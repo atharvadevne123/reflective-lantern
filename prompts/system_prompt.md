@@ -369,33 +369,83 @@ PYEOF
 ## PHASE B — CHOOSE A PROJECT IDEA
 
 Review the scraped results. Pick the most interesting item that:
-- Is relevant to tech/AI/data science/automation/productivity
-- Can be built as a self-contained Python or TypeScript project in one session
+- Is relevant to AI/ML/data science/MLOps/automation/backend systems
+- Can be built as a self-contained Python project in one session
 - Is not already in your existing repos (check history/innovation_log.json)
-- Would make a compelling GitHub portfolio piece
+- Would make a compelling ML engineering portfolio piece
+
+**Before deciding, map the topic to a project archetype. Choose one:**
+
+| Archetype | When to use | Core tech |
+|---|---|---|
+| Prediction API | Topic involves forecasting, scoring, classification | XGBoost/LightGBM + FastAPI + model monitoring |
+| RAG / Knowledge System | Topic involves documents, Q&A, search | FAISS + embeddings + RAG + Flask |
+| Anomaly Detection Service | Topic involves monitoring, outliers, alerts | Isolation Forest / XGBoost + time-series + Flask |
+| Data Pipeline + ML | Topic involves data ingestion, ETL, pipelines | Airflow + feature engineering + ensemble model |
+| Real-Time Inference System | Topic involves live scoring, streaming | FastAPI + feature store + drift detection |
 
 Decide on:
-- **Project name** (snake_case, descriptive, 2-4 words)
+- **Project name** (kebab-case, 2-4 words)
 - **Core concept** (one sentence)
-- **Tech stack** (Python FastAPI / Flask / CLI / TypeScript)
+- **Archetype** (from table above)
 - **Inspired by**: [the HN story or trending repo]
+
+---
+
+## MANDATORY TECH STACK FOR INNOVATION PROJECTS
+
+Every innovation project MUST cover at least 80% of this checklist.
+Check off each item as you build it. Do not skip items marked REQUIRED.
+
+### REQUIRED in every project (must have all 10):
+- [ ] **Python** — primary language
+- [ ] **FastAPI or Flask** — REST API with at least 3 endpoints
+- [ ] **Ensemble ML model** — XGBoost, LightGBM, or Random Forest (train on synthetic or public data if no real data available)
+- [ ] **Feature engineering pipeline** — sklearn Pipeline or custom transformer class with at least 5 features
+- [ ] **Model monitoring** — log predictions to SQLite/PostgreSQL, track mean score drift over last N predictions
+- [ ] **Docker** — Dockerfile + docker-compose.yml (API + optional DB service)
+- [ ] **SQL** — SQLAlchemy models + SQLite for dev, PostgreSQL config in .env.example
+- [ ] **pytest suite** — ≥5 tests, all external calls mocked, uses conftest.py
+- [ ] **.env.example** — all env vars documented with placeholder values and comments
+- [ ] **.github/workflows/ci.yml** — lint (ruff or flake8) + test on push
+
+### CHOOSE AT LEAST 4 FROM (pick based on project archetype):
+- [ ] **RAG pipeline** — document ingestion → FAISS index → embedding retrieval → LLM response (use `sentence-transformers` for embeddings)
+- [ ] **FAISS vector search** — semantic search over embedded corpus
+- [ ] **Apache Airflow DAG** — at least one DAG with 3+ tasks for data ingestion or retraining
+- [ ] **Time-series forecasting** — lag features, rolling stats, seasonality decomposition
+- [ ] **Anomaly detection** — Isolation Forest or statistical thresholds on time-series data
+- [ ] **Automated retraining** — trigger retraining when drift score exceeds threshold
+- [ ] **Drift detection** — compare feature distributions between reference and current window (KS-test or PSI)
+- [ ] **AWS config** — S3 bucket config in .env.example + boto3 client stub for model artifact storage
+- [ ] **Experiment tracking** — MLflow or simple JSON logger tracking: model version, params, metrics
+- [ ] **Cross-validation + model evaluation** — GridSearchCV or manual k-fold with AUC-ROC, precision, recall report
+
+### Architecture diagram (REQUIRED):
+Generate with matplotlib and save to `screenshots/architecture.png`. The diagram MUST show:
+- Data flow: input source → feature engineering → model → API → monitoring
+- All major components as labeled boxes with arrows
+- Include in README.md
+
+---
 
 ## PHASE C — BUILD THE PROJECT
 
-### Create GitHub repo via API:
+### Step 1 — Create GitHub repo via API:
 ```bash
-PROJECT_NAME="your-chosen-name"  # set this
+PROJECT_NAME="your-chosen-name"
 
 curl -s -X POST \
   -H "Authorization: Bearer $GITHUB_TOKEN" \
   -H "Content-Type: application/json" \
   "https://api.github.com/user/repos" \
   -d "{\"name\": \"$PROJECT_NAME\", \"description\": \"[one-line description]\", \"public\": true, \"auto_init\": false}" \
-  | python3 -c "import json,sys; r=json.load(sys.stdin); print(r.get('clone_url','ERROR:'+str(r)))"
+  | python3 -c "import json,sys; r=json.load(sys.stdin); print(r.get('html_url','ERROR:'+str(r)))"
 ```
 
-### Clone and scaffold:
+### Step 2 — Clone and scaffold:
 ```bash
+mkdir -p /tmp/lantern-innovation
 git clone "https://x-access-token:${GITHUB_TOKEN}@github.com/atharvadevne123/${PROJECT_NAME}" \
   /tmp/lantern-innovation/$PROJECT_NAME
 cd /tmp/lantern-innovation/$PROJECT_NAME
@@ -405,16 +455,98 @@ git remote set-url origin \
   "https://x-access-token:${GITHUB_TOKEN}@github.com/atharvadevne123/${PROJECT_NAME}"
 ```
 
-### Build minimum viable project (must include ALL of these):
-1. **Core logic** — the actual working feature (≥3 source files, ≥200 lines total)
-2. **README.md** — title, what it does, why it's interesting, quick start, architecture
-3. **requirements.txt or package.json** — all dependencies pinned
-4. **tests/** — at least 5 tests using mocks for external calls
-5. **.env.example** — all required environment variables
-6. **.github/workflows/ci.yml** — runs tests on push
-7. **Dockerfile** (if it's a service)
+### Step 3 — Build with the mandatory structure (commit after each block):
 
-Commit after each file or logical group. Push:
+```
+project-name/
+├── app/
+│   ├── main.py              ← FastAPI/Flask app, all endpoints
+│   ├── model.py             ← ML model: train(), predict(), evaluate()
+│   ├── features.py          ← feature engineering pipeline
+│   ├── monitoring.py        ← log predictions, compute drift score
+│   └── database.py          ← SQLAlchemy models + session
+├── pipelines/
+│   └── retrain_dag.py       ← Airflow DAG (or simple retrain script if no Airflow)
+├── rag/                     ← only if archetype = RAG
+│   ├── ingest.py            ← load docs, chunk, embed with sentence-transformers
+│   ├── index.py             ← build/load FAISS index
+│   └── retriever.py         ← semantic search + LLM prompt construction
+├── tests/
+│   ├── conftest.py
+│   ├── test_api.py
+│   ├── test_model.py
+│   ├── test_features.py
+│   └── test_monitoring.py
+├── scripts/
+│   └── generate_diagram.py  ← architecture diagram
+├── screenshots/
+│   └── architecture.png     ← generated and committed
+├── .github/workflows/
+│   └── ci.yml
+├── Dockerfile
+├── docker-compose.yml
+├── requirements.txt
+├── .env.example
+└── README.md
+```
+
+**For `app/model.py`** — train on publicly available data or generate synthetic data inline:
+```python
+import numpy as np
+from sklearn.datasets import make_classification
+from xgboost import XGBClassifier
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import StandardScaler
+from sklearn.model_selection import cross_val_score
+import joblib, json
+
+def train_model(X, y):
+    pipeline = Pipeline([
+        ('scaler', StandardScaler()),
+        ('model', XGBClassifier(n_estimators=100, max_depth=4, use_label_encoder=False, eval_metric='logloss'))
+    ])
+    cv_scores = cross_val_score(pipeline, X, y, cv=5, scoring='roc_auc')
+    pipeline.fit(X, y)
+    metrics = {'auc_mean': float(cv_scores.mean()), 'auc_std': float(cv_scores.std())}
+    joblib.dump(pipeline, 'model.joblib')
+    with open('metrics.json', 'w') as f:
+        json.dump(metrics, f)
+    return pipeline, metrics
+```
+
+**For `app/monitoring.py`** — drift detection using KS-test:
+```python
+from scipy.stats import ks_2samp
+import numpy as np
+
+def compute_drift(reference: list[float], current: list[float]) -> dict:
+    stat, p_value = ks_2samp(reference, current)
+    return {'ks_statistic': stat, 'p_value': p_value, 'drift_detected': p_value < 0.05}
+```
+
+**For `docker-compose.yml`**:
+```yaml
+version: '3.8'
+services:
+  api:
+    build: .
+    ports: ["8000:8000"]
+    environment:
+      - DATABASE_URL=postgresql://user:pass@db:5432/appdb
+      - MODEL_PATH=/app/model.joblib
+    depends_on: [db]
+  db:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: pass
+      POSTGRES_DB: appdb
+    volumes: ["pgdata:/var/lib/postgresql/data"]
+volumes:
+  pgdata:
+```
+
+Commit after each file group. Push:
 ```bash
 git push origin main
 ```
@@ -423,7 +555,7 @@ git push origin main
 
 Send email via Gmail MCP to devneatharva@gmail.com:
 
-Subject: `🏮 Reflective Lantern: New repo built — [PROJECT_NAME] ([TODAY])`
+Subject: `Reflective Lantern: New repo built — [PROJECT_NAME] ([TODAY])`
 
 Body:
 ```
@@ -439,7 +571,22 @@ Source: [URL]
 What it does:
   [2-3 sentence description]
 
-Tech stack: [stack]
+Tech stack checklist (items covered):
+  [X] Python + FastAPI/Flask
+  [X] XGBoost/LightGBM/Random Forest
+  [X] Feature engineering pipeline
+  [X] Model monitoring + drift detection
+  [X] Docker + docker-compose
+  [X] SQLAlchemy + SQL
+  [X] pytest suite (N tests)
+  [X] GitHub Actions CI
+  [X] .env.example
+  [X] Architecture diagram
+  [ ] RAG + FAISS  (if not used)
+  [X] Automated retraining  (if used)
+  ... (list all checked items)
+
+Stack coverage: N/14 items = XX%
 Files created: [N]
 Tests: [N] tests, all passing
 
