@@ -1,0 +1,17 @@
+[
+  {
+    "date": "2026-04-21",
+    "mode": "improvement",
+    "repo": "Gmail-job-Automation",
+    "improvements": [
+      "refactor/auth.py: add type annotations, replace print() with logging, remove macOS-specific Safari browser registration, raise FileNotFoundError instead of exit(1)",
+      "refactor/gmail_labeler.py: add type annotations to all public functions, replace all print() with logging.getLogger calls, configure logging.basicConfig in main()",
+      "refactor/delete_job_emails.py: add type annotations to all public functions, replace all print() with logging.getLogger calls, configure logging.basicConfig in main()",
+      "test: add pytest suite with 16 tests (mocked Gmail API, no credentials needed) — test_auth.py (6), test_labeler.py (5), test_delete.py (5)",
+      "ci: add GitHub Actions CI workflow (ubuntu-latest, Python 3.11, pytest on push/PR)",
+      "docs: update README with CI badge and Testing section"
+    ],
+    "tests_passed": true,
+    "commits": 4
+  }
+]
