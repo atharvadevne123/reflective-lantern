@@ -1,1 +1,27 @@
-[]
+[
+  {
+    "date": "2026-04-22",
+    "project": "rag-sentinel",
+    "description": "RAG-powered document intelligence with ML anomaly detection and KS-drift monitoring. FastAPI + RandomForest + IsolationForest ensemble + FAISS RAG + Airflow DAG retraining.",
+    "inspired_by": "HKUDS/RAG-Anything (GitHub trending Python)",
+    "repo_url": "https://github.com/atharvadevne123/rag-sentinel",
+    "file_count": 27,
+    "test_count": 38,
+    "coverage_pct": 100,
+    "archetype": "RAG/Knowledge System + Anomaly Detection",
+    "stack": [
+      "Python",
+      "FastAPI",
+      "RandomForest",
+      "IsolationForest",
+      "sklearn Pipeline",
+      "KS-drift monitoring",
+      "SQLAlchemy",
+      "FAISS RAG",
+      "Airflow DAG",
+      "Docker+PostgreSQL",
+      "pytest",
+      "GitHub Actions CI"
+    ]
+  }
+]
