@@ -23,5 +23,39 @@
       "pytest",
       "GitHub Actions CI"
     ]
+  },
+  {
+    "date": "2026-04-22",
+    "mode": "innovation",
+    "project": "price-prophet",
+    "description": "E-commerce price optimization and demand forecasting engine",
+    "repo_url": "https://github.com/atharvadevne123/price-prophet",
+    "tech_stack": [
+      "Python 3.11",
+      "FastAPI",
+      "XGBoost",
+      "LightGBM",
+      "RandomForest",
+      "sklearn Pipeline",
+      "FAISS",
+      "SQLAlchemy",
+      "PostgreSQL",
+      "Docker",
+      "Airflow DAG",
+      "KS-test drift detection",
+      "pytest (32 tests)"
+    ],
+    "stack_coverage_pct": 100,
+    "optional_enhancements": [
+      "FAISS",
+      "Airflow DAG",
+      "5-fold CV",
+      "drift detection"
+    ],
+    "tests_passed": true,
+    "test_count": 32,
+    "file_count": 22,
+    "server_verified": true,
+    "commits": 1
   }
 ]
