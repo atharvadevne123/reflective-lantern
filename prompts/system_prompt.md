@@ -250,31 +250,143 @@ git pull origin main --rebase
 git push origin main
 ```
 
-## PHASE 9 — GMAIL DIGEST + HISTORY LOG
+## PHASE 9 — GENERATE PDF REPORT + SEND EMAIL + HISTORY LOG
 
-**Send email via Gmail MCP** to devneatharva@gmail.com:
-
-Subject: `Reflective Lantern: [REPO_NAME] improved — [TODAY]`
-
-Body:
+Install required library (once):
+```bash
+pip install fpdf2 -q
 ```
-Reflective Lantern Daily Run — IMPROVEMENT MODE
+
+Build and run this script — substitute ALL bracketed values with actual run data before executing:
+
+```python
+python3 - <<'PYEOF'
+import os, smtplib
+from email.mime.multipart import MIMEMultipart
+from email.mime.base import MIMEBase
+from email.mime.text import MIMEText
+from email import encoders
+from fpdf import FPDF
+import datetime
+
+# ── Substitute actual run values here ────────────────────────────
+TODAY         = "[TODAY]"           # e.g. "2026-04-23"
+REPO_NAME     = "[REPO_NAME]"       # e.g. "FraudDetectionAI"
+IMPROVEMENTS  = [                   # list every improvement applied
+    "[improvement 1]",
+    "[improvement 2]",
+    "[improvement 3]",
+]
+TESTS_STATUS  = "PASSED"            # "PASSED" or "FAILED: <reason>"
+README_STATUS = "Updated"           # "Updated" or "No changes"
+COMMITS_COUNT = 5                   # integer
+# ─────────────────────────────────────────────────────────────────
+
+import datetime as _dt
+tomorrow = _dt.date.today() + _dt.timedelta(days=1)
+while tomorrow.isoweekday() > 5:
+    tomorrow += _dt.timedelta(days=1)
+NEXT_RUN = tomorrow.isoformat()
+
+PDF_PATH = f"/tmp/lantern_{REPO_NAME}_{TODAY}.pdf"
+
+# ── Generate PDF ──────────────────────────────────────────────────
+pdf = FPDF()
+pdf.set_margins(20, 20, 20)
+pdf.add_page()
+
+pdf.set_font("Helvetica", "B", 22)
+pdf.set_text_color(99, 102, 241)
+pdf.cell(0, 14, "Reflective Lantern", align="C", new_x="LMARGIN", new_y="NEXT")
+pdf.set_font("Helvetica", "", 12)
+pdf.set_text_color(120, 120, 130)
+pdf.cell(0, 8, "Daily Improvement Report", align="C", new_x="LMARGIN", new_y="NEXT")
+pdf.ln(6)
+
+pdf.set_font("Helvetica", "", 11)
+pdf.set_text_color(50, 50, 60)
+pdf.cell(0, 7, f"Date: {TODAY}   |   Mode: IMPROVEMENT", new_x="LMARGIN", new_y="NEXT")
+pdf.cell(0, 7, f"Repo: {REPO_NAME}", new_x="LMARGIN", new_y="NEXT")
+pdf.cell(0, 7, f"GitHub: https://github.com/atharvadevne123/{REPO_NAME}", new_x="LMARGIN", new_y="NEXT")
+pdf.ln(5)
+
+pdf.set_draw_color(200, 200, 210)
+pdf.line(20, pdf.get_y(), 190, pdf.get_y())
+pdf.ln(4)
+
+pdf.set_font("Helvetica", "B", 13)
+pdf.set_text_color(30, 30, 40)
+pdf.cell(0, 9, f"Improvements Applied ({len(IMPROVEMENTS)})", new_x="LMARGIN", new_y="NEXT")
+pdf.set_font("Helvetica", "", 11)
+for i, imp in enumerate(IMPROVEMENTS, 1):
+    pdf.multi_cell(0, 7, f"  {i}. {imp}")
+pdf.ln(4)
+
+pdf.set_font("Helvetica", "B", 13)
+pdf.cell(0, 9, "Run Summary", new_x="LMARGIN", new_y="NEXT")
+pdf.set_font("Helvetica", "", 11)
+status_color = (16, 185, 129) if "PASS" in TESTS_STATUS else (244, 63, 94)
+pdf.set_text_color(*status_color)
+pdf.cell(0, 7, f"  Tests:   {TESTS_STATUS}", new_x="LMARGIN", new_y="NEXT")
+pdf.set_text_color(50, 50, 60)
+pdf.cell(0, 7, f"  README:  {README_STATUS}", new_x="LMARGIN", new_y="NEXT")
+pdf.cell(0, 7, f"  Commits: {COMMITS_COUNT} pushed to main", new_x="LMARGIN", new_y="NEXT")
+pdf.cell(0, 7, f"  Next run: {NEXT_RUN}", new_x="LMARGIN", new_y="NEXT")
+pdf.ln(6)
+
+pdf.set_font("Helvetica", "I", 10)
+pdf.set_text_color(150, 150, 160)
+pdf.cell(0, 7, "— Reflective Lantern / Claude Sonnet 4.6", new_x="LMARGIN", new_y="NEXT")
+pdf.output(PDF_PATH)
+print(f"PDF generated: {PDF_PATH}")
+
+# ── Send email via SMTP ───────────────────────────────────────────
+GMAIL_USER = "devneatharva@gmail.com"
+GMAIL_PASS = os.environ.get("GMAIL_APP_PASSWORD", "")
+
+if not GMAIL_PASS:
+    print("ERROR: GMAIL_APP_PASSWORD env var not set — cannot send email")
+    raise SystemExit(1)
+
+subject = f"Reflective Lantern: {REPO_NAME} improved — {TODAY}"
+body = f"""Reflective Lantern Daily Run — IMPROVEMENT MODE
 ===============================================
-Date: [TODAY]
-Repo: [REPO_NAME]
-GitHub: https://github.com/atharvadevne123/[REPO_NAME]
+Date:   {TODAY}
+Repo:   {REPO_NAME}
+GitHub: https://github.com/atharvadevne123/{REPO_NAME}
 
-Improvements ([N] total):
-  1. [description]
-  2. [description]
-  ...
+Improvements ({len(IMPROVEMENTS)} total):
+{chr(10).join(f"  {i+1}. {imp}" for i, imp in enumerate(IMPROVEMENTS))}
 
-Tests: PASSED / FAILED ([reason if failed])
-README: Updated / No changes
-Commits: [N] pushed to main
+Tests:   {TESTS_STATUS}
+README:  {README_STATUS}
+Commits: {COMMITS_COUNT} pushed to main
+Next run: {NEXT_RUN}
 
-Next run: [next weekday]
-— Reflective Lantern / Claude Sonnet 4.6
+Full PDF report is attached.
+— Reflective Lantern / Claude Sonnet 4.6"""
+
+msg = MIMEMultipart()
+msg["From"]    = GMAIL_USER
+msg["To"]      = GMAIL_USER
+msg["Subject"] = subject
+msg.attach(MIMEText(body, "plain"))
+
+with open(PDF_PATH, "rb") as f:
+    part = MIMEBase("application", "octet-stream")
+    part.set_payload(f.read())
+    encoders.encode_base64(part)
+    part.add_header("Content-Disposition",
+                    f'attachment; filename="lantern_{REPO_NAME}_{TODAY}.pdf"')
+    msg.attach(part)
+
+with smtplib.SMTP("smtp.gmail.com", 587) as smtp:
+    smtp.ehlo()
+    smtp.starttls()
+    smtp.login(GMAIL_USER, GMAIL_PASS)
+    smtp.send_message(msg)
+    print(f"Email with PDF sent to {GMAIL_USER}")
+PYEOF
 ```
 
 **Then update history log** — return to reflective-lantern repo:
@@ -551,46 +663,166 @@ Commit after each file group. Push:
 git push origin main
 ```
 
-## PHASE D — GMAIL DIGEST (INNOVATION)
+## PHASE D — GENERATE PDF REPORT + SEND EMAIL (INNOVATION)
 
-Send email via Gmail MCP to devneatharva@gmail.com:
-
-Subject: `Reflective Lantern: New repo built — [PROJECT_NAME] ([TODAY])`
-
-Body:
+Install required library (once):
+```bash
+pip install fpdf2 -q
 ```
-Reflective Lantern Daily Run — INNOVATION MODE
-===============================================
-Date: [TODAY]
-New Repo: [PROJECT_NAME]
-GitHub: https://github.com/atharvadevne123/[PROJECT_NAME]
 
-Inspired by: [HN title or trending repo]
-Source: [URL]
+Build and run this script — substitute ALL bracketed values with actual build data:
+
+```python
+python3 - <<'PYEOF'
+import os, smtplib
+from email.mime.multipart import MIMEMultipart
+from email.mime.base import MIMEBase
+from email.mime.text import MIMEText
+from email import encoders
+from fpdf import FPDF
+import datetime as _dt
+
+# ── Substitute actual build values here ──────────────────────────
+TODAY         = "[TODAY]"
+PROJECT_NAME  = "[PROJECT_NAME]"
+INSPIRED_BY   = "[HN title or trending repo name]"
+SOURCE_URL    = "[URL]"
+DESCRIPTION   = "[2-3 sentence description of what the project does]"
+STACK_ITEMS   = [           # list every tech stack item as "✓ Item" or "✗ Item"
+    "✓ Python + FastAPI/Flask",
+    "✓ XGBoost/LightGBM/Random Forest",
+    "✓ Feature engineering pipeline",
+    "✓ Model monitoring + drift detection",
+    "✓ Docker + docker-compose",
+    "✓ SQLAlchemy + SQL",
+    "✓ pytest suite",
+    "✓ GitHub Actions CI",
+    "✓ .env.example",
+    "✓ Architecture diagram",
+]
+STACK_COVERAGE = "10/14 = 71%"  # update with actual count
+FILES_CREATED  = 18             # integer
+TESTS_COUNT    = 25             # integer
+TESTS_STATUS   = "PASSED"       # "PASSED" or "FAILED: <reason>"
+# ─────────────────────────────────────────────────────────────────
+
+PDF_PATH = f"/tmp/lantern_innovation_{PROJECT_NAME}_{TODAY}.pdf"
+
+# ── Generate PDF ──────────────────────────────────────────────────
+pdf = FPDF()
+pdf.set_margins(20, 20, 20)
+pdf.add_page()
+
+pdf.set_font("Helvetica", "B", 22)
+pdf.set_text_color(99, 102, 241)
+pdf.cell(0, 14, "Reflective Lantern", align="C", new_x="LMARGIN", new_y="NEXT")
+pdf.set_font("Helvetica", "", 12)
+pdf.set_text_color(120, 120, 130)
+pdf.cell(0, 8, "Innovation Mode — New Repo Built", align="C", new_x="LMARGIN", new_y="NEXT")
+pdf.ln(6)
+
+pdf.set_font("Helvetica", "", 11)
+pdf.set_text_color(50, 50, 60)
+pdf.cell(0, 7, f"Date: {TODAY}   |   Mode: INNOVATION", new_x="LMARGIN", new_y="NEXT")
+pdf.cell(0, 7, f"New Repo: {PROJECT_NAME}", new_x="LMARGIN", new_y="NEXT")
+pdf.cell(0, 7, f"GitHub: https://github.com/atharvadevne123/{PROJECT_NAME}", new_x="LMARGIN", new_y="NEXT")
+pdf.ln(4)
+
+pdf.set_draw_color(200, 200, 210)
+pdf.line(20, pdf.get_y(), 190, pdf.get_y())
+pdf.ln(4)
+
+pdf.set_font("Helvetica", "B", 13)
+pdf.set_text_color(30, 30, 40)
+pdf.cell(0, 9, "Inspiration", new_x="LMARGIN", new_y="NEXT")
+pdf.set_font("Helvetica", "", 11)
+pdf.multi_cell(0, 7, f"  {INSPIRED_BY}")
+pdf.cell(0, 7, f"  Source: {SOURCE_URL}", new_x="LMARGIN", new_y="NEXT")
+pdf.ln(4)
+
+pdf.set_font("Helvetica", "B", 13)
+pdf.cell(0, 9, "What It Does", new_x="LMARGIN", new_y="NEXT")
+pdf.set_font("Helvetica", "", 11)
+pdf.multi_cell(0, 7, f"  {DESCRIPTION}")
+pdf.ln(4)
+
+pdf.set_font("Helvetica", "B", 13)
+pdf.cell(0, 9, f"Tech Stack ({STACK_COVERAGE})", new_x="LMARGIN", new_y="NEXT")
+pdf.set_font("Helvetica", "", 11)
+for item in STACK_ITEMS:
+    color = (16, 185, 129) if item.startswith("✓") else (200, 200, 200)
+    pdf.set_text_color(*color)
+    pdf.cell(0, 7, f"  {item}", new_x="LMARGIN", new_y="NEXT")
+pdf.set_text_color(50, 50, 60)
+pdf.ln(4)
+
+pdf.set_font("Helvetica", "B", 13)
+pdf.cell(0, 9, "Build Summary", new_x="LMARGIN", new_y="NEXT")
+pdf.set_font("Helvetica", "", 11)
+status_color = (16, 185, 129) if "PASS" in TESTS_STATUS else (244, 63, 94)
+pdf.set_text_color(*status_color)
+pdf.cell(0, 7, f"  Tests: {TESTS_COUNT} tests — {TESTS_STATUS}", new_x="LMARGIN", new_y="NEXT")
+pdf.set_text_color(50, 50, 60)
+pdf.cell(0, 7, f"  Files created: {FILES_CREATED}", new_x="LMARGIN", new_y="NEXT")
+pdf.ln(6)
+
+pdf.set_font("Helvetica", "I", 10)
+pdf.set_text_color(150, 150, 160)
+pdf.cell(0, 7, "— Reflective Lantern / Claude Sonnet 4.6", new_x="LMARGIN", new_y="NEXT")
+pdf.output(PDF_PATH)
+print(f"PDF generated: {PDF_PATH}")
+
+# ── Send email via SMTP ───────────────────────────────────────────
+GMAIL_USER = "devneatharva@gmail.com"
+GMAIL_PASS = os.environ.get("GMAIL_APP_PASSWORD", "")
+
+if not GMAIL_PASS:
+    print("ERROR: GMAIL_APP_PASSWORD env var not set — cannot send email")
+    raise SystemExit(1)
+
+subject = f"Reflective Lantern: New repo built — {PROJECT_NAME} ({TODAY})"
+body = f"""Reflective Lantern Daily Run — INNOVATION MODE
+===============================================
+Date:     {TODAY}
+New Repo: {PROJECT_NAME}
+GitHub:   https://github.com/atharvadevne123/{PROJECT_NAME}
+
+Inspired by: {INSPIRED_BY}
+Source:      {SOURCE_URL}
 
 What it does:
-  [2-3 sentence description]
+  {DESCRIPTION}
 
-Tech stack checklist (items covered):
-  [X] Python + FastAPI/Flask
-  [X] XGBoost/LightGBM/Random Forest
-  [X] Feature engineering pipeline
-  [X] Model monitoring + drift detection
-  [X] Docker + docker-compose
-  [X] SQLAlchemy + SQL
-  [X] pytest suite (N tests)
-  [X] GitHub Actions CI
-  [X] .env.example
-  [X] Architecture diagram
-  [ ] RAG + FAISS  (if not used)
-  [X] Automated retraining  (if used)
-  ... (list all checked items)
+Tech stack ({STACK_COVERAGE}):
+{chr(10).join(f"  {item}" for item in STACK_ITEMS)}
 
-Stack coverage: N/14 items = XX%
-Files created: [N]
-Tests: [N] tests, all passing
+Files created: {FILES_CREATED}
+Tests: {TESTS_COUNT} tests — {TESTS_STATUS}
 
-— Reflective Lantern / Claude Sonnet 4.6
+Full PDF report is attached.
+— Reflective Lantern / Claude Sonnet 4.6"""
+
+msg = MIMEMultipart()
+msg["From"]    = GMAIL_USER
+msg["To"]      = GMAIL_USER
+msg["Subject"] = subject
+msg.attach(MIMEText(body, "plain"))
+
+with open(PDF_PATH, "rb") as f:
+    part = MIMEBase("application", "octet-stream")
+    part.set_payload(f.read())
+    encoders.encode_base64(part)
+    part.add_header("Content-Disposition",
+                    f'attachment; filename="lantern_innovation_{PROJECT_NAME}_{TODAY}.pdf"')
+    msg.attach(part)
+
+with smtplib.SMTP("smtp.gmail.com", 587) as smtp:
+    smtp.ehlo()
+    smtp.starttls()
+    smtp.login(GMAIL_USER, GMAIL_PASS)
+    smtp.send_message(msg)
+    print(f"Email with PDF sent to {GMAIL_USER}")
+PYEOF
 ```
 
 ## PHASE E — UPDATE INNOVATION LOG
