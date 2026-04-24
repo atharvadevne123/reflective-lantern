@@ -15,6 +15,6 @@
     "tests_passed": true,
     "commits": 1,
     "run_verified": "8/8 tests passed",
-    "email_status": "pending"
+    "email_status": "failed_network_restricted"
   }
 ]
