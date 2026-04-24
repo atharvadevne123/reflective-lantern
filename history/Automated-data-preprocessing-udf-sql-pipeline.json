@@ -1,0 +1,20 @@
+[
+  {
+    "date": "2026-04-24",
+    "mode": "improvement",
+    "improvements": [
+      "Rewrote split_files.py: argparse CLI, type hints, logging, try/except around all I/O",
+      "Fixed remainder-lines bug: last chunk now absorbs modulo remainder so no lines are dropped",
+      "Added tests/test_split_files.py: 8-test pytest suite covering edge cases",
+      "Added requirements.txt (pandas, textblob, pytest, ruff)",
+      "Added .github/workflows/ci.yml: ruff lint + pytest on every push/PR",
+      "Added .gitignore and .env.example for safe credential management",
+      "Fixed UDF and tables.sql: missing semicolons, hardcoded AWS creds replaced with $VAR placeholders, review_count cast to INT",
+      "Updated README: CI badge, CLI usage docs, env-vars reference table, test section"
+    ],
+    "tests_passed": true,
+    "commits": 1,
+    "run_verified": "8/8 tests passed",
+    "email_status": "pending"
+  }
+]
