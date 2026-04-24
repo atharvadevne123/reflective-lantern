@@ -1,0 +1,20 @@
+{
+  "name": "@atharvadevne123/reflective-lantern",
+  "version": "1.0.0",
+  "description": "Autonomous code improvement agent — system prompts and configuration",
+  "main": "index.js",
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
+  },
+  "files": [
+    "index.js",
+    "prompts/",
+    "system_prompt.md"
+  ],
+  "scripts": {
+    "test": "node -e \"const r = require('.'); console.log(Object.keys(r.getPrompts()));\""
+  },
+  "keywords": ["claude", "agent", "prompts", "llm"],
+  "license": "MIT",
+  "author": "atharvadevne123"
+}
