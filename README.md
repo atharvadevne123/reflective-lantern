@@ -1,3 +1,5 @@
+![Python Package](https://github.com/atharvadevne123/reflective-lantern/actions/workflows/python-publish.yml/badge.svg) ![npm](https://github.com/atharvadevne123/reflective-lantern/actions/workflows/npm-publish.yml/badge.svg) ![Bump Version](https://github.com/atharvadevne123/reflective-lantern/actions/workflows/bump-version.yml/badge.svg)
+
 # Reflective Lantern
 
 Autonomous Mon–Fri code improvement agent powered by Claude Code Cloud Routines.
