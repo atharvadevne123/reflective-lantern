@@ -1,0 +1,20 @@
+[
+  {
+    "date": "2026-04-25",
+    "mode": "improvement",
+    "improvements": [
+      "1. [Security/T1] Fixed path-traversal vulnerability in get_sql() - now validates resolved path stays within sql/ directory",
+      "2. [Tests/T2] Added 39-test pytest suite (tests/test_pipeline.py + tests/test_sql_meta.py) covering security, data validation, and integration",
+      "3. [Quality/T3] Added load_sample_reviews() NDJSON parser and validate_review() with type hints, logging, and field/range validation",
+      "4. [Quality/T3] Added sql_meta.py module for extracting table/stream/task/procedure/warehouse/sequence names from DDL scripts",
+      "5. [DX/T4] Added .github/workflows/ci.yml running tests on Python 3.9, 3.11, 3.12 matrix",
+      "6. [DX/T4] Added .env.example with all required Snowflake and AWS environment variables",
+      "7. [DX/T4] Added requirements.txt and updated pyproject.toml with pytest/ruff configuration sections",
+      "8. [DX/T4] Added .gitignore covering __pycache__, *.egg-info, dist, .env, .venv"
+    ],
+    "tests_passed": true,
+    "commits": 2,
+    "run_verified": "39/39 pytest tests passing",
+    "email_status": "pending"
+  }
+]
