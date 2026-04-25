@@ -10,11 +10,14 @@
       "5. [DX/T4] Added .github/workflows/ci.yml running tests on Python 3.9, 3.11, 3.12 matrix",
       "6. [DX/T4] Added .env.example with all required Snowflake and AWS environment variables",
       "7. [DX/T4] Added requirements.txt and updated pyproject.toml with pytest/ruff configuration sections",
-      "8. [DX/T4] Added .gitignore covering __pycache__, *.egg-info, dist, .env, .venv"
+      "8. [DX/T4] Added .gitignore covering __pycache__, *.egg-info, dist, .env, .venv",
+      "9. [DX/T4] Secured Dockerfile: non-root appuser, HEALTHCHECK, removed snowflake.txt from image",
+      "10. [Tests/T2] Extended test suite to 43 tests (4 new sql_meta tests for summarize, dedup, case-insensitive)",
+      "11. [Quality/T3] Added ruff>=0.4 to requirements.txt for consistent linting"
     ],
     "tests_passed": true,
-    "commits": 2,
-    "run_verified": "39/39 pytest tests passing",
+    "commits": 3,
+    "run_verified": "43/43 pytest tests passing",
     "email_status": "failed_2525:OSError"
   }
 ]
