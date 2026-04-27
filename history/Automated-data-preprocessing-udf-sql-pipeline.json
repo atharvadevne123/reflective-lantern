@@ -34,6 +34,6 @@
     "tests_passed": true,
     "commits": 1,
     "run_verified": "19/19 tests passed, 81% coverage",
-    "email_status": "pending"
+    "email_status": "failed_2525:OSError"
   }
 ]
