@@ -16,5 +16,24 @@
     "commits": 1,
     "run_verified": "8/8 tests passed",
     "email_status": "failed_network_restricted"
+  },
+  {
+    "date": "2026-04-27",
+    "mode": "improvement",
+    "improvements": [
+      "Fixed split_file edge case: cap num_files to total_lines when it exceeds line count (no empty output files)",
+      "Added --output-dir CLI argument to split_files.py with auto-mkdir support",
+      "Added snowflake_connector.py: reads Snowflake credentials from env/.env, validates all required vars, lazy-imports connector",
+      "Expanded test suite from 8 to 19 tests (81% coverage): cap logic, --output-dir, main(), Snowflake connector mocked tests",
+      "Updated requirements.txt: added pytest-cov, python-dotenv, mypy",
+      "Updated pyproject.toml: added [tool.pytest.ini_options], [tool.mypy], [tool.coverage.*]",
+      "Updated CI: added mypy type-check step, switched pytest to --cov with 75% threshold",
+      "Added Dockerfile to containerise split_files.py",
+      "Updated README: new features, Docker usage, project structure, test results (19 tests, 81% coverage)"
+    ],
+    "tests_passed": true,
+    "commits": 1,
+    "run_verified": "19/19 tests passed, 81% coverage",
+    "email_status": "pending"
   }
 ]
