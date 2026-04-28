@@ -17,6 +17,6 @@
     "tests_passed": true,
     "commits": 2,
     "run_verified": "37 passed, 0 warnings",
-    "email_status": "pending"
+    "email_status": "failed_2525:OSError"
   }
 ]
