@@ -109,9 +109,11 @@ Use Glob and Read to examine key source files. Understand:
 
 Do NOT start making changes until you have a clear picture.
 
-## PHASE 4 — PLAN 5+ IMPROVEMENTS
+## PHASE 4 — PLAN 15+ IMPROVEMENTS
 
-Identify at least 5 specific improvements from these tiers (prioritize Tier 1 and 2):
+Identify **at least 15** specific improvements from these tiers (prioritize Tier 1 and 2).
+**You must not proceed to Phase 5 until you have 15 concrete, file-level improvements planned.**
+Work top-down through the tiers — exhaust each tier before moving to the next:
 
 ### Tier 1 — Security & Correctness
 - Hardcoded secrets → `os.environ.get('KEY', '')` / `process.env.KEY`. Add `.env.example`.
@@ -201,12 +203,16 @@ jobs:
 For each improvement:
 1. Use Grep to find the relevant code — don't read whole files
 2. Edit with Edit or Write tool
-3. Commit atomically:
+3. **Commit each individual file change as its own atomic commit — never bundle unrelated files:**
 ```bash
-git add <specific files>
-git commit -m "type: one-line description"
+git add <one specific file>
+git commit -m "type: precise one-line description of this file's change"
 ```
 Prefixes: `feat` / `fix` / `refactor` / `ci` / `docs` / `chore` / `test`
+
+Only bundle two files in one commit when they are strictly co-dependent
+(e.g. a new module + the `__init__.py` line that imports it).
+Every other change = its own commit. This is mandatory.
 
 ## PHASE 6 — TEST VERIFICATION
 
@@ -237,6 +243,30 @@ fig, ax = plt.subplots(figsize=(12, 6))
 plt.savefig('screenshots/architecture.png', dpi=150, bbox_inches='tight')
 ```
 Commit it and add `![Architecture](screenshots/architecture.png)` to README.
+
+## PHASE 7.5 — COMMIT COUNT GATE (HARD STOP)
+
+Before pushing, count your commits and enforce the minimum:
+
+```bash
+COMMIT_COUNT=$(git log origin/main..HEAD --oneline | wc -l | tr -d ' ')
+echo "Commits ready to push: $COMMIT_COUNT"
+```
+
+**If `COMMIT_COUNT` < 15 — do NOT push. Return to Phase 4 and add more improvements:**
+
+Work through this fill-up list in order until you reach 15:
+- Add type annotations to every un-annotated public function (one commit per file touched)
+- Add docstrings to every public class and method without one (one commit per file)
+- Replace every bare `print()` call with `logging.getLogger(__name__)` (one commit per file)
+- Add or expand tests — at least 2 new test functions per commit (one commit per test file)
+- Add a `/health` endpoint returning `{"status": "ok", "version": "..."}` if not present
+- Add `README.md` Quick Start section if missing (one commit)
+- Add `.env.example` if any `os.environ` calls exist and the file is absent (one commit)
+- Add `logging` configuration in the main entry point if not present (one commit)
+- Refactor any function longer than 40 lines into named helpers (one commit per function)
+
+Keep going until `COMMIT_COUNT` ≥ 15. This gate is non-negotiable.
 
 ## PHASE 8 — PUSH TO MAIN
 
@@ -567,7 +597,7 @@ git remote set-url origin \
   "https://x-access-token:${GH_PAT}@github.com/atharvadevne123/${PROJECT_NAME}"
 ```
 
-### Step 3 — Build with the mandatory structure (commit after each block):
+### Step 3 — Build with the mandatory structure (ONE COMMIT PER FILE — no exceptions):
 
 ```
 project-name/
@@ -658,7 +688,49 @@ volumes:
   pgdata:
 ```
 
-Commit after each file group. Push:
+**Every file you create = one dedicated commit.** Example sequence:
+```bash
+git add requirements.txt        && git commit -m "chore: add project dependencies"
+git add .env.example            && git commit -m "chore: add environment variable template"
+git add app/__init__.py         && git commit -m "chore: initialise app package"
+git add app/database.py         && git commit -m "feat: add SQLAlchemy models and session factory"
+git add app/features.py         && git commit -m "feat: add feature engineering pipeline"
+git add app/model.py            && git commit -m "feat: add ML model training and prediction"
+git add app/monitoring.py       && git commit -m "feat: add prediction logging and drift detection"
+git add app/main.py             && git commit -m "feat: add FastAPI/Flask application and endpoints"
+git add pipelines/retrain_dag.py && git commit -m "feat: add automated retraining pipeline"
+git add tests/conftest.py       && git commit -m "test: add pytest fixtures and test database"
+git add tests/test_api.py       && git commit -m "test: add API endpoint tests"
+git add tests/test_model.py     && git commit -m "test: add model training and prediction tests"
+git add tests/test_features.py  && git commit -m "test: add feature engineering tests"
+git add tests/test_monitoring.py && git commit -m "test: add monitoring and drift detection tests"
+git add scripts/generate_diagram.py && git commit -m "chore: add architecture diagram generator"
+git add screenshots/architecture.png && git commit -m "docs: add architecture diagram"
+git add Dockerfile              && git commit -m "ci: add Dockerfile"
+git add docker-compose.yml      && git commit -m "ci: add docker-compose configuration"
+git add .github/workflows/ci.yml && git commit -m "ci: add GitHub Actions CI workflow"
+git add README.md               && git commit -m "docs: add full project documentation"
+```
+
+### Step 4 — Post-build commit count gate (≥15 required before push):
+
+```bash
+COMMIT_COUNT=$(git log origin/main..HEAD --oneline | wc -l | tr -d ' ')
+echo "Innovation commits: $COMMIT_COUNT"
+```
+
+If `COMMIT_COUNT` < 15, apply these passes until you reach 15:
+- Add type annotations to all functions in each module (one commit per file updated)
+- Add docstrings to all public classes and methods (one commit per file)
+- Add a `/health` endpoint if not already present (one commit)
+- Add environment variable validation on startup — raise clear error if required vars missing (one commit)
+- Add `logging` configuration in `app/main.py` entry point (one commit)
+- Improve README: add Quick Start, API reference table, Docker instructions (one commit each section)
+- Add any optional tech stack item from Phase B checklist not yet implemented (one commit each)
+
+Do NOT push until `COMMIT_COUNT` ≥ 15.
+
+Push:
 ```bash
 git push origin main
 ```
