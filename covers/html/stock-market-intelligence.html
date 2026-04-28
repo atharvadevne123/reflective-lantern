@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    width: 1500px; height: 600px; overflow: hidden;
+    font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: linear-gradient(135deg, #11998e 0%, #2e8b57 50%, #0a2e1a 100%);
+    display: flex; align-items: center; justify-content: center;
+  }
+  .noise {
+    position: absolute; inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+    opacity: 0.3; pointer-events: none;
+  }
+  .orb1 {
+    position: absolute; width: 500px; height: 500px;
+    background: radial-gradient(circle, #38ef7d22 0%, transparent 70%);
+    top: -150px; right: -100px; border-radius: 50%;
+  }
+  .orb2 {
+    position: absolute; width: 400px; height: 400px;
+    background: radial-gradient(circle, #38ef7d15 0%, transparent 70%);
+    bottom: -200px; left: -80px; border-radius: 50%;
+  }
+  .dots {
+    position: absolute; inset: 0; overflow: hidden; opacity: 0.12;
+  }
+  .center {
+    position: relative; z-index: 10;
+    display: flex; flex-direction: column; align-items: center;
+    justify-content: center; text-align: center;
+    padding: 0 100px;
+  }
+  .icon {
+    font-size: 80px; margin-bottom: 24px;
+    filter: drop-shadow(0 4px 20px rgba(0,0,0,0.4));
+  }
+  .title {
+    font-size: 72px; font-weight: 800; color: #ffffff;
+    letter-spacing: -1px; line-height: 1.1;
+    text-shadow: 0 2px 30px rgba(0,0,0,0.5);
+    margin-bottom: 16px;
+  }
+  .subtitle {
+    font-size: 28px; font-weight: 400; color: rgba(255,255,255,0.75);
+    letter-spacing: 0.5px; margin-bottom: 32px;
+  }
+  .tags {
+    display: flex; gap: 12px; flex-wrap: wrap; justify-content: center;
+  }
+  .tag {
+    background: rgba(255,255,255,0.12);
+    border: 1px solid rgba(255,255,255,0.2);
+    color: rgba(255,255,255,0.85);
+    padding: 6px 18px; border-radius: 20px;
+    font-size: 16px; font-weight: 500; letter-spacing: 0.3px;
+    backdrop-filter: blur(4px);
+  }
+  .line {
+    position: absolute; bottom: 0; left: 0; right: 0;
+    height: 4px; background: linear-gradient(90deg, transparent, #38ef7d, transparent);
+    opacity: 0.6;
+  }
+</style>
+</head>
+<body>
+  <div class="noise"></div>
+  <div class="orb1"></div>
+  <div class="orb2"></div>
+  <div class="center">
+    <div class="icon">💹</div>
+    <div class="title">Stock Market Intelligence</div>
+    <div class="subtitle">AI-Powered Market Analysis</div>
+    <div class="tags">
+      <span class="tag">LLM</span> <span class="tag">Streamlit</span> <span class="tag">AI</span> <span class="tag">Python</span>
+    </div>
+  </div>
+  <div class="line"></div>
+</body>
+</html>
