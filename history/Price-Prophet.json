@@ -1,0 +1,22 @@
+[
+  {
+    "date": "2026-04-28",
+    "mode": "improvement",
+    "improvements": [
+      "Replace list+pop(0) with deque(maxlen=1000) for O(1) recent-prediction sliding window",
+      "Guard /metrics endpoint against calling predict() when _model is None",
+      "Initialize optimize_price best_demand/best_new_price before loop to prevent UnboundLocalError",
+      "Fix datetime.utcnow deprecation to datetime.now(timezone.utc) across all ORM models",
+      "Fix Pydantic Field example= kwarg deprecation to json_schema_extra (eliminated 10 warnings)",
+      "Add validated limit param (ge=1, le=200) to /predictions endpoint via Query",
+      "Add GET /categories endpoint listing all supported product categories",
+      "Add GET /summary endpoint with aggregated DB stats (totals, avg demand, RMSE, drift events)",
+      "Add pytest-cov to requirements.txt; add coverage XML upload step to CI workflow",
+      "Add 5 new API tests: /categories, /summary, limit validation, cost field, train bounds (37 total)"
+    ],
+    "tests_passed": true,
+    "commits": 2,
+    "run_verified": "37 passed, 0 warnings",
+    "email_status": "pending"
+  }
+]
