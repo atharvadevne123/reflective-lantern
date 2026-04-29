@@ -57,5 +57,32 @@
     "file_count": 22,
     "server_verified": true,
     "commits": 1
+  },
+  {
+    "date": "2026-04-29",
+    "project": "Churn-Shield",
+    "description": "Production-ready customer churn prediction API using LightGBM + XGBoost + RandomForest ensemble with KS-test drift detection, Airflow retraining DAG, and SQLAlchemy persistence for SaaS businesses.",
+    "inspired_by": "Growing MLOps demand for production-grade churn prevention in SaaS subscription businesses",
+    "repo_url": "https://github.com/atharvadevne123/Churn-Shield",
+    "file_count": 22,
+    "test_count": 30,
+    "coverage_pct": 100,
+    "archetype": "Prediction API + Automated Retraining + Drift Detection",
+    "stack": [
+      "Python 3.11",
+      "FastAPI",
+      "LightGBM",
+      "XGBoost",
+      "RandomForest",
+      "sklearn Pipeline (14 features)",
+      "KS-drift monitoring",
+      "SQLAlchemy",
+      "Airflow DAG",
+      "Docker+PostgreSQL",
+      "pytest (30 tests)",
+      "GitHub Actions CI",
+      "5-fold CV AUC-ROC",
+      "Time-series lag/rolling features"
+    ]
   }
 ]
