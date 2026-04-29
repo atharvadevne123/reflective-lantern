@@ -16,6 +16,6 @@
     "tests_passed": true,
     "commits": 1,
     "run_verified": "README-only repo: docs improvements applied successfully",
-    "email_status": "pending"
+    "email_status": "failed_2525:OSError"
   }
 ]
