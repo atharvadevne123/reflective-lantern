@@ -35,7 +35,201 @@ else:
 PYEOF
 ```
 
-Store the output as MODE. Then follow the matching section below.
+Store the output as MODE. Then **before branching into IMPROVEMENT or INNOVATION**, run the full pre-flight below.
+
+---
+
+# PRE-FLIGHT — Run before every mode (IMPROVEMENT or INNOVATION)
+
+These three checks run every single day, regardless of mode. Complete all three before doing any repo work.
+
+## PRE-FLIGHT 1 — Fix all failing CI workflows
+
+```bash
+# Fetch all repos
+curl -s -H "Authorization: Bearer $GH_PAT" \
+  "https://api.github.com/users/atharvadevne123/repos?per_page=100&type=owner" \
+  > /tmp/all_repos_preflight.json
+
+python3 - <<'PYEOF'
+import json, urllib.request
+
+with open('/tmp/all_repos_preflight.json') as f:
+    repos = json.load(f)
+
+repos = [r for r in repos if not r.get('archived') and not r.get('fork')]
+failed = []
+
+for repo in repos:
+    name = repo['name']
+    try:
+        url = f"https://api.github.com/repos/atharvadevne123/{name}/actions/runs?per_page=10&status=failure"
+        req = urllib.request.Request(url, headers={
+            'Authorization': f"Bearer {__import__('os').environ['GH_PAT']}",
+            'Accept': 'application/vnd.github+json'
+        })
+        with urllib.request.urlopen(req, timeout=10) as r:
+            data = json.load(r)
+        runs = data.get('workflow_runs', [])
+        # Only flag if the most recent run for each workflow is failing
+        latest_by_workflow = {}
+        for run in runs:
+            wf = run['workflow_id']
+            if wf not in latest_by_workflow:
+                latest_by_workflow[wf] = run
+        for wf, run in latest_by_workflow.items():
+            if run['conclusion'] in ('failure', 'timed_out'):
+                failed.append({'repo': name, 'workflow': run['name'], 'run_id': run['id'], 'url': run['html_url']})
+    except Exception as e:
+        print(f"Could not check {name}: {e}")
+
+if failed:
+    print(f"\n{len(failed)} failing workflow(s) found:")
+    for f in failed:
+        print(f"  {f['repo']} / {f['workflow']} → {f['url']}")
+else:
+    print("All workflows passing — no fixes needed.")
+
+with open('/tmp/failing_workflows.json', 'w') as f:
+    json.dump(failed, f)
+PYEOF
+```
+
+For each failing workflow in `/tmp/failing_workflows.json`:
+1. Clone the repo (if not already cloned): `git clone "https://x-access-token:${GH_PAT}@github.com/atharvadevne123/<REPO>" /tmp/preflight-fix/<REPO>`
+2. Read the workflow file and the failing run logs to understand the error
+3. Apply the minimal fix (dependency pin, ruff auto-fix, import removal, etc.)
+4. Commit and push: `git commit -m "ci: fix failing <workflow-name> workflow"`
+5. Move on to the next failing repo
+
+Do NOT spend more than 10 minutes total on pre-flight fixes — if a fix is complex, add a `# TODO: needs manual review` comment, commit, and move on.
+
+## PRE-FLIGHT 2 — Merge all non-main branches
+
+```bash
+python3 - <<'PYEOF'
+import json, urllib.request, os
+
+GH_PAT = os.environ['GH_PAT']
+
+with open('/tmp/all_repos_preflight.json') as f:
+    repos = json.load(f)
+
+repos = [r for r in repos if not r.get('archived') and not r.get('fork')]
+branches_to_merge = []
+
+for repo in repos:
+    name = repo['name']
+    default = repo.get('default_branch', 'main')
+    try:
+        url = f"https://api.github.com/repos/atharvadevne123/{name}/branches?per_page=100"
+        req = urllib.request.Request(url, headers={
+            'Authorization': f"Bearer {GH_PAT}",
+            'Accept': 'application/vnd.github+json'
+        })
+        with urllib.request.urlopen(req, timeout=10) as r:
+            branches = json.load(r)
+        non_main = [b['name'] for b in branches if b['name'] != default]
+        if non_main:
+            branches_to_merge.append({'repo': name, 'default': default, 'branches': non_main})
+    except Exception as e:
+        print(f"Could not list branches for {name}: {e}")
+
+if branches_to_merge:
+    print(f"\n{sum(len(x['branches']) for x in branches_to_merge)} non-main branch(es) to merge:")
+    for item in branches_to_merge:
+        print(f"  {item['repo']}: {item['branches']}")
+else:
+    print("All repos have only main branch — nothing to merge.")
+
+with open('/tmp/branches_to_merge.json', 'w') as f:
+    json.dump(branches_to_merge, f)
+PYEOF
+```
+
+For each repo with non-main branches:
+```bash
+REPO=<name>
+DEFAULT=<default-branch>
+BRANCH=<branch-to-merge>
+
+# Use GitHub merge API (no clone needed)
+curl -s -X POST \
+  -H "Authorization: Bearer $GH_PAT" \
+  -H "Content-Type: application/json" \
+  "https://api.github.com/repos/atharvadevne123/$REPO/merges" \
+  -d "{\"base\": \"$DEFAULT\", \"head\": \"$BRANCH\", \"commit_message\": \"chore: merge $BRANCH into $DEFAULT\"}" \
+  | python3 -c "import json,sys; r=json.load(sys.stdin); print(r.get('sha','CONFLICT or '+str(r.get('message',r)))[:80])"
+```
+
+If the merge API returns a conflict (422), clone and force-merge:
+```bash
+git clone "https://x-access-token:${GH_PAT}@github.com/atharvadevne123/$REPO" /tmp/preflight-merge/$REPO
+cd /tmp/preflight-merge/$REPO
+git remote set-url origin "https://x-access-token:${GH_PAT}@github.com/atharvadevne123/$REPO"
+git fetch origin $BRANCH
+git merge FETCH_HEAD -X theirs --no-edit
+git push origin $DEFAULT
+```
+
+## PRE-FLIGHT 3 — Check releases and packages
+
+```bash
+python3 - <<'PYEOF'
+import json, urllib.request, os
+
+GH_PAT = os.environ['GH_PAT']
+
+with open('/tmp/all_repos_preflight.json') as f:
+    repos = json.load(f)
+
+repos = [r for r in repos if not r.get('archived') and not r.get('fork')]
+missing_releases = []
+
+for repo in repos:
+    name = repo['name']
+    try:
+        url = f"https://api.github.com/repos/atharvadevne123/{name}/releases?per_page=1"
+        req = urllib.request.Request(url, headers={
+            'Authorization': f"Bearer {GH_PAT}",
+            'Accept': 'application/vnd.github+json'
+        })
+        with urllib.request.urlopen(req, timeout=10) as r:
+            releases = json.load(r)
+        if not releases:
+            missing_releases.append(name)
+    except Exception as e:
+        print(f"Could not check releases for {name}: {e}")
+
+if missing_releases:
+    print(f"\n{len(missing_releases)} repo(s) with no release yet: {missing_releases}")
+else:
+    print("All repos have at least one release.")
+
+with open('/tmp/missing_releases.json', 'w') as f:
+    json.dump(missing_releases, f)
+PYEOF
+```
+
+For each repo in `/tmp/missing_releases.json` that has meaningful code (not just a README):
+```bash
+REPO=<name>
+curl -s -X POST \
+  -H "Authorization: Bearer $GH_PAT" \
+  -H "Content-Type: application/json" \
+  "https://api.github.com/repos/atharvadevne123/$REPO/releases" \
+  -d "{
+    \"tag_name\": \"v1.0.0\",
+    \"target_commitish\": \"main\",
+    \"name\": \"v1.0.0 — Initial Release\",
+    \"body\": \"Initial stable release.\",
+    \"draft\": false,
+    \"prerelease\": false
+  }" \
+  | python3 -c "import json,sys; r=json.load(sys.stdin); print(r.get('html_url','ERROR:'+str(r.get('message',r))))"
+```
+
+Skip repos that are clearly scaffolding-only (no src files, only README + .gitignore).
 
 ---
 
@@ -109,11 +303,14 @@ Use Glob and Read to examine key source files. Understand:
 
 Do NOT start making changes until you have a clear picture.
 
-## PHASE 4 — PLAN 15+ IMPROVEMENTS
+## PHASE 4 — PLAN 60 IMPROVEMENTS (300 COMMITS/WEEK TARGET)
 
-Identify **at least 15** specific improvements from these tiers (prioritize Tier 1 and 2).
-**You must not proceed to Phase 5 until you have 15 concrete, file-level improvements planned.**
-Work top-down through the tiers — exhaust each tier before moving to the next:
+**You MUST make exactly 60 atomic commits this run. 300 commits/week ÷ 5 weekdays = 60/day.**
+Each individual file change = one commit. Plan 60+ before you start implementing.
+Track your commit count after every `git commit`: "Commit N/60 done."
+Do NOT combine unrelated files into one commit. Be extremely granular.
+
+Identify 60 specific improvements across these tiers. Work top-down — exhaust each tier before moving to the next:
 
 ### Tier 1 — Security & Correctness
 - Hardcoded secrets → `os.environ.get('KEY', '')` / `process.env.KEY`. Add `.env.example`.
@@ -122,7 +319,7 @@ Work top-down through the tiers — exhaust each tier before moving to the next:
 - SQL injection: string-formatted queries → parameterized
 - Path traversal on user-controlled file paths
 
-### Tier 2 — Tests (creating a suite from scratch = improvements #1 and #2)
+### Tier 2 — Tests (each test file and each batch of 3+ test functions = one commit)
 If no tests exist, create one. Patterns:
 
 **FastAPI (SQLAlchemy):**
@@ -198,21 +395,32 @@ jobs:
 - Fix N+1 ORM queries (joinedload / selectinload)
 - Add connection pooling where missing
 
-## PHASE 5 — IMPLEMENT
+## PHASE 5 — IMPLEMENT (TARGET: 60 COMMITS)
 
 For each improvement:
 1. Use Grep to find the relevant code — don't read whole files
 2. Edit with Edit or Write tool
-3. **Commit each individual file change as its own atomic commit — never bundle unrelated files:**
+3. **One file change = one commit. No exceptions.**
 ```bash
 git add <one specific file>
-git commit -m "type: precise one-line description of this file's change"
+git commit -m "type(N/60): precise one-line description"
+# Example: "fix(12/60): add null check for DB response in get_user()"
 ```
 Prefixes: `feat` / `fix` / `refactor` / `ci` / `docs` / `chore` / `test`
 
-Only bundle two files in one commit when they are strictly co-dependent
-(e.g. a new module + the `__init__.py` line that imports it).
-Every other change = its own commit. This is mandatory.
+**Granularity rules — every one of these counts as a separate commit:**
+- Adding type annotations to one file
+- Adding docstrings to one file
+- Replacing `print()` calls in one file with logging
+- Adding one new test function group (3+ related tests per commit)
+- Adding one new endpoint
+- Fixing one error handling gap
+- Adding one new helper function extracted from a long function
+- Updating README (one commit per section: Quick Start, API Reference, Architecture, Badges, etc.)
+- Adding one new CI workflow step
+- Adding/updating one config file (.env.example, .pre-commit-config.yaml, pyproject.toml, etc.)
+
+Only bundle two files when strictly co-dependent (new module + its `__init__.py` import line).
 
 ## PHASE 6 — TEST VERIFICATION
 
@@ -253,20 +461,60 @@ COMMIT_COUNT=$(git log origin/main..HEAD --oneline | wc -l | tr -d ' ')
 echo "Commits ready to push: $COMMIT_COUNT"
 ```
 
-**If `COMMIT_COUNT` < 15 — do NOT push. Return to Phase 4 and add more improvements:**
+**If `COMMIT_COUNT` < 60 — do NOT push. Keep working from this fill-up list:**
 
-Work through this fill-up list in order until you reach 15:
-- Add type annotations to every un-annotated public function (one commit per file touched)
-- Add docstrings to every public class and method without one (one commit per file)
-- Replace every bare `print()` call with `logging.getLogger(__name__)` (one commit per file)
-- Add or expand tests — at least 2 new test functions per commit (one commit per test file)
-- Add a `/health` endpoint returning `{"status": "ok", "version": "..."}` if not present
-- Add `README.md` Quick Start section if missing (one commit)
-- Add `.env.example` if any `os.environ` calls exist and the file is absent (one commit)
-- Add `logging` configuration in the main entry point if not present (one commit)
-- Refactor any function longer than 40 lines into named helpers (one commit per function)
+Work through these in order, one commit per item, until you reach 60:
 
-Keep going until `COMMIT_COUNT` ≥ 15. This gate is non-negotiable.
+**Type annotations pass** (one commit per source file):
+- Add `-> ReturnType` and parameter type hints to every public function in each `.py` file
+
+**Docstring pass** (one commit per source file):
+- Add Google-style docstrings to every public class, method, and module-level function
+
+**Logging pass** (one commit per source file):
+- Replace every `print()` with `logging.getLogger(__name__).info/warning/error()`
+- Add `logging.basicConfig(level=logging.INFO, format='...')` to main entry point
+
+**Test expansion pass** (one commit per 3 new test functions):
+- Add edge case tests: empty input, None values, boundary values
+- Add error path tests: what happens when DB is down, model fails, validation rejects
+- Add parametrized tests with `@pytest.mark.parametrize`
+- Add integration tests that call multiple endpoints in sequence
+- Add fixture variations (different user roles, different data shapes)
+
+**Error handling pass** (one commit per function/endpoint):
+- Wrap each DB call in try/except, return structured error response
+- Add HTTP 422 validation on every endpoint input
+- Add 404 handlers for every GET-by-id endpoint
+- Add timeout handling for any external API calls
+
+**API expansion pass** (one commit per endpoint):
+- Add `/health` endpoint: `{"status": "ok", "version": "1.0.0", "uptime_s": ...}`
+- Add `/metrics` endpoint: prediction count, avg latency, drift score
+- Add pagination to any list endpoint that returns unbounded results
+- Add request ID header logging middleware
+
+**Config & DX pass** (one commit per file):
+- Add `pyproject.toml` with `[tool.ruff]` and `[tool.pytest.ini_options]` sections
+- Add `.pre-commit-config.yaml` with ruff + trailing-whitespace hooks
+- Add `CONTRIBUTING.md` with dev setup, testing instructions, PR guidelines
+- Update `.env.example` — add comments explaining each variable's purpose
+- Add `Makefile` with targets: `make test`, `make lint`, `make run`, `make docker-up`
+
+**README expansion pass** (one commit per section):
+- Quick Start (clone → install → run in 3 commands)
+- API Reference table (method, path, description, example request/response)
+- Architecture section with diagram reference
+- Environment Variables table
+- Docker instructions
+- CI badge
+- Contributing link
+
+**Refactor pass** (one commit per function refactored):
+- Any function > 40 lines → extract named helpers
+- Any repeated logic block appearing 2+ times → extract shared utility
+
+Keep going until `COMMIT_COUNT` ≥ 60. This gate is non-negotiable.
 
 ## PHASE 8 — PUSH TO MAIN
 
@@ -309,7 +557,7 @@ IMPROVEMENTS  = [                   # list every improvement applied
 ]
 TESTS_STATUS  = "PASSED"            # "PASSED" or "FAILED: <reason>"
 README_STATUS = "Updated"           # "Updated" or "No changes"
-COMMITS_COUNT = 5                   # integer
+COMMITS_COUNT = 60                  # integer — must be ≥60
 # ─────────────────────────────────────────────────────────────────
 
 import datetime as _dt
@@ -431,7 +679,7 @@ Read `history/[REPO_NAME].json` (or start with `[]`), append:
   "mode": "improvement",
   "improvements": ["desc1", "desc2", "..."],
   "tests_passed": true,
-  "commits": 5,
+  "commits": 60,
   "notes": ""
 }
 ```
@@ -597,7 +845,7 @@ git remote set-url origin \
   "https://x-access-token:${GH_PAT}@github.com/atharvadevne123/${PROJECT_NAME}"
 ```
 
-### Step 3 — Build with the mandatory structure (ONE COMMIT PER FILE — no exceptions):
+### Step 3 — Build with the mandatory structure (TARGET: 60 COMMITS — one per file, no exceptions):
 
 ```
 project-name/
@@ -712,28 +960,140 @@ git add .github/workflows/ci.yml && git commit -m "ci: add GitHub Actions CI wor
 git add README.md               && git commit -m "docs: add full project documentation"
 ```
 
-### Step 4 — Post-build commit count gate (≥15 required before push):
+### Step 4 — Post-build commit count gate (≥60 required before push):
 
 ```bash
 COMMIT_COUNT=$(git log origin/main..HEAD --oneline | wc -l | tr -d ' ')
-echo "Innovation commits: $COMMIT_COUNT"
+echo "Innovation commits: $COMMIT_COUNT / 60 required"
 ```
 
-If `COMMIT_COUNT` < 15, apply these passes until you reach 15:
-- Add type annotations to all functions in each module (one commit per file updated)
-- Add docstrings to all public classes and methods (one commit per file)
-- Add a `/health` endpoint if not already present (one commit)
-- Add environment variable validation on startup — raise clear error if required vars missing (one commit)
-- Add `logging` configuration in `app/main.py` entry point (one commit)
-- Improve README: add Quick Start, API reference table, Docker instructions (one commit each section)
-- Add any optional tech stack item from Phase B checklist not yet implemented (one commit each)
+If `COMMIT_COUNT` < 60, work through the same fill-up list from Phase 7.5 of IMPROVEMENT mode
+(type annotations pass → docstring pass → logging pass → test expansion → error handling →
+API expansion → config & DX → README expansion → refactor pass) until you reach 60.
 
-Do NOT push until `COMMIT_COUNT` ≥ 15.
+Do NOT push until `COMMIT_COUNT` ≥ 60.
 
 Push:
 ```bash
 git push origin main
 ```
+
+## PHASE C.5 — CREATE GITHUB RELEASE + PYTHON PACKAGE
+
+Every innovation project gets a release on the same day it's built.
+
+### Step 1 — Tag and release on GitHub:
+```bash
+PROJECT_NAME="<the project you just built>"
+TODAY=$(date +%Y-%m-%d)
+
+# Create annotated tag
+git tag -a v1.0.0 -m "Initial release — built by Reflective Lantern on $TODAY"
+git push origin v1.0.0
+
+# Create GitHub release via API
+curl -s -X POST \
+  -H "Authorization: Bearer $GH_PAT" \
+  -H "Content-Type: application/json" \
+  "https://api.github.com/repos/atharvadevne123/$PROJECT_NAME/releases" \
+  -d "{
+    \"tag_name\": \"v1.0.0\",
+    \"target_commitish\": \"main\",
+    \"name\": \"v1.0.0 — Initial Release\",
+    \"body\": \"## What's included\n\n$(python3 -c \"import sys; lines=open('README.md').read().split('\n'); print('\n'.join(lines[:30]))\" 2>/dev/null || echo 'See README for full documentation.')\",
+    \"draft\": false,
+    \"prerelease\": false
+  }" \
+  | python3 -c "import json,sys; r=json.load(sys.stdin); print('Release URL:', r.get('html_url','ERROR:'+str(r.get('message',r))))"
+```
+
+### Step 2 — Create Python package (if the project is a Python library or service):
+
+Check if the project has an importable module structure (i.e., `app/` with `__init__.py`):
+
+```bash
+ls app/__init__.py 2>/dev/null && echo "HAS_INIT=yes" || echo "HAS_INIT=no"
+```
+
+If `HAS_INIT=yes`, create `pyproject.toml` (if not already present) and build a source distribution:
+
+```python
+# Write pyproject.toml
+content = f"""[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.backends.legacy:build"
+
+[project]
+name = "{PROJECT_NAME}"
+version = "1.0.0"
+description = "Built by Reflective Lantern — autonomous ML portfolio project"
+readme = "README.md"
+license = {{text = "MIT"}}
+requires-python = ">=3.10"
+dependencies = []  # populated from requirements.txt by agent
+
+[project.urls]
+Homepage = "https://github.com/atharvadevne123/{PROJECT_NAME}"
+"""
+with open('pyproject.toml', 'w') as f:
+    f.write(content)
+```
+
+```bash
+# Parse requirements.txt and add as dependencies
+python3 - <<'PYEOF'
+import re, toml  # pip install toml -q if needed
+
+try:
+    with open('requirements.txt') as f:
+        deps = [l.strip() for l in f if l.strip() and not l.startswith('#')]
+
+    with open('pyproject.toml') as f:
+        content = f.read()
+
+    # Replace empty dependencies list
+    dep_str = '[' + ', '.join(f'"{d}"' for d in deps[:20]) + ']'
+    content = content.replace('dependencies = []  # populated from requirements.txt by agent',
+                              f'dependencies = {dep_str}')
+    with open('pyproject.toml', 'w') as f:
+        f.write(content)
+    print("pyproject.toml updated with dependencies")
+except Exception as e:
+    print(f"Could not update dependencies: {e}")
+PYEOF
+
+# Build source distribution
+pip install build -q
+python -m build --sdist --wheel 2>&1 | tail -5
+
+# List what was built
+ls dist/
+```
+
+```bash
+# Commit pyproject.toml + dist artifacts
+git add pyproject.toml
+git commit -m "chore: add pyproject.toml for package distribution"
+
+# Upload dist/ as release assets (attach the .whl file to the GitHub release)
+RELEASE_ID=$(curl -s -H "Authorization: Bearer $GH_PAT" \
+  "https://api.github.com/repos/atharvadevne123/$PROJECT_NAME/releases/tags/v1.0.0" \
+  | python3 -c "import json,sys; print(json.load(sys.stdin)['id'])")
+
+WHL_FILE=$(ls dist/*.whl 2>/dev/null | head -1)
+if [ -n "$WHL_FILE" ]; then
+  WHL_NAME=$(basename $WHL_FILE)
+  curl -s -X POST \
+    -H "Authorization: Bearer $GH_PAT" \
+    -H "Content-Type: application/octet-stream" \
+    --data-binary @"$WHL_FILE" \
+    "https://uploads.github.com/repos/atharvadevne123/$PROJECT_NAME/releases/$RELEASE_ID/assets?name=$WHL_NAME" \
+    | python3 -c "import json,sys; r=json.load(sys.stdin); print('Asset:', r.get('browser_download_url','ERROR:'+str(r.get('message',r))))"
+  echo "Wheel uploaded to release."
+fi
+```
+
+Note: Do NOT publish to PyPI (no credentials). The wheel is attached to the GitHub release as a downloadable asset.
 
 ## PHASE D — GENERATE PDF REPORT + SEND EMAIL (INNOVATION)
 
@@ -776,6 +1136,8 @@ STACK_COVERAGE = "10/14 = 71%"  # update with actual count
 FILES_CREATED  = 18             # integer
 TESTS_COUNT    = 25             # integer
 TESTS_STATUS   = "PASSED"       # "PASSED" or "FAILED: <reason>"
+RELEASE_URL    = "[https://github.com/atharvadevne123/PROJECT/releases/tag/v1.0.0]"
+PACKAGE_BUILT  = True           # True if .whl was attached to release
 # ─────────────────────────────────────────────────────────────────
 
 PDF_PATH = f"/tmp/lantern_innovation_{PROJECT_NAME}_{TODAY}.pdf"
@@ -870,6 +1232,8 @@ Tech stack ({STACK_COVERAGE}):
 
 Files created: {FILES_CREATED}
 Tests: {TESTS_COUNT} tests — {TESTS_STATUS}
+Release: {RELEASE_URL}
+Python package (.whl): {"Attached to release" if PACKAGE_BUILT else "Not applicable"}
 
 Full PDF report is attached.
 — Reflective Lantern / Claude Sonnet 4.6"""
@@ -911,7 +1275,10 @@ Read `history/innovation_log.json` (or start with `[]`), append:
   "repo": "[PROJECT_NAME]",
   "inspired_by": "[title or repo]",
   "source_url": "[url]",
-  "description": "[one-line]"
+  "description": "[one-line]",
+  "release_url": "[https://github.com/atharvadevne123/PROJECT/releases/tag/v1.0.0]",
+  "package_built": true,
+  "commits": 60
 }
 ```
 
