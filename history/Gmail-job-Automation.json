@@ -13,5 +13,24 @@
     ],
     "tests_passed": true,
     "commits": 4
+  },
+  {
+    "date": "2026-04-30",
+    "mode": "improvement",
+    "improvements": [
+      "fix: CI actions/checkout@v4 + setup-python@v5 (were v6, non-existent - CI was broken)",
+      "feat: --dry-run flag for gmail_labeler.py previews label counts without making changes",
+      "fix: with_retry now retries on OSError/ConnectionError/TimeoutError in addition to HttpError",
+      "fix: type annotations on _cb callback in gmail_labeler.py; remove quoted Optional in label_interviews.py",
+      "test: 5 new tests (network retry x3, dry-run label creation, dry-run thread count)",
+      "chore: pytest-cov in requirements; [tool.ruff.lint] + coverage config + [tool.pytest.ini_options] in pyproject.toml",
+      "chore: Makefile with install/test/lint/fix/clean targets",
+      "chore: remove stale in-file README comment block from gmail_labeler.py",
+      "docs: README updated with dry-run usage, Makefile shortcuts, updated test counts"
+    ],
+    "tests_passed": true,
+    "commits": 3,
+    "run_verified": "27/27 tests passed",
+    "email_status": "pending"
   }
 ]
