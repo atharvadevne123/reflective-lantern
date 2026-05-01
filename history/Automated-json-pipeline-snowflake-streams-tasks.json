@@ -90,6 +90,6 @@
     "tests_passed": true,
     "commits": 60,
     "run_verified": "277/277 pytest tests passing",
-    "email_status": "pending"
+    "email_status": "failed_97:AddressFamilyNotSupported"
   }
 ]
