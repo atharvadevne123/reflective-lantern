@@ -24,6 +24,6 @@
     "tests_passed": true,
     "test_count": 109,
     "commits": 62,
-    "email_status": "pending"
+    "email_status": "failed - SMTP blocked by network"
   }
 ]
