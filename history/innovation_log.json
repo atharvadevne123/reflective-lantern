@@ -84,5 +84,14 @@
       "5-fold CV AUC-ROC",
       "Time-series lag/rolling features"
     ]
+  },
+  {
+    "date": "2026-04-17",
+    "project": "FraudDetectionAI",
+    "description": "Real-time financial fraud detection — ML ensemble (XGBoost + LightGBM + RF), RAG explainability via FAISS + Claude, Airflow pipeline, Flask API, Docker, AWS. PRE-EXISTING REPO — do not rebuild fraud detection.",
+    "inspired_by": "pre-existing repo (not built by innovation mode)",
+    "repo_url": "https://github.com/atharvadevne123/FraudDetectionAI",
+    "archetype": "Fraud Detection — SKIP THIS TOPIC",
+    "note": "Fraud-Radar (2026-05-06) was deleted as a duplicate. Never build fraud detection projects again."
   }
 ]
