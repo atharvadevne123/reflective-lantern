@@ -84,5 +84,31 @@
       "5-fold CV AUC-ROC",
       "Time-series lag/rolling features"
     ]
+  },
+  {
+    "date": "2026-05-06",
+    "project": "Fraud-Radar",
+    "description": "Real-time financial transaction fraud detection API using XGBoost and IsolationForest ensemble with velocity features, KS-drift monitoring, and automated retraining pipelines.",
+    "inspired_by": "cocoindex real-time data indexing trend + MLOps fraud prevention demand",
+    "repo_url": "https://github.com/atharvadevne123/Fraud-Radar",
+    "file_count": 23,
+    "test_count": 31,
+    "coverage_pct": 100,
+    "archetype": "Anomaly Detection + Prediction API",
+    "stack": [
+      "Python 3.11",
+      "FastAPI (5 endpoints)",
+      "XGBoost+RandomForest ensemble",
+      "IsolationForest anomaly detection",
+      "sklearn Pipeline (15 features)",
+      "KS-test + PSI drift monitoring",
+      "SQLAlchemy",
+      "Airflow DAG",
+      "Docker+PostgreSQL",
+      "pytest (31 tests)",
+      "GitHub Actions CI",
+      "5-fold Stratified CV AUC-ROC",
+      "MLflow"
+    ]
   }
 ]
