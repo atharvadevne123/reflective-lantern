@@ -67,6 +67,6 @@
     ],
     "tests_passed": true,
     "commits": 62,
-    "email_status": "pending"
+    "email_status": "failed_smtp_blocked"
   }
 ]
