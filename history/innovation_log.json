@@ -86,26 +86,29 @@
     ]
   },
   {
-    "date": "2026-04-17",
-    "project": "FraudDetectionAI",
-    "description": "Real-time financial fraud detection \u2014 ML ensemble (XGBoost + LightGBM + RF), RAG explainability via FAISS + Claude, Airflow pipeline, Flask API, Docker, AWS. PRE-EXISTING REPO \u2014 do not rebuild fraud detection.",
-    "inspired_by": "pre-existing repo (not built by innovation mode)",
-    "repo_url": "https://github.com/atharvadevne123/FraudDetectionAI",
-    "archetype": "Fraud Detection \u2014 SKIP THIS TOPIC",
-    "note": "Fraud-Radar (2026-05-06) was deleted as a duplicate. Never build fraud detection projects again."
-  },
-  {
     "date": "2026-05-06",
-    "project": "Energy-Oracle",
-    "description": "Real-time energy consumption prediction API using LightGBM + RandomForest ensemble with 26 time-series features, KS-test drift detection, Isolation Forest anomaly detection, Airflow retraining DAG, and PostgreSQL-backed prediction logging.",
-    "inspired_by": "AI/ML observability platforms, energy optimization trends, time-series ML best practices",
-    "chosen_keywords": "energy consumption prediction monitoring time series",
-    "file_count": 84,
-    "test_count": 126,
+    "project": "Fraud-Radar",
+    "description": "Real-time financial transaction fraud detection API using XGBoost and IsolationForest ensemble with velocity features, KS-drift monitoring, and automated retraining pipelines.",
+    "inspired_by": "cocoindex real-time data indexing trend + MLOps fraud prevention demand",
+    "repo_url": "https://github.com/atharvadevne123/Fraud-Radar",
+    "file_count": 23,
+    "test_count": 31,
     "coverage_pct": 100,
-    "archetype": "Prediction API + Time-Series ML + Anomaly Detection",
-    "bonus_modules": 17,
-    "commits": 62,
-    "repo_url": "https://github.com/atharvadevne123/Energy-Oracle"
+    "archetype": "Anomaly Detection + Prediction API",
+    "stack": [
+      "Python 3.11",
+      "FastAPI (5 endpoints)",
+      "XGBoost+RandomForest ensemble",
+      "IsolationForest anomaly detection",
+      "sklearn Pipeline (15 features)",
+      "KS-test + PSI drift monitoring",
+      "SQLAlchemy",
+      "Airflow DAG",
+      "Docker+PostgreSQL",
+      "pytest (31 tests)",
+      "GitHub Actions CI",
+      "5-fold Stratified CV AUC-ROC",
+      "MLflow"
+    ]
   }
 ]
