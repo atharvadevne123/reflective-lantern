@@ -57,6 +57,6 @@
     ],
     "tests_passed": true,
     "commits": 60,
-    "email_status": "pending"
+    "email_status": "failed - SMTP blocked by sandbox network (ports 587/465 timeout)"
   }
 ]
