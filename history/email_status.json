@@ -1,0 +1,11 @@
+[
+  {
+    "date": "2026-05-08",
+    "repo": "Automated-data-preprocessing-udf-sql-pipeline",
+    "email_to": "devneatharva@gmail.com",
+    "status": "BLOCKED",
+    "reason": "SMTP outbound blocked in sandbox environment (errno 97 EAFNOSUPPORT)",
+    "commits": 60,
+    "tests": 1001
+  }
+]
