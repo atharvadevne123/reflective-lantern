@@ -1,0 +1,38 @@
+[
+  {
+    "date": "2026-05-11",
+    "mode": "improvement",
+    "improvements": [
+      "Created requirements.txt with compatible dependency ranges",
+      "Built src/data_loader.py: load and merge Details.csv + Orders.csv with validation",
+      "Built src/analysis.py: revenue by category, profit by subcategory, top customers, monthly revenue, summary stats",
+      "Built src/forecasting.py: OLS linear trend forecasting with 95% CI",
+      "Built src/monitoring.py: KS-test drift detection for Amount/Profit/Quantity",
+      "Built src/visualization.py: matplotlib/seaborn charts (category, monthly, pie, customers, heatmap)",
+      "Built src/reporting.py: fpdf2 PDF report generator with embedded charts",
+      "Built app/main.py: FastAPI REST API with 12 endpoints",
+      "Built app/models.py: Pydantic request/response models with validation",
+      "Built app/middleware.py: rate limiting middleware (120 req/min per IP)",
+      "Built app/config.py: pydantic-settings configuration",
+      "Built app/routers/metrics_router.py: business metrics endpoints (growth, retention, Gini, basket)",
+      "Built src/features.py: feature engineering (time features, rolling revenue, encoding, tiers)",
+      "Built src/aggregations.py: CLV, quarterly summary, state-category pivot, sub-category profitability",
+      "Built src/metrics.py: revenue growth rate, customer retention, basket size, Gini coefficient",
+      "Built src/anomaly.py: z-score and IQR anomaly detection for revenue outliers",
+      "Built src/validation.py: schema validation for Details and Orders CSVs",
+      "Built src/cache.py: LRU cache decorator utility",
+      "Added tests/conftest.py with session-scoped fixtures",
+      "Added 165 tests across 14 test files covering all modules and API endpoints",
+      "Added .github/workflows/ci.yml with lint, test, and type-check matrix",
+      "Added Dockerfile and docker-compose.yml",
+      "Added .env.example, pyproject.toml, .pre-commit-config.yaml, Makefile",
+      "Added CONTRIBUTING.md, CHANGELOG.md, SECURITY.md, CODE_OF_CONDUCT.md",
+      "Added scripts: generate_report.py, load_data.py, check_drift.py, forecast_cli.py",
+      "Rewrote README.md with overview, quick start, API reference, architecture",
+      "Fixed Gini coefficient formula, gini endpoint return type, rupee symbol encoding"
+    ],
+    "tests_passed": true,
+    "commits": 61,
+    "email_status": "pending"
+  }
+]
