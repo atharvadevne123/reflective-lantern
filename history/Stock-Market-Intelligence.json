@@ -1,0 +1,42 @@
+[
+  {
+    "date": "2026-05-12",
+    "mode": "improvement",
+    "improvements": [
+      "Added comprehensive test suite: tests/__init__.py, conftest.py, test_signal_engine.py, test_api.py, test_news_scraper.py, test_sentiment.py, test_orchestrator.py, test_database.py, test_models.py, test_integration.py",
+      "Added GitHub Actions CI workflow (.github/workflows/ci.yml) with lint, test (Python 3.10/3.11/3.12), type-check, and Codecov upload",
+      "Added Makefile with install, test, coverage, lint, format, type-check, audit, run, docker-build targets",
+      "Added CONTRIBUTING.md with development workflow and commit conventions",
+      "Added CHANGELOG.md following Keep a Changelog format",
+      "Added .pre-commit-config.yaml with ruff, mypy, and whitespace hooks",
+      "Added multi-stage Dockerfile with health check",
+      "Added docker-compose.yml with API + PostgreSQL services",
+      "Updated pyproject.toml with ruff, pytest, mypy, and coverage configuration",
+      "Added module docstrings and public exports to all __init__.py files",
+      "Added PeriodicTask scheduler class to scheduler/__init__.py",
+      "Fixed deprecated declarative_base() -> DeclarativeBase in database/models.py",
+      "Added composite database indexes (ticker+created_at) and __repr__ methods to all models",
+      "Replaced datetime.utcnow() with timezone-aware UTC helper",
+      "Replaced all print() calls with structured logging in api/database.py",
+      "Added get_db FastAPI dependency with proper session lifecycle",
+      "Added get_signal_count and get_recent_articles to DatabaseService",
+      "Added type annotations and from __future__ import annotations to all modules",
+      "Added lru_cache on _signal_to_score for O(1) repeated calls",
+      "Added /api/version and /api/metrics endpoints to FastAPI app",
+      "Added correlation ID middleware with X-Correlation-ID header",
+      "Replaced deprecated @app.on_event with lifespan handler",
+      "Added input validation and improved error handling throughout API",
+      "Converted debug_sentiment.py to proper CLI with argparse",
+      "Added type annotations to quick_start.py",
+      "Added cffi, httpx, pytest-asyncio, pre-commit to requirements.txt",
+      "Expanded env.example with all required/optional environment variables",
+      "Updated README with CI badges, Quick Start, Testing, Architecture, API Reference, Contributing sections",
+      "Refactored nlp/sentiment_analyzer.py with lazy heavy imports and modern type hints",
+      "Refactored analysis/signal_engine.py with lru_cache and structured logging",
+      "Refactored main_orchestrator.py with per-article error handling"
+    ],
+    "tests_passed": true,
+    "commits": 60,
+    "email_status": "pending"
+  }
+]
