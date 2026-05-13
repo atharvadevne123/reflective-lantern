@@ -141,6 +141,7 @@
     ],
     "release": "v1.0.0",
     "url": "https://github.com/atharvadevne123/Talent-Radar",
-    "email_status": "pending"
+    "email_status": "network_blocked",
+    "pdf_path": "/tmp/Talent-Radar_report_2026-05-13.pdf"
   }
 ]
