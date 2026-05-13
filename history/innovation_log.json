@@ -110,5 +110,17 @@
       "5-fold Stratified CV AUC-ROC",
       "MLflow"
     ]
+  },
+  {
+    "date": "2026-05-13",
+    "project": "Loan-Lens",
+    "description": "Credit risk scoring and loan default prediction API with LightGBM ensemble, SHAP explainability, fairness metrics, drift monitoring, and automated retraining for production lending.",
+    "inspired_by": "Trending: production ML credit risk APIs, LightGBM + XGBoost ensembles for lending",
+    "chosen_keywords": "credit loan lending borrower default",
+    "file_count": 57,
+    "test_count": 90,
+    "coverage_pct": 100,
+    "archetype": "Prediction API",
+    "repo_url": "https://github.com/atharvadevne123/Loan-Lens"
   }
 ]
