@@ -1,0 +1,6 @@
+{
+  "start_year": 2026,
+  "start_week": 20,
+  "base_commits_per_week": 300,
+  "increment_per_week": 200
+}
