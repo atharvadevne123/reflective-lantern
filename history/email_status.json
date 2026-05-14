@@ -7,5 +7,15 @@
     "reason": "SMTP outbound blocked in sandbox environment (errno 97 EAFNOSUPPORT)",
     "commits": 60,
     "tests": 1001
+  },
+  {
+    "date": "2026-05-14",
+    "repo": "Churn-Shield",
+    "email_to": "devneatharva@gmail.com",
+    "status": "BLOCKED",
+    "reason": "SMTP outbound blocked in sandbox environment - IPv4 connection to smtp.gmail.com:587 timed out",
+    "pdf_generated": "/tmp/churn_shield_report.pdf",
+    "commits": 61,
+    "tests": 134
   }
 ]
