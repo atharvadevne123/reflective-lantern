@@ -67,6 +67,6 @@
     "tests_passed": true,
     "commits": 60,
     "test_count": 250,
-    "email_status": "pending"
+    "email_status": "network_unavailable"
   }
 ]
