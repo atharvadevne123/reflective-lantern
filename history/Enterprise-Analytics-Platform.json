@@ -5,6 +5,7 @@
   "branch": "main",
   "commit_count": 60,
   "head_sha": "54f41521ff5a",
+  "gate_passed": true,
   "summary": {
     "preflight": {
       "ci_fixes": 2,
@@ -20,19 +21,25 @@
       "Type annotations on all messaging layer methods",
       "Google-style docstrings on all 15 data model classes",
       "10+ test files, 80+ test cases with pytest.mark.parametrize",
-      "3 new analytics endpoints",
-      "2 new anomaly endpoints",
-      "2 new forecasting endpoints",
+      "3 new analytics endpoints: top-products, inventory-risk, cash-position",
+      "2 new anomaly endpoints: financial/cashflow, supply-chain/lead-time",
+      "2 new forecasting endpoints: inventory/reorder, demand/trend",
       "send_batch() on UnifiedProducer",
       "ForecastConfig, AnomalyDetectionConfig, DateRangeFilter request models",
       "Centralized config/settings.py Settings class",
       "/config/settings diagnostic endpoint on all 3 services",
       "CI upgraded to actions v4/v5 + bandit security scan",
-      "ruff B/SIM rules enabled",
+      "ruff B/SIM rules enabled in pyproject.toml",
       "5 new Makefile targets",
       "Version bumped to 1.1.0"
     ]
   },
-  "email_sent": true,
-  "email_to": "devneatharva@gmail.com"
+  "email_status": {
+    "attempted": true,
+    "sent": false,
+    "error": "SMTP outbound blocked by remote execution environment (IPv6/SMTP not available)",
+    "recipient": "devneatharva@gmail.com",
+    "pdf_report_generated": true,
+    "pdf_size_bytes": 7892
+  }
 }
