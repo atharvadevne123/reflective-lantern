@@ -155,5 +155,37 @@
     "coverage_pct": 100,
     "archetype": "Prediction API",
     "repo_url": "https://github.com/atharvadevne123/Loan-Lens"
+  },
+  {
+    "date": "2026-05-20",
+    "project": "Climate-Pulse",
+    "description": "Short-range climate pattern and extreme weather event prediction API using XGBoost-LightGBM ensemble with atmospheric feature engineering, KS-drift monitoring, and Airflow retraining pipelines.",
+    "inspired_by": "Growing demand for climate ML tools and real-time weather intelligence",
+    "chosen_keywords": "climate weather atmospheric precipitation temperature",
+    "file_count": 41,
+    "test_count": 106,
+    "coverage_pct": 100,
+    "archetype": "Prediction API + Time-series forecasting + Drift Detection",
+    "commits": 60,
+    "stack": [
+      "Python 3.11",
+      "FastAPI (7 endpoints)",
+      "XGBoost + LightGBM + RandomForest ensemble",
+      "sklearn Pipeline (5 stages: lag, rolling, atmospheric ratios, seasonal, dew-point)",
+      "KS-drift detection per feature",
+      "SQLAlchemy ORM",
+      "PostgreSQL + Docker",
+      "pytest (106 tests)",
+      "GitHub Actions CI",
+      "Airflow weekly retraining DAG",
+      "5-fold CV AUC-ROC",
+      "Alembic migrations",
+      "In-memory TTL cache",
+      "Telemetry counters"
+    ],
+    "release": "v1.0.0",
+    "repo_url": "https://github.com/atharvadevne123/Climate-Pulse",
+    "email_status": "network_blocked_smtp",
+    "pdf_path": "/tmp/Climate-Pulse_innovation_2026-05-20.pdf"
   }
 ]
