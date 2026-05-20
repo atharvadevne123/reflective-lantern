@@ -6,109 +6,46 @@
   "tests_passing": 215,
   "ruff_clean": true,
   "push_status": "success",
+  "email_status": "blocked \u2014 container has no outbound SMTP (IPv6 not supported)",
   "summary": {
-    "security": [],
     "tests": [
-      "tests/test_anomaly_detector_extended.py (14 tests)",
-      "tests/test_anomaly_predict_proba.py (8 tests)",
-      "tests/test_api_endpoints.py (15 tests)",
-      "tests/test_api_health.py (12 tests)",
-      "tests/test_batch_predict.py (14 tests)",
-      "tests/test_config.py (16 tests)",
-      "tests/test_data_quality.py (14 tests)",
-      "tests/test_drift_monitor.py (7 tests)",
-      "tests/test_feature_engineering_extended.py (17 tests)",
-      "tests/test_fraud_classifier.py (14 tests)",
-      "tests/test_logging_utils.py (7 tests)",
-      "tests/test_metrics.py (13 tests)",
-      "tests/test_rag_explainer.py (11 tests)",
-      "tests/test_validation.py (12 tests)"
-    ],
-    "type_annotations": [
-      "models/anomaly/anomaly_detector.py",
-      "models/ensemble/fraud_classifier.py",
-      "models/rag/rag_explainer.py",
-      "monitoring/drift_monitor.py",
-      "pipeline/feature_engineering.py",
-      "pipeline/airflow/dags/fraud_detection_dag.py",
-      "scripts/train.py",
-      "scripts/generate_synthetic_data.py",
-      "api/app.py",
-      "utils/validation.py",
-      "utils/metrics.py",
-      "utils/logging.py",
-      "config/constants.py"
-    ],
-    "docstrings": [
-      "AnomalyDetector: _minmax, _normalise_fixed, _to_array, _check_fitted, score_and_predict",
-      "FraudEnsemble: predict_proba, predict, save, load, _log_metrics, _check_fitted",
-      "DriftMonitor: _check_score_shift, _check_missing, _save_report, _load_reference",
-      "TransactionFeatureEngineer: _amount_features, _temporal_features, _geo_features, _device_features, _velocity_features"
-    ],
-    "dx_improvements": [
-      "Makefile with 10 targets including test-cov, type-check, evaluate, check-data",
-      ".pre-commit-config.yaml",
-      ".editorconfig",
-      "CONTRIBUTING.md",
-      "CHANGELOG.md",
-      "SECURITY.md",
-      "CODE_OF_CONDUCT.md",
-      "pyproject.toml: classifiers, ruff config, mypy config, pytest paths",
-      "CI badge in README",
-      "Testing and Contributing sections in README"
+      "test_anomaly_detector_extended (14)",
+      "test_anomaly_predict_proba (8)",
+      "test_api_endpoints (15)",
+      "test_api_health (12)",
+      "test_batch_predict (14)",
+      "test_config (16)",
+      "test_data_quality (14)",
+      "test_drift_monitor (7)",
+      "test_feature_engineering_extended (17)",
+      "test_fraud_classifier (14)",
+      "test_logging_utils (7)",
+      "test_metrics (13)",
+      "test_rag_explainer (11)",
+      "test_validation (12)"
     ],
     "new_features": [
-      "utils/ package: validation, metrics, logging helpers",
+      "utils/ package: validation, metrics, logging",
       "config/ package: constants (risk tiers, defaults, ensemble weights)",
-      "scripts/evaluate.py: offline model evaluation",
-      "scripts/batch_predict.py: chunked offline scoring",
-      "scripts/check_data_quality.py: data validation",
-      "AnomalyDetector.predict_proba() method",
-      "models/__init__.py, models/anomaly/__init__.py, models/ensemble/__init__.py, models/rag/__init__.py",
-      "api/wsgi.py: LOG_LEVEL, LOG_FILE, PORT env var support"
+      "scripts/evaluate.py, batch_predict.py, check_data_quality.py",
+      "AnomalyDetector.predict_proba()",
+      "models package exports (__init__.py files)",
+      "wsgi.py: LOG_LEVEL, LOG_FILE, PORT env var support"
     ],
-    "performance": [
-      "_velocity_features: preserved original DataFrame index (alignment-safe refactor)"
+    "type_annotations": [
+      "models/anomaly, models/ensemble, models/rag, monitoring, pipeline, scripts, utils, config"
     ],
-    "style": [
-      "ruff autofix: import sort order across 14+ files",
-      "Removed unused variables req_json/res_json in take_screenshots.py"
+    "docstrings": [
+      "AnomalyDetector, FraudEnsemble, DriftMonitor, TransactionFeatureEngineer private methods"
+    ],
+    "dx": [
+      "Makefile (10 targets)",
+      ".editorconfig",
+      "CODE_OF_CONDUCT.md",
+      "SECURITY.md expanded",
+      "pyproject.toml classifiers+ruff+mypy",
+      "CI badge in README",
+      "Testing/Contributing sections in README"
     ]
-  },
-  "commits_detail": [
-    "test(28/60): add extended tests for AnomalyDetector (init, score, predict, persistence)",
-    "docs(29/60): add Contributor Covenant Code of Conduct",
-    "docs(30/60): expand SECURITY.md with API auth, rate limiting, and secrets guidance",
-    "docs(31/60): add CI badge and Testing/Contributing sections to README",
-    "feat(32/60): add utils package with validation and evaluation metric helpers",
-    "test(33/60): add tests for validation helpers and evaluation metrics (31 tests)",
-    "dx(34/60): add .editorconfig for consistent cross-editor formatting",
-    "docs(35/60): add docstrings to DriftMonitor private methods",
-    "docs(36/60): add docstrings to TransactionFeatureEngineer private methods",
-    "feat(37/60): add config package with system-wide constants (risk tiers, defaults)",
-    "test(38/60): add 16 tests for config.constants (risk tiers, defaults, weights)",
-    "feat(39/60): add scripts/evaluate.py for offline model evaluation with metrics",
-    "feat(40/60): populate models package __init__.py files with public exports",
-    "feat(41/60): add scripts/batch_predict.py for chunked offline scoring with risk tiers",
-    "test(42/60): add tests for batch_predict.assign_risk_tier (14 tests with parametrize)",
-    "feat(43/60): add AnomalyDetector.predict_proba and score_and_predict docstring",
-    "test(44/60): add tests for predict_proba and score_and_predict (8 tests)",
-    "feat(45/60): add error handling and docstrings to Airflow DAG tasks",
-    "docs(46/60): add docstrings to FraudEnsemble predict_proba, predict, save, and load",
-    "style(47/60): ruff autofix — sort imports, remove unused variables, clean F-rules",
-    "feat(48/60): add utils/logging.py with configurable loguru setup helper",
-    "test(49/60): add tests for utils.logging configure and get_logger helpers (7 tests)",
-    "feat(50/60): add scripts/check_data_quality.py for schema and bounds validation",
-    "test(51/60): add 14 tests for data quality check helpers (bounds, missing, duplicates)",
-    "perf(52/60): refactor _velocity_features to preserve original index and add docstring",
-    "feat(53/60): populate top-level models/__init__.py with AnomalyDetector and FraudEnsemble exports",
-    "dx(54/60): expand Makefile with install-dev, test-cov, type-check, evaluate, check-data targets",
-    "dx(55/60): expand pyproject.toml with classifiers, ruff config, mypy config, and pytest paths",
-    "feat(56/60): improve generate_synthetic_data.py with parse_args, CSV support, and --seed flag",
-    "test(57/60): add extended tests for /health, /version, /model/info endpoints (12 tests)",
-    "test(58/60): improve conftest with predict/predict_proba on mocks and clean_transaction fixture",
-    "feat(59/60): improve wsgi.py with logging setup, LOG_LEVEL/LOG_FILE env vars, and PORT support",
-    "docs(60/60): update CHANGELOG with all additions, changes, and fixes from this session",
-    "style: ruff import sort fixes in newly added utils and test files"
-  ]
+  }
 }
