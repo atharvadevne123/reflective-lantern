@@ -124,6 +124,6 @@
       "tests/test_analyze_sentiment_format.py", "tests/test_aggregator_merge.py",
       "tests/test_validate_text_length.py", "tests/test_sentiment_stream.py"
     ],
-    "email_status": "pending"
+    "email_status": "failed_smtp_blocked - Errno 97 Address family not supported (sandbox network restricts SMTP 465/587)"
   }
 ]
