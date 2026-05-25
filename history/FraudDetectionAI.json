@@ -1,0 +1,51 @@
+{
+  "repo": "FraudDetectionAI",
+  "mode": "IMPROVEMENT",
+  "run_date": "2026-05-20T10:58:03Z",
+  "commits": 61,
+  "tests_passing": 215,
+  "ruff_clean": true,
+  "push_status": "success",
+  "email_status": "blocked \u2014 container has no outbound SMTP (IPv6 not supported)",
+  "summary": {
+    "tests": [
+      "test_anomaly_detector_extended (14)",
+      "test_anomaly_predict_proba (8)",
+      "test_api_endpoints (15)",
+      "test_api_health (12)",
+      "test_batch_predict (14)",
+      "test_config (16)",
+      "test_data_quality (14)",
+      "test_drift_monitor (7)",
+      "test_feature_engineering_extended (17)",
+      "test_fraud_classifier (14)",
+      "test_logging_utils (7)",
+      "test_metrics (13)",
+      "test_rag_explainer (11)",
+      "test_validation (12)"
+    ],
+    "new_features": [
+      "utils/ package: validation, metrics, logging",
+      "config/ package: constants (risk tiers, defaults, ensemble weights)",
+      "scripts/evaluate.py, batch_predict.py, check_data_quality.py",
+      "AnomalyDetector.predict_proba()",
+      "models package exports (__init__.py files)",
+      "wsgi.py: LOG_LEVEL, LOG_FILE, PORT env var support"
+    ],
+    "type_annotations": [
+      "models/anomaly, models/ensemble, models/rag, monitoring, pipeline, scripts, utils, config"
+    ],
+    "docstrings": [
+      "AnomalyDetector, FraudEnsemble, DriftMonitor, TransactionFeatureEngineer private methods"
+    ],
+    "dx": [
+      "Makefile (10 targets)",
+      ".editorconfig",
+      "CODE_OF_CONDUCT.md",
+      "SECURITY.md expanded",
+      "pyproject.toml classifiers+ruff+mypy",
+      "CI badge in README",
+      "Testing/Contributing sections in README"
+    ]
+  }
+}
