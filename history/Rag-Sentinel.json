@@ -67,6 +67,6 @@
     "tests_passed": true,
     "test_count": 165,
     "commits": 60,
-    "email_status": "pending"
+    "email_status": "pdf_generated_smtp_blocked"
   }
 ]
