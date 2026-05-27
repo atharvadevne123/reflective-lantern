@@ -187,5 +187,40 @@
     "repo_url": "https://github.com/atharvadevne123/Climate-Pulse",
     "email_status": "network_blocked_smtp",
     "pdf_path": "/tmp/Climate-Pulse_innovation_2026-05-20.pdf"
+  },
+  {
+    "date": "2026-05-27",
+    "project": "Agri-Yield",
+    "description": "Machine learning API predicting agricultural crop yields from soil composition, climate features, and irrigation parameters using XGBoost-LightGBM ensemble with drift monitoring and retraining.",
+    "inspired_by": "AI engineering trends + climate/sustainability ML demand",
+    "chosen_keywords": "agriculture crop yield soil irrigation",
+    "file_count": 73,
+    "test_count": 143,
+    "coverage_pct": 100,
+    "archetype": "Prediction API + Time-series forecasting + Drift Detection",
+    "commits": 60,
+    "stack": [
+      "Python 3.11",
+      "FastAPI (5 versioned endpoints /api/v1/)",
+      "XGBoost + LightGBM + RandomForest VotingRegressor",
+      "sklearn-compatible 5-stage Pipeline (28 features)",
+      "KS-test + PSI drift monitoring",
+      "SQLAlchemy ORM",
+      "PostgreSQL + Docker",
+      "pytest (143 tests)",
+      "GitHub Actions CI",
+      "Airflow weekly retraining DAG",
+      "5-fold CV R2/RMSE",
+      "Alembic migrations",
+      "TTL cache",
+      "Batch prediction",
+      "MLflow stub",
+      "AWS/boto3 stub",
+      "FAISS similarity search",
+      "Time-series forecasting"
+    ],
+    "release": "v1.0.0",
+    "repo_url": "https://github.com/atharvadevne123/Agri-Yield",
+    "pdf_path": "/tmp/Agri-Yield_innovation_2026-05-27.pdf"
   }
 ]
