@@ -17,5 +17,16 @@
     "pdf_generated": "/tmp/churn_shield_report.pdf",
     "commits": 61,
     "tests": 134
+  },
+  {
+    "date": "2026-05-28",
+    "repo": "Climate-Pulse",
+    "email_to": "devneatharva@gmail.com",
+    "status": "BLOCKED",
+    "reason": "SMTP outbound blocked in remote execution environment - smtp.gmail.com:465 and :587 both timed out (IPv4 forced)",
+    "report_script": "/tmp/send_report.py",
+    "commits": 60,
+    "tests_before": 186,
+    "tests_after": 358
   }
 ]
