@@ -153,6 +153,7 @@
     "tests_passed": true,
     "test_count": 611,
     "commits": 60,
-    "email_status": "pending"
+    "email_status": "failed_network_blocked",
+    "email_note": "SMTP outbound blocked by container network policy (Address family not supported)"
   }
 ]
