@@ -68,9 +68,9 @@
       "Expanded tests: 371 total (up from 277), added parametrize edge cases",
       "Tests added for all new functions across all modules",
       "Fixed import ordering and ruff lint issues",
-      "PRE-FLIGHT: Fixed 4 CI workflow failures (Loan-Lens, Supply-Pulse release workflows; Stock-Market-Intelligence ruff + security)",
+      "PRE-FLIGHT: Fixed 4 CI workflow failures",
       "PRE-FLIGHT: Merged 50+ Dependabot branches across 12 repos",
-      "PRE-FLIGHT: Created Campaign-Guard v1.0.0 release after initializing empty repo"
+      "PRE-FLIGHT: Created Campaign-Guard v1.0.0 release"
     ],
     "tests_passed": true,
     "commit_count": 61,
