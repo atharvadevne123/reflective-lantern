@@ -3,54 +3,43 @@
     "date": "2026-04-25",
     "mode": "improvement",
     "improvements": [
-      "1. [Security/T1] Fixed path-traversal vulnerability in get_sql() - now validates resolved path stays within sql/ directory",
-      "2. [Tests/T2] Added 39-test pytest suite (tests/test_pipeline.py + tests/test_sql_meta.py) covering security, data validation, and integration",
-      "3. [Quality/T3] Added load_sample_reviews() NDJSON parser and validate_review() with type hints, logging, and field/range validation",
-      "4. [Quality/T3] Added sql_meta.py module for extracting table/stream/task/procedure/warehouse/sequence names from DDL scripts",
-      "5. [DX/T4] Added .github/workflows/ci.yml running tests on Python 3.9, 3.11, 3.12 matrix",
-      "6. [DX/T4] Added .env.example with all required Snowflake and AWS environment variables",
-      "7. [DX/T4] Added requirements.txt and updated pyproject.toml with pytest/ruff configuration sections",
-      "8. [DX/T4] Added .gitignore covering __pycache__, *.egg-info, dist, .env, .venv",
-      "9. [DX/T4] Secured Dockerfile: non-root appuser, HEALTHCHECK, removed snowflake.txt from image",
-      "10. [Tests/T2] Extended test suite to 43 tests (4 new sql_meta tests for summarize, dedup, case-insensitive)",
-      "11. [Quality/T3] Added ruff>=0.4 to requirements.txt for consistent linting"
+      "Fixed path-traversal vulnerability in get_sql()",
+      "Added 39-test pytest suite",
+      "Added load_sample_reviews() NDJSON parser and validate_review()",
+      "Added sql_meta.py module for DDL metadata extraction",
+      "Added CI workflow, .env.example, requirements.txt, .gitignore",
+      "Secured Dockerfile with non-root user and HEALTHCHECK",
+      "Extended test suite to 43 tests"
     ],
     "tests_passed": true,
     "commits": 3,
     "run_verified": "43/43 pytest tests passing",
-    "email_status": "failed_2525:OSError"
+    "email_status": "failed_SMTP"
   },
   {
     "date": "2026-05-01",
     "mode": "improvement",
     "improvements": [
-      "fix(1/60): add date-format (YYYY-MM-DD) and empty-string validation to validate_review()",
-      "feat(2/60): add custom exception hierarchy in exceptions.py",
-      "feat(3/60): add shared constants module constants.py",
-      "feat(4/60): add environment-based PipelineConfig/SnowflakeConfig in config.py",
-      "feat(5/60): add standalone batch-aware validators module validators.py",
-      "feat(6/60): add data transformation helpers in transformers.py",
-      "feat(7/60): add general-purpose utility helpers in utils.py",
-      "feat(8/60): add exponential-backoff retry decorator in retry.py",
-      "feat(9/60): add chunked batch processor with BatchResult in batch_processor.py",
-      "feat(10/60): add PipelineMetrics with JSON export in metrics.py",
-      "feat(11/60): add NDJSON streaming reader/writer helpers in io.py",
-      "feat(12/60): add CSV, JSON, NDJSON export utilities in export.py",
-      "feat(13/60): add composable record filter predicates in filters.py",
-      "test(14/60): add shared pytest fixtures in tests/conftest.py",
-      "feat(30/60): add ReviewPipeline end-to-end orchestrator in pipeline.py",
-      "chore(32/60): add Makefile with install, test, lint, docker-build targets",
-      "docs(43/60): add CODE_OF_CONDUCT.md",
-      "docs(44/60): update SECURITY.md",
-      "test(45/60): add end-to-end integration tests",
-      "docs(46/60): rewrite README with badges, Quick Start, API Ref, Architecture",
-      "feat(54/60): add aggregation helpers in aggregators.py",
-      "feat(56/60): add record deduplication utilities in deduplicator.py"
+      "Added custom exception hierarchy in exceptions.py",
+      "Added shared constants module constants.py",
+      "Added environment-based PipelineConfig/SnowflakeConfig",
+      "Added standalone batch-aware validators module",
+      "Added data transformation helpers in transformers.py",
+      "Added exponential-backoff retry decorator in retry.py",
+      "Added chunked batch processor with BatchResult",
+      "Added PipelineMetrics with JSON export",
+      "Added NDJSON streaming reader/writer helpers",
+      "Added CSV, JSON, NDJSON export utilities",
+      "Added composable record filter predicates",
+      "Added ReviewPipeline end-to-end orchestrator",
+      "Added Makefile, pre-commit, docker-compose",
+      "Added aggregation helpers and deduplication utilities",
+      "277 tests passing"
     ],
     "tests_passed": true,
     "commits": 60,
     "run_verified": "277/277 pytest tests passing",
-    "email_status": "failed_97:AddressFamilyNotSupported"
+    "email_status": "failed_SMTP"
   },
   {
     "date": "2026-06-22",
@@ -77,13 +66,14 @@
       "Updated CHANGELOG.md with today's improvements",
       "Updated README: Code Examples, API Reference, Architecture, Performance sections",
       "Expanded tests: 371 total (up from 277), added parametrize edge cases",
-      "Tests added for all new functions: count_by, rating_histogram, field_stats",
-      "Tests added for validation_report, export_summary, dump_metrics",
-      "Tests added for sample_records, is_healthy, process_stream, jitter",
-      "Fixed import ordering and ruff lint issues"
+      "Tests added for all new functions across all modules",
+      "Fixed import ordering and ruff lint issues",
+      "PRE-FLIGHT: Fixed 4 CI workflow failures (Loan-Lens, Supply-Pulse release workflows; Stock-Market-Intelligence ruff + security)",
+      "PRE-FLIGHT: Merged 50+ Dependabot branches across 12 repos",
+      "PRE-FLIGHT: Created Campaign-Guard v1.0.0 release after initializing empty repo"
     ],
     "tests_passed": true,
     "commit_count": 61,
-    "email_status": "sent"
+    "email_status": "failed_SMTP_address_family_not_supported"
   }
 ]
