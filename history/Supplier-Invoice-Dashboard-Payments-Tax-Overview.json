@@ -1,5 +1,40 @@
 [
   {
+    "date": "2026-06-26",
+    "mode": "improvement",
+    "improvements": [
+      "refactor(analytics): added OVERDUE_DAYS_THRESHOLD/INCOMPLETE_STATUSES constants, empty-list guards",
+      "refactor(features): added DECIMAL_ZERO/CENT/EPSILON constants, improved docstrings",
+      "feat(config): added field_validators for tax_rate (0-1) and log_level; rate_limit/window_seconds settings",
+      "docs(init): added comprehensive module docstring listing all sub-modules",
+      "refactor(reporting): extracted _compute_row_fields helper, added build_summary_cards/build_payment_summary/build_overdue_report",
+      "refactor(middleware): use uuid4().hex for compact ID, Callable type annotation",
+      "refactor(cache): added _make_cache_key with MD5 hashing, get_or_set() explicit-key helper",
+      "refactor(rate_limit): RATE_LIMIT/WINDOW_SECONDS now read from settings instead of hardcoded",
+      "refactor(bulk): added REQUIRED_CSV_COLUMNS constant, _normalize_csv_header, validate_csv_row, merge_invoice_dicts, to_invoice_create_payload",
+      "feat(validators): added validate_non_empty_string, validate_non_negative_amount, validate_supplier_name, validate_business_unit",
+      "feat(utils): added DEFAULT_PAGE_SIZE/MAX_PAGE_SIZE constants, clamp(), truncate_string(), chunk_list()",
+      "feat(currency): added CNY/SGD/MXN exchange rates, list_supported_currencies(), normalize_amount_list()",
+      "feat(database): added ix_invoice_bu_status composite index, invoice_date index, check_db_connection(), Generator return type",
+      "refactor(exceptions): added __repr__ to exception classes, field param to ValidationError",
+      "feat(schemas): added InvoiceUpdate and BulkImportResponse schemas with field descriptions",
+      "feat(features): added compute_payment_ratio(), invoice_age_days(), classify_invoice_size() helpers, cancelled_count in aggregate_invoices",
+      "feat(analytics): added incomplete_invoice_count(), top_currencies_by_invoice_count(), overdue_by_supplier(), average_invoice_amount(), average_days_to_pay()",
+      "fix(main): replaced __import__('sqlalchemy') hack with proper import; extracted _build_invoice_query() and _to_inv_dict() helpers",
+      "feat(main): added date_from/date_to filter params to list_invoices; added /analytics/incomplete-count endpoint",
+      "refactor(scripts): replaced print() with logger.info() in analytics_dashboard; added more suppliers/currencies in seed script",
+      "feat(export): added get_report_path() helper",
+      "feat(migration): added ix_invoice_bu_status and ix_supplier_invoices_invoice_date indexes to migration 0001",
+      "test(new files): added test_config.py, test_exceptions.py, test_middleware.py, test_database.py",
+      "test(conftest): added paid_invoice_data and overdue_invoice_data fixtures",
+      "test(expanded): added tests for all new functions across analytics, features, cache, currency, utils, validators, reporting, bulk, rate_limit, api"
+    ],
+    "tests_passed": true,
+    "commits": 60,
+    "test_count": 247,
+    "email_status": "network_blocked"
+  },
+  {
     "date": "2026-06-11",
     "mode": "improvement",
     "improvements": [
