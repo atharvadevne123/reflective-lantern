@@ -33,5 +33,15 @@
     "date": "2026-06-03",
     "repo": "FraudDetectionAI",
     "status": "blocked - container SMTP outbound blocked (EAFNOSUPPORT)"
+  },
+  {
+    "date": "2026-06-30",
+    "repo": "Energy-Oracle",
+    "email_to": "devneatharva@gmail.com",
+    "status": "BLOCKED",
+    "reason": "SMTP outbound blocked in remote execution environment \u2014 IPv4 EAFNOSUPPORT on SSL:465, timeout on STARTTLS:587",
+    "commits": 60,
+    "tests_passed": 228,
+    "tests_skipped": 5
   }
 ]
