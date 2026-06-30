@@ -15,9 +15,9 @@
       "Composite database index (zone, created_at)"
     ],
     "New Endpoints": [
-      "/api/v1/version — app + model version",
-      "/api/v1/batch — bulk prediction up to 1000 records",
-      "/api/v1/health/deep — per-component database and model status"
+      "/api/v1/version \u2014 app + model version",
+      "/api/v1/batch \u2014 bulk prediction up to 1000 records",
+      "/api/v1/health/deep \u2014 per-component database and model status"
     ],
     "Schemas": [
       "BatchPredictRequest, BatchPredictResponse, BatchPredictItem",
@@ -28,19 +28,19 @@
     "Tests": [
       "test_config.py (6 tests)",
       "test_schemas.py (23 tests)",
-      "test_api.py (9 new tests — version, batch, deep-health, correlation-ID)",
-      "test_batch.py (10 tests — empty, missing-key, partial failure, order)",
-      "test_report.py (5 tests — skipped when fpdf crypto unavailable)",
-      "test_retrain.py (6 tests — history accumulation, run_id uniqueness, ISO timestamp)",
-      "test_middleware.py (7 tests — correlation ID generation and forwarding)",
-      "test_features_n.py (4 tests — N_FEATURES, uniqueness, unknown zone)",
-      "test_validators_batch.py (5 tests — validate_batch_input, VALID_ZONES)",
-      "test_cache_lru.py (5 tests — hit/miss, LRU eviction, clear_cache)",
-      "test_logging_config.py (4 tests — JSON formatter, configure_logging)",
-      "test_health.py (5 tests — check_database, check_model, full_health_report)",
-      "test_zone_profiles.py (8 tests — ALL_ZONES, hierarchy, expected_kwh)",
-      "test_seasonality_ext.py (7 tests — month_to_season, cyclical encoding)",
-      "test_model_seed.py (5 tests — seed reproducibility, shape, positive kWh)"
+      "test_api.py (9 new tests \u2014 version, batch, deep-health, correlation-ID)",
+      "test_batch.py (10 tests \u2014 empty, missing-key, partial failure, order)",
+      "test_report.py (5 tests \u2014 skipped when fpdf crypto unavailable)",
+      "test_retrain.py (6 tests \u2014 history accumulation, run_id uniqueness, ISO timestamp)",
+      "test_middleware.py (7 tests \u2014 correlation ID generation and forwarding)",
+      "test_features_n.py (4 tests \u2014 N_FEATURES, uniqueness, unknown zone)",
+      "test_validators_batch.py (5 tests \u2014 validate_batch_input, VALID_ZONES)",
+      "test_cache_lru.py (5 tests \u2014 hit/miss, LRU eviction, clear_cache)",
+      "test_logging_config.py (4 tests \u2014 JSON formatter, configure_logging)",
+      "test_health.py (5 tests \u2014 check_database, check_model, full_health_report)",
+      "test_zone_profiles.py (8 tests \u2014 ALL_ZONES, hierarchy, expected_kwh)",
+      "test_seasonality_ext.py (7 tests \u2014 month_to_season, cyclical encoding)",
+      "test_model_seed.py (5 tests \u2014 seed reproducibility, shape, positive kWh)"
     ],
     "Developer Experience": [
       "SECURITY.md (vulnerability reporting policy)",
@@ -119,5 +119,6 @@
     "SECURITY.md",
     "CODE_OF_CONDUCT.md",
     "README.md"
-  ]
+  ],
+  "push_verified": true
 }
