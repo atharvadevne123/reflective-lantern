@@ -1,0 +1,141 @@
+#!/usr/bin/env python3
+"""Check health of all non-archived, non-fork repos for the configured owner.
+
+Reports failing CI workflows, missing releases, open branches, and
+repos without a CI workflow. Exits non-zero if any issues are found.
+
+Usage:
+    python scripts/health_check.py [--json]
+"""
+
+from __future__ import annotations
+
+import argparse
+import json
+import logging
+import os
+import sys
+import urllib.request
+from dataclasses import dataclass, field
+from typing import Any
+
+log = logging.getLogger(__name__)
+GH_API = "https://api.github.com"
+
+
+@dataclass
+class RepoHealth:
+    """Health summary for a single repository."""
+
+    name: str
+    failing_workflows: list[str] = field(default_factory=list)
+    open_branches: list[str] = field(default_factory=list)
+    has_release: bool = True
+    has_ci: bool = True
+
+    @property
+    def healthy(self) -> bool:
+        """True when no issues were found."""
+        return not (
+            self.failing_workflows
+            or self.open_branches
+            or not self.has_release
+            or not self.has_ci
+        )
+
+
+def _get(url: str, token: str) -> Any:
+    req = urllib.request.Request(
+        url,
+        headers={"Authorization": f"Bearer {token}", "Accept": "application/vnd.github+json"},
+    )
+    with urllib.request.urlopen(req, timeout=15) as r:
+        return json.load(r)
+
+
+def check_repo(name: str, default_branch: str, token: str) -> RepoHealth:
+    """Return a RepoHealth for *name*."""
+    health = RepoHealth(name=name)
+    owner = os.environ.get("GITHUB_USERNAME", "atharvadevne123")
+
+    # Failing workflows
+    try:
+        runs = _get(f"{GH_API}/repos/{owner}/{name}/actions/runs?per_page=20", token)
+        latest: dict[int, Any] = {}
+        for run in runs.get("workflow_runs", []):
+            wid = run["workflow_id"]
+            if wid not in latest:
+                latest[wid] = run
+        for run in latest.values():
+            if run["conclusion"] in ("failure", "timed_out"):
+                health.failing_workflows.append(run["name"])
+        health.has_ci = bool(latest)
+    except Exception as exc:
+        log.warning("Could not fetch workflows for %s: %s", name, exc)
+
+    # Open branches
+    try:
+        branches = _get(f"{GH_API}/repos/{owner}/{name}/branches?per_page=100", token)
+        health.open_branches = [
+            b["name"] for b in branches if b["name"] != default_branch
+        ]
+    except Exception as exc:
+        log.warning("Could not fetch branches for %s: %s", name, exc)
+
+    # Missing release
+    try:
+        releases = _get(f"{GH_API}/repos/{owner}/{name}/releases?per_page=1", token)
+        health.has_release = bool(releases)
+    except Exception as exc:
+        log.warning("Could not fetch releases for %s: %s", name, exc)
+
+    return health
+
+
+def main() -> int:
+    """Entry point. Returns exit code (0 = all healthy)."""
+    parser = argparse.ArgumentParser(description="Repo health check")
+    parser.add_argument("--json", action="store_true", help="Output JSON")
+    args = parser.parse_args()
+
+    logging.basicConfig(level=logging.INFO, format="%(levelname)s %(message)s")
+
+    token = os.environ.get("GH_PAT", "")
+    if not token:
+        log.error("GH_PAT environment variable is not set")
+        return 1
+
+    owner = os.environ.get("GITHUB_USERNAME", "atharvadevne123")
+    repos_data = _get(f"{GH_API}/users/{owner}/repos?per_page=100&type=owner", token)
+    repos = [r for r in repos_data if not r.get("archived") and not r.get("fork")]
+
+    results = []
+    issues = 0
+    for repo in repos:
+        health = check_repo(repo["name"], repo.get("default_branch", "main"), token)
+        results.append(health)
+        if not health.healthy:
+            issues += 1
+
+    if args.json:
+        import dataclasses
+        print(json.dumps([dataclasses.asdict(r) for r in results], indent=2))
+    else:
+        for r in results:
+            status = "OK" if r.healthy else "ISSUES"
+            print(f"[{status}] {r.name}")
+            if r.failing_workflows:
+                print(f"  Failing workflows: {r.failing_workflows}")
+            if r.open_branches:
+                print(f"  Open branches: {r.open_branches}")
+            if not r.has_release:
+                print("  Missing release")
+            if not r.has_ci:
+                print("  No CI workflows found")
+        print(f"\n{len(results)} repos checked, {issues} with issues")
+
+    return 0 if issues == 0 else 1
+
+
+if __name__ == "__main__":
+    sys.exit(main())
