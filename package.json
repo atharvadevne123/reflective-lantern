@@ -3,18 +3,27 @@
   "version": "1.0.0",
   "description": "Autonomous code improvement agent — system prompts and configuration",
   "main": "index.js",
+  "engines": {
+    "node": ">=20"
+  },
   "publishConfig": {
     "registry": "https://npm.pkg.github.com"
   },
   "files": [
     "index.js",
     "prompts/",
-    "system_prompt.md"
+    "history/",
+    ".env.example"
   ],
   "scripts": {
-    "test": "node -e \"const r = require('.'); console.log(Object.keys(r.getPrompts()));\""
+    "test": "node -e \"const r = require('.'); const v = r.validate(); console.log(v.valid ? 'OK' : v.errors.join('\\n')); process.exit(v.valid ? 0 : 1);\"",
+    "test:prompts": "node -e \"const r = require('.'); const p = r.getPrompts(); console.log('Prompts:', Object.keys(p));\"",
+    "test:history": "node -e \"const r = require('.'); const h = r.getHistory(); console.log('History repos:', Object.keys(h).length);\"",
+    "lint": "node --check index.js 2>&1 || true",
+    "validate": "node -e \"const {validate} = require('.'); const v = validate(); console.log(JSON.stringify(v, null, 2));\"",
+    "start": "node index.js"
   },
-  "keywords": ["claude", "agent", "prompts", "llm"],
+  "keywords": ["claude", "agent", "prompts", "llm", "automation", "github"],
   "license": "MIT",
   "author": "atharvadevne123"
 }
