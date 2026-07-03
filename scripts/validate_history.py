@@ -7,6 +7,7 @@ Usage:
 
 from __future__ import annotations
 
+import argparse
 import json
 import logging
 import sys
@@ -82,11 +83,20 @@ def validate_file(path: Path) -> list[str]:
 
 def main() -> int:
     """Validate all history files. Return 0 if all valid, 1 otherwise."""
+    parser = argparse.ArgumentParser(description="Validate Reflective Lantern history files")
+    parser.add_argument(
+        "--verbose", "-v", action="store_true", help="Print each file as it is checked"
+    )
+    args = parser.parse_args()
     logging.basicConfig(level=logging.INFO, format="%(levelname)s %(message)s")
     all_errors: list[str] = []
     files = sorted(p for p in HISTORY_DIR.glob("*.json") if p.name not in NON_RECORD_FILES)
     for path in files:
+        if args.verbose:
+            print(f"Checking {path.name} …", end=" ", flush=True)
         errors = validate_file(path)
+        if args.verbose:
+            print("OK" if not errors else f"FAIL ({len(errors)} error(s))")
         all_errors.extend(errors)
 
     if all_errors:

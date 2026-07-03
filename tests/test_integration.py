@@ -17,7 +17,8 @@ def test_validate_history_main_passes_on_good_files(tmp_path: Path) -> None:
     (h / "GoodRepo.json").write_text(json.dumps([{"date": "2026-06-01", "commits": 60}]))
     import scripts.validate_history as vh
     with patch.object(vh, "HISTORY_DIR", h):
-        result = vh.main()
+        with patch.object(sys, "argv", ["validate_history.py"]):
+            result = vh.main()
     assert result == 0
 
 
@@ -28,7 +29,8 @@ def test_validate_history_main_fails_on_bad_files(tmp_path: Path) -> None:
     (h / "BadRepo.json").write_text(json.dumps([{"commits": 60}]))
     import scripts.validate_history as vh
     with patch.object(vh, "HISTORY_DIR", h):
-        result = vh.main()
+        with patch.object(sys, "argv", ["validate_history.py"]):
+            result = vh.main()
     assert result == 1
 
 
@@ -91,7 +93,8 @@ def test_validate_history_main_skips_non_record_files(tmp_path: Path) -> None:
     (h / "GoodRepo.json").write_text(json.dumps([{"date": "2026-06-01", "commits": 60}]))
     import scripts.validate_history as vh
     with patch.object(vh, "HISTORY_DIR", h):
-        result = vh.main()
+        with patch.object(sys, "argv", ["validate_history.py"]):
+            result = vh.main()
     assert result == 0
 
 
