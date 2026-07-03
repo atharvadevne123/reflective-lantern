@@ -15,8 +15,7 @@ from typing import Any
 
 log = logging.getLogger(__name__)
 HISTORY_DIR = Path(__file__).parent.parent / "history"
-# Files that are not run records and must be skipped during schema validation
-NON_RECORD_FILES: frozenset[str] = frozenset({"schema.json", "commit_schedule.json"})
+from config.constants import NON_RECORD_FILES  # noqa: E402
 
 REQUIRED_FIELDS: dict[str, type] = {
     "date": str,
