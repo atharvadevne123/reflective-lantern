@@ -40,3 +40,6 @@ COVER_BASE_URL: str = (
 # Claude model for portfolio descriptions
 NOTION_MODEL: str = "claude-sonnet-4-6"
 NOTION_DESCRIPTION_MAX_TOKENS: int = 200
+
+# History files that are config/meta files, not per-run records
+NON_RECORD_FILES: frozenset[str] = frozenset({"schema.json", "commit_schedule.json"})
