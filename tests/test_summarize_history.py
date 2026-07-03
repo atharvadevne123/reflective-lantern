@@ -111,8 +111,9 @@ def test_main_skips_non_record_files(tmp_path: Path, capsys: pytest.CaptureFixtu
 
 
 def test_main_json_flag_outputs_valid_json(tmp_path: Path, capsys: pytest.CaptureFixture) -> None:
-    from unittest.mock import patch
     import sys
+    from unittest.mock import patch
+
     import scripts.summarize_history as sh
     h = tmp_path / "history"
     h.mkdir()
@@ -129,8 +130,9 @@ def test_main_json_flag_outputs_valid_json(tmp_path: Path, capsys: pytest.Captur
 
 def test_main_sort_by_repo_alphabetical(tmp_path: Path, capsys: pytest.CaptureFixture) -> None:
     import sys
-    import scripts.summarize_history as sh
     from unittest.mock import patch
+
+    import scripts.summarize_history as sh
     h = tmp_path / "history"
     h.mkdir()
     (h / "Zebra.json").write_text(json.dumps([{"date": "2026-06-10", "commits": 5}]))
@@ -144,8 +146,9 @@ def test_main_sort_by_repo_alphabetical(tmp_path: Path, capsys: pytest.CaptureFi
 
 def test_main_json_tests_passed_field(tmp_path: Path, capsys: pytest.CaptureFixture) -> None:
     import sys
-    import scripts.summarize_history as sh
     from unittest.mock import patch
+
+    import scripts.summarize_history as sh
     h = tmp_path / "history"
     h.mkdir()
     (h / "Repo.json").write_text(json.dumps([{"date": "2026-07-01", "commits": 60, "tests_passed": True}]))

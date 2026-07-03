@@ -36,6 +36,7 @@ def test_build_message_missing_pdf_skipped(tmp_path: Path) -> None:
 
 def test_send_via_smtp_success() -> None:
     from email.mime.multipart import MIMEMultipart
+
     from scripts.email_report import send_via_smtp
     mock_smtp = MagicMock()
     mock_smtp.__enter__ = MagicMock(return_value=mock_smtp)
@@ -49,6 +50,7 @@ def test_send_via_smtp_success() -> None:
 
 def test_send_via_smtp_all_ports_fail() -> None:
     from email.mime.multipart import MIMEMultipart
+
     from scripts.email_report import send_via_smtp
     with (
         patch("smtplib.SMTP", side_effect=OSError("blocked")),

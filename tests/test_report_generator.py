@@ -160,6 +160,7 @@ def test_report_generator_main_weekly_stdout(
     sample_history: Path, capsys: pytest.CaptureFixture
 ) -> None:
     import sys
+
     from scripts import report_generator as rg
     with patch.object(rg, "HISTORY_DIR", sample_history):
         with patch.object(sys, "argv", ["report_generator.py", "--mode", "weekly", "--date", "2026-06-30"]):
@@ -181,6 +182,7 @@ def test_weekly_report_commit_values(commits: int, tmp_path: Path) -> None:
 
 def test_daily_report_innovation_mode(innovation_history_dir: Path) -> None:
     from datetime import date
+
     from scripts import report_generator as rg
     with patch.object(rg, "HISTORY_DIR", innovation_history_dir):
         report = rg.daily_report(date(2026, 7, 8))
@@ -191,6 +193,7 @@ def test_daily_report_innovation_mode(innovation_history_dir: Path) -> None:
 
 def test_weekly_report_uses_fixture(innovation_history_dir: Path) -> None:
     from datetime import date
+
     from scripts import report_generator as rg
     with patch.object(rg, "HISTORY_DIR", innovation_history_dir):
         report = rg.weekly_report(date(2026, 7, 10))

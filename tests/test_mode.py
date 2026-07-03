@@ -81,8 +81,8 @@ def test_is_innovation_day_no_arg() -> None:
 def test_innovation_day_ranges_all_days(day: int, expected: bool) -> None:
     # Pick a Wednesday in July 2026 for day offset; July 1 is Wednesday
     # Nearest Wednesday with given day is mapped via fixed offsets
-    from config.constants import INNOVATION_DAY_RANGES, INNOVATION_WEEKDAY
-    from datetime import date
+
+    from config.constants import INNOVATION_DAY_RANGES
     # Build a date where day-of-month == day and isoweekday == 3 (if expected)
     # Use October 2026: Oct 7 = Wed; Oct 14 = Wed; Oct 21 = Wed; Oct 28 = Wed
     # But we need arbitrary day numbers — just check ranges directly

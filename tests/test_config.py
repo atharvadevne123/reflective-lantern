@@ -98,6 +98,7 @@ def test_settings_env_overrides(
 ) -> None:
     monkeypatch.setenv(env_var, value)
     import importlib
+
     import config.settings as cs
     importlib.reload(cs)
     cs._settings = None
