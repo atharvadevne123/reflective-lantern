@@ -114,3 +114,51 @@ def test_check_repo_workflow_conclusions(
         health = check_repo("repo", "main", "token")
 
     assert health.failing_workflows == expected_failing
+
+
+def test_get_retries_on_failure() -> None:
+    """_get() should retry the configured number of times before raising."""
+    from scripts.health_check import _get
+    call_count = 0
+
+    def failing_urlopen(*args: object, **kwargs: object) -> object:
+        nonlocal call_count
+        call_count += 1
+        raise OSError("network error")
+
+    import urllib.request
+    with (
+        patch.object(urllib.request, "urlopen", side_effect=failing_urlopen),
+        pytest.raises(RuntimeError, match="All"),
+    ):
+        _get("https://api.github.com/test", "token", retries=2)
+    assert call_count == 2
+
+
+def test_repo_health_name_stored() -> None:
+    h = RepoHealth(name="My-Repo")
+    assert h.name == "My-Repo"
+
+
+@pytest.mark.parametrize("has_release,has_ci,branches,workflows,healthy", [
+    (True, True, [], [], True),
+    (False, True, [], [], False),
+    (True, False, [], [], False),
+    (True, True, ["feat/x"], [], False),
+    (True, True, [], ["CI"], False),
+])
+def test_repo_health_parametrized(
+    has_release: bool,
+    has_ci: bool,
+    branches: list[str],
+    workflows: list[str],
+    healthy: bool,
+) -> None:
+    h = RepoHealth(
+        name="R",
+        has_release=has_release,
+        has_ci=has_ci,
+        open_branches=branches,
+        failing_workflows=workflows,
+    )
+    assert h.healthy is healthy
