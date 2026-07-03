@@ -43,6 +43,16 @@ class RepoHealth:
             or not self.has_ci
         )
 
+    def stats(self) -> dict[str, int | bool]:
+        """Return a summary dict of issue counts."""
+        return {
+            "failing_workflows": len(self.failing_workflows),
+            "open_branches": len(self.open_branches),
+            "has_release": self.has_release,
+            "has_ci": self.has_ci,
+            "healthy": self.healthy,
+        }
+
 
 def _get(url: str, token: str, retries: int = 3) -> Any:
     """Fetch *url* with Bearer *token*, retrying up to *retries* times on error."""
