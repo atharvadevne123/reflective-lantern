@@ -73,7 +73,7 @@
       "PRE-FLIGHT: Created Campaign-Guard v1.0.0 release"
     ],
     "tests_passed": true,
-    "commit_count": 61,
-    "email_status": "failed_SMTP_address_family_not_supported"
+    "email_status": "failed_SMTP_address_family_not_supported",
+    "commits": 61
   }
 ]
