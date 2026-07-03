@@ -162,3 +162,50 @@ def test_repo_health_parametrized(
         failing_workflows=workflows,
     )
     assert h.healthy is healthy
+
+
+def test_repo_health_stats_healthy() -> None:
+    from scripts.health_check import RepoHealth
+    r = RepoHealth(name="clean-repo")
+    stats = r.stats()
+    assert stats["healthy"] is True
+    assert stats["failing_workflows"] == 0
+    assert stats["open_branches"] == 0
+    assert stats["has_release"] is True
+    assert stats["has_ci"] is True
+
+
+def test_repo_health_stats_with_issues() -> None:
+    from scripts.health_check import RepoHealth
+    r = RepoHealth(
+        name="broken",
+        failing_workflows=["CI", "Lint"],
+        open_branches=["feature/x"],
+        has_release=False,
+    )
+    stats = r.stats()
+    assert stats["healthy"] is False
+    assert stats["failing_workflows"] == 2
+    assert stats["open_branches"] == 1
+    assert stats["has_release"] is False
+
+
+@pytest.mark.parametrize("failing,branches,has_release,has_ci,expected_healthy", [
+    ([], [], True, True, True),
+    (["CI"], [], True, True, False),
+    ([], ["branch-x"], True, True, False),
+    ([], [], False, True, False),
+    ([], [], True, False, False),
+])
+def test_repo_health_healthy_parametrized(
+    failing: list, branches: list, has_release: bool, has_ci: bool, expected_healthy: bool
+) -> None:
+    from scripts.health_check import RepoHealth
+    r = RepoHealth(
+        name="repo",
+        failing_workflows=failing,
+        open_branches=branches,
+        has_release=has_release,
+        has_ci=has_ci,
+    )
+    assert r.healthy is expected_healthy
