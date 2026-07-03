@@ -67,7 +67,10 @@ class Settings:
     )
 
     def validate(self) -> list[str]:
-        """Return a list of missing required environment variable names."""
+        """Return a list of missing required environment variable names.
+
+        An empty list means all required credentials are present and non-empty.
+        """
         missing: list[str] = []
         if not self.anthropic_api_key:
             missing.append("ANTHROPIC_API_KEY")
@@ -80,6 +83,10 @@ class Settings:
         if not self.gmail_app_pass:
             missing.append("GMAIL_APP_PASS")
         return missing
+
+    def is_valid(self) -> bool:
+        """Return True when all required credentials are present."""
+        return len(self.validate()) == 0
 
     @property
     def history_dir(self) -> Path:
