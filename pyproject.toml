@@ -1,6 +1,6 @@
 [build-system]
 requires = ["setuptools>=68", "wheel"]
-build-backend = "setuptools.backends.legacy:build"
+build-backend = "setuptools.build_meta"
 
 [project]
 name = "reflective-lantern"
@@ -35,6 +35,9 @@ dev = [
     "mypy>=1.10.0",
     "pre-commit>=3.7.0",
 ]
+
+[tool.setuptools.packages.find]
+include = ["config*", "scripts*"]
 
 [tool.ruff]
 line-length = 100
