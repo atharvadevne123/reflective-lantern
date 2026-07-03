@@ -134,3 +134,33 @@ def test_non_record_files_constant() -> None:
     from config.constants import NON_RECORD_FILES
     assert "schema.json" in NON_RECORD_FILES
     assert "commit_schedule.json" in NON_RECORD_FILES
+
+
+def test_constants_version_is_semver() -> None:
+    from config.constants import VERSION
+    parts = VERSION.split(".")
+    assert len(parts) == 3
+    assert all(p.isdigit() for p in parts)
+
+
+def test_constants_smtp_ports() -> None:
+    from config.constants import SMTP_PORT_SSL, SMTP_PORT_TLS
+    assert SMTP_PORT_TLS == 587
+    assert SMTP_PORT_SSL == 465
+
+
+def test_constants_github_api_base() -> None:
+    from config.constants import GITHUB_API_BASE
+    assert GITHUB_API_BASE.startswith("https://")
+    assert "github.com" in GITHUB_API_BASE
+
+
+def test_constants_notion_model_is_string() -> None:
+    from config.constants import NOTION_MODEL
+    assert isinstance(NOTION_MODEL, str)
+    assert len(NOTION_MODEL) > 0
+
+
+def test_constants_max_repos_per_page() -> None:
+    from config.constants import MAX_REPOS_PER_PAGE
+    assert MAX_REPOS_PER_PAGE == 100
