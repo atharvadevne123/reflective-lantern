@@ -85,3 +85,52 @@ def test_get_settings_singleton() -> None:
     s1 = cs.get_settings()
     s2 = cs.get_settings()
     assert s1 is s2
+
+
+@pytest.mark.parametrize("env_var,value,attr", [
+    ("LOG_LEVEL", "DEBUG", "log_level"),
+    ("LOG_LEVEL", "WARNING", "log_level"),
+    ("COMMIT_TARGET", "90", "commit_target"),
+    ("PF_FIX_TIMEOUT", "600", "pf_fix_timeout"),
+])
+def test_settings_env_overrides(
+    monkeypatch: pytest.MonkeyPatch, env_var: str, value: str, attr: str
+) -> None:
+    monkeypatch.setenv(env_var, value)
+    import importlib
+    import config.settings as cs
+    importlib.reload(cs)
+    cs._settings = None
+    from config.settings import Settings
+    s = Settings()
+    expected = int(value) if attr in ("commit_target", "pf_fix_timeout") else value
+    assert getattr(s, attr) == expected
+
+
+def test_settings_report_recipient_defaults_to_gmail_user(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("GMAIL_USER", "fallback@example.com")
+    monkeypatch.delenv("REPORT_RECIPIENT", raising=False)
+    from config.settings import Settings
+    s = Settings()
+    assert s.report_recipient == "fallback@example.com"
+
+
+def test_settings_report_recipient_explicit(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("GMAIL_USER", "sender@example.com")
+    monkeypatch.setenv("REPORT_RECIPIENT", "boss@example.com")
+    from config.settings import Settings
+    s = Settings()
+    assert s.report_recipient == "boss@example.com"
+
+
+def test_constants_innovation_day_ranges() -> None:
+    from config.constants import INNOVATION_DAY_RANGES, INNOVATION_WEEKDAY
+    assert INNOVATION_WEEKDAY == 3
+    assert (8, 14) in INNOVATION_DAY_RANGES
+    assert (22, 28) in INNOVATION_DAY_RANGES
+
+
+def test_non_record_files_constant() -> None:
+    from config.constants import NON_RECORD_FILES
+    assert "schema.json" in NON_RECORD_FILES
+    assert "commit_schedule.json" in NON_RECORD_FILES
