@@ -15,6 +15,8 @@ from typing import Any
 
 log = logging.getLogger(__name__)
 HISTORY_DIR = Path(__file__).parent.parent / "history"
+# Files that are not run records and must be skipped during schema validation
+NON_RECORD_FILES: frozenset[str] = frozenset({"schema.json", "commit_schedule.json"})
 
 REQUIRED_FIELDS: dict[str, type] = {
     "date": str,
@@ -83,7 +85,7 @@ def main() -> int:
     """Validate all history files. Return 0 if all valid, 1 otherwise."""
     logging.basicConfig(level=logging.INFO, format="%(levelname)s %(message)s")
     all_errors: list[str] = []
-    files = sorted(HISTORY_DIR.glob("*.json"))
+    files = sorted(p for p in HISTORY_DIR.glob("*.json") if p.name not in NON_RECORD_FILES)
     for path in files:
         errors = validate_file(path)
         all_errors.extend(errors)
