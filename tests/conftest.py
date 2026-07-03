@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import json
-import os
 from pathlib import Path
 from typing import Any, Generator
 
@@ -73,3 +72,18 @@ def settings_env(monkeypatch: pytest.MonkeyPatch) -> Generator[None, None, None]
     monkeypatch.setenv("GMAIL_USER", "test@gmail.com")
     monkeypatch.setenv("GMAIL_APP_PASS", "test-pass")
     yield
+
+
+@pytest.fixture()
+def innovation_history_dir(tmp_path: Path) -> Path:
+    """Return a history directory with an INNOVATION mode entry."""
+    h = tmp_path / "history"
+    h.mkdir()
+    (h / "NewProject.json").write_text(json.dumps([{
+        "date": "2026-07-08",
+        "mode": "innovation",
+        "commits": 114,
+        "tests_passed": True,
+        "improvements": ["built new ML pipeline from scratch"],
+    }]))
+    return h
