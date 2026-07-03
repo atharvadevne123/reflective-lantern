@@ -19,13 +19,21 @@ log = logging.getLogger(__name__)
 GH_API = "https://api.github.com"
 
 
-def _get(url: str, token: str) -> Any:
+def _get(url: str, token: str, retries: int = 3) -> Any:
+    """Fetch *url* with Bearer *token*, retrying up to *retries* times on network errors."""
     req = urllib.request.Request(
         url,
         headers={"Authorization": f"Bearer {token}", "Accept": "application/vnd.github+json"},
     )
-    with urllib.request.urlopen(req, timeout=15) as r:
-        return json.load(r)
+    last_exc: Exception | None = None
+    for attempt in range(1, retries + 1):
+        try:
+            with urllib.request.urlopen(req, timeout=15) as r:
+                return json.load(r)
+        except Exception as exc:
+            last_exc = exc
+            log.warning("Attempt %d/%d failed for %s: %s", attempt, retries, url, exc)
+    raise RuntimeError(f"All {retries} attempts failed for {url}") from last_exc
 
 
 def get_latest_runs(owner: str, repo: str, token: str) -> list[dict[str, Any]]:
