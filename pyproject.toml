@@ -17,6 +17,8 @@ classifiers = [
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: Utilities",
 ]
 dependencies = [
     "anthropic>=0.40.0",
@@ -70,3 +72,7 @@ omit = ["tests/*", "*/__init__.py"]
 [tool.coverage.report]
 show_missing = true
 fail_under = 70
+
+[project.urls]
+Homepage = "https://github.com/atharvadevne123/reflective-lantern"
+"Bug Tracker" = "https://github.com/atharvadevne123/reflective-lantern/issues"
