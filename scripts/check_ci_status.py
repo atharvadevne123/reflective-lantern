@@ -44,9 +44,9 @@ def get_latest_runs(owner: str, repo: str, token: str) -> list[dict[str, Any]]:
         log.warning("%s: could not fetch runs — %s", repo, exc)
         return []
     runs = data.get("workflow_runs", [])
-    latest: dict[int, dict[str, Any]] = {}
+    latest: dict[int | None, dict[str, Any]] = {}
     for run in runs:
-        wid = run["workflow_id"]
+        wid = run.get("workflow_id")
         if wid not in latest:
             latest[wid] = run
     return list(latest.values())
