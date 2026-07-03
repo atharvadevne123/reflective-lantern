@@ -20,7 +20,6 @@ from email.mime.application import MIMEApplication
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from pathlib import Path
-from typing import Optional
 
 log = logging.getLogger(__name__)
 
@@ -33,7 +32,7 @@ def build_message(
     body: str,
     sender: str,
     recipient: str,
-    pdf_path: Optional[Path] = None,
+    pdf_path: Path | None = None,
 ) -> MIMEMultipart:
     """Build a MIME multipart email, optionally attaching a PDF."""
     msg = MIMEMultipart()
@@ -86,10 +85,10 @@ def send_via_smtp(
 def send_report(
     subject: str,
     body: str,
-    pdf_path: Optional[Path] = None,
-    sender: Optional[str] = None,
-    password: Optional[str] = None,
-    recipient: Optional[str] = None,
+    pdf_path: Path | None = None,
+    sender: str | None = None,
+    password: str | None = None,
+    recipient: str | None = None,
 ) -> bool:
     """Build and send a report email. Returns True on success.
 
