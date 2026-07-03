@@ -108,3 +108,20 @@ def test_main_skips_non_record_files(tmp_path: Path, capsys: pytest.CaptureFixtu
     out = capsys.readouterr().out
     assert "MyRepo" in out
     assert "commit_schedule" not in out
+
+
+def test_main_json_flag_outputs_valid_json(tmp_path: Path, capsys: pytest.CaptureFixture) -> None:
+    from unittest.mock import patch
+    import sys
+    import scripts.summarize_history as sh
+    h = tmp_path / "history"
+    h.mkdir()
+    (h / "AlphaRepo.json").write_text(json.dumps([{"date": "2026-06-30", "commits": 55}]))
+    with patch.object(sh, "HISTORY_DIR", h):
+        with patch.object(sys, "argv", ["summarize_history.py", "--json"]):
+            sh.main()
+    out = capsys.readouterr().out
+    parsed = json.loads(out)
+    assert isinstance(parsed, list)
+    assert parsed[0]["repo"] == "AlphaRepo"
+    assert parsed[0]["commits"] == 55
