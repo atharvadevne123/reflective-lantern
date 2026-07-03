@@ -164,3 +164,40 @@ def test_constants_notion_model_is_string() -> None:
 def test_constants_max_repos_per_page() -> None:
     from config.constants import MAX_REPOS_PER_PAGE
     assert MAX_REPOS_PER_PAGE == 100
+
+
+def test_settings_is_valid_false_when_missing(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+    monkeypatch.delenv("GH_PAT", raising=False)
+    from config.settings import Settings
+    s = Settings()
+    assert s.is_valid() is False
+
+
+def test_settings_is_valid_true_when_all_present(settings_env: None) -> None:
+    from config.settings import Settings
+    s = Settings()
+    assert s.is_valid() is True
+
+
+def test_settings_history_dir_property() -> None:
+    from config.settings import Settings
+    s = Settings()
+    assert s.history_dir.name == "history"
+    assert s.history_dir.is_dir()
+
+
+@pytest.mark.parametrize("key", [
+    "anthropic_api_key",
+    "gh_pat",
+    "notion_api_key",
+    "gmail_user",
+    "gmail_app_pass",
+    "log_level",
+    "commit_target",
+    "pf_fix_timeout",
+])
+def test_settings_has_attribute(settings_env: None, key: str) -> None:
+    from config.settings import Settings
+    s = Settings()
+    assert hasattr(s, key)
