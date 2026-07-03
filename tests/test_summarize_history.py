@@ -64,3 +64,47 @@ def test_main_runs_without_error(history_path: Path, sort_by: str, capsys: pytes
     captured = capsys.readouterr()
     assert "Alpha" in captured.out
     assert "Beta" in captured.out
+
+
+def test_load_latest_entry_returns_none_on_nested_invalid(tmp_path: Path) -> None:
+    from scripts.summarize_history import load_latest_entry
+    f = tmp_path / "nested.json"
+    f.write_text("[[1, 2, 3]]")  # list of non-dicts
+    entry = load_latest_entry(f)
+    # Picks max by empty string key — returns the inner list, not a dict
+    # This is a known edge case; function returns None for non-dict entries
+    assert entry is None
+
+
+@pytest.mark.parametrize("commits,expected_commits", [
+    (60, 60),
+    (0, 0),
+    (120, 120),
+])
+def test_load_latest_entry_commit_values(tmp_path: Path, commits: int, expected_commits: int) -> None:
+    from scripts.summarize_history import load_latest_entry
+    f = tmp_path / "repo.json"
+    f.write_text(json.dumps([{"date": "2026-07-01", "commits": commits}]))
+    entry = load_latest_entry(f)
+    assert entry is not None
+    assert entry["commits"] == expected_commits
+
+
+def test_main_skips_non_record_files(tmp_path: Path, capsys: pytest.CaptureFixture) -> None:
+    """commit_schedule.json and schema.json should not appear in table output."""
+    import scripts.summarize_history as sh
+    h = tmp_path / "history"
+    h.mkdir()
+    (h / "MyRepo.json").write_text(json.dumps([{"date": "2026-07-01", "commits": 60}]))
+    (h / "commit_schedule.json").write_text(json.dumps({
+        "start_year": 2026, "start_week": 1
+    }))
+    import sys
+    with (
+        patch.object(sh, "HISTORY_DIR", h),
+        patch.object(sys, "argv", ["sh.py"]),
+    ):
+        sh.main()
+    out = capsys.readouterr().out
+    assert "MyRepo" in out
+    assert "commit_schedule" not in out

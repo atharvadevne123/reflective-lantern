@@ -27,10 +27,13 @@ def load_latest_entry(path: Path) -> dict[str, Any] | None:
         log.warning("Skipping %s: %s", path.name, exc)
         return None
     if isinstance(raw, list) and raw:
-        # Pick the entry with the latest date
+        # Only consider dict entries; skip nested lists or primitives
+        dict_entries = [e for e in raw if isinstance(e, dict)]
+        if not dict_entries:
+            return None
         def _date_key(e: dict[str, Any]) -> str:
             return str(e.get("date") or e.get("last_run") or "")
-        return max(raw, key=_date_key)
+        return max(dict_entries, key=_date_key)
     if isinstance(raw, dict):
         return raw
     return None
