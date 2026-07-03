@@ -30,8 +30,17 @@ def _entry_date(entry: dict[str, Any]) -> date | None:
         return None
 
 
-def clean_file(path: Path, cutoff: date, dry_run: bool = False) -> int:
-    """Remove entries older than *cutoff* from *path*. Return number removed."""
+def clean_file(
+    path: Path,
+    cutoff: date,
+    dry_run: bool = False,
+    max_entries: int | None = None,
+) -> int:
+    """Remove entries older than *cutoff* from *path*. Return number removed.
+
+    If *max_entries* is set, also truncate the file to the most recent
+    *max_entries* entries after the date-based removal.
+    """
     try:
         raw = json.loads(path.read_text())
     except Exception as exc:
@@ -52,6 +61,10 @@ def clean_file(path: Path, cutoff: date, dry_run: bool = False) -> int:
     kept = [e for e in raw if not (
         (d := _entry_date(e)) is not None and d < cutoff
     )]
+
+    if max_entries is not None and len(kept) > max_entries:
+        kept = kept[-max_entries:]
+
     removed = original_count - len(kept)
 
     if removed > 0:
@@ -71,6 +84,12 @@ def main() -> int:
     parser.add_argument(
         "--dry-run", action="store_true", help="Report without modifying files"
     )
+    parser.add_argument(
+        "--max-entries",
+        type=int,
+        default=None,
+        help="Keep at most this many entries per file after date pruning",
+    )
     args = parser.parse_args()
     logging.basicConfig(level=logging.INFO, format="%(levelname)s %(message)s")
 
@@ -79,7 +98,9 @@ def main() -> int:
 
     total_removed = 0
     for path in sorted(HISTORY_DIR.glob("*.json")):
-        total_removed += clean_file(path, cutoff, dry_run=args.dry_run)
+        total_removed += clean_file(
+            path, cutoff, dry_run=args.dry_run, max_entries=args.max_entries
+        )
 
     action = "Would remove" if args.dry_run else "Removed"
     print(f"{action} {total_removed} old entries from history files")
