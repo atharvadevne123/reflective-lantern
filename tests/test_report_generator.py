@@ -177,3 +177,21 @@ def test_weekly_report_commit_values(commits: int, tmp_path: Path) -> None:
     with patch.object(rg, "HISTORY_DIR", h):
         report = rg.weekly_report(date(2026, 6, 30))
     assert str(commits) in report
+
+
+def test_daily_report_innovation_mode(innovation_history_dir: Path) -> None:
+    from datetime import date
+    from scripts import report_generator as rg
+    with patch.object(rg, "HISTORY_DIR", innovation_history_dir):
+        report = rg.daily_report(date(2026, 7, 8))
+    assert "INNOVATION" in report
+    assert "114" in report
+    assert "NewProject" in report
+
+
+def test_weekly_report_uses_fixture(innovation_history_dir: Path) -> None:
+    from datetime import date
+    from scripts import report_generator as rg
+    with patch.object(rg, "HISTORY_DIR", innovation_history_dir):
+        report = rg.weekly_report(date(2026, 7, 10))
+    assert "NewProject" in report
