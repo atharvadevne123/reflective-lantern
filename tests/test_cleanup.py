@@ -127,3 +127,32 @@ def test_clean_file_empty_list(tmp_path: Path) -> None:
     f = write_history(tmp_path / "repo.json", [])
     removed = clean_file(f, cutoff=date(2026, 1, 1))
     assert removed == 0
+
+
+def test_clean_file_max_entries_truncates(tmp_path: Path) -> None:
+    from scripts.cleanup import clean_file
+    entries = [{"date": f"2026-0{i+1}-01", "commits": i} for i in range(5)]
+    f = write_history(tmp_path / "big.json", entries)
+    removed = clean_file(f, cutoff=date(2020, 1, 1), max_entries=3)
+    assert removed == 2
+    kept = json.loads(f.read_text())
+    assert len(kept) == 3
+    # most recent 3 entries kept (slicing from the end)
+    assert kept[-1]["date"] == "2026-05-01"
+
+
+def test_clean_file_max_entries_no_truncation_needed(tmp_path: Path) -> None:
+    from scripts.cleanup import clean_file
+    entries = [{"date": "2026-06-01", "commits": 10}]
+    f = write_history(tmp_path / "small.json", entries)
+    removed = clean_file(f, cutoff=date(2020, 1, 1), max_entries=5)
+    assert removed == 0
+    assert len(json.loads(f.read_text())) == 1
+
+
+def test_clean_file_max_entries_none_no_truncation(tmp_path: Path) -> None:
+    from scripts.cleanup import clean_file
+    entries = [{"date": f"2026-0{i+1}-01", "commits": i} for i in range(5)]
+    f = write_history(tmp_path / "nolimit.json", entries)
+    clean_file(f, cutoff=date(2020, 1, 1), max_entries=None)
+    assert len(json.loads(f.read_text())) == 5
