@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
+VERSION: str = "1.0.0"
+
 # Repository root
 ROOT_DIR: Path = Path(__file__).parent.parent
 
