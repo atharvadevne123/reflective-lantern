@@ -130,3 +130,36 @@ def test_summarize_history_sort_by_commits(tmp_path: Path, capsys: pytest.Captur
     beta_pos = out.index("Beta")
     alpha_pos = out.index("Alpha")
     assert beta_pos < alpha_pos  # higher commits first
+
+
+def test_validate_history_verbose_flag(tmp_path: Path, capsys: pytest.CaptureFixture) -> None:
+    """--verbose flag prints each filename during validation."""
+    h = tmp_path / "history"
+    h.mkdir()
+    (h / "GoodRepo.json").write_text(json.dumps([{"date": "2026-06-30", "commits": 60}]))
+    import scripts.validate_history as vh
+    with patch.object(vh, "HISTORY_DIR", h):
+        with patch.object(sys, "argv", ["validate_history.py", "--verbose"]):
+            result = vh.main()
+    assert result == 0
+    out = capsys.readouterr().out
+    assert "GoodRepo.json" in out
+
+
+def test_report_generator_output_to_file(tmp_path: Path) -> None:
+    """--output flag writes report to a file instead of stdout."""
+    h = tmp_path / "history"
+    h.mkdir()
+    (h / "Repo.json").write_text(json.dumps([{"date": "2026-07-03", "commits": 60}]))
+    out_file = tmp_path / "report.md"
+    import scripts.report_generator as rg
+    with patch.object(rg, "HISTORY_DIR", h):
+        with patch.object(sys, "argv", [
+            "report_generator.py", "--mode", "daily",
+            "--date", "2026-07-03",
+            "--output", str(out_file),
+        ]):
+            rg.main()
+    assert out_file.exists()
+    content = out_file.read_text()
+    assert "Repo" in content
