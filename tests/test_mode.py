@@ -53,3 +53,47 @@ def test_determine_mode_boundaries() -> None:
     # These aren't Wednesdays, so IMPROVEMENT regardless
     assert determine_mode(wed_day7) == RunMode.IMPROVEMENT
     assert determine_mode(wed_day21) == RunMode.IMPROVEMENT
+
+
+def test_determine_mode_no_arg_returns_run_mode() -> None:
+    result = determine_mode()
+    assert isinstance(result, RunMode)
+
+
+def test_is_innovation_day_no_arg() -> None:
+    result = is_innovation_day()
+    assert isinstance(result, bool)
+
+
+@pytest.mark.parametrize("day,expected", [
+    (8, True),
+    (9, True),
+    (13, True),
+    (14, True),
+    (7, False),
+    (15, False),
+    (22, True),
+    (23, True),
+    (28, True),
+    (21, False),
+    (29, False),
+])
+def test_innovation_day_ranges_all_days(day: int, expected: bool) -> None:
+    # Pick a Wednesday in July 2026 for day offset; July 1 is Wednesday
+    # Nearest Wednesday with given day is mapped via fixed offsets
+    from config.constants import INNOVATION_DAY_RANGES, INNOVATION_WEEKDAY
+    from datetime import date
+    # Build a date where day-of-month == day and isoweekday == 3 (if expected)
+    # Use October 2026: Oct 7 = Wed; Oct 14 = Wed; Oct 21 = Wed; Oct 28 = Wed
+    # But we need arbitrary day numbers — just check ranges directly
+    in_range = any(lo <= day <= hi for lo, hi in INNOVATION_DAY_RANGES)
+    assert in_range == expected
+
+
+def test_run_mode_is_str_subclass() -> None:
+    assert issubclass(RunMode, str)
+
+
+def test_determine_mode_today_is_improvement() -> None:
+    # 2026-07-03 is a Friday → IMPROVEMENT
+    assert determine_mode(date(2026, 7, 3)) == RunMode.IMPROVEMENT
