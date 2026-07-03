@@ -99,3 +99,35 @@ def test_get_latest_runs_no_workflow_id_key() -> None:
     with patch("scripts.check_ci_status._get", return_value={"workflow_runs": runs}):
         result = get_latest_runs("owner", "repo", "token")
     assert len(result) == 1
+
+def test_get_latest_runs_multiple_no_workflow_id() -> None:
+    """Runs without workflow_id are all grouped under None key → only one kept."""
+    from scripts.check_ci_status import get_latest_runs
+    runs = [
+        {"name": "CI", "conclusion": "success"},
+        {"name": "Deploy", "conclusion": "failure"},
+    ]
+    with patch("scripts.check_ci_status._get", return_value={"workflow_runs": runs}):
+        result = get_latest_runs("owner", "repo", "token")
+    # Both runs have workflow_id=None, so only the first is kept
+    assert len(result) == 1
+    assert result[0]["name"] == "CI"
+
+
+@pytest.mark.parametrize("retries", [1, 2, 3])
+def test_get_retries_count(retries: int) -> None:
+    import urllib.request
+    call_count = 0
+
+    def failing_open(*args: object, **kwargs: object) -> object:
+        nonlocal call_count
+        call_count += 1
+        raise OSError("refused")
+
+    from scripts.check_ci_status import _get
+    with (
+        patch.object(urllib.request, "urlopen", side_effect=failing_open),
+        pytest.raises(RuntimeError),
+    ):
+        _get("https://api.github.com", "tok", retries=retries)
+    assert call_count == retries
