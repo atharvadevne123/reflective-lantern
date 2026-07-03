@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 import pytest
 
@@ -85,3 +85,37 @@ def test_known_projects_in_registry(project_name: str) -> None:
     from scripts.notion_portfolio_update import PROJECTS
     names = [str(p["name"]) for p in PROJECTS]
     assert project_name in names
+
+
+def test_cover_base_url_ends_with_covers() -> None:
+    from scripts.notion_portfolio_update import COVER_BASE
+    assert COVER_BASE.endswith("covers") or "/covers" in COVER_BASE
+
+
+@pytest.mark.parametrize("project_count", [5, 10])
+def test_projects_minimum_count(project_count: int) -> None:
+    from scripts.notion_portfolio_update import PROJECTS
+    assert len(PROJECTS) >= project_count
+
+
+def test_update_notion_page_sets_tags_property() -> None:
+    from scripts.notion_portfolio_update import update_notion_page
+    mock_notion = MagicMock()
+    update_notion_page(mock_notion, "page-abc", "https://example.com/img.svg", ["ML", "Python"])
+    call_kwargs = mock_notion.pages.update.call_args[1]
+    props = call_kwargs["properties"]
+    assert "Tags" in props
+
+
+def test_project_names_are_strings() -> None:
+    from scripts.notion_portfolio_update import PROJECTS
+    for project in PROJECTS:
+        assert isinstance(project["name"], str)
+        assert len(project["name"]) > 0
+
+
+def test_project_covers_non_empty() -> None:
+    from scripts.notion_portfolio_update import PROJECTS
+    for project in PROJECTS:
+        cover = project.get("cover", "")
+        assert cover, f"{project['name']} has an empty cover field"
