@@ -15,14 +15,16 @@ from datetime import date, timedelta
 from pathlib import Path
 from typing import Any
 
+from config.constants import NON_RECORD_FILES
+
 log = logging.getLogger(__name__)
 HISTORY_DIR = Path(__file__).parent.parent / "history"
 
 
 def load_all_history() -> dict[str, list[dict[str, Any]]]:
-    """Load every JSON file from the history directory."""
+    """Load every run-record JSON file from the history directory."""
     history: dict[str, list[dict[str, Any]]] = {}
-    for path in sorted(HISTORY_DIR.glob("*.json")):
+    for path in sorted(p for p in HISTORY_DIR.glob("*.json") if p.name not in NON_RECORD_FILES):
         try:
             data = json.loads(path.read_text())
             if isinstance(data, list):
