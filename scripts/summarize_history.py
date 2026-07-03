@@ -13,6 +13,8 @@ import logging
 from pathlib import Path
 from typing import Any
 
+from config.constants import NON_RECORD_FILES  # noqa: E402
+
 log = logging.getLogger(__name__)
 HISTORY_DIR = Path(__file__).parent.parent / "history"
 
@@ -47,7 +49,7 @@ def main() -> None:
     logging.basicConfig(level=logging.WARNING)
 
     rows: list[dict[str, Any]] = []
-    for path in sorted(HISTORY_DIR.glob("*.json")):
+    for path in sorted(p for p in HISTORY_DIR.glob("*.json") if p.name not in NON_RECORD_FILES):
         entry = load_latest_entry(path)
         if entry is None:
             continue
