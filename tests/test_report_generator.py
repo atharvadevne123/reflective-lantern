@@ -127,3 +127,53 @@ def test_weekly_report_covers_full_7_days(sample_history: Path) -> None:
         report = rg.weekly_report(date(2026, 6, 30))
     # The report should mention 7 days
     assert "2026-06" in report
+
+
+def test_weekly_report_repos_touched_count(sample_history: Path) -> None:
+    from scripts import report_generator as rg
+    with patch.object(rg, "HISTORY_DIR", sample_history):
+        report = rg.weekly_report(date(2026, 6, 30))
+    assert "Repos touched" in report
+
+
+def test_weekly_report_contains_repo_name(sample_history: Path) -> None:
+    from scripts import report_generator as rg
+    with patch.object(rg, "HISTORY_DIR", sample_history):
+        report = rg.weekly_report(date(2026, 6, 30))
+    assert "RepoA" in report or "RepoB" in report
+
+
+def test_daily_report_last_run_field(tmp_path: Path) -> None:
+    from scripts import report_generator as rg
+    h = tmp_path / "history"
+    h.mkdir()
+    (h / "RepoC.json").write_text(json.dumps(
+        [{"last_run": "2026-07-01", "commits": 45, "mode": "improvement"}]
+    ))
+    with patch.object(rg, "HISTORY_DIR", h):
+        report = rg.daily_report(date(2026, 7, 1))
+    assert "RepoC" in report
+    assert "45" in report
+
+
+def test_report_generator_main_weekly_stdout(
+    sample_history: Path, capsys: pytest.CaptureFixture
+) -> None:
+    import sys
+    from scripts import report_generator as rg
+    with patch.object(rg, "HISTORY_DIR", sample_history):
+        with patch.object(sys, "argv", ["report_generator.py", "--mode", "weekly", "--date", "2026-06-30"]):
+            rg.main()
+    out = capsys.readouterr().out
+    assert "Weekly Summary" in out
+
+
+@pytest.mark.parametrize("commits", [0, 1, 60, 300])
+def test_weekly_report_commit_values(commits: int, tmp_path: Path) -> None:
+    from scripts import report_generator as rg
+    h = tmp_path / "history"
+    h.mkdir()
+    (h / "Repo.json").write_text(json.dumps([{"date": "2026-06-30", "commits": commits}]))
+    with patch.object(rg, "HISTORY_DIR", h):
+        report = rg.weekly_report(date(2026, 6, 30))
+    assert str(commits) in report
