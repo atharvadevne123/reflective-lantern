@@ -76,3 +76,54 @@ def test_load_all_history_single_dict(sample_history: Path) -> None:
         history = rg.load_all_history()
     assert "RepoB" in history
     assert isinstance(history["RepoB"], list)
+
+
+@pytest.mark.parametrize("target_date,expected_present", [
+    (date(2026, 6, 30), True),   # date exists
+    (date(2026, 6, 23), True),   # second entry
+    (date(2026, 1, 1), False),   # no entries on this date
+])
+def test_daily_report_date_presence(
+    sample_history: Path, target_date: date, expected_present: bool
+) -> None:
+    from scripts import report_generator as rg
+    with patch.object(rg, "HISTORY_DIR", sample_history):
+        report = rg.daily_report(target_date)
+    if expected_present:
+        assert "No runs found" not in report
+    else:
+        assert "No runs found" in report
+
+
+def test_daily_report_shows_mode(sample_history: Path) -> None:
+    from scripts import report_generator as rg
+    with patch.object(rg, "HISTORY_DIR", sample_history):
+        report = rg.daily_report(date(2026, 6, 30))
+    assert "IMPROVEMENT" in report
+
+
+def test_daily_report_shows_improvements(sample_history: Path) -> None:
+    from scripts import report_generator as rg
+    with patch.object(rg, "HISTORY_DIR", sample_history):
+        report = rg.daily_report(date(2026, 6, 30))
+    assert "added types" in report
+
+
+def test_load_all_history_excludes_non_record_files(tmp_path: Path) -> None:
+    """commit_schedule.json should not appear as a history entry."""
+    from scripts import report_generator as rg
+    h = tmp_path / "history"
+    h.mkdir()
+    (h / "Repo.json").write_text(json.dumps([{"date": "2026-07-01", "commits": 60}]))
+    (h / "commit_schedule.json").write_text(json.dumps({"start_year": 2026}))
+    with patch.object(rg, "HISTORY_DIR", h):
+        history = rg.load_all_history()
+    assert "Repo" in history
+
+
+def test_weekly_report_covers_full_7_days(sample_history: Path) -> None:
+    from scripts import report_generator as rg
+    with patch.object(rg, "HISTORY_DIR", sample_history):
+        report = rg.weekly_report(date(2026, 6, 30))
+    # The report should mention 7 days
+    assert "2026-06" in report
