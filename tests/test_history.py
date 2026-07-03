@@ -93,3 +93,39 @@ def test_actual_history_files_valid() -> None:
     for path in sorted(p for p in history_dir.glob("*.json") if p.name not in _skip):
         errors.extend(validate_file(path))
     assert errors == [], "\n".join(errors)
+
+
+def test_validate_file_multiple_entries(tmp_path: Path) -> None:
+    from scripts.validate_history import validate_file
+    data = [
+        {"date": "2026-05-01", "commits": 60},
+        {"date": "2026-06-01", "commits": 45},
+        {"last_run": "2026-07-01", "commits": 30},
+    ]
+    f = tmp_path / "multi.json"
+    f.write_text(json.dumps(data))
+    assert validate_file(f) == []
+
+
+def test_validate_entry_commits_wrong_type() -> None:
+    from scripts.validate_history import validate_entry
+    entry = {"date": "2026-06-01", "commits": "sixty"}
+    errors = validate_entry(entry, "bad.json", 0)
+    assert any("commits" in e for e in errors)
+
+
+def test_validate_file_root_is_primitive(tmp_path: Path) -> None:
+    from scripts.validate_history import validate_file
+    f = tmp_path / "prim.json"
+    f.write_text("42")
+    errors = validate_file(f)
+    assert len(errors) == 1
+    assert "list or dict" in errors[0]
+
+
+@pytest.mark.parametrize("mode", ["improvement", "IMPROVEMENT", "innovation", "INNOVATION"])
+def test_validate_entry_mode_values(mode: str) -> None:
+    from scripts.validate_history import validate_entry
+    entry = {"date": "2026-06-01", "commits": 60, "mode": mode}
+    errors = validate_entry(entry, "test.json", 0)
+    assert errors == []
