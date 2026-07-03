@@ -1,4 +1,6 @@
-.PHONY: install install-dev test lint format type-check clean help
+.PHONY: install install-dev test lint format type-check clean help \
+        summarize summarize-json ci-status all-checks report-daily report-weekly cleanup \
+        notion-update notion-update-descriptions health-check weekly-summary validate-history
 
 PYTHON ?= python3
 PIP    ?= $(PYTHON) -m pip
@@ -12,6 +14,13 @@ help:
 	@echo "  format       Run ruff formatter"
 	@echo "  type-check   Run mypy type checker"
 	@echo "  clean        Remove build artifacts and caches"
+	@echo "  summarize    Print history summary table"
+	@echo "  summarize-json Print history summary as JSON"
+	@echo "  ci-status    Check CI status across all repos"
+	@echo "  all-checks   Run all local health checks"
+	@echo "  report-daily Generate today's Markdown report"
+	@echo "  report-weekly Generate weekly Markdown report"
+	@echo "  cleanup      Preview old history entries to remove (dry-run)"
 
 install:
 	$(PIP) install -e . -q
@@ -50,3 +59,24 @@ weekly-summary:
 
 validate-history:
 	$(PYTHON) scripts/validate_history.py
+
+summarize:
+	$(PYTHON) scripts/summarize_history.py
+
+summarize-json:
+	$(PYTHON) scripts/summarize_history.py --json
+
+ci-status:
+	$(PYTHON) scripts/check_ci_status.py
+
+all-checks:
+	$(PYTHON) scripts/run_all_checks.py
+
+report-daily:
+	$(PYTHON) scripts/report_generator.py --mode daily
+
+report-weekly:
+	$(PYTHON) scripts/report_generator.py --mode weekly
+
+cleanup:
+	$(PYTHON) scripts/cleanup.py --dry-run
