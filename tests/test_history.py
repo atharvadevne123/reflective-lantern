@@ -88,7 +88,8 @@ def test_actual_history_files_valid() -> None:
     """All real history files in this repo must pass validation."""
     from scripts.validate_history import validate_file
     history_dir = Path(__file__).parent.parent / "history"
+    _skip = {"schema.json", "commit_schedule.json"}
     errors: list[str] = []
-    for path in sorted(history_dir.glob("*.json")):
+    for path in sorted(p for p in history_dir.glob("*.json") if p.name not in _skip):
         errors.extend(validate_file(path))
     assert errors == [], "\n".join(errors)

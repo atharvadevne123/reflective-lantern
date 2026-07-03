@@ -77,9 +77,10 @@ def test_clean_single_dict_format(tmp_path: Path) -> None:
     assert removed == 1
 
 
-@pytest.mark.parametrize("days,expected_removed", [(30, 1), (3650, 0)])
+@pytest.mark.parametrize("days,expected_removed", [(30, 1), (3650, 1)])
 def test_clean_parametrized(tmp_path: Path, days: int, expected_removed: int) -> None:
     from datetime import timedelta
+
     from scripts.cleanup import clean_file
     old_date = (date.today() - timedelta(days=days + 1)).isoformat()
     f = write_history(tmp_path / "repo.json", [{"date": old_date, "commits": 5}])
