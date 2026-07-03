@@ -22,7 +22,8 @@
       "Docker+PostgreSQL",
       "pytest",
       "GitHub Actions CI"
-    ]
+    ],
+    "commits": 60
   },
   {
     "date": "2026-04-22",
@@ -83,7 +84,8 @@
       "GitHub Actions CI",
       "5-fold CV AUC-ROC",
       "Time-series lag/rolling features"
-    ]
+    ],
+    "commits": 60
   },
   {
     "date": "2026-05-06",
@@ -109,7 +111,8 @@
       "GitHub Actions CI",
       "5-fold Stratified CV AUC-ROC",
       "MLflow"
-    ]
+    ],
+    "commits": 60
   },
   {
     "date": "2026-05-13",
@@ -154,7 +157,8 @@
     "test_count": 90,
     "coverage_pct": 100,
     "archetype": "Prediction API",
-    "repo_url": "https://github.com/atharvadevne123/Loan-Lens"
+    "repo_url": "https://github.com/atharvadevne123/Loan-Lens",
+    "commits": 114
   },
   {
     "date": "2026-05-20",
