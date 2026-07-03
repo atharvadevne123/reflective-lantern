@@ -2,7 +2,7 @@
 """Summarise all history JSON files as a human-readable table.
 
 Usage:
-    python scripts/summarize_history.py [--sort-by commits|date|repo]
+    python scripts/summarize_history.py [--sort-by commits|date|repo] [--json]
 """
 
 from __future__ import annotations
@@ -48,6 +48,11 @@ def main() -> None:
         default="date",
         help="Sort rows by this column",
     )
+    parser.add_argument(
+        "--json",
+        action="store_true",
+        help="Output rows as JSON array instead of a table",
+    )
     args = parser.parse_args()
     logging.basicConfig(level=logging.WARNING)
 
@@ -70,6 +75,10 @@ def main() -> None:
         rows.sort(key=lambda r: r["repo"])
     else:
         rows.sort(key=lambda r: r["date"], reverse=True)
+
+    if args.json:
+        print(json.dumps(rows, indent=2))
+        return
 
     # Print table
     col_w = {"repo": 45, "date": 12, "mode": 12, "commits": 8, "tests_passed": 12}
