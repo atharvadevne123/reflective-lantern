@@ -7,7 +7,6 @@ from typing import Any
 
 import pytest
 
-
 SAMPLE_REPOS: list[dict[str, Any]] = [
     {"name": "Alpha", "language": "Python", "archived": False, "fork": False},
     {"name": "Beta", "language": "JavaScript", "archived": False, "fork": False},
@@ -57,3 +56,48 @@ def test_select_repo_different_seeds_different_results() -> None:
     names = [select_repo(repos, d)["name"] for d in dates]
     # Should not all be the same repo over 19 days
     assert len(set(names)) > 1
+
+
+def test_fetch_repos_filters_archived() -> None:
+    """fetch_repos should exclude archived repos."""
+    from unittest.mock import patch
+    import json, urllib.request
+    from scripts.rotate_repos import fetch_repos
+
+    mock_repos = [
+        {"name": "Active", "archived": False, "fork": False},
+        {"name": "Archived", "archived": True, "fork": False},
+        {"name": "Fork", "archived": False, "fork": True},
+        {"name": "reflective-lantern", "archived": False, "fork": False},
+    ]
+
+    class FakeResponse:
+        def read(self) -> bytes:
+            return json.dumps(mock_repos).encode()
+        def __enter__(self) -> "FakeResponse":
+            return self
+        def __exit__(self, *args: object) -> None:
+            pass
+
+    with patch.object(urllib.request, "urlopen", return_value=FakeResponse()):
+        repos = fetch_repos("owner", "token")
+
+    names = [r["name"] for r in repos]
+    assert "Active" in names
+    assert "Archived" not in names
+    assert "Fork" not in names
+    assert "reflective-lantern" not in names
+
+
+@pytest.mark.parametrize("seed_date", [
+    date(2026, 1, 1),
+    date(2026, 6, 15),
+    date(2026, 12, 31),
+])
+def test_select_repo_seed_is_date_based(seed_date: date) -> None:
+    from scripts.rotate_repos import select_repo
+    repos = [{"name": f"R{i}"} for i in range(10)]
+    result = select_repo(repos, seed_date)
+    assert result in repos
+    # Deterministic: same date should give same result
+    assert select_repo(repos, seed_date)["name"] == result["name"]
