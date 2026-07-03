@@ -125,3 +125,33 @@ def test_main_json_flag_outputs_valid_json(tmp_path: Path, capsys: pytest.Captur
     assert isinstance(parsed, list)
     assert parsed[0]["repo"] == "AlphaRepo"
     assert parsed[0]["commits"] == 55
+
+
+def test_main_sort_by_repo_alphabetical(tmp_path: Path, capsys: pytest.CaptureFixture) -> None:
+    import sys
+    import scripts.summarize_history as sh
+    from unittest.mock import patch
+    h = tmp_path / "history"
+    h.mkdir()
+    (h / "Zebra.json").write_text(json.dumps([{"date": "2026-06-10", "commits": 5}]))
+    (h / "Apple.json").write_text(json.dumps([{"date": "2026-06-11", "commits": 10}]))
+    with patch.object(sh, "HISTORY_DIR", h):
+        with patch.object(sys, "argv", ["summarize_history.py", "--sort-by", "repo"]):
+            sh.main()
+    out = capsys.readouterr().out
+    assert out.index("Apple") < out.index("Zebra")
+
+
+def test_main_json_tests_passed_field(tmp_path: Path, capsys: pytest.CaptureFixture) -> None:
+    import sys
+    import scripts.summarize_history as sh
+    from unittest.mock import patch
+    h = tmp_path / "history"
+    h.mkdir()
+    (h / "Repo.json").write_text(json.dumps([{"date": "2026-07-01", "commits": 60, "tests_passed": True}]))
+    with patch.object(sh, "HISTORY_DIR", h):
+        with patch.object(sys, "argv", ["summarize_history.py", "--json"]):
+            sh.main()
+    out = capsys.readouterr().out
+    parsed = json.loads(out)
+    assert parsed[0]["tests_passed"] is True
