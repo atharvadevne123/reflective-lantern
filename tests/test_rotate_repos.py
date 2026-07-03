@@ -101,3 +101,30 @@ def test_select_repo_seed_is_date_based(seed_date: date) -> None:
     assert result in repos
     # Deterministic: same date should give same result
     assert select_repo(repos, seed_date)["name"] == result["name"]
+
+
+def test_select_repo_raises_on_empty_list() -> None:
+    from datetime import date
+    from scripts.rotate_repos import select_repo
+    with pytest.raises(ValueError, match="empty"):
+        select_repo([], date(2026, 7, 3))
+
+
+def test_select_repo_single_item_always_returns_it() -> None:
+    from datetime import date
+    from scripts.rotate_repos import select_repo
+    repo = {"name": "only-repo", "language": "Python"}
+    for day in range(1, 32):
+        try:
+            d = date(2026, 7, day)
+        except ValueError:
+            continue
+        assert select_repo([repo], d) is repo
+
+
+def test_select_repo_excludes_nothing_from_single_list() -> None:
+    from datetime import date
+    from scripts.rotate_repos import select_repo
+    repos = [{"name": f"repo-{i}"} for i in range(10)]
+    result = select_repo(repos, date(2026, 7, 3))
+    assert result in repos
