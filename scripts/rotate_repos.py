@@ -43,7 +43,12 @@ def fetch_repos(owner: str, token: str) -> list[dict[str, Any]]:
 
 
 def select_repo(repos: list[dict[str, Any]], target_date: date) -> dict[str, Any]:
-    """Select a repo deterministically based on *target_date*."""
+    """Select a repo deterministically based on *target_date*.
+
+    Raises ValueError when the repo list is empty.
+    """
+    if not repos:
+        raise ValueError("Cannot select from an empty repo list")
     rng = random.Random(target_date.year * 10000 + target_date.month * 100 + target_date.day)
     return rng.choice(repos)
 
