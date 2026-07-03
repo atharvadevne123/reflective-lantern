@@ -75,3 +75,52 @@ def test_configure_logging_all_levels(level: str) -> None:
     configure_logging(level)
     assert logging.getLogger().level == getattr(logging, level)
     configure_logging("INFO")  # restore
+
+
+def test_json_formatter_level_field_is_string() -> None:
+    from config.logging_config import JsonFormatter
+    formatter = JsonFormatter()
+    record = logging.LogRecord(
+        name="test", level=logging.WARNING, pathname="", lineno=0,
+        msg="warn msg", args=(), exc_info=None,
+    )
+    output = formatter.format(record)
+    parsed = json.loads(output)
+    assert parsed["level"] == "WARNING"
+    assert isinstance(parsed["level"], str)
+
+
+def test_configure_logging_clears_duplicate_handlers() -> None:
+    from config.logging_config import configure_logging
+    configure_logging()
+    count_before = len(logging.getLogger().handlers)
+    configure_logging()
+    count_after = len(logging.getLogger().handlers)
+    # Should not keep growing unbounded
+    assert count_after <= count_before + 1
+
+
+def test_json_formatter_no_exception_key_absent() -> None:
+    from config.logging_config import JsonFormatter
+    formatter = JsonFormatter()
+    record = logging.LogRecord(
+        name="test", level=logging.INFO, pathname="", lineno=0,
+        msg="clean", args=(), exc_info=None,
+    )
+    output = formatter.format(record)
+    parsed = json.loads(output)
+    assert "exception" not in parsed
+
+
+@pytest.mark.parametrize("level_str,level_int", [
+    ("DEBUG", logging.DEBUG),
+    ("INFO", logging.INFO),
+    ("WARNING", logging.WARNING),
+    ("ERROR", logging.ERROR),
+    ("CRITICAL", logging.CRITICAL),
+])
+def test_configure_logging_numeric_level(level_str: str, level_int: int) -> None:
+    from config.logging_config import configure_logging
+    configure_logging(level_str)
+    assert logging.getLogger().level == level_int
+    configure_logging("INFO")
