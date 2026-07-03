@@ -52,3 +52,16 @@ def test_history_file_commits_below_reasonable_cap(history_file: Path) -> None:
     for entry in entries:
         commits = entry.get("commits", 0)
         assert commits < 1000, f"{history_file.name}: suspiciously high commits={commits}"
+
+
+@pytest.mark.parametrize("history_file", HISTORY_FILES, ids=lambda p: p.stem)
+def test_history_file_mode_if_present_is_valid(history_file: Path) -> None:
+    """If a mode field is present, it must be 'improvement' or 'innovation'."""
+    data = json.loads(history_file.read_text())
+    entries = data if isinstance(data, list) else [data]
+    valid_modes = {"improvement", "innovation", "IMPROVEMENT", "INNOVATION"}
+    for i, entry in enumerate(entries):
+        if "mode" in entry:
+            assert entry["mode"] in valid_modes, (
+                f"{history_file.name}[{i}]: unexpected mode={entry['mode']!r}"
+            )
