@@ -12,9 +12,9 @@ from config.mode import RunMode, determine_mode, is_innovation_day
 @pytest.mark.parametrize("target_date,expected", [
     # Wednesday day 8-14 → INNOVATION
     (date(2026, 7, 8), RunMode.INNOVATION),    # Wed day 8
-    (date(2026, 7, 14), RunMode.INNOVATION),   # Wed day 14
+    (date(2026, 10, 14), RunMode.INNOVATION),  # Wed day 14 (Oct 2026)
     (date(2026, 7, 22), RunMode.INNOVATION),   # Wed day 22
-    (date(2026, 7, 28), RunMode.INNOVATION),   # Wed day 28
+    (date(2026, 10, 28), RunMode.INNOVATION),  # Wed day 28 (Oct 2026)
     # Wednesday but outside range → IMPROVEMENT
     (date(2026, 7, 1), RunMode.IMPROVEMENT),   # Wed day 1
     (date(2026, 7, 15), RunMode.IMPROVEMENT),  # Wed day 15
