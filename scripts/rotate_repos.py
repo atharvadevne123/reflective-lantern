@@ -42,13 +42,19 @@ def fetch_repos(owner: str, token: str) -> list[dict[str, Any]]:
     ]
 
 
-def select_repo(repos: list[dict[str, Any]], target_date: date) -> dict[str, Any]:
+def select_repo(
+    repos: list[dict[str, Any]],
+    target_date: date,
+    min_repos: int = 1,
+) -> dict[str, Any]:
     """Select a repo deterministically based on *target_date*.
 
-    Raises ValueError when the repo list is empty.
+    Raises ValueError when the repo list has fewer than *min_repos* entries.
     """
-    if not repos:
-        raise ValueError("Cannot select from an empty repo list")
+    if len(repos) < min_repos:
+        raise ValueError(
+            f"Need at least {min_repos} repo(s), got {len(repos)}"
+        )
     rng = random.Random(target_date.year * 10000 + target_date.month * 100 + target_date.day)
     return rng.choice(repos)
 
