@@ -131,3 +131,61 @@ def test_get_retries_count(retries: int) -> None:
     ):
         _get("https://api.github.com", "tok", retries=retries)
     assert call_count == retries
+
+
+def test_get_latest_runs_no_workflow_id_dedup() -> None:
+    from unittest.mock import MagicMock, patch
+
+    import urllib.request
+    run = {"workflow_id": None, "name": "CI", "conclusion": "success", "status": "completed"}
+    payload = {"workflow_runs": [run, run, run]}
+
+    ctx_mock = MagicMock()
+    ctx_mock.__enter__ = MagicMock(return_value=MagicMock(read=lambda: b""))
+    ctx_mock.__exit__ = MagicMock(return_value=False)
+
+    import json
+    mock_response = MagicMock()
+    mock_response.__enter__ = lambda s: s
+    mock_response.__exit__ = MagicMock(return_value=False)
+    mock_response.read.return_value = json.dumps(payload).encode()
+
+    with patch.object(urllib.request, "urlopen", return_value=mock_response):
+        from scripts.check_ci_status import get_latest_runs
+        runs = get_latest_runs("owner", "repo", "tok")
+    assert len(runs) == 1
+
+
+def test_repo_flag_filters_to_single_repo(monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture) -> None:
+    import sys
+    with monkeypatch.context() as m:
+        m.setenv("GH_PAT", "tok")
+        from unittest.mock import MagicMock, patch
+        import json, urllib.request
+
+        repos_payload = [
+            {"name": "repo-a", "archived": False, "fork": False},
+            {"name": "repo-b", "archived": False, "fork": False},
+        ]
+        runs_payload = {"workflow_runs": []}
+
+        call_urls: list[str] = []
+
+        def fake_urlopen(req, timeout=15):  # noqa: ANN001
+            call_urls.append(req.full_url)
+            mock = MagicMock()
+            mock.__enter__ = lambda s: s
+            mock.__exit__ = MagicMock(return_value=False)
+            if "repos?per_page" in req.full_url:
+                mock.read.return_value = json.dumps(repos_payload).encode()
+            else:
+                mock.read.return_value = json.dumps(runs_payload).encode()
+            return mock
+
+        import scripts.check_ci_status as ccs
+        with (
+            patch.object(urllib.request, "urlopen", side_effect=fake_urlopen),
+            patch.object(sys, "argv", ["check_ci_status.py", "--repo", "repo-a"]),
+        ):
+            ccs.main()
+        assert not any("repo-b" in u for u in call_urls)
