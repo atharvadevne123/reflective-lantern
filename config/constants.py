@@ -53,3 +53,9 @@ MAX_HISTORY_ENTRIES: int = 365
 # Report formatting
 REPORT_DATE_FORMAT: str = "%Y-%m-%d"
 PDF_MAX_SIZE_MB: float = 5.0
+
+# Weekly summary window
+WEEKLY_SUMMARY_DAYS: int = 7
+
+# Repo selection constraints
+MIN_REPOS_FOR_ROTATION: int = 1
