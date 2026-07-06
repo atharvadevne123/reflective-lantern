@@ -159,3 +159,21 @@ def test_select_repo_min_repos_default_allows_single() -> None:
     from scripts.rotate_repos import select_repo
     result = select_repo([{"name": "solo"}], date(2026, 7, 6))
     assert result["name"] == "solo"
+
+
+def test_repo_names_sorted() -> None:
+    from scripts.rotate_repos import repo_names
+    repos = [{"name": "Zebra"}, {"name": "Apple"}, {"name": "Mango"}]
+    assert repo_names(repos) == ["Apple", "Mango", "Zebra"]
+
+
+def test_repo_names_empty() -> None:
+    from scripts.rotate_repos import repo_names
+    assert repo_names([]) == []
+
+
+def test_repo_names_skips_non_string_names() -> None:
+    from scripts.rotate_repos import repo_names
+    repos = [{"name": "Valid"}, {"name": None}, {"other": "no-name"}]
+    result = repo_names(repos)
+    assert result == ["Valid"]
