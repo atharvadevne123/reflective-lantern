@@ -53,6 +53,12 @@ def main() -> None:
         action="store_true",
         help="Output rows as JSON array instead of a table",
     )
+    parser.add_argument(
+        "--filter-mode",
+        choices=["improvement", "innovation"],
+        default=None,
+        help="Only show rows matching this mode",
+    )
     args = parser.parse_args()
     logging.basicConfig(level=logging.WARNING)
 
@@ -68,6 +74,9 @@ def main() -> None:
             "commits": entry.get("commits", 0),
             "tests_passed": entry.get("tests_passed", None),
         })
+
+    if args.filter_mode:
+        rows = [r for r in rows if r["mode"].lower() == args.filter_mode]
 
     if args.sort_by == "commits":
         rows.sort(key=lambda r: r["commits"], reverse=True)
