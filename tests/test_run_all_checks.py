@@ -73,3 +73,19 @@ def test_run_check_exit_codes(exit_code: int, expected_ok: bool) -> None:
     ok, elapsed = run_check("parametrized", [sys.executable, "-c", f"raise SystemExit({exit_code})"])
     assert ok is expected_ok
     assert elapsed >= 0.0
+
+
+def test_run_check_returns_elapsed_float() -> None:
+    from scripts.run_all_checks import run_check
+    _, elapsed = run_check("timing check", [sys.executable, "-c", "pass"])
+    assert isinstance(elapsed, float)
+
+
+def test_main_timing_summary_in_output(capsys: pytest.CaptureFixture) -> None:
+    from scripts import run_all_checks as rac
+    checks = [("ok", [sys.executable, "-c", "pass"])]
+    with patch.object(rac, "CHECKS", checks):
+        with patch.object(sys, "argv", ["run_all_checks.py"]):
+            rac.main()
+    out = capsys.readouterr().out
+    assert "total" in out.lower() or "s]" in out
