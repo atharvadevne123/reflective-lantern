@@ -105,7 +105,8 @@ def main() -> None:
             f"{tp:<{col_w['tests_passed']}}"
         )
     total_commits = sum(r["commits"] for r in rows)
-    print(f"\n{len(rows)} repos | {total_commits} total commits")
+    passed_count = sum(1 for r in rows if r["tests_passed"] is True)
+    print(f"\n{len(rows)} repos | {total_commits} total commits | {passed_count} with tests passing")
 
 
 if __name__ == "__main__":
