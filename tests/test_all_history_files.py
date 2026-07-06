@@ -65,3 +65,34 @@ def test_history_file_mode_if_present_is_valid(history_file: Path) -> None:
             assert entry["mode"] in valid_modes, (
                 f"{history_file.name}[{i}]: unexpected mode={entry['mode']!r}"
             )
+
+
+@pytest.mark.parametrize("history_file", HISTORY_FILES, ids=lambda p: p.stem)
+def test_history_file_dates_are_iso_format(history_file: Path) -> None:
+    """All date and last_run values must parse as ISO dates."""
+    from datetime import date
+    data = json.loads(history_file.read_text())
+    entries = data if isinstance(data, list) else [data]
+    for i, entry in enumerate(entries):
+        for field in ("date", "last_run"):
+            if field in entry:
+                val = entry[field]
+                try:
+                    date.fromisoformat(str(val))
+                except ValueError:
+                    pytest.fail(f"{history_file.name}[{i}]: {field}={val!r} is not ISO format")
+
+
+@pytest.mark.parametrize("history_file", HISTORY_FILES, ids=lambda p: p.stem)
+def test_history_file_email_status_if_present_is_valid(history_file: Path) -> None:
+    """email_status must be a recognised value when present."""
+    from scripts.validate_history import VALID_EMAIL_STATUS_PREFIXES, VALID_EMAIL_STATUSES
+    data = json.loads(history_file.read_text())
+    entries = data if isinstance(data, list) else [data]
+    for i, entry in enumerate(entries):
+        if "email_status" in entry and isinstance(entry["email_status"], str):
+            status = entry["email_status"]
+            valid = status in VALID_EMAIL_STATUSES or any(
+                status.startswith(p) for p in VALID_EMAIL_STATUS_PREFIXES
+            )
+            assert valid, f"{history_file.name}[{i}]: unrecognised email_status={status!r}"
