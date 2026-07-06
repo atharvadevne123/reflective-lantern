@@ -35,6 +35,9 @@ OPTIONAL_FIELDS: dict[str, type] = {
 
 VALID_EMAIL_STATUSES: frozenset[str] = frozenset({"pending", "sent", "skipped"})
 VALID_EMAIL_STATUS_PREFIXES: tuple[str, ...] = ("failed", "network_", "pdf_generated")
+VALID_MODES: frozenset[str] = frozenset(
+    {"improvement", "innovation", "IMPROVEMENT", "INNOVATION"}
+)
 
 
 def validate_entry(entry: Any, source: str, idx: int) -> list[str]:
@@ -62,6 +65,11 @@ def validate_entry(entry: Any, source: str, idx: int) -> list[str]:
     if "commits" in entry and isinstance(entry["commits"], int):
         if entry["commits"] < 0:
             errors.append(f"{source}[{idx}]: 'commits' is negative")
+
+    # Validate mode if present
+    if "mode" in entry and isinstance(entry["mode"], str):
+        if entry["mode"] not in VALID_MODES:
+            errors.append(f"{source}[{idx}]: unrecognised mode '{entry['mode']}'")
 
     # Validate email_status if present
     if "email_status" in entry and isinstance(entry["email_status"], str):
