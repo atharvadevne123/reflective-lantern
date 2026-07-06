@@ -151,3 +151,25 @@ def test_validate_entry_no_email_status_ok() -> None:
     entry = {"date": "2026-07-01", "commits": 60}
     errors = validate_entry(entry, "test.json", 0)
     assert errors == []
+
+
+def test_validate_entry_invalid_mode() -> None:
+    from scripts.validate_history import validate_entry
+    entry = {"date": "2026-07-01", "commits": 60, "mode": "invalid_mode"}
+    errors = validate_entry(entry, "test.json", 0)
+    assert any("mode" in e for e in errors)
+
+
+def test_validate_entry_valid_modes() -> None:
+    from scripts.validate_history import validate_entry
+    for mode in ("improvement", "IMPROVEMENT", "innovation", "INNOVATION"):
+        entry = {"date": "2026-07-01", "commits": 60, "mode": mode}
+        errors = validate_entry(entry, "test.json", 0)
+        assert errors == [], f"Unexpected errors for mode={mode!r}: {errors}"
+
+
+def test_valid_modes_constant_exists() -> None:
+    from scripts.validate_history import VALID_MODES
+    assert "improvement" in VALID_MODES
+    assert "innovation" in VALID_MODES
+    assert isinstance(VALID_MODES, frozenset)
