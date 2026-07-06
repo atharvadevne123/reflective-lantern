@@ -163,3 +163,34 @@ def test_report_generator_output_to_file(tmp_path: Path) -> None:
     assert out_file.exists()
     content = out_file.read_text()
     assert "Repo" in content
+
+
+def test_validate_history_json_flag(tmp_path: Path, capsys: pytest.CaptureFixture) -> None:
+    """--json flag outputs a JSON array from validate_history."""
+    h = tmp_path / "history"
+    h.mkdir()
+    (h / "Good.json").write_text(json.dumps([{"date": "2026-07-01", "commits": 60}]))
+    import scripts.validate_history as vh
+    with patch.object(vh, "HISTORY_DIR", h):
+        with patch.object(sys, "argv", ["validate_history.py", "--json"]):
+            result = vh.main()
+    assert result == 0
+    out = capsys.readouterr().out
+    parsed = json.loads(out)
+    assert isinstance(parsed, list)
+    assert parsed[0]["file"] == "Good.json"
+    assert parsed[0]["errors"] == []
+
+
+def test_config_package_exports_next_innovation_day() -> None:
+    from config import next_innovation_day
+    from datetime import date
+    result = next_innovation_day(date(2026, 7, 6))
+    assert isinstance(result, date)
+
+
+def test_config_package_exports_get_logger() -> None:
+    import logging
+    from config import get_logger
+    logger = get_logger("test.integration")
+    assert isinstance(logger, logging.Logger)
