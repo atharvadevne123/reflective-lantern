@@ -64,6 +64,11 @@ class RepoHealth:
             "healthy": self.healthy,
         }
 
+    def summary_line(self) -> str:
+        """Return a single-line human-readable summary."""
+        status = "OK" if self.healthy else f"ISSUES ({self.issues_count})"
+        return f"{self.name}: {status}"
+
 
 def _get(url: str, token: str, retries: int = 3) -> Any:
     """Fetch *url* with Bearer *token*, retrying up to *retries* times on error."""
