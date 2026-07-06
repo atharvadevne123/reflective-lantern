@@ -32,6 +32,21 @@ def _entry_date(entry: dict[str, Any]) -> date | None:
         return None
 
 
+def count_entries(history_dir: Path) -> dict[str, int]:
+    """Return a mapping of filename → entry count for all JSON files in *history_dir*."""
+    result: dict[str, int] = {}
+    for path in sorted(history_dir.glob("*.json")):
+        try:
+            raw = json.loads(path.read_text())
+            if isinstance(raw, list):
+                result[path.name] = len(raw)
+            elif isinstance(raw, dict):
+                result[path.name] = 1
+        except Exception:
+            result[path.name] = 0
+    return result
+
+
 def clean_file(
     path: Path,
     cutoff: date,
