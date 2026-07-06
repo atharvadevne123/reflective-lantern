@@ -109,7 +109,7 @@ def test_select_repo_raises_on_empty_list() -> None:
     from datetime import date
 
     from scripts.rotate_repos import select_repo
-    with pytest.raises(ValueError, match="empty"):
+    with pytest.raises(ValueError, match="at least 1"):
         select_repo([], date(2026, 7, 3))
 
 
@@ -133,3 +133,29 @@ def test_select_repo_excludes_nothing_from_single_list() -> None:
     repos = [{"name": f"repo-{i}"} for i in range(10)]
     result = select_repo(repos, date(2026, 7, 3))
     assert result in repos
+
+
+def test_select_repo_min_repos_raises_when_too_few() -> None:
+    from datetime import date
+
+    from scripts.rotate_repos import select_repo
+    repos = [{"name": "solo"}]
+    with pytest.raises(ValueError, match="at least 2"):
+        select_repo(repos, date(2026, 7, 6), min_repos=2)
+
+
+def test_select_repo_min_repos_passes_when_enough() -> None:
+    from datetime import date
+
+    from scripts.rotate_repos import select_repo
+    repos = [{"name": "a"}, {"name": "b"}]
+    result = select_repo(repos, date(2026, 7, 6), min_repos=2)
+    assert result in repos
+
+
+def test_select_repo_min_repos_default_allows_single() -> None:
+    from datetime import date
+
+    from scripts.rotate_repos import select_repo
+    result = select_repo([{"name": "solo"}], date(2026, 7, 6))
+    assert result["name"] == "solo"
