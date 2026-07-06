@@ -100,17 +100,27 @@ def main() -> int:
     parser.add_argument(
         "--verbose", "-v", action="store_true", help="Print each file as it is checked"
     )
+    parser.add_argument(
+        "--json", action="store_true", help="Output results as a JSON array"
+    )
     args = parser.parse_args()
     logging.basicConfig(level=logging.INFO, format="%(levelname)s %(message)s")
     all_errors: list[str] = []
+    file_results: list[dict[str, object]] = []
     files = sorted(p for p in HISTORY_DIR.glob("*.json") if p.name not in NON_RECORD_FILES)
     for path in files:
-        if args.verbose:
+        if args.verbose and not args.json:
             print(f"Checking {path.name} …", end=" ", flush=True)
         errors = validate_file(path)
-        if args.verbose:
+        if args.verbose and not args.json:
             print("OK" if not errors else f"FAIL ({len(errors)} error(s))")
         all_errors.extend(errors)
+        file_results.append({"file": path.name, "errors": errors})
+
+    if args.json:
+        import json as _json
+        print(_json.dumps(file_results, indent=2))
+        return 1 if all_errors else 0
 
     if all_errors:
         for err in all_errors:
