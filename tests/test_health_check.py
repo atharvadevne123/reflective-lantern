@@ -237,3 +237,20 @@ def test_stats_includes_issues_count() -> None:
     s = h.stats()
     assert "issues_count" in s
     assert s["issues_count"] == 1
+
+
+def test_summary_line_healthy() -> None:
+    h = RepoHealth(name="MyRepo")
+    assert h.summary_line() == "MyRepo: OK"
+
+
+def test_summary_line_with_issues() -> None:
+    h = RepoHealth(name="BadRepo", failing_workflows=["CI"])
+    assert "ISSUES" in h.summary_line()
+    assert "1" in h.summary_line()
+
+
+def test_summary_line_contains_repo_name() -> None:
+    h = RepoHealth(name="SpecialRepo", open_branches=["dev"])
+    line = h.summary_line()
+    assert "SpecialRepo" in line
