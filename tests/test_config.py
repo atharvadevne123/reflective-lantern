@@ -256,3 +256,27 @@ def test_constants_max_history_entries() -> None:
 def test_constants_pdf_max_size_mb() -> None:
     from config.constants import PDF_MAX_SIZE_MB
     assert PDF_MAX_SIZE_MB > 0
+
+
+def test_constants_weekly_summary_days() -> None:
+    from config.constants import WEEKLY_SUMMARY_DAYS
+    assert WEEKLY_SUMMARY_DAYS == 7
+
+
+def test_constants_min_repos_for_rotation() -> None:
+    from config.constants import MIN_REPOS_FOR_ROTATION
+    assert MIN_REPOS_FOR_ROTATION >= 1
+
+
+def test_settings_has_dry_run_attribute() -> None:
+    from config.settings import Settings
+    s = Settings()
+    assert hasattr(s, "dry_run")
+    assert isinstance(s.dry_run, bool)
+
+
+def test_settings_has_report_subject_prefix() -> None:
+    from config.settings import Settings
+    s = Settings()
+    assert hasattr(s, "report_subject_prefix")
+    assert isinstance(s.report_subject_prefix, str)
