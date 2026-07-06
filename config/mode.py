@@ -9,7 +9,11 @@ from config.constants import INNOVATION_DAY_RANGES, INNOVATION_WEEKDAY
 
 
 class RunMode(str, Enum):
-    """Possible Reflective Lantern run modes."""
+    """Possible Reflective Lantern run modes.
+
+    IMPROVEMENT: Standard Mon–Fri 60-commit code improvement pass.
+    INNOVATION: Full project creation on qualifying Wednesdays (days 8–14 or 22–28).
+    """
 
     IMPROVEMENT = "IMPROVEMENT"
     INNOVATION = "INNOVATION"
