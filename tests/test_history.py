@@ -129,3 +129,25 @@ def test_validate_entry_mode_values(mode: str) -> None:
     entry = {"date": "2026-06-01", "commits": 60, "mode": mode}
     errors = validate_entry(entry, "test.json", 0)
     assert errors == []
+
+
+def test_validate_entry_valid_email_status() -> None:
+    from scripts.validate_history import validate_entry
+    for status in ("pending", "sent", "skipped", "failed_smtp", "network_blocked", "pdf_generated_ok"):
+        entry = {"date": "2026-07-01", "commits": 60, "email_status": status}
+        errors = validate_entry(entry, "test.json", 0)
+        assert errors == [], f"Unexpected errors for email_status={status!r}: {errors}"
+
+
+def test_validate_entry_invalid_email_status() -> None:
+    from scripts.validate_history import validate_entry
+    entry = {"date": "2026-07-01", "commits": 60, "email_status": "unknown_xyz"}
+    errors = validate_entry(entry, "test.json", 0)
+    assert any("email_status" in e for e in errors)
+
+
+def test_validate_entry_no_email_status_ok() -> None:
+    from scripts.validate_history import validate_entry
+    entry = {"date": "2026-07-01", "commits": 60}
+    errors = validate_entry(entry, "test.json", 0)
+    assert errors == []
