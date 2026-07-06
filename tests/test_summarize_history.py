@@ -192,3 +192,30 @@ def test_filter_mode_innovation(tmp_path: Path, capsys: pytest.CaptureFixture) -
     out = capsys.readouterr().out
     assert "B" in out
     assert "1 repos" in out
+
+
+def test_load_all_entries_list_file(tmp_path: Path) -> None:
+    import scripts.summarize_history as sh
+    f = tmp_path / "repo.json"
+    f.write_text(json.dumps([
+        {"date": "2026-07-01", "commits": 60},
+        {"date": "2026-07-02", "commits": 45},
+    ]))
+    result = sh.load_all_entries(f)
+    assert len(result) == 2
+
+
+def test_load_all_entries_dict_file(tmp_path: Path) -> None:
+    import scripts.summarize_history as sh
+    f = tmp_path / "repo.json"
+    f.write_text(json.dumps({"date": "2026-07-01", "commits": 60}))
+    result = sh.load_all_entries(f)
+    assert len(result) == 1
+
+
+def test_load_all_entries_invalid_json(tmp_path: Path) -> None:
+    import scripts.summarize_history as sh
+    f = tmp_path / "bad.json"
+    f.write_text("{bad json")
+    result = sh.load_all_entries(f)
+    assert result == []
