@@ -97,3 +97,37 @@ def test_run_mode_is_str_subclass() -> None:
 def test_determine_mode_today_is_improvement() -> None:
     # 2026-07-03 is a Friday → IMPROVEMENT
     assert determine_mode(date(2026, 7, 3)) == RunMode.IMPROVEMENT
+
+
+def test_next_innovation_day_returns_date() -> None:
+    from config.mode import next_innovation_day
+    result = next_innovation_day(date(2026, 7, 6))
+    assert isinstance(result, date)
+
+
+def test_next_innovation_day_is_always_innovation() -> None:
+    from config.mode import is_innovation_day, next_innovation_day
+    nxt = next_innovation_day(date(2026, 7, 6))
+    assert is_innovation_day(nxt)
+
+
+def test_next_innovation_day_is_after_start() -> None:
+    from config.mode import next_innovation_day
+    start = date(2026, 7, 6)
+    nxt = next_innovation_day(start)
+    assert nxt > start
+
+
+def test_next_innovation_day_is_wednesday() -> None:
+    from config.mode import next_innovation_day
+    nxt = next_innovation_day(date(2026, 7, 6))
+    assert nxt.isoweekday() == 3
+
+
+@pytest.mark.parametrize("after,expected", [
+    (date(2026, 7, 6), date(2026, 7, 8)),
+    (date(2026, 7, 8), date(2026, 7, 22)),
+])
+def test_next_innovation_day_known_dates(after: date, expected: date) -> None:
+    from config.mode import next_innovation_day
+    assert next_innovation_day(after) == expected
