@@ -33,10 +33,11 @@ def build_message(
     sender: str,
     recipient: str,
     pdf_path: Path | None = None,
+    subject_prefix: str = "",
 ) -> MIMEMultipart:
     """Build a MIME multipart email, optionally attaching a PDF."""
     msg = MIMEMultipart()
-    msg["Subject"] = subject
+    msg["Subject"] = f"{subject_prefix} {subject}".strip() if subject_prefix else subject
     msg["From"] = sender
     msg["To"] = recipient
     msg.attach(MIMEText(body, "plain"))
