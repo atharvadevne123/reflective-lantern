@@ -19,6 +19,20 @@ log = logging.getLogger(__name__)
 HISTORY_DIR = Path(__file__).parent.parent / "history"
 
 
+def load_all_entries(path: Path) -> list[dict[str, Any]]:
+    """Return all entries from a history file as a list of dicts."""
+    try:
+        raw = json.loads(path.read_text())
+    except Exception as exc:
+        log.warning("Skipping %s: %s", path.name, exc)
+        return []
+    if isinstance(raw, list):
+        return [e for e in raw if isinstance(e, dict)]
+    if isinstance(raw, dict):
+        return [raw]
+    return []
+
+
 def load_latest_entry(path: Path) -> dict[str, Any] | None:
     """Return the most recent entry from a history file."""
     try:
