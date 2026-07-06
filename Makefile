@@ -1,6 +1,7 @@
 .PHONY: install install-dev test lint format type-check clean help \
         summarize summarize-json ci-status all-checks report-daily report-weekly cleanup \
-        notion-update notion-update-descriptions health-check weekly-summary validate-history
+        notion-update notion-update-descriptions health-check weekly-summary validate-history \
+        validate-json clean-cache lint-fix coverage test-fast
 
 PYTHON ?= python3
 PIP    ?= $(PYTHON) -m pip
@@ -21,6 +22,11 @@ help:
 	@echo "  report-daily Generate today's Markdown report"
 	@echo "  report-weekly Generate weekly Markdown report"
 	@echo "  cleanup      Preview old history entries to remove (dry-run)"
+	@echo "  validate-json  Validate history and output JSON results"
+	@echo "  clean-cache  Remove __pycache__ and .pyc files"
+	@echo "  lint-fix     Auto-fix lint issues with ruff"
+	@echo "  coverage     Run tests with HTML coverage report"
+	@echo "  test-fast    Quick test run (quiet, stop on first failure)"
 
 install:
 	$(PIP) install -e . -q
@@ -80,3 +86,21 @@ report-weekly:
 
 cleanup:
 	$(PYTHON) scripts/cleanup.py --dry-run
+
+validate-json:
+	$(PYTHON) scripts/validate_history.py --json
+
+clean-cache:
+	find . -type d -name __pycache__ -exec rm -rf {} + 2>/dev/null || true
+	find . -name "*.pyc" -delete 2>/dev/null || true
+	rm -rf .pytest_cache .mypy_cache .ruff_cache
+
+lint-fix:
+	$(PYTHON) -m ruff check . --fix
+	$(PYTHON) -m ruff check . --unsafe-fixes || true
+
+coverage:
+	$(PYTHON) -m pytest tests/ --cov=config --cov=scripts --cov-report=html --cov-report=term-missing
+
+test-fast:
+	$(PYTHON) -m pytest tests/ -q --tb=no -x
