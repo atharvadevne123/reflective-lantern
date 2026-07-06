@@ -21,6 +21,16 @@ log = logging.getLogger(__name__)
 HISTORY_DIR = Path(__file__).parent.parent / "history"
 
 
+def total_commits(history: dict[str, list[dict[str, Any]]]) -> int:
+    """Return the sum of all commit counts across all repos and entries."""
+    return sum(
+        int(entry.get("commits", 0))
+        for entries in history.values()
+        for entry in entries
+        if isinstance(entry, dict)
+    )
+
+
 def load_all_history() -> dict[str, list[dict[str, Any]]]:
     """Load every run-record JSON file from the history directory."""
     history: dict[str, list[dict[str, Any]]] = {}
