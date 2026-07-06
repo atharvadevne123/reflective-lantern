@@ -37,6 +37,7 @@ def clean_file(
     cutoff: date,
     dry_run: bool = False,
     max_entries: int | None = None,
+    min_keep: int = 0,
 ) -> int:
     """Remove entries older than *cutoff* from *path*. Return number removed.
 
@@ -63,6 +64,9 @@ def clean_file(
     kept = [e for e in raw if not (
         (d := _entry_date(e)) is not None and d < cutoff
     )]
+    # Always preserve at least min_keep most-recent entries if requested
+    if min_keep > 0 and len(kept) < min_keep and len(raw) >= min_keep:
+        kept = raw[-min_keep:]
 
     if max_entries is not None and len(kept) > max_entries:
         kept = kept[-max_entries:]
@@ -93,6 +97,12 @@ def main() -> int:
         default=None,
         help="Keep at most this many entries per file after date pruning",
     )
+    parser.add_argument(
+        "--min-keep",
+        type=int,
+        default=0,
+        help="Always keep at least this many of the most recent entries (default: 0 = no minimum)",
+    )
     args = parser.parse_args()
     logging.basicConfig(level=logging.INFO, format="%(levelname)s %(message)s")
 
@@ -102,7 +112,10 @@ def main() -> int:
     total_removed = 0
     for path in sorted(HISTORY_DIR.glob("*.json")):
         total_removed += clean_file(
-            path, cutoff, dry_run=args.dry_run, max_entries=args.max_entries
+            path, cutoff,
+            dry_run=args.dry_run,
+            max_entries=args.max_entries,
+            min_keep=args.min_keep,
         )
 
     action = "Would remove" if args.dry_run else "Removed"
