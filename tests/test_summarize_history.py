@@ -158,3 +158,37 @@ def test_main_json_tests_passed_field(tmp_path: Path, capsys: pytest.CaptureFixt
     out = capsys.readouterr().out
     parsed = json.loads(out)
     assert parsed[0]["tests_passed"] is True
+
+
+def test_filter_mode_improvement(tmp_path: Path, capsys: pytest.CaptureFixture) -> None:
+    import sys
+    from unittest.mock import patch
+
+    import scripts.summarize_history as sh
+    h = tmp_path / "history"
+    h.mkdir()
+    (h / "A.json").write_text(json.dumps([{"date": "2026-07-01", "commits": 60, "mode": "improvement"}]))
+    (h / "B.json").write_text(json.dumps([{"date": "2026-07-08", "commits": 60, "mode": "innovation"}]))
+    with patch.object(sh, "HISTORY_DIR", h):
+        with patch.object(sys, "argv", ["summarize_history.py", "--filter-mode", "improvement"]):
+            sh.main()
+    out = capsys.readouterr().out
+    assert "A" in out
+    assert "B" not in out.split("1 repos")[0]
+
+
+def test_filter_mode_innovation(tmp_path: Path, capsys: pytest.CaptureFixture) -> None:
+    import sys
+    from unittest.mock import patch
+
+    import scripts.summarize_history as sh
+    h = tmp_path / "history"
+    h.mkdir()
+    (h / "A.json").write_text(json.dumps([{"date": "2026-07-01", "commits": 60, "mode": "improvement"}]))
+    (h / "B.json").write_text(json.dumps([{"date": "2026-07-08", "commits": 60, "mode": "innovation"}]))
+    with patch.object(sh, "HISTORY_DIR", h):
+        with patch.object(sys, "argv", ["summarize_history.py", "--filter-mode", "innovation"]):
+            sh.main()
+    out = capsys.readouterr().out
+    assert "B" in out
+    assert "1 repos" in out
