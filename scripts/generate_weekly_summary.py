@@ -30,6 +30,9 @@ def main() -> None:
     """Entry point."""
     parser = argparse.ArgumentParser(description="Send weekly Reflective Lantern summary email")
     parser.add_argument("--dry-run", action="store_true", help="Print email body without sending")
+    parser.add_argument(
+        "--subject", default=None, help="Override the email subject line"
+    )
     args = parser.parse_args()
     logging.basicConfig(level=logging.INFO, format="%(levelname)s %(message)s")
 
@@ -37,7 +40,7 @@ def main() -> None:
     start_date = end_date - timedelta(days=6)
     body = _build_body(end_date)
 
-    subject = (
+    subject = args.subject or (
         f"Reflective Lantern Weekly Summary — "
         f"{start_date.isoformat()} to {end_date.isoformat()}"
     )
