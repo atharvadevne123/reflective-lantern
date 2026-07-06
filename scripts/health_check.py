@@ -43,6 +43,16 @@ class RepoHealth:
             or not self.has_ci
         )
 
+    @property
+    def issues_count(self) -> int:
+        """Total number of discrete issues found across all checks."""
+        return (
+            len(self.failing_workflows)
+            + len(self.open_branches)
+            + (0 if self.has_release else 1)
+            + (0 if self.has_ci else 1)
+        )
+
     def stats(self) -> dict[str, int | bool]:
         """Return a summary dict of issue counts."""
         return {
@@ -50,6 +60,7 @@ class RepoHealth:
             "open_branches": len(self.open_branches),
             "has_release": self.has_release,
             "has_ci": self.has_ci,
+            "issues_count": self.issues_count,
             "healthy": self.healthy,
         }
 
