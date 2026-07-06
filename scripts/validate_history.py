@@ -33,6 +33,9 @@ OPTIONAL_FIELDS: dict[str, type] = {
     "repo": str,
 }
 
+VALID_EMAIL_STATUSES: frozenset[str] = frozenset({"pending", "sent", "skipped"})
+VALID_EMAIL_STATUS_PREFIXES: tuple[str, ...] = ("failed", "network_", "pdf_generated")
+
 
 def validate_entry(entry: Any, source: str, idx: int) -> list[str]:
     """Return a list of validation error strings for a single history entry."""
@@ -59,6 +62,16 @@ def validate_entry(entry: Any, source: str, idx: int) -> list[str]:
     if "commits" in entry and isinstance(entry["commits"], int):
         if entry["commits"] < 0:
             errors.append(f"{source}[{idx}]: 'commits' is negative")
+
+    # Validate email_status if present
+    if "email_status" in entry and isinstance(entry["email_status"], str):
+        status = entry["email_status"]
+        if status not in VALID_EMAIL_STATUSES and not any(
+            status.startswith(p) for p in VALID_EMAIL_STATUS_PREFIXES
+        ):
+            errors.append(
+                f"{source}[{idx}]: unrecognised email_status '{status}'"
+            )
 
     return errors
 
