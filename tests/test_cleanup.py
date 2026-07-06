@@ -189,3 +189,33 @@ def test_clean_file_min_keep_selects_most_recent(tmp_path: Path) -> None:
     # The last entry (most recent by position) should be preserved
     assert len(remaining) == 1
     assert remaining[0]["commits"] == 2
+
+
+def test_count_entries_list_file(tmp_path: Path) -> None:
+    from scripts.cleanup import count_entries
+    f = tmp_path / "repo.json"
+    f.write_text(json.dumps([{"date": "2026-07-01", "commits": 60}, {"date": "2026-07-02", "commits": 45}]))
+    result = count_entries(tmp_path)
+    assert result["repo.json"] == 2
+
+
+def test_count_entries_dict_file(tmp_path: Path) -> None:
+    from scripts.cleanup import count_entries
+    f = tmp_path / "single.json"
+    f.write_text(json.dumps({"date": "2026-07-01", "commits": 60}))
+    result = count_entries(tmp_path)
+    assert result["single.json"] == 1
+
+
+def test_count_entries_invalid_json(tmp_path: Path) -> None:
+    from scripts.cleanup import count_entries
+    f = tmp_path / "bad.json"
+    f.write_text("{broken")
+    result = count_entries(tmp_path)
+    assert result["bad.json"] == 0
+
+
+def test_count_entries_empty_dir(tmp_path: Path) -> None:
+    from scripts.cleanup import count_entries
+    result = count_entries(tmp_path)
+    assert result == {}
