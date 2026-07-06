@@ -15,6 +15,8 @@ from datetime import date, timedelta
 from pathlib import Path
 from typing import Any
 
+from config.constants import CLEANUP_DEFAULT_DAYS
+
 log = logging.getLogger(__name__)
 HISTORY_DIR = Path(__file__).parent.parent / "history"
 
@@ -79,7 +81,8 @@ def main() -> int:
     """Entry point."""
     parser = argparse.ArgumentParser(description="Clean old history entries")
     parser.add_argument(
-        "--days", type=int, default=90, help="Remove entries older than this many days"
+        "--days", type=int, default=CLEANUP_DEFAULT_DAYS,
+        help="Remove entries older than this many days"
     )
     parser.add_argument(
         "--dry-run", action="store_true", help="Report without modifying files"
