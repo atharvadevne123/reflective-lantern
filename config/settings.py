@@ -58,6 +58,16 @@ class Settings:
         default_factory=lambda: os.environ.get("JSON_LOGS", "0") == "1"
     )
 
+    # Report settings
+    report_subject_prefix: str = field(
+        default_factory=lambda: os.environ.get(
+            "REPORT_SUBJECT_PREFIX", "[Reflective Lantern]"
+        )
+    )
+    dry_run: bool = field(
+        default_factory=lambda: os.environ.get("DRY_RUN", "0") == "1"
+    )
+
     # Run settings
     pf_fix_timeout: int = field(
         default_factory=lambda: int(os.environ.get("PF_FIX_TIMEOUT", "300"))
