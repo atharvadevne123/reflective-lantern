@@ -10,6 +10,7 @@ from __future__ import annotations
 import argparse
 import subprocess
 import sys
+import time
 from pathlib import Path
 
 SCRIPTS_DIR = Path(__file__).parent
@@ -19,17 +20,19 @@ CHECKS = [
 ]
 
 
-def run_check(name: str, cmd: list[str]) -> bool:
-    """Run a single check. Return True if it passed."""
+def run_check(name: str, cmd: list[str]) -> tuple[bool, float]:
+    """Run a single check. Return (passed, elapsed_seconds)."""
     print(f"\n{'─' * 60}")
     print(f"  {name}")
     print(f"{'─' * 60}")
+    t0 = time.perf_counter()
     result = subprocess.run(cmd, check=False)
+    elapsed = time.perf_counter() - t0
     if result.returncode == 0:
-        print(f"  ✓ {name} passed")
+        print(f"  ✓ {name} passed ({elapsed:.2f}s)")
     else:
-        print(f"  ✗ {name} failed (exit {result.returncode})")
-    return result.returncode == 0
+        print(f"  ✗ {name} failed (exit {result.returncode}, {elapsed:.2f}s)")
+    return result.returncode == 0, elapsed
 
 
 def main() -> int:
@@ -44,8 +47,10 @@ def main() -> int:
 
     passed = 0
     failed = 0
+    total_time = 0.0
     for name, cmd in CHECKS:
-        ok = run_check(name, cmd)
+        ok, elapsed = run_check(name, cmd)
+        total_time += elapsed
         if ok:
             passed += 1
         else:
@@ -54,7 +59,7 @@ def main() -> int:
                 break
 
     print(f"\n{'═' * 60}")
-    print(f"  {passed} check(s) passed, {failed} failed")
+    print(f"  {passed} check(s) passed, {failed} failed  [{total_time:.2f}s total]")
     print(f"{'═' * 60}")
     return 0 if failed == 0 else 1
 
