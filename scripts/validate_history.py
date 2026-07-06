@@ -84,6 +84,11 @@ def validate_entry(entry: Any, source: str, idx: int) -> list[str]:
     return errors
 
 
+def validate_files(paths: list[Path]) -> dict[str, list[str]]:
+    """Validate multiple history files. Return filename → error list mapping."""
+    return {path.name: validate_file(path) for path in paths}
+
+
 def validate_file(path: Path) -> list[str]:
     """Validate one history JSON file. Return list of error strings."""
     try:
