@@ -45,3 +45,11 @@ NOTION_DESCRIPTION_MAX_TOKENS: int = 200
 
 # History files that are config/meta files, not per-run records
 NON_RECORD_FILES: frozenset[str] = frozenset({"schema.json", "commit_schedule.json"})
+
+# Cleanup defaults
+CLEANUP_DEFAULT_DAYS: int = 90
+MAX_HISTORY_ENTRIES: int = 365
+
+# Report formatting
+REPORT_DATE_FORMAT: str = "%Y-%m-%d"
+PDF_MAX_SIZE_MB: float = 5.0
