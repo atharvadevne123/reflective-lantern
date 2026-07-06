@@ -42,6 +42,11 @@ def fetch_repos(owner: str, token: str) -> list[dict[str, Any]]:
     ]
 
 
+def repo_names(repos: list[dict[str, Any]]) -> list[str]:
+    """Return sorted list of repo names from *repos*."""
+    return sorted(r["name"] for r in repos if isinstance(r.get("name"), str))
+
+
 def select_repo(
     repos: list[dict[str, Any]],
     target_date: date,
