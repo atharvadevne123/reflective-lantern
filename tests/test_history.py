@@ -173,3 +173,31 @@ def test_valid_modes_constant_exists() -> None:
     assert "improvement" in VALID_MODES
     assert "innovation" in VALID_MODES
     assert isinstance(VALID_MODES, frozenset)
+
+
+def test_validate_files_batch_all_valid(tmp_path: Path) -> None:
+    from pathlib import Path
+    from scripts.validate_history import validate_files
+    f1 = tmp_path / "a.json"
+    f2 = tmp_path / "b.json"
+    import json
+    f1.write_text(json.dumps([{"date": "2026-07-01", "commits": 60}]))
+    f2.write_text(json.dumps([{"date": "2026-07-02", "commits": 45}]))
+    result = validate_files([f1, f2])
+    assert result["a.json"] == []
+    assert result["b.json"] == []
+
+
+def test_validate_files_batch_detects_error(tmp_path: Path) -> None:
+    from scripts.validate_history import validate_files
+    f = tmp_path / "bad.json"
+    import json
+    f.write_text(json.dumps([{"commits": 60}]))  # missing date
+    result = validate_files([f])
+    assert len(result["bad.json"]) > 0
+
+
+def test_validate_files_empty_list() -> None:
+    from scripts.validate_history import validate_files
+    result = validate_files([])
+    assert result == {}
