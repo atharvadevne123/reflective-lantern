@@ -17,7 +17,7 @@ from __future__ import annotations
 import logging
 import os
 import time
-from typing import Optional
+from typing import Any, Optional
 
 import anthropic
 from dotenv import load_dotenv
@@ -171,6 +171,11 @@ def update_notion_page(
         cover={"type": "external", "external": {"url": cover_url}},
         properties=properties,
     )
+
+
+def project_names() -> list[str]:
+    """Return sorted list of project names from the registry."""
+    return sorted(str(p["name"]) for p in PROJECTS)
 
 
 def main(generate_descriptions: bool = False) -> None:
