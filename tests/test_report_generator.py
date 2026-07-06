@@ -224,3 +224,23 @@ def test_total_commits_multiple_entries() -> None:
     from scripts.report_generator import total_commits
     history = {"repo": [{"commits": 60}, {"commits": 30}]}
     assert total_commits(history) == 90
+
+
+def test_format_date_iso() -> None:
+    from datetime import date
+    from scripts.report_generator import format_date
+    assert format_date(date(2026, 7, 6)) == "2026-07-06"
+
+
+def test_format_date_single_digit_month() -> None:
+    from datetime import date
+    from scripts.report_generator import format_date
+    assert format_date(date(2026, 1, 5)) == "2026-01-05"
+
+
+def test_format_date_returns_string() -> None:
+    from datetime import date
+    from scripts.report_generator import format_date
+    result = format_date(date.today())
+    assert isinstance(result, str)
+    assert len(result) == 10
