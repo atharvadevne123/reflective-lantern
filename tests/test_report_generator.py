@@ -244,3 +244,33 @@ def test_format_date_returns_string() -> None:
     result = format_date(date.today())
     assert isinstance(result, str)
     assert len(result) == 10
+
+
+def test_weekly_report_custom_window(tmp_path: Path) -> None:
+    from datetime import date
+    from unittest.mock import patch
+
+    from scripts import report_generator as rg
+    h = tmp_path / "history"
+    h.mkdir()
+    (h / "Repo.json").write_text(json.dumps([
+        {"date": "2026-07-06", "commits": 60},
+        {"date": "2026-06-01", "commits": 30},
+    ]))
+    with patch.object(rg, "HISTORY_DIR", h):
+        report = rg.weekly_report(date(2026, 7, 6), window_days=3)
+    assert "2026-07-06" in report
+    assert "2026-06-01" not in report
+
+
+def test_weekly_report_window_1_day(tmp_path: Path) -> None:
+    from datetime import date
+    from unittest.mock import patch
+
+    from scripts import report_generator as rg
+    h = tmp_path / "history"
+    h.mkdir()
+    (h / "Repo.json").write_text(json.dumps([{"date": "2026-07-06", "commits": 60}]))
+    with patch.object(rg, "HISTORY_DIR", h):
+        report = rg.weekly_report(date(2026, 7, 6), window_days=1)
+    assert "2026-07-06" in report
