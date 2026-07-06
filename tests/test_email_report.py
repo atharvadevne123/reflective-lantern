@@ -78,3 +78,25 @@ def test_build_message_various_subjects(subject: str, body: str) -> None:
     from scripts.email_report import build_message
     msg = build_message(subject, body, "sender@test.com", "recv@test.com")
     assert msg["Subject"] == subject
+
+
+def test_build_message_with_subject_prefix() -> None:
+    from scripts.email_report import build_message
+    msg = build_message(
+        "Daily Report", "body", "s@t.com", "r@t.com",
+        subject_prefix="[Reflective Lantern]",
+    )
+    assert msg["Subject"] == "[Reflective Lantern] Daily Report"
+
+
+def test_build_message_empty_prefix_no_leading_space() -> None:
+    from scripts.email_report import build_message
+    msg = build_message("Subject", "body", "s@t.com", "r@t.com", subject_prefix="")
+    assert msg["Subject"] == "Subject"
+
+
+def test_build_message_prefix_strips_correctly() -> None:
+    from scripts.email_report import build_message
+    msg = build_message("Report", "body", "s@t.com", "r@t.com", subject_prefix="[LN]")
+    assert not msg["Subject"].startswith(" ")
+    assert msg["Subject"] == "[LN] Report"
