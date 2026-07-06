@@ -202,3 +202,57 @@ def test_settings_has_attribute(settings_env: None, key: str) -> None:
     from config.settings import Settings
     s = Settings()
     assert hasattr(s, key)
+
+
+def test_settings_repr_masks_sensitive_fields(settings_env: None) -> None:
+    from config.settings import Settings
+    s = Settings()
+    r = repr(s)
+    assert "sk-test" not in r
+    assert "ghp_test" not in r
+    assert "secret_test" not in r
+    assert "***" in r
+
+
+def test_settings_repr_shows_non_sensitive(settings_env: None) -> None:
+    from config.settings import Settings
+    s = Settings()
+    r = repr(s)
+    assert "test@gmail.com" in r
+    assert "atharvadevne123" in r
+
+
+def test_settings_dry_run_default_false(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.delenv("DRY_RUN", raising=False)
+    from config.settings import Settings
+    s = Settings()
+    assert s.dry_run is False
+
+
+def test_settings_dry_run_from_env(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("DRY_RUN", "1")
+    from config.settings import Settings
+    s = Settings()
+    assert s.dry_run is True
+
+
+def test_settings_report_subject_prefix_default(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.delenv("REPORT_SUBJECT_PREFIX", raising=False)
+    from config.settings import Settings
+    s = Settings()
+    assert s.report_subject_prefix == "[Reflective Lantern]"
+
+
+def test_constants_cleanup_default_days() -> None:
+    from config.constants import CLEANUP_DEFAULT_DAYS
+    assert CLEANUP_DEFAULT_DAYS == 90
+
+
+def test_constants_max_history_entries() -> None:
+    from config.constants import MAX_HISTORY_ENTRIES
+    assert MAX_HISTORY_ENTRIES > 0
+
+
+def test_constants_pdf_max_size_mb() -> None:
+    from config.constants import PDF_MAX_SIZE_MB
+    assert PDF_MAX_SIZE_MB > 0
