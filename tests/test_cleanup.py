@@ -156,3 +156,36 @@ def test_clean_file_max_entries_none_no_truncation(tmp_path: Path) -> None:
     f = write_history(tmp_path / "nolimit.json", entries)
     clean_file(f, cutoff=date(2020, 1, 1), max_entries=None)
     assert len(json.loads(f.read_text())) == 5
+
+
+def test_clean_file_min_keep_preserves_recent_entry(tmp_path: Path) -> None:
+    from scripts.cleanup import clean_file
+    # Only one very old entry, min_keep=1 should retain it
+    entries = [{"date": "2020-01-01", "commits": 5}]
+    f = write_history(tmp_path / "minkeep.json", entries)
+    removed = clean_file(f, cutoff=date(2026, 1, 1), min_keep=1)
+    assert removed == 0
+    assert len(json.loads(f.read_text())) == 1
+
+
+def test_clean_file_min_keep_zero_removes_all(tmp_path: Path) -> None:
+    from scripts.cleanup import clean_file
+    entries = [{"date": "2020-01-01", "commits": 5}]
+    f = write_history(tmp_path / "nminkeep.json", entries)
+    removed = clean_file(f, cutoff=date(2026, 1, 1), min_keep=0)
+    assert removed == 1
+    assert json.loads(f.read_text()) == []
+
+
+def test_clean_file_min_keep_selects_most_recent(tmp_path: Path) -> None:
+    from scripts.cleanup import clean_file
+    entries = [
+        {"date": "2020-01-01", "commits": 1},
+        {"date": "2021-06-01", "commits": 2},
+    ]
+    f = write_history(tmp_path / "minkeep2.json", entries)
+    clean_file(f, cutoff=date(2026, 1, 1), min_keep=1)
+    remaining = json.loads(f.read_text())
+    # The last entry (most recent by position) should be preserved
+    assert len(remaining) == 1
+    assert remaining[0]["commits"] == 2
