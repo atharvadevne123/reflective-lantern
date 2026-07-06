@@ -27,6 +27,11 @@ class JsonFormatter(logging.Formatter):
         return json.dumps(payload, ensure_ascii=False)
 
 
+def get_logger(name: str) -> logging.Logger:
+    """Return a module-level logger by *name*."""
+    return logging.getLogger(name)
+
+
 def configure_logging(level: str = "INFO", *, json_logs: bool = False) -> None:
     """Configure root logger with optional JSON output.
 
