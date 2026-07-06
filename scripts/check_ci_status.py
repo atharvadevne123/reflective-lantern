@@ -56,6 +56,7 @@ def main() -> int:
     """Entry point."""
     parser = argparse.ArgumentParser(description="Check CI status across all repos")
     parser.add_argument("--failing-only", action="store_true", help="Only show failing workflows")
+    parser.add_argument("--repo", default=None, help="Only check this repository name")
     args = parser.parse_args()
 
     logging.basicConfig(level=logging.INFO, format="%(levelname)s %(message)s")
@@ -68,6 +69,8 @@ def main() -> int:
     owner = os.environ.get("GITHUB_USERNAME", "atharvadevne123")
     repos_data = _get(f"{GH_API}/users/{owner}/repos?per_page=100&type=owner", token)
     repos = [r for r in repos_data if not r.get("archived") and not r.get("fork")]
+    if args.repo:
+        repos = [r for r in repos if r["name"] == args.repo]
 
     failing = 0
     for repo in sorted(repos, key=lambda r: r["name"]):
