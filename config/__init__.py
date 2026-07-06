@@ -1,8 +1,8 @@
 """Configuration package for Reflective Lantern."""
 
 from config.constants import COMMIT_TARGET, HISTORY_DIR, SCRIPTS_DIR, VERSION
-from config.logging_config import configure_logging
-from config.mode import RunMode, determine_mode, is_innovation_day
+from config.logging_config import configure_logging, get_logger
+from config.mode import RunMode, determine_mode, is_innovation_day, next_innovation_day
 from config.settings import Settings, get_settings
 
 __all__ = [
@@ -12,6 +12,8 @@ __all__ = [
     "RunMode",
     "determine_mode",
     "is_innovation_day",
+    "next_innovation_day",
+    "get_logger",
     "COMMIT_TARGET",
     "HISTORY_DIR",
     "SCRIPTS_DIR",
