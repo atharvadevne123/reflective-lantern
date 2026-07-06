@@ -85,10 +85,10 @@ def daily_report(target_date: date) -> str:
     return "\n".join(lines)
 
 
-def weekly_report(end_date: date | None = None) -> str:
-    """Return a Markdown string summarising the past 7 days."""
+def weekly_report(end_date: date | None = None, window_days: int = 7) -> str:
+    """Return a Markdown string summarising the past *window_days* days."""
     end = end_date or date.today()
-    start = end - timedelta(days=6)
+    start = end - timedelta(days=window_days - 1)
     history = load_all_history()
     total_commits = 0
     repos_touched: set[str] = set()
