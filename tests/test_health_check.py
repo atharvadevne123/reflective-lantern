@@ -209,3 +209,31 @@ def test_repo_health_healthy_parametrized(
         has_ci=has_ci,
     )
     assert r.healthy is expected_healthy
+
+
+def test_issues_count_all_healthy() -> None:
+    h = RepoHealth(name="Repo")
+    assert h.issues_count == 0
+
+
+def test_issues_count_with_failing_workflows() -> None:
+    h = RepoHealth(name="Repo", failing_workflows=["CI", "lint"])
+    assert h.issues_count == 2
+
+
+def test_issues_count_with_all_issues() -> None:
+    h = RepoHealth(
+        name="Repo",
+        failing_workflows=["CI"],
+        open_branches=["dev", "hotfix"],
+        has_release=False,
+        has_ci=False,
+    )
+    assert h.issues_count == 5
+
+
+def test_stats_includes_issues_count() -> None:
+    h = RepoHealth(name="Repo", failing_workflows=["CI"])
+    s = h.stats()
+    assert "issues_count" in s
+    assert s["issues_count"] == 1
