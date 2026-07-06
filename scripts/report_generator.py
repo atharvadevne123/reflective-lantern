@@ -21,6 +21,11 @@ log = logging.getLogger(__name__)
 HISTORY_DIR = Path(__file__).parent.parent / "history"
 
 
+def format_date(d: date) -> str:
+    """Return *d* formatted as YYYY-MM-DD."""
+    return d.strftime("%Y-%m-%d")
+
+
 def total_commits(history: dict[str, list[dict[str, Any]]]) -> int:
     """Return the sum of all commit counts across all repos and entries."""
     return sum(
