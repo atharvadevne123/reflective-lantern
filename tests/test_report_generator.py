@@ -198,3 +198,29 @@ def test_weekly_report_uses_fixture(innovation_history_dir: Path) -> None:
     with patch.object(rg, "HISTORY_DIR", innovation_history_dir):
         report = rg.weekly_report(date(2026, 7, 10))
     assert "NewProject" in report
+
+
+def test_total_commits_empty() -> None:
+    from scripts.report_generator import total_commits
+    assert total_commits({}) == 0
+
+
+def test_total_commits_single_repo() -> None:
+    from scripts.report_generator import total_commits
+    history = {"repo": [{"date": "2026-07-01", "commits": 60}]}
+    assert total_commits(history) == 60
+
+
+def test_total_commits_multiple_repos() -> None:
+    from scripts.report_generator import total_commits
+    history = {
+        "a": [{"date": "2026-07-01", "commits": 60}],
+        "b": [{"date": "2026-07-02", "commits": 45}],
+    }
+    assert total_commits(history) == 105
+
+
+def test_total_commits_multiple_entries() -> None:
+    from scripts.report_generator import total_commits
+    history = {"repo": [{"commits": 60}, {"commits": 30}]}
+    assert total_commits(history) == 90
