@@ -220,8 +220,9 @@
       "test(59/60): add WEEKLY_SUMMARY_DAYS, MIN_REPOS_FOR_ROTATION, dry_run, and subject_prefix tests",
       "chore(60/60): expose __version__ from scripts package via config.constants.VERSION"
     ],
-    "email_status": "pending",
+    "email_status": "failed_smtp_network_blocked",
     "last_commit_sha": "3e3eba5",
-    "notes": "Session 2026-07-06 (Monday). 515 tests passing. 60 commits to main. Cloud Routine schedule change requested by user -- must be done via claude.ai/code/routines web UI (cannot be modified from within a running session)."
+    "notes": "Session 2026-07-06 (Monday). 515 tests passing. 60 commits to main. Cloud Routine schedule change requested by user -- must be done via claude.ai/code/routines web UI (cannot be modified from within a running session).",
+    "email_error": "SMTP outbound blocked \u2014 Address family not supported by protocol (both ports 587 and 465)"
   }
 ]
