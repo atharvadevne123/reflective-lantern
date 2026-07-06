@@ -124,3 +124,37 @@ def test_configure_logging_numeric_level(level_str: str, level_int: int) -> None
     configure_logging(level_str)
     assert logging.getLogger().level == level_int
     configure_logging("INFO")
+
+
+def test_get_logger_returns_logger() -> None:
+    from config.logging_config import get_logger
+    logger = get_logger("test.module")
+    assert isinstance(logger, logging.Logger)
+    assert logger.name == "test.module"
+
+
+def test_get_logger_same_name_same_instance() -> None:
+    from config.logging_config import get_logger
+    l1 = get_logger("same.name")
+    l2 = get_logger("same.name")
+    assert l1 is l2
+
+
+@pytest.mark.parametrize("name", ["config.settings", "scripts.cleanup", "my.module"])
+def test_get_logger_parametrized_names(name: str) -> None:
+    from config.logging_config import get_logger
+    logger = get_logger(name)
+    assert logger.name == name
+
+
+def test_json_formatter_run_id_included() -> None:
+    from config.logging_config import JsonFormatter
+    formatter = JsonFormatter()
+    record = logging.LogRecord(
+        name="test", level=logging.INFO, pathname="", lineno=0,
+        msg="with run_id", args=(), exc_info=None,
+    )
+    record.run_id = "abc-123"  # type: ignore[attr-defined]
+    output = formatter.format(record)
+    parsed = json.loads(output)
+    assert parsed.get("run_id") == "abc-123"
