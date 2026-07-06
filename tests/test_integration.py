@@ -183,14 +183,16 @@ def test_validate_history_json_flag(tmp_path: Path, capsys: pytest.CaptureFixtur
 
 
 def test_config_package_exports_next_innovation_day() -> None:
-    from config import next_innovation_day
     from datetime import date
+
+    from config import next_innovation_day
     result = next_innovation_day(date(2026, 7, 6))
     assert isinstance(result, date)
 
 
 def test_config_package_exports_get_logger() -> None:
     import logging
+
     from config import get_logger
     logger = get_logger("test.integration")
     assert isinstance(logger, logging.Logger)

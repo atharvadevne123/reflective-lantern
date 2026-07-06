@@ -266,5 +266,38 @@
     "release_id": 330110846,
     "email_status": "network_blocked_smtp",
     "pdf_path": "/tmp/Supply-Pulse_innovation_2026-05-27.pdf"
+  },
+  {
+    "date": "2026-07-06",
+    "mode": "innovation",
+    "project": "Realty-Edge",
+    "description": "FastAPI ML API for real estate valuation and investment scoring using XGBoost/LightGBM/RandomForest VotingRegressor ensemble with FAISS comparable property search and KS-drift monitoring.",
+    "inspired_by": "GitHub trending Python \u2014 PropTech ML + real estate investment tools",
+    "repo_branch": "innovation/realty-edge",
+    "repo_url": "https://github.com/atharvadevne123/reflective-lantern/tree/innovation/realty-edge",
+    "file_count": 56,
+    "test_count": 168,
+    "commits": 62,
+    "push_status": "pushed_to_branch",
+    "email_status": "network_blocked",
+    "archetype": "Real Estate ML API + Investment Scoring",
+    "stack": [
+      "Python 3.11",
+      "FastAPI",
+      "XGBoost",
+      "LightGBM",
+      "RandomForest",
+      "VotingRegressor",
+      "sklearn Pipeline",
+      "FAISS",
+      "KS-drift monitoring",
+      "PostgreSQL",
+      "SQLAlchemy",
+      "Alembic",
+      "Airflow DAG",
+      "Docker+Compose",
+      "pytest",
+      "GitHub Actions CI"
+    ]
   }
 ]

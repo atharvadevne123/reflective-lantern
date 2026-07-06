@@ -176,7 +176,6 @@ def test_valid_modes_constant_exists() -> None:
 
 
 def test_validate_files_batch_all_valid(tmp_path: Path) -> None:
-    from pathlib import Path
     from scripts.validate_history import validate_files
     f1 = tmp_path / "a.json"
     f2 = tmp_path / "b.json"

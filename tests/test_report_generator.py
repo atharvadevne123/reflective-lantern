@@ -228,18 +228,21 @@ def test_total_commits_multiple_entries() -> None:
 
 def test_format_date_iso() -> None:
     from datetime import date
+
     from scripts.report_generator import format_date
     assert format_date(date(2026, 7, 6)) == "2026-07-06"
 
 
 def test_format_date_single_digit_month() -> None:
     from datetime import date
+
     from scripts.report_generator import format_date
     assert format_date(date(2026, 1, 5)) == "2026-01-05"
 
 
 def test_format_date_returns_string() -> None:
     from datetime import date
+
     from scripts.report_generator import format_date
     result = format_date(date.today())
     assert isinstance(result, str)
@@ -289,9 +292,10 @@ def test_weekly_report_with_multi_repo_fixture(multi_repo_history_dir: Path) -> 
 
 
 def test_total_commits_with_multi_repo_fixture(multi_repo_history_dir: Path) -> None:
-    from scripts.report_generator import load_all_history, total_commits
     from unittest.mock import patch
+
     from scripts import report_generator as rg
+    from scripts.report_generator import load_all_history, total_commits
     with patch.object(rg, "HISTORY_DIR", multi_repo_history_dir):
         history = load_all_history()
     assert total_commits(history) == 60 + 60 + 120 + 60

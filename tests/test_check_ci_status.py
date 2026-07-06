@@ -134,9 +134,8 @@ def test_get_retries_count(retries: int) -> None:
 
 
 def test_get_latest_runs_no_workflow_id_dedup() -> None:
-    from unittest.mock import MagicMock, patch
-
     import urllib.request
+    from unittest.mock import MagicMock, patch
     run = {"workflow_id": None, "name": "CI", "conclusion": "success", "status": "completed"}
     payload = {"workflow_runs": [run, run, run]}
 
@@ -160,8 +159,9 @@ def test_repo_flag_filters_to_single_repo(monkeypatch: pytest.MonkeyPatch, capsy
     import sys
     with monkeypatch.context() as m:
         m.setenv("GH_PAT", "tok")
+        import json
+        import urllib.request
         from unittest.mock import MagicMock, patch
-        import json, urllib.request
 
         repos_payload = [
             {"name": "repo-a", "archived": False, "fork": False},
