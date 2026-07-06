@@ -119,3 +119,23 @@ def test_project_covers_non_empty() -> None:
     for project in PROJECTS:
         cover = project.get("cover", "")
         assert cover, f"{project['name']} has an empty cover field"
+
+
+def test_project_names_helper_returns_list() -> None:
+    from scripts.notion_portfolio_update import project_names
+    names = project_names()
+    assert isinstance(names, list)
+    assert len(names) > 0
+
+
+def test_project_names_helper_sorted() -> None:
+    from scripts.notion_portfolio_update import project_names
+    names = project_names()
+    assert names == sorted(names)
+
+
+def test_project_names_helper_all_strings() -> None:
+    from scripts.notion_portfolio_update import project_names
+    for name in project_names():
+        assert isinstance(name, str)
+        assert len(name) > 0
