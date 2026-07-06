@@ -88,6 +88,17 @@ class Settings:
         """Return True when all required credentials are present."""
         return len(self.validate()) == 0
 
+    def __repr__(self) -> str:
+        """Return repr with sensitive fields masked."""
+        _SENSITIVE = {"anthropic_api_key", "gh_pat", "notion_api_key", "gmail_app_pass"}
+        parts = []
+        for f in self.__dataclass_fields__:
+            val = getattr(self, f)
+            if f in _SENSITIVE:
+                val = "***" if val else ""
+            parts.append(f"{f}={val!r}")
+        return f"Settings({', '.join(parts)})"
+
     @property
     def history_dir(self) -> Path:
         """Absolute path to the history directory."""
