@@ -274,3 +274,24 @@ def test_weekly_report_window_1_day(tmp_path: Path) -> None:
     with patch.object(rg, "HISTORY_DIR", h):
         report = rg.weekly_report(date(2026, 7, 6), window_days=1)
     assert "2026-07-06" in report
+
+
+def test_weekly_report_with_multi_repo_fixture(multi_repo_history_dir: Path) -> None:
+    from datetime import date
+    from unittest.mock import patch
+
+    from scripts import report_generator as rg
+    with patch.object(rg, "HISTORY_DIR", multi_repo_history_dir):
+        report = rg.weekly_report(date(2026, 7, 8), window_days=7)
+    assert "Alpha" in report
+    assert "Beta" in report
+    assert "Gamma" in report
+
+
+def test_total_commits_with_multi_repo_fixture(multi_repo_history_dir: Path) -> None:
+    from scripts.report_generator import load_all_history, total_commits
+    from unittest.mock import patch
+    from scripts import report_generator as rg
+    with patch.object(rg, "HISTORY_DIR", multi_repo_history_dir):
+        history = load_all_history()
+    assert total_commits(history) == 60 + 60 + 120 + 60
