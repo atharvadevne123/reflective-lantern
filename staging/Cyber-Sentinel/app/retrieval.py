@@ -120,3 +120,9 @@ def get_index(dim: int = EMBEDDING_DIM) -> AttackPatternIndex:
         _index_cache[cache_key] = AttackPatternIndex(dim=dim)
         logger.info("Created new AttackPatternIndex(dim=%d)", dim)
     return _index_cache[cache_key]
+
+
+def clear_index_cache() -> None:
+    """Evict all cached index instances (useful for testing)."""
+    _index_cache.clear()
+    logger.info("Attack pattern index cache cleared")
