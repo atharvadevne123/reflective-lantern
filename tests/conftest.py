@@ -1,125 +1,104 @@
-"""Shared pytest fixtures for the Reflective Lantern test suite."""
+"""Pytest fixtures and test database setup."""
 
-from __future__ import annotations
-
-import json
-from pathlib import Path
-from typing import Any, Generator
-
+import numpy as np
+import pandas as pd
 import pytest
+from app.database import Base, get_db
+from app.main import app
+from fastapi.testclient import TestClient
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
+
+TEST_DB_URL = "sqlite:///./test_realty_edge.db"
+
+_test_engine = create_engine(TEST_DB_URL, connect_args={"check_same_thread": False})
+TestSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=_test_engine)
 
 
-@pytest.fixture()
-def history_dir(tmp_path: Path) -> Path:
-    """Return a temporary history directory pre-populated with sample files."""
-    h = tmp_path / "history"
-    h.mkdir()
-    sample: list[dict[str, Any]] = [
-        {
-            "date": "2026-06-01",
-            "mode": "improvement",
-            "commits": 60,
-            "tests_passed": True,
-            "improvements": ["added type annotations", "added docstrings"],
-        },
-        {
-            "date": "2026-06-15",
-            "mode": "improvement",
-            "commits": 60,
-            "tests_passed": True,
-            "improvements": ["added pytest suite"],
-        },
-    ]
-    (h / "SampleRepo.json").write_text(json.dumps(sample))
-    (h / "AnotherRepo.json").write_text(json.dumps([sample[0]]))
-    return h
+def override_get_db():
+    db = TestSessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
 
 
-@pytest.fixture()
-def single_entry_history_dir(tmp_path: Path) -> Path:
-    """Return a history directory with a single-dict-format file."""
-    h = tmp_path / "history"
-    h.mkdir()
-    entry = {"last_run": "2026-06-20", "commits": 45, "mode": "improvement"}
-    (h / "OldRepo.json").write_text(json.dumps(entry))
-    return h
-
-
-@pytest.fixture()
-def invalid_history_dir(tmp_path: Path) -> Path:
-    """Return a history directory with an invalid JSON file."""
-    h = tmp_path / "history"
-    h.mkdir()
-    (h / "Broken.json").write_text("{not valid json")
-    return h
-
-
-@pytest.fixture()
-def env_with_pat(monkeypatch: pytest.MonkeyPatch) -> Generator[None, None, None]:
-    """Monkeypatch GH_PAT so scripts don't require a real token."""
-    monkeypatch.setenv("GH_PAT", "test-token-123")
-    monkeypatch.setenv("GITHUB_USERNAME", "test-owner")
+@pytest.fixture(scope="session", autouse=True)
+def setup_test_db():
+    Base.metadata.create_all(bind=_test_engine)
     yield
-    # teardown handled by monkeypatch
+    Base.metadata.drop_all(bind=_test_engine)
 
 
-@pytest.fixture()
-def settings_env(monkeypatch: pytest.MonkeyPatch) -> Generator[None, None, None]:
-    """Set all required env vars for Settings."""
-    monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-test")
-    monkeypatch.setenv("GH_PAT", "ghp_test")
-    monkeypatch.setenv("NOTION_API_KEY", "secret_test")
-    monkeypatch.setenv("GMAIL_USER", "test@gmail.com")
-    monkeypatch.setenv("GMAIL_APP_PASS", "test-pass")
-    yield
+@pytest.fixture
+def db_session():
+    db = TestSessionLocal()
+    yield db
+    db.close()
 
 
-@pytest.fixture()
-def multi_repo_history_dir(tmp_path: Path) -> Path:
-    """Return a history directory with multiple repos across different modes."""
-    h = tmp_path / "history"
-    h.mkdir()
-    (h / "Alpha.json").write_text(
-        json.dumps(
-            [
-                {"date": "2026-07-01", "mode": "improvement", "commits": 60, "tests_passed": True},
-                {"date": "2026-07-03", "mode": "improvement", "commits": 60, "tests_passed": True},
-            ]
-        )
-    )
-    (h / "Beta.json").write_text(
-        json.dumps(
-            [
-                {"date": "2026-07-08", "mode": "innovation", "commits": 120, "tests_passed": True},
-            ]
-        )
-    )
-    (h / "Gamma.json").write_text(
-        json.dumps(
-            [
-                {"date": "2026-07-02", "mode": "improvement", "commits": 60, "tests_passed": False},
-            ]
-        )
-    )
-    return h
+@pytest.fixture
+def client(setup_test_db):
+    app.dependency_overrides[get_db] = override_get_db
+    with TestClient(app) as c:
+        yield c
+    app.dependency_overrides.clear()
 
 
-@pytest.fixture()
-def innovation_history_dir(tmp_path: Path) -> Path:
-    """Return a history directory with an INNOVATION mode entry."""
-    h = tmp_path / "history"
-    h.mkdir()
-    (h / "NewProject.json").write_text(
-        json.dumps(
-            [
-                {
-                    "date": "2026-07-08",
-                    "mode": "innovation",
-                    "commits": 114,
-                    "tests_passed": True,
-                    "improvements": ["built new ML pipeline from scratch"],
-                }
-            ]
-        )
-    )
-    return h
+@pytest.fixture
+def sample_property():
+    return {
+        "sqft": 1800.0,
+        "bedrooms": 3,
+        "bathrooms": 2.0,
+        "lot_size": 5000.0,
+        "year_built": 1990,
+        "renovation_year": 2015,
+        "condition_score": 7.5,
+        "zipcode": "94102",
+        "city": "San Francisco",
+        "state": "CA",
+        "school_score": 8.0,
+        "transit_score": 9.0,
+        "walkability_score": 8.5,
+        "crime_rate": 0.3,
+        "median_neighborhood_price": 1_200_000.0,
+        "median_price_per_sqft": 800.0,
+        "avg_rental_yield": 0.05,
+        "listing_days": 14,
+        "list_price": 1_100_000.0,
+    }
+
+
+@pytest.fixture
+def sample_df():
+    rng = np.random.default_rng(42)
+    n = 50
+    return pd.DataFrame({
+        "sqft": rng.uniform(800, 4000, n),
+        "bedrooms": rng.integers(1, 6, n),
+        "bathrooms": rng.choice([1.0, 1.5, 2.0, 2.5, 3.0], n),
+        "lot_size": rng.uniform(2000, 15000, n),
+        "year_built": rng.integers(1950, 2020, n),
+        "renovation_year": rng.integers(2000, 2025, n),
+        "condition_score": rng.uniform(4, 10, n),
+        "zipcode": ["94102"] * n,
+        "city": ["San Francisco"] * n,
+        "state": ["CA"] * n,
+        "school_score": rng.uniform(3, 10, n),
+        "transit_score": rng.uniform(3, 10, n),
+        "walkability_score": rng.uniform(3, 10, n),
+        "crime_rate": rng.uniform(0.1, 0.8, n),
+        "median_neighborhood_price": rng.uniform(300_000, 2_000_000, n),
+        "median_price_per_sqft": rng.uniform(150, 1000, n),
+        "avg_rental_yield": rng.uniform(0.03, 0.10, n),
+        "listing_days": rng.integers(1, 365, n),
+        "list_price": rng.uniform(300_000, 2_000_000, n),
+    })
+
+
+@pytest.fixture
+def sample_target(sample_df):
+    rng = np.random.default_rng(0)
+    base = sample_df["sqft"] * sample_df["median_price_per_sqft"]
+    return (base + rng.normal(0, 50_000, len(sample_df))).clip(100_000).values
