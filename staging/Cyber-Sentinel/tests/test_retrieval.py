@@ -73,3 +73,14 @@ def test_singleton_pattern() -> None:
     idx1 = get_index()
     idx2 = get_index()
     assert idx1 is idx2
+
+
+def test_clear_index_cache_creates_fresh_instance() -> None:
+    from app.retrieval import clear_index_cache, get_index
+
+    first = get_index()
+    assert get_index() is first
+    clear_index_cache()
+    second = get_index()
+    assert second is not first
+    assert second.size == first.size
