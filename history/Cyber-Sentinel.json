@@ -1,0 +1,49 @@
+{
+  "repo": "Cyber-Sentinel",
+  "date": "2026-07-07",
+  "mode": "IMPROVEMENT",
+  "commits": 60,
+  "tests_passed": 102,
+  "lint": "ruff clean",
+  "status": "STAGED - target repo not writable from session",
+  "reason": "All channels to atharvadevne123/Cyber-Sentinel returned 403 'GitHub access to this repository is not enabled for this session'; session scope limited to reflective-lantern",
+  "staged_at": "reflective-lantern:staging/Cyber-Sentinel/ (see STAGING.md for transfer steps)",
+  "bugs_fixed": [
+    "get_feature_importance crashed on fitted VotingClassifier (used estimators_ instead of named_estimators_)",
+    "ModelNotTrainedError never caught by 'except RuntimeError' - untrained /predict returned 500 instead of 503",
+    "train_model never persisted metrics.pkl so load_metrics() always returned empty",
+    "test suite required PostgreSQL; now forces SQLite before app import",
+    "test_clear_model_cache_forces_reload asserted wrong behaviour"
+  ],
+  "tiers": {
+    "Application": [
+      "FastAPI API (8 endpoints)",
+      "XGB/LGBM/RF voting ensemble",
+      "KS-test drift detection",
+      "FAISS pattern index",
+      "LRU prediction cache",
+      "SQLAlchemy models"
+    ],
+    "Tests": [
+      "102 tests across 8 modules"
+    ],
+    "Infra": [
+      "CI matrix 3.11/3.12",
+      "release workflow",
+      "dependabot",
+      "pre-commit",
+      "Docker/compose",
+      "Alembic",
+      "Airflow retrain DAG"
+    ],
+    "Docs": [
+      "README",
+      "CHANGELOG 1.0.1",
+      "CONTRIBUTING",
+      "SECURITY",
+      "CODE_OF_CONDUCT",
+      "STAGING.md"
+    ]
+  },
+  "email_status": "BLOCKED - SMTP EAFNOSUPPORT on 465/587"
+}
