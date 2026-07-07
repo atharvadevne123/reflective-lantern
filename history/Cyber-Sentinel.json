@@ -45,5 +45,6 @@
       "STAGING.md"
     ]
   },
-  "email_status": "BLOCKED - SMTP EAFNOSUPPORT on 465/587"
+  "email_status": "network_blocked",
+  "email_error": "SMTP EAFNOSUPPORT on ports 465/587 — outbound SMTP not permitted in session"
 }
