@@ -14,6 +14,7 @@ from sqlalchemy.orm import Session
 from app import __version__
 from app.cache import cache_prediction, cache_stats, cached_predict
 from app.database import Prediction, get_db, init_db
+from app.exceptions import ModelNotTrainedError
 from app.features import build_feature_vector
 from app.model import get_feature_importance, predict, train_model
 from app.monitoring import (
@@ -180,7 +181,7 @@ async def predict_endpoint(
             db.rollback()
 
         return result
-    except RuntimeError as exc:
+    except (ModelNotTrainedError, RuntimeError) as exc:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
     except Exception as exc:
         logger.error("Prediction error: %s", exc)
@@ -195,7 +196,7 @@ async def metrics() -> dict[str, Any]:
     importance = {}
     try:
         importance = get_feature_importance()
-    except RuntimeError:
+    except (ModelNotTrainedError, RuntimeError):
         pass
     return {
         "prediction_health": health,
@@ -225,5 +226,5 @@ async def feature_importance() -> dict[str, Any]:
     try:
         importance = get_feature_importance()
         return {"feature_importance": importance}
-    except RuntimeError as exc:
+    except (ModelNotTrainedError, RuntimeError) as exc:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
