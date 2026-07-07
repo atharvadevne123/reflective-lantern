@@ -113,3 +113,23 @@ def test_get_feature_drift_summary_no_predictions() -> None:
 
     result = get_feature_drift_summary()
     assert "error" in result
+
+
+def test_drift_threshold_default() -> None:
+    from app.monitoring import DRIFT_THRESHOLD, get_drift_threshold
+
+    assert get_drift_threshold() == DRIFT_THRESHOLD
+
+
+def test_drift_threshold_env_override(monkeypatch) -> None:
+    from app.monitoring import get_drift_threshold
+
+    monkeypatch.setenv("DRIFT_THRESHOLD", "0.01")
+    assert get_drift_threshold() == 0.01
+
+
+def test_drift_threshold_invalid_env_falls_back(monkeypatch) -> None:
+    from app.monitoring import DRIFT_THRESHOLD, get_drift_threshold
+
+    monkeypatch.setenv("DRIFT_THRESHOLD", "not-a-number")
+    assert get_drift_threshold() == DRIFT_THRESHOLD
