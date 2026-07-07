@@ -52,6 +52,14 @@ class Settings:
     )
     dry_run: bool = field(default_factory=lambda: os.environ.get("DRY_RUN", "0") == "1")
 
+    # Palantir Foundry
+    foundry_hostname: str = field(default_factory=lambda: os.environ.get("FOUNDRY_HOSTNAME", ""))
+    foundry_token: str = field(default_factory=lambda: os.environ.get("FOUNDRY_TOKEN", ""))
+    foundry_dataset_rid: str = field(
+        default_factory=lambda: os.environ.get("FOUNDRY_DATASET_RID", "")
+    )
+    foundry_branch: str = field(default_factory=lambda: os.environ.get("FOUNDRY_BRANCH", "master"))
+
     # Run settings
     pf_fix_timeout: int = field(
         default_factory=lambda: int(os.environ.get("PF_FIX_TIMEOUT", "300"))
@@ -80,9 +88,19 @@ class Settings:
         """Return True when all required credentials are present."""
         return len(self.validate()) == 0
 
+    def foundry_configured(self) -> bool:
+        """Return True when Foundry hostname, token, and dataset RID are all set."""
+        return bool(self.foundry_hostname and self.foundry_token and self.foundry_dataset_rid)
+
     def __repr__(self) -> str:
         """Return repr with sensitive fields masked."""
-        _SENSITIVE = {"anthropic_api_key", "gh_pat", "notion_api_key", "gmail_app_pass"}
+        _SENSITIVE = {
+            "anthropic_api_key",
+            "gh_pat",
+            "notion_api_key",
+            "gmail_app_pass",
+            "foundry_token",
+        }
         parts = []
         for f in self.__dataclass_fields__:
             val = getattr(self, f)
