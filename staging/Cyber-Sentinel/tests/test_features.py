@@ -130,3 +130,11 @@ def test_features_from_dataframe() -> None:
     df = pd.DataFrame({"a": [1.0, 2.0], "b": [3.0, 4.0], "c": ["x", "y"]})
     arr = features_from_dataframe(df)
     assert arr.shape == (2, 2)
+
+
+def test_feature_names_align_with_vector() -> None:
+    from app.features import FEATURE_NAMES, build_feature_vector
+
+    vector = build_feature_vector({})
+    assert len(FEATURE_NAMES) == len(vector) == 25
+    assert len(set(FEATURE_NAMES)) == 25
