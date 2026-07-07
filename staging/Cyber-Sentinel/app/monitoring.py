@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import logging
+import os
 from typing import Any
 
 import numpy as np
@@ -12,6 +13,18 @@ logger = logging.getLogger(__name__)
 DRIFT_THRESHOLD = 0.05
 _reference_data: dict[str, np.ndarray] = {}
 _prediction_log: list[dict[str, Any]] = []
+
+
+def get_drift_threshold() -> float:
+    """Return the KS-test p-value threshold, overridable via DRIFT_THRESHOLD env var."""
+    raw = os.environ.get("DRIFT_THRESHOLD")
+    if raw is None:
+        return DRIFT_THRESHOLD
+    try:
+        return float(raw)
+    except ValueError:
+        logger.warning("Invalid DRIFT_THRESHOLD %r; falling back to %s", raw, DRIFT_THRESHOLD)
+        return DRIFT_THRESHOLD
 
 
 def set_reference_distribution(feature_name: str, values: np.ndarray) -> None:
@@ -59,7 +72,7 @@ def compute_drift(feature_name: str, current_values: np.ndarray) -> dict[str, An
 
     try:
         result = stats.ks_2samp(reference, current)
-        drift_detected = bool(result.pvalue < DRIFT_THRESHOLD)
+        drift_detected = bool(result.pvalue < get_drift_threshold())
         if drift_detected:
             logger.warning(
                 "Drift detected | feature=%s ks=%.4f p=%.4f n_ref=%d n_cur=%d",
