@@ -48,6 +48,7 @@ docker compose up -d
 | GET | `/metrics` | Prediction health + drift summary |
 | GET | `/drift` | Run drift check and return alerts |
 | GET | `/feature-importance` | RF feature importance scores |
+| GET | `/cache/stats` | Prediction cache size and hit/miss counters |
 
 ### Predict Example
 
@@ -91,7 +92,17 @@ Client ──► FastAPI (main.py)
    PostgreSQL via SQLAlchemy ORM
 ```
 
+## Configuration
+
+| Variable | Default | Purpose |
+|----------|---------|---------|
+| `DATABASE_URL` | local PostgreSQL | SQLAlchemy connection string |
+| `MODEL_PATH` | `/tmp/cyber_sentinel_model.pkl` | Persisted model location |
+| `DRIFT_THRESHOLD` | `0.05` | KS-test p-value threshold for drift alerts |
+
 ## Testing
+
+The suite (100+ tests) runs against SQLite; no PostgreSQL needed locally.
 
 ```bash
 make test
