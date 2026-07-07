@@ -118,3 +118,12 @@ def test_feature_importance_returns_dict() -> None:
     train_model()
     importance = get_feature_importance()
     assert isinstance(importance, dict)
+
+
+def test_load_metrics_after_training() -> None:
+    from app.model import load_metrics, train_model
+
+    train_model()
+    metrics = load_metrics()
+    assert metrics.get("f1_score") is not None
+    assert metrics.get("cv_mean") is not None
