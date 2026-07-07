@@ -56,3 +56,26 @@ def test_cache_multiple_entries(n: int) -> None:
     for i in range(n):
         cache_prediction([float(i)] * 25, {"label": "normal", "idx": i})
     assert cache_stats()["size"] == n
+
+
+def test_cache_stats_tracks_hits_and_misses() -> None:
+    from app.cache import cache_prediction, cache_stats, cached_predict, clear_cache
+
+    clear_cache()
+    features = [1.0] * 25
+    assert cached_predict(features) is None
+    cache_prediction(features, {"label": "normal"})
+    assert cached_predict(features) is not None
+    stats = cache_stats()
+    assert stats["hits"] == 1
+    assert stats["misses"] == 1
+
+
+def test_clear_cache_resets_counters() -> None:
+    from app.cache import cache_stats, cached_predict, clear_cache
+
+    cached_predict([2.0] * 25)
+    clear_cache()
+    stats = cache_stats()
+    assert stats["hits"] == 0
+    assert stats["misses"] == 0
