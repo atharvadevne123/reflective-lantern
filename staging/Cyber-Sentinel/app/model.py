@@ -128,7 +128,7 @@ def train_model(X: np.ndarray | None = None, y: np.ndarray | None = None) -> dic
     _model_cache["version"] = "1.0.0"
 
     logger.info("Model trained and saved. F1=%.4f, CV mean=%.4f", f1, cv_scores.mean())
-    return {
+    metrics = {
         "version": "1.0.0",
         "f1_score": round(f1, 4),
         "cv_mean": round(float(cv_scores.mean()), 4),
@@ -137,6 +137,10 @@ def train_model(X: np.ndarray | None = None, y: np.ndarray | None = None) -> dic
         "n_samples": len(X),
         "estimators": [e[0] for e in estimators],
     }
+    # Persist metrics alongside the model so load_metrics() has data to serve.
+    with open(MODEL_PATH.parent / "metrics.pkl", "wb") as f:
+        pickle.dump(metrics, f)
+    return metrics
 
 
 def _load_model() -> tuple[Pipeline, LabelEncoder]:
