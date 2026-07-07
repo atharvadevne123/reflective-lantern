@@ -1,10 +1,15 @@
-.PHONY: install test lint format run docker-build docker-up clean
+.PHONY: install test coverage check lint format run docker-build docker-up clean
 
 install:
 	pip install -e ".[dev]"
 
 test:
 	pytest tests/ -v --tb=short --cov=app --cov-report=term-missing
+
+coverage:
+	pytest tests/ -q --cov=app --cov-report=html --cov-report=term
+
+check: lint test
 
 lint:
 	ruff check . --select E,F,W,I --ignore E501
