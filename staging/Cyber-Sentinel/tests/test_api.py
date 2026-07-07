@@ -111,3 +111,14 @@ def test_health_response_has_version(client: TestClient) -> None:
 def test_correlation_id_header(client: TestClient) -> None:
     resp = client.get("/health", headers={"X-Correlation-ID": "test-123"})
     assert resp.headers.get("X-Correlation-ID") == "test-123"
+
+
+def test_predict_untrained_returns_503(client, sample_event, monkeypatch, tmp_path) -> None:
+    import app.model as model_module
+    from app.cache import clear_cache
+
+    clear_cache()
+    monkeypatch.setattr(model_module, "MODEL_PATH", tmp_path / "missing.pkl")
+    monkeypatch.setattr(model_module, "LABEL_ENCODER_PATH", tmp_path / "missing_le.pkl")
+    resp = client.post("/predict", json=sample_event)
+    assert resp.status_code == 503
