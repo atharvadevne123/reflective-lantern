@@ -123,7 +123,9 @@ def weekly_report(end_date: date | None = None, window_days: int = 7) -> str:
 def main() -> None:
     """Entry point."""
     parser = argparse.ArgumentParser(description="Generate Reflective Lantern Markdown reports")
-    parser.add_argument("--mode", choices=["daily", "weekly"], default="daily", help="Report type")
+    parser.add_argument(
+        "--mode", choices=["daily", "weekly"], default="daily", help="Report type"
+    )
     parser.add_argument("--date", help="Target date (YYYY-MM-DD), defaults to today")
     parser.add_argument("--output", help="Write report to this file (default: stdout)")
     args = parser.parse_args()

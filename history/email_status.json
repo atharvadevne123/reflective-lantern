@@ -44,14 +44,5 @@
     "commits": 60,
     "tests_passed": 228,
     "tests_skipped": 5
-  },
-  {
-    "date": "2026-07-07",
-    "repo": "Cyber-Sentinel",
-    "email_to": "devneatharva@gmail.com",
-    "status": "BLOCKED",
-    "reason": "SMTP outbound blocked in remote execution environment - OSError EAFNOSUPPORT on SSL:465 and STARTTLS:587",
-    "commits": 60,
-    "tests_passed": 102
   }
 ]

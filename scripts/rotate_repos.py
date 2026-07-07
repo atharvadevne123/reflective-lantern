@@ -35,9 +35,10 @@ def fetch_repos(owner: str, token: str) -> list[dict[str, Any]]:
     with urllib.request.urlopen(req, timeout=15) as r:
         repos = json.load(r)
     return [
-        r
-        for r in repos
-        if not r.get("archived") and not r.get("fork") and r["name"] != "reflective-lantern"
+        r for r in repos
+        if not r.get("archived")
+        and not r.get("fork")
+        and r["name"] != "reflective-lantern"
     ]
 
 
@@ -56,7 +57,9 @@ def select_repo(
     Raises ValueError when the repo list has fewer than *min_repos* entries.
     """
     if len(repos) < min_repos:
-        raise ValueError(f"Need at least {min_repos} repo(s), got {len(repos)}")
+        raise ValueError(
+            f"Need at least {min_repos} repo(s), got {len(repos)}"
+        )
     rng = random.Random(target_date.year * 10000 + target_date.month * 100 + target_date.day)
     return rng.choice(repos)
 
@@ -86,17 +89,12 @@ def main() -> int:
     repo = select_repo(repos, target_date)
 
     if args.json:
-        print(
-            json.dumps(
-                {
-                    "name": repo["name"],
-                    "language": repo.get("language"),
-                    "description": repo.get("description"),
-                    "date": target_date.isoformat(),
-                },
-                indent=2,
-            )
-        )
+        print(json.dumps({
+            "name": repo["name"],
+            "language": repo.get("language"),
+            "description": repo.get("description"),
+            "date": target_date.isoformat(),
+        }, indent=2))
     else:
         print(repo["name"])
     return 0

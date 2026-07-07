@@ -10,7 +10,9 @@ import pytest
 HISTORY_DIR = Path(__file__).parent.parent / "history"
 # commit_schedule.json is a config file; schema.json is a JSON schema — neither are run records
 _EXCLUDED = {"schema.json", "commit_schedule.json"}
-HISTORY_FILES = sorted(p for p in HISTORY_DIR.glob("*.json") if p.name not in _EXCLUDED)
+HISTORY_FILES = sorted(
+    p for p in HISTORY_DIR.glob("*.json") if p.name not in _EXCLUDED
+)
 
 
 @pytest.mark.parametrize("history_file", HISTORY_FILES, ids=lambda p: p.stem)
@@ -69,7 +71,6 @@ def test_history_file_mode_if_present_is_valid(history_file: Path) -> None:
 def test_history_file_dates_are_iso_format(history_file: Path) -> None:
     """All date and last_run values must parse as ISO dates."""
     from datetime import date
-
     data = json.loads(history_file.read_text())
     entries = data if isinstance(data, list) else [data]
     for i, entry in enumerate(entries):
@@ -86,7 +87,6 @@ def test_history_file_dates_are_iso_format(history_file: Path) -> None:
 def test_history_file_email_status_if_present_is_valid(history_file: Path) -> None:
     """email_status must be a recognised value when present."""
     from scripts.validate_history import VALID_EMAIL_STATUS_PREFIXES, VALID_EMAIL_STATUSES
-
     data = json.loads(history_file.read_text())
     entries = data if isinstance(data, list) else [data]
     for i, entry in enumerate(entries):

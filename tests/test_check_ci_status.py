@@ -16,7 +16,6 @@ SAMPLE_RUNS: list[dict[str, Any]] = [
 
 def test_get_latest_runs_deduplicates_by_workflow_id() -> None:
     from scripts.check_ci_status import get_latest_runs
-
     mock_data = {"workflow_runs": SAMPLE_RUNS}
     with patch("scripts.check_ci_status._get", return_value=mock_data):
         runs = get_latest_runs("owner", "repo", "token")
@@ -26,7 +25,6 @@ def test_get_latest_runs_deduplicates_by_workflow_id() -> None:
 
 def test_get_latest_runs_picks_first_occurrence() -> None:
     from scripts.check_ci_status import get_latest_runs
-
     mock_data = {"workflow_runs": SAMPLE_RUNS}
     with patch("scripts.check_ci_status._get", return_value=mock_data):
         runs = get_latest_runs("owner", "repo", "token")
@@ -36,7 +34,6 @@ def test_get_latest_runs_picks_first_occurrence() -> None:
 
 def test_get_latest_runs_returns_empty_on_error() -> None:
     from scripts.check_ci_status import get_latest_runs
-
     with patch("scripts.check_ci_status._get", side_effect=Exception("network error")):
         runs = get_latest_runs("owner", "repo", "token")
     assert runs == []
@@ -44,30 +41,24 @@ def test_get_latest_runs_returns_empty_on_error() -> None:
 
 def test_get_latest_runs_handles_empty_response() -> None:
     from scripts.check_ci_status import get_latest_runs
-
     with patch("scripts.check_ci_status._get", return_value={"workflow_runs": []}):
         runs = get_latest_runs("owner", "repo", "token")
     assert runs == []
 
 
-@pytest.mark.parametrize(
-    "conclusion,is_fail",
-    [
-        ("success", False),
-        ("failure", True),
-        ("timed_out", True),
-        ("skipped", False),
-        ("cancelled", False),
-    ],
-)
+@pytest.mark.parametrize("conclusion,is_fail", [
+    ("success", False),
+    ("failure", True),
+    ("timed_out", True),
+    ("skipped", False),
+    ("cancelled", False),
+])
 def test_failure_conclusions(conclusion: str, is_fail: bool) -> None:
     assert (conclusion in ("failure", "timed_out")) == is_fail
-
 
 def test_get_retries_on_network_error() -> None:
     """_get() should retry the configured number of times before raising."""
     import urllib.request
-
     call_count = 0
 
     def failing_open(*args: object, **kwargs: object) -> object:
@@ -76,7 +67,6 @@ def test_get_retries_on_network_error() -> None:
         raise OSError("connection refused")
 
     from scripts.check_ci_status import _get
-
     with (
         patch.object(urllib.request, "urlopen", side_effect=failing_open),
         pytest.raises(RuntimeError, match="All"),
@@ -85,23 +75,19 @@ def test_get_retries_on_network_error() -> None:
     assert call_count == 2
 
 
-@pytest.mark.parametrize(
-    "runs,expected_count",
-    [
-        ([], 0),
-        ([{"workflow_id": 1, "name": "CI", "conclusion": "success"}], 1),
-        (
-            [
-                {"workflow_id": 1, "name": "CI", "conclusion": "success"},
-                {"workflow_id": 2, "name": "Deploy", "conclusion": "failure"},
-            ],
-            2,
-        ),
-    ],
-)
+@pytest.mark.parametrize("runs,expected_count", [
+    ([], 0),
+    ([{"workflow_id": 1, "name": "CI", "conclusion": "success"}], 1),
+    (
+        [
+            {"workflow_id": 1, "name": "CI", "conclusion": "success"},
+            {"workflow_id": 2, "name": "Deploy", "conclusion": "failure"},
+        ],
+        2,
+    ),
+])
 def test_get_latest_runs_count(runs: list[dict], expected_count: int) -> None:
     from scripts.check_ci_status import get_latest_runs
-
     with patch("scripts.check_ci_status._get", return_value={"workflow_runs": runs}):
         result = get_latest_runs("owner", "repo", "token")
     assert len(result) == expected_count
@@ -109,17 +95,14 @@ def test_get_latest_runs_count(runs: list[dict], expected_count: int) -> None:
 
 def test_get_latest_runs_no_workflow_id_key() -> None:
     from scripts.check_ci_status import get_latest_runs
-
     runs = [{"name": "CI", "conclusion": "success"}]  # missing workflow_id
     with patch("scripts.check_ci_status._get", return_value={"workflow_runs": runs}):
         result = get_latest_runs("owner", "repo", "token")
     assert len(result) == 1
 
-
 def test_get_latest_runs_multiple_no_workflow_id() -> None:
     """Runs without workflow_id are all grouped under None key → only one kept."""
     from scripts.check_ci_status import get_latest_runs
-
     runs = [
         {"name": "CI", "conclusion": "success"},
         {"name": "Deploy", "conclusion": "failure"},
@@ -134,7 +117,6 @@ def test_get_latest_runs_multiple_no_workflow_id() -> None:
 @pytest.mark.parametrize("retries", [1, 2, 3])
 def test_get_retries_count(retries: int) -> None:
     import urllib.request
-
     call_count = 0
 
     def failing_open(*args: object, **kwargs: object) -> object:
@@ -143,7 +125,6 @@ def test_get_retries_count(retries: int) -> None:
         raise OSError("refused")
 
     from scripts.check_ci_status import _get
-
     with (
         patch.object(urllib.request, "urlopen", side_effect=failing_open),
         pytest.raises(RuntimeError),
@@ -155,7 +136,6 @@ def test_get_retries_count(retries: int) -> None:
 def test_get_latest_runs_no_workflow_id_dedup() -> None:
     import urllib.request
     from unittest.mock import MagicMock, patch
-
     run = {"workflow_id": None, "name": "CI", "conclusion": "success", "status": "completed"}
     payload = {"workflow_runs": [run, run, run]}
 
@@ -164,7 +144,6 @@ def test_get_latest_runs_no_workflow_id_dedup() -> None:
     ctx_mock.__exit__ = MagicMock(return_value=False)
 
     import json
-
     mock_response = MagicMock()
     mock_response.__enter__ = lambda s: s
     mock_response.__exit__ = MagicMock(return_value=False)
@@ -172,16 +151,12 @@ def test_get_latest_runs_no_workflow_id_dedup() -> None:
 
     with patch.object(urllib.request, "urlopen", return_value=mock_response):
         from scripts.check_ci_status import get_latest_runs
-
         runs = get_latest_runs("owner", "repo", "tok")
     assert len(runs) == 1
 
 
-def test_repo_flag_filters_to_single_repo(
-    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture
-) -> None:
+def test_repo_flag_filters_to_single_repo(monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture) -> None:
     import sys
-
     with monkeypatch.context() as m:
         m.setenv("GH_PAT", "tok")
         import json
@@ -208,7 +183,6 @@ def test_repo_flag_filters_to_single_repo(
             return mock
 
         import scripts.check_ci_status as ccs
-
         with (
             patch.object(urllib.request, "urlopen", side_effect=fake_urlopen),
             patch.object(sys, "argv", ["check_ci_status.py", "--repo", "repo-a"]),

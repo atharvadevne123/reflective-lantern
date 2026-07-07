@@ -53,7 +53,11 @@ def test_check_repo_marks_failing_workflow(
 
     def mock_get(url: str, token: str) -> Any:
         if "actions/runs" in url:
-            return {"workflow_runs": [{"workflow_id": 1, "name": "CI", "conclusion": "failure"}]}
+            return {
+                "workflow_runs": [
+                    {"workflow_id": 1, "name": "CI", "conclusion": "failure"}
+                ]
+            }
         if "branches" in url:
             return [{"name": "main"}]
         if "releases" in url:
@@ -86,15 +90,12 @@ def test_check_repo_detects_open_branches(
     assert "feature/new" in health.open_branches
 
 
-@pytest.mark.parametrize(
-    "workflows,expected_failing",
-    [
-        ([], []),
-        ([{"workflow_id": 1, "name": "CI", "conclusion": "success"}], []),
-        ([{"workflow_id": 1, "name": "CI", "conclusion": "failure"}], ["CI"]),
-        ([{"workflow_id": 1, "name": "CI", "conclusion": "timed_out"}], ["CI"]),
-    ],
-)
+@pytest.mark.parametrize("workflows,expected_failing", [
+    ([], []),
+    ([{"workflow_id": 1, "name": "CI", "conclusion": "success"}], []),
+    ([{"workflow_id": 1, "name": "CI", "conclusion": "failure"}], ["CI"]),
+    ([{"workflow_id": 1, "name": "CI", "conclusion": "timed_out"}], ["CI"]),
+])
 def test_check_repo_workflow_conclusions(
     workflows: list[dict[str, str]], expected_failing: list[str]
 ) -> None:
@@ -118,7 +119,6 @@ def test_check_repo_workflow_conclusions(
 def test_get_retries_on_failure() -> None:
     """_get() should retry the configured number of times before raising."""
     from scripts.health_check import _get
-
     call_count = 0
 
     def failing_urlopen(*args: object, **kwargs: object) -> object:
@@ -127,7 +127,6 @@ def test_get_retries_on_failure() -> None:
         raise OSError("network error")
 
     import urllib.request
-
     with (
         patch.object(urllib.request, "urlopen", side_effect=failing_urlopen),
         pytest.raises(RuntimeError, match="All"),
@@ -141,16 +140,13 @@ def test_repo_health_name_stored() -> None:
     assert h.name == "My-Repo"
 
 
-@pytest.mark.parametrize(
-    "has_release,has_ci,branches,workflows,healthy",
-    [
-        (True, True, [], [], True),
-        (False, True, [], [], False),
-        (True, False, [], [], False),
-        (True, True, ["feat/x"], [], False),
-        (True, True, [], ["CI"], False),
-    ],
-)
+@pytest.mark.parametrize("has_release,has_ci,branches,workflows,healthy", [
+    (True, True, [], [], True),
+    (False, True, [], [], False),
+    (True, False, [], [], False),
+    (True, True, ["feat/x"], [], False),
+    (True, True, [], ["CI"], False),
+])
 def test_repo_health_parametrized(
     has_release: bool,
     has_ci: bool,
@@ -170,7 +166,6 @@ def test_repo_health_parametrized(
 
 def test_repo_health_stats_healthy() -> None:
     from scripts.health_check import RepoHealth
-
     r = RepoHealth(name="clean-repo")
     stats = r.stats()
     assert stats["healthy"] is True
@@ -182,7 +177,6 @@ def test_repo_health_stats_healthy() -> None:
 
 def test_repo_health_stats_with_issues() -> None:
     from scripts.health_check import RepoHealth
-
     r = RepoHealth(
         name="broken",
         failing_workflows=["CI", "Lint"],
@@ -196,21 +190,17 @@ def test_repo_health_stats_with_issues() -> None:
     assert stats["has_release"] is False
 
 
-@pytest.mark.parametrize(
-    "failing,branches,has_release,has_ci,expected_healthy",
-    [
-        ([], [], True, True, True),
-        (["CI"], [], True, True, False),
-        ([], ["branch-x"], True, True, False),
-        ([], [], False, True, False),
-        ([], [], True, False, False),
-    ],
-)
+@pytest.mark.parametrize("failing,branches,has_release,has_ci,expected_healthy", [
+    ([], [], True, True, True),
+    (["CI"], [], True, True, False),
+    ([], ["branch-x"], True, True, False),
+    ([], [], False, True, False),
+    ([], [], True, False, False),
+])
 def test_repo_health_healthy_parametrized(
     failing: list, branches: list, has_release: bool, has_ci: bool, expected_healthy: bool
 ) -> None:
     from scripts.health_check import RepoHealth
-
     r = RepoHealth(
         name="repo",
         failing_workflows=failing,

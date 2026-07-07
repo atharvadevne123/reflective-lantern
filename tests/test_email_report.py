@@ -10,7 +10,6 @@ import pytest
 
 def test_build_message_no_attachment() -> None:
     from scripts.email_report import build_message
-
     msg = build_message("Sub", "Body", "a@b.com", "c@d.com")
     assert msg["Subject"] == "Sub"
     assert msg["From"] == "a@b.com"
@@ -19,7 +18,6 @@ def test_build_message_no_attachment() -> None:
 
 def test_build_message_with_pdf(tmp_path: Path) -> None:
     from scripts.email_report import build_message
-
     pdf = tmp_path / "report.pdf"
     pdf.write_bytes(b"%PDF-1.4 fake")
     msg = build_message("Sub", "Body", "a@b.com", "c@d.com", pdf_path=pdf)
@@ -30,7 +28,6 @@ def test_build_message_with_pdf(tmp_path: Path) -> None:
 
 def test_build_message_missing_pdf_skipped(tmp_path: Path) -> None:
     from scripts.email_report import build_message
-
     missing = tmp_path / "missing.pdf"
     msg = build_message("Sub", "Body", "a@b.com", "c@d.com", pdf_path=missing)
     parts = [p for p in msg.walk() if p.get_content_type() == "application/pdf"]
@@ -41,7 +38,6 @@ def test_send_via_smtp_success() -> None:
     from email.mime.multipart import MIMEMultipart
 
     from scripts.email_report import send_via_smtp
-
     mock_smtp = MagicMock()
     mock_smtp.__enter__ = MagicMock(return_value=mock_smtp)
     mock_smtp.__exit__ = MagicMock(return_value=False)
@@ -56,7 +52,6 @@ def test_send_via_smtp_all_ports_fail() -> None:
     from email.mime.multipart import MIMEMultipart
 
     from scripts.email_report import send_via_smtp
-
     with (
         patch("smtplib.SMTP", side_effect=OSError("blocked")),
         patch("smtplib.SMTP_SSL", side_effect=OSError("blocked")),
@@ -70,34 +65,25 @@ def test_send_report_missing_env(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.delenv("GMAIL_USER", raising=False)
     monkeypatch.delenv("GMAIL_APP_PASS", raising=False)
     from scripts.email_report import send_report
-
     result = send_report(subject="S", body="B")
     assert result is False
 
 
-@pytest.mark.parametrize(
-    "subject,body",
-    [
-        ("Daily Report", "60 commits pushed."),
-        ("Weekly Summary", "7 repos updated this week."),
-        ("Innovation: New-Repo", "Full ML project built from scratch."),
-    ],
-)
+@pytest.mark.parametrize("subject,body", [
+    ("Daily Report", "60 commits pushed."),
+    ("Weekly Summary", "7 repos updated this week."),
+    ("Innovation: New-Repo", "Full ML project built from scratch."),
+])
 def test_build_message_various_subjects(subject: str, body: str) -> None:
     from scripts.email_report import build_message
-
     msg = build_message(subject, body, "sender@test.com", "recv@test.com")
     assert msg["Subject"] == subject
 
 
 def test_build_message_with_subject_prefix() -> None:
     from scripts.email_report import build_message
-
     msg = build_message(
-        "Daily Report",
-        "body",
-        "s@t.com",
-        "r@t.com",
+        "Daily Report", "body", "s@t.com", "r@t.com",
         subject_prefix="[Reflective Lantern]",
     )
     assert msg["Subject"] == "[Reflective Lantern] Daily Report"
@@ -105,14 +91,12 @@ def test_build_message_with_subject_prefix() -> None:
 
 def test_build_message_empty_prefix_no_leading_space() -> None:
     from scripts.email_report import build_message
-
     msg = build_message("Subject", "body", "s@t.com", "r@t.com", subject_prefix="")
     assert msg["Subject"] == "Subject"
 
 
 def test_build_message_prefix_strips_correctly() -> None:
     from scripts.email_report import build_message
-
     msg = build_message("Report", "body", "s@t.com", "r@t.com", subject_prefix="[LN]")
     assert not msg["Subject"].startswith(" ")
     assert msg["Subject"] == "[LN] Report"
