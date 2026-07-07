@@ -35,55 +35,7 @@ else:
 PYEOF
 ```
 
-Store the output as MODE.
-
-Then compute the commit target for this week:
-
-```bash
-python3 - <<'PYEOF'
-import datetime, json, os, math
-
-config_path = os.path.join(os.environ.get('LANTERN_DIR', '.'), 'history', 'commit_schedule.json')
-try:
-    with open(config_path) as f:
-        config = json.load(f)
-except Exception:
-    config = {}
-
-today = datetime.date.today()
-iso = today.isocalendar()
-
-if 'start_year' not in config:
-    config = {
-        'start_year': iso[0],
-        'start_week': iso[1],
-        'base_commits_per_week': 300,
-        'increment_per_week': 200
-    }
-    os.makedirs(os.path.dirname(config_path), exist_ok=True)
-    with open(config_path, 'w') as f:
-        json.dump(config, f, indent=2)
-
-start_date = datetime.date.fromisocalendar(config['start_year'], config['start_week'], 1)
-weeks_elapsed = max(0, (today - start_date).days // 7)
-weekly_target = config['base_commits_per_week'] + weeks_elapsed * config['increment_per_week']
-daily_target  = math.ceil(weekly_target / 5)
-
-print(f"WEEKS_ELAPSED={weeks_elapsed}")
-print(f"WEEKLY_TARGET={weekly_target}")
-print(f"DAILY_TARGET={daily_target}")
-PYEOF
-```
-
-Parse the printed lines and export:
-```bash
-eval $(python3 ... | grep -E '^(WEEKS_ELAPSED|WEEKLY_TARGET|DAILY_TARGET)=' | sed 's/^/export /')
-echo "Week $((WEEKS_ELAPSED+1)): $WEEKLY_TARGET commits/week → $DAILY_TARGET commits today"
-```
-
-Store `$DAILY_TARGET` — every commit gate below uses this variable instead of a fixed number.
-
-Then **before branching into IMPROVEMENT or INNOVATION**, run the full pre-flight below.
+Store the output as MODE. Then **before branching into IMPROVEMENT or INNOVATION**, run the full pre-flight below.
 
 ---
 
@@ -351,11 +303,11 @@ Use Glob and Read to examine key source files. Understand:
 
 Do NOT start making changes until you have a clear picture.
 
-## PHASE 4 — PLAN $DAILY_TARGET IMPROVEMENTS (INCREMENTAL WEEKLY TARGET)
+## PHASE 4 — PLAN 60 IMPROVEMENTS (300 COMMITS/WEEK TARGET)
 
-**You MUST make exactly $DAILY_TARGET atomic commits this run ($WEEKLY_TARGET commits/week ÷ 5 weekdays = $DAILY_TARGET/day).**
-Each individual file change = one commit. Plan $DAILY_TARGET+ before you start implementing.
-Track your commit count after every `git commit`: "Commit N/$DAILY_TARGET done."
+**You MUST make exactly 60 atomic commits this run. 300 commits/week ÷ 5 weekdays = 60/day.**
+Each individual file change = one commit. Plan 60+ before you start implementing.
+Track your commit count after every `git commit`: "Commit N/60 done."
 Do NOT combine unrelated files into one commit. Be extremely granular.
 
 Identify 60 specific improvements across these tiers. Work top-down — exhaust each tier before moving to the next:
@@ -443,7 +395,7 @@ jobs:
 - Fix N+1 ORM queries (joinedload / selectinload)
 - Add connection pooling where missing
 
-## PHASE 5 — IMPLEMENT (TARGET: $DAILY_TARGET COMMITS)
+## PHASE 5 — IMPLEMENT (TARGET: 60 COMMITS)
 
 For each improvement:
 1. Use Grep to find the relevant code — don't read whole files
@@ -451,8 +403,8 @@ For each improvement:
 3. **One file change = one commit. No exceptions.**
 ```bash
 git add <one specific file>
-git commit -m "type(N/$DAILY_TARGET): precise one-line description"
-# Example: "fix(12/$DAILY_TARGET): add null check for DB response in get_user()"
+git commit -m "type(N/60): precise one-line description"
+# Example: "fix(12/60): add null check for DB response in get_user()"
 ```
 Prefixes: `feat` / `fix` / `refactor` / `ci` / `docs` / `chore` / `test`
 
@@ -506,10 +458,10 @@ Before pushing, count your commits and enforce the minimum:
 
 ```bash
 COMMIT_COUNT=$(git log origin/main..HEAD --oneline | wc -l | tr -d ' ')
-echo "Commits ready to push: $COMMIT_COUNT / $DAILY_TARGET required"
+echo "Commits ready to push: $COMMIT_COUNT"
 ```
 
-**If `COMMIT_COUNT` < $DAILY_TARGET — do NOT push. Keep working from this fill-up list:**
+**If `COMMIT_COUNT` < 60 — do NOT push. Keep working from this fill-up list:**
 
 Work through these in order, one commit per item, until you reach 60:
 
@@ -562,7 +514,7 @@ Work through these in order, one commit per item, until you reach 60:
 - Any function > 40 lines → extract named helpers
 - Any repeated logic block appearing 2+ times → extract shared utility
 
-Keep going until `COMMIT_COUNT` ≥ $DAILY_TARGET. This gate is non-negotiable.
+Keep going until `COMMIT_COUNT` ≥ 60. This gate is non-negotiable.
 
 ## PHASE 8 — PUSH TO MAIN
 
@@ -605,7 +557,7 @@ IMPROVEMENTS  = [                   # list every improvement applied
 ]
 TESTS_STATUS  = "PASSED"            # "PASSED" or "FAILED: <reason>"
 README_STATUS = "Updated"           # "Updated" or "No changes"
-COMMITS_COUNT = DAILY_TARGET        # integer — must be ≥ DAILY_TARGET (set from schedule)
+COMMITS_COUNT = 60                  # integer — must be ≥60
 # ─────────────────────────────────────────────────────────────────
 
 import datetime as _dt
@@ -727,7 +679,7 @@ Read `history/[REPO_NAME].json` (or start with `[]`), append:
   "mode": "improvement",
   "improvements": ["desc1", "desc2", "..."],
   "tests_passed": true,
-  "commits": "$DAILY_TARGET",
+  "commits": 60,
   "notes": ""
 }
 ```
@@ -745,94 +697,70 @@ git push
 
 This mode fires every Wednesday on the 2nd and 4th week of the month.
 
-## PHASE A — SCAN GITHUB FOR MOST-STARRED REPO
+## PHASE A — SCRAPE TRENDING TECH
 
-Find the GitHub repository with the highest all-time star count. Read its README and description to understand its topic, then use that as inspiration for a new project.
+Fetch from multiple sources:
 
 ```bash
-# Step 1 — Find the top 10 most-starred repos on GitHub
+# Hacker News top stories (no auth needed)
+curl -s "https://hacker-news.firebaseio.com/v0/topstories.json" | python3 -c "
+import json,sys
+ids = json.load(sys.stdin)[:30]
+print(json.dumps(ids))
+" > /tmp/hn_ids.json
+
+# Fetch first 15 story details
 python3 - <<'PYEOF'
-import urllib.request, json, os
+import json, urllib.request, time
+with open('/tmp/hn_ids.json') as f:
+    ids = json.load(f)
 
-GH_PAT = os.environ.get('GH_PAT', '')
-headers = {
-    'Authorization': f'Bearer {GH_PAT}',
-    'Accept': 'application/vnd.github+json',
-    'X-GitHub-Api-Version': '2022-11-28'
-}
+stories = []
+for sid in ids[:15]:
+    try:
+        url = f"https://hacker-news.firebaseio.com/v0/item/{sid}.json"
+        with urllib.request.urlopen(url, timeout=5) as r:
+            story = json.load(r)
+        if story.get('type') == 'story' and story.get('title'):
+            stories.append({
+                'title': story['title'],
+                'url': story.get('url', ''),
+                'score': story.get('score', 0),
+                'id': sid
+            })
+        time.sleep(0.1)
+    except:
+        pass
 
-url = "https://api.github.com/search/repositories?q=stars:>1&sort=stars&order=desc&per_page=10"
-req = urllib.request.Request(url, headers=headers)
-with urllib.request.urlopen(req, timeout=15) as r:
-    data = json.load(r)
-
-repos = data.get('items', [])
-print("Top 10 most-starred GitHub repositories:")
-for repo in repos:
-    print(f"[{repo['stargazers_count']:,}★] {repo['full_name']} — {repo.get('description','')}")
-
-with open('/tmp/top_starred_repos.json', 'w') as f:
-    json.dump(repos, f)
+stories.sort(key=lambda s: s['score'], reverse=True)
+for s in stories[:10]:
+    print(f"[{s['score']}] {s['title']} — {s['url']}")
 PYEOF
-```
 
-```bash
-# Step 2 — Fetch README of the #1 most-starred repo to understand the topic
-python3 - <<'PYEOF'
-import urllib.request, json, os, base64
-
-GH_PAT = os.environ.get('GH_PAT', '')
-headers = {
-    'Authorization': f'Bearer {GH_PAT}',
-    'Accept': 'application/vnd.github+json'
-}
-
-with open('/tmp/top_starred_repos.json') as f:
-    repos = json.load(f)
-
-top_repo = repos[0]
-owner, name = top_repo['full_name'].split('/')
-
-print(f"Most-starred repo : {top_repo['full_name']}")
-print(f"Stars             : {top_repo['stargazers_count']:,}")
-print(f"Language          : {top_repo.get('language','unknown')}")
-print(f"Description       : {top_repo.get('description','')}")
-print(f"Topics            : {', '.join(top_repo.get('topics', []))}")
-print(f"URL               : {top_repo['html_url']}")
-
-try:
-    url = f"https://api.github.com/repos/{owner}/{name}/readme"
-    req = urllib.request.Request(url, headers=headers)
-    with urllib.request.urlopen(req, timeout=10) as r:
-        readme_data = json.load(r)
-    readme_text = base64.b64decode(readme_data['content']).decode('utf-8', errors='ignore')
-    print("\n--- README (first 80 lines) ---")
-    print('\n'.join(readme_text.split('\n')[:80]))
-    with open('/tmp/top_repo_readme.txt', 'w') as f:
-        f.write(readme_text)
-except Exception as e:
-    print(f"Could not fetch README: {e}")
-
-with open('/tmp/top_repo_info.json', 'w') as f:
-    json.dump({
-        'full_name': top_repo['full_name'],
-        'stars': top_repo['stargazers_count'],
-        'description': top_repo.get('description', ''),
-        'language': top_repo.get('language', ''),
-        'topics': top_repo.get('topics', []),
-        'html_url': top_repo['html_url']
-    }, f)
+# GitHub trending (Python, today)
+curl -s "https://github.com/trending/python?since=daily" | python3 - <<'PYEOF'
+import sys, re
+html = sys.stdin.read()
+# Extract repo names from trending page
+repos = re.findall(r'href="/([a-zA-Z0-9_-]+/[a-zA-Z0-9_.-]+)".*?class="lh-condensed"', html)
+descs = re.findall(r'<p class="col-9.*?text-gray.*?>(.*?)</p>', html, re.DOTALL)
+seen = set()
+count = 0
+for repo in repos:
+    if repo not in seen and '/' in repo:
+        seen.add(repo)
+        print(f"GitHub Trending: {repo}")
+        count += 1
+    if count >= 8:
+        break
 PYEOF
 ```
 
 ## PHASE B — CHOOSE A PROJECT IDEA
 
-Read `/tmp/top_repo_info.json` and `/tmp/top_repo_readme.txt`. Understand what the most-starred repo does and what problem space it occupies. Extract the core topic or theme (e.g., if the repo is `freeCodeCamp` → education/learning platform; if it's `transformers` → NLP/LLM inference; if it's `linux` → OS/systems).
-
-Then design a **new, original project** inspired by that topic that:
+Review the scraped results. Pick the most interesting item that:
 - Is relevant to AI/ML/data science/MLOps/automation/backend systems
 - Can be built as a self-contained Python project in one session
-- Is NOT a clone or copy of the most-starred repo — it must be a fresh idea in the same domain
 - Is not already in your existing repos (check history/innovation_log.json)
 - Would make a compelling ML engineering portfolio piece
 
@@ -917,7 +845,7 @@ git remote set-url origin \
   "https://x-access-token:${GH_PAT}@github.com/atharvadevne123/${PROJECT_NAME}"
 ```
 
-### Step 3 — Build with the mandatory structure (TARGET: $DAILY_TARGET COMMITS — one per file, no exceptions):
+### Step 3 — Build with the mandatory structure (TARGET: 60 COMMITS — one per file, no exceptions):
 
 ```
 project-name/
@@ -1032,18 +960,18 @@ git add .github/workflows/ci.yml && git commit -m "ci: add GitHub Actions CI wor
 git add README.md               && git commit -m "docs: add full project documentation"
 ```
 
-### Step 4 — Post-build commit count gate (≥$DAILY_TARGET required before push):
+### Step 4 — Post-build commit count gate (≥60 required before push):
 
 ```bash
 COMMIT_COUNT=$(git log origin/main..HEAD --oneline | wc -l | tr -d ' ')
-echo "Innovation commits: $COMMIT_COUNT / $DAILY_TARGET required"
+echo "Innovation commits: $COMMIT_COUNT / 60 required"
 ```
 
-If `COMMIT_COUNT` < $DAILY_TARGET, work through the same fill-up list from Phase 7.5 of IMPROVEMENT mode
+If `COMMIT_COUNT` < 60, work through the same fill-up list from Phase 7.5 of IMPROVEMENT mode
 (type annotations pass → docstring pass → logging pass → test expansion → error handling →
-API expansion → config & DX → README expansion → refactor pass) until you reach $DAILY_TARGET.
+API expansion → config & DX → README expansion → refactor pass) until you reach 60.
 
-Do NOT push until `COMMIT_COUNT` ≥ $DAILY_TARGET.
+Do NOT push until `COMMIT_COUNT` ≥ 60.
 
 Push:
 ```bash
@@ -1189,7 +1117,7 @@ import datetime as _dt
 # ── Substitute actual build values here ──────────────────────────
 TODAY         = "[TODAY]"
 PROJECT_NAME  = "[PROJECT_NAME]"
-INSPIRED_BY   = "[most-starred GitHub repo full_name, e.g. freeCodeCamp/freeCodeCamp]"
+INSPIRED_BY   = "[HN title or trending repo name]"
 SOURCE_URL    = "[URL]"
 DESCRIPTION   = "[2-3 sentence description of what the project does]"
 STACK_ITEMS   = [           # list every tech stack item as "✓ Item" or "✗ Item"
@@ -1350,7 +1278,7 @@ Read `history/innovation_log.json` (or start with `[]`), append:
   "description": "[one-line]",
   "release_url": "[https://github.com/atharvadevne123/PROJECT/releases/tag/v1.0.0]",
   "package_built": true,
-  "commits": "$DAILY_TARGET"
+  "commits": 60
 }
 ```
 

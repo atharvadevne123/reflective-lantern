@@ -1,15 +1,18 @@
 # Security Policy
 
+## Supported Versions
+
+| Version | Supported |
+|---------|-----------|
+| 1.x.x   | yes       |
+
 ## Reporting a Vulnerability
 
-Report security issues privately to devneatharva@gmail.com. Do not open public issues for vulnerabilities.
+Please do not open a public GitHub issue for security vulnerabilities.
 
-## Scope
+Email devneatharva@gmail.com with:
+- A description of the vulnerability
+- Steps to reproduce
+- Potential impact
 
-- SQL injection via untrusted input
-- Authentication bypasses
-- Remote code execution via model loading
-
-## Response
-
-We aim to acknowledge reports within 48 hours and release patches within 7 days for critical issues.
+You will receive a response within 48 hours. Confirmed vulnerabilities will be patched and released promptly.

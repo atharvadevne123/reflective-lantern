@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
-"""Batch-update Notion portfolio Case Studies database.
-
+"""
+Batch-update Notion portfolio Case Studies database.
 Uses the Anthropic SDK to generate descriptions, then patches each page
 via the Notion API (cover + tags + description).
 
@@ -9,31 +9,29 @@ Usage:
     export ANTHROPIC_API_KEY=sk-...
     export NOTION_API_KEY=secret_...
     python notion_portfolio_update.py
-    python notion_portfolio_update.py --descriptions
 """
 
-from __future__ import annotations
-
-import logging
 import os
+import json
 import time
 from typing import Optional
-
 import anthropic
-from dotenv import load_dotenv
 from notion_client import Client as NotionClient
+from dotenv import load_dotenv
 
 load_dotenv()
 
-log = logging.getLogger(__name__)
+ANTHROPIC_API_KEY = os.environ["ANTHROPIC_API_KEY"]
+NOTION_API_KEY = os.environ["NOTION_API_KEY"]
+COVER_BASE = "https://raw.githubusercontent.com/atharvadevne123/reflective-lantern/main/covers"
 
-ANTHROPIC_API_KEY: str = os.environ.get("ANTHROPIC_API_KEY", "")
-NOTION_API_KEY: str = os.environ.get("NOTION_API_KEY", "")
-COVER_BASE: str = "https://raw.githubusercontent.com/atharvadevne123/reflective-lantern/main/covers"
+# ── Project registry ────────────────────────────────────────────────────────
+# page_id: Notion page UUID
+# cover:   SVG filename (no extension) under COVER_BASE
+# tags:    existing Case Studies multi-select options
+# github:  repo name on atharvadevne123
 
-# Project registry
-# page_id: Notion page UUID | cover: SVG filename | tags: multi-select options
-PROJECTS: list[dict[str, object]] = [
+PROJECTS = [
     {
         "page_id": "1c2c64d2-8030-80f2-b711-d22cc503b0af",
         "name": "Healthcare - Heart Failure",
@@ -128,18 +126,16 @@ PROJECTS: list[dict[str, object]] = [
 ]
 
 
-def generate_description(client: anthropic.Anthropic, project: dict[str, object]) -> str:
-    """Ask Claude for a 2-sentence portfolio description for *project*."""
+def generate_description(client: anthropic.Anthropic, project: dict) -> str:
+    """Ask Claude for a 2-sentence portfolio description for a project."""
     github_hint = (
         f"GitHub repo: github.com/atharvadevne123/{project['github']}"
-        if project.get("github")
+        if project["github"]
         else ""
     )
-    raw_tags = project.get("tags")
-    tags_str = ", ".join(str(t) for t in raw_tags) if isinstance(raw_tags, list) else ""
     prompt = (
-        f'Write a concise 2-sentence portfolio description for the project "{project["name"]}". '
-        f"Tags: {tags_str}. {github_hint} "
+        f"Write a concise 2-sentence portfolio description for the project \"{project['name']}\". "
+        f"Tags: {', '.join(project['tags'])}. {github_hint} "
         "Be specific, professional, and highlight the technical value. No fluff."
     )
     message = client.messages.create(
@@ -147,7 +143,7 @@ def generate_description(client: anthropic.Anthropic, project: dict[str, object]
         max_tokens=200,
         messages=[{"role": "user", "content": prompt}],
     )
-    return message.content[0].text.strip()  # type: ignore[union-attr]
+    return message.content[0].text.strip()
 
 
 def update_notion_page(
@@ -158,11 +154,16 @@ def update_notion_page(
     description: Optional[str] = None,
 ) -> None:
     """Patch a Notion page: cover image, Tags multi-select, and Description."""
-    properties: dict[str, object] = {"Tags": {"multi_select": [{"name": t} for t in tags]}}
+    properties: dict = {
+        "Tags": {
+            "multi_select": [{"name": t} for t in tags]
+        }
+    }
     if description:
         properties["Description"] = {
             "rich_text": [{"type": "text", "text": {"content": description}}]
         }
+
     notion.pages.update(
         page_id=page_id,
         cover={"type": "external", "external": {"url": cover_url}},
@@ -170,55 +171,45 @@ def update_notion_page(
     )
 
 
-def project_names() -> list[str]:
-    """Return sorted list of project names from the registry."""
-    return sorted(str(p["name"]) for p in PROJECTS)
-
-
 def main(generate_descriptions: bool = False) -> None:
-    """Iterate over PROJECTS and update each Notion page."""
-    if not ANTHROPIC_API_KEY:
-        log.warning("ANTHROPIC_API_KEY not set; description generation will be skipped")
-    if not NOTION_API_KEY:
-        raise ValueError("NOTION_API_KEY environment variable is required")
-
     ai = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
     notion = NotionClient(auth=NOTION_API_KEY)
 
-    results: list[dict[str, str]] = []
+    results = []
     for project in PROJECTS:
-        name = str(project["name"])
-        log.info("Updating %s", name)
+        print(f"→ {project['name']}")
         cover_url = f"{COVER_BASE}/{project['cover']}.svg"
-        raw_tags = project.get("tags")
-        tags = [str(t) for t in raw_tags] if isinstance(raw_tags, list) else []
 
-        description: Optional[str] = None
-        if generate_descriptions and ANTHROPIC_API_KEY:
-            try:
-                description = generate_description(ai, project)
-                log.info("Description for %s: %s", name, description[:60])
-            except Exception as exc:
-                log.warning("Could not generate description for %s: %s", name, exc)
+        description = None
+        if generate_descriptions:
+            description = generate_description(ai, project)
+            print(f"  description: {description[:80]}…")
 
         try:
-            update_notion_page(notion, str(project["page_id"]), cover_url, tags, description)
-            results.append({"name": name, "status": "ok"})
-            log.info("%s ✔ updated", name)
+            update_notion_page(
+                notion,
+                page_id=project["page_id"],
+                cover_url=cover_url,
+                tags=project["tags"],
+                description=description,
+            )
+            results.append({"name": project["name"], "status": "ok"})
+            print("  ✓ updated")
         except Exception as exc:
-            results.append({"name": name, "status": "error", "error": str(exc)})
-            log.error("%s ✘ %s", name, exc)
+            results.append({"name": project["name"], "status": "error", "error": str(exc)})
+            print(f"  ✗ {exc}")
 
         time.sleep(0.3)  # stay under Notion rate limit
 
-    ok_count = sum(1 for r in results if r["status"] == "ok")
-    log.info("Done: %d/%d pages updated successfully", ok_count, len(results))
+    print("\nSummary:")
+    for r in results:
+        icon = "✓" if r["status"] == "ok" else "✗"
+        print(f"  {icon} {r['name']}")
 
 
 if __name__ == "__main__":
     import argparse
 
-    logging.basicConfig(level=logging.INFO, format="%(levelname)s %(message)s")
     parser = argparse.ArgumentParser(description="Batch-update Notion portfolio pages")
     parser.add_argument(
         "--descriptions",
