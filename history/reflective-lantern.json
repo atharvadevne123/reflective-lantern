@@ -224,5 +224,24 @@
     "last_commit_sha": "3e3eba5",
     "notes": "Session 2026-07-06 (Monday). 515 tests passing. 60 commits to main. Cloud Routine schedule change requested by user -- must be done via claude.ai/code/routines web UI (cannot be modified from within a running session).",
     "email_error": "SMTP outbound blocked \u2014 Address family not supported by protocol (both ports 587 and 465)"
+  },
+  {
+    "date": "2026-07-07",
+    "mode": "improvement",
+    "commits": 8,
+    "tests_passed": true,
+    "tests_total": 548,
+    "improvements": [
+      "fix: mypy type errors in notion_portfolio_update tag handling",
+      "style: ruff format across repo \u2014 lint.sh now fully green",
+      "fix: stale editable install repointed (config/scripts resolved from /tmp copy)",
+      "feat(foundry): Foundry constants + env-backed settings with masked token",
+      "feat(foundry): history-to-dataset export (CSV, JSONL, ontology objects)",
+      "feat(foundry): transactional Datasets v2 API client (stdlib-only)",
+      "feat(foundry): one-command foundry_sync with export-only fallback",
+      "test(foundry): 33 new tests; chore: Makefile targets + .env.example docs"
+    ],
+    "email_status": "skipped",
+    "notes": "User-requested run: bug sweep + Palantir Foundry integration. 548 tests passing (was 515)."
   }
 ]
