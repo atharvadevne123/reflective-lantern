@@ -1,7 +1,8 @@
 .PHONY: install install-dev test lint format type-check clean help \
         summarize summarize-json ci-status all-checks report-daily report-weekly cleanup \
         notion-update notion-update-descriptions health-check weekly-summary validate-history \
-        validate-json clean-cache lint-fix coverage test-fast
+        validate-json clean-cache lint-fix coverage test-fast \
+        foundry-export foundry-export-jsonl foundry-sync
 
 PYTHON ?= python3
 PIP    ?= $(PYTHON) -m pip
@@ -104,3 +105,12 @@ coverage:
 
 test-fast:
 	$(PYTHON) -m pytest tests/ -q --tb=no -x
+
+foundry-export:
+	$(PYTHON) scripts/foundry_export.py --format csv
+
+foundry-export-jsonl:
+	$(PYTHON) scripts/foundry_export.py --format jsonl
+
+foundry-sync:
+	$(PYTHON) scripts/foundry_sync.py
