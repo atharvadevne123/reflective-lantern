@@ -47,6 +47,7 @@ def _fetch_training_data(**context: object) -> dict:
 def _train_and_validate(**context: object) -> None:
     import numpy as np
     import pandas as pd
+
     from app.model import train_model
 
     records = context["ti"].xcom_pull(task_ids="fetch_data", key="records") or []
@@ -67,9 +68,10 @@ def _train_and_validate(**context: object) -> None:
 def _run_drift_check(**context: object) -> None:
     import os
 
-    from app.monitoring import get_recent_predictions, run_drift_check
     from sqlalchemy import create_engine
     from sqlalchemy.orm import sessionmaker
+
+    from app.monitoring import get_recent_predictions, run_drift_check
 
     db_url = os.getenv("DATABASE_URL", "sqlite:///./realty_edge.db")
     engine = create_engine(db_url)

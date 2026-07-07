@@ -3,6 +3,7 @@
 import math
 
 import pytest
+
 from app.time_series import (
     compute_sma,
     exponential_smoothing_forecast,

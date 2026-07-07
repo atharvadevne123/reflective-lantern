@@ -19,7 +19,12 @@ from sqlalchemy.orm import Session
 from app.database import get_db, init_db
 from app.faiss_index import add_property, search_comparable
 from app.model import MODEL_VERSION, load_metrics, load_model, predict
-from app.monitoring import get_drift_summary, get_recent_predictions, log_prediction, run_drift_check
+from app.monitoring import (
+    get_drift_summary,
+    get_recent_predictions,
+    log_prediction,
+    run_drift_check,
+)
 from app.schemas import (
     BatchPredictionResponse,
     BatchPropertyInput,

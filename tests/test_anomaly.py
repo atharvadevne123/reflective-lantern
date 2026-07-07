@@ -1,6 +1,7 @@
 """Tests for valuation anomaly detection."""
 
 import pytest
+
 from app.anomaly import detect_valuation_anomaly
 
 

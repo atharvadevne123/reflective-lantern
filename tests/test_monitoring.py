@@ -1,6 +1,7 @@
 """Tests for drift detection and prediction logging."""
 
 import pytest
+
 from app.monitoring import compute_drift, log_prediction, run_drift_check
 
 

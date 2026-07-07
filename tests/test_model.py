@@ -2,6 +2,7 @@
 
 import numpy as np
 import pytest
+
 from app.model import _synthetic_model, load_metrics, predict, train_model
 
 

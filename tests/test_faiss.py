@@ -2,6 +2,7 @@
 
 import numpy as np
 import pytest
+
 from app.faiss_index import (
     DIM,
     add_property,

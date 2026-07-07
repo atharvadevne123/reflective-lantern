@@ -1,8 +1,9 @@
 """Tests for Pydantic request/response schemas."""
 
 import pytest
-from app.schemas import BatchPropertyInput, PropertyInput
 from pydantic import ValidationError
+
+from app.schemas import BatchPropertyInput, PropertyInput
 
 
 def base_props() -> dict:
