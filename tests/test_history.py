@@ -10,12 +10,14 @@ import pytest
 
 def test_validate_entry_valid() -> None:
     from scripts.validate_history import validate_entry
+
     entry = {"date": "2026-06-01", "commits": 60, "mode": "improvement"}
     assert validate_entry(entry, "test.json", 0) == []
 
 
 def test_validate_entry_missing_commits() -> None:
     from scripts.validate_history import validate_entry
+
     entry = {"date": "2026-06-01"}
     # commits missing — should pass if date present (commits optional in some formats)
     errors = validate_entry(entry, "test.json", 0)
@@ -25,6 +27,7 @@ def test_validate_entry_missing_commits() -> None:
 
 def test_validate_entry_no_date_fields() -> None:
     from scripts.validate_history import validate_entry
+
     entry = {"commits": 60, "mode": "improvement"}
     errors = validate_entry(entry, "test.json", 0)
     assert any("date" in e or "last_run" in e for e in errors)
@@ -32,6 +35,7 @@ def test_validate_entry_no_date_fields() -> None:
 
 def test_validate_entry_negative_commits() -> None:
     from scripts.validate_history import validate_entry
+
     entry = {"date": "2026-06-01", "commits": -5}
     errors = validate_entry(entry, "test.json", 0)
     assert any("negative" in e for e in errors)
@@ -39,6 +43,7 @@ def test_validate_entry_negative_commits() -> None:
 
 def test_validate_entry_not_dict() -> None:
     from scripts.validate_history import validate_entry
+
     errors = validate_entry("not a dict", "test.json", 0)
     assert len(errors) == 1
     assert "dict" in errors[0]
@@ -46,6 +51,7 @@ def test_validate_entry_not_dict() -> None:
 
 def test_validate_file_valid_list(tmp_path: Path) -> None:
     from scripts.validate_history import validate_file
+
     data = [{"date": "2026-06-01", "commits": 60}]
     f = tmp_path / "repo.json"
     f.write_text(json.dumps(data))
@@ -54,6 +60,7 @@ def test_validate_file_valid_list(tmp_path: Path) -> None:
 
 def test_validate_file_valid_dict(tmp_path: Path) -> None:
     from scripts.validate_history import validate_file
+
     data = {"last_run": "2026-06-01", "commits": 45}
     f = tmp_path / "repo.json"
     f.write_text(json.dumps(data))
@@ -62,6 +69,7 @@ def test_validate_file_valid_dict(tmp_path: Path) -> None:
 
 def test_validate_file_invalid_json(tmp_path: Path) -> None:
     from scripts.validate_history import validate_file
+
     f = tmp_path / "bad.json"
     f.write_text("{not valid")
     errors = validate_file(f)
@@ -71,6 +79,7 @@ def test_validate_file_invalid_json(tmp_path: Path) -> None:
 
 def test_validate_file_empty_list(tmp_path: Path) -> None:
     from scripts.validate_history import validate_file
+
     f = tmp_path / "empty.json"
     f.write_text("[]")
     assert validate_file(f) == []
@@ -79,6 +88,7 @@ def test_validate_file_empty_list(tmp_path: Path) -> None:
 @pytest.mark.parametrize("commits", [0, 1, 60, 300])
 def test_validate_entry_valid_commit_counts(commits: int) -> None:
     from scripts.validate_history import validate_entry
+
     entry = {"date": "2026-06-01", "commits": commits}
     errors = validate_entry(entry, "test.json", 0)
     assert all("negative" not in e for e in errors)
@@ -87,6 +97,7 @@ def test_validate_entry_valid_commit_counts(commits: int) -> None:
 def test_actual_history_files_valid() -> None:
     """All real history files in this repo must pass validation."""
     from scripts.validate_history import validate_file
+
     history_dir = Path(__file__).parent.parent / "history"
     _skip = {"schema.json", "commit_schedule.json"}
     errors: list[str] = []
@@ -97,6 +108,7 @@ def test_actual_history_files_valid() -> None:
 
 def test_validate_file_multiple_entries(tmp_path: Path) -> None:
     from scripts.validate_history import validate_file
+
     data = [
         {"date": "2026-05-01", "commits": 60},
         {"date": "2026-06-01", "commits": 45},
@@ -109,6 +121,7 @@ def test_validate_file_multiple_entries(tmp_path: Path) -> None:
 
 def test_validate_entry_commits_wrong_type() -> None:
     from scripts.validate_history import validate_entry
+
     entry = {"date": "2026-06-01", "commits": "sixty"}
     errors = validate_entry(entry, "bad.json", 0)
     assert any("commits" in e for e in errors)
@@ -116,6 +129,7 @@ def test_validate_entry_commits_wrong_type() -> None:
 
 def test_validate_file_root_is_primitive(tmp_path: Path) -> None:
     from scripts.validate_history import validate_file
+
     f = tmp_path / "prim.json"
     f.write_text("42")
     errors = validate_file(f)
@@ -126,6 +140,7 @@ def test_validate_file_root_is_primitive(tmp_path: Path) -> None:
 @pytest.mark.parametrize("mode", ["improvement", "IMPROVEMENT", "innovation", "INNOVATION"])
 def test_validate_entry_mode_values(mode: str) -> None:
     from scripts.validate_history import validate_entry
+
     entry = {"date": "2026-06-01", "commits": 60, "mode": mode}
     errors = validate_entry(entry, "test.json", 0)
     assert errors == []
@@ -133,7 +148,15 @@ def test_validate_entry_mode_values(mode: str) -> None:
 
 def test_validate_entry_valid_email_status() -> None:
     from scripts.validate_history import validate_entry
-    for status in ("pending", "sent", "skipped", "failed_smtp", "network_blocked", "pdf_generated_ok"):
+
+    for status in (
+        "pending",
+        "sent",
+        "skipped",
+        "failed_smtp",
+        "network_blocked",
+        "pdf_generated_ok",
+    ):
         entry = {"date": "2026-07-01", "commits": 60, "email_status": status}
         errors = validate_entry(entry, "test.json", 0)
         assert errors == [], f"Unexpected errors for email_status={status!r}: {errors}"
@@ -141,6 +164,7 @@ def test_validate_entry_valid_email_status() -> None:
 
 def test_validate_entry_invalid_email_status() -> None:
     from scripts.validate_history import validate_entry
+
     entry = {"date": "2026-07-01", "commits": 60, "email_status": "unknown_xyz"}
     errors = validate_entry(entry, "test.json", 0)
     assert any("email_status" in e for e in errors)
@@ -148,6 +172,7 @@ def test_validate_entry_invalid_email_status() -> None:
 
 def test_validate_entry_no_email_status_ok() -> None:
     from scripts.validate_history import validate_entry
+
     entry = {"date": "2026-07-01", "commits": 60}
     errors = validate_entry(entry, "test.json", 0)
     assert errors == []
@@ -155,6 +180,7 @@ def test_validate_entry_no_email_status_ok() -> None:
 
 def test_validate_entry_invalid_mode() -> None:
     from scripts.validate_history import validate_entry
+
     entry = {"date": "2026-07-01", "commits": 60, "mode": "invalid_mode"}
     errors = validate_entry(entry, "test.json", 0)
     assert any("mode" in e for e in errors)
@@ -162,6 +188,7 @@ def test_validate_entry_invalid_mode() -> None:
 
 def test_validate_entry_valid_modes() -> None:
     from scripts.validate_history import validate_entry
+
     for mode in ("improvement", "IMPROVEMENT", "innovation", "INNOVATION"):
         entry = {"date": "2026-07-01", "commits": 60, "mode": mode}
         errors = validate_entry(entry, "test.json", 0)
@@ -170,17 +197,19 @@ def test_validate_entry_valid_modes() -> None:
 
 def test_valid_modes_constant_exists() -> None:
     from scripts.validate_history import VALID_MODES
+
     assert "improvement" in VALID_MODES
     assert "innovation" in VALID_MODES
     assert isinstance(VALID_MODES, frozenset)
 
 
 def test_validate_files_batch_all_valid(tmp_path: Path) -> None:
-    from pathlib import Path
     from scripts.validate_history import validate_files
+
     f1 = tmp_path / "a.json"
     f2 = tmp_path / "b.json"
     import json
+
     f1.write_text(json.dumps([{"date": "2026-07-01", "commits": 60}]))
     f2.write_text(json.dumps([{"date": "2026-07-02", "commits": 45}]))
     result = validate_files([f1, f2])
@@ -190,8 +219,10 @@ def test_validate_files_batch_all_valid(tmp_path: Path) -> None:
 
 def test_validate_files_batch_detects_error(tmp_path: Path) -> None:
     from scripts.validate_history import validate_files
+
     f = tmp_path / "bad.json"
     import json
+
     f.write_text(json.dumps([{"commits": 60}]))  # missing date
     result = validate_files([f])
     assert len(result["bad.json"]) > 0
@@ -199,5 +230,6 @@ def test_validate_files_batch_detects_error(tmp_path: Path) -> None:
 
 def test_validate_files_empty_list() -> None:
     from scripts.validate_history import validate_files
+
     result = validate_files([])
     assert result == {}

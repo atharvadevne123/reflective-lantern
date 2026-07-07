@@ -16,6 +16,7 @@ def test_validate_history_main_passes_on_good_files(tmp_path: Path) -> None:
     h.mkdir()
     (h / "GoodRepo.json").write_text(json.dumps([{"date": "2026-06-01", "commits": 60}]))
     import scripts.validate_history as vh
+
     with patch.object(vh, "HISTORY_DIR", h):
         with patch.object(sys, "argv", ["validate_history.py"]):
             result = vh.main()
@@ -28,6 +29,7 @@ def test_validate_history_main_fails_on_bad_files(tmp_path: Path) -> None:
     h.mkdir()
     (h / "BadRepo.json").write_text(json.dumps([{"commits": 60}]))
     import scripts.validate_history as vh
+
     with patch.object(vh, "HISTORY_DIR", h):
         with patch.object(sys, "argv", ["validate_history.py"]):
             result = vh.main()
@@ -40,6 +42,7 @@ def test_cleanup_main_dry_run_exits_zero(tmp_path: Path) -> None:
     h.mkdir()
     (h / "OldRepo.json").write_text(json.dumps([{"date": "2020-01-01", "commits": 10}]))
     import scripts.cleanup as cl
+
     with patch.object(cl, "HISTORY_DIR", h):
         with patch.object(sys, "argv", ["cleanup.py", "--dry-run", "--days", "30"]):
             result = cl.main()
@@ -49,12 +52,14 @@ def test_cleanup_main_dry_run_exits_zero(tmp_path: Path) -> None:
 def test_report_generator_daily_returns_string(tmp_path: Path) -> None:
     """daily_report() returns a non-empty Markdown string."""
     from datetime import date
+
     h = tmp_path / "history"
     h.mkdir()
-    (h / "MyRepo.json").write_text(json.dumps([
-        {"date": "2026-07-01", "commits": 60, "improvements": ["added tests"]}
-    ]))
+    (h / "MyRepo.json").write_text(
+        json.dumps([{"date": "2026-07-01", "commits": 60, "improvements": ["added tests"]}])
+    )
     import scripts.report_generator as rg
+
     with patch.object(rg, "HISTORY_DIR", h):
         report = rg.daily_report(date(2026, 7, 1))
     assert isinstance(report, str)
@@ -68,6 +73,7 @@ def test_summarize_history_main_prints_table(tmp_path: Path, capsys: pytest.Capt
     h.mkdir()
     (h / "Alpha.json").write_text(json.dumps([{"date": "2026-06-30", "commits": 60}]))
     import scripts.summarize_history as sh
+
     with patch.object(sh, "HISTORY_DIR", h):
         with patch.object(sys, "argv", ["summarize_history.py"]):
             sh.main()
@@ -78,6 +84,7 @@ def test_summarize_history_main_prints_table(tmp_path: Path, capsys: pytest.Capt
 def test_config_package_importable() -> None:
     """The config package exports Settings and constants without errors."""
     from config import COMMIT_TARGET, HISTORY_DIR, SCRIPTS_DIR, Settings
+
     assert COMMIT_TARGET == 60
     assert HISTORY_DIR.exists()
     assert SCRIPTS_DIR.exists()
@@ -92,6 +99,7 @@ def test_validate_history_main_skips_non_record_files(tmp_path: Path) -> None:
     (h / "commit_schedule.json").write_text("{}")
     (h / "GoodRepo.json").write_text(json.dumps([{"date": "2026-06-01", "commits": 60}]))
     import scripts.validate_history as vh
+
     with patch.object(vh, "HISTORY_DIR", h):
         with patch.object(sys, "argv", ["validate_history.py"]):
             result = vh.main()
@@ -103,11 +111,16 @@ def test_cleanup_main_removes_old_entries(tmp_path: Path) -> None:
     h = tmp_path / "history"
     h.mkdir()
     f = h / "OldData.json"
-    f.write_text(json.dumps([
-        {"date": "2020-01-01", "commits": 5},
-        {"date": "2026-06-30", "commits": 60},
-    ]))
+    f.write_text(
+        json.dumps(
+            [
+                {"date": "2020-01-01", "commits": 5},
+                {"date": "2026-06-30", "commits": 60},
+            ]
+        )
+    )
     import scripts.cleanup as cl
+
     with patch.object(cl, "HISTORY_DIR", h):
         with patch.object(sys, "argv", ["cleanup.py", "--days", "30"]):
             result = cl.main()
@@ -123,6 +136,7 @@ def test_summarize_history_sort_by_commits(tmp_path: Path, capsys: pytest.Captur
     (h / "Alpha.json").write_text(json.dumps([{"date": "2026-06-01", "commits": 10}]))
     (h / "Beta.json").write_text(json.dumps([{"date": "2026-06-02", "commits": 99}]))
     import scripts.summarize_history as sh
+
     with patch.object(sh, "HISTORY_DIR", h):
         with patch.object(sys, "argv", ["summarize_history.py", "--sort-by", "commits"]):
             sh.main()
@@ -138,6 +152,7 @@ def test_validate_history_verbose_flag(tmp_path: Path, capsys: pytest.CaptureFix
     h.mkdir()
     (h / "GoodRepo.json").write_text(json.dumps([{"date": "2026-06-30", "commits": 60}]))
     import scripts.validate_history as vh
+
     with patch.object(vh, "HISTORY_DIR", h):
         with patch.object(sys, "argv", ["validate_history.py", "--verbose"]):
             result = vh.main()
@@ -153,12 +168,21 @@ def test_report_generator_output_to_file(tmp_path: Path) -> None:
     (h / "Repo.json").write_text(json.dumps([{"date": "2026-07-03", "commits": 60}]))
     out_file = tmp_path / "report.md"
     import scripts.report_generator as rg
+
     with patch.object(rg, "HISTORY_DIR", h):
-        with patch.object(sys, "argv", [
-            "report_generator.py", "--mode", "daily",
-            "--date", "2026-07-03",
-            "--output", str(out_file),
-        ]):
+        with patch.object(
+            sys,
+            "argv",
+            [
+                "report_generator.py",
+                "--mode",
+                "daily",
+                "--date",
+                "2026-07-03",
+                "--output",
+                str(out_file),
+            ],
+        ):
             rg.main()
     assert out_file.exists()
     content = out_file.read_text()
@@ -171,6 +195,7 @@ def test_validate_history_json_flag(tmp_path: Path, capsys: pytest.CaptureFixtur
     h.mkdir()
     (h / "Good.json").write_text(json.dumps([{"date": "2026-07-01", "commits": 60}]))
     import scripts.validate_history as vh
+
     with patch.object(vh, "HISTORY_DIR", h):
         with patch.object(sys, "argv", ["validate_history.py", "--json"]):
             result = vh.main()
@@ -183,14 +208,18 @@ def test_validate_history_json_flag(tmp_path: Path, capsys: pytest.CaptureFixtur
 
 
 def test_config_package_exports_next_innovation_day() -> None:
-    from config import next_innovation_day
     from datetime import date
+
+    from config import next_innovation_day
+
     result = next_innovation_day(date(2026, 7, 6))
     assert isinstance(result, date)
 
 
 def test_config_package_exports_get_logger() -> None:
     import logging
+
     from config import get_logger
+
     logger = get_logger("test.integration")
     assert isinstance(logger, logging.Logger)

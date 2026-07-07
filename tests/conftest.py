@@ -79,16 +79,28 @@ def multi_repo_history_dir(tmp_path: Path) -> Path:
     """Return a history directory with multiple repos across different modes."""
     h = tmp_path / "history"
     h.mkdir()
-    (h / "Alpha.json").write_text(json.dumps([
-        {"date": "2026-07-01", "mode": "improvement", "commits": 60, "tests_passed": True},
-        {"date": "2026-07-03", "mode": "improvement", "commits": 60, "tests_passed": True},
-    ]))
-    (h / "Beta.json").write_text(json.dumps([
-        {"date": "2026-07-08", "mode": "innovation", "commits": 120, "tests_passed": True},
-    ]))
-    (h / "Gamma.json").write_text(json.dumps([
-        {"date": "2026-07-02", "mode": "improvement", "commits": 60, "tests_passed": False},
-    ]))
+    (h / "Alpha.json").write_text(
+        json.dumps(
+            [
+                {"date": "2026-07-01", "mode": "improvement", "commits": 60, "tests_passed": True},
+                {"date": "2026-07-03", "mode": "improvement", "commits": 60, "tests_passed": True},
+            ]
+        )
+    )
+    (h / "Beta.json").write_text(
+        json.dumps(
+            [
+                {"date": "2026-07-08", "mode": "innovation", "commits": 120, "tests_passed": True},
+            ]
+        )
+    )
+    (h / "Gamma.json").write_text(
+        json.dumps(
+            [
+                {"date": "2026-07-02", "mode": "improvement", "commits": 60, "tests_passed": False},
+            ]
+        )
+    )
     return h
 
 
@@ -97,11 +109,17 @@ def innovation_history_dir(tmp_path: Path) -> Path:
     """Return a history directory with an INNOVATION mode entry."""
     h = tmp_path / "history"
     h.mkdir()
-    (h / "NewProject.json").write_text(json.dumps([{
-        "date": "2026-07-08",
-        "mode": "innovation",
-        "commits": 114,
-        "tests_passed": True,
-        "improvements": ["built new ML pipeline from scratch"],
-    }]))
+    (h / "NewProject.json").write_text(
+        json.dumps(
+            [
+                {
+                    "date": "2026-07-08",
+                    "mode": "innovation",
+                    "commits": 114,
+                    "tests_passed": True,
+                    "improvements": ["built new ML pipeline from scratch"],
+                }
+            ]
+        )
+    )
     return h

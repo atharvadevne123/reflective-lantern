@@ -21,9 +21,7 @@ class Settings:
     """
 
     # Anthropic
-    anthropic_api_key: str = field(
-        default_factory=lambda: os.environ.get("ANTHROPIC_API_KEY", "")
-    )
+    anthropic_api_key: str = field(default_factory=lambda: os.environ.get("ANTHROPIC_API_KEY", ""))
 
     # GitHub
     gh_pat: str = field(default_factory=lambda: os.environ.get("GH_PAT", ""))
@@ -32,49 +30,33 @@ class Settings:
     )
 
     # Notion
-    notion_api_key: str = field(
-        default_factory=lambda: os.environ.get("NOTION_API_KEY", "")
-    )
+    notion_api_key: str = field(default_factory=lambda: os.environ.get("NOTION_API_KEY", ""))
     notion_database_id: str = field(
         default_factory=lambda: os.environ.get("NOTION_DATABASE_ID", "")
     )
 
     # Gmail
     gmail_user: str = field(default_factory=lambda: os.environ.get("GMAIL_USER", ""))
-    gmail_app_pass: str = field(
-        default_factory=lambda: os.environ.get("GMAIL_APP_PASS", "")
-    )
+    gmail_app_pass: str = field(default_factory=lambda: os.environ.get("GMAIL_APP_PASS", ""))
     report_recipient: str = field(
-        default_factory=lambda: os.environ.get(
-            "REPORT_RECIPIENT", os.environ.get("GMAIL_USER", "")
-        )
+        default_factory=lambda: os.environ.get("REPORT_RECIPIENT", os.environ.get("GMAIL_USER", ""))
     )
 
     # Logging
-    log_level: str = field(
-        default_factory=lambda: os.environ.get("LOG_LEVEL", "INFO").upper()
-    )
-    json_logs: bool = field(
-        default_factory=lambda: os.environ.get("JSON_LOGS", "0") == "1"
-    )
+    log_level: str = field(default_factory=lambda: os.environ.get("LOG_LEVEL", "INFO").upper())
+    json_logs: bool = field(default_factory=lambda: os.environ.get("JSON_LOGS", "0") == "1")
 
     # Report settings
     report_subject_prefix: str = field(
-        default_factory=lambda: os.environ.get(
-            "REPORT_SUBJECT_PREFIX", "[Reflective Lantern]"
-        )
+        default_factory=lambda: os.environ.get("REPORT_SUBJECT_PREFIX", "[Reflective Lantern]")
     )
-    dry_run: bool = field(
-        default_factory=lambda: os.environ.get("DRY_RUN", "0") == "1"
-    )
+    dry_run: bool = field(default_factory=lambda: os.environ.get("DRY_RUN", "0") == "1")
 
     # Run settings
     pf_fix_timeout: int = field(
         default_factory=lambda: int(os.environ.get("PF_FIX_TIMEOUT", "300"))
     )
-    commit_target: int = field(
-        default_factory=lambda: int(os.environ.get("COMMIT_TARGET", "60"))
-    )
+    commit_target: int = field(default_factory=lambda: int(os.environ.get("COMMIT_TARGET", "60")))
 
     def validate(self) -> list[str]:
         """Return a list of missing required environment variable names.
