@@ -10,6 +10,9 @@ logger = logging.getLogger(__name__)
 _prediction_cache: dict[str, dict[str, Any]] = {}
 CACHE_MAX_SIZE = 1024
 
+_cache_hits = 0
+_cache_misses = 0
+
 
 def _make_key(features: list[float]) -> str:
     """Hash a feature vector to a cache key."""
@@ -19,8 +22,14 @@ def _make_key(features: list[float]) -> str:
 
 def cached_predict(features: list[float]) -> dict[str, Any] | None:
     """Return a cached prediction result if available."""
+    global _cache_hits, _cache_misses
     key = _make_key(features)
-    return _prediction_cache.get(key)
+    result = _prediction_cache.get(key)
+    if result is None:
+        _cache_misses += 1
+    else:
+        _cache_hits += 1
+    return result
 
 
 def cache_prediction(features: list[float], result: dict[str, Any]) -> None:
@@ -34,11 +43,19 @@ def cache_prediction(features: list[float], result: dict[str, Any]) -> None:
 
 
 def cache_stats() -> dict[str, int]:
-    """Return current cache statistics."""
-    return {"size": len(_prediction_cache), "max_size": CACHE_MAX_SIZE}
+    """Return current cache statistics including hit/miss counters."""
+    return {
+        "size": len(_prediction_cache),
+        "max_size": CACHE_MAX_SIZE,
+        "hits": _cache_hits,
+        "misses": _cache_misses,
+    }
 
 
 def clear_cache() -> None:
-    """Clear the prediction cache."""
+    """Clear the prediction cache and reset hit/miss counters."""
+    global _cache_hits, _cache_misses
     _prediction_cache.clear()
+    _cache_hits = 0
+    _cache_misses = 0
     logger.info("Prediction cache cleared")
