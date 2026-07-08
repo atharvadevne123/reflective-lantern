@@ -75,12 +75,16 @@ make health-check          # cross-repo CI / release / branch health
 make weekly-summary        # build + email 7-day digest
 make validate-history      # validate history JSON schema
 make notion-update         # sync Notion portfolio pages
+make foundry-export        # export run history as a Foundry-ready CSV
+make foundry-sync          # export + upload to a Palantir Foundry dataset
 
 python scripts/summarize_history.py        # tabular run history
 python scripts/rotate_repos.py             # which repo is selected today
 python scripts/check_ci_status.py --failing-only
 python scripts/report_generator.py --mode weekly
 ```
+
+Foundry setup and dataset schema are documented in [docs/foundry.md](docs/foundry.md).
 
 ## Token Efficiency
 
