@@ -93,6 +93,6 @@
     ],
     "tests_passed": true,
     "commits": 60,
-    "email_status": "pending"
+    "email_status": "failed: SMTP outbound blocked by sandbox network policy (ports 587/465 unreachable)"
   }
 ]
