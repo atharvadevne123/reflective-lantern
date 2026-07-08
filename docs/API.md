@@ -50,6 +50,11 @@ Request: `feature_name` (string), `reference` (>=10 floats), `current`
 Response: `ks_statistic`, `p_value`, `drift_detected` (p < 0.05). Results
 are persisted to `drift_logs` and gate the automated retraining pipeline.
 
+### `GET /api/v1/routes/{route_id}/history`
+
+Most recent logged predictions for one route segment. Query param `limit`
+(default 20, clamped to 1-200).
+
 ### `GET /api/v1/metrics`
 
 Monitoring snapshot: prediction volume, congestion level distribution,
