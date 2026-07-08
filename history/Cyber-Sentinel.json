@@ -72,7 +72,8 @@
     "push_blocked_reason": "git proxy: repo not in session authorized set; no add_repo tool available",
     "bundle": "pending/Cyber-Sentinel-2026-06-23.bundle",
     "note": "container clock reported 2026-06-23; actual date 2026-07-08",
-    "email_status": "pending"
+    "email_status": "failed - SMTP egress blocked in session (HTTPS-only proxy)",
+    "report_pdf": "pending/Cyber-Sentinel_report_2026-07-08.pdf"
   },
   {
     "date": "2026-06-09",
