@@ -86,3 +86,10 @@ def test_congestion_labels_complete() -> None:
     assert set(CONGESTION_LABELS.keys()) == {0, 1, 2, 3}
     assert "free" in CONGESTION_LABELS.values()
     assert "severe" in CONGESTION_LABELS.values()
+
+
+def test_package_version_matches_model_version() -> None:
+    import app
+    from app.model import MODEL_VERSION
+
+    assert app.__version__ == MODEL_VERSION
