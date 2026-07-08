@@ -3,6 +3,14 @@
 All notable changes to Traffic-Pulse are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [Unreleased]
+
+### Planned
+
+- Redis-backed rate limiting for multi-replica deployments.
+- MLflow experiment tracking for retraining runs.
+- Real-world data connectors (city open-data traffic feeds).
+
 ## [1.0.0] - 2026-07-08
 
 ### Added
@@ -22,4 +30,10 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Correlation-ID and response-time middleware.
 - Docker + docker-compose with PostgreSQL 16 and healthchecks.
 - GitHub Actions CI: ruff lint + format check + pytest.
-- Test suite: 40+ tests across API, model, features, and monitoring.
+- Batch prediction endpoint (`POST /api/v1/predict/batch`, max 100 items).
+- Per-route history endpoint (`GET /api/v1/routes/{route_id}/history`).
+- Model metadata endpoint (`GET /api/v1/model-info`).
+- Rate limiting (120 req/min per client) and gzip compression.
+- Structured JSON logging with correlation IDs.
+- Alembic migrations for prediction and drift tables.
+- Test suite: 85+ tests across API, model, features, monitoring, middleware, and pipeline.
