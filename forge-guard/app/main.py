@@ -208,3 +208,32 @@ async def feature_importance_endpoint() -> dict[str, float]:
     from app.model import feature_importance
 
     return feature_importance(_model)
+
+
+@app.post(
+    "/api/v1/predict/batch",
+    tags=["inference"],
+    summary="Batch predict defects for up to 100 sensor readings",
+)
+async def predict_batch(
+    payload: "BatchSensorInput",
+    request: Request,
+    db: Annotated[Session, Depends(get_db)],
+) -> "BatchPredictionResponse":
+    """Run inference on multiple sensor readings in a single request."""
+    from app.schemas import BatchPredictionResponse, BatchSensorInput  # noqa: F401
+
+    if _model is None:
+        raise HTTPException(status_code=503, detail="Model not loaded")
+
+    results = []
+    for reading in payload.readings:
+        feats = engineer_single(reading)
+        label, prob = predict(_model, feats)
+        log_prediction(db=db, sensor_data=reading, prediction=label,
+                       defect_probability=prob, model_version=MODEL_VERSION)
+        results.append({"prediction": label, "defect_probability": prob})
+
+    return BatchPredictionResponse(
+        predictions=results, count=len(results), model_version=MODEL_VERSION
+    )
