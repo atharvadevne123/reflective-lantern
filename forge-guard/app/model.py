@@ -122,3 +122,17 @@ def get_metrics() -> dict[str, Any]:
     if METRICS_PATH.exists():
         return json.loads(METRICS_PATH.read_text())
     return {}
+
+
+def feature_importance(model: Pipeline) -> dict[str, float]:
+    """Return a feature-importance dict from the XGBoost sub-estimator."""
+    import numpy as np
+
+    estimator = model.named_steps["model"]
+    xgb_est = estimator.named_estimators_["xgb"]
+    scores = xgb_est.feature_importances_
+    from app.features import FEATURE_NAMES
+
+    if FEATURE_NAMES and len(FEATURE_NAMES) == len(scores):
+        return {name: round(float(s), 4) for name, s in zip(FEATURE_NAMES, scores, strict=False)}
+    return {f"f{i}": round(float(s), 4) for i, s in enumerate(scores)}
