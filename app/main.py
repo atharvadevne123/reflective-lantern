@@ -46,6 +46,12 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     _models.clear()
 
 
+TAGS_METADATA = [
+    {"name": "prediction", "description": "Congestion level predictions (single and batch)."},
+    {"name": "monitoring", "description": "Drift detection and prediction statistics."},
+    {"name": "system", "description": "Health and model metadata."},
+]
+
 app = FastAPI(
     title="Traffic-Pulse",
     description=(
@@ -54,6 +60,7 @@ app = FastAPI(
     ),
     version=MODEL_VERSION,
     lifespan=lifespan,
+    openapi_tags=TAGS_METADATA,
 )
 
 app.add_middleware(
