@@ -88,13 +88,21 @@ def _investment_score(predicted_value: float, prop: PropertyInput) -> float:
         return 0.0
     annual_rent = predicted_value * prop.avg_rental_yield
     cap_rate = annual_rent / predicted_value
-    amenity = (prop.school_score * 0.4 + prop.transit_score * 0.3 + prop.walkability_score * 0.3) / 10
+    amenity = (
+        prop.school_score * 0.4 + prop.transit_score * 0.3 + prop.walkability_score * 0.3
+    ) / 10
     risk_penalty = prop.crime_rate
     score = (cap_rate * 50 + amenity * 3 - risk_penalty * 2) * 10
     return min(max(round(float(score), 2), 0.0), 10.0)
 
 
-@app.get("/api/v1/health", response_model=HealthResponse, tags=["System"], summary="Health check", description="Returns service status, model version, and DB connectivity.")
+@app.get(
+    "/api/v1/health",
+    response_model=HealthResponse,
+    tags=["System"],
+    summary="Health check",
+    description="Returns service status, model version, and DB connectivity.",
+)
 async def health(db: Session = Depends(get_db)) -> HealthResponse:
     try:
         db.execute(__import__("sqlalchemy").text("SELECT 1"))
@@ -104,13 +112,25 @@ async def health(db: Session = Depends(get_db)) -> HealthResponse:
     return HealthResponse(status="ok", model_version=MODEL_VERSION, db_connected=db_ok)
 
 
-@app.get("/api/v1/metrics", response_model=MetricsResponse, tags=["System"], summary="Model metrics", description="Returns 5-fold CV R2, RMSE, feature count from the last training run.")
+@app.get(
+    "/api/v1/metrics",
+    response_model=MetricsResponse,
+    tags=["System"],
+    summary="Model metrics",
+    description="Returns 5-fold CV R2, RMSE, feature count from the last training run.",
+)
 async def metrics() -> MetricsResponse:
     m = load_metrics()
     return MetricsResponse(**{k: v for k, v in m.items() if k in MetricsResponse.model_fields})
 
 
-@app.post("/api/v1/predict", response_model=PredictionResponse, tags=["Valuation"], summary="Predict property value", description="Predict market value and investment score for a single property.")
+@app.post(
+    "/api/v1/predict",
+    response_model=PredictionResponse,
+    tags=["Valuation"],
+    summary="Predict property value",
+    description="Predict market value and investment score for a single property.",
+)
 @limiter.limit("100/minute")
 async def predict_value(
     request: Request,
@@ -140,10 +160,23 @@ async def predict_value(
         investment_score=inv_score,
     )
     add_property(
-        np.array([prop.sqft, prop.bedrooms, prop.bathrooms, prop.condition_score,
-                  prop.school_score, prop.transit_score, prop.walkability_score,
-                  prop.crime_rate, prop.median_price_per_sqft, prop.avg_rental_yield,
-                  prop.listing_days, float(prop.year_built)] + [0.0] * 12),
+        np.array(
+            [
+                prop.sqft,
+                prop.bedrooms,
+                prop.bathrooms,
+                prop.condition_score,
+                prop.school_score,
+                prop.transit_score,
+                prop.walkability_score,
+                prop.crime_rate,
+                prop.median_price_per_sqft,
+                prop.avg_rental_yield,
+                prop.listing_days,
+                float(prop.year_built),
+            ]
+            + [0.0] * 12
+        ),
         {"predicted_value": val, "zipcode": prop.zipcode, "sqft": prop.sqft},
     )
     return PredictionResponse(
@@ -156,7 +189,13 @@ async def predict_value(
     )
 
 
-@app.post("/api/v1/batch-predict", response_model=BatchPredictionResponse, tags=["Valuation"], summary="Batch predict", description="Predict values for up to 100 properties in one request.")
+@app.post(
+    "/api/v1/batch-predict",
+    response_model=BatchPredictionResponse,
+    tags=["Valuation"],
+    summary="Batch predict",
+    description="Predict values for up to 100 properties in one request.",
+)
 @limiter.limit("20/minute")
 async def batch_predict(
     request: Request,
@@ -176,14 +215,16 @@ async def batch_predict(
     for val, prop in zip(values, body.properties, strict=False):
         v = float(val)
         inv = _investment_score(v, prop)
-        results.append(PredictionResponse(
-            predicted_value=round(v, 2),
-            investment_score=inv,
-            confidence_band_low=round(v * 0.92, 2),
-            confidence_band_high=round(v * 1.08, 2),
-            model_version=MODEL_VERSION,
-            correlation_id=corr_id,
-        ))
+        results.append(
+            PredictionResponse(
+                predicted_value=round(v, 2),
+                investment_score=inv,
+                confidence_band_low=round(v * 0.92, 2),
+                confidence_band_high=round(v * 1.08, 2),
+                model_version=MODEL_VERSION,
+                correlation_id=corr_id,
+            )
+        )
     return BatchPredictionResponse(predictions=results, count=len(results))
 
 
@@ -191,19 +232,37 @@ async def batch_predict(
 @limiter.limit("50/minute")
 async def comparable_properties(request: Request, body: ComparableRequest) -> ComparableResponse:
     prop = body.property
-    query_vec = np.array([
-        prop.sqft, prop.bedrooms, prop.bathrooms, prop.condition_score,
-        prop.school_score, prop.transit_score, prop.walkability_score,
-        prop.crime_rate, prop.median_price_per_sqft, prop.avg_rental_yield,
-        prop.listing_days, float(prop.year_built),
-    ] + [0.0] * 12)
+    query_vec = np.array(
+        [
+            prop.sqft,
+            prop.bedrooms,
+            prop.bathrooms,
+            prop.condition_score,
+            prop.school_score,
+            prop.transit_score,
+            prop.walkability_score,
+            prop.crime_rate,
+            prop.median_price_per_sqft,
+            prop.avg_rental_yield,
+            prop.listing_days,
+            float(prop.year_built),
+        ]
+        + [0.0] * 12
+    )
     results = search_comparable(query_vec, top_k=body.top_k)
     return ComparableResponse(comparables=results, query_vector_dim=len(query_vec))
 
 
-@app.get("/api/v1/neighborhood-stats/{zipcode}", response_model=NeighborhoodStatsResponse, tags=["Analytics"])
-async def neighborhood_stats(zipcode: str, db: Session = Depends(get_db)) -> NeighborhoodStatsResponse:
+@app.get(
+    "/api/v1/neighborhood-stats/{zipcode}",
+    response_model=NeighborhoodStatsResponse,
+    tags=["Analytics"],
+)
+async def neighborhood_stats(
+    zipcode: str, db: Session = Depends(get_db)
+) -> NeighborhoodStatsResponse:
     from app.database import NeighborhoodStat
+
     stat = db.query(NeighborhoodStat).filter(NeighborhoodStat.zipcode == zipcode).first()
     if stat is None:
         return NeighborhoodStatsResponse(

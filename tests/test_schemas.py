@@ -8,11 +8,21 @@ from app.schemas import BatchPropertyInput, PropertyInput
 
 def base_props() -> dict:
     return {
-        "sqft": 1800.0, "bedrooms": 3, "bathrooms": 2.0, "lot_size": 5000.0,
-        "year_built": 1990, "condition_score": 7.5, "zipcode": "94102",
-        "school_score": 8.0, "transit_score": 9.0, "walkability_score": 8.5,
-        "crime_rate": 0.3, "median_neighborhood_price": 1_200_000.0,
-        "median_price_per_sqft": 800.0, "avg_rental_yield": 0.05, "listing_days": 14,
+        "sqft": 1800.0,
+        "bedrooms": 3,
+        "bathrooms": 2.0,
+        "lot_size": 5000.0,
+        "year_built": 1990,
+        "condition_score": 7.5,
+        "zipcode": "94102",
+        "school_score": 8.0,
+        "transit_score": 9.0,
+        "walkability_score": 8.5,
+        "crime_rate": 0.3,
+        "median_neighborhood_price": 1_200_000.0,
+        "median_price_per_sqft": 800.0,
+        "avg_rental_yield": 0.05,
+        "listing_days": 14,
     }
 
 
@@ -22,20 +32,23 @@ def test_valid_property_input():
     assert prop.bedrooms == 3
 
 
-@pytest.mark.parametrize("field,bad_val", [
-    ("sqft", -1),
-    ("sqft", 0),
-    ("bedrooms", 0),
-    ("bedrooms", 25),
-    ("bathrooms", 0),
-    ("year_built", 1700),
-    ("year_built", 2030),
-    ("crime_rate", -0.1),
-    ("crime_rate", 1.5),
-    ("condition_score", 0.5),
-    ("condition_score", 11.0),
-    ("avg_rental_yield", -0.1),
-])
+@pytest.mark.parametrize(
+    "field,bad_val",
+    [
+        ("sqft", -1),
+        ("sqft", 0),
+        ("bedrooms", 0),
+        ("bedrooms", 25),
+        ("bathrooms", 0),
+        ("year_built", 1700),
+        ("year_built", 2030),
+        ("crime_rate", -0.1),
+        ("crime_rate", 1.5),
+        ("condition_score", 0.5),
+        ("condition_score", 11.0),
+        ("avg_rental_yield", -0.1),
+    ],
+)
 def test_invalid_field_raises_validation_error(field, bad_val):
     props = base_props()
     props[field] = bad_val

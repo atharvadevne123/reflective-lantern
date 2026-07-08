@@ -27,7 +27,9 @@ COLORS = {
 
 def box(ax, x, y, w, h, color, label, sublabel="", fontsize=10):
     rect = mpatches.FancyBboxPatch(
-        (x, y), w, h,
+        (x, y),
+        w,
+        h,
         boxstyle="round,pad=0.1",
         facecolor=color,
         edgecolor="white",
@@ -36,20 +38,45 @@ def box(ax, x, y, w, h, color, label, sublabel="", fontsize=10):
     )
     ax.add_patch(rect)
     cy = y + h / 2
-    ax.text(x + w / 2, cy + (0.1 if sublabel else 0), label, ha="center", va="center",
-            fontsize=fontsize, fontweight="bold", color="white")
+    ax.text(
+        x + w / 2,
+        cy + (0.1 if sublabel else 0),
+        label,
+        ha="center",
+        va="center",
+        fontsize=fontsize,
+        fontweight="bold",
+        color="white",
+    )
     if sublabel:
-        ax.text(x + w / 2, cy - 0.22, sublabel, ha="center", va="center",
-                fontsize=7.5, color="white", alpha=0.9)
+        ax.text(
+            x + w / 2,
+            cy - 0.22,
+            sublabel,
+            ha="center",
+            va="center",
+            fontsize=7.5,
+            color="white",
+            alpha=0.9,
+        )
 
 
 def arrow(ax, x1, y1, x2, y2, color="#7F8C8D"):
-    ax.annotate("", xy=(x2, y2), xytext=(x1, y1),
-                arrowprops={"arrowstyle": "->", "color": color, "lw": 1.5})
+    ax.annotate(
+        "", xy=(x2, y2), xytext=(x1, y1), arrowprops={"arrowstyle": "->", "color": color, "lw": 1.5}
+    )
 
 
-ax.text(8, 8.5, "Realty-Edge — System Architecture", ha="center", va="center",
-        fontsize=16, fontweight="bold", color=COLORS["header"])
+ax.text(
+    8,
+    8.5,
+    "Realty-Edge — System Architecture",
+    ha="center",
+    va="center",
+    fontsize=16,
+    fontweight="bold",
+    color=COLORS["header"],
+)
 
 box(ax, 0.3, 6.8, 2.0, 0.9, COLORS["client"], "Client", "REST / JSON")
 box(ax, 0.3, 5.5, 2.0, 0.9, COLORS["client"], "Batch Client", "CSV / bulk")
@@ -75,14 +102,26 @@ box(ax, 13.2, 5.4, 2.5, 0.7, COLORS["monitoring"], "PredictionLog", "DB logging"
 box(ax, 13.2, 4.3, 2.5, 0.7, COLORS["monitoring"], "Rate Limiter", "300 req/min")
 box(ax, 13.2, 3.2, 2.5, 0.7, COLORS["pipeline"], "5-fold CV", "R2+RMSE metrics")
 
-ax.text(4.6, 8.2, "FastAPI Layer", ha="center", fontsize=9, color=COLORS["api"],
-        fontstyle="italic")
-ax.text(8.45, 8.2, "ML Ensemble", ha="center", fontsize=9, color=COLORS["ml"],
-        fontstyle="italic")
-ax.text(11.75, 8.2, "Storage & Search", ha="center", fontsize=9, color=COLORS["storage"],
-        fontstyle="italic")
-ax.text(14.45, 8.2, "Monitoring", ha="center", fontsize=9, color=COLORS["monitoring"],
-        fontstyle="italic")
+ax.text(4.6, 8.2, "FastAPI Layer", ha="center", fontsize=9, color=COLORS["api"], fontstyle="italic")
+ax.text(8.45, 8.2, "ML Ensemble", ha="center", fontsize=9, color=COLORS["ml"], fontstyle="italic")
+ax.text(
+    11.75,
+    8.2,
+    "Storage & Search",
+    ha="center",
+    fontsize=9,
+    color=COLORS["storage"],
+    fontstyle="italic",
+)
+ax.text(
+    14.45,
+    8.2,
+    "Monitoring",
+    ha="center",
+    fontsize=9,
+    color=COLORS["monitoring"],
+    fontstyle="italic",
+)
 
 for y in [7.25, 5.9]:
     arrow(ax, 2.3, y, 3.2, y)
@@ -94,9 +133,16 @@ for y in [6.8, 5.65, 4.55, 3.45]:
     arrow(ax, 13.0, y, 13.2, y)
 
 stack_items = [
-    "Python 3.11", "FastAPI", "XGBoost+LightGBM+RF", "sklearn Pipeline",
-    "FAISS Search", "KS-drift Monitoring", "PostgreSQL+SQLAlchemy",
-    "Docker+Compose", "Airflow DAG", "GitHub Actions CI",
+    "Python 3.11",
+    "FastAPI",
+    "XGBoost+LightGBM+RF",
+    "sklearn Pipeline",
+    "FAISS Search",
+    "KS-drift Monitoring",
+    "PostgreSQL+SQLAlchemy",
+    "Docker+Compose",
+    "Airflow DAG",
+    "GitHub Actions CI",
 ]
 ax.text(0.3, 3.0, "Tech Stack:", fontsize=9, fontweight="bold", color=COLORS["header"])
 for i, item in enumerate(stack_items):
@@ -105,5 +151,7 @@ for i, item in enumerate(stack_items):
     ax.text(0.3 + col * 3.8, 2.6 - row * 0.35, f"• {item}", fontsize=8.0, color="#34495E")
 
 plt.tight_layout()
-plt.savefig("screenshots/architecture.png", dpi=150, bbox_inches="tight", facecolor=fig.get_facecolor())
+plt.savefig(
+    "screenshots/architecture.png", dpi=150, bbox_inches="tight", facecolor=fig.get_facecolor()
+)
 print("Architecture diagram saved to screenshots/architecture.png")

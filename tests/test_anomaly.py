@@ -60,12 +60,15 @@ def test_zero_predicted_skipped():
     assert result["method"] == "skipped"
 
 
-@pytest.mark.parametrize("predicted,median,expect_anomaly", [
-    (500_000, 490_000, False),
-    (200_000, 500_000, True),
-    (1_500_000, 500_000, True),
-    (550_000, 500_000, False),
-])
+@pytest.mark.parametrize(
+    "predicted,median,expect_anomaly",
+    [
+        (500_000, 490_000, False),
+        (200_000, 500_000, True),
+        (1_500_000, 500_000, True),
+        (550_000, 500_000, False),
+    ],
+)
 def test_ratio_method_parametrized(predicted, median, expect_anomaly):
     result = detect_valuation_anomaly(predicted=predicted, neighborhood_median=median)
     assert result["is_anomaly"] == expect_anomaly

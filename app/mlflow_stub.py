@@ -50,7 +50,7 @@ def log_training_run(
             mlflow.log_metrics(metrics)
             if tags:
                 mlflow.set_tags(tags)
-            for path in (artifact_paths or []):
+            for path in artifact_paths or []:
                 if os.path.exists(path):
                     mlflow.log_artifact(path)
             run_id = run.info.run_id

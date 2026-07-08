@@ -46,22 +46,38 @@ def generate_dataset() -> tuple[pd.DataFrame, np.ndarray]:
     listing_days = RNG.integers(1, 400, N)
     zipcode = RNG.choice(ZIPCODES, N)
 
-    base_val = (sqft * med_ppsf * 0.7 +
-                condition * 15_000 +
-                school * 20_000 -
-                crime * 80_000 +
-                RNG.normal(0, 30_000, N))
+    base_val = (
+        sqft * med_ppsf * 0.7
+        + condition * 15_000
+        + school * 20_000
+        - crime * 80_000
+        + RNG.normal(0, 30_000, N)
+    )
     base_val = base_val.clip(50_000, 10_000_000)
 
-    df = pd.DataFrame({
-        "sqft": sqft, "bedrooms": beds, "bathrooms": baths, "lot_size": lot,
-        "year_built": built, "renovation_year": reno, "condition_score": condition,
-        "zipcode": zipcode, "city": "City", "state": "CA",
-        "school_score": school, "transit_score": transit, "walkability_score": walk,
-        "crime_rate": crime, "median_neighborhood_price": med_price,
-        "median_price_per_sqft": med_ppsf, "avg_rental_yield": rental_yield,
-        "listing_days": listing_days, "list_price": base_val * 1.05,
-    })
+    df = pd.DataFrame(
+        {
+            "sqft": sqft,
+            "bedrooms": beds,
+            "bathrooms": baths,
+            "lot_size": lot,
+            "year_built": built,
+            "renovation_year": reno,
+            "condition_score": condition,
+            "zipcode": zipcode,
+            "city": "City",
+            "state": "CA",
+            "school_score": school,
+            "transit_score": transit,
+            "walkability_score": walk,
+            "crime_rate": crime,
+            "median_neighborhood_price": med_price,
+            "median_price_per_sqft": med_ppsf,
+            "avg_rental_yield": rental_yield,
+            "listing_days": listing_days,
+            "list_price": base_val * 1.05,
+        }
+    )
     return df, base_val
 
 

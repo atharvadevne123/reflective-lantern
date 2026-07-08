@@ -4,6 +4,7 @@ Revision ID: 001
 Revises:
 Create Date: 2026-07-06
 """
+
 import sqlalchemy as sa
 from alembic import op
 
@@ -11,6 +12,7 @@ revision = "001"
 down_revision = None
 branch_labels = None
 depends_on = None
+
 
 def upgrade() -> None:
     op.create_table(
@@ -64,6 +66,7 @@ def upgrade() -> None:
         sa.Column("avg_rental_yield", sa.Float),
         sa.Column("updated_at", sa.DateTime),
     )
+
 
 def downgrade() -> None:
     op.drop_table("neighborhood_stats")

@@ -20,14 +20,17 @@ def test_price_per_sqft_zero_sqft():
     assert price_per_sqft(500_000, 0) == 0.0
 
 
-@pytest.mark.parametrize("days,expected", [
-    (5, "fast"),
-    (13, "fast"),
-    (14, "normal"),
-    (60, "normal"),
-    (61, "slow"),
-    (365, "slow"),
-])
+@pytest.mark.parametrize(
+    "days,expected",
+    [
+        (5, "fast"),
+        (13, "fast"),
+        (14, "normal"),
+        (60, "normal"),
+        (61, "slow"),
+        (365, "slow"),
+    ],
+)
 def test_dom_classification(days, expected):
     assert dom_classification(days) == expected
 
@@ -66,10 +69,13 @@ def test_price_to_rent_ratio_zero_rent():
     assert math.isinf(result)
 
 
-@pytest.mark.parametrize("value,rent,expect_buy", [
-    (200_000, 20_000, True),
-    (1_000_000, 20_000, False),
-])
+@pytest.mark.parametrize(
+    "value,rent,expect_buy",
+    [
+        (200_000, 20_000, True),
+        (1_000_000, 20_000, False),
+    ],
+)
 def test_buy_vs_rent_signal(value, rent, expect_buy):
     ratio = price_to_rent_ratio(value, rent)
     assert (ratio < 15) == expect_buy

@@ -53,11 +53,14 @@ def test_score_bounded_zero_to_ten():
     assert 0 <= result.investment_score <= 10
 
 
-@pytest.mark.parametrize("yield_,expected_gt_zero", [
-    (0.0, True),
-    (0.05, True),
-    (0.10, True),
-])
+@pytest.mark.parametrize(
+    "yield_,expected_gt_zero",
+    [
+        (0.0, True),
+        (0.05, True),
+        (0.10, True),
+    ],
+)
 def test_various_yields(yield_, expected_gt_zero):
     result = compute_investment_analysis(400_000, yield_, 5, 5, 5, 0.3)
     if expected_gt_zero:

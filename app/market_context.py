@@ -59,8 +59,12 @@ def affordability_index(
     monthly = loan * r * (1 + r) ** n / ((1 + r) ** n - 1) if r > 0 else loan / n
     pct_income = monthly / (annual_income / 12) * 100
     is_affordable = pct_income <= 28.0
-    logger.debug("Affordability: monthly=%.0f pct_income=%.1f%% affordable=%s",
-                 monthly, pct_income, is_affordable)
+    logger.debug(
+        "Affordability: monthly=%.0f pct_income=%.1f%% affordable=%s",
+        monthly,
+        pct_income,
+        is_affordable,
+    )
     return {
         "loan_amount": round(loan, 2),
         "monthly_payment": round(monthly, 2),

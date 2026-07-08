@@ -1,4 +1,5 @@
 """Simple in-process LRU cache for repeated feature vectors."""
+
 from __future__ import annotations
 
 import hashlib

@@ -41,12 +41,15 @@ def test_predict_confidence_band_width(client, sample_property):
     assert abs(high - mid * 1.08) < 1
 
 
-@pytest.mark.parametrize("sqft,beds,baths", [
-    (800, 1, 1.0),
-    (1500, 2, 1.5),
-    (3000, 4, 3.0),
-    (4500, 5, 4.0),
-])
+@pytest.mark.parametrize(
+    "sqft,beds,baths",
+    [
+        (800, 1, 1.0),
+        (1500, 2, 1.5),
+        (3000, 4, 3.0),
+        (4500, 5, 4.0),
+    ],
+)
 def test_predict_various_sizes(client, sample_property, sqft, beds, baths):
     prop = dict(sample_property)
     prop["sqft"] = sqft
@@ -140,10 +143,16 @@ def test_response_time_header(client):
 
 def test_neighborhood_stats_known_zip(client, db_session):
     from app.database import NeighborhoodStat
+
     stat = NeighborhoodStat(
-        zipcode="55555", median_price=400_000.0, median_price_per_sqft=250.0,
-        school_score=7.0, transit_score=6.5, walkability_score=6.0,
-        crime_rate=0.35, avg_rental_yield=0.07,
+        zipcode="55555",
+        median_price=400_000.0,
+        median_price_per_sqft=250.0,
+        school_score=7.0,
+        transit_score=6.5,
+        walkability_score=6.0,
+        crime_rate=0.35,
+        avg_rental_yield=0.07,
     )
     db_session.add(stat)
     db_session.commit()
@@ -151,6 +160,7 @@ def test_neighborhood_stats_known_zip(client, db_session):
 
 def test_predict_stores_prediction_in_db(client, db_session, sample_property):
     from app.database import PredictionLog
+
     before = db_session.query(PredictionLog).count()
     client.post("/api/v1/predict", json=sample_property)
     after = db_session.query(PredictionLog).count()

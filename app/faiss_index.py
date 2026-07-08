@@ -40,9 +40,7 @@ def add_property(vector: np.ndarray, metadata: dict[str, Any]) -> None:
     _stored_properties.append(metadata)
 
 
-def search_comparable(
-    query_vector: np.ndarray, top_k: int = 5
-) -> list[dict[str, Any]]:
+def search_comparable(query_vector: np.ndarray, top_k: int = 5) -> list[dict[str, Any]]:
     index = get_index()
     if index.ntotal == 0:
         return []

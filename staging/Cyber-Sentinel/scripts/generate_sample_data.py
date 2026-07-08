@@ -1,4 +1,5 @@
 """Generate sample network event data for testing and demonstration."""
+
 from __future__ import annotations
 
 import json

@@ -57,7 +57,9 @@ def log_prediction(
     db.add(record)
     db.commit()
     db.refresh(record)
-    logger.debug("Logged prediction id=%s corr=%s value=%.0f", record.id, correlation_id, predicted_value)
+    logger.debug(
+        "Logged prediction id=%s corr=%s value=%.0f", record.id, correlation_id, predicted_value
+    )
     return record
 
 
@@ -79,26 +81,21 @@ def run_drift_check(
     db.commit()
     db.refresh(report)
     if result["drift_detected"]:
-        logger.warning("Drift detected on feature=%s ks=%.4f p=%.4f", feature_name, result["ks_statistic"], result["p_value"])
+        logger.warning(
+            "Drift detected on feature=%s ks=%.4f p=%.4f",
+            feature_name,
+            result["ks_statistic"],
+            result["p_value"],
+        )
     return report
 
 
 def get_recent_predictions(db: Session, limit: int = REFERENCE_WINDOW) -> list[PredictionLog]:
-    return (
-        db.query(PredictionLog)
-        .order_by(PredictionLog.created_at.desc())
-        .limit(limit)
-        .all()
-    )
+    return db.query(PredictionLog).order_by(PredictionLog.created_at.desc()).limit(limit).all()
 
 
 def get_drift_summary(db: Session) -> list[dict[str, Any]]:
-    reports = (
-        db.query(DriftReport)
-        .order_by(DriftReport.created_at.desc())
-        .limit(100)
-        .all()
-    )
+    reports = db.query(DriftReport).order_by(DriftReport.created_at.desc()).limit(100).all()
     return [
         {
             "feature_name": r.feature_name,

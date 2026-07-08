@@ -46,8 +46,13 @@ def detect_valuation_anomaly(
         deviation_pct (float), direction ('low'|'high'|'normal').
     """
     if predicted <= 0 or neighborhood_median <= 0:
-        return {"is_anomaly": False, "method": "skipped", "score": 0.0,
-                "deviation_pct": 0.0, "direction": "normal"}
+        return {
+            "is_anomaly": False,
+            "method": "skipped",
+            "score": 0.0,
+            "deviation_pct": 0.0,
+            "direction": "normal",
+        }
 
     deviation_pct = (predicted - neighborhood_median) / neighborhood_median * 100
 
@@ -63,8 +68,11 @@ def detect_valuation_anomaly(
         lower = q1 - IQR_MULTIPLIER * iqr
         upper = q3 + IQR_MULTIPLIER * iqr
         is_anomaly = predicted < lower or predicted > upper
-        score = float(max(0, predicted - upper) / (iqr + 1e-9) if predicted > upper
-                      else max(0, lower - predicted) / (iqr + 1e-9))
+        score = float(
+            max(0, predicted - upper) / (iqr + 1e-9)
+            if predicted > upper
+            else max(0, lower - predicted) / (iqr + 1e-9)
+        )
         method = "iqr"
     else:
         ratio = predicted / neighborhood_median
@@ -72,12 +80,19 @@ def detect_valuation_anomaly(
         score = float(abs(ratio - 1.0))
         method = "ratio"
 
-    direction = "low" if predicted < neighborhood_median else ("high" if predicted > neighborhood_median else "normal")
+    direction = (
+        "low"
+        if predicted < neighborhood_median
+        else ("high" if predicted > neighborhood_median else "normal")
+    )
 
     if is_anomaly:
         logger.warning(
             "Valuation anomaly detected: predicted=%.0f median=%.0f deviation=%.1f%% method=%s",
-            predicted, neighborhood_median, deviation_pct, method,
+            predicted,
+            neighborhood_median,
+            deviation_pct,
+            method,
         )
 
     return {

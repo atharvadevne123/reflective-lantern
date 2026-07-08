@@ -71,14 +71,21 @@ def compute_investment_analysis(
     amenity_composite = (school_score * 0.4 + transit_score * 0.3 + walkability_score * 0.3) / 10.0
     risk_score = float(min(max(crime_rate, 0.0), 1.0))
 
-    raw_score = cap_rate * _CAP_RATE_WEIGHT + amenity_composite * _AMENITY_WEIGHT - risk_score * _RISK_PENALTY
+    raw_score = (
+        cap_rate * _CAP_RATE_WEIGHT
+        + amenity_composite * _AMENITY_WEIGHT
+        - risk_score * _RISK_PENALTY
+    )
     investment_score = float(min(max(raw_score, 0.0), 10.0))
 
     break_even = predicted_value / noi if noi > 0 else float("inf")
 
     logger.debug(
         "InvestmentAnalysis value=%.0f rent=%.0f cap_rate=%.4f score=%.2f",
-        predicted_value, annual_rent, cap_rate, investment_score,
+        predicted_value,
+        annual_rent,
+        cap_rate,
+        investment_score,
     )
 
     return InvestmentAnalysis(

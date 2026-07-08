@@ -54,6 +54,7 @@ def test_load_metrics_returns_dict():
 
 def test_train_model_persists_file(sample_df, sample_target, tmp_path, monkeypatch):
     import app.model as model_module
+
     mp = tmp_path / "model.joblib"
     mtp = tmp_path / "metrics.json"
     monkeypatch.setattr(model_module, "MODEL_PATH", mp)

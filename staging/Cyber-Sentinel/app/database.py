@@ -1,4 +1,5 @@
 """SQLAlchemy models and session management for Cyber-Sentinel."""
+
 from __future__ import annotations
 
 import logging

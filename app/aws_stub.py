@@ -29,6 +29,7 @@ def _s3_client() -> Any | None:
         return None
     try:
         import boto3
+
         return boto3.client("s3", region_name=_REGION)
     except ImportError:
         logger.debug("boto3 not installed — S3 artefact storage disabled.")

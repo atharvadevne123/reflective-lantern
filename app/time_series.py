@@ -35,9 +35,7 @@ def compute_sma(values: list[float], window: int = 3) -> list[float]:
     return pad + sma.tolist()
 
 
-def linear_trend_forecast(
-    values: list[float], horizon: int = 3
-) -> dict[str, Any]:
+def linear_trend_forecast(values: list[float], horizon: int = 3) -> dict[str, Any]:
     """Fit a linear trend and extrapolate forward by horizon steps.
 
     Args:

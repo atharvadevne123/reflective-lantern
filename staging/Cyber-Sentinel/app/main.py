@@ -1,4 +1,5 @@
 """Cyber-Sentinel FastAPI application for real-time intrusion detection."""
+
 from __future__ import annotations
 
 import logging
@@ -164,7 +165,7 @@ async def predict_endpoint(
         log_prediction(result, features)
 
         index = get_index()
-        similar_patterns = index.search(features[:index.dim], k=3)
+        similar_patterns = index.search(features[: index.dim], k=3)
         result["similar_patterns"] = similar_patterns
 
         try:

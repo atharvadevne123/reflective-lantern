@@ -1,4 +1,5 @@
 """Custom exception hierarchy for Cyber-Sentinel."""
+
 from __future__ import annotations
 
 

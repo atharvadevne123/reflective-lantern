@@ -28,7 +28,11 @@ def _fetch_training_data(**context: object) -> dict:
     db_url = os.getenv("DATABASE_URL", "sqlite:///./realty_edge.db")
     engine = create_engine(db_url)
     with engine.connect() as conn:
-        rows = conn.execute(text("SELECT features_json, predicted_value FROM prediction_logs ORDER BY created_at DESC LIMIT 5000")).fetchall()
+        rows = conn.execute(
+            text(
+                "SELECT features_json, predicted_value FROM prediction_logs ORDER BY created_at DESC LIMIT 5000"
+            )
+        ).fetchall()
     print(f"Fetched {len(rows)} rows")
     if len(rows) < MIN_SAMPLES:
         raise ValueError(f"Insufficient data: {len(rows)} < {MIN_SAMPLES}")
@@ -83,7 +87,9 @@ def _run_drift_check(**context: object) -> None:
         if len(vals) >= 40:
             mid = len(vals) // 2
             report = run_drift_check(db, "predicted_value", vals[:mid], vals[mid:])
-            print(f"Drift check: ks={report.ks_statistic} p={report.p_value} detected={report.drift_detected}")
+            print(
+                f"Drift check: ks={report.ks_statistic} p={report.p_value} detected={report.drift_detected}"
+            )
     finally:
         db.close()
 

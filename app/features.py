@@ -75,7 +75,11 @@ class PropertyAgeTransformer(TransformerMixin, BaseEstimator):  # noqa: N801
     def transform(self, X: pd.DataFrame) -> pd.DataFrame:
         X = X.copy()
         X["property_age"] = self.reference_year - X["year_built"].clip(1800, self.reference_year)
-        renovation = X["renovation_year"] if "renovation_year" in X.columns else pd.Series(np.nan, index=X.index)
+        renovation = (
+            X["renovation_year"]
+            if "renovation_year" in X.columns
+            else pd.Series(np.nan, index=X.index)
+        )
         X["renovation_age"] = np.where(
             renovation.notna() & (renovation > 0),
             self.reference_year - renovation,
@@ -145,16 +149,24 @@ class TierEncoderTransformer(TransformerMixin, BaseEstimator):
 
     def transform(self, X: pd.DataFrame) -> pd.DataFrame:
         X = X.copy()
-        X["size_tier"] = pd.cut(
-            X["sqft"],
-            bins=[0, 800, 1500, 2500, 4000, 1e9],
-            labels=[1, 2, 3, 4, 5],
-        ).astype(float).fillna(3.0)
-        X["age_tier"] = pd.cut(
-            X.get("property_age", pd.Series(np.zeros(len(X)))),
-            bins=[-1, 5, 15, 30, 60, 1000],
-            labels=[5, 4, 3, 2, 1],
-        ).astype(float).fillna(3.0)
+        X["size_tier"] = (
+            pd.cut(
+                X["sqft"],
+                bins=[0, 800, 1500, 2500, 4000, 1e9],
+                labels=[1, 2, 3, 4, 5],
+            )
+            .astype(float)
+            .fillna(3.0)
+        )
+        X["age_tier"] = (
+            pd.cut(
+                X.get("property_age", pd.Series(np.zeros(len(X)))),
+                bins=[-1, 5, 15, 30, 60, 1000],
+                labels=[5, 4, 3, 2, 1],
+            )
+            .astype(float)
+            .fillna(3.0)
+        )
         return X
 
 
@@ -173,6 +185,7 @@ def build_feature_pipeline() -> Pipeline:
 def extract_feature_array(df: pd.DataFrame, pipeline: Pipeline) -> np.ndarray:
     from sklearn.exceptions import NotFittedError
     from sklearn.utils.validation import check_is_fitted
+
     try:
         check_is_fitted(pipeline)
         transformed = pipeline.transform(df)

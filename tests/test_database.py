@@ -72,9 +72,9 @@ def test_query_prediction_logs_by_correlation(mem_db):
     )
     mem_db.add(log)
     mem_db.commit()
-    results = mem_db.query(PredictionLog).filter(
-        PredictionLog.correlation_id == "unique-corr-xyz"
-    ).all()
+    results = (
+        mem_db.query(PredictionLog).filter(PredictionLog.correlation_id == "unique-corr-xyz").all()
+    )
     assert len(results) == 1
     assert results[0].predicted_value == 300_000.0
 

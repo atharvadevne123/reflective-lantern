@@ -56,9 +56,7 @@ def _build_ensemble() -> VotingRegressor:
     return VotingRegressor(estimators=[("xgb", xgb), ("lgbm", lgbm), ("rf", rf)])
 
 
-def train_model(
-    X: pd.DataFrame, y: np.ndarray
-) -> tuple[Any, dict[str, float]]:
+def train_model(X: pd.DataFrame, y: np.ndarray) -> tuple[Any, dict[str, float]]:
     feature_pipeline = build_feature_pipeline()
     feature_pipeline.fit(X)
     X_features = extract_feature_array(X, feature_pipeline)
@@ -69,7 +67,9 @@ def train_model(
     ensemble = _build_ensemble()
     kf = KFold(n_splits=5, shuffle=True, random_state=42)
     cv_r2 = cross_val_score(ensemble, X_scaled, y, cv=kf, scoring="r2")
-    cv_rmse = np.sqrt(-cross_val_score(ensemble, X_scaled, y, cv=kf, scoring="neg_mean_squared_error"))
+    cv_rmse = np.sqrt(
+        -cross_val_score(ensemble, X_scaled, y, cv=kf, scoring="neg_mean_squared_error")
+    )
 
     ensemble.fit(X_scaled, y)
 
@@ -86,7 +86,13 @@ def train_model(
     bundle = {"ensemble": ensemble, "scaler": scaler, "feature_pipeline": feature_pipeline}
     joblib.dump(bundle, MODEL_PATH)
     METRICS_PATH.write_text(json.dumps(metrics, indent=2))
-    logger.info("Model trained. R2=%.4f±%.4f, RMSE=%.0f±%.0f", cv_r2.mean(), cv_r2.std(), cv_rmse.mean(), cv_rmse.std())
+    logger.info(
+        "Model trained. R2=%.4f±%.4f, RMSE=%.0f±%.0f",
+        cv_r2.mean(),
+        cv_r2.std(),
+        cv_rmse.mean(),
+        cv_rmse.std(),
+    )
     return bundle, metrics
 
 
@@ -112,14 +118,25 @@ def _synthetic_model() -> dict[str, Any]:
     scaler = StandardScaler().fit(X_stub)
     ridge = Ridge().fit(scaler.transform(X_stub), y_stub)
     fp = build_feature_pipeline()
-    stub_df = pd.DataFrame({
-        "sqft": [1500.0], "bedrooms": [3], "bathrooms": [2.0],
-        "lot_size": [5000.0], "year_built": [2000], "condition_score": [5.0],
-        "school_score": [6.0], "transit_score": [5.0], "walkability_score": [5.0],
-        "crime_rate": [0.3], "median_neighborhood_price": [300_000.0],
-        "median_price_per_sqft": [200.0], "avg_rental_yield": [0.06],
-        "listing_days": [30], "list_price": [350_000.0],
-    })
+    stub_df = pd.DataFrame(
+        {
+            "sqft": [1500.0],
+            "bedrooms": [3],
+            "bathrooms": [2.0],
+            "lot_size": [5000.0],
+            "year_built": [2000],
+            "condition_score": [5.0],
+            "school_score": [6.0],
+            "transit_score": [5.0],
+            "walkability_score": [5.0],
+            "crime_rate": [0.3],
+            "median_neighborhood_price": [300_000.0],
+            "median_price_per_sqft": [200.0],
+            "avg_rental_yield": [0.06],
+            "listing_days": [30],
+            "list_price": [350_000.0],
+        }
+    )
     fp.fit(stub_df)
     bundle = {
         "ensemble": ridge,

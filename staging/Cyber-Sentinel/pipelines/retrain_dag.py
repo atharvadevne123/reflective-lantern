@@ -1,4 +1,5 @@
 """Airflow DAG for automated Cyber-Sentinel model retraining."""
+
 from __future__ import annotations
 
 import logging
@@ -35,9 +36,7 @@ def check_drift(**context: object) -> dict[str, object]:
 
     drift_summary = get_feature_drift_summary()
     drift_detected = any(
-        v.get("drift_detected", False)
-        for v in drift_summary.values()
-        if isinstance(v, dict)
+        v.get("drift_detected", False) for v in drift_summary.values() if isinstance(v, dict)
     )
     logger.info("Drift check: %s", "DRIFT" if drift_detected else "OK")
     return {"drift_detected": drift_detected, "summary": drift_summary}

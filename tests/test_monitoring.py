@@ -7,6 +7,7 @@ from app.monitoring import compute_drift, log_prediction, run_drift_check
 
 def test_compute_drift_no_drift():
     import numpy as np
+
     rng = np.random.default_rng(42)
     ref = rng.normal(500_000, 50_000, 100).tolist()
     cur = rng.normal(500_000, 50_000, 100).tolist()
@@ -20,6 +21,7 @@ def test_compute_drift_no_drift():
 
 def test_compute_drift_detects_shift():
     import numpy as np
+
     rng = np.random.default_rng(0)
     ref = rng.normal(300_000, 20_000, 200).tolist()
     cur = rng.normal(700_000, 20_000, 200).tolist()
@@ -28,12 +30,16 @@ def test_compute_drift_detects_shift():
     assert result["ks_statistic"] > 0.5
 
 
-@pytest.mark.parametrize("ref_mean,cur_mean,expect_drift", [
-    (400_000, 400_000, False),
-    (400_000, 900_000, True),
-])
+@pytest.mark.parametrize(
+    "ref_mean,cur_mean,expect_drift",
+    [
+        (400_000, 400_000, False),
+        (400_000, 900_000, True),
+    ],
+)
 def test_compute_drift_parametrized(ref_mean, cur_mean, expect_drift):
     import numpy as np
+
     rng = np.random.default_rng(1)
     ref = rng.normal(ref_mean, 10_000, 200).tolist()
     cur = rng.normal(cur_mean, 10_000, 200).tolist()
@@ -65,6 +71,7 @@ def test_log_prediction_creates_record(db_session):
 
 def test_run_drift_check_creates_report(db_session):
     import numpy as np
+
     rng = np.random.default_rng(5)
     ref = rng.normal(500_000, 30_000, 100).tolist()
     cur = rng.normal(800_000, 30_000, 100).tolist()

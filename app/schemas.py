@@ -29,7 +29,12 @@ class PropertyInput(BaseModel):
     @field_validator("renovation_year")
     @classmethod
     def renovation_after_built(cls, v: int | None, info: object) -> int | None:
-        if v is not None and hasattr(info, "data") and "year_built" in info.data and v < info.data["year_built"]:
+        if (
+            v is not None
+            and hasattr(info, "data")
+            and "year_built" in info.data
+            and v < info.data["year_built"]
+        ):
             raise ValueError("renovation_year must be >= year_built")
         return v
 

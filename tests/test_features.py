@@ -17,14 +17,28 @@ from app.features import (
 
 @pytest.fixture
 def single_row():
-    return pd.DataFrame([{
-        "sqft": 2000.0, "bedrooms": 3, "bathrooms": 2.0, "lot_size": 6000.0,
-        "year_built": 1990, "renovation_year": 2015, "condition_score": 8.0,
-        "school_score": 7.0, "transit_score": 6.0, "walkability_score": 7.0,
-        "crime_rate": 0.25, "median_neighborhood_price": 500_000.0,
-        "median_price_per_sqft": 300.0, "avg_rental_yield": 0.07,
-        "listing_days": 20, "list_price": 450_000.0,
-    }])
+    return pd.DataFrame(
+        [
+            {
+                "sqft": 2000.0,
+                "bedrooms": 3,
+                "bathrooms": 2.0,
+                "lot_size": 6000.0,
+                "year_built": 1990,
+                "renovation_year": 2015,
+                "condition_score": 8.0,
+                "school_score": 7.0,
+                "transit_score": 6.0,
+                "walkability_score": 7.0,
+                "crime_rate": 0.25,
+                "median_neighborhood_price": 500_000.0,
+                "median_price_per_sqft": 300.0,
+                "avg_rental_yield": 0.07,
+                "listing_days": 20,
+                "list_price": 450_000.0,
+            }
+        ]
+    )
 
 
 def test_property_age_transformer(single_row):
@@ -96,9 +110,16 @@ def test_extract_feature_array(single_row):
     assert np.all(np.isfinite(arr))
 
 
-@pytest.mark.parametrize("sqft,expected_tier", [
-    (500, 1), (1000, 2), (2000, 3), (3000, 4), (5000, 5),
-])
+@pytest.mark.parametrize(
+    "sqft,expected_tier",
+    [
+        (500, 1),
+        (1000, 2),
+        (2000, 3),
+        (3000, 4),
+        (5000, 5),
+    ],
+)
 def test_size_tier_values(single_row, sqft, expected_tier):
     row = single_row.copy()
     row["sqft"] = sqft
