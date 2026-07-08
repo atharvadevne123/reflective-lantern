@@ -164,3 +164,59 @@ def test_client_from_settings_configured(monkeypatch: pytest.MonkeyPatch) -> Non
     monkeypatch.setenv("FOUNDRY_TOKEN", "tok")
     client = client_from_settings()
     assert client.base_url == "https://stack.palantirfoundry.com/api/v2"
+
+
+def test_get_dataset_returns_metadata() -> None:
+    client = make_client()
+    with patch.object(
+        urllib.request,
+        "urlopen",
+        lambda req, timeout: FakeResponse({"rid": "ri.ds", "name": "runs"}),
+    ):
+        meta = client.get_dataset("ri.ds")
+    assert meta["name"] == "runs"
+
+
+def test_list_files_returns_paths() -> None:
+    client = make_client()
+    body = {"data": [{"path": "runs.csv"}, {"path": "extra.json"}]}
+    captured: dict[str, Any] = {}
+
+    def fake_urlopen(req: urllib.request.Request, timeout: float) -> FakeResponse:
+        captured["url"] = req.full_url
+        return FakeResponse(body)
+
+    with patch.object(urllib.request, "urlopen", fake_urlopen):
+        files = client.list_files("ri.ds", branch="dev")
+
+    assert files == ["runs.csv", "extra.json"]
+    assert "branchName=dev" in captured["url"]
+
+
+def test_list_files_handles_malformed_response() -> None:
+    client = make_client()
+    with patch.object(
+        urllib.request, "urlopen", lambda req, timeout: FakeResponse({"data": "oops"})
+    ):
+        assert client.list_files("ri.ds") == []
+
+
+def test_main_verify_unconfigured_fails(monkeypatch: pytest.MonkeyPatch) -> None:
+    import sys
+
+    from scripts.foundry_client import main
+
+    for var in ("FOUNDRY_HOSTNAME", "FOUNDRY_TOKEN", "FOUNDRY_DATASET_RID"):
+        monkeypatch.delenv(var, raising=False)
+    monkeypatch.setattr(sys, "argv", ["foundry_client.py", "--verify"])
+    assert main() == 1
+
+
+def test_main_requires_upload_or_verify(monkeypatch: pytest.MonkeyPatch) -> None:
+    import sys
+
+    from scripts.foundry_client import main
+
+    monkeypatch.setattr(sys, "argv", ["foundry_client.py"])
+    with pytest.raises(SystemExit):
+        main()
