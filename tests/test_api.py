@@ -137,3 +137,24 @@ def test_predict_missing_required_field(client: TestClient, sample_payload: dict
 def test_predict_route_id_too_long(client: TestClient, sample_payload: dict) -> None:
     resp = client.post("/api/v1/predict", json={**sample_payload, "route_id": "X" * 65})
     assert resp.status_code == 422
+
+
+def test_route_history_endpoint(client: TestClient, sample_payload: dict) -> None:
+    client.post("/api/v1/predict", json={**sample_payload, "route_id": "HIST-1"})
+    resp = client.get("/api/v1/routes/HIST-1/history")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["route_id"] == "HIST-1"
+    assert data["count"] >= 1
+
+
+def test_route_history_empty_for_unknown_route(client: TestClient) -> None:
+    resp = client.get("/api/v1/routes/NO-SUCH-ROUTE/history")
+    assert resp.status_code == 200
+    assert resp.json()["count"] == 0
+
+
+def test_route_history_limit_clamped(client: TestClient) -> None:
+    resp = client.get("/api/v1/routes/HIST-1/history?limit=9999")
+    assert resp.status_code == 200
+    assert resp.json()["count"] <= 200
