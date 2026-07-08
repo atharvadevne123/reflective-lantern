@@ -63,3 +63,50 @@ curl -X POST http://localhost:8000/api/v1/detect \
     "horizon": 5
   }'
 ```
+
+## API Reference
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `GET`  | `/api/v1/health` | Liveness + readiness check |
+| `GET`  | `/api/v1/version` | API and model version |
+| `GET`  | `/api/v1/metrics` | Prediction and latency metrics |
+| `POST` | `/api/v1/train` | Train anomaly detector and forecaster |
+| `POST` | `/api/v1/detect` | Batch anomaly detection |
+| `POST` | `/api/v1/forecast` | Multi-step forecasting |
+| `GET`  | `/api/v1/drift` | KS-test drift report |
+| `GET`  | `/api/v1/feature-importance` | Top-20 RF feature importances |
+
+### POST /api/v1/detect — Request Body
+
+```json
+{
+  "readings": [
+    {
+      "sensor_id": "string",
+      "timestamp": "ISO-8601",
+      "values": { "channel_name": 0.0 }
+    }
+  ],
+  "horizon": 5
+}
+```
+
+### POST /api/v1/detect — Response
+
+```json
+{
+  "results": [
+    {
+      "sensor_id": "turbine-01",
+      "timestamp": "2026-07-08T12:00:00",
+      "anomaly_score": 0.87,
+      "is_anomaly": true,
+      "threshold": 0.7
+    }
+  ],
+  "total_readings": 1,
+  "anomaly_count": 1,
+  "processing_time_ms": 12.4
+}
+```
