@@ -14,6 +14,7 @@ from typing import Any
 import pandas as pd
 from fastapi import Depends, FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.gzip import GZipMiddleware
 from pydantic import BaseModel, Field, field_validator
 from sqlalchemy.orm import Session
 
@@ -70,6 +71,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
+app.add_middleware(GZipMiddleware, minimum_size=1024)
 
 app.middleware("http")(rate_limit_middleware)
 
