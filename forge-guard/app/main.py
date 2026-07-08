@@ -194,3 +194,17 @@ async def metrics(db: Annotated[Session, Depends(get_db)]) -> MetricsResponse:
 @app.get("/metrics", tags=["ops"], deprecated=True)
 async def metrics_legacy(db: Annotated[Session, Depends(get_db)]) -> MetricsResponse:
     return await metrics(db)
+
+
+@app.get(
+    "/api/v1/feature-importance",
+    tags=["inference"],
+    summary="Return XGBoost feature importances",
+)
+async def feature_importance_endpoint() -> dict[str, float]:
+    """Return per-feature importance scores from the XGBoost sub-estimator."""
+    if _model is None:
+        raise HTTPException(status_code=503, detail="Model not loaded")
+    from app.model import feature_importance
+
+    return feature_importance(_model)
