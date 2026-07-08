@@ -34,6 +34,7 @@ CONGESTION_LABELS: dict[int, str] = {
 
 
 def _xgb_pipeline() -> Pipeline:
+    """Build the scaled XGBoost classification pipeline."""
     return Pipeline(
         [
             ("scaler", StandardScaler()),
@@ -54,6 +55,7 @@ def _xgb_pipeline() -> Pipeline:
 
 
 def _lgbm_pipeline() -> Pipeline:
+    """Build the scaled LightGBM classification pipeline."""
     return Pipeline(
         [
             ("scaler", StandardScaler()),
@@ -151,6 +153,11 @@ def train_model(
 
 
 def load_model() -> dict[str, Pipeline]:
+    """Load the persisted ensemble, training a fresh one when absent.
+
+    Returns:
+        Mapping of ensemble member name to fitted sklearn pipeline.
+    """
     if not MODEL_PATH.exists():
         logger.info("No saved model found — training from scratch")
         models, _ = train_model()
