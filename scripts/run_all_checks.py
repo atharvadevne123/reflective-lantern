@@ -17,6 +17,10 @@ SCRIPTS_DIR = Path(__file__).parent
 CHECKS = [
     ("History validation", [sys.executable, str(SCRIPTS_DIR / "validate_history.py")]),
     ("History summary", [sys.executable, str(SCRIPTS_DIR / "summarize_history.py")]),
+    (
+        "Foundry export",
+        [sys.executable, str(SCRIPTS_DIR / "foundry_sync.py"), "--export-only"],
+    ),
 ]
 
 
