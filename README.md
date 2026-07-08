@@ -135,3 +135,23 @@ it to `model_stable.joblib` only when validation passes.
 ## License
 
 MIT
+
+## Project structure
+
+```
+Traffic-Pulse/
+├── app/                  # FastAPI app, ML model, features, monitoring
+│   ├── main.py           # API endpoints + middleware
+│   ├── model.py          # XGBoost + LightGBM ensemble
+│   ├── features.py       # 26-feature engineering pipeline
+│   ├── monitoring.py     # KS-test drift + prediction logging
+│   ├── middleware.py     # Rate limiting
+│   ├── logging_config.py # Structured JSON logs
+│   ├── config.py         # Env-driven settings
+│   └── database.py       # SQLAlchemy models
+├── pipelines/            # Drift-gated retraining pipeline
+├── migrations/           # Alembic database migrations
+├── tests/                # 85+ pytest tests
+├── scripts/              # Diagram generator + example client
+└── docs/                 # Extended API documentation
+```
