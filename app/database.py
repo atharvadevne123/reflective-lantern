@@ -54,6 +54,11 @@ class DriftLog(Base):
 
 
 def get_db() -> Generator[Session, None, None]:
+    """Yield a database session and guarantee it is closed afterwards.
+
+    Yields:
+        An active SQLAlchemy session bound to the configured engine.
+    """
     db = SessionLocal()
     try:
         yield db
@@ -62,4 +67,5 @@ def get_db() -> Generator[Session, None, None]:
 
 
 def init_db() -> None:
+    """Create all tables if they do not already exist (idempotent)."""
     Base.metadata.create_all(bind=engine)
