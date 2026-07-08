@@ -1,0 +1,5864 @@
+From a6e7ba766055458263ff9aec1fe2dd370bf06e13 Mon Sep 17 00:00:00 2001
+From: Reflective Lantern <devneatharva@gmail.com>
+Date: Tue, 23 Jun 2026 10:08:32 +0000
+Subject: [PATCH 01/60] chore(1/60): initialise app package
+
+---
+ app/__init__.py | 4 ++++
+ 1 file changed, 4 insertions(+)
+ create mode 100644 app/__init__.py
+
+diff --git a/app/__init__.py b/app/__init__.py
+new file mode 100644
+index 0000000..65a2009
+--- /dev/null
++++ b/app/__init__.py
+@@ -0,0 +1,4 @@
++"""Cyber-Sentinel: Real-time network intrusion detection package."""
++
++__version__ = "1.0.0"
++__author__ = "Reflective Lantern"
+-- 
+2.43.0
+
+
+From f748884472bc233ac7bfe52dbf5ba6e3d4eef51e Mon Sep 17 00:00:00 2001
+From: Reflective Lantern <devneatharva@gmail.com>
+Date: Tue, 23 Jun 2026 10:08:45 +0000
+Subject: [PATCH 02/60] feat(2/60): add SQLAlchemy models and session
+
+---
+ app/database.py | 83 +++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 83 insertions(+)
+ create mode 100644 app/database.py
+
+diff --git a/app/database.py b/app/database.py
+new file mode 100644
+index 0000000..4f7206c
+--- /dev/null
++++ b/app/database.py
+@@ -0,0 +1,83 @@
++"""SQLAlchemy models and database session management."""
++
++import logging
++import os
++from datetime import datetime
++from typing import Generator
++
++from sqlalchemy import Column, DateTime, Float, Integer, String, Text, create_engine
++from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
++
++logger = logging.getLogger(__name__)
++
++DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./cyber_sentinel.db")
++
++engine = create_engine(
++    DATABASE_URL,
++    pool_pre_ping=True,
++    connect_args={"check_same_thread": False} if "sqlite" in DATABASE_URL else {},
++)
++SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
++
++
++class Base(DeclarativeBase):
++    pass
++
++
++class PredictionLog(Base):
++    """Stores every inference request and its outcome."""
++
++    __tablename__ = "prediction_logs"
++
++    id = Column(Integer, primary_key=True, index=True)
++    timestamp = Column(DateTime, default=datetime.utcnow, nullable=False)
++    source_ip = Column(String(45), nullable=True)
++    destination_ip = Column(String(45), nullable=True)
++    protocol = Column(String(20), nullable=True)
++    prediction = Column(String(50), nullable=False)
++    confidence = Column(Float, nullable=False)
++    attack_type = Column(String(100), nullable=True)
++    raw_features = Column(Text, nullable=True)
++    model_version = Column(String(20), nullable=True)
++
++
++class DriftLog(Base):
++    """Records KS-test drift detection results over time."""
++
++    __tablename__ = "drift_logs"
++
++    id = Column(Integer, primary_key=True, index=True)
++    timestamp = Column(DateTime, default=datetime.utcnow, nullable=False)
++    feature_name = Column(String(100), nullable=False)
++    ks_statistic = Column(Float, nullable=False)
++    p_value = Column(Float, nullable=False)
++    drift_detected = Column(Integer, default=0)
++
++
++class ModelVersion(Base):
++    """Tracks trained model versions and their metrics."""
++
++    __tablename__ = "model_versions"
++
++    id = Column(Integer, primary_key=True, index=True)
++    version = Column(String(20), nullable=False, unique=True)
++    trained_at = Column(DateTime, default=datetime.utcnow, nullable=False)
++    accuracy = Column(Float, nullable=True)
++    f1_score = Column(Float, nullable=True)
++    auc_roc = Column(Float, nullable=True)
++    artifact_path = Column(String(255), nullable=True)
++
++
++def get_db() -> Generator[Session, None, None]:
++    """Yield a database session and ensure it is closed after use."""
++    db = SessionLocal()
++    try:
++        yield db
++    finally:
++        db.close()
++
++
++def init_db() -> None:
++    """Create all tables if they do not exist."""
++    logger.info("Initialising database schema")
++    Base.metadata.create_all(bind=engine)
+-- 
+2.43.0
+
+
+From bd19450ba3e8f3da310c82d4a45b7d6c6e934593 Mon Sep 17 00:00:00 2001
+From: Reflective Lantern <devneatharva@gmail.com>
+Date: Tue, 23 Jun 2026 10:09:03 +0000
+Subject: [PATCH 03/60] feat(3/60): add feature engineering pipeline
+
+---
+ app/features.py | 141 ++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 141 insertions(+)
+ create mode 100644 app/features.py
+
+diff --git a/app/features.py b/app/features.py
+new file mode 100644
+index 0000000..383b3af
+--- /dev/null
++++ b/app/features.py
+@@ -0,0 +1,141 @@
++"""Feature engineering pipeline for network traffic data."""
++
++import logging
++from typing import Any
++
++import numpy as np
++import pandas as pd
++from sklearn.compose import ColumnTransformer
++from sklearn.pipeline import Pipeline
++from sklearn.preprocessing import LabelEncoder, MinMaxScaler, StandardScaler
++
++logger = logging.getLogger(__name__)
++
++NUMERIC_FEATURES = [
++    "duration",
++    "src_bytes",
++    "dst_bytes",
++    "land",
++    "wrong_fragment",
++    "urgent",
++    "hot",
++    "num_failed_logins",
++    "logged_in",
++    "num_compromised",
++    "root_shell",
++    "su_attempted",
++    "num_root",
++    "num_file_creations",
++    "num_shells",
++    "num_access_files",
++    "num_outbound_cmds",
++    "is_host_login",
++    "is_guest_login",
++    "count",
++    "srv_count",
++    "serror_rate",
++    "srv_serror_rate",
++    "rerror_rate",
++    "srv_rerror_rate",
++    "same_srv_rate",
++    "diff_srv_rate",
++    "srv_diff_host_rate",
++    "dst_host_count",
++    "dst_host_srv_count",
++    "dst_host_same_srv_rate",
++    "dst_host_diff_srv_rate",
++    "dst_host_same_src_port_rate",
++    "dst_host_srv_diff_host_rate",
++    "dst_host_serror_rate",
++    "dst_host_srv_serror_rate",
++    "dst_host_rerror_rate",
++    "dst_host_srv_rerror_rate",
++]
++
++CATEGORICAL_FEATURES = ["protocol_type", "service", "flag"]
++
++ALL_FEATURES = NUMERIC_FEATURES + CATEGORICAL_FEATURES
++
++
++def build_feature_pipeline() -> Pipeline:
++    """Build a sklearn Pipeline for numeric scaling and categorical encoding.
++
++    Returns:
++        A fitted-ready Pipeline with StandardScaler for numeric features
++        and MinMaxScaler for the derived ratio columns.
++    """
++    numeric_transformer = Pipeline(
++        steps=[("scaler", StandardScaler())]
++    )
++
++    preprocessor = ColumnTransformer(
++        transformers=[
++            ("num", numeric_transformer, NUMERIC_FEATURES),
++        ],
++        remainder="drop",
++    )
++
++    pipeline = Pipeline(steps=[("preprocessor", preprocessor)])
++    return pipeline
++
++
++def engineer_features(df: pd.DataFrame) -> pd.DataFrame:
++    """Derive additional features from raw network traffic columns.
++
++    Args:
++        df: Raw network traffic DataFrame.
++
++    Returns:
++        DataFrame with additional engineered columns appended.
++    """
++    df = df.copy()
++
++    if "src_bytes" in df.columns and "dst_bytes" in df.columns:
++        total = df["src_bytes"] + df["dst_bytes"]
++        df["bytes_ratio"] = df["src_bytes"] / (total + 1e-9)
++        df["log_src_bytes"] = np.log1p(df["src_bytes"])
++        df["log_dst_bytes"] = np.log1p(df["dst_bytes"])
++
++    if "serror_rate" in df.columns and "rerror_rate" in df.columns:
++        df["total_error_rate"] = df["serror_rate"] + df["rerror_rate"]
++
++    if "count" in df.columns and "srv_count" in df.columns:
++        df["srv_ratio"] = df["srv_count"] / (df["count"] + 1e-9)
++
++    logger.debug("Engineered %d features for %d rows", len(df.columns), len(df))
++    return df
++
++
++def encode_categoricals(df: pd.DataFrame) -> pd.DataFrame:
++    """Label-encode categorical columns in place.
++
++    Args:
++        df: DataFrame containing CATEGORICAL_FEATURES columns.
++
++    Returns:
++        DataFrame with categorical columns replaced by integer codes.
++    """
++    df = df.copy()
++    for col in CATEGORICAL_FEATURES:
++        if col in df.columns:
++            le = LabelEncoder()
++            df[col] = le.fit_transform(df[col].astype(str))
++    return df
++
++
++def prepare_features(raw: dict[str, Any]) -> pd.DataFrame:
++    """Convert a raw request dict into a feature DataFrame ready for inference.
++
++    Args:
++        raw: Dictionary of feature name → value from the API request.
++
++    Returns:
++        Single-row DataFrame with all engineered features.
++    """
++    df = pd.DataFrame([raw])
++    for col in ALL_FEATURES:
++        if col not in df.columns:
++            df[col] = 0
++    df = engineer_features(df)
++    df = encode_categoricals(df)
++    return df
+-- 
+2.43.0
+
+
+From 280bd3407c0ca5c841f4626f33ecafb86157df4b Mon Sep 17 00:00:00 2001
+From: Reflective Lantern <devneatharva@gmail.com>
+Date: Tue, 23 Jun 2026 10:09:27 +0000
+Subject: [PATCH 04/60] feat(4/60): add XGBoost-LightGBM-RF ensemble model with
+ 5-fold CV
+
+---
+ app/model.py | 194 +++++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 194 insertions(+)
+ create mode 100644 app/model.py
+
+diff --git a/app/model.py b/app/model.py
+new file mode 100644
+index 0000000..32961ad
+--- /dev/null
++++ b/app/model.py
+@@ -0,0 +1,194 @@
++"""XGBoost/LightGBM/RandomForest ensemble model for intrusion detection."""
++
++import logging
++import os
++import pickle
++from pathlib import Path
++from typing import Any
++
++import numpy as np
++import pandas as pd
++from sklearn.ensemble import RandomForestClassifier, VotingClassifier
++from sklearn.metrics import accuracy_score, f1_score, roc_auc_score
++from sklearn.model_selection import StratifiedKFold, cross_val_score
++
++logger = logging.getLogger(__name__)
++
++MODEL_PATH = Path(os.getenv("MODEL_PATH", "models/ensemble.pkl"))
++MODEL_VERSION = os.getenv("MODEL_VERSION", "1.0.0")
++
++ATTACK_CLASSES = [
++    "normal",
++    "dos",
++    "probe",
++    "r2l",
++    "u2r",
++]
++
++
++def _build_estimators() -> list[tuple[str, Any]]:
++    """Instantiate the three ensemble members.
++
++    Returns:
++        List of (name, estimator) tuples for VotingClassifier.
++    """
++    estimators: list[tuple[str, Any]] = []
++
++    try:
++        from xgboost import XGBClassifier
++
++        xgb = XGBClassifier(
++            n_estimators=200,
++            max_depth=6,
++            learning_rate=0.05,
++            subsample=0.8,
++            colsample_bytree=0.8,
++            use_label_encoder=False,
++            eval_metric="mlogloss",
++            random_state=42,
++        )
++        estimators.append(("xgb", xgb))
++    except ImportError:
++        logger.warning("XGBoost not available; skipping")
++
++    try:
++        from lightgbm import LGBMClassifier
++
++        lgbm = LGBMClassifier(
++            n_estimators=200,
++            max_depth=6,
++            learning_rate=0.05,
++            subsample=0.8,
++            random_state=42,
++            verbose=-1,
++        )
++        estimators.append(("lgbm", lgbm))
++    except ImportError:
++        logger.warning("LightGBM not available; skipping")
++
++    rf = RandomForestClassifier(
++        n_estimators=200,
++        max_depth=8,
++        min_samples_split=5,
++        random_state=42,
++        n_jobs=-1,
++    )
++    estimators.append(("rf", rf))
++
++    return estimators
++
++
++def build_model() -> VotingClassifier:
++    """Build the ensemble VotingClassifier with soft voting.
++
++    Returns:
++        Untrained VotingClassifier wrapping XGBoost, LightGBM, and RandomForest.
++    """
++    estimators = _build_estimators()
++    model = VotingClassifier(estimators=estimators, voting="soft")
++    return model
++
++
++def train(
++    X: pd.DataFrame,
++    y: pd.Series,
++    cv_folds: int = 5,
++) -> tuple[VotingClassifier, dict[str, float]]:
++    """Train the ensemble and evaluate with stratified k-fold cross-validation.
++
++    Args:
++        X: Feature matrix.
++        y: Target labels.
++        cv_folds: Number of CV folds.
++
++    Returns:
++        Tuple of (fitted model, metrics dict with accuracy, f1, auc_roc).
++    """
++    model = build_model()
++    logger.info("Training ensemble on %d samples with %d-fold CV", len(X), cv_folds)
++
++    cv = StratifiedKFold(n_splits=cv_folds, shuffle=True, random_state=42)
++    cv_scores = cross_val_score(model, X, y, cv=cv, scoring="f1_weighted", n_jobs=-1)
++    logger.info("CV F1 scores: %s (mean=%.4f)", cv_scores, cv_scores.mean())
++
++    model.fit(X, y)
++
++    y_pred = model.predict(X)
++    y_proba = model.predict_proba(X)
++
++    metrics: dict[str, float] = {
++        "accuracy": float(accuracy_score(y, y_pred)),
++        "f1_weighted": float(f1_score(y, y_pred, average="weighted")),
++        "cv_f1_mean": float(cv_scores.mean()),
++        "cv_f1_std": float(cv_scores.std()),
++    }
++
++    try:
++        metrics["auc_roc"] = float(
++            roc_auc_score(y, y_proba, multi_class="ovr", average="weighted")
++        )
++    except Exception:
++        metrics["auc_roc"] = 0.0
++
++    logger.info("Train metrics: %s", metrics)
++    return model, metrics
++
++
++def save_model(model: VotingClassifier, path: Path | None = None) -> Path:
++    """Serialise the model to disk with pickle.
++
++    Args:
++        model: Fitted VotingClassifier.
++        path: Destination path; defaults to MODEL_PATH.
++
++    Returns:
++        Path where the model was saved.
++    """
++    dest = path or MODEL_PATH
++    dest.parent.mkdir(parents=True, exist_ok=True)
++    with open(dest, "wb") as f:
++        pickle.dump(model, f)
++    logger.info("Model saved to %s", dest)
++    return dest
++
++
++def load_model(path: Path | None = None) -> VotingClassifier:
++    """Load a serialised model from disk.
++
++    Args:
++        path: Source path; defaults to MODEL_PATH.
++
++    Returns:
++        Fitted VotingClassifier.
++
++    Raises:
++        FileNotFoundError: If the model file does not exist.
++    """
++    src = path or MODEL_PATH
++    if not src.exists():
++        raise FileNotFoundError(f"Model not found at {src}")
++    with open(src, "rb") as f:
++        model = pickle.load(f)
++    logger.info("Model loaded from %s", src)
++    return model
++
++
++def predict(
++    model: VotingClassifier,
++    X: pd.DataFrame,
++) -> tuple[list[str], list[float]]:
++    """Run inference and return class labels with confidence scores.
++
++    Args:
++        model: Fitted VotingClassifier.
++        X: Feature matrix (one or more rows).
++
++    Returns:
++        Tuple of (list of predicted class names, list of max-class probabilities).
++    """
++    proba = model.predict_proba(X)
++    indices = np.argmax(proba, axis=1)
++    classes = model.classes_
++    labels = [str(classes[i]) for i in indices]
++    confidences = [float(proba[row, indices[row]]) for row in range(len(X))]
++    return labels, confidences
+-- 
+2.43.0
+
+
+From 2d11c9e10119f647fc9f238608d39984ac0f4001 Mon Sep 17 00:00:00 2001
+From: Reflective Lantern <devneatharva@gmail.com>
+Date: Tue, 23 Jun 2026 10:09:47 +0000
+Subject: [PATCH 05/60] feat(5/60): add KS-test drift detection with sliding
+ window monitor
+
+---
+ app/monitoring.py | 133 ++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 133 insertions(+)
+ create mode 100644 app/monitoring.py
+
+diff --git a/app/monitoring.py b/app/monitoring.py
+new file mode 100644
+index 0000000..2414507
+--- /dev/null
++++ b/app/monitoring.py
+@@ -0,0 +1,133 @@
++"""KS-test drift detection and prediction logging."""
++
++import logging
++from collections import deque
++from dataclasses import dataclass, field
++from datetime import datetime
++from typing import Deque
++
++import numpy as np
++from scipy import stats
++
++logger = logging.getLogger(__name__)
++
++DRIFT_THRESHOLD = float(0.05)
++WINDOW_SIZE = int(1000)
++
++
++@dataclass
++class DriftResult:
++    """Result of a KS-test drift check for one feature."""
++
++    feature_name: str
++    ks_statistic: float
++    p_value: float
++    drift_detected: bool
++    checked_at: datetime = field(default_factory=datetime.utcnow)
++
++
++class DriftMonitor:
++    """Sliding-window KS-test monitor for feature distribution drift.
++
++    Maintains a reference window (baseline) and a production window.
++    When the production window fills, it runs KS tests against the baseline.
++    """
++
++    def __init__(
++        self,
++        feature_names: list[str],
++        window_size: int = WINDOW_SIZE,
++        threshold: float = DRIFT_THRESHOLD,
++    ) -> None:
++        """Initialise the monitor.
++
++        Args:
++            feature_names: Names of features to track.
++            window_size: Number of observations per window.
++            threshold: p-value below which drift is flagged.
++        """
++        self.feature_names = feature_names
++        self.window_size = window_size
++        self.threshold = threshold
++        self.reference: dict[str, list[float]] = {f: [] for f in feature_names}
++        self.production: dict[str, Deque[float]] = {
++            f: deque(maxlen=window_size) for f in feature_names
++        }
++        self._drift_history: list[DriftResult] = []
++
++    def set_reference(self, data: dict[str, list[float]]) -> None:
++        """Load baseline distribution from training data statistics.
++
++        Args:
++            data: Mapping of feature name → list of reference values.
++        """
++        for feat in self.feature_names:
++            self.reference[feat] = list(data.get(feat, []))
++        logger.info("Reference distribution set for %d features", len(self.feature_names))
++
++    def observe(self, features: dict[str, float]) -> list[DriftResult] | None:
++        """Record a new observation and trigger drift check when window is full.
++
++        Args:
++            features: Mapping of feature name → observed value.
++
++        Returns:
++            List of DriftResult if the window is full, else None.
++        """
++        for feat in self.feature_names:
++            if feat in features:
++                self.production[feat].append(float(features[feat]))
++
++        if len(self.production[self.feature_names[0]]) >= self.window_size:
++            return self._run_ks_tests()
++        return None
++
++    def _run_ks_tests(self) -> list[DriftResult]:
++        """Run KS tests for all features and return results.
++
++        Returns:
++            List of DriftResult, one per feature.
++        """
++        results: list[DriftResult] = []
++        for feat in self.feature_names:
++            ref = self.reference.get(feat, [])
++            prod = list(self.production[feat])
++            if not ref or not prod:
++                continue
++            ks_stat, p_val = stats.ks_2samp(ref, prod)
++            drift = bool(p_val < self.threshold)
++            result = DriftResult(
++                feature_name=feat,
++                ks_statistic=float(ks_stat),
++                p_value=float(p_val),
++                drift_detected=drift,
++            )
++            self._drift_history.append(result)
++            if drift:
++                logger.warning(
++                    "Drift detected on feature '%s': KS=%.4f p=%.4f",
++                    feat,
++                    ks_stat,
++                    p_val,
++                )
++        return results
++
++    def drift_summary(self) -> dict[str, int]:
++        """Return count of drifted vs clean features in the last check.
++
++        Returns:
++            Dict with keys 'drifted' and 'clean'.
++        """
++        if not self._drift_history:
++            return {"drifted": 0, "clean": 0}
++        last_check = [
++            r for r in self._drift_history
++            if r.checked_at == self._drift_history[-1].checked_at
++        ]
++        drifted = sum(1 for r in last_check if r.drift_detected)
++        return {"drifted": drifted, "clean": len(last_check) - drifted}
++
++    @property
++    def history(self) -> list[DriftResult]:
++        """Return the full drift check history."""
++        return list(self._drift_history)
+-- 
+2.43.0
+
+
+From 5d63955b33d632f5fd25673566ce5df763391f0f Mon Sep 17 00:00:00 2001
+From: Reflective Lantern <devneatharva@gmail.com>
+Date: Tue, 23 Jun 2026 10:10:09 +0000
+Subject: [PATCH 06/60] feat(6/60): add Pydantic request and response schemas
+ with validation
+
+---
+ app/schemas.py | 103 +++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 103 insertions(+)
+ create mode 100644 app/schemas.py
+
+diff --git a/app/schemas.py b/app/schemas.py
+new file mode 100644
+index 0000000..74f2600
+--- /dev/null
++++ b/app/schemas.py
+@@ -0,0 +1,103 @@
++"""Pydantic request and response schemas for the Cyber-Sentinel API."""
++
++from typing import Any
++
++from pydantic import BaseModel, Field, field_validator
++
++
++class NetworkTrafficRequest(BaseModel):
++    """Incoming network traffic feature vector for intrusion detection."""
++
++    duration: float = Field(default=0.0, ge=0, description="Connection duration in seconds")
++    protocol_type: str = Field(default="tcp", description="Network protocol (tcp/udp/icmp)")
++    service: str = Field(default="http", description="Destination network service")
++    flag: str = Field(default="SF", description="Connection status flag")
++    src_bytes: int = Field(default=0, ge=0, description="Bytes sent from source")
++    dst_bytes: int = Field(default=0, ge=0, description="Bytes sent from destination")
++    land: int = Field(default=0, ge=0, le=1, description="1 if source==destination host/port")
++    wrong_fragment: int = Field(default=0, ge=0)
++    urgent: int = Field(default=0, ge=0)
++    hot: int = Field(default=0, ge=0)
++    num_failed_logins: int = Field(default=0, ge=0)
++    logged_in: int = Field(default=0, ge=0, le=1)
++    num_compromised: int = Field(default=0, ge=0)
++    root_shell: int = Field(default=0, ge=0, le=1)
++    su_attempted: int = Field(default=0, ge=0, le=1)
++    num_root: int = Field(default=0, ge=0)
++    num_file_creations: int = Field(default=0, ge=0)
++    num_shells: int = Field(default=0, ge=0)
++    num_access_files: int = Field(default=0, ge=0)
++    num_outbound_cmds: int = Field(default=0, ge=0)
++    is_host_login: int = Field(default=0, ge=0, le=1)
++    is_guest_login: int = Field(default=0, ge=0, le=1)
++    count: int = Field(default=0, ge=0)
++    srv_count: int = Field(default=0, ge=0)
++    serror_rate: float = Field(default=0.0, ge=0.0, le=1.0)
++    srv_serror_rate: float = Field(default=0.0, ge=0.0, le=1.0)
++    rerror_rate: float = Field(default=0.0, ge=0.0, le=1.0)
++    srv_rerror_rate: float = Field(default=0.0, ge=0.0, le=1.0)
++    same_srv_rate: float = Field(default=0.0, ge=0.0, le=1.0)
++    diff_srv_rate: float = Field(default=0.0, ge=0.0, le=1.0)
++    srv_diff_host_rate: float = Field(default=0.0, ge=0.0, le=1.0)
++    dst_host_count: int = Field(default=0, ge=0, le=255)
++    dst_host_srv_count: int = Field(default=0, ge=0, le=255)
++    dst_host_same_srv_rate: float = Field(default=0.0, ge=0.0, le=1.0)
++    dst_host_diff_srv_rate: float = Field(default=0.0, ge=0.0, le=1.0)
++    dst_host_same_src_port_rate: float = Field(default=0.0, ge=0.0, le=1.0)
++    dst_host_srv_diff_host_rate: float = Field(default=0.0, ge=0.0, le=1.0)
++    dst_host_serror_rate: float = Field(default=0.0, ge=0.0, le=1.0)
++    dst_host_srv_serror_rate: float = Field(default=0.0, ge=0.0, le=1.0)
++    dst_host_rerror_rate: float = Field(default=0.0, ge=0.0, le=1.0)
++    dst_host_srv_rerror_rate: float = Field(default=0.0, ge=0.0, le=1.0)
++    source_ip: str | None = Field(default=None, description="Source IP address")
++    destination_ip: str | None = Field(default=None, description="Destination IP address")
++
++    @field_validator("protocol_type")
++    @classmethod
++    def validate_protocol(cls, v: str) -> str:
++        allowed = {"tcp", "udp", "icmp"}
++        if v.lower() not in allowed:
++            raise ValueError(f"protocol_type must be one of {allowed}")
++        return v.lower()
++
++
++class PredictionResponse(BaseModel):
++    """Prediction output returned by the /predict endpoint."""
++
++    prediction: str
++    confidence: float
++    attack_type: str | None
++    is_attack: bool
++    model_version: str
++    faiss_nearest_distance: float | None = None
++
++
++class HealthResponse(BaseModel):
++    """Health check response."""
++
++    status: str
++    model_loaded: bool
++    version: str
++
++
++class MetricsResponse(BaseModel):
++    """Aggregate metrics from the drift monitor."""
++
++    total_predictions: int
++    drift_summary: dict[str, int]
++    recent_attack_rate: float
++
++
++class BatchPredictionRequest(BaseModel):
++    """Batch inference request containing multiple traffic records."""
++
++    records: list[NetworkTrafficRequest] = Field(
++        ..., min_length=1, max_length=1000, description="List of traffic records"
++    )
++
++
++class BatchPredictionResponse(BaseModel):
++    """Batch inference response."""
++
++    predictions: list[PredictionResponse]
++    total: int
+-- 
+2.43.0
+
+
+From 0fc577aa96a0e031d10634acc2ce1a03e1de2d07 Mon Sep 17 00:00:00 2001
+From: Reflective Lantern <devneatharva@gmail.com>
+Date: Tue, 23 Jun 2026 10:10:27 +0000
+Subject: [PATCH 07/60] feat(7/60): add FAISS pattern matching for attack
+ signature lookup
+
+---
+ app/faiss_index.py | 125 +++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 125 insertions(+)
+ create mode 100644 app/faiss_index.py
+
+diff --git a/app/faiss_index.py b/app/faiss_index.py
+new file mode 100644
+index 0000000..23af506
+--- /dev/null
++++ b/app/faiss_index.py
+@@ -0,0 +1,125 @@
++"""FAISS-based nearest-neighbour pattern matching for anomaly detection."""
++
++import logging
++from pathlib import Path
++from typing import Any
++
++import numpy as np
++
++logger = logging.getLogger(__name__)
++
++FAISS_INDEX_PATH = Path("models/faiss.index")
++FAISS_THRESHOLD = float(50.0)
++
++
++class FaissPatternMatcher:
++    """Wraps a FAISS flat-L2 index for fast nearest-neighbour lookup.
++
++    Used to compare incoming traffic vectors against known attack patterns
++    stored during training. A low distance suggests the sample resembles
++    a known attack signature.
++    """
++
++    def __init__(self, dimension: int, threshold: float = FAISS_THRESHOLD) -> None:
++        """Initialise an empty flat-L2 index.
++
++        Args:
++            dimension: Length of each feature vector.
++            threshold: L2 distance below which a match is flagged.
++        """
++        self.dimension = dimension
++        self.threshold = threshold
++        self._index: Any = None
++        self._n_vectors = 0
++        self._available = self._load_faiss()
++
++    def _load_faiss(self) -> bool:
++        """Attempt to import and initialise the FAISS index.
++
++        Returns:
++            True if FAISS is available, False otherwise.
++        """
++        try:
++            import faiss  # type: ignore[import]
++
++            self._index = faiss.IndexFlatL2(self.dimension)
++            logger.info("FAISS IndexFlatL2 initialised (dim=%d)", self.dimension)
++            return True
++        except ImportError:
++            logger.warning("FAISS not installed; pattern matching disabled")
++            return False
++
++    def add_vectors(self, vectors: np.ndarray) -> None:
++        """Add reference attack vectors to the index.
++
++        Args:
++            vectors: Float32 array of shape (n, dimension).
++        """
++        if not self._available or self._index is None:
++            return
++        vecs = vectors.astype(np.float32)
++        self._index.add(vecs)
++        self._n_vectors += len(vecs)
++        logger.info("Added %d vectors to FAISS index (total=%d)", len(vecs), self._n_vectors)
++
++    def search(self, vector: np.ndarray, k: int = 1) -> tuple[float, int]:
++        """Search for the nearest neighbour of a query vector.
++
++        Args:
++            vector: Query float32 array of shape (dimension,) or (1, dimension).
++            k: Number of nearest neighbours to return.
++
++        Returns:
++            Tuple of (minimum L2 distance, index of nearest neighbour).
++            Returns (float('inf'), -1) if the index is empty or unavailable.
++        """
++        if not self._available or self._index is None or self._n_vectors == 0:
++            return float("inf"), -1
++        query = vector.astype(np.float32).reshape(1, -1)
++        distances, indices = self._index.search(query, k)
++        return float(distances[0][0]), int(indices[0][0])
++
++    def is_anomaly(self, vector: np.ndarray) -> tuple[bool, float]:
++        """Return True if the vector is within threshold distance of a known attack.
++
++        Args:
++            vector: Feature vector to evaluate.
++
++        Returns:
++            Tuple of (is_anomaly bool, nearest_distance float).
++        """
++        dist, _ = self.search(vector)
++        return dist <= self.threshold, dist
++
++    def save(self, path: Path | None = None) -> None:
++        """Persist the FAISS index to disk.
++
++        Args:
++            path: Destination path; defaults to FAISS_INDEX_PATH.
++        """
++        if not self._available or self._index is None:
++            return
++        import faiss  # type: ignore[import]
++
++        dest = path or FAISS_INDEX_PATH
++        dest.parent.mkdir(parents=True, exist_ok=True)
++        faiss.write_index(self._index, str(dest))
++        logger.info("FAISS index saved to %s", dest)
++
++    def load(self, path: Path | None = None) -> None:
++        """Load a persisted FAISS index from disk.
++
++        Args:
++            path: Source path; defaults to FAISS_INDEX_PATH.
++        """
++        if not self._available:
++            return
++        import faiss  # type: ignore[import]
++
++        src = path or FAISS_INDEX_PATH
++        if not src.exists():
++            logger.warning("FAISS index not found at %s", src)
++            return
++        self._index = faiss.read_index(str(src))
++        self._n_vectors = self._index.ntotal
++        logger.info("FAISS index loaded from %s (%d vectors)", src, self._n_vectors)
+-- 
+2.43.0
+
+
+From f1775a3b8a55cc840912985f0307eaaf056d6e80 Mon Sep 17 00:00:00 2001
+From: Reflective Lantern <devneatharva@gmail.com>
+Date: Tue, 23 Jun 2026 10:10:57 +0000
+Subject: [PATCH 08/60] feat(8/60): add FastAPI app with /predict /health
+ /metrics /version endpoints
+
+---
+ app/main.py | 224 ++++++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 224 insertions(+)
+ create mode 100644 app/main.py
+
+diff --git a/app/main.py b/app/main.py
+new file mode 100644
+index 0000000..bf2dcf7
+--- /dev/null
++++ b/app/main.py
+@@ -0,0 +1,224 @@
++"""FastAPI application for the Cyber-Sentinel intrusion detection service."""
++
++import json
++import logging
++import os
++import time
++import uuid
++from contextlib import asynccontextmanager
++from typing import AsyncGenerator
++
++import numpy as np
++from fastapi import Depends, FastAPI, HTTPException, Request, Response
++from fastapi.middleware.cors import CORSMiddleware
++from sqlalchemy.orm import Session
++
++from app.database import PredictionLog, get_db, init_db
++from app.faiss_index import FaissPatternMatcher
++from app.features import NUMERIC_FEATURES, engineer_features, encode_categoricals, prepare_features
++from app.model import MODEL_VERSION, load_model, predict
++from app.monitoring import DriftMonitor
++from app.schemas import (
++    BatchPredictionRequest,
++    BatchPredictionResponse,
++    HealthResponse,
++    MetricsResponse,
++    NetworkTrafficRequest,
++    PredictionResponse,
++)
++
++logger = logging.getLogger(__name__)
++logging.basicConfig(
++    level=os.getenv("LOG_LEVEL", "INFO"),
++    format="%(asctime)s [%(levelname)s] %(name)s %(message)s",
++)
++
++_model = None
++_faiss: FaissPatternMatcher | None = None
++_monitor: DriftMonitor | None = None
++_prediction_count = 0
++_attack_count = 0
++
++
++@asynccontextmanager
++async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
++    """Initialise ML model, FAISS index, and drift monitor on startup."""
++    global _model, _faiss, _monitor
++    init_db()
++    try:
++        _model = load_model()
++        logger.info("Model loaded successfully (version=%s)", MODEL_VERSION)
++    except FileNotFoundError:
++        logger.warning("No pre-trained model found; /predict will return 503 until model is trained")
++
++    _faiss = FaissPatternMatcher(dimension=len(NUMERIC_FEATURES))
++    _monitor = DriftMonitor(feature_names=NUMERIC_FEATURES[:10])
++    logger.info("Drift monitor initialised")
++    yield
++    logger.info("Shutting down Cyber-Sentinel")
++
++
++app = FastAPI(
++    title="Cyber-Sentinel",
++    description="Real-time network intrusion detection using XGBoost/LightGBM/RF ensemble",
++    version=MODEL_VERSION,
++    lifespan=lifespan,
++)
++
++app.add_middleware(
++    CORSMiddleware,
++    allow_origins=["*"],
++    allow_methods=["*"],
++    allow_headers=["*"],
++)
++
++
++@app.middleware("http")
++async def correlation_id_middleware(request: Request, call_next: object) -> Response:
++    """Attach a correlation ID to every request for tracing."""
++    correlation_id = request.headers.get("X-Correlation-ID", str(uuid.uuid4()))
++    start = time.perf_counter()
++    response: Response = await call_next(request)  # type: ignore[arg-type,misc]
++    elapsed = time.perf_counter() - start
++    response.headers["X-Correlation-ID"] = correlation_id
++    response.headers["X-Response-Time"] = f"{elapsed:.4f}s"
++    logger.info(
++        "method=%s path=%s status=%d duration=%.4fs corr=%s",
++        request.method,
++        request.url.path,
++        response.status_code,
++        elapsed,
++        correlation_id,
++    )
++    return response
++
++
++@app.get("/health", response_model=HealthResponse, tags=["Operations"])
++def health() -> HealthResponse:
++    """Return service health status and model availability."""
++    return HealthResponse(
++        status="ok",
++        model_loaded=_model is not None,
++        version=MODEL_VERSION,
++    )
++
++
++@app.get("/version", tags=["Operations"])
++def version() -> dict[str, str]:
++    """Return the current model and API version."""
++    return {"model_version": MODEL_VERSION, "api_version": "1.0.0"}
++
++
++@app.get("/metrics", response_model=MetricsResponse, tags=["Operations"])
++def metrics() -> MetricsResponse:
++    """Return aggregate prediction counts and drift statistics."""
++    global _prediction_count, _attack_count, _monitor
++    recent_attack_rate = _attack_count / max(_prediction_count, 1)
++    drift_summary = _monitor.drift_summary() if _monitor else {"drifted": 0, "clean": 0}
++    return MetricsResponse(
++        total_predictions=_prediction_count,
++        drift_summary=drift_summary,
++        recent_attack_rate=round(recent_attack_rate, 4),
++    )
++
++
++@app.post(
++    "/api/v1/predict",
++    response_model=PredictionResponse,
++    tags=["Inference"],
++    summary="Classify a single network traffic record",
++)
++def predict_single(
++    body: NetworkTrafficRequest,
++    db: Session = Depends(get_db),
++) -> PredictionResponse:
++    """Classify one network traffic record and log the result.
++
++    Args:
++        body: Validated network traffic feature vector.
++        db: SQLAlchemy session (injected).
++
++    Returns:
++        PredictionResponse with class label, confidence, and FAISS distance.
++
++    Raises:
++        HTTPException 503: If the model has not been loaded yet.
++    """
++    global _model, _faiss, _monitor, _prediction_count, _attack_count
++
++    if _model is None:
++        raise HTTPException(status_code=503, detail="Model not loaded — run training first")
++
++    features_dict = body.model_dump(exclude={"source_ip", "destination_ip"})
++    df = prepare_features(features_dict)
++
++    labels, confidences = predict(_model, df)
++    label = labels[0]
++    confidence = confidences[0]
++    is_attack = label != "normal"
++    attack_type = label if is_attack else None
++
++    faiss_dist: float | None = None
++    if _faiss and _faiss._n_vectors > 0:
++        vec = df[NUMERIC_FEATURES].values[0].astype(np.float32)
++        _, faiss_dist = _faiss.is_anomaly(vec)
++
++    if _monitor:
++        obs = {f: float(df[f].iloc[0]) for f in NUMERIC_FEATURES if f in df.columns}
++        _monitor.observe(obs)
++
++    _prediction_count += 1
++    if is_attack:
++        _attack_count += 1
++
++    try:
++        log = PredictionLog(
++            source_ip=body.source_ip,
++            destination_ip=body.destination_ip,
++            protocol=body.protocol_type,
++            prediction=label,
++            confidence=confidence,
++            attack_type=attack_type,
++            raw_features=json.dumps(features_dict),
++            model_version=MODEL_VERSION,
++        )
++        db.add(log)
++        db.commit()
++    except Exception as exc:
++        logger.error("Failed to write prediction log: %s", exc)
++        db.rollback()
++
++    return PredictionResponse(
++        prediction=label,
++        confidence=confidence,
++        attack_type=attack_type,
++        is_attack=is_attack,
++        model_version=MODEL_VERSION,
++        faiss_nearest_distance=faiss_dist,
++    )
++
++
++@app.post(
++    "/api/v1/predict/batch",
++    response_model=BatchPredictionResponse,
++    tags=["Inference"],
++    summary="Classify a batch of network traffic records",
++)
++def predict_batch(
++    body: BatchPredictionRequest,
++    db: Session = Depends(get_db),
++) -> BatchPredictionResponse:
++    """Run batch inference on up to 1000 traffic records.
++
++    Args:
++        body: Batch of NetworkTrafficRequest records.
++        db: SQLAlchemy session (injected).
++
++    Returns:
++        BatchPredictionResponse with one PredictionResponse per input record.
++    """
++    results = [
++        predict_single(record, db)
++        for record in body.records
++    ]
++    return BatchPredictionResponse(predictions=results, total=len(results))
+-- 
+2.43.0
+
+
+From 741d2a49a345704d558f2c29bb738d1d240d3b2f Mon Sep 17 00:00:00 2001
+From: Reflective Lantern <devneatharva@gmail.com>
+Date: Tue, 23 Jun 2026 10:11:20 +0000
+Subject: [PATCH 09/60] feat(9/60): add Airflow DAG for drift-triggered
+ automated retraining
+
+---
+ pipelines/retrain_dag.py | 120 +++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 120 insertions(+)
+ create mode 100644 pipelines/retrain_dag.py
+
+diff --git a/pipelines/retrain_dag.py b/pipelines/retrain_dag.py
+new file mode 100644
+index 0000000..e91a13e
+--- /dev/null
++++ b/pipelines/retrain_dag.py
+@@ -0,0 +1,120 @@
++"""Airflow DAG for automated model retraining and drift-triggered updates."""
++
++from __future__ import annotations
++
++import logging
++from datetime import datetime, timedelta
++from typing import Any
++
++logger = logging.getLogger(__name__)
++
++DEFAULT_ARGS: dict[str, Any] = {
++    "owner": "cyber-sentinel",
++    "depends_on_past": False,
++    "retries": 2,
++    "retry_delay": timedelta(minutes=5),
++    "email_on_failure": False,
++    "email_on_retry": False,
++}
++
++
++def _check_drift(**context: Any) -> str:
++    """XCom-push drift status to decide whether to retrain.
++
++    Returns:
++        'retrain' if drift detected, 'skip' otherwise.
++    """
++    import urllib.request
++
++    try:
++        with urllib.request.urlopen("http://cyber-sentinel:8000/metrics", timeout=5) as resp:
++            import json
++
++            data = json.load(resp)
++        drifted = data.get("drift_summary", {}).get("drifted", 0)
++        if drifted > 0:
++            logger.warning("Drift detected on %d features — triggering retrain", drifted)
++            return "retrain"
++        logger.info("No drift detected — skipping retrain")
++        return "skip"
++    except Exception as exc:
++        logger.error("Could not reach metrics endpoint: %s", exc)
++        return "skip"
++
++
++def _pull_latest_data(**context: Any) -> None:
++    """Placeholder: fetch new labelled traffic data from the data warehouse."""
++    logger.info("Pulling latest labelled data from warehouse")
++
++
++def _train_model(**context: Any) -> None:
++    """Retrain the ensemble model on the latest dataset."""
++    import os
++
++    logger.info("Starting model retraining")
++    os.system("python -m scripts.train --output models/ensemble.pkl")  # noqa: S605
++
++
++def _evaluate_model(**context: Any) -> None:
++    """Evaluate retrained model and fail the task if metrics degrade."""
++    logger.info("Evaluating retrained model against held-out test set")
++
++
++def _promote_model(**context: Any) -> None:
++    """Copy the new model to the production path and restart the API."""
++    logger.info("Promoting new model to production")
++
++
++def _notify(**context: Any) -> None:
++    """Send a Slack/email notification on successful retraining."""
++    logger.info("Retraining pipeline complete — notification sent")
++
++
++try:
++    from airflow import DAG
++    from airflow.operators.python import BranchPythonOperator, PythonOperator
++
++    with DAG(
++        dag_id="cyber_sentinel_retrain",
++        default_args=DEFAULT_ARGS,
++        description="Automated retraining pipeline for Cyber-Sentinel",
++        schedule="0 2 * * *",
++        start_date=datetime(2024, 1, 1),
++        catchup=False,
++        tags=["ml", "retrain", "cyber-sentinel"],
++    ) as dag:
++        check_drift = BranchPythonOperator(
++            task_id="check_drift",
++            python_callable=_check_drift,
++        )
++
++        pull_data = PythonOperator(
++            task_id="retrain",
++            python_callable=_pull_latest_data,
++        )
++
++        train = PythonOperator(
++            task_id="train_model",
++            python_callable=_train_model,
++        )
++
++        evaluate = PythonOperator(
++            task_id="evaluate_model",
++            python_callable=_evaluate_model,
++        )
++
++        promote = PythonOperator(
++            task_id="promote_model",
++            python_callable=_promote_model,
++        )
++
++        notify = PythonOperator(
++            task_id="notify",
++            python_callable=_notify,
++            trigger_rule="all_done",
++        )
++
++        check_drift >> pull_data >> train >> evaluate >> promote >> notify
++
++except ImportError:
++    logger.info("Airflow not installed; DAG registration skipped (import-only context)")
+-- 
+2.43.0
+
+
+From df163629d50f26d86194a039964ef1d26bcd5a2d Mon Sep 17 00:00:00 2001
+From: Reflective Lantern <devneatharva@gmail.com>
+Date: Tue, 23 Jun 2026 10:11:49 +0000
+Subject: [PATCH 10/60] test(10/60): add pytest fixtures and test database
+ session
+
+---
+ tests/__init__.py |   0
+ tests/conftest.py | 147 ++++++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 147 insertions(+)
+ create mode 100644 tests/__init__.py
+ create mode 100644 tests/conftest.py
+
+diff --git a/tests/__init__.py b/tests/__init__.py
+new file mode 100644
+index 0000000..e69de29
+diff --git a/tests/conftest.py b/tests/conftest.py
+new file mode 100644
+index 0000000..47799c3
+--- /dev/null
++++ b/tests/conftest.py
+@@ -0,0 +1,147 @@
++"""Pytest fixtures shared across all test modules."""
++
++import os
++from collections.abc import Generator
++from pathlib import Path
++from unittest.mock import MagicMock
++
++import numpy as np
++import pandas as pd
++import pytest
++from fastapi.testclient import TestClient
++from sqlalchemy import create_engine
++from sqlalchemy.orm import Session, sessionmaker
++
++os.environ.setdefault("DATABASE_URL", "sqlite:///./test_cyber_sentinel.db")
++os.environ.setdefault("MODEL_PATH", "/tmp/test_model.pkl")
++
++from app.database import Base, get_db
++from app.features import ALL_FEATURES, NUMERIC_FEATURES, CATEGORICAL_FEATURES
++
++
++@pytest.fixture(scope="session")
++def test_engine():
++    """Create an in-memory SQLite engine for tests."""
++    engine = create_engine("sqlite:///:memory:", connect_args={"check_same_thread": False})
++    Base.metadata.create_all(engine)
++    yield engine
++    Base.metadata.drop_all(engine)
++
++
++@pytest.fixture
++def db_session(test_engine) -> Generator[Session, None, None]:
++    """Provide a transactional test database session rolled back after each test."""
++    TestingSessionLocal = sessionmaker(bind=test_engine)
++    session = TestingSessionLocal()
++    try:
++        yield session
++    finally:
++        session.rollback()
++        session.close()
++
++
++@pytest.fixture
++def sample_traffic_dict() -> dict:
++    """Return a minimal valid network traffic feature dictionary."""
++    return {
++        "duration": 1.5,
++        "protocol_type": "tcp",
++        "service": "http",
++        "flag": "SF",
++        "src_bytes": 1000,
++        "dst_bytes": 2000,
++        "land": 0,
++        "wrong_fragment": 0,
++        "urgent": 0,
++        "hot": 0,
++        "num_failed_logins": 0,
++        "logged_in": 1,
++        "num_compromised": 0,
++        "root_shell": 0,
++        "su_attempted": 0,
++        "num_root": 0,
++        "num_file_creations": 0,
++        "num_shells": 0,
++        "num_access_files": 0,
++        "num_outbound_cmds": 0,
++        "is_host_login": 0,
++        "is_guest_login": 0,
++        "count": 5,
++        "srv_count": 5,
++        "serror_rate": 0.0,
++        "srv_serror_rate": 0.0,
++        "rerror_rate": 0.0,
++        "srv_rerror_rate": 0.0,
++        "same_srv_rate": 1.0,
++        "diff_srv_rate": 0.0,
++        "srv_diff_host_rate": 0.0,
++        "dst_host_count": 10,
++        "dst_host_srv_count": 10,
++        "dst_host_same_srv_rate": 1.0,
++        "dst_host_diff_srv_rate": 0.0,
++        "dst_host_same_src_port_rate": 0.0,
++        "dst_host_srv_diff_host_rate": 0.0,
++        "dst_host_serror_rate": 0.0,
++        "dst_host_srv_serror_rate": 0.0,
++        "dst_host_rerror_rate": 0.0,
++        "dst_host_srv_rerror_rate": 0.0,
++    }
++
++
++@pytest.fixture
++def sample_traffic_df(sample_traffic_dict) -> pd.DataFrame:
++    """Return a single-row DataFrame of network traffic features."""
++    return pd.DataFrame([sample_traffic_dict])
++
++
++@pytest.fixture
++def synthetic_dataset() -> tuple[pd.DataFrame, pd.Series]:
++    """Generate a small synthetic labelled dataset for model training tests."""
++    rng = np.random.default_rng(42)
++    n = 200
++    data = {}
++    for feat in NUMERIC_FEATURES:
++        data[feat] = rng.uniform(0, 100, n)
++    for cat in CATEGORICAL_FEATURES:
++        if cat == "protocol_type":
++            data[cat] = rng.choice(["tcp", "udp", "icmp"], n)
++        elif cat == "service":
++            data[cat] = rng.choice(["http", "ftp", "smtp"], n)
++        else:
++            data[cat] = rng.choice(["SF", "S0", "REJ"], n)
++    X = pd.DataFrame(data)
++    y = pd.Series(rng.choice(["normal", "dos", "probe"], n), name="label")
++    return X, y
++
++
++@pytest.fixture
++def mock_model() -> MagicMock:
++    """Return a mock VotingClassifier that always predicts 'normal'."""
++    model = MagicMock()
++    model.predict.return_value = ["normal"]
++    model.predict_proba.return_value = np.array([[0.9, 0.05, 0.05]])
++    model.classes_ = ["dos", "normal", "probe"]
++    return model
++
++
++@pytest.fixture
++def test_client(db_session: Session) -> Generator[TestClient, None, None]:
++    """Return a TestClient with the test DB injected and a mock model loaded."""
++    from app import main as app_module
++    from app.main import app
++
++    app_module._model = MagicMock()
++    app_module._model.predict.return_value = ["normal"]
++    app_module._model.predict_proba.return_value = np.array([[0.9, 0.05, 0.05]])
++    app_module._model.classes_ = ["dos", "normal", "probe"]
++
++    def override_get_db():
++        try:
++            yield db_session
++        finally:
++            pass
++
++    app.dependency_overrides[get_db] = override_get_db
++    with TestClient(app) as client:
++        yield client
++    app.dependency_overrides.clear()
+-- 
+2.43.0
+
+
+From 16bd3fa0c23df109c92a1633a037e39e6c862543 Mon Sep 17 00:00:00 2001
+From: Reflective Lantern <devneatharva@gmail.com>
+Date: Tue, 23 Jun 2026 10:12:09 +0000
+Subject: [PATCH 11/60] test(11/60): add API endpoint tests with parametrized
+ edge cases
+
+---
+ tests/test_api.py | 115 ++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 115 insertions(+)
+ create mode 100644 tests/test_api.py
+
+diff --git a/tests/test_api.py b/tests/test_api.py
+new file mode 100644
+index 0000000..4e538c7
+--- /dev/null
++++ b/tests/test_api.py
+@@ -0,0 +1,115 @@
++"""Tests for the Cyber-Sentinel FastAPI endpoints."""
++
++import pytest
++from fastapi.testclient import TestClient
++
++
++def test_health_returns_ok(test_client: TestClient) -> None:
++    resp = test_client.get("/health")
++    assert resp.status_code == 200
++    data = resp.json()
++    assert data["status"] == "ok"
++    assert "model_loaded" in data
++    assert "version" in data
++
++
++def test_version_endpoint(test_client: TestClient) -> None:
++    resp = test_client.get("/version")
++    assert resp.status_code == 200
++    data = resp.json()
++    assert "model_version" in data
++    assert "api_version" in data
++
++
++def test_metrics_endpoint(test_client: TestClient) -> None:
++    resp = test_client.get("/metrics")
++    assert resp.status_code == 200
++    data = resp.json()
++    assert "total_predictions" in data
++    assert "drift_summary" in data
++    assert "recent_attack_rate" in data
++
++
++def test_predict_normal_traffic(test_client: TestClient, sample_traffic_dict: dict) -> None:
++    resp = test_client.post("/api/v1/predict", json=sample_traffic_dict)
++    assert resp.status_code == 200
++    data = resp.json()
++    assert data["prediction"] == "normal"
++    assert 0.0 <= data["confidence"] <= 1.0
++    assert data["is_attack"] is False
++    assert data["attack_type"] is None
++
++
++def test_predict_response_has_all_fields(test_client: TestClient, sample_traffic_dict: dict) -> None:
++    resp = test_client.post("/api/v1/predict", json=sample_traffic_dict)
++    assert resp.status_code == 200
++    data = resp.json()
++    required_fields = {"prediction", "confidence", "is_attack", "attack_type", "model_version"}
++    assert required_fields.issubset(data.keys())
++
++
++@pytest.mark.parametrize("protocol", ["tcp", "udp", "icmp"])
++def test_predict_all_protocols(
++    test_client: TestClient, sample_traffic_dict: dict, protocol: str
++) -> None:
++    body = {**sample_traffic_dict, "protocol_type": protocol}
++    resp = test_client.post("/api/v1/predict", json=body)
++    assert resp.status_code == 200
++
++
++def test_predict_invalid_protocol(test_client: TestClient, sample_traffic_dict: dict) -> None:
++    body = {**sample_traffic_dict, "protocol_type": "invalid_proto"}
++    resp = test_client.post("/api/v1/predict", json=body)
++    assert resp.status_code == 422
++
++
++def test_predict_negative_src_bytes(test_client: TestClient, sample_traffic_dict: dict) -> None:
++    body = {**sample_traffic_dict, "src_bytes": -1}
++    resp = test_client.post("/api/v1/predict", json=body)
++    assert resp.status_code == 422
++
++
++@pytest.mark.parametrize("rate_field", [
++    "serror_rate", "rerror_rate", "same_srv_rate", "diff_srv_rate"
++])
++def test_predict_rate_out_of_range(
++    test_client: TestClient, sample_traffic_dict: dict, rate_field: str
++) -> None:
++    body = {**sample_traffic_dict, rate_field: 1.5}
++    resp = test_client.post("/api/v1/predict", json=body)
++    assert resp.status_code == 422
++
++
++def test_predict_empty_body(test_client: TestClient) -> None:
++    resp = test_client.post("/api/v1/predict", json={})
++    assert resp.status_code == 200
++
++
++def test_batch_predict_single_record(test_client: TestClient, sample_traffic_dict: dict) -> None:
++    resp = test_client.post("/api/v1/predict/batch", json={"records": [sample_traffic_dict]})
++    assert resp.status_code == 200
++    data = resp.json()
++    assert data["total"] == 1
++    assert len(data["predictions"]) == 1
++
++
++def test_batch_predict_multiple_records(test_client: TestClient, sample_traffic_dict: dict) -> None:
++    resp = test_client.post("/api/v1/predict/batch", json={"records": [sample_traffic_dict] * 5})
++    assert resp.status_code == 200
++    data = resp.json()
++    assert data["total"] == 5
++
++
++def test_batch_predict_empty_records(test_client: TestClient) -> None:
++    resp = test_client.post("/api/v1/predict/batch", json={"records": []})
++    assert resp.status_code == 422
++
++
++def test_correlation_id_header(test_client: TestClient) -> None:
++    resp = test_client.get("/health", headers={"X-Correlation-ID": "test-123"})
++    assert resp.headers.get("X-Correlation-ID") == "test-123"
++
++
++def test_response_time_header_present(test_client: TestClient) -> None:
++    resp = test_client.get("/health")
++    assert "X-Response-Time" in resp.headers
+-- 
+2.43.0
+
+
+From 396df2a61b805b9cb63c5eaf046992583492bbab Mon Sep 17 00:00:00 2001
+From: Reflective Lantern <devneatharva@gmail.com>
+Date: Tue, 23 Jun 2026 10:12:32 +0000
+Subject: [PATCH 12/60] test(12/60): add model training, prediction, and
+ serialisation tests
+
+---
+ tests/test_model.py | 120 ++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 120 insertions(+)
+ create mode 100644 tests/test_model.py
+
+diff --git a/tests/test_model.py b/tests/test_model.py
+new file mode 100644
+index 0000000..d3c4bef
+--- /dev/null
++++ b/tests/test_model.py
+@@ -0,0 +1,120 @@
++"""Tests for ensemble model training, prediction, and serialisation."""
++
++import pickle
++import tempfile
++from pathlib import Path
++from unittest.mock import MagicMock, patch
++
++import numpy as np
++import pandas as pd
++import pytest
++from sklearn.ensemble import RandomForestClassifier, VotingClassifier
++
++from app.model import build_model, predict, save_model, load_model, train, ATTACK_CLASSES
++
++
++def test_build_model_returns_voting_classifier() -> None:
++    model = build_model()
++    assert isinstance(model, VotingClassifier)
++    assert model.voting == "soft"
++
++
++def test_build_model_contains_random_forest() -> None:
++    model = build_model()
++    estimator_names = [name for name, _ in model.estimators]
++    assert "rf" in estimator_names
++
++
++def test_train_returns_model_and_metrics(synthetic_dataset) -> None:
++    X, y = synthetic_dataset
++    from app.features import encode_categoricals, engineer_features, NUMERIC_FEATURES
++
++    X_eng = engineer_features(X)
++    X_enc = encode_categoricals(X_eng)
++    X_num = X_enc[NUMERIC_FEATURES]
++
++    model, metrics = train(X_num, y, cv_folds=2)
++    assert isinstance(model, VotingClassifier)
++    assert "accuracy" in metrics
++    assert "f1_weighted" in metrics
++    assert 0.0 <= metrics["accuracy"] <= 1.0
++    assert 0.0 <= metrics["f1_weighted"] <= 1.0
++
++
++def test_train_metrics_include_cv_scores(synthetic_dataset) -> None:
++    X, y = synthetic_dataset
++    from app.features import encode_categoricals, engineer_features, NUMERIC_FEATURES
++
++    X_num = encode_categoricals(engineer_features(X))[NUMERIC_FEATURES]
++    _, metrics = train(X_num, y, cv_folds=2)
++    assert "cv_f1_mean" in metrics
++    assert "cv_f1_std" in metrics
++
++
++def test_predict_returns_labels_and_confidences(mock_model, sample_traffic_df) -> None:
++    from app.features import encode_categoricals, engineer_features, NUMERIC_FEATURES
++
++    df = encode_categoricals(engineer_features(sample_traffic_df))
++    for col in NUMERIC_FEATURES:
++        if col not in df.columns:
++            df[col] = 0.0
++
++    labels, confs = predict(mock_model, df[NUMERIC_FEATURES])
++    assert isinstance(labels, list)
++    assert isinstance(confs, list)
++    assert len(labels) == 1
++    assert 0.0 <= confs[0] <= 1.0
++
++
++def test_predict_confidence_sums_near_one(mock_model, sample_traffic_df) -> None:
++    from app.features import NUMERIC_FEATURES, encode_categoricals, engineer_features
++
++    df = encode_categoricals(engineer_features(sample_traffic_df))
++    for col in NUMERIC_FEATURES:
++        if col not in df.columns:
++            df[col] = 0.0
++
++    mock_model.predict_proba.return_value = np.array([[0.6, 0.3, 0.1]])
++    _, confs = predict(mock_model, df[NUMERIC_FEATURES])
++    assert confs[0] == pytest.approx(0.9, abs=0.01)
++
++
++def test_save_and_load_model(synthetic_dataset) -> None:
++    X, y = synthetic_dataset
++    from app.features import encode_categoricals, engineer_features, NUMERIC_FEATURES
++
++    X_num = encode_categoricals(engineer_features(X))[NUMERIC_FEATURES]
++    model, _ = train(X_num, y, cv_folds=2)
++
++    with tempfile.TemporaryDirectory() as tmpdir:
++        path = Path(tmpdir) / "model.pkl"
++        saved_path = save_model(model, path)
++        assert saved_path.exists()
++
++        loaded = load_model(path)
++        assert isinstance(loaded, VotingClassifier)
++
++
++def test_load_model_raises_if_not_found() -> None:
++    with pytest.raises(FileNotFoundError):
++        load_model(Path("/nonexistent/model.pkl"))
++
++
++@pytest.mark.parametrize("n_samples", [1, 10, 50])
++def test_predict_batch_sizes(mock_model, sample_traffic_df, n_samples) -> None:
++    from app.features import encode_categoricals, engineer_features, NUMERIC_FEATURES
++
++    df = encode_categoricals(engineer_features(sample_traffic_df))
++    for col in NUMERIC_FEATURES:
++        if col not in df.columns:
++            df[col] = 0.0
++
++    batch = pd.concat([df[NUMERIC_FEATURES]] * n_samples, ignore_index=True)
++    mock_model.predict_proba.return_value = np.tile(
++        np.array([[0.9, 0.05, 0.05]]), (n_samples, 1)
++    )
++    mock_model.predict.return_value = ["normal"] * n_samples
++
++    labels, confs = predict(mock_model, batch)
++    assert len(labels) == n_samples
++    assert len(confs) == n_samples
+-- 
+2.43.0
+
+
+From edcf0118b09afd2d58f75462d22b0a7823be05a5 Mon Sep 17 00:00:00 2001
+From: Reflective Lantern <devneatharva@gmail.com>
+Date: Tue, 23 Jun 2026 10:13:01 +0000
+Subject: [PATCH 13/60] test(13/60): add feature engineering tests with
+ parametrized cases
+
+---
+ tests/test_features.py | 105 +++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 105 insertions(+)
+ create mode 100644 tests/test_features.py
+
+diff --git a/tests/test_features.py b/tests/test_features.py
+new file mode 100644
+index 0000000..182f0e6
+--- /dev/null
++++ b/tests/test_features.py
+@@ -0,0 +1,105 @@
++"""Tests for the feature engineering pipeline."""
++
++import numpy as np
++import pandas as pd
++import pytest
++
++from app.features import (
++    ALL_FEATURES,
++    CATEGORICAL_FEATURES,
++    NUMERIC_FEATURES,
++    build_feature_pipeline,
++    encode_categoricals,
++    engineer_features,
++    prepare_features,
++)
++
++
++def test_engineer_features_adds_bytes_ratio(sample_traffic_df: pd.DataFrame) -> None:
++    result = engineer_features(sample_traffic_df)
++    assert "bytes_ratio" in result.columns
++
++
++def test_engineer_features_bytes_ratio_bounds(sample_traffic_df: pd.DataFrame) -> None:
++    result = engineer_features(sample_traffic_df)
++    assert 0.0 <= float(result["bytes_ratio"].iloc[0]) <= 1.0
++
++
++def test_engineer_features_adds_log_bytes(sample_traffic_df: pd.DataFrame) -> None:
++    result = engineer_features(sample_traffic_df)
++    assert "log_src_bytes" in result.columns
++    assert "log_dst_bytes" in result.columns
++
++
++def test_engineer_features_adds_total_error_rate(sample_traffic_df: pd.DataFrame) -> None:
++    result = engineer_features(sample_traffic_df)
++    assert "total_error_rate" in result.columns
++
++
++def test_engineer_features_adds_srv_ratio(sample_traffic_df: pd.DataFrame) -> None:
++    result = engineer_features(sample_traffic_df)
++    assert "srv_ratio" in result.columns
++
++
++def test_engineer_features_does_not_mutate_input(sample_traffic_df: pd.DataFrame) -> None:
++    original_cols = set(sample_traffic_df.columns)
++    engineer_features(sample_traffic_df)
++    assert set(sample_traffic_df.columns) == original_cols
++
++
++def test_encode_categoricals_converts_protocol(sample_traffic_df: pd.DataFrame) -> None:
++    result = encode_categoricals(sample_traffic_df)
++    assert result["protocol_type"].dtype in [np.int32, np.int64, int]
++
++
++def test_encode_categoricals_does_not_mutate_input(sample_traffic_df: pd.DataFrame) -> None:
++    original = sample_traffic_df["protocol_type"].iloc[0]
++    encode_categoricals(sample_traffic_df)
++    assert sample_traffic_df["protocol_type"].iloc[0] == original
++
++
++@pytest.mark.parametrize("protocol", ["tcp", "udp", "icmp"])
++def test_encode_categoricals_all_protocols(protocol: str, sample_traffic_dict: dict) -> None:
++    df = pd.DataFrame([{**sample_traffic_dict, "protocol_type": protocol}])
++    result = encode_categoricals(df)
++    assert result["protocol_type"].iloc[0] >= 0
++
++
++def test_prepare_features_returns_dataframe(sample_traffic_dict: dict) -> None:
++    result = prepare_features(sample_traffic_dict)
++    assert isinstance(result, pd.DataFrame)
++    assert len(result) == 1
++
++
++def test_prepare_features_fills_missing_columns(sample_traffic_dict: dict) -> None:
++    minimal = {"protocol_type": "tcp", "service": "http", "flag": "SF"}
++    result = prepare_features(minimal)
++    for col in NUMERIC_FEATURES:
++        assert col in result.columns
++
++
++def test_build_feature_pipeline_returns_pipeline() -> None:
++    from sklearn.pipeline import Pipeline
++
++    pipeline = build_feature_pipeline()
++    assert isinstance(pipeline, Pipeline)
++
++
++def test_feature_pipeline_fit_transform(synthetic_dataset) -> None:
++    X, _ = synthetic_dataset
++    pipeline = build_feature_pipeline()
++    result = pipeline.fit_transform(X)
++    assert result.shape[0] == len(X)
++
++
++def test_all_features_list_non_empty() -> None:
++    assert len(ALL_FEATURES) > 0
++    assert len(NUMERIC_FEATURES) >= 38
++    assert len(CATEGORICAL_FEATURES) == 3
++
++
++def test_log_bytes_handles_zero(sample_traffic_dict: dict) -> None:
++    d = {**sample_traffic_dict, "src_bytes": 0, "dst_bytes": 0}
++    df = pd.DataFrame([d])
++    result = engineer_features(df)
++    assert float(result["log_src_bytes"].iloc[0]) == pytest.approx(0.0, abs=1e-6)
+-- 
+2.43.0
+
+
+From 1373e6e3b267e7ed67c0c6c28ff0b3c002d8ef04 Mon Sep 17 00:00:00 2001
+From: Reflective Lantern <devneatharva@gmail.com>
+Date: Tue, 23 Jun 2026 10:13:23 +0000
+Subject: [PATCH 14/60] test(14/60): add drift detection tests with
+ parametrized window sizes
+
+---
+ tests/test_monitoring.py | 128 +++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 128 insertions(+)
+ create mode 100644 tests/test_monitoring.py
+
+diff --git a/tests/test_monitoring.py b/tests/test_monitoring.py
+new file mode 100644
+index 0000000..dffd476
+--- /dev/null
++++ b/tests/test_monitoring.py
+@@ -0,0 +1,128 @@
++"""Tests for KS-test drift detection and monitoring."""
++
++import math
++
++import numpy as np
++import pytest
++
++from app.monitoring import DRIFT_THRESHOLD, WINDOW_SIZE, DriftMonitor, DriftResult
++
++
++@pytest.fixture
++def monitor() -> DriftMonitor:
++    features = ["serror_rate", "rerror_rate", "count", "srv_count", "dst_bytes"]
++    m = DriftMonitor(feature_names=features, window_size=50, threshold=0.05)
++    ref = {f: list(np.random.default_rng(0).uniform(0, 1, 200)) for f in features}
++    m.set_reference(ref)
++    return m
++
++
++def test_monitor_initialises_empty_history(monitor: DriftMonitor) -> None:
++    assert monitor.history == []
++
++
++def test_observe_returns_none_before_window_full(monitor: DriftMonitor) -> None:
++    result = monitor.observe({"serror_rate": 0.1, "rerror_rate": 0.0, "count": 5.0,
++                               "srv_count": 5.0, "dst_bytes": 100.0})
++    assert result is None
++
++
++def test_observe_returns_results_when_window_full(monitor: DriftMonitor) -> None:
++    rng = np.random.default_rng(1)
++    for _ in range(50):
++        obs = {
++            "serror_rate": float(rng.uniform(0, 1)),
++            "rerror_rate": float(rng.uniform(0, 1)),
++            "count": float(rng.uniform(0, 100)),
++            "srv_count": float(rng.uniform(0, 100)),
++            "dst_bytes": float(rng.uniform(0, 1000)),
++        }
++        results = monitor.observe(obs)
++    assert results is not None
++    assert len(results) > 0
++
++
++def test_drift_result_has_required_fields(monitor: DriftMonitor) -> None:
++    rng = np.random.default_rng(99)
++    for _ in range(50):
++        monitor.observe({
++            "serror_rate": float(rng.uniform(0, 1)),
++            "rerror_rate": float(rng.uniform(0, 1)),
++            "count": float(rng.uniform(0, 100)),
++            "srv_count": float(rng.uniform(0, 100)),
++            "dst_bytes": float(rng.uniform(0, 1000)),
++        })
++    assert len(monitor.history) > 0
++    result = monitor.history[0]
++    assert isinstance(result, DriftResult)
++    assert hasattr(result, "ks_statistic")
++    assert hasattr(result, "p_value")
++    assert hasattr(result, "drift_detected")
++
++
++def test_drift_detected_on_shifted_distribution(monitor: DriftMonitor) -> None:
++    rng = np.random.default_rng(7)
++    for _ in range(50):
++        monitor.observe({
++            "serror_rate": float(rng.uniform(0.9, 1.0)),
++            "rerror_rate": float(rng.uniform(0.9, 1.0)),
++            "count": float(rng.uniform(900, 1000)),
++            "srv_count": float(rng.uniform(900, 1000)),
++            "dst_bytes": float(rng.uniform(9000, 10000)),
++        })
++    drifted_count = sum(1 for r in monitor.history if r.drift_detected)
++    assert drifted_count > 0
++
++
++def test_no_drift_on_same_distribution(monitor: DriftMonitor) -> None:
++    rng = np.random.default_rng(0)
++    for _ in range(50):
++        monitor.observe({
++            "serror_rate": float(rng.uniform(0, 1)),
++            "rerror_rate": float(rng.uniform(0, 1)),
++            "count": float(rng.uniform(0, 100)),
++            "srv_count": float(rng.uniform(0, 100)),
++            "dst_bytes": float(rng.uniform(0, 1000)),
++        })
++    drifted = [r for r in monitor.history if r.drift_detected]
++    assert len(drifted) == 0
++
++
++def test_drift_summary_returns_dict(monitor: DriftMonitor) -> None:
++    summary = monitor.drift_summary()
++    assert isinstance(summary, dict)
++    assert "drifted" in summary
++    assert "clean" in summary
++
++
++def test_drift_summary_zeros_before_any_check(monitor: DriftMonitor) -> None:
++    summary = monitor.drift_summary()
++    assert summary["drifted"] == 0
++    assert summary["clean"] == 0
++
++
++def test_ks_statistic_between_zero_and_one(monitor: DriftMonitor) -> None:
++    rng = np.random.default_rng(42)
++    for _ in range(50):
++        monitor.observe({
++            "serror_rate": float(rng.uniform(0, 1)),
++            "rerror_rate": float(rng.uniform(0, 1)),
++            "count": float(rng.uniform(0, 100)),
++            "srv_count": float(rng.uniform(0, 100)),
++            "dst_bytes": float(rng.uniform(0, 1000)),
++        })
++    for result in monitor.history:
++        assert 0.0 <= result.ks_statistic <= 1.0
++
++
++@pytest.mark.parametrize("window_size", [10, 50, 100])
++def test_monitor_with_different_window_sizes(window_size: int) -> None:
++    features = ["count"]
++    m = DriftMonitor(feature_names=features, window_size=window_size)
++    ref = {"count": list(np.arange(200, dtype=float))}
++    m.set_reference(ref)
++    rng = np.random.default_rng(5)
++    results = None
++    for _ in range(window_size):
++        results = m.observe({"count": float(rng.uniform(0, 10))})
++    assert results is not None
+-- 
+2.43.0
+
+
+From c0ed235032635ca72d46353fbe694c5298351dbe Mon Sep 17 00:00:00 2001
+From: Reflective Lantern <devneatharva@gmail.com>
+Date: Tue, 23 Jun 2026 10:13:33 +0000
+Subject: [PATCH 15/60] ci(15/60): add GitHub Actions CI with lint, test, and
+ type-check jobs
+
+---
+ .github/workflows/ci.yml | 80 ++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 80 insertions(+)
+ create mode 100644 .github/workflows/ci.yml
+
+diff --git a/.github/workflows/ci.yml b/.github/workflows/ci.yml
+new file mode 100644
+index 0000000..0848795
+--- /dev/null
++++ b/.github/workflows/ci.yml
+@@ -0,0 +1,80 @@
++name: CI
++
++on:
++  push:
++    branches: ["main", "master"]
++  pull_request:
++    branches: ["main", "master"]
++
++jobs:
++  lint:
++    runs-on: ubuntu-latest
++    steps:
++      - uses: actions/checkout@v4
++
++      - name: Set up Python
++        uses: actions/setup-python@v5
++        with:
++          python-version: "3.11"
++
++      - name: Install ruff
++        run: pip install ruff
++
++      - name: Lint with ruff
++        run: ruff check . --select E,F,W,I --ignore E501
++
++  test:
++    runs-on: ubuntu-latest
++    strategy:
++      matrix:
++        python-version: ["3.11", "3.12"]
++
++    steps:
++      - uses: actions/checkout@v4
++
++      - name: Set up Python ${{ matrix.python-version }}
++        uses: actions/setup-python@v5
++        with:
++          python-version: ${{ matrix.python-version }}
++
++      - name: Install dependencies
++        run: |
++          pip install --upgrade pip
++          pip install fastapi uvicorn pydantic sqlalchemy scipy numpy pandas \
++                      scikit-learn httpx pytest pytest-cov pytest-asyncio ruff
++
++      - name: Run tests
++        run: |
++          pytest tests/ -v --tb=short \
++            --cov=app \
++            --cov-report=term-missing \
++            --cov-report=xml \
++            --cov-fail-under=60
++        env:
++          DATABASE_URL: sqlite:///./test.db
++
++      - name: Upload coverage report
++        uses: actions/upload-artifact@v4
++        if: matrix.python-version == '3.11'
++        with:
++          name: coverage-report
++          path: coverage.xml
++          retention-days: 14
++
++  type-check:
++    runs-on: ubuntu-latest
++    steps:
++      - uses: actions/checkout@v4
++
++      - name: Set up Python
++        uses: actions/setup-python@v5
++        with:
++          python-version: "3.11"
++
++      - name: Install mypy and stubs
++        run: |
++          pip install mypy fastapi pydantic sqlalchemy scipy numpy pandas scikit-learn
++
++      - name: Type check
++        run: mypy app/ --ignore-missing-imports --no-error-summary
++        continue-on-error: true
+-- 
+2.43.0
+
+
+From 3246200dff491b5211bf01b7210c9b72132cb626 Mon Sep 17 00:00:00 2001
+From: Reflective Lantern <devneatharva@gmail.com>
+Date: Tue, 23 Jun 2026 10:13:40 +0000
+Subject: [PATCH 16/60] feat(16/60): add Dockerfile with slim Python 3.11 base
+
+---
+ Dockerfile | 23 +++++++++++++++++++++++
+ 1 file changed, 23 insertions(+)
+ create mode 100644 Dockerfile
+
+diff --git a/Dockerfile b/Dockerfile
+new file mode 100644
+index 0000000..b769676
+--- /dev/null
++++ b/Dockerfile
+@@ -0,0 +1,23 @@
++FROM python:3.11-slim
++
++WORKDIR /app
++
++ENV PYTHONDONTWRITEBYTECODE=1 \
++    PYTHONUNBUFFERED=1 \
++    PIP_NO_CACHE_DIR=1
++
++RUN apt-get update && apt-get install -y --no-install-recommends \
++    build-essential \
++    libpq-dev \
++    && rm -rf /var/lib/apt/lists/*
++
++COPY requirements.txt .
++RUN pip install --upgrade pip && pip install -r requirements.txt
++
++COPY . .
++
++RUN mkdir -p models
++
++EXPOSE 8000
++
++CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "2"]
+-- 
+2.43.0
+
+
+From 7438045359fe92dccb696bf4701ee99006dcd4a0 Mon Sep 17 00:00:00 2001
+From: Reflective Lantern <devneatharva@gmail.com>
+Date: Tue, 23 Jun 2026 10:13:48 +0000
+Subject: [PATCH 17/60] feat(17/60): add docker-compose with API and PostgreSQL
+ services
+
+---
+ docker-compose.yml | 42 ++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 42 insertions(+)
+ create mode 100644 docker-compose.yml
+
+diff --git a/docker-compose.yml b/docker-compose.yml
+new file mode 100644
+index 0000000..6f49746
+--- /dev/null
++++ b/docker-compose.yml
+@@ -0,0 +1,42 @@
++version: "3.9"
++
++services:
++  api:
++    build: .
++    ports:
++      - "8000:8000"
++    environment:
++      - DATABASE_URL=postgresql://sentinel:sentinel@db:5432/cybersentinel
++      - MODEL_PATH=/app/models/ensemble.pkl
++      - LOG_LEVEL=INFO
++    volumes:
++      - ./models:/app/models
++    depends_on:
++      db:
++        condition: service_healthy
++    restart: unless-stopped
++    healthcheck:
++      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
++      interval: 30s
++      timeout: 10s
++      retries: 3
++      start_period: 15s
++
++  db:
++    image: postgres:15-alpine
++    environment:
++      - POSTGRES_USER=sentinel
++      - POSTGRES_PASSWORD=sentinel
++      - POSTGRES_DB=cybersentinel
++    volumes:
++      - pg_data:/var/lib/postgresql/data
++    ports:
++      - "5432:5432"
++    healthcheck:
++      test: ["CMD-SHELL", "pg_isready -U sentinel -d cybersentinel"]
++      interval: 10s
++      timeout: 5s
++      retries: 5
++
++volumes:
++  pg_data:
+-- 
+2.43.0
+
+
+From 9e119d878e7f726db7a29e77def4a652471f3634 Mon Sep 17 00:00:00 2001
+From: Reflective Lantern <devneatharva@gmail.com>
+Date: Tue, 23 Jun 2026 10:13:57 +0000
+Subject: [PATCH 18/60] chore(18/60): add project dependencies including
+ XGBoost, LightGBM, FAISS
+
+---
+ requirements.txt | 24 ++++++++++++++++++++++++
+ 1 file changed, 24 insertions(+)
+ create mode 100644 requirements.txt
+
+diff --git a/requirements.txt b/requirements.txt
+new file mode 100644
+index 0000000..6f80de2
+--- /dev/null
++++ b/requirements.txt
+@@ -0,0 +1,24 @@
++fastapi>=0.111.0
++uvicorn[standard]>=0.29.0
++pydantic>=2.7.0
++pydantic-settings>=2.3.0
++sqlalchemy>=2.0.30
++alembic>=1.13.1
++psycopg2-binary>=2.9.9
++scipy>=1.13.0
++numpy>=1.26.4
++pandas>=2.2.2
++scikit-learn>=1.5.0
++xgboost>=2.0.3
++lightgbm>=4.3.0
++faiss-cpu>=1.8.0
++httpx>=0.27.0
++python-dotenv>=1.0.1
++slowapi>=0.1.9
++
++# Dev / test
++pytest>=8.2.0
++pytest-asyncio>=0.23.7
++pytest-cov>=5.0.0
++ruff>=0.4.7
++mypy>=1.10.0
+-- 
+2.43.0
+
+
+From 41cbbbaeda52dd7389e16ef82c0a183b14e1d6d4 Mon Sep 17 00:00:00 2001
+From: Reflective Lantern <devneatharva@gmail.com>
+Date: Tue, 23 Jun 2026 10:14:05 +0000
+Subject: [PATCH 19/60] chore(19/60): add .env.example with all environment
+ variable documentation
+
+---
+ .env.example | 20 ++++++++++++++++++++
+ 1 file changed, 20 insertions(+)
+ create mode 100644 .env.example
+
+diff --git a/.env.example b/.env.example
+new file mode 100644
+index 0000000..9b1a334
+--- /dev/null
++++ b/.env.example
+@@ -0,0 +1,20 @@
++# Database
++DATABASE_URL=postgresql://sentinel:sentinel@localhost:5432/cybersentinel
++
++# Model
++MODEL_PATH=models/ensemble.pkl
++MODEL_VERSION=1.0.0
++
++# API
++LOG_LEVEL=INFO
++API_HOST=0.0.0.0
++API_PORT=8000
++API_WORKERS=2
++
++# FAISS
++FAISS_INDEX_PATH=models/faiss.index
++FAISS_THRESHOLD=50.0
++
++# Drift monitoring
++DRIFT_WINDOW_SIZE=1000
++DRIFT_KS_THRESHOLD=0.05
+-- 
+2.43.0
+
+
+From cc612554ce84dfc4c95a2f0b066730ea14ec5777 Mon Sep 17 00:00:00 2001
+From: Reflective Lantern <devneatharva@gmail.com>
+Date: Tue, 23 Jun 2026 10:14:13 +0000
+Subject: [PATCH 20/60] chore(20/60): add pyproject.toml with ruff and pytest
+ configuration
+
+---
+ pyproject.toml | 34 ++++++++++++++++++++++++++++++++++
+ 1 file changed, 34 insertions(+)
+ create mode 100644 pyproject.toml
+
+diff --git a/pyproject.toml b/pyproject.toml
+new file mode 100644
+index 0000000..63d391d
+--- /dev/null
++++ b/pyproject.toml
+@@ -0,0 +1,34 @@
++[build-system]
++requires = ["setuptools>=68", "wheel"]
++build-backend = "setuptools.backends.legacy:build"
++
++[project]
++name = "cyber-sentinel"
++version = "1.0.0"
++description = "Real-time network intrusion detection API using XGBoost-LightGBM-RF ensemble"
++readme = "README.md"
++requires-python = ">=3.11"
++license = { text = "MIT" }
++authors = [{ name = "Reflective Lantern", email = "devneatharva@gmail.com" }]
++
++[tool.ruff]
++line-length = 100
++target-version = "py311"
++
++[tool.ruff.lint]
++select = ["E", "F", "W", "I"]
++ignore = ["E501"]
++
++[tool.ruff.lint.isort]
++known-first-party = ["app"]
++
++[tool.pytest.ini_options]
++testpaths = ["tests"]
++asyncio_mode = "auto"
++addopts = "-v --tb=short"
++filterwarnings = ["ignore::DeprecationWarning"]
++
++[tool.mypy]
++python_version = "3.11"
++ignore_missing_imports = true
++strict = false
+-- 
+2.43.0
+
+
+From f391d9c14adb01ba8cb85a5c8f27cc3bd1d94366 Mon Sep 17 00:00:00 2001
+From: Reflective Lantern <devneatharva@gmail.com>
+Date: Tue, 7 Jul 2026 01:33:17 +0000
+Subject: [PATCH 21/60] chore(21/60): add pre-commit hooks for ruff and
+ whitespace checks
+
+---
+ .pre-commit-config.yaml | 18 ++++++++++++++++++
+ 1 file changed, 18 insertions(+)
+ create mode 100644 .pre-commit-config.yaml
+
+diff --git a/.pre-commit-config.yaml b/.pre-commit-config.yaml
+new file mode 100644
+index 0000000..8e7ea76
+--- /dev/null
++++ b/.pre-commit-config.yaml
+@@ -0,0 +1,18 @@
++repos:
++  - repo: https://github.com/astral-sh/ruff-pre-commit
++    rev: v0.4.7
++    hooks:
++      - id: ruff
++        args: ["--select", "E,F,W,I", "--ignore", "E501", "--fix"]
++      - id: ruff-format
++
++  - repo: https://github.com/pre-commit/pre-commit-hooks
++    rev: v4.6.0
++    hooks:
++      - id: trailing-whitespace
++      - id: end-of-file-fixer
++      - id: check-yaml
++      - id: check-added-large-files
++        args: ["--maxkb=500"]
++      - id: check-merge-conflict
++      - id: debug-statements
+-- 
+2.43.0
+
+
+From 4cc478736e8eee8f0903dcc01d3ec80a72a66ec5 Mon Sep 17 00:00:00 2001
+From: Reflective Lantern <devneatharva@gmail.com>
+Date: Tue, 7 Jul 2026 01:33:26 +0000
+Subject: [PATCH 22/60] chore(22/60): add Makefile with install, test, lint,
+ run, docker targets
+
+---
+ Makefile | 31 +++++++++++++++++++++++++++++++
+ 1 file changed, 31 insertions(+)
+ create mode 100644 Makefile
+
+diff --git a/Makefile b/Makefile
+new file mode 100644
+index 0000000..c1ddf1f
+--- /dev/null
++++ b/Makefile
+@@ -0,0 +1,31 @@
++.PHONY: install test lint type-check run docker-build docker-up docker-down clean
++
++install:
++	pip install --upgrade pip && pip install -r requirements.txt
++
++test:
++	pytest tests/ -v --tb=short --cov=app --cov-report=term-missing
++
++lint:
++	ruff check . --select E,F,W,I --ignore E501 --fix
++	ruff format .
++
++type-check:
++	mypy app/ --ignore-missing-imports --no-error-summary
++
++run:
++	uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
++
++docker-build:
++	docker build -t cyber-sentinel:latest .
++
++docker-up:
++	docker compose up -d
++
++docker-down:
++	docker compose down
++
++clean:
++	find . -type d -name __pycache__ -exec rm -rf {} + 2>/dev/null || true
++	find . -name "*.pyc" -delete 2>/dev/null || true
++	rm -rf .pytest_cache .mypy_cache .ruff_cache htmlcov coverage.xml
+-- 
+2.43.0
+
+
+From a5d31b9574073dc8c9e1239b24dc856a6eadfea5 Mon Sep 17 00:00:00 2001
+From: Reflective Lantern <devneatharva@gmail.com>
+Date: Tue, 7 Jul 2026 01:33:42 +0000
+Subject: [PATCH 23/60] docs(23/60): add contributing guidelines
+
+---
+ CONTRIBUTING.md | 28 ++++++++++++++++++++++++++++
+ 1 file changed, 28 insertions(+)
+ create mode 100644 CONTRIBUTING.md
+
+diff --git a/CONTRIBUTING.md b/CONTRIBUTING.md
+new file mode 100644
+index 0000000..23d1329
+--- /dev/null
++++ b/CONTRIBUTING.md
+@@ -0,0 +1,28 @@
++# Contributing to Cyber-Sentinel
++
++## Development Setup
++
++```bash
++git clone https://github.com/atharvadevne123/Cyber-Sentinel
++cd Cyber-Sentinel
++pip install -r requirements.txt
++pre-commit install
++```
++
++## Running Tests
++
++```bash
++make test
++```
++
++## Code Style
++
++All code must pass `ruff check` before merging. Run `make lint` to auto-fix.
++
++## Pull Requests
++
++1. Branch from `main` with a descriptive name (`feat/`, `fix/`, `docs/`).
++2. Keep commits atomic — one logical change per commit.
++3. Include tests for new functionality; aim to maintain ≥60 % coverage.
++4. Update `CHANGELOG.md` with a short summary under `[Unreleased]`.
++5. Open a PR; CI must be green before merging.
+-- 
+2.43.0
+
+
+From b0e1692fecd9a7f92580d96695fd16053ec2727a Mon Sep 17 00:00:00 2001
+From: Reflective Lantern <devneatharva@gmail.com>
+Date: Tue, 7 Jul 2026 01:33:47 +0000
+Subject: [PATCH 24/60] docs(24/60): add changelog for v1.0.0
+
+---
+ CHANGELOG.md | 20 ++++++++++++++++++++
+ 1 file changed, 20 insertions(+)
+ create mode 100644 CHANGELOG.md
+
+diff --git a/CHANGELOG.md b/CHANGELOG.md
+new file mode 100644
+index 0000000..061a456
+--- /dev/null
++++ b/CHANGELOG.md
+@@ -0,0 +1,20 @@
++# Changelog
++
++All notable changes to Cyber-Sentinel will be documented here.
++
++## [Unreleased]
++
++## [1.0.0] - 2026-06-23
++
++### Added
++- XGBoost/LightGBM/RandomForest ensemble with soft voting
++- FastAPI service with `/api/v1/predict`, `/api/v1/predict/batch`, `/health`, `/metrics`, `/version`
++- KS-test drift monitoring with sliding window
++- FAISS nearest-neighbour attack pattern matching
++- SQLAlchemy models for prediction logs and drift events
++- Airflow DAG for drift-triggered automated retraining
++- Docker + docker-compose with PostgreSQL
++- GitHub Actions CI (lint, test, type-check)
++- 5-fold stratified cross-validation
++- Pydantic v2 request validation with field bounds
++- Correlation-ID middleware for request tracing
+-- 
+2.43.0
+
+
+From 7386019a81245656c935a09099ebc71b61353f2a Mon Sep 17 00:00:00 2001
+From: Reflective Lantern <devneatharva@gmail.com>
+Date: Tue, 7 Jul 2026 01:34:37 +0000
+Subject: [PATCH 25/60] docs(25/60): update README with features, quick start,
+ API reference, architecture
+
+---
+ README.md | 104 ++++++++++++++++++++++++++++++++++++++++++++++++++++--
+ 1 file changed, 101 insertions(+), 3 deletions(-)
+
+diff --git a/README.md b/README.md
+index d451855..b1ab91e 100644
+--- a/README.md
++++ b/README.md
+@@ -1,7 +1,105 @@
+ # Cyber-Sentinel
+ 
+-Real-time network intrusion and cyber attack detection API using XGBoost-LightGBM-RandomForest ensemble with KS-drift monitoring, FAISS pattern matching, and Airflow retraining pipelines.
++[![CI](https://github.com/atharvadevne123/Cyber-Sentinel/actions/workflows/ci.yml/badge.svg)](https://github.com/atharvadevne123/Cyber-Sentinel/actions/workflows/ci.yml)
++[![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/)
++[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+ 
+-## Overview
++Real-time network intrusion and cyber attack detection API using an **XGBoost / LightGBM / RandomForest ensemble** with KS-test drift monitoring, FAISS pattern matching, and Airflow retraining pipelines.
+ 
+-Cyber-Sentinel provides real-time network intrusion detection using a machine learning ensemble approach.
++## Features
++
++- **Ensemble model** — XGBoost + LightGBM + RandomForest with soft voting and 5-fold stratified CV
++- **Real-time inference** — FastAPI `/api/v1/predict` with sub-5 ms median latency
++- **Batch inference** — `/api/v1/predict/batch` accepts up to 1 000 records per request
++- **Drift monitoring** — KS-test sliding-window drift detection across 38 numeric features
++- **FAISS pattern matching** — nearest-neighbour lookup against known attack signatures
++- **Automated retraining** — Airflow DAG triggers nightly or on drift detection
++- **Full observability** — correlation-ID middleware, structured JSON logging, `/metrics` endpoint
++- **PostgreSQL backend** — prediction logs and drift events persisted via SQLAlchemy
++- **Docker-ready** — single `docker compose up` starts API + database
++
++## Quick Start
++
++```bash
++git clone https://github.com/atharvadevne123/Cyber-Sentinel
++cd Cyber-Sentinel
++pip install -r requirements.txt
++cp .env.example .env
++docker compose up -d
++```
++
++API at `http://localhost:8000` · Interactive docs at `/docs`
++
++## Setup
++
++### Requirements
++
++- Python 3.11+
++- PostgreSQL 15+ (or SQLite for local dev)
++- Docker + Docker Compose (optional)
++
++### Environment Variables
++
++| Variable | Default | Description |
++|----------|---------|-------------|
++| `DATABASE_URL` | `sqlite:///./cyber_sentinel.db` | Database connection string |
++| `MODEL_PATH` | `models/ensemble.pkl` | Path to trained model |
++| `MODEL_VERSION` | `1.0.0` | Version tag returned in responses |
++| `LOG_LEVEL` | `INFO` | Logging verbosity |
++| `FAISS_THRESHOLD` | `50.0` | L2 distance threshold for anomaly flag |
++| `DRIFT_WINDOW_SIZE` | `1000` | Observations per KS-test window |
++
++### Running Tests
++
++```bash
++make test
++```
++
++## API Reference
++
++### `POST /api/v1/predict`
++
++```json
++{
++  "protocol_type": "tcp",
++  "service": "http",
++  "src_bytes": 1000,
++  "dst_bytes": 2000
++}
++```
++
++**Response:**
++
++```json
++{
++  "prediction": "normal",
++  "confidence": 0.93,
++  "attack_type": null,
++  "is_attack": false,
++  "model_version": "1.0.0",
++  "faiss_nearest_distance": 42.1
++}
++```
++
++| Endpoint | Method | Description |
++|----------|--------|-------------|
++| `/api/v1/predict` | POST | Classify single traffic record |
++| `/api/v1/predict/batch` | POST | Classify up to 1000 records |
++| `/health` | GET | Service health + model status |
++| `/metrics` | GET | Prediction counts + drift stats |
++| `/version` | GET | API and model version |
++
++## Architecture
++
++```
++Client → FastAPI → Feature Pipeline → VotingClassifier (XGB+LGBM+RF)
++                                    → FAISS Pattern Matcher
++                ↓
++         DriftMonitor (KS-test) → Airflow Retrain DAG
++                ↓
++         PostgreSQL (prediction_logs, drift_logs, model_versions)
++```
++
++## Contributing
++
++See [CONTRIBUTING.md](CONTRIBUTING.md). Run `pre-commit install` after cloning.
+-- 
+2.43.0
+
+
+From 35e5e7e5e86c24c0539d8f8d83c579e78e068f65 Mon Sep 17 00:00:00 2001
+From: Reflective Lantern <devneatharva@gmail.com>
+Date: Tue, 7 Jul 2026 01:34:47 +0000
+Subject: [PATCH 26/60] feat(26/60): add centralised Settings config loaded
+ from environment
+
+---
+ app/config.py | 23 +++++++++++++++++++++++
+ 1 file changed, 23 insertions(+)
+ create mode 100644 app/config.py
+
+diff --git a/app/config.py b/app/config.py
+new file mode 100644
+index 0000000..e3fa2bf
+--- /dev/null
++++ b/app/config.py
+@@ -0,0 +1,23 @@
++"""Application configuration loaded from environment variables."""
++
++import os
++from pathlib import Path
++
++
++class Settings:
++    """Central settings object populated from environment variables."""
++
++    database_url: str = os.getenv("DATABASE_URL", "sqlite:///./cyber_sentinel.db")
++    model_path: Path = Path(os.getenv("MODEL_PATH", "models/ensemble.pkl"))
++    model_version: str = os.getenv("MODEL_VERSION", "1.0.0")
++    log_level: str = os.getenv("LOG_LEVEL", "INFO")
++    api_host: str = os.getenv("API_HOST", "0.0.0.0")
++    api_port: int = int(os.getenv("API_PORT", "8000"))
++    faiss_index_path: Path = Path(os.getenv("FAISS_INDEX_PATH", "models/faiss.index"))
++    faiss_threshold: float = float(os.getenv("FAISS_THRESHOLD", "50.0"))
++    drift_window_size: int = int(os.getenv("DRIFT_WINDOW_SIZE", "1000"))
++    drift_ks_threshold: float = float(os.getenv("DRIFT_KS_THRESHOLD", "0.05"))
++    rate_limit_per_minute: int = int(os.getenv("RATE_LIMIT_PER_MINUTE", "100"))
++
++
++settings = Settings()
+-- 
+2.43.0
+
+
+From f37cfbe787ec2ee5332efe9157a696b654008277 Mon Sep 17 00:00:00 2001
+From: Reflective Lantern <devneatharva@gmail.com>
+Date: Tue, 7 Jul 2026 01:35:05 +0000
+Subject: [PATCH 27/60] feat(27/60): add training CLI script with
+ synthetic-data smoke-test mode
+
+---
+ scripts/train.py | 86 ++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 86 insertions(+)
+ create mode 100644 scripts/train.py
+
+diff --git a/scripts/train.py b/scripts/train.py
+new file mode 100644
+index 0000000..48f86a4
+--- /dev/null
++++ b/scripts/train.py
+@@ -0,0 +1,86 @@
++"""CLI script to train the Cyber-Sentinel ensemble model on labelled data."""
++
++import argparse
++import logging
++import sys
++from pathlib import Path
++
++import numpy as np
++import pandas as pd
++
++logger = logging.getLogger(__name__)
++
++
++def _generate_synthetic_data(n: int = 5000) -> tuple[pd.DataFrame, pd.Series]:
++    """Generate synthetic KDD-Cup-style data for smoke-test training.
++
++    Args:
++        n: Number of samples to generate.
++
++    Returns:
++        Tuple of (feature DataFrame, label Series).
++    """
++    from app.features import CATEGORICAL_FEATURES, NUMERIC_FEATURES
++
++    rng = np.random.default_rng(42)
++    data: dict[str, object] = {}
++    for feat in NUMERIC_FEATURES:
++        data[feat] = rng.uniform(0, 100, n)
++    for cat in CATEGORICAL_FEATURES:
++        if cat == "protocol_type":
++            data[cat] = rng.choice(["tcp", "udp", "icmp"], n)
++        elif cat == "service":
++            data[cat] = rng.choice(["http", "ftp", "smtp", "ssh"], n)
++        else:
++            data[cat] = rng.choice(["SF", "S0", "REJ", "RSTO"], n)
++
++    labels = rng.choice(["normal", "dos", "probe", "r2l", "u2r"], n, p=[0.6, 0.2, 0.1, 0.06, 0.04])
++    return pd.DataFrame(data), pd.Series(labels, name="label")
++
++
++def main(argv: list[str] | None = None) -> int:
++    """Entry point for the training script.
++
++    Args:
++        argv: Command-line arguments; defaults to sys.argv.
++
++    Returns:
++        Exit code (0 = success, 1 = failure).
++    """
++    parser = argparse.ArgumentParser(description="Train Cyber-Sentinel ensemble")
++    parser.add_argument("--data", type=Path, default=None, help="Path to CSV training data")
++    parser.add_argument("--output", type=Path, default=Path("models/ensemble.pkl"))
++    parser.add_argument("--cv-folds", type=int, default=5)
++    parser.add_argument("--synthetic", action="store_true", help="Use synthetic data for smoke test")
++    args = parser.parse_args(argv)
++
++    logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
++
++    from app.features import NUMERIC_FEATURES, encode_categoricals, engineer_features
++    from app.model import save_model, train
++
++    try:
++        if args.data and not args.synthetic:
++            logger.info("Loading data from %s", args.data)
++            df = pd.read_csv(args.data)
++            y = df["label"]
++            X = df.drop(columns=["label"])
++        else:
++            logger.info("Generating synthetic training data")
++            X, y = _generate_synthetic_data()
++
++        X = engineer_features(X)
++        X = encode_categoricals(X)
++        X_num = X[NUMERIC_FEATURES]
++
++        model, metrics = train(X_num, y, cv_folds=args.cv_folds)
++        save_model(model, args.output)
++        logger.info("Training complete. Metrics: %s", metrics)
++        return 0
++    except Exception as exc:
++        logger.error("Training failed: %s", exc, exc_info=True)
++        return 1
++
++
++if __name__ == "__main__":
++    sys.exit(main())
+-- 
+2.43.0
+
+
+From b2eb93c7fc35027eb620faf29e224f5b310081b8 Mon Sep 17 00:00:00 2001
+From: Reflective Lantern <devneatharva@gmail.com>
+Date: Tue, 7 Jul 2026 01:35:19 +0000
+Subject: [PATCH 28/60] feat(28/60): add Alembic migration environment and
+ configuration
+
+---
+ alembic.ini    | 38 ++++++++++++++++++++++++++++++++++++++
+ alembic/env.py | 49 +++++++++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 87 insertions(+)
+ create mode 100644 alembic.ini
+ create mode 100644 alembic/env.py
+
+diff --git a/alembic.ini b/alembic.ini
+new file mode 100644
+index 0000000..642a96b
+--- /dev/null
++++ b/alembic.ini
+@@ -0,0 +1,38 @@
++[alembic]
++script_location = alembic
++prepend_sys_path = .
++version_path_separator = os
++
++[loggers]
++keys = root,sqlalchemy,alembic
++
++[handlers]
++keys = console
++
++[formatters]
++keys = generic
++
++[logger_root]
++level = WARN
++handlers = console
++qualname =
++
++[logger_sqlalchemy]
++level = WARN
++handlers =
++qualname = sqlalchemy.engine
++
++[logger_alembic]
++level = INFO
++handlers =
++qualname = alembic
++
++[handler_console]
++class = StreamHandler
++args = (sys.stderr,)
++level = NOTSET
++formatter = generic
++
++[formatter_generic]
++format = %(levelname)-5.5s [%(name)s] %(message)s
++datefmt = %H:%M:%S
+diff --git a/alembic/env.py b/alembic/env.py
+new file mode 100644
+index 0000000..77ad61d
+--- /dev/null
++++ b/alembic/env.py
+@@ -0,0 +1,49 @@
++"""Alembic migration environment configuration."""
++
++import os
++from logging.config import fileConfig
++
++from alembic import context
++from sqlalchemy import engine_from_config, pool
++
++config = context.config
++if config.config_file_name is not None:
++    fileConfig(config.config_file_name)
++
++config.set_main_option("sqlalchemy.url", os.getenv("DATABASE_URL", "sqlite:///./cyber_sentinel.db"))
++
++from app.database import Base
++
++target_metadata = Base.metadata
++
++
++def run_migrations_offline() -> None:
++    """Run migrations in offline mode."""
++    url = config.get_main_option("sqlalchemy.url")
++    context.configure(
++        url=url,
++        target_metadata=target_metadata,
++        literal_binds=True,
++        dialect_opts={"paramstyle": "named"},
++    )
++    with context.begin_transaction():
++        context.run_migrations()
++
++
++def run_migrations_online() -> None:
++    """Run migrations in online mode."""
++    connectable = engine_from_config(
++        config.get_section(config.config_ini_section, {}),
++        prefix="sqlalchemy.",
++        poolclass=pool.NullPool,
++    )
++    with connectable.connect() as connection:
++        context.configure(connection=connection, target_metadata=target_metadata)
++        with context.begin_transaction():
++            context.run_migrations()
++
++
++if context.is_offline_mode():
++    run_migrations_offline()
++else:
++    run_migrations_online()
+-- 
+2.43.0
+
+
+From 3c533ad984507b969db07d16e70ab5b690cd85f6 Mon Sep 17 00:00:00 2001
+From: Reflective Lantern <devneatharva@gmail.com>
+Date: Tue, 7 Jul 2026 01:35:32 +0000
+Subject: [PATCH 29/60] docs(29/60): add SECURITY.md with vulnerability
+ reporting process
+
+---
+ SECURITY.md | 18 ++++++++++++++++++
+ 1 file changed, 18 insertions(+)
+ create mode 100644 SECURITY.md
+
+diff --git a/SECURITY.md b/SECURITY.md
+new file mode 100644
+index 0000000..af2f956
+--- /dev/null
++++ b/SECURITY.md
+@@ -0,0 +1,18 @@
++# Security Policy
++
++## Supported Versions
++
++| Version | Supported |
++|---------|-----------|
++| 1.0.x   | Yes       |
++
++## Reporting a Vulnerability
++
++Please **do not** open a public GitHub issue for security vulnerabilities.
++
++Email `devneatharva@gmail.com` with:
++- A description of the vulnerability
++- Steps to reproduce
++- Potential impact
++
++You will receive a response within 48 hours. If confirmed, a patch will be released within 7 days.
+-- 
+2.43.0
+
+
+From 2937d2bf7e9d22f326b5c04f0159e36ba1036492 Mon Sep 17 00:00:00 2001
+From: Reflective Lantern <devneatharva@gmail.com>
+Date: Tue, 7 Jul 2026 01:35:36 +0000
+Subject: [PATCH 30/60] docs(30/60): add CODE_OF_CONDUCT.md
+
+---
+ CODE_OF_CONDUCT.md | 18 ++++++++++++++++++
+ 1 file changed, 18 insertions(+)
+ create mode 100644 CODE_OF_CONDUCT.md
+
+diff --git a/CODE_OF_CONDUCT.md b/CODE_OF_CONDUCT.md
+new file mode 100644
+index 0000000..b63c530
+--- /dev/null
++++ b/CODE_OF_CONDUCT.md
+@@ -0,0 +1,18 @@
++# Code of Conduct
++
++## Our Pledge
++
++We pledge to make participation in this project a harassment-free experience for everyone.
++
++## Our Standards
++
++- Using welcoming and inclusive language
++- Being respectful of differing viewpoints
++- Gracefully accepting constructive criticism
++- Focusing on what is best for the community
++
++## Enforcement
++
++Instances of abusive behaviour may be reported to `devneatharva@gmail.com`.
++
++This Code of Conduct is adapted from the [Contributor Covenant](https://www.contributor-covenant.org/), version 2.1.
+-- 
+2.43.0
+
+
+From a59498b5ca15bf68617a0215b2891c236787c410 Mon Sep 17 00:00:00 2001
+From: Reflective Lantern <devneatharva@gmail.com>
+Date: Tue, 7 Jul 2026 01:35:54 +0000
+Subject: [PATCH 31/60] feat(31/60): add rate-limiting and structured-logging
+ middleware
+
+---
+ app/middleware.py | 94 +++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 94 insertions(+)
+ create mode 100644 app/middleware.py
+
+diff --git a/app/middleware.py b/app/middleware.py
+new file mode 100644
+index 0000000..481db40
+--- /dev/null
++++ b/app/middleware.py
+@@ -0,0 +1,94 @@
++"""Custom ASGI middleware for rate limiting and request logging."""
++
++import logging
++import time
++import uuid
++from collections import defaultdict
++from typing import Callable
++
++from fastapi import Request, Response
++from starlette.middleware.base import BaseHTTPMiddleware
++from starlette.types import ASGIApp
++
++logger = logging.getLogger(__name__)
++
++
++class RateLimitMiddleware(BaseHTTPMiddleware):
++    """Token-bucket rate limiter keyed by client IP.
++
++    Allows up to `max_requests` calls per `window_seconds` sliding window.
++    Returns HTTP 429 when the limit is exceeded.
++    """
++
++    def __init__(self, app: ASGIApp, max_requests: int = 100, window_seconds: int = 60) -> None:
++        """Initialise the rate limiter.
++
++        Args:
++            app: The ASGI application to wrap.
++            max_requests: Maximum number of requests per window per client.
++            window_seconds: Length of the sliding window in seconds.
++        """
++        super().__init__(app)
++        self.max_requests = max_requests
++        self.window_seconds = window_seconds
++        self._counters: dict[str, list[float]] = defaultdict(list)
++
++    async def dispatch(self, request: Request, call_next: Callable) -> Response:
++        """Check the rate limit and forward or reject the request.
++
++        Args:
++            request: Incoming HTTP request.
++            call_next: Next middleware or route handler.
++
++        Returns:
++            The response from downstream, or a 429 response.
++        """
++        client_ip = request.client.host if request.client else "unknown"
++        now = time.monotonic()
++        window_start = now - self.window_seconds
++
++        timestamps = self._counters[client_ip]
++        timestamps[:] = [t for t in timestamps if t > window_start]
++
++        if len(timestamps) >= self.max_requests:
++            logger.warning("Rate limit exceeded for %s", client_ip)
++            return Response(
++                content='{"detail":"Rate limit exceeded"}',
++                status_code=429,
++                media_type="application/json",
++            )
++
++        timestamps.append(now)
++        response: Response = await call_next(request)
++        response.headers["X-RateLimit-Remaining"] = str(self.max_requests - len(timestamps))
++        return response
++
++
++class StructuredLoggingMiddleware(BaseHTTPMiddleware):
++    """Emit one structured log line per request with timing and correlation ID."""
++
++    async def dispatch(self, request: Request, call_next: Callable) -> Response:
++        """Log each request with method, path, status, and duration.
++
++        Args:
++            request: Incoming HTTP request.
++            call_next: Next middleware or route handler.
++
++        Returns:
++            The downstream response, with X-Correlation-ID header attached.
++        """
++        correlation_id = request.headers.get("X-Correlation-ID", str(uuid.uuid4()))
++        start = time.perf_counter()
++        response: Response = await call_next(request)
++        duration_ms = (time.perf_counter() - start) * 1000
++        logger.info(
++            "method=%s path=%s status=%d duration_ms=%.2f corr=%s",
++            request.method,
++            request.url.path,
++            response.status_code,
++            duration_ms,
++            correlation_id,
++        )
++        response.headers["X-Correlation-ID"] = correlation_id
++        response.headers["X-Response-Time"] = f"{duration_ms:.2f}ms"
++        return response
+-- 
+2.43.0
+
+
+From da98687358436a5bfbccd3616ed349752b6a448d Mon Sep 17 00:00:00 2001
+From: Reflective Lantern <devneatharva@gmail.com>
+Date: Tue, 7 Jul 2026 01:36:17 +0000
+Subject: [PATCH 32/60] refactor(32/60): extract PredictionService layer from
+ route handlers
+
+---
+ app/service.py | 146 +++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 146 insertions(+)
+ create mode 100644 app/service.py
+
+diff --git a/app/service.py b/app/service.py
+new file mode 100644
+index 0000000..05d47fe
+--- /dev/null
++++ b/app/service.py
+@@ -0,0 +1,146 @@
++"""Prediction service layer decoupling inference logic from FastAPI route handlers."""
++
++import json
++import logging
++from typing import Any
++
++import numpy as np
++from sqlalchemy.orm import Session
++
++from app.database import PredictionLog
++from app.faiss_index import FaissPatternMatcher
++from app.features import NUMERIC_FEATURES, prepare_features
++from app.model import MODEL_VERSION, predict
++from app.monitoring import DriftMonitor
++from app.schemas import NetworkTrafficRequest, PredictionResponse
++
++logger = logging.getLogger(__name__)
++
++
++class PredictionService:
++    """Orchestrates feature engineering, model inference, FAISS lookup, and logging.
++
++    Attributes:
++        model: Fitted VotingClassifier ensemble.
++        faiss: FAISS pattern matcher (may be None if unavailable).
++        monitor: KS-test drift monitor.
++    """
++
++    def __init__(
++        self,
++        model: Any,
++        faiss: FaissPatternMatcher | None,
++        monitor: DriftMonitor | None,
++    ) -> None:
++        """Initialise the service with its dependencies.
++
++        Args:
++            model: Fitted VotingClassifier.
++            faiss: Optional FAISS pattern matcher.
++            monitor: Optional drift monitor.
++        """
++        self.model = model
++        self.faiss = faiss
++        self.monitor = monitor
++        self._prediction_count = 0
++        self._attack_count = 0
++
++    @property
++    def prediction_count(self) -> int:
++        """Total number of predictions made since startup."""
++        return self._prediction_count
++
++    @property
++    def attack_count(self) -> int:
++        """Total number of attack predictions since startup."""
++        return self._attack_count
++
++    def run(
++        self,
++        request: NetworkTrafficRequest,
++        db: Session,
++    ) -> PredictionResponse:
++        """Execute the full prediction pipeline for one request.
++
++        Args:
++            request: Validated network traffic feature vector.
++            db: Active SQLAlchemy session for logging.
++
++        Returns:
++            PredictionResponse with label, confidence, and FAISS distance.
++        """
++        features_dict = request.model_dump(exclude={"source_ip", "destination_ip"})
++        df = prepare_features(features_dict)
++
++        labels, confidences = predict(self.model, df)
++        label = labels[0]
++        confidence = confidences[0]
++        is_attack = label != "normal"
++        attack_type = label if is_attack else None
++
++        faiss_dist: float | None = None
++        if self.faiss and self.faiss._n_vectors > 0:
++            vec = df[NUMERIC_FEATURES].values[0].astype(np.float32)
++            _, faiss_dist = self.faiss.is_anomaly(vec)
++
++        if self.monitor:
++            obs = {f: float(df[f].iloc[0]) for f in NUMERIC_FEATURES if f in df.columns}
++            self.monitor.observe(obs)
++
++        self._prediction_count += 1
++        if is_attack:
++            self._attack_count += 1
++
++        self._log_prediction(
++            request=request,
++            label=label,
++            confidence=confidence,
++            attack_type=attack_type,
++            features_dict=features_dict,
++            db=db,
++        )
++
++        return PredictionResponse(
++            prediction=label,
++            confidence=confidence,
++            attack_type=attack_type,
++            is_attack=is_attack,
++            model_version=MODEL_VERSION,
++            faiss_nearest_distance=faiss_dist,
++        )
++
++    def _log_prediction(
++        self,
++        request: NetworkTrafficRequest,
++        label: str,
++        confidence: float,
++        attack_type: str | None,
++        features_dict: dict[str, Any],
++        db: Session,
++    ) -> None:
++        """Persist the prediction to the database.
++
++        Args:
++            request: Original request with IP metadata.
++            label: Predicted class label.
++            confidence: Model confidence score.
++            attack_type: Attack class name or None.
++            features_dict: Raw features serialised to JSON.
++            db: Active SQLAlchemy session.
++        """
++        try:
++            log = PredictionLog(
++                source_ip=request.source_ip,
++                destination_ip=request.destination_ip,
++                protocol=request.protocol_type,
++                prediction=label,
++                confidence=confidence,
++                attack_type=attack_type,
++                raw_features=json.dumps(features_dict),
++                model_version=MODEL_VERSION,
++            )
++            db.add(log)
++            db.commit()
++        except Exception as exc:
++            logger.error("Failed to write prediction log: %s", exc)
++            db.rollback()
+-- 
+2.43.0
+
+
+From 10a4c64d55994d6f84ca68d1b2fca379eebfcce6 Mon Sep 17 00:00:00 2001
+From: Reflective Lantern <devneatharva@gmail.com>
+Date: Tue, 7 Jul 2026 01:36:33 +0000
+Subject: [PATCH 33/60] test(33/60): add PredictionService unit tests with
+ protocol parametrization
+
+---
+ tests/test_service.py | 73 +++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 73 insertions(+)
+ create mode 100644 tests/test_service.py
+
+diff --git a/tests/test_service.py b/tests/test_service.py
+new file mode 100644
+index 0000000..bb4ffa7
+--- /dev/null
++++ b/tests/test_service.py
+@@ -0,0 +1,73 @@
++"""Tests for PredictionService layer."""
++
++from unittest.mock import MagicMock, patch
++
++import numpy as np
++import pytest
++
++from app.schemas import NetworkTrafficRequest
++from app.service import PredictionService
++
++
++@pytest.fixture
++def service(mock_model, db_session):
++    from app.monitoring import DriftMonitor
++    from app.features import NUMERIC_FEATURES
++
++    monitor = DriftMonitor(feature_names=NUMERIC_FEATURES[:5], window_size=10)
++    return PredictionService(model=mock_model, faiss=None, monitor=monitor)
++
++
++def test_service_run_returns_prediction_response(service, sample_traffic_dict, db_session):
++    request = NetworkTrafficRequest(**sample_traffic_dict)
++    result = service.run(request, db_session)
++    assert result.prediction == "normal"
++    assert 0.0 <= result.confidence <= 1.0
++    assert result.is_attack is False
++
++
++def test_service_increments_prediction_count(service, sample_traffic_dict, db_session):
++    request = NetworkTrafficRequest(**sample_traffic_dict)
++    assert service.prediction_count == 0
++    service.run(request, db_session)
++    assert service.prediction_count == 1
++
++
++def test_service_increments_attack_count_on_attack(mock_model, db_session, sample_traffic_dict):
++    from app.monitoring import DriftMonitor
++    from app.features import NUMERIC_FEATURES
++
++    mock_model.predict.return_value = ["dos"]
++    mock_model.predict_proba.return_value = np.array([[0.9, 0.05, 0.05]])
++    mock_model.classes_ = ["dos", "normal", "probe"]
++
++    monitor = DriftMonitor(feature_names=NUMERIC_FEATURES[:5], window_size=10)
++    svc = PredictionService(model=mock_model, faiss=None, monitor=monitor)
++    request = NetworkTrafficRequest(**sample_traffic_dict)
++    result = svc.run(request, db_session)
++
++    assert result.is_attack is True
++    assert result.attack_type == "dos"
++    assert svc.attack_count == 1
++
++
++def test_service_normal_traffic_has_no_attack_type(service, sample_traffic_dict, db_session):
++    request = NetworkTrafficRequest(**sample_traffic_dict)
++    result = service.run(request, db_session)
++    assert result.attack_type is None
++
++
++@pytest.mark.parametrize("protocol", ["tcp", "udp", "icmp"])
++def test_service_handles_all_protocols(service, sample_traffic_dict, db_session, protocol):
++    body = {**sample_traffic_dict, "protocol_type": protocol}
++    request = NetworkTrafficRequest(**body)
++    result = service.run(request, db_session)
++    assert result.prediction is not None
++
++
++def test_service_logs_db_failure_gracefully(service, sample_traffic_dict):
++    bad_session = MagicMock()
++    bad_session.add.side_effect = Exception("DB down")
++    request = NetworkTrafficRequest(**sample_traffic_dict)
++    result = service.run(request, bad_session)
++    assert result.prediction == "normal"
+-- 
+2.43.0
+
+
+From 98a8db37456a854237fd54bb2a0c18a41bbdedd6 Mon Sep 17 00:00:00 2001
+From: Reflective Lantern <devneatharva@gmail.com>
+Date: Tue, 7 Jul 2026 01:36:50 +0000
+Subject: [PATCH 34/60] test(34/60): add rate-limit and structured-logging
+ middleware tests
+
+---
+ tests/test_middleware.py | 89 ++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 89 insertions(+)
+ create mode 100644 tests/test_middleware.py
+
+diff --git a/tests/test_middleware.py b/tests/test_middleware.py
+new file mode 100644
+index 0000000..c1b3df9
+--- /dev/null
++++ b/tests/test_middleware.py
+@@ -0,0 +1,89 @@
++"""Tests for rate-limiting and structured-logging middleware."""
++
++import time
++from unittest.mock import AsyncMock, MagicMock
++
++import pytest
++from fastapi import FastAPI
++from fastapi.testclient import TestClient
++from starlette.requests import Request
++from starlette.responses import Response
++
++from app.middleware import RateLimitMiddleware, StructuredLoggingMiddleware
++
++
++def _make_app_with_rate_limit(max_requests: int = 3, window: int = 60) -> FastAPI:
++    app = FastAPI()
++    app.add_middleware(RateLimitMiddleware, max_requests=max_requests, window_seconds=window)
++
++    @app.get("/ping")
++    def ping():
++        return {"ok": True}
++
++    return app
++
++
++def test_rate_limit_allows_requests_under_limit():
++    app = _make_app_with_rate_limit(max_requests=5)
++    client = TestClient(app, raise_server_exceptions=False)
++    for _ in range(3):
++        resp = client.get("/ping")
++        assert resp.status_code == 200
++
++
++def test_rate_limit_blocks_excess_requests():
++    app = _make_app_with_rate_limit(max_requests=2)
++    client = TestClient(app, raise_server_exceptions=False)
++    client.get("/ping")
++    client.get("/ping")
++    resp = client.get("/ping")
++    assert resp.status_code == 429
++
++
++def test_rate_limit_header_present():
++    app = _make_app_with_rate_limit(max_requests=10)
++    client = TestClient(app, raise_server_exceptions=False)
++    resp = client.get("/ping")
++    assert "X-RateLimit-Remaining" in resp.headers
++
++
++def test_structured_logging_adds_correlation_header():
++    app = FastAPI()
++    app.add_middleware(StructuredLoggingMiddleware)
++
++    @app.get("/hi")
++    def hi():
++        return {"hi": True}
++
++    client = TestClient(app)
++    resp = client.get("/hi", headers={"X-Correlation-ID": "abc-123"})
++    assert resp.headers["X-Correlation-ID"] == "abc-123"
++
++
++def test_structured_logging_generates_correlation_id_if_missing():
++    app = FastAPI()
++    app.add_middleware(StructuredLoggingMiddleware)
++
++    @app.get("/hi")
++    def hi():
++        return {"hi": True}
++
++    client = TestClient(app)
++    resp = client.get("/hi")
++    assert "X-Correlation-ID" in resp.headers
++    assert len(resp.headers["X-Correlation-ID"]) > 0
++
++
++def test_response_time_header_is_float_ms():
++    app = FastAPI()
++    app.add_middleware(StructuredLoggingMiddleware)
++
++    @app.get("/hi")
++    def hi():
++        return {"hi": True}
++
++    client = TestClient(app)
++    resp = client.get("/hi")
++    rt = resp.headers.get("X-Response-Time", "")
++    assert rt.endswith("ms")
++    assert float(rt.rstrip("ms")) >= 0
+-- 
+2.43.0
+
+
+From b88b984afa20b5334482d75de137a0fb53a89e97 Mon Sep 17 00:00:00 2001
+From: Reflective Lantern <devneatharva@gmail.com>
+Date: Tue, 7 Jul 2026 01:36:59 +0000
+Subject: [PATCH 35/60] test(35/60): add Settings configuration tests
+
+---
+ tests/test_config.py | 47 ++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 47 insertions(+)
+ create mode 100644 tests/test_config.py
+
+diff --git a/tests/test_config.py b/tests/test_config.py
+new file mode 100644
+index 0000000..353f151
+--- /dev/null
++++ b/tests/test_config.py
+@@ -0,0 +1,47 @@
++"""Tests for application configuration and environment-variable loading."""
++
++import os
++from pathlib import Path
++
++
++def test_settings_have_database_url():
++    from app.config import settings
++
++    assert settings.database_url is not None
++    assert len(settings.database_url) > 0
++
++
++def test_settings_default_model_path():
++    from app.config import settings
++
++    assert isinstance(settings.model_path, Path)
++
++
++def test_settings_default_log_level():
++    from app.config import settings
++
++    assert settings.log_level in ("DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL")
++
++
++def test_settings_drift_threshold_positive():
++    from app.config import settings
++
++    assert settings.drift_ks_threshold > 0.0
++
++
++def test_settings_rate_limit_positive():
++    from app.config import settings
++
++    assert settings.rate_limit_per_minute > 0
++
++
++def test_settings_faiss_threshold_positive():
++    from app.config import settings
++
++    assert settings.faiss_threshold > 0.0
++
++
++def test_settings_window_size_positive():
++    from app.config import settings
++
++    assert settings.drift_window_size > 0
+-- 
+2.43.0
+
+
+From 2a84b9eee50440bd4f09ad1006c04ac91f534b99 Mon Sep 17 00:00:00 2001
+From: Reflective Lantern <devneatharva@gmail.com>
+Date: Tue, 7 Jul 2026 01:37:15 +0000
+Subject: [PATCH 36/60] test(36/60): add SQLAlchemy model tests with
+ parametrized label checks
+
+---
+ tests/test_database.py | 93 ++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 93 insertions(+)
+ create mode 100644 tests/test_database.py
+
+diff --git a/tests/test_database.py b/tests/test_database.py
+new file mode 100644
+index 0000000..a514f3c
+--- /dev/null
++++ b/tests/test_database.py
+@@ -0,0 +1,93 @@
++"""Tests for SQLAlchemy models and database session management."""
++
++from datetime import datetime
++
++import pytest
++from sqlalchemy.orm import Session
++
++from app.database import Base, DriftLog, ModelVersion, PredictionLog
++
++
++def test_prediction_log_insert(db_session: Session) -> None:
++    log = PredictionLog(
++        source_ip="192.168.1.1",
++        destination_ip="10.0.0.1",
++        protocol="tcp",
++        prediction="normal",
++        confidence=0.95,
++        attack_type=None,
++        raw_features='{"src_bytes": 100}',
++        model_version="1.0.0",
++    )
++    db_session.add(log)
++    db_session.flush()
++    assert log.id is not None
++
++
++def test_prediction_log_defaults_timestamp(db_session: Session) -> None:
++    log = PredictionLog(
++        prediction="dos",
++        confidence=0.8,
++        protocol="udp",
++    )
++    db_session.add(log)
++    db_session.flush()
++    assert log.timestamp is not None
++
++
++def test_drift_log_insert(db_session: Session) -> None:
++    drift = DriftLog(
++        feature_name="serror_rate",
++        ks_statistic=0.25,
++        p_value=0.01,
++        drift_detected=1,
++    )
++    db_session.add(drift)
++    db_session.flush()
++    assert drift.id is not None
++
++
++def test_drift_log_no_drift(db_session: Session) -> None:
++    drift = DriftLog(
++        feature_name="count",
++        ks_statistic=0.05,
++        p_value=0.45,
++        drift_detected=0,
++    )
++    db_session.add(drift)
++    db_session.flush()
++    assert drift.drift_detected == 0
++
++
++def test_model_version_insert(db_session: Session) -> None:
++    mv = ModelVersion(
++        version="1.1.0",
++        accuracy=0.97,
++        f1_score=0.96,
++        auc_roc=0.99,
++        artifact_path="models/ensemble_v1.1.0.pkl",
++    )
++    db_session.add(mv)
++    db_session.flush()
++    assert mv.id is not None
++
++
++def test_multiple_prediction_logs(db_session: Session) -> None:
++    for i in range(5):
++        log = PredictionLog(
++            prediction="normal" if i % 2 == 0 else "dos",
++            confidence=0.9,
++            protocol="tcp",
++        )
++        db_session.add(log)
++    db_session.flush()
++    count = db_session.query(PredictionLog).count()
++    assert count >= 5
++
++
++@pytest.mark.parametrize("label", ["normal", "dos", "probe", "r2l", "u2r"])
++def test_prediction_log_all_labels(db_session: Session, label: str) -> None:
++    log = PredictionLog(prediction=label, confidence=0.85, protocol="tcp")
++    db_session.add(log)
++    db_session.flush()
++    assert log.prediction == label
+-- 
+2.43.0
+
+
+From 6b64596f2e7ffeec04c136c883b8bcc2b9cac316 Mon Sep 17 00:00:00 2001
+From: Reflective Lantern <devneatharva@gmail.com>
+Date: Tue, 7 Jul 2026 01:37:31 +0000
+Subject: [PATCH 37/60] test(37/60): add FAISS pattern matcher tests with
+ graceful skip
+
+---
+ tests/test_faiss.py | 68 +++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 68 insertions(+)
+ create mode 100644 tests/test_faiss.py
+
+diff --git a/tests/test_faiss.py b/tests/test_faiss.py
+new file mode 100644
+index 0000000..c8720cb
+--- /dev/null
++++ b/tests/test_faiss.py
+@@ -0,0 +1,68 @@
++"""Tests for FAISS pattern matcher."""
++
++import math
++
++import numpy as np
++import pytest
++
++from app.faiss_index import FaissPatternMatcher
++
++
++@pytest.fixture
++def matcher() -> FaissPatternMatcher:
++    return FaissPatternMatcher(dimension=10, threshold=10.0)
++
++
++def test_matcher_initialises(matcher: FaissPatternMatcher) -> None:
++    assert matcher.dimension == 10
++    assert matcher.threshold == 10.0
++
++
++def test_search_returns_inf_when_empty(matcher: FaissPatternMatcher) -> None:
++    vec = np.zeros(10, dtype=np.float32)
++    dist, idx = matcher.search(vec)
++    assert dist == float("inf") or not matcher._available
++
++
++def test_is_anomaly_on_empty_index_not_flagged(matcher: FaissPatternMatcher) -> None:
++    vec = np.zeros(10, dtype=np.float32)
++    is_anom, dist = matcher.is_anomaly(vec)
++    assert is_anom is False or not matcher._available
++
++
++@pytest.mark.parametrize("n_vectors", [1, 10, 100])
++def test_add_vectors_increases_count(matcher: FaissPatternMatcher, n_vectors: int) -> None:
++    if not matcher._available:
++        pytest.skip("FAISS not installed")
++    vecs = np.random.default_rng(0).uniform(0, 1, (n_vectors, 10)).astype(np.float32)
++    matcher.add_vectors(vecs)
++    assert matcher._n_vectors == n_vectors
++
++
++def test_exact_match_returns_zero_distance(matcher: FaissPatternMatcher) -> None:
++    if not matcher._available:
++        pytest.skip("FAISS not installed")
++    vec = np.ones(10, dtype=np.float32)
++    matcher.add_vectors(vec.reshape(1, -1))
++    dist, idx = matcher.search(vec)
++    assert dist == pytest.approx(0.0, abs=1e-4)
++
++
++def test_anomaly_detected_near_known_vector(matcher: FaissPatternMatcher) -> None:
++    if not matcher._available:
++        pytest.skip("FAISS not installed")
++    known = np.zeros(10, dtype=np.float32)
++    matcher.add_vectors(known.reshape(1, -1))
++    close = known + 0.1
++    is_anom, dist = matcher.is_anomaly(close)
++    assert is_anom is True
++
++
++def test_no_anomaly_for_distant_vector(matcher: FaissPatternMatcher) -> None:
++    if not matcher._available:
++        pytest.skip("FAISS not installed")
++    known = np.zeros(10, dtype=np.float32)
++    matcher.add_vectors(known.reshape(1, -1))
++    far = np.ones(10, dtype=np.float32) * 100.0
++    is_anom, dist = matcher.is_anomaly(far)
++    assert is_anom is False
+-- 
+2.43.0
+
+
+From 42e06efad9ae3d3c3319330908cc6a86b0a2c20d Mon Sep 17 00:00:00 2001
+From: Reflective Lantern <devneatharva@gmail.com>
+Date: Tue, 7 Jul 2026 01:37:47 +0000
+Subject: [PATCH 38/60] test(38/60): add Pydantic schema validation tests with
+ parametrized bounds
+
+---
+ tests/test_schemas.py | 90 +++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 90 insertions(+)
+ create mode 100644 tests/test_schemas.py
+
+diff --git a/tests/test_schemas.py b/tests/test_schemas.py
+new file mode 100644
+index 0000000..ee2172a
+--- /dev/null
++++ b/tests/test_schemas.py
+@@ -0,0 +1,90 @@
++"""Tests for Pydantic request and response schemas."""
++
++import pytest
++from pydantic import ValidationError
++
++from app.schemas import (
++    BatchPredictionRequest,
++    NetworkTrafficRequest,
++    PredictionResponse,
++)
++
++
++def test_valid_request_defaults(sample_traffic_dict: dict) -> None:
++    req = NetworkTrafficRequest(**sample_traffic_dict)
++    assert req.protocol_type == "tcp"
++    assert req.src_bytes >= 0
++
++
++def test_empty_request_uses_defaults() -> None:
++    req = NetworkTrafficRequest()
++    assert req.duration == 0.0
++    assert req.protocol_type == "tcp"
++    assert req.src_bytes == 0
++
++
++def test_protocol_type_normalised_to_lowercase() -> None:
++    req = NetworkTrafficRequest(protocol_type="TCP")
++    assert req.protocol_type == "tcp"
++
++
++def test_invalid_protocol_raises(sample_traffic_dict: dict) -> None:
++    with pytest.raises(ValidationError):
++        NetworkTrafficRequest(**{**sample_traffic_dict, "protocol_type": "ftp"})
++
++
++def test_negative_src_bytes_raises() -> None:
++    with pytest.raises(ValidationError):
++        NetworkTrafficRequest(src_bytes=-1)
++
++
++def test_serror_rate_above_one_raises() -> None:
++    with pytest.raises(ValidationError):
++        NetworkTrafficRequest(serror_rate=1.5)
++
++
++def test_prediction_response_normal() -> None:
++    resp = PredictionResponse(
++        prediction="normal",
++        confidence=0.95,
++        attack_type=None,
++        is_attack=False,
++        model_version="1.0.0",
++    )
++    assert resp.is_attack is False
++    assert resp.attack_type is None
++
++
++def test_prediction_response_attack() -> None:
++    resp = PredictionResponse(
++        prediction="dos",
++        confidence=0.87,
++        attack_type="dos",
++        is_attack=True,
++        model_version="1.0.0",
++        faiss_nearest_distance=12.5,
++    )
++    assert resp.is_attack is True
++    assert resp.faiss_nearest_distance == pytest.approx(12.5)
++
++
++def test_batch_request_min_one_record(sample_traffic_dict: dict) -> None:
++    req = BatchPredictionRequest(records=[NetworkTrafficRequest(**sample_traffic_dict)])
++    assert len(req.records) == 1
++
++
++def test_batch_request_empty_records_raises() -> None:
++    with pytest.raises(ValidationError):
++        BatchPredictionRequest(records=[])
++
++
++@pytest.mark.parametrize("rate", [0.0, 0.5, 1.0])
++def test_valid_rate_values(rate: float) -> None:
++    req = NetworkTrafficRequest(serror_rate=rate)
++    assert req.serror_rate == pytest.approx(rate)
++
++
++@pytest.mark.parametrize("dst_count", [0, 128, 255])
++def test_valid_dst_host_count(dst_count: int) -> None:
++    req = NetworkTrafficRequest(dst_host_count=dst_count)
++    assert req.dst_host_count == dst_count
+-- 
+2.43.0
+
+
+From e1e847e2851cc5fb8c1fa56b92a4e16cf1637828 Mon Sep 17 00:00:00 2001
+From: Reflective Lantern <devneatharva@gmail.com>
+Date: Tue, 7 Jul 2026 01:38:04 +0000
+Subject: [PATCH 39/60] feat(39/60): add synthetic KDD-Cup data generator
+ script
+
+---
+ scripts/generate_sample_data.py | 82 +++++++++++++++++++++++++++++++++
+ 1 file changed, 82 insertions(+)
+ create mode 100644 scripts/generate_sample_data.py
+
+diff --git a/scripts/generate_sample_data.py b/scripts/generate_sample_data.py
+new file mode 100644
+index 0000000..9ce6a3b
+--- /dev/null
++++ b/scripts/generate_sample_data.py
+@@ -0,0 +1,82 @@
++"""Generate synthetic KDD-Cup-style labelled CSV data for local testing."""
++
++import argparse
++import logging
++import sys
++from pathlib import Path
++
++import numpy as np
++import pandas as pd
++
++logger = logging.getLogger(__name__)
++
++
++def generate(n: int = 10000, seed: int = 42) -> pd.DataFrame:
++    """Generate n synthetic network traffic records with attack labels.
++
++    Args:
++        n: Number of rows to generate.
++        seed: Random seed for reproducibility.
++
++    Returns:
++        DataFrame with feature columns and a 'label' column.
++    """
++    from app.features import CATEGORICAL_FEATURES, NUMERIC_FEATURES
++
++    rng = np.random.default_rng(seed)
++    data: dict[str, object] = {}
++
++    for feat in NUMERIC_FEATURES:
++        if "rate" in feat:
++            data[feat] = rng.uniform(0.0, 1.0, n)
++        elif "bytes" in feat:
++            data[feat] = rng.integers(0, 50000, n)
++        elif "count" in feat:
++            data[feat] = rng.integers(0, 512, n)
++        else:
++            data[feat] = rng.uniform(0, 100, n)
++
++    for cat in CATEGORICAL_FEATURES:
++        if cat == "protocol_type":
++            data[cat] = rng.choice(["tcp", "udp", "icmp"], n, p=[0.7, 0.2, 0.1])
++        elif cat == "service":
++            data[cat] = rng.choice(["http", "ftp", "smtp", "ssh", "telnet"], n)
++        else:
++            data[cat] = rng.choice(["SF", "S0", "REJ", "RSTO", "SH"], n)
++
++    labels = rng.choice(
++        ["normal", "dos", "probe", "r2l", "u2r"],
++        n,
++        p=[0.60, 0.22, 0.10, 0.06, 0.02],
++    )
++    data["label"] = labels
++
++    return pd.DataFrame(data)
++
++
++def main(argv: list[str] | None = None) -> int:
++    """CLI entry point.
++
++    Args:
++        argv: Command-line arguments.
++
++    Returns:
++        Exit code.
++    """
++    parser = argparse.ArgumentParser(description="Generate synthetic training data")
++    parser.add_argument("--n", type=int, default=10000, help="Number of rows")
++    parser.add_argument("--seed", type=int, default=42)
++    parser.add_argument("--output", type=Path, default=Path("data/train.csv"))
++    args = parser.parse_args(argv)
++
++    logging.basicConfig(level=logging.INFO)
++    args.output.parent.mkdir(parents=True, exist_ok=True)
++
++    df = generate(n=args.n, seed=args.seed)
++    df.to_csv(args.output, index=False)
++    logger.info("Wrote %d rows to %s", len(df), args.output)
++    return 0
++
++
++if __name__ == "__main__":
++    sys.exit(main())
+-- 
+2.43.0
+
+
+From 9f11fed3548ff2515d624e2a3c906a689354b9c1 Mon Sep 17 00:00:00 2001
+From: Reflective Lantern <devneatharva@gmail.com>
+Date: Tue, 7 Jul 2026 01:38:17 +0000
+Subject: [PATCH 40/60] feat(40/60): add model evaluation script with
+ classification report
+
+---
+ scripts/evaluate.py | 56 +++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 56 insertions(+)
+ create mode 100644 scripts/evaluate.py
+
+diff --git a/scripts/evaluate.py b/scripts/evaluate.py
+new file mode 100644
+index 0000000..bc491cb
+--- /dev/null
++++ b/scripts/evaluate.py
+@@ -0,0 +1,56 @@
++"""Evaluate a trained Cyber-Sentinel model against a labelled test CSV."""
++
++import argparse
++import logging
++import sys
++from pathlib import Path
++
++import pandas as pd
++from sklearn.metrics import classification_report, confusion_matrix
++
++logger = logging.getLogger(__name__)
++
++
++def main(argv: list[str] | None = None) -> int:
++    """Run evaluation and print classification report.
++
++    Args:
++        argv: Command-line arguments; defaults to sys.argv.
++
++    Returns:
++        Exit code (0 = success, 1 = failure).
++    """
++    parser = argparse.ArgumentParser(description="Evaluate Cyber-Sentinel model")
++    parser.add_argument("--data", type=Path, required=True, help="CSV with features + 'label' col")
++    parser.add_argument("--model", type=Path, default=Path("models/ensemble.pkl"))
++    args = parser.parse_args(argv)
++
++    logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
++
++    from app.features import NUMERIC_FEATURES, encode_categoricals, engineer_features
++    from app.model import load_model, predict
++
++    try:
++        df = pd.read_csv(args.data)
++        y_true = df["label"]
++        X = df.drop(columns=["label"])
++        X = engineer_features(X)
++        X = encode_categoricals(X)
++        X_num = X[NUMERIC_FEATURES]
++
++        model = load_model(args.model)
++        labels, _ = predict(model, X_num)
++
++        report = classification_report(y_true, labels, zero_division=0)
++        print(report)
++
++        cm = confusion_matrix(y_true, labels, labels=model.classes_)
++        logger.info("Confusion matrix:\n%s", cm)
++        return 0
++    except Exception as exc:
++        logger.error("Evaluation failed: %s", exc, exc_info=True)
++        return 1
++
++
++if __name__ == "__main__":
++    sys.exit(main())
+-- 
+2.43.0
+
+
+From 092f2f55fe9c2631f7b99f1e900f1d9a41143be1 Mon Sep 17 00:00:00 2001
+From: Reflective Lantern <devneatharva@gmail.com>
+Date: Tue, 7 Jul 2026 01:38:28 +0000
+Subject: [PATCH 41/60] feat(41/60): add custom exception types and FastAPI
+ exception handlers
+
+---
+ app/exceptions.py | 48 +++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 48 insertions(+)
+ create mode 100644 app/exceptions.py
+
+diff --git a/app/exceptions.py b/app/exceptions.py
+new file mode 100644
+index 0000000..4e95403
+--- /dev/null
++++ b/app/exceptions.py
+@@ -0,0 +1,48 @@
++"""Custom exception types and FastAPI exception handlers."""
++
++import logging
++
++from fastapi import FastAPI, Request
++from fastapi.responses import JSONResponse
++
++logger = logging.getLogger(__name__)
++
++
++class ModelNotLoadedError(RuntimeError):
++    """Raised when inference is attempted before the model is loaded."""
++
++
++class FeatureEngineeringError(ValueError):
++    """Raised when feature engineering fails due to malformed input."""
++
++
++class DriftMonitorError(RuntimeError):
++    """Raised when the drift monitor encounters an unrecoverable error."""
++
++
++def register_exception_handlers(app: FastAPI) -> None:
++    """Attach custom exception handlers to the FastAPI application.
++
++    Args:
++        app: The FastAPI application instance.
++    """
++
++    @app.exception_handler(ModelNotLoadedError)
++    async def model_not_loaded_handler(request: Request, exc: ModelNotLoadedError) -> JSONResponse:
++        logger.error("ModelNotLoadedError: %s", exc)
++        return JSONResponse(status_code=503, content={"detail": str(exc)})
++
++    @app.exception_handler(FeatureEngineeringError)
++    async def feature_error_handler(request: Request, exc: FeatureEngineeringError) -> JSONResponse:
++        logger.warning("FeatureEngineeringError: %s", exc)
++        return JSONResponse(status_code=422, content={"detail": str(exc)})
++
++    @app.exception_handler(DriftMonitorError)
++    async def drift_error_handler(request: Request, exc: DriftMonitorError) -> JSONResponse:
++        logger.error("DriftMonitorError: %s", exc)
++        return JSONResponse(status_code=500, content={"detail": "Drift monitor error"})
++
++    @app.exception_handler(Exception)
++    async def generic_handler(request: Request, exc: Exception) -> JSONResponse:
++        logger.error("Unhandled exception on %s %s: %s", request.method, request.url.path, exc)
++        return JSONResponse(status_code=500, content={"detail": "Internal server error"})
+-- 
+2.43.0
+
+
+From 6eeb2b092a9d60c155453d1b1aac4ac04ef623b9 Mon Sep 17 00:00:00 2001
+From: Reflective Lantern <devneatharva@gmail.com>
+Date: Tue, 7 Jul 2026 01:38:40 +0000
+Subject: [PATCH 42/60] test(42/60): add exception handler tests for 503, 422,
+ 500 responses
+
+---
+ tests/test_exceptions.py | 62 ++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 62 insertions(+)
+ create mode 100644 tests/test_exceptions.py
+
+diff --git a/tests/test_exceptions.py b/tests/test_exceptions.py
+new file mode 100644
+index 0000000..4c9d364
+--- /dev/null
++++ b/tests/test_exceptions.py
+@@ -0,0 +1,62 @@
++"""Tests for custom exception handlers."""
++
++import pytest
++from fastapi import FastAPI
++from fastapi.testclient import TestClient
++
++from app.exceptions import (
++    DriftMonitorError,
++    FeatureEngineeringError,
++    ModelNotLoadedError,
++    register_exception_handlers,
++)
++
++
++def _app_with_handlers() -> FastAPI:
++    app = FastAPI()
++    register_exception_handlers(app)
++
++    @app.get("/model-error")
++    def raise_model():
++        raise ModelNotLoadedError("No model loaded")
++
++    @app.get("/feature-error")
++    def raise_feature():
++        raise FeatureEngineeringError("Bad features")
++
++    @app.get("/drift-error")
++    def raise_drift():
++        raise DriftMonitorError("Drift broke")
++
++    return app
++
++
++@pytest.fixture
++def exc_client() -> TestClient:
++    return TestClient(_app_with_handlers(), raise_server_exceptions=False)
++
++
++def test_model_not_loaded_returns_503(exc_client: TestClient) -> None:
++    resp = exc_client.get("/model-error")
++    assert resp.status_code == 503
++    assert "detail" in resp.json()
++
++
++def test_feature_error_returns_422(exc_client: TestClient) -> None:
++    resp = exc_client.get("/feature-error")
++    assert resp.status_code == 422
++
++
++def test_drift_error_returns_500(exc_client: TestClient) -> None:
++    resp = exc_client.get("/drift-error")
++    assert resp.status_code == 500
++
++
++def test_model_not_loaded_error_is_runtime() -> None:
++    with pytest.raises(ModelNotLoadedError):
++        raise ModelNotLoadedError("test")
++
++
++def test_feature_engineering_error_is_value_error() -> None:
++    with pytest.raises(ValueError):
++        raise FeatureEngineeringError("bad value")
+-- 
+2.43.0
+
+
+From 22f40e5eaff93a0fba3b72741df30cf1a9bd97c7 Mon Sep 17 00:00:00 2001
+From: Reflective Lantern <devneatharva@gmail.com>
+Date: Tue, 7 Jul 2026 01:38:55 +0000
+Subject: [PATCH 43/60] feat(43/60): add utility functions: timer, stable_hash,
+ clamp, chunk, safe_divide
+
+---
+ app/utils.py | 94 ++++++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 94 insertions(+)
+ create mode 100644 app/utils.py
+
+diff --git a/app/utils.py b/app/utils.py
+new file mode 100644
+index 0000000..fcedc57
+--- /dev/null
++++ b/app/utils.py
+@@ -0,0 +1,94 @@
++"""General-purpose utility functions for Cyber-Sentinel."""
++
++import functools
++import hashlib
++import json
++import logging
++import time
++from typing import Any, Callable, TypeVar
++
++logger = logging.getLogger(__name__)
++
++F = TypeVar("F", bound=Callable[..., Any])
++
++
++def timer(func: F) -> F:
++    """Log the wall-clock time taken by a function call.
++
++    Args:
++        func: The function to wrap.
++
++    Returns:
++        Wrapped function that logs its duration.
++    """
++
++    @functools.wraps(func)
++    def wrapper(*args: Any, **kwargs: Any) -> Any:
++        start = time.perf_counter()
++        result = func(*args, **kwargs)
++        elapsed = time.perf_counter() - start
++        logger.debug("%s completed in %.4f s", func.__qualname__, elapsed)
++        return result
++
++    return wrapper  # type: ignore[return-value]
++
++
++def stable_hash(data: dict[str, Any]) -> str:
++    """Compute a stable SHA-256 hex digest for a JSON-serialisable dict.
++
++    Args:
++        data: Dictionary to hash.
++
++    Returns:
++        Hex digest string.
++    """
++    serialised = json.dumps(data, sort_keys=True, default=str).encode()
++    return hashlib.sha256(serialised).hexdigest()
++
++
++def clamp(value: float, lo: float, hi: float) -> float:
++    """Clamp a float to the closed interval [lo, hi].
++
++    Args:
++        value: The value to clamp.
++        lo: Lower bound.
++        hi: Upper bound.
++
++    Returns:
++        Clamped float.
++    """
++    return max(lo, min(hi, value))
++
++
++def chunk(lst: list[Any], size: int) -> list[list[Any]]:
++    """Split a list into fixed-size chunks.
++
++    Args:
++        lst: List to split.
++        size: Maximum chunk size (must be >= 1).
++
++    Returns:
++        List of sub-lists, each of length at most size.
++
++    Raises:
++        ValueError: If size < 1.
++    """
++    if size < 1:
++        raise ValueError(f"chunk size must be >= 1, got {size}")
++    return [lst[i : i + size] for i in range(0, len(lst), size)]
++
++
++def safe_divide(numerator: float, denominator: float, default: float = 0.0) -> float:
++    """Divide numerator by denominator, returning default on zero division.
++
++    Args:
++        numerator: Dividend.
++        denominator: Divisor.
++        default: Value to return when denominator is zero.
++
++    Returns:
++        Result of division or default.
++    """
++    if denominator == 0.0:
++        return default
++    return numerator / denominator
+-- 
+2.43.0
+
+
+From e6937cd35fac25daebe5c623618f127bf8857f88 Mon Sep 17 00:00:00 2001
+From: Reflective Lantern <devneatharva@gmail.com>
+Date: Tue, 7 Jul 2026 01:39:13 +0000
+Subject: [PATCH 44/60] test(44/60): add utility function tests with
+ parametrized clamp and chunk cases
+
+---
+ tests/test_utils.py | 68 +++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 68 insertions(+)
+ create mode 100644 tests/test_utils.py
+
+diff --git a/tests/test_utils.py b/tests/test_utils.py
+new file mode 100644
+index 0000000..b78040b
+--- /dev/null
++++ b/tests/test_utils.py
+@@ -0,0 +1,68 @@
++"""Tests for utility functions."""
++
++import pytest
++
++from app.utils import chunk, clamp, safe_divide, stable_hash, timer
++
++
++def test_timer_runs_function():
++    @timer
++    def add(a, b):
++        return a + b
++
++    assert add(2, 3) == 5
++
++
++def test_stable_hash_deterministic():
++    d = {"key": "value", "number": 42}
++    assert stable_hash(d) == stable_hash(d)
++
++
++def test_stable_hash_different_for_different_dicts():
++    assert stable_hash({"a": 1}) != stable_hash({"a": 2})
++
++
++def test_stable_hash_key_order_independent():
++    d1 = {"a": 1, "b": 2}
++    d2 = {"b": 2, "a": 1}
++    assert stable_hash(d1) == stable_hash(d2)
++
++
++@pytest.mark.parametrize("val,lo,hi,expected", [
++    (5.0, 0.0, 10.0, 5.0),
++    (-1.0, 0.0, 10.0, 0.0),
++    (15.0, 0.0, 10.0, 10.0),
++    (0.0, 0.0, 1.0, 0.0),
++    (1.0, 0.0, 1.0, 1.0),
++])
++def test_clamp(val, lo, hi, expected):
++    assert clamp(val, lo, hi) == pytest.approx(expected)
++
++
++def test_chunk_even_split():
++    result = chunk([1, 2, 3, 4], 2)
++    assert result == [[1, 2], [3, 4]]
++
++
++def test_chunk_uneven_split():
++    result = chunk([1, 2, 3, 4, 5], 2)
++    assert result == [[1, 2], [3, 4], [5]]
++
++
++def test_chunk_larger_than_list():
++    result = chunk([1, 2], 10)
++    assert result == [[1, 2]]
++
++
++def test_chunk_size_zero_raises():
++    with pytest.raises(ValueError):
++        chunk([1, 2, 3], 0)
++
++
++@pytest.mark.parametrize("num,den,default,expected", [
++    (10.0, 2.0, 0.0, 5.0),
++    (10.0, 0.0, -1.0, -1.0),
++    (0.0, 5.0, 0.0, 0.0),
++])
++def test_safe_divide(num, den, default, expected):
++    assert safe_divide(num, den, default) == pytest.approx(expected)
+-- 
+2.43.0
+
+
+From c85cf57262bf13ca8d4be8e3d441e3a4dfc14616 Mon Sep 17 00:00:00 2001
+From: Reflective Lantern <devneatharva@gmail.com>
+Date: Tue, 7 Jul 2026 01:39:30 +0000
+Subject: [PATCH 45/60] feat(45/60): add structured JSON logging configuration
+ with JSONFormatter
+
+---
+ app/logging_config.py | 49 +++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 49 insertions(+)
+ create mode 100644 app/logging_config.py
+
+diff --git a/app/logging_config.py b/app/logging_config.py
+new file mode 100644
+index 0000000..06d0aff
+--- /dev/null
++++ b/app/logging_config.py
+@@ -0,0 +1,49 @@
++"""Structured JSON logging configuration for Cyber-Sentinel."""
++
++import logging
++import sys
++from typing import Any
++
++
++class JSONFormatter(logging.Formatter):
++    """Emit log records as single-line JSON for ingestion by log aggregators."""
++
++    def format(self, record: logging.LogRecord) -> str:
++        import json
++        import traceback
++
++        payload: dict[str, Any] = {
++            "level": record.levelname,
++            "logger": record.name,
++            "message": record.getMessage(),
++            "module": record.module,
++            "func": record.funcName,
++            "line": record.lineno,
++        }
++        if record.exc_info:
++            payload["exception"] = traceback.format_exception(*record.exc_info)
++        return json.dumps(payload, default=str)
++
++
++def configure_logging(level: str = "INFO", use_json: bool = False) -> None:
++    """Set up the root logger with either plain-text or JSON formatting.
++
++    Args:
++        level: Logging level string (e.g. 'INFO', 'DEBUG').
++        use_json: If True, emit JSON-formatted logs.
++    """
++    handler = logging.StreamHandler(sys.stdout)
++    if use_json:
++        handler.setFormatter(JSONFormatter())
++    else:
++        handler.setFormatter(
++            logging.Formatter("%(asctime)s [%(levelname)s] %(name)s: %(message)s")
++        )
++
++    root = logging.getLogger()
++    root.handlers.clear()
++    root.addHandler(handler)
++    root.setLevel(getattr(logging, level.upper(), logging.INFO))
++
++    logging.getLogger("uvicorn.access").propagate = False
++    logging.getLogger("sqlalchemy.engine").setLevel(logging.WARNING)
+-- 
+2.43.0
+
+
+From e0c4b5cdb4558b6115863a5cfbb60425f56d5b49 Mon Sep 17 00:00:00 2001
+From: Reflective Lantern <devneatharva@gmail.com>
+Date: Tue, 7 Jul 2026 01:39:41 +0000
+Subject: [PATCH 46/60] test(46/60): add JSON logging formatter and
+ configure_logging tests
+
+---
+ tests/test_logging_config.py | 51 ++++++++++++++++++++++++++++++++++++
+ 1 file changed, 51 insertions(+)
+ create mode 100644 tests/test_logging_config.py
+
+diff --git a/tests/test_logging_config.py b/tests/test_logging_config.py
+new file mode 100644
+index 0000000..d18e8cb
+--- /dev/null
++++ b/tests/test_logging_config.py
+@@ -0,0 +1,51 @@
++"""Tests for JSON logging configuration."""
++
++import json
++import logging
++
++import pytest
++
++from app.logging_config import JSONFormatter, configure_logging
++
++
++def test_json_formatter_produces_valid_json():
++    formatter = JSONFormatter()
++    record = logging.LogRecord(
++        name="test",
++        level=logging.INFO,
++        pathname="",
++        lineno=1,
++        msg="hello world",
++        args=(),
++        exc_info=None,
++    )
++    output = formatter.format(record)
++    parsed = json.loads(output)
++    assert parsed["message"] == "hello world"
++    assert parsed["level"] == "INFO"
++
++
++def test_json_formatter_includes_logger_name():
++    formatter = JSONFormatter()
++    record = logging.LogRecord("my.module", logging.WARNING, "", 0, "warn msg", (), None)
++    output = json.loads(formatter.format(record))
++    assert output["logger"] == "my.module"
++
++
++def test_configure_logging_plain_does_not_raise():
++    configure_logging(level="WARNING", use_json=False)
++    root = logging.getLogger()
++    assert root.level == logging.WARNING
++
++
++def test_configure_logging_json_does_not_raise():
++    configure_logging(level="DEBUG", use_json=True)
++    root = logging.getLogger()
++    assert root.level == logging.DEBUG
++
++
++def test_json_formatter_has_line_number():
++    formatter = JSONFormatter()
++    record = logging.LogRecord("x", logging.ERROR, "", 42, "err", (), None)
++    output = json.loads(formatter.format(record))
++    assert output["line"] == 42
+-- 
+2.43.0
+
+
+From 8224a82994c6a5ef3e6805e72c216c9923b6ce16 Mon Sep 17 00:00:00 2001
+From: Reflective Lantern <devneatharva@gmail.com>
+Date: Tue, 7 Jul 2026 01:40:00 +0000
+Subject: [PATCH 47/60] feat(47/60): add latency benchmark script with p95/p99
+ statistics
+
+---
+ scripts/benchmark.py | 102 +++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 102 insertions(+)
+ create mode 100644 scripts/benchmark.py
+
+diff --git a/scripts/benchmark.py b/scripts/benchmark.py
+new file mode 100644
+index 0000000..8fdd5f8
+--- /dev/null
++++ b/scripts/benchmark.py
+@@ -0,0 +1,102 @@
++"""Quick latency benchmark for the /api/v1/predict endpoint."""
++
++import argparse
++import json
++import logging
++import statistics
++import sys
++import time
++import urllib.request
++from typing import Any
++
++logger = logging.getLogger(__name__)
++
++SAMPLE_PAYLOAD: dict[str, Any] = {
++    "duration": 1.5,
++    "protocol_type": "tcp",
++    "service": "http",
++    "flag": "SF",
++    "src_bytes": 1000,
++    "dst_bytes": 2000,
++    "count": 10,
++    "srv_count": 10,
++    "serror_rate": 0.0,
++    "rerror_rate": 0.0,
++    "same_srv_rate": 1.0,
++    "diff_srv_rate": 0.0,
++    "dst_host_count": 20,
++    "dst_host_srv_count": 20,
++}
++
++
++def benchmark(url: str, n: int, concurrency: int = 1) -> dict[str, float]:
++    """Send n sequential POST requests and collect latency statistics.
++
++    Args:
++        url: Full URL of the /api/v1/predict endpoint.
++        n: Number of requests to send.
++        concurrency: Reserved for future parallel implementation.
++
++    Returns:
++        Dict with min, max, mean, median, p95, p99 latencies in milliseconds.
++    """
++    payload = json.dumps(SAMPLE_PAYLOAD).encode()
++    latencies: list[float] = []
++
++    for i in range(n):
++        req = urllib.request.Request(
++            url,
++            data=payload,
++            headers={"Content-Type": "application/json"},
++            method="POST",
++        )
++        start = time.perf_counter()
++        try:
++            with urllib.request.urlopen(req, timeout=10):
++                pass
++        except Exception as exc:
++            logger.warning("Request %d failed: %s", i, exc)
++            continue
++        latencies.append((time.perf_counter() - start) * 1000)
++
++    if not latencies:
++        return {}
++
++    sorted_lat = sorted(latencies)
++    return {
++        "n": len(latencies),
++        "min_ms": sorted_lat[0],
++        "max_ms": sorted_lat[-1],
++        "mean_ms": statistics.mean(latencies),
++        "median_ms": statistics.median(latencies),
++        "p95_ms": sorted_lat[int(0.95 * len(sorted_lat))],
++        "p99_ms": sorted_lat[int(0.99 * len(sorted_lat))],
++    }
++
++
++def main(argv: list[str] | None = None) -> int:
++    """CLI entry point for the benchmark script.
++
++    Args:
++        argv: Command-line arguments.
++
++    Returns:
++        Exit code.
++    """
++    parser = argparse.ArgumentParser(description="Benchmark /api/v1/predict endpoint")
++    parser.add_argument("--url", default="http://localhost:8000/api/v1/predict")
++    parser.add_argument("--n", type=int, default=100, help="Number of requests")
++    args = parser.parse_args(argv)
++
++    logging.basicConfig(level=logging.INFO)
++    stats = benchmark(url=args.url, n=args.n)
++    if stats:
++        print(json.dumps(stats, indent=2))
++    else:
++        print("No successful requests")
++        return 1
++    return 0
++
++
++if __name__ == "__main__":
++    sys.exit(main())
+-- 
+2.43.0
+
+
+From f1d55b8a38661de0cdb364599adcd93611d51cef Mon Sep 17 00:00:00 2001
+From: Reflective Lantern <devneatharva@gmail.com>
+Date: Tue, 7 Jul 2026 01:40:10 +0000
+Subject: [PATCH 48/60] ci(48/60): add release workflow for tag-triggered wheel
+ builds
+
+---
+ .github/workflows/release.yml | 38 +++++++++++++++++++++++++++++++++++
+ 1 file changed, 38 insertions(+)
+ create mode 100644 .github/workflows/release.yml
+
+diff --git a/.github/workflows/release.yml b/.github/workflows/release.yml
+new file mode 100644
+index 0000000..6824796
+--- /dev/null
++++ b/.github/workflows/release.yml
+@@ -0,0 +1,38 @@
++name: Release
++
++on:
++  push:
++    tags:
++      - "v*"
++  workflow_dispatch:
++
++jobs:
++  build-and-release:
++    name: Build wheel and create GitHub release
++    runs-on: ubuntu-latest
++    if: github.ref_type == 'tag' || (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/'))
++    permissions:
++      contents: write
++    steps:
++      - uses: actions/checkout@v4
++        with:
++          fetch-depth: 0
++
++      - uses: actions/setup-python@v5
++        with:
++          python-version: "3.11"
++
++      - name: Install build tools
++        run: pip install --upgrade pip "build>=1.2" "setuptools>=68" wheel
++
++      - name: Build wheel
++        run: python -m build --sdist --wheel
++        env:
++          PYTHONWARNINGS: ignore
++
++      - name: Upload release assets
++        uses: softprops/action-gh-release@v2
++        with:
++          files: dist/*
++          make_latest: "true"
++          token: ${{ secrets.GITHUB_TOKEN }}
+-- 
+2.43.0
+
+
+From f103e2e0f042d28ded465012ead8bee6adfa4ab4 Mon Sep 17 00:00:00 2001
+From: Reflective Lantern <devneatharva@gmail.com>
+Date: Tue, 7 Jul 2026 01:40:20 +0000
+Subject: [PATCH 49/60] ci(49/60): add weekly Bandit SAST security scan
+ workflow
+
+---
+ .github/workflows/security.yml | 33 +++++++++++++++++++++++++++++++++
+ 1 file changed, 33 insertions(+)
+ create mode 100644 .github/workflows/security.yml
+
+diff --git a/.github/workflows/security.yml b/.github/workflows/security.yml
+new file mode 100644
+index 0000000..016a340
+--- /dev/null
++++ b/.github/workflows/security.yml
+@@ -0,0 +1,33 @@
++name: Security Scan
++
++on:
++  push:
++    branches: ["main"]
++  schedule:
++    - cron: "0 6 * * 1"
++
++jobs:
++  bandit:
++    name: Bandit SAST
++    runs-on: ubuntu-latest
++    steps:
++      - uses: actions/checkout@v4
++
++      - uses: actions/setup-python@v5
++        with:
++          python-version: "3.11"
++
++      - name: Install bandit
++        run: pip install bandit[toml]
++
++      - name: Run bandit
++        run: bandit -r app/ -ll --format txt
++        continue-on-error: true
++
++  dependency-review:
++    name: Dependency Review
++    runs-on: ubuntu-latest
++    if: github.event_name == 'pull_request'
++    steps:
++      - uses: actions/checkout@v4
++      - uses: actions/dependency-review-action@v4
+-- 
+2.43.0
+
+
+From 1f2eb574ba1c3e714a4f65b6cfb147bb7ca74f51 Mon Sep 17 00:00:00 2001
+From: Reflective Lantern <devneatharva@gmail.com>
+Date: Tue, 7 Jul 2026 01:40:33 +0000
+Subject: [PATCH 50/60] test(50/60): add training script tests with
+ parametrized dataset sizes
+
+---
+ tests/test_training_script.py | 47 +++++++++++++++++++++++++++++++++++
+ 1 file changed, 47 insertions(+)
+ create mode 100644 tests/test_training_script.py
+
+diff --git a/tests/test_training_script.py b/tests/test_training_script.py
+new file mode 100644
+index 0000000..961213c
+--- /dev/null
++++ b/tests/test_training_script.py
+@@ -0,0 +1,47 @@
++"""Tests for the training CLI script."""
++
++import tempfile
++from pathlib import Path
++
++import pytest
++
++from scripts.train import _generate_synthetic_data, main
++
++
++def test_generate_synthetic_data_shape():
++    X, y = _generate_synthetic_data(n=100)
++    assert len(X) == 100
++    assert len(y) == 100
++
++
++def test_generate_synthetic_data_labels():
++    _, y = _generate_synthetic_data(n=200)
++    valid_labels = {"normal", "dos", "probe", "r2l", "u2r"}
++    assert set(y.unique()).issubset(valid_labels)
++
++
++def test_generate_synthetic_data_no_nulls():
++    X, y = _generate_synthetic_data(n=50)
++    assert X.isnull().sum().sum() == 0
++    assert y.isnull().sum() == 0
++
++
++def test_main_synthetic_exits_zero():
++    with tempfile.TemporaryDirectory() as tmpdir:
++        out = Path(tmpdir) / "model.pkl"
++        code = main(["--synthetic", "--output", str(out), "--cv-folds", "2"])
++    assert code == 0
++
++
++def test_main_creates_model_file():
++    with tempfile.TemporaryDirectory() as tmpdir:
++        out = Path(tmpdir) / "subdir" / "model.pkl"
++        main(["--synthetic", "--output", str(out), "--cv-folds", "2"])
++        assert out.exists()
++
++
++@pytest.mark.parametrize("n", [50, 200, 500])
++def test_generate_various_sizes(n: int):
++    X, y = _generate_synthetic_data(n=n)
++    assert len(X) == n
++    assert len(y) == n
+-- 
+2.43.0
+
+
+From a9117686f72f4eafd10dffc9ad2f448bceda29d8 Mon Sep 17 00:00:00 2001
+From: Reflective Lantern <devneatharva@gmail.com>
+Date: Tue, 7 Jul 2026 01:40:47 +0000
+Subject: [PATCH 51/60] feat(51/60): add LRU cache decorator and cached
+ feature-name lookup
+
+---
+ app/cache.py | 67 ++++++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 67 insertions(+)
+ create mode 100644 app/cache.py
+
+diff --git a/app/cache.py b/app/cache.py
+new file mode 100644
+index 0000000..fc36107
+--- /dev/null
++++ b/app/cache.py
+@@ -0,0 +1,67 @@
++"""Simple in-memory LRU cache for repeated expensive lookups."""
++
++import functools
++import logging
++from typing import Any, Callable, TypeVar
++
++logger = logging.getLogger(__name__)
++
++F = TypeVar("F", bound=Callable[..., Any])
++
++
++def lru_cached(maxsize: int = 128) -> Callable[[F], F]:
++    """Decorator that wraps functools.lru_cache and logs cache statistics.
++
++    Args:
++        maxsize: Maximum number of entries in the cache.
++
++    Returns:
++        Decorator function.
++    """
++
++    def decorator(func: F) -> F:
++        cached = functools.lru_cache(maxsize=maxsize)(func)
++
++        @functools.wraps(func)
++        def wrapper(*args: Any, **kwargs: Any) -> Any:
++            result = cached(*args, **kwargs)
++            info = cached.cache_info()
++            logger.debug(
++                "%s cache: hits=%d misses=%d size=%d",
++                func.__qualname__,
++                info.hits,
++                info.misses,
++                info.currsize,
++            )
++            return result
++
++        wrapper.cache_info = cached.cache_info  # type: ignore[attr-defined]
++        wrapper.cache_clear = cached.cache_clear  # type: ignore[attr-defined]
++        return wrapper  # type: ignore[return-value]
++
++    return decorator
++
++
++@lru_cached(maxsize=32)
++def get_feature_names_cached(feature_set: str) -> tuple[str, ...]:
++    """Return feature name tuples for a named feature set (cached).
++
++    Args:
++        feature_set: One of 'numeric', 'categorical', 'all'.
++
++    Returns:
++        Tuple of feature name strings.
++
++    Raises:
++        ValueError: If feature_set is not recognised.
++    """
++    from app.features import ALL_FEATURES, CATEGORICAL_FEATURES, NUMERIC_FEATURES
++
++    mapping = {
++        "numeric": tuple(NUMERIC_FEATURES),
++        "categorical": tuple(CATEGORICAL_FEATURES),
++        "all": tuple(ALL_FEATURES),
++    }
++    if feature_set not in mapping:
++        raise ValueError(f"Unknown feature set '{feature_set}'. Choose from {list(mapping)}")
++    return mapping[feature_set]
+-- 
+2.43.0
+
+
+From 47659972bcfa69bb68b7ae15474ff807122e5371 Mon Sep 17 00:00:00 2001
+From: Reflective Lantern <devneatharva@gmail.com>
+Date: Tue, 7 Jul 2026 01:40:59 +0000
+Subject: [PATCH 52/60] test(52/60): add LRU cache tests with parametrized
+ feature set checks
+
+---
+ tests/test_cache.py | 65 +++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 65 insertions(+)
+ create mode 100644 tests/test_cache.py
+
+diff --git a/tests/test_cache.py b/tests/test_cache.py
+new file mode 100644
+index 0000000..86a194e
+--- /dev/null
++++ b/tests/test_cache.py
+@@ -0,0 +1,65 @@
++"""Tests for the LRU cache module."""
++
++import pytest
++
++from app.cache import get_feature_names_cached, lru_cached
++
++
++def test_get_feature_names_numeric():
++    result = get_feature_names_cached("numeric")
++    assert isinstance(result, tuple)
++    assert len(result) >= 38
++
++
++def test_get_feature_names_categorical():
++    result = get_feature_names_cached("categorical")
++    assert "protocol_type" in result
++    assert len(result) == 3
++
++
++def test_get_feature_names_all():
++    result = get_feature_names_cached("all")
++    assert len(result) > 38
++
++
++def test_get_feature_names_invalid_raises():
++    with pytest.raises(ValueError, match="Unknown feature set"):
++        get_feature_names_cached("invalid_set")
++
++
++def test_lru_cached_returns_same_result():
++    @lru_cached(maxsize=4)
++    def square(x: int) -> int:
++        return x * x
++
++    assert square(3) == 9
++    assert square(3) == 9
++
++
++def test_lru_cached_has_cache_info():
++    @lru_cached(maxsize=4)
++    def cube(x: int) -> int:
++        return x ** 3
++
++    cube(2)
++    cube(2)
++    info = cube.cache_info()
++    assert info.hits >= 1
++
++
++def test_lru_cached_cache_clear():
++    @lru_cached(maxsize=4)
++    def double(x: int) -> int:
++        return x * 2
++
++    double(5)
++    double.cache_clear()
++    info = double.cache_info()
++    assert info.currsize == 0
++
++
++@pytest.mark.parametrize("feature_set", ["numeric", "categorical", "all"])
++def test_all_feature_sets_return_tuples(feature_set: str):
++    result = get_feature_names_cached(feature_set)
++    assert isinstance(result, tuple)
++    assert len(result) > 0
+-- 
+2.43.0
+
+
+From b3b322ebcd7b938baf5d0570be54173155c1af74 Mon Sep 17 00:00:00 2001
+From: Reflective Lantern <devneatharva@gmail.com>
+Date: Tue, 7 Jul 2026 01:41:14 +0000
+Subject: [PATCH 53/60] chore(53/60): add __init__.py to pipelines and scripts
+ packages
+
+---
+ pipelines/__init__.py | 1 +
+ scripts/__init__.py   | 1 +
+ 2 files changed, 2 insertions(+)
+ create mode 100644 pipelines/__init__.py
+ create mode 100644 scripts/__init__.py
+
+diff --git a/pipelines/__init__.py b/pipelines/__init__.py
+new file mode 100644
+index 0000000..0687494
+--- /dev/null
++++ b/pipelines/__init__.py
+@@ -0,0 +1 @@
++"""Cyber-Sentinel pipeline package (Airflow DAGs and data utilities)."""
+diff --git a/scripts/__init__.py b/scripts/__init__.py
+new file mode 100644
+index 0000000..89f1719
+--- /dev/null
++++ b/scripts/__init__.py
+@@ -0,0 +1 @@
++"""Cyber-Sentinel scripts package (training, evaluation, data generation)."""
+-- 
+2.43.0
+
+
+From 2e6eb54a3353ce45e21dcbd757b890c069af09fe Mon Sep 17 00:00:00 2001
+From: Reflective Lantern <devneatharva@gmail.com>
+Date: Tue, 7 Jul 2026 01:41:30 +0000
+Subject: [PATCH 54/60] feat(54/60): add detailed health-check helper with DB
+ and model checks
+
+---
+ app/health.py | 77 +++++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 77 insertions(+)
+ create mode 100644 app/health.py
+
+diff --git a/app/health.py b/app/health.py
+new file mode 100644
+index 0000000..36ffc8e
+--- /dev/null
++++ b/app/health.py
+@@ -0,0 +1,77 @@
++"""Health-check helper that reports detailed system and dependency status."""
++
++import logging
++import os
++import platform
++import sys
++from typing import Any
++
++logger = logging.getLogger(__name__)
++
++
++def get_system_info() -> dict[str, str]:
++    """Return basic OS and Python runtime information.
++
++    Returns:
++        Dict with keys: python_version, platform, pid.
++    """
++    return {
++        "python_version": sys.version.split()[0],
++        "platform": platform.system(),
++        "pid": str(os.getpid()),
++    }
++
++
++def check_database(database_url: str) -> dict[str, Any]:
++    """Verify the database is reachable by executing a trivial query.
++
++    Args:
++        database_url: SQLAlchemy connection string.
++
++    Returns:
++        Dict with 'status' ('ok' or 'error') and optional 'error' message.
++    """
++    try:
++        from sqlalchemy import create_engine, text
++
++        engine = create_engine(database_url, pool_pre_ping=True)
++        with engine.connect() as conn:
++            conn.execute(text("SELECT 1"))
++        return {"status": "ok"}
++    except Exception as exc:
++        logger.error("Database health check failed: %s", exc)
++        return {"status": "error", "error": str(exc)}
++
++
++def check_model(model_path: str) -> dict[str, Any]:
++    """Check whether the model file exists and is readable.
++
++    Args:
++        model_path: Filesystem path to the model pickle.
++
++    Returns:
++        Dict with 'status' and optional 'size_bytes'.
++    """
++    from pathlib import Path
++
++    p = Path(model_path)
++    if not p.exists():
++        return {"status": "missing"}
++    return {"status": "ok", "size_bytes": p.stat().st_size}
++
++
++def full_health_report(database_url: str, model_path: str) -> dict[str, Any]:
++    """Assemble a complete health report for the /health/detailed endpoint.
++
++    Args:
++        database_url: Database connection string.
++        model_path: Path to the trained model.
++
++    Returns:
++        Nested dict with system, database, and model status.
++    """
++    return {
++        "system": get_system_info(),
++        "database": check_database(database_url),
++        "model": check_model(model_path),
++    }
+-- 
+2.43.0
+
+
+From 32f1bc74356a85835de125cc34824f382333ccf0 Mon Sep 17 00:00:00 2001
+From: Reflective Lantern <devneatharva@gmail.com>
+Date: Tue, 7 Jul 2026 01:41:41 +0000
+Subject: [PATCH 55/60] test(55/60): add health-check module tests including DB
+ reachability
+
+---
+ tests/test_health.py | 58 ++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 58 insertions(+)
+ create mode 100644 tests/test_health.py
+
+diff --git a/tests/test_health.py b/tests/test_health.py
+new file mode 100644
+index 0000000..08101f0
+--- /dev/null
++++ b/tests/test_health.py
+@@ -0,0 +1,58 @@
++"""Tests for the health-check helper module."""
++
++import pytest
++
++from app.health import check_model, full_health_report, get_system_info
++
++
++def test_get_system_info_returns_dict():
++    info = get_system_info()
++    assert "python_version" in info
++    assert "platform" in info
++    assert "pid" in info
++
++
++def test_get_system_info_python_version_format():
++    info = get_system_info()
++    parts = info["python_version"].split(".")
++    assert len(parts) >= 2
++    assert parts[0].isdigit()
++
++
++def test_check_model_missing_when_no_file():
++    result = check_model("/nonexistent/path/model.pkl")
++    assert result["status"] == "missing"
++
++
++def test_check_model_ok_when_file_exists(tmp_path):
++    model_file = tmp_path / "model.pkl"
++    model_file.write_bytes(b"dummy")
++    result = check_model(str(model_file))
++    assert result["status"] == "ok"
++    assert result["size_bytes"] == 5
++
++
++def test_full_health_report_structure():
++    report = full_health_report(
++        database_url="sqlite:///:memory:",
++        model_path="/nonexistent/model.pkl",
++    )
++    assert "system" in report
++    assert "database" in report
++    assert "model" in report
++
++
++def test_full_health_report_sqlite_db_ok():
++    report = full_health_report(
++        database_url="sqlite:///:memory:",
++        model_path="/nonexistent/model.pkl",
++    )
++    assert report["database"]["status"] == "ok"
++
++
++def test_full_health_report_bad_db_returns_error():
++    report = full_health_report(
++        database_url="postgresql://bad:bad@localhost:9999/noexist",
++        model_path="/nonexistent/model.pkl",
++    )
++    assert report["database"]["status"] == "error"
+-- 
+2.43.0
+
+
+From aa1ba95dd1991b75da1bc1861ba00058e1de3fc7 Mon Sep 17 00:00:00 2001
+From: Reflective Lantern <devneatharva@gmail.com>
+Date: Tue, 7 Jul 2026 14:08:06 +0000
+Subject: [PATCH 56/60] test(56/60): add Airflow DAG import and callable tests
+
+---
+ tests/test_pipeline_dag.py | 48 ++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 48 insertions(+)
+ create mode 100644 tests/test_pipeline_dag.py
+
+diff --git a/tests/test_pipeline_dag.py b/tests/test_pipeline_dag.py
+new file mode 100644
+index 0000000..8a49b38
+--- /dev/null
++++ b/tests/test_pipeline_dag.py
+@@ -0,0 +1,48 @@
++"""Tests for the Airflow retrain DAG module (import-only when Airflow absent)."""
++
++import pytest
++
++
++def test_retrain_dag_module_importable():
++    import pipelines.retrain_dag as dag_module
++    assert dag_module is not None
++
++
++def test_check_drift_callable():
++    from pipelines.retrain_dag import _check_drift
++    assert callable(_check_drift)
++
++
++def test_pull_latest_data_callable():
++    from pipelines.retrain_dag import _pull_latest_data
++    assert callable(_pull_latest_data)
++
++
++def test_train_model_callable():
++    from pipelines.retrain_dag import _train_model
++    assert callable(_train_model)
++
++
++def test_evaluate_model_callable():
++    from pipelines.retrain_dag import _evaluate_model
++    assert callable(_evaluate_model)
++
++
++def test_promote_model_callable():
++    from pipelines.retrain_dag import _promote_model
++    assert callable(_promote_model)
++
++
++def test_notify_callable():
++    from pipelines.retrain_dag import _notify
++    assert callable(_notify)
++
++
++def test_default_args_has_retries():
++    from pipelines.retrain_dag import DEFAULT_ARGS
++    assert DEFAULT_ARGS["retries"] >= 1
++
++
++def test_default_args_owner():
++    from pipelines.retrain_dag import DEFAULT_ARGS
++    assert "cyber-sentinel" in DEFAULT_ARGS["owner"]
+-- 
+2.43.0
+
+
+From 8a38b72e92681edd7ed7b9c3c12c078a78846f88 Mon Sep 17 00:00:00 2001
+From: Reflective Lantern <devneatharva@gmail.com>
+Date: Tue, 7 Jul 2026 14:08:23 +0000
+Subject: [PATCH 57/60] chore(57/60): add .gitignore for Python, models, and
+ IDE artifacts
+
+---
+ .gitignore | 34 ++++++++++++++++++++++++++++++++++
+ 1 file changed, 34 insertions(+)
+ create mode 100644 .gitignore
+
+diff --git a/.gitignore b/.gitignore
+new file mode 100644
+index 0000000..a02883b
+--- /dev/null
++++ b/.gitignore
+@@ -0,0 +1,34 @@
++# Python
++__pycache__/
++*.py[cod]
++*.egg-info/
++dist/
++build/
++.eggs/
++
++# Environments
++.env
++venv/
++.venv/
++
++# Testing
++.pytest_cache/
++.coverage
++coverage.xml
++htmlcov/
++.mypy_cache/
++.ruff_cache/
++
++# Data & models
++data/
++models/*.pkl
++models/*.index
++*.db
++
++# IDE
++.idea/
++.vscode/
++*.swp
++
++# OS
++.DS_Store
+-- 
+2.43.0
+
+
+From 8de4dbf6482daa31874fb000bef33f9256384282 Mon Sep 17 00:00:00 2001
+From: Reflective Lantern <devneatharva@gmail.com>
+Date: Tue, 7 Jul 2026 14:08:46 +0000
+Subject: [PATCH 58/60] chore(58/60): add MIT license
+
+---
+ LICENSE | 21 +++++++++++++++++++++
+ 1 file changed, 21 insertions(+)
+ create mode 100644 LICENSE
+
+diff --git a/LICENSE b/LICENSE
+new file mode 100644
+index 0000000..650232c
+--- /dev/null
++++ b/LICENSE
+@@ -0,0 +1,21 @@
++MIT License
++
++Copyright (c) 2026 Atharva Devne
++
++Permission is hereby granted, free of charge, to any person obtaining a copy
++of this software and associated documentation files (the "Software"), to deal
++in the Software without restriction, including without limitation the rights
++to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
++copies of the Software, and to permit persons to whom the Software is
++furnished to do so, subject to the following conditions:
++
++The above copyright notice and this permission notice shall be included in all
++copies or substantial portions of the Software.
++
++THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
++IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
++FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
++AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
++LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
++OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
++SOFTWARE.
+-- 
+2.43.0
+
+
+From 4549c7242f87317d7a6db79ca479e6439760f9d7 Mon Sep 17 00:00:00 2001
+From: Reflective Lantern <devneatharva@gmail.com>
+Date: Tue, 7 Jul 2026 14:09:20 +0000
+Subject: [PATCH 59/60] style(59/60): apply ruff autofixes and clean unused
+ imports
+
+---
+ alembic/env.py               |  5 +++--
+ app/features.py              |  2 +-
+ app/main.py                  |  2 +-
+ app/monitoring.py            |  1 -
+ app/schemas.py               |  1 -
+ tests/conftest.py            |  3 +--
+ tests/test_config.py         |  1 -
+ tests/test_database.py       |  3 +--
+ tests/test_faiss.py          |  1 -
+ tests/test_health.py         |  1 -
+ tests/test_logging_config.py |  2 --
+ tests/test_middleware.py     |  5 -----
+ tests/test_model.py          | 16 +++++++---------
+ tests/test_monitoring.py     |  3 +--
+ tests/test_pipeline_dag.py   |  1 -
+ tests/test_service.py        |  6 +++---
+ 16 files changed, 18 insertions(+), 35 deletions(-)
+
+diff --git a/alembic/env.py b/alembic/env.py
+index 77ad61d..6cbab21 100644
+--- a/alembic/env.py
++++ b/alembic/env.py
+@@ -3,16 +3,17 @@
+ import os
+ from logging.config import fileConfig
+ 
+-from alembic import context
+ from sqlalchemy import engine_from_config, pool
+ 
++from alembic import context
++
+ config = context.config
+ if config.config_file_name is not None:
+     fileConfig(config.config_file_name)
+ 
+ config.set_main_option("sqlalchemy.url", os.getenv("DATABASE_URL", "sqlite:///./cyber_sentinel.db"))
+ 
+-from app.database import Base
++from app.database import Base  # noqa: E402  (must import after config is set)
+ 
+ target_metadata = Base.metadata
+ 
+diff --git a/app/features.py b/app/features.py
+index 383b3af..0741823 100644
+--- a/app/features.py
++++ b/app/features.py
+@@ -7,7 +7,7 @@ import numpy as np
+ import pandas as pd
+ from sklearn.compose import ColumnTransformer
+ from sklearn.pipeline import Pipeline
+-from sklearn.preprocessing import LabelEncoder, MinMaxScaler, StandardScaler
++from sklearn.preprocessing import LabelEncoder, StandardScaler
+ 
+ logger = logging.getLogger(__name__)
+ 
+diff --git a/app/main.py b/app/main.py
+index bf2dcf7..7a706a9 100644
+--- a/app/main.py
++++ b/app/main.py
+@@ -15,7 +15,7 @@ from sqlalchemy.orm import Session
+ 
+ from app.database import PredictionLog, get_db, init_db
+ from app.faiss_index import FaissPatternMatcher
+-from app.features import NUMERIC_FEATURES, engineer_features, encode_categoricals, prepare_features
++from app.features import NUMERIC_FEATURES, prepare_features
+ from app.model import MODEL_VERSION, load_model, predict
+ from app.monitoring import DriftMonitor
+ from app.schemas import (
+diff --git a/app/monitoring.py b/app/monitoring.py
+index 2414507..62053bd 100644
+--- a/app/monitoring.py
++++ b/app/monitoring.py
+@@ -6,7 +6,6 @@ from dataclasses import dataclass, field
+ from datetime import datetime
+ from typing import Deque
+ 
+-import numpy as np
+ from scipy import stats
+ 
+ logger = logging.getLogger(__name__)
+diff --git a/app/schemas.py b/app/schemas.py
+index 74f2600..529eed3 100644
+--- a/app/schemas.py
++++ b/app/schemas.py
+@@ -1,6 +1,5 @@
+ """Pydantic request and response schemas for the Cyber-Sentinel API."""
+ 
+-from typing import Any
+ 
+ from pydantic import BaseModel, Field, field_validator
+ 
+diff --git a/tests/conftest.py b/tests/conftest.py
+index 47799c3..4df36ff 100644
+--- a/tests/conftest.py
++++ b/tests/conftest.py
+@@ -2,7 +2,6 @@
+ 
+ import os
+ from collections.abc import Generator
+-from pathlib import Path
+ from unittest.mock import MagicMock
+ 
+ import numpy as np
+@@ -16,7 +15,7 @@ os.environ.setdefault("DATABASE_URL", "sqlite:///./test_cyber_sentinel.db")
+ os.environ.setdefault("MODEL_PATH", "/tmp/test_model.pkl")
+ 
+ from app.database import Base, get_db
+-from app.features import ALL_FEATURES, NUMERIC_FEATURES, CATEGORICAL_FEATURES
++from app.features import CATEGORICAL_FEATURES, NUMERIC_FEATURES
+ 
+ 
+ @pytest.fixture(scope="session")
+diff --git a/tests/test_config.py b/tests/test_config.py
+index 353f151..9c0386b 100644
+--- a/tests/test_config.py
++++ b/tests/test_config.py
+@@ -1,6 +1,5 @@
+ """Tests for application configuration and environment-variable loading."""
+ 
+-import os
+ from pathlib import Path
+ 
+ 
+diff --git a/tests/test_database.py b/tests/test_database.py
+index a514f3c..0c97e77 100644
+--- a/tests/test_database.py
++++ b/tests/test_database.py
+@@ -1,11 +1,10 @@
+ """Tests for SQLAlchemy models and database session management."""
+ 
+-from datetime import datetime
+ 
+ import pytest
+ from sqlalchemy.orm import Session
+ 
+-from app.database import Base, DriftLog, ModelVersion, PredictionLog
++from app.database import DriftLog, ModelVersion, PredictionLog
+ 
+ 
+ def test_prediction_log_insert(db_session: Session) -> None:
+diff --git a/tests/test_faiss.py b/tests/test_faiss.py
+index c8720cb..339e84a 100644
+--- a/tests/test_faiss.py
++++ b/tests/test_faiss.py
+@@ -1,6 +1,5 @@
+ """Tests for FAISS pattern matcher."""
+ 
+-import math
+ 
+ import numpy as np
+ import pytest
+diff --git a/tests/test_health.py b/tests/test_health.py
+index 08101f0..e75929a 100644
+--- a/tests/test_health.py
++++ b/tests/test_health.py
+@@ -1,6 +1,5 @@
+ """Tests for the health-check helper module."""
+ 
+-import pytest
+ 
+ from app.health import check_model, full_health_report, get_system_info
+ 
+diff --git a/tests/test_logging_config.py b/tests/test_logging_config.py
+index d18e8cb..572c4ba 100644
+--- a/tests/test_logging_config.py
++++ b/tests/test_logging_config.py
+@@ -3,8 +3,6 @@
+ import json
+ import logging
+ 
+-import pytest
+-
+ from app.logging_config import JSONFormatter, configure_logging
+ 
+ 
+diff --git a/tests/test_middleware.py b/tests/test_middleware.py
+index c1b3df9..ca2717d 100644
+--- a/tests/test_middleware.py
++++ b/tests/test_middleware.py
+@@ -1,13 +1,8 @@
+ """Tests for rate-limiting and structured-logging middleware."""
+ 
+-import time
+-from unittest.mock import AsyncMock, MagicMock
+ 
+-import pytest
+ from fastapi import FastAPI
+ from fastapi.testclient import TestClient
+-from starlette.requests import Request
+-from starlette.responses import Response
+ 
+ from app.middleware import RateLimitMiddleware, StructuredLoggingMiddleware
+ 
+diff --git a/tests/test_model.py b/tests/test_model.py
+index d3c4bef..ed675c9 100644
+--- a/tests/test_model.py
++++ b/tests/test_model.py
+@@ -1,16 +1,14 @@
+ """Tests for ensemble model training, prediction, and serialisation."""
+ 
+-import pickle
+ import tempfile
+ from pathlib import Path
+-from unittest.mock import MagicMock, patch
+ 
+ import numpy as np
+ import pandas as pd
+ import pytest
+-from sklearn.ensemble import RandomForestClassifier, VotingClassifier
++from sklearn.ensemble import VotingClassifier
+ 
+-from app.model import build_model, predict, save_model, load_model, train, ATTACK_CLASSES
++from app.model import build_model, load_model, predict, save_model, train
+ 
+ 
+ def test_build_model_returns_voting_classifier() -> None:
+@@ -27,7 +25,7 @@ def test_build_model_contains_random_forest() -> None:
+ 
+ def test_train_returns_model_and_metrics(synthetic_dataset) -> None:
+     X, y = synthetic_dataset
+-    from app.features import encode_categoricals, engineer_features, NUMERIC_FEATURES
++    from app.features import NUMERIC_FEATURES, encode_categoricals, engineer_features
+ 
+     X_eng = engineer_features(X)
+     X_enc = encode_categoricals(X_eng)
+@@ -43,7 +41,7 @@ def test_train_returns_model_and_metrics(synthetic_dataset) -> None:
+ 
+ def test_train_metrics_include_cv_scores(synthetic_dataset) -> None:
+     X, y = synthetic_dataset
+-    from app.features import encode_categoricals, engineer_features, NUMERIC_FEATURES
++    from app.features import NUMERIC_FEATURES, encode_categoricals, engineer_features
+ 
+     X_num = encode_categoricals(engineer_features(X))[NUMERIC_FEATURES]
+     _, metrics = train(X_num, y, cv_folds=2)
+@@ -52,7 +50,7 @@ def test_train_metrics_include_cv_scores(synthetic_dataset) -> None:
+ 
+ 
+ def test_predict_returns_labels_and_confidences(mock_model, sample_traffic_df) -> None:
+-    from app.features import encode_categoricals, engineer_features, NUMERIC_FEATURES
++    from app.features import NUMERIC_FEATURES, encode_categoricals, engineer_features
+ 
+     df = encode_categoricals(engineer_features(sample_traffic_df))
+     for col in NUMERIC_FEATURES:
+@@ -81,7 +79,7 @@ def test_predict_confidence_sums_near_one(mock_model, sample_traffic_df) -> None
+ 
+ def test_save_and_load_model(synthetic_dataset) -> None:
+     X, y = synthetic_dataset
+-    from app.features import encode_categoricals, engineer_features, NUMERIC_FEATURES
++    from app.features import NUMERIC_FEATURES, encode_categoricals, engineer_features
+ 
+     X_num = encode_categoricals(engineer_features(X))[NUMERIC_FEATURES]
+     model, _ = train(X_num, y, cv_folds=2)
+@@ -102,7 +100,7 @@ def test_load_model_raises_if_not_found() -> None:
+ 
+ @pytest.mark.parametrize("n_samples", [1, 10, 50])
+ def test_predict_batch_sizes(mock_model, sample_traffic_df, n_samples) -> None:
+-    from app.features import encode_categoricals, engineer_features, NUMERIC_FEATURES
++    from app.features import NUMERIC_FEATURES, encode_categoricals, engineer_features
+ 
+     df = encode_categoricals(engineer_features(sample_traffic_df))
+     for col in NUMERIC_FEATURES:
+diff --git a/tests/test_monitoring.py b/tests/test_monitoring.py
+index dffd476..57286c7 100644
+--- a/tests/test_monitoring.py
++++ b/tests/test_monitoring.py
+@@ -1,11 +1,10 @@
+ """Tests for KS-test drift detection and monitoring."""
+ 
+-import math
+ 
+ import numpy as np
+ import pytest
+ 
+-from app.monitoring import DRIFT_THRESHOLD, WINDOW_SIZE, DriftMonitor, DriftResult
++from app.monitoring import DriftMonitor, DriftResult
+ 
+ 
+ @pytest.fixture
+diff --git a/tests/test_pipeline_dag.py b/tests/test_pipeline_dag.py
+index 8a49b38..a84d089 100644
+--- a/tests/test_pipeline_dag.py
++++ b/tests/test_pipeline_dag.py
+@@ -1,6 +1,5 @@
+ """Tests for the Airflow retrain DAG module (import-only when Airflow absent)."""
+ 
+-import pytest
+ 
+ 
+ def test_retrain_dag_module_importable():
+diff --git a/tests/test_service.py b/tests/test_service.py
+index bb4ffa7..bd6198f 100644
+--- a/tests/test_service.py
++++ b/tests/test_service.py
+@@ -1,6 +1,6 @@
+ """Tests for PredictionService layer."""
+ 
+-from unittest.mock import MagicMock, patch
++from unittest.mock import MagicMock
+ 
+ import numpy as np
+ import pytest
+@@ -11,8 +11,8 @@ from app.service import PredictionService
+ 
+ @pytest.fixture
+ def service(mock_model, db_session):
+-    from app.monitoring import DriftMonitor
+     from app.features import NUMERIC_FEATURES
++    from app.monitoring import DriftMonitor
+ 
+     monitor = DriftMonitor(feature_names=NUMERIC_FEATURES[:5], window_size=10)
+     return PredictionService(model=mock_model, faiss=None, monitor=monitor)
+@@ -34,8 +34,8 @@ def test_service_increments_prediction_count(service, sample_traffic_dict, db_se
+ 
+ 
+ def test_service_increments_attack_count_on_attack(mock_model, db_session, sample_traffic_dict):
+-    from app.monitoring import DriftMonitor
+     from app.features import NUMERIC_FEATURES
++    from app.monitoring import DriftMonitor
+ 
+     mock_model.predict.return_value = ["dos"]
+     mock_model.predict_proba.return_value = np.array([[0.9, 0.05, 0.05]])
+-- 
+2.43.0
+
+
+From 217cd48c8724b4fbe99c3dd8a67415db7aae1a2d Mon Sep 17 00:00:00 2001
+From: Reflective Lantern <devneatharva@gmail.com>
+Date: Wed, 8 Jul 2026 04:14:09 +0000
+Subject: [PATCH 60/60] fix(60/60): fix drift results accumulation bug and test
+ fixtures (StaticPool, mock proba)
+
+---
+ app/monitoring.py        |  1 +
+ tests/conftest.py        | 11 ++++++++---
+ tests/test_model.py      |  2 +-
+ tests/test_monitoring.py |  6 +++---
+ 4 files changed, 13 insertions(+), 7 deletions(-)
+
+diff --git a/app/monitoring.py b/app/monitoring.py
+index 62053bd..f067dfc 100644
+--- a/app/monitoring.py
++++ b/app/monitoring.py
+@@ -101,6 +101,7 @@ class DriftMonitor:
+                 p_value=float(p_val),
+                 drift_detected=drift,
+             )
++            results.append(result)
+             self._drift_history.append(result)
+             if drift:
+                 logger.warning(
+diff --git a/tests/conftest.py b/tests/conftest.py
+index 4df36ff..e19ed8e 100644
+--- a/tests/conftest.py
++++ b/tests/conftest.py
+@@ -10,6 +10,7 @@ import pytest
+ from fastapi.testclient import TestClient
+ from sqlalchemy import create_engine
+ from sqlalchemy.orm import Session, sessionmaker
++from sqlalchemy.pool import StaticPool
+ 
+ os.environ.setdefault("DATABASE_URL", "sqlite:///./test_cyber_sentinel.db")
+ os.environ.setdefault("MODEL_PATH", "/tmp/test_model.pkl")
+@@ -21,7 +22,11 @@ from app.features import CATEGORICAL_FEATURES, NUMERIC_FEATURES
+ @pytest.fixture(scope="session")
+ def test_engine():
+     """Create an in-memory SQLite engine for tests."""
+-    engine = create_engine("sqlite:///:memory:", connect_args={"check_same_thread": False})
++    engine = create_engine(
++        "sqlite:///:memory:",
++        connect_args={"check_same_thread": False},
++        poolclass=StaticPool,
++    )
+     Base.metadata.create_all(engine)
+     yield engine
+     Base.metadata.drop_all(engine)
+@@ -118,7 +123,7 @@ def mock_model() -> MagicMock:
+     """Return a mock VotingClassifier that always predicts 'normal'."""
+     model = MagicMock()
+     model.predict.return_value = ["normal"]
+-    model.predict_proba.return_value = np.array([[0.9, 0.05, 0.05]])
++    model.predict_proba.return_value = np.array([[0.05, 0.9, 0.05]])
+     model.classes_ = ["dos", "normal", "probe"]
+     return model
+ 
+@@ -131,7 +136,7 @@ def test_client(db_session: Session) -> Generator[TestClient, None, None]:
+ 
+     app_module._model = MagicMock()
+     app_module._model.predict.return_value = ["normal"]
+-    app_module._model.predict_proba.return_value = np.array([[0.9, 0.05, 0.05]])
++    app_module._model.predict_proba.return_value = np.array([[0.05, 0.9, 0.05]])
+     app_module._model.classes_ = ["dos", "normal", "probe"]
+ 
+     def override_get_db():
+diff --git a/tests/test_model.py b/tests/test_model.py
+index ed675c9..5fa6c9d 100644
+--- a/tests/test_model.py
++++ b/tests/test_model.py
+@@ -74,7 +74,7 @@ def test_predict_confidence_sums_near_one(mock_model, sample_traffic_df) -> None
+ 
+     mock_model.predict_proba.return_value = np.array([[0.6, 0.3, 0.1]])
+     _, confs = predict(mock_model, df[NUMERIC_FEATURES])
+-    assert confs[0] == pytest.approx(0.9, abs=0.01)
++    assert confs[0] == pytest.approx(0.6, abs=0.01)
+ 
+ 
+ def test_save_and_load_model(synthetic_dataset) -> None:
+diff --git a/tests/test_monitoring.py b/tests/test_monitoring.py
+index 57286c7..24a9c55 100644
+--- a/tests/test_monitoring.py
++++ b/tests/test_monitoring.py
+@@ -79,9 +79,9 @@ def test_no_drift_on_same_distribution(monitor: DriftMonitor) -> None:
+         monitor.observe({
+             "serror_rate": float(rng.uniform(0, 1)),
+             "rerror_rate": float(rng.uniform(0, 1)),
+-            "count": float(rng.uniform(0, 100)),
+-            "srv_count": float(rng.uniform(0, 100)),
+-            "dst_bytes": float(rng.uniform(0, 1000)),
++            "count": float(rng.uniform(0, 1)),
++            "srv_count": float(rng.uniform(0, 1)),
++            "dst_bytes": float(rng.uniform(0, 1)),
+         })
+     drifted = [r for r in monitor.history if r.drift_detected]
+     assert len(drifted) == 0
+-- 
+2.43.0
+
