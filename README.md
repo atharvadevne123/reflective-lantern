@@ -49,3 +49,54 @@ docker compose up --build -d
 curl http://localhost:8000/health
 ```
 
+## API Reference
+
+### `POST /api/v1/predict`
+
+Predict the congestion level for a route segment.
+
+```bash
+curl -X POST http://localhost:8000/api/v1/predict \
+  -H "Content-Type: application/json" \
+  -d '{
+    "route_id": "R42",
+    "hour": 8,
+    "day_of_week": 1,
+    "vehicle_count": 1800,
+    "avg_speed_kmh": 32.5,
+    "road_type": "arterial",
+    "incident_count": 1,
+    "is_raining": 1
+  }'
+```
+
+```json
+{
+  "route_id": "R42",
+  "congestion_level": 2,
+  "congestion_label": "congested",
+  "congestion_probability": 0.71,
+  "class_probabilities": {"free": 0.02, "moderate": 0.21, "congested": 0.71, "severe": 0.06},
+  "incident_score": 0.0556,
+  "model_version": "1.0.0"
+}
+```
+
+### `POST /api/v1/drift`
+
+Run a KS test between a reference window and the current window of a feature.
+
+```bash
+curl -X POST http://localhost:8000/api/v1/drift \
+  -H "Content-Type: application/json" \
+  -d '{"feature_name": "vehicle_count", "reference": [/* >=10 floats */], "current": [/* >=10 floats */]}'
+```
+
+### `GET /api/v1/metrics`
+
+Prediction volume, congestion distribution, active drift alerts, and training metrics.
+
+### `GET /health`
+
+Liveness probe with model version and loaded ensemble members.
+
