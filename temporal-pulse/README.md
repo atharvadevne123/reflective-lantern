@@ -110,3 +110,37 @@ curl -X POST http://localhost:8000/api/v1/detect \
   "processing_time_ms": 12.4
 }
 ```
+
+## Architecture
+
+```
+IoT Sensors / Clients
+        │
+        ▼
+  FastAPI (uvicorn)
+        │
+  Feature Pipeline
+  ├─ Rolling stats (windows: 5, 10, 20)
+  ├─ Lag features (steps: 1, 2, 3, 5)
+  ├─ Rate of change (1st + 2nd order)
+  ├─ Cyclical time encoding (hour, day-of-week)
+  └─ Cross-sensor rolling correlations
+        │
+  ML Ensemble
+  ├─ Isolation Forest → anomaly score [0, 1]
+  ├─ Random Forest   → multi-step forecast + CI
+  └─ FAISS index     → nearest-neighbour root cause
+        │
+  Monitoring
+  ├─ KS-test drift detection (per feature)
+  ├─ Prediction latency tracking
+  └─ Anomaly event log
+        │
+  PostgreSQL
+  └─ sensor_readings | anomaly_events | predictions | drift_logs
+        │
+  Retraining DAG (Airflow / cron)
+  └─ Daily: extract → engineer → train → update reference distributions
+```
+
+See `screenshots/architecture.txt` for the full ASCII diagram.
