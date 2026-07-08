@@ -128,7 +128,7 @@ class DriftRequest(BaseModel):
 # ── Endpoints ────────────────────────────────────────────────────────────────
 
 
-@app.get("/health", tags=["system"])
+@app.get("/health", tags=["system"], summary="Liveness probe")
 def health() -> dict[str, Any]:
     """Liveness probe — returns model version and loaded ensemble members."""
     return {
@@ -138,7 +138,7 @@ def health() -> dict[str, Any]:
     }
 
 
-@app.get("/api/v1/metrics", tags=["monitoring"])
+@app.get("/api/v1/metrics", tags=["monitoring"], summary="Monitoring snapshot")
 def metrics(db: Session = Depends(get_db)) -> dict[str, Any]:
     """Prediction statistics and any active drift alerts."""
     predictions = get_recent_predictions(db, limit=200)
@@ -162,7 +162,12 @@ def metrics(db: Session = Depends(get_db)) -> dict[str, Any]:
     }
 
 
-@app.post("/api/v1/predict", response_model=PredictionResponse, tags=["prediction"])
+@app.post(
+    "/api/v1/predict",
+    response_model=PredictionResponse,
+    tags=["prediction"],
+    summary="Predict congestion for one route segment",
+)
 def predict(
     payload: TrafficInput,
     db: Session = Depends(get_db),
@@ -188,7 +193,7 @@ def predict(
     return PredictionResponse(route_id=payload.route_id, **result)
 
 
-@app.post("/api/v1/drift", tags=["monitoring"])
+@app.post("/api/v1/drift", tags=["monitoring"], summary="Run KS drift test on a feature")
 def check_drift(
     payload: DriftRequest,
     db: Session = Depends(get_db),
@@ -199,7 +204,11 @@ def check_drift(
     return {"feature": payload.feature_name, **drift_result}
 
 
-@app.post("/api/v1/predict/batch", tags=["prediction"])
+@app.post(
+    "/api/v1/predict/batch",
+    tags=["prediction"],
+    summary="Predict congestion for up to 100 segments",
+)
 def predict_batch(
     payloads: list[TrafficInput],
     db: Session = Depends(get_db),
@@ -227,7 +236,7 @@ def predict_batch(
     return responses
 
 
-@app.get("/api/v1/model-info", tags=["system"])
+@app.get("/api/v1/model-info", tags=["system"], summary="Model metadata and feature list")
 def model_info() -> dict[str, Any]:
     """Model metadata: version, ensemble members, and feature list."""
     return {
