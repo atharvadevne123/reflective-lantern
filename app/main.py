@@ -256,3 +256,36 @@ def model_info() -> dict[str, Any]:
         "features": FEATURE_COLUMNS,
         "congestion_labels": {"0": "free", "1": "moderate", "2": "congested", "3": "severe"},
     }
+
+@app.get("/api/v1/routes/{route_id}/history", tags=["prediction"], summary="Recent predictions for a route")
+def route_history(
+    route_id: str,
+    limit: int = 20,
+    db: Session = Depends(get_db),
+) -> dict[str, Any]:
+    """Return the most recent logged predictions for one route segment."""
+    from app.database import PredictionLog
+
+    limit = max(1, min(limit, 200))
+    rows = (
+        db.query(PredictionLog)
+        .filter(PredictionLog.route_id == route_id)
+        .order_by(PredictionLog.timestamp.desc())
+        .limit(limit)
+        .all()
+    )
+    return {
+        "route_id": route_id,
+        "count": len(rows),
+        "predictions": [
+            {
+                "timestamp": r.timestamp.isoformat(),
+                "hour": r.hour,
+                "congestion_level": r.congestion_level,
+                "congestion_prob": r.congestion_prob,
+                "incident_score": r.incident_score,
+                "model_version": r.model_version,
+            }
+            for r in rows
+        ],
+    }
