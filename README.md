@@ -100,3 +100,38 @@ Prediction volume, congestion distribution, active drift alerts, and training me
 
 Liveness probe with model version and loaded ensemble members.
 
+## Architecture
+
+![Architecture](screenshots/architecture.png)
+
+| Layer | Technology |
+|---|---|
+| API | FastAPI + Pydantic v2 validation |
+| ML | XGBoost + LightGBM ensemble in sklearn Pipelines |
+| Features | 26 temporal/traffic features (`app/features.py`) |
+| Monitoring | KS-test drift + prediction logs (`app/monitoring.py`) |
+| Storage | SQLAlchemy — SQLite (dev) / PostgreSQL 16 (prod) |
+| Retraining | Drift-gated pipeline with AUC validation gate |
+| CI | GitHub Actions — ruff lint + format + pytest |
+
+## Testing
+
+```bash
+make test    # 40+ tests: API validation, model training, features, drift
+make lint    # ruff check + format check
+```
+
+## Retraining pipeline
+
+```bash
+python pipelines/retrain_dag.py           # retrain only if drift detected
+python pipelines/retrain_dag.py --force   # unconditional retrain
+```
+
+The pipeline checks `drift_logs` for unresolved drift, retrains the ensemble,
+validates the new model against an AUC threshold (default 0.75), and promotes
+it to `model_stable.joblib` only when validation passes.
+
+## License
+
+MIT
