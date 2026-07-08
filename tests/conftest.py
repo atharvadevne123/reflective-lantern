@@ -2,11 +2,35 @@
 
 from __future__ import annotations
 
+import importlib.util
 import json
 from pathlib import Path
 from typing import Any, Generator
 
 import pytest
+
+# Tests for the staged Cyber-Sentinel app (app/, pipelines/) need heavyweight
+# ML dependencies that are not part of Reflective Lantern's own requirements.
+# Skip collecting them when their primary dependency is absent so the core
+# automation suite stays runnable everywhere.
+_STAGED_TEST_DEPS: dict[str, str] = {
+    "test_anomaly.py": "numpy",
+    "test_api.py": "fastapi",
+    "test_cache.py": "numpy",
+    "test_database.py": "sqlalchemy",
+    "test_faiss.py": "numpy",
+    "test_features.py": "numpy",
+    "test_investment.py": "numpy",
+    "test_market_context.py": "numpy",
+    "test_mlflow_stub.py": "numpy",
+    "test_model.py": "numpy",
+    "test_monitoring.py": "scipy",
+    "test_time_series.py": "numpy",
+}
+
+collect_ignore: list[str] = [
+    filename for filename, dep in _STAGED_TEST_DEPS.items() if importlib.util.find_spec(dep) is None
+]
 
 
 @pytest.fixture()
@@ -79,16 +103,28 @@ def multi_repo_history_dir(tmp_path: Path) -> Path:
     """Return a history directory with multiple repos across different modes."""
     h = tmp_path / "history"
     h.mkdir()
-    (h / "Alpha.json").write_text(json.dumps([
-        {"date": "2026-07-01", "mode": "improvement", "commits": 60, "tests_passed": True},
-        {"date": "2026-07-03", "mode": "improvement", "commits": 60, "tests_passed": True},
-    ]))
-    (h / "Beta.json").write_text(json.dumps([
-        {"date": "2026-07-08", "mode": "innovation", "commits": 120, "tests_passed": True},
-    ]))
-    (h / "Gamma.json").write_text(json.dumps([
-        {"date": "2026-07-02", "mode": "improvement", "commits": 60, "tests_passed": False},
-    ]))
+    (h / "Alpha.json").write_text(
+        json.dumps(
+            [
+                {"date": "2026-07-01", "mode": "improvement", "commits": 60, "tests_passed": True},
+                {"date": "2026-07-03", "mode": "improvement", "commits": 60, "tests_passed": True},
+            ]
+        )
+    )
+    (h / "Beta.json").write_text(
+        json.dumps(
+            [
+                {"date": "2026-07-08", "mode": "innovation", "commits": 120, "tests_passed": True},
+            ]
+        )
+    )
+    (h / "Gamma.json").write_text(
+        json.dumps(
+            [
+                {"date": "2026-07-02", "mode": "improvement", "commits": 60, "tests_passed": False},
+            ]
+        )
+    )
     return h
 
 
@@ -97,11 +133,17 @@ def innovation_history_dir(tmp_path: Path) -> Path:
     """Return a history directory with an INNOVATION mode entry."""
     h = tmp_path / "history"
     h.mkdir()
-    (h / "NewProject.json").write_text(json.dumps([{
-        "date": "2026-07-08",
-        "mode": "innovation",
-        "commits": 114,
-        "tests_passed": True,
-        "improvements": ["built new ML pipeline from scratch"],
-    }]))
+    (h / "NewProject.json").write_text(
+        json.dumps(
+            [
+                {
+                    "date": "2026-07-08",
+                    "mode": "innovation",
+                    "commits": 114,
+                    "tests_passed": True,
+                    "improvements": ["built new ML pipeline from scratch"],
+                }
+            ]
+        )
+    )
     return h
