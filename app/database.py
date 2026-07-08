@@ -31,7 +31,7 @@ class PredictionLog(Base):
     timestamp = Column(DateTime, default=datetime.utcnow, nullable=False)
     hour = Column(Integer, nullable=False)
     day_of_week = Column(Integer, nullable=False)
-    route_id = Column(String(64), nullable=False)
+    route_id = Column(String(64), nullable=False, index=True)
     road_type = Column(String(32), nullable=False)
     congestion_level = Column(Integer, nullable=False)
     congestion_prob = Column(Float, nullable=False)
@@ -47,7 +47,7 @@ class DriftLog(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     timestamp = Column(DateTime, default=datetime.utcnow, nullable=False)
-    feature_name = Column(String(64), nullable=False)
+    feature_name = Column(String(64), nullable=False, index=True)
     ks_statistic = Column(Float, nullable=False)
     p_value = Column(Float, nullable=False)
     drift_detected = Column(Integer, default=0, nullable=False)
