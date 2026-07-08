@@ -29,9 +29,7 @@ log = logging.getLogger(__name__)
 
 ANTHROPIC_API_KEY: str = os.environ.get("ANTHROPIC_API_KEY", "")
 NOTION_API_KEY: str = os.environ.get("NOTION_API_KEY", "")
-COVER_BASE: str = (
-    "https://raw.githubusercontent.com/atharvadevne123/reflective-lantern/main/covers"
-)
+COVER_BASE: str = "https://raw.githubusercontent.com/atharvadevne123/reflective-lantern/main/covers"
 
 # Project registry
 # page_id: Notion page UUID | cover: SVG filename | tags: multi-select options
@@ -137,9 +135,10 @@ def generate_description(client: anthropic.Anthropic, project: dict[str, object]
         if project.get("github")
         else ""
     )
-    tags_str = ", ".join(str(t) for t in (project.get("tags") or []))
+    raw_tags = project.get("tags")
+    tags_str = ", ".join(str(t) for t in raw_tags) if isinstance(raw_tags, list) else ""
     prompt = (
-        f"Write a concise 2-sentence portfolio description for the project \"{project['name']}\". "
+        f'Write a concise 2-sentence portfolio description for the project "{project["name"]}". '
         f"Tags: {tags_str}. {github_hint} "
         "Be specific, professional, and highlight the technical value. No fluff."
     )
@@ -159,9 +158,7 @@ def update_notion_page(
     description: Optional[str] = None,
 ) -> None:
     """Patch a Notion page: cover image, Tags multi-select, and Description."""
-    properties: dict[str, object] = {
-        "Tags": {"multi_select": [{"name": t} for t in tags]}
-    }
+    properties: dict[str, object] = {"Tags": {"multi_select": [{"name": t} for t in tags]}}
     if description:
         properties["Description"] = {
             "rich_text": [{"type": "text", "text": {"content": description}}]
@@ -193,7 +190,8 @@ def main(generate_descriptions: bool = False) -> None:
         name = str(project["name"])
         log.info("Updating %s", name)
         cover_url = f"{COVER_BASE}/{project['cover']}.svg"
-        tags = [str(t) for t in (project.get("tags") or [])]
+        raw_tags = project.get("tags")
+        tags = [str(t) for t in raw_tags] if isinstance(raw_tags, list) else []
 
         description: Optional[str] = None
         if generate_descriptions and ANTHROPIC_API_KEY:

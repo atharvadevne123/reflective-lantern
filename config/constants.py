@@ -59,3 +59,11 @@ WEEKLY_SUMMARY_DAYS: int = 7
 
 # Repo selection constraints
 MIN_REPOS_FOR_ROTATION: int = 1
+
+# Palantir Foundry integration
+FOUNDRY_API_VERSION: str = "v2"
+FOUNDRY_DEFAULT_BRANCH: str = "master"
+FOUNDRY_DATASET_FILENAME: str = "reflective_lantern_runs.csv"
+FOUNDRY_UPLOAD_TIMEOUT_SECONDS: int = 60
+FOUNDRY_RUN_OBJECT_TYPE: str = "AutomationRun"
+FOUNDRY_REPO_OBJECT_TYPE: str = "Repository"
