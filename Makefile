@@ -1,4 +1,4 @@
-.PHONY: install test lint run train diagram docker-up docker-down
+.PHONY: install test lint run train diagram docker-up docker-down migrate coverage
 
 install:
 	pip install -r requirements.txt
@@ -25,3 +25,9 @@ docker-up:
 
 docker-down:
 	docker compose down -v
+
+migrate:
+	alembic upgrade head
+
+coverage:
+	pytest tests/ --cov --cov-report=term-missing
