@@ -29,3 +29,23 @@ retrains automatically when feature drift is detected.
   model promotion (`pipelines/retrain_dag.py`, Airflow-compatible).
 - **Production middleware** — correlation-ID propagation and response-time headers.
 
+## Quickstart
+
+### Local
+
+```bash
+git clone https://github.com/atharvadevne123/Traffic-Pulse
+cd Traffic-Pulse
+make install          # pip install -r requirements.txt + dev tools
+make train            # train the ensemble (writes model.joblib + metrics.json)
+make run              # uvicorn app.main:app --reload
+```
+
+### Docker
+
+```bash
+cp .env.example .env
+docker compose up --build -d
+curl http://localhost:8000/health
+```
+
