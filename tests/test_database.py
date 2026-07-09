@@ -10,7 +10,7 @@ TEST_URL = "sqlite:///:memory:"
 
 
 @pytest.fixture(scope="module")
-def mem_db():
+def mem_db() -> None:
     engine = create_engine(TEST_URL, connect_args={"check_same_thread": False})
     Base.metadata.create_all(bind=engine)
     Session = sessionmaker(bind=engine)
@@ -20,7 +20,7 @@ def mem_db():
     Base.metadata.drop_all(bind=engine)
 
 
-def test_create_prediction_log(mem_db):
+def test_create_prediction_log(mem_db) -> None:
     log = PredictionLog(
         predicted_value=450_000.0,
         model_version="1.0.0",
@@ -33,7 +33,7 @@ def test_create_prediction_log(mem_db):
     assert log.predicted_value == 450_000.0
 
 
-def test_create_drift_report(mem_db):
+def test_create_drift_report(mem_db) -> None:
     report = DriftReport(
         feature_name="sqft",
         ks_statistic=0.15,
@@ -47,7 +47,7 @@ def test_create_drift_report(mem_db):
     assert report.drift_detected is True
 
 
-def test_create_neighborhood_stat(mem_db):
+def test_create_neighborhood_stat(mem_db) -> None:
     stat = NeighborhoodStat(
         zipcode="94102",
         median_price=1_200_000.0,
@@ -63,7 +63,7 @@ def test_create_neighborhood_stat(mem_db):
     assert stat.id is not None
 
 
-def test_query_prediction_logs_by_correlation(mem_db):
+def test_query_prediction_logs_by_correlation(mem_db) -> None:
     log = PredictionLog(
         predicted_value=300_000.0,
         model_version="1.0.0",
@@ -79,7 +79,7 @@ def test_query_prediction_logs_by_correlation(mem_db):
     assert results[0].predicted_value == 300_000.0
 
 
-def test_create_property(mem_db):
+def test_create_property(mem_db) -> None:
     prop = Property(
         address="123 Main St",
         zipcode="94102",
@@ -97,7 +97,7 @@ def test_create_property(mem_db):
     assert prop.id is not None
 
 
-def test_drift_report_no_drift(mem_db):
+def test_drift_report_no_drift(mem_db) -> None:
     report = DriftReport(
         feature_name="predicted_value",
         ks_statistic=0.05,
