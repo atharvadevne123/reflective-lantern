@@ -89,3 +89,59 @@ def test_download_no_bucket_returns_empty() -> None:
     result = download_model_artefacts("/tmp")
     s._BUCKET = original
     assert result == []
+
+
+def test_upload_empty_list_returns_empty() -> None:
+    import app.aws_stub as s
+
+    original = s._BUCKET
+    s._BUCKET = "test-bucket"
+    mock_client = MagicMock()
+    with patch("app.aws_stub._s3_client", return_value=mock_client):
+        result = upload_model_artefacts([])
+    s._BUCKET = original
+    assert result == []
+
+
+def test_upload_s3_error_skips_file(tmp_path) -> None:
+    import app.aws_stub as s
+
+    f = tmp_path / "model.joblib"
+    f.write_bytes(b"data")
+    mock_client = MagicMock()
+    mock_client.upload_file.side_effect = RuntimeError("S3 error")
+    with (
+        patch("app.aws_stub._s3_client", return_value=mock_client),
+        patch.object(s, "_BUCKET", "bucket"),
+    ):
+        result = upload_model_artefacts([str(f)])
+    assert result == []
+
+
+def test_download_with_client_success(tmp_path) -> None:
+    import app.aws_stub as s
+
+    mock_client = MagicMock()
+
+    def fake_download(bucket, key, local_path):
+        open(local_path, "w").close()
+
+    mock_client.download_file.side_effect = fake_download
+    with (
+        patch("app.aws_stub._s3_client", return_value=mock_client),
+        patch.object(s, "_BUCKET", "bucket"),
+    ):
+        result = download_model_artefacts(str(tmp_path))
+    assert len(result) == 2
+
+
+def test_log_training_run_no_uri_with_tags_returns_none() -> None:
+    import app.mlflow_stub as m
+
+    original = m._TRACKING_URI
+    m._TRACKING_URI = ""
+    try:
+        result = log_training_run({"lr": 0.01}, {"r2": 0.85}, tags={"env": "test"})
+    finally:
+        m._TRACKING_URI = original
+    assert result is None
