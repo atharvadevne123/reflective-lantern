@@ -100,3 +100,47 @@ def test_optional_fields_default() -> None:
     assert prop.renovation_year is None
     assert prop.list_price is None
     assert prop.city == ""
+
+
+def test_renovation_year_before_built_raises() -> None:
+    props = base_props()
+    props["year_built"] = 2000
+    props["renovation_year"] = 1990
+    with pytest.raises(ValidationError):
+        PropertyInput(**props)
+
+
+def test_renovation_year_equal_to_built_is_valid() -> None:
+    props = base_props()
+    props["year_built"] = 2000
+    props["renovation_year"] = 2000
+    prop = PropertyInput(**props)
+    assert prop.renovation_year == 2000
+
+
+def test_sqft_upper_bound_valid() -> None:
+    props = base_props()
+    props["sqft"] = 50_000.0
+    prop = PropertyInput(**props)
+    assert prop.sqft == 50_000.0
+
+
+def test_sqft_exceeds_upper_bound_raises() -> None:
+    props = base_props()
+    props["sqft"] = 50_001.0
+    with pytest.raises(ValidationError):
+        PropertyInput(**props)
+
+
+def test_list_price_zero_raises() -> None:
+    props = base_props()
+    props["list_price"] = 0.0
+    with pytest.raises(ValidationError):
+        PropertyInput(**props)
+
+
+def test_listing_days_upper_bound_valid() -> None:
+    props = base_props()
+    props["listing_days"] = 3650
+    prop = PropertyInput(**props)
+    assert prop.listing_days == 3650
