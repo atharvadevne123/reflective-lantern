@@ -36,6 +36,12 @@ MODEL_VERSION = "1.0.0"
 
 
 def _build_ensemble() -> VotingRegressor:
+    """Build the XGBoost + LightGBM + RandomForest soft-voting ensemble.
+
+    Returns:
+        An unfitted ``VotingRegressor`` with equal weights across all three
+        base learners.
+    """
     xgb = XGBRegressor(
         n_estimators=200,
         max_depth=5,
@@ -57,6 +63,18 @@ def _build_ensemble() -> VotingRegressor:
 
 
 def train_model(X: pd.DataFrame, y: np.ndarray) -> tuple[Any, dict[str, float]]:
+    """Train the ensemble on *X* / *y* and persist the model bundle to disk.
+
+    Runs 5-fold CV to compute R2 and RMSE before fitting on the full dataset.
+
+    Args:
+        X: Raw property feature DataFrame (pre-pipeline).
+        y: Array of target property values in dollars.
+
+    Returns:
+        Tuple of ``(bundle, metrics)`` where *bundle* is a dict containing
+        the fitted ``ensemble``, ``scaler``, and ``feature_pipeline``.
+    """
     feature_pipeline = build_feature_pipeline()
     feature_pipeline.fit(X)
     X_features = extract_feature_array(X, feature_pipeline)
@@ -97,12 +115,26 @@ def train_model(X: pd.DataFrame, y: np.ndarray) -> tuple[Any, dict[str, float]]:
 
 
 def predict(features_df: pd.DataFrame, bundle: dict[str, Any]) -> np.ndarray:
+    """Run inference on a batch of property features.
+
+    Args:
+        features_df: Raw property feature DataFrame (pre-pipeline).
+        bundle: Model bundle returned by :func:`train_model` or :func:`load_model`.
+
+    Returns:
+        1-D numpy array of predicted property values.
+    """
     X_features = extract_feature_array(features_df, bundle["feature_pipeline"])
     X_scaled = bundle["scaler"].transform(X_features)
     return bundle["ensemble"].predict(X_scaled)
 
 
 def load_model() -> dict[str, Any]:
+    """Load the persisted model bundle from disk, or generate a synthetic stub.
+
+    Returns:
+        Dict with ``ensemble``, ``scaler``, and ``feature_pipeline`` keys.
+    """
     if not MODEL_PATH.exists():
         logger.warning("No model file found at %s; generating synthetic model", MODEL_PATH)
         return _synthetic_model()
@@ -148,6 +180,11 @@ def _synthetic_model() -> dict[str, Any]:
 
 
 def load_metrics() -> dict[str, Any]:
+    """Return the most recent training metrics from disk.
+
+    Returns:
+        Metrics dict, or a minimal placeholder if the file does not exist.
+    """
     if not METRICS_PATH.exists():
         return {"model_version": MODEL_VERSION, "note": "no metrics file"}
     return json.loads(METRICS_PATH.read_text())
