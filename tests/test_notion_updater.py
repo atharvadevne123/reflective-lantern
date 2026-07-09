@@ -158,3 +158,30 @@ def test_project_names_helper_all_strings() -> None:
     for name in project_names():
         assert isinstance(name, str)
         assert len(name) > 0
+
+
+def test_project_names_no_duplicates() -> None:
+    from scripts.notion_portfolio_update import project_names
+
+    names = project_names()
+    assert len(names) == len(set(names)), "project_names() contains duplicates"
+
+
+def test_projects_list_has_name_field() -> None:
+    from scripts.notion_portfolio_update import PROJECTS
+
+    for project in PROJECTS:
+        assert "name" in project, f"Project missing name key"
+
+
+def test_projects_list_is_non_empty() -> None:
+    from scripts.notion_portfolio_update import PROJECTS
+
+    assert isinstance(PROJECTS, list)
+    assert len(PROJECTS) > 0
+
+
+def test_project_names_count_matches_projects() -> None:
+    from scripts.notion_portfolio_update import PROJECTS, project_names
+
+    assert len(project_names()) == len(PROJECTS)
