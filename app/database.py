@@ -32,10 +32,12 @@ SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 
 class Base(DeclarativeBase):
-    pass
+    """Declarative base for all Realty-Edge ORM models."""
 
 
 class Property(Base):
+    """ORM model for a stored property listing."""
+
     __tablename__ = "properties"
 
     id = Column(Integer, primary_key=True, index=True)
@@ -55,6 +57,8 @@ class Property(Base):
 
 
 class PredictionLog(Base):
+    """ORM model for a single model prediction record."""
+
     __tablename__ = "prediction_logs"
 
     id = Column(Integer, primary_key=True, index=True)
@@ -68,6 +72,8 @@ class PredictionLog(Base):
 
 
 class DriftReport(Base):
+    """ORM model for a KS-test drift detection report."""
+
     __tablename__ = "drift_reports"
 
     id = Column(Integer, primary_key=True, index=True)
@@ -80,6 +86,8 @@ class DriftReport(Base):
 
 
 class NeighborhoodStat(Base):
+    """ORM model for aggregated neighbourhood statistics by ZIP code."""
+
     __tablename__ = "neighborhood_stats"
 
     id = Column(Integer, primary_key=True, index=True)
