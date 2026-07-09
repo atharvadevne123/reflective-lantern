@@ -107,3 +107,30 @@ def test_higher_expense_ratio_lowers_cap_rate(expense_ratio) -> None:
 def test_predicted_value_preserved_in_result() -> None:
     result = compute_investment_analysis(750_000, 0.06, 5, 5, 5, 0.3)
     assert result.predicted_value == pytest.approx(750_000)
+
+
+def test_zero_predicted_value_returns_early() -> None:
+    result = compute_investment_analysis(0.0, 0.07, 6, 6, 6, 0.3)
+    assert result.investment_score == 0.0
+    assert result.annual_rent_estimate == 0.0
+    assert result.break_even_years == float("inf")
+
+
+def test_negative_predicted_value_returns_early() -> None:
+    result = compute_investment_analysis(-100.0, 0.07, 6, 6, 6, 0.3)
+    assert result.investment_score == 0.0
+
+
+def test_investment_score_clamped_to_zero_at_minimum() -> None:
+    result = compute_investment_analysis(500_000, 0.001, 0, 0, 0, 1.0)
+    assert result.investment_score >= 0.0
+
+
+def test_investment_score_clamped_to_ten_at_maximum() -> None:
+    result = compute_investment_analysis(100_000, 0.99, 10, 10, 10, 0.0)
+    assert result.investment_score <= 10.0
+
+
+def test_break_even_zero_noi_returns_inf() -> None:
+    result = compute_investment_analysis(500_000, 0.0, 6, 6, 6, 0.3)
+    assert result.break_even_years == float("inf")
