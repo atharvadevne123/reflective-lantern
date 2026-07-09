@@ -264,3 +264,30 @@ def test_summary_line_contains_repo_name() -> None:
     h = RepoHealth(name="SpecialRepo", open_branches=["dev"])
     line = h.summary_line()
     assert "SpecialRepo" in line
+
+
+def test_stats_has_all_expected_keys() -> None:
+    h = RepoHealth(name="Repo")
+    s = h.stats()
+    for key in ("failing_workflows", "open_branches", "has_release", "has_ci", "healthy"):
+        assert key in s
+
+
+def test_issues_count_zero_when_healthy() -> None:
+    h = RepoHealth(name="Repo")
+    assert h.issues_count == 0
+
+
+def test_issues_count_counts_each_failing_workflow_separately() -> None:
+    h = RepoHealth(name="Repo", failing_workflows=["CI", "Lint", "Deploy"])
+    assert h.issues_count == 3
+
+
+def test_stats_has_release_reflects_field() -> None:
+    h = RepoHealth(name="Repo", has_release=False)
+    assert h.stats()["has_release"] is False
+
+
+def test_repo_health_name_preserved() -> None:
+    h = RepoHealth(name="my-repo-123")
+    assert h.name == "my-repo-123"
