@@ -16,7 +16,7 @@ from app.features import (
 
 
 @pytest.fixture
-def single_row():
+def single_row() -> None:
     return pd.DataFrame(
         [
             {
@@ -41,7 +41,7 @@ def single_row():
     )
 
 
-def test_property_age_transformer(single_row):
+def test_property_age_transformer(single_row) -> None:
     t = PropertyAgeTransformer(reference_year=2026)
     result = t.fit_transform(single_row)
     assert "property_age" in result.columns
@@ -49,14 +49,14 @@ def test_property_age_transformer(single_row):
     assert result["renovation_age"].iloc[0] == 11
 
 
-def test_property_age_no_renovation(single_row):
+def test_property_age_no_renovation(single_row) -> None:
     row = single_row.copy()
     row["renovation_year"] = None
     result = PropertyAgeTransformer(reference_year=2026).transform(row)
     assert result["renovation_age"].iloc[0] == result["property_age"].iloc[0]
 
 
-def test_ratio_transformer(single_row):
+def test_ratio_transformer(single_row) -> None:
     t = RatioFeatureTransformer()
     result = t.fit_transform(single_row)
     assert "beds_per_bath" in result.columns
@@ -64,14 +64,14 @@ def test_ratio_transformer(single_row):
     assert result["sqft_per_bed"].iloc[0] == pytest.approx(2000 / 3, rel=1e-3)
 
 
-def test_ratio_transformer_zero_beds(single_row):
+def test_ratio_transformer_zero_beds(single_row) -> None:
     row = single_row.copy()
     row["bedrooms"] = 1
     result = RatioFeatureTransformer().transform(row)
     assert result["sqft_per_bed"].iloc[0] > 0
 
 
-def test_amenity_composite_transformer(single_row):
+def test_amenity_composite_transformer(single_row) -> None:
     result = AmenityCompositeTransformer().fit_transform(single_row)
     assert "amenity_composite" in result.columns
     assert "risk_score" in result.columns
@@ -79,14 +79,14 @@ def test_amenity_composite_transformer(single_row):
     assert 0 <= result["risk_score"].iloc[0] <= 1
 
 
-def test_investment_potential_transformer(single_row):
+def test_investment_potential_transformer(single_row) -> None:
     pre = AmenityCompositeTransformer().fit_transform(single_row)
     result = InvestmentPotentialTransformer().fit_transform(pre)
     assert "investment_potential" in result.columns
     assert 0 <= result["investment_potential"].iloc[0] <= 10
 
 
-def test_tier_encoder_transformer(single_row):
+def test_tier_encoder_transformer(single_row) -> None:
     pre = PropertyAgeTransformer().fit_transform(single_row)
     result = TierEncoderTransformer().fit_transform(pre)
     assert "size_tier" in result.columns
@@ -94,14 +94,14 @@ def test_tier_encoder_transformer(single_row):
     assert result["size_tier"].iloc[0] in [1, 2, 3, 4, 5]
 
 
-def test_build_feature_pipeline(single_row):
+def test_build_feature_pipeline(single_row) -> None:
     pipeline = build_feature_pipeline()
     result = pipeline.fit_transform(single_row)
     assert isinstance(result, pd.DataFrame)
     assert "amenity_composite" in result.columns
 
 
-def test_extract_feature_array(single_row):
+def test_extract_feature_array(single_row) -> None:
     pipeline = build_feature_pipeline()
     arr = extract_feature_array(single_row, pipeline)
     assert arr.ndim == 2
@@ -120,7 +120,7 @@ def test_extract_feature_array(single_row):
         (5000, 5),
     ],
 )
-def test_size_tier_values(single_row, sqft, expected_tier):
+def test_size_tier_values(single_row, sqft, expected_tier) -> None:
     row = single_row.copy()
     row["sqft"] = sqft
     pre = PropertyAgeTransformer().fit_transform(row)
@@ -128,7 +128,7 @@ def test_size_tier_values(single_row, sqft, expected_tier):
     assert result["size_tier"].iloc[0] == expected_tier
 
 
-def test_pipeline_handles_missing_values(sample_df):
+def test_pipeline_handles_missing_values(sample_df) -> None:
     df = sample_df.copy()
     df.loc[0, "renovation_year"] = None
     pipeline = build_feature_pipeline()
