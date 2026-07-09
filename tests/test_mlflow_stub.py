@@ -8,13 +8,13 @@ from app.mlflow_stub import log_training_run
 # --- MLflow stub tests ---
 
 
-def test_log_training_run_no_uri_returns_none():
+def test_log_training_run_no_uri_returns_none() -> None:
     with patch.dict("os.environ", {"MLFLOW_TRACKING_URI": ""}):
         result = log_training_run({"lr": 0.01}, {"r2": 0.85})
     assert result is None
 
 
-def test_log_training_run_mlflow_not_installed_returns_none():
+def test_log_training_run_mlflow_not_installed_returns_none() -> None:
     with (
         patch.dict("os.environ", {"MLFLOW_TRACKING_URI": "http://localhost:5000"}),
         patch("builtins.__import__", side_effect=ImportError("mlflow not installed")),
@@ -23,7 +23,7 @@ def test_log_training_run_mlflow_not_installed_returns_none():
     assert result is None
 
 
-def test_log_training_run_mlflow_exception_returns_none():
+def test_log_training_run_mlflow_exception_returns_none() -> None:
     with (
         patch.dict("os.environ", {"MLFLOW_TRACKING_URI": "http://localhost:5000"}),
         patch("app.mlflow_stub.os.getenv", return_value="http://localhost:5000"),
@@ -42,7 +42,7 @@ def test_log_training_run_mlflow_exception_returns_none():
 # --- AWS stub tests ---
 
 
-def test_upload_no_bucket_returns_empty():
+def test_upload_no_bucket_returns_empty() -> None:
     with patch.dict("os.environ", {"S3_BUCKET": ""}):
         import app.aws_stub as s
 
@@ -53,7 +53,7 @@ def test_upload_no_bucket_returns_empty():
     assert result == []
 
 
-def test_upload_missing_file_skipped(tmp_path):
+def test_upload_missing_file_skipped(tmp_path) -> None:
     import app.aws_stub as s
 
     original_bucket = s._BUCKET
@@ -66,7 +66,7 @@ def test_upload_missing_file_skipped(tmp_path):
     mock_client.upload_file.assert_not_called()
 
 
-def test_upload_existing_file(tmp_path):
+def test_upload_existing_file(tmp_path) -> None:
     import app.aws_stub as s
 
     test_file = tmp_path / "model.joblib"
@@ -81,7 +81,7 @@ def test_upload_existing_file(tmp_path):
     assert "s3://test-bucket" in result[0]
 
 
-def test_download_no_bucket_returns_empty():
+def test_download_no_bucket_returns_empty() -> None:
     import app.aws_stub as s
 
     original = s._BUCKET
