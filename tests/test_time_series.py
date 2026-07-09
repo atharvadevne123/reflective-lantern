@@ -75,3 +75,36 @@ def test_exp_smoothing_empty_input() -> None:
 def test_exp_smoothing_single_value() -> None:
     result = exponential_smoothing_forecast([500_000], horizon=2)
     assert all(v == pytest.approx(500_000.0) for v in result)
+
+def test_sma_window_one_returns_input() -> None:
+    values = [100.0, 200.0, 300.0]
+    result = compute_sma(values, window=1)
+    assert result == pytest.approx(values)
+
+
+@pytest.mark.parametrize("horizon", [1, 5, 12])
+def test_linear_trend_forecast_horizon_length(horizon) -> None:
+    values = [100_000 + i * 5_000 for i in range(8)]
+    result = linear_trend_forecast(values, horizon=horizon)
+    assert len(result["forecasts"]) == horizon
+
+
+def test_linear_trend_negative_slope() -> None:
+    values = [200_000, 180_000, 160_000, 140_000, 120_000]
+    result = linear_trend_forecast(values, horizon=2)
+    assert result["slope"] < 0
+
+
+def test_exp_smoothing_high_alpha_tracks_recent() -> None:
+    # With alpha near 1.0, latest value dominates
+    values = [100_000] * 9 + [500_000]
+    result = exponential_smoothing_forecast(values, alpha=0.99, horizon=1)
+    assert result[0] > 400_000
+
+
+@pytest.mark.parametrize("n", [3, 6, 10])
+def test_sma_valid_values_count(n) -> None:
+    values = list(range(n))
+    result = compute_sma(values, window=3)
+    valid_count = sum(1 for v in result if not math.isnan(v))
+    assert valid_count == max(0, n - 2)
