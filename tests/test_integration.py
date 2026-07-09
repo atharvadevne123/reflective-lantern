@@ -223,3 +223,43 @@ def test_config_package_exports_get_logger() -> None:
 
     logger = get_logger("test.integration")
     assert isinstance(logger, logging.Logger)
+
+
+def test_validate_history_invalid_json_returns_error(tmp_path: Path) -> None:
+    import scripts.validate_history as vh
+    from unittest.mock import patch
+
+    h = tmp_path / "history"
+    h.mkdir()
+    (h / "Bad.json").write_text("{invalid")
+    with patch.object(vh, "HISTORY_DIR", h):
+        with patch.object(sys, "argv", ["validate_history.py"]):
+            result = vh.main()
+    assert result == 1
+
+
+def test_validate_history_single_dict_format(tmp_path: Path) -> None:
+    import scripts.validate_history as vh
+    from unittest.mock import patch
+
+    h = tmp_path / "history"
+    h.mkdir()
+    entry = {"date": "2026-07-01", "commits": 60, "mode": "improvement"}
+    (h / "Old.json").write_text(json.dumps(entry))
+    with patch.object(vh, "HISTORY_DIR", h):
+        with patch.object(sys, "argv", ["validate_history.py"]):
+            result = vh.main()
+    assert result == 0
+
+
+def test_validate_history_negative_commits(tmp_path: Path) -> None:
+    import scripts.validate_history as vh
+    from unittest.mock import patch
+
+    h = tmp_path / "history"
+    h.mkdir()
+    (h / "Bad.json").write_text(json.dumps([{"date": "2026-07-01", "commits": -1}]))
+    with patch.object(vh, "HISTORY_DIR", h):
+        with patch.object(sys, "argv", ["validate_history.py"]):
+            result = vh.main()
+    assert result == 1
