@@ -81,3 +81,19 @@ def price_to_rent_ratio(predicted_value: float, annual_rent: float) -> float:
     if annual_rent <= 0:
         return float("inf")
     return round(predicted_value / annual_rent, 2)
+
+
+def affordability_bucket(pct_income: float) -> str:
+    """Classify a mortgage payment as a percentage of income into a bucket.
+
+    Args:
+        pct_income: Monthly mortgage payment as a percentage of monthly income.
+
+    Returns:
+        'affordable' (<=28%), 'stretched' (28-36%), or 'unaffordable' (>36%).
+    """
+    if pct_income <= 28.0:
+        return "affordable"
+    if pct_income <= 36.0:
+        return "stretched"
+    return "unaffordable"
