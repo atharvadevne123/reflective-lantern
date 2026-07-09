@@ -127,7 +127,7 @@ def main() -> int:
     if args.json:
         import json as _json
 
-        log.info(_json.dumps(file_results, indent=2))
+        print(_json.dumps(file_results, indent=2))
         return 1 if all_errors else 0
 
     if all_errors:
