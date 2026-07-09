@@ -258,3 +258,42 @@ def test_load_all_entries_invalid_json(tmp_path: Path) -> None:
     f.write_text("{bad json")
     result = sh.load_all_entries(f)
     assert result == []
+
+
+def test_load_all_entries_empty_list(tmp_path: Path) -> None:
+    import scripts.summarize_history as sh
+
+    f = tmp_path / "empty.json"
+    f.write_text("[]")
+    result = sh.load_all_entries(f)
+    assert result == []
+
+
+def test_load_all_entries_filters_non_dicts(tmp_path: Path) -> None:
+    import scripts.summarize_history as sh
+
+    f = tmp_path / "mixed.json"
+    f.write_text(json.dumps([{"date": "2026-07-01", "commits": 60}, "not-a-dict", 42]))
+    result = sh.load_all_entries(f)
+    assert len(result) == 1
+
+
+def test_aggregate_stats_total_commits(history_dir: Path) -> None:
+    import scripts.summarize_history as sh
+
+    entries = []
+    for path in history_dir.glob("*.json"):
+        entries.extend(sh.load_all_entries(path))
+    total_commits = sum(e.get("commits", 0) for e in entries)
+    assert total_commits > 0
+
+
+def test_summarize_history_returns_zero(history_dir: Path) -> None:
+    import scripts.summarize_history as sh
+    from unittest.mock import patch
+    import sys
+
+    with patch.object(sys, "argv", ["summarize_history.py"]):
+        with patch.object(sh, "HISTORY_DIR", history_dir):
+            rc = sh.main()
+    assert rc in (0, None)
