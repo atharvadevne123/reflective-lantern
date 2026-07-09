@@ -89,3 +89,45 @@ def test_log_prediction_without_investment_score(db_session) -> None:
         correlation_id="test-corr-002",
     )
     assert record.investment_score is None
+
+
+def test_compute_drift_ks_statistic_range() -> None:
+    import numpy as np
+
+    rng = np.random.default_rng(99)
+    ref = rng.uniform(0, 1, 100).tolist()
+    cur = rng.uniform(0, 1, 100).tolist()
+    result = compute_drift(ref, cur)
+    assert 0.0 <= result["ks_statistic"] <= 1.0
+
+
+def test_compute_drift_p_value_range() -> None:
+    import numpy as np
+
+    rng = np.random.default_rng(77)
+    ref = rng.normal(0, 1, 200).tolist()
+    cur = rng.normal(0, 1, 200).tolist()
+    result = compute_drift(ref, cur)
+    assert 0.0 <= result["p_value"] <= 1.0
+
+
+def test_log_prediction_model_version_stored(db_session) -> None:
+    record = log_prediction(
+        db=db_session,
+        predicted_value=500_000.0,
+        features={"sqft": 2000},
+        correlation_id="test-mv-001",
+        model_version="2.0.0",
+    )
+    assert record.model_version == "2.0.0"
+
+
+@pytest.mark.parametrize("predicted_value", [100_000.0, 500_000.0, 2_000_000.0])
+def test_log_prediction_various_values(db_session, predicted_value) -> None:
+    record = log_prediction(
+        db=db_session,
+        predicted_value=predicted_value,
+        features={},
+        correlation_id="test-pv",
+    )
+    assert record.predicted_value == pytest.approx(predicted_value)
