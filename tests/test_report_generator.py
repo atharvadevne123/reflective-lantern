@@ -346,3 +346,34 @@ def test_total_commits_with_multi_repo_fixture(multi_repo_history_dir: Path) -> 
     with patch.object(rg, "HISTORY_DIR", multi_repo_history_dir):
         history = load_all_history()
     assert total_commits(history) == 60 + 60 + 120 + 60
+
+
+def test_total_commits_empty_history() -> None:
+    from scripts.report_generator import total_commits
+
+    assert total_commits({}) == 0
+
+
+def test_total_commits_single_repo() -> None:
+    from scripts.report_generator import total_commits
+
+    history = {"MyRepo": [{"commits": 60}, {"commits": 45}]}
+    assert total_commits(history) == 105
+
+
+def test_format_date_iso_format() -> None:
+    from datetime import date
+    from scripts.report_generator import format_date
+
+    d = date(2026, 7, 9)
+    assert format_date(d) == "2026-07-09"
+
+
+def test_daily_report_contains_date_string(history_dir: Path) -> None:
+    from datetime import date
+    from unittest.mock import patch
+    from scripts import report_generator as rg
+
+    with patch.object(rg, "HISTORY_DIR", history_dir):
+        report = rg.daily_report(date(2026, 6, 15))
+    assert "2026-06-15" in report
