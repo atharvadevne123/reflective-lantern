@@ -12,11 +12,11 @@ from app.market_context import (
 )
 
 
-def test_price_per_sqft_basic():
+def test_price_per_sqft_basic() -> None:
     assert price_per_sqft(500_000, 1000) == pytest.approx(500.0)
 
 
-def test_price_per_sqft_zero_sqft():
+def test_price_per_sqft_zero_sqft() -> None:
     assert price_per_sqft(500_000, 0) == 0.0
 
 
@@ -31,22 +31,22 @@ def test_price_per_sqft_zero_sqft():
         (365, "slow"),
     ],
 )
-def test_dom_classification(days, expected):
+def test_dom_classification(days, expected) -> None:
     assert dom_classification(days) == expected
 
 
-def test_affordability_expensive_is_not_affordable():
+def test_affordability_expensive_is_not_affordable() -> None:
     result = affordability_index(predicted_value=2_000_000, annual_income=80_000)
     assert result["is_affordable"] is False
     assert result["pct_income"] > 28
 
 
-def test_affordability_cheap_is_affordable():
+def test_affordability_cheap_is_affordable() -> None:
     result = affordability_index(predicted_value=150_000, annual_income=100_000)
     assert result["is_affordable"] is True
 
 
-def test_affordability_contains_required_keys():
+def test_affordability_contains_required_keys() -> None:
     result = affordability_index(500_000)
     assert "loan_amount" in result
     assert "monthly_payment" in result
@@ -54,17 +54,17 @@ def test_affordability_contains_required_keys():
     assert "is_affordable" in result
 
 
-def test_affordability_loan_amount():
+def test_affordability_loan_amount() -> None:
     result = affordability_index(500_000, down_payment_pct=0.20)
     assert result["loan_amount"] == pytest.approx(400_000.0)
 
 
-def test_price_to_rent_ratio_basic():
+def test_price_to_rent_ratio_basic() -> None:
     result = price_to_rent_ratio(500_000, 25_000)
     assert result == pytest.approx(20.0)
 
 
-def test_price_to_rent_ratio_zero_rent():
+def test_price_to_rent_ratio_zero_rent() -> None:
     result = price_to_rent_ratio(500_000, 0)
     assert math.isinf(result)
 
@@ -76,6 +76,6 @@ def test_price_to_rent_ratio_zero_rent():
         (1_000_000, 20_000, False),
     ],
 )
-def test_buy_vs_rent_signal(value, rent, expect_buy):
+def test_buy_vs_rent_signal(value, rent, expect_buy) -> None:
     ratio = price_to_rent_ratio(value, rent)
     assert (ratio < 15) == expect_buy
