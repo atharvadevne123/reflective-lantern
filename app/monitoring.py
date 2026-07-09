@@ -27,6 +27,16 @@ DRIFT_THRESHOLD = 0.05
 
 
 def compute_drift(reference: list[float], current: list[float]) -> dict[str, Any]:
+    """Run a KS two-sample test and return a drift summary dict.
+
+    Args:
+        reference: Historical baseline feature values (up to REFERENCE_WINDOW).
+        current: Recent feature values to compare against the baseline.
+
+    Returns:
+        Dict with ``ks_statistic``, ``p_value``, ``drift_detected``,
+        ``n_reference``, and ``n_current`` keys.
+    """
     stat, p = ks_2samp(reference, current)
     return {
         "ks_statistic": round(float(stat), 4),
@@ -46,6 +56,20 @@ def log_prediction(
     model_version: str = "1.0.0",
     property_id: int | None = None,
 ) -> PredictionLog:
+    """Persist a prediction record to the database.
+
+    Args:
+        db: Active SQLAlchemy session.
+        predicted_value: Model output value in dollars.
+        features: Raw feature dict used for the prediction.
+        correlation_id: Request-scoped trace ID.
+        investment_score: Optional investment scoring output.
+        model_version: Identifier of the model that made the prediction.
+        property_id: FK to the stored property row, if applicable.
+
+    Returns:
+        The newly created and refreshed ``PredictionLog`` ORM instance.
+    """
     record = PredictionLog(
         property_id=property_id,
         predicted_value=predicted_value,
@@ -69,6 +93,17 @@ def run_drift_check(
     reference_values: list[float],
     current_values: list[float],
 ) -> DriftReport:
+    """Compute drift and persist the report to the database.
+
+    Args:
+        db: Active SQLAlchemy session.
+        feature_name: Name of the feature being monitored.
+        reference_values: Historical baseline feature values.
+        current_values: Recent feature values for comparison.
+
+    Returns:
+        The persisted ``DriftReport`` ORM instance.
+    """
     result = compute_drift(reference_values, current_values)
     report = DriftReport(
         feature_name=feature_name,
@@ -91,10 +126,12 @@ def run_drift_check(
 
 
 def get_recent_predictions(db: Session, limit: int = REFERENCE_WINDOW) -> list[PredictionLog]:
+    """Return the *limit* most recent prediction log rows, newest first."""
     return db.query(PredictionLog).order_by(PredictionLog.created_at.desc()).limit(limit).all()
 
 
 def get_drift_summary(db: Session) -> list[dict[str, Any]]:
+    """Return the 100 most recent drift reports as serialisable dicts."""
     reports = db.query(DriftReport).order_by(DriftReport.created_at.desc()).limit(100).all()
     return [
         {
