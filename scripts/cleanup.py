@@ -133,7 +133,7 @@ def main() -> int:
         )
 
     action = "Would remove" if args.dry_run else "Removed"
-    print(f"{action} {total_removed} old entries from history files")
+    log.info("%s %d old entries from history files", action, total_removed)
     return 0
 
 
