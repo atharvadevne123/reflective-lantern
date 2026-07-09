@@ -92,6 +92,10 @@ class Settings:
         """Return True when Foundry hostname, token, and dataset RID are all set."""
         return bool(self.foundry_hostname and self.foundry_token and self.foundry_dataset_rid)
 
+    def email_configured(self) -> bool:
+        """Return True when Gmail user and app password are both set."""
+        return bool(self.gmail_user and self.gmail_app_pass)
+
     def __repr__(self) -> str:
         """Return repr with sensitive fields masked."""
         _SENSITIVE = {
