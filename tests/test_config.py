@@ -323,3 +323,35 @@ def test_settings_has_report_subject_prefix() -> None:
     s = Settings()
     assert hasattr(s, "report_subject_prefix")
     assert isinstance(s.report_subject_prefix, str)
+
+
+def test_email_configured_false_when_missing(monkeypatch: pytest.MonkeyPatch) -> None:
+    from config.settings import Settings
+
+    monkeypatch.delenv("GMAIL_USER", raising=False)
+    monkeypatch.delenv("GMAIL_APP_PASS", raising=False)
+    s = Settings()
+    assert s.email_configured() is False
+
+
+def test_email_configured_true_when_set(settings_env) -> None:
+    from config.settings import Settings
+
+    s = Settings()
+    assert s.email_configured() is True
+
+
+def test_email_configured_false_when_only_user_set(monkeypatch: pytest.MonkeyPatch) -> None:
+    from config.settings import Settings
+
+    monkeypatch.setenv("GMAIL_USER", "user@example.com")
+    monkeypatch.delenv("GMAIL_APP_PASS", raising=False)
+    s = Settings()
+    assert s.email_configured() is False
+
+
+def test_foundry_configured_false_by_default() -> None:
+    from config.settings import Settings
+
+    s = Settings()
+    assert s.foundry_configured() is False
