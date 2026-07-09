@@ -220,3 +220,29 @@ def test_main_requires_upload_or_verify(monkeypatch: pytest.MonkeyPatch) -> None
     monkeypatch.setattr(sys, "argv", ["foundry_client.py"])
     with pytest.raises(SystemExit):
         main()
+
+
+def test_foundry_client_raises_on_empty_hostname() -> None:
+    from scripts.foundry_client import FoundryClient, FoundryConfigError
+
+    with pytest.raises(FoundryConfigError):
+        FoundryClient(hostname="", token="tok")
+
+
+def test_foundry_client_raises_on_empty_token() -> None:
+    from scripts.foundry_client import FoundryClient, FoundryConfigError
+
+    with pytest.raises(FoundryConfigError):
+        FoundryClient(hostname="https://host.example.com", token="")
+
+
+def test_foundry_config_error_is_runtime_error() -> None:
+    from scripts.foundry_client import FoundryConfigError
+
+    assert issubclass(FoundryConfigError, RuntimeError)
+
+
+def test_foundry_api_error_is_runtime_error() -> None:
+    from scripts.foundry_client import FoundryAPIError
+
+    assert issubclass(FoundryAPIError, RuntimeError)
