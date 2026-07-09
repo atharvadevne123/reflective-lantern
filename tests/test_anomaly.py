@@ -77,3 +77,29 @@ def test_ratio_method_parametrized(predicted, median, expect_anomaly) -> None:
 def test_deviation_pct_computed() -> None:
     result = detect_valuation_anomaly(predicted=600_000, neighborhood_median=500_000)
     assert result["deviation_pct"] == pytest.approx(20.0)
+
+def test_result_has_required_keys() -> None:
+    result = detect_valuation_anomaly(predicted=450_000, neighborhood_median=500_000)
+    assert "is_anomaly" in result
+    assert "direction" in result
+    assert "method" in result
+    assert "deviation_pct" in result
+
+
+def test_direction_low_when_underpriced() -> None:
+    result = detect_valuation_anomaly(predicted=50_000, neighborhood_median=500_000)
+    assert result["direction"] == "low"
+
+
+def test_direction_high_when_overpriced() -> None:
+    result = detect_valuation_anomaly(predicted=1_500_000, neighborhood_median=500_000)
+    assert result["direction"] == "high"
+
+
+@pytest.mark.parametrize("std", [10_000, 50_000, 100_000])
+def test_zscore_deviation_scales_with_std(std) -> None:
+    result = detect_valuation_anomaly(
+        predicted=700_000, neighborhood_median=500_000, neighborhood_std=std
+    )
+    assert result["method"] == "zscore"
+    assert "score" in result
