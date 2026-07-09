@@ -62,3 +62,39 @@ def test_train_model_persists_file(sample_df, sample_target, tmp_path, monkeypat
     train_model(sample_df, sample_target)
     assert mp.exists()
     assert mtp.exists()
+
+
+def test_train_model_metrics_have_std(sample_df, sample_target) -> None:
+    _, metrics = train_model(sample_df, sample_target)
+    assert "r2_std" in metrics
+    assert "rmse_std" in metrics
+    assert metrics["r2_std"] >= 0.0
+    assert metrics["rmse_std"] >= 0.0
+
+
+def test_train_model_n_features_positive(sample_df, sample_target) -> None:
+    _, metrics = train_model(sample_df, sample_target)
+    assert metrics["n_features"] > 0
+
+
+def test_predict_no_nan_values(sample_df, sample_target) -> None:
+    bundle, _ = train_model(sample_df, sample_target)
+    preds = predict(sample_df, bundle)
+    assert not np.any(np.isnan(preds))
+
+
+@pytest.mark.parametrize("seed", [0, 7, 42])
+def test_synthetic_model_predict_finite(seed) -> None:
+    rng = np.random.default_rng(seed)
+    bundle = _synthetic_model()
+    import pandas as pd
+    stub = pd.DataFrame({
+        "sqft": [1200.0], "bedrooms": [2], "bathrooms": [1.0], "lot_size": [4000.0],
+        "year_built": [1990], "condition_score": [6.0], "school_score": [5.0],
+        "transit_score": [5.0], "walkability_score": [5.0], "crime_rate": [0.4],
+        "median_neighborhood_price": [250_000.0], "median_price_per_sqft": [180.0],
+        "avg_rental_yield": [0.05], "listing_days": [20], "list_price": [300_000.0],
+    })
+    preds = predict(stub, bundle)
+    assert len(preds) == 1
+    assert np.isfinite(preds[0])
