@@ -205,8 +205,8 @@ def client(monkeypatch: pytest.MonkeyPatch):  # type: ignore[return]
         return
     os.environ.setdefault("DATABASE_URL", "sqlite:///:memory:")
     os.environ.setdefault("ANTHROPIC_API_KEY", "sk-test")
-    from app.main import app
     from app.database import Base, engine
+    from app.main import app
     Base.metadata.create_all(bind=engine)
     with TestClient(app) as c:
         yield c

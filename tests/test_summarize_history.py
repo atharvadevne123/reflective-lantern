@@ -289,9 +289,10 @@ def test_aggregate_stats_total_commits(history_dir: Path) -> None:
 
 
 def test_summarize_history_returns_zero(history_dir: Path) -> None:
-    import scripts.summarize_history as sh
-    from unittest.mock import patch
     import sys
+    from unittest.mock import patch
+
+    import scripts.summarize_history as sh
 
     with patch.object(sys, "argv", ["summarize_history.py"]):
         with patch.object(sh, "HISTORY_DIR", history_dir):

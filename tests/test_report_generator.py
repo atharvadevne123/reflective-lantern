@@ -354,7 +354,7 @@ def test_total_commits_empty_history() -> None:
     assert total_commits({}) == 0
 
 
-def test_total_commits_single_repo() -> None:
+def test_total_commits_single_repo_multiple_entries() -> None:
     from scripts.report_generator import total_commits
 
     history = {"MyRepo": [{"commits": 60}, {"commits": 45}]}
@@ -363,6 +363,7 @@ def test_total_commits_single_repo() -> None:
 
 def test_format_date_iso_format() -> None:
     from datetime import date
+
     from scripts.report_generator import format_date
 
     d = date(2026, 7, 9)
@@ -372,6 +373,7 @@ def test_format_date_iso_format() -> None:
 def test_daily_report_contains_date_string(history_dir: Path) -> None:
     from datetime import date
     from unittest.mock import patch
+
     from scripts import report_generator as rg
 
     with patch.object(rg, "HISTORY_DIR", history_dir):

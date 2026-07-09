@@ -104,7 +104,7 @@ def test_dom_classification_boundary_values(days, expected) -> None:
     assert dom_classification(days) == expected
 
 
-def test_price_to_rent_ratio_zero_rent() -> None:
+def test_price_to_rent_ratio_zero_annual_rent_returns_inf() -> None:
     from app.market_context import price_to_rent_ratio
     ratio = price_to_rent_ratio(500_000, 0)
     assert ratio == float("inf")

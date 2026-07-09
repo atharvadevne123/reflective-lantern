@@ -150,6 +150,7 @@ def test_normalize_mode_non_string_returns_empty() -> None:
 
 def test_rows_to_jsonl_each_line_is_valid_json(multi_repo_history_dir) -> None:
     import json
+
     from scripts.foundry_export import build_run_rows, rows_to_jsonl
 
     rows = build_run_rows(multi_repo_history_dir)
@@ -166,7 +167,7 @@ def test_rows_to_jsonl_empty_returns_empty_string() -> None:
 
 
 def test_build_ontology_run_object_has_required_properties(multi_repo_history_dir) -> None:
-    from scripts.foundry_export import build_run_rows, build_ontology_objects
+    from scripts.foundry_export import build_ontology_objects, build_run_rows
 
     rows = build_run_rows(multi_repo_history_dir)
     objects = build_ontology_objects(rows)

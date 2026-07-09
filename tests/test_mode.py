@@ -152,8 +152,8 @@ def test_next_innovation_day_known_dates(after: date, expected: date) -> None:
 
 
 def test_next_innovation_day_is_in_valid_day_range() -> None:
-    from config.mode import next_innovation_day
     from config.constants import INNOVATION_DAY_RANGES
+    from config.mode import next_innovation_day
 
     nxt = next_innovation_day(after=date(2026, 7, 1))
     day = nxt.day

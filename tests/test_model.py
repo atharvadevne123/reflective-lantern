@@ -85,7 +85,6 @@ def test_predict_no_nan_values(sample_df, sample_target) -> None:
 
 @pytest.mark.parametrize("seed", [0, 7, 42])
 def test_synthetic_model_predict_finite(seed) -> None:
-    rng = np.random.default_rng(seed)
     bundle = _synthetic_model()
     import pandas as pd
     stub = pd.DataFrame({

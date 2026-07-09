@@ -226,8 +226,9 @@ def test_config_package_exports_get_logger() -> None:
 
 
 def test_validate_history_invalid_json_returns_error(tmp_path: Path) -> None:
-    import scripts.validate_history as vh
     from unittest.mock import patch
+
+    import scripts.validate_history as vh
 
     h = tmp_path / "history"
     h.mkdir()
@@ -239,8 +240,9 @@ def test_validate_history_invalid_json_returns_error(tmp_path: Path) -> None:
 
 
 def test_validate_history_single_dict_format(tmp_path: Path) -> None:
-    import scripts.validate_history as vh
     from unittest.mock import patch
+
+    import scripts.validate_history as vh
 
     h = tmp_path / "history"
     h.mkdir()
@@ -253,8 +255,9 @@ def test_validate_history_single_dict_format(tmp_path: Path) -> None:
 
 
 def test_validate_history_negative_commits(tmp_path: Path) -> None:
-    import scripts.validate_history as vh
     from unittest.mock import patch
+
+    import scripts.validate_history as vh
 
     h = tmp_path / "history"
     h.mkdir()

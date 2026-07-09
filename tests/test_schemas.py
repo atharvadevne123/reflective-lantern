@@ -102,7 +102,7 @@ def test_optional_fields_default() -> None:
     assert prop.city == ""
 
 
-def test_renovation_year_before_built_raises() -> None:
+def test_renovation_year_before_built_by_ten_years_raises() -> None:
     props = base_props()
     props["year_built"] = 2000
     props["renovation_year"] = 1990
@@ -110,7 +110,7 @@ def test_renovation_year_before_built_raises() -> None:
         PropertyInput(**props)
 
 
-def test_renovation_year_equal_to_built_is_valid() -> None:
+def test_renovation_year_same_as_built_is_valid() -> None:
     props = base_props()
     props["year_built"] = 2000
     props["renovation_year"] = 2000

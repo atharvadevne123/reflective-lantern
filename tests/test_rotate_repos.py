@@ -204,6 +204,7 @@ def test_repo_names_skips_non_string_names() -> None:
 
 def test_select_repo_deterministic_same_date() -> None:
     from datetime import date
+
     from scripts.rotate_repos import select_repo
 
     repos = [{"name": "A"}, {"name": "B"}, {"name": "C"}]
@@ -215,6 +216,7 @@ def test_select_repo_deterministic_same_date() -> None:
 
 def test_select_repo_different_dates_may_differ() -> None:
     from datetime import date
+
     from scripts.rotate_repos import select_repo
 
     repos = [{"name": f"Repo{i}"} for i in range(10)]
@@ -224,6 +226,7 @@ def test_select_repo_different_dates_may_differ() -> None:
 
 def test_select_repo_raises_when_empty() -> None:
     from datetime import date
+
     from scripts.rotate_repos import select_repo
 
     with pytest.raises(ValueError, match="Need at least"):
@@ -232,6 +235,7 @@ def test_select_repo_raises_when_empty() -> None:
 
 def test_select_repo_returns_from_repos() -> None:
     from datetime import date
+
     from scripts.rotate_repos import select_repo
 
     repos = [{"name": "Alpha"}, {"name": "Beta"}]

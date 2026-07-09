@@ -261,8 +261,9 @@ def test_count_entries_empty_dir(tmp_path: Path) -> None:
 
 
 def test_entry_date_with_date_field() -> None:
-    from scripts.cleanup import _entry_date
     from datetime import date
+
+    from scripts.cleanup import _entry_date
 
     entry = {"date": "2026-07-09", "commits": 60}
     result = _entry_date(entry)
@@ -270,8 +271,9 @@ def test_entry_date_with_date_field() -> None:
 
 
 def test_entry_date_with_last_run_field() -> None:
-    from scripts.cleanup import _entry_date
     from datetime import date
+
+    from scripts.cleanup import _entry_date
 
     entry = {"last_run": "2026-06-01", "commits": 45}
     result = _entry_date(entry)

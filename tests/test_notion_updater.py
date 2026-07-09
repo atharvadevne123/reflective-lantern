@@ -171,7 +171,7 @@ def test_projects_list_has_name_field() -> None:
     from scripts.notion_portfolio_update import PROJECTS
 
     for project in PROJECTS:
-        assert "name" in project, f"Project missing name key"
+        assert "name" in project, "Project missing name key"
 
 
 def test_projects_list_is_non_empty() -> None:
