@@ -116,3 +116,34 @@ def test_build_message_prefix_strips_correctly() -> None:
     msg = build_message("Report", "body", "s@t.com", "r@t.com", subject_prefix="[LN]")
     assert not msg["Subject"].startswith(" ")
     assert msg["Subject"] == "[LN] Report"
+
+
+def test_build_message_body_is_plain_text() -> None:
+    from scripts.email_report import build_message
+
+    msg = build_message("Subject", "Hello world", "s@t.com", "r@t.com")
+    parts = msg.get_payload()
+    if isinstance(parts, list):
+        text = " ".join(p.get_payload() for p in parts if hasattr(p, "get_payload"))
+    else:
+        text = str(parts)
+    assert "Hello world" in text
+
+
+def test_build_message_from_and_to() -> None:
+    from scripts.email_report import build_message
+
+    msg = build_message("Sub", "body", "sender@test.com", "recipient@test.com")
+    assert msg["From"] == "sender@test.com"
+    assert msg["To"] == "recipient@test.com"
+
+
+def test_send_report_returns_false_without_credentials(
+    monkeypatch,
+) -> None:
+    from scripts.email_report import send_report
+
+    monkeypatch.delenv("GMAIL_USER", raising=False)
+    monkeypatch.delenv("GMAIL_APP_PASS", raising=False)
+    result = send_report(subject="Test", body="body")
+    assert result is False
