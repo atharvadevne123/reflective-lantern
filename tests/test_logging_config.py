@@ -202,3 +202,48 @@ def test_json_formatter_run_id_included() -> None:
     output = formatter.format(record)
     parsed = json.loads(output)
     assert parsed.get("run_id") == "abc-123"
+
+
+def test_json_formatter_exception_info_included() -> None:
+    from config.logging_config import JsonFormatter
+
+    formatter = JsonFormatter()
+    try:
+        raise ValueError("test error")
+    except ValueError:
+        import sys
+        exc_info = sys.exc_info()
+
+    record = logging.LogRecord(
+        name="test",
+        level=logging.ERROR,
+        pathname="",
+        lineno=0,
+        msg="error occurred",
+        args=(),
+        exc_info=exc_info,
+    )
+    output = formatter.format(record)
+    parsed = json.loads(output)
+    assert "exception" in parsed
+    assert "ValueError" in parsed["exception"]
+
+
+def test_json_formatter_output_has_ts_key() -> None:
+    from config.logging_config import JsonFormatter
+
+    formatter = JsonFormatter()
+    record = logging.LogRecord(
+        name="test", level=logging.INFO, pathname="", lineno=0,
+        msg="hello", args=(), exc_info=None,
+    )
+    parsed = json.loads(formatter.format(record))
+    assert "ts" in parsed
+
+
+def test_configure_logging_suppresses_noisy_loggers() -> None:
+    from config.logging_config import configure_logging
+
+    configure_logging(level="DEBUG")
+    assert logging.getLogger("urllib3").level == logging.WARNING
+    assert logging.getLogger("httpx").level == logging.WARNING
