@@ -8,10 +8,14 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import logging
 import subprocess
 import sys
 import time
 from pathlib import Path
+
+logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 
 SCRIPTS_DIR = Path(__file__).parent
 CHECKS = [
@@ -26,16 +30,16 @@ CHECKS = [
 
 def run_check(name: str, cmd: list[str]) -> tuple[bool, float]:
     """Run a single check. Return (passed, elapsed_seconds)."""
-    print(f"\n{'─' * 60}")
-    print(f"  {name}")
-    print(f"{'─' * 60}")
+    logger.info("─" * 60)
+    logger.info("  %s", name)
+    logger.info("─" * 60)
     t0 = time.perf_counter()
     result = subprocess.run(cmd, check=False)
     elapsed = time.perf_counter() - t0
     if result.returncode == 0:
-        print(f"  ✓ {name} passed ({elapsed:.2f}s)")
+        logger.info("  ✓ %s passed (%.2fs)", name, elapsed)
     else:
-        print(f"  ✗ {name} failed (exit {result.returncode}, {elapsed:.2f}s)")
+        logger.error("  ✗ %s failed (exit %d, %.2fs)", name, result.returncode, elapsed)
     return result.returncode == 0, elapsed
 
 
@@ -62,9 +66,9 @@ def main() -> int:
             if args.stop_on_failure:
                 break
 
-    print(f"\n{'═' * 60}")
-    print(f"  {passed} check(s) passed, {failed} failed  [{total_time:.2f}s total]")
-    print(f"{'═' * 60}")
+    logger.info("═" * 60)
+    logger.info("  %d check(s) passed, %d failed  [%.2fs total]", passed, failed, total_time)
+    logger.info("═" * 60)
     return 0 if failed == 0 else 1
 
 
