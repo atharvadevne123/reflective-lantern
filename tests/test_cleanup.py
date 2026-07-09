@@ -258,3 +258,36 @@ def test_count_entries_empty_dir(tmp_path: Path) -> None:
 
     result = count_entries(tmp_path)
     assert result == {}
+
+
+def test_entry_date_with_date_field() -> None:
+    from scripts.cleanup import _entry_date
+    from datetime import date
+
+    entry = {"date": "2026-07-09", "commits": 60}
+    result = _entry_date(entry)
+    assert result == date(2026, 7, 9)
+
+
+def test_entry_date_with_last_run_field() -> None:
+    from scripts.cleanup import _entry_date
+    from datetime import date
+
+    entry = {"last_run": "2026-06-01", "commits": 45}
+    result = _entry_date(entry)
+    assert result == date(2026, 6, 1)
+
+
+def test_entry_date_invalid_returns_none() -> None:
+    from scripts.cleanup import _entry_date
+
+    entry = {"date": "not-a-date"}
+    result = _entry_date(entry)
+    assert result is None
+
+
+def test_entry_date_missing_returns_none() -> None:
+    from scripts.cleanup import _entry_date
+
+    result = _entry_date({"commits": 60})
+    assert result is None
