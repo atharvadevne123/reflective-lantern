@@ -14,6 +14,8 @@ import sys
 import time
 from pathlib import Path
 
+from config.constants import SEPARATOR_WIDTH
+
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 
@@ -30,9 +32,9 @@ CHECKS = [
 
 def run_check(name: str, cmd: list[str]) -> tuple[bool, float]:
     """Run a single check. Return (passed, elapsed_seconds)."""
-    logger.info("─" * 60)
+    logger.info("─" * SEPARATOR_WIDTH)
     logger.info("  %s", name)
-    logger.info("─" * 60)
+    logger.info("─" * SEPARATOR_WIDTH)
     t0 = time.perf_counter()
     result = subprocess.run(cmd, check=False)
     elapsed = time.perf_counter() - t0
@@ -66,9 +68,9 @@ def main() -> int:
             if args.stop_on_failure:
                 break
 
-    print(f"\n{'═' * 60}")
+    print(f"\n{'═' * SEPARATOR_WIDTH}")
     print(f"  {passed} check(s) passed, {failed} failed  [{total_time:.2f}s total]")
-    print(f"{'═' * 60}")
+    print(f"{'═' * SEPARATOR_WIDTH}")
     return 0 if failed == 0 else 1
 
 
