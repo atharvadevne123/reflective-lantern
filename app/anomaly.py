@@ -10,7 +10,7 @@ Typical usage
 from app.anomaly import detect_valuation_anomaly
 result = detect_valuation_anomaly(predicted=250_000, neighborhood_median=600_000)
 if result["is_anomaly"]:
-    print("Possibly underpriced or data entry error")
+    logger.warning("Possibly underpriced or data entry error")
 """
 
 import logging
