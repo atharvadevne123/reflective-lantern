@@ -132,3 +132,47 @@ def test_real_history_dir_exports_cleanly() -> None:
     assert len(rows) > 0
     text = rows_to_csv(rows)
     assert text.startswith(",".join(DATASET_COLUMNS))
+
+
+def test_normalize_mode_lowercases_string() -> None:
+    from scripts.foundry_export import _normalize_mode
+
+    assert _normalize_mode("IMPROVEMENT") == "improvement"
+    assert _normalize_mode("Innovation") == "innovation"
+
+
+def test_normalize_mode_non_string_returns_empty() -> None:
+    from scripts.foundry_export import _normalize_mode
+
+    assert _normalize_mode(None) == ""
+    assert _normalize_mode(42) == ""
+
+
+def test_rows_to_jsonl_each_line_is_valid_json(multi_repo_history_dir) -> None:
+    import json
+    from scripts.foundry_export import build_run_rows, rows_to_jsonl
+
+    rows = build_run_rows(multi_repo_history_dir)
+    jsonl = rows_to_jsonl(rows)
+    for line in jsonl.strip().splitlines():
+        parsed = json.loads(line)
+        assert "run_key" in parsed
+
+
+def test_rows_to_jsonl_empty_returns_empty_string() -> None:
+    from scripts.foundry_export import rows_to_jsonl
+
+    assert rows_to_jsonl([]) == ""
+
+
+def test_build_ontology_run_object_has_required_properties(multi_repo_history_dir) -> None:
+    from scripts.foundry_export import build_run_rows, build_ontology_objects
+
+    rows = build_run_rows(multi_repo_history_dir)
+    objects = build_ontology_objects(rows)
+    run_objs = [o for o in objects if o["objectType"] == "AutomationRun"]
+    for obj in run_objs:
+        props = obj["properties"]
+        assert "repository" in props
+        assert "runDate" in props
+        assert "commits" in props
