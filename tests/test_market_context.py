@@ -120,3 +120,41 @@ def test_affordability_index_low_price_is_affordable() -> None:
     from app.market_context import affordability_index
     result = affordability_index(100_000, annual_income=200_000)
     assert result["is_affordable"] is True
+
+
+def test_affordability_bucket_affordable() -> None:
+    from app.market_context import affordability_bucket
+
+    assert affordability_bucket(25.0) == "affordable"
+    assert affordability_bucket(28.0) == "affordable"
+
+
+def test_affordability_bucket_stretched() -> None:
+    from app.market_context import affordability_bucket
+
+    assert affordability_bucket(28.1) == "stretched"
+    assert affordability_bucket(36.0) == "stretched"
+
+
+def test_affordability_bucket_unaffordable() -> None:
+    from app.market_context import affordability_bucket
+
+    assert affordability_bucket(36.1) == "unaffordable"
+    assert affordability_bucket(80.0) == "unaffordable"
+
+
+@pytest.mark.parametrize(
+    "pct,expected",
+    [
+        (0.0, "affordable"),
+        (28.0, "affordable"),
+        (28.5, "stretched"),
+        (36.0, "stretched"),
+        (36.1, "unaffordable"),
+        (100.0, "unaffordable"),
+    ],
+)
+def test_affordability_bucket_parametrized(pct: float, expected: str) -> None:
+    from app.market_context import affordability_bucket
+
+    assert affordability_bucket(pct) == expected
