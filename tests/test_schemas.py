@@ -26,7 +26,7 @@ def base_props() -> dict:
     }
 
 
-def test_valid_property_input():
+def test_valid_property_input() -> None:
     prop = PropertyInput(**base_props())
     assert prop.sqft == 1800.0
     assert prop.bedrooms == 3
@@ -49,14 +49,14 @@ def test_valid_property_input():
         ("avg_rental_yield", -0.1),
     ],
 )
-def test_invalid_field_raises_validation_error(field, bad_val):
+def test_invalid_field_raises_validation_error(field, bad_val) -> None:
     props = base_props()
     props[field] = bad_val
     with pytest.raises(ValidationError):
         PropertyInput(**props)
 
 
-def test_renovation_year_before_built_raises():
+def test_renovation_year_before_built_raises() -> None:
     props = base_props()
     props["renovation_year"] = 1980
     props["year_built"] = 1990
@@ -64,37 +64,37 @@ def test_renovation_year_before_built_raises():
         PropertyInput(**props)
 
 
-def test_renovation_year_equal_to_built_is_valid():
+def test_renovation_year_equal_to_built_is_valid() -> None:
     props = base_props()
     props["renovation_year"] = 1990
     prop = PropertyInput(**props)
     assert prop.renovation_year == 1990
 
 
-def test_zipcode_too_short_raises():
+def test_zipcode_too_short_raises() -> None:
     props = base_props()
     props["zipcode"] = "123"
     with pytest.raises(ValidationError):
         PropertyInput(**props)
 
 
-def test_batch_input_empty_raises():
+def test_batch_input_empty_raises() -> None:
     with pytest.raises(ValidationError):
         BatchPropertyInput(properties=[])
 
 
-def test_batch_input_too_many_raises():
+def test_batch_input_too_many_raises() -> None:
     props = [PropertyInput(**base_props())] * 101
     with pytest.raises(ValidationError):
         BatchPropertyInput(properties=props)
 
 
-def test_batch_input_valid():
+def test_batch_input_valid() -> None:
     body = BatchPropertyInput(properties=[PropertyInput(**base_props())] * 5)
     assert len(body.properties) == 5
 
 
-def test_optional_fields_default():
+def test_optional_fields_default() -> None:
     props = base_props()
     prop = PropertyInput(**props)
     assert prop.renovation_year is None
