@@ -19,7 +19,14 @@ log = logging.getLogger(__name__)
 
 
 def _build_body(end_date: date) -> str:
-    """Import report_generator to build the weekly Markdown body."""
+    """Build the Markdown body for the weekly summary email.
+
+    Args:
+        end_date: The last day included in the 7-day window.
+
+    Returns:
+        A Markdown-formatted string suitable for use as the email body.
+    """
     import sys
 
     sys.path.insert(0, str(Path(__file__).parent.parent))
