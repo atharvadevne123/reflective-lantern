@@ -1,9 +1,13 @@
 """Generate Realty-Edge system architecture diagram."""
 
+import logging
 import os
 
 import matplotlib.patches as mpatches
 import matplotlib.pyplot as plt
+
+logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.INFO, format="%(levelname)s %(message)s")
 
 os.makedirs("screenshots", exist_ok=True)
 
@@ -154,4 +158,4 @@ plt.tight_layout()
 plt.savefig(
     "screenshots/architecture.png", dpi=150, bbox_inches="tight", facecolor=fig.get_facecolor()
 )
-print("Architecture diagram saved to screenshots/architecture.png")
+logger.info("Architecture diagram saved to screenshots/architecture.png")
