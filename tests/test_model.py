@@ -6,7 +6,7 @@ import pytest
 from app.model import _synthetic_model, load_metrics, predict, train_model
 
 
-def test_train_model_returns_bundle_and_metrics(sample_df, sample_target):
+def test_train_model_returns_bundle_and_metrics(sample_df, sample_target) -> None:
     bundle, metrics = train_model(sample_df, sample_target)
     assert "ensemble" in bundle
     assert "scaler" in bundle
@@ -16,43 +16,43 @@ def test_train_model_returns_bundle_and_metrics(sample_df, sample_target):
     assert metrics["n_samples"] == len(sample_target)
 
 
-def test_train_model_r2_reasonable(sample_df, sample_target):
+def test_train_model_r2_reasonable(sample_df, sample_target) -> None:
     _, metrics = train_model(sample_df, sample_target)
     assert metrics["r2_mean"] > -2.0
 
 
-def test_predict_returns_correct_shape(sample_df, sample_target):
+def test_predict_returns_correct_shape(sample_df, sample_target) -> None:
     bundle, _ = train_model(sample_df, sample_target)
     preds = predict(sample_df, bundle)
     assert preds.shape == (len(sample_df),)
 
 
-def test_predict_positive_values(sample_df, sample_target):
+def test_predict_positive_values(sample_df, sample_target) -> None:
     bundle, _ = train_model(sample_df, sample_target)
     preds = predict(sample_df, bundle)
     assert np.all(np.isfinite(preds))
 
 
 @pytest.mark.parametrize("n", [1, 5, 10])
-def test_predict_batch_sizes(sample_df, sample_target, n):
+def test_predict_batch_sizes(sample_df, sample_target, n) -> None:
     bundle, _ = train_model(sample_df, sample_target)
     preds = predict(sample_df.head(n), bundle)
     assert len(preds) == n
 
 
-def test_synthetic_model_loads():
+def test_synthetic_model_loads() -> None:
     bundle = _synthetic_model()
     assert "ensemble" in bundle
     assert "scaler" in bundle
 
 
-def test_load_metrics_returns_dict():
+def test_load_metrics_returns_dict() -> None:
     m = load_metrics()
     assert isinstance(m, dict)
     assert "model_version" in m
 
 
-def test_train_model_persists_file(sample_df, sample_target, tmp_path, monkeypatch):
+def test_train_model_persists_file(sample_df, sample_target, tmp_path, monkeypatch) -> None:
     import app.model as model_module
 
     mp = tmp_path / "model.joblib"
