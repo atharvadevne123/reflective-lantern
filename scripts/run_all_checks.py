@@ -66,9 +66,9 @@ def main() -> int:
             if args.stop_on_failure:
                 break
 
-    logger.info("═" * 60)
-    logger.info("  %d check(s) passed, %d failed  [%.2fs total]", passed, failed, total_time)
-    logger.info("═" * 60)
+    print(f"\n{'═' * 60}")
+    print(f"  {passed} check(s) passed, {failed} failed  [{total_time:.2f}s total]")
+    print(f"{'═' * 60}")
     return 0 if failed == 0 else 1
 
 
