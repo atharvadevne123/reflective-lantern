@@ -149,3 +149,36 @@ def test_next_innovation_day_known_dates(after: date, expected: date) -> None:
     from config.mode import next_innovation_day
 
     assert next_innovation_day(after) == expected
+
+
+def test_next_innovation_day_is_in_valid_day_range() -> None:
+    from config.mode import next_innovation_day
+    from config.constants import INNOVATION_DAY_RANGES
+
+    nxt = next_innovation_day(after=date(2026, 7, 1))
+    day = nxt.day
+    in_range = any(lo <= day <= hi for lo, hi in INNOVATION_DAY_RANGES)
+    assert in_range
+
+
+def test_run_mode_str_value() -> None:
+    from config.mode import RunMode
+
+    assert RunMode.IMPROVEMENT.value == "IMPROVEMENT"
+    assert RunMode.INNOVATION.value == "INNOVATION"
+
+
+def test_determine_mode_improvement_on_monday() -> None:
+    from config.mode import RunMode, determine_mode
+
+    monday = date(2026, 7, 6)
+    assert monday.isoweekday() == 1
+    assert determine_mode(monday) == RunMode.IMPROVEMENT
+
+
+def test_is_innovation_day_false_on_first_wednesday_of_month() -> None:
+    from config.mode import is_innovation_day
+
+    wed_day1 = date(2026, 7, 1)
+    assert wed_day1.isoweekday() == 3
+    assert not is_innovation_day(wed_day1)
