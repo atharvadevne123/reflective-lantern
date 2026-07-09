@@ -76,3 +76,34 @@ def test_break_even_decreases_with_higher_yield() -> None:
 def test_amenity_composite_range() -> None:
     result = compute_investment_analysis(500_000, 0.07, 8, 9, 7, 0.2)
     assert 0 <= result.amenity_composite <= 1
+
+
+def test_gross_rental_yield_matches_input() -> None:
+    result = compute_investment_analysis(
+        predicted_value=400_000,
+        avg_rental_yield=0.07,
+        school_score=6,
+        transit_score=6,
+        walkability_score=6,
+        crime_rate=0.3,
+    )
+    assert result.gross_rental_yield == pytest.approx(0.07)
+
+
+def test_risk_score_equals_crime_rate() -> None:
+    for cr in [0.0, 0.3, 0.7, 1.0]:
+        result = compute_investment_analysis(500_000, 0.07, 6, 6, 6, cr)
+        assert result.risk_score == pytest.approx(cr)
+
+
+@pytest.mark.parametrize("expense_ratio", [0.20, 0.35, 0.50])
+def test_higher_expense_ratio_lowers_cap_rate(expense_ratio) -> None:
+    result = compute_investment_analysis(500_000, 0.08, 6, 6, 6, 0.3, expense_ratio)
+    baseline = compute_investment_analysis(500_000, 0.08, 6, 6, 6, 0.3, 0.10)
+    if expense_ratio > 0.10:
+        assert result.cap_rate < baseline.cap_rate
+
+
+def test_predicted_value_preserved_in_result() -> None:
+    result = compute_investment_analysis(750_000, 0.06, 5, 5, 5, 0.3)
+    assert result.predicted_value == pytest.approx(750_000)
