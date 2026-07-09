@@ -6,6 +6,12 @@ from pydantic import BaseModel, Field, field_validator
 
 
 class PropertyInput(BaseModel):
+    """Input schema for a single property valuation request.
+
+    All numeric fields are validated at the boundary; ``renovation_year``
+    must not precede ``year_built`` when both are supplied.
+    """
+
     sqft: float = Field(..., gt=0, le=50_000, description="Total living area in square feet")
     bedrooms: int = Field(..., ge=1, le=20)
     bathrooms: float = Field(..., ge=0.5, le=20)
@@ -40,6 +46,8 @@ class PropertyInput(BaseModel):
 
 
 class PredictionResponse(BaseModel):
+    """Response schema for a single property valuation prediction."""
+
     predicted_value: float
     investment_score: float
     confidence_band_low: float
@@ -49,25 +57,35 @@ class PredictionResponse(BaseModel):
 
 
 class BatchPropertyInput(BaseModel):
+    """Input schema for a batch of up to 100 property valuation requests."""
+
     properties: list[PropertyInput] = Field(..., min_length=1, max_length=100)
 
 
 class BatchPredictionResponse(BaseModel):
+    """Response schema wrapping predictions for a batch request."""
+
     predictions: list[PredictionResponse]
     count: int
 
 
 class ComparableRequest(BaseModel):
+    """Request schema for comparable-property search via FAISS."""
+
     property: PropertyInput
     top_k: int = Field(5, ge=1, le=20)
 
 
 class ComparableResponse(BaseModel):
+    """Response schema containing the nearest comparable properties."""
+
     comparables: list[dict]
     query_vector_dim: int
 
 
 class NeighborhoodStatsResponse(BaseModel):
+    """Response schema for aggregated neighbourhood statistics."""
+
     zipcode: str
     median_price: float
     median_price_per_sqft: float
@@ -79,17 +97,23 @@ class NeighborhoodStatsResponse(BaseModel):
 
 
 class DriftStatusResponse(BaseModel):
+    """Response schema for the /drift endpoint."""
+
     drift_reports: list[dict]
     total_predictions: int
 
 
 class HealthResponse(BaseModel):
+    """Response schema for the /health liveness check."""
+
     status: str
     model_version: str
     db_connected: bool
 
 
 class MetricsResponse(BaseModel):
+    """Response schema for model training metrics."""
+
     r2_mean: float | None = None
     rmse_mean: float | None = None
     n_features: int | None = None
