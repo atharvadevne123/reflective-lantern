@@ -89,7 +89,12 @@ def main() -> int:
         Path(args.output).write_text(payload)
         log.info("Wrote export to %s", args.output)
 
-    print(f"{summary['rows']} rows exported ({summary['format']}), uploaded={summary['uploaded']}")
+    log.info(
+        "%d rows exported (%s), uploaded=%s",
+        summary["rows"],
+        summary["format"],
+        summary["uploaded"],
+    )
     return 0
 
 
