@@ -5,7 +5,7 @@ import pytest
 from app.monitoring import compute_drift, log_prediction, run_drift_check
 
 
-def test_compute_drift_no_drift():
+def test_compute_drift_no_drift() -> None:
     import numpy as np
 
     rng = np.random.default_rng(42)
@@ -19,7 +19,7 @@ def test_compute_drift_no_drift():
     assert result["p_value"] > 0.05
 
 
-def test_compute_drift_detects_shift():
+def test_compute_drift_detects_shift() -> None:
     import numpy as np
 
     rng = np.random.default_rng(0)
@@ -37,7 +37,7 @@ def test_compute_drift_detects_shift():
         (400_000, 900_000, True),
     ],
 )
-def test_compute_drift_parametrized(ref_mean, cur_mean, expect_drift):
+def test_compute_drift_parametrized(ref_mean, cur_mean, expect_drift) -> None:
     import numpy as np
 
     rng = np.random.default_rng(1)
@@ -47,7 +47,7 @@ def test_compute_drift_parametrized(ref_mean, cur_mean, expect_drift):
     assert result["drift_detected"] == expect_drift
 
 
-def test_compute_drift_sample_counts():
+def test_compute_drift_sample_counts() -> None:
     ref = [1.0] * 50
     cur = [2.0] * 30
     result = compute_drift(ref, cur)
@@ -55,7 +55,7 @@ def test_compute_drift_sample_counts():
     assert result["n_current"] == 30
 
 
-def test_log_prediction_creates_record(db_session):
+def test_log_prediction_creates_record(db_session) -> None:
     record = log_prediction(
         db=db_session,
         predicted_value=450_000.0,
@@ -69,7 +69,7 @@ def test_log_prediction_creates_record(db_session):
     assert record.investment_score == 6.5
 
 
-def test_run_drift_check_creates_report(db_session):
+def test_run_drift_check_creates_report(db_session) -> None:
     import numpy as np
 
     rng = np.random.default_rng(5)
@@ -81,7 +81,7 @@ def test_run_drift_check_creates_report(db_session):
     assert report.drift_detected is True
 
 
-def test_log_prediction_without_investment_score(db_session):
+def test_log_prediction_without_investment_score(db_session) -> None:
     record = log_prediction(
         db=db_session,
         predicted_value=300_000.0,
