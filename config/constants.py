@@ -53,6 +53,7 @@ MAX_HISTORY_ENTRIES: int = 365
 # Report formatting
 REPORT_DATE_FORMAT: str = "%Y-%m-%d"
 PDF_MAX_SIZE_MB: float = 5.0
+SEPARATOR_WIDTH: int = 60
 
 # Weekly summary window
 WEEKLY_SUMMARY_DAYS: int = 7
