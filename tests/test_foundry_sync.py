@@ -68,3 +68,26 @@ def test_sync_summary_row_count_matches_export(
 
     summary = sync(settings=_unconfigured_settings(monkeypatch))
     assert summary["rows"] == len(build_run_rows())
+
+
+def test_sync_summary_has_required_keys(monkeypatch: pytest.MonkeyPatch) -> None:
+    summary = sync(settings=_unconfigured_settings(monkeypatch))
+    for key in ("rows", "format", "uploaded", "transaction_rid"):
+        assert key in summary, f"Missing key: {key}"
+
+
+def test_sync_format_defaults_to_csv(monkeypatch: pytest.MonkeyPatch) -> None:
+    summary = sync(settings=_unconfigured_settings(monkeypatch))
+    assert summary["format"] == "csv"
+
+
+def test_sync_uploaded_false_when_unconfigured(monkeypatch: pytest.MonkeyPatch) -> None:
+    settings = _unconfigured_settings(monkeypatch)
+    assert not settings.foundry_configured()
+    summary = sync(settings=settings)
+    assert summary["uploaded"] is False
+
+
+def test_sync_csv_format_explicit(monkeypatch: pytest.MonkeyPatch) -> None:
+    summary = sync(fmt="csv", settings=_unconfigured_settings(monkeypatch))
+    assert summary["format"] == "csv"
