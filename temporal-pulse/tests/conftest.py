@@ -22,8 +22,14 @@ def engine():
     import os
     sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
+    from sqlalchemy.pool import StaticPool
+
     from app.database import Base
-    eng = create_engine(TEST_DATABASE_URL, connect_args={"check_same_thread": False})
+    eng = create_engine(
+        TEST_DATABASE_URL,
+        connect_args={"check_same_thread": False},
+        poolclass=StaticPool,
+    )
     Base.metadata.create_all(eng)
     yield eng
     Base.metadata.drop_all(eng)
