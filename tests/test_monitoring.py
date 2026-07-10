@@ -84,10 +84,31 @@ def test_log_anomaly(db_session):
 
 
 @pytest.mark.parametrize("mean_shift", [0, 5, 10, 20])
-def test_drift_various_shifts(mean_shift: float):
+def test_drift_various_shifts(mean_shift: float) -> None:
     rng = np.random.default_rng(42)
     ref = list(rng.normal(10, 2, 200))
     cur = list(rng.normal(10 + mean_shift, 2, 200))
     result = compute_drift(ref, cur)
     if mean_shift >= 10:
         assert result["drift_detected"], f"Expected drift at shift={mean_shift}"
+
+
+def test_latency_timer_ms_positive() -> None:
+    with LatencyTimer() as t:
+        pass
+    assert t.ms >= 0.0
+
+
+def test_compute_drift_exact_same_distribution() -> None:
+    data = list(np.random.default_rng(99).normal(5, 1, 100))
+    result = compute_drift(data, data)
+    assert not result["drift_detected"]
+    assert result["ks_statistic"] == pytest.approx(0.0)
+
+
+def test_set_reference_window_truncates_to_500() -> None:
+    large = list(range(1000))
+    set_reference_window(large)
+    from app.monitoring import _reference_window
+    assert len(_reference_window) == 500
+    assert _reference_window[0] == 500
