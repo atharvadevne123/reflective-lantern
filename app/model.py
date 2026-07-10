@@ -159,3 +159,24 @@ def generate_synthetic_training_data(
         "load_ratio_vs_daily_mean": rng.uniform(0.7, 1.3, n_samples),
     })
     return df, pd.Series(load, name="load_mw")
+
+
+def get_model_summary(model: VotingRegressor) -> dict:
+    """Return a summary of the fitted ensemble model."""
+    estimators = model.estimators_ if hasattr(model, "estimators_") else []
+    return {
+        "n_estimators": len(estimators),
+        "estimator_names": [name for name, _ in model.estimators],
+        "weights": list(model.weights) if model.weights else None,
+    }
+
+
+def validate_feature_array(X: np.ndarray, expected_features: int | None = None) -> bool:
+    """Validate that input array has no NaN/Inf and expected number of features."""
+    if np.isnan(X).any() or np.isinf(X).any():
+        logger.warning("input contains NaN or Inf values")
+        return False
+    if expected_features is not None and X.shape[1] != expected_features:
+        logger.warning("expected %d features, got %d", expected_features, X.shape[1])
+        return False
+    return True
