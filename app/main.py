@@ -76,8 +76,20 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(
     title="Volt-Cast",
-    description="Energy consumption and grid load prediction API",
+    description=(
+        "**Volt-Cast** — Production-grade electricity consumption and grid load prediction API. "
+        "Powered by an XGBoost + LightGBM + RandomForest VotingRegressor ensemble with KS-test "
+        "drift monitoring, automated retraining, and FAISS pattern matching."
+    ),
     version="1.0.0",
+    contact={"name": "Reflective Lantern", "email": "devneatharva@gmail.com"},
+    license_info={"name": "MIT"},
+    openapi_tags=[
+        {"name": "System", "description": "Health, metrics, and configuration endpoints"},
+        {"name": "Prediction", "description": "Load prediction, batch, forecast, and analysis"},
+        {"name": "Monitoring", "description": "Drift detection and performance monitoring"},
+        {"name": "Administration", "description": "Model retraining and management"},
+    ],
     lifespan=lifespan,
 )
 
