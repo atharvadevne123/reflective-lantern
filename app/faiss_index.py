@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import logging
-from typing import Optional
 
 import numpy as np
 
@@ -24,7 +23,7 @@ class LoadPatternIndex:
         self.dim = dim
         self._vectors: list[np.ndarray] = []
         self._metadata: list[dict] = []
-        self._index: Optional[object] = None
+        self._index: object | None = None
 
     def add(self, vector: list[float], metadata: dict | None = None) -> None:
         """Add a load period vector (e.g. 24-hour profile) to the index."""
@@ -86,7 +85,7 @@ class LoadPatternIndex:
         return len(self._vectors)
 
 
-_pattern_index: Optional[LoadPatternIndex] = None
+_pattern_index: LoadPatternIndex | None = None
 
 
 def get_pattern_index(dim: int = 24) -> LoadPatternIndex:

@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import numpy as np
 import pytest
 
 from app.time_series import compute_trend, detect_load_spikes, seasonal_summary

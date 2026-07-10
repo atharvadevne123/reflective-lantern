@@ -17,7 +17,6 @@ from __future__ import annotations
 import logging
 import os
 import time
-from typing import Optional
 
 import anthropic
 from dotenv import load_dotenv
@@ -156,7 +155,7 @@ def update_notion_page(
     page_id: str,
     cover_url: str,
     tags: list[str],
-    description: Optional[str] = None,
+    description: str | None = None,
 ) -> None:
     """Patch a Notion page: cover image, Tags multi-select, and Description."""
     properties: dict[str, object] = {
@@ -195,7 +194,7 @@ def main(generate_descriptions: bool = False) -> None:
         cover_url = f"{COVER_BASE}/{project['cover']}.svg"
         tags = [str(t) for t in (project.get("tags") or [])]
 
-        description: Optional[str] = None
+        description: str | None = None
         if generate_descriptions and ANTHROPIC_API_KEY:
             try:
                 description = generate_description(ai, project)

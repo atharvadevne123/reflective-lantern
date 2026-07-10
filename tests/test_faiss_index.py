@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import numpy as np
 import pytest
 
 from app.faiss_index import LoadPatternIndex, get_pattern_index

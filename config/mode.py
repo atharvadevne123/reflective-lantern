@@ -3,12 +3,12 @@
 from __future__ import annotations
 
 from datetime import date, timedelta
-from enum import Enum
+from enum import StrEnum
 
 from config.constants import INNOVATION_DAY_RANGES, INNOVATION_WEEKDAY
 
 
-class RunMode(str, Enum):
+class RunMode(StrEnum):
     """Possible Reflective Lantern run modes.
 
     IMPROVEMENT: Standard Mon–Fri 60-commit code improvement pass.

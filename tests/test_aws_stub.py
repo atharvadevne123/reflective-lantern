@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-import pytest
-
 from app.aws_stub import download_model, list_model_versions, upload_model
 
 

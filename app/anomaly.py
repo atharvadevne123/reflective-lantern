@@ -3,14 +3,13 @@
 from __future__ import annotations
 
 import logging
-from typing import Optional
 
 import numpy as np
 from sklearn.ensemble import IsolationForest
 
 logger = logging.getLogger(__name__)
 
-_iso_model: Optional[IsolationForest] = None
+_iso_model: IsolationForest | None = None
 
 
 def fit_isolation_forest(
