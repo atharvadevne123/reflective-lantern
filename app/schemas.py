@@ -76,6 +76,7 @@ class DriftResponse(BaseModel):
 
 
 class HealthResponse(BaseModel):
+    """API health check response."""
     status: str
     model_loaded: bool
     anomaly_model_loaded: bool
@@ -83,6 +84,7 @@ class HealthResponse(BaseModel):
 
 
 class MetricsResponse(BaseModel):
+    """Aggregated monitoring metrics response."""
     total_predictions: int
     total_anomalies_flagged: int
     total_drift_events: int
