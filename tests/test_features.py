@@ -1,115 +1,144 @@
 """Tests for feature engineering pipeline."""
 
-import numpy as np
-import pandas as pd
+from __future__ import annotations
+
 import pytest
 
 from app.features import (
-    AmenityCompositeTransformer,
-    InvestmentPotentialTransformer,
-    PropertyAgeTransformer,
+    DropColumnsTransformer,
+    LagFeatureTransformer,
+    PeakPeriodEncoder,
     RatioFeatureTransformer,
-    TierEncoderTransformer,
+    RollingStatsTransformer,
+    TemporalFeatureTransformer,
     build_feature_pipeline,
-    extract_feature_array,
+    build_raw_feature_df,
 )
 
 
-@pytest.fixture
-def single_row():
-    return pd.DataFrame([{
-        "sqft": 2000.0, "bedrooms": 3, "bathrooms": 2.0, "lot_size": 6000.0,
-        "year_built": 1990, "renovation_year": 2015, "condition_score": 8.0,
-        "school_score": 7.0, "transit_score": 6.0, "walkability_score": 7.0,
-        "crime_rate": 0.25, "median_neighborhood_price": 500_000.0,
-        "median_price_per_sqft": 300.0, "avg_rental_yield": 0.07,
-        "listing_days": 20, "list_price": 450_000.0,
-    }])
+class TestLagFeatureTransformer:
+    def test_creates_lag_columns(self):
+        df = build_raw_feature_df(12, 2, 6, False, 25.0, 60.0, [3000.0] * 200)
+        t = LagFeatureTransformer()
+        out = t.fit_transform(df)
+        assert "lag_1h" in out.columns
+        assert "lag_24h" in out.columns
+        assert "lag_168h" in out.columns
+
+    def test_lag_values_from_history(self):
+        history = list(range(200, 370))
+        df = build_raw_feature_df(12, 2, 6, False, 25.0, 60.0, history)
+        out = LagFeatureTransformer().fit_transform(df)
+        assert out["lag_1h"].iloc[0] == pytest.approx(history[-1], rel=0.01)
+        assert out["lag_24h"].iloc[0] == pytest.approx(history[-24], rel=0.01)
+
+    def test_no_history_fills_zeros(self):
+        df = build_raw_feature_df(12, 2, 6, False, 25.0, 60.0, None)
+        out = LagFeatureTransformer().fit_transform(df)
+        assert out["lag_1h"].iloc[0] == 0.0
+        assert out["lag_24h"].iloc[0] == 0.0
+
+    @pytest.mark.parametrize("lags", [[1], [1, 24], [1, 24, 168]])
+    def test_custom_lags(self, lags):
+        df = build_raw_feature_df(12, 2, 6, False, 25.0, 60.0, [3000.0] * 200)
+        out = LagFeatureTransformer(lags=lags).fit_transform(df)
+        for lag in lags:
+            assert f"lag_{lag}h" in out.columns
 
 
-def test_property_age_transformer(single_row):
-    t = PropertyAgeTransformer(reference_year=2026)
-    result = t.fit_transform(single_row)
-    assert "property_age" in result.columns
-    assert result["property_age"].iloc[0] == 36
-    assert result["renovation_age"].iloc[0] == 11
+class TestRollingStatsTransformer:
+    def test_creates_rolling_columns(self):
+        df = build_raw_feature_df(12, 2, 6, False, 25.0, 60.0, [4000.0] * 30)
+        out = RollingStatsTransformer().fit_transform(df)
+        assert "rolling_mean_3h" in out.columns
+        assert "rolling_std_3h" in out.columns
+        assert "rolling_mean_24h" in out.columns
+
+    def test_rolling_mean_correct(self):
+        history = [float(i) for i in range(1, 31)]  # 1..30
+        df = build_raw_feature_df(12, 2, 6, False, 25.0, 60.0, history)
+        out = RollingStatsTransformer(windows=[3]).fit_transform(df)
+        expected_mean_3 = (28.0 + 29.0 + 30.0) / 3
+        assert out["rolling_mean_3h"].iloc[0] == pytest.approx(expected_mean_3, rel=0.01)
 
 
-def test_property_age_no_renovation(single_row):
-    row = single_row.copy()
-    row["renovation_year"] = None
-    result = PropertyAgeTransformer(reference_year=2026).transform(row)
-    assert result["renovation_age"].iloc[0] == result["property_age"].iloc[0]
+class TestTemporalFeatureTransformer:
+    def test_creates_sin_cos_columns(self):
+        df = build_raw_feature_df(12, 3, 6, False, 20.0, 50.0)
+        out = TemporalFeatureTransformer().fit_transform(df)
+        assert "hour_sin" in out.columns
+        assert "hour_cos" in out.columns
+        assert "dow_sin" in out.columns
+        assert "month_sin" in out.columns
+
+    @pytest.mark.parametrize("hour,expected_sin", [(0, 0.0), (6, 1.0), (12, 0.0), (18, -1.0)])
+    def test_hour_sin_values(self, hour, expected_sin):
+        df = build_raw_feature_df(hour, 0, 1, False, 20.0, 50.0)
+        out = TemporalFeatureTransformer().fit_transform(df)
+        assert out["hour_sin"].iloc[0] == pytest.approx(expected_sin, abs=0.01)
 
 
-def test_ratio_transformer(single_row):
-    t = RatioFeatureTransformer()
-    result = t.fit_transform(single_row)
-    assert "beds_per_bath" in result.columns
-    assert "sqft_per_bed" in result.columns
-    assert result["sqft_per_bed"].iloc[0] == pytest.approx(2000 / 3, rel=1e-3)
+class TestPeakPeriodEncoder:
+    def test_peak_hour_detection(self):
+        df = build_raw_feature_df(14, 2, 6, False, 25.0, 60.0)
+        out = PeakPeriodEncoder().fit_transform(df)
+        assert out["is_peak_hour"].iloc[0] == 1
+
+    def test_off_peak_hour(self):
+        df = build_raw_feature_df(3, 2, 6, False, 25.0, 60.0)
+        out = PeakPeriodEncoder().fit_transform(df)
+        assert out["is_peak_hour"].iloc[0] == 0
+
+    def test_morning_peak_detection(self):
+        df = build_raw_feature_df(8, 0, 1, False, 15.0, 55.0)
+        out = PeakPeriodEncoder().fit_transform(df)
+        assert out["is_morning_peak"].iloc[0] == 1
+
+    def test_evening_peak_detection(self):
+        df = build_raw_feature_df(19, 0, 1, False, 25.0, 65.0)
+        out = PeakPeriodEncoder().fit_transform(df)
+        assert out["is_evening_peak"].iloc[0] == 1
 
 
-def test_ratio_transformer_zero_beds(single_row):
-    row = single_row.copy()
-    row["bedrooms"] = 1
-    result = RatioFeatureTransformer().transform(row)
-    assert result["sqft_per_bed"].iloc[0] > 0
+class TestRatioFeatureTransformer:
+    def test_creates_heat_index(self):
+        df = build_raw_feature_df(12, 2, 7, False, 30.0, 80.0)
+        out = RatioFeatureTransformer().fit_transform(df)
+        assert "heat_index" in out.columns
+        assert "cooling_demand_proxy" in out.columns
+        assert "heating_demand_proxy" in out.columns
+
+    def test_cooling_demand_positive_when_hot(self):
+        df = build_raw_feature_df(12, 2, 7, False, 35.0, 70.0)
+        out = RatioFeatureTransformer().fit_transform(df)
+        assert out["cooling_demand_proxy"].iloc[0] > 0
+
+    def test_heating_demand_positive_when_cold(self):
+        df = build_raw_feature_df(12, 2, 1, False, -5.0, 50.0)
+        out = RatioFeatureTransformer().fit_transform(df)
+        assert out["heating_demand_proxy"].iloc[0] > 0
 
 
-def test_amenity_composite_transformer(single_row):
-    result = AmenityCompositeTransformer().fit_transform(single_row)
-    assert "amenity_composite" in result.columns
-    assert "risk_score" in result.columns
-    assert 0 <= result["amenity_composite"].iloc[0] <= 1
-    assert 0 <= result["risk_score"].iloc[0] <= 1
+class TestDropColumnsTransformer:
+    def test_drops_helper_columns(self):
+        df = build_raw_feature_df(12, 2, 6, False, 25.0, 60.0, [3000.0] * 5, "northeast")
+        out = DropColumnsTransformer().fit_transform(df)
+        assert "historical_loads" not in out.columns
+        assert "region" not in out.columns
 
 
-def test_investment_potential_transformer(single_row):
-    pre = AmenityCompositeTransformer().fit_transform(single_row)
-    result = InvestmentPotentialTransformer().fit_transform(pre)
-    assert "investment_potential" in result.columns
-    assert 0 <= result["investment_potential"].iloc[0] <= 10
+class TestBuildFeaturePipeline:
+    def test_pipeline_runs_end_to_end(self):
+        from app.model import generate_synthetic_training_data
+        X, y = generate_synthetic_training_data(n_samples=50)
+        pipe = build_feature_pipeline()
+        # Pipeline expects full numeric df; test with synthetic data directly
+        result = pipe.fit_transform(X)
+        assert result.shape[0] == 50
+        assert result.shape[1] > 0
 
-
-def test_tier_encoder_transformer(single_row):
-    pre = PropertyAgeTransformer().fit_transform(single_row)
-    result = TierEncoderTransformer().fit_transform(pre)
-    assert "size_tier" in result.columns
-    assert "age_tier" in result.columns
-    assert result["size_tier"].iloc[0] in [1, 2, 3, 4, 5]
-
-
-def test_build_feature_pipeline(single_row):
-    pipeline = build_feature_pipeline()
-    result = pipeline.fit_transform(single_row)
-    assert isinstance(result, pd.DataFrame)
-    assert "amenity_composite" in result.columns
-
-
-def test_extract_feature_array(single_row):
-    pipeline = build_feature_pipeline()
-    arr = extract_feature_array(single_row, pipeline)
-    assert arr.ndim == 2
-    assert arr.shape[0] == 1
-    assert arr.shape[1] > 0
-    assert np.all(np.isfinite(arr))
-
-
-@pytest.mark.parametrize("sqft,expected_tier", [
-    (500, 1), (1000, 2), (2000, 3), (3000, 4), (5000, 5),
-])
-def test_size_tier_values(single_row, sqft, expected_tier):
-    row = single_row.copy()
-    row["sqft"] = sqft
-    pre = PropertyAgeTransformer().fit_transform(row)
-    result = TierEncoderTransformer().fit_transform(pre)
-    assert result["size_tier"].iloc[0] == expected_tier
-
-
-def test_pipeline_handles_missing_values(sample_df):
-    df = sample_df.copy()
-    df.loc[0, "renovation_year"] = None
-    pipeline = build_feature_pipeline()
-    result = pipeline.fit_transform(df)
-    assert not result.isnull().all().any()
+    def test_raw_feature_df_shape(self):
+        df = build_raw_feature_df(12, 2, 6, False, 25.0, 60.0)
+        assert df.shape[0] == 1
+        assert "hour" in df.columns
+        assert "temperature_c" in df.columns
