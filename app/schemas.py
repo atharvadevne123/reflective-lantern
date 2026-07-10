@@ -88,3 +88,7 @@ class MetricsResponse(BaseModel):
     total_drift_events: int
     reference_window_size: int
     model_metrics: dict[str, Any]
+
+
+class BatchPredictRequest(BaseModel):
+    readings: list[EnergyReadingIn] = Field(..., min_length=1, max_length=100)
