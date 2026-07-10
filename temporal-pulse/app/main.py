@@ -289,3 +289,42 @@ async def drift_report() -> list[DriftReport]:
 async def feature_importance() -> list[dict]:
     """Return top-20 feature importances from the forecaster."""
     return get_feature_importance()
+
+
+@app.get("/api/v1/anomalies", tags=["monitoring"])
+async def list_anomalies(
+    sensor_id: str | None = None,
+    min_score: float = 0.0,
+    limit: int = 100,
+    offset: int = 0,
+    db: Session = Depends(get_db),
+) -> dict[str, Any]:
+    """List persisted anomaly events, filterable by sensor and minimum score."""
+    limit = max(1, min(limit, 1000))
+    offset = max(0, offset)
+    try:
+        query = db.query(AnomalyEvent).filter(AnomalyEvent.anomaly_score >= min_score)
+        if sensor_id:
+            query = query.filter(AnomalyEvent.sensor_id == sensor_id)
+        total = query.count()
+        events = (
+            query.order_by(AnomalyEvent.timestamp.desc()).offset(offset).limit(limit).all()
+        )
+        return {
+            "total": total,
+            "limit": limit,
+            "offset": offset,
+            "events": [
+                {
+                    "id": e.id,
+                    "sensor_id": e.sensor_id,
+                    "timestamp": e.timestamp.isoformat() if e.timestamp else None,
+                    "anomaly_score": e.anomaly_score,
+                    "root_cause": e.root_cause,
+                }
+                for e in events
+            ],
+        }
+    except Exception as e:
+        logger.error("Failed to list anomalies: %s", e)
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
