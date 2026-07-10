@@ -1,4 +1,14 @@
-"""Drift detection and prediction logging for Forge-Guard."""
+"""Drift detection and prediction logging for Forge-Guard.
+
+Implements the model-monitoring layer:
+
+* ``log_prediction`` — every inference is persisted with its sensor inputs so
+  the drift monitor has a complete history to compare against.
+* ``compute_drift`` — two-sample Kolmogorov-Smirnov test; p < 0.05 marks drift.
+* ``run_drift_check`` — compares the recent prediction window against the
+  reference window per feature and persists a ``DriftReport`` row for each.
+* ``defect_rate`` — rolling defect-rate statistics for the ops dashboard.
+"""
 
 from __future__ import annotations
 
