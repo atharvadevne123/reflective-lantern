@@ -112,3 +112,19 @@ pytest tests/ -v
 ## License
 
 MIT
+
+## API Versioning
+
+All endpoints are prefixed with `/api/v1/`. Future breaking changes will introduce `/api/v2/` while keeping v1 operational for 6 months.
+
+## Monitoring Dashboard
+
+`GET /api/v1/metrics` returns:
+- `total_predictions`: Total forecasts served
+- `total_anomalies_flagged`: Anomalies detected by IsolationForest
+- `total_drift_events`: KS-test drift events logged
+- `model_metrics`: Latest training R2 and MAE
+
+## Rate Limiting
+
+200 requests per minute per IP. Exceeding this returns HTTP 429.
