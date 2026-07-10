@@ -88,6 +88,14 @@ def train_model(
     joblib.dump(full_pipeline, MODEL_PATH)
     METRICS_PATH.write_text(json.dumps(metrics, indent=2))
     logger.info("Model saved to %s — metrics: %s", MODEL_PATH, metrics)
+
+    try:
+        from app.mlflow_compat import log_run
+
+        log_run(metrics, params={"cv_folds": cv_folds, "model_version": MODEL_VERSION})
+    except Exception:
+        logger.debug("Experiment tracking unavailable — continuing.")
+
     return full_pipeline, metrics
 
 
