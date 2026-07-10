@@ -1,4 +1,8 @@
-"""ML model training, prediction, and persistence."""
+"""ML model training, prediction, and persistence.
+
+Supports XGBoost, LightGBM, and RandomForest via a VotingRegressor ensemble.
+Models are serialised with joblib and metrics written to JSON.
+"""
 
 from __future__ import annotations
 
