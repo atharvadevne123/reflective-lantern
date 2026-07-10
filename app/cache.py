@@ -16,7 +16,6 @@ class TTLCache:
         self._ttl = ttl_seconds
         self._max = max_size
         self._store: dict[str, tuple[Any, float]] = {}
-        self.default_ttl = default_ttl
         self.hits = 0
         self.misses = 0
 
