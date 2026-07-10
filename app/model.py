@@ -16,6 +16,7 @@ import numpy as np
 import pandas as pd
 from sklearn.ensemble import IsolationForest, RandomForestRegressor, VotingRegressor
 from sklearn.model_selection import KFold, cross_val_score
+from typing import Any
 
 try:
     from lightgbm import LGBMRegressor
@@ -37,12 +38,9 @@ MODEL_PATH = Path(os.getenv("MODEL_PATH", "model.joblib"))
 ANOMALY_MODEL_PATH = Path(os.getenv("ANOMALY_MODEL_PATH", "anomaly_model.joblib"))
 METRICS_PATH = Path(os.getenv("METRICS_PATH", "metrics.json"))
 
-try:
-    from xgboost import XGBRegressor
-    _HAS_XGB = True
-except ImportError:
-    _HAS_XGB = False
+if not _HAS_XGB:
     logger.warning("xgboost not available; using RandomForest only")
+
 
 def _build_estimator() -> VotingRegressor:
     """Build the voting ensemble from available backends."""
