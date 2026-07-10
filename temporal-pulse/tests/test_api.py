@@ -85,17 +85,16 @@ class TestDetect:
         assert resp.status_code == 422
 
     def test_detect_invalid_values_rejected(self, client):
-        payload = {
-            "readings": [
-                {
-                    "sensor_id": "s1",
-                    "timestamp": "2026-01-01T00:00:00",
-                    "values": {"temp": float("nan")},
-                }
-            ],
-            "horizon": 1,
-        }
-        resp = client.post("/api/v1/detect", json=payload)
+        raw_body = (
+            '{"readings": [{"sensor_id": "s1", '
+            '"timestamp": "2026-01-01T00:00:00", '
+            '"values": {"temp": NaN}}], "horizon": 1}'
+        )
+        resp = client.post(
+            "/api/v1/detect",
+            content=raw_body,
+            headers={"Content-Type": "application/json"},
+        )
         assert resp.status_code == 422
 
     def test_detect_processing_time_returned(self, client, sample_readings):

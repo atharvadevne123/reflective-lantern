@@ -11,6 +11,7 @@ from typing import Any, AsyncIterator
 
 import numpy as np
 from fastapi import Depends, FastAPI, HTTPException, Request, Response, status
+from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
@@ -73,6 +74,16 @@ app = FastAPI(
     version=API_VERSION,
     lifespan=lifespan,
 )
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError) -> JSONResponse:
+    """Return 422 with sanitized errors (raw input may contain non-JSON floats like NaN)."""
+    errors = [
+        {"loc": list(err.get("loc", [])), "msg": err.get("msg"), "type": err.get("type")}
+        for err in exc.errors()
+    ]
+    return JSONResponse(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, content={"detail": errors})
+
 
 CORS_ORIGINS = os.getenv("CORS_ORIGINS", "*").split(",")
 app.add_middleware(
