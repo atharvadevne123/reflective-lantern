@@ -8,8 +8,9 @@ from pathlib import Path
 import pytest
 
 HISTORY_DIR = Path(__file__).parent.parent / "history"
-# commit_schedule.json is a config file; schema.json is a JSON schema — neither are run records
-_EXCLUDED = {"schema.json", "commit_schedule.json"}
+from config.constants import NON_RECORD_FILES
+
+_EXCLUDED = NON_RECORD_FILES
 HISTORY_FILES = sorted(p for p in HISTORY_DIR.glob("*.json") if p.name not in _EXCLUDED)
 
 

@@ -44,7 +44,9 @@ NOTION_MODEL: str = "claude-sonnet-4-6"
 NOTION_DESCRIPTION_MAX_TOKENS: int = 200
 
 # History files that are config/meta files, not per-run records
-NON_RECORD_FILES: frozenset[str] = frozenset({"schema.json", "commit_schedule.json"})
+NON_RECORD_FILES: frozenset[str] = frozenset(
+    {"schema.json", "commit_schedule.json", "email_status.json"}
+)
 
 # Cleanup defaults
 CLEANUP_DEFAULT_DAYS: int = 90

@@ -99,7 +99,9 @@ def test_actual_history_files_valid() -> None:
     from scripts.validate_history import validate_file
 
     history_dir = Path(__file__).parent.parent / "history"
-    _skip = {"schema.json", "commit_schedule.json"}
+    from config.constants import NON_RECORD_FILES
+
+    _skip = NON_RECORD_FILES
     errors: list[str] = []
     for path in sorted(p for p in history_dir.glob("*.json") if p.name not in _skip):
         errors.extend(validate_file(path))
