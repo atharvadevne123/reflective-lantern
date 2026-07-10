@@ -93,6 +93,11 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+if os.getenv("RATE_LIMIT_ENABLED", "true").lower() == "true":
+    from .middleware import RateLimitMiddleware
+
+    app.add_middleware(RateLimitMiddleware)
+
 
 @app.middleware("http")
 async def correlation_id_middleware(request: Request, call_next: Any) -> Response:

@@ -44,6 +44,7 @@ def client(engine) -> Generator:
     """Return a TestClient with the DB patched to use the in-memory engine."""
     import os
     os.environ["DATABASE_URL"] = TEST_DATABASE_URL
+    os.environ["RATE_LIMIT_ENABLED"] = "false"
 
     import sys
     sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
