@@ -350,8 +350,10 @@ def test_email_configured_false_when_only_user_set(monkeypatch: pytest.MonkeyPat
     assert s.email_configured() is False
 
 
-def test_foundry_configured_false_by_default() -> None:
+def test_foundry_configured_false_by_default(monkeypatch: pytest.MonkeyPatch) -> None:
     from config.settings import Settings
 
+    for var in ("FOUNDRY_HOSTNAME", "FOUNDRY_TOKEN", "FOUNDRY_DATASET_RID"):
+        monkeypatch.delenv(var, raising=False)
     s = Settings()
     assert s.foundry_configured() is False
