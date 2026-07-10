@@ -33,7 +33,7 @@ def add_lag_features(df: pd.DataFrame, columns: list[str]) -> pd.DataFrame:
     result = df.copy()
     for col in columns:
         for lag in LAG_STEPS:
-            result[f"{col}_lag_{lag}"] = df[col].shift(lag).fillna(method="bfill").fillna(0)
+            result[f"{col}_lag_{lag}"] = df[col].shift(lag).bfill().fillna(0)
     return result
 
 
