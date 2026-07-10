@@ -7,9 +7,9 @@ from pathlib import Path
 
 import pytest
 
-HISTORY_DIR = Path(__file__).parent.parent / "history"
 from config.constants import NON_RECORD_FILES
 
+HISTORY_DIR = Path(__file__).parent.parent / "history"
 _EXCLUDED = NON_RECORD_FILES
 HISTORY_FILES = sorted(p for p in HISTORY_DIR.glob("*.json") if p.name not in _EXCLUDED)
 
