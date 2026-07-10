@@ -230,3 +230,32 @@ def train_endpoint(db: Session = Depends(get_db)) -> dict[str, Any]:
     _anomaly_bundle = train_anomaly_model(df)
     set_reference_window(consumption.tolist())
     return {"status": "trained", "metrics": metrics_out}
+
+
+@app.post("/api/v1/predict/batch", tags=["Forecasting"])
+def predict_batch(
+    payloads: list[EnergyReadingIn],
+    db: Session = Depends(get_db),
+) -> list[PredictResponse]:
+    """Forecast energy consumption for multiple buildings in one request."""
+    if _model_bundle is None:
+        raise HTTPException(status_code=503, detail="Forecasting model not loaded.")
+    if len(payloads) > 100:
+        raise HTTPException(status_code=400, detail="Batch size exceeds 100.")
+    results = []
+    for payload in payloads:
+        with LatencyTimer() as timer:
+            row = make_feature_row(
+                hour=payload.hour,
+                day_of_week=payload.day_of_week,
+                month=payload.month,
+                temperature_c=payload.temperature_c,
+                humidity_pct=payload.humidity_pct,
+                occupancy=payload.occupancy,
+                hvac_state=payload.hvac_state,
+                consumption_kwh=payload.consumption_kwh,
+            )
+            kwh_pred = float(predict(_model_bundle, row)[0])
+        log_prediction(db=db, building_id=payload.building_id, timestamp=payload.timestamp, predicted_kwh=kwh_pred, latency_ms=timer.ms)
+        results.append(PredictResponse(building_id=payload.building_id, timestamp=payload.timestamp, predicted_kwh=round(kwh_pred, 3), model_version=__version__, latency_ms=timer.ms))
+    return results
