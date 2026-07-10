@@ -38,6 +38,9 @@ class LoadPatternIndex:
         """Build the FAISS index from stored vectors."""
         if not self._vectors:
             return
+        if not _HAS_FAISS:
+            logger.info("faiss unavailable — brute-force search will be used")
+            return
         matrix = np.stack(self._vectors, axis=0).astype(np.float32)
         faiss.normalize_L2(matrix)
         idx = faiss.IndexFlatIP(self.dim)
