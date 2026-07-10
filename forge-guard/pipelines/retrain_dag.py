@@ -169,6 +169,13 @@ def run_pipeline(trigger: str = "scheduled") -> None:
     result = task_retrain_model(X, y)
     task_record_run(result, trigger=trigger)
 
+    try:
+        from app.aws_stub import upload_model
+
+        upload_model()
+    except Exception:
+        logger.debug("S3 upload unavailable — model kept local only.")
+
     logger.info(
         "=== Retraining COMPLETE — AUC %.4f → %.4f ===",
         result["auc_before"],
