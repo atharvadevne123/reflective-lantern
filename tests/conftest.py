@@ -1,107 +1,69 @@
-"""Shared pytest fixtures for the Reflective Lantern test suite."""
+"""Shared pytest fixtures for Volt-Cast tests."""
 
 from __future__ import annotations
 
-import json
-from pathlib import Path
-from typing import Any, Generator
-
 import pytest
+from fastapi.testclient import TestClient
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
+
+from app.database import Base, get_db
+from app.main import app
+from app.model import generate_synthetic_training_data
+
+TEST_DB_URL = "sqlite:///./test_volt_cast.db"
+
+test_engine = create_engine(TEST_DB_URL, connect_args={"check_same_thread": False})
+TestSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=test_engine)
+
+
+@pytest.fixture(scope="session")
+def db_engine():
+    Base.metadata.create_all(bind=test_engine)
+    yield test_engine
+    Base.metadata.drop_all(bind=test_engine)
 
 
 @pytest.fixture()
-def history_dir(tmp_path: Path) -> Path:
-    """Return a temporary history directory pre-populated with sample files."""
-    h = tmp_path / "history"
-    h.mkdir()
-    sample: list[dict[str, Any]] = [
-        {
-            "date": "2026-06-01",
-            "mode": "improvement",
-            "commits": 60,
-            "tests_passed": True,
-            "improvements": ["added type annotations", "added docstrings"],
-        },
-        {
-            "date": "2026-06-15",
-            "mode": "improvement",
-            "commits": 60,
-            "tests_passed": True,
-            "improvements": ["added pytest suite"],
-        },
-    ]
-    (h / "SampleRepo.json").write_text(json.dumps(sample))
-    (h / "AnotherRepo.json").write_text(json.dumps([sample[0]]))
-    return h
+def db_session(db_engine):
+    connection = db_engine.connect()
+    transaction = connection.begin()
+    session = TestSessionLocal(bind=connection)
+    yield session
+    session.close()
+    transaction.rollback()
+    connection.close()
 
 
 @pytest.fixture()
-def single_entry_history_dir(tmp_path: Path) -> Path:
-    """Return a history directory with a single-dict-format file."""
-    h = tmp_path / "history"
-    h.mkdir()
-    entry = {"last_run": "2026-06-20", "commits": 45, "mode": "improvement"}
-    (h / "OldRepo.json").write_text(json.dumps(entry))
-    return h
+def client(db_session):
+    def override_get_db():
+        try:
+            yield db_session
+        finally:
+            pass
+
+    app.dependency_overrides[get_db] = override_get_db
+    with TestClient(app) as c:
+        yield c
+    app.dependency_overrides.clear()
+
+
+@pytest.fixture(scope="session")
+def synthetic_data():
+    X, y = generate_synthetic_training_data(n_samples=300)
+    return X, y
 
 
 @pytest.fixture()
-def invalid_history_dir(tmp_path: Path) -> Path:
-    """Return a history directory with an invalid JSON file."""
-    h = tmp_path / "history"
-    h.mkdir()
-    (h / "Broken.json").write_text("{not valid json")
-    return h
-
-
-@pytest.fixture()
-def env_with_pat(monkeypatch: pytest.MonkeyPatch) -> Generator[None, None, None]:
-    """Monkeypatch GH_PAT so scripts don't require a real token."""
-    monkeypatch.setenv("GH_PAT", "test-token-123")
-    monkeypatch.setenv("GITHUB_USERNAME", "test-owner")
-    yield
-    # teardown handled by monkeypatch
-
-
-@pytest.fixture()
-def settings_env(monkeypatch: pytest.MonkeyPatch) -> Generator[None, None, None]:
-    """Set all required env vars for Settings."""
-    monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-test")
-    monkeypatch.setenv("GH_PAT", "ghp_test")
-    monkeypatch.setenv("NOTION_API_KEY", "secret_test")
-    monkeypatch.setenv("GMAIL_USER", "test@gmail.com")
-    monkeypatch.setenv("GMAIL_APP_PASS", "test-pass")
-    yield
-
-
-@pytest.fixture()
-def multi_repo_history_dir(tmp_path: Path) -> Path:
-    """Return a history directory with multiple repos across different modes."""
-    h = tmp_path / "history"
-    h.mkdir()
-    (h / "Alpha.json").write_text(json.dumps([
-        {"date": "2026-07-01", "mode": "improvement", "commits": 60, "tests_passed": True},
-        {"date": "2026-07-03", "mode": "improvement", "commits": 60, "tests_passed": True},
-    ]))
-    (h / "Beta.json").write_text(json.dumps([
-        {"date": "2026-07-08", "mode": "innovation", "commits": 120, "tests_passed": True},
-    ]))
-    (h / "Gamma.json").write_text(json.dumps([
-        {"date": "2026-07-02", "mode": "improvement", "commits": 60, "tests_passed": False},
-    ]))
-    return h
-
-
-@pytest.fixture()
-def innovation_history_dir(tmp_path: Path) -> Path:
-    """Return a history directory with an INNOVATION mode entry."""
-    h = tmp_path / "history"
-    h.mkdir()
-    (h / "NewProject.json").write_text(json.dumps([{
-        "date": "2026-07-08",
-        "mode": "innovation",
-        "commits": 114,
-        "tests_passed": True,
-        "improvements": ["built new ML pipeline from scratch"],
-    }]))
-    return h
+def sample_predict_payload():
+    return {
+        "hour": 14,
+        "day_of_week": 2,
+        "month": 7,
+        "is_weekend": False,
+        "temperature_c": 28.5,
+        "humidity_pct": 65.0,
+        "historical_loads": [3500.0, 3600.0, 3800.0, 4000.0, 4200.0],
+        "region": "northeast",
+    }
