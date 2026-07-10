@@ -367,3 +367,24 @@ async def analyze_load_series(loads: list[float]):
         "seasonal": seasonal,
         "anomaly_check": anomaly,
     }
+
+
+@app.post("/api/v1/similar-periods", tags=["Prediction"])
+async def find_similar_periods(profile: list[float]):
+    """Find historical load profiles similar to the given 24-hour pattern."""
+    from app.faiss_index import get_pattern_index
+
+    if len(profile) != 24:
+        raise HTTPException(status_code=422, detail="Profile must contain exactly 24 hourly values")
+
+    idx = get_pattern_index(dim=24)
+
+    if idx.size < 3:
+        X, y = generate_synthetic_training_data(n_samples=200)
+        hours = X["hour"].values
+        for day_start in range(0, min(len(hours) - 24, 50)):
+            chunk = y.values[day_start : day_start + 24].tolist()
+            idx.add(chunk, {"day_offset": day_start, "source": "synthetic"})
+
+    results = idx.search(profile, k=5)
+    return {"query_length": len(profile), "matches": results}
