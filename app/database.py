@@ -2,13 +2,17 @@
 
 from __future__ import annotations
 
+import logging
 import os
 from datetime import datetime
+from typing import Generator
 
 from sqlalchemy import Column, DateTime, Float, Integer, String, create_engine
 from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
 
-DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./watt_guard.db")
+logger = logging.getLogger(__name__)
+
+DATABASE_URL: str = os.getenv("DATABASE_URL", "sqlite:///./watt_guard.db")
 
 engine = create_engine(
     DATABASE_URL,
@@ -18,71 +22,71 @@ SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 
 class Base(DeclarativeBase):
-    pass
+    """Declarative base for all ORM models."""
 
 
 class EnergyReading(Base):
-    """Raw energy consumption readings."""
+    """Raw energy consumption reading from a building sensor."""
 
     __tablename__ = "energy_readings"
 
-    id = Column(Integer, primary_key=True, index=True)
-    building_id = Column(String(64), index=True, nullable=False)
-    timestamp = Column(DateTime, nullable=False, index=True)
-    consumption_kwh = Column(Float, nullable=False)
-    temperature_c = Column(Float)
-    humidity_pct = Column(Float)
-    occupancy = Column(Integer)
-    hvac_state = Column(Integer, default=0)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    id: int = Column(Integer, primary_key=True, index=True)
+    building_id: str = Column(String(64), index=True, nullable=False)
+    timestamp: datetime = Column(DateTime, nullable=False, index=True)
+    consumption_kwh: float = Column(Float, nullable=False)
+    temperature_c: float = Column(Float)
+    humidity_pct: float = Column(Float)
+    occupancy: int = Column(Integer)
+    hvac_state: int = Column(Integer, default=0)
+    created_at: datetime = Column(DateTime, default=datetime.utcnow)
 
 
 class PredictionLog(Base):
-    """Log of every prediction made by the API."""
+    """Audit log of every prediction made by the forecasting model."""
 
     __tablename__ = "prediction_logs"
 
-    id = Column(Integer, primary_key=True, index=True)
-    building_id = Column(String(64), index=True)
-    timestamp = Column(DateTime, nullable=False)
-    predicted_kwh = Column(Float, nullable=False)
-    actual_kwh = Column(Float)
-    model_version = Column(String(32), default="1.0.0")
-    latency_ms = Column(Float)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    id: int = Column(Integer, primary_key=True, index=True)
+    building_id: str = Column(String(64), index=True)
+    timestamp: datetime = Column(DateTime, nullable=False)
+    predicted_kwh: float = Column(Float, nullable=False)
+    actual_kwh: float = Column(Float)
+    model_version: str = Column(String(32), default="1.0.0")
+    latency_ms: float = Column(Float)
+    created_at: datetime = Column(DateTime, default=datetime.utcnow)
 
 
 class AnomalyLog(Base):
-    """Log of detected anomalies."""
+    """Record of anomaly detection results."""
 
     __tablename__ = "anomaly_logs"
 
-    id = Column(Integer, primary_key=True, index=True)
-    building_id = Column(String(64), index=True)
-    timestamp = Column(DateTime, nullable=False)
-    consumption_kwh = Column(Float, nullable=False)
-    anomaly_score = Column(Float, nullable=False)
-    is_anomaly = Column(Integer, nullable=False)
-    severity = Column(String(16))
-    created_at = Column(DateTime, default=datetime.utcnow)
+    id: int = Column(Integer, primary_key=True, index=True)
+    building_id: str = Column(String(64), index=True)
+    timestamp: datetime = Column(DateTime, nullable=False)
+    consumption_kwh: float = Column(Float, nullable=False)
+    anomaly_score: float = Column(Float, nullable=False)
+    is_anomaly: int = Column(Integer, nullable=False)
+    severity: str = Column(String(16))
+    created_at: datetime = Column(DateTime, default=datetime.utcnow)
 
 
 class DriftLog(Base):
-    """KS-test drift detection results."""
+    """KS-test drift detection result per feature."""
 
     __tablename__ = "drift_logs"
 
-    id = Column(Integer, primary_key=True, index=True)
-    feature_name = Column(String(64), nullable=False)
-    ks_statistic = Column(Float, nullable=False)
-    p_value = Column(Float, nullable=False)
-    drift_detected = Column(Integer, nullable=False)
-    checked_at = Column(DateTime, default=datetime.utcnow)
+    id: int = Column(Integer, primary_key=True, index=True)
+    feature_name: str = Column(String(64), nullable=False)
+    ks_statistic: float = Column(Float, nullable=False)
+    p_value: float = Column(Float, nullable=False)
+    drift_detected: int = Column(Integer, nullable=False)
+    checked_at: datetime = Column(DateTime, default=datetime.utcnow)
 
 
-def get_db() -> Session:
-    """Yield a database session."""
-    db = SessionLocal()
+def get_db() -> Generator[Session, None, None]:
+    """Yield a database session and ensure it is closed after use."""
+    db: Session = SessionLocal()
     try:
         yield db
     finally:
@@ -90,5 +94,6 @@ def get_db() -> Session:
 
 
 def create_tables() -> None:
-    """Create all tables."""
+    """Create all ORM tables if they do not already exist."""
     Base.metadata.create_all(bind=engine)
+    logger.info("Database tables ensured.")
