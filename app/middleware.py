@@ -1,49 +1,58 @@
-"""Custom ASGI middleware for Realty-Edge.
+"""Rate limiting middleware — sliding-window counter per client IP."""
 
-Provides:
-- CorrelationIDMiddleware: stamps every request/response with X-Correlation-ID
-- RequestLoggingMiddleware: logs method, path, status, and latency at INFO level
-"""
+from __future__ import annotations
 
-import logging
 import time
-import uuid
+from collections import defaultdict, deque
+from typing import Any
 
-from starlette.middleware.base import BaseHTTPMiddleware
-from starlette.requests import Request
-from starlette.responses import Response
+from fastapi import Request
+from fastapi.responses import JSONResponse
 
-logger = logging.getLogger(__name__)
+from app.config import settings
 
-
-class CorrelationIDMiddleware(BaseHTTPMiddleware):
-    """Read or generate X-Correlation-ID and expose it on request.state."""
-
-    async def dispatch(self, request: Request, call_next: object) -> Response:
-        """Read or generate X-Correlation-ID, attach it to request state, and echo in response."""
-        corr_id = request.headers.get("X-Correlation-ID", str(uuid.uuid4()))
-        request.state.correlation_id = corr_id
-        response: Response = await call_next(request)
-        response.headers["X-Correlation-ID"] = corr_id
-        return response
+_WINDOW_SECONDS = 60.0
+_requests: dict[str, deque[float]] = defaultdict(deque)
 
 
-class RequestLoggingMiddleware(BaseHTTPMiddleware):
-    """Log HTTP method, path, status code, and latency for every request."""
+def _client_key(request: Request) -> str:
+    """Resolve the rate-limit bucket key for a request.
 
-    async def dispatch(self, request: Request, call_next: object) -> Response:
-        """Process the request and emit a structured INFO log with timing."""
-        start = time.perf_counter()
-        response: Response = await call_next(request)
-        elapsed_ms = (time.perf_counter() - start) * 1000
-        corr_id = getattr(request.state, "correlation_id", "-")
-        logger.info(
-            "%s %s %d %.1fms corr=%s",
-            request.method,
-            request.url.path,
-            response.status_code,
-            elapsed_ms,
-            corr_id,
+    Args:
+        request: Incoming HTTP request.
+
+    Returns:
+        The client IP (or ``unknown`` when the transport gives none).
+    """
+    if request.client is None:
+        return "unknown"
+    return request.client.host
+
+
+async def rate_limit_middleware(request: Request, call_next: Any) -> Any:
+    """Reject requests beyond ``settings.rate_limit_per_minute`` with HTTP 429.
+
+    Uses an in-memory sliding window per client IP. For multi-replica
+    deployments swap this for a shared store (e.g. Redis).
+    """
+    key = _client_key(request)
+    now = time.monotonic()
+    window = _requests[key]
+
+    while window and now - window[0] > _WINDOW_SECONDS:
+        window.popleft()
+
+    if len(window) >= settings.rate_limit_per_minute:
+        return JSONResponse(
+            status_code=429,
+            content={"detail": "Rate limit exceeded. Try again later."},
+            headers={"Retry-After": "60"},
         )
-        response.headers["X-Response-Time-Ms"] = f"{elapsed_ms:.1f}"
-        return response
+
+    window.append(now)
+    return await call_next(request)
+
+
+def reset_rate_limiter() -> None:
+    """Clear all rate-limit windows (used by tests)."""
+    _requests.clear()

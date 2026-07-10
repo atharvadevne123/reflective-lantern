@@ -1,126 +1,157 @@
-![CI](https://github.com/atharvadevne123/reflective-lantern/actions/workflows/ci.yml/badge.svg)
-![Python Package](https://github.com/atharvadevne123/reflective-lantern/actions/workflows/python-publish.yml/badge.svg)
-![npm](https://github.com/atharvadevne123/reflective-lantern/actions/workflows/npm-publish.yml/badge.svg)
-![Bump Version](https://github.com/atharvadevne123/reflective-lantern/actions/workflows/bump-version.yml/badge.svg)
+# Traffic-Pulse
 
-# Reflective Lantern
+[![CI](https://github.com/atharvadevne123/Traffic-Pulse/actions/workflows/ci.yml/badge.svg)](https://github.com/atharvadevne123/Traffic-Pulse/actions/workflows/ci.yml)
+![Python](https://img.shields.io/badge/python-3.11%2B-blue)
+![FastAPI](https://img.shields.io/badge/FastAPI-0.111%2B-009688)
+![License](https://img.shields.io/badge/license-MIT-green)
 
-Autonomous Mon–Fri code improvement agent powered by Claude Code Cloud Routines.
+Real-time urban traffic congestion prediction and incident detection API using an
+**XGBoost + LightGBM ensemble** with temporal feature engineering, route scoring,
+and automated KS-test drift detection.
 
-Every weekday at 9 AM CST, Reflective Lantern wakes up, picks one of @atharvadevne123’s
-GitHub repositories, implements 60 improvements, runs tests, updates docs, pushes to main,
-and sends an email digest — all with zero human intervention.
+Traffic-Pulse classifies road segments into four congestion levels — `free`,
+`moderate`, `congested`, `severe` — from live traffic telemetry (vehicle counts,
+average speeds, incidents, weather), logs every prediction for monitoring, and
+retrains automatically when feature drift is detected.
 
-## Quick Start
+## Features
 
-```bash
-git clone https://github.com/atharvadevne123/reflective-lantern.git
-cd reflective-lantern
-bash scripts/setup.sh          # install deps + pre-commit hooks
-cp .env.example .env           # fill in your API keys
-make test                      # verify everything works
-```
+- **Ensemble ML** — XGBoost + LightGBM pipelines averaged at the probability level,
+  trained with 5-fold stratified cross-validation (weighted one-vs-rest AUC-ROC).
+- **26 engineered features** — cyclical hour/day-of-week encodings, peak-hour flags,
+  lag features (1h/2h/4h), rolling means/stds (6h/24h), speed-volume ratios,
+  incident density, and road-type encoding.
+- **Drift detection** — two-sample Kolmogorov-Smirnov test per feature with
+  drift events persisted to the database and surfaced in `/api/v1/metrics`.
+- **Prediction logging** — every request/result stored via SQLAlchemy
+  (SQLite in dev, PostgreSQL in prod).
+- **Automated retraining** — drift-gated pipeline with AUC validation and
+  model promotion (`pipelines/retrain_dag.py`, Airflow-compatible).
+- **Production middleware** — correlation-ID propagation and response-time headers.
 
-**Required environment variables** (see `.env.example` for full list):
+## Quickstart
 
-| Variable | Description |
-|----------|-------------|
-| `ANTHROPIC_API_KEY` | Claude API key for AI-powered features |
-| `GH_PAT` | GitHub Personal Access Token (`repo` + `workflow` scopes) |
-| `NOTION_API_KEY` | For Notion portfolio updates |
-| `GMAIL_USER` + `GMAIL_APP_PASS` | For emailed run reports |
-
-## What It Does
-
-Each daily run:
-1. **PRE-FLIGHT** — Fix failing CI workflows, merge open branches, create missing releases
-2. **MODE SELECT** — IMPROVEMENT (most days) or INNOVATION (Wednesday wks 2 & 4)
-3. **SELECT REPO** — deterministic daily rotation through the active portfolio
-4. **ANALYSE** — read every source file, identify 60 improvements across 5 tiers
-5. **IMPLEMENT** — one commit per change (security → tests → quality → DX → perf)
-6. **VERIFY** — run full test suite; fix failures (2 attempts)
-7. **PUSH** — directly to `main`
-8. **NOTIFY** — PDF report emailed to devneatharva@gmail.com
-
-## Architecture
-
-See [`docs/architecture.md`](docs/architecture.md) for a full ASCII diagram.
-
-```
-reflective-lantern/
-├── .claude/settings.json     ← CCR tool permissions
-├── config/                    ← Settings, constants, logging
-├── scripts/                   ← Standalone utility scripts
-├── tests/                     ← pytest suite
-├── docs/                      ← Architecture & operations docs
-├── history/                   ← Per-repo JSON run logs
-├── prompts/system_prompt.md  ← Cached agent instructions (3000+ tokens)
-└── covers/                    ← SVG cover images for Notion
-```
-
-## Improvement Tiers
-
-| Priority | Tier | Examples |
-|----------|------|----------|
-| 1 | Security / Correctness | Secrets → env vars, bare `except` → typed, SQL injection |
-| 2 | Tests | `conftest.py`, happy path + 3 edge cases per endpoint |
-| 3 | Code Quality | Type hints, docstrings, logging, refactor > 40-line functions |
-| 4 | Developer Experience | CI/CD, Dockerfile, `.env.example`, `pyproject.toml`, README |
-| 5 | Performance | `lru_cache`, N+1 fix, DB indexes, connection pooling |
-
-## Utility Scripts
+### Local
 
 ```bash
-make health-check          # cross-repo CI / release / branch health
-make weekly-summary        # build + email 7-day digest
-make validate-history      # validate history JSON schema
-make notion-update         # sync Notion portfolio pages
-make foundry-export        # export run history as a Foundry-ready CSV
-make foundry-sync          # export + upload to a Palantir Foundry dataset
-
-python scripts/summarize_history.py        # tabular run history
-python scripts/rotate_repos.py             # which repo is selected today
-python scripts/check_ci_status.py --failing-only
-python scripts/report_generator.py --mode weekly
+git clone https://github.com/atharvadevne123/Traffic-Pulse
+cd Traffic-Pulse
+make install          # pip install -r requirements.txt + dev tools
+make train            # train the ensemble (writes model.joblib + metrics.json)
+make run              # uvicorn app.main:app --reload
 ```
 
-Foundry setup and dataset schema are documented in [docs/foundry.md](docs/foundry.md).
+### Docker
 
-## Token Efficiency
+```bash
+cp .env.example .env
+docker compose up --build -d
+curl http://localhost:8000/health
+```
 
-The `prompts/system_prompt.md` file exceeds Sonnet 4.6’s 2 048-token cache threshold,
-so it is cached on first use and subsequent runs hit the cache at ~10% of the original
-input cost. Combined with one-repo-per-day rotation, estimated cost is **$0.15–0.25/run**.
+## API Reference
 
-## History
+### `POST /api/v1/predict`
 
-The `history/` directory contains JSON logs of every run per repo. Example entry:
+Predict the congestion level for a route segment.
+
+```bash
+curl -X POST http://localhost:8000/api/v1/predict \
+  -H "Content-Type: application/json" \
+  -d '{
+    "route_id": "R42",
+    "hour": 8,
+    "day_of_week": 1,
+    "vehicle_count": 1800,
+    "avg_speed_kmh": 32.5,
+    "road_type": "arterial",
+    "incident_count": 1,
+    "is_raining": 1
+  }'
+```
 
 ```json
 {
-  "date": "2026-06-30",
-  "mode": "improvement",
-  "commits": 60,
-  "tests_passed": true,
-  "improvements": ["added pytest suite", "fixed hardcoded API key"]
+  "route_id": "R42",
+  "congestion_level": 2,
+  "congestion_label": "congested",
+  "congestion_probability": 0.71,
+  "class_probabilities": {"free": 0.02, "moderate": 0.21, "congested": 0.71, "severe": 0.06},
+  "incident_score": 0.0556,
+  "model_version": "1.0.0"
 }
 ```
 
-See [`history/schema.json`](history/schema.json) for the full JSON schema.
+### `POST /api/v1/drift`
 
-## Contributing
+Run a KS test between a reference window and the current window of a feature.
 
-See [CONTRIBUTING.md](CONTRIBUTING.md). Run `make test && make lint` before
-opening a pull request.
+```bash
+curl -X POST http://localhost:8000/api/v1/drift \
+  -H "Content-Type: application/json" \
+  -d '{"feature_name": "vehicle_count", "reference": [/* >=10 floats */], "current": [/* >=10 floats */]}'
+```
+
+### `GET /api/v1/metrics`
+
+Prediction volume, congestion distribution, active drift alerts, and training metrics.
+
+### `GET /health`
+
+Liveness probe with model version and loaded ensemble members.
+
+## Architecture
+
+![Architecture](screenshots/architecture.png)
+
+| Layer | Technology |
+|---|---|
+| API | FastAPI + Pydantic v2 validation |
+| ML | XGBoost + LightGBM ensemble in sklearn Pipelines |
+| Features | 26 temporal/traffic features (`app/features.py`) |
+| Monitoring | KS-test drift + prediction logs (`app/monitoring.py`) |
+| Storage | SQLAlchemy — SQLite (dev) / PostgreSQL 16 (prod) |
+| Retraining | Drift-gated pipeline with AUC validation gate |
+| CI | GitHub Actions — ruff lint + format + pytest |
+
+## Testing
+
+```bash
+make test    # 40+ tests: API validation, model training, features, drift
+make lint    # ruff check + format check
+```
+
+## Retraining pipeline
+
+```bash
+python pipelines/retrain_dag.py           # retrain only if drift detected
+python pipelines/retrain_dag.py --force   # unconditional retrain
+```
+
+The pipeline checks `drift_logs` for unresolved drift, retrains the ensemble,
+validates the new model against an AUC threshold (default 0.75), and promotes
+it to `model_stable.joblib` only when validation passes.
 
 ## License
 
-MIT — see [LICENSE](LICENSE) if present, otherwise open for personal use.
+MIT
 
-## Tech Stack
+## Project structure
 
-- **Scheduler**: Claude Code Cloud Routine (`cron 0 14 * * 1-5` = 9 AM CDT)
-- **AI**: Claude Sonnet 4.6 with prompt caching
-- **Repo ops**: GitHub REST API + git
-- **Notifications**: Gmail SMTP
-- **Portfolio**: Notion API + Anthropic SDK
+```
+Traffic-Pulse/
+├── app/                  # FastAPI app, ML model, features, monitoring
+│   ├── main.py           # API endpoints + middleware
+│   ├── model.py          # XGBoost + LightGBM ensemble
+│   ├── features.py       # 26-feature engineering pipeline
+│   ├── monitoring.py     # KS-test drift + prediction logging
+│   ├── middleware.py     # Rate limiting
+│   ├── logging_config.py # Structured JSON logs
+│   ├── config.py         # Env-driven settings
+│   └── database.py       # SQLAlchemy models
+├── pipelines/            # Drift-gated retraining pipeline
+├── migrations/           # Alembic database migrations
+├── tests/                # 85+ pytest tests
+├── scripts/              # Diagram generator + example client
+└── docs/                 # Extended API documentation
+```

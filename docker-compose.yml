@@ -6,32 +6,27 @@ services:
     ports:
       - "8000:8000"
     environment:
-      - DATABASE_URL=postgresql://realty:realty@db:5432/realty_edge
+      - DATABASE_URL=postgresql://traffic_user:traffic_pass@db:5432/traffic_pulse
       - MODEL_PATH=/app/model.joblib
       - METRICS_PATH=/app/metrics.json
     depends_on:
       db:
         condition: service_healthy
     restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
 
   db:
-    image: postgres:15-alpine
+    image: postgres:16-alpine
     environment:
-      POSTGRES_USER: realty
-      POSTGRES_PASSWORD: realty
-      POSTGRES_DB: realty_edge
+      POSTGRES_USER: traffic_user
+      POSTGRES_PASSWORD: traffic_pass
+      POSTGRES_DB: traffic_pulse
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U realty -d realty_edge"]
-      interval: 10s
+      test: ["CMD-SHELL", "pg_isready -U traffic_user -d traffic_pulse"]
+      interval: 5s
       timeout: 5s
-      retries: 5
+      retries: 10
     restart: unless-stopped
 
 volumes:

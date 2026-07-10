@@ -1,174 +1,160 @@
-"""Tests for FastAPI endpoints."""
+"""Tests for the FastAPI endpoints."""
+
+from __future__ import annotations
 
 import pytest
+from fastapi.testclient import TestClient
 
 
-def test_health_returns_ok(client) -> None:
-    resp = client.get("/api/v1/health")
+def test_health_returns_ok(client: TestClient) -> None:
+    resp = client.get("/health")
+    assert resp.status_code == 200
+    assert resp.json()["status"] == "ok"
+
+
+def test_health_includes_model_version(client: TestClient) -> None:
+    data = client.get("/health").json()
+    assert "model_version" in data
+    assert data["model_version"] == "1.0.0"
+
+
+def test_predict_success(client: TestClient, sample_payload: dict) -> None:
+    resp = client.post("/api/v1/predict", json=sample_payload)
     assert resp.status_code == 200
     data = resp.json()
-    assert data["status"] == "ok"
-    assert "model_version" in data
-    assert "db_connected" in data
+    assert data["route_id"] == "R001"
+    assert data["congestion_level"] in {0, 1, 2, 3}
 
 
-def test_metrics_endpoint(client) -> None:
-    resp = client.get("/api/v1/metrics")
-    assert resp.status_code == 200
-    data = resp.json()
-    assert "model_version" in data
+def test_predict_probabilities_sum_to_one(client: TestClient, sample_payload: dict) -> None:
+    data = client.post("/api/v1/predict", json=sample_payload).json()
+    total = sum(data["class_probabilities"].values())
+    assert abs(total - 1.0) < 0.02
 
 
-def test_predict_returns_valuation(client, sample_property) -> None:
-    resp = client.post("/api/v1/predict", json=sample_property)
-    assert resp.status_code == 200
-    data = resp.json()
-    assert data["predicted_value"] > 0
-    assert 0 <= data["investment_score"] <= 10
-    assert data["confidence_band_low"] < data["predicted_value"]
-    assert data["confidence_band_high"] > data["predicted_value"]
-    assert "correlation_id" in data
-    assert "model_version" in data
-
-
-def test_predict_confidence_band_width(client, sample_property) -> None:
-    resp = client.post("/api/v1/predict", json=sample_property)
-    data = resp.json()
-    low = data["confidence_band_low"]
-    high = data["confidence_band_high"]
-    mid = data["predicted_value"]
-    assert abs(low - mid * 0.92) < 1
-    assert abs(high - mid * 1.08) < 1
+def test_predict_class_labels(client: TestClient, sample_payload: dict) -> None:
+    data = client.post("/api/v1/predict", json=sample_payload).json()
+    assert set(data["class_probabilities"].keys()) == {"free", "moderate", "congested", "severe"}
 
 
 @pytest.mark.parametrize(
-    "sqft,beds,baths",
-    [
-        (800, 1, 1.0),
-        (1500, 2, 1.5),
-        (3000, 4, 3.0),
-        (4500, 5, 4.0),
-    ],
+    "hour",
+    [8, 17, 3, 14],
+    ids=["morning-peak", "evening-peak", "night", "midday"],
 )
-def test_predict_various_sizes(client, sample_property, sqft, beds, baths) -> None:
-    prop = dict(sample_property)
-    prop["sqft"] = sqft
-    prop["bedrooms"] = beds
-    prop["bathrooms"] = baths
-    resp = client.post("/api/v1/predict", json=prop)
+def test_predict_different_hours(client: TestClient, sample_payload: dict, hour: int) -> None:
+    resp = client.post("/api/v1/predict", json={**sample_payload, "hour": hour})
     assert resp.status_code == 200
-    assert resp.json()["predicted_value"] > 0
 
 
-def test_predict_missing_required_field(client, sample_property) -> None:
-    prop = dict(sample_property)
-    del prop["sqft"]
-    resp = client.post("/api/v1/predict", json=prop)
+def test_predict_invalid_road_type(client: TestClient, sample_payload: dict) -> None:
+    resp = client.post("/api/v1/predict", json={**sample_payload, "road_type": "dirt_track"})
     assert resp.status_code == 422
 
 
-def test_predict_invalid_sqft(client, sample_property) -> None:
-    prop = dict(sample_property)
-    prop["sqft"] = -100
-    resp = client.post("/api/v1/predict", json=prop)
+def test_predict_invalid_hour_above_max(client: TestClient, sample_payload: dict) -> None:
+    resp = client.post("/api/v1/predict", json={**sample_payload, "hour": 25})
     assert resp.status_code == 422
 
 
-def test_predict_invalid_year_built(client, sample_property) -> None:
-    prop = dict(sample_property)
-    prop["year_built"] = 1700
-    resp = client.post("/api/v1/predict", json=prop)
+def test_predict_invalid_vehicle_count(client: TestClient, sample_payload: dict) -> None:
+    resp = client.post("/api/v1/predict", json={**sample_payload, "vehicle_count": -1})
     assert resp.status_code == 422
 
 
-def test_batch_predict(client, sample_property) -> None:
-    body = {"properties": [sample_property, sample_property]}
-    resp = client.post("/api/v1/batch-predict", json=body)
+def test_metrics_endpoint(client: TestClient) -> None:
+    resp = client.get("/api/v1/metrics")
     assert resp.status_code == 200
     data = resp.json()
-    assert data["count"] == 2
-    assert len(data["predictions"]) == 2
-
-
-def test_batch_predict_empty_raises(client) -> None:
-    resp = client.post("/api/v1/batch-predict", json={"properties": []})
-    assert resp.status_code == 422
-
-
-def test_comparable_properties(client, sample_property) -> None:
-    body = {"property": sample_property, "top_k": 3}
-    resp = client.post("/api/v1/comparable-properties", json=body)
-    assert resp.status_code == 200
-    data = resp.json()
-    assert "comparables" in data
-    assert "query_vector_dim" in data
-
-
-def test_neighborhood_stats_returns_default(client) -> None:
-    resp = client.get("/api/v1/neighborhood-stats/99999")
-    assert resp.status_code == 200
-    data = resp.json()
-    assert data["zipcode"] == "99999"
-    assert data["median_price"] > 0
-
-
-def test_drift_status(client) -> None:
-    resp = client.get("/api/v1/drift-status")
-    assert resp.status_code == 200
-    data = resp.json()
-    assert "drift_reports" in data
     assert "total_predictions" in data
+    assert "congestion_distribution" in data
 
 
-def test_run_drift_check_insufficient_data(client) -> None:
-    resp = client.post("/api/v1/run-drift-check")
+def test_drift_detects_shift(
+    client: TestClient,
+    reference_distribution: list[float],
+    drifted_distribution: list[float],
+) -> None:
+    resp = client.post(
+        "/api/v1/drift",
+        json={
+            "feature_name": "vehicle_count",
+            "reference": reference_distribution,
+            "current": drifted_distribution,
+        },
+    )
     assert resp.status_code == 200
-    data = resp.json()
-    assert data["status"] == "skipped"
+    assert resp.json()["drift_detected"] is True
 
 
-def test_correlation_id_header(client, sample_property) -> None:
+def test_correlation_id_in_response_headers(client: TestClient) -> None:
+    resp = client.get("/health")
+    assert "x-correlation-id" in resp.headers
+
+
+def test_predict_highway_road(client: TestClient, sample_payload: dict) -> None:
     resp = client.post(
         "/api/v1/predict",
-        json=sample_property,
-        headers={"X-Correlation-ID": "test-corr-123"},
+        json={
+            **sample_payload,
+            "road_type": "highway",
+            "vehicle_count": 3000,
+            "avg_speed_kmh": 110.0,
+        },
     )
-    assert resp.headers.get("x-correlation-id") == "test-corr-123"
+    assert resp.status_code == 200
 
 
-def test_response_time_header(client) -> None:
-    resp = client.get("/api/v1/health")
-    assert "x-response-time-ms" in resp.headers
-
-
-def test_neighborhood_stats_known_zip(client, db_session) -> None:
-    from app.database import NeighborhoodStat
-
-    stat = NeighborhoodStat(
-        zipcode="55555",
-        median_price=400_000.0,
-        median_price_per_sqft=250.0,
-        school_score=7.0,
-        transit_score=6.5,
-        walkability_score=6.0,
-        crime_rate=0.35,
-        avg_rental_yield=0.07,
-    )
-    db_session.add(stat)
-    db_session.commit()
-
-
-def test_predict_stores_prediction_in_db(client, db_session, sample_property) -> None:
-    from app.database import PredictionLog
-
-    before = db_session.query(PredictionLog).count()
-    client.post("/api/v1/predict", json=sample_property)
-    after = db_session.query(PredictionLog).count()
-    assert after >= before
-
-
-def test_batch_predict_all_positive(client, sample_property) -> None:
-    body = {"properties": [sample_property] * 3}
-    resp = client.post("/api/v1/batch-predict", json=body)
+def test_batch_predict_success(client: TestClient, sample_payload: dict) -> None:
+    batch = [sample_payload, {**sample_payload, "route_id": "R002", "hour": 17}]
+    resp = client.post("/api/v1/predict/batch", json=batch)
+    assert resp.status_code == 200
     data = resp.json()
-    assert all(p["predicted_value"] > 0 for p in data["predictions"])
+    assert len(data) == 2
+    assert data[1]["route_id"] == "R002"
+
+
+def test_batch_predict_over_limit_rejected(client: TestClient, sample_payload: dict) -> None:
+    batch = [{**sample_payload, "route_id": f"R{i}"} for i in range(101)]
+    resp = client.post("/api/v1/predict/batch", json=batch)
+    assert resp.status_code == 422
+
+
+def test_model_info_endpoint(client: TestClient) -> None:
+    resp = client.get("/api/v1/model-info")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["n_features"] == 26
+    assert "hour_sin" in data["features"]
+
+
+def test_predict_missing_required_field(client: TestClient, sample_payload: dict) -> None:
+    payload = {k: v for k, v in sample_payload.items() if k != "route_id"}
+    resp = client.post("/api/v1/predict", json=payload)
+    assert resp.status_code == 422
+
+
+def test_predict_route_id_too_long(client: TestClient, sample_payload: dict) -> None:
+    resp = client.post("/api/v1/predict", json={**sample_payload, "route_id": "X" * 65})
+    assert resp.status_code == 422
+
+
+def test_route_history_endpoint(client: TestClient, sample_payload: dict) -> None:
+    client.post("/api/v1/predict", json={**sample_payload, "route_id": "HIST-1"})
+    resp = client.get("/api/v1/routes/HIST-1/history")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["route_id"] == "HIST-1"
+    assert data["count"] >= 1
+
+
+def test_route_history_empty_for_unknown_route(client: TestClient) -> None:
+    resp = client.get("/api/v1/routes/NO-SUCH-ROUTE/history")
+    assert resp.status_code == 200
+    assert resp.json()["count"] == 0
+
+
+def test_route_history_limit_clamped(client: TestClient) -> None:
+    resp = client.get("/api/v1/routes/HIST-1/history?limit=9999")
+    assert resp.status_code == 200
+    assert resp.json()["count"] <= 200

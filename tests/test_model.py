@@ -1,112 +1,95 @@
-"""Tests for ML model training and prediction."""
+"""Tests for model training and prediction logic."""
 
-import numpy as np
+from __future__ import annotations
+
 import pytest
 
-from app.model import _synthetic_model, load_metrics, predict, train_model
+from app.features import FEATURE_COLUMNS
+from app.model import (
+    CONGESTION_LABELS,
+    generate_synthetic_data,
+    predict,
+    train_model,
+)
 
 
-def test_train_model_returns_bundle_and_metrics(sample_df, sample_target) -> None:
-    bundle, metrics = train_model(sample_df, sample_target)
-    assert "ensemble" in bundle
-    assert "scaler" in bundle
-    assert "feature_pipeline" in bundle
-    assert "r2_mean" in metrics
-    assert "rmse_mean" in metrics
-    assert metrics["n_samples"] == len(sample_target)
+def test_synthetic_data_shape() -> None:
+    X, y = generate_synthetic_data(n_samples=200)
+    assert len(X) == 200
+    assert len(y) == 200
 
 
-def test_train_model_r2_reasonable(sample_df, sample_target) -> None:
-    _, metrics = train_model(sample_df, sample_target)
-    assert metrics["r2_mean"] > -2.0
+def test_synthetic_data_has_all_feature_columns() -> None:
+    X, _ = generate_synthetic_data(n_samples=100)
+    assert set(FEATURE_COLUMNS).issubset(set(X.columns))
 
 
-def test_predict_returns_correct_shape(sample_df, sample_target) -> None:
-    bundle, _ = train_model(sample_df, sample_target)
-    preds = predict(sample_df, bundle)
-    assert preds.shape == (len(sample_df),)
+def test_synthetic_labels_in_valid_range() -> None:
+    _, y = generate_synthetic_data(n_samples=500)
+    assert all(0 <= label <= 3 for label in y)
 
 
-def test_predict_positive_values(sample_df, sample_target) -> None:
-    bundle, _ = train_model(sample_df, sample_target)
-    preds = predict(sample_df, bundle)
-    assert np.all(np.isfinite(preds))
+def test_synthetic_data_has_multiple_classes() -> None:
+    _, y = generate_synthetic_data(n_samples=500)
+    assert len(set(y)) > 1
 
 
-@pytest.mark.parametrize("n", [1, 5, 10])
-def test_predict_batch_sizes(sample_df, sample_target, n) -> None:
-    bundle, _ = train_model(sample_df, sample_target)
-    preds = predict(sample_df.head(n), bundle)
-    assert len(preds) == n
+def test_train_model_returns_two_pipelines() -> None:
+    X, y = generate_synthetic_data(n_samples=300)
+    models, metrics = train_model(X, y)
+    assert set(models.keys()) == {"xgb", "lgbm"}
 
 
-def test_synthetic_model_loads() -> None:
-    bundle = _synthetic_model()
-    assert "ensemble" in bundle
-    assert "scaler" in bundle
+def test_train_model_metrics_structure() -> None:
+    X, y = generate_synthetic_data(n_samples=300)
+    _, metrics = train_model(X, y)
+    assert "ensemble_auc" in metrics
+    assert "cv_results" in metrics
+    assert metrics["n_features"] == len(FEATURE_COLUMNS)
 
 
-def test_load_metrics_returns_dict() -> None:
-    m = load_metrics()
-    assert isinstance(m, dict)
-    assert "model_version" in m
+def test_train_model_auc_above_chance() -> None:
+    X, y = generate_synthetic_data(n_samples=300)
+    _, metrics = train_model(X, y)
+    assert metrics["ensemble_auc"] > 0.55
 
 
-def test_train_model_persists_file(sample_df, sample_target, tmp_path, monkeypatch) -> None:
-    import app.model as model_module
-
-    mp = tmp_path / "model.joblib"
-    mtp = tmp_path / "metrics.json"
-    monkeypatch.setattr(model_module, "MODEL_PATH", mp)
-    monkeypatch.setattr(model_module, "METRICS_PATH", mtp)
-    train_model(sample_df, sample_target)
-    assert mp.exists()
-    assert mtp.exists()
+@pytest.mark.parametrize("n_samples", [100, 500])
+def test_train_model_various_sizes(n_samples: int) -> None:
+    X, y = generate_synthetic_data(n_samples=n_samples)
+    models, metrics = train_model(X, y)
+    assert len(models) == 2
+    assert metrics["n_samples"] == n_samples
 
 
-def test_train_model_metrics_have_std(sample_df, sample_target) -> None:
-    _, metrics = train_model(sample_df, sample_target)
-    assert "r2_std" in metrics
-    assert "rmse_std" in metrics
-    assert metrics["r2_std"] >= 0.0
-    assert metrics["rmse_std"] >= 0.0
+def test_predict_output_keys(mock_models: dict) -> None:
+    X, _ = generate_synthetic_data(n_samples=3)
+    result = predict(mock_models, X.iloc[:1])
+    expected = {
+        "congestion_level",
+        "congestion_label",
+        "congestion_probability",
+        "class_probabilities",
+        "incident_score",
+        "model_version",
+    }
+    assert expected.issubset(result.keys())
 
 
-def test_train_model_n_features_positive(sample_df, sample_target) -> None:
-    _, metrics = train_model(sample_df, sample_target)
-    assert metrics["n_features"] > 0
+def test_predict_congestion_label_valid(mock_models: dict) -> None:
+    X, _ = generate_synthetic_data(n_samples=3)
+    result = predict(mock_models, X.iloc[:1])
+    assert result["congestion_label"] in CONGESTION_LABELS.values()
 
 
-def test_predict_no_nan_values(sample_df, sample_target) -> None:
-    bundle, _ = train_model(sample_df, sample_target)
-    preds = predict(sample_df, bundle)
-    assert not np.any(np.isnan(preds))
+def test_congestion_labels_complete() -> None:
+    assert set(CONGESTION_LABELS.keys()) == {0, 1, 2, 3}
+    assert "free" in CONGESTION_LABELS.values()
+    assert "severe" in CONGESTION_LABELS.values()
 
 
-@pytest.mark.parametrize("seed", [0, 7, 42])
-def test_synthetic_model_predict_finite(seed) -> None:
-    bundle = _synthetic_model()
-    import pandas as pd
+def test_package_version_matches_model_version() -> None:
+    import app
+    from app.model import MODEL_VERSION
 
-    stub = pd.DataFrame(
-        {
-            "sqft": [1200.0],
-            "bedrooms": [2],
-            "bathrooms": [1.0],
-            "lot_size": [4000.0],
-            "year_built": [1990],
-            "condition_score": [6.0],
-            "school_score": [5.0],
-            "transit_score": [5.0],
-            "walkability_score": [5.0],
-            "crime_rate": [0.4],
-            "median_neighborhood_price": [250_000.0],
-            "median_price_per_sqft": [180.0],
-            "avg_rental_yield": [0.05],
-            "listing_days": [20],
-            "list_price": [300_000.0],
-        }
-    )
-    preds = predict(stub, bundle)
-    assert len(preds) == 1
-    assert np.isfinite(preds[0])
+    assert app.__version__ == MODEL_VERSION

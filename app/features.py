@@ -1,197 +1,177 @@
-"""Feature engineering pipeline for real estate valuation.
+"""Feature engineering pipeline for traffic congestion prediction."""
 
-The pipeline is composed of five custom sklearn-compatible transformers that
-run in sequence. Each transformer adds columns to the DataFrame in place,
-so downstream stages can reference upstream outputs.
-
-Pipeline stages
----------------
-1. PropertyAgeTransformer  – property_age, renovation_age
-2. RatioFeatureTransformer – beds_per_bath, sqft_per_bed, price_ratio_neighborhood
-3. AmenityCompositeTransformer – amenity_composite [0-1], risk_score [0-1]
-4. InvestmentPotentialTransformer – investment_potential [0-10]
-5. TierEncoderTransformer – size_tier [1-5], age_tier [1-5]
-"""
+from __future__ import annotations
 
 import logging
 from typing import Any
 
 import numpy as np
 import pandas as pd
-from sklearn.base import BaseEstimator, TransformerMixin
-from sklearn.pipeline import Pipeline
 
 logger = logging.getLogger(__name__)
 
-__all__ = [
-    "build_feature_pipeline",
-    "extract_feature_array",
-    "FEATURE_COLUMNS",
-    "PropertyAgeTransformer",
-    "RatioFeatureTransformer",
-    "AmenityCompositeTransformer",
-    "InvestmentPotentialTransformer",
-    "TierEncoderTransformer",
+ROAD_TYPE_MAP: dict[str, int] = {
+    "highway": 0,
+    "arterial": 1,
+    "collector": 2,
+    "local": 3,
+    "expressway": 4,
+}
+
+PEAK_HOURS: frozenset[int] = frozenset(range(7, 10)) | frozenset(range(16, 20))
+
+FEATURE_COLUMNS: list[str] = [
+    "hour",
+    "day_of_week",
+    "month",
+    "is_weekend",
+    "is_peak_hour",
+    "hour_sin",
+    "hour_cos",
+    "dow_sin",
+    "dow_cos",
+    "vehicle_count",
+    "avg_speed_kmh",
+    "speed_volume_ratio",
+    "incident_count",
+    "incident_density",
+    "temperature_celsius",
+    "is_raining",
+    "road_type_encoded",
+    "lag_1h",
+    "lag_2h",
+    "lag_4h",
+    "lag_delta_1h",
+    "lag_ratio_1h",
+    "rolling_mean_6h",
+    "rolling_std_6h",
+    "rolling_mean_24h",
+    "volume_vs_daily_avg",
 ]
 
-FEATURE_COLUMNS = [
-    "sqft",
-    "bedrooms",
-    "bathrooms",
-    "lot_size",
-    "year_built",
-    "condition_score",
-    "school_score",
-    "transit_score",
-    "walkability_score",
-    "crime_rate",
-    "median_neighborhood_price",
-    "median_price_per_sqft",
-    "avg_rental_yield",
-    "listing_days",
-    "renovation_age",
-    "property_age",
-    "beds_per_bath",
-    "sqft_per_bed",
-    "price_ratio_neighborhood",
-    "amenity_composite",
-    "investment_potential",
-    "risk_score",
-    "size_tier",
-    "age_tier",
-]
+
+def encode_road_type(road_type: str) -> int:
+    """Map a road type name to its ordinal encoding.
+
+    Args:
+        road_type: Road classification (case-insensitive).
+
+    Returns:
+        Integer code; unknown types fall back to ``local`` (3).
+    """
+    return ROAD_TYPE_MAP.get(road_type.lower(), 3)
 
 
-class PropertyAgeTransformer(TransformerMixin, BaseEstimator):  # noqa: N801
-    """Compute property age and renovation recency features."""
-
-    def __init__(self, reference_year: int = 2026) -> None:
-        self.reference_year = reference_year
-
-    def fit(self, X: pd.DataFrame, y: Any = None) -> "PropertyAgeTransformer":
-        self.n_features_in_ = X.shape[1]
-        return self
-
-    def transform(self, X: pd.DataFrame) -> pd.DataFrame:
-        X = X.copy()
-        X["property_age"] = self.reference_year - X["year_built"].clip(1800, self.reference_year)
-        renovation = (
-            X["renovation_year"]
-            if "renovation_year" in X.columns
-            else pd.Series(np.nan, index=X.index)
-        )
-        X["renovation_age"] = np.where(
-            renovation.notna() & (renovation > 0),
-            self.reference_year - renovation,
-            X["property_age"],
-        )
-        return X
+def is_peak_hour(hour: int) -> int:
+    """Return 1 when the hour falls in the 7-9 or 16-19 rush windows."""
+    return int(hour in PEAK_HOURS)
 
 
-class RatioFeatureTransformer(TransformerMixin, BaseEstimator):
-    """Compute ratio and interaction features."""
+def compute_lag_features(
+    vehicle_count: float,
+    avg_speed: float,  # noqa: ARG001
+    lag_1h: float | None = None,
+    lag_2h: float | None = None,
+    lag_4h: float | None = None,
+) -> dict[str, float]:
+    """Compute lag features, falling back to decayed estimates when history is absent.
 
-    def fit(self, X: pd.DataFrame, y: Any = None) -> "RatioFeatureTransformer":
-        self.n_features_in_ = X.shape[1]
-        return self
+    Args:
+        vehicle_count: Current hourly vehicle count.
+        avg_speed: Current average speed (reserved for future lag interactions).
+        lag_1h: Observed count one hour ago, if available.
+        lag_2h: Observed count two hours ago, if available.
+        lag_4h: Observed count four hours ago, if available.
 
-    def transform(self, X: pd.DataFrame) -> pd.DataFrame:
-        X = X.copy()
-        X["beds_per_bath"] = X["bedrooms"] / (X["bathrooms"].clip(lower=0.5))
-        X["sqft_per_bed"] = X["sqft"] / (X["bedrooms"].clip(lower=1))
-        median_ppsf = X.get("median_price_per_sqft", pd.Series(np.ones(len(X))))
-        X["price_ratio_neighborhood"] = (X["sqft"] * median_ppsf) / (
-            X.get("list_price", pd.Series(np.ones(len(X)) * 1e6)).clip(lower=1)
-        )
-        return X
-
-
-class AmenityCompositeTransformer(TransformerMixin, BaseEstimator):
-    """Compute composite amenity and risk scores."""
-
-    def fit(self, X: pd.DataFrame, y: Any = None) -> "AmenityCompositeTransformer":
-        self.n_features_in_ = X.shape[1]
-        return self
-
-    def transform(self, X: pd.DataFrame) -> pd.DataFrame:
-        X = X.copy()
-        school = X.get("school_score", pd.Series(np.ones(len(X)) * 5.0))
-        transit = X.get("transit_score", pd.Series(np.ones(len(X)) * 5.0))
-        walk = X.get("walkability_score", pd.Series(np.ones(len(X)) * 5.0))
-        crime = X.get("crime_rate", pd.Series(np.ones(len(X)) * 0.5))
-        X["amenity_composite"] = (school * 0.4 + transit * 0.3 + walk * 0.3) / 10.0
-        X["risk_score"] = crime.clip(0, 1)
-        return X
+    Returns:
+        Lag values plus delta and ratio against the 1-hour lag.
+    """
+    l1 = lag_1h if lag_1h is not None else vehicle_count * 0.95
+    l2 = lag_2h if lag_2h is not None else vehicle_count * 0.90
+    l4 = lag_4h if lag_4h is not None else vehicle_count * 0.85
+    return {
+        "lag_1h": l1,
+        "lag_2h": l2,
+        "lag_4h": l4,
+        "lag_delta_1h": vehicle_count - l1,
+        "lag_ratio_1h": vehicle_count / (l1 + 1e-8),
+    }
 
 
-class InvestmentPotentialTransformer(TransformerMixin, BaseEstimator):
-    """Compute investment potential score from rental yield and appreciation proxies."""
+def compute_rolling_features(
+    vehicle_count: float,
+    rolling_mean_6h: float | None = None,
+    rolling_std_6h: float | None = None,
+    rolling_mean_24h: float | None = None,
+) -> dict[str, float]:
+    """Compute rolling-window statistics with sensible fallbacks.
 
-    def fit(self, X: pd.DataFrame, y: Any = None) -> "InvestmentPotentialTransformer":
-        self.n_features_in_ = X.shape[1]
-        return self
-
-    def transform(self, X: pd.DataFrame) -> pd.DataFrame:
-        X = X.copy()
-        rental_yield = X.get("avg_rental_yield", pd.Series(np.ones(len(X)) * 0.06))
-        amenity = X.get("amenity_composite", pd.Series(np.ones(len(X)) * 0.5))
-        risk = X.get("risk_score", pd.Series(np.ones(len(X)) * 0.5))
-        X["investment_potential"] = (rental_yield * 5.0 + amenity * 3.0 - risk * 2.0).clip(0, 10)
-        return X
-
-
-class TierEncoderTransformer(TransformerMixin, BaseEstimator):
-    """Encode size and age into discrete tier features."""
-
-    def fit(self, X: pd.DataFrame, y: Any = None) -> "TierEncoderTransformer":
-        self.n_features_in_ = X.shape[1]
-        return self
-
-    def transform(self, X: pd.DataFrame) -> pd.DataFrame:
-        X = X.copy()
-        X["size_tier"] = (
-            pd.cut(
-                X["sqft"],
-                bins=[0, 800, 1500, 2500, 4000, 1e9],
-                labels=[1, 2, 3, 4, 5],
-            )
-            .astype(float)
-            .fillna(3.0)
-        )
-        X["age_tier"] = (
-            pd.cut(
-                X.get("property_age", pd.Series(np.zeros(len(X)))),
-                bins=[-1, 5, 15, 30, 60, 1000],
-                labels=[5, 4, 3, 2, 1],
-            )
-            .astype(float)
-            .fillna(3.0)
-        )
-        return X
+    Returns:
+        6h/24h rolling means, 6h std, and current volume vs daily average.
+    """
+    rm6 = rolling_mean_6h if rolling_mean_6h is not None else vehicle_count
+    rs6 = rolling_std_6h if rolling_std_6h is not None else vehicle_count * 0.1
+    rm24 = rolling_mean_24h if rolling_mean_24h is not None else vehicle_count * 0.95
+    return {
+        "rolling_mean_6h": rm6,
+        "rolling_std_6h": rs6,
+        "rolling_mean_24h": rm24,
+        "volume_vs_daily_avg": vehicle_count / (rm24 + 1e-8),
+    }
 
 
-def build_feature_pipeline() -> Pipeline:
-    return Pipeline(
-        steps=[
-            ("age", PropertyAgeTransformer()),
-            ("ratios", RatioFeatureTransformer()),
-            ("amenity", AmenityCompositeTransformer()),
-            ("investment", InvestmentPotentialTransformer()),
-            ("tiers", TierEncoderTransformer()),
-        ]
+def build_feature_vector(raw: dict[str, Any]) -> dict[str, float]:
+    """Convert a raw input dict into the flat feature vector consumed by the model."""
+    hour = int(raw["hour"])
+    dow = int(raw["day_of_week"])
+    month = int(raw.get("month", 6))
+    vehicle_count = float(raw.get("vehicle_count", 1000))
+    avg_speed = float(raw.get("avg_speed_kmh", 50.0))
+    incident_count = int(raw.get("incident_count", 0))
+    temperature = float(raw.get("temperature_celsius", 20.0))
+    is_raining = int(raw.get("is_raining", 0))
+    road_type = str(raw.get("road_type", "arterial"))
+
+    lag = compute_lag_features(
+        vehicle_count,
+        avg_speed,
+        raw.get("lag_1h"),
+        raw.get("lag_2h"),
+        raw.get("lag_4h"),
+    )
+    rolling = compute_rolling_features(
+        vehicle_count,
+        raw.get("rolling_mean_6h"),
+        raw.get("rolling_std_6h"),
+        raw.get("rolling_mean_24h"),
     )
 
+    return {
+        "hour": hour,
+        "day_of_week": dow,
+        "month": month,
+        "is_weekend": int(dow >= 5),
+        "is_peak_hour": is_peak_hour(hour),
+        "hour_sin": float(np.sin(2 * np.pi * hour / 24)),
+        "hour_cos": float(np.cos(2 * np.pi * hour / 24)),
+        "dow_sin": float(np.sin(2 * np.pi * dow / 7)),
+        "dow_cos": float(np.cos(2 * np.pi * dow / 7)),
+        "vehicle_count": vehicle_count,
+        "avg_speed_kmh": avg_speed,
+        "speed_volume_ratio": avg_speed / (vehicle_count + 1e-8),
+        "incident_count": float(incident_count),
+        "incident_density": incident_count / (vehicle_count + 1e-8),
+        "temperature_celsius": temperature,
+        "is_raining": float(is_raining),
+        "road_type_encoded": float(encode_road_type(road_type)),
+        **lag,
+        **rolling,
+    }
 
-def extract_feature_array(df: pd.DataFrame, pipeline: Pipeline) -> np.ndarray:
-    from sklearn.exceptions import NotFittedError
-    from sklearn.utils.validation import check_is_fitted
 
-    try:
-        check_is_fitted(pipeline)
-        transformed = pipeline.transform(df)
-    except NotFittedError:
-        transformed = pipeline.fit_transform(df)
-    available = [c for c in FEATURE_COLUMNS if c in transformed.columns]
-    result = transformed[available].fillna(0).values
-    logger.debug("Extracted %d features from %d samples", result.shape[1], result.shape[0])
-    return result
+def build_feature_dataframe(records: list[dict[str, Any]]) -> pd.DataFrame:
+    """Vectorise a batch of raw records into a model-ready dataframe."""
+    rows = [build_feature_vector(r) for r in records]
+    df = pd.DataFrame(rows)
+    logger.info("Built feature dataframe shape=%s", df.shape)
+    return df

@@ -1,15 +1,6 @@
-"""Ensemble ML model for property valuation.
+"""ML model training and ensemble prediction for traffic congestion level."""
 
-Trains a soft-voting ensemble of XGBoost, LightGBM, and RandomForest
-regressors on the engineered feature array. Runs 5-fold cross-validation
-to measure R2 and RMSE before saving the bundle to disk.
-
-Typical usage
--------------
-from app.model import train_model, predict, load_model
-bundle, metrics = train_model(X_df, y_array)
-predictions = predict(X_df, bundle)
-"""
+from __future__ import annotations
 
 import json
 import logging
@@ -20,13 +11,13 @@ from typing import Any
 import joblib
 import numpy as np
 import pandas as pd
-from lightgbm import LGBMRegressor
-from sklearn.ensemble import RandomForestRegressor, VotingRegressor
-from sklearn.model_selection import KFold, cross_val_score
+from lightgbm import LGBMClassifier
+from sklearn.model_selection import StratifiedKFold, cross_val_score
+from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
-from xgboost import XGBRegressor
+from xgboost import XGBClassifier
 
-from app.features import build_feature_pipeline, extract_feature_array
+from app.features import FEATURE_COLUMNS, build_feature_dataframe
 
 logger = logging.getLogger(__name__)
 
@@ -34,157 +25,165 @@ MODEL_PATH = Path(os.getenv("MODEL_PATH", "model.joblib"))
 METRICS_PATH = Path(os.getenv("METRICS_PATH", "metrics.json"))
 MODEL_VERSION = "1.0.0"
 
-
-def _build_ensemble() -> VotingRegressor:
-    """Build the XGBoost + LightGBM + RandomForest soft-voting ensemble.
-
-    Returns:
-        An unfitted ``VotingRegressor`` with equal weights across all three
-        base learners.
-    """
-    xgb = XGBRegressor(
-        n_estimators=200,
-        max_depth=5,
-        learning_rate=0.05,
-        subsample=0.8,
-        colsample_bytree=0.8,
-        verbosity=0,
-    )
-    lgbm = LGBMRegressor(
-        n_estimators=200,
-        max_depth=5,
-        learning_rate=0.05,
-        subsample=0.8,
-        colsample_bytree=0.8,
-        verbose=-1,
-    )
-    rf = RandomForestRegressor(n_estimators=100, max_depth=8, n_jobs=-1)
-    return VotingRegressor(estimators=[("xgb", xgb), ("lgbm", lgbm), ("rf", rf)])
+CONGESTION_LABELS: dict[int, str] = {
+    0: "free",
+    1: "moderate",
+    2: "congested",
+    3: "severe",
+}
 
 
-def train_model(X: pd.DataFrame, y: np.ndarray) -> tuple[Any, dict[str, float]]:
-    """Train the ensemble on *X* / *y* and persist the model bundle to disk.
-
-    Runs 5-fold CV to compute R2 and RMSE before fitting on the full dataset.
-
-    Args:
-        X: Raw property feature DataFrame (pre-pipeline).
-        y: Array of target property values in dollars.
-
-    Returns:
-        Tuple of ``(bundle, metrics)`` where *bundle* is a dict containing
-        the fitted ``ensemble``, ``scaler``, and ``feature_pipeline``.
-    """
-    feature_pipeline = build_feature_pipeline()
-    feature_pipeline.fit(X)
-    X_features = extract_feature_array(X, feature_pipeline)
-
-    scaler = StandardScaler()
-    X_scaled = scaler.fit_transform(X_features)
-
-    ensemble = _build_ensemble()
-    kf = KFold(n_splits=5, shuffle=True, random_state=42)
-    cv_r2 = cross_val_score(ensemble, X_scaled, y, cv=kf, scoring="r2")
-    cv_rmse = np.sqrt(
-        -cross_val_score(ensemble, X_scaled, y, cv=kf, scoring="neg_mean_squared_error")
+def _xgb_pipeline() -> Pipeline:
+    """Build the scaled XGBoost classification pipeline."""
+    return Pipeline(
+        [
+            ("scaler", StandardScaler()),
+            (
+                "model",
+                XGBClassifier(
+                    n_estimators=100,
+                    max_depth=4,
+                    learning_rate=0.1,
+                    subsample=0.8,
+                    eval_metric="mlogloss",
+                    random_state=42,
+                    verbosity=0,
+                ),
+            ),
+        ]
     )
 
-    ensemble.fit(X_scaled, y)
 
-    metrics = {
-        "r2_mean": float(cv_r2.mean()),
-        "r2_std": float(cv_r2.std()),
-        "rmse_mean": float(cv_rmse.mean()),
-        "rmse_std": float(cv_rmse.std()),
-        "n_features": int(X_scaled.shape[1]),
-        "n_samples": int(len(y)),
+def _lgbm_pipeline() -> Pipeline:
+    """Build the scaled LightGBM classification pipeline."""
+    return Pipeline(
+        [
+            ("scaler", StandardScaler()),
+            (
+                "model",
+                LGBMClassifier(
+                    n_estimators=100,
+                    max_depth=4,
+                    learning_rate=0.1,
+                    subsample=0.8,
+                    random_state=42,
+                    verbose=-1,
+                ),
+            ),
+        ]
+    )
+
+
+def generate_synthetic_data(n_samples: int = 5000) -> tuple[pd.DataFrame, np.ndarray]:
+    """Generate labelled synthetic traffic records for training."""
+    rng = np.random.default_rng(42)
+    records: list[dict[str, Any]] = []
+    labels: list[int] = []
+
+    for _ in range(n_samples):
+        hour = int(rng.integers(0, 24))
+        dow = int(rng.integers(0, 7))
+        month = int(rng.integers(1, 13))
+        vehicle_count = int(rng.integers(100, 3000))
+        avg_speed = max(5.0, float(rng.normal(60, 20)))
+        incident_count = int(rng.poisson(0.5))
+        temperature = float(rng.normal(18, 8))
+        is_raining = int(rng.random() < 0.15)
+
+        score = (
+            (vehicle_count / 3000) * 3.0
+            + (1 - avg_speed / 100) * 2.0
+            + incident_count * 0.5
+            + int(7 <= hour <= 9 or 16 <= hour <= 19) * 0.8
+            + is_raining * 0.3
+            - int(dow >= 5) * 0.4
+            + float(rng.normal(0, 0.2))
+        )
+        level = min(3, max(0, int(score)))
+
+        records.append(
+            {
+                "hour": hour,
+                "day_of_week": dow,
+                "month": month,
+                "vehicle_count": vehicle_count,
+                "avg_speed_kmh": avg_speed,
+                "incident_count": incident_count,
+                "temperature_celsius": temperature,
+                "is_raining": is_raining,
+                "road_type": "arterial",
+            }
+        )
+        labels.append(level)
+
+    return build_feature_dataframe(records), np.array(labels)
+
+
+def train_model(
+    X: pd.DataFrame | None = None,
+    y: np.ndarray | None = None,
+) -> tuple[dict[str, Pipeline], dict[str, Any]]:
+    """Train XGBoost and LightGBM pipelines with 5-fold cross-validation."""
+    if X is None or y is None:
+        X, y = generate_synthetic_data()
+
+    X_arr = X[FEATURE_COLUMNS].values
+    cv = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
+    models: dict[str, Pipeline] = {}
+    cv_results: dict[str, Any] = {}
+
+    for name, pipe in [("xgb", _xgb_pipeline()), ("lgbm", _lgbm_pipeline())]:
+        scores = cross_val_score(pipe, X_arr, y, cv=cv, scoring="roc_auc_ovr_weighted")
+        pipe.fit(X_arr, y)
+        models[name] = pipe
+        cv_results[name] = {"auc_mean": float(scores.mean()), "auc_std": float(scores.std())}
+        logger.info("Trained %s AUC=%.4f±%.4f", name, scores.mean(), scores.std())
+
+    metrics: dict[str, Any] = {
         "model_version": MODEL_VERSION,
+        "n_samples": int(len(y)),
+        "n_features": int(X_arr.shape[1]),
+        "cv_results": cv_results,
+        "ensemble_auc": float(np.mean([v["auc_mean"] for v in cv_results.values()])),
     }
-
-    bundle = {"ensemble": ensemble, "scaler": scaler, "feature_pipeline": feature_pipeline}
-    joblib.dump(bundle, MODEL_PATH)
+    joblib.dump(models, MODEL_PATH)
     METRICS_PATH.write_text(json.dumps(metrics, indent=2))
-    logger.info(
-        "Model trained. R2=%.4f±%.4f, RMSE=%.0f±%.0f",
-        cv_r2.mean(),
-        cv_r2.std(),
-        cv_rmse.mean(),
-        cv_rmse.std(),
-    )
-    return bundle, metrics
+    logger.info("Model saved to %s metrics=%s", MODEL_PATH, metrics)
+    return models, metrics
 
 
-def predict(features_df: pd.DataFrame, bundle: dict[str, Any]) -> np.ndarray:
-    """Run inference on a batch of property features.
-
-    Args:
-        features_df: Raw property feature DataFrame (pre-pipeline).
-        bundle: Model bundle returned by :func:`train_model` or :func:`load_model`.
+def load_model() -> dict[str, Pipeline]:
+    """Load the persisted ensemble, training a fresh one when absent.
 
     Returns:
-        1-D numpy array of predicted property values.
-    """
-    X_features = extract_feature_array(features_df, bundle["feature_pipeline"])
-    X_scaled = bundle["scaler"].transform(X_features)
-    return bundle["ensemble"].predict(X_scaled)
-
-
-def load_model() -> dict[str, Any]:
-    """Load the persisted model bundle from disk, or generate a synthetic stub.
-
-    Returns:
-        Dict with ``ensemble``, ``scaler``, and ``feature_pipeline`` keys.
+        Mapping of ensemble member name to fitted sklearn pipeline.
     """
     if not MODEL_PATH.exists():
-        logger.warning("No model file found at %s; generating synthetic model", MODEL_PATH)
-        return _synthetic_model()
-    return joblib.load(MODEL_PATH)
+        logger.info("No saved model found — training from scratch")
+        models, _ = train_model()
+        return models
+    return joblib.load(MODEL_PATH)  # type: ignore[no-any-return]
 
 
-def _synthetic_model() -> dict[str, Any]:
-    """Return a minimal stub model for use in test/CI environments."""
-    from sklearn.linear_model import Ridge
-
-    X_stub = np.random.default_rng(42).normal(size=(50, 24))
-    y_stub = np.random.default_rng(42).uniform(100_000, 1_000_000, size=50)
-    scaler = StandardScaler().fit(X_stub)
-    ridge = Ridge().fit(scaler.transform(X_stub), y_stub)
-    fp = build_feature_pipeline()
-    stub_df = pd.DataFrame(
-        {
-            "sqft": [1500.0],
-            "bedrooms": [3],
-            "bathrooms": [2.0],
-            "lot_size": [5000.0],
-            "year_built": [2000],
-            "condition_score": [5.0],
-            "school_score": [6.0],
-            "transit_score": [5.0],
-            "walkability_score": [5.0],
-            "crime_rate": [0.3],
-            "median_neighborhood_price": [300_000.0],
-            "median_price_per_sqft": [200.0],
-            "avg_rental_yield": [0.06],
-            "listing_days": [30],
-            "list_price": [350_000.0],
-        }
+def predict(
+    models: dict[str, Pipeline],
+    features: pd.DataFrame,
+) -> dict[str, Any]:
+    """Average class probabilities from all ensemble members and return prediction."""
+    X = features[FEATURE_COLUMNS].values
+    probs: np.ndarray = np.mean([m.predict_proba(X) for m in models.values()], axis=0)
+    congestion_level = int(np.argmax(probs, axis=1)[0])
+    congestion_prob = float(probs[0][congestion_level])
+    incident_score = float(
+        features["incident_count"].iloc[0] / max(1.0, features["vehicle_count"].iloc[0]) * 100
     )
-    fp.fit(stub_df)
-    bundle = {
-        "ensemble": ridge,
-        "scaler": scaler,
-        "feature_pipeline": fp,
+    return {
+        "congestion_level": congestion_level,
+        "congestion_label": CONGESTION_LABELS[congestion_level],
+        "congestion_probability": round(congestion_prob, 4),
+        "class_probabilities": {
+            CONGESTION_LABELS[i]: round(float(p), 4) for i, p in enumerate(probs[0])
+        },
+        "incident_score": round(incident_score, 4),
+        "model_version": MODEL_VERSION,
     }
-    joblib.dump(bundle, MODEL_PATH)
-    return bundle
-
-
-def load_metrics() -> dict[str, Any]:
-    """Return the most recent training metrics from disk.
-
-    Returns:
-        Metrics dict, or a minimal placeholder if the file does not exist.
-    """
-    if not METRICS_PATH.exists():
-        return {"model_version": MODEL_VERSION, "note": "no metrics file"}
-    return json.loads(METRICS_PATH.read_text())

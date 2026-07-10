@@ -1,310 +1,291 @@
-"""FastAPI application for Realty-Edge property valuation API."""
+"""FastAPI application — /api/v1/predict, /api/v1/metrics, /api/v1/drift, /health."""
 
+from __future__ import annotations
+
+import json
 import logging
 import time
 import uuid
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
+from pathlib import Path
 from typing import Any
 
-import numpy as np
 import pandas as pd
-from fastapi import Depends, FastAPI, HTTPException, Request, Response
+from fastapi import Depends, FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
-from slowapi import Limiter, _rate_limit_exceeded_handler
-from slowapi.errors import RateLimitExceeded
-from slowapi.util import get_remote_address
+from fastapi.middleware.gzip import GZipMiddleware
+from pydantic import BaseModel, Field, field_validator
 from sqlalchemy.orm import Session
 
 from app.database import get_db, init_db
-from app.faiss_index import add_property, search_comparable
-from app.model import MODEL_VERSION, load_metrics, load_model, predict
+from app.features import FEATURE_COLUMNS, build_feature_vector
+from app.logging_config import configure_logging
+from app.middleware import rate_limit_middleware
+from app.model import MODEL_VERSION, load_model
+from app.model import predict as model_predict
 from app.monitoring import (
+    compute_drift,
     get_drift_summary,
     get_recent_predictions,
+    log_drift,
     log_prediction,
-    run_drift_check,
-)
-from app.schemas import (
-    BatchPredictionResponse,
-    BatchPropertyInput,
-    ComparableRequest,
-    ComparableResponse,
-    DriftStatusResponse,
-    HealthResponse,
-    MetricsResponse,
-    NeighborhoodStatsResponse,
-    PredictionResponse,
-    PropertyInput,
 )
 
-logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s %(message)s")
+configure_logging()
 logger = logging.getLogger(__name__)
 
-limiter = Limiter(key_func=get_remote_address, default_limits=["300/minute"])
-
-_model_bundle: dict[str, Any] | None = None
+_models: dict = {}
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
-    global _model_bundle
     init_db()
-    _model_bundle = load_model()
-    logger.info("Realty-Edge started. Model version=%s", MODEL_VERSION)
+    _models.update(load_model())
+    logger.info("Traffic-Pulse started model_version=%s", MODEL_VERSION)
     yield
-    logger.info("Realty-Edge shutting down.")
+    _models.clear()
 
+
+TAGS_METADATA = [
+    {"name": "prediction", "description": "Congestion level predictions (single and batch)."},
+    {"name": "monitoring", "description": "Drift detection and prediction statistics."},
+    {"name": "system", "description": "Health and model metadata."},
+]
 
 app = FastAPI(
-    title="Realty-Edge",
-    description="Real estate property valuation and investment scoring API.",
-    version="1.0.0",
+    title="Traffic-Pulse",
+    description=(
+        "Real-time urban traffic congestion prediction and incident detection API "
+        "using an XGBoost-LightGBM ensemble with KS-test drift monitoring."
+    ),
+    version=MODEL_VERSION,
     lifespan=lifespan,
+    openapi_tags=TAGS_METADATA,
 )
-app.state.limiter = limiter
-app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
-app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["GET", "POST"],
+    allow_headers=["*"],
+)
+
+
+app.add_middleware(GZipMiddleware, minimum_size=1024)
+
+app.middleware("http")(rate_limit_middleware)
 
 
 @app.middleware("http")
-async def correlation_id_middleware(request: Request, call_next: Any) -> Response:
-    corr_id = request.headers.get("X-Correlation-ID", str(uuid.uuid4()))
-    request.state.correlation_id = corr_id
+async def correlation_id_middleware(request: Request, call_next: Any) -> Any:
+    correlation_id = request.headers.get("X-Correlation-ID", str(uuid.uuid4()))
     start = time.perf_counter()
     response = await call_next(request)
-    elapsed = (time.perf_counter() - start) * 1000
-    response.headers["X-Correlation-ID"] = corr_id
-    response.headers["X-Response-Time-Ms"] = f"{elapsed:.1f}"
+    elapsed_ms = round((time.perf_counter() - start) * 1000, 2)
+    response.headers["X-Correlation-ID"] = correlation_id
+    response.headers["X-Response-Time-Ms"] = str(elapsed_ms)
     return response
 
 
-def _property_to_df(prop: PropertyInput) -> pd.DataFrame:
-    return pd.DataFrame([prop.model_dump()])
+# ── Request / Response schemas ───────────────────────────────────────────────
 
 
-def _investment_score(predicted_value: float, prop: PropertyInput) -> float:
-    if predicted_value <= 0:
-        return 0.0
-    annual_rent = predicted_value * prop.avg_rental_yield
-    cap_rate = annual_rent / predicted_value
-    amenity = (
-        prop.school_score * 0.4 + prop.transit_score * 0.3 + prop.walkability_score * 0.3
-    ) / 10
-    risk_penalty = prop.crime_rate
-    score = (cap_rate * 50 + amenity * 3 - risk_penalty * 2) * 10
-    return min(max(round(float(score), 2), 0.0), 10.0)
+class TrafficInput(BaseModel):
+    route_id: str = Field(..., min_length=1, max_length=64)
+    hour: int = Field(..., ge=0, le=23)
+    day_of_week: int = Field(..., ge=0, le=6)
+    month: int = Field(default=6, ge=1, le=12)
+    vehicle_count: int = Field(..., ge=0, le=10_000)
+    avg_speed_kmh: float = Field(..., ge=0.0, le=200.0)
+    road_type: str = Field(default="arterial")
+    incident_count: int = Field(default=0, ge=0, le=100)
+    temperature_celsius: float = Field(default=20.0, ge=-30.0, le=50.0)
+    is_raining: int = Field(default=0, ge=0, le=1)
+    lag_1h: float | None = None
+    lag_2h: float | None = None
+    lag_4h: float | None = None
+    rolling_mean_6h: float | None = None
+    rolling_std_6h: float | None = None
+    rolling_mean_24h: float | None = None
+
+    @field_validator("road_type")
+    @classmethod
+    def validate_road_type(cls, v: str) -> str:
+        allowed = {"highway", "arterial", "collector", "local", "expressway"}
+        if v.lower() not in allowed:
+            msg = f"road_type must be one of {sorted(allowed)}"
+            raise ValueError(msg)
+        return v.lower()
 
 
-@app.get(
-    "/api/v1/health",
-    response_model=HealthResponse,
-    tags=["System"],
-    summary="Health check",
-    description="Returns service status, model version, and DB connectivity.",
-)
-async def health(db: Session = Depends(get_db)) -> HealthResponse:
-    try:
-        db.execute(__import__("sqlalchemy").text("SELECT 1"))
-        db_ok = True
-    except Exception:
-        db_ok = False
-    return HealthResponse(status="ok", model_version=MODEL_VERSION, db_connected=db_ok)
+class PredictionResponse(BaseModel):
+    route_id: str
+    congestion_level: int
+    congestion_label: str
+    congestion_probability: float
+    class_probabilities: dict[str, float]
+    incident_score: float
+    model_version: str
 
 
-@app.get(
-    "/api/v1/metrics",
-    response_model=MetricsResponse,
-    tags=["System"],
-    summary="Model metrics",
-    description="Returns 5-fold CV R2, RMSE, feature count from the last training run.",
-)
-async def metrics() -> MetricsResponse:
-    m = load_metrics()
-    return MetricsResponse(**{k: v for k, v in m.items() if k in MetricsResponse.model_fields})
+class DriftRequest(BaseModel):
+    feature_name: str
+    reference: list[float] = Field(..., min_length=10)
+    current: list[float] = Field(..., min_length=10)
+
+
+# ── Endpoints ────────────────────────────────────────────────────────────────
+
+
+@app.get("/health", tags=["system"], summary="Liveness probe")
+def health() -> dict[str, Any]:
+    """Liveness probe — returns model version and loaded ensemble members."""
+    return {
+        "status": "ok",
+        "model_version": MODEL_VERSION,
+        "models_loaded": list(_models.keys()),
+    }
+
+
+@app.get("/api/v1/metrics", tags=["monitoring"], summary="Monitoring snapshot")
+def metrics(db: Session = Depends(get_db)) -> dict[str, Any]:
+    """Prediction statistics and any active drift alerts."""
+    predictions = get_recent_predictions(db, limit=200)
+    drift_logs = get_drift_summary(db, limit=50)
+
+    level_counts: dict[int, int] = {0: 0, 1: 0, 2: 0, 3: 0}
+    for p in predictions:
+        level_counts[p.congestion_level] = level_counts.get(p.congestion_level, 0) + 1
+
+    metrics_path = Path("metrics.json")
+    training_metrics: dict[str, Any] = (
+        json.loads(metrics_path.read_text()) if metrics_path.exists() else {}
+    )
+
+    return {
+        "total_predictions": len(predictions),
+        "congestion_distribution": level_counts,
+        "drift_alerts": [d for d in drift_logs if d["drift_detected"]],
+        "training_metrics": training_metrics,
+        "model_version": MODEL_VERSION,
+    }
 
 
 @app.post(
     "/api/v1/predict",
     response_model=PredictionResponse,
-    tags=["Valuation"],
-    summary="Predict property value",
-    description="Predict market value and investment score for a single property.",
+    tags=["prediction"],
+    summary="Predict congestion for one route segment",
 )
-@limiter.limit("100/minute")
-async def predict_value(
-    request: Request,
-    prop: PropertyInput,
+def predict(
+    payload: TrafficInput,
     db: Session = Depends(get_db),
 ) -> PredictionResponse:
-    corr_id = getattr(request.state, "correlation_id", str(uuid.uuid4()))
-    if _model_bundle is None:
-        raise HTTPException(status_code=503, detail="Model not loaded")
-    df = _property_to_df(prop)
-    try:
-        values = predict(df, _model_bundle)
-    except Exception as exc:
-        logger.exception("Prediction error: %s", exc)
-        raise HTTPException(status_code=500, detail="Prediction failed") from exc
+    """Predict congestion level (0-3) for the given route and conditions."""
+    if not _models:
+        raise HTTPException(status_code=503, detail="Models not loaded")
 
-    val = float(values[0])
-    band_low = val * 0.92
-    band_high = val * 1.08
-    inv_score = _investment_score(val, prop)
+    raw = payload.model_dump()
+    features = build_feature_vector(raw)
+    df = pd.DataFrame([features])
 
+    result = model_predict(_models, df)
     log_prediction(
-        db=db,
-        predicted_value=val,
-        features=prop.model_dump(),
-        correlation_id=corr_id,
-        investment_score=inv_score,
+        db,
+        hour=payload.hour,
+        day_of_week=payload.day_of_week,
+        route_id=payload.route_id,
+        road_type=payload.road_type,
+        prediction=result,
+        features=features,
     )
-    add_property(
-        np.array(
-            [
-                prop.sqft,
-                prop.bedrooms,
-                prop.bathrooms,
-                prop.condition_score,
-                prop.school_score,
-                prop.transit_score,
-                prop.walkability_score,
-                prop.crime_rate,
-                prop.median_price_per_sqft,
-                prop.avg_rental_yield,
-                prop.listing_days,
-                float(prop.year_built),
-            ]
-            + [0.0] * 12
-        ),
-        {"predicted_value": val, "zipcode": prop.zipcode, "sqft": prop.sqft},
-    )
-    return PredictionResponse(
-        predicted_value=round(val, 2),
-        investment_score=inv_score,
-        confidence_band_low=round(band_low, 2),
-        confidence_band_high=round(band_high, 2),
-        model_version=MODEL_VERSION,
-        correlation_id=corr_id,
-    )
+    return PredictionResponse(route_id=payload.route_id, **result)
+
+
+@app.post("/api/v1/drift", tags=["monitoring"], summary="Run KS drift test on a feature")
+def check_drift(
+    payload: DriftRequest,
+    db: Session = Depends(get_db),
+) -> dict[str, Any]:
+    """KS-test drift detection between a reference and current feature window."""
+    drift_result = compute_drift(payload.reference, payload.current)
+    log_drift(db, payload.feature_name, drift_result)
+    return {"feature": payload.feature_name, **drift_result}
 
 
 @app.post(
-    "/api/v1/batch-predict",
-    response_model=BatchPredictionResponse,
-    tags=["Valuation"],
-    summary="Batch predict",
-    description="Predict values for up to 100 properties in one request.",
+    "/api/v1/predict/batch",
+    tags=["prediction"],
+    summary="Predict congestion for up to 100 segments",
 )
-@limiter.limit("20/minute")
-async def batch_predict(
-    request: Request,
-    body: BatchPropertyInput,
+def predict_batch(
+    payloads: list[TrafficInput],
     db: Session = Depends(get_db),
-) -> BatchPredictionResponse:
-    corr_id = getattr(request.state, "correlation_id", str(uuid.uuid4()))
-    if _model_bundle is None:
-        raise HTTPException(status_code=503, detail="Model not loaded")
-    df = pd.DataFrame([p.model_dump() for p in body.properties])
-    try:
-        values = predict(df, _model_bundle)
-    except Exception as exc:
-        raise HTTPException(status_code=500, detail="Batch prediction failed") from exc
+) -> list[PredictionResponse]:
+    """Predict congestion levels for up to 100 route segments in one call."""
+    if not _models:
+        raise HTTPException(status_code=503, detail="Models not loaded")
+    if len(payloads) > 100:
+        raise HTTPException(status_code=422, detail="Batch size limited to 100")
 
-    results = []
-    for val, prop in zip(values, body.properties, strict=False):
-        v = float(val)
-        inv = _investment_score(v, prop)
-        results.append(
-            PredictionResponse(
-                predicted_value=round(v, 2),
-                investment_score=inv,
-                confidence_band_low=round(v * 0.92, 2),
-                confidence_band_high=round(v * 1.08, 2),
-                model_version=MODEL_VERSION,
-                correlation_id=corr_id,
-            )
+    responses: list[PredictionResponse] = []
+    for payload in payloads:
+        features = build_feature_vector(payload.model_dump())
+        result = model_predict(_models, pd.DataFrame([features]))
+        log_prediction(
+            db,
+            hour=payload.hour,
+            day_of_week=payload.day_of_week,
+            route_id=payload.route_id,
+            road_type=payload.road_type,
+            prediction=result,
+            features=features,
         )
-    return BatchPredictionResponse(predictions=results, count=len(results))
+        responses.append(PredictionResponse(route_id=payload.route_id, **result))
+    return responses
 
 
-@app.post("/api/v1/comparable-properties", response_model=ComparableResponse, tags=["Search"])
-@limiter.limit("50/minute")
-async def comparable_properties(request: Request, body: ComparableRequest) -> ComparableResponse:
-    prop = body.property
-    query_vec = np.array(
-        [
-            prop.sqft,
-            prop.bedrooms,
-            prop.bathrooms,
-            prop.condition_score,
-            prop.school_score,
-            prop.transit_score,
-            prop.walkability_score,
-            prop.crime_rate,
-            prop.median_price_per_sqft,
-            prop.avg_rental_yield,
-            prop.listing_days,
-            float(prop.year_built),
-        ]
-        + [0.0] * 12
-    )
-    results = search_comparable(query_vec, top_k=body.top_k)
-    return ComparableResponse(comparables=results, query_vector_dim=len(query_vec))
-
-
-@app.get(
-    "/api/v1/neighborhood-stats/{zipcode}",
-    response_model=NeighborhoodStatsResponse,
-    tags=["Analytics"],
-)
-async def neighborhood_stats(
-    zipcode: str, db: Session = Depends(get_db)
-) -> NeighborhoodStatsResponse:
-    from app.database import NeighborhoodStat
-
-    stat = db.query(NeighborhoodStat).filter(NeighborhoodStat.zipcode == zipcode).first()
-    if stat is None:
-        return NeighborhoodStatsResponse(
-            zipcode=zipcode,
-            median_price=350_000.0,
-            median_price_per_sqft=220.0,
-            school_score=6.5,
-            transit_score=5.5,
-            walkability_score=5.5,
-            crime_rate=0.3,
-            avg_rental_yield=0.065,
-        )
-    return NeighborhoodStatsResponse(
-        zipcode=stat.zipcode,
-        median_price=stat.median_price,
-        median_price_per_sqft=stat.median_price_per_sqft,
-        school_score=stat.school_score,
-        transit_score=stat.transit_score,
-        walkability_score=stat.walkability_score,
-        crime_rate=stat.crime_rate,
-        avg_rental_yield=stat.avg_rental_yield,
-    )
-
-
-@app.get("/api/v1/drift-status", response_model=DriftStatusResponse, tags=["Monitoring"])
-async def drift_status(db: Session = Depends(get_db)) -> DriftStatusResponse:
-    reports = get_drift_summary(db)
-    total = len(get_recent_predictions(db, limit=10000))
-    return DriftStatusResponse(drift_reports=reports, total_predictions=total)
-
-
-@app.post("/api/v1/run-drift-check", tags=["Monitoring"])
-async def trigger_drift_check(db: Session = Depends(get_db)) -> dict:
-    recent = get_recent_predictions(db, limit=200)
-    if len(recent) < 20:
-        return {"status": "skipped", "reason": "insufficient predictions"}
-    vals = [r.predicted_value for r in recent]
-    mid = len(vals) // 2
-    result = run_drift_check(db, "predicted_value", vals[:mid], vals[mid:])
+@app.get("/api/v1/model-info", tags=["system"], summary="Model metadata and feature list")
+def model_info() -> dict[str, Any]:
+    """Model metadata: version, ensemble members, and feature list."""
     return {
-        "feature": "predicted_value",
-        "ks_statistic": result.ks_statistic,
-        "p_value": result.p_value,
-        "drift_detected": result.drift_detected,
+        "model_version": MODEL_VERSION,
+        "ensemble_members": list(_models.keys()),
+        "n_features": len(FEATURE_COLUMNS),
+        "features": FEATURE_COLUMNS,
+        "congestion_labels": {"0": "free", "1": "moderate", "2": "congested", "3": "severe"},
+    }
+
+@app.get("/api/v1/routes/{route_id}/history", tags=["prediction"], summary="Recent predictions for a route")
+def route_history(
+    route_id: str,
+    limit: int = 20,
+    db: Session = Depends(get_db),
+) -> dict[str, Any]:
+    """Return the most recent logged predictions for one route segment."""
+    from app.database import PredictionLog
+
+    limit = max(1, min(limit, 200))
+    rows = (
+        db.query(PredictionLog)
+        .filter(PredictionLog.route_id == route_id)
+        .order_by(PredictionLog.timestamp.desc())
+        .limit(limit)
+        .all()
+    )
+    return {
+        "route_id": route_id,
+        "count": len(rows),
+        "predictions": [
+            {
+                "timestamp": r.timestamp.isoformat(),
+                "hour": r.hour,
+                "congestion_level": r.congestion_level,
+                "congestion_prob": r.congestion_prob,
+                "incident_score": r.incident_score,
+                "model_version": r.model_version,
+            }
+            for r in rows
+        ],
     }

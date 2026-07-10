@@ -1,28 +1,15 @@
-"""SQLAlchemy models and session management for Realty-Edge.
+"""SQLAlchemy models and session management for prediction logging."""
 
-Provides ORM models for properties, prediction logs, drift reports, and
-neighbourhood stats. Exports a session factory and a FastAPI dependency.
-"""
+from __future__ import annotations
 
-import logging
 import os
+from collections.abc import Generator
 from datetime import datetime
 
-from sqlalchemy import (
-    Boolean,
-    Column,
-    DateTime,
-    Float,
-    Integer,
-    String,
-    Text,
-    create_engine,
-)
+from sqlalchemy import Column, DateTime, Float, Integer, String, Text, create_engine
 from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
 
-logger = logging.getLogger(__name__)
-
-DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./realty_edge.db")
+DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./traffic_pulse.db")
 
 engine = create_engine(
     DATABASE_URL,
@@ -32,78 +19,46 @@ SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 
 class Base(DeclarativeBase):
-    """Declarative base for all Realty-Edge ORM models."""
-
-
-class Property(Base):
-    """ORM model for a stored property listing."""
-
-    __tablename__ = "properties"
-
-    id = Column(Integer, primary_key=True, index=True)
-    address = Column(String(500))
-    zipcode = Column(String(10), index=True)
-    city = Column(String(100))
-    state = Column(String(50))
-    sqft = Column(Float)
-    bedrooms = Column(Integer)
-    bathrooms = Column(Float)
-    lot_size = Column(Float)
-    year_built = Column(Integer)
-    renovation_year = Column(Integer, nullable=True)
-    condition_score = Column(Float)
-    list_price = Column(Float, nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    pass
 
 
 class PredictionLog(Base):
-    """ORM model for a single model prediction record."""
+    """Stores each prediction request and its result for monitoring."""
 
     __tablename__ = "prediction_logs"
 
     id = Column(Integer, primary_key=True, index=True)
-    property_id = Column(Integer, nullable=True)
-    predicted_value = Column(Float)
-    investment_score = Column(Float, nullable=True)
-    model_version = Column(String(50))
-    features_json = Column(Text)
-    correlation_id = Column(String(50), index=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    timestamp = Column(DateTime, default=datetime.utcnow, nullable=False)
+    hour = Column(Integer, nullable=False)
+    day_of_week = Column(Integer, nullable=False)
+    route_id = Column(String(64), nullable=False, index=True)
+    road_type = Column(String(32), nullable=False)
+    congestion_level = Column(Integer, nullable=False)
+    congestion_prob = Column(Float, nullable=False)
+    incident_score = Column(Float, nullable=False)
+    model_version = Column(String(32), default="1.0.0", nullable=False)
+    features_json = Column(Text, nullable=True)
 
 
-class DriftReport(Base):
-    """ORM model for a KS-test drift detection report."""
+class DriftLog(Base):
+    """Stores KS-test drift detection results per feature."""
 
-    __tablename__ = "drift_reports"
-
-    id = Column(Integer, primary_key=True, index=True)
-    feature_name = Column(String(100))
-    ks_statistic = Column(Float)
-    p_value = Column(Float)
-    drift_detected = Column(Boolean)
-    sample_size = Column(Integer)
-    created_at = Column(DateTime, default=datetime.utcnow)
-
-
-class NeighborhoodStat(Base):
-    """ORM model for aggregated neighbourhood statistics by ZIP code."""
-
-    __tablename__ = "neighborhood_stats"
+    __tablename__ = "drift_logs"
 
     id = Column(Integer, primary_key=True, index=True)
-    zipcode = Column(String(10), unique=True, index=True)
-    median_price = Column(Float)
-    median_price_per_sqft = Column(Float)
-    school_score = Column(Float)
-    transit_score = Column(Float)
-    walkability_score = Column(Float)
-    crime_rate = Column(Float)
-    avg_rental_yield = Column(Float)
-    updated_at = Column(DateTime, default=datetime.utcnow)
+    timestamp = Column(DateTime, default=datetime.utcnow, nullable=False)
+    feature_name = Column(String(64), nullable=False, index=True)
+    ks_statistic = Column(Float, nullable=False)
+    p_value = Column(Float, nullable=False)
+    drift_detected = Column(Integer, default=0, nullable=False)
 
 
-def get_db() -> Session:
-    """Yield a database session and close it when the request ends."""
+def get_db() -> Generator[Session, None, None]:
+    """Yield a database session and guarantee it is closed afterwards.
+
+    Yields:
+        An active SQLAlchemy session bound to the configured engine.
+    """
     db = SessionLocal()
     try:
         yield db
@@ -112,10 +67,5 @@ def get_db() -> Session:
 
 
 def init_db() -> None:
-    """Create all tables that do not yet exist.
-
-    Safe to call on startup; existing tables are left untouched.
-    """
-    logger.info("Initialising database schema at %s", DATABASE_URL.split("@")[-1])
+    """Create all tables if they do not already exist (idempotent)."""
     Base.metadata.create_all(bind=engine)
-    logger.info("Database ready.")

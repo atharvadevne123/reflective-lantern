@@ -1,64 +1,39 @@
-# Contributing to Reflective Lantern
+# Contributing to Traffic-Pulse
 
-Thank you for your interest! This is a personal automation project, but
-external contributions are welcome for bug fixes, new utility scripts, and
-documentation improvements.
+Thanks for your interest in contributing!
 
-## Getting Started
+## Getting started
 
-```bash
-git clone https://github.com/atharvadevne123/reflective-lantern.git
-cd reflective-lantern
-bash scripts/setup.sh
-```
+1. Fork the repository and clone your fork.
+2. Install dependencies: `make install`
+3. Run the test suite: `make test`
+4. Run the linter: `make lint`
 
-This installs all dev dependencies and pre-commit hooks.
+## Development workflow
 
-## Development Workflow
+- Create a feature branch from `main`: `git checkout -b feat/my-feature`
+- Keep changes focused — one logical change per pull request.
+- Add or update tests for any behaviour change.
+- Ensure `ruff check .` and `pytest` pass before pushing.
 
-```bash
-make test       # run pytest
-make lint       # ruff check
-make format     # ruff format
-make type-check # mypy
-```
+## Commit style
 
-All four commands must pass before opening a pull request.
+Use conventional commit prefixes:
 
-## Pull Request Guidelines
+- `feat:` new functionality
+- `fix:` bug fixes
+- `test:` test-only changes
+- `docs:` documentation
+- `chore:` tooling / maintenance
+- `ci:` CI configuration
 
-- **One change per PR** — keep diffs small and focused
-- **Tests required** — new scripts must have corresponding `tests/test_*.py`
-- **No secrets** — never commit API keys or passwords; use `.env.example`
-- **Update `.env.example`** if you add new environment variables
-- **Update `CHANGELOG.md`** with a brief description of your change
+## Code style
 
-## Project Structure
+- Python 3.11+, full type annotations on public functions.
+- Google-style docstrings.
+- `ruff` handles formatting and linting (config in `pyproject.toml`).
 
-```
-reflective-lantern/
-├── .claude/settings.json   ← CCR tool permissions
-├── config/                  ← Python config package
-├── scripts/                 ← Standalone utility scripts
-├── tests/                   ← pytest test suite
-├── docs/                    ← Architecture & operations docs
-├── history/                 ← Per-repo JSON run logs
-├── prompts/                 ← Cached agent instructions
-└── covers/                  ← SVG cover images for Notion
-```
+## Reporting issues
 
-## Code Style
-
-- Python 3.11+, type annotations on every function
-- `ruff` for linting and formatting (see `pyproject.toml`)
-- Google-style docstrings on every public class and function
-- `logging` instead of `print()`
-- No bare `except:` — always catch specific exception types
-
-## Reporting Issues
-
-Please use the GitHub issue templates:
-- **Bug report** — for unexpected failures
-- **Feature request** — for new ideas
-
-For security issues, see [SECURITY.md](SECURITY.md).
+Open a GitHub issue with a minimal reproduction, expected vs actual
+behaviour, and your environment details.

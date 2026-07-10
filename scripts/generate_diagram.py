@@ -1,161 +1,125 @@
-"""Generate Realty-Edge system architecture diagram."""
+"""Generate the Traffic-Pulse system architecture diagram."""
 
-import logging
+from __future__ import annotations
+
 import os
 
 import matplotlib.patches as mpatches
 import matplotlib.pyplot as plt
 
-logger = logging.getLogger(__name__)
-logging.basicConfig(level=logging.INFO, format="%(levelname)s %(message)s")
 
-os.makedirs("screenshots", exist_ok=True)
-
-fig, ax = plt.subplots(figsize=(16, 9))
-ax.set_xlim(0, 16)
-ax.set_ylim(0, 9)
-ax.axis("off")
-fig.patch.set_facecolor("#F8F9FA")
-ax.set_facecolor("#F8F9FA")
-
-COLORS = {
-    "client": "#4A90D9",
-    "api": "#2ECC71",
-    "ml": "#E74C3C",
-    "storage": "#F39C12",
-    "pipeline": "#9B59B6",
-    "monitoring": "#1ABC9C",
-    "header": "#2C3E50",
-}
-
-
-def box(ax, x, y, w, h, color, label, sublabel="", fontsize=10):
-    rect = mpatches.FancyBboxPatch(
+def _box(
+    ax: plt.Axes,
+    x: float,
+    y: float,
+    w: float,
+    h: float,
+    label: str,
+    color: str,
+    fontsize: int = 8,
+) -> None:
+    patch = mpatches.FancyBboxPatch(
         (x, y),
         w,
         h,
-        boxstyle="round,pad=0.1",
+        boxstyle="round,pad=0.12",
         facecolor=color,
         edgecolor="white",
-        linewidth=1.5,
-        alpha=0.9,
+        alpha=0.92,
+        linewidth=1.4,
     )
-    ax.add_patch(rect)
-    cy = y + h / 2
+    ax.add_patch(patch)
     ax.text(
         x + w / 2,
-        cy + (0.1 if sublabel else 0),
+        y + h / 2,
         label,
         ha="center",
         va="center",
         fontsize=fontsize,
+        color="white",
+        fontweight="bold",
+    )
+
+
+def main() -> None:
+    os.makedirs("screenshots", exist_ok=True)
+    fig, ax = plt.subplots(figsize=(16, 9))
+    ax.set_xlim(0, 16)
+    ax.set_ylim(0, 9)
+    ax.set_facecolor("#12122a")
+    fig.patch.set_facecolor("#12122a")
+    ax.axis("off")
+
+    ax.text(
+        8,
+        8.6,
+        "Traffic-Pulse — System Architecture",
+        ha="center",
+        va="center",
+        fontsize=15,
         fontweight="bold",
         color="white",
     )
-    if sublabel:
-        ax.text(
-            x + w / 2,
-            cy - 0.22,
-            sublabel,
-            ha="center",
-            va="center",
-            fontsize=7.5,
-            color="white",
-            alpha=0.9,
-        )
 
+    _box(ax, 0.2, 6.6, 1.8, 1.1, "REST Client\n(SDK / curl)", "#455A64")
+    _box(
+        ax,
+        3.2,
+        5.7,
+        2.8,
+        2.8,
+        "FastAPI App\n/api/v1/predict\n/api/v1/drift\n/api/v1/metrics\n/health",
+        "#1565C0",
+    )
+    _box(ax, 7.2, 7.2, 2.5, 1.2, "Feature\nEngineering\n(26 features)", "#00695C")
+    _box(ax, 7.2, 5.5, 2.5, 1.5, "XGBoost +\nLightGBM\nEnsemble", "#4A148C")
+    _box(ax, 7.2, 3.7, 2.5, 1.5, "Monitoring\nKS-Test Drift\nPrediction Log", "#B71C1C")
+    _box(ax, 10.8, 6.8, 2.4, 1.2, "SQLite / PostgreSQL\n(SQLAlchemy ORM)", "#4E342E")
+    _box(ax, 10.8, 4.8, 2.4, 1.6, "Retraining Pipeline\nretrain_dag.py\n(@weekly)", "#E65100")
+    _box(ax, 3.2, 3.0, 2.8, 1.5, "Docker\ndocker-compose\n(API + PostgreSQL)", "#006064")
+    _box(ax, 7.2, 1.5, 2.5, 1.5, "GitHub Actions CI\nruff lint + pytest\n(on push / PR)", "#37474F")
 
-def arrow(ax, x1, y1, x2, y2, color="#7F8C8D"):
-    ax.annotate(
-        "", xy=(x2, y2), xytext=(x1, y1), arrowprops={"arrowstyle": "->", "color": color, "lw": 1.5}
+    ap = {"arrowstyle": "->", "color": "#90CAF9", "lw": 1.4}
+    arrows = [
+        (2.0, 7.15, 3.2, 7.0),
+        (6.0, 7.0, 7.2, 7.8),
+        (6.0, 6.5, 7.2, 6.2),
+        (6.0, 5.8, 7.2, 4.5),
+        (9.7, 7.8, 10.8, 7.3),
+        (9.7, 6.2, 10.8, 7.0),
+        (9.7, 4.5, 10.8, 5.5),
+        (4.6, 5.7, 4.6, 4.5),
+    ]
+    for x1, y1, x2, y2 in arrows:
+        ax.annotate("", xy=(x2, y2), xytext=(x1, y1), arrowprops=ap)
+
+    legend = [
+        mpatches.Patch(color="#1565C0", label="API Layer"),
+        mpatches.Patch(color="#4A148C", label="ML Ensemble"),
+        mpatches.Patch(color="#00695C", label="Feature Engineering"),
+        mpatches.Patch(color="#B71C1C", label="Monitoring / Drift"),
+        mpatches.Patch(color="#4E342E", label="Database"),
+        mpatches.Patch(color="#E65100", label="Retraining"),
+        mpatches.Patch(color="#006064", label="Infrastructure"),
+    ]
+    ax.legend(
+        handles=legend,
+        loc="lower left",
+        fontsize=8,
+        facecolor="#1e1e3a",
+        edgecolor="white",
+        labelcolor="white",
     )
 
+    plt.tight_layout()
+    plt.savefig(
+        "screenshots/architecture.png",
+        dpi=150,
+        bbox_inches="tight",
+        facecolor=fig.get_facecolor(),
+    )
+    print("Saved screenshots/architecture.png")
 
-ax.text(
-    8,
-    8.5,
-    "Realty-Edge — System Architecture",
-    ha="center",
-    va="center",
-    fontsize=16,
-    fontweight="bold",
-    color=COLORS["header"],
-)
 
-box(ax, 0.3, 6.8, 2.0, 0.9, COLORS["client"], "Client", "REST / JSON")
-box(ax, 0.3, 5.5, 2.0, 0.9, COLORS["client"], "Batch Client", "CSV / bulk")
-
-box(ax, 3.2, 7.0, 2.8, 0.7, COLORS["api"], "/api/v1/predict", "POST")
-box(ax, 3.2, 6.1, 2.8, 0.7, COLORS["api"], "/api/v1/batch-predict", "POST")
-box(ax, 3.2, 5.2, 2.8, 0.7, COLORS["api"], "/api/v1/comparable-properties", "POST")
-box(ax, 3.2, 4.3, 2.8, 0.7, COLORS["api"], "/api/v1/neighborhood-stats", "GET")
-box(ax, 3.2, 3.4, 2.8, 0.7, COLORS["api"], "/api/v1/drift-status", "GET")
-
-box(ax, 7.2, 6.8, 2.5, 0.9, COLORS["ml"], "XGBoost", "n_est=200")
-box(ax, 7.2, 5.7, 2.5, 0.9, COLORS["ml"], "LightGBM", "n_est=200")
-box(ax, 7.2, 4.6, 2.5, 0.9, COLORS["ml"], "RandomForest", "n_est=100")
-box(ax, 7.2, 3.5, 2.5, 0.9, COLORS["ml"], "VotingRegressor", "soft ensemble")
-
-box(ax, 10.5, 7.1, 2.5, 0.7, COLORS["storage"], "PostgreSQL", "prod storage")
-box(ax, 10.5, 6.0, 2.5, 0.7, COLORS["storage"], "SQLite", "dev storage")
-box(ax, 10.5, 4.9, 2.5, 0.7, COLORS["monitoring"], "FAISS Index", "comparable search")
-box(ax, 10.5, 3.8, 2.5, 0.7, COLORS["pipeline"], "Airflow DAG", "weekly retrain")
-
-box(ax, 13.2, 6.5, 2.5, 0.7, COLORS["monitoring"], "KS-test", "drift detection")
-box(ax, 13.2, 5.4, 2.5, 0.7, COLORS["monitoring"], "PredictionLog", "DB logging")
-box(ax, 13.2, 4.3, 2.5, 0.7, COLORS["monitoring"], "Rate Limiter", "300 req/min")
-box(ax, 13.2, 3.2, 2.5, 0.7, COLORS["pipeline"], "5-fold CV", "R2+RMSE metrics")
-
-ax.text(4.6, 8.2, "FastAPI Layer", ha="center", fontsize=9, color=COLORS["api"], fontstyle="italic")
-ax.text(8.45, 8.2, "ML Ensemble", ha="center", fontsize=9, color=COLORS["ml"], fontstyle="italic")
-ax.text(
-    11.75,
-    8.2,
-    "Storage & Search",
-    ha="center",
-    fontsize=9,
-    color=COLORS["storage"],
-    fontstyle="italic",
-)
-ax.text(
-    14.45,
-    8.2,
-    "Monitoring",
-    ha="center",
-    fontsize=9,
-    color=COLORS["monitoring"],
-    fontstyle="italic",
-)
-
-for y in [7.25, 5.9]:
-    arrow(ax, 2.3, y, 3.2, y)
-for y in [7.35, 6.45, 5.55, 4.65]:
-    arrow(ax, 6.0, y, 7.2, y)
-for y in [7.45, 6.35, 5.25]:
-    arrow(ax, 9.7, y, 10.5, y)
-for y in [6.8, 5.65, 4.55, 3.45]:
-    arrow(ax, 13.0, y, 13.2, y)
-
-stack_items = [
-    "Python 3.11",
-    "FastAPI",
-    "XGBoost+LightGBM+RF",
-    "sklearn Pipeline",
-    "FAISS Search",
-    "KS-drift Monitoring",
-    "PostgreSQL+SQLAlchemy",
-    "Docker+Compose",
-    "Airflow DAG",
-    "GitHub Actions CI",
-]
-ax.text(0.3, 3.0, "Tech Stack:", fontsize=9, fontweight="bold", color=COLORS["header"])
-for i, item in enumerate(stack_items):
-    col = i % 2
-    row = i // 2
-    ax.text(0.3 + col * 3.8, 2.6 - row * 0.35, f"• {item}", fontsize=8.0, color="#34495E")
-
-plt.tight_layout()
-plt.savefig(
-    "screenshots/architecture.png", dpi=150, bbox_inches="tight", facecolor=fig.get_facecolor()
-)
-logger.info("Architecture diagram saved to screenshots/architecture.png")
+if __name__ == "__main__":
+    main()
