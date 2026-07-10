@@ -87,3 +87,9 @@ secrets/
 # Logs
 *.log
 logs/
+
+# Runtime artifacts (model files, local DBs, metrics snapshots)
+*.db
+*.joblib
+*.pkl
+*_metrics.json
