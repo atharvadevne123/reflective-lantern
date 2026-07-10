@@ -103,6 +103,18 @@ KS-test drift report for the recent prediction distribution.
 
 Model performance metrics: R², RMSE, prediction count, P50/P95 latency.
 
+
+### POST `/api/v1/analyze`
+
+Analyze a historical load series for trends, spikes, and seasonal patterns.
+
+### GET `/api/v1/similar-periods`
+
+Find the 5 most similar 24-hour load profiles using FAISS pattern matching.
+
+### GET `/api/v1/regions` / `/api/v1/regions/{region_id}`
+
+List and query supported grid regions (northeast, midwest, south, west, texas).
 ### POST `/api/v1/retrain`
 
 Trigger model retraining on fresh data.
