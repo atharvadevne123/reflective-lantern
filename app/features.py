@@ -1,8 +1,6 @@
-"""Feature engineering pipeline for energy load prediction."""
+"""Feature engineering pipeline for energy consumption forecasting."""
 
 from __future__ import annotations
-
-import logging
 
 import numpy as np
 import pandas as pd
@@ -10,128 +8,117 @@ from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 
-logger = logging.getLogger(__name__)
 
-PEAK_HOURS = frozenset(range(7, 22))  # 7am-10pm
+class TemporalFeatureExtractor(BaseEstimator, TransformerMixin):
+    """Extract hour-of-day, day-of-week, month, and cyclic encodings."""
 
-
-class LagFeatureTransformer(BaseEstimator, TransformerMixin):
-    """Adds historical lag features to the feature dataframe.
-
-    Creates columns for load values at fixed look-back offsets:
-    lag_1h, lag_24h, and lag_168h (7 days).
-
-    Args:
-        lags: List of integer hour offsets. Defaults to [1, 24, 168].
-    """
-
-    def __init__(self, lags: list[int] | None = None) -> None:
-        self.lags = lags or [1, 24, 168]
-
-    def fit(self, X: pd.DataFrame, y=None) -> LagFeatureTransformer:
+    def fit(self, X: pd.DataFrame, y=None) -> TemporalFeatureExtractor:
         return self
 
     def transform(self, X: pd.DataFrame) -> pd.DataFrame:
-        X = X.copy()
-        if "historical_loads" in X.columns:
-            history = X["historical_loads"].iloc[0] if hasattr(X["historical_loads"].iloc[0], "__len__") else []
-            for lag in self.lags:
-                col = f"lag_{lag}h"
-                if len(history) >= lag:
-                    X[col] = float(history[-lag])
-                else:
-                    X[col] = 0.0
-        else:
-            for lag in self.lags:
-                X[f"lag_{lag}h"] = 0.0
-        return X
+        df = X.copy()
+        if "hour" not in df.columns:
+            df["hour"] = 0
+        if "day_of_week" not in df.columns:
+            df["day_of_week"] = 0
+        if "month" not in df.columns:
+            df["month"] = 1
+
+        df["hour_sin"] = np.sin(2 * np.pi * df["hour"] / 24)
+        df["hour_cos"] = np.cos(2 * np.pi * df["hour"] / 24)
+        df["dow_sin"] = np.sin(2 * np.pi * df["day_of_week"] / 7)
+        df["dow_cos"] = np.cos(2 * np.pi * df["day_of_week"] / 7)
+        df["month_sin"] = np.sin(2 * np.pi * df["month"] / 12)
+        df["month_cos"] = np.cos(2 * np.pi * df["month"] / 12)
+        df["is_weekend"] = (df["day_of_week"] >= 5).astype(int)
+        df["is_business_hour"] = ((df["hour"] >= 8) & (df["hour"] <= 18) & (df["day_of_week"] < 5)).astype(int)
+        return df
 
 
-class RollingStatsTransformer(BaseEstimator, TransformerMixin):
-    """Adds rolling mean and std features over 3h and 24h windows."""
+class LagFeatureExtractor(BaseEstimator, TransformerMixin):
+    """Add lag features for consumption (1h, 2h, 3h, 6h, 12h, 24h, 168h)."""
 
-    def __init__(self, windows: list[int] | None = None) -> None:
-        self.windows = windows or [3, 24]
+    LAG_COLS = [1, 2, 3, 6, 12, 24, 168]
 
-    def fit(self, X: pd.DataFrame, y=None) -> RollingStatsTransformer:
+    def fit(self, X: pd.DataFrame, y=None) -> LagFeatureExtractor:
         return self
 
     def transform(self, X: pd.DataFrame) -> pd.DataFrame:
-        X = X.copy()
-        if "historical_loads" in X.columns:
-            for w in self.windows:
-                col_mean = f"rolling_mean_{w}h"
-                col_std = f"rolling_std_{w}h"
-                history = X["historical_loads"].iloc[0] if hasattr(X["historical_loads"].iloc[0], "__len__") else []
-                if len(history) >= w:
-                    window_vals = list(history[-w:])
-                    X[col_mean] = float(np.mean(window_vals))
-                    X[col_std] = float(np.std(window_vals))
-                else:
-                    X[col_mean] = 0.0
-                    X[col_std] = 0.0
-        else:
-            for w in self.windows:
-                X[f"rolling_mean_{w}h"] = 0.0
-                X[f"rolling_std_{w}h"] = 0.0
-        return X
+        df = X.copy()
+        base = df.get("consumption_kwh", pd.Series(np.zeros(len(df))))
+        for lag in self.LAG_COLS:
+            col = f"lag_{lag}h"
+            if col not in df.columns:
+                df[col] = base.shift(lag).fillna(base.mean() if len(base) > 0 else 0.0)
+        return df
 
 
-class TemporalFeatureTransformer(BaseEstimator, TransformerMixin):
-    """Encodes temporal cyclical features: hour, day, month."""
+class RollingStatsExtractor(BaseEstimator, TransformerMixin):
+    """Rolling mean, std, min, max over 3h, 6h, 24h windows."""
 
-    def fit(self, X: pd.DataFrame, y=None) -> TemporalFeatureTransformer:
+    WINDOWS = [3, 6, 24]
+
+    def fit(self, X: pd.DataFrame, y=None) -> RollingStatsExtractor:
         return self
 
     def transform(self, X: pd.DataFrame) -> pd.DataFrame:
-        X = X.copy()
-        if "hour" in X.columns:
-            X["hour_sin"] = np.sin(2 * np.pi * X["hour"] / 24)
-            X["hour_cos"] = np.cos(2 * np.pi * X["hour"] / 24)
-        if "day_of_week" in X.columns:
-            X["dow_sin"] = np.sin(2 * np.pi * X["day_of_week"] / 7)
-            X["dow_cos"] = np.cos(2 * np.pi * X["day_of_week"] / 7)
-        if "month" in X.columns:
-            X["month_sin"] = np.sin(2 * np.pi * X["month"] / 12)
-            X["month_cos"] = np.cos(2 * np.pi * X["month"] / 12)
-        return X
+        df = X.copy()
+        base = df.get("consumption_kwh", pd.Series(np.zeros(len(df))))
+        for w in self.WINDOWS:
+            rolled = base.rolling(window=w, min_periods=1)
+            df[f"roll_mean_{w}h"] = rolled.mean().fillna(base.mean() if len(base) > 0 else 0.0)
+            df[f"roll_std_{w}h"] = rolled.std().fillna(0.0)
+            df[f"roll_min_{w}h"] = rolled.min().fillna(base.min() if len(base) > 0 else 0.0)
+            df[f"roll_max_{w}h"] = rolled.max().fillna(base.max() if len(base) > 0 else 0.0)
+        return df
 
 
-class PeakPeriodEncoder(BaseEstimator, TransformerMixin):
-    """Encodes is_peak_hour and load_category features."""
+class WeatherFeatureExtractor(BaseEstimator, TransformerMixin):
+    """Derive composite weather features: heat index, cooling degree hours."""
 
-    def fit(self, X: pd.DataFrame, y=None) -> PeakPeriodEncoder:
+    def fit(self, X: pd.DataFrame, y=None) -> WeatherFeatureExtractor:
         return self
 
     def transform(self, X: pd.DataFrame) -> pd.DataFrame:
-        X = X.copy()
-        if "hour" in X.columns:
-            X["is_peak_hour"] = X["hour"].apply(lambda h: 1 if h in PEAK_HOURS else 0)
-            X["is_morning_peak"] = X["hour"].apply(lambda h: 1 if 7 <= h <= 10 else 0)
-            X["is_evening_peak"] = X["hour"].apply(lambda h: 1 if 17 <= h <= 21 else 0)
-        if "is_weekend" in X.columns:
-            X["is_weekday_peak"] = (
-                (X.get("is_peak_hour", 0) == 1) & (X["is_weekend"] == 0)
-            ).astype(int)
-        return X
+        df = X.copy()
+        temp = df.get("temperature_c", pd.Series(np.full(len(df), 20.0)))
+        hum = df.get("humidity_pct", pd.Series(np.full(len(df), 50.0)))
+
+        df["temperature_c"] = temp.fillna(20.0)
+        df["humidity_pct"] = hum.fillna(50.0)
+        df["heat_index"] = df["temperature_c"] + 0.33 * (df["humidity_pct"] / 100 * 6.105) - 4.0
+        df["cooling_deg_hours"] = np.maximum(df["temperature_c"] - 18.0, 0.0)
+        df["heating_deg_hours"] = np.maximum(18.0 - df["temperature_c"], 0.0)
+        df["temp_humidity_ratio"] = df["temperature_c"] / (df["humidity_pct"] + 1e-6)
+        return df
 
 
-class RatioFeatureTransformer(BaseEstimator, TransformerMixin):
-    """Computes temperature-humidity interaction ratio and capacity factor."""
+class OccupancyFeatureExtractor(BaseEstimator, TransformerMixin):
+    """Encode occupancy and HVAC state into energy-load proxies."""
 
-    def fit(self, X: pd.DataFrame, y=None) -> RatioFeatureTransformer:
+    def fit(self, X: pd.DataFrame, y=None) -> OccupancyFeatureExtractor:
         return self
 
     def transform(self, X: pd.DataFrame) -> pd.DataFrame:
-        X = X.copy()
-        if "temperature_c" in X.columns and "humidity_pct" in X.columns:
-            X["heat_index"] = X["temperature_c"] + 0.33 * (X["humidity_pct"] / 100.0 * 6.105) - 4.0
-            X["cooling_demand_proxy"] = np.maximum(X["temperature_c"] - 18.0, 0)
-            X["heating_demand_proxy"] = np.maximum(18.0 - X["temperature_c"], 0)
-        if "lag_24h" in X.columns and "rolling_mean_24h" in X.columns:
-            mean_val = X["rolling_mean_24h"].replace(0, np.nan)
-            X["load_ratio_vs_daily_mean"] = X["lag_24h"] / mean_val.fillna(1.0)
-        return X
+        df = X.copy()
+        occ = df.get("occupancy", pd.Series(np.zeros(len(df))))
+        hvac = df.get("hvac_state", pd.Series(np.zeros(len(df))))
+        df["occupancy"] = occ.fillna(0).clip(lower=0)
+        df["hvac_state"] = hvac.fillna(0).astype(int)
+        df["occ_hvac_load"] = df["occupancy"] * df["hvac_state"]
+        df["occupancy_density"] = np.log1p(df["occupancy"])
+        return df
+
+
+class DropNonNumeric(BaseEstimator, TransformerMixin):
+    """Drop string/datetime columns before scaling."""
+
+    def fit(self, X: pd.DataFrame, y=None) -> DropNonNumeric:
+        self.numeric_cols_ = X.select_dtypes(include=[np.number]).columns.tolist()
+        return self
+
+    def transform(self, X: pd.DataFrame) -> np.ndarray:
+        return X[self.numeric_cols_].values
 
 
 class DropColumnsTransformer(BaseEstimator, TransformerMixin):
@@ -148,34 +135,42 @@ class DropColumnsTransformer(BaseEstimator, TransformerMixin):
 
 
 def build_feature_pipeline() -> Pipeline:
-    return Pipeline([
-        ("lag", LagFeatureTransformer()),
-        ("rolling", RollingStatsTransformer()),
-        ("temporal", TemporalFeatureTransformer()),
-        ("peak", PeakPeriodEncoder()),
-        ("ratios", RatioFeatureTransformer()),
-        ("drop", DropColumnsTransformer()),
-        ("scaler", StandardScaler()),
-    ])
+    """Build the full sklearn feature engineering pipeline."""
+    return Pipeline(
+        [
+            ("temporal", TemporalFeatureExtractor()),
+            ("lag", LagFeatureExtractor()),
+            ("rolling", RollingStatsExtractor()),
+            ("weather", WeatherFeatureExtractor()),
+            ("occupancy", OccupancyFeatureExtractor()),
+            ("drop_non_numeric", DropNonNumeric()),
+            ("scaler", StandardScaler()),
+        ]
+    )
 
 
-def build_raw_feature_df(
+def make_feature_row(
     hour: int,
     day_of_week: int,
     month: int,
-    is_weekend: bool,
     temperature_c: float,
     humidity_pct: float,
-    historical_loads: list[float] | None = None,
-    region: str = "default",
+    occupancy: int,
+    hvac_state: int,
+    consumption_kwh: float = 0.0,
 ) -> pd.DataFrame:
-    return pd.DataFrame([{
-        "hour": hour,
-        "day_of_week": day_of_week,
-        "month": month,
-        "is_weekend": int(is_weekend),
-        "temperature_c": temperature_c,
-        "humidity_pct": humidity_pct,
-        "historical_loads": historical_loads or [],
-        "region": region,
-    }])
+    """Build a single-row DataFrame for inference."""
+    return pd.DataFrame(
+        [
+            {
+                "hour": hour,
+                "day_of_week": day_of_week,
+                "month": month,
+                "temperature_c": temperature_c,
+                "humidity_pct": humidity_pct,
+                "occupancy": occupancy,
+                "hvac_state": hvac_state,
+                "consumption_kwh": consumption_kwh,
+            }
+        ]
+    )

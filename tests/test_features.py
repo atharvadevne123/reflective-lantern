@@ -1,144 +1,129 @@
-"""Tests for feature engineering pipeline."""
+"""Feature engineering pipeline tests."""
+
+from __future__ import annotations
 
 from __future__ import annotations
 
 import pytest
 
 from app.features import (
-    DropColumnsTransformer,
-    LagFeatureTransformer,
-    PeakPeriodEncoder,
-    RatioFeatureTransformer,
-    RollingStatsTransformer,
-    TemporalFeatureTransformer,
+    LagFeatureExtractor,
+    OccupancyFeatureExtractor,
+    RollingStatsExtractor,
+    TemporalFeatureExtractor,
+    WeatherFeatureExtractor,
     build_feature_pipeline,
-    build_raw_feature_df,
+    make_feature_row,
 )
 
 
-class TestLagFeatureTransformer:
-    def test_creates_lag_columns(self):
-        df = build_raw_feature_df(12, 2, 6, False, 25.0, 60.0, [3000.0] * 200)
-        t = LagFeatureTransformer()
-        out = t.fit_transform(df)
-        assert "lag_1h" in out.columns
-        assert "lag_24h" in out.columns
-        assert "lag_168h" in out.columns
-
-    def test_lag_values_from_history(self):
-        history = list(range(200, 370))
-        df = build_raw_feature_df(12, 2, 6, False, 25.0, 60.0, history)
-        out = LagFeatureTransformer().fit_transform(df)
-        assert out["lag_1h"].iloc[0] == pytest.approx(history[-1], rel=0.01)
-        assert out["lag_24h"].iloc[0] == pytest.approx(history[-24], rel=0.01)
-
-    def test_no_history_fills_zeros(self):
-        df = build_raw_feature_df(12, 2, 6, False, 25.0, 60.0, None)
-        out = LagFeatureTransformer().fit_transform(df)
-        assert out["lag_1h"].iloc[0] == 0.0
-        assert out["lag_24h"].iloc[0] == 0.0
-
-    @pytest.mark.parametrize("lags", [[1], [1, 24], [1, 24, 168]])
-    def test_custom_lags(self, lags):
-        df = build_raw_feature_df(12, 2, 6, False, 25.0, 60.0, [3000.0] * 200)
-        out = LagFeatureTransformer(lags=lags).fit_transform(df)
-        for lag in lags:
-            assert f"lag_{lag}h" in out.columns
+def _base_df(n: int = 50) -> pd.DataFrame:
+    rng = np.random.default_rng(7)
+    return pd.DataFrame(
+        {
+            "hour": rng.integers(0, 24, n),
+            "day_of_week": rng.integers(0, 7, n),
+            "month": rng.integers(1, 13, n),
+            "temperature_c": rng.uniform(0, 40, n),
+            "humidity_pct": rng.uniform(20, 90, n),
+            "occupancy": rng.integers(0, 200, n),
+            "hvac_state": rng.integers(0, 2, n),
+            "consumption_kwh": rng.uniform(5, 30, n),
+        }
+    )
 
 
-class TestRollingStatsTransformer:
-    def test_creates_rolling_columns(self):
-        df = build_raw_feature_df(12, 2, 6, False, 25.0, 60.0, [4000.0] * 30)
-        out = RollingStatsTransformer().fit_transform(df)
-        assert "rolling_mean_3h" in out.columns
-        assert "rolling_std_3h" in out.columns
-        assert "rolling_mean_24h" in out.columns
-
-    def test_rolling_mean_correct(self):
-        history = [float(i) for i in range(1, 31)]  # 1..30
-        df = build_raw_feature_df(12, 2, 6, False, 25.0, 60.0, history)
-        out = RollingStatsTransformer(windows=[3]).fit_transform(df)
-        expected_mean_3 = (28.0 + 29.0 + 30.0) / 3
-        assert out["rolling_mean_3h"].iloc[0] == pytest.approx(expected_mean_3, rel=0.01)
+def test_temporal_adds_cyclic_columns():
+    df = _base_df()
+    out = TemporalFeatureExtractor().fit_transform(df)
+    for col in ("hour_sin", "hour_cos", "dow_sin", "dow_cos", "is_weekend", "is_business_hour"):
+        assert col in out.columns, f"Missing column: {col}"
 
 
-class TestTemporalFeatureTransformer:
-    def test_creates_sin_cos_columns(self):
-        df = build_raw_feature_df(12, 3, 6, False, 20.0, 50.0)
-        out = TemporalFeatureTransformer().fit_transform(df)
-        assert "hour_sin" in out.columns
-        assert "hour_cos" in out.columns
-        assert "dow_sin" in out.columns
-        assert "month_sin" in out.columns
-
-    @pytest.mark.parametrize("hour,expected_sin", [(0, 0.0), (6, 1.0), (12, 0.0), (18, -1.0)])
-    def test_hour_sin_values(self, hour, expected_sin):
-        df = build_raw_feature_df(hour, 0, 1, False, 20.0, 50.0)
-        out = TemporalFeatureTransformer().fit_transform(df)
-        assert out["hour_sin"].iloc[0] == pytest.approx(expected_sin, abs=0.01)
+def test_temporal_weekend_flag():
+    df = pd.DataFrame({"hour": [10], "day_of_week": [6], "month": [1]})
+    out = TemporalFeatureExtractor().fit_transform(df)
+    assert out["is_weekend"].iloc[0] == 1
 
 
-class TestPeakPeriodEncoder:
-    def test_peak_hour_detection(self):
-        df = build_raw_feature_df(14, 2, 6, False, 25.0, 60.0)
-        out = PeakPeriodEncoder().fit_transform(df)
-        assert out["is_peak_hour"].iloc[0] == 1
-
-    def test_off_peak_hour(self):
-        df = build_raw_feature_df(3, 2, 6, False, 25.0, 60.0)
-        out = PeakPeriodEncoder().fit_transform(df)
-        assert out["is_peak_hour"].iloc[0] == 0
-
-    def test_morning_peak_detection(self):
-        df = build_raw_feature_df(8, 0, 1, False, 15.0, 55.0)
-        out = PeakPeriodEncoder().fit_transform(df)
-        assert out["is_morning_peak"].iloc[0] == 1
-
-    def test_evening_peak_detection(self):
-        df = build_raw_feature_df(19, 0, 1, False, 25.0, 65.0)
-        out = PeakPeriodEncoder().fit_transform(df)
-        assert out["is_evening_peak"].iloc[0] == 1
+def test_temporal_weekday_flag():
+    df = pd.DataFrame({"hour": [10], "day_of_week": [1], "month": [1]})
+    out = TemporalFeatureExtractor().fit_transform(df)
+    assert out["is_weekend"].iloc[0] == 0
 
 
-class TestRatioFeatureTransformer:
-    def test_creates_heat_index(self):
-        df = build_raw_feature_df(12, 2, 7, False, 30.0, 80.0)
-        out = RatioFeatureTransformer().fit_transform(df)
-        assert "heat_index" in out.columns
-        assert "cooling_demand_proxy" in out.columns
-        assert "heating_demand_proxy" in out.columns
-
-    def test_cooling_demand_positive_when_hot(self):
-        df = build_raw_feature_df(12, 2, 7, False, 35.0, 70.0)
-        out = RatioFeatureTransformer().fit_transform(df)
-        assert out["cooling_demand_proxy"].iloc[0] > 0
-
-    def test_heating_demand_positive_when_cold(self):
-        df = build_raw_feature_df(12, 2, 1, False, -5.0, 50.0)
-        out = RatioFeatureTransformer().fit_transform(df)
-        assert out["heating_demand_proxy"].iloc[0] > 0
+def test_lag_extractor_adds_columns():
+    df = _base_df()
+    out = LagFeatureExtractor().fit_transform(df)
+    for lag in [1, 2, 3, 6, 12, 24, 168]:
+        assert f"lag_{lag}h" in out.columns
 
 
-class TestDropColumnsTransformer:
-    def test_drops_helper_columns(self):
-        df = build_raw_feature_df(12, 2, 6, False, 25.0, 60.0, [3000.0] * 5, "northeast")
-        out = DropColumnsTransformer().fit_transform(df)
-        assert "historical_loads" not in out.columns
-        assert "region" not in out.columns
+def test_lag_extractor_no_nans():
+    df = _base_df()
+    out = LagFeatureExtractor().fit_transform(df)
+    for lag in [1, 2, 3]:
+        assert out[f"lag_{lag}h"].isna().sum() == 0
 
 
-class TestBuildFeaturePipeline:
-    def test_pipeline_runs_end_to_end(self):
-        from app.model import generate_synthetic_training_data
-        X, y = generate_synthetic_training_data(n_samples=50)
-        pipe = build_feature_pipeline()
-        # Pipeline expects full numeric df; test with synthetic data directly
-        result = pipe.fit_transform(X)
-        assert result.shape[0] == 50
-        assert result.shape[1] > 0
+def test_rolling_stats_columns():
+    df = _base_df()
+    out = RollingStatsExtractor().fit_transform(df)
+    for w in [3, 6, 24]:
+        for stat in ["mean", "std", "min", "max"]:
+            assert f"roll_{stat}_{w}h" in out.columns
 
-    def test_raw_feature_df_shape(self):
-        df = build_raw_feature_df(12, 2, 6, False, 25.0, 60.0)
-        assert df.shape[0] == 1
-        assert "hour" in df.columns
-        assert "temperature_c" in df.columns
+
+def test_weather_derived_features():
+    df = _base_df()
+    out = WeatherFeatureExtractor().fit_transform(df)
+    for col in ("heat_index", "cooling_deg_hours", "heating_deg_hours", "temp_humidity_ratio"):
+        assert col in out.columns
+
+
+def test_weather_cooling_non_negative():
+    df = pd.DataFrame({"temperature_c": [30.0], "humidity_pct": [60.0]})
+    out = WeatherFeatureExtractor().fit_transform(df)
+    assert out["cooling_deg_hours"].iloc[0] >= 0
+
+
+def test_occupancy_occ_hvac_load():
+    df = pd.DataFrame({"occupancy": [100], "hvac_state": [1]})
+    out = OccupancyFeatureExtractor().fit_transform(df)
+    assert out["occ_hvac_load"].iloc[0] == 100
+
+
+def test_full_pipeline_output_shape():
+    df = _base_df(100)
+    pipe = build_feature_pipeline()
+    result = pipe.fit_transform(df)
+    assert result.shape[0] == 100
+    assert result.shape[1] > 10
+
+
+def test_full_pipeline_no_nan():
+    df = _base_df(50)
+    pipe = build_feature_pipeline()
+    result = pipe.fit_transform(df)
+    assert not np.isnan(result).any()
+
+
+def test_make_feature_row_single():
+    row = make_feature_row(14, 1, 6, 28.5, 60.0, 50, 1, 12.0)
+    assert len(row) == 1
+    assert row["hour"].iloc[0] == 14
+
+
+@pytest.mark.parametrize("hour,expected_biz", [(9, 1), (22, 0), (8, 1), (18, 1), (19, 0)])
+def test_business_hour_flag(hour, expected_biz):
+    df = pd.DataFrame({"hour": [hour], "day_of_week": [1], "month": [3]})
+    out = TemporalFeatureExtractor().fit_transform(df)
+    assert out["is_business_hour"].iloc[0] == expected_biz
+
+
+def test_pipeline_transform_matches_fit_transform():
+    df = _base_df(60)
+    pipe = build_feature_pipeline()
+    r1 = pipe.fit_transform(df)
+    r2 = pipe.transform(df)
+    np.testing.assert_allclose(r1, r2, rtol=1e-5)

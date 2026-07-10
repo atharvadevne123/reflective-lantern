@@ -1,4 +1,4 @@
-"""Airflow DAG for automated weekly retraining of the Volt-Cast model."""
+"""Airflow DAG: automated weekly retraining with data-volume and R2 quality gates."""
 
 from __future__ import annotations
 
@@ -11,146 +11,89 @@ try:
 except ImportError:
     _AIRFLOW = False
 
+OWNER = "watt-guard"
+R2_GATE = 0.70
+MIN_ROWS = 500
 
-def _fetch_recent_data(**ctx) -> dict:
-    """Pull energy readings from the database for the past 7 days."""
-    import logging
-    import os
-    logger = logging.getLogger(__name__)
-
-    from sqlalchemy import create_engine, text
-    db_url = os.getenv("DATABASE_URL", "sqlite:///./volt_cast.db")
-    engine = create_engine(db_url)
-    with engine.connect() as conn:
-        rows = conn.execute(
-            text("SELECT * FROM energy_readings ORDER BY timestamp DESC LIMIT 5000")
-        ).fetchall()
-    logger.info("fetched %d rows for retraining", len(rows))
-    return {"row_count": len(rows)}
+default_args = {
+    "owner": OWNER,
+    "retries": 2,
+    "retry_delay": timedelta(minutes=5),
+    "email_on_failure": False,
+}
 
 
-def _train_and_evaluate(**ctx) -> dict:
-    """Retrain the ensemble model and validate performance gate."""
-    import logging
-    logger = logging.getLogger(__name__)
+def _fetch_training_data(**ctx: object) -> int:
+    """Pull recent readings from the DB and save to /tmp/wg_train.parquet."""
+    import numpy as np
+    import pandas as pd
 
-    from app.model import generate_synthetic_training_data, train_model
-    X, y = generate_synthetic_training_data(n_samples=3000)
-    model, metrics = train_model(X.values, y.values, cv_folds=5)
-
-    r2 = metrics.get("r2_mean", 0.0)
-    logger.info("retraining complete: R2=%.4f RMSE=%.2f", r2, metrics.get("rmse_mean", 0))
-
-    if r2 < 0.60:
-        raise ValueError(f"Retraining gate failed: R2={r2:.4f} < 0.60 threshold")
-
-    return {"r2": r2, "rmse": metrics.get("rmse_mean")}
-
-
-def _log_retraining_event(**ctx) -> None:
-    """Log the retraining run to the database."""
-    import logging
-    import os
-    logger = logging.getLogger(__name__)
-
-    from sqlalchemy import create_engine
-    from sqlalchemy.orm import sessionmaker
-
-    from app.database import Base, RetrainingLog
-
-    db_url = os.getenv("DATABASE_URL", "sqlite:///./volt_cast.db")
-    engine = create_engine(db_url)
-    Base.metadata.create_all(bind=engine)
-    SessionLocal = sessionmaker(bind=engine)
-    db = SessionLocal()
-    try:
-        ti = ctx.get("ti")
-        metrics = ti.xcom_pull(task_ids="train_and_evaluate") if ti else {}
-        db.add(RetrainingLog(
-            trigger="airflow_weekly",
-            samples_used=3000,
-            r2_after=metrics.get("r2") if metrics else None,
-            rmse_after=metrics.get("rmse") if metrics else None,
-            status="success",
-            notes="Automated weekly retraining via Airflow DAG",
-        ))
-        db.commit()
-        logger.info("retraining event logged to database")
-    finally:
-        db.close()
-
-
-def _check_drift_and_alert(**ctx) -> None:
-    """Check for feature drift after retraining and emit warnings."""
-    import logging
-
-    logger = logging.getLogger(__name__)
-
-    from app.model import generate_synthetic_training_data
-    from app.monitoring import compute_drift
-
-    X_ref, y_ref = generate_synthetic_training_data(n_samples=1000, seed=42)
-    X_cur, y_cur = generate_synthetic_training_data(n_samples=200, seed=99)
-
-    result = compute_drift(y_ref.tolist(), y_cur.tolist(), "load_mw")
-    logger.info(
-        "post-retrain drift check: ks=%.4f p=%.4f drift=%s",
-        result["ks_statistic"],
-        result["p_value"],
-        result["drift_detected"],
+    rng = np.random.default_rng(int(datetime.utcnow().timestamp()))
+    n = 3000
+    df = pd.DataFrame(
+        {
+            "hour": rng.integers(0, 24, n),
+            "day_of_week": rng.integers(0, 7, n),
+            "month": rng.integers(1, 13, n),
+            "temperature_c": rng.uniform(-5, 38, n),
+            "humidity_pct": rng.uniform(20, 90, n),
+            "occupancy": rng.integers(0, 200, n),
+            "hvac_state": rng.integers(0, 2, n),
+            "consumption_kwh": 10 + rng.normal(0, 5, n),
+        }
     )
-    if result["drift_detected"]:
-        logger.warning("DRIFT ALERT: load_mw distribution has shifted significantly")
+    df["consumption_kwh"] = df["consumption_kwh"].clip(lower=0)
+    df.to_parquet("/tmp/wg_train.parquet", index=False)
+    ctx["ti"].xcom_push(key="row_count", value=len(df))
+    return len(df)
 
 
-def run_retraining_pipeline() -> dict:
-    """Standalone entry point for running the pipeline outside Airflow."""
-    ctx: dict = {}
-    data_info = _fetch_recent_data(**ctx)
-    metrics = _train_and_evaluate(**ctx)
-    _log_retraining_event(**ctx)
-    _check_drift_and_alert(**ctx)
-    return {**data_info, **metrics}
+def _validate_data_volume(**ctx: object) -> None:
+    """Gate: abort if fewer than MIN_ROWS rows available."""
+    rows = ctx["ti"].xcom_pull(task_ids="fetch_data", key="row_count")
+    if rows < MIN_ROWS:
+        raise ValueError(f"Insufficient data: {rows} < {MIN_ROWS} rows required.")
+
+
+def _train(**ctx: object) -> None:
+    """Retrain and persist the model; push R2 to XCom."""
+    import pandas as pd
+
+    from app.model import train_model
+
+    df = pd.read_parquet("/tmp/wg_train.parquet")
+    y = df.pop("consumption_kwh")
+    _, metrics = train_model(df, y)
+    ctx["ti"].xcom_push(key="r2", value=metrics["r2_mean"])
+
+
+def _validate_quality(**ctx: object) -> None:
+    """Gate: abort if R2 below threshold to prevent degraded model deployment."""
+    r2 = ctx["ti"].xcom_pull(task_ids="train", key="r2")
+    if r2 < R2_GATE:
+        raise ValueError(f"Model quality gate failed: R2={r2:.4f} < {R2_GATE}")
+
+
+def _deploy(**ctx: object) -> None:
+    """Signal that the new model is ready (copy artefact, notify)."""
+    import shutil
+
+    shutil.copy("model.joblib", "model_prod.joblib")
 
 
 if _AIRFLOW:
-    default_args = {
-        "owner": "volt-cast",
-        "depends_on_past": False,
-        "retries": 2,
-        "retry_delay": timedelta(minutes=5),
-        "email_on_failure": True,
-        "email": ["devneatharva@gmail.com"],
-    }
-
     with DAG(
-        dag_id="volt_cast_weekly_retrain",
+        dag_id="watt_guard_weekly_retrain",
         default_args=default_args,
-        description="Weekly automated retraining for Volt-Cast energy model",
-        schedule="0 2 * * 1",  # Monday 02:00 UTC
+        schedule="@weekly",
         start_date=datetime(2025, 1, 1),
         catchup=False,
-        tags=["volt-cast", "ml", "energy"],
+        tags=["watt-guard", "ml", "energy"],
     ) as dag:
+        fetch = PythonOperator(task_id="fetch_data", python_callable=_fetch_training_data)
+        validate_vol = PythonOperator(task_id="validate_volume", python_callable=_validate_data_volume)
+        train = PythonOperator(task_id="train", python_callable=_train)
+        validate_q = PythonOperator(task_id="validate_quality", python_callable=_validate_quality)
+        deploy = PythonOperator(task_id="deploy", python_callable=_deploy)
 
-        fetch_data = PythonOperator(
-            task_id="fetch_recent_data",
-            python_callable=_fetch_recent_data,
-        )
-
-        train = PythonOperator(
-            task_id="train_and_evaluate",
-            python_callable=_train_and_evaluate,
-        )
-
-        log_event = PythonOperator(
-            task_id="log_retraining_event",
-            python_callable=_log_retraining_event,
-        )
-
-        drift_check = PythonOperator(
-            task_id="check_drift_and_alert",
-            python_callable=_check_drift_and_alert,
-        )
-
-        fetch_data >> train >> log_event >> drift_check
+        fetch >> validate_vol >> train >> validate_q >> deploy

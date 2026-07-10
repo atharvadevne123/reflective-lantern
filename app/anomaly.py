@@ -1,4 +1,4 @@
-"""Anomaly detection for energy load readings using Isolation Forest."""
+"""Extended anomaly analysis: Z-score, IQR, and multi-metric severity."""
 
 from __future__ import annotations
 
@@ -9,61 +9,69 @@ from sklearn.ensemble import IsolationForest
 
 logger = logging.getLogger(__name__)
 
-_iso_model: IsolationForest | None = None
+
+def zscore_flag(value: float, mean: float, std: float, threshold: float = 3.0) -> bool:
+    """Return True if *value* is more than *threshold* standard deviations from *mean*.
+
+    Args:
+        value: The observation to test.
+        mean: Distribution mean.
+        std: Distribution standard deviation.
+        threshold: Number of standard deviations to use as the boundary.
+
+    Returns:
+        True when the observation is flagged as anomalous.
+    """
+    if std < 1e-9:
+        return False
+    return abs(value - mean) / std > threshold
 
 
-def fit_isolation_forest(
-    loads: list[float],
-    contamination: float = 0.05,
-    random_state: int = 42,
-) -> IsolationForest:
-    """Fit an Isolation Forest on the reference load distribution."""
-    arr = np.array(loads, dtype=float).reshape(-1, 1)
-    model = IsolationForest(
-        contamination=contamination,
-        random_state=random_state,
-        n_estimators=100,
-    )
-    model.fit(arr)
-    logger.info("isolation forest fitted on %d samples", len(loads))
-    return model
+def iqr_flag(value: float, q1: float, q3: float, k: float = 1.5) -> bool:
+    """Return True if *value* falls outside the IQR fence.
+
+    Args:
+        value: The observation to test.
+        q1: First quartile of the reference distribution.
+        q3: Third quartile of the reference distribution.
+        k: IQR multiplier (default 1.5 = standard Tukey fence).
+
+    Returns:
+        True when the observation is flagged as anomalous.
+    """
+    iqr = q3 - q1
+    lower = q1 - k * iqr
+    upper = q3 + k * iqr
+    return value < lower or value > upper
 
 
-def score_loads(
-    model: IsolationForest,
-    loads: list[float],
-) -> list[dict]:
-    """Score each load value and flag anomalies (-1 = anomaly, 1 = normal)."""
-    arr = np.array(loads, dtype=float).reshape(-1, 1)
-    scores = model.decision_function(arr)
-    labels = model.predict(arr)
+def compute_severity(
+    value: float,
+    reference: list[float],
+    z_threshold: float = 3.0,
+    iqr_k: float = 1.5,
+) -> dict[str, object]:
+    """Run both Z-score and IQR tests and combine into a severity label.
 
-    return [
-        {
-            "index": i,
-            "load_mw": round(float(loads[i]), 2),
-            "anomaly_score": round(float(scores[i]), 4),
-            "is_anomaly": bool(labels[i] == -1),
-        }
-        for i in range(len(loads))
-    ]
+    Args:
+        value: Consumption reading to evaluate.
+        reference: Historical reference window.
+        z_threshold: Z-score boundary for flagging.
+        iqr_k: IQR fence multiplier.
 
+    Returns:
+        Dict with keys 'z_flag', 'iqr_flag', 'severity' ('none'|'warning'|'critical').
+    """
+    arr = np.array(reference, dtype=float)
+    mean, std = float(arr.mean()), float(arr.std())
+    q1, q3 = float(np.percentile(arr, 25)), float(np.percentile(arr, 75))
 
-def quick_anomaly_check(
-    reference_loads: list[float],
-    new_loads: list[float],
-) -> dict:
-    """Fit on reference and score new_loads — returns summary."""
-    if len(reference_loads) < 20:
-        return {"error": "insufficient_reference_data"}
+    z = zscore_flag(value, mean, std, z_threshold)
+    iq = iqr_flag(value, q1, q3, iqr_k)
 
-    model = fit_isolation_forest(reference_loads)
-    results = score_loads(model, new_loads)
-    n_anomalies = sum(1 for r in results if r["is_anomaly"])
+    both = z and iq
+    either = z or iq
+    severity = "critical" if both else ("warning" if either else "none")
 
-    return {
-        "total_checked": len(new_loads),
-        "anomalies_detected": n_anomalies,
-        "anomaly_rate_pct": round(100 * n_anomalies / max(len(new_loads), 1), 1),
-        "details": results,
-    }
+    logger.debug("Anomaly severity=%s z=%s iqr=%s value=%.2f mean=%.2f", severity, z, iq, value, mean)
+    return {"z_flag": z, "iqr_flag": iq, "severity": severity}

@@ -1,4 +1,4 @@
-"""Generate Volt-Cast system architecture diagram."""
+"""Generate the Watt-Guard system architecture diagram."""
 
 from __future__ import annotations
 
@@ -6,95 +6,92 @@ import os
 
 import matplotlib.patches as mpatches
 import matplotlib.pyplot as plt
+from matplotlib.patches import FancyBboxPatch
 
 os.makedirs("screenshots", exist_ok=True)
-
-
-def draw_box(ax, x, y, w, h, label, color, fontsize=9, textcolor="white"):
-    box = mpatches.FancyBboxPatch(
-        (x, y), w, h,
-        boxstyle="round,pad=0.1",
-        facecolor=color,
-        edgecolor="white",
-        linewidth=1.5,
-    )
-    ax.add_patch(box)
-    ax.text(x + w / 2, y + h / 2, label, ha="center", va="center",
-            fontsize=fontsize, fontweight="bold", color=textcolor, wrap=True)
-
-
-def draw_arrow(ax, x1, y1, x2, y2, label=""):
-    ax.annotate(
-        "", xy=(x2, y2), xytext=(x1, y1),
-        arrowprops={"arrowstyle": "->", "color": "#555555", "lw": 1.5},
-    )
-    if label:
-        mx, my = (x1 + x2) / 2, (y1 + y2) / 2
-        ax.text(mx + 0.05, my, label, fontsize=7, color="#333333")
-
 
 fig, ax = plt.subplots(figsize=(16, 9))
 ax.set_xlim(0, 16)
 ax.set_ylim(0, 9)
 ax.axis("off")
-ax.set_facecolor("#F8F9FA")
-fig.patch.set_facecolor("#F8F9FA")
+fig.patch.set_facecolor("#0f1923")
 
-plt.title("Volt-Cast — System Architecture", fontsize=16, fontweight="bold", pad=20, color="#1A1A2E")
+COLORS = {
+    "api": "#1e88e5",
+    "model": "#43a047",
+    "store": "#fb8c00",
+    "monitor": "#8e24aa",
+    "pipe": "#e53935",
+    "ext": "#546e7a",
+    "text": "white",
+}
 
-# Colors
-CLIENT_C = "#4361EE"
-API_C = "#3A0CA3"
-ML_C = "#7209B7"
-DB_C = "#F72585"
-MONITOR_C = "#4CC9F0"
-PIPE_C = "#06D6A0"
-FAISS_C = "#FFB703"
 
-# Client
-draw_box(ax, 0.3, 6.5, 2.2, 1.2, "API Clients\n(REST / Batch)", CLIENT_C)
+def box(ax, x, y, w, h, label, color, fontsize=9):
+    rect = FancyBboxPatch((x, y), w, h, boxstyle="round,pad=0.1", facecolor=color, edgecolor="white", linewidth=1.2, zorder=3)
+    ax.add_patch(rect)
+    ax.text(x + w / 2, y + h / 2, label, ha="center", va="center", color="white", fontsize=fontsize, fontweight="bold", zorder=4)
 
-# FastAPI Layer
-draw_box(ax, 3.5, 5.0, 2.8, 3.0, "FastAPI\n/predict\n/batch-predict\n/forecast\n/drift\n/retrain\n/health /metrics", API_C, fontsize=7.5)
 
-# ML Ensemble
-draw_box(ax, 7.2, 5.8, 2.8, 2.0, "ML Ensemble\nXGBoost\nLightGBM\nRandomForest\nVotingRegressor", ML_C, fontsize=8)
+def arrow(ax, x1, y1, x2, y2):
+    ax.annotate("", xy=(x2, y2), xytext=(x1, y1), arrowprops=dict(arrowstyle="->", color="white", lw=1.2), zorder=5)
+
+
+# Title
+ax.text(8, 8.5, "Watt-Guard — System Architecture", ha="center", va="center", color="white", fontsize=14, fontweight="bold")
+
+# Clients
+box(ax, 0.3, 6.5, 1.8, 0.8, "Building\nSensors", COLORS["ext"])
+box(ax, 0.3, 5.4, 1.8, 0.8, "SCADA /\nIoT Hub", COLORS["ext"])
+
+# FastAPI
+box(ax, 2.8, 5.5, 2.5, 2.0, "FastAPI\n/predict\n/anomaly\n/drift\n/metrics", COLORS["api"], fontsize=8)
 
 # Feature Pipeline
-draw_box(ax, 7.2, 3.5, 2.8, 1.8, "Feature Pipeline\nLag (1h/24h/168h)\nRolling Mean/Std\nTemporal Cyclical\nPeak Encoder\nRatio Features", ML_C, fontsize=7.5)
+box(ax, 6.2, 6.5, 2.2, 1.0, "Feature\nPipeline", COLORS["model"])
 
-# Database
-draw_box(ax, 11.0, 5.8, 2.8, 2.0, "PostgreSQL\nEnergyReadings\nPredictionLog\nDriftReports\nRetrainingLog", DB_C, fontsize=8)
+# ML Models
+box(ax, 6.2, 5.0, 2.2, 1.2, "XGBoost +\nLightGBM +\nRandForest", COLORS["model"], fontsize=8)
 
-# Monitoring
-draw_box(ax, 11.0, 3.5, 2.8, 1.8, "Monitoring\nKS-Test Drift\nRMSE/MAE/MAPE\nP50/P95 Latency\nPredictionTracker", MONITOR_C, fontsize=7.5, textcolor="#1A1A2E")
+# Anomaly
+box(ax, 9.2, 6.5, 2.2, 1.0, "Isolation\nForest", COLORS["monitor"])
+
+# KS Drift
+box(ax, 9.2, 5.0, 2.2, 1.2, "KS-Drift\nDetector", COLORS["monitor"])
+
+# DB
+box(ax, 6.8, 2.8, 2.0, 1.2, "SQLite /\nPostgreSQL\n(SQLAlchemy)", COLORS["store"], fontsize=8)
 
 # Airflow
-draw_box(ax, 7.2, 1.2, 2.8, 1.8, "Airflow DAG\nWeekly Retrain\nData Gate\nDrift Alert\nR² Validation", PIPE_C, fontsize=8, textcolor="#1A1A2E")
+box(ax, 9.5, 2.8, 2.2, 1.2, "Airflow DAG\nWeekly\nRetrain", COLORS["pipe"], fontsize=8)
 
 # Docker
-draw_box(ax, 3.5, 1.2, 2.8, 1.8, "Docker Compose\nAPI Container\nPostgreSQL\n.env.example\nGH Actions CI", FAISS_C, fontsize=8, textcolor="#1A1A2E")
+box(ax, 12.0, 5.5, 2.2, 1.5, "Docker\nCompose\n(API+DB)", COLORS["ext"])
+
+# CI
+box(ax, 12.0, 3.5, 2.2, 1.2, "GitHub\nActions CI\nruff+pytest", COLORS["ext"], fontsize=8)
 
 # Arrows
-draw_arrow(ax, 2.5, 7.1, 3.5, 7.1, "REST")
-draw_arrow(ax, 6.3, 6.8, 7.2, 6.8, "predict()")
-draw_arrow(ax, 6.3, 6.2, 7.2, 4.5, "features")
-draw_arrow(ax, 10.0, 6.8, 11.0, 6.8, "DB write")
-draw_arrow(ax, 10.0, 4.3, 11.0, 4.3, "drift write")
-draw_arrow(ax, 8.6, 3.5, 8.6, 3.0, "schedule")
-draw_arrow(ax, 7.2, 2.1, 6.3, 2.1, "trigger")
-draw_arrow(ax, 10.0, 2.1, 11.0, 4.3, "log retrain")
+arrow(ax, 2.1, 7.1, 2.8, 6.8)
+arrow(ax, 2.1, 5.8, 2.8, 6.0)
+arrow(ax, 5.3, 6.7, 6.2, 7.0)
+arrow(ax, 5.3, 6.3, 6.2, 5.8)
+arrow(ax, 5.3, 6.3, 9.2, 7.0)
+arrow(ax, 5.3, 6.3, 9.2, 5.6)
+arrow(ax, 7.8, 5.0, 7.8, 4.0)
+arrow(ax, 10.3, 5.0, 10.3, 4.0)
+arrow(ax, 9.5, 3.4, 8.8, 3.5)
 
-legend_elements = [
-    mpatches.Patch(facecolor=CLIENT_C, label="Client"),
-    mpatches.Patch(facecolor=API_C, label="FastAPI"),
-    mpatches.Patch(facecolor=ML_C, label="ML / Features"),
-    mpatches.Patch(facecolor=DB_C, label="PostgreSQL"),
-    mpatches.Patch(facecolor=MONITOR_C, label="Monitoring"),
-    mpatches.Patch(facecolor=PIPE_C, label="Airflow Pipeline"),
-    mpatches.Patch(facecolor=FAISS_C, label="Infra / Docker"),
+# Legend
+legend_patches = [
+    mpatches.Patch(color=COLORS["api"], label="REST API"),
+    mpatches.Patch(color=COLORS["model"], label="ML Models"),
+    mpatches.Patch(color=COLORS["monitor"], label="Monitoring"),
+    mpatches.Patch(color=COLORS["store"], label="Storage"),
+    mpatches.Patch(color=COLORS["pipe"], label="Pipelines"),
+    mpatches.Patch(color=COLORS["ext"], label="Infrastructure"),
 ]
-ax.legend(handles=legend_elements, loc="lower right", fontsize=8, framealpha=0.8)
+ax.legend(handles=legend_patches, loc="lower left", fontsize=8, framealpha=0.3, labelcolor="white", facecolor="#1a2a3a")
 
 plt.tight_layout()
 plt.savefig("screenshots/architecture.png", dpi=150, bbox_inches="tight")

@@ -1,4 +1,8 @@
-"""Ensemble ML model training and prediction for energy load forecasting."""
+"""ML model training, prediction, and persistence.
+
+Supports XGBoost, LightGBM, and RandomForest via a VotingRegressor ensemble.
+Models are serialised with joblib and metrics written to JSON.
+"""
 
 from __future__ import annotations
 
@@ -10,14 +14,28 @@ from pathlib import Path
 import joblib
 import numpy as np
 import pandas as pd
-from sklearn.ensemble import RandomForestRegressor, VotingRegressor
+from sklearn.ensemble import IsolationForest, RandomForestRegressor, VotingRegressor
 from sklearn.model_selection import KFold, cross_val_score
+
+try:
+    from lightgbm import LGBMRegressor
+    _HAS_LGBM = True
+except ImportError:
+    _HAS_LGBM = False
+
+try:
+    from xgboost import XGBRegressor
+    _HAS_XGB = True
+except ImportError:
+    _HAS_XGB = False
+
+from app.features import build_feature_pipeline
 
 logger = logging.getLogger(__name__)
 
-MODEL_PATH = Path(os.getenv("MODEL_PATH", "volt_cast_model.joblib"))
-METRICS_PATH = Path(os.getenv("METRICS_PATH", "volt_cast_metrics.json"))
-MODEL_VERSION = "1.0.0"
+MODEL_PATH = Path(os.getenv("MODEL_PATH", "model.joblib"))
+ANOMALY_MODEL_PATH = Path(os.getenv("ANOMALY_MODEL_PATH", "anomaly_model.joblib"))
+METRICS_PATH = Path(os.getenv("METRICS_PATH", "metrics.json"))
 
 try:
     from xgboost import XGBRegressor
@@ -26,164 +44,97 @@ except ImportError:
     _HAS_XGB = False
     logger.warning("xgboost not available; using RandomForest only")
 
-try:
-    from lightgbm import LGBMRegressor
-    _HAS_LGB = True
-except ImportError:
-    _HAS_LGB = False
-    logger.warning("lightgbm not available; using RandomForest only")
-
-
-def _build_estimators() -> list:
-    estimators = [
-        ("rf", RandomForestRegressor(n_estimators=100, max_depth=8, random_state=42)),
+def _build_estimator() -> VotingRegressor:
+    """Build the voting ensemble from available backends."""
+    estimators: list[tuple[str, Any]] = [
+        ("rf", RandomForestRegressor(n_estimators=100, max_depth=8, random_state=42, n_jobs=-1)),
     ]
     if _HAS_XGB:
         estimators.append(
-            ("xgb", XGBRegressor(n_estimators=100, max_depth=6, learning_rate=0.1,
-                                  subsample=0.8, colsample_bytree=0.8,
-                                  verbosity=0, random_state=42))
+            ("xgb", XGBRegressor(n_estimators=100, max_depth=5, learning_rate=0.05, random_state=42, verbosity=0))
         )
-    if _HAS_LGB:
+    if _HAS_LGBM:
         estimators.append(
-            ("lgb", LGBMRegressor(n_estimators=100, max_depth=6, learning_rate=0.1,
-                                   subsample=0.8, colsample_bytree=0.8,
-                                   verbose=-1, random_state=42))
+            ("lgbm", LGBMRegressor(n_estimators=100, max_depth=5, learning_rate=0.05, random_state=42, verbose=-1))
         )
-    return estimators
+    return VotingRegressor(estimators=estimators)
 
 
-def train_model(
-    X: np.ndarray,
-    y: np.ndarray,
-    cv_folds: int = 5,
-) -> tuple[VotingRegressor, dict]:
-    estimators = _build_estimators()
-    model = VotingRegressor(estimators=estimators)
+def train_model(X: pd.DataFrame, y: pd.Series) -> tuple[Any, dict[str, float]]:
+    """Train the forecasting model with 5-fold CV; return fitted pipeline and metrics."""
+    feature_pipe = build_feature_pipeline()
+    X_feat = feature_pipe.fit_transform(X)
 
-    kf = KFold(n_splits=cv_folds, shuffle=True, random_state=42)
-    r2_scores = cross_val_score(model, X, y, cv=kf, scoring="r2")
-    rmse_scores = cross_val_score(
-        model, X, y, cv=kf,
-        scoring="neg_root_mean_squared_error",
-    )
+    estimator = _build_estimator()
+    kf = KFold(n_splits=5, shuffle=True, random_state=42)
+    cv_scores = cross_val_score(estimator, X_feat, y, cv=kf, scoring="r2")
+    estimator.fit(X_feat, y)
 
-    model.fit(X, y)
+    # Compute in-sample MAE
+    preds = estimator.predict(X_feat)
+    mae = float(np.mean(np.abs(preds - y.values)))
 
-    metrics = {
-        "r2_mean": float(r2_scores.mean()),
-        "r2_std": float(r2_scores.std()),
-        "rmse_mean": float(-rmse_scores.mean()),
-        "rmse_std": float(rmse_scores.std()),
-        "n_samples": int(X.shape[0]),
-        "n_features": int(X.shape[1]),
-        "n_estimators": len(estimators),
-        "cv_folds": cv_folds,
-        "model_version": MODEL_VERSION,
+    metrics: dict[str, float] = {
+        "r2_mean": float(cv_scores.mean()),
+        "r2_std": float(cv_scores.std()),
+        "mae_kwh": mae,
+        "n_samples": len(y),
+        "n_features": X_feat.shape[1],
     }
 
-    joblib.dump(model, MODEL_PATH)
-    METRICS_PATH.write_text(json.dumps(metrics, indent=2))
-    logger.info("model trained: R2=%.4f RMSE=%.2f", metrics["r2_mean"], metrics["rmse_mean"])
+    joblib.dump({"pipeline": feature_pipe, "estimator": estimator}, MODEL_PATH)
+    with open(METRICS_PATH, "w") as fh:
+        json.dump(metrics, fh, indent=2)
 
-    try:
-        from app.mlflow_stub import log_metrics as mlflow_log
-        mlflow_log(metrics, run_name=f"volt-cast-{MODEL_VERSION}")
-    except Exception:
-        pass
-
-    return model, metrics
+    logger.info("Model trained: R2=%.4f±%.4f  MAE=%.2f kWh", metrics["r2_mean"], metrics["r2_std"], mae)
+    return {"pipeline": feature_pipe, "estimator": estimator}, metrics
 
 
-def load_model() -> VotingRegressor | None:
+def train_anomaly_model(X: pd.DataFrame) -> Any:
+    """Train an IsolationForest on historical readings for anomaly detection."""
+    feature_pipe = build_feature_pipeline()
+    X_feat = feature_pipe.fit_transform(X)
+    iso = IsolationForest(n_estimators=100, contamination=0.05, random_state=42)
+    iso.fit(X_feat)
+    joblib.dump({"pipeline": feature_pipe, "iso": iso}, ANOMALY_MODEL_PATH)
+    logger.info("Anomaly model trained on %d samples", len(X))
+    return {"pipeline": feature_pipe, "iso": iso}
+
+
+def load_model() -> dict[str, Any] | None:
+    """Load the forecasting model bundle or return None."""
     if not MODEL_PATH.exists():
-        logger.warning("model file not found at %s", MODEL_PATH)
         return None
-    model = joblib.load(MODEL_PATH)
-    logger.info("model loaded from %s", MODEL_PATH)
-    return model
+    return joblib.load(MODEL_PATH)
 
 
-def load_metrics() -> dict:
+def load_anomaly_model() -> dict[str, Any] | None:
+    """Load the anomaly detection bundle or return None."""
+    if not ANOMALY_MODEL_PATH.exists():
+        return None
+    return joblib.load(ANOMALY_MODEL_PATH)
+
+
+def predict(model_bundle: dict[str, Any], X: pd.DataFrame) -> np.ndarray:
+    """Run forecasting model on feature DataFrame."""
+    feat = model_bundle["pipeline"].transform(X)
+    return model_bundle["estimator"].predict(feat)
+
+
+def score_anomaly(anomaly_bundle: dict[str, Any], X: pd.DataFrame) -> dict[str, Any]:
+    """Return anomaly score and flag for a reading."""
+    feat = anomaly_bundle["pipeline"].transform(X)
+    score = float(anomaly_bundle["iso"].score_samples(feat)[0])
+    is_anomaly = int(anomaly_bundle["iso"].predict(feat)[0] == -1)
+    severity = "none"
+    if is_anomaly:
+        severity = "critical" if score < -0.5 else "warning"
+    return {"anomaly_score": round(score, 4), "is_anomaly": is_anomaly, "severity": severity}
+
+
+def get_metrics() -> dict[str, float]:
+    """Load latest training metrics."""
     if not METRICS_PATH.exists():
         return {}
-    return json.loads(METRICS_PATH.read_text())
-
-
-def predict(model: VotingRegressor, X: np.ndarray) -> np.ndarray:
-    return model.predict(X)
-
-
-def generate_synthetic_training_data(
-    n_samples: int = 2000,
-    seed: int = 42,
-) -> tuple[pd.DataFrame, pd.Series]:
-    rng = np.random.default_rng(seed)
-    hours = rng.integers(0, 24, n_samples)
-    dow = rng.integers(0, 7, n_samples)
-    months = rng.integers(1, 13, n_samples)
-    is_weekend = (dow >= 5).astype(int)
-    temps = rng.uniform(-5, 40, n_samples)
-    humidity = rng.uniform(20, 95, n_samples)
-
-    base_load = 3500.0
-    hour_effect = 500 * np.sin(np.pi * hours / 12) + 300 * (hours >= 7).astype(float)
-    temp_effect = 100 * np.maximum(temps - 22, 0) + 80 * np.maximum(10 - temps, 0)
-    weekend_effect = -400 * is_weekend
-    month_effect = 200 * np.sin(2 * np.pi * months / 12)
-    noise = rng.normal(0, 150, n_samples)
-
-    load = base_load + hour_effect + temp_effect + weekend_effect + month_effect + noise
-    load = np.clip(load, 1000, 8000)
-
-    df = pd.DataFrame({
-        "hour": hours,
-        "hour_sin": np.sin(2 * np.pi * hours / 24),
-        "hour_cos": np.cos(2 * np.pi * hours / 24),
-        "dow_sin": np.sin(2 * np.pi * dow / 7),
-        "dow_cos": np.cos(2 * np.pi * dow / 7),
-        "month_sin": np.sin(2 * np.pi * months / 12),
-        "month_cos": np.cos(2 * np.pi * months / 12),
-        "day_of_week": dow,
-        "month": months,
-        "is_weekend": is_weekend,
-        "is_peak_hour": ((hours >= 7) & (hours <= 21)).astype(int),
-        "is_morning_peak": ((hours >= 7) & (hours <= 10)).astype(int),
-        "is_evening_peak": ((hours >= 17) & (hours <= 21)).astype(int),
-        "is_weekday_peak": (((hours >= 7) & (hours <= 21)) & (is_weekend == 0)).astype(int),
-        "temperature_c": temps,
-        "humidity_pct": humidity,
-        "heat_index": temps + 0.33 * (humidity / 100.0 * 6.105) - 4.0,
-        "cooling_demand_proxy": np.maximum(temps - 18.0, 0),
-        "heating_demand_proxy": np.maximum(18.0 - temps, 0),
-        "lag_1h": load * rng.uniform(0.95, 1.05, n_samples),
-        "lag_24h": load * rng.uniform(0.90, 1.10, n_samples),
-        "lag_168h": load * rng.uniform(0.85, 1.15, n_samples),
-        "rolling_mean_3h": load * rng.uniform(0.97, 1.03, n_samples),
-        "rolling_std_3h": rng.uniform(50, 200, n_samples),
-        "rolling_mean_24h": load * rng.uniform(0.93, 1.07, n_samples),
-        "rolling_std_24h": rng.uniform(100, 400, n_samples),
-        "load_ratio_vs_daily_mean": rng.uniform(0.7, 1.3, n_samples),
-    })
-    return df, pd.Series(load, name="load_mw")
-
-
-def get_model_summary(model: VotingRegressor) -> dict:
-    """Return a summary of the fitted ensemble model."""
-    estimators = model.estimators_ if hasattr(model, "estimators_") else []
-    return {
-        "n_estimators": len(estimators),
-        "estimator_names": [name for name, _ in model.estimators],
-        "weights": list(model.weights) if model.weights else None,
-    }
-
-
-def validate_feature_array(X: np.ndarray, expected_features: int | None = None) -> bool:
-    """Validate that input array has no NaN/Inf and expected number of features."""
-    if np.isnan(X).any() or np.isinf(X).any():
-        logger.warning("input contains NaN or Inf values")
-        return False
-    if expected_features is not None and X.shape[1] != expected_features:
-        logger.warning("expected %d features, got %d", expected_features, X.shape[1])
-        return False
-    return True
+    with open(METRICS_PATH) as fh:
+        return json.load(fh)

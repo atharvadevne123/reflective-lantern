@@ -3,164 +3,129 @@
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING
+import time
+from datetime import datetime
+from typing import Any
 
 import numpy as np
 from scipy.stats import ks_2samp
 
-if TYPE_CHECKING:
-    import pandas as pd
+from app.database import AnomalyLog, DriftLog, PredictionLog
 
 logger = logging.getLogger(__name__)
 
-DRIFT_THRESHOLD = 0.05  # p-value below this => drift detected
+# In-memory reference window (populated after first training)
+_reference_window: list[float] = []
+REFERENCE_WINDOW_SIZE = 500
+DRIFT_P_THRESHOLD = 0.05
 
 
-def compute_drift(
-    reference: list[float],
-    current: list[float],
-    feature_name: str = "unknown",
-) -> dict:
-    """KS-test based drift detection between reference and current distributions."""
-    if len(reference) < 10 or len(current) < 5:
-        logger.warning("insufficient samples for drift test on %s", feature_name)
-        return {
-            "feature": feature_name,
-            "ks_statistic": 0.0,
-            "p_value": 1.0,
-            "drift_detected": False,
-            "note": "insufficient_samples",
-        }
+def set_reference_window(values: list[float]) -> None:
+    """Set the reference distribution for drift detection."""
+    global _reference_window
+    _reference_window = list(values[-REFERENCE_WINDOW_SIZE:])
+    logger.info("Reference window set: %d samples", len(_reference_window))
 
-    stat, p_value = ks_2samp(reference, current)
-    drift = bool(p_value < DRIFT_THRESHOLD)
 
-    result = {
-        "feature": feature_name,
+def compute_drift(reference: list[float], current: list[float]) -> dict[str, Any]:
+    """Run KS-test between reference and current distributions."""
+    if len(reference) < 10 or len(current) < 10:
+        return {"ks_statistic": 0.0, "p_value": 1.0, "drift_detected": False, "reason": "insufficient_data"}
+    stat, p = ks_2samp(reference, current)
+    return {
         "ks_statistic": round(float(stat), 4),
-        "p_value": round(float(p_value), 4),
-        "drift_detected": drift,
-        "reference_n": len(reference),
-        "current_n": len(current),
+        "p_value": round(float(p), 4),
+        "drift_detected": bool(p < DRIFT_P_THRESHOLD),
     }
-    if drift:
-        logger.warning("drift detected on %s: ks=%.4f p=%.4f", feature_name, stat, p_value)
-    return result
 
 
-def compute_all_feature_drifts(
-    reference_df: pd.DataFrame,
-    current_df: pd.DataFrame,
-    numeric_features: list[str] | None = None,
-) -> list[dict]:
-    """Compute drift across all numeric features."""
-
-    if numeric_features is None:
-        numeric_features = list(
-            set(reference_df.select_dtypes(include=[np.number]).columns)
-            & set(current_df.select_dtypes(include=[np.number]).columns)
-        )
-
+def check_feature_drift(feature_values: dict[str, list[float]], db: Session) -> list[dict[str, Any]]:
+    """Check drift per feature and log results."""
     results = []
-    for feat in sorted(numeric_features):
-        ref_vals = reference_df[feat].dropna().tolist()
-        cur_vals = current_df[feat].dropna().tolist()
-        results.append(compute_drift(ref_vals, cur_vals, feature_name=feat))
+    for feature_name, current_vals in feature_values.items():
+        ref = _reference_window if _reference_window else current_vals
+        result = compute_drift(ref, current_vals)
+        result["feature"] = feature_name
 
+        entry = DriftLog(
+            feature_name=feature_name,
+            ks_statistic=result["ks_statistic"],
+            p_value=result["p_value"],
+            drift_detected=int(result["drift_detected"]),
+            checked_at=datetime.utcnow(),
+        )
+        db.add(entry)
+        if result["drift_detected"]:
+            logger.warning("Drift detected on feature '%s': KS=%.4f p=%.4f", feature_name, result["ks_statistic"], result["p_value"])
+        results.append(result)
+
+    db.commit()
     return results
 
 
-def compute_prediction_error_metrics(
-    actual: list[float],
-    predicted: list[float],
-) -> dict:
-    """RMSE, MAE and MAPE for a batch of predictions."""
-    if not actual or not predicted or len(actual) != len(predicted):
-        return {"rmse": None, "mae": None, "mape": None}
-
-    a = np.array(actual, dtype=float)
-    p = np.array(predicted, dtype=float)
-    rmse = float(np.sqrt(np.mean((a - p) ** 2)))
-    mae = float(np.mean(np.abs(a - p)))
-    mask = a != 0
-    mape = float(np.mean(np.abs((a[mask] - p[mask]) / a[mask])) * 100) if mask.any() else None
-
-    return {"rmse": round(rmse, 3), "mae": round(mae, 3), "mape": round(mape, 3) if mape else None}
-
-
-class PredictionTracker:
-    """In-memory ring buffer for recent predictions — used for drift window."""
-
-    def __init__(self, max_size: int = 1000) -> None:
-        self._max = max_size
-        self._loads: list[float] = []
-        self._latencies: list[float] = []
-
-    def record(self, load_mw: float, latency_ms: float) -> None:
-        self._loads.append(float(load_mw))
-        self._latencies.append(float(latency_ms))
-        if len(self._loads) > self._max:
-            self._loads = self._loads[-self._max:]
-            self._latencies = self._latencies[-self._max:]
-
-    @property
-    def loads(self) -> list[float]:
-        return list(self._loads)
-
-    @property
-    def latencies(self) -> list[float]:
-        return list(self._latencies)
-
-    @property
-    def count(self) -> int:
-        return len(self._loads)
+def log_prediction(
+    db: Session,
+    building_id: str,
+    timestamp: datetime,
+    predicted_kwh: float,
+    latency_ms: float,
+    actual_kwh: float | None = None,
+    model_version: str = "1.0.0",
+) -> None:
+    """Persist a prediction record."""
+    entry = PredictionLog(
+        building_id=building_id,
+        timestamp=timestamp,
+        predicted_kwh=predicted_kwh,
+        actual_kwh=actual_kwh,
+        model_version=model_version,
+        latency_ms=latency_ms,
+    )
+    db.add(entry)
+    db.commit()
 
 
-_tracker = PredictionTracker()
+def log_anomaly(
+    db: Session,
+    building_id: str,
+    timestamp: datetime,
+    consumption_kwh: float,
+    anomaly_score: float,
+    is_anomaly: int,
+    severity: str,
+) -> None:
+    """Persist an anomaly detection record."""
+    entry = AnomalyLog(
+        building_id=building_id,
+        timestamp=timestamp,
+        consumption_kwh=consumption_kwh,
+        anomaly_score=anomaly_score,
+        is_anomaly=is_anomaly,
+        severity=severity,
+    )
+    db.add(entry)
+    db.commit()
 
 
-def get_tracker() -> PredictionTracker:
-    return _tracker
+def get_prediction_stats(db: Session) -> dict[str, Any]:
+    """Aggregate prediction statistics for the /metrics endpoint."""
+    total = db.query(PredictionLog).count()
+    anomalies = db.query(AnomalyLog).filter(AnomalyLog.is_anomaly == 1).count()
+    drifts = db.query(DriftLog).filter(DriftLog.drift_detected == 1).count()
+    return {
+        "total_predictions": total,
+        "total_anomalies_flagged": anomalies,
+        "total_drift_events": drifts,
+        "reference_window_size": len(_reference_window),
+    }
 
 
-def compute_psi(
-    reference: list[float],
-    current: list[float],
-    bins: int = 10,
-) -> dict:
-    """Population Stability Index (PSI) for distribution shift detection.
+class LatencyTimer:
+    """Context manager to measure request latency in milliseconds."""
 
-    Args:
-        reference: Reference distribution values.
-        current: Current distribution values to compare.
-        bins: Number of histogram bins.
+    def __enter__(self) -> LatencyTimer:
+        self._start = time.perf_counter()
+        return self
 
-    Returns:
-        dict with psi, severity ('stable'/'slight'/'significant'), and bin details.
-    """
-    import numpy as np
-
-    if len(reference) < 10 or len(current) < 5:
-        return {"psi": None, "severity": "unknown", "note": "insufficient_samples"}
-
-    ref = np.array(reference, dtype=float)
-    cur = np.array(current, dtype=float)
-    global_min = min(ref.min(), cur.min())
-    global_max = max(ref.max(), cur.max())
-
-    if global_max == global_min:
-        return {"psi": 0.0, "severity": "stable"}
-
-    bin_edges = np.linspace(global_min, global_max, bins + 1)
-    ref_counts, _ = np.histogram(ref, bins=bin_edges)
-    cur_counts, _ = np.histogram(cur, bins=bin_edges)
-
-    ref_pct = ref_counts / ref_counts.sum()
-    cur_pct = cur_counts / cur_counts.sum()
-    ref_pct = np.where(ref_pct == 0, 1e-6, ref_pct)
-    cur_pct = np.where(cur_pct == 0, 1e-6, cur_pct)
-
-    psi = float(np.sum((cur_pct - ref_pct) * np.log(cur_pct / ref_pct)))
-    severity = "stable" if psi < 0.1 else "slight" if psi < 0.2 else "significant"
-
-    return {"psi": round(psi, 4), "severity": severity, "bins": bins}
+    def __exit__(self, *_: Any) -> None:
+        self.ms = round((time.perf_counter() - self._start) * 1000, 2)

@@ -1,4 +1,4 @@
-"""In-process TTL cache for expensive computations."""
+"""Simple in-memory TTL cache for prediction results."""
 
 from __future__ import annotations
 
@@ -10,9 +10,11 @@ logger = logging.getLogger(__name__)
 
 
 class TTLCache:
-    """Simple dict-backed cache with per-entry TTL in seconds."""
+    """Thread-unsafe but lightweight TTL cache for single-process use."""
 
-    def __init__(self, default_ttl: float = 60.0) -> None:
+    def __init__(self, ttl_seconds: int = 60, max_size: int = 1000) -> None:
+        self._ttl = ttl_seconds
+        self._max = max_size
         self._store: dict[str, tuple[Any, float]] = {}
         self.default_ttl = default_ttl
         self.hits = 0
@@ -26,19 +28,23 @@ class TTLCache:
         value, expires_at = entry
         if time.monotonic() > expires_at:
             del self._store[key]
-            self.misses += 1
             return None
-        self.hits += 1
         return value
 
-    def set(self, key: str, value: Any, ttl: float | None = None) -> None:
-        expires_at = time.monotonic() + (ttl if ttl is not None else self.default_ttl)
-        self._store[key] = (value, expires_at)
+    def set(self, key: str, value: Any) -> None:
+        """Store a value with the configured TTL."""
+        if len(self._store) >= self._max:
+            # Evict the oldest entry
+            oldest = min(self._store, key=lambda k: self._store[k][1])
+            del self._store[oldest]
+        self._store[key] = (value, time.monotonic() + self._ttl)
 
-    def delete(self, key: str) -> None:
+    def invalidate(self, key: str) -> None:
+        """Remove a specific key."""
         self._store.pop(key, None)
 
     def clear(self) -> None:
+        """Empty the cache."""
         self._store.clear()
         self.hits = 0
         self.misses = 0
@@ -59,9 +65,4 @@ class TTLCache:
         total = self.hits + self.misses
         return self.hits / total if total > 0 else 0.0
 
-
-_forecast_cache = TTLCache(default_ttl=300.0)
-
-
-def get_forecast_cache() -> TTLCache:
-    return _forecast_cache
+prediction_cache = TTLCache(ttl_seconds=30, max_size=500)

@@ -1,419 +1,261 @@
-"""Volt-Cast FastAPI application — energy load prediction API."""
+"""FastAPI application — Watt-Guard energy forecasting API."""
 
 from __future__ import annotations
 
 import logging
-import time
-import uuid
 from contextlib import asynccontextmanager
 from typing import TYPE_CHECKING
 
-import numpy as np
-
-if TYPE_CHECKING:
-    import pandas as pd
 from fastapi import Depends, FastAPI, HTTPException
 from sqlalchemy.orm import Session
 
-from app.database import (
-    DriftReport,
-    PredictionLog,
-    RetrainingLog,
-    create_tables,
-    get_db,
-)
-from app.features import build_raw_feature_df
+from app import __version__
+from app.database import create_tables, get_db
+from app.features import make_feature_row
 from app.middleware import CorrelationIDMiddleware, RateLimitMiddleware
 from app.model import (
-    MODEL_VERSION,
-    generate_synthetic_training_data,
-    load_metrics,
+    get_metrics,
+    load_anomaly_model,
     load_model,
     predict,
-    train_model,
+    score_anomaly,
 )
 from app.monitoring import (
-    compute_all_feature_drifts,
-    get_tracker,
+    LatencyTimer,
+    compute_drift,
+    get_prediction_stats,
+    log_anomaly,
+    log_prediction,
+    set_reference_window,
 )
 from app.schemas import (
-    BatchPredictRequest,
-    BatchPredictResponse,
+    AnomalyRequest,
+    AnomalyResponse,
+    DriftRequest,
     DriftResponse,
-    ForecastRequest,
-    ForecastResponse,
+    EnergyReadingIn,
     HealthResponse,
     MetricsResponse,
-    PredictRequest,
     PredictResponse,
 )
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(name)s %(levelname)s %(message)s")
 logger = logging.getLogger(__name__)
 
-_model = None
-_start_time = time.monotonic()
-_REFERENCE_LOADS: list[float] = []
+_model_bundle: dict[str, Any] | None = None
+_anomaly_bundle: dict[str, Any] | None = None
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    global _model, _REFERENCE_LOADS
+    global _model_bundle, _anomaly_bundle
     create_tables()
-    _model = load_model()
-    if _model is None:
-        logger.info("no saved model found — training on synthetic data")
-        X, y = generate_synthetic_training_data(n_samples=2000)
-        _model, _ = train_model(X.values, y.values)
-        _REFERENCE_LOADS = y.tolist()[:1000]
-        logger.info("model trained and ready")
-    else:
-        X, y = generate_synthetic_training_data(n_samples=500)
-        _REFERENCE_LOADS = y.tolist()[:500]
+    _model_bundle = load_model()
+    _anomaly_bundle = load_anomaly_model()
+    if _model_bundle:
+        logger.info("Forecasting model loaded.")
+    if _anomaly_bundle:
+        logger.info("Anomaly model loaded.")
     yield
-    logger.info("volt-cast shutting down")
 
 
 app = FastAPI(
-    title="Volt-Cast",
-    description=(
-        "**Volt-Cast** — Production-grade electricity consumption and grid load prediction API. "
-        "Powered by an XGBoost + LightGBM + RandomForest VotingRegressor ensemble with KS-test "
-        "drift monitoring, automated retraining, and FAISS pattern matching."
-    ),
-    version="1.0.0",
-    contact={"name": "Reflective Lantern", "email": "devneatharva@gmail.com"},
-    license_info={"name": "MIT"},
-    openapi_tags=[
-        {"name": "System", "description": "Health, metrics, and configuration endpoints"},
-        {"name": "Prediction", "description": "Load prediction, batch, forecast, and analysis"},
-        {"name": "Monitoring", "description": "Drift detection and performance monitoring"},
-        {"name": "Administration", "description": "Model retraining and management"},
-    ],
+    title="Watt-Guard",
+    description="Smart building energy consumption forecasting and anomaly detection API.",
+    version=__version__,
     lifespan=lifespan,
 )
 
-app.add_middleware(CorrelationIDMiddleware)
 app.add_middleware(RateLimitMiddleware)
-
-
-def _get_model():
-    if _model is None:
-        raise HTTPException(status_code=503, detail="Model not loaded")
-    return _model
+app.add_middleware(CorrelationIDMiddleware)
 
 
 @app.get("/api/v1/health", response_model=HealthResponse, tags=["System"])
-async def health():
-    """Health check endpoint."""
-    tracker = get_tracker()
+def health() -> HealthResponse:
+    """Return API liveness and model load status."""
     return HealthResponse(
-        status="ok" if _model is not None else "degraded",
-        model_loaded=_model is not None,
-        model_version=MODEL_VERSION,
-        prediction_count=tracker.count,
-        uptime_seconds=round(time.monotonic() - _start_time, 1),
+        status="ok",
+        model_loaded=_model_bundle is not None,
+        anomaly_model_loaded=_anomaly_bundle is not None,
+        version=__version__,
     )
 
 
-@app.get("/api/v1/metrics", response_model=MetricsResponse, tags=["System"])
-async def metrics():
-    """Model performance metrics."""
-    m = load_metrics()
-    tracker = get_tracker()
-    lats = tracker.latencies
-    p50 = float(np.percentile(lats, 50)) if lats else None
-    p95 = float(np.percentile(lats, 95)) if lats else None
-    return MetricsResponse(
-        r2_mean=m.get("r2_mean"),
-        r2_std=m.get("r2_std"),
-        rmse_mean=m.get("rmse_mean"),
-        rmse_std=m.get("rmse_std"),
-        n_samples=m.get("n_samples"),
-        n_features=m.get("n_features"),
-        model_version=m.get("model_version", MODEL_VERSION),
-        prediction_count=tracker.count,
-        recent_latency_p50_ms=round(p50, 2) if p50 else None,
-        recent_latency_p95_ms=round(p95, 2) if p95 else None,
-    )
-
-
-@app.post("/api/v1/predict", response_model=PredictResponse, tags=["Prediction"])
-async def predict_load(
-    req: PredictRequest,
-    request=None,
+@app.post("/api/v1/predict", response_model=PredictResponse, tags=["Forecasting"])
+def predict_consumption(
+    payload: EnergyReadingIn,
     db: Session = Depends(get_db),
-):
-    """Predict energy load for a single time slot."""
-    model = _get_model()
-    t0 = time.monotonic()
-    request_id = str(uuid.uuid4())
+) -> PredictResponse:
+    """Forecast energy consumption for a building at a given timestep."""
+    if _model_bundle is None:
+        raise HTTPException(status_code=503, detail="Forecasting model not loaded. Run /api/v1/train first.")
 
-    df = build_raw_feature_df(
-        hour=req.hour,
-        day_of_week=req.day_of_week,
-        month=req.month,
-        is_weekend=req.is_weekend,
-        temperature_c=req.temperature_c,
-        humidity_pct=req.humidity_pct,
-        historical_loads=req.historical_loads,
-        region=req.region,
+    with LatencyTimer() as timer:
+        row = make_feature_row(
+            hour=payload.hour,
+            day_of_week=payload.day_of_week,
+            month=payload.month,
+            temperature_c=payload.temperature_c,
+            humidity_pct=payload.humidity_pct,
+            occupancy=payload.occupancy,
+            hvac_state=payload.hvac_state,
+            consumption_kwh=payload.consumption_kwh,
+        )
+        kwh_pred = float(predict(_model_bundle, row)[0])
+
+    log_prediction(
+        db=db,
+        building_id=payload.building_id,
+        timestamp=payload.timestamp,
+        predicted_kwh=kwh_pred,
+        latency_ms=timer.ms,
     )
-
-    # Apply feature transformers manually for single-row inference
-    row = _engineer_features(df).values
-    pred = float(predict(model, row)[0])
-    pred = max(500.0, min(pred, 15000.0))  # clamp to plausible MW range
-
-    latency_ms = (time.monotonic() - t0) * 1000
-    get_tracker().record(pred, latency_ms)
-
-    db.add(PredictionLog(
-        predicted_load_mw=pred,
-        model_version=MODEL_VERSION,
-        region=req.region,
-        latency_ms=round(latency_ms, 2),
-        request_id=request_id,
-    ))
-    db.commit()
-
     return PredictResponse(
-        predicted_load_mw=round(pred, 2),
-        model_version=MODEL_VERSION,
-        region=req.region,
-        request_id=request_id,
-        latency_ms=round(latency_ms, 2),
+        building_id=payload.building_id,
+        timestamp=payload.timestamp,
+        predicted_kwh=round(kwh_pred, 3),
+        model_version=__version__,
+        latency_ms=timer.ms,
     )
 
 
-@app.post("/api/v1/batch-predict", response_model=BatchPredictResponse, tags=["Prediction"])
-async def batch_predict(req: BatchPredictRequest, db: Session = Depends(get_db)):
-    """Predict energy load for multiple time slots."""
-    model = _get_model()
-    t0 = time.monotonic()
-    results = []
+@app.post("/api/v1/anomaly", response_model=AnomalyResponse, tags=["Anomaly Detection"])
+def detect_anomaly(
+    payload: AnomalyRequest,
+    db: Session = Depends(get_db),
+) -> AnomalyResponse:
+    """Detect whether a consumption reading is anomalous."""
+    if _anomaly_bundle is None:
+        raise HTTPException(status_code=503, detail="Anomaly model not loaded. Run /api/v1/train first.")
 
-    for item in req.requests:
-        t1 = time.monotonic()
-        request_id = str(uuid.uuid4())
-        df = build_raw_feature_df(
-            hour=item.hour,
-            day_of_week=item.day_of_week,
-            month=item.month,
-            is_weekend=item.is_weekend,
-            temperature_c=item.temperature_c,
-            humidity_pct=item.humidity_pct,
-            historical_loads=item.historical_loads,
-            region=item.region,
+    with LatencyTimer() as timer:
+        row = make_feature_row(
+            hour=payload.hour,
+            day_of_week=payload.day_of_week,
+            month=payload.month,
+            temperature_c=payload.temperature_c,
+            humidity_pct=payload.humidity_pct,
+            occupancy=payload.occupancy,
+            hvac_state=payload.hvac_state,
+            consumption_kwh=payload.consumption_kwh,
         )
-        row = _engineer_features(df).values
-        pred = float(predict(model, row)[0])
-        pred = max(500.0, min(pred, 15000.0))
-        latency_ms = (time.monotonic() - t1) * 1000
-        get_tracker().record(pred, latency_ms)
-        db.add(PredictionLog(
-            predicted_load_mw=pred,
-            model_version=MODEL_VERSION,
-            region=item.region,
-            latency_ms=round(latency_ms, 2),
-            request_id=request_id,
-        ))
-        results.append(PredictResponse(
-            predicted_load_mw=round(pred, 2),
-            model_version=MODEL_VERSION,
-            region=item.region,
-            request_id=request_id,
-            latency_ms=round(latency_ms, 2),
-        ))
+        result = score_anomaly(_anomaly_bundle, row)
 
-    db.commit()
-    return BatchPredictResponse(
-        predictions=results,
-        total=len(results),
-        batch_latency_ms=round((time.monotonic() - t0) * 1000, 2),
+    log_anomaly(
+        db=db,
+        building_id=payload.building_id,
+        timestamp=payload.timestamp,
+        consumption_kwh=payload.consumption_kwh,
+        anomaly_score=result["anomaly_score"],
+        is_anomaly=result["is_anomaly"],
+        severity=result["severity"],
+    )
+    return AnomalyResponse(
+        building_id=payload.building_id,
+        timestamp=payload.timestamp,
+        consumption_kwh=payload.consumption_kwh,
+        anomaly_score=result["anomaly_score"],
+        is_anomaly=bool(result["is_anomaly"]),
+        severity=result["severity"],
+        latency_ms=timer.ms,
     )
 
 
-@app.get("/api/v1/drift", response_model=DriftResponse, tags=["Monitoring"])
-async def drift_report(db: Session = Depends(get_db)):
-    """Return KS-test drift detection report for recent predictions."""
-    tracker = get_tracker()
-    current_loads = tracker.loads
+@app.post("/api/v1/drift", response_model=DriftResponse, tags=["Monitoring"])
+def drift_check(payload: DriftRequest) -> DriftResponse:
+    """Run KS-test between reference and current consumption distributions."""
+    from app.monitoring import _reference_window
 
-    if len(current_loads) < 10:
-        return DriftResponse(
-            drifts=[],
-            summary={"message": "insufficient_predictions", "count": len(current_loads)},
-            model_version=MODEL_VERSION,
-        )
+    ref = payload.reference_values if payload.reference_values else _reference_window
+    if len(ref) < 10:
+        raise HTTPException(status_code=400, detail="Reference distribution has fewer than 10 samples.")
 
-    ref = _REFERENCE_LOADS[:500] if _REFERENCE_LOADS else current_loads[:200]
-    drift_result = compute_all_feature_drifts(
-        reference_df=_loads_to_df(ref),
-        current_df=_loads_to_df(current_loads[-200:]),
-        numeric_features=["load_mw"],
-    )
-
-    for d in drift_result:
-        db.add(DriftReport(
-            feature_name=d["feature"],
-            ks_statistic=d["ks_statistic"],
-            p_value=d["p_value"],
-            drift_detected=d["drift_detected"],
-            reference_window=len(ref),
-            current_window=min(len(current_loads), 200),
-            model_version=MODEL_VERSION,
-        ))
-    db.commit()
-
-    n_drifted = sum(1 for d in drift_result if d["drift_detected"])
+    result = compute_drift(ref, payload.current_values)
+    msg = "Drift detected — retraining recommended." if result["drift_detected"] else "No significant drift detected."
     return DriftResponse(
-        drifts=drift_result,
-        summary={
-            "total_features": len(drift_result),
-            "drifted": n_drifted,
-            "drift_pct": round(100 * n_drifted / max(len(drift_result), 1), 1),
-        },
-        model_version=MODEL_VERSION,
+        ks_statistic=result["ks_statistic"],
+        p_value=result["p_value"],
+        drift_detected=result["drift_detected"],
+        message=msg,
     )
 
 
-@app.get("/api/v1/forecast", response_model=ForecastResponse, tags=["Prediction"])
-async def forecast(req: ForecastRequest = Depends()):
-    """Generate a multi-hour load forecast."""
-    model = _get_model()
-    forecasts = []
-    for h in range(req.horizon_hours):
-        hour = (req.start_hour + h) % 24
-        dow = (req.day_of_week + (req.start_hour + h) // 24) % 7
-        df = build_raw_feature_df(
-            hour=hour,
-            day_of_week=dow,
-            month=req.month,
-            is_weekend=req.is_weekend,
-            temperature_c=req.temperature_c,
-            humidity_pct=req.humidity_pct,
-            region=req.region,
-        )
-        row = _engineer_features(df).values
-        pred = float(predict(model, row)[0])
-        pred = max(500.0, min(pred, 15000.0))
-        forecasts.append({"offset_hours": h, "hour": hour, "predicted_load_mw": round(pred, 2)})
-
-    return ForecastResponse(
-        region=req.region,
-        horizon_hours=req.horizon_hours,
-        forecasts=forecasts,
+@app.get("/api/v1/metrics", response_model=MetricsResponse, tags=["Monitoring"])
+def metrics(db: Session = Depends(get_db)) -> MetricsResponse:
+    """Return prediction counts, anomaly counts, drift events, and model metrics."""
+    stats = get_prediction_stats(db)
+    return MetricsResponse(
+        **stats,
+        model_metrics=get_metrics(),
     )
 
 
-@app.post("/api/v1/retrain", tags=["Administration"])
-async def retrain(db: Session = Depends(get_db)):
-    """Trigger model retraining on synthetic data (demo endpoint)."""
-    global _model
-    X, y = generate_synthetic_training_data(n_samples=3000)
-    _model, metrics = train_model(X.values, y.values)
-    db.add(RetrainingLog(
-        trigger="api",
-        samples_used=3000,
-        r2_after=metrics.get("r2_mean"),
-        rmse_after=metrics.get("rmse_mean"),
-        status="success",
-    ))
-    db.commit()
-    return {"status": "retrained", "metrics": metrics}
-
-
-def _engineer_features(df) -> pd.DataFrame:
-    """Apply the feature engineering steps inline for single-row inference."""
+@app.post("/api/v1/train", tags=["Training"])
+def train_endpoint(db: Session = Depends(get_db)) -> dict[str, Any]:
+    """Train both forecasting and anomaly models on synthetic seed data."""
+    global _model_bundle, _anomaly_bundle
     import numpy as np
-
-    from app.features import (
-        DropColumnsTransformer,
-        LagFeatureTransformer,
-        PeakPeriodEncoder,
-        RatioFeatureTransformer,
-        RollingStatsTransformer,
-        TemporalFeatureTransformer,
-    )
-
-    for step in [
-        LagFeatureTransformer(),
-        RollingStatsTransformer(),
-        TemporalFeatureTransformer(),
-        PeakPeriodEncoder(),
-        RatioFeatureTransformer(),
-        DropColumnsTransformer(),
-    ]:
-        df = step.fit_transform(df)
-
-    return df.select_dtypes(include=[np.number])
-
-
-def _loads_to_df(loads: list[float]) -> pd.DataFrame:
     import pandas as pd
-    return pd.DataFrame({"load_mw": loads})
+
+    from app.model import train_anomaly_model, train_model
+
+    rng = np.random.default_rng(42)
+    n = 2000
+    hours = rng.integers(0, 24, n)
+    dow = rng.integers(0, 7, n)
+    months = rng.integers(1, 13, n)
+    temp = rng.uniform(-5, 38, n)
+    hum = rng.uniform(20, 90, n)
+    occ = rng.integers(0, 200, n)
+    hvac = rng.integers(0, 2, n)
+    base = 10 + 0.3 * temp + 0.05 * occ + 5 * hvac
+    consumption = base + rng.normal(0, 2, n)
+    consumption = np.clip(consumption, 0, None)
+
+    df = pd.DataFrame(
+        {
+            "hour": hours,
+            "day_of_week": dow,
+            "month": months,
+            "temperature_c": temp,
+            "humidity_pct": hum,
+            "occupancy": occ,
+            "hvac_state": hvac,
+            "consumption_kwh": consumption,
+        }
+    )
+    y = pd.Series(consumption)
+
+    _model_bundle, metrics_out = train_model(df, y)
+    _anomaly_bundle = train_anomaly_model(df)
+    set_reference_window(consumption.tolist())
+    return {"status": "trained", "metrics": metrics_out}
 
 
-@app.post("/api/v1/analyze", tags=["Prediction"])
-async def analyze_load_series(loads: list[float]):
-    """Analyze a historical load series for trends, spikes, and seasonal patterns."""
-    from app.anomaly import quick_anomaly_check
-    from app.time_series import compute_trend, detect_load_spikes, seasonal_summary
-
-    if len(loads) < 10:
-        raise HTTPException(status_code=422, detail="Provide at least 10 load values")
-
-    trend = compute_trend(loads, window=min(24, len(loads) // 2))
-    spikes = detect_load_spikes(loads)
-    seasonal = seasonal_summary(loads, period=min(24, len(loads)))
-    ref = loads[: len(loads) // 2]
-    cur = loads[len(loads) // 2 :]
-    anomaly = quick_anomaly_check(ref, cur) if len(ref) >= 20 else {"skipped": "insufficient_reference"}
-
-    return {
-        "series_length": len(loads),
-        "trend": trend,
-        "spikes_detected": len(spikes),
-        "spike_details": spikes[:5],
-        "seasonal": seasonal,
-        "anomaly_check": anomaly,
-    }
-
-
-@app.post("/api/v1/similar-periods", tags=["Prediction"])
-async def find_similar_periods(profile: list[float]):
-    """Find historical load profiles similar to the given 24-hour pattern."""
-    from app.faiss_index import get_pattern_index
-
-    if len(profile) != 24:
-        raise HTTPException(status_code=422, detail="Profile must contain exactly 24 hourly values")
-
-    idx = get_pattern_index(dim=24)
-
-    if idx.size < 3:
-        X, y = generate_synthetic_training_data(n_samples=200)
-        hours = X["hour"].values
-        for day_start in range(0, min(len(hours) - 24, 50)):
-            chunk = y.values[day_start : day_start + 24].tolist()
-            idx.add(chunk, {"day_offset": day_start, "source": "synthetic"})
-
-    results = idx.search(profile, k=5)
-    return {"query_length": len(profile), "matches": results}
-
-
-@app.get("/api/v1/regions", tags=["System"])
-async def list_regions():
-    """List all supported grid regions."""
-    from app.regions import list_regions as _list
-    return {"regions": _list()}
-
-
-@app.get("/api/v1/regions/{region_id}", tags=["System"])
-async def get_region(region_id: str):
-    """Get metadata for a specific grid region."""
-    from app.regions import get_region as _get
-    region = _get(region_id)
-    if not region:
-        raise HTTPException(status_code=404, detail=f"Region '{region_id}' not found")
-    return {"id": region_id, **region}
+@app.post("/api/v1/predict/batch", tags=["Forecasting"])
+def predict_batch(
+    payloads: list[EnergyReadingIn],
+    db: Session = Depends(get_db),
+) -> list[PredictResponse]:
+    """Forecast energy consumption for multiple buildings in one request."""
+    if _model_bundle is None:
+        raise HTTPException(status_code=503, detail="Forecasting model not loaded.")
+    if len(payloads) > 100:
+        raise HTTPException(status_code=400, detail="Batch size exceeds 100.")
+    results = []
+    for payload in payloads:
+        with LatencyTimer() as timer:
+            row = make_feature_row(
+                hour=payload.hour,
+                day_of_week=payload.day_of_week,
+                month=payload.month,
+                temperature_c=payload.temperature_c,
+                humidity_pct=payload.humidity_pct,
+                occupancy=payload.occupancy,
+                hvac_state=payload.hvac_state,
+                consumption_kwh=payload.consumption_kwh,
+            )
+            kwh_pred = float(predict(_model_bundle, row)[0])
+        log_prediction(db=db, building_id=payload.building_id, timestamp=payload.timestamp, predicted_kwh=kwh_pred, latency_ms=timer.ms)
+        results.append(PredictResponse(building_id=payload.building_id, timestamp=payload.timestamp, predicted_kwh=round(kwh_pred, 3), model_version=__version__, latency_ms=timer.ms))
+    return results

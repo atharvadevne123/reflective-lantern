@@ -1,73 +1,56 @@
-"""Tests for Isolation Forest anomaly detection."""
+"""Extended anomaly analysis tests."""
 
 from __future__ import annotations
 
 import numpy as np
 import pytest
 
-from app.anomaly import fit_isolation_forest, quick_anomaly_check, score_loads
+from app.anomaly import compute_severity, iqr_flag, zscore_flag
 
 
-class TestFitIsolationForest:
-    def test_fits_successfully(self):
-        loads = np.random.default_rng(42).normal(3000, 200, 500).tolist()
-        model = fit_isolation_forest(loads)
-        assert model is not None
-
-    def test_model_has_predict(self):
-        loads = np.random.default_rng(42).normal(3000, 200, 200).tolist()
-        model = fit_isolation_forest(loads)
-        assert hasattr(model, "predict")
-
-    @pytest.mark.parametrize("contamination", [0.01, 0.05, 0.10])
-    def test_various_contamination(self, contamination):
-        loads = np.random.default_rng(0).normal(3000, 200, 300).tolist()
-        model = fit_isolation_forest(loads, contamination=contamination)
-        assert model is not None
+def test_zscore_normal():
+    assert not zscore_flag(10.0, mean=10.0, std=2.0, threshold=3.0)
 
 
-class TestScoreLoads:
-    def test_returns_list_of_dicts(self):
-        loads = np.random.default_rng(42).normal(3000, 200, 200).tolist()
-        model = fit_isolation_forest(loads)
-        results = score_loads(model, loads[:10])
-        assert len(results) == 10
-        assert all("is_anomaly" in r for r in results)
-        assert all("anomaly_score" in r for r in results)
-
-    def test_obvious_anomaly_flagged(self):
-        rng = np.random.default_rng(7)
-        loads = rng.normal(3000, 100, 300).tolist()
-        model = fit_isolation_forest(loads, contamination=0.05)
-        outliers = [99999.0, -5000.0]
-        results = score_loads(model, outliers)
-        assert any(r["is_anomaly"] for r in results)
-
-    def test_index_matches_input(self):
-        loads = [3000.0] * 100
-        model = fit_isolation_forest(loads)
-        results = score_loads(model, loads[:5])
-        for i, r in enumerate(results):
-            assert r["index"] == i
+def test_zscore_outlier():
+    assert zscore_flag(20.0, mean=10.0, std=1.0, threshold=3.0)
 
 
-class TestQuickAnomalyCheck:
-    def test_returns_summary_dict(self):
-        rng = np.random.default_rng(42)
-        ref = rng.normal(3000, 200, 200).tolist()
-        new = rng.normal(3000, 200, 20).tolist()
-        result = quick_anomaly_check(ref, new)
-        assert "anomalies_detected" in result
-        assert "anomaly_rate_pct" in result
-        assert result["total_checked"] == 20
+def test_zscore_zero_std():
+    assert not zscore_flag(5.0, mean=5.0, std=0.0)
 
     def test_insufficient_reference(self):
         result = quick_anomaly_check([3000.0] * 5, [3000.0, 9000.0])
         assert "error" in result
 
-    def test_high_anomaly_rate_for_outliers(self):
-        rng = np.random.default_rng(42)
-        ref = rng.normal(3000, 100, 300).tolist()
-        outliers = [99999.0] * 10
-        result = quick_anomaly_check(ref, outliers)
-        assert result["anomaly_rate_pct"] > 50
+def test_iqr_within_fence():
+    assert not iqr_flag(10.0, q1=8.0, q3=12.0)
+
+
+def test_iqr_outside_fence():
+    assert iqr_flag(30.0, q1=8.0, q3=12.0)
+
+
+def test_iqr_below_fence():
+    assert iqr_flag(-5.0, q1=8.0, q3=12.0)
+
+
+def test_compute_severity_none():
+    ref = list(np.random.default_rng(1).normal(10, 1, 200))
+    result = compute_severity(10.0, ref)
+    assert result["severity"] == "none"
+
+
+def test_compute_severity_critical():
+    ref = list(np.random.default_rng(1).normal(10, 1, 200))
+    result = compute_severity(100.0, ref)
+    assert result["severity"] == "critical"
+    assert result["z_flag"] is True
+    assert result["iqr_flag"] is True
+
+
+@pytest.mark.parametrize("value,expected", [(10.0, "none"), (100.0, "critical")])
+def test_compute_severity_parametrized(value, expected):
+    ref = list(np.random.default_rng(42).normal(10, 1, 100))
+    result = compute_severity(value, ref)
+    assert result["severity"] == expected

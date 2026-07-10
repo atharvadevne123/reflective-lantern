@@ -1,102 +1,77 @@
-"""Tests for database models and session management."""
+"""Database model tests."""
 
 from __future__ import annotations
 
-from app.database import DriftReport, EnergyReading, PredictionLog, RetrainingLog
+from datetime import datetime
+
+import pytest
+
+from app.database import AnomalyLog, DriftLog, EnergyReading, PredictionLog
 
 
-class TestEnergyReadingModel:
-    def test_create_energy_reading(self, db_session):
-        reading = EnergyReading(
-            load_mw=4500.0,
-            temperature_c=28.0,
-            humidity_pct=65.0,
-            hour=14,
-            day_of_week=2,
-            month=7,
-            is_weekend=False,
-            region="northeast",
+def test_energy_reading_insert(db_session):
+    r = EnergyReading(
+        building_id="bldg-db-test",
+        timestamp=datetime.utcnow(),
+        consumption_kwh=15.2,
+        temperature_c=22.0,
+        humidity_pct=55.0,
+        occupancy=30,
+        hvac_state=1,
+    )
+    db_session.add(r)
+    db_session.commit()
+    assert r.id is not None
+
+
+def test_prediction_log_insert(db_session):
+    p = PredictionLog(
+        building_id="bldg-db-test",
+        timestamp=datetime.utcnow(),
+        predicted_kwh=18.5,
+        latency_ms=12.3,
+    )
+    db_session.add(p)
+    db_session.commit()
+    assert p.id is not None
+    assert p.model_version == "1.0.0"
+
+
+def test_anomaly_log_insert(db_session):
+    a = AnomalyLog(
+        building_id="bldg-db-test",
+        timestamp=datetime.utcnow(),
+        consumption_kwh=99.0,
+        anomaly_score=-0.7,
+        is_anomaly=1,
+        severity="critical",
+    )
+    db_session.add(a)
+    db_session.commit()
+    assert a.id is not None
+
+
+def test_drift_log_insert(db_session):
+    d = DriftLog(
+        feature_name="consumption_kwh",
+        ks_statistic=0.42,
+        p_value=0.001,
+        drift_detected=1,
+    )
+    db_session.add(d)
+    db_session.commit()
+    assert d.id is not None
+
+
+def test_query_by_building_id(db_session):
+    for i in range(3):
+        db_session.add(
+            EnergyReading(
+                building_id="query-test-bldg",
+                timestamp=datetime.utcnow(),
+                consumption_kwh=10.0 + i,
+            )
         )
-        db_session.add(reading)
-        db_session.commit()
-        assert reading.id is not None
-
-    def test_energy_reading_defaults(self, db_session):
-        reading = EnergyReading(load_mw=3000.0, hour=8, day_of_week=0, month=3)
-        db_session.add(reading)
-        db_session.commit()
-        assert reading.region == "default"
-        assert reading.source == "api"
-
-    def test_multiple_readings(self, db_session):
-        for i in range(5):
-            db_session.add(EnergyReading(
-                load_mw=3000.0 + i * 100,
-                hour=i,
-                day_of_week=0,
-                month=1,
-            ))
-        db_session.commit()
-        count = db_session.query(EnergyReading).count()
-        assert count >= 5
-
-
-class TestPredictionLogModel:
-    def test_create_prediction_log(self, db_session):
-        log = PredictionLog(
-            predicted_load_mw=4200.0,
-            region="west",
-            latency_ms=12.5,
-            request_id="test-req-001",
-        )
-        db_session.add(log)
-        db_session.commit()
-        assert log.id is not None
-
-    def test_prediction_log_defaults(self, db_session):
-        log = PredictionLog(predicted_load_mw=3500.0)
-        db_session.add(log)
-        db_session.commit()
-        assert log.model_version == "1.0.0"
-        assert log.region == "default"
-
-
-class TestDriftReportModel:
-    def test_create_drift_report(self, db_session):
-        report = DriftReport(
-            feature_name="temperature_c",
-            ks_statistic=0.12,
-            p_value=0.04,
-            drift_detected=True,
-        )
-        db_session.add(report)
-        db_session.commit()
-        assert report.id is not None
-        assert report.drift_detected is True
-
-    def test_drift_report_defaults(self, db_session):
-        report = DriftReport(
-            feature_name="load_mw",
-            ks_statistic=0.05,
-            p_value=0.30,
-            drift_detected=False,
-        )
-        db_session.add(report)
-        db_session.commit()
-        assert report.reference_window == 1000
-        assert report.current_window == 200
-
-
-class TestRetrainingLogModel:
-    def test_create_retraining_log(self, db_session):
-        log = RetrainingLog(
-            trigger="drift_alert",
-            samples_used=2000,
-            r2_after=0.87,
-            rmse_after=250.5,
-            status="success",
-        )
-        db_session.add(log)
-        db_session.commit()
-        assert log.id is not None
-        assert log.status == "success"
+    db_session.commit()
+    rows = db_session.query(EnergyReading).filter(EnergyReading.building_id == "query-test-bldg").all()
+    assert len(rows) >= 3

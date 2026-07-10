@@ -1,4 +1,4 @@
-"""Time-series load trend analysis and seasonal decomposition."""
+"""Time-series forecasting utilities: trend decomposition and seasonal baselines."""
 
 from __future__ import annotations
 
@@ -9,16 +9,19 @@ import numpy as np
 logger = logging.getLogger(__name__)
 
 
-def compute_trend(
-    loads: list[float],
-    window: int = 24,
-) -> dict:
-    """Compute simple moving average trend and slope for a load series."""
-    if len(loads) < window:
-        return {"trend": None, "slope": None, "direction": "unknown"}
+def simple_moving_average(values: list[float], window: int) -> list[float]:
+    """Compute a simple moving average over *window* periods.
 
-    arr = np.array(loads, dtype=float)
-    sma = np.convolve(arr, np.ones(window) / window, mode="valid")
+    Args:
+        values: Time-ordered consumption readings.
+        window: Number of periods in the rolling window.
+
+    Returns:
+        Smoothed series of the same length (leading values use partial windows).
+    """
+    arr = np.array(values, dtype=float)
+    result = np.convolve(arr, np.ones(window) / window, mode="full")[: len(arr)]
+    return result.tolist()
 
     if len(sma) >= 2:
         slope = float(np.polyfit(np.arange(len(sma)), sma, 1)[0])
@@ -27,58 +30,60 @@ def compute_trend(
         slope = 0.0
         direction = "stable"
 
-    return {
-        "sma_last": round(float(sma[-1]), 2) if len(sma) > 0 else None,
-        "slope_mw_per_hour": round(slope, 3),
-        "direction": direction,
-        "window_size": window,
-        "series_length": len(loads),
-    }
+def seasonal_baseline(values: list[float], period: int = 24) -> list[float]:
+    """Compute a seasonal baseline by averaging each position modulo *period*.
+
+    Args:
+        values: Time-ordered readings (e.g. hourly).
+        period: Seasonality length (default 24 for hourly data).
+
+    Returns:
+        Seasonal baseline the same length as *values*.
+    """
+    arr = np.array(values, dtype=float)
+    n = len(arr)
+    bucket_means = np.zeros(period)
+    counts = np.zeros(period)
+    for i, v in enumerate(arr):
+        bucket_means[i % period] += v
+        counts[i % period] += 1
+    with np.errstate(invalid="ignore"):
+        bucket_means = np.where(counts > 0, bucket_means / counts, 0.0)
+    return [float(bucket_means[i % period]) for i in range(n)]
 
 
-def detect_load_spikes(
-    loads: list[float],
-    z_threshold: float = 3.0,
-) -> list[dict]:
-    """Detect load spikes using Z-score method."""
-    if len(loads) < 10:
+def forecast_linear_trend(values: list[float], horizon: int = 24) -> list[float]:
+    """Fit a linear trend and extrapolate *horizon* steps ahead.
+
+    Args:
+        values: Historical readings.
+        horizon: Number of future steps to forecast.
+
+    Returns:
+        List of *horizon* forecasted values.
+    """
+    arr = np.array(values, dtype=float)
+    x = np.arange(len(arr))
+    slope, intercept = np.polyfit(x, arr, 1)
+    future_x = np.arange(len(arr), len(arr) + horizon)
+    forecasted = slope * future_x + intercept
+    logger.debug("Linear trend: slope=%.4f intercept=%.4f horizon=%d", slope, intercept, horizon)
+    return forecasted.tolist()
+
+
+def detect_spikes(values: list[float], z_threshold: float = 3.0) -> list[int]:
+    """Return indices where consumption deviates more than *z_threshold* standard deviations.
+
+    Args:
+        values: Time-ordered readings.
+        z_threshold: Number of standard deviations to flag as a spike.
+
+    Returns:
+        List of spike indices.
+    """
+    arr = np.array(values, dtype=float)
+    mean, std = arr.mean(), arr.std()
+    if std < 1e-9:
         return []
-
-    arr = np.array(loads, dtype=float)
-    mean = arr.mean()
-    std = arr.std()
-    if std == 0:
-        return []
-
     z_scores = np.abs((arr - mean) / std)
-    spikes = [
-        {
-            "index": int(i),
-            "load_mw": round(float(arr[i]), 2),
-            "z_score": round(float(z_scores[i]), 3),
-            "deviation_mw": round(float(arr[i] - mean), 2),
-        }
-        for i in np.where(z_scores > z_threshold)[0]
-    ]
-    return spikes
-
-
-def seasonal_summary(
-    loads: list[float],
-    period: int = 24,
-) -> dict:
-    """Compute per-period mean to approximate seasonal pattern."""
-    if len(loads) < period:
-        return {"period": period, "seasonal_means": []}
-
-    arr = np.array(loads, dtype=float)
-    n_complete = (len(arr) // period) * period
-    matrix = arr[:n_complete].reshape(-1, period)
-    seasonal_means = matrix.mean(axis=0).tolist()
-
-    return {
-        "period": period,
-        "seasonal_means": [round(v, 2) for v in seasonal_means],
-        "peak_period_index": int(np.argmax(seasonal_means)),
-        "trough_period_index": int(np.argmin(seasonal_means)),
-    }
+    return [int(i) for i in np.where(z_scores > z_threshold)[0]]

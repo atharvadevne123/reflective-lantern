@@ -6,29 +6,29 @@ services:
     ports:
       - "8000:8000"
     environment:
-      - DATABASE_URL=postgresql://voltcast:voltcast@db:5432/voltcast
-      - MODEL_PATH=/app/volt_cast_model.joblib
-      - METRICS_PATH=/app/volt_cast_metrics.json
+      - DATABASE_URL=postgresql://wattguard:wattguard@db:5432/wattguard
+      - MODEL_PATH=/app/model.joblib
+      - ANOMALY_MODEL_PATH=/app/anomaly_model.joblib
     depends_on:
       db:
         condition: service_healthy
-    restart: unless-stopped
     volumes:
-      - model_data:/app/models
+      - model_data:/app
+    restart: unless-stopped
 
   db:
     image: postgres:15-alpine
     environment:
-      POSTGRES_USER: voltcast
-      POSTGRES_PASSWORD: voltcast
-      POSTGRES_DB: voltcast
+      POSTGRES_USER: wattguard
+      POSTGRES_PASSWORD: wattguard
+      POSTGRES_DB: wattguard
     ports:
       - "5432:5432"
     volumes:
       - pg_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U voltcast"]
-      interval: 10s
+      test: ["CMD-SHELL", "pg_isready -U wattguard"]
+      interval: 5s
       timeout: 5s
       retries: 5
 

@@ -2,30 +2,21 @@ name: Volt-Cast CI
 
 on:
   push:
-    branches: ["main", "innovation/*"]
+    branches: ["**"]
   pull_request:
-    branches: ["main"]
+    branches: [main]
 
 jobs:
   lint-and-test:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        python-version: ["3.11"]
-
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up Python ${{ matrix.python-version }}
+      - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: ${{ matrix.python-version }}
-
-      - name: Cache pip
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt') }}
+          python-version: "3.11"
+          cache: pip
 
       - name: Install dependencies
         run: pip install -r requirements.txt
@@ -36,9 +27,16 @@ jobs:
       - name: Ruff format check
         run: ruff format --check .
 
-      - name: Run pytest
+      - name: Run tests
         run: pytest tests/ -v --tb=short 2>&1 | tail -60
 
       - name: Upload coverage
         if: always()
-        run: echo "Coverage step placeholder"
+        run: |
+          pip install pytest-cov -q
+          pytest tests/ --cov=app --cov-report=term-missing 2>&1 | tail -30
+
+      - name: Type check
+        run: |
+          pip install mypy -q
+          mypy app/ --ignore-missing-imports --no-strict-optional 2>&1 | tail -10 || true

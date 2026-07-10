@@ -1,91 +1,96 @@
-"""Pydantic request/response schemas for the Volt-Cast API."""
+"""Pydantic request/response schemas."""
 
 from __future__ import annotations
+
+from datetime import datetime
+from typing import Any
 
 from pydantic import BaseModel, Field, field_validator
 
 
-class PredictRequest(BaseModel):
-    hour: int = Field(..., ge=0, le=23, description="Hour of day (0-23)")
-    day_of_week: int = Field(..., ge=0, le=6, description="Day of week (0=Mon, 6=Sun)")
-    month: int = Field(..., ge=1, le=12, description="Month (1-12)")
-    is_weekend: bool = Field(default=False, description="Whether the day is weekend")
-    temperature_c: float = Field(..., ge=-30.0, le=55.0, description="Temperature in Celsius")
-    humidity_pct: float = Field(..., ge=0.0, le=100.0, description="Relative humidity (0-100)")
-    historical_loads: list[float] | None = Field(
-        default=None,
-        description="Recent historical load values in MW (most recent last)",
-    )
-    region: str = Field(default="default", max_length=64, description="Grid region identifier")
+class EnergyReadingIn(BaseModel):
+    """Input schema for a single energy reading."""
 
-    @field_validator("historical_loads")
+    building_id: str = Field(..., min_length=1, max_length=64, description="Unique building identifier")
+    timestamp: datetime = Field(..., description="Reading timestamp (ISO-8601)")
+    hour: int = Field(..., ge=0, le=23, description="Hour of day 0-23")
+    day_of_week: int = Field(..., ge=0, le=6, description="Day of week 0=Mon 6=Sun")
+    month: int = Field(..., ge=1, le=12, description="Month 1-12")
+    temperature_c: float = Field(..., ge=-40.0, le=60.0, description="Outside temperature in Celsius")
+    humidity_pct: float = Field(..., ge=0.0, le=100.0, description="Relative humidity 0-100")
+    occupancy: int = Field(..., ge=0, le=10000, description="Number of occupants")
+    hvac_state: int = Field(..., ge=0, le=1, description="HVAC on=1 off=0")
+    consumption_kwh: float = Field(0.0, ge=0.0, description="Current consumption (used for lag features)")
+
+    @field_validator("building_id")
     @classmethod
-    def validate_loads(cls, v: list[float] | None) -> list[float] | None:
-        if v is not None:
-            if len(v) > 1000:
-                raise ValueError("historical_loads must not exceed 1000 entries")
-            if any(x < 0 or x > 50000 for x in v):
-                raise ValueError("load values must be between 0 and 50000 MW")
+    def building_id_alphanumeric(cls, v: str) -> str:
+        if not v.replace("-", "").replace("_", "").isalnum():
+            raise ValueError("building_id must be alphanumeric with hyphens/underscores only")
         return v
 
 
 class PredictResponse(BaseModel):
-    predicted_load_mw: float
+    building_id: str
+    timestamp: datetime
+    predicted_kwh: float
     model_version: str
-    region: str
-    request_id: str
     latency_ms: float
 
 
-class BatchPredictRequest(BaseModel):
-    requests: list[PredictRequest] = Field(..., min_length=1, max_length=100)
+class AnomalyRequest(BaseModel):
+    """Input for anomaly detection."""
 
-
-class BatchPredictResponse(BaseModel):
-    predictions: list[PredictResponse]
-    total: int
-    batch_latency_ms: float
-
-
-class ForecastRequest(BaseModel):
-    start_hour: int = Field(..., ge=0, le=23)
+    building_id: str = Field(..., min_length=1, max_length=64)
+    timestamp: datetime
+    consumption_kwh: float = Field(..., ge=0.0)
+    hour: int = Field(..., ge=0, le=23)
     day_of_week: int = Field(..., ge=0, le=6)
     month: int = Field(..., ge=1, le=12)
-    is_weekend: bool = False
-    temperature_c: float = Field(default=20.0, ge=-30.0, le=55.0)
-    humidity_pct: float = Field(default=60.0, ge=0.0, le=100.0)
-    horizon_hours: int = Field(default=24, ge=1, le=168)
-    region: str = Field(default="default", max_length=64)
+    temperature_c: float = Field(20.0, ge=-40.0, le=60.0)
+    humidity_pct: float = Field(50.0, ge=0.0, le=100.0)
+    occupancy: int = Field(0, ge=0, le=10000)
+    hvac_state: int = Field(0, ge=0, le=1)
 
 
-class ForecastResponse(BaseModel):
-    region: str
-    horizon_hours: int
-    forecasts: list[dict]
+class AnomalyResponse(BaseModel):
+    building_id: str
+    timestamp: datetime
+    consumption_kwh: float
+    anomaly_score: float
+    is_anomaly: bool
+    severity: str
+    latency_ms: float
 
 
-class HealthResponse(BaseModel):
-    status: str
-    model_loaded: bool
-    model_version: str
-    prediction_count: int
-    uptime_seconds: float
-
-
-class MetricsResponse(BaseModel):
-    r2_mean: float | None
-    r2_std: float | None
-    rmse_mean: float | None
-    rmse_std: float | None
-    n_samples: int | None
-    n_features: int | None
-    model_version: str
-    prediction_count: int
-    recent_latency_p50_ms: float | None
-    recent_latency_p95_ms: float | None
+class DriftRequest(BaseModel):
+    current_values: list[float] = Field(..., min_length=10, description="Current window of consumption readings")
+    reference_values: list[float] | None = Field(None, description="Reference distribution (uses global if omitted)")
 
 
 class DriftResponse(BaseModel):
-    drifts: list[dict]
-    summary: dict
-    model_version: str
+    ks_statistic: float
+    p_value: float
+    drift_detected: bool
+    message: str
+
+
+class HealthResponse(BaseModel):
+    """API health check response."""
+    status: str
+    model_loaded: bool
+    anomaly_model_loaded: bool
+    version: str
+
+
+class MetricsResponse(BaseModel):
+    """Aggregated monitoring metrics response."""
+    total_predictions: int
+    total_anomalies_flagged: int
+    total_drift_events: int
+    reference_window_size: int
+    model_metrics: dict[str, Any]
+
+
+class BatchPredictRequest(BaseModel):
+    readings: list[EnergyReadingIn] = Field(..., min_length=1, max_length=100)

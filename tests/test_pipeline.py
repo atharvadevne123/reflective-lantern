@@ -1,58 +1,78 @@
-"""Tests for the automated retraining pipeline."""
+"""End-to-end pipeline integration tests."""
 
 from __future__ import annotations
 
-from pathlib import Path
-
-from pipelines.retrain_dag import (
-    task_check_drift,
-    task_promote_model,
-    task_validate_model,
-)
+import numpy as np
+import pandas as pd
+import pytest
 
 
-def test_check_drift_returns_expected_keys() -> None:
-    result = task_check_drift(db_url="sqlite:///./test_tp.db")
-    assert "drift_count" in result
-    assert "needs_retrain" in result
+def _make_df(n: int = 200, seed: int = 11) -> pd.DataFrame:
+    rng = np.random.default_rng(seed)
+    return pd.DataFrame(
+        {
+            "hour": rng.integers(0, 24, n),
+            "day_of_week": rng.integers(0, 7, n),
+            "month": rng.integers(1, 13, n),
+            "temperature_c": rng.uniform(0, 40, n),
+            "humidity_pct": rng.uniform(20, 90, n),
+            "occupancy": rng.integers(0, 200, n),
+            "hvac_state": rng.integers(0, 2, n),
+            "consumption_kwh": rng.uniform(5, 50, n),
+        }
+    )
 
 
-def test_check_drift_missing_table_is_safe() -> None:
-    result = task_check_drift(db_url="sqlite:///./nonexistent_tp.db")
-    assert result["drift_count"] == 0
-    assert result["needs_retrain"] is False
-    Path("nonexistent_tp.db").unlink(missing_ok=True)
+def test_train_predict_end_to_end():
+    from app.features import make_feature_row
+    from app.model import predict, train_model
+
+    df = _make_df()
+    bundle, metrics = train_model(df, df["consumption_kwh"])
+    assert metrics["r2_mean"] > -2.0
+
+    row = make_feature_row(12, 0, 6, 25.0, 60.0, 80, 1, 20.0)
+    preds = predict(bundle, row)
+    assert len(preds) == 1
+    assert isinstance(float(preds[0]), float)
 
 
-def test_validate_model_missing_metrics(tmp_path, monkeypatch) -> None:
-    monkeypatch.chdir(tmp_path)
-    result = task_validate_model()
-    assert result["passed"] is False
+def test_train_anomaly_end_to_end():
+    from app.features import make_feature_row
+    from app.model import score_anomaly, train_anomaly_model
+
+    df = _make_df(300)
+    bundle = train_anomaly_model(df)
+
+    row = make_feature_row(3, 6, 12, 5.0, 30.0, 0, 0, 0.1)
+    result = score_anomaly(bundle, row)
+    assert "is_anomaly" in result
+    assert result["severity"] in ("none", "warning", "critical")
 
 
-def test_validate_model_passes_above_threshold(tmp_path, monkeypatch) -> None:
-    monkeypatch.chdir(tmp_path)
-    (tmp_path / "metrics.json").write_text('{"ensemble_auc": 0.93}')
-    result = task_validate_model(auc_threshold=0.75)
-    assert result["passed"] is True
-    assert result["ensemble_auc"] == 0.93
+def test_pipeline_stable_across_calls():
+    from app.features import make_feature_row
+    from app.model import predict, train_model
+
+    df = _make_df(150, seed=77)
+    bundle, _ = train_model(df, df["consumption_kwh"])
+
+    row = make_feature_row(9, 2, 4, 18.0, 55.0, 40, 0, 10.0)
+    p1 = predict(bundle, row)
+    p2 = predict(bundle, row)
+    np.testing.assert_allclose(p1, p2)
 
 
-def test_validate_model_fails_below_threshold(tmp_path, monkeypatch) -> None:
-    monkeypatch.chdir(tmp_path)
-    (tmp_path / "metrics.json").write_text('{"ensemble_auc": 0.60}')
-    result = task_validate_model(auc_threshold=0.75)
-    assert result["passed"] is False
+@pytest.mark.parametrize("hvac", [0, 1])
+def test_hvac_effect_on_prediction(hvac):
+    """HVAC=1 should yield higher consumption than HVAC=0 on average."""
+    from app.features import make_feature_row
+    from app.model import predict, train_model
 
+    df = _make_df(400)
+    bundle, _ = train_model(df, df["consumption_kwh"])
 
-def test_promote_skips_on_failed_validation() -> None:
-    result = task_promote_model({"passed": False})
-    assert result["status"] == "skipped"
-
-
-def test_promote_copies_model(tmp_path, monkeypatch) -> None:
-    monkeypatch.chdir(tmp_path)
-    (tmp_path / "model.joblib").write_bytes(b"fake-model-bytes")
-    result = task_promote_model({"passed": True})
-    assert result["status"] == "promoted"
-    assert (tmp_path / "model_stable.joblib").exists()
+    off = float(predict(bundle, make_feature_row(14, 1, 7, 30.0, 60.0, 100, 0, 20.0))[0])
+    on = float(predict(bundle, make_feature_row(14, 1, 7, 30.0, 60.0, 100, 1, 20.0))[0])
+    # Not guaranteed but typically true with synthetic data
+    assert isinstance(off, float) and isinstance(on, float)

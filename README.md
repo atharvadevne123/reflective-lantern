@@ -1,198 +1,131 @@
-# Volt-Cast ⚡
+# Watt-Guard ⚡
 
-[![CI](https://github.com/atharvadevne123/reflective-lantern/actions/workflows/ci.yml/badge.svg)](https://github.com/atharvadevne123/reflective-lantern/actions/workflows/ci.yml)
-[![Python 3.11](https://img.shields.io/badge/python-3.11-blue.svg)](https://www.python.org/downloads/)
-[![FastAPI](https://img.shields.io/badge/FastAPI-0.111-green)](https://fastapi.tiangolo.com)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+> Smart building and industrial energy consumption forecasting and anomaly detection API.
 
-> **Electricity consumption and grid load prediction API** using XGBoost-LightGBM-RandomForest VotingRegressor ensemble with KS-test drift monitoring, automated weekly retraining, and production-grade smart energy management.
-
----
+[![CI](https://github.com/atharvadevne123/reflective-lantern/actions/workflows/ci.yml/badge.svg)](https://github.com/atharvadevne123/reflective-lantern/actions)
+[![Coverage](https://img.shields.io/badge/tests-59%20passed-brightgreen)](tests/)
+[![Python 3.11](https://img.shields.io/badge/python-3.11-blue.svg)](https://python.org)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.111-009688.svg)](https://fastapi.tiangolo.com)
 
 ## Overview
 
-Volt-Cast is a production-quality ML API for **smart grid energy load forecasting**. It takes temporal and environmental features (hour, day, temperature, humidity, historical loads) and predicts electricity demand in megawatts for a given time slot.
-
-### Key Features
-
-- **Ensemble Model**: XGBoost + LightGBM + RandomForest `VotingRegressor` with 5-fold cross-validation
-- **6-Stage Feature Pipeline**: Lag (1h/24h/168h), Rolling stats, Temporal cyclical, Peak period encoding, Heat index ratios, Drop + StandardScaler
-- **KS-Test Drift Detection**: Kolmogorov-Smirnov test across prediction distribution windows
-- **7 REST Endpoints**: `/predict`, `/batch-predict`, `/forecast`, `/drift`, `/retrain`, `/health`, `/metrics`
-- **Automated Retraining**: Airflow DAG scheduled weekly with R² gate (≥0.60)
-- **Production Infra**: Docker + PostgreSQL + SQLAlchemy ORM + Alembic migrations
-- **Rate Limiting**: 200 req/min per IP with correlation ID middleware
-
----
+Watt-Guard provides production-grade energy consumption forecasting and anomaly detection for smart buildings and industrial facilities. It uses an XGBoost + LightGBM + RandomForest voting ensemble trained on occupancy-aware, weather-correlated features with automated weekly retraining and KS-test drift monitoring.
 
 ## Architecture
 
-![Architecture Diagram](screenshots/architecture.png)
+![Architecture](screenshots/architecture.png)
 
----
+## Tech Stack
 
-## Quick Start
+| Layer | Technology |
+|---|---|
+| API | FastAPI + Uvicorn |
+| ML Models | XGBoost, LightGBM, RandomForest (VotingRegressor) |
+| Anomaly Detection | IsolationForest |
+| Feature Pipeline | sklearn Pipeline (7 stages, 30+ features) |
+| Drift Monitoring | KS-test (scipy) |
+| Database | SQLite (dev) / PostgreSQL (prod) via SQLAlchemy |
+| Retraining | Airflow weekly DAG |
+| Containerisation | Docker + docker-compose |
+| Testing | pytest (50+ tests) |
+| CI | GitHub Actions (ruff + pytest) |
 
-### Local Development
+## Quickstart
 
 ```bash
-# Install dependencies
+# Clone
+git clone https://github.com/atharvadevne123/reflective-lantern
+cd reflective-lantern && git checkout innovation/watt-guard
+
+# Install
 pip install -r requirements.txt
 
-# Run the API
+# Run
 uvicorn app.main:app --reload
-
-# Test
-pytest tests/ -v
 ```
 
-### Docker
+Or with Docker:
 
 ```bash
-cp .env.example .env
 docker-compose up --build
 ```
-
-The API will be available at `http://localhost:8000`. Interactive docs at `http://localhost:8000/docs`.
-
----
 
 ## API Reference
 
 ### POST `/api/v1/predict`
-
-Predict energy load for a single time slot.
+Forecast energy consumption for a building.
 
 ```json
 {
+  "building_id": "bldg-001",
+  "timestamp": "2025-06-01T14:00:00",
   "hour": 14,
-  "day_of_week": 2,
-  "month": 7,
-  "is_weekend": false,
+  "day_of_week": 1,
+  "month": 6,
   "temperature_c": 28.5,
-  "humidity_pct": 65.0,
-  "historical_loads": [3500.0, 3600.0, 3800.0, 4000.0],
-  "region": "northeast"
+  "humidity_pct": 60.0,
+  "occupancy": 50,
+  "hvac_state": 1,
+  "consumption_kwh": 12.0
 }
 ```
 
-**Response:**
-```json
-{
-  "predicted_load_mw": 4312.75,
-  "model_version": "1.0.0",
-  "region": "northeast",
-  "request_id": "550e8400-e29b-41d4-a716-446655440000",
-  "latency_ms": 8.4
-}
-```
+### POST `/api/v1/anomaly`
+Detect anomalous consumption readings.
 
-### POST `/api/v1/batch-predict`
-
-Predict for multiple time slots (up to 100).
-
-### GET `/api/v1/forecast?start_hour=8&day_of_week=0&month=6&horizon_hours=24`
-
-Multi-hour load forecast for grid planning.
-
-### GET `/api/v1/drift`
-
-KS-test drift report for the recent prediction distribution.
+### POST `/api/v1/drift`
+KS-test between reference and current distributions.
 
 ### GET `/api/v1/metrics`
-
-Model performance metrics: R², RMSE, prediction count, P50/P95 latency.
-
-
-### POST `/api/v1/analyze`
-
-Analyze a historical load series for trends, spikes, and seasonal patterns.
-
-### GET `/api/v1/similar-periods`
-
-Find the 5 most similar 24-hour load profiles using FAISS pattern matching.
-
-### GET `/api/v1/regions` / `/api/v1/regions/{region_id}`
-
-List and query supported grid regions (northeast, midwest, south, west, texas).
-### POST `/api/v1/retrain`
-
-Trigger model retraining on fresh data.
+Prediction counts, anomaly counts, drift events, model R2/MAE.
 
 ### GET `/api/v1/health`
+API liveness and model load status.
 
-Health check with model load status and uptime.
-
----
+### POST `/api/v1/train`
+Train both models on synthetic seed data (for demo/CI).
 
 ## Feature Engineering
 
-| Stage | Transformer | Features Added |
-|-------|-------------|----------------|
-| 1 | `LagFeatureTransformer` | `lag_1h`, `lag_24h`, `lag_168h` |
-| 2 | `RollingStatsTransformer` | `rolling_mean_3h`, `rolling_std_3h`, `rolling_mean_24h`, `rolling_std_24h` |
-| 3 | `TemporalFeatureTransformer` | `hour_sin`, `hour_cos`, `dow_sin`, `dow_cos`, `month_sin`, `month_cos` |
-| 4 | `PeakPeriodEncoder` | `is_peak_hour`, `is_morning_peak`, `is_evening_peak`, `is_weekday_peak` |
-| 5 | `RatioFeatureTransformer` | `heat_index`, `cooling_demand_proxy`, `heating_demand_proxy`, `load_ratio_vs_daily_mean` |
-| 6 | `StandardScaler` | Normalized numeric features |
+The 7-stage sklearn Pipeline computes:
+- **Temporal**: hour/day/month cyclic sin-cos, is_weekend, is_business_hour
+- **Lag**: 1h, 2h, 3h, 6h, 12h, 24h, 168h consumption lags
+- **Rolling**: mean/std/min/max over 3h, 6h, 24h windows
+- **Weather**: heat index, cooling/heating degree-hours, temp-humidity ratio
+- **Occupancy**: occ×HVAC load proxy, log-occupancy density
+- **DropNonNumeric**: removes non-numeric columns before scaling
+- **StandardScaler**: zero-mean unit-variance normalisation
 
----
+## Model Monitoring
 
-## Project Structure
+Every prediction is logged to `prediction_logs`. Drift is checked via KS-test between a reference window (last 500 readings after training) and the current window. Anomaly scores from IsolationForest are logged to `anomaly_logs`.
 
+## Retraining
+
+The Airflow DAG `watt_guard_weekly_retrain` runs every Sunday. It fetches recent data, validates row count ≥ 500, retrains the model, gates on R2 ≥ 0.70, and deploys the new artefact.
+
+## Testing
+
+```bash
+pytest tests/ -v
 ```
-volt-cast/
-├── app/
-│   ├── __init__.py         # Package init
-│   ├── database.py         # SQLAlchemy models
-│   ├── features.py         # 6-stage feature pipeline
-│   ├── main.py             # FastAPI app (7 endpoints)
-│   ├── middleware.py       # Rate limiting + correlation ID
-│   ├── model.py            # Ensemble training & prediction
-│   ├── monitoring.py       # KS-drift detection
-│   └── schemas.py          # Pydantic request/response models
-├── pipelines/
-│   └── retrain_dag.py      # Airflow weekly retraining DAG
-├── tests/
-│   ├── conftest.py         # Pytest fixtures
-│   ├── test_api.py         # API endpoint tests
-│   ├── test_database.py    # ORM model tests
-│   ├── test_features.py    # Feature pipeline tests
-│   ├── test_model.py       # Model training tests
-│   └── test_monitoring.py  # Drift detection tests
-├── scripts/
-│   └── generate_diagram.py # Architecture diagram
-├── screenshots/
-│   └── architecture.png    # System architecture diagram
-├── .github/workflows/ci.yml
-├── Dockerfile
-├── docker-compose.yml
-├── requirements.txt
-├── pyproject.toml
-├── Makefile
-└── .env.example
-```
-
----
-
-## Tech Stack
-
-| Category | Technology |
-|----------|-----------|
-| Language | Python 3.11 |
-| API Framework | FastAPI 0.111+ |
-| ML Models | XGBoost, LightGBM, RandomForest |
-| Ensemble | `VotingRegressor` (scikit-learn) |
-| Feature Engineering | Custom sklearn Transformers |
-| Drift Detection | KS-test (scipy.stats) |
-| Database | SQLAlchemy ORM + PostgreSQL (prod) / SQLite (dev) |
-| Pipeline Orchestration | Apache Airflow |
-| Containerization | Docker + docker-compose |
-| Testing | pytest with parametrized test cases |
-| CI/CD | GitHub Actions (ruff lint + pytest) |
-
----
 
 ## License
 
-MIT License — see [LICENSE](LICENSE) for details.
+MIT
+
+## API Versioning
+
+All endpoints are prefixed with `/api/v1/`. Future breaking changes will introduce `/api/v2/` while keeping v1 operational for 6 months.
+
+## Monitoring Dashboard
+
+`GET /api/v1/metrics` returns:
+- `total_predictions`: Total forecasts served
+- `total_anomalies_flagged`: Anomalies detected by IsolationForest
+- `total_drift_events`: KS-test drift events logged
+- `model_metrics`: Latest training R2 and MAE
+
+## Rate Limiting
+
+200 requests per minute per IP. Exceeding this returns HTTP 429.

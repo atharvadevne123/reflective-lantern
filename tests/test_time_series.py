@@ -1,84 +1,32 @@
-"""Tests for time-series analysis utilities."""
+"""Time-series forecasting utility tests."""
 
 from __future__ import annotations
 
+import numpy as np
 import pytest
 
-from app.time_series import compute_trend, detect_load_spikes, seasonal_summary
+from app.time_series import (
+    detect_spikes,
+    forecast_linear_trend,
+    seasonal_baseline,
+    simple_moving_average,
+)
 
 
-class TestComputeTrend:
-    def test_increasing_trend(self):
-        loads = [float(1000 + i * 50) for i in range(50)]
-        result = compute_trend(loads, window=10)
-        assert result["direction"] == "increasing"
-        assert result["slope_mw_per_hour"] > 0
-
-    def test_decreasing_trend(self):
-        loads = [float(5000 - i * 50) for i in range(50)]
-        result = compute_trend(loads, window=10)
-        assert result["direction"] == "decreasing"
-
-    def test_stable_trend(self):
-        loads = [3000.0] * 48
-        result = compute_trend(loads, window=24)
-        assert result["direction"] == "stable"
-        assert result["slope_mw_per_hour"] == pytest.approx(0.0, abs=1.0)
-
-    def test_insufficient_data(self):
-        result = compute_trend([3000.0, 3100.0], window=24)
-        assert result["direction"] == "unknown"
-        assert result["trend"] is None
-
-    def test_returns_expected_keys(self):
-        loads = [3000.0 + i for i in range(30)]
-        result = compute_trend(loads, window=10)
-        assert "sma_last" in result
-        assert "slope_mw_per_hour" in result
-        assert "direction" in result
-
-    @pytest.mark.parametrize("window", [6, 12, 24])
-    def test_various_window_sizes(self, window):
-        loads = [3000.0 + i * 10 for i in range(60)]
-        result = compute_trend(loads, window=window)
-        assert result["window_size"] == window
-        assert result["sma_last"] is not None
+def test_sma_length():
+    result = simple_moving_average([1.0] * 10, window=3)
+    assert len(result) == 10
 
 
-class TestDetectLoadSpikes:
-    def test_detects_obvious_spike(self):
-        loads = [3000.0] * 50 + [9999.0] + [3000.0] * 50
-        spikes = detect_load_spikes(loads)
-        assert len(spikes) >= 1
-        assert any(s["index"] == 50 for s in spikes)
-
-    def test_no_spikes_uniform(self):
-        loads = [3000.0] * 100
-        spikes = detect_load_spikes(loads)
-        assert len(spikes) == 0
-
-    def test_returns_expected_keys(self):
-        loads = [3000.0] * 50 + [9000.0] + [3000.0] * 50
-        spikes = detect_load_spikes(loads)
-        if spikes:
-            assert "index" in spikes[0]
-            assert "load_mw" in spikes[0]
-            assert "z_score" in spikes[0]
-            assert "deviation_mw" in spikes[0]
-
-    def test_insufficient_data(self):
-        spikes = detect_load_spikes([3000.0, 3100.0])
-        assert spikes == []
+def test_sma_flat_series():
+    result = simple_moving_average([5.0] * 20, window=5)
+    assert all(abs(v - 5.0) < 0.1 for v in result[-10:])
 
 
-class TestSeasonalSummary:
-    def test_computes_seasonal_means(self):
-        period = 24
-        pattern = [float(1000 + i * 100) for i in range(period)]
-        loads = pattern * 3
-        result = seasonal_summary(loads, period=period)
-        assert len(result["seasonal_means"]) == period
-        assert result["period"] == period
+def test_seasonal_baseline_length():
+    data = list(range(48))
+    baseline = seasonal_baseline(data, period=24)
+    assert len(baseline) == 48
 
     def test_peak_trough_indices(self):
         period = 4
@@ -88,6 +36,39 @@ class TestSeasonalSummary:
         assert result["peak_period_index"] == 1
         assert result["trough_period_index"] == 3
 
-    def test_insufficient_data(self):
-        result = seasonal_summary([3000.0] * 5, period=24)
-        assert result["seasonal_means"] == []
+def test_seasonal_baseline_periodicity():
+    data = [float(i % 24) for i in range(72)]
+    baseline = seasonal_baseline(data, period=24)
+    # positions 0, 24, 48 should all have the same baseline
+    assert abs(baseline[0] - baseline[24]) < 1e-9
+    assert abs(baseline[0] - baseline[48]) < 1e-9
+
+
+def test_linear_trend_length():
+    result = forecast_linear_trend([1.0, 2.0, 3.0, 4.0], horizon=10)
+    assert len(result) == 10
+
+
+def test_linear_trend_direction():
+    # Ascending series → future values should be higher than last historical
+    result = forecast_linear_trend(list(range(20)), horizon=5)
+    assert result[0] > 18.0
+
+
+def test_detect_spikes_finds_outlier():
+    data = [10.0] * 100
+    data[50] = 1000.0
+    spikes = detect_spikes(data)
+    assert 50 in spikes
+
+
+def test_detect_spikes_empty_on_flat():
+    data = [5.0] * 50
+    assert detect_spikes(data) == []
+
+
+@pytest.mark.parametrize("window", [1, 3, 7, 24])
+def test_sma_various_windows(window):
+    data = list(np.random.default_rng(42).uniform(5, 30, 100))
+    result = simple_moving_average(data, window=window)
+    assert len(result) == 100

@@ -1,4 +1,4 @@
-"""Tests for monitoring and drift detection."""
+"""Drift detection and monitoring tests."""
 
 from __future__ import annotations
 
@@ -6,153 +6,88 @@ import numpy as np
 import pytest
 
 from app.monitoring import (
-    PredictionTracker,
-    compute_all_feature_drifts,
+    LatencyTimer,
     compute_drift,
-    compute_prediction_error_metrics,
-    compute_psi,
-    get_tracker,
+    set_reference_window,
 )
 
 
-class TestComputeDrift:
-    def test_no_drift_identical_distributions(self):
-        ref = list(np.random.default_rng(42).normal(0, 1, 500))
-        cur = list(np.random.default_rng(42).normal(0, 1, 200))
-        result = compute_drift(ref, cur, "test_feature")
-        assert result["drift_detected"] is False
-        assert result["p_value"] > 0.05
-
-    def test_drift_detected_shifted_distribution(self):
-        ref = list(np.random.default_rng(42).normal(0, 1, 500))
-        cur = list(np.random.default_rng(42).normal(5, 1, 200))
-        result = compute_drift(ref, cur, "shifted_feature")
-        assert result["drift_detected"] is True
-        assert result["p_value"] < 0.05
-
-    def test_returns_expected_keys(self):
-        ref = list(np.random.default_rng(0).uniform(0, 1, 100))
-        cur = list(np.random.default_rng(1).uniform(0, 1, 50))
-        result = compute_drift(ref, cur, "feature_x")
-        assert "ks_statistic" in result
-        assert "p_value" in result
-        assert "drift_detected" in result
-        assert "feature" in result
-
-    def test_insufficient_samples_no_drift(self):
-        result = compute_drift([1.0, 2.0], [3.0], "tiny")
-        assert result["drift_detected"] is False
-        assert result["note"] == "insufficient_samples"
-
-    def test_ks_statistic_in_range(self):
-        ref = list(np.random.default_rng(7).normal(100, 15, 300))
-        cur = list(np.random.default_rng(8).normal(110, 15, 100))
-        result = compute_drift(ref, cur, "load_mw")
-        assert 0.0 <= result["ks_statistic"] <= 1.0
-
-    @pytest.mark.parametrize("shift", [0, 1, 3, 10])
-    def test_drift_increases_with_shift(self, shift):
-        rng = np.random.default_rng(42)
-        ref = rng.normal(0, 1, 500).tolist()
-        cur = rng.normal(shift, 1, 200).tolist()
-        result = compute_drift(ref, cur, f"shift_{shift}")
-        if shift == 0:
-            assert result["drift_detected"] is False
-        elif shift >= 10:
-            assert result["drift_detected"] is True
+def test_compute_drift_no_drift():
+    ref = list(np.random.default_rng(1).normal(10, 2, 200))
+    cur = list(np.random.default_rng(2).normal(10, 2, 200))
+    result = compute_drift(ref, cur)
+    assert "ks_statistic" in result
+    assert "p_value" in result
+    assert not result["drift_detected"]
 
 
-class TestComputeAllFeatureDrifts:
-    def test_runs_on_dataframe(self):
-        import pandas as pd
-        rng = np.random.default_rng(42)
-        ref = pd.DataFrame({"a": rng.normal(0, 1, 300), "b": rng.normal(50, 10, 300)})
-        cur = pd.DataFrame({"a": rng.normal(0, 1, 100), "b": rng.normal(50, 10, 100)})
-        results = compute_all_feature_drifts(ref, cur, ["a", "b"])
-        assert len(results) == 2
-        assert all("feature" in r for r in results)
+def test_compute_drift_detects_shift():
+    ref = list(np.random.default_rng(1).normal(10, 1, 200))
+    cur = list(np.random.default_rng(2).normal(30, 1, 200))
+    result = compute_drift(ref, cur)
+    assert result["drift_detected"], f"Expected drift, p={result['p_value']}"
+    assert result["ks_statistic"] > 0.5
 
 
-class TestPredictionErrorMetrics:
-    def test_perfect_prediction(self):
-        vals = [1000.0, 2000.0, 3000.0]
-        m = compute_prediction_error_metrics(vals, vals)
-        assert m["rmse"] == pytest.approx(0.0, abs=0.001)
-        assert m["mae"] == pytest.approx(0.0, abs=0.001)
-
-    def test_known_rmse(self):
-        actual = [3.0, 3.0]
-        predicted = [4.0, 4.0]
-        m = compute_prediction_error_metrics(actual, predicted)
-        assert m["rmse"] == pytest.approx(1.0, abs=0.001)
-
-    def test_empty_inputs(self):
-        m = compute_prediction_error_metrics([], [])
-        assert m["rmse"] is None
-
-    def test_mismatched_lengths(self):
-        m = compute_prediction_error_metrics([1.0, 2.0], [1.0])
-        assert m["rmse"] is None
-
-    def test_mape_zero_actual(self):
-        m = compute_prediction_error_metrics([0.0, 1.0], [0.5, 1.5])
-        assert m["mape"] is not None
+def test_compute_drift_insufficient_data():
+    result = compute_drift([1.0, 2.0], [3.0, 4.0])
+    assert not result["drift_detected"]
+    assert result["reason"] == "insufficient_data"
 
 
-class TestPredictionTracker:
-    def test_records_loads(self):
-        t = PredictionTracker(max_size=10)
-        t.record(3000.0, 5.0)
-        t.record(3500.0, 6.0)
-        assert t.count == 2
-        assert t.loads == [3000.0, 3500.0]
-
-    def test_evicts_oldest_when_full(self):
-        t = PredictionTracker(max_size=3)
-        for i in range(5):
-            t.record(float(i), 1.0)
-        assert t.count == 3
-        assert t.loads[0] == 2.0  # oldest 0,1 evicted
-
-    def test_get_tracker_returns_singleton(self):
-        t1 = get_tracker()
-        t2 = get_tracker()
-        assert t1 is t2
+def test_compute_drift_p_value_range():
+    ref = list(range(100))
+    cur = list(range(100, 200))
+    result = compute_drift(ref, cur)
+    assert 0.0 <= result["p_value"] <= 1.0
+    assert 0.0 <= result["ks_statistic"] <= 1.0
 
 
-class TestComputePSI:
-    def test_stable_psi(self):
-        import numpy as np
-        rng = np.random.default_rng(42)
-        ref = rng.normal(3000, 200, 500).tolist()
-        cur = rng.normal(3000, 200, 200).tolist()
-        result = compute_psi(ref, cur)
-        assert result["severity"] == "stable"
-        assert result["psi"] is not None
-        assert result["psi"] < 0.2
+def test_set_reference_window():
+    values = list(range(600))
+    set_reference_window(values)
+    from app.monitoring import _reference_window
 
-    def test_significant_psi_on_shift(self):
-        ref = [3000.0] * 300
-        cur = [8000.0] * 100
-        result = compute_psi(ref, cur)
-        assert result["psi"] is not None
-        assert result["psi"] > 0.0
+    assert len(_reference_window) == 500
 
-    def test_insufficient_data(self):
-        result = compute_psi([1.0, 2.0], [3.0])
-        assert result["severity"] == "unknown"
-        assert result["psi"] is None
 
-    def test_identical_distributions_low_psi(self):
-        vals = [float(i) for i in range(100)]
-        result = compute_psi(vals, vals)
-        assert result["psi"] is not None
+def test_latency_timer():
+    import time
 
-    @pytest.mark.parametrize("bins", [5, 10, 20])
-    def test_custom_bins(self, bins):
-        import numpy as np
-        rng = np.random.default_rng(0)
-        ref = rng.normal(0, 1, 200).tolist()
-        cur = rng.normal(0, 1, 100).tolist()
-        result = compute_psi(ref, cur, bins=bins)
-        assert result["bins"] == bins
+    with LatencyTimer() as t:
+        time.sleep(0.01)
+    assert t.ms >= 5.0
+
+
+def test_log_prediction(db_session):
+    from datetime import datetime
+
+    from app.monitoring import log_prediction
+
+    log_prediction(db_session, "bldg-test", datetime.utcnow(), 15.5, 12.3)
+    from app.database import PredictionLog
+
+    count = db_session.query(PredictionLog).filter(PredictionLog.building_id == "bldg-test").count()
+    assert count >= 1
+
+
+def test_log_anomaly(db_session):
+    from datetime import datetime
+
+    from app.monitoring import log_anomaly
+
+    log_anomaly(db_session, "bldg-test", datetime.utcnow(), 99.9, -0.6, 1, "critical")
+    from app.database import AnomalyLog
+
+    count = db_session.query(AnomalyLog).filter(AnomalyLog.building_id == "bldg-test").count()
+    assert count >= 1
+
+
+@pytest.mark.parametrize("mean_shift", [0, 5, 10, 20])
+def test_drift_various_shifts(mean_shift: float):
+    rng = np.random.default_rng(42)
+    ref = list(rng.normal(10, 2, 200))
+    cur = list(rng.normal(10 + mean_shift, 2, 200))
+    result = compute_drift(ref, cur)
+    if mean_shift >= 10:
+        assert result["drift_detected"], f"Expected drift at shift={mean_shift}"

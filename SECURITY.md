@@ -3,17 +3,11 @@
 ## Supported Versions
 
 | Version | Supported |
-| ------- | --------- |
+|---------|-----------|
 | 1.0.x   | Yes       |
 
 ## Reporting a Vulnerability
 
-Please report security vulnerabilities to devneatharva@gmail.com.
-Do not open public GitHub issues for security vulnerabilities.
+Please report security issues to devneatharva@gmail.com. Do not open a public issue.
 
-## Security Best Practices
-
-- Use environment variables for all secrets (see `.env.example`)
-- Do not expose the `/api/v1/retrain` endpoint publicly without authentication
-- Use HTTPS in production (configure via reverse proxy, e.g., nginx)
-- PostgreSQL credentials should be rotated regularly
+Response time: within 48 hours. Patch SLA: 7 days for critical, 30 days for medium.
