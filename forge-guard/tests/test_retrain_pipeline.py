@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import pandas as pd
-import pytest
 
 
 def test_task_engineer_features_shapes(synthetic_df: pd.DataFrame):

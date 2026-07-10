@@ -28,7 +28,6 @@ def upload_model(model_path: Path = Path("model.joblib"), version: str = "1.0.0"
 
     try:
         import boto3  # type: ignore[import]
-        from botocore.exceptions import BotoCoreError, ClientError  # type: ignore[import]
 
         s3 = boto3.client("s3")
         key = f"{S3_PREFIX}/{version}/{model_path.name}"
@@ -37,7 +36,7 @@ def upload_model(model_path: Path = Path("model.joblib"), version: str = "1.0.0"
         return True
     except ImportError:
         logger.warning("boto3 not installed — model not uploaded to S3.")
-    except (BotoCoreError, Exception) as exc:
+    except Exception as exc:
         logger.warning("S3 upload failed: %s", exc)
     return False
 

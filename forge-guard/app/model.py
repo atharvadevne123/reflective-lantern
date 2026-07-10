@@ -35,7 +35,7 @@ def _build_ensemble() -> VotingClassifier:
         subsample=0.8,
         colsample_bytree=0.8,
         eval_metric="logloss",
-        
+
         random_state=42,
         n_jobs=-1,
     )
@@ -143,7 +143,6 @@ def get_metrics() -> dict[str, Any]:
 
 def feature_importance(model: Pipeline) -> dict[str, float]:
     """Return a feature-importance dict from the XGBoost sub-estimator."""
-    import numpy as np
 
     estimator = model.named_steps["model"]
     xgb_est = estimator.named_estimators_["xgb"]
