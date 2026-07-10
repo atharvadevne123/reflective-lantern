@@ -399,6 +399,7 @@
     "file_count": 47,
     "test_count": 65,
     "coverage_pct": 100,
-    "note": "Delivered as branch forge-guard/main + draft PR #12 in reflective-lantern; standalone repo creation returned 403 (token scoped to this repo only). Email report not sent: outbound SMTP blocked in CCR sandbox."
+    "note": "Delivered as branch forge-guard/main + draft PR #12 in reflective-lantern; standalone repo creation returned 403 (token scoped to this repo only). Email report not sent: outbound SMTP blocked in CCR sandbox.",
+    "commits": 60
   }
 ]
