@@ -20,6 +20,7 @@ from app.database import get_db, init_db
 from app.features import engineer_single
 from app.model import MODEL_VERSION, get_metrics, load_model, predict
 from app.monitoring import defect_rate, log_prediction, run_drift_check
+from app.schemas import BatchPredictionResponse, BatchSensorInput
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s %(message)s")
 logger = logging.getLogger(__name__)
@@ -216,13 +217,11 @@ async def feature_importance_endpoint() -> dict[str, float]:
     summary="Batch predict defects for up to 100 sensor readings",
 )
 async def predict_batch(
-    payload: "BatchSensorInput",
+    payload: BatchSensorInput,
     request: Request,
     db: Annotated[Session, Depends(get_db)],
-) -> "BatchPredictionResponse":
+) -> BatchPredictionResponse:
     """Run inference on multiple sensor readings in a single request."""
-    from app.schemas import BatchPredictionResponse, BatchSensorInput  # noqa: F401
-
     if _model is None:
         raise HTTPException(status_code=503, detail="Model not loaded")
 
