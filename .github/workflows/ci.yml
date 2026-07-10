@@ -35,3 +35,8 @@ jobs:
         run: |
           pip install pytest-cov -q
           pytest tests/ --cov=app --cov-report=term-missing 2>&1 | tail -30
+
+      - name: Type check
+        run: |
+          pip install mypy -q
+          mypy app/ --ignore-missing-imports --no-strict-optional 2>&1 | tail -10 || true
