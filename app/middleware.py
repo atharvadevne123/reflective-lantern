@@ -4,13 +4,15 @@ from __future__ import annotations
 
 import time
 import uuid
-from collections import defaultdict
+from collections import defaultdict, deque
+from typing import Any
 
 from fastapi import Request, Response
 from starlette.middleware.base import BaseHTTPMiddleware
 
-_request_counts: dict[str, list[float]] = defaultdict(list)
 RATE_LIMIT = 200  # requests per minute
+_request_counts: dict[str, list[float]] = defaultdict(list)
+_rate_buckets: dict[str, deque[float]] = defaultdict(deque)
 
 
 class RateLimitMiddleware(BaseHTTPMiddleware):
@@ -28,9 +30,6 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         _request_counts[ip].append(now)
         return await call_next(request)
 
-RATE_LIMIT_PER_MINUTE = 200
-_rate_buckets: dict[str, deque] = defaultdict(lambda: deque())
-
 
 class CorrelationIDMiddleware(BaseHTTPMiddleware):
     """Attach X-Correlation-ID to every request/response."""
@@ -41,7 +40,3 @@ class CorrelationIDMiddleware(BaseHTTPMiddleware):
         response = await call_next(request)
         response.headers["X-Correlation-ID"] = correlation_id
         return response
-
-
-# Type alias used above
-from typing import Any  # noqa: E402 (placed after class bodies to avoid circular)
