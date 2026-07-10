@@ -193,8 +193,17 @@ def main() -> int:
 
     if args.verify:
         client = client_from_settings(settings)
-        meta = client.get_dataset(settings.foundry_dataset_rid)
-        files = client.list_files(settings.foundry_dataset_rid, branch=settings.foundry_branch)
+        try:
+            meta = client.get_dataset(settings.foundry_dataset_rid)
+            files = client.list_files(settings.foundry_dataset_rid, branch=settings.foundry_branch)
+        except FoundryAPIError as exc:
+            log.error("Verification failed: %s", exc)
+            log.error(
+                "Config looks complete but the request did not succeed — check the "
+                "network policy allows %s and that the token is valid",
+                settings.foundry_hostname,
+            )
+            return 1
         log.info(
             "Dataset reachable: %s (%d file(s) on branch %s)",
             meta.get("name", settings.foundry_dataset_rid),
@@ -221,9 +230,13 @@ def main() -> int:
         return 0
 
     client = client_from_settings(settings)
-    txn = client.upload_dataset_file(
-        settings.foundry_dataset_rid, local, target_name=target, branch=settings.foundry_branch
-    )
+    try:
+        txn = client.upload_dataset_file(
+            settings.foundry_dataset_rid, local, target_name=target, branch=settings.foundry_branch
+        )
+    except FoundryAPIError as exc:
+        log.error("Upload failed: %s", exc)
+        return 1
     log.info("Committed transaction %s", txn)
     return 0
 
