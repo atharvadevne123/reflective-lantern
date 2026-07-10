@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import logging
 import os
-from functools import lru_cache
 from pathlib import Path
 from typing import Any
 
@@ -139,7 +138,60 @@ def get_feature_importance(
     return [{"feature": n, "importance": float(v)} for n, v in ranked[:20]]
 
 
-@lru_cache(maxsize=1)
 def get_model_version() -> str:
     """Return the current model version string."""
     return _MODEL_VERSION
+
+
+def save_models(directory: Path | None = None) -> dict[str, str]:
+    """Persist trained models and scaler to disk with joblib."""
+    import joblib
+
+    directory = directory or MODEL_DIR
+    directory.mkdir(parents=True, exist_ok=True)
+    saved = {}
+    try:
+        if _IF_MODEL is not None:
+            path = directory / "isolation_forest.joblib"
+            joblib.dump(_IF_MODEL, path)
+            saved["isolation_forest"] = str(path)
+        if _RF_MODEL is not None:
+            path = directory / "random_forest.joblib"
+            joblib.dump(_RF_MODEL, path)
+            saved["random_forest"] = str(path)
+        if _SCALER is not None:
+            path = directory / "scaler.joblib"
+            joblib.dump(_SCALER, path)
+            saved["scaler"] = str(path)
+        logger.info("Saved %d model artifacts to %s", len(saved), directory)
+    except Exception as e:
+        logger.error("Failed to save models: %s", e)
+        raise
+    return saved
+
+
+def load_models(directory: Path | None = None) -> bool:
+    """Load persisted models from disk. Returns True if all artifacts loaded."""
+    import joblib
+
+    global _IF_MODEL, _RF_MODEL, _SCALER, _MODEL_VERSION
+
+    directory = directory or MODEL_DIR
+    try:
+        if_path = directory / "isolation_forest.joblib"
+        rf_path = directory / "random_forest.joblib"
+        scaler_path = directory / "scaler.joblib"
+        loaded_all = if_path.exists() and scaler_path.exists()
+        if if_path.exists():
+            _IF_MODEL = joblib.load(if_path)
+        if rf_path.exists():
+            _RF_MODEL = joblib.load(rf_path)
+        if scaler_path.exists():
+            _SCALER = joblib.load(scaler_path)
+        if loaded_all:
+            _MODEL_VERSION = "v1.0"
+            logger.info("Models loaded from %s", directory)
+        return loaded_all
+    except Exception as e:
+        logger.error("Failed to load models: %s", e)
+        return False
