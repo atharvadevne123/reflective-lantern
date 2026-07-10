@@ -161,3 +161,7 @@ def make_feature_row(
             }
         ]
     )
+
+
+import logging as _logging
+_feat_logger = _logging.getLogger(__name__)
