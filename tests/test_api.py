@@ -174,3 +174,25 @@ class TestRetrainEndpoint:
         data = resp.json()
         assert data["status"] == "retrained"
         assert "metrics" in data
+
+
+class TestAnalyzeEndpoint:
+    def test_analyze_returns_200(self, client):
+        loads = [3000.0 + i * 50 for i in range(48)]
+        resp = client.post("/api/v1/analyze", json=loads)
+        assert resp.status_code == 200
+
+    def test_analyze_returns_trend(self, client):
+        loads = [float(3000 + i * 10) for i in range(48)]
+        data = client.post("/api/v1/analyze", json=loads).json()
+        assert "trend" in data
+        assert "direction" in data["trend"]
+
+    def test_analyze_detects_spike(self, client):
+        loads = [3000.0] * 48 + [9999.0] + [3000.0] * 48
+        data = client.post("/api/v1/analyze", json=loads).json()
+        assert data["spikes_detected"] >= 1
+
+    def test_analyze_too_few_values(self, client):
+        resp = client.post("/api/v1/analyze", json=[1000.0, 2000.0])
+        assert resp.status_code == 422
