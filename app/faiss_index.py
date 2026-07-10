@@ -1,72 +1,96 @@
-"""FAISS-based comparable property search.
+"""FAISS-based similar load-period search for energy pattern matching."""
 
-Maintains a module-level IndexFlatL2 (L2 distance brute-force) alongside
-a list of metadata dicts so callers can retrieve full context for each
-nearest neighbour.
-
-All vectors are padded or truncated to DIM=24 to match the feature space.
-The index is rebuilt fresh on each process restart; for production workloads
-consider persisting the index with faiss.write_index / faiss.read_index.
-"""
+from __future__ import annotations
 
 import logging
-from typing import Any
+from typing import Optional
 
-import faiss
 import numpy as np
 
 logger = logging.getLogger(__name__)
 
-_index: faiss.IndexFlatL2 | None = None
-_stored_properties: list[dict[str, Any]] = []
-DIM = 24
+try:
+    import faiss  # type: ignore[import]
+    _HAS_FAISS = True
+except ImportError:
+    _HAS_FAISS = False
+    logger.info("faiss not available; using brute-force fallback")
 
 
-def get_index() -> faiss.IndexFlatL2:
-    global _index
-    if _index is None:
-        _index = faiss.IndexFlatL2(DIM)
-        logger.info("Initialised FAISS IndexFlatL2 dim=%d", DIM)
-    return _index
+class LoadPatternIndex:
+    """Stores energy load vectors and finds similar historical periods."""
+
+    def __init__(self, dim: int = 24) -> None:
+        self.dim = dim
+        self._vectors: list[np.ndarray] = []
+        self._metadata: list[dict] = []
+        self._index: Optional[object] = None
+
+    def add(self, vector: list[float], metadata: dict | None = None) -> None:
+        """Add a load period vector (e.g. 24-hour profile) to the index."""
+        v = np.array(vector, dtype=np.float32)
+        if len(v) != self.dim:
+            raise ValueError(f"expected dim={self.dim}, got {len(v)}")
+        self._vectors.append(v)
+        self._metadata.append(metadata or {})
+        self._index = None  # invalidate
+
+    def build(self) -> None:
+        """Build the FAISS index from stored vectors."""
+        if not self._vectors:
+            return
+        matrix = np.stack(self._vectors, axis=0).astype(np.float32)
+        faiss.normalize_L2(matrix)
+        idx = faiss.IndexFlatIP(self.dim)
+        idx.add(matrix)
+        self._index = idx
+        logger.info("faiss index built with %d vectors", len(self._vectors))
+
+    def search(self, query: list[float], k: int = 5) -> list[dict]:
+        """Find k most similar load period profiles."""
+        q = np.array(query, dtype=np.float32).reshape(1, -1)
+
+        if _HAS_FAISS and self._index is not None:
+            faiss.normalize_L2(q)
+            distances, indices = self._index.search(q, k)
+            return [
+                {
+                    "rank": r + 1,
+                    "index": int(indices[0][r]),
+                    "similarity": round(float(distances[0][r]), 4),
+                    "metadata": self._metadata[int(indices[0][r])],
+                }
+                for r in range(min(k, len(self._vectors)))
+                if indices[0][r] >= 0
+            ]
+
+        return self._brute_force_search(q[0], k)
+
+    def _brute_force_search(self, query: np.ndarray, k: int) -> list[dict]:
+        if not self._vectors:
+            return []
+        q_norm = query / (np.linalg.norm(query) + 1e-9)
+        sims = []
+        for i, v in enumerate(self._vectors):
+            v_norm = v / (np.linalg.norm(v) + 1e-9)
+            sim = float(np.dot(q_norm, v_norm))
+            sims.append((sim, i))
+        sims.sort(reverse=True)
+        return [
+            {"rank": r + 1, "index": i, "similarity": round(s, 4), "metadata": self._metadata[i]}
+            for r, (s, i) in enumerate(sims[:k])
+        ]
+
+    @property
+    def size(self) -> int:
+        return len(self._vectors)
 
 
-def add_property(vector: np.ndarray, metadata: dict[str, Any]) -> None:
-    vec = vector.reshape(1, -1).astype(np.float32)
-    if vec.shape[1] < DIM:
-        vec = np.pad(vec, ((0, 0), (0, DIM - vec.shape[1])))
-    elif vec.shape[1] > DIM:
-        vec = vec[:, :DIM]
-    get_index().add(vec)
-    _stored_properties.append(metadata)
+_pattern_index: Optional[LoadPatternIndex] = None
 
 
-def search_comparable(
-    query_vector: np.ndarray, top_k: int = 5
-) -> list[dict[str, Any]]:
-    index = get_index()
-    if index.ntotal == 0:
-        return []
-    vec = query_vector.reshape(1, -1).astype(np.float32)
-    if vec.shape[1] < DIM:
-        vec = np.pad(vec, ((0, 0), (0, DIM - vec.shape[1])))
-    elif vec.shape[1] > DIM:
-        vec = vec[:, :DIM]
-    k = min(top_k, index.ntotal)
-    distances, indices = index.search(vec, k)
-    results = []
-    for dist, idx in zip(distances[0], indices[0], strict=False):
-        if idx < len(_stored_properties):
-            entry = dict(_stored_properties[idx])
-            entry["distance"] = float(dist)
-            results.append(entry)
-    return results
-
-
-def index_size() -> int:
-    return get_index().ntotal
-
-
-def reset_index() -> None:
-    global _index, _stored_properties
-    _index = faiss.IndexFlatL2(DIM)
-    _stored_properties = []
+def get_pattern_index(dim: int = 24) -> LoadPatternIndex:
+    global _pattern_index
+    if _pattern_index is None:
+        _pattern_index = LoadPatternIndex(dim=dim)
+    return _pattern_index
