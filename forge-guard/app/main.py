@@ -41,11 +41,23 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     yield
 
 
+TAGS_METADATA = [
+    {"name": "inference", "description": "Defect prediction endpoints — single, batch, and explainability."},
+    {"name": "ops", "description": "Health, metrics, drift reports, and retraining triggers."},
+]
+
 app = FastAPI(
     title="Forge-Guard",
-    description="Real-time manufacturing defect prediction API with drift monitoring.",
+    description=(
+        "Real-time manufacturing defect prediction API with drift monitoring. "
+        "Send 7 sensor readings per production cycle and receive a defect "
+        "probability plus drift diagnostics."
+    ),
     version="1.0.0",
     lifespan=lifespan,
+    openapi_tags=TAGS_METADATA,
+    contact={"name": "Reflective Lantern", "email": "devneatharva@gmail.com"},
+    license_info={"name": "MIT", "url": "https://opensource.org/licenses/MIT"},
 )
 
 app.add_middleware(
