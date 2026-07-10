@@ -341,3 +341,29 @@ def _engineer_features(df) -> pd.DataFrame:
 def _loads_to_df(loads: list[float]) -> pd.DataFrame:
     import pandas as pd
     return pd.DataFrame({"load_mw": loads})
+
+
+@app.post("/api/v1/analyze", tags=["Prediction"])
+async def analyze_load_series(loads: list[float]):
+    """Analyze a historical load series for trends, spikes, and seasonal patterns."""
+    from app.anomaly import quick_anomaly_check
+    from app.time_series import compute_trend, detect_load_spikes, seasonal_summary
+
+    if len(loads) < 10:
+        raise HTTPException(status_code=422, detail="Provide at least 10 load values")
+
+    trend = compute_trend(loads, window=min(24, len(loads) // 2))
+    spikes = detect_load_spikes(loads)
+    seasonal = seasonal_summary(loads, period=min(24, len(loads)))
+    ref = loads[: len(loads) // 2]
+    cur = loads[len(loads) // 2 :]
+    anomaly = quick_anomaly_check(ref, cur) if len(ref) >= 20 else {"skipped": "insufficient_reference"}
+
+    return {
+        "series_length": len(loads),
+        "trend": trend,
+        "spikes_detected": len(spikes),
+        "spike_details": spikes[:5],
+        "seasonal": seasonal,
+        "anomaly_check": anomaly,
+    }
