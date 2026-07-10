@@ -1,122 +1,186 @@
-![CI](https://github.com/atharvadevne123/reflective-lantern/actions/workflows/ci.yml/badge.svg)
-![Python Package](https://github.com/atharvadevne123/reflective-lantern/actions/workflows/python-publish.yml/badge.svg)
-![npm](https://github.com/atharvadevne123/reflective-lantern/actions/workflows/npm-publish.yml/badge.svg)
-![Bump Version](https://github.com/atharvadevne123/reflective-lantern/actions/workflows/bump-version.yml/badge.svg)
+# Volt-Cast ⚡
 
-# Reflective Lantern
+[![CI](https://github.com/atharvadevne123/reflective-lantern/actions/workflows/ci.yml/badge.svg)](https://github.com/atharvadevne123/reflective-lantern/actions/workflows/ci.yml)
+[![Python 3.11](https://img.shields.io/badge/python-3.11-blue.svg)](https://www.python.org/downloads/)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.111-green)](https://fastapi.tiangolo.com)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-Autonomous Mon–Fri code improvement agent powered by Claude Code Cloud Routines.
+> **Electricity consumption and grid load prediction API** using XGBoost-LightGBM-RandomForest VotingRegressor ensemble with KS-test drift monitoring, automated weekly retraining, and production-grade smart energy management.
 
-Every weekday at 9 AM CST, Reflective Lantern wakes up, picks one of @atharvadevne123’s
-GitHub repositories, implements 60 improvements, runs tests, updates docs, pushes to main,
-and sends an email digest — all with zero human intervention.
+---
 
-## Quick Start
+## Overview
 
-```bash
-git clone https://github.com/atharvadevne123/reflective-lantern.git
-cd reflective-lantern
-bash scripts/setup.sh          # install deps + pre-commit hooks
-cp .env.example .env           # fill in your API keys
-make test                      # verify everything works
-```
+Volt-Cast is a production-quality ML API for **smart grid energy load forecasting**. It takes temporal and environmental features (hour, day, temperature, humidity, historical loads) and predicts electricity demand in megawatts for a given time slot.
 
-**Required environment variables** (see `.env.example` for full list):
+### Key Features
 
-| Variable | Description |
-|----------|-------------|
-| `ANTHROPIC_API_KEY` | Claude API key for AI-powered features |
-| `GH_PAT` | GitHub Personal Access Token (`repo` + `workflow` scopes) |
-| `NOTION_API_KEY` | For Notion portfolio updates |
-| `GMAIL_USER` + `GMAIL_APP_PASS` | For emailed run reports |
+- **Ensemble Model**: XGBoost + LightGBM + RandomForest `VotingRegressor` with 5-fold cross-validation
+- **6-Stage Feature Pipeline**: Lag (1h/24h/168h), Rolling stats, Temporal cyclical, Peak period encoding, Heat index ratios, Drop + StandardScaler
+- **KS-Test Drift Detection**: Kolmogorov-Smirnov test across prediction distribution windows
+- **7 REST Endpoints**: `/predict`, `/batch-predict`, `/forecast`, `/drift`, `/retrain`, `/health`, `/metrics`
+- **Automated Retraining**: Airflow DAG scheduled weekly with R² gate (≥0.60)
+- **Production Infra**: Docker + PostgreSQL + SQLAlchemy ORM + Alembic migrations
+- **Rate Limiting**: 200 req/min per IP with correlation ID middleware
 
-## What It Does
-
-Each daily run:
-1. **PRE-FLIGHT** — Fix failing CI workflows, merge open branches, create missing releases
-2. **MODE SELECT** — IMPROVEMENT (most days) or INNOVATION (Wednesday wks 2 & 4)
-3. **SELECT REPO** — deterministic daily rotation through the active portfolio
-4. **ANALYSE** — read every source file, identify 60 improvements across 5 tiers
-5. **IMPLEMENT** — one commit per change (security → tests → quality → DX → perf)
-6. **VERIFY** — run full test suite; fix failures (2 attempts)
-7. **PUSH** — directly to `main`
-8. **NOTIFY** — PDF report emailed to devneatharva@gmail.com
+---
 
 ## Architecture
 
-See [`docs/architecture.md`](docs/architecture.md) for a full ASCII diagram.
+![Architecture Diagram](screenshots/architecture.png)
 
-```
-reflective-lantern/
-├── .claude/settings.json     ← CCR tool permissions
-├── config/                    ← Settings, constants, logging
-├── scripts/                   ← Standalone utility scripts
-├── tests/                     ← pytest suite
-├── docs/                      ← Architecture & operations docs
-├── history/                   ← Per-repo JSON run logs
-├── prompts/system_prompt.md  ← Cached agent instructions (3000+ tokens)
-└── covers/                    ← SVG cover images for Notion
-```
+---
 
-## Improvement Tiers
+## Quick Start
 
-| Priority | Tier | Examples |
-|----------|------|----------|
-| 1 | Security / Correctness | Secrets → env vars, bare `except` → typed, SQL injection |
-| 2 | Tests | `conftest.py`, happy path + 3 edge cases per endpoint |
-| 3 | Code Quality | Type hints, docstrings, logging, refactor > 40-line functions |
-| 4 | Developer Experience | CI/CD, Dockerfile, `.env.example`, `pyproject.toml`, README |
-| 5 | Performance | `lru_cache`, N+1 fix, DB indexes, connection pooling |
-
-## Utility Scripts
+### Local Development
 
 ```bash
-make health-check          # cross-repo CI / release / branch health
-make weekly-summary        # build + email 7-day digest
-make validate-history      # validate history JSON schema
-make notion-update         # sync Notion portfolio pages
+# Install dependencies
+pip install -r requirements.txt
 
-python scripts/summarize_history.py        # tabular run history
-python scripts/rotate_repos.py             # which repo is selected today
-python scripts/check_ci_status.py --failing-only
-python scripts/report_generator.py --mode weekly
+# Run the API
+uvicorn app.main:app --reload
+
+# Test
+pytest tests/ -v
 ```
 
-## Token Efficiency
+### Docker
 
-The `prompts/system_prompt.md` file exceeds Sonnet 4.6’s 2 048-token cache threshold,
-so it is cached on first use and subsequent runs hit the cache at ~10% of the original
-input cost. Combined with one-repo-per-day rotation, estimated cost is **$0.15–0.25/run**.
+```bash
+cp .env.example .env
+docker-compose up --build
+```
 
-## History
+The API will be available at `http://localhost:8000`. Interactive docs at `http://localhost:8000/docs`.
 
-The `history/` directory contains JSON logs of every run per repo. Example entry:
+---
+
+## API Reference
+
+### POST `/api/v1/predict`
+
+Predict energy load for a single time slot.
 
 ```json
 {
-  "date": "2026-06-30",
-  "mode": "improvement",
-  "commits": 60,
-  "tests_passed": true,
-  "improvements": ["added pytest suite", "fixed hardcoded API key"]
+  "hour": 14,
+  "day_of_week": 2,
+  "month": 7,
+  "is_weekend": false,
+  "temperature_c": 28.5,
+  "humidity_pct": 65.0,
+  "historical_loads": [3500.0, 3600.0, 3800.0, 4000.0],
+  "region": "northeast"
 }
 ```
 
-See [`history/schema.json`](history/schema.json) for the full JSON schema.
+**Response:**
+```json
+{
+  "predicted_load_mw": 4312.75,
+  "model_version": "1.0.0",
+  "region": "northeast",
+  "request_id": "550e8400-e29b-41d4-a716-446655440000",
+  "latency_ms": 8.4
+}
+```
 
-## Contributing
+### POST `/api/v1/batch-predict`
 
-See [CONTRIBUTING.md](CONTRIBUTING.md). Run `make test && make lint` before
-opening a pull request.
+Predict for multiple time slots (up to 100).
 
-## License
+### GET `/api/v1/forecast?start_hour=8&day_of_week=0&month=6&horizon_hours=24`
 
-MIT — see [LICENSE](LICENSE) if present, otherwise open for personal use.
+Multi-hour load forecast for grid planning.
+
+### GET `/api/v1/drift`
+
+KS-test drift report for the recent prediction distribution.
+
+### GET `/api/v1/metrics`
+
+Model performance metrics: R², RMSE, prediction count, P50/P95 latency.
+
+### POST `/api/v1/retrain`
+
+Trigger model retraining on fresh data.
+
+### GET `/api/v1/health`
+
+Health check with model load status and uptime.
+
+---
+
+## Feature Engineering
+
+| Stage | Transformer | Features Added |
+|-------|-------------|----------------|
+| 1 | `LagFeatureTransformer` | `lag_1h`, `lag_24h`, `lag_168h` |
+| 2 | `RollingStatsTransformer` | `rolling_mean_3h`, `rolling_std_3h`, `rolling_mean_24h`, `rolling_std_24h` |
+| 3 | `TemporalFeatureTransformer` | `hour_sin`, `hour_cos`, `dow_sin`, `dow_cos`, `month_sin`, `month_cos` |
+| 4 | `PeakPeriodEncoder` | `is_peak_hour`, `is_morning_peak`, `is_evening_peak`, `is_weekday_peak` |
+| 5 | `RatioFeatureTransformer` | `heat_index`, `cooling_demand_proxy`, `heating_demand_proxy`, `load_ratio_vs_daily_mean` |
+| 6 | `StandardScaler` | Normalized numeric features |
+
+---
+
+## Project Structure
+
+```
+volt-cast/
+├── app/
+│   ├── __init__.py         # Package init
+│   ├── database.py         # SQLAlchemy models
+│   ├── features.py         # 6-stage feature pipeline
+│   ├── main.py             # FastAPI app (7 endpoints)
+│   ├── middleware.py       # Rate limiting + correlation ID
+│   ├── model.py            # Ensemble training & prediction
+│   ├── monitoring.py       # KS-drift detection
+│   └── schemas.py          # Pydantic request/response models
+├── pipelines/
+│   └── retrain_dag.py      # Airflow weekly retraining DAG
+├── tests/
+│   ├── conftest.py         # Pytest fixtures
+│   ├── test_api.py         # API endpoint tests
+│   ├── test_database.py    # ORM model tests
+│   ├── test_features.py    # Feature pipeline tests
+│   ├── test_model.py       # Model training tests
+│   └── test_monitoring.py  # Drift detection tests
+├── scripts/
+│   └── generate_diagram.py # Architecture diagram
+├── screenshots/
+│   └── architecture.png    # System architecture diagram
+├── .github/workflows/ci.yml
+├── Dockerfile
+├── docker-compose.yml
+├── requirements.txt
+├── pyproject.toml
+├── Makefile
+└── .env.example
+```
+
+---
 
 ## Tech Stack
 
-- **Scheduler**: Claude Code Cloud Routine (`cron 0 14 * * 1-5` = 9 AM CDT)
-- **AI**: Claude Sonnet 4.6 with prompt caching
-- **Repo ops**: GitHub REST API + git
-- **Notifications**: Gmail SMTP
-- **Portfolio**: Notion API + Anthropic SDK
+| Category | Technology |
+|----------|-----------|
+| Language | Python 3.11 |
+| API Framework | FastAPI 0.111+ |
+| ML Models | XGBoost, LightGBM, RandomForest |
+| Ensemble | `VotingRegressor` (scikit-learn) |
+| Feature Engineering | Custom sklearn Transformers |
+| Drift Detection | KS-test (scipy.stats) |
+| Database | SQLAlchemy ORM + PostgreSQL (prod) / SQLite (dev) |
+| Pipeline Orchestration | Apache Airflow |
+| Containerization | Docker + docker-compose |
+| Testing | pytest with parametrized test cases |
+| CI/CD | GitHub Actions (ruff lint + pytest) |
+
+---
+
+## License
+
+MIT License — see [LICENSE](LICENSE) for details.
