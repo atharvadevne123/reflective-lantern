@@ -10,6 +10,7 @@ from app.monitoring import (
     compute_all_feature_drifts,
     compute_drift,
     compute_prediction_error_metrics,
+    compute_psi,
     get_tracker,
 )
 
@@ -117,3 +118,41 @@ class TestPredictionTracker:
         t1 = get_tracker()
         t2 = get_tracker()
         assert t1 is t2
+
+
+class TestComputePSI:
+    def test_stable_psi(self):
+        import numpy as np
+        rng = np.random.default_rng(42)
+        ref = rng.normal(3000, 200, 500).tolist()
+        cur = rng.normal(3000, 200, 200).tolist()
+        result = compute_psi(ref, cur)
+        assert result["severity"] == "stable"
+        assert result["psi"] is not None
+        assert result["psi"] < 0.2
+
+    def test_significant_psi_on_shift(self):
+        ref = [3000.0] * 300
+        cur = [8000.0] * 100
+        result = compute_psi(ref, cur)
+        assert result["psi"] is not None
+        assert result["psi"] > 0.0
+
+    def test_insufficient_data(self):
+        result = compute_psi([1.0, 2.0], [3.0])
+        assert result["severity"] == "unknown"
+        assert result["psi"] is None
+
+    def test_identical_distributions_low_psi(self):
+        vals = [float(i) for i in range(100)]
+        result = compute_psi(vals, vals)
+        assert result["psi"] is not None
+
+    @pytest.mark.parametrize("bins", [5, 10, 20])
+    def test_custom_bins(self, bins):
+        import numpy as np
+        rng = np.random.default_rng(0)
+        ref = rng.normal(0, 1, 200).tolist()
+        cur = rng.normal(0, 1, 100).tolist()
+        result = compute_psi(ref, cur, bins=bins)
+        assert result["bins"] == bins
