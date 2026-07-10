@@ -16,3 +16,8 @@
 - pytest suite with 50+ tests and parametrized cases
 - GitHub Actions CI (ruff lint + pytest)
 - Architecture diagram
+
+### Stats
+- Tests:  passing
+- Files: 33 Python files
+- Features: 7-stage feature pipeline, 30+ engineered features
