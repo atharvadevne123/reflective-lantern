@@ -388,3 +388,20 @@ async def find_similar_periods(profile: list[float]):
 
     results = idx.search(profile, k=5)
     return {"query_length": len(profile), "matches": results}
+
+
+@app.get("/api/v1/regions", tags=["System"])
+async def list_regions():
+    """List all supported grid regions."""
+    from app.regions import list_regions as _list
+    return {"regions": _list()}
+
+
+@app.get("/api/v1/regions/{region_id}", tags=["System"])
+async def get_region(region_id: str):
+    """Get metadata for a specific grid region."""
+    from app.regions import get_region as _get
+    region = _get(region_id)
+    if not region:
+        raise HTTPException(status_code=404, detail=f"Region '{region_id}' not found")
+    return {"id": region_id, **region}
