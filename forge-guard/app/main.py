@@ -240,3 +240,20 @@ async def predict_batch(
     return BatchPredictionResponse(
         predictions=results, count=len(results), model_version=MODEL_VERSION
     )
+
+
+@app.post(
+    "/api/v1/retrain",
+    tags=["ops"],
+    summary="Trigger the retraining pipeline in the background",
+)
+async def trigger_retrain() -> dict[str, str]:
+    """Kick off the retraining pipeline as a background thread and return immediately."""
+    import threading
+
+    from pipelines.retrain_dag import run_pipeline
+
+    thread = threading.Thread(target=run_pipeline, kwargs={"trigger": "api"}, daemon=True)
+    thread.start()
+    logger.info("Retraining pipeline triggered via API.")
+    return {"status": "accepted", "message": "Retraining started in background."}
