@@ -19,9 +19,6 @@ def test_zscore_outlier():
 def test_zscore_zero_std():
     assert not zscore_flag(5.0, mean=5.0, std=0.0)
 
-    def test_insufficient_reference(self):
-        result = quick_anomaly_check([3000.0] * 5, [3000.0, 9000.0])
-        assert "error" in result
 
 def test_iqr_within_fence():
     assert not iqr_flag(10.0, q1=8.0, q3=12.0)
