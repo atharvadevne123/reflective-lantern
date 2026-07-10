@@ -128,3 +128,28 @@ class TestFeatureImportance:
     def test_feature_importance_returns_list(self, client):
         resp = client.get("/api/v1/feature-importance")
         assert isinstance(resp.json(), list)
+
+
+class TestAnomaliesList:
+    def test_anomalies_returns_200(self, client):
+        resp = client.get("/api/v1/anomalies")
+        assert resp.status_code == 200
+
+    def test_anomalies_has_pagination_fields(self, client):
+        resp = client.get("/api/v1/anomalies")
+        data = resp.json()
+        assert "total" in data
+        assert "events" in data
+        assert "limit" in data
+
+    def test_anomalies_limit_clamped(self, client):
+        resp = client.get("/api/v1/anomalies?limit=99999")
+        assert resp.json()["limit"] == 1000
+
+    def test_anomalies_filter_by_sensor(self, client):
+        resp = client.get("/api/v1/anomalies?sensor_id=nonexistent-sensor")
+        assert resp.json()["total"] == 0
+
+    def test_anomalies_min_score_filter(self, client):
+        resp = client.get("/api/v1/anomalies?min_score=0.99")
+        assert resp.status_code == 200
