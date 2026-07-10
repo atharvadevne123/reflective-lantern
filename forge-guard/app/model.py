@@ -96,6 +96,15 @@ def train_model(
     except Exception:
         logger.debug("Experiment tracking unavailable — continuing.")
 
+    try:
+        from app.faiss_index import build_index
+
+        healthy = X[y == 0]
+        if len(healthy) >= 50:
+            build_index(healthy.astype(np.float32))
+    except Exception:
+        logger.debug("FAISS index build skipped.")
+
     return full_pipeline, metrics
 
 
