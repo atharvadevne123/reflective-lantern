@@ -85,6 +85,13 @@ def train_model(
     joblib.dump(model, MODEL_PATH)
     METRICS_PATH.write_text(json.dumps(metrics, indent=2))
     logger.info("model trained: R2=%.4f RMSE=%.2f", metrics["r2_mean"], metrics["rmse_mean"])
+
+    try:
+        from app.mlflow_stub import log_metrics as mlflow_log
+        mlflow_log(metrics, run_name=f"volt-cast-{MODEL_VERSION}")
+    except Exception:
+        pass
+
     return model, metrics
 
 
