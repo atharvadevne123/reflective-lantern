@@ -28,9 +28,9 @@ def extract_recent_readings(lookback_days: int = LOOKBACK_DAYS) -> list[dict[str
     """Pull recent sensor readings from the database for retraining."""
     from sqlalchemy import create_engine, text
 
-    engine = create_engine(DATABASE_URL)
     cutoff = datetime.utcnow() - timedelta(days=lookback_days)
     try:
+        engine = create_engine(DATABASE_URL)
         with engine.connect() as conn:
             rows = conn.execute(
                 text(
