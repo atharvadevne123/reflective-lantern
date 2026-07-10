@@ -3,6 +3,7 @@
 > Smart building and industrial energy consumption forecasting and anomaly detection API.
 
 [![CI](https://github.com/atharvadevne123/reflective-lantern/actions/workflows/ci.yml/badge.svg)](https://github.com/atharvadevne123/reflective-lantern/actions)
+[![Coverage](https://img.shields.io/badge/tests-59%20passed-brightgreen)](tests/)
 [![Python 3.11](https://img.shields.io/badge/python-3.11-blue.svg)](https://python.org)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.111-009688.svg)](https://fastapi.tiangolo.com)
 
