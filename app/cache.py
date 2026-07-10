@@ -1,73 +1,67 @@
-"""In-memory TTL cache for expensive lookups in Realty-Edge.
+"""In-process TTL cache for expensive computations."""
 
-Provides a simple dict-backed TTL cache to avoid repeated database queries
-for neighbourhood stats and metrics that change infrequently.
-
-Example
--------
-cache = TTLCache(ttl_seconds=300)
-cache.set("key", value)
-result = cache.get("key")   # None after TTL expires
-"""
+from __future__ import annotations
 
 import logging
 import time
-from typing import Any
+from typing import Any, Optional
 
 logger = logging.getLogger(__name__)
 
 
 class TTLCache:
-    """Thread-unsafe TTL cache backed by a plain dict.
+    """Simple dict-backed cache with per-entry TTL in seconds."""
 
-    Suitable for single-process deployments. For multi-process or distributed
-    deployments replace with Redis.
-
-    Args:
-        ttl_seconds: How long an entry remains valid after being set.
-        max_size: Maximum number of entries; oldest entries are evicted first.
-    """
-
-    def __init__(self, ttl_seconds: float = 300.0, max_size: int = 512) -> None:
-        self._ttl = ttl_seconds
-        self._max_size = max_size
+    def __init__(self, default_ttl: float = 60.0) -> None:
         self._store: dict[str, tuple[Any, float]] = {}
+        self.default_ttl = default_ttl
+        self.hits = 0
+        self.misses = 0
 
-    def get(self, key: str) -> Any | None:
-        """Return cached value or None if missing or expired."""
+    def get(self, key: str) -> Optional[Any]:
         entry = self._store.get(key)
         if entry is None:
+            self.misses += 1
             return None
         value, expires_at = entry
         if time.monotonic() > expires_at:
             del self._store[key]
-            logger.debug("Cache MISS (expired) key=%s", key)
+            self.misses += 1
             return None
-        logger.debug("Cache HIT key=%s", key)
+        self.hits += 1
         return value
 
-    def set(self, key: str, value: Any) -> None:
-        """Store a value with a TTL timestamp."""
-        if len(self._store) >= self._max_size:
-            oldest = min(self._store, key=lambda k: self._store[k][1])
-            del self._store[oldest]
-            logger.debug("Cache evicted key=%s (max_size=%d)", oldest, self._max_size)
-        self._store[key] = (value, time.monotonic() + self._ttl)
-        logger.debug("Cache SET key=%s ttl=%.0fs", key, self._ttl)
+    def set(self, key: str, value: Any, ttl: float | None = None) -> None:
+        expires_at = time.monotonic() + (ttl if ttl is not None else self.default_ttl)
+        self._store[key] = (value, expires_at)
 
-    def invalidate(self, key: str) -> bool:
-        """Remove a key from the cache. Returns True if the key existed."""
-        existed = key in self._store
+    def delete(self, key: str) -> None:
         self._store.pop(key, None)
-        return existed
 
     def clear(self) -> None:
-        """Remove all entries."""
         self._store.clear()
+        self.hits = 0
+        self.misses = 0
 
-    def __len__(self) -> int:
+    def evict_expired(self) -> int:
+        now = time.monotonic()
+        expired = [k for k, (_, exp) in self._store.items() if now > exp]
+        for k in expired:
+            del self._store[k]
+        return len(expired)
+
+    @property
+    def size(self) -> int:
         return len(self._store)
 
+    @property
+    def hit_rate(self) -> float:
+        total = self.hits + self.misses
+        return self.hits / total if total > 0 else 0.0
 
-neighborhood_cache: TTLCache = TTLCache(ttl_seconds=300.0)
-metrics_cache: TTLCache = TTLCache(ttl_seconds=60.0)
+
+_forecast_cache = TTLCache(default_ttl=300.0)
+
+
+def get_forecast_cache() -> TTLCache:
+    return _forecast_cache
