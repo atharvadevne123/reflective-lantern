@@ -23,7 +23,7 @@ class Settings:
     """
 
     database_url: str = field(
-        default_factory=lambda: os.getenv("DATABASE_URL", "sqlite:///./traffic_pulse.db")
+        default_factory=lambda: os.getenv("DATABASE_URL", "sqlite:///./watt_guard.db")
     )
     model_path: str = field(default_factory=lambda: os.getenv("MODEL_PATH", "model.joblib"))
     metrics_path: str = field(default_factory=lambda: os.getenv("METRICS_PATH", "metrics.json"))
