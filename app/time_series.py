@@ -23,12 +23,6 @@ def simple_moving_average(values: list[float], window: int) -> list[float]:
     result = np.convolve(arr, np.ones(window) / window, mode="full")[: len(arr)]
     return result.tolist()
 
-    if len(sma) >= 2:
-        slope = float(np.polyfit(np.arange(len(sma)), sma, 1)[0])
-        direction = "increasing" if slope > 10 else "decreasing" if slope < -10 else "stable"
-    else:
-        slope = 0.0
-        direction = "stable"
 
 def seasonal_baseline(values: list[float], period: int = 24) -> list[float]:
     """Compute a seasonal baseline by averaging each position modulo *period*.
