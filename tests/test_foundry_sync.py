@@ -43,22 +43,24 @@ def test_sync_export_only_never_uploads(monkeypatch: pytest.MonkeyPatch) -> None
 def test_sync_configured_uploads(monkeypatch: pytest.MonkeyPatch) -> None:
     settings = _configured_settings(monkeypatch)
     with patch("scripts.foundry_sync.client_from_settings") as mocked:
-        mocked.return_value.upload_dataset_file.return_value = "ri.txn.42"
+        mocked.return_value.upload_dataset_files.return_value = "ri.txn.42"
+        mocked.return_value.list_files.return_value = []
         summary = sync(settings=settings)
     assert summary["uploaded"] is True
     assert summary["transaction_rid"] == "ri.txn.42"
-    call = mocked.return_value.upload_dataset_file.call_args
+    call = mocked.return_value.upload_dataset_files.call_args
     assert call.args[0] == "ri.foundry.main.dataset.x"
 
 
 def test_sync_jsonl_format_target_name(monkeypatch: pytest.MonkeyPatch) -> None:
     settings = _configured_settings(monkeypatch)
     with patch("scripts.foundry_sync.client_from_settings") as mocked:
-        mocked.return_value.upload_dataset_file.return_value = "ri.txn.1"
+        mocked.return_value.upload_dataset_files.return_value = "ri.txn.1"
+        mocked.return_value.list_files.return_value = []
         summary = sync(fmt="jsonl", settings=settings)
     assert summary["format"] == "jsonl"
-    call = mocked.return_value.upload_dataset_file.call_args
-    assert call.kwargs["target_name"].endswith(".jsonl")
+    files_arg = mocked.return_value.upload_dataset_files.call_args.args[1]
+    assert any(name.endswith(".jsonl") for name in files_arg)
 
 
 def test_sync_summary_row_count_matches_export(
@@ -91,3 +93,60 @@ def test_sync_uploaded_false_when_unconfigured(monkeypatch: pytest.MonkeyPatch) 
 def test_sync_csv_format_explicit(monkeypatch: pytest.MonkeyPatch) -> None:
     summary = sync(fmt="csv", settings=_unconfigured_settings(monkeypatch))
     assert summary["format"] == "csv"
+
+
+def test_sync_uploads_csv_ontology_and_manifest(monkeypatch: pytest.MonkeyPatch) -> None:
+    settings = _configured_settings(monkeypatch)
+    with patch("scripts.foundry_sync.client_from_settings") as mocked:
+        mocked.return_value.upload_dataset_files.return_value = "ri.txn.3"
+        mocked.return_value.list_files.return_value = [
+            "reflective_lantern_runs.csv",
+            "reflective_lantern_ontology.json",
+            "manifest.json",
+        ]
+        summary = sync(settings=settings)
+    files_arg = mocked.return_value.upload_dataset_files.call_args.args[1]
+    assert set(files_arg) == {
+        "reflective_lantern_runs.csv",
+        "reflective_lantern_ontology.json",
+        "manifest.json",
+    }
+    assert summary["files"] == [
+        "reflective_lantern_runs.csv",
+        "reflective_lantern_ontology.json",
+        "manifest.json",
+    ]
+
+
+def test_sync_no_ontology_skips_json(monkeypatch: pytest.MonkeyPatch) -> None:
+    settings = _configured_settings(monkeypatch)
+    with patch("scripts.foundry_sync.client_from_settings") as mocked:
+        mocked.return_value.upload_dataset_files.return_value = "ri.txn.4"
+        mocked.return_value.list_files.return_value = []
+        sync(include_ontology=False, settings=settings)
+    files_arg = mocked.return_value.upload_dataset_files.call_args.args[1]
+    assert "reflective_lantern_ontology.json" not in files_arg
+    assert "manifest.json" in files_arg
+
+
+def test_build_manifest_contents() -> None:
+    from scripts.foundry_sync import build_manifest
+
+    m = build_manifest(10, "csv", True)
+    assert m["rows"] == 10
+    assert m["format"] == "csv"
+    assert m["includes_ontology"] is True
+    assert m["generator"] == "reflective-lantern"
+
+
+def test_sync_manifest_is_valid_json(monkeypatch: pytest.MonkeyPatch) -> None:
+    import json as _json
+
+    settings = _configured_settings(monkeypatch)
+    with patch("scripts.foundry_sync.client_from_settings") as mocked:
+        mocked.return_value.upload_dataset_files.return_value = "ri.txn.5"
+        mocked.return_value.list_files.return_value = []
+        sync(settings=settings)
+    files_arg = mocked.return_value.upload_dataset_files.call_args.args[1]
+    manifest = _json.loads(files_arg["manifest.json"])
+    assert manifest["rows"] > 0
