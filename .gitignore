@@ -87,3 +87,13 @@ secrets/
 # Logs
 *.log
 logs/
+
+# Generated artifacts
+volt_cast.db
+test_volt_cast.db
+volt_cast_model.joblib
+volt_cast_metrics.json
+*.pyc
+__pycache__/
+dist/
+*.egg-info/
