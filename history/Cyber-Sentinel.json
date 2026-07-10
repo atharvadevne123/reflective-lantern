@@ -1,98 +1,50 @@
-[
-  {
-    "repo": "Cyber-Sentinel",
-    "date": "2026-07-07",
-    "mode": "IMPROVEMENT",
-    "commits": 60,
-    "tests_passed": 102,
-    "lint": "ruff clean",
-    "status": "STAGED - target repo not writable from session",
-    "reason": "All channels to atharvadevne123/Cyber-Sentinel returned 403 'GitHub access to this repository is not enabled for this session'; session scope limited to reflective-lantern",
-    "staged_at": "reflective-lantern:staging/Cyber-Sentinel/ (see STAGING.md for transfer steps)",
-    "bugs_fixed": [
-      "get_feature_importance crashed on fitted VotingClassifier (used estimators_ instead of named_estimators_)",
-      "ModelNotTrainedError never caught by 'except RuntimeError' - untrained /predict returned 500 instead of 503",
-      "train_model never persisted metrics.pkl so load_metrics() always returned empty",
-      "test suite required PostgreSQL; now forces SQLite before app import",
-      "test_clear_model_cache_forces_reload asserted wrong behaviour"
+{
+  "repo": "Cyber-Sentinel",
+  "date": "2026-07-07",
+  "mode": "IMPROVEMENT",
+  "commits": 60,
+  "tests_passed": 102,
+  "lint": "ruff clean",
+  "status": "STAGED - target repo not writable from session",
+  "reason": "All channels to atharvadevne123/Cyber-Sentinel returned 403 'GitHub access to this repository is not enabled for this session'; session scope limited to reflective-lantern",
+  "staged_at": "reflective-lantern:staging/Cyber-Sentinel/ (see STAGING.md for transfer steps)",
+  "bugs_fixed": [
+    "get_feature_importance crashed on fitted VotingClassifier (used estimators_ instead of named_estimators_)",
+    "ModelNotTrainedError never caught by 'except RuntimeError' - untrained /predict returned 500 instead of 503",
+    "train_model never persisted metrics.pkl so load_metrics() always returned empty",
+    "test suite required PostgreSQL; now forces SQLite before app import",
+    "test_clear_model_cache_forces_reload asserted wrong behaviour"
+  ],
+  "tiers": {
+    "Application": [
+      "FastAPI API (8 endpoints)",
+      "XGB/LGBM/RF voting ensemble",
+      "KS-test drift detection",
+      "FAISS pattern index",
+      "LRU prediction cache",
+      "SQLAlchemy models"
     ],
-    "tiers": {
-      "Application": [
-        "FastAPI API (8 endpoints)",
-        "XGB/LGBM/RF voting ensemble",
-        "KS-test drift detection",
-        "FAISS pattern index",
-        "LRU prediction cache",
-        "SQLAlchemy models"
-      ],
-      "Tests": [
-        "102 tests across 8 modules"
-      ],
-      "Infra": [
-        "CI matrix 3.11/3.12",
-        "release workflow",
-        "dependabot",
-        "pre-commit",
-        "Docker/compose",
-        "Alembic",
-        "Airflow retrain DAG"
-      ],
-      "Docs": [
-        "README",
-        "CHANGELOG 1.0.1",
-        "CONTRIBUTING",
-        "SECURITY",
-        "CODE_OF_CONDUCT",
-        "STAGING.md"
-      ]
-    },
-    "email_status": "network_blocked",
-    "email_error": "SMTP EAFNOSUPPORT on ports 465/587 \u2014 outbound SMTP not permitted in session"
+    "Tests": [
+      "102 tests across 8 modules"
+    ],
+    "Infra": [
+      "CI matrix 3.11/3.12",
+      "release workflow",
+      "dependabot",
+      "pre-commit",
+      "Docker/compose",
+      "Alembic",
+      "Airflow retrain DAG"
+    ],
+    "Docs": [
+      "README",
+      "CHANGELOG 1.0.1",
+      "CONTRIBUTING",
+      "SECURITY",
+      "CODE_OF_CONDUCT",
+      "STAGING.md"
+    ]
   },
-  {
-    "date": "2026-06-23",
-    "mode": "improvement",
-    "improvements": [
-      "Built full ML project structure from empty repo: app package, SQLAlchemy models, feature pipeline",
-      "XGBoost/LightGBM/RandomForest soft-voting ensemble with 5-fold stratified CV",
-      "KS-test sliding-window drift monitor (fixed results-accumulation bug found by tests)",
-      "FAISS flat-L2 attack pattern matcher with graceful fallback",
-      "FastAPI app: /api/v1/predict, /api/v1/predict/batch, /health, /metrics, /version",
-      "Pydantic v2 schemas with field bounds and protocol validation",
-      "PredictionService layer, rate-limit + correlation-ID middleware, custom exception handlers",
-      "Airflow retrain DAG with drift-triggered branching",
-      "171 passing tests across 14 test modules (pytest, in-memory SQLite via StaticPool)",
-      "CI (lint/test/type-check), release + Bandit security workflows",
-      "Dockerfile, docker-compose with PostgreSQL, Alembic env, Makefile, pre-commit, pyproject",
-      "Docs: README, CONTRIBUTING, CHANGELOG, SECURITY, CODE_OF_CONDUCT, MIT LICENSE"
-    ],
-    "tests_passed": true,
-    "commits": 60,
-    "pushed": false,
-    "push_blocked_reason": "git proxy: repo not in session authorized set; no add_repo tool available",
-    "bundle": "pending/Cyber-Sentinel-2026-06-23.bundle",
-    "note": "container clock reported 2026-06-23; actual date 2026-07-08",
-    "email_status": "failed - SMTP egress blocked in session (HTTPS-only proxy)",
-    "report_pdf": "pending/Cyber-Sentinel_report_2026-07-08.pdf"
-  },
-  {
-    "date": "2026-06-09",
-    "mode": "improvement",
-    "improvements": [
-      "Built complete FastAPI intrusion-detection service from near-empty repo (app package: database, schemas, features, model, monitoring, faiss_store, middleware, config, utils, validators, explainability)",
-      "XGBoost-LightGBM-RandomForest soft-voting ensemble with 5-fold stratified CV and AUC-ROC reporting",
-      "KS-test drift monitoring with rolling live windows and prediction tracker",
-      "FAISS flat-L2 pattern store for nearest-neighbour attack matching",
-      "Airflow retraining DAG (fetch -> retrain -> drift check)",
-      "Full pytest suite: 130 new tests (API, model, features, monitoring, middleware, validators, utils, config, explainability)",
-      "Rate-limit + request-size middleware wired into the app",
-      "Alembic migration scaffold with initial schema",
-      "CI workflow (lint + test with PostgreSQL service), Dockerfile, docker-compose, Makefile, pre-commit",
-      "Docs: README (quick start, API reference, architecture), CONTRIBUTING, CHANGELOG, SECURITY, CODE_OF_CONDUCT, LICENSE",
-      "Merged concurrent remote Flask/Foundry implementation preserving both codebases; fixed its lint errors; 139 tests green"
-    ],
-    "tests_passed": true,
-    "commits": 60,
-    "email_status": "failed: SMTP outbound blocked by sandbox network policy (ports 587/465 unreachable)"
-  }
-]
+  "email_status": "network_blocked",
+  "email_error": "SMTP EAFNOSUPPORT on ports 465/587 — outbound SMTP not permitted in session"
+}

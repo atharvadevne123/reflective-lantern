@@ -44,9 +44,7 @@ NOTION_MODEL: str = "claude-sonnet-4-6"
 NOTION_DESCRIPTION_MAX_TOKENS: int = 200
 
 # History files that are config/meta files, not per-run records
-NON_RECORD_FILES: frozenset[str] = frozenset(
-    {"schema.json", "commit_schedule.json", "email_status.json"}
-)
+NON_RECORD_FILES: frozenset[str] = frozenset({"schema.json", "commit_schedule.json"})
 
 # Cleanup defaults
 CLEANUP_DEFAULT_DAYS: int = 90
@@ -55,18 +53,9 @@ MAX_HISTORY_ENTRIES: int = 365
 # Report formatting
 REPORT_DATE_FORMAT: str = "%Y-%m-%d"
 PDF_MAX_SIZE_MB: float = 5.0
-SEPARATOR_WIDTH: int = 60
 
 # Weekly summary window
 WEEKLY_SUMMARY_DAYS: int = 7
 
 # Repo selection constraints
 MIN_REPOS_FOR_ROTATION: int = 1
-
-# Palantir Foundry integration
-FOUNDRY_API_VERSION: str = "v2"
-FOUNDRY_DEFAULT_BRANCH: str = "master"
-FOUNDRY_DATASET_FILENAME: str = "reflective_lantern_runs.csv"
-FOUNDRY_UPLOAD_TIMEOUT_SECONDS: int = 60
-FOUNDRY_RUN_OBJECT_TYPE: str = "AutomationRun"
-FOUNDRY_REPO_OBJECT_TYPE: str = "Repository"

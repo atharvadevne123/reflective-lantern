@@ -1,157 +1,198 @@
-# Traffic-Pulse
+# Volt-Cast ⚡
 
-[![CI](https://github.com/atharvadevne123/Traffic-Pulse/actions/workflows/ci.yml/badge.svg)](https://github.com/atharvadevne123/Traffic-Pulse/actions/workflows/ci.yml)
-![Python](https://img.shields.io/badge/python-3.11%2B-blue)
-![FastAPI](https://img.shields.io/badge/FastAPI-0.111%2B-009688)
-![License](https://img.shields.io/badge/license-MIT-green)
+[![CI](https://github.com/atharvadevne123/reflective-lantern/actions/workflows/ci.yml/badge.svg)](https://github.com/atharvadevne123/reflective-lantern/actions/workflows/ci.yml)
+[![Python 3.11](https://img.shields.io/badge/python-3.11-blue.svg)](https://www.python.org/downloads/)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.111-green)](https://fastapi.tiangolo.com)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-Real-time urban traffic congestion prediction and incident detection API using an
-**XGBoost + LightGBM ensemble** with temporal feature engineering, route scoring,
-and automated KS-test drift detection.
+> **Electricity consumption and grid load prediction API** using XGBoost-LightGBM-RandomForest VotingRegressor ensemble with KS-test drift monitoring, automated weekly retraining, and production-grade smart energy management.
 
-Traffic-Pulse classifies road segments into four congestion levels — `free`,
-`moderate`, `congested`, `severe` — from live traffic telemetry (vehicle counts,
-average speeds, incidents, weather), logs every prediction for monitoring, and
-retrains automatically when feature drift is detected.
+---
 
-## Features
+## Overview
 
-- **Ensemble ML** — XGBoost + LightGBM pipelines averaged at the probability level,
-  trained with 5-fold stratified cross-validation (weighted one-vs-rest AUC-ROC).
-- **26 engineered features** — cyclical hour/day-of-week encodings, peak-hour flags,
-  lag features (1h/2h/4h), rolling means/stds (6h/24h), speed-volume ratios,
-  incident density, and road-type encoding.
-- **Drift detection** — two-sample Kolmogorov-Smirnov test per feature with
-  drift events persisted to the database and surfaced in `/api/v1/metrics`.
-- **Prediction logging** — every request/result stored via SQLAlchemy
-  (SQLite in dev, PostgreSQL in prod).
-- **Automated retraining** — drift-gated pipeline with AUC validation and
-  model promotion (`pipelines/retrain_dag.py`, Airflow-compatible).
-- **Production middleware** — correlation-ID propagation and response-time headers.
+Volt-Cast is a production-quality ML API for **smart grid energy load forecasting**. It takes temporal and environmental features (hour, day, temperature, humidity, historical loads) and predicts electricity demand in megawatts for a given time slot.
 
-## Quickstart
+### Key Features
 
-### Local
+- **Ensemble Model**: XGBoost + LightGBM + RandomForest `VotingRegressor` with 5-fold cross-validation
+- **6-Stage Feature Pipeline**: Lag (1h/24h/168h), Rolling stats, Temporal cyclical, Peak period encoding, Heat index ratios, Drop + StandardScaler
+- **KS-Test Drift Detection**: Kolmogorov-Smirnov test across prediction distribution windows
+- **7 REST Endpoints**: `/predict`, `/batch-predict`, `/forecast`, `/drift`, `/retrain`, `/health`, `/metrics`
+- **Automated Retraining**: Airflow DAG scheduled weekly with R² gate (≥0.60)
+- **Production Infra**: Docker + PostgreSQL + SQLAlchemy ORM + Alembic migrations
+- **Rate Limiting**: 200 req/min per IP with correlation ID middleware
+
+---
+
+## Architecture
+
+![Architecture Diagram](screenshots/architecture.png)
+
+---
+
+## Quick Start
+
+### Local Development
 
 ```bash
-git clone https://github.com/atharvadevne123/Traffic-Pulse
-cd Traffic-Pulse
-make install          # pip install -r requirements.txt + dev tools
-make train            # train the ensemble (writes model.joblib + metrics.json)
-make run              # uvicorn app.main:app --reload
+# Install dependencies
+pip install -r requirements.txt
+
+# Run the API
+uvicorn app.main:app --reload
+
+# Test
+pytest tests/ -v
 ```
 
 ### Docker
 
 ```bash
 cp .env.example .env
-docker compose up --build -d
-curl http://localhost:8000/health
+docker-compose up --build
 ```
+
+The API will be available at `http://localhost:8000`. Interactive docs at `http://localhost:8000/docs`.
+
+---
 
 ## API Reference
 
-### `POST /api/v1/predict`
+### POST `/api/v1/predict`
 
-Predict the congestion level for a route segment.
-
-```bash
-curl -X POST http://localhost:8000/api/v1/predict \
-  -H "Content-Type: application/json" \
-  -d '{
-    "route_id": "R42",
-    "hour": 8,
-    "day_of_week": 1,
-    "vehicle_count": 1800,
-    "avg_speed_kmh": 32.5,
-    "road_type": "arterial",
-    "incident_count": 1,
-    "is_raining": 1
-  }'
-```
+Predict energy load for a single time slot.
 
 ```json
 {
-  "route_id": "R42",
-  "congestion_level": 2,
-  "congestion_label": "congested",
-  "congestion_probability": 0.71,
-  "class_probabilities": {"free": 0.02, "moderate": 0.21, "congested": 0.71, "severe": 0.06},
-  "incident_score": 0.0556,
-  "model_version": "1.0.0"
+  "hour": 14,
+  "day_of_week": 2,
+  "month": 7,
+  "is_weekend": false,
+  "temperature_c": 28.5,
+  "humidity_pct": 65.0,
+  "historical_loads": [3500.0, 3600.0, 3800.0, 4000.0],
+  "region": "northeast"
 }
 ```
 
-### `POST /api/v1/drift`
-
-Run a KS test between a reference window and the current window of a feature.
-
-```bash
-curl -X POST http://localhost:8000/api/v1/drift \
-  -H "Content-Type: application/json" \
-  -d '{"feature_name": "vehicle_count", "reference": [/* >=10 floats */], "current": [/* >=10 floats */]}'
+**Response:**
+```json
+{
+  "predicted_load_mw": 4312.75,
+  "model_version": "1.0.0",
+  "region": "northeast",
+  "request_id": "550e8400-e29b-41d4-a716-446655440000",
+  "latency_ms": 8.4
+}
 ```
 
-### `GET /api/v1/metrics`
+### POST `/api/v1/batch-predict`
 
-Prediction volume, congestion distribution, active drift alerts, and training metrics.
+Predict for multiple time slots (up to 100).
 
-### `GET /health`
+### GET `/api/v1/forecast?start_hour=8&day_of_week=0&month=6&horizon_hours=24`
 
-Liveness probe with model version and loaded ensemble members.
+Multi-hour load forecast for grid planning.
 
-## Architecture
+### GET `/api/v1/drift`
 
-![Architecture](screenshots/architecture.png)
+KS-test drift report for the recent prediction distribution.
 
-| Layer | Technology |
-|---|---|
-| API | FastAPI + Pydantic v2 validation |
-| ML | XGBoost + LightGBM ensemble in sklearn Pipelines |
-| Features | 26 temporal/traffic features (`app/features.py`) |
-| Monitoring | KS-test drift + prediction logs (`app/monitoring.py`) |
-| Storage | SQLAlchemy — SQLite (dev) / PostgreSQL 16 (prod) |
-| Retraining | Drift-gated pipeline with AUC validation gate |
-| CI | GitHub Actions — ruff lint + format + pytest |
+### GET `/api/v1/metrics`
 
-## Testing
+Model performance metrics: R², RMSE, prediction count, P50/P95 latency.
 
-```bash
-make test    # 40+ tests: API validation, model training, features, drift
-make lint    # ruff check + format check
+
+### POST `/api/v1/analyze`
+
+Analyze a historical load series for trends, spikes, and seasonal patterns.
+
+### GET `/api/v1/similar-periods`
+
+Find the 5 most similar 24-hour load profiles using FAISS pattern matching.
+
+### GET `/api/v1/regions` / `/api/v1/regions/{region_id}`
+
+List and query supported grid regions (northeast, midwest, south, west, texas).
+### POST `/api/v1/retrain`
+
+Trigger model retraining on fresh data.
+
+### GET `/api/v1/health`
+
+Health check with model load status and uptime.
+
+---
+
+## Feature Engineering
+
+| Stage | Transformer | Features Added |
+|-------|-------------|----------------|
+| 1 | `LagFeatureTransformer` | `lag_1h`, `lag_24h`, `lag_168h` |
+| 2 | `RollingStatsTransformer` | `rolling_mean_3h`, `rolling_std_3h`, `rolling_mean_24h`, `rolling_std_24h` |
+| 3 | `TemporalFeatureTransformer` | `hour_sin`, `hour_cos`, `dow_sin`, `dow_cos`, `month_sin`, `month_cos` |
+| 4 | `PeakPeriodEncoder` | `is_peak_hour`, `is_morning_peak`, `is_evening_peak`, `is_weekday_peak` |
+| 5 | `RatioFeatureTransformer` | `heat_index`, `cooling_demand_proxy`, `heating_demand_proxy`, `load_ratio_vs_daily_mean` |
+| 6 | `StandardScaler` | Normalized numeric features |
+
+---
+
+## Project Structure
+
+```
+volt-cast/
+├── app/
+│   ├── __init__.py         # Package init
+│   ├── database.py         # SQLAlchemy models
+│   ├── features.py         # 6-stage feature pipeline
+│   ├── main.py             # FastAPI app (7 endpoints)
+│   ├── middleware.py       # Rate limiting + correlation ID
+│   ├── model.py            # Ensemble training & prediction
+│   ├── monitoring.py       # KS-drift detection
+│   └── schemas.py          # Pydantic request/response models
+├── pipelines/
+│   └── retrain_dag.py      # Airflow weekly retraining DAG
+├── tests/
+│   ├── conftest.py         # Pytest fixtures
+│   ├── test_api.py         # API endpoint tests
+│   ├── test_database.py    # ORM model tests
+│   ├── test_features.py    # Feature pipeline tests
+│   ├── test_model.py       # Model training tests
+│   └── test_monitoring.py  # Drift detection tests
+├── scripts/
+│   └── generate_diagram.py # Architecture diagram
+├── screenshots/
+│   └── architecture.png    # System architecture diagram
+├── .github/workflows/ci.yml
+├── Dockerfile
+├── docker-compose.yml
+├── requirements.txt
+├── pyproject.toml
+├── Makefile
+└── .env.example
 ```
 
-## Retraining pipeline
+---
 
-```bash
-python pipelines/retrain_dag.py           # retrain only if drift detected
-python pipelines/retrain_dag.py --force   # unconditional retrain
-```
+## Tech Stack
 
-The pipeline checks `drift_logs` for unresolved drift, retrains the ensemble,
-validates the new model against an AUC threshold (default 0.75), and promotes
-it to `model_stable.joblib` only when validation passes.
+| Category | Technology |
+|----------|-----------|
+| Language | Python 3.11 |
+| API Framework | FastAPI 0.111+ |
+| ML Models | XGBoost, LightGBM, RandomForest |
+| Ensemble | `VotingRegressor` (scikit-learn) |
+| Feature Engineering | Custom sklearn Transformers |
+| Drift Detection | KS-test (scipy.stats) |
+| Database | SQLAlchemy ORM + PostgreSQL (prod) / SQLite (dev) |
+| Pipeline Orchestration | Apache Airflow |
+| Containerization | Docker + docker-compose |
+| Testing | pytest with parametrized test cases |
+| CI/CD | GitHub Actions (ruff lint + pytest) |
+
+---
 
 ## License
 
-MIT
-
-## Project structure
-
-```
-Traffic-Pulse/
-├── app/                  # FastAPI app, ML model, features, monitoring
-│   ├── main.py           # API endpoints + middleware
-│   ├── model.py          # XGBoost + LightGBM ensemble
-│   ├── features.py       # 26-feature engineering pipeline
-│   ├── monitoring.py     # KS-test drift + prediction logging
-│   ├── middleware.py     # Rate limiting
-│   ├── logging_config.py # Structured JSON logs
-│   ├── config.py         # Env-driven settings
-│   └── database.py       # SQLAlchemy models
-├── pipelines/            # Drift-gated retraining pipeline
-├── migrations/           # Alembic database migrations
-├── tests/                # 85+ pytest tests
-├── scripts/              # Diagram generator + example client
-└── docs/                 # Extended API documentation
-```
+MIT License — see [LICENSE](LICENSE) for details.

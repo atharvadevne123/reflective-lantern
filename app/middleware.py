@@ -1,58 +1,56 @@
-"""Rate limiting middleware — sliding-window counter per client IP."""
+"""FastAPI middleware: correlation ID and rate limiting."""
 
 from __future__ import annotations
 
+import logging
 import time
+import uuid
 from collections import defaultdict, deque
-from typing import Any
+from collections.abc import Callable
 
-from fastapi import Request
-from fastapi.responses import JSONResponse
+from fastapi import Request, Response
+from starlette.middleware.base import BaseHTTPMiddleware
 
-from app.config import settings
+logger = logging.getLogger(__name__)
 
-_WINDOW_SECONDS = 60.0
-_requests: dict[str, deque[float]] = defaultdict(deque)
-
-
-def _client_key(request: Request) -> str:
-    """Resolve the rate-limit bucket key for a request.
-
-    Args:
-        request: Incoming HTTP request.
-
-    Returns:
-        The client IP (or ``unknown`` when the transport gives none).
-    """
-    if request.client is None:
-        return "unknown"
-    return request.client.host
+RATE_LIMIT_PER_MINUTE = 200
+_rate_buckets: dict[str, deque] = defaultdict(lambda: deque())
 
 
-async def rate_limit_middleware(request: Request, call_next: Any) -> Any:
-    """Reject requests beyond ``settings.rate_limit_per_minute`` with HTTP 429.
+class CorrelationIDMiddleware(BaseHTTPMiddleware):
+    """Injects X-Request-ID into each request and response."""
 
-    Uses an in-memory sliding window per client IP. For multi-replica
-    deployments swap this for a shared store (e.g. Redis).
-    """
-    key = _client_key(request)
-    now = time.monotonic()
-    window = _requests[key]
-
-    while window and now - window[0] > _WINDOW_SECONDS:
-        window.popleft()
-
-    if len(window) >= settings.rate_limit_per_minute:
-        return JSONResponse(
-            status_code=429,
-            content={"detail": "Rate limit exceeded. Try again later."},
-            headers={"Retry-After": "60"},
-        )
-
-    window.append(now)
-    return await call_next(request)
+    async def dispatch(self, request: Request, call_next: Callable) -> Response:
+        request_id = request.headers.get("X-Request-ID") or str(uuid.uuid4())
+        request.state.request_id = request_id
+        start = time.monotonic()
+        response = await call_next(request)
+        elapsed_ms = (time.monotonic() - start) * 1000
+        response.headers["X-Request-ID"] = request_id
+        response.headers["X-Response-Time-Ms"] = f"{elapsed_ms:.1f}"
+        return response
 
 
-def reset_rate_limiter() -> None:
-    """Clear all rate-limit windows (used by tests)."""
-    _requests.clear()
+class RateLimitMiddleware(BaseHTTPMiddleware):
+    """Simple in-process per-IP rate limiter (RATE_LIMIT_PER_MINUTE req/min)."""
+
+    async def dispatch(self, request: Request, call_next: Callable) -> Response:
+        client_ip = request.client.host if request.client else "unknown"
+        now = time.monotonic()
+        bucket = _rate_buckets[client_ip]
+
+        # evict timestamps older than 60 seconds
+        while bucket and now - bucket[0] > 60.0:
+            bucket.popleft()
+
+        if len(bucket) >= RATE_LIMIT_PER_MINUTE:
+            logger.warning("rate limit exceeded for %s", client_ip)
+            from fastapi.responses import JSONResponse
+            return JSONResponse(
+                status_code=429,
+                content={"detail": "Rate limit exceeded. Try again in 60 seconds."},
+                headers={"Retry-After": "60"},
+            )
+
+        bucket.append(now)
+        return await call_next(request)

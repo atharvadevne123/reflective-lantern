@@ -1,5 +1,4 @@
 """Ensemble ML model: XGBoost + LightGBM + RandomForest for intrusion detection."""
-
 from __future__ import annotations
 
 import logging
@@ -37,7 +36,9 @@ from app.features import generate_synthetic_data
 logger = logging.getLogger(__name__)
 
 MODEL_PATH = Path(os.environ.get("MODEL_PATH", "/tmp/cyber_sentinel_model.pkl"))
-LABEL_ENCODER_PATH = Path(os.environ.get("LABEL_ENCODER_PATH", "/tmp/cyber_sentinel_le.pkl"))
+LABEL_ENCODER_PATH = Path(
+    os.environ.get("LABEL_ENCODER_PATH", "/tmp/cyber_sentinel_le.pkl")
+)
 
 ATTACK_TYPES = ["normal", "dos", "probe", "r2l", "u2r"]
 
@@ -101,12 +102,10 @@ def train_model(X: np.ndarray | None = None, y: np.ndarray | None = None) -> dic
 
     estimators = _build_estimators()
     voting_clf = VotingClassifier(estimators=estimators, voting="soft")
-    pipeline = Pipeline(
-        [
-            ("scaler", StandardScaler()),
-            ("clf", voting_clf),
-        ]
-    )
+    pipeline = Pipeline([
+        ("scaler", StandardScaler()),
+        ("clf", voting_clf),
+    ])
 
     logger.info("Starting cross-validation with %d samples", len(X))
     skf = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
@@ -180,7 +179,9 @@ def predict(features: list[float]) -> dict[str, Any]:
         "label": label,
         "confidence": confidence,
         "attack_type": attack_type,
-        "class_probabilities": {ATTACK_TYPES[i]: round(float(p), 4) for i, p in enumerate(proba)},
+        "class_probabilities": {
+            ATTACK_TYPES[i]: round(float(p), 4) for i, p in enumerate(proba)
+        },
         "model_version": _model_cache.get("version", "unknown"),
     }
 

@@ -32,22 +32,17 @@
   {
     "date": "2026-06-03",
     "repo": "FraudDetectionAI",
-    "status": "blocked - container SMTP outbound blocked (EAFNOSUPPORT)"
+    "status": "blocked - container SMTP outbound blocked (EAFNOSUPPORT)",
+    "commits": 62
   },
   {
-    "date": "2026-07-10",
-    "repo": "Gmail-job-Automation",
+    "date": "2026-06-30",
+    "repo": "Energy-Oracle",
     "email_to": "devneatharva@gmail.com",
     "status": "BLOCKED",
-    "reason": "SMTP outbound blocked in remote execution environment - smtp.gmail.com:465 and :587 both timed out",
+    "reason": "SMTP outbound blocked in remote execution environment \u2014 IPv4 EAFNOSUPPORT on SSL:465, timeout on STARTTLS:587",
     "commits": 60,
-    "tests_before": 27,
-    "tests_after": 128
-  },
-  {
-    "date": "2026-07-10",
-    "run": "innovation-forge-guard",
-    "status": "failed",
-    "reason": "SMTP unavailable in CCR sandbox (no raw socket egress)"
+    "tests_passed": 228,
+    "tests_skipped": 5
   }
 ]

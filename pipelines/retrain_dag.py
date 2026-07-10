@@ -1,136 +1,156 @@
-"""Automated retraining pipeline — Airflow-compatible DAG pattern."""
+"""Airflow DAG for automated weekly retraining of the Volt-Cast model."""
 
 from __future__ import annotations
 
-import json
-import logging
-import os
-import shutil
 from datetime import datetime, timedelta
-from pathlib import Path
-from typing import Any
 
-logger = logging.getLogger(__name__)
-
-DAG_ID = "traffic_pulse_retrain"
-SCHEDULE_INTERVAL = "@weekly"
-DEFAULT_ARGS: dict[str, Any] = {
-    "owner": "reflective-lantern",
-    "retries": 2,
-    "retry_delay": timedelta(minutes=5),
-    "email_on_failure": False,
-}
+try:
+    from airflow import DAG
+    from airflow.operators.python import PythonOperator
+    _AIRFLOW = True
+except ImportError:
+    _AIRFLOW = False
 
 
-def task_check_drift(
-    db_url: str = os.getenv("DATABASE_URL", "sqlite:///./traffic_pulse.db"),
-) -> dict[str, Any]:
-    """Query drift_logs for unresolved drift events."""
+def _fetch_recent_data(**ctx) -> dict:
+    """Pull energy readings from the database for the past 7 days."""
+    import logging
+    import os
+    logger = logging.getLogger(__name__)
+
     from sqlalchemy import create_engine, text
-
+    db_url = os.getenv("DATABASE_URL", "sqlite:///./volt_cast.db")
     engine = create_engine(db_url)
     with engine.connect() as conn:
-        try:
-            row = conn.execute(text("SELECT COUNT(*) FROM drift_logs WHERE drift_detected = 1"))
-            drift_count = row.scalar() or 0
-        except Exception:
-            drift_count = 0
-
-    needs_retrain = drift_count > 0
-    logger.info("Drift check drift_count=%d needs_retrain=%s", drift_count, needs_retrain)
-    return {"drift_count": int(drift_count), "needs_retrain": needs_retrain}
+        rows = conn.execute(
+            text("SELECT * FROM energy_readings ORDER BY timestamp DESC LIMIT 5000")
+        ).fetchall()
+    logger.info("fetched %d rows for retraining", len(rows))
+    return {"row_count": len(rows)}
 
 
-def task_fetch_recent_data(
-    db_url: str = os.getenv("DATABASE_URL", "sqlite:///./traffic_pulse.db"),
-    days: int = 7,
-) -> dict[str, int]:
-    """Count recent predictions to size the retraining dataset."""
-    from sqlalchemy import create_engine, text
+def _train_and_evaluate(**ctx) -> dict:
+    """Retrain the ensemble model and validate performance gate."""
+    import logging
+    logger = logging.getLogger(__name__)
 
-    cutoff = datetime.utcnow() - timedelta(days=days)
+    from app.model import generate_synthetic_training_data, train_model
+    X, y = generate_synthetic_training_data(n_samples=3000)
+    model, metrics = train_model(X.values, y.values, cv_folds=5)
+
+    r2 = metrics.get("r2_mean", 0.0)
+    logger.info("retraining complete: R2=%.4f RMSE=%.2f", r2, metrics.get("rmse_mean", 0))
+
+    if r2 < 0.60:
+        raise ValueError(f"Retraining gate failed: R2={r2:.4f} < 0.60 threshold")
+
+    return {"r2": r2, "rmse": metrics.get("rmse_mean")}
+
+
+def _log_retraining_event(**ctx) -> None:
+    """Log the retraining run to the database."""
+    import logging
+    import os
+    logger = logging.getLogger(__name__)
+
+    from sqlalchemy import create_engine
+    from sqlalchemy.orm import sessionmaker
+
+    from app.database import Base, RetrainingLog
+
+    db_url = os.getenv("DATABASE_URL", "sqlite:///./volt_cast.db")
     engine = create_engine(db_url)
-    with engine.connect() as conn:
-        try:
-            row = conn.execute(
-                text("SELECT COUNT(*) FROM prediction_logs WHERE timestamp > :cutoff"),
-                {"cutoff": cutoff},
-            )
-            count = row.scalar() or 0
-        except Exception:
-            count = 0
-
-    logger.info("Recent data count=%d over last %d days", count, days)
-    return {"recent_prediction_count": int(count)}
-
-
-def task_retrain(n_samples: int = 5000) -> dict[str, Any]:
-    """Re-train the ensemble on fresh synthetic data."""
-    from app.model import train_model
-
-    logger.info("Starting retraining n_samples=%d", n_samples)
-    _, metrics = train_model()
-    logger.info("Retraining complete metrics=%s", metrics)
-    return metrics
+    Base.metadata.create_all(bind=engine)
+    SessionLocal = sessionmaker(bind=engine)
+    db = SessionLocal()
+    try:
+        ti = ctx.get("ti")
+        metrics = ti.xcom_pull(task_ids="train_and_evaluate") if ti else {}
+        db.add(RetrainingLog(
+            trigger="airflow_weekly",
+            samples_used=3000,
+            r2_after=metrics.get("r2") if metrics else None,
+            rmse_after=metrics.get("rmse") if metrics else None,
+            status="success",
+            notes="Automated weekly retraining via Airflow DAG",
+        ))
+        db.commit()
+        logger.info("retraining event logged to database")
+    finally:
+        db.close()
 
 
-def task_validate_model(auc_threshold: float = 0.75) -> dict[str, Any]:
-    """Assert retrained model meets minimum AUC before promotion."""
-    metrics_path = Path("metrics.json")
-    if not metrics_path.exists():
-        return {"passed": False, "reason": "metrics.json not found"}
+def _check_drift_and_alert(**ctx) -> None:
+    """Check for feature drift after retraining and emit warnings."""
+    import logging
 
-    metrics = json.loads(metrics_path.read_text())
-    ensemble_auc = float(metrics.get("ensemble_auc", 0.0))
-    passed = ensemble_auc >= auc_threshold
-    return {"passed": passed, "ensemble_auc": ensemble_auc, "threshold": auc_threshold}
+    logger = logging.getLogger(__name__)
 
+    from app.model import generate_synthetic_training_data
+    from app.monitoring import compute_drift
 
-def task_promote_model(validation: dict[str, Any]) -> dict[str, str]:
-    """Copy the validated model to the stable production path."""
-    if not validation.get("passed"):
-        logger.warning("Validation failed — skipping promotion: %s", validation)
-        return {"status": "skipped", "reason": "validation_failed"}
+    X_ref, y_ref = generate_synthetic_training_data(n_samples=1000, seed=42)
+    X_cur, y_cur = generate_synthetic_training_data(n_samples=200, seed=99)
 
-    src = Path("model.joblib")
-    dst = Path("model_stable.joblib")
-    if src.exists():
-        shutil.copy2(src, dst)
-        logger.info("Promoted %s -> %s", src, dst)
-        return {"status": "promoted", "model_path": str(dst)}
-    return {"status": "skipped", "reason": "model_not_found"}
+    result = compute_drift(y_ref.tolist(), y_cur.tolist(), "load_mw")
+    logger.info(
+        "post-retrain drift check: ks=%.4f p=%.4f drift=%s",
+        result["ks_statistic"],
+        result["p_value"],
+        result["drift_detected"],
+    )
+    if result["drift_detected"]:
+        logger.warning("DRIFT ALERT: load_mw distribution has shifted significantly")
 
 
-def run_pipeline(force: bool = False) -> dict[str, Any]:
-    """Execute the full check-retrain-validate-promote pipeline."""
-    results: dict[str, Any] = {}
-
-    drift = task_check_drift()
-    results["drift_check"] = drift
-
-    if not force and not drift["needs_retrain"]:
-        logger.info("No drift — skipping retraining")
-        return {"status": "skipped", **results}
-
-    data_info = task_fetch_recent_data()
-    results["data_info"] = data_info
-
-    n_samples = max(1000, min(data_info["recent_prediction_count"] * 10, 10_000))
-    training_metrics = task_retrain(n_samples=n_samples)
-    results["training_metrics"] = training_metrics
-
-    validation = task_validate_model()
-    results["validation"] = validation
-
-    promotion = task_promote_model(validation)
-    results["promotion"] = promotion
-
-    return {"status": "completed", **results}
+def run_retraining_pipeline() -> dict:
+    """Standalone entry point for running the pipeline outside Airflow."""
+    ctx: dict = {}
+    data_info = _fetch_recent_data(**ctx)
+    metrics = _train_and_evaluate(**ctx)
+    _log_retraining_event(**ctx)
+    _check_drift_and_alert(**ctx)
+    return {**data_info, **metrics}
 
 
-if __name__ == "__main__":
-    import sys
+if _AIRFLOW:
+    default_args = {
+        "owner": "volt-cast",
+        "depends_on_past": False,
+        "retries": 2,
+        "retry_delay": timedelta(minutes=5),
+        "email_on_failure": True,
+        "email": ["devneatharva@gmail.com"],
+    }
 
-    force = "--force" in sys.argv
-    result = run_pipeline(force=force)
-    print(json.dumps(result, indent=2, default=str))
+    with DAG(
+        dag_id="volt_cast_weekly_retrain",
+        default_args=default_args,
+        description="Weekly automated retraining for Volt-Cast energy model",
+        schedule="0 2 * * 1",  # Monday 02:00 UTC
+        start_date=datetime(2025, 1, 1),
+        catchup=False,
+        tags=["volt-cast", "ml", "energy"],
+    ) as dag:
+
+        fetch_data = PythonOperator(
+            task_id="fetch_recent_data",
+            python_callable=_fetch_recent_data,
+        )
+
+        train = PythonOperator(
+            task_id="train_and_evaluate",
+            python_callable=_train_and_evaluate,
+        )
+
+        log_event = PythonOperator(
+            task_id="log_retraining_event",
+            python_callable=_log_retraining_event,
+        )
+
+        drift_check = PythonOperator(
+            task_id="check_drift_and_alert",
+            python_callable=_check_drift_and_alert,
+        )
+
+        fetch_data >> train >> log_event >> drift_check

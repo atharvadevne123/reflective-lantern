@@ -1,48 +1,42 @@
-"""Structured JSON logging configuration."""
+"""Structured JSON logging configuration for Volt-Cast."""
 
 from __future__ import annotations
 
 import json
 import logging
 import sys
-from datetime import UTC, datetime
 from typing import Any
-
-from app.config import settings
 
 
 class JsonFormatter(logging.Formatter):
-    """Format log records as single-line JSON objects.
-
-    Emits ``timestamp``, ``level``, ``logger``, ``message`` and any
-    ``extra``-supplied ``correlation_id`` so log aggregators can index
-    requests end-to-end.
-    """
+    """Emit log records as JSON lines for structured log ingestion."""
 
     def format(self, record: logging.LogRecord) -> str:
-        payload: dict[str, Any] = {
-            "timestamp": datetime.now(UTC).isoformat(),
+        log: dict[str, Any] = {
+            "ts": self.formatTime(record, self.datefmt),
             "level": record.levelname,
             "logger": record.name,
-            "message": record.getMessage(),
+            "msg": record.getMessage(),
         }
-        correlation_id = getattr(record, "correlation_id", None)
-        if correlation_id:
-            payload["correlation_id"] = correlation_id
-        if record.exc_info and record.exc_info[0]:
-            payload["exception"] = self.formatException(record.exc_info)
-        return json.dumps(payload)
+        if record.exc_info:
+            log["exc"] = self.formatException(record.exc_info)
+        if hasattr(record, "request_id"):
+            log["request_id"] = record.request_id
+        return json.dumps(log, ensure_ascii=False)
 
 
-def configure_logging(level: str | None = None) -> None:
-    """Install the JSON formatter on the root logger.
-
-    Args:
-        level: Logging level name; defaults to ``settings.log_level``.
-    """
+def configure_logging(level: str = "INFO", json_output: bool = False) -> None:
+    """Set up root logger with optional JSON formatting."""
     handler = logging.StreamHandler(sys.stdout)
-    handler.setFormatter(JsonFormatter())
+    if json_output:
+        handler.setFormatter(JsonFormatter())
+    else:
+        handler.setFormatter(
+            logging.Formatter("%(asctime)s %(name)s %(levelname)s %(message)s")
+        )
     root = logging.getLogger()
+    root.setLevel(getattr(logging, level.upper(), logging.INFO))
     root.handlers.clear()
     root.addHandler(handler)
-    root.setLevel(level or settings.log_level)
+    logging.getLogger("uvicorn.access").setLevel(logging.WARNING)
+    logging.getLogger("sqlalchemy.engine").setLevel(logging.WARNING)

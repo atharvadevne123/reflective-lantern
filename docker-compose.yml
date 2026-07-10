@@ -6,28 +6,32 @@ services:
     ports:
       - "8000:8000"
     environment:
-      - DATABASE_URL=postgresql://traffic_user:traffic_pass@db:5432/traffic_pulse
-      - MODEL_PATH=/app/model.joblib
-      - METRICS_PATH=/app/metrics.json
+      - DATABASE_URL=postgresql://voltcast:voltcast@db:5432/voltcast
+      - MODEL_PATH=/app/volt_cast_model.joblib
+      - METRICS_PATH=/app/volt_cast_metrics.json
     depends_on:
       db:
         condition: service_healthy
     restart: unless-stopped
+    volumes:
+      - model_data:/app/models
 
   db:
-    image: postgres:16-alpine
+    image: postgres:15-alpine
     environment:
-      POSTGRES_USER: traffic_user
-      POSTGRES_PASSWORD: traffic_pass
-      POSTGRES_DB: traffic_pulse
+      POSTGRES_USER: voltcast
+      POSTGRES_PASSWORD: voltcast
+      POSTGRES_DB: voltcast
+    ports:
+      - "5432:5432"
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - pg_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U traffic_user -d traffic_pulse"]
-      interval: 5s
+      test: ["CMD-SHELL", "pg_isready -U voltcast"]
+      interval: 10s
       timeout: 5s
-      retries: 10
-    restart: unless-stopped
+      retries: 5
 
 volumes:
-  postgres_data:
+  pg_data:
+  model_data:

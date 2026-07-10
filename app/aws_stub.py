@@ -1,93 +1,67 @@
-"""AWS/boto3 integration stub for Realty-Edge model artefact storage.
+"""AWS/boto3 stub for S3 model artifact storage."""
 
-Uploads and downloads model artefacts (model.joblib, metrics.json) to an
-S3 bucket when AWS credentials are configured. Falls back to local disk
-when AWS is unavailable.
-
-Environment variables
----------------------
-AWS_REGION          – AWS region (default: us-east-1)
-S3_BUCKET           – Target bucket name
-S3_PREFIX           – Key prefix for artefacts (default: realty-edge/models)
-"""
+from __future__ import annotations
 
 import logging
 import os
 from pathlib import Path
-from typing import Any
 
 logger = logging.getLogger(__name__)
 
-_REGION = os.getenv("AWS_REGION", "us-east-1")
-_BUCKET = os.getenv("S3_BUCKET", "")
-_PREFIX = os.getenv("S3_PREFIX", "realty-edge/models")
+AWS_ENABLED = os.getenv("AWS_ENABLED", "false").lower() == "true"
+S3_BUCKET = os.getenv("S3_BUCKET", "volt-cast-models")
+S3_PREFIX = os.getenv("S3_PREFIX", "models/")
 
 
-def _s3_client() -> Any | None:
-    """Return a boto3 S3 client or None if boto3 is unavailable."""
-    if not _BUCKET:
-        return None
+def upload_model(local_path: str, s3_key: str | None = None) -> str:
+    """Upload model file to S3 — no-op stub when AWS_ENABLED=false."""
+    path = Path(local_path)
+    key = s3_key or f"{S3_PREFIX}{path.name}"
+
+    if not AWS_ENABLED:
+        logger.info("aws stub — would upload %s to s3://%s/%s", local_path, S3_BUCKET, key)
+        return f"s3://{S3_BUCKET}/{key} (stub)"
+
     try:
-        import boto3
-
-        return boto3.client("s3", region_name=_REGION)
-    except ImportError:
-        logger.debug("boto3 not installed — S3 artefact storage disabled.")
+        import boto3  # type: ignore[import]
+        s3 = boto3.client("s3")
+        s3.upload_file(local_path, S3_BUCKET, key)
+        uri = f"s3://{S3_BUCKET}/{key}"
+        logger.info("uploaded model to %s", uri)
+        return uri
     except Exception as exc:
-        logger.warning("Failed to initialise boto3 client: %s", exc)
-    return None
+        logger.error("s3 upload failed: %s", exc)
+        raise
 
 
-def upload_model_artefacts(local_paths: list[str]) -> list[str]:
-    """Upload model artefact files to S3.
+def download_model(s3_key: str, local_path: str) -> str:
+    """Download model file from S3 — no-op stub when AWS_ENABLED=false."""
+    if not AWS_ENABLED:
+        logger.info("aws stub — would download s3://%s/%s to %s", S3_BUCKET, s3_key, local_path)
+        return local_path
 
-    Args:
-        local_paths: Local file paths to upload.
+    try:
+        import boto3  # type: ignore[import]
+        s3 = boto3.client("s3")
+        s3.download_file(S3_BUCKET, s3_key, local_path)
+        logger.info("downloaded model from s3://%s/%s", S3_BUCKET, s3_key)
+        return local_path
+    except Exception as exc:
+        logger.error("s3 download failed: %s", exc)
+        raise
 
-    Returns:
-        List of S3 URIs that were successfully uploaded.
-    """
-    client = _s3_client()
-    if client is None:
-        logger.debug("S3 upload skipped (no bucket configured or boto3 missing).")
+
+def list_model_versions() -> list[str]:
+    """List available model versions in S3."""
+    if not AWS_ENABLED:
+        logger.info("aws stub — would list versions in s3://%s/%s", S3_BUCKET, S3_PREFIX)
+        return ["stub/volt_cast_model_v1.0.0.joblib"]
+
+    try:
+        import boto3  # type: ignore[import]
+        s3 = boto3.client("s3")
+        resp = s3.list_objects_v2(Bucket=S3_BUCKET, Prefix=S3_PREFIX)
+        return [obj["Key"] for obj in resp.get("Contents", [])]
+    except Exception as exc:
+        logger.error("s3 list failed: %s", exc)
         return []
-    uploaded: list[str] = []
-    for path in local_paths:
-        if not Path(path).exists():
-            logger.warning("Artefact not found, skipping upload: %s", path)
-            continue
-        key = f"{_PREFIX}/{Path(path).name}"
-        try:
-            client.upload_file(path, _BUCKET, key)
-            uri = f"s3://{_BUCKET}/{key}"
-            uploaded.append(uri)
-            logger.info("Uploaded artefact to %s", uri)
-        except Exception as exc:
-            logger.error("S3 upload failed for %s: %s", path, exc)
-    return uploaded
-
-
-def download_model_artefacts(local_dir: str = ".") -> list[str]:
-    """Download model artefacts from S3 to a local directory.
-
-    Args:
-        local_dir: Directory to write downloaded files into.
-
-    Returns:
-        List of local file paths that were successfully downloaded.
-    """
-    client = _s3_client()
-    if client is None:
-        logger.debug("S3 download skipped.")
-        return []
-    downloaded: list[str] = []
-    for filename in ("model.joblib", "metrics.json"):
-        key = f"{_PREFIX}/{filename}"
-        local_path = os.path.join(local_dir, filename)
-        try:
-            client.download_file(_BUCKET, key, local_path)
-            downloaded.append(local_path)
-            logger.info("Downloaded %s to %s", key, local_path)
-        except Exception as exc:
-            logger.warning("S3 download failed for %s: %s", key, exc)
-    return downloaded

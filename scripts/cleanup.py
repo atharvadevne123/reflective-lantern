@@ -76,7 +76,9 @@ def clean_file(
         return 0
 
     original_count = len(raw)
-    kept = [e for e in raw if not ((d := _entry_date(e)) is not None and d < cutoff)]
+    kept = [e for e in raw if not (
+        (d := _entry_date(e)) is not None and d < cutoff
+    )]
     # Always preserve at least min_keep most-recent entries if requested
     if min_keep > 0 and len(kept) < min_keep and len(raw) >= min_keep:
         kept = raw[-min_keep:]
@@ -98,12 +100,12 @@ def main() -> int:
     """Entry point."""
     parser = argparse.ArgumentParser(description="Clean old history entries")
     parser.add_argument(
-        "--days",
-        type=int,
-        default=CLEANUP_DEFAULT_DAYS,
-        help="Remove entries older than this many days",
+        "--days", type=int, default=CLEANUP_DEFAULT_DAYS,
+        help="Remove entries older than this many days"
     )
-    parser.add_argument("--dry-run", action="store_true", help="Report without modifying files")
+    parser.add_argument(
+        "--dry-run", action="store_true", help="Report without modifying files"
+    )
     parser.add_argument(
         "--max-entries",
         type=int,
@@ -125,15 +127,14 @@ def main() -> int:
     total_removed = 0
     for path in sorted(HISTORY_DIR.glob("*.json")):
         total_removed += clean_file(
-            path,
-            cutoff,
+            path, cutoff,
             dry_run=args.dry_run,
             max_entries=args.max_entries,
             min_keep=args.min_keep,
         )
 
     action = "Would remove" if args.dry_run else "Removed"
-    log.info("%s %d old entries from history files", action, total_removed)
+    print(f"{action} {total_removed} old entries from history files")
     return 0
 
 

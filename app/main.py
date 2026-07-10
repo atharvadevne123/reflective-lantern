@@ -1,291 +1,419 @@
-"""FastAPI application — /api/v1/predict, /api/v1/metrics, /api/v1/drift, /health."""
+"""Volt-Cast FastAPI application — energy load prediction API."""
 
 from __future__ import annotations
 
-import json
 import logging
 import time
 import uuid
-from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
-from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING
 
-import pandas as pd
-from fastapi import Depends, FastAPI, HTTPException, Request
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.middleware.gzip import GZipMiddleware
-from pydantic import BaseModel, Field, field_validator
+import numpy as np
+
+if TYPE_CHECKING:
+    import pandas as pd
+from fastapi import Depends, FastAPI, HTTPException
 from sqlalchemy.orm import Session
 
-from app.database import get_db, init_db
-from app.features import FEATURE_COLUMNS, build_feature_vector
-from app.logging_config import configure_logging
-from app.middleware import rate_limit_middleware
-from app.model import MODEL_VERSION, load_model
-from app.model import predict as model_predict
+from app.database import (
+    DriftReport,
+    PredictionLog,
+    RetrainingLog,
+    create_tables,
+    get_db,
+)
+from app.features import build_raw_feature_df
+from app.middleware import CorrelationIDMiddleware, RateLimitMiddleware
+from app.model import (
+    MODEL_VERSION,
+    generate_synthetic_training_data,
+    load_metrics,
+    load_model,
+    predict,
+    train_model,
+)
 from app.monitoring import (
-    compute_drift,
-    get_drift_summary,
-    get_recent_predictions,
-    log_drift,
-    log_prediction,
+    compute_all_feature_drifts,
+    get_tracker,
+)
+from app.schemas import (
+    BatchPredictRequest,
+    BatchPredictResponse,
+    DriftResponse,
+    ForecastRequest,
+    ForecastResponse,
+    HealthResponse,
+    MetricsResponse,
+    PredictRequest,
+    PredictResponse,
 )
 
-configure_logging()
+logging.basicConfig(level=logging.INFO, format="%(asctime)s %(name)s %(levelname)s %(message)s")
 logger = logging.getLogger(__name__)
 
-_models: dict = {}
+_model = None
+_start_time = time.monotonic()
+_REFERENCE_LOADS: list[float] = []
 
 
 @asynccontextmanager
-async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
-    init_db()
-    _models.update(load_model())
-    logger.info("Traffic-Pulse started model_version=%s", MODEL_VERSION)
+async def lifespan(app: FastAPI):
+    global _model, _REFERENCE_LOADS
+    create_tables()
+    _model = load_model()
+    if _model is None:
+        logger.info("no saved model found — training on synthetic data")
+        X, y = generate_synthetic_training_data(n_samples=2000)
+        _model, _ = train_model(X.values, y.values)
+        _REFERENCE_LOADS = y.tolist()[:1000]
+        logger.info("model trained and ready")
+    else:
+        X, y = generate_synthetic_training_data(n_samples=500)
+        _REFERENCE_LOADS = y.tolist()[:500]
     yield
-    _models.clear()
+    logger.info("volt-cast shutting down")
 
-
-TAGS_METADATA = [
-    {"name": "prediction", "description": "Congestion level predictions (single and batch)."},
-    {"name": "monitoring", "description": "Drift detection and prediction statistics."},
-    {"name": "system", "description": "Health and model metadata."},
-]
 
 app = FastAPI(
-    title="Traffic-Pulse",
+    title="Volt-Cast",
     description=(
-        "Real-time urban traffic congestion prediction and incident detection API "
-        "using an XGBoost-LightGBM ensemble with KS-test drift monitoring."
+        "**Volt-Cast** — Production-grade electricity consumption and grid load prediction API. "
+        "Powered by an XGBoost + LightGBM + RandomForest VotingRegressor ensemble with KS-test "
+        "drift monitoring, automated retraining, and FAISS pattern matching."
     ),
-    version=MODEL_VERSION,
+    version="1.0.0",
+    contact={"name": "Reflective Lantern", "email": "devneatharva@gmail.com"},
+    license_info={"name": "MIT"},
+    openapi_tags=[
+        {"name": "System", "description": "Health, metrics, and configuration endpoints"},
+        {"name": "Prediction", "description": "Load prediction, batch, forecast, and analysis"},
+        {"name": "Monitoring", "description": "Drift detection and performance monitoring"},
+        {"name": "Administration", "description": "Model retraining and management"},
+    ],
     lifespan=lifespan,
-    openapi_tags=TAGS_METADATA,
 )
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_methods=["GET", "POST"],
-    allow_headers=["*"],
-)
+app.add_middleware(CorrelationIDMiddleware)
+app.add_middleware(RateLimitMiddleware)
 
 
-app.add_middleware(GZipMiddleware, minimum_size=1024)
-
-app.middleware("http")(rate_limit_middleware)
-
-
-@app.middleware("http")
-async def correlation_id_middleware(request: Request, call_next: Any) -> Any:
-    correlation_id = request.headers.get("X-Correlation-ID", str(uuid.uuid4()))
-    start = time.perf_counter()
-    response = await call_next(request)
-    elapsed_ms = round((time.perf_counter() - start) * 1000, 2)
-    response.headers["X-Correlation-ID"] = correlation_id
-    response.headers["X-Response-Time-Ms"] = str(elapsed_ms)
-    return response
+def _get_model():
+    if _model is None:
+        raise HTTPException(status_code=503, detail="Model not loaded")
+    return _model
 
 
-# ── Request / Response schemas ───────────────────────────────────────────────
-
-
-class TrafficInput(BaseModel):
-    route_id: str = Field(..., min_length=1, max_length=64)
-    hour: int = Field(..., ge=0, le=23)
-    day_of_week: int = Field(..., ge=0, le=6)
-    month: int = Field(default=6, ge=1, le=12)
-    vehicle_count: int = Field(..., ge=0, le=10_000)
-    avg_speed_kmh: float = Field(..., ge=0.0, le=200.0)
-    road_type: str = Field(default="arterial")
-    incident_count: int = Field(default=0, ge=0, le=100)
-    temperature_celsius: float = Field(default=20.0, ge=-30.0, le=50.0)
-    is_raining: int = Field(default=0, ge=0, le=1)
-    lag_1h: float | None = None
-    lag_2h: float | None = None
-    lag_4h: float | None = None
-    rolling_mean_6h: float | None = None
-    rolling_std_6h: float | None = None
-    rolling_mean_24h: float | None = None
-
-    @field_validator("road_type")
-    @classmethod
-    def validate_road_type(cls, v: str) -> str:
-        allowed = {"highway", "arterial", "collector", "local", "expressway"}
-        if v.lower() not in allowed:
-            msg = f"road_type must be one of {sorted(allowed)}"
-            raise ValueError(msg)
-        return v.lower()
-
-
-class PredictionResponse(BaseModel):
-    route_id: str
-    congestion_level: int
-    congestion_label: str
-    congestion_probability: float
-    class_probabilities: dict[str, float]
-    incident_score: float
-    model_version: str
-
-
-class DriftRequest(BaseModel):
-    feature_name: str
-    reference: list[float] = Field(..., min_length=10)
-    current: list[float] = Field(..., min_length=10)
-
-
-# ── Endpoints ────────────────────────────────────────────────────────────────
-
-
-@app.get("/health", tags=["system"], summary="Liveness probe")
-def health() -> dict[str, Any]:
-    """Liveness probe — returns model version and loaded ensemble members."""
-    return {
-        "status": "ok",
-        "model_version": MODEL_VERSION,
-        "models_loaded": list(_models.keys()),
-    }
-
-
-@app.get("/api/v1/metrics", tags=["monitoring"], summary="Monitoring snapshot")
-def metrics(db: Session = Depends(get_db)) -> dict[str, Any]:
-    """Prediction statistics and any active drift alerts."""
-    predictions = get_recent_predictions(db, limit=200)
-    drift_logs = get_drift_summary(db, limit=50)
-
-    level_counts: dict[int, int] = {0: 0, 1: 0, 2: 0, 3: 0}
-    for p in predictions:
-        level_counts[p.congestion_level] = level_counts.get(p.congestion_level, 0) + 1
-
-    metrics_path = Path("metrics.json")
-    training_metrics: dict[str, Any] = (
-        json.loads(metrics_path.read_text()) if metrics_path.exists() else {}
+@app.get("/api/v1/health", response_model=HealthResponse, tags=["System"])
+async def health():
+    """Health check endpoint."""
+    tracker = get_tracker()
+    return HealthResponse(
+        status="ok" if _model is not None else "degraded",
+        model_loaded=_model is not None,
+        model_version=MODEL_VERSION,
+        prediction_count=tracker.count,
+        uptime_seconds=round(time.monotonic() - _start_time, 1),
     )
 
-    return {
-        "total_predictions": len(predictions),
-        "congestion_distribution": level_counts,
-        "drift_alerts": [d for d in drift_logs if d["drift_detected"]],
-        "training_metrics": training_metrics,
-        "model_version": MODEL_VERSION,
-    }
 
-
-@app.post(
-    "/api/v1/predict",
-    response_model=PredictionResponse,
-    tags=["prediction"],
-    summary="Predict congestion for one route segment",
-)
-def predict(
-    payload: TrafficInput,
-    db: Session = Depends(get_db),
-) -> PredictionResponse:
-    """Predict congestion level (0-3) for the given route and conditions."""
-    if not _models:
-        raise HTTPException(status_code=503, detail="Models not loaded")
-
-    raw = payload.model_dump()
-    features = build_feature_vector(raw)
-    df = pd.DataFrame([features])
-
-    result = model_predict(_models, df)
-    log_prediction(
-        db,
-        hour=payload.hour,
-        day_of_week=payload.day_of_week,
-        route_id=payload.route_id,
-        road_type=payload.road_type,
-        prediction=result,
-        features=features,
+@app.get("/api/v1/metrics", response_model=MetricsResponse, tags=["System"])
+async def metrics():
+    """Model performance metrics."""
+    m = load_metrics()
+    tracker = get_tracker()
+    lats = tracker.latencies
+    p50 = float(np.percentile(lats, 50)) if lats else None
+    p95 = float(np.percentile(lats, 95)) if lats else None
+    return MetricsResponse(
+        r2_mean=m.get("r2_mean"),
+        r2_std=m.get("r2_std"),
+        rmse_mean=m.get("rmse_mean"),
+        rmse_std=m.get("rmse_std"),
+        n_samples=m.get("n_samples"),
+        n_features=m.get("n_features"),
+        model_version=m.get("model_version", MODEL_VERSION),
+        prediction_count=tracker.count,
+        recent_latency_p50_ms=round(p50, 2) if p50 else None,
+        recent_latency_p95_ms=round(p95, 2) if p95 else None,
     )
-    return PredictionResponse(route_id=payload.route_id, **result)
 
 
-@app.post("/api/v1/drift", tags=["monitoring"], summary="Run KS drift test on a feature")
-def check_drift(
-    payload: DriftRequest,
+@app.post("/api/v1/predict", response_model=PredictResponse, tags=["Prediction"])
+async def predict_load(
+    req: PredictRequest,
+    request=None,
     db: Session = Depends(get_db),
-) -> dict[str, Any]:
-    """KS-test drift detection between a reference and current feature window."""
-    drift_result = compute_drift(payload.reference, payload.current)
-    log_drift(db, payload.feature_name, drift_result)
-    return {"feature": payload.feature_name, **drift_result}
+):
+    """Predict energy load for a single time slot."""
+    model = _get_model()
+    t0 = time.monotonic()
+    request_id = str(uuid.uuid4())
+
+    df = build_raw_feature_df(
+        hour=req.hour,
+        day_of_week=req.day_of_week,
+        month=req.month,
+        is_weekend=req.is_weekend,
+        temperature_c=req.temperature_c,
+        humidity_pct=req.humidity_pct,
+        historical_loads=req.historical_loads,
+        region=req.region,
+    )
+
+    # Apply feature transformers manually for single-row inference
+    row = _engineer_features(df).values
+    pred = float(predict(model, row)[0])
+    pred = max(500.0, min(pred, 15000.0))  # clamp to plausible MW range
+
+    latency_ms = (time.monotonic() - t0) * 1000
+    get_tracker().record(pred, latency_ms)
+
+    db.add(PredictionLog(
+        predicted_load_mw=pred,
+        model_version=MODEL_VERSION,
+        region=req.region,
+        latency_ms=round(latency_ms, 2),
+        request_id=request_id,
+    ))
+    db.commit()
+
+    return PredictResponse(
+        predicted_load_mw=round(pred, 2),
+        model_version=MODEL_VERSION,
+        region=req.region,
+        request_id=request_id,
+        latency_ms=round(latency_ms, 2),
+    )
 
 
-@app.post(
-    "/api/v1/predict/batch",
-    tags=["prediction"],
-    summary="Predict congestion for up to 100 segments",
-)
-def predict_batch(
-    payloads: list[TrafficInput],
-    db: Session = Depends(get_db),
-) -> list[PredictionResponse]:
-    """Predict congestion levels for up to 100 route segments in one call."""
-    if not _models:
-        raise HTTPException(status_code=503, detail="Models not loaded")
-    if len(payloads) > 100:
-        raise HTTPException(status_code=422, detail="Batch size limited to 100")
+@app.post("/api/v1/batch-predict", response_model=BatchPredictResponse, tags=["Prediction"])
+async def batch_predict(req: BatchPredictRequest, db: Session = Depends(get_db)):
+    """Predict energy load for multiple time slots."""
+    model = _get_model()
+    t0 = time.monotonic()
+    results = []
 
-    responses: list[PredictionResponse] = []
-    for payload in payloads:
-        features = build_feature_vector(payload.model_dump())
-        result = model_predict(_models, pd.DataFrame([features]))
-        log_prediction(
-            db,
-            hour=payload.hour,
-            day_of_week=payload.day_of_week,
-            route_id=payload.route_id,
-            road_type=payload.road_type,
-            prediction=result,
-            features=features,
+    for item in req.requests:
+        t1 = time.monotonic()
+        request_id = str(uuid.uuid4())
+        df = build_raw_feature_df(
+            hour=item.hour,
+            day_of_week=item.day_of_week,
+            month=item.month,
+            is_weekend=item.is_weekend,
+            temperature_c=item.temperature_c,
+            humidity_pct=item.humidity_pct,
+            historical_loads=item.historical_loads,
+            region=item.region,
         )
-        responses.append(PredictionResponse(route_id=payload.route_id, **result))
-    return responses
+        row = _engineer_features(df).values
+        pred = float(predict(model, row)[0])
+        pred = max(500.0, min(pred, 15000.0))
+        latency_ms = (time.monotonic() - t1) * 1000
+        get_tracker().record(pred, latency_ms)
+        db.add(PredictionLog(
+            predicted_load_mw=pred,
+            model_version=MODEL_VERSION,
+            region=item.region,
+            latency_ms=round(latency_ms, 2),
+            request_id=request_id,
+        ))
+        results.append(PredictResponse(
+            predicted_load_mw=round(pred, 2),
+            model_version=MODEL_VERSION,
+            region=item.region,
+            request_id=request_id,
+            latency_ms=round(latency_ms, 2),
+        ))
 
-
-@app.get("/api/v1/model-info", tags=["system"], summary="Model metadata and feature list")
-def model_info() -> dict[str, Any]:
-    """Model metadata: version, ensemble members, and feature list."""
-    return {
-        "model_version": MODEL_VERSION,
-        "ensemble_members": list(_models.keys()),
-        "n_features": len(FEATURE_COLUMNS),
-        "features": FEATURE_COLUMNS,
-        "congestion_labels": {"0": "free", "1": "moderate", "2": "congested", "3": "severe"},
-    }
-
-@app.get("/api/v1/routes/{route_id}/history", tags=["prediction"], summary="Recent predictions for a route")
-def route_history(
-    route_id: str,
-    limit: int = 20,
-    db: Session = Depends(get_db),
-) -> dict[str, Any]:
-    """Return the most recent logged predictions for one route segment."""
-    from app.database import PredictionLog
-
-    limit = max(1, min(limit, 200))
-    rows = (
-        db.query(PredictionLog)
-        .filter(PredictionLog.route_id == route_id)
-        .order_by(PredictionLog.timestamp.desc())
-        .limit(limit)
-        .all()
+    db.commit()
+    return BatchPredictResponse(
+        predictions=results,
+        total=len(results),
+        batch_latency_ms=round((time.monotonic() - t0) * 1000, 2),
     )
+
+
+@app.get("/api/v1/drift", response_model=DriftResponse, tags=["Monitoring"])
+async def drift_report(db: Session = Depends(get_db)):
+    """Return KS-test drift detection report for recent predictions."""
+    tracker = get_tracker()
+    current_loads = tracker.loads
+
+    if len(current_loads) < 10:
+        return DriftResponse(
+            drifts=[],
+            summary={"message": "insufficient_predictions", "count": len(current_loads)},
+            model_version=MODEL_VERSION,
+        )
+
+    ref = _REFERENCE_LOADS[:500] if _REFERENCE_LOADS else current_loads[:200]
+    drift_result = compute_all_feature_drifts(
+        reference_df=_loads_to_df(ref),
+        current_df=_loads_to_df(current_loads[-200:]),
+        numeric_features=["load_mw"],
+    )
+
+    for d in drift_result:
+        db.add(DriftReport(
+            feature_name=d["feature"],
+            ks_statistic=d["ks_statistic"],
+            p_value=d["p_value"],
+            drift_detected=d["drift_detected"],
+            reference_window=len(ref),
+            current_window=min(len(current_loads), 200),
+            model_version=MODEL_VERSION,
+        ))
+    db.commit()
+
+    n_drifted = sum(1 for d in drift_result if d["drift_detected"])
+    return DriftResponse(
+        drifts=drift_result,
+        summary={
+            "total_features": len(drift_result),
+            "drifted": n_drifted,
+            "drift_pct": round(100 * n_drifted / max(len(drift_result), 1), 1),
+        },
+        model_version=MODEL_VERSION,
+    )
+
+
+@app.get("/api/v1/forecast", response_model=ForecastResponse, tags=["Prediction"])
+async def forecast(req: ForecastRequest = Depends()):
+    """Generate a multi-hour load forecast."""
+    model = _get_model()
+    forecasts = []
+    for h in range(req.horizon_hours):
+        hour = (req.start_hour + h) % 24
+        dow = (req.day_of_week + (req.start_hour + h) // 24) % 7
+        df = build_raw_feature_df(
+            hour=hour,
+            day_of_week=dow,
+            month=req.month,
+            is_weekend=req.is_weekend,
+            temperature_c=req.temperature_c,
+            humidity_pct=req.humidity_pct,
+            region=req.region,
+        )
+        row = _engineer_features(df).values
+        pred = float(predict(model, row)[0])
+        pred = max(500.0, min(pred, 15000.0))
+        forecasts.append({"offset_hours": h, "hour": hour, "predicted_load_mw": round(pred, 2)})
+
+    return ForecastResponse(
+        region=req.region,
+        horizon_hours=req.horizon_hours,
+        forecasts=forecasts,
+    )
+
+
+@app.post("/api/v1/retrain", tags=["Administration"])
+async def retrain(db: Session = Depends(get_db)):
+    """Trigger model retraining on synthetic data (demo endpoint)."""
+    global _model
+    X, y = generate_synthetic_training_data(n_samples=3000)
+    _model, metrics = train_model(X.values, y.values)
+    db.add(RetrainingLog(
+        trigger="api",
+        samples_used=3000,
+        r2_after=metrics.get("r2_mean"),
+        rmse_after=metrics.get("rmse_mean"),
+        status="success",
+    ))
+    db.commit()
+    return {"status": "retrained", "metrics": metrics}
+
+
+def _engineer_features(df) -> pd.DataFrame:
+    """Apply the feature engineering steps inline for single-row inference."""
+    import numpy as np
+
+    from app.features import (
+        DropColumnsTransformer,
+        LagFeatureTransformer,
+        PeakPeriodEncoder,
+        RatioFeatureTransformer,
+        RollingStatsTransformer,
+        TemporalFeatureTransformer,
+    )
+
+    for step in [
+        LagFeatureTransformer(),
+        RollingStatsTransformer(),
+        TemporalFeatureTransformer(),
+        PeakPeriodEncoder(),
+        RatioFeatureTransformer(),
+        DropColumnsTransformer(),
+    ]:
+        df = step.fit_transform(df)
+
+    return df.select_dtypes(include=[np.number])
+
+
+def _loads_to_df(loads: list[float]) -> pd.DataFrame:
+    import pandas as pd
+    return pd.DataFrame({"load_mw": loads})
+
+
+@app.post("/api/v1/analyze", tags=["Prediction"])
+async def analyze_load_series(loads: list[float]):
+    """Analyze a historical load series for trends, spikes, and seasonal patterns."""
+    from app.anomaly import quick_anomaly_check
+    from app.time_series import compute_trend, detect_load_spikes, seasonal_summary
+
+    if len(loads) < 10:
+        raise HTTPException(status_code=422, detail="Provide at least 10 load values")
+
+    trend = compute_trend(loads, window=min(24, len(loads) // 2))
+    spikes = detect_load_spikes(loads)
+    seasonal = seasonal_summary(loads, period=min(24, len(loads)))
+    ref = loads[: len(loads) // 2]
+    cur = loads[len(loads) // 2 :]
+    anomaly = quick_anomaly_check(ref, cur) if len(ref) >= 20 else {"skipped": "insufficient_reference"}
+
     return {
-        "route_id": route_id,
-        "count": len(rows),
-        "predictions": [
-            {
-                "timestamp": r.timestamp.isoformat(),
-                "hour": r.hour,
-                "congestion_level": r.congestion_level,
-                "congestion_prob": r.congestion_prob,
-                "incident_score": r.incident_score,
-                "model_version": r.model_version,
-            }
-            for r in rows
-        ],
+        "series_length": len(loads),
+        "trend": trend,
+        "spikes_detected": len(spikes),
+        "spike_details": spikes[:5],
+        "seasonal": seasonal,
+        "anomaly_check": anomaly,
     }
+
+
+@app.post("/api/v1/similar-periods", tags=["Prediction"])
+async def find_similar_periods(profile: list[float]):
+    """Find historical load profiles similar to the given 24-hour pattern."""
+    from app.faiss_index import get_pattern_index
+
+    if len(profile) != 24:
+        raise HTTPException(status_code=422, detail="Profile must contain exactly 24 hourly values")
+
+    idx = get_pattern_index(dim=24)
+
+    if idx.size < 3:
+        X, y = generate_synthetic_training_data(n_samples=200)
+        hours = X["hour"].values
+        for day_start in range(0, min(len(hours) - 24, 50)):
+            chunk = y.values[day_start : day_start + 24].tolist()
+            idx.add(chunk, {"day_offset": day_start, "source": "synthetic"})
+
+    results = idx.search(profile, k=5)
+    return {"query_length": len(profile), "matches": results}
+
+
+@app.get("/api/v1/regions", tags=["System"])
+async def list_regions():
+    """List all supported grid regions."""
+    from app.regions import list_regions as _list
+    return {"regions": _list()}
+
+
+@app.get("/api/v1/regions/{region_id}", tags=["System"])
+async def get_region(region_id: str):
+    """Get metadata for a specific grid region."""
+    from app.regions import get_region as _get
+    region = _get(region_id)
+    if not region:
+        raise HTTPException(status_code=404, detail=f"Region '{region_id}' not found")
+    return {"id": region_id, **region}

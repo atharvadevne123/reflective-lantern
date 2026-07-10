@@ -1,5 +1,4 @@
 """Tests for FAISS-based attack pattern retrieval."""
-
 from __future__ import annotations
 
 import numpy as np

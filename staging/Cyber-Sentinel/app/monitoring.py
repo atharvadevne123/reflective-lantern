@@ -1,5 +1,4 @@
 """KS-test drift detection and prediction health monitoring."""
-
 from __future__ import annotations
 
 import logging
@@ -36,9 +35,7 @@ def set_reference_distribution(feature_name: str, values: np.ndarray) -> None:
         values: Array of reference (training) values.
     """
     _reference_data[feature_name] = np.asarray(values, dtype=float)
-    logger.info(
-        "Reference distribution set for feature '%s' (%d samples)", feature_name, len(values)
-    )
+    logger.info("Reference distribution set for feature '%s' (%d samples)", feature_name, len(values))
 
 
 def compute_drift(feature_name: str, current_values: np.ndarray) -> dict[str, Any]:

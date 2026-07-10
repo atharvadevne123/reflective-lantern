@@ -1,5 +1,4 @@
 """Tests for the prediction cache module."""
-
 from __future__ import annotations
 
 import pytest

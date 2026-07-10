@@ -38,18 +38,14 @@ ZIPCODES = [
 
 def seed(db_url: str | None = None) -> None:
     url = db_url or os.getenv("DATABASE_URL", "sqlite:///./realty_edge.db")
-    engine = create_engine(
-        url, connect_args={"check_same_thread": False} if "sqlite" in url else {}
-    )
+    engine = create_engine(url, connect_args={"check_same_thread": False} if "sqlite" in url else {})
     Base.metadata.create_all(bind=engine)
     Session = sessionmaker(bind=engine)
     db = Session()
     try:
         inserted = 0
-        for zipcode, med_price, med_ppsf, school, transit, walk, crime, rental in ZIPCODES:
-            existing = (
-                db.query(NeighborhoodStat).filter(NeighborhoodStat.zipcode == zipcode).first()
-            )
+        for (zipcode, med_price, med_ppsf, school, transit, walk, crime, rental) in ZIPCODES:
+            existing = db.query(NeighborhoodStat).filter(NeighborhoodStat.zipcode == zipcode).first()
             if existing:
                 continue
             stat = NeighborhoodStat(

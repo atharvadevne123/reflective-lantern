@@ -4,7 +4,6 @@ Revision ID: 001_initial_schema
 Revises:
 Create Date: 2026-06-29
 """
-
 from __future__ import annotations
 
 import sqlalchemy as sa

@@ -1,5 +1,4 @@
 """CLI script to train the Cyber-Sentinel ensemble model."""
-
 from __future__ import annotations
 
 import logging

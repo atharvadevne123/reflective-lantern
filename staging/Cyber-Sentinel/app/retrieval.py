@@ -1,5 +1,4 @@
 """FAISS-based pattern matching for known attack signatures."""
-
 from __future__ import annotations
 
 import logging

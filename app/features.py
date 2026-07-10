@@ -1,177 +1,181 @@
-"""Feature engineering pipeline for traffic congestion prediction."""
+"""Feature engineering pipeline for energy load prediction."""
 
 from __future__ import annotations
 
 import logging
-from typing import Any
 
 import numpy as np
 import pandas as pd
+from sklearn.base import BaseEstimator, TransformerMixin
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import StandardScaler
 
 logger = logging.getLogger(__name__)
 
-ROAD_TYPE_MAP: dict[str, int] = {
-    "highway": 0,
-    "arterial": 1,
-    "collector": 2,
-    "local": 3,
-    "expressway": 4,
-}
-
-PEAK_HOURS: frozenset[int] = frozenset(range(7, 10)) | frozenset(range(16, 20))
-
-FEATURE_COLUMNS: list[str] = [
-    "hour",
-    "day_of_week",
-    "month",
-    "is_weekend",
-    "is_peak_hour",
-    "hour_sin",
-    "hour_cos",
-    "dow_sin",
-    "dow_cos",
-    "vehicle_count",
-    "avg_speed_kmh",
-    "speed_volume_ratio",
-    "incident_count",
-    "incident_density",
-    "temperature_celsius",
-    "is_raining",
-    "road_type_encoded",
-    "lag_1h",
-    "lag_2h",
-    "lag_4h",
-    "lag_delta_1h",
-    "lag_ratio_1h",
-    "rolling_mean_6h",
-    "rolling_std_6h",
-    "rolling_mean_24h",
-    "volume_vs_daily_avg",
-]
+PEAK_HOURS = frozenset(range(7, 22))  # 7am-10pm
 
 
-def encode_road_type(road_type: str) -> int:
-    """Map a road type name to its ordinal encoding.
+class LagFeatureTransformer(BaseEstimator, TransformerMixin):
+    """Adds historical lag features to the feature dataframe.
+
+    Creates columns for load values at fixed look-back offsets:
+    lag_1h, lag_24h, and lag_168h (7 days).
 
     Args:
-        road_type: Road classification (case-insensitive).
-
-    Returns:
-        Integer code; unknown types fall back to ``local`` (3).
+        lags: List of integer hour offsets. Defaults to [1, 24, 168].
     """
-    return ROAD_TYPE_MAP.get(road_type.lower(), 3)
+
+    def __init__(self, lags: list[int] | None = None) -> None:
+        self.lags = lags or [1, 24, 168]
+
+    def fit(self, X: pd.DataFrame, y=None) -> LagFeatureTransformer:
+        return self
+
+    def transform(self, X: pd.DataFrame) -> pd.DataFrame:
+        X = X.copy()
+        if "historical_loads" in X.columns:
+            history = X["historical_loads"].iloc[0] if hasattr(X["historical_loads"].iloc[0], "__len__") else []
+            for lag in self.lags:
+                col = f"lag_{lag}h"
+                if len(history) >= lag:
+                    X[col] = float(history[-lag])
+                else:
+                    X[col] = 0.0
+        else:
+            for lag in self.lags:
+                X[f"lag_{lag}h"] = 0.0
+        return X
 
 
-def is_peak_hour(hour: int) -> int:
-    """Return 1 when the hour falls in the 7-9 or 16-19 rush windows."""
-    return int(hour in PEAK_HOURS)
+class RollingStatsTransformer(BaseEstimator, TransformerMixin):
+    """Adds rolling mean and std features over 3h and 24h windows."""
+
+    def __init__(self, windows: list[int] | None = None) -> None:
+        self.windows = windows or [3, 24]
+
+    def fit(self, X: pd.DataFrame, y=None) -> RollingStatsTransformer:
+        return self
+
+    def transform(self, X: pd.DataFrame) -> pd.DataFrame:
+        X = X.copy()
+        if "historical_loads" in X.columns:
+            for w in self.windows:
+                col_mean = f"rolling_mean_{w}h"
+                col_std = f"rolling_std_{w}h"
+                history = X["historical_loads"].iloc[0] if hasattr(X["historical_loads"].iloc[0], "__len__") else []
+                if len(history) >= w:
+                    window_vals = list(history[-w:])
+                    X[col_mean] = float(np.mean(window_vals))
+                    X[col_std] = float(np.std(window_vals))
+                else:
+                    X[col_mean] = 0.0
+                    X[col_std] = 0.0
+        else:
+            for w in self.windows:
+                X[f"rolling_mean_{w}h"] = 0.0
+                X[f"rolling_std_{w}h"] = 0.0
+        return X
 
 
-def compute_lag_features(
-    vehicle_count: float,
-    avg_speed: float,  # noqa: ARG001
-    lag_1h: float | None = None,
-    lag_2h: float | None = None,
-    lag_4h: float | None = None,
-) -> dict[str, float]:
-    """Compute lag features, falling back to decayed estimates when history is absent.
+class TemporalFeatureTransformer(BaseEstimator, TransformerMixin):
+    """Encodes temporal cyclical features: hour, day, month."""
 
-    Args:
-        vehicle_count: Current hourly vehicle count.
-        avg_speed: Current average speed (reserved for future lag interactions).
-        lag_1h: Observed count one hour ago, if available.
-        lag_2h: Observed count two hours ago, if available.
-        lag_4h: Observed count four hours ago, if available.
+    def fit(self, X: pd.DataFrame, y=None) -> TemporalFeatureTransformer:
+        return self
 
-    Returns:
-        Lag values plus delta and ratio against the 1-hour lag.
-    """
-    l1 = lag_1h if lag_1h is not None else vehicle_count * 0.95
-    l2 = lag_2h if lag_2h is not None else vehicle_count * 0.90
-    l4 = lag_4h if lag_4h is not None else vehicle_count * 0.85
-    return {
-        "lag_1h": l1,
-        "lag_2h": l2,
-        "lag_4h": l4,
-        "lag_delta_1h": vehicle_count - l1,
-        "lag_ratio_1h": vehicle_count / (l1 + 1e-8),
-    }
+    def transform(self, X: pd.DataFrame) -> pd.DataFrame:
+        X = X.copy()
+        if "hour" in X.columns:
+            X["hour_sin"] = np.sin(2 * np.pi * X["hour"] / 24)
+            X["hour_cos"] = np.cos(2 * np.pi * X["hour"] / 24)
+        if "day_of_week" in X.columns:
+            X["dow_sin"] = np.sin(2 * np.pi * X["day_of_week"] / 7)
+            X["dow_cos"] = np.cos(2 * np.pi * X["day_of_week"] / 7)
+        if "month" in X.columns:
+            X["month_sin"] = np.sin(2 * np.pi * X["month"] / 12)
+            X["month_cos"] = np.cos(2 * np.pi * X["month"] / 12)
+        return X
 
 
-def compute_rolling_features(
-    vehicle_count: float,
-    rolling_mean_6h: float | None = None,
-    rolling_std_6h: float | None = None,
-    rolling_mean_24h: float | None = None,
-) -> dict[str, float]:
-    """Compute rolling-window statistics with sensible fallbacks.
+class PeakPeriodEncoder(BaseEstimator, TransformerMixin):
+    """Encodes is_peak_hour and load_category features."""
 
-    Returns:
-        6h/24h rolling means, 6h std, and current volume vs daily average.
-    """
-    rm6 = rolling_mean_6h if rolling_mean_6h is not None else vehicle_count
-    rs6 = rolling_std_6h if rolling_std_6h is not None else vehicle_count * 0.1
-    rm24 = rolling_mean_24h if rolling_mean_24h is not None else vehicle_count * 0.95
-    return {
-        "rolling_mean_6h": rm6,
-        "rolling_std_6h": rs6,
-        "rolling_mean_24h": rm24,
-        "volume_vs_daily_avg": vehicle_count / (rm24 + 1e-8),
-    }
+    def fit(self, X: pd.DataFrame, y=None) -> PeakPeriodEncoder:
+        return self
+
+    def transform(self, X: pd.DataFrame) -> pd.DataFrame:
+        X = X.copy()
+        if "hour" in X.columns:
+            X["is_peak_hour"] = X["hour"].apply(lambda h: 1 if h in PEAK_HOURS else 0)
+            X["is_morning_peak"] = X["hour"].apply(lambda h: 1 if 7 <= h <= 10 else 0)
+            X["is_evening_peak"] = X["hour"].apply(lambda h: 1 if 17 <= h <= 21 else 0)
+        if "is_weekend" in X.columns:
+            X["is_weekday_peak"] = (
+                (X.get("is_peak_hour", 0) == 1) & (X["is_weekend"] == 0)
+            ).astype(int)
+        return X
 
 
-def build_feature_vector(raw: dict[str, Any]) -> dict[str, float]:
-    """Convert a raw input dict into the flat feature vector consumed by the model."""
-    hour = int(raw["hour"])
-    dow = int(raw["day_of_week"])
-    month = int(raw.get("month", 6))
-    vehicle_count = float(raw.get("vehicle_count", 1000))
-    avg_speed = float(raw.get("avg_speed_kmh", 50.0))
-    incident_count = int(raw.get("incident_count", 0))
-    temperature = float(raw.get("temperature_celsius", 20.0))
-    is_raining = int(raw.get("is_raining", 0))
-    road_type = str(raw.get("road_type", "arterial"))
+class RatioFeatureTransformer(BaseEstimator, TransformerMixin):
+    """Computes temperature-humidity interaction ratio and capacity factor."""
 
-    lag = compute_lag_features(
-        vehicle_count,
-        avg_speed,
-        raw.get("lag_1h"),
-        raw.get("lag_2h"),
-        raw.get("lag_4h"),
-    )
-    rolling = compute_rolling_features(
-        vehicle_count,
-        raw.get("rolling_mean_6h"),
-        raw.get("rolling_std_6h"),
-        raw.get("rolling_mean_24h"),
-    )
+    def fit(self, X: pd.DataFrame, y=None) -> RatioFeatureTransformer:
+        return self
 
-    return {
+    def transform(self, X: pd.DataFrame) -> pd.DataFrame:
+        X = X.copy()
+        if "temperature_c" in X.columns and "humidity_pct" in X.columns:
+            X["heat_index"] = X["temperature_c"] + 0.33 * (X["humidity_pct"] / 100.0 * 6.105) - 4.0
+            X["cooling_demand_proxy"] = np.maximum(X["temperature_c"] - 18.0, 0)
+            X["heating_demand_proxy"] = np.maximum(18.0 - X["temperature_c"], 0)
+        if "lag_24h" in X.columns and "rolling_mean_24h" in X.columns:
+            mean_val = X["rolling_mean_24h"].replace(0, np.nan)
+            X["load_ratio_vs_daily_mean"] = X["lag_24h"] / mean_val.fillna(1.0)
+        return X
+
+
+class DropColumnsTransformer(BaseEstimator, TransformerMixin):
+    """Drops non-numeric or helper columns before model training."""
+
+    DROP_COLS = ["historical_loads", "region", "timestamp"]
+
+    def fit(self, X: pd.DataFrame, y=None) -> DropColumnsTransformer:
+        self.cols_to_drop_ = [c for c in self.DROP_COLS if c in X.columns]
+        return self
+
+    def transform(self, X: pd.DataFrame) -> pd.DataFrame:
+        return X.drop(columns=self.cols_to_drop_, errors="ignore")
+
+
+def build_feature_pipeline() -> Pipeline:
+    return Pipeline([
+        ("lag", LagFeatureTransformer()),
+        ("rolling", RollingStatsTransformer()),
+        ("temporal", TemporalFeatureTransformer()),
+        ("peak", PeakPeriodEncoder()),
+        ("ratios", RatioFeatureTransformer()),
+        ("drop", DropColumnsTransformer()),
+        ("scaler", StandardScaler()),
+    ])
+
+
+def build_raw_feature_df(
+    hour: int,
+    day_of_week: int,
+    month: int,
+    is_weekend: bool,
+    temperature_c: float,
+    humidity_pct: float,
+    historical_loads: list[float] | None = None,
+    region: str = "default",
+) -> pd.DataFrame:
+    return pd.DataFrame([{
         "hour": hour,
-        "day_of_week": dow,
+        "day_of_week": day_of_week,
         "month": month,
-        "is_weekend": int(dow >= 5),
-        "is_peak_hour": is_peak_hour(hour),
-        "hour_sin": float(np.sin(2 * np.pi * hour / 24)),
-        "hour_cos": float(np.cos(2 * np.pi * hour / 24)),
-        "dow_sin": float(np.sin(2 * np.pi * dow / 7)),
-        "dow_cos": float(np.cos(2 * np.pi * dow / 7)),
-        "vehicle_count": vehicle_count,
-        "avg_speed_kmh": avg_speed,
-        "speed_volume_ratio": avg_speed / (vehicle_count + 1e-8),
-        "incident_count": float(incident_count),
-        "incident_density": incident_count / (vehicle_count + 1e-8),
-        "temperature_celsius": temperature,
-        "is_raining": float(is_raining),
-        "road_type_encoded": float(encode_road_type(road_type)),
-        **lag,
-        **rolling,
-    }
-
-
-def build_feature_dataframe(records: list[dict[str, Any]]) -> pd.DataFrame:
-    """Vectorise a batch of raw records into a model-ready dataframe."""
-    rows = [build_feature_vector(r) for r in records]
-    df = pd.DataFrame(rows)
-    logger.info("Built feature dataframe shape=%s", df.shape)
-    return df
+        "is_weekend": int(is_weekend),
+        "temperature_c": temperature_c,
+        "humidity_pct": humidity_pct,
+        "historical_loads": historical_loads or [],
+        "region": region,
+    }])

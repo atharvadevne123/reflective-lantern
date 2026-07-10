@@ -1,5 +1,4 @@
 """API endpoint tests for Cyber-Sentinel."""
-
 from __future__ import annotations
 
 import pytest
@@ -95,9 +94,7 @@ def test_predict_invalid_serror_rate(client: TestClient) -> None:
     assert resp.status_code == 422
 
 
-def test_predict_response_has_similar_patterns(
-    trained_client: TestClient, sample_event: dict
-) -> None:
+def test_predict_response_has_similar_patterns(trained_client: TestClient, sample_event: dict) -> None:
     resp = trained_client.post("/predict", json=sample_event)
     assert resp.status_code == 200
     data = resp.json()

@@ -45,10 +45,8 @@ def load_latest_entry(path: Path) -> dict[str, Any] | None:
         dict_entries = [e for e in raw if isinstance(e, dict)]
         if not dict_entries:
             return None
-
         def _date_key(e: dict[str, Any]) -> str:
             return str(e.get("date") or e.get("last_run") or "")
-
         return max(dict_entries, key=_date_key)
     if isinstance(raw, dict):
         return raw
@@ -83,15 +81,13 @@ def main() -> None:
         entry = load_latest_entry(path)
         if entry is None:
             continue
-        rows.append(
-            {
-                "repo": path.stem,
-                "date": entry.get("date") or entry.get("last_run") or "",
-                "mode": (entry.get("mode") or "improvement").upper(),
-                "commits": entry.get("commits", 0),
-                "tests_passed": entry.get("tests_passed", None),
-            }
-        )
+        rows.append({
+            "repo": path.stem,
+            "date": entry.get("date") or entry.get("last_run") or "",
+            "mode": (entry.get("mode") or "improvement").upper(),
+            "commits": entry.get("commits", 0),
+            "tests_passed": entry.get("tests_passed", None),
+        })
 
     if args.filter_mode:
         rows = [r for r in rows if r["mode"].lower() == args.filter_mode]
@@ -114,11 +110,7 @@ def main() -> None:
     print(header)
     print(sep)
     for row in rows:
-        tp = (
-            "yes"
-            if row["tests_passed"] is True
-            else ("no" if row["tests_passed"] is False else "-")
-        )
+        tp = "yes" if row["tests_passed"] is True else ("no" if row["tests_passed"] is False else "-")
         print(
             f"{row['repo']:<{col_w['repo']}} | "
             f"{row['date']:<{col_w['date']}} | "
@@ -128,9 +120,7 @@ def main() -> None:
         )
     total_commits = sum(r["commits"] for r in rows)
     passed_count = sum(1 for r in rows if r["tests_passed"] is True)
-    print(
-        f"\n{len(rows)} repos | {total_commits} total commits | {passed_count} with tests passing"
-    )
+    print(f"\n{len(rows)} repos | {total_commits} total commits | {passed_count} with tests passing")
 
 
 if __name__ == "__main__":

@@ -35,7 +35,9 @@ OPTIONAL_FIELDS: dict[str, type] = {
 
 VALID_EMAIL_STATUSES: frozenset[str] = frozenset({"pending", "sent", "skipped"})
 VALID_EMAIL_STATUS_PREFIXES: tuple[str, ...] = ("failed", "network_", "pdf_generated")
-VALID_MODES: frozenset[str] = frozenset({"improvement", "innovation", "IMPROVEMENT", "INNOVATION"})
+VALID_MODES: frozenset[str] = frozenset(
+    {"improvement", "innovation", "IMPROVEMENT", "INNOVATION"}
+)
 
 
 def validate_entry(entry: Any, source: str, idx: int) -> list[str]:
@@ -75,7 +77,9 @@ def validate_entry(entry: Any, source: str, idx: int) -> list[str]:
         if status not in VALID_EMAIL_STATUSES and not any(
             status.startswith(p) for p in VALID_EMAIL_STATUS_PREFIXES
         ):
-            errors.append(f"{source}[{idx}]: unrecognised email_status '{status}'")
+            errors.append(
+                f"{source}[{idx}]: unrecognised email_status '{status}'"
+            )
 
     return errors
 
@@ -109,7 +113,9 @@ def main() -> int:
     parser.add_argument(
         "--verbose", "-v", action="store_true", help="Print each file as it is checked"
     )
-    parser.add_argument("--json", action="store_true", help="Output results as a JSON array")
+    parser.add_argument(
+        "--json", action="store_true", help="Output results as a JSON array"
+    )
     args = parser.parse_args()
     logging.basicConfig(level=logging.INFO, format="%(levelname)s %(message)s")
     all_errors: list[str] = []
@@ -126,17 +132,16 @@ def main() -> int:
 
     if args.json:
         import json as _json
-
         print(_json.dumps(file_results, indent=2))
         return 1 if all_errors else 0
 
     if all_errors:
         for err in all_errors:
             log.error(err)
-        log.error("%d files checked, %d error(s) found", len(files), len(all_errors))
+        print(f"\n{len(files)} files checked, {len(all_errors)} error(s) found")
         return 1
 
-    log.info("%d history files validated — all OK", len(files))
+    print(f"{len(files)} history files validated — all OK")
     return 0
 
 

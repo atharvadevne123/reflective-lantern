@@ -1,35 +1,44 @@
-name: CI
+name: Volt-Cast CI
 
 on:
   push:
-    branches: [main]
+    branches: ["main", "innovation/*"]
   pull_request:
-    branches: [main]
-
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+    branches: ["main"]
 
 jobs:
   lint-and-test:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.11"]
+
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up Python
+      - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
-          cache: pip
+          python-version: ${{ matrix.python-version }}
+
+      - name: Cache pip
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt') }}
 
       - name: Install dependencies
-        run: pip install -r requirements.txt ruff pytest httpx
+        run: pip install -r requirements.txt
 
-      - name: Lint with ruff
+      - name: Ruff lint
         run: ruff check .
 
-      - name: Run tests
+      - name: Ruff format check
+        run: ruff format --check .
+
+      - name: Run pytest
         run: pytest tests/ -v --tb=short 2>&1 | tail -60
 
-      - name: Check ruff format
-        run: ruff format --check .
+      - name: Upload coverage
+        if: always()
+        run: echo "Coverage step placeholder"

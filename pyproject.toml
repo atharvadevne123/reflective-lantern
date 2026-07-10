@@ -3,47 +3,63 @@ requires = ["setuptools>=68", "wheel"]
 build-backend = "setuptools.backends.legacy:build"
 
 [project]
-name = "traffic-pulse"
+name = "volt-cast"
 version = "1.0.0"
-description = "Urban traffic congestion prediction and incident detection API."
-requires-python = ">=3.11"
+description = "Energy consumption and grid load prediction API"
+authors = [{ name = "Reflective Lantern", email = "devneatharva@gmail.com" }]
+readme = "README.md"
 license = { text = "MIT" }
+requires-python = ">=3.11"
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3.11",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
 dependencies = [
+    "scikit-learn>=1.4.0",
+    "xgboost>=2.0.0",
+    "lightgbm>=4.3.0",
+    "joblib>=1.3.0",
+    "numpy>=1.26.0",
+    "pandas>=2.2.0",
+    "scipy>=1.12.0",
     "fastapi>=0.111.0",
     "uvicorn[standard]>=0.29.0",
     "pydantic>=2.7.0",
-    "sqlalchemy>=2.0.30",
-    "xgboost>=2.0.3",
-    "lightgbm>=4.3.0",
-    "scikit-learn>=1.5.0",
-    "scipy>=1.13.0",
-    "pandas>=2.2.0",
-    "numpy>=1.26.0",
-    "joblib>=1.4.0",
+    "sqlalchemy>=2.0.0",
+    "psycopg2-binary>=2.9.0",
+    "alembic>=1.13.0",
 ]
 
 [project.optional-dependencies]
-dev = ["pytest>=8.0", "httpx>=0.27.0", "ruff>=0.4.0"]
+dev = ["pytest>=8.2.0", "httpx>=0.27.0", "ruff>=0.4.0", "mypy>=1.10.0"]
 
 [tool.ruff]
-target-version = "py311"
 line-length = 100
+target-version = "py311"
 
 [tool.ruff.lint]
-select = ["E", "F", "I", "UP", "B", "SIM"]
-ignore = ["E501"]
+select = ["E", "F", "W", "I", "UP", "B", "C4"]
+ignore = ["E501", "B008"]
 
 [tool.ruff.lint.per-file-ignores]
-"app/main.py" = ["B008"]  # FastAPI Depends() in defaults is idiomatic
+"tests/*" = ["S101"]
+"pipelines/*" = ["B006"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-addopts = "-v --tb=short"
+asyncio_mode = "auto"
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+filterwarnings = [
+    "ignore::DeprecationWarning",
+    "ignore::UserWarning",
+]
 
-[tool.coverage.run]
-source = ["app", "pipelines"]
-omit = ["tests/*", "migrations/*"]
-
-[tool.coverage.report]
-show_missing = true
-skip_covered = true
+[tool.mypy]
+python_version = "3.11"
+ignore_missing_imports = true
+strict = false

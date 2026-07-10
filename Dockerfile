@@ -7,8 +7,9 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
-RUN python -c "from app.model import train_model; train_model()" \
-    && python scripts/generate_diagram.py
+ENV DATABASE_URL=postgresql://voltcast:voltcast@db:5432/voltcast
+ENV MODEL_PATH=/app/volt_cast_model.joblib
+ENV METRICS_PATH=/app/volt_cast_metrics.json
 
 EXPOSE 8000
 

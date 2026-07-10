@@ -1,3 +1,4 @@
-"""Traffic-Pulse: Urban traffic congestion prediction and incident detection API."""
+"""Volt-Cast: Energy consumption and grid load prediction package."""
 
 __version__ = "1.0.0"
+__author__ = "Reflective Lantern"

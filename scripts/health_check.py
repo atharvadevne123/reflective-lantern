@@ -37,7 +37,10 @@ class RepoHealth:
     def healthy(self) -> bool:
         """True when no issues were found."""
         return not (
-            self.failing_workflows or self.open_branches or not self.has_release or not self.has_ci
+            self.failing_workflows
+            or self.open_branches
+            or not self.has_release
+            or not self.has_ci
         )
 
     @property
@@ -107,7 +110,9 @@ def check_repo(name: str, default_branch: str, token: str) -> RepoHealth:
     # Open branches
     try:
         branches = _get(f"{GH_API}/repos/{owner}/{name}/branches?per_page=100", token)
-        health.open_branches = [b["name"] for b in branches if b["name"] != default_branch]
+        health.open_branches = [
+            b["name"] for b in branches if b["name"] != default_branch
+        ]
     except Exception as exc:
         log.warning("Could not fetch branches for %s: %s", name, exc)
 
@@ -148,7 +153,6 @@ def main() -> int:
 
     if args.json:
         import dataclasses
-
         print(json.dumps([dataclasses.asdict(r) for r in results], indent=2))
     else:
         for r in results:

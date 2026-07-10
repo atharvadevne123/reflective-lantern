@@ -1,5 +1,4 @@
 """Shared pytest fixtures for Cyber-Sentinel test suite."""
-
 from __future__ import annotations
 
 import os
@@ -16,7 +15,6 @@ from fastapi.testclient import TestClient
 def client() -> TestClient:
     """Provide a FastAPI TestClient for end-to-end API tests."""
     from app.main import app
-
     return TestClient(app)
 
 
@@ -68,6 +66,5 @@ def reset_model_cache() -> None:
     """Clear the in-memory model cache before each test."""
     from app.model import clear_model_cache
     from app.monitoring import reset_monitoring
-
     clear_model_cache()
     reset_monitoring()

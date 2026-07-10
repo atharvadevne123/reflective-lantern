@@ -21,7 +21,9 @@ class Settings:
     """
 
     # Anthropic
-    anthropic_api_key: str = field(default_factory=lambda: os.environ.get("ANTHROPIC_API_KEY", ""))
+    anthropic_api_key: str = field(
+        default_factory=lambda: os.environ.get("ANTHROPIC_API_KEY", "")
+    )
 
     # GitHub
     gh_pat: str = field(default_factory=lambda: os.environ.get("GH_PAT", ""))
@@ -30,41 +32,49 @@ class Settings:
     )
 
     # Notion
-    notion_api_key: str = field(default_factory=lambda: os.environ.get("NOTION_API_KEY", ""))
+    notion_api_key: str = field(
+        default_factory=lambda: os.environ.get("NOTION_API_KEY", "")
+    )
     notion_database_id: str = field(
         default_factory=lambda: os.environ.get("NOTION_DATABASE_ID", "")
     )
 
     # Gmail
     gmail_user: str = field(default_factory=lambda: os.environ.get("GMAIL_USER", ""))
-    gmail_app_pass: str = field(default_factory=lambda: os.environ.get("GMAIL_APP_PASS", ""))
+    gmail_app_pass: str = field(
+        default_factory=lambda: os.environ.get("GMAIL_APP_PASS", "")
+    )
     report_recipient: str = field(
-        default_factory=lambda: os.environ.get("REPORT_RECIPIENT", os.environ.get("GMAIL_USER", ""))
+        default_factory=lambda: os.environ.get(
+            "REPORT_RECIPIENT", os.environ.get("GMAIL_USER", "")
+        )
     )
 
     # Logging
-    log_level: str = field(default_factory=lambda: os.environ.get("LOG_LEVEL", "INFO").upper())
-    json_logs: bool = field(default_factory=lambda: os.environ.get("JSON_LOGS", "0") == "1")
+    log_level: str = field(
+        default_factory=lambda: os.environ.get("LOG_LEVEL", "INFO").upper()
+    )
+    json_logs: bool = field(
+        default_factory=lambda: os.environ.get("JSON_LOGS", "0") == "1"
+    )
 
     # Report settings
     report_subject_prefix: str = field(
-        default_factory=lambda: os.environ.get("REPORT_SUBJECT_PREFIX", "[Reflective Lantern]")
+        default_factory=lambda: os.environ.get(
+            "REPORT_SUBJECT_PREFIX", "[Reflective Lantern]"
+        )
     )
-    dry_run: bool = field(default_factory=lambda: os.environ.get("DRY_RUN", "0") == "1")
-
-    # Palantir Foundry
-    foundry_hostname: str = field(default_factory=lambda: os.environ.get("FOUNDRY_HOSTNAME", ""))
-    foundry_token: str = field(default_factory=lambda: os.environ.get("FOUNDRY_TOKEN", ""))
-    foundry_dataset_rid: str = field(
-        default_factory=lambda: os.environ.get("FOUNDRY_DATASET_RID", "")
+    dry_run: bool = field(
+        default_factory=lambda: os.environ.get("DRY_RUN", "0") == "1"
     )
-    foundry_branch: str = field(default_factory=lambda: os.environ.get("FOUNDRY_BRANCH", "master"))
 
     # Run settings
     pf_fix_timeout: int = field(
         default_factory=lambda: int(os.environ.get("PF_FIX_TIMEOUT", "300"))
     )
-    commit_target: int = field(default_factory=lambda: int(os.environ.get("COMMIT_TARGET", "60")))
+    commit_target: int = field(
+        default_factory=lambda: int(os.environ.get("COMMIT_TARGET", "60"))
+    )
 
     def validate(self) -> list[str]:
         """Return a list of missing required environment variable names.
@@ -88,23 +98,9 @@ class Settings:
         """Return True when all required credentials are present."""
         return len(self.validate()) == 0
 
-    def foundry_configured(self) -> bool:
-        """Return True when Foundry hostname, token, and dataset RID are all set."""
-        return bool(self.foundry_hostname and self.foundry_token and self.foundry_dataset_rid)
-
-    def email_configured(self) -> bool:
-        """Return True when Gmail user and app password are both set."""
-        return bool(self.gmail_user and self.gmail_app_pass)
-
     def __repr__(self) -> str:
         """Return repr with sensitive fields masked."""
-        _SENSITIVE = {
-            "anthropic_api_key",
-            "gh_pat",
-            "notion_api_key",
-            "gmail_app_pass",
-            "foundry_token",
-        }
+        _SENSITIVE = {"anthropic_api_key", "gh_pat", "notion_api_key", "gmail_app_pass"}
         parts = []
         for f in self.__dataclass_fields__:
             val = getattr(self, f)

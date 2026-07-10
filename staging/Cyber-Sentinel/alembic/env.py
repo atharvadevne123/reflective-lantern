@@ -1,5 +1,4 @@
 """Alembic environment configuration for Cyber-Sentinel."""
-
 from __future__ import annotations
 
 import os

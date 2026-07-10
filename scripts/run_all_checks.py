@@ -8,40 +8,30 @@ Usage:
 from __future__ import annotations
 
 import argparse
-import logging
 import subprocess
 import sys
 import time
 from pathlib import Path
 
-from config.constants import SEPARATOR_WIDTH
-
-logger = logging.getLogger(__name__)
-logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
-
 SCRIPTS_DIR = Path(__file__).parent
 CHECKS = [
     ("History validation", [sys.executable, str(SCRIPTS_DIR / "validate_history.py")]),
     ("History summary", [sys.executable, str(SCRIPTS_DIR / "summarize_history.py")]),
-    (
-        "Foundry export",
-        [sys.executable, str(SCRIPTS_DIR / "foundry_sync.py"), "--export-only"],
-    ),
 ]
 
 
 def run_check(name: str, cmd: list[str]) -> tuple[bool, float]:
     """Run a single check. Return (passed, elapsed_seconds)."""
-    logger.info("─" * SEPARATOR_WIDTH)
-    logger.info("  %s", name)
-    logger.info("─" * SEPARATOR_WIDTH)
+    print(f"\n{'─' * 60}")
+    print(f"  {name}")
+    print(f"{'─' * 60}")
     t0 = time.perf_counter()
     result = subprocess.run(cmd, check=False)
     elapsed = time.perf_counter() - t0
     if result.returncode == 0:
-        logger.info("  ✓ %s passed (%.2fs)", name, elapsed)
+        print(f"  ✓ {name} passed ({elapsed:.2f}s)")
     else:
-        logger.error("  ✗ %s failed (exit %d, %.2fs)", name, result.returncode, elapsed)
+        print(f"  ✗ {name} failed (exit {result.returncode}, {elapsed:.2f}s)")
     return result.returncode == 0, elapsed
 
 
@@ -68,9 +58,9 @@ def main() -> int:
             if args.stop_on_failure:
                 break
 
-    print(f"\n{'═' * SEPARATOR_WIDTH}")
+    print(f"\n{'═' * 60}")
     print(f"  {passed} check(s) passed, {failed} failed  [{total_time:.2f}s total]")
-    print(f"{'═' * SEPARATOR_WIDTH}")
+    print(f"{'═' * 60}")
     return 0 if failed == 0 else 1
 
 

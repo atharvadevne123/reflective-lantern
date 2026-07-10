@@ -1,5 +1,4 @@
 """Tests for the feature engineering pipeline."""
-
 from __future__ import annotations
 
 import numpy as np

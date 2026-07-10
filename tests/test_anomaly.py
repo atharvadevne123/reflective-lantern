@@ -1,106 +1,73 @@
-"""Tests for valuation anomaly detection."""
+"""Tests for Isolation Forest anomaly detection."""
 
+from __future__ import annotations
+
+import numpy as np
 import pytest
 
-from app.anomaly import detect_valuation_anomaly
+from app.anomaly import fit_isolation_forest, quick_anomaly_check, score_loads
 
 
-def test_normal_value_not_anomaly() -> None:
-    result = detect_valuation_anomaly(predicted=500_000, neighborhood_median=480_000)
-    assert result["is_anomaly"] is False
-    assert result["direction"] == "high"
+class TestFitIsolationForest:
+    def test_fits_successfully(self):
+        loads = np.random.default_rng(42).normal(3000, 200, 500).tolist()
+        model = fit_isolation_forest(loads)
+        assert model is not None
+
+    def test_model_has_predict(self):
+        loads = np.random.default_rng(42).normal(3000, 200, 200).tolist()
+        model = fit_isolation_forest(loads)
+        assert hasattr(model, "predict")
+
+    @pytest.mark.parametrize("contamination", [0.01, 0.05, 0.10])
+    def test_various_contamination(self, contamination):
+        loads = np.random.default_rng(0).normal(3000, 200, 300).tolist()
+        model = fit_isolation_forest(loads, contamination=contamination)
+        assert model is not None
 
 
-def test_severely_underpriced_is_anomaly() -> None:
-    result = detect_valuation_anomaly(predicted=100_000, neighborhood_median=800_000)
-    assert result["is_anomaly"] is True
-    assert result["direction"] == "low"
+class TestScoreLoads:
+    def test_returns_list_of_dicts(self):
+        loads = np.random.default_rng(42).normal(3000, 200, 200).tolist()
+        model = fit_isolation_forest(loads)
+        results = score_loads(model, loads[:10])
+        assert len(results) == 10
+        assert all("is_anomaly" in r for r in results)
+        assert all("anomaly_score" in r for r in results)
+
+    def test_obvious_anomaly_flagged(self):
+        rng = np.random.default_rng(7)
+        loads = rng.normal(3000, 100, 300).tolist()
+        model = fit_isolation_forest(loads, contamination=0.05)
+        outliers = [99999.0, -5000.0]
+        results = score_loads(model, outliers)
+        assert any(r["is_anomaly"] for r in results)
+
+    def test_index_matches_input(self):
+        loads = [3000.0] * 100
+        model = fit_isolation_forest(loads)
+        results = score_loads(model, loads[:5])
+        for i, r in enumerate(results):
+            assert r["index"] == i
 
 
-def test_severely_overpriced_is_anomaly() -> None:
-    result = detect_valuation_anomaly(predicted=3_000_000, neighborhood_median=400_000)
-    assert result["is_anomaly"] is True
-    assert result["direction"] == "high"
+class TestQuickAnomalyCheck:
+    def test_returns_summary_dict(self):
+        rng = np.random.default_rng(42)
+        ref = rng.normal(3000, 200, 200).tolist()
+        new = rng.normal(3000, 200, 20).tolist()
+        result = quick_anomaly_check(ref, new)
+        assert "anomalies_detected" in result
+        assert "anomaly_rate_pct" in result
+        assert result["total_checked"] == 20
 
+    def test_insufficient_reference(self):
+        result = quick_anomaly_check([3000.0] * 5, [3000.0, 9000.0])
+        assert "error" in result
 
-def test_zscore_method_used_when_std_provided() -> None:
-    result = detect_valuation_anomaly(
-        predicted=2_000_000,
-        neighborhood_median=500_000,
-        neighborhood_std=50_000,
-    )
-    assert result["method"] == "zscore"
-    assert result["is_anomaly"] is True
-
-
-def test_zscore_within_threshold_not_anomaly() -> None:
-    result = detect_valuation_anomaly(
-        predicted=510_000,
-        neighborhood_median=500_000,
-        neighborhood_std=50_000,
-    )
-    assert result["method"] == "zscore"
-    assert result["is_anomaly"] is False
-
-
-def test_iqr_method_used_with_reference_values() -> None:
-    ref = list(range(300_000, 600_000, 10_000))
-    result = detect_valuation_anomaly(
-        predicted=5_000_000,
-        neighborhood_median=450_000,
-        reference_values=ref,
-    )
-    assert result["method"] == "iqr"
-    assert result["is_anomaly"] is True
-
-
-def test_zero_predicted_skipped() -> None:
-    result = detect_valuation_anomaly(predicted=0, neighborhood_median=500_000)
-    assert result["is_anomaly"] is False
-    assert result["method"] == "skipped"
-
-
-@pytest.mark.parametrize(
-    "predicted,median,expect_anomaly",
-    [
-        (500_000, 490_000, False),
-        (200_000, 500_000, True),
-        (1_500_000, 500_000, True),
-        (550_000, 500_000, False),
-    ],
-)
-def test_ratio_method_parametrized(predicted, median, expect_anomaly) -> None:
-    result = detect_valuation_anomaly(predicted=predicted, neighborhood_median=median)
-    assert result["is_anomaly"] == expect_anomaly
-
-
-def test_deviation_pct_computed() -> None:
-    result = detect_valuation_anomaly(predicted=600_000, neighborhood_median=500_000)
-    assert result["deviation_pct"] == pytest.approx(20.0)
-
-
-def test_result_has_required_keys() -> None:
-    result = detect_valuation_anomaly(predicted=450_000, neighborhood_median=500_000)
-    assert "is_anomaly" in result
-    assert "direction" in result
-    assert "method" in result
-    assert "deviation_pct" in result
-
-
-def test_direction_low_when_underpriced() -> None:
-    result = detect_valuation_anomaly(predicted=50_000, neighborhood_median=500_000)
-    assert result["direction"] == "low"
-
-
-def test_direction_high_when_overpriced() -> None:
-    result = detect_valuation_anomaly(predicted=1_500_000, neighborhood_median=500_000)
-    assert result["direction"] == "high"
-
-
-@pytest.mark.parametrize("std", [10_000, 50_000, 100_000])
-def test_zscore_deviation_scales_with_std(std) -> None:
-    result = detect_valuation_anomaly(
-        predicted=700_000, neighborhood_median=500_000, neighborhood_std=std
-    )
-    assert result["method"] == "zscore"
-    assert "score" in result
+    def test_high_anomaly_rate_for_outliers(self):
+        rng = np.random.default_rng(42)
+        ref = rng.normal(3000, 100, 300).tolist()
+        outliers = [99999.0] * 10
+        result = quick_anomaly_check(ref, outliers)
+        assert result["anomaly_rate_pct"] > 50

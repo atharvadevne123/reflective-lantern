@@ -1,147 +1,43 @@
-"""Tests for MLflow and AWS stubs (mocked external calls)."""
+"""Tests for MLflow stub."""
 
-from unittest.mock import MagicMock, patch
+from __future__ import annotations
 
-from app.aws_stub import download_model_artefacts, upload_model_artefacts
-from app.mlflow_stub import log_training_run
+import pytest
 
-# --- MLflow stub tests ---
-
-
-def test_log_training_run_no_uri_returns_none() -> None:
-    with patch.dict("os.environ", {"MLFLOW_TRACKING_URI": ""}):
-        result = log_training_run({"lr": 0.01}, {"r2": 0.85})
-    assert result is None
+from app.mlflow_stub import dump_run_store, get_best_run, log_metrics
 
 
-def test_log_training_run_mlflow_not_installed_returns_none() -> None:
-    with (
-        patch.dict("os.environ", {"MLFLOW_TRACKING_URI": "http://localhost:5000"}),
-        patch("builtins.__import__", side_effect=ImportError("mlflow not installed")),
-    ):
-        result = log_training_run({"lr": 0.01}, {"r2": 0.85})
-    assert result is None
+class TestMlflowStub:
+    def setup_method(self):
+        from app import mlflow_stub
+        mlflow_stub._RUN_STORE.clear()
 
+    def test_log_metrics_returns_run_id(self):
+        run_id = log_metrics({"r2_mean": 0.85, "rmse_mean": 250.0})
+        assert run_id.startswith("run_")
 
-def test_log_training_run_mlflow_exception_returns_none() -> None:
-    with (
-        patch.dict("os.environ", {"MLFLOW_TRACKING_URI": "http://localhost:5000"}),
-        patch("app.mlflow_stub.os.getenv", return_value="http://localhost:5000"),
-    ):
-        import app.mlflow_stub as m
+    def test_multiple_runs_increment(self):
+        id1 = log_metrics({"r2_mean": 0.80})
+        id2 = log_metrics({"r2_mean": 0.85})
+        assert id1 != id2
 
-        original = m._TRACKING_URI
-        m._TRACKING_URI = "http://localhost:5000"
-        try:
-            result = log_training_run({"lr": 0.01}, {"r2": 0.85})
-        finally:
-            m._TRACKING_URI = original
-    assert result is None
+    def test_get_best_run_by_metric(self):
+        log_metrics({"r2_mean": 0.80}, run_name="run_a")
+        log_metrics({"r2_mean": 0.90}, run_name="run_b")
+        log_metrics({"r2_mean": 0.75}, run_name="run_c")
+        best = get_best_run("r2_mean")
+        assert best is not None
+        assert best["r2_mean"] == pytest.approx(0.90, rel=0.01)
+        assert best["run_name"] == "run_b"
 
+    def test_get_best_run_no_runs(self):
+        assert get_best_run("r2_mean") is None
 
-# --- AWS stub tests ---
-
-
-def test_upload_no_bucket_returns_empty() -> None:
-    with patch.dict("os.environ", {"S3_BUCKET": ""}):
-        import app.aws_stub as s
-
-        original = s._BUCKET
-        s._BUCKET = ""
-        result = upload_model_artefacts(["model.joblib"])
-        s._BUCKET = original
-    assert result == []
-
-
-def test_upload_missing_file_skipped(tmp_path) -> None:
-    import app.aws_stub as s
-
-    original_bucket = s._BUCKET
-    s._BUCKET = "test-bucket"
-    mock_client = MagicMock()
-    with patch("app.aws_stub._s3_client", return_value=mock_client):
-        result = upload_model_artefacts([str(tmp_path / "nonexistent.joblib")])
-    s._BUCKET = original_bucket
-    assert result == []
-    mock_client.upload_file.assert_not_called()
-
-
-def test_upload_existing_file(tmp_path) -> None:
-    import app.aws_stub as s
-
-    test_file = tmp_path / "model.joblib"
-    test_file.write_bytes(b"fake model")
-    mock_client = MagicMock()
-    with (
-        patch("app.aws_stub._s3_client", return_value=mock_client),
-        patch.object(s, "_BUCKET", "test-bucket"),
-    ):
-        result = upload_model_artefacts([str(test_file)])
-    assert len(result) == 1
-    assert "s3://test-bucket" in result[0]
-
-
-def test_download_no_bucket_returns_empty() -> None:
-    import app.aws_stub as s
-
-    original = s._BUCKET
-    s._BUCKET = ""
-    result = download_model_artefacts("/tmp")
-    s._BUCKET = original
-    assert result == []
-
-
-def test_upload_empty_list_returns_empty() -> None:
-    import app.aws_stub as s
-
-    original = s._BUCKET
-    s._BUCKET = "test-bucket"
-    mock_client = MagicMock()
-    with patch("app.aws_stub._s3_client", return_value=mock_client):
-        result = upload_model_artefacts([])
-    s._BUCKET = original
-    assert result == []
-
-
-def test_upload_s3_error_skips_file(tmp_path) -> None:
-    import app.aws_stub as s
-
-    f = tmp_path / "model.joblib"
-    f.write_bytes(b"data")
-    mock_client = MagicMock()
-    mock_client.upload_file.side_effect = RuntimeError("S3 error")
-    with (
-        patch("app.aws_stub._s3_client", return_value=mock_client),
-        patch.object(s, "_BUCKET", "bucket"),
-    ):
-        result = upload_model_artefacts([str(f)])
-    assert result == []
-
-
-def test_download_with_client_success(tmp_path) -> None:
-    import app.aws_stub as s
-
-    mock_client = MagicMock()
-
-    def fake_download(bucket, key, local_path):
-        open(local_path, "w").close()
-
-    mock_client.download_file.side_effect = fake_download
-    with (
-        patch("app.aws_stub._s3_client", return_value=mock_client),
-        patch.object(s, "_BUCKET", "bucket"),
-    ):
-        result = download_model_artefacts(str(tmp_path))
-    assert len(result) == 2
-
-
-def test_log_training_run_no_uri_with_tags_returns_none() -> None:
-    import app.mlflow_stub as m
-
-    original = m._TRACKING_URI
-    m._TRACKING_URI = ""
-    try:
-        result = log_training_run({"lr": 0.01}, {"r2": 0.85}, tags={"env": "test"})
-    finally:
-        m._TRACKING_URI = original
-    assert result is None
+    def test_dump_run_store(self, tmp_path):
+        log_metrics({"r2_mean": 0.85})
+        path = str(tmp_path / "runs.json")
+        dump_run_store(path)
+        import json
+        data = json.loads(open(path).read())
+        assert len(data) == 1
+        assert data[0]["r2_mean"] == pytest.approx(0.85)

@@ -1,160 +1,198 @@
-"""Tests for the FastAPI endpoints."""
+"""Tests for Volt-Cast API endpoints."""
 
 from __future__ import annotations
 
 import pytest
-from fastapi.testclient import TestClient
 
 
-def test_health_returns_ok(client: TestClient) -> None:
-    resp = client.get("/health")
-    assert resp.status_code == 200
-    assert resp.json()["status"] == "ok"
+class TestHealthEndpoint:
+    def test_health_returns_200(self, client):
+        resp = client.get("/api/v1/health")
+        assert resp.status_code == 200
+
+    def test_health_response_schema(self, client):
+        data = client.get("/api/v1/health").json()
+        assert "status" in data
+        assert "model_loaded" in data
+        assert "model_version" in data
+        assert "prediction_count" in data
+        assert "uptime_seconds" in data
+
+    def test_health_model_is_loaded(self, client):
+        data = client.get("/api/v1/health").json()
+        assert data["model_loaded"] is True
+        assert data["status"] == "ok"
 
 
-def test_health_includes_model_version(client: TestClient) -> None:
-    data = client.get("/health").json()
-    assert "model_version" in data
-    assert data["model_version"] == "1.0.0"
+class TestMetricsEndpoint:
+    def test_metrics_returns_200(self, client):
+        resp = client.get("/api/v1/metrics")
+        assert resp.status_code == 200
+
+    def test_metrics_has_model_version(self, client):
+        data = client.get("/api/v1/metrics").json()
+        assert "model_version" in data
+        assert "prediction_count" in data
 
 
-def test_predict_success(client: TestClient, sample_payload: dict) -> None:
-    resp = client.post("/api/v1/predict", json=sample_payload)
-    assert resp.status_code == 200
-    data = resp.json()
-    assert data["route_id"] == "R001"
-    assert data["congestion_level"] in {0, 1, 2, 3}
+class TestPredictEndpoint:
+    def test_predict_returns_200(self, client, sample_predict_payload):
+        resp = client.post("/api/v1/predict", json=sample_predict_payload)
+        assert resp.status_code == 200
+
+    def test_predict_response_has_load(self, client, sample_predict_payload):
+        data = client.post("/api/v1/predict", json=sample_predict_payload).json()
+        assert "predicted_load_mw" in data
+        assert isinstance(data["predicted_load_mw"], float)
+        assert data["predicted_load_mw"] > 0
+
+    def test_predict_load_in_plausible_range(self, client, sample_predict_payload):
+        data = client.post("/api/v1/predict", json=sample_predict_payload).json()
+        assert 500.0 <= data["predicted_load_mw"] <= 15000.0
+
+    def test_predict_returns_request_id(self, client, sample_predict_payload):
+        data = client.post("/api/v1/predict", json=sample_predict_payload).json()
+        assert "request_id" in data
+        assert len(data["request_id"]) > 0
+
+    def test_predict_returns_latency(self, client, sample_predict_payload):
+        data = client.post("/api/v1/predict", json=sample_predict_payload).json()
+        assert "latency_ms" in data
+        assert data["latency_ms"] >= 0
+
+    @pytest.mark.parametrize("hour", [0, 6, 12, 18, 23])
+    def test_predict_various_hours(self, client, sample_predict_payload, hour):
+        payload = {**sample_predict_payload, "hour": hour}
+        resp = client.post("/api/v1/predict", json=payload)
+        assert resp.status_code == 200
+        assert resp.json()["predicted_load_mw"] > 0
+
+    @pytest.mark.parametrize("month", [1, 3, 6, 9, 12])
+    def test_predict_various_months(self, client, sample_predict_payload, month):
+        payload = {**sample_predict_payload, "month": month}
+        resp = client.post("/api/v1/predict", json=payload)
+        assert resp.status_code == 200
+
+    def test_predict_invalid_hour_fails(self, client, sample_predict_payload):
+        payload = {**sample_predict_payload, "hour": 25}
+        resp = client.post("/api/v1/predict", json=payload)
+        assert resp.status_code == 422
+
+    def test_predict_invalid_temp_fails(self, client, sample_predict_payload):
+        payload = {**sample_predict_payload, "temperature_c": 999.0}
+        resp = client.post("/api/v1/predict", json=payload)
+        assert resp.status_code == 422
+
+    def test_predict_invalid_humidity_fails(self, client, sample_predict_payload):
+        payload = {**sample_predict_payload, "humidity_pct": -5.0}
+        resp = client.post("/api/v1/predict", json=payload)
+        assert resp.status_code == 422
+
+    def test_predict_without_history(self, client):
+        payload = {
+            "hour": 10,
+            "day_of_week": 1,
+            "month": 5,
+            "is_weekend": False,
+            "temperature_c": 20.0,
+            "humidity_pct": 50.0,
+        }
+        resp = client.post("/api/v1/predict", json=payload)
+        assert resp.status_code == 200
+
+    def test_predict_weekend(self, client, sample_predict_payload):
+        payload = {**sample_predict_payload, "is_weekend": True}
+        resp = client.post("/api/v1/predict", json=payload)
+        assert resp.status_code == 200
 
 
-def test_predict_probabilities_sum_to_one(client: TestClient, sample_payload: dict) -> None:
-    data = client.post("/api/v1/predict", json=sample_payload).json()
-    total = sum(data["class_probabilities"].values())
-    assert abs(total - 1.0) < 0.02
+class TestBatchPredictEndpoint:
+    def test_batch_predict_single(self, client, sample_predict_payload):
+        resp = client.post("/api/v1/batch-predict", json={"requests": [sample_predict_payload]})
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["total"] == 1
+        assert len(data["predictions"]) == 1
+
+    def test_batch_predict_multiple(self, client, sample_predict_payload):
+        payloads = [
+            {**sample_predict_payload, "hour": h} for h in [8, 12, 18]
+        ]
+        resp = client.post("/api/v1/batch-predict", json={"requests": payloads})
+        assert resp.status_code == 200
+        assert resp.json()["total"] == 3
+
+    def test_batch_predict_empty_fails(self, client):
+        resp = client.post("/api/v1/batch-predict", json={"requests": []})
+        assert resp.status_code == 422
 
 
-def test_predict_class_labels(client: TestClient, sample_payload: dict) -> None:
-    data = client.post("/api/v1/predict", json=sample_payload).json()
-    assert set(data["class_probabilities"].keys()) == {"free", "moderate", "congested", "severe"}
+class TestDriftEndpoint:
+    def test_drift_returns_200(self, client):
+        resp = client.get("/api/v1/drift")
+        assert resp.status_code == 200
+
+    def test_drift_response_schema(self, client):
+        data = client.get("/api/v1/drift").json()
+        assert "drifts" in data
+        assert "summary" in data
+        assert "model_version" in data
 
 
-@pytest.mark.parametrize(
-    "hour",
-    [8, 17, 3, 14],
-    ids=["morning-peak", "evening-peak", "night", "midday"],
-)
-def test_predict_different_hours(client: TestClient, sample_payload: dict, hour: int) -> None:
-    resp = client.post("/api/v1/predict", json={**sample_payload, "hour": hour})
-    assert resp.status_code == 200
+class TestForecastEndpoint:
+    def test_forecast_returns_200(self, client):
+        resp = client.get(
+            "/api/v1/forecast",
+            params={"start_hour": 8, "day_of_week": 0, "month": 6, "horizon_hours": 12}
+        )
+        assert resp.status_code == 200
+
+    def test_forecast_returns_correct_count(self, client):
+        resp = client.get(
+            "/api/v1/forecast",
+            params={"start_hour": 0, "day_of_week": 1, "month": 3, "horizon_hours": 24}
+        )
+        data = resp.json()
+        assert len(data["forecasts"]) == 24
+        assert data["horizon_hours"] == 24
+
+    def test_forecast_hour_wraps_correctly(self, client):
+        resp = client.get(
+            "/api/v1/forecast",
+            params={"start_hour": 22, "day_of_week": 3, "month": 8, "horizon_hours": 6}
+        )
+        data = resp.json()
+        hours = [f["hour"] for f in data["forecasts"]]
+        assert hours[0] == 22
+        assert hours[2] == 0  # wraps past midnight
 
 
-def test_predict_invalid_road_type(client: TestClient, sample_payload: dict) -> None:
-    resp = client.post("/api/v1/predict", json={**sample_payload, "road_type": "dirt_track"})
-    assert resp.status_code == 422
+class TestRetrainEndpoint:
+    def test_retrain_returns_200(self, client):
+        resp = client.post("/api/v1/retrain")
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["status"] == "retrained"
+        assert "metrics" in data
 
 
-def test_predict_invalid_hour_above_max(client: TestClient, sample_payload: dict) -> None:
-    resp = client.post("/api/v1/predict", json={**sample_payload, "hour": 25})
-    assert resp.status_code == 422
+class TestAnalyzeEndpoint:
+    def test_analyze_returns_200(self, client):
+        loads = [3000.0 + i * 50 for i in range(48)]
+        resp = client.post("/api/v1/analyze", json=loads)
+        assert resp.status_code == 200
 
+    def test_analyze_returns_trend(self, client):
+        loads = [float(3000 + i * 10) for i in range(48)]
+        data = client.post("/api/v1/analyze", json=loads).json()
+        assert "trend" in data
+        assert "direction" in data["trend"]
 
-def test_predict_invalid_vehicle_count(client: TestClient, sample_payload: dict) -> None:
-    resp = client.post("/api/v1/predict", json={**sample_payload, "vehicle_count": -1})
-    assert resp.status_code == 422
+    def test_analyze_detects_spike(self, client):
+        loads = [3000.0] * 48 + [9999.0] + [3000.0] * 48
+        data = client.post("/api/v1/analyze", json=loads).json()
+        assert data["spikes_detected"] >= 1
 
-
-def test_metrics_endpoint(client: TestClient) -> None:
-    resp = client.get("/api/v1/metrics")
-    assert resp.status_code == 200
-    data = resp.json()
-    assert "total_predictions" in data
-    assert "congestion_distribution" in data
-
-
-def test_drift_detects_shift(
-    client: TestClient,
-    reference_distribution: list[float],
-    drifted_distribution: list[float],
-) -> None:
-    resp = client.post(
-        "/api/v1/drift",
-        json={
-            "feature_name": "vehicle_count",
-            "reference": reference_distribution,
-            "current": drifted_distribution,
-        },
-    )
-    assert resp.status_code == 200
-    assert resp.json()["drift_detected"] is True
-
-
-def test_correlation_id_in_response_headers(client: TestClient) -> None:
-    resp = client.get("/health")
-    assert "x-correlation-id" in resp.headers
-
-
-def test_predict_highway_road(client: TestClient, sample_payload: dict) -> None:
-    resp = client.post(
-        "/api/v1/predict",
-        json={
-            **sample_payload,
-            "road_type": "highway",
-            "vehicle_count": 3000,
-            "avg_speed_kmh": 110.0,
-        },
-    )
-    assert resp.status_code == 200
-
-
-def test_batch_predict_success(client: TestClient, sample_payload: dict) -> None:
-    batch = [sample_payload, {**sample_payload, "route_id": "R002", "hour": 17}]
-    resp = client.post("/api/v1/predict/batch", json=batch)
-    assert resp.status_code == 200
-    data = resp.json()
-    assert len(data) == 2
-    assert data[1]["route_id"] == "R002"
-
-
-def test_batch_predict_over_limit_rejected(client: TestClient, sample_payload: dict) -> None:
-    batch = [{**sample_payload, "route_id": f"R{i}"} for i in range(101)]
-    resp = client.post("/api/v1/predict/batch", json=batch)
-    assert resp.status_code == 422
-
-
-def test_model_info_endpoint(client: TestClient) -> None:
-    resp = client.get("/api/v1/model-info")
-    assert resp.status_code == 200
-    data = resp.json()
-    assert data["n_features"] == 26
-    assert "hour_sin" in data["features"]
-
-
-def test_predict_missing_required_field(client: TestClient, sample_payload: dict) -> None:
-    payload = {k: v for k, v in sample_payload.items() if k != "route_id"}
-    resp = client.post("/api/v1/predict", json=payload)
-    assert resp.status_code == 422
-
-
-def test_predict_route_id_too_long(client: TestClient, sample_payload: dict) -> None:
-    resp = client.post("/api/v1/predict", json={**sample_payload, "route_id": "X" * 65})
-    assert resp.status_code == 422
-
-
-def test_route_history_endpoint(client: TestClient, sample_payload: dict) -> None:
-    client.post("/api/v1/predict", json={**sample_payload, "route_id": "HIST-1"})
-    resp = client.get("/api/v1/routes/HIST-1/history")
-    assert resp.status_code == 200
-    data = resp.json()
-    assert data["route_id"] == "HIST-1"
-    assert data["count"] >= 1
-
-
-def test_route_history_empty_for_unknown_route(client: TestClient) -> None:
-    resp = client.get("/api/v1/routes/NO-SUCH-ROUTE/history")
-    assert resp.status_code == 200
-    assert resp.json()["count"] == 0
-
-
-def test_route_history_limit_clamped(client: TestClient) -> None:
-    resp = client.get("/api/v1/routes/HIST-1/history?limit=9999")
-    assert resp.status_code == 200
-    assert resp.json()["count"] <= 200
+    def test_analyze_too_few_values(self, client):
+        resp = client.post("/api/v1/analyze", json=[1000.0, 2000.0])
+        assert resp.status_code == 422

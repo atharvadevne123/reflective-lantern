@@ -1,95 +1,91 @@
-"""Tests for model training and prediction logic."""
+"""Tests for model training and prediction."""
 
 from __future__ import annotations
 
 import pytest
 
-from app.features import FEATURE_COLUMNS
-from app.model import (
-    CONGESTION_LABELS,
-    generate_synthetic_data,
-    predict,
-    train_model,
-)
+
+class TestModelTraining:
+    def test_train_returns_model_and_metrics(self, synthetic_data):
+        from app.model import train_model
+        X, y = synthetic_data
+        model, metrics = train_model(X.values[:200], y.values[:200], cv_folds=2)
+        assert model is not None
+        assert "r2_mean" in metrics
+        assert "rmse_mean" in metrics
+
+    def test_metrics_r2_positive(self, synthetic_data):
+        from app.model import train_model
+        X, y = synthetic_data
+        _, metrics = train_model(X.values[:200], y.values[:200], cv_folds=2)
+        assert metrics["r2_mean"] > 0.0
+
+    def test_metrics_has_all_keys(self, synthetic_data):
+        from app.model import train_model
+        X, y = synthetic_data
+        _, metrics = train_model(X.values[:200], y.values[:200], cv_folds=2)
+        for key in ["r2_mean", "r2_std", "rmse_mean", "rmse_std", "n_samples", "n_features"]:
+            assert key in metrics
+
+    def test_model_file_created(self, tmp_path, synthetic_data, monkeypatch):
+        from app import model as model_mod
+        model_path = tmp_path / "test_model.joblib"
+        metrics_path = tmp_path / "test_metrics.json"
+        monkeypatch.setattr(model_mod, "MODEL_PATH", model_path)
+        monkeypatch.setattr(model_mod, "METRICS_PATH", metrics_path)
+        X, y = synthetic_data
+        model_mod.train_model(X.values[:100], y.values[:100], cv_folds=2)
+        assert model_path.exists()
+        assert metrics_path.exists()
+
+    def test_model_load_returns_none_if_missing(self, tmp_path, monkeypatch):
+        from app import model as model_mod
+        monkeypatch.setattr(model_mod, "MODEL_PATH", tmp_path / "nonexistent.joblib")
+        assert model_mod.load_model() is None
 
 
-def test_synthetic_data_shape() -> None:
-    X, y = generate_synthetic_data(n_samples=200)
-    assert len(X) == 200
-    assert len(y) == 200
+class TestModelPrediction:
+    def test_predict_returns_array(self, synthetic_data):
+        from app.model import predict, train_model
+        X, y = synthetic_data
+        model, _ = train_model(X.values[:200], y.values[:200], cv_folds=2)
+        preds = predict(model, X.values[:10])
+        assert len(preds) == 10
+
+    def test_predict_positive_values(self, synthetic_data):
+        from app.model import predict, train_model
+        X, y = synthetic_data
+        model, _ = train_model(X.values[:200], y.values[:200], cv_folds=2)
+        preds = predict(model, X.values[:20])
+        assert all(p > 0 for p in preds)
+
+    @pytest.mark.parametrize("n_rows", [1, 5, 50])
+    def test_predict_various_batch_sizes(self, synthetic_data, n_rows):
+        from app.model import predict, train_model
+        X, y = synthetic_data
+        model, _ = train_model(X.values[:200], y.values[:200], cv_folds=2)
+        preds = predict(model, X.values[:n_rows])
+        assert len(preds) == n_rows
 
 
-def test_synthetic_data_has_all_feature_columns() -> None:
-    X, _ = generate_synthetic_data(n_samples=100)
-    assert set(FEATURE_COLUMNS).issubset(set(X.columns))
+class TestSyntheticData:
+    def test_synthetic_data_shape(self, synthetic_data):
+        X, y = synthetic_data
+        assert X.shape[0] == 300
+        assert X.shape[1] > 10
 
+    def test_synthetic_loads_in_range(self, synthetic_data):
+        _, y = synthetic_data
+        assert y.min() >= 1000
+        assert y.max() <= 8000
 
-def test_synthetic_labels_in_valid_range() -> None:
-    _, y = generate_synthetic_data(n_samples=500)
-    assert all(0 <= label <= 3 for label in y)
+    def test_synthetic_data_no_nulls(self, synthetic_data):
+        X, y = synthetic_data
+        assert not X.isnull().any().any()
+        assert not y.isnull().any()
 
-
-def test_synthetic_data_has_multiple_classes() -> None:
-    _, y = generate_synthetic_data(n_samples=500)
-    assert len(set(y)) > 1
-
-
-def test_train_model_returns_two_pipelines() -> None:
-    X, y = generate_synthetic_data(n_samples=300)
-    models, metrics = train_model(X, y)
-    assert set(models.keys()) == {"xgb", "lgbm"}
-
-
-def test_train_model_metrics_structure() -> None:
-    X, y = generate_synthetic_data(n_samples=300)
-    _, metrics = train_model(X, y)
-    assert "ensemble_auc" in metrics
-    assert "cv_results" in metrics
-    assert metrics["n_features"] == len(FEATURE_COLUMNS)
-
-
-def test_train_model_auc_above_chance() -> None:
-    X, y = generate_synthetic_data(n_samples=300)
-    _, metrics = train_model(X, y)
-    assert metrics["ensemble_auc"] > 0.55
-
-
-@pytest.mark.parametrize("n_samples", [100, 500])
-def test_train_model_various_sizes(n_samples: int) -> None:
-    X, y = generate_synthetic_data(n_samples=n_samples)
-    models, metrics = train_model(X, y)
-    assert len(models) == 2
-    assert metrics["n_samples"] == n_samples
-
-
-def test_predict_output_keys(mock_models: dict) -> None:
-    X, _ = generate_synthetic_data(n_samples=3)
-    result = predict(mock_models, X.iloc[:1])
-    expected = {
-        "congestion_level",
-        "congestion_label",
-        "congestion_probability",
-        "class_probabilities",
-        "incident_score",
-        "model_version",
-    }
-    assert expected.issubset(result.keys())
-
-
-def test_predict_congestion_label_valid(mock_models: dict) -> None:
-    X, _ = generate_synthetic_data(n_samples=3)
-    result = predict(mock_models, X.iloc[:1])
-    assert result["congestion_label"] in CONGESTION_LABELS.values()
-
-
-def test_congestion_labels_complete() -> None:
-    assert set(CONGESTION_LABELS.keys()) == {0, 1, 2, 3}
-    assert "free" in CONGESTION_LABELS.values()
-    assert "severe" in CONGESTION_LABELS.values()
-
-
-def test_package_version_matches_model_version() -> None:
-    import app
-    from app.model import MODEL_VERSION
-
-    assert app.__version__ == MODEL_VERSION
+    def test_custom_sample_size(self):
+        from app.model import generate_synthetic_training_data
+        X, y = generate_synthetic_training_data(n_samples=100)
+        assert len(X) == 100
+        assert len(y) == 100

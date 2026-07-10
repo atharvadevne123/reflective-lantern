@@ -1,33 +1,33 @@
-.PHONY: install test lint run train diagram docker-up docker-down migrate coverage
+.PHONY: install test lint format run docker-up docker-down clean
 
 install:
 	pip install -r requirements.txt
-	pip install pytest httpx ruff
 
 test:
-	pytest tests/ -v --tb=short
+	pytest tests/ -v --tb=short 2>&1 | tail -60
 
 lint:
 	ruff check .
-	ruff format --check .
+
+format:
+	ruff format .
 
 run:
-	uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+	uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 
-train:
-	python -c "from app.model import train_model; train_model()"
+docker-up:
+	docker-compose up --build -d
+
+docker-down:
+	docker-compose down -v
 
 diagram:
 	python scripts/generate_diagram.py
 
-docker-up:
-	docker compose up --build -d
+clean:
+	find . -type d -name __pycache__ -exec rm -rf {} + 2>/dev/null; \
+	find . -name "*.pyc" -delete; \
+	rm -f volt_cast.db test_volt_cast.db volt_cast_model.joblib volt_cast_metrics.json
 
-docker-down:
-	docker compose down -v
-
-migrate:
-	alembic upgrade head
-
-coverage:
-	pytest tests/ --cov --cov-report=term-missing
+retrain:
+	python -c "from pipelines.retrain_dag import run_retraining_pipeline; run_retraining_pipeline()"

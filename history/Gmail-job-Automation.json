@@ -1,59 +1,40 @@
-[
-  {
-    "date": "2026-04-21",
-    "mode": "improvement",
-    "repo": "Gmail-job-Automation",
-    "improvements": [
-      "refactor/auth.py: add type annotations, replace print() with logging, remove macOS-specific Safari browser registration, raise FileNotFoundError instead of exit(1)",
-      "refactor/gmail_labeler.py: add type annotations to all public functions, replace all print() with logging.getLogger calls, configure logging.basicConfig in main()",
-      "refactor/delete_job_emails.py: add type annotations to all public functions, replace all print() with logging.getLogger calls, configure logging.basicConfig in main()",
-      "test: add pytest suite with 16 tests (mocked Gmail API, no credentials needed) \u2014 test_auth.py (6), test_labeler.py (5), test_delete.py (5)",
-      "ci: add GitHub Actions CI workflow (ubuntu-latest, Python 3.11, pytest on push/PR)",
-      "docs: update README with CI badge and Testing section"
+{
+  "repo": "Gmail-job-Automation",
+  "mode": "IMPROVEMENT",
+  "date": "2026-06-24",
+  "commits": 60,
+  "summary": {
+    "new_files": [
+      "utils.py", "count_emails.py", "py.typed", "CHANGELOG.md",
+      "CONTRIBUTING.md", "tests/test_utils.py", "tests/test_count.py",
+      ".github/workflows/release.yml"
     ],
-    "tests_passed": true,
-    "commits": 4
+    "key_improvements": [
+      "Added utils.py: build_query, chunked, format_count, format_duration, sanitize_query, retry, truncate",
+      "Added count_emails.py: count_all, export_csv, --json/--csv CLI flags",
+      "Added __all__ and NullHandler to all modules for PEP compliance",
+      "Added dry_run param to label_interview_threads and trash_all_in_label",
+      "Fixed _cb type annotations in delete_job_emails.py and label_interviews.py",
+      "Added is_authenticated() helper to auth.py",
+      "Added batch_size param to label_threads in gmail_labeler.py",
+      "Added REJECTION_LABEL/APPLICATION_LABEL constants to gmail_labeler.py",
+      "Added LABEL_COLOR constant to label_interviews.py",
+      "Added --labels CLI flag to delete_job_emails.py",
+      "Added Python 3.12 to CI test matrix",
+      "Added mypy type-checking step to CI",
+      "Added coverage XML artifact upload to CI",
+      "Added 5 new interview query patterns (24 total)",
+      "Expanded test suite with parametrize, pagination, dry_run, constant tests",
+      "Added dev-install, check, release targets to Makefile",
+      "Added architecture diagram, badges, API reference to README"
+    ]
   },
-  {
-    "date": "2026-04-30",
-    "mode": "improvement",
-    "improvements": [
-      "fix: CI actions/checkout@v4 + setup-python@v5 (were v6, non-existent - CI was broken)",
-      "feat: --dry-run flag for gmail_labeler.py previews label counts without making changes",
-      "fix: with_retry now retries on OSError/ConnectionError/TimeoutError in addition to HttpError",
-      "fix: type annotations on _cb callback in gmail_labeler.py; remove quoted Optional in label_interviews.py",
-      "test: 5 new tests (network retry x3, dry-run label creation, dry-run thread count)",
-      "chore: pytest-cov in requirements; [tool.ruff.lint] + coverage config + [tool.pytest.ini_options] in pyproject.toml",
-      "chore: Makefile with install/test/lint/fix/clean targets",
-      "chore: remove stale in-file README comment block from gmail_labeler.py",
-      "docs: README updated with dry-run usage, Makefile shortcuts, updated test counts"
-    ],
-    "tests_passed": true,
-    "commits": 3,
-    "run_verified": "27/27 tests passed",
-    "email_status": "failed_2525:OSError"
-  },
-  {
-    "date": "2026-07-10",
-    "mode": "improvement",
-    "repo": "Gmail-job-Automation",
-    "improvements": [
-      "docs: Google-style docstrings + module docstrings across auth.py, gmail_labeler.py, label_interviews.py, delete_job_emails.py",
-      "feat: --dry-run flag for label_interviews.py (parity with gmail_labeler.py); --yes flag for delete_job_emails.py; --log-level flag on all three scripts",
-      "feat: scripts/run_all.py - run all three labelers with a single authentication",
-      "feat: utils.py with format_count()/plural_s(), wired into all script summaries",
-      "fix: ruff B023 loop-variable capture in batch callbacks (all three scripts); unused imports in run_all.py/test_run_all.py",
-      "refactor: type annotations tightened (list[str], dict[str, list[str]], typing.Final on constants); __all__ exports",
-      "test: suite grown 27 -> 128 tests (parametrized retry codes, pagination, dry-run parity, main() flows, query-list integrity)",
-      "ci: split workflow into lint/test(3.9,3.11,3.12)/type-check jobs with coverage artifact; pinned actions to @v4/@v5",
-      "chore: pre-commit config, .editorconfig, .gitattributes, PR/issue templates, CONTRIBUTING.md, CHANGELOG.md, CODE_OF_CONDUCT.md",
-      "build: requirements-dev.txt split; Makefile help/format/ci/type-check/cover/count targets; [tool.mypy] in pyproject",
-      "merge: integrated upstream count_emails.py, is_authenticated(), extra utils helpers, dependabot bumps (128 tests green, 89.7% coverage)"
-    ],
-    "tests_passed": true,
-    "tests_before": 27,
-    "tests_after": 128,
-    "coverage": "89.72%",
-    "commits": 60
+  "preflight": {
+    "ci_fixes": [
+      "Automated-json-pipeline: fixed ruff I001 in benchmark.py and export_metrics.py",
+      "Stock-Market-Intelligence: fixed TestClient context manager in test_api_portfolio_risk.py",
+      "Loan-Lens: fixed release.yml make_latest boolean type",
+      "Supply-Pulse: fixed release.yml make_latest boolean type"
+    ]
   }
-]
+}

@@ -1,5 +1,4 @@
 """Tests for custom exception hierarchy."""
-
 from __future__ import annotations
 
 import pytest
@@ -46,12 +45,7 @@ def test_all_exceptions_catchable_as_base() -> None:
         ModelNotTrainedError,
     )
 
-    for exc_cls in [
-        ModelNotTrainedError,
-        FeatureExtractionError,
-        DriftDetectionError,
-        DatabaseError,
-    ]:
+    for exc_cls in [ModelNotTrainedError, FeatureExtractionError, DriftDetectionError, DatabaseError]:
         try:
             raise exc_cls("test")
         except CyberSentinelError:

@@ -1,63 +1,44 @@
-"""MLflow integration stub for Realty-Edge experiment tracking.
+"""MLflow stub for experiment tracking — swappable with real MLflow."""
 
-Logs model metrics, parameters, and artefacts to MLflow when the
-MLFLOW_TRACKING_URI environment variable is set. Falls back to a no-op
-logger when MLflow is unavailable (e.g. in CI or lightweight dev setups).
+from __future__ import annotations
 
-Usage
------
-from app.mlflow_stub import log_training_run
-log_training_run(params={"n_estimators": 200}, metrics={"r2": 0.87}, tags={"env": "prod"})
-"""
-
+import json
 import logging
-import os
-from typing import Any
+from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
-_TRACKING_URI = os.getenv("MLFLOW_TRACKING_URI", "")
-_EXPERIMENT = os.getenv("MLFLOW_EXPERIMENT_NAME", "realty-edge")
+MLFLOW_ENABLED = False
+_RUN_STORE: list[dict] = []
 
 
-def log_training_run(
-    params: dict[str, Any],
-    metrics: dict[str, float],
-    tags: dict[str, str] | None = None,
-    artifact_paths: list[str] | None = None,
-) -> str | None:
-    """Log a training run to MLflow if available.
+def log_metrics(metrics: dict, run_name: str = "volt-cast") -> str:
+    """Log model metrics — writes to local store or MLflow if enabled."""
+    run_id = f"run_{len(_RUN_STORE):04d}"
+    entry = {"run_id": run_id, "run_name": run_name, **metrics}
+    _RUN_STORE.append(entry)
 
-    Args:
-        params: Model hyperparameters to record.
-        metrics: Evaluation metrics (R2, RMSE, etc.).
-        tags: Arbitrary key-value metadata for the run.
-        artifact_paths: Local file paths to upload as artefacts.
+    if MLFLOW_ENABLED:
+        try:
+            import mlflow  # type: ignore[import]
+            with mlflow.start_run(run_name=run_name):
+                mlflow.log_metrics({k: v for k, v in metrics.items() if isinstance(v, (int, float))})
+        except Exception as exc:
+            logger.warning("mlflow logging failed: %s", exc)
+    else:
+        logger.info("mlflow stub — logged run %s: %s", run_id, metrics)
 
-    Returns:
-        The MLflow run ID if logging succeeded, else None.
-    """
-    if not _TRACKING_URI:
-        logger.debug("MLFLOW_TRACKING_URI not set — skipping MLflow logging.")
+    return run_id
+
+
+def get_best_run(metric: str = "r2_mean") -> dict | None:
+    """Return the run with the highest value for `metric`."""
+    valid = [r for r in _RUN_STORE if metric in r]
+    if not valid:
         return None
-    try:
-        import mlflow
+    return max(valid, key=lambda r: r[metric])
 
-        mlflow.set_tracking_uri(_TRACKING_URI)
-        mlflow.set_experiment(_EXPERIMENT)
-        with mlflow.start_run() as run:
-            mlflow.log_params(params)
-            mlflow.log_metrics(metrics)
-            if tags:
-                mlflow.set_tags(tags)
-            for path in artifact_paths or []:
-                if os.path.exists(path):
-                    mlflow.log_artifact(path)
-            run_id = run.info.run_id
-            logger.info("MLflow run logged: %s", run_id)
-            return run_id
-    except ImportError:
-        logger.debug("MLflow not installed — skipping.")
-    except Exception as exc:
-        logger.warning("MLflow logging failed: %s", exc)
-    return None
+
+def dump_run_store(path: str = "/tmp/mlflow_stub_runs.json") -> None:
+    Path(path).write_text(json.dumps(_RUN_STORE, indent=2))
+    logger.info("mlflow stub runs written to %s", path)

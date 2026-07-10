@@ -88,12 +88,9 @@ def main() -> int:
                 failing += 1
             if not args.failing_only or is_fail:
                 icon = "❌" if is_fail else ("✅" if conclusion == "success" else "⏳")
-                log.info("  %s %s / %s: %s", icon, name, wf_name, conclusion)
+                print(f"  {icon} {name} / {wf_name}: {conclusion}")
 
-    if failing:
-        log.warning("%d failing workflow(s) found across %d repos", failing, len(repos))
-    else:
-        log.info("0 failing workflow(s) found across %d repos", len(repos))
+    print(f"\n{failing} failing workflow(s) found across {len(repos)} repos")
     return 1 if failing > 0 else 0
 
 

@@ -1,5 +1,4 @@
 """Tests for the ensemble model training and prediction."""
-
 from __future__ import annotations
 
 import numpy as np
