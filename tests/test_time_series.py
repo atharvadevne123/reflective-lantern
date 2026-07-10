@@ -28,13 +28,6 @@ def test_seasonal_baseline_length():
     baseline = seasonal_baseline(data, period=24)
     assert len(baseline) == 48
 
-    def test_peak_trough_indices(self):
-        period = 4
-        pattern = [1000.0, 5000.0, 2000.0, 500.0]
-        loads = pattern * 5
-        result = seasonal_summary(loads, period=period)
-        assert result["peak_period_index"] == 1
-        assert result["trough_period_index"] == 3
 
 def test_seasonal_baseline_periodicity():
     data = [float(i % 24) for i in range(72)]
