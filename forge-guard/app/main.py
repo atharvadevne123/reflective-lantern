@@ -18,11 +18,15 @@ from sqlalchemy.orm import Session
 
 from app.database import get_db, init_db
 from app.features import engineer_single
+from app.logging_config import configure_logging
 from app.model import MODEL_VERSION, get_metrics, load_model, predict
 from app.monitoring import defect_rate, log_prediction, run_drift_check
 from app.schemas import BatchPredictionResponse, BatchSensorInput
 
-logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s %(message)s")
+configure_logging(
+    level=os.getenv("LOG_LEVEL", "INFO"),
+    json_output=os.getenv("LOG_JSON", "false").lower() == "true",
+)
 logger = logging.getLogger(__name__)
 
 _model = None
