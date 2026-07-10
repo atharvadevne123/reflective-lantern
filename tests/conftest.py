@@ -138,9 +138,7 @@ def db_session():  # type: ignore[return]
 
         from app.database import Base
 
-        engine = create_engine(
-            "sqlite:///:memory:", connect_args={"check_same_thread": False}
-        )
+        engine = create_engine("sqlite:///:memory:", connect_args={"check_same_thread": False})
         Base.metadata.create_all(bind=engine)
         Session = sessionmaker(autocommit=False, autoflush=False, bind=engine)
         session = Session()
@@ -164,23 +162,25 @@ def sample_df():  # type: ignore[return]
         return
     rng = np.random.default_rng(42)
     n = 50
-    return pd.DataFrame({
-        "sqft": rng.uniform(800, 4000, n),
-        "bedrooms": rng.integers(1, 6, n),
-        "bathrooms": rng.uniform(1, 4, n),
-        "lot_size": rng.uniform(2000, 15000, n),
-        "year_built": rng.integers(1960, 2020, n),
-        "condition_score": rng.uniform(3, 9, n),
-        "school_score": rng.uniform(4, 9, n),
-        "transit_score": rng.uniform(3, 9, n),
-        "walkability_score": rng.uniform(3, 9, n),
-        "crime_rate": rng.uniform(0.05, 0.6, n),
-        "median_neighborhood_price": rng.uniform(200_000, 800_000, n),
-        "median_price_per_sqft": rng.uniform(100, 400, n),
-        "avg_rental_yield": rng.uniform(0.03, 0.12, n),
-        "listing_days": rng.integers(1, 180, n),
-        "list_price": rng.uniform(200_000, 900_000, n),
-    })
+    return pd.DataFrame(
+        {
+            "sqft": rng.uniform(800, 4000, n),
+            "bedrooms": rng.integers(1, 6, n),
+            "bathrooms": rng.uniform(1, 4, n),
+            "lot_size": rng.uniform(2000, 15000, n),
+            "year_built": rng.integers(1960, 2020, n),
+            "condition_score": rng.uniform(3, 9, n),
+            "school_score": rng.uniform(4, 9, n),
+            "transit_score": rng.uniform(3, 9, n),
+            "walkability_score": rng.uniform(3, 9, n),
+            "crime_rate": rng.uniform(0.05, 0.6, n),
+            "median_neighborhood_price": rng.uniform(200_000, 800_000, n),
+            "median_price_per_sqft": rng.uniform(100, 400, n),
+            "avg_rental_yield": rng.uniform(0.03, 0.12, n),
+            "listing_days": rng.integers(1, 180, n),
+            "list_price": rng.uniform(200_000, 900_000, n),
+        }
+    )
 
 
 @pytest.fixture()
@@ -207,6 +207,7 @@ def client(monkeypatch: pytest.MonkeyPatch):  # type: ignore[return]
     os.environ.setdefault("ANTHROPIC_API_KEY", "sk-test")
     from app.database import Base, engine
     from app.main import app
+
     Base.metadata.create_all(bind=engine)
     with TestClient(app) as c:
         yield c

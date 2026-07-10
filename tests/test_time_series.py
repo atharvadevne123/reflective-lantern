@@ -76,6 +76,7 @@ def test_exp_smoothing_single_value() -> None:
     result = exponential_smoothing_forecast([500_000], horizon=2)
     assert all(v == pytest.approx(500_000.0) for v in result)
 
+
 def test_sma_window_one_returns_input() -> None:
     values = [100.0, 200.0, 300.0]
     result = compute_sma(values, window=1)

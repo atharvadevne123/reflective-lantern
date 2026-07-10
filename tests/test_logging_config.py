@@ -212,6 +212,7 @@ def test_json_formatter_exception_info_included() -> None:
         raise ValueError("test error")
     except ValueError:
         import sys
+
         exc_info = sys.exc_info()
 
     record = logging.LogRecord(
@@ -234,8 +235,13 @@ def test_json_formatter_output_has_ts_key() -> None:
 
     formatter = JsonFormatter()
     record = logging.LogRecord(
-        name="test", level=logging.INFO, pathname="", lineno=0,
-        msg="hello", args=(), exc_info=None,
+        name="test",
+        level=logging.INFO,
+        pathname="",
+        lineno=0,
+        msg="hello",
+        args=(),
+        exc_info=None,
     )
     parsed = json.loads(formatter.format(record))
     assert "ts" in parsed

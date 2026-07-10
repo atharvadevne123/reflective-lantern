@@ -87,13 +87,26 @@ def test_predict_no_nan_values(sample_df, sample_target) -> None:
 def test_synthetic_model_predict_finite(seed) -> None:
     bundle = _synthetic_model()
     import pandas as pd
-    stub = pd.DataFrame({
-        "sqft": [1200.0], "bedrooms": [2], "bathrooms": [1.0], "lot_size": [4000.0],
-        "year_built": [1990], "condition_score": [6.0], "school_score": [5.0],
-        "transit_score": [5.0], "walkability_score": [5.0], "crime_rate": [0.4],
-        "median_neighborhood_price": [250_000.0], "median_price_per_sqft": [180.0],
-        "avg_rental_yield": [0.05], "listing_days": [20], "list_price": [300_000.0],
-    })
+
+    stub = pd.DataFrame(
+        {
+            "sqft": [1200.0],
+            "bedrooms": [2],
+            "bathrooms": [1.0],
+            "lot_size": [4000.0],
+            "year_built": [1990],
+            "condition_score": [6.0],
+            "school_score": [5.0],
+            "transit_score": [5.0],
+            "walkability_score": [5.0],
+            "crime_rate": [0.4],
+            "median_neighborhood_price": [250_000.0],
+            "median_price_per_sqft": [180.0],
+            "avg_rental_yield": [0.05],
+            "listing_days": [20],
+            "list_price": [300_000.0],
+        }
+    )
     preds = predict(stub, bundle)
     assert len(preds) == 1
     assert np.isfinite(preds[0])

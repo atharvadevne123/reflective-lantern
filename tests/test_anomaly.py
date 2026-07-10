@@ -78,6 +78,7 @@ def test_deviation_pct_computed() -> None:
     result = detect_valuation_anomaly(predicted=600_000, neighborhood_median=500_000)
     assert result["deviation_pct"] == pytest.approx(20.0)
 
+
 def test_result_has_required_keys() -> None:
     result = detect_valuation_anomaly(predicted=450_000, neighborhood_median=500_000)
     assert "is_anomaly" in result
