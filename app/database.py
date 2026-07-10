@@ -100,3 +100,30 @@ def get_db() -> Session:
         yield db
     finally:
         db.close()
+
+
+def get_recent_predictions(db: Session, limit: int = 200) -> list[PredictionLog]:
+    """Return the most recent prediction log entries."""
+    return (
+        db.query(PredictionLog)
+        .order_by(PredictionLog.created_at.desc())
+        .limit(limit)
+        .all()
+    )
+
+
+def get_drift_summary(db: Session, model_version: str = "1.0.0") -> dict:
+    """Aggregate drift statistics for the given model version."""
+    reports = (
+        db.query(DriftReport)
+        .filter(DriftReport.model_version == model_version)
+        .all()
+    )
+    if not reports:
+        return {"total": 0, "drifted": 0, "drift_pct": 0.0}
+    drifted = sum(1 for r in reports if r.drift_detected)
+    return {
+        "total": len(reports),
+        "drifted": drifted,
+        "drift_pct": round(100 * drifted / len(reports), 1),
+    }
