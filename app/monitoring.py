@@ -121,3 +121,46 @@ _tracker = PredictionTracker()
 
 def get_tracker() -> PredictionTracker:
     return _tracker
+
+
+def compute_psi(
+    reference: list[float],
+    current: list[float],
+    bins: int = 10,
+) -> dict:
+    """Population Stability Index (PSI) for distribution shift detection.
+
+    Args:
+        reference: Reference distribution values.
+        current: Current distribution values to compare.
+        bins: Number of histogram bins.
+
+    Returns:
+        dict with psi, severity ('stable'/'slight'/'significant'), and bin details.
+    """
+    import numpy as np
+
+    if len(reference) < 10 or len(current) < 5:
+        return {"psi": None, "severity": "unknown", "note": "insufficient_samples"}
+
+    ref = np.array(reference, dtype=float)
+    cur = np.array(current, dtype=float)
+    global_min = min(ref.min(), cur.min())
+    global_max = max(ref.max(), cur.max())
+
+    if global_max == global_min:
+        return {"psi": 0.0, "severity": "stable"}
+
+    bin_edges = np.linspace(global_min, global_max, bins + 1)
+    ref_counts, _ = np.histogram(ref, bins=bin_edges)
+    cur_counts, _ = np.histogram(cur, bins=bin_edges)
+
+    ref_pct = ref_counts / ref_counts.sum()
+    cur_pct = cur_counts / cur_counts.sum()
+    ref_pct = np.where(ref_pct == 0, 1e-6, ref_pct)
+    cur_pct = np.where(cur_pct == 0, 1e-6, cur_pct)
+
+    psi = float(np.sum((cur_pct - ref_pct) * np.log(cur_pct / ref_pct)))
+    severity = "stable" if psi < 0.1 else "slight" if psi < 0.2 else "significant"
+
+    return {"psi": round(psi, 4), "severity": severity, "bins": bins}
