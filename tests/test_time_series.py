@@ -1,77 +1,94 @@
-"""Tests for time-series forecasting module."""
+"""Tests for time-series analysis utilities."""
 
-import math
+from __future__ import annotations
 
+import numpy as np
 import pytest
 
-from app.time_series import (
-    compute_sma,
-    exponential_smoothing_forecast,
-    linear_trend_forecast,
-)
+from app.time_series import compute_trend, detect_load_spikes, seasonal_summary
 
 
-def test_sma_length_matches_input():
-    result = compute_sma([1, 2, 3, 4, 5], window=3)
-    assert len(result) == 5
+class TestComputeTrend:
+    def test_increasing_trend(self):
+        loads = [float(1000 + i * 50) for i in range(50)]
+        result = compute_trend(loads, window=10)
+        assert result["direction"] == "increasing"
+        assert result["slope_mw_per_hour"] > 0
+
+    def test_decreasing_trend(self):
+        loads = [float(5000 - i * 50) for i in range(50)]
+        result = compute_trend(loads, window=10)
+        assert result["direction"] == "decreasing"
+
+    def test_stable_trend(self):
+        loads = [3000.0] * 48
+        result = compute_trend(loads, window=24)
+        assert result["direction"] == "stable"
+        assert result["slope_mw_per_hour"] == pytest.approx(0.0, abs=1.0)
+
+    def test_insufficient_data(self):
+        result = compute_trend([3000.0, 3100.0], window=24)
+        assert result["direction"] == "unknown"
+        assert result["trend"] is None
+
+    def test_returns_expected_keys(self):
+        loads = [3000.0 + i for i in range(30)]
+        result = compute_trend(loads, window=10)
+        assert "sma_last" in result
+        assert "slope_mw_per_hour" in result
+        assert "direction" in result
+
+    @pytest.mark.parametrize("window", [6, 12, 24])
+    def test_various_window_sizes(self, window):
+        loads = [3000.0 + i * 10 for i in range(60)]
+        result = compute_trend(loads, window=window)
+        assert result["window_size"] == window
+        assert result["sma_last"] is not None
 
 
-def test_sma_first_values_nan():
-    result = compute_sma([1, 2, 3, 4, 5], window=3)
-    assert math.isnan(result[0])
-    assert math.isnan(result[1])
+class TestDetectLoadSpikes:
+    def test_detects_obvious_spike(self):
+        loads = [3000.0] * 50 + [9999.0] + [3000.0] * 50
+        spikes = detect_load_spikes(loads)
+        assert len(spikes) >= 1
+        assert any(s["index"] == 50 for s in spikes)
+
+    def test_no_spikes_uniform(self):
+        loads = [3000.0] * 100
+        spikes = detect_load_spikes(loads)
+        assert len(spikes) == 0
+
+    def test_returns_expected_keys(self):
+        loads = [3000.0] * 50 + [9000.0] + [3000.0] * 50
+        spikes = detect_load_spikes(loads)
+        if spikes:
+            assert "index" in spikes[0]
+            assert "load_mw" in spikes[0]
+            assert "z_score" in spikes[0]
+            assert "deviation_mw" in spikes[0]
+
+    def test_insufficient_data(self):
+        spikes = detect_load_spikes([3000.0, 3100.0])
+        assert spikes == []
 
 
-def test_sma_correct_value():
-    result = compute_sma([100_000, 200_000, 300_000, 400_000], window=3)
-    assert result[2] == pytest.approx(200_000.0)
-    assert result[3] == pytest.approx(300_000.0)
+class TestSeasonalSummary:
+    def test_computes_seasonal_means(self):
+        period = 24
+        pattern = [float(1000 + i * 100) for i in range(period)]
+        loads = pattern * 3
+        result = seasonal_summary(loads, period=period)
+        assert len(result["seasonal_means"]) == period
+        assert result["period"] == period
 
+    def test_peak_trough_indices(self):
+        period = 4
+        pattern = [1000.0, 5000.0, 2000.0, 500.0]
+        loads = pattern * 5
+        result = seasonal_summary(loads, period=period)
+        assert result["peak_period_index"] == 1
+        assert result["trough_period_index"] == 3
 
-def test_sma_too_short_all_nan():
-    result = compute_sma([100, 200], window=5)
-    assert all(math.isnan(v) for v in result)
-
-
-def test_linear_trend_positive_slope():
-    values = [100_000, 110_000, 120_000, 130_000, 140_000]
-    result = linear_trend_forecast(values, horizon=2)
-    assert result["slope"] > 0
-    assert len(result["forecasts"]) == 2
-    assert result["r_squared"] > 0.99
-
-
-def test_linear_trend_flat_r_squared():
-    values = [500_000] * 5
-    result = linear_trend_forecast(values, horizon=3)
-    assert result["slope"] == pytest.approx(0.0, abs=1.0)
-    assert result["r_squared"] == 0.0
-
-
-def test_linear_trend_too_few_values():
-    result = linear_trend_forecast([100_000, 120_000], horizon=3)
-    assert result["forecasts"] == []
-    assert result["r_squared"] == 0.0
-
-
-def test_linear_trend_forecast_extrapolates():
-    values = [100_000 + i * 10_000 for i in range(5)]
-    result = linear_trend_forecast(values, horizon=3)
-    for f in result["forecasts"]:
-        assert f > values[-1]
-
-
-@pytest.mark.parametrize("alpha", [0.1, 0.3, 0.7, 0.9])
-def test_exp_smoothing_returns_horizon_values(alpha):
-    values = [100_000, 110_000, 120_000, 130_000]
-    result = exponential_smoothing_forecast(values, alpha=alpha, horizon=3)
-    assert len(result) == 3
-
-
-def test_exp_smoothing_empty_input():
-    assert exponential_smoothing_forecast([], horizon=3) == []
-
-
-def test_exp_smoothing_single_value():
-    result = exponential_smoothing_forecast([500_000], horizon=2)
-    assert all(v == pytest.approx(500_000.0) for v in result)
+    def test_insufficient_data(self):
+        result = seasonal_summary([3000.0] * 5, period=24)
+        assert result["seasonal_means"] == []
