@@ -1,4 +1,7 @@
-# Watt-Guard ⚡
+![CI](https://github.com/atharvadevne123/reflective-lantern/actions/workflows/ci.yml/badge.svg)
+![Python Package](https://github.com/atharvadevne123/reflective-lantern/actions/workflows/python-publish.yml/badge.svg)
+![npm](https://github.com/atharvadevne123/reflective-lantern/actions/workflows/npm-publish.yml/badge.svg)
+![Bump Version](https://github.com/atharvadevne123/reflective-lantern/actions/workflows/bump-version.yml/badge.svg)
 
 > Smart building and industrial energy consumption forecasting and anomaly detection API.
 
@@ -7,30 +10,68 @@
 [![Python 3.11](https://img.shields.io/badge/python-3.11-blue.svg)](https://python.org)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.111-009688.svg)](https://fastapi.tiangolo.com)
 
-## Overview
+Every weekday at 9 AM CST, Reflective Lantern wakes up, picks one of @atharvadevne123’s
+GitHub repositories, implements 60 improvements, runs tests, updates docs, pushes to main,
+and sends an email digest — all with zero human intervention.
 
-Watt-Guard provides production-grade energy consumption forecasting and anomaly detection for smart buildings and industrial facilities. It uses an XGBoost + LightGBM + RandomForest voting ensemble trained on occupancy-aware, weather-correlated features with automated weekly retraining and KS-test drift monitoring.
+## Quick Start
+
+```bash
+git clone https://github.com/atharvadevne123/reflective-lantern.git
+cd reflective-lantern
+bash scripts/setup.sh          # install deps + pre-commit hooks
+cp .env.example .env           # fill in your API keys
+make test                      # verify everything works
+```
+
+**Required environment variables** (see `.env.example` for full list):
+
+| Variable | Description |
+|----------|-------------|
+| `ANTHROPIC_API_KEY` | Claude API key for AI-powered features |
+| `GH_PAT` | GitHub Personal Access Token (`repo` + `workflow` scopes) |
+| `NOTION_API_KEY` | For Notion portfolio updates |
+| `GMAIL_USER` + `GMAIL_APP_PASS` | For emailed run reports |
+
+## What It Does
+
+Each daily run:
+1. **PRE-FLIGHT** — Fix failing CI workflows, merge open branches, create missing releases
+2. **MODE SELECT** — IMPROVEMENT (most days) or INNOVATION (Wednesday wks 2 & 4)
+3. **SELECT REPO** — deterministic daily rotation through the active portfolio
+4. **ANALYSE** — read every source file, identify 60 improvements across 5 tiers
+5. **IMPLEMENT** — one commit per change (security → tests → quality → DX → perf)
+6. **VERIFY** — run full test suite; fix failures (2 attempts)
+7. **PUSH** — directly to `main`
+8. **NOTIFY** — PDF report emailed to devneatharva@gmail.com
 
 ## Architecture
 
-![Architecture](screenshots/architecture.png)
+See [`docs/architecture.md`](docs/architecture.md) for a full ASCII diagram.
 
-## Tech Stack
+```
+reflective-lantern/
+├── .claude/settings.json     ← CCR tool permissions
+├── config/                    ← Settings, constants, logging
+├── scripts/                   ← Standalone utility scripts
+├── tests/                     ← pytest suite
+├── docs/                      ← Architecture & operations docs
+├── history/                   ← Per-repo JSON run logs
+├── prompts/system_prompt.md  ← Cached agent instructions (3000+ tokens)
+└── covers/                    ← SVG cover images for Notion
+```
 
-| Layer | Technology |
-|---|---|
-| API | FastAPI + Uvicorn |
-| ML Models | XGBoost, LightGBM, RandomForest (VotingRegressor) |
-| Anomaly Detection | IsolationForest |
-| Feature Pipeline | sklearn Pipeline (7 stages, 30+ features) |
-| Drift Monitoring | KS-test (scipy) |
-| Database | SQLite (dev) / PostgreSQL (prod) via SQLAlchemy |
-| Retraining | Airflow weekly DAG |
-| Containerisation | Docker + docker-compose |
-| Testing | pytest (50+ tests) |
-| CI | GitHub Actions (ruff + pytest) |
+## Improvement Tiers
 
-## Quickstart
+| Priority | Tier | Examples |
+|----------|------|----------|
+| 1 | Security / Correctness | Secrets → env vars, bare `except` → typed, SQL injection |
+| 2 | Tests | `conftest.py`, happy path + 3 edge cases per endpoint |
+| 3 | Code Quality | Type hints, docstrings, logging, refactor > 40-line functions |
+| 4 | Developer Experience | CI/CD, Dockerfile, `.env.example`, `pyproject.toml`, README |
+| 5 | Performance | `lru_cache`, N+1 fix, DB indexes, connection pooling |
+
+## Utility Scripts
 
 ```bash
 # Clone
@@ -116,16 +157,8 @@ MIT
 
 ## API Versioning
 
-All endpoints are prefixed with `/api/v1/`. Future breaking changes will introduce `/api/v2/` while keeping v1 operational for 6 months.
-
-## Monitoring Dashboard
-
-`GET /api/v1/metrics` returns:
-- `total_predictions`: Total forecasts served
-- `total_anomalies_flagged`: Anomalies detected by IsolationForest
-- `total_drift_events`: KS-test drift events logged
-- `model_metrics`: Latest training R2 and MAE
-
-## Rate Limiting
-
-200 requests per minute per IP. Exceeding this returns HTTP 429.
+- **Scheduler**: Claude Code Cloud Routine (`cron 0 14 * * 1-5` = 9 AM CDT)
+- **AI**: Claude Sonnet 4.6 with prompt caching
+- **Repo ops**: GitHub REST API + git
+- **Notifications**: Gmail SMTP
+- **Portfolio**: Notion API + Anthropic SDK

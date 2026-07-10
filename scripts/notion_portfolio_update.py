@@ -158,9 +158,7 @@ def update_notion_page(
     description: str | None = None,
 ) -> None:
     """Patch a Notion page: cover image, Tags multi-select, and Description."""
-    properties: dict[str, object] = {
-        "Tags": {"multi_select": [{"name": t} for t in tags]}
-    }
+    properties: dict[str, object] = {"Tags": {"multi_select": [{"name": t} for t in tags]}}
     if description:
         properties["Description"] = {
             "rich_text": [{"type": "text", "text": {"content": description}}]
