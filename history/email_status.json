@@ -43,5 +43,11 @@
     "commits": 60,
     "tests_before": 27,
     "tests_after": 128
+  },
+  {
+    "date": "2026-07-10",
+    "run": "innovation-forge-guard",
+    "status": "failed",
+    "reason": "SMTP unavailable in CCR sandbox (no raw socket egress)"
   }
 ]
