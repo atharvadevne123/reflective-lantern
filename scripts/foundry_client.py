@@ -54,14 +54,14 @@ class FoundryClient:
         self.base_url = f"{hostname.rstrip('/')}/api/{FOUNDRY_API_VERSION}"
         self._token = token
 
-    def _request(
+    def _request_raw(
         self,
         method: str,
         path: str,
         body: bytes | None = None,
         content_type: str = "application/json",
-    ) -> dict[str, Any]:
-        """Issue an authenticated request and return the parsed JSON body."""
+    ) -> bytes:
+        """Issue an authenticated request and return the raw response body."""
         req = urllib.request.Request(
             f"{self.base_url}{path}",
             data=body,
@@ -73,12 +73,22 @@ class FoundryClient:
         )
         try:
             with urllib.request.urlopen(req, timeout=FOUNDRY_UPLOAD_TIMEOUT_SECONDS) as resp:
-                raw = resp.read()
+                return resp.read()  # type: ignore[no-any-return]
         except urllib.error.HTTPError as exc:
             detail = exc.read().decode(errors="replace")[:500]
             raise FoundryAPIError(f"{method} {path} failed ({exc.code}): {detail}") from exc
         except urllib.error.URLError as exc:
             raise FoundryAPIError(f"{method} {path} failed: {exc.reason}") from exc
+
+    def _request(
+        self,
+        method: str,
+        path: str,
+        body: bytes | None = None,
+        content_type: str = "application/json",
+    ) -> dict[str, Any]:
+        """Issue an authenticated request and return the parsed JSON body."""
+        raw = self._request_raw(method, path, body=body, content_type=content_type)
         if not raw:
             return {}
         result = json.loads(raw)
@@ -130,6 +140,44 @@ class FoundryClient:
             return []
         return [f["path"] for f in data if isinstance(f, dict) and "path" in f]
 
+    def read_table(self, dataset_rid: str, fmt: str = "CSV", branch: str = "master") -> bytes:
+        """Read the dataset back as a table export (requires a schema).
+
+        *fmt* is one of Foundry's readTable formats, e.g. CSV or ARROW.
+        """
+        return self._request_raw(
+            "GET",
+            f"/datasets/{dataset_rid}/readTable?format={fmt}&branchName={branch}",
+        )
+
+    def upload_dataset_files(
+        self,
+        dataset_rid: str,
+        files: dict[str, bytes],
+        branch: str = "master",
+    ) -> str:
+        """Upload several files to *dataset_rid* in one atomic transaction.
+
+        *files* maps target path inside the dataset to content bytes.
+        Returns the committed transaction RID. Aborts the transaction if
+        any upload or the commit fails, then re-raises.
+        """
+        if not files:
+            raise ValueError("files must not be empty")
+        txn = self.create_transaction(dataset_rid, branch=branch)
+        try:
+            for target_name, content in files.items():
+                self.upload_file(dataset_rid, txn, target_name, content)
+            self.commit_transaction(dataset_rid, txn)
+        except FoundryAPIError:
+            log.warning("Upload failed; aborting transaction %s", txn)
+            try:
+                self.abort_transaction(dataset_rid, txn)
+            except FoundryAPIError:
+                log.error("Could not abort transaction %s", txn)
+            raise
+        return txn
+
     def upload_dataset_file(
         self,
         dataset_rid: str,
@@ -142,19 +190,9 @@ class FoundryClient:
         Returns the committed transaction RID. Aborts the transaction if
         the upload or commit fails, then re-raises.
         """
-        content = local_path.read_bytes()
-        txn = self.create_transaction(dataset_rid, branch=branch)
-        try:
-            self.upload_file(dataset_rid, txn, target_name, content)
-            self.commit_transaction(dataset_rid, txn)
-        except FoundryAPIError:
-            log.warning("Upload failed; aborting transaction %s", txn)
-            try:
-                self.abort_transaction(dataset_rid, txn)
-            except FoundryAPIError:
-                log.error("Could not abort transaction %s", txn)
-            raise
-        return txn
+        return self.upload_dataset_files(
+            dataset_rid, {target_name: local_path.read_bytes()}, branch=branch
+        )
 
 
 def client_from_settings(settings: Settings | None = None) -> FoundryClient:
@@ -176,12 +214,17 @@ def main() -> int:
         action="store_true",
         help="Check that the configured dataset is reachable, then exit",
     )
+    parser.add_argument(
+        "--read-table",
+        action="store_true",
+        help="Read the dataset back as CSV and print it (requires an applied schema)",
+    )
     args = parser.parse_args()
 
     logging.basicConfig(level=logging.INFO, format="%(levelname)s %(message)s")
 
-    if not args.upload and not args.verify:
-        parser.error("one of --upload or --verify is required")
+    if not args.upload and not args.verify and not args.read_table:
+        parser.error("one of --upload, --verify, or --read-table is required")
 
     settings = Settings()
     if not settings.foundry_configured():
@@ -210,6 +253,17 @@ def main() -> int:
             len(files),
             settings.foundry_branch,
         )
+        return 0
+
+    if args.read_table:
+        client = client_from_settings(settings)
+        try:
+            data = client.read_table(settings.foundry_dataset_rid, branch=settings.foundry_branch)
+        except FoundryAPIError as exc:
+            log.error("readTable failed: %s", exc)
+            log.error("Hint: readTable requires a schema applied to the dataset in Foundry")
+            return 1
+        sys.stdout.write(data.decode(errors="replace"))
         return 0
 
     local = Path(args.upload)

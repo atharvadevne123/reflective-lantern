@@ -246,3 +246,78 @@ def test_foundry_api_error_is_runtime_error() -> None:
     from scripts.foundry_client import FoundryAPIError
 
     assert issubclass(FoundryAPIError, RuntimeError)
+
+
+def test_read_table_returns_raw_bytes() -> None:
+    client = make_client()
+    captured: dict[str, Any] = {}
+
+    class RawResponse:
+        def read(self) -> bytes:
+            return b"a,b\n1,2\n"
+
+        def __enter__(self) -> "RawResponse":
+            return self
+
+        def __exit__(self, *args: object) -> None:
+            pass
+
+    def fake_urlopen(req: urllib.request.Request, timeout: float) -> RawResponse:
+        captured["url"] = req.full_url
+        return RawResponse()
+
+    with patch.object(urllib.request, "urlopen", fake_urlopen):
+        data = client.read_table("ri.ds", branch="dev")
+
+    assert data == b"a,b\n1,2\n"
+    assert "/datasets/ri.ds/readTable" in captured["url"]
+    assert "format=CSV" in captured["url"]
+    assert "branchName=dev" in captured["url"]
+
+
+def test_upload_dataset_files_single_transaction() -> None:
+    client = make_client()
+    calls: list[str] = []
+
+    def fake_urlopen(req: urllib.request.Request, timeout: float) -> FakeResponse:
+        calls.append(req.full_url)
+        if "/transactions?" in req.full_url:
+            return FakeResponse({"rid": "ri.txn.multi"})
+        return FakeResponse()
+
+    with patch.object(urllib.request, "urlopen", fake_urlopen):
+        txn = client.upload_dataset_files(
+            "ri.ds", {"runs.csv": b"a\n", "ontology.json": b"[]", "manifest.json": b"{}"}
+        )
+
+    assert txn == "ri.txn.multi"
+    assert sum("/transactions?" in u for u in calls) == 1
+    assert sum("/upload" in u for u in calls) == 3
+    assert sum(u.endswith("/commit") for u in calls) == 1
+
+
+def test_upload_dataset_files_empty_raises() -> None:
+    client = make_client()
+    with pytest.raises(ValueError, match="must not be empty"):
+        client.upload_dataset_files("ri.ds", {})
+
+
+def test_upload_dataset_files_aborts_on_failure() -> None:
+    import urllib.error
+
+    client = make_client()
+    calls: list[str] = []
+
+    def fake_urlopen(req: urllib.request.Request, timeout: float) -> FakeResponse:
+        calls.append(req.full_url)
+        if "/transactions?" in req.full_url:
+            return FakeResponse({"rid": "ri.txn.bad"})
+        if "second.csv" in req.full_url:
+            raise urllib.error.URLError("boom")
+        return FakeResponse()
+
+    with patch.object(urllib.request, "urlopen", fake_urlopen):
+        with pytest.raises(FoundryAPIError):
+            client.upload_dataset_files("ri.ds", {"first.csv": b"1", "second.csv": b"2"})
+
+    assert any(u.endswith("/abort") for u in calls)
