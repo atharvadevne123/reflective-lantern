@@ -6,33 +6,32 @@ services:
     ports:
       - "8000:8000"
     environment:
-      - DATABASE_URL=postgresql://realty:realty@db:5432/realty_edge
-      - MODEL_PATH=/app/model.joblib
-      - METRICS_PATH=/app/metrics.json
+      - DATABASE_URL=postgresql://voltcast:voltcast@db:5432/voltcast
+      - MODEL_PATH=/app/volt_cast_model.joblib
+      - METRICS_PATH=/app/volt_cast_metrics.json
     depends_on:
       db:
         condition: service_healthy
     restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
+    volumes:
+      - model_data:/app/models
 
   db:
     image: postgres:15-alpine
     environment:
-      POSTGRES_USER: realty
-      POSTGRES_PASSWORD: realty
-      POSTGRES_DB: realty_edge
+      POSTGRES_USER: voltcast
+      POSTGRES_PASSWORD: voltcast
+      POSTGRES_DB: voltcast
+    ports:
+      - "5432:5432"
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - pg_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U realty -d realty_edge"]
+      test: ["CMD-SHELL", "pg_isready -U voltcast"]
       interval: 10s
       timeout: 5s
       retries: 5
-    restart: unless-stopped
 
 volumes:
-  postgres_data:
+  pg_data:
+  model_data:
