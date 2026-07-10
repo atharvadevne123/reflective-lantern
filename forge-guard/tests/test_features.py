@@ -101,3 +101,37 @@ def test_lag_count_parametrized(small_df, lags):
     out = t.fit_transform(small_df)
     for lag in range(1, lags + 1):
         assert f"temperature_lag{lag}" in out.columns
+
+
+def test_engineer_single_missing_column_defaults_to_zero():
+    row = {"temperature": 78.5, "pressure": 52.0, "vibration": 2.1, "cycle_time": 28.0}
+    result = engineer_single(row)
+    assert result.ndim == 2
+    assert not np.isnan(result).any()
+
+
+def test_ratio_transformer_handles_zero_denominator():
+    df = pd.DataFrame(
+        {
+            "temperature": [75.0], "pressure": [0.0], "vibration": [2.0],
+            "cycle_time": [0.0], "tool_wear": [10.0],
+            "power_consumption": [100.0], "humidity": [45.0],
+        }
+    )
+    t = RatioFeatureTransformer()
+    out = t.fit_transform(df)
+    assert np.isfinite(out["temp_pressure_ratio"]).all()
+    assert np.isfinite(out["vibration_per_cycle"]).all()
+
+
+def test_pipeline_output_has_no_nan(small_df):
+    pipe = build_feature_pipeline()
+    X = pipe.fit_transform(small_df)
+    assert not np.isnan(X).any()
+
+
+@pytest.mark.parametrize("seed", [0, 1, 42])
+def test_synthetic_data_reproducible(seed):
+    a = generate_synthetic_data(n_samples=50, seed=seed)
+    b = generate_synthetic_data(n_samples=50, seed=seed)
+    pd.testing.assert_frame_equal(a, b)
