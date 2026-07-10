@@ -1,0 +1,52 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.backends.legacy:build"
+
+[project]
+name = "watt-guard"
+version = "1.0.0"
+description = "Smart building energy consumption forecasting and anomaly detection API"
+readme = "README.md"
+requires-python = ">=3.11"
+license = {text = "MIT"}
+authors = [{name = "Reflective Lantern", email = "devneatharva@gmail.com"}]
+keywords = ["energy", "forecasting", "anomaly-detection", "ml", "fastapi"]
+classifiers = [
+    "Programming Language :: Python :: 3.11",
+    "License :: OSI Approved :: MIT License",
+]
+dependencies = [
+    "fastapi>=0.111.0",
+    "uvicorn[standard]>=0.29.0",
+    "pydantic>=2.7.0",
+    "sqlalchemy>=2.0.30",
+    "scipy>=1.13.0",
+    "scikit-learn>=1.4.2",
+    "xgboost>=2.0.3",
+    "lightgbm>=4.3.0",
+    "joblib>=1.4.0",
+    "numpy>=1.26.4",
+    "pandas>=2.2.2",
+]
+
+[project.urls]
+Repository = "https://github.com/atharvadevne123/reflective-lantern/tree/innovation/watt-guard"
+
+[tool.ruff]
+line-length = 120
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+ignore = ["E501", "B008"]
+
+[tool.ruff.format]
+quote-style = "double"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-v --tb=short"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["app*"]
