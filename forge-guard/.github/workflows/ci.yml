@@ -1,0 +1,54 @@
+name: CI
+
+on:
+  push:
+    branches: [main, "forge-guard/**"]
+    paths:
+      - "forge-guard/**"
+  pull_request:
+    branches: [main]
+    paths:
+      - "forge-guard/**"
+
+defaults:
+  run:
+    working-directory: forge-guard
+
+jobs:
+  lint:
+    name: Ruff Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - run: pip install ruff
+      - run: ruff check .
+      - run: ruff format --check .
+
+  test:
+    name: Pytest Suite
+    runs-on: ubuntu-latest
+    needs: lint
+    strategy:
+      matrix:
+        python-version: ["3.10", "3.11", "3.12"]
+    env:
+      DATABASE_URL: "sqlite:///./test_forge_guard.db"
+      MODEL_PATH: "/tmp/test_model.joblib"
+      METRICS_PATH: "/tmp/test_metrics.json"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+      - run: pip install -r requirements.txt
+      - run: pytest tests/ -v --tb=short -q 2>&1 | tail -60
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: pytest-logs-${{ matrix.python-version }}
+          path: forge-guard/test_forge_guard.db
