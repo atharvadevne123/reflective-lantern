@@ -36,6 +36,23 @@ dev = [
     "ruff>=0.4.0",
     "mypy>=1.10.0",
     "pre-commit>=3.7.0",
+    "python-dotenv>=1.0.0",
+    "xgboost>=2.0.0",
+    "lightgbm>=4.3.0",
+    "faiss-cpu>=1.8.0",
+    "scikit-learn>=1.4.0",
+    "numpy>=1.26.0",
+    "pandas>=2.0.0",
+    "fastapi>=0.111.0",
+    "httpx>=0.27.0",
+    "notion-client>=2.2.1",
+    "requests>=2.31.0",
+    "slowapi>=0.1.9",
+    "uvicorn>=0.29.0",
+    "sqlalchemy>=2.0.0",
+    "scipy>=1.13.0",
+    "alembic>=1.13.0",
+    "anthropic>=0.30.0",
 ]
 
 [tool.setuptools.packages.find]

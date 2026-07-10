@@ -347,7 +347,9 @@
     "file_count": 57,
     "test_count": 188,
     "coverage_pct": 100,
-    "note": "Email report NOT sent: SMTP egress blocked in sandbox. Wheel asset upload blocked (uploads.github.com not allowlisted). Foreign Palantir Foundry content found pushed to repo mid-build by a parallel process; preserved on branch 'foundry-import' before force-pushing Campaign-Guard to main."
+    "note": "Email report NOT sent: SMTP egress blocked in sandbox. Wheel asset upload blocked (uploads.github.com not allowlisted). Foreign Palantir Foundry content found pushed to repo mid-build by a parallel process; preserved on branch 'foundry-import' before force-pushing Campaign-Guard to main.",
+    "commits": 60,
+    "release": "v1.0.0"
   },
   {
     "date": "2026-07-10",
