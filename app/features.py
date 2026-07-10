@@ -16,7 +16,14 @@ PEAK_HOURS = frozenset(range(7, 22))  # 7am-10pm
 
 
 class LagFeatureTransformer(BaseEstimator, TransformerMixin):
-    """Adds lag features: load at t-1h, t-24h, t-168h."""
+    """Adds historical lag features to the feature dataframe.
+
+    Creates columns for load values at fixed look-back offsets:
+    lag_1h, lag_24h, and lag_168h (7 days).
+
+    Args:
+        lags: List of integer hour offsets. Defaults to [1, 24, 168].
+    """
 
     def __init__(self, lags: list[int] | None = None) -> None:
         self.lags = lags or [1, 24, 168]
