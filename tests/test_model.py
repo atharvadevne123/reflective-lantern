@@ -169,3 +169,39 @@ def test_train_model_r2_in_metrics(sample_df, sample_target) -> None:
     _, metrics = train_model(sample_df, sample_target)
     assert isinstance(metrics["r2_mean"], float)
     assert isinstance(metrics["r2_std"], float)
+
+
+def test_n_stub_samples_constant() -> None:
+    from app.model import N_STUB_SAMPLES
+
+    assert N_STUB_SAMPLES > 0
+
+
+def test_n_stub_features_constant() -> None:
+    from app.model import N_STUB_FEATURES
+
+    assert N_STUB_FEATURES > 0
+
+
+@pytest.mark.parametrize("n_rows", [5, 10, 20])
+def test_predict_returns_correct_count(sample_df, sample_target, n_rows: int) -> None:
+    from app.model import predict, train_model
+
+    bundle, _ = train_model(sample_df, sample_target)
+    subset = sample_df.head(n_rows)
+    preds = predict(subset, bundle)
+    assert len(preds) == n_rows
+
+
+def test_metrics_rmse_is_non_negative(sample_df, sample_target) -> None:
+    from app.model import train_model
+
+    _, metrics = train_model(sample_df, sample_target)
+    assert metrics.get("rmse_mean", 0.0) >= 0.0
+
+
+def test_metrics_mae_is_non_negative(sample_df, sample_target) -> None:
+    from app.model import train_model
+
+    _, metrics = train_model(sample_df, sample_target)
+    assert metrics.get("mae_mean", 0.0) >= 0.0
