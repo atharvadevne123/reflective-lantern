@@ -141,3 +141,43 @@ def test_score_field_present_in_zscore_result() -> None:
     )
     assert "score" in result
     assert isinstance(result["score"], float)
+
+
+def test_ratio_low_threshold_boundary() -> None:
+    from app.anomaly import RATIO_LOW_THRESHOLD
+
+    at_threshold = detect_valuation_anomaly(
+        predicted=500_000 * RATIO_LOW_THRESHOLD,
+        neighborhood_median=500_000,
+    )
+    assert at_threshold["is_anomaly"] is True
+
+
+def test_ratio_high_threshold_boundary() -> None:
+    from app.anomaly import RATIO_HIGH_THRESHOLD
+
+    just_above = detect_valuation_anomaly(
+        predicted=500_000 * (RATIO_HIGH_THRESHOLD + 0.1),
+        neighborhood_median=500_000,
+    )
+    assert just_above["is_anomaly"] is True
+
+
+def test_iqr_method_requires_min_reference_size() -> None:
+    from app.anomaly import MIN_REFERENCE_SIZE
+
+    small_ref = [400_000.0] * (MIN_REFERENCE_SIZE - 1)
+    result = detect_valuation_anomaly(
+        predicted=5_000_000,
+        neighborhood_median=450_000,
+        reference_values=small_ref,
+    )
+    assert result["method"] != "iqr"
+
+
+@pytest.mark.parametrize("deviation_pct", [-50.0, 0.0, 50.0, 200.0])
+def test_deviation_pct_formula(deviation_pct: float) -> None:
+    median = 500_000
+    predicted = median * (1 + deviation_pct / 100)
+    result = detect_valuation_anomaly(predicted=predicted, neighborhood_median=median)
+    assert abs(result["deviation_pct"] - deviation_pct) < 0.1
