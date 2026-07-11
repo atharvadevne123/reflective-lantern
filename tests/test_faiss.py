@@ -91,3 +91,52 @@ def test_reset_clears_all() -> None:
     reset_index()
     assert index_size() == 0
     assert search_comparable(make_vec(0)) == []
+
+
+@pytest.mark.parametrize("top_k", [1, 3, 5])
+def test_search_top_k_various(top_k: int) -> None:
+    for i in range(10):
+        add_property(make_vec(i), {"id": i})
+    results = search_comparable(make_vec(0), top_k=top_k)
+    assert len(results) == top_k
+
+
+def test_search_results_have_metadata() -> None:
+    add_property(make_vec(0), {"zipcode": "94102", "bedrooms": 3, "sqft": 1800})
+    results = search_comparable(make_vec(0), top_k=1)
+    assert len(results) == 1
+    assert results[0]["zipcode"] == "94102"
+
+
+def test_search_returns_sorted_by_distance() -> None:
+    query = make_vec(99)
+    add_property(query.copy(), {"id": "near"})
+    far_vec = make_vec(99) + 100.0
+    add_property(far_vec, {"id": "far"})
+    results = search_comparable(query, top_k=2)
+    assert results[0]["distance"] <= results[1]["distance"]
+
+
+def test_add_then_reset_then_add_works() -> None:
+    add_property(make_vec(0), {"id": 0})
+    assert index_size() == 1
+    reset_index()
+    assert index_size() == 0
+    add_property(make_vec(1), {"id": 1})
+    assert index_size() == 1
+
+
+@pytest.mark.parametrize("n", [1, 5, 20])
+def test_search_top_k_capped_when_fewer_stored(n: int) -> None:
+    for i in range(n):
+        add_property(make_vec(i), {"id": i})
+    results = search_comparable(make_vec(0), top_k=100)
+    assert len(results) == n
+
+
+def test_zero_vector_can_be_added() -> None:
+    zero_vec = np.zeros(DIM, dtype=np.float32)
+    add_property(zero_vec, {"id": "zero"})
+    assert index_size() == 1
+    results = search_comparable(zero_vec, top_k=1)
+    assert len(results) == 1
