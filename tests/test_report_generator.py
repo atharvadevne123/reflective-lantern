@@ -340,8 +340,9 @@ def test_weekly_report_with_multi_repo_fixture(multi_repo_history_dir: Path) -> 
 def test_total_commits_with_multi_repo_fixture(multi_repo_history_dir: Path) -> None:
     from unittest.mock import patch
 
-    from scripts import report_generator as rg
     from scripts.report_generator import load_all_history, total_commits
+
+    from scripts import report_generator as rg
 
     with patch.object(rg, "HISTORY_DIR", multi_repo_history_dir):
         history = load_all_history()
