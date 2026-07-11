@@ -99,5 +99,36 @@
     "commits": 60,
     "push_status": "blocked_by_git_proxy \u2014 60 commits saved to pending/ as bundle+patch",
     "email_status": "network_blocked (SMTP unreachable); PDF saved to pending/"
+  },
+  {
+    "date": "2026-07-10",
+    "mode": "improvement",
+    "improvements": [
+      "Added full-text search module (query, amount-range, regex, sorting) with 26 tests",
+      "Added in-memory audit log module with create/update/delete event tracking and 16 tests",
+      "Added page-based and cursor-based pagination helpers with 19 tests",
+      "Added overdue/high-value alert notifications with severity grouping and 18 tests",
+      "Added CSV/JSON export module with round-trip parsing and 16 tests",
+      "Added analytics: payment_velocity, tax_summary, overdue_summary with tests",
+      "Added features: payment_velocity_score, early_payment_discount with tests",
+      "Added 9 currencies (BRL, KRW, HKD, NOK, SEK, DKK, NZD, ZAR, AED) plus names and total_in_currency",
+      "Added utils: business_days_between, percentage, flatten_dict with tests",
+      "Added PATCH /invoices/{id} body update and DELETE /invoices/{id} endpoints",
+      "Fixed PATCH route collision by moving payment update to /invoices/{id}/payment",
+      "Extended InvoiceUpdate schema with supplier, business_unit, currency",
+      "Added endpoints: /analytics/payment-velocity, /tax-summary, /overdue-summary, /alerts",
+      "Added endpoints: /export/csv, /export/json, /search, /audit, /currencies",
+      "Wired audit logging into invoice create/update/delete endpoints",
+      "Added X-Response-Time-Ms header to correlation middleware",
+      "Added ruff format check to CI; formatted all test files",
+      "Added Makefile format/coverage targets; 1.1.0 changelog; CONTRIBUTING project layout",
+      "Updated README: features, API reference, testing, architecture, curl examples",
+      "Bumped version to 1.1.0 across config, package, and pyproject"
+    ],
+    "tests_passed": true,
+    "tests_total": 399,
+    "commits": 63,
+    "push_status": "BLOCKED: git proxy denied push - repository not in session's authorized set (only reflective-lantern authorized). All 63 commits ready locally; ruff clean; 399/399 tests passing.",
+    "email_status": "pending"
   }
 ]
