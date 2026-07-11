@@ -9,11 +9,20 @@ services:
       - DATABASE_URL=postgresql://wattguard:wattguard@db:5432/wattguard
       - MODEL_PATH=/app/model.joblib
       - ANOMALY_MODEL_PATH=/app/anomaly_model.joblib
+      - LOG_LEVEL=INFO
+      - LOG_JSON=true
+      - RATE_LIMIT_PER_MINUTE=200
     depends_on:
       db:
         condition: service_healthy
     volumes:
       - model_data:/app
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8000/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
     restart: unless-stopped
 
   db:
@@ -27,10 +36,11 @@ services:
     volumes:
       - pg_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U wattguard"]
+      test: ["CMD-SHELL", "pg_isready -U wattguard -d wattguard"]
       interval: 5s
       timeout: 5s
       retries: 5
+      start_period: 10s
 
 volumes:
   pg_data:
