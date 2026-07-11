@@ -173,3 +173,26 @@ def test_batch_predict_all_positive(client, sample_property) -> None:
     resp = client.post("/api/v1/batch-predict", json=body)
     data = resp.json()
     assert all(p["predicted_value"] > 0 for p in data["predictions"])
+
+
+def test_correlation_id_header_returned(client) -> None:
+    resp = client.get("/api/v1/health")
+    assert "x-correlation-id" in resp.headers
+
+
+def test_correlation_id_header_echoed(client) -> None:
+    resp = client.get("/api/v1/health", headers={"X-Correlation-ID": "test-id-123"})
+    assert resp.headers.get("x-correlation-id") == "test-id-123"
+
+
+def test_response_time_header_returned(client) -> None:
+    resp = client.get("/api/v1/health")
+    assert "x-response-time-ms" in resp.headers
+
+
+def test_middleware_constants_match_headers(client) -> None:
+    from app.middleware import CORRELATION_ID_HEADER, RESPONSE_TIME_HEADER
+
+    resp = client.get("/api/v1/health")
+    assert CORRELATION_ID_HEADER.lower() in resp.headers
+    assert RESPONSE_TIME_HEADER.lower() in resp.headers
