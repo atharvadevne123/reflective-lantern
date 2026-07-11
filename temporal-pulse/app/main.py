@@ -46,10 +46,9 @@ from .schemas import (
     VersionResponse,
 )
 
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s %(levelname)s %(name)s %(message)s",
-)
+from .logging_config import configure_logging
+
+configure_logging()
 logger = logging.getLogger(__name__)
 
 ANOMALY_THRESHOLD = float(os.getenv("ANOMALY_THRESHOLD", "0.7"))
