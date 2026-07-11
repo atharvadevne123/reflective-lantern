@@ -1,0 +1,54 @@
+[
+  {
+    "repo": "reflective-lantern",
+    "last_run": "2026-07-11",
+    "mode": "IMPROVEMENT",
+    "commits": 60,
+    "tests_before": 909,
+    "tests_after": 1189,
+    "tests_added": 280,
+    "tiers": {
+      "Constants/Refactoring": [
+        "app/features.py: add _SCHOOL_WEIGHT, _TRANSIT_WEIGHT, _WALK_WEIGHT, _AMENITY_SCALE constants",
+        "app/time_series.py: add MIN_PERIODS, MAX_HORIZON; add ValueError validation for window/alpha",
+        "app/monitoring.py: add DRIFT_REPORT_LIMIT, DEFAULT_MODEL_VERSION, MIN_DRIFT_SAMPLES constants",
+        "app/cache.py: add keys(), ttl property, max_size property to TTLCache",
+        "app/schemas.py: add _MAX_SQFT, _MAX_BEDROOMS, _MAX_BATHROOMS, _MIN_YEAR, _MAX_YEAR, _BATCH_MAX, _MAX_TOP_K constants",
+        "app/model.py: add CV_N_SPLITS, CV_RANDOM_STATE, N_STUB_SAMPLES, N_STUB_FEATURES constants",
+        "app/anomaly.py: add RATIO_LOW_THRESHOLD, RATIO_HIGH_THRESHOLD, MIN_REFERENCE_SIZE constants",
+        "app/market_context.py: add DOM_FAST_DAYS, DOM_SLOW_DAYS, AFFORDABILITY_THRESHOLD, STRETCHED_THRESHOLD constants",
+        "app/investment.py: add DEFAULT_OPERATING_EXPENSE_RATIO, _SCHOOL_WEIGHT/_TRANSIT_WEIGHT/_WALK_WEIGHT, INVESTMENT_SCORE_MAX/MIN constants",
+        "app/faiss_index.py: add DEFAULT_TOP_K, MAX_TOP_K constants",
+        "app/database.py: add ADDRESS_MAX_LEN, ZIPCODE_MAX_LEN, CITY_MAX_LEN, STATE_MAX_LEN, MODEL_VERSION_MAX_LEN, CORRELATION_ID_MAX_LEN, FEATURE_NAME_MAX_LEN",
+        "app/middleware.py: add CORRELATION_ID_HEADER, RESPONSE_TIME_HEADER constants",
+        "app/aws_stub.py: add DEFAULT_REGION, DEFAULT_PREFIX, ARTEFACT_FILENAMES constants",
+        "scripts/check_ci_status.py: add FAILING_CONCLUSIONS, DEFAULT_RETRIES, RUNS_PER_PAGE, REPOS_PER_PAGE",
+        "scripts/health_check.py: add FAILING_CONCLUSIONS, DEFAULT_RETRIES, WORKFLOW_RUNS_PER_PAGE, BRANCHES_PER_PAGE, RELEASES_PER_PAGE",
+        "scripts/rotate_repos.py: add EXCLUDED_REPO, date_seed(), _is_eligible_repo() helpers"
+      ],
+      "Tests": [
+        "test_market_context.py: +28 tests (DOM/affordability threshold constants, price/sqft parametrize)",
+        "test_rotate_repos.py: +34 tests (date_seed formula, _is_eligible_repo, year boundary parametrize)",
+        "test_faiss.py: +10 tests (DEFAULT_TOP_K, search with default k, top_k argument)",
+        "test_investment.py: +16 tests (DEFAULT_OPERATING_EXPENSE_RATIO, score bounds, cap rate formula)",
+        "test_health_check.py: +13 tests (FAILING_CONCLUSIONS, DEFAULT_RETRIES, page size constants)",
+        "test_check_ci_status.py: +19 tests (FAILING_CONCLUSIONS, dedup correctness, retry count parametrize)",
+        "test_database.py: +14 tests (column length constants, minimum length parametrize)",
+        "test_monitoring.py: +14 tests (MIN_DRIFT_SAMPLES, ValueError guard, DRIFT_THRESHOLD)",
+        "test_cache.py: +17 tests (max_size property, keys() method, ttl parametrize)",
+        "test_time_series.py: +14 tests (MIN_PERIODS, MAX_HORIZON, alpha validation)",
+        "test_features.py: +13 tests (weight constants, weights sum to 1, amenity formula)",
+        "test_anomaly.py: +10 tests (threshold constants, anomaly detection parametrize)",
+        "test_schemas.py: +22 tests (constant boundaries, year/sqft/bathroom valid values)",
+        "test_model.py: +14 tests (N_STUB_SAMPLES/FEATURES, predict count parametrize, metric bounds)",
+        "test_cleanup.py: +10 tests (CLEANUP_DEFAULT_DAYS, MAX_HISTORY_ENTRIES, clean_file parametrize)",
+        "test_config.py: +15 tests (COMMIT_TARGET, SMTP_PORTS, string constants non-empty parametrize)",
+        "test_api.py: +7 tests (correlation ID header round-trip, response-time header, middleware constant)",
+        "test_mlflow_stub.py: +11 tests (DEFAULT_REGION, DEFAULT_PREFIX, ARTEFACT_FILENAMES)",
+        "1189 total passing tests (was 909)"
+      ]
+    },
+    "files_changed": 33,
+    "lint_status": "ruff: all checks passed"
+  }
+]

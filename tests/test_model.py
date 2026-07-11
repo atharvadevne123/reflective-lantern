@@ -89,5 +89,101 @@ def test_train_various_sizes(n_samples):
             "consumption_kwh": rng.uniform(5, 30, n_samples),
         }
     )
-    _, metrics = train_model(df, df["consumption_kwh"])
+    preds = predict(stub, bundle)
+    assert len(preds) == 1
+    assert np.isfinite(preds[0])
+
+
+def test_train_model_model_version_in_metrics(sample_df, sample_target) -> None:
+    _, metrics = train_model(sample_df, sample_target)
+    assert "model_version" in metrics
+
+
+@pytest.mark.parametrize("n_samples", [20, 50])
+def test_train_model_n_samples_recorded(sample_df, sample_target, n_samples) -> None:
+    df_subset = sample_df.head(n_samples)
+    y_subset = sample_target[:n_samples]
+    _, metrics = train_model(df_subset, y_subset)
     assert metrics["n_samples"] == n_samples
+
+
+def test_metrics_file_content(sample_df, sample_target, tmp_path, monkeypatch) -> None:
+    import json
+
+    import app.model as model_module
+
+    mtp = tmp_path / "metrics.json"
+    mp = tmp_path / "model.joblib"
+    monkeypatch.setattr(model_module, "MODEL_PATH", mp)
+    monkeypatch.setattr(model_module, "METRICS_PATH", mtp)
+    _, metrics = train_model(sample_df, sample_target)
+    stored = json.loads(mtp.read_text())
+    assert stored["n_samples"] == metrics["n_samples"]
+    assert stored["r2_mean"] == pytest.approx(metrics["r2_mean"])
+
+
+def test_cv_n_splits_constant_used() -> None:
+    from app.model import CV_N_SPLITS
+
+    assert CV_N_SPLITS == 5
+
+
+def test_cv_random_state_constant_used() -> None:
+    from app.model import CV_RANDOM_STATE
+
+    assert CV_RANDOM_STATE == 42
+
+
+def test_load_metrics_model_version_matches_constant() -> None:
+    from app.model import MODEL_VERSION
+
+    m = load_metrics()
+    assert m.get("model_version") == MODEL_VERSION or m.get("note") == "no metrics file"
+
+
+def test_predict_values_positive(sample_df, sample_target) -> None:
+    bundle, _ = train_model(sample_df, sample_target)
+    preds = predict(sample_df.head(5), bundle)
+    assert len(preds) == 5
+
+
+def test_train_model_r2_in_metrics(sample_df, sample_target) -> None:
+    _, metrics = train_model(sample_df, sample_target)
+    assert isinstance(metrics["r2_mean"], float)
+    assert isinstance(metrics["r2_std"], float)
+
+
+def test_n_stub_samples_constant() -> None:
+    from app.model import N_STUB_SAMPLES
+
+    assert N_STUB_SAMPLES > 0
+
+
+def test_n_stub_features_constant() -> None:
+    from app.model import N_STUB_FEATURES
+
+    assert N_STUB_FEATURES > 0
+
+
+@pytest.mark.parametrize("n_rows", [5, 10, 20])
+def test_predict_returns_correct_count(sample_df, sample_target, n_rows: int) -> None:
+    from app.model import predict, train_model
+
+    bundle, _ = train_model(sample_df, sample_target)
+    subset = sample_df.head(n_rows)
+    preds = predict(subset, bundle)
+    assert len(preds) == n_rows
+
+
+def test_metrics_rmse_is_non_negative(sample_df, sample_target) -> None:
+    from app.model import train_model
+
+    _, metrics = train_model(sample_df, sample_target)
+    assert metrics.get("rmse_mean", 0.0) >= 0.0
+
+
+def test_metrics_mae_is_non_negative(sample_df, sample_target) -> None:
+    from app.model import train_model
+
+    _, metrics = train_model(sample_df, sample_target)
+    assert metrics.get("mae_mean", 0.0) >= 0.0

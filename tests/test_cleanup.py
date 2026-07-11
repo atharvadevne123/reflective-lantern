@@ -293,3 +293,47 @@ def test_entry_date_missing_returns_none() -> None:
 
     result = _entry_date({"commits": 60})
     assert result is None
+
+
+def test_cleanup_default_days_constant() -> None:
+    from config.constants import CLEANUP_DEFAULT_DAYS
+
+    assert CLEANUP_DEFAULT_DAYS > 0
+
+
+def test_max_history_entries_constant() -> None:
+    from config.constants import MAX_HISTORY_ENTRIES
+
+    assert MAX_HISTORY_ENTRIES > 0
+
+
+def test_cleanup_default_days_less_than_max_history() -> None:
+    from config.constants import CLEANUP_DEFAULT_DAYS, MAX_HISTORY_ENTRIES
+
+    # MAX_HISTORY_ENTRIES represents the cap per file; cleanup threshold
+    # should be meaningful (≤ max-history-days equivalent)
+    assert CLEANUP_DEFAULT_DAYS < MAX_HISTORY_ENTRIES
+
+
+@pytest.mark.parametrize("days", [7, 30, 90, 180])
+def test_clean_file_respects_days_parameter(tmp_path: pytest.fixture, days: int) -> None:
+    import json
+    from datetime import date, timedelta
+
+    from scripts.cleanup import clean_file
+
+    today = date.today()
+    entries = [
+        {"date": (today - timedelta(days=d)).isoformat(), "value": d}
+        for d in range(0, days * 2, 5)
+    ]
+    path = tmp_path / "test.json"
+    path.write_text(json.dumps(entries))
+    cutoff = today - timedelta(days=days)
+    removed = clean_file(path, cutoff)
+    remaining = json.loads(path.read_text())
+    assert all(
+        date.fromisoformat(e["date"]) >= cutoff
+        for e in remaining
+    )
+    assert removed >= 0

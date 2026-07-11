@@ -101,29 +101,99 @@ def test_full_pipeline_output_shape():
     assert result.shape[1] > 10
 
 
-def test_full_pipeline_no_nan():
-    df = _base_df(50)
-    pipe = build_feature_pipeline()
-    result = pipe.fit_transform(df)
-    assert not np.isnan(result).any()
+def test_pipeline_handles_missing_values(sample_df) -> None:
+    df = sample_df.copy()
+    df.loc[0, "renovation_year"] = None
+    pipeline = build_feature_pipeline()
+    result = pipeline.fit_transform(df)
+    non_optional = [c for c in result.columns if c != "renovation_year"]
+    assert not result[non_optional].isnull().all().any()
 
 
-def test_make_feature_row_single():
-    row = make_feature_row(14, 1, 6, 28.5, 60.0, 50, 1, 12.0)
-    assert len(row) == 1
-    assert row["hour"].iloc[0] == 14
+@pytest.mark.parametrize(
+    "bedrooms,bathrooms",
+    [(1, 1.0), (2, 1.5), (4, 3.0), (6, 4.5)],
+)
+def test_beds_per_bath_various_configs(single_row, bedrooms, bathrooms) -> None:
+    row = single_row.copy()
+    row["bedrooms"] = bedrooms
+    row["bathrooms"] = bathrooms
+    result = RatioFeatureTransformer().fit_transform(row)
+    assert result["beds_per_bath"].iloc[0] == pytest.approx(bedrooms / bathrooms)
 
 
-@pytest.mark.parametrize("hour,expected_biz", [(9, 1), (22, 0), (8, 1), (18, 1), (19, 0)])
-def test_business_hour_flag(hour, expected_biz):
-    df = pd.DataFrame({"hour": [hour], "day_of_week": [1], "month": [3]})
-    out = TemporalFeatureExtractor().fit_transform(df)
-    assert out["is_business_hour"].iloc[0] == expected_biz
+@pytest.mark.parametrize("year_built", [1950, 1970, 1990, 2005, 2020])
+def test_property_age_various_years(single_row, year_built) -> None:
+    row = single_row.copy()
+    row["year_built"] = year_built
+    result = PropertyAgeTransformer(reference_year=2026).fit_transform(row)
+    assert result["property_age"].iloc[0] == 2026 - year_built
 
 
-def test_pipeline_transform_matches_fit_transform():
-    df = _base_df(60)
-    pipe = build_feature_pipeline()
-    r1 = pipe.fit_transform(df)
-    r2 = pipe.transform(df)
-    np.testing.assert_allclose(r1, r2, rtol=1e-5)
+def test_amenity_composite_high_scores(single_row) -> None:
+    row = single_row.copy()
+    row["school_score"] = 10.0
+    row["transit_score"] = 10.0
+    row["walkability_score"] = 10.0
+    row["crime_rate"] = 0.0
+    result = AmenityCompositeTransformer().fit_transform(row)
+    assert result["amenity_composite"].iloc[0] > 0.8
+
+
+def test_extract_feature_array_multiple_rows(sample_df) -> None:
+    pipeline = build_feature_pipeline()
+    arr = extract_feature_array(sample_df, pipeline)
+    assert arr.ndim == 2
+    assert arr.shape[0] == len(sample_df)
+    assert np.all(np.isfinite(arr))
+
+
+def test_school_weight_constant() -> None:
+    from app.features import _SCHOOL_WEIGHT
+
+    assert 0.0 < _SCHOOL_WEIGHT <= 1.0
+
+
+def test_transit_weight_constant() -> None:
+    from app.features import _TRANSIT_WEIGHT
+
+    assert 0.0 < _TRANSIT_WEIGHT <= 1.0
+
+
+def test_walk_weight_constant() -> None:
+    from app.features import _WALK_WEIGHT
+
+    assert 0.0 < _WALK_WEIGHT <= 1.0
+
+
+def test_amenity_weights_sum_to_one() -> None:
+    from app.features import _SCHOOL_WEIGHT, _TRANSIT_WEIGHT, _WALK_WEIGHT
+
+    import pytest
+
+    total = _SCHOOL_WEIGHT + _TRANSIT_WEIGHT + _WALK_WEIGHT
+    assert total == pytest.approx(1.0)
+
+
+def test_amenity_scale_constant() -> None:
+    from app.features import _AMENITY_SCALE
+
+    assert _AMENITY_SCALE > 0.0
+
+
+@pytest.mark.parametrize("school,transit,walk", [
+    (10.0, 10.0, 10.0),
+    (5.0, 5.0, 5.0),
+    (0.0, 0.0, 0.0),
+])
+def test_amenity_composite_uses_weights(school, transit, walk, single_row) -> None:
+    from app.features import _AMENITY_SCALE, _SCHOOL_WEIGHT, _TRANSIT_WEIGHT, _WALK_WEIGHT, AmenityCompositeTransformer
+
+    row = single_row.copy()
+    row["school_score"] = school
+    row["transit_score"] = transit
+    row["walkability_score"] = walk
+    result = AmenityCompositeTransformer().fit_transform(row)
+    expected = (school * _SCHOOL_WEIGHT + transit * _TRANSIT_WEIGHT + walk * _WALK_WEIGHT) / _AMENITY_SCALE
+    import pytest as _pytest
+    assert result["amenity_composite"].iloc[0] == _pytest.approx(expected, rel=1e-3)

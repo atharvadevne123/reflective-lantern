@@ -134,3 +134,86 @@ def test_investment_score_clamped_to_ten_at_maximum() -> None:
 def test_break_even_zero_noi_returns_inf() -> None:
     result = compute_investment_analysis(500_000, 0.0, 6, 6, 6, 0.3)
     assert result.break_even_years == float("inf")
+
+
+@pytest.mark.parametrize(
+    "school,transit,walk",
+    [
+        (1.0, 1.0, 1.0),
+        (5.0, 5.0, 5.0),
+        (10.0, 10.0, 10.0),
+    ],
+)
+def test_amenity_composite_bounded(school: float, transit: float, walk: float) -> None:
+    result = compute_investment_analysis(500_000, 0.07, school, transit, walk, 0.2)
+    assert 0 <= result.amenity_composite <= 1
+
+
+@pytest.mark.parametrize(
+    "predicted_value",
+    [100_000, 300_000, 750_000, 2_000_000],
+)
+def test_annual_rent_scales_with_value(predicted_value: float) -> None:
+    result = compute_investment_analysis(predicted_value, 0.07, 5, 5, 5, 0.3)
+    assert result.annual_rent_estimate == pytest.approx(predicted_value * 0.07)
+
+
+def test_cap_rate_positive_with_yield() -> None:
+    result = compute_investment_analysis(500_000, 0.08, 5, 5, 5, 0.3)
+    assert result.cap_rate > 0
+
+
+def test_investment_analysis_fields_present() -> None:
+    result = compute_investment_analysis(500_000, 0.07, 5, 5, 5, 0.3)
+    for field in ("annual_rent_estimate", "cap_rate", "investment_score",
+                  "break_even_years", "amenity_composite", "gross_rental_yield",
+                  "risk_score", "predicted_value"):
+        assert hasattr(result, field)
+
+
+@pytest.mark.parametrize("crime_rate", [0.0, 0.25, 0.5, 0.75, 1.0])
+def test_risk_score_equals_crime_rate_parametrized(crime_rate: float) -> None:
+    result = compute_investment_analysis(500_000, 0.07, 5, 5, 5, crime_rate)
+    assert result.risk_score == pytest.approx(crime_rate)
+
+
+def test_default_operating_expense_ratio_constant() -> None:
+    from app.investment import DEFAULT_OPERATING_EXPENSE_RATIO
+
+    assert 0.0 < DEFAULT_OPERATING_EXPENSE_RATIO < 1.0
+
+
+def test_investment_score_max_constant() -> None:
+    from app.investment import INVESTMENT_SCORE_MAX
+
+    assert INVESTMENT_SCORE_MAX == 10.0
+
+
+def test_investment_score_min_constant() -> None:
+    from app.investment import INVESTMENT_SCORE_MIN
+
+    assert INVESTMENT_SCORE_MIN == 0.0
+
+
+def test_investment_score_never_exceeds_max() -> None:
+    from app.investment import INVESTMENT_SCORE_MAX
+
+    result = compute_investment_analysis(500_000, 0.20, 10.0, 10.0, 10.0, 0.0)
+    assert result.investment_score <= INVESTMENT_SCORE_MAX
+
+
+def test_investment_score_never_below_min() -> None:
+    from app.investment import INVESTMENT_SCORE_MIN
+
+    result = compute_investment_analysis(500_000, 0.001, 0.0, 0.0, 0.0, 1.0)
+    assert result.investment_score >= INVESTMENT_SCORE_MIN
+
+
+@pytest.mark.parametrize("expense_ratio", [0.25, 0.35, 0.45])
+def test_cap_rate_decreases_with_expense_ratio(expense_ratio: float) -> None:
+    result = compute_investment_analysis(
+        500_000, 0.08, 5, 5, 5, 0.2, operating_expense_ratio=expense_ratio
+    )
+    assert result.cap_rate == pytest.approx(
+        (500_000 * 0.08 * (1 - expense_ratio)) / 500_000, rel=1e-4
+    )

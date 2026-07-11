@@ -268,7 +268,88 @@ def predict_batch(
                 hvac_state=payload.hvac_state,
                 consumption_kwh=payload.consumption_kwh,
             )
-            kwh_pred = float(predict(_model_bundle, row)[0])
-        log_prediction(db=db, building_id=payload.building_id, timestamp=payload.timestamp, predicted_kwh=kwh_pred, latency_ms=timer.ms)
-        results.append(PredictResponse(building_id=payload.building_id, timestamp=payload.timestamp, predicted_kwh=round(kwh_pred, 3), model_version=__version__, latency_ms=timer.ms))
-    return results
+        )
+    return BatchPredictionResponse(predictions=results, count=len(results))
+
+
+@app.post("/api/v1/comparable-properties", response_model=ComparableResponse, tags=["Search"])
+@limiter.limit("50/minute")
+async def comparable_properties(request: Request, body: ComparableRequest) -> ComparableResponse:
+    prop = body.property
+    query_vec = np.array(
+        [
+            prop.sqft,
+            prop.bedrooms,
+            prop.bathrooms,
+            prop.condition_score,
+            prop.school_score,
+            prop.transit_score,
+            prop.walkability_score,
+            prop.crime_rate,
+            prop.median_price_per_sqft,
+            prop.avg_rental_yield,
+            prop.listing_days,
+            float(prop.year_built),
+        ]
+        + [0.0] * 12
+    )
+    results = search_comparable(query_vec, top_k=body.top_k)
+    return ComparableResponse(comparables=results, query_vector_dim=len(query_vec))
+
+
+@app.get(
+    "/api/v1/neighborhood-stats/{zipcode}",
+    response_model=NeighborhoodStatsResponse,
+    tags=["Analytics"],
+)
+async def neighborhood_stats(
+    zipcode: str, db: Session = Depends(get_db)
+) -> NeighborhoodStatsResponse:
+    from app.database import NeighborhoodStat
+
+    stat = db.query(NeighborhoodStat).filter(NeighborhoodStat.zipcode == zipcode).first()
+    if stat is None:
+        return NeighborhoodStatsResponse(
+            zipcode=zipcode,
+            median_price=350_000.0,
+            median_price_per_sqft=220.0,
+            school_score=6.5,
+            transit_score=5.5,
+            walkability_score=5.5,
+            crime_rate=0.3,
+            avg_rental_yield=0.065,
+        )
+    return NeighborhoodStatsResponse(
+        zipcode=stat.zipcode,
+        median_price=stat.median_price,
+        median_price_per_sqft=stat.median_price_per_sqft,
+        school_score=stat.school_score,
+        transit_score=stat.transit_score,
+        walkability_score=stat.walkability_score,
+        crime_rate=stat.crime_rate,
+        avg_rental_yield=stat.avg_rental_yield,
+    )
+
+
+@app.get("/api/v1/drift-status", response_model=DriftStatusResponse, tags=["Monitoring"])
+async def drift_status(db: Session = Depends(get_db)) -> DriftStatusResponse:
+    reports = get_drift_summary(db)
+    total = len(get_recent_predictions(db, limit=10000))
+    return DriftStatusResponse(drift_reports=reports, total_predictions=total)
+
+
+@app.post("/api/v1/run-drift-check", tags=["Monitoring"])
+async def trigger_drift_check(db: Session = Depends(get_db)) -> dict:
+    recent = get_recent_predictions(db, limit=200)
+    if len(recent) < 20:
+        return {"status": "skipped", "reason": "insufficient predictions"}
+    vals = [r.predicted_value for r in recent]
+    mid = len(vals) // 2
+    result = run_drift_check(db, "predicted_value", vals[:mid], vals[mid:])
+    return {
+        "status": "completed",
+        "feature": "predicted_value",
+        "ks_statistic": result.ks_statistic,
+        "p_value": result.p_value,
+        "drift_detected": result.drift_detected,
+    }

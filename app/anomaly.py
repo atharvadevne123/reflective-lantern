@@ -9,6 +9,11 @@ from sklearn.ensemble import IsolationForest
 
 logger = logging.getLogger(__name__)
 
+ZSCORE_THRESHOLD = 2.5
+IQR_MULTIPLIER = 1.5
+RATIO_LOW_THRESHOLD = 0.4
+RATIO_HIGH_THRESHOLD = 2.5
+MIN_REFERENCE_SIZE = 4
 
 def zscore_flag(value: float, mean: float, std: float, threshold: float = 3.0) -> bool:
     """Return True if *value* is more than *threshold* standard deviations from *mean*.
@@ -27,8 +32,29 @@ def zscore_flag(value: float, mean: float, std: float, threshold: float = 3.0) -
     return abs(value - mean) / std > threshold
 
 
-def iqr_flag(value: float, q1: float, q3: float, k: float = 1.5) -> bool:
-    """Return True if *value* falls outside the IQR fence.
+    if neighborhood_std and neighborhood_std > 0:
+        zscore = abs(predicted - neighborhood_median) / neighborhood_std
+        is_anomaly = zscore > ZSCORE_THRESHOLD
+        method = "zscore"
+        score = float(zscore)
+    elif reference_values and len(reference_values) >= MIN_REFERENCE_SIZE:
+        arr = np.array(reference_values, dtype=float)
+        q1, q3 = np.percentile(arr, [25, 75])
+        iqr = q3 - q1
+        lower = q1 - IQR_MULTIPLIER * iqr
+        upper = q3 + IQR_MULTIPLIER * iqr
+        is_anomaly = predicted < lower or predicted > upper
+        score = float(
+            max(0, predicted - upper) / (iqr + 1e-9)
+            if predicted > upper
+            else max(0, lower - predicted) / (iqr + 1e-9)
+        )
+        method = "iqr"
+    else:
+        ratio = predicted / neighborhood_median
+        is_anomaly = ratio <= RATIO_LOW_THRESHOLD or ratio > RATIO_HIGH_THRESHOLD
+        score = float(abs(ratio - 1.0))
+        method = "ratio"
 
     Args:
         value: The observation to test.

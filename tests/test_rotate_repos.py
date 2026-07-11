@@ -241,3 +241,176 @@ def test_select_repo_returns_from_repos() -> None:
     repos = [{"name": "Alpha"}, {"name": "Beta"}]
     result = select_repo(repos, date(2026, 7, 9))
     assert result in repos
+
+
+@pytest.mark.parametrize(
+    "target_date",
+    [
+        date(2026, 1, 1),
+        date(2026, 3, 31),
+        date(2026, 6, 30),
+        date(2026, 9, 1),
+        date(2026, 12, 31),
+    ],
+)
+def test_select_repo_year_boundary_dates(target_date: date) -> None:
+    from scripts.rotate_repos import select_repo
+
+    repos = [{"name": f"Repo{i}"} for i in range(5)]
+    result = select_repo(repos, target_date)
+    assert result in repos
+    assert select_repo(repos, target_date) == result
+
+
+@pytest.mark.parametrize("n_repos", [2, 5, 10, 50])
+def test_select_repo_scales_to_pool_size(n_repos: int) -> None:
+    from datetime import date
+
+    from scripts.rotate_repos import select_repo
+
+    repos = [{"name": f"Repo{i}"} for i in range(n_repos)]
+    result = select_repo(repos, date(2026, 7, 11))
+    assert result in repos
+
+
+def test_repo_names_contains_all_valid_names() -> None:
+    from scripts.rotate_repos import repo_names
+
+    repos = [{"name": f"repo-{i}"} for i in range(10)]
+    names = repo_names(repos)
+    assert len(names) == 10
+    assert names == sorted(names)
+
+
+def test_fetch_repos_all_archived_returns_empty() -> None:
+    import json
+    import urllib.request
+    from unittest.mock import patch
+
+    from scripts.rotate_repos import fetch_repos
+
+    archived_repos = [
+        {"name": f"archived-{i}", "archived": True, "fork": False}
+        for i in range(3)
+    ]
+
+    class FakeResponse:
+        def read(self) -> bytes:
+            return json.dumps(archived_repos).encode()
+
+        def __enter__(self) -> "FakeResponse":
+            return self
+
+        def __exit__(self, *args: object) -> None:
+            pass
+
+    with patch.object(urllib.request, "urlopen", return_value=FakeResponse()):
+        repos = fetch_repos("owner", "token")
+
+    assert repos == []
+
+
+def test_select_repo_result_is_dict() -> None:
+    from datetime import date
+
+    from scripts.rotate_repos import select_repo
+
+    repos = [{"name": "A", "language": "Python"}, {"name": "B", "language": "Go"}]
+    result = select_repo(repos, date(2026, 7, 5))
+    assert isinstance(result, dict)
+    assert "name" in result
+
+
+def test_date_seed_is_integer() -> None:
+    from datetime import date
+
+    from scripts.rotate_repos import date_seed
+
+    assert isinstance(date_seed(date(2026, 7, 11)), int)
+
+
+def test_date_seed_different_dates_produce_different_seeds() -> None:
+    from datetime import date
+
+    from scripts.rotate_repos import date_seed
+
+    s1 = date_seed(date(2026, 7, 1))
+    s2 = date_seed(date(2026, 7, 2))
+    assert s1 != s2
+
+
+@pytest.mark.parametrize(
+    "d,expected_seed",
+    [
+        (date(2026, 7, 11), 2026 * 10_000 + 7 * 100 + 11),
+        (date(2026, 1, 1), 2026 * 10_000 + 1 * 100 + 1),
+        (date(2026, 12, 31), 2026 * 10_000 + 12 * 100 + 31),
+    ],
+)
+def test_date_seed_formula(d: date, expected_seed: int) -> None:
+    from scripts.rotate_repos import date_seed
+
+    assert date_seed(d) == expected_seed
+
+
+def test_is_eligible_repo_filters_archived() -> None:
+    from scripts.rotate_repos import _is_eligible_repo
+
+    assert not _is_eligible_repo({"name": "repo", "archived": True, "fork": False})
+
+
+def test_is_eligible_repo_filters_forks() -> None:
+    from scripts.rotate_repos import _is_eligible_repo
+
+    assert not _is_eligible_repo({"name": "repo", "archived": False, "fork": True})
+
+
+def test_is_eligible_repo_filters_excluded_repo() -> None:
+    from scripts.rotate_repos import EXCLUDED_REPO, _is_eligible_repo
+
+    assert not _is_eligible_repo({"name": EXCLUDED_REPO, "archived": False, "fork": False})
+
+
+def test_is_eligible_repo_passes_valid_repo() -> None:
+    from scripts.rotate_repos import _is_eligible_repo
+
+    assert _is_eligible_repo({"name": "my-repo", "archived": False, "fork": False})
+
+
+def test_excluded_repo_constant_is_string() -> None:
+    from scripts.rotate_repos import EXCLUDED_REPO
+
+    assert isinstance(EXCLUDED_REPO, str)
+    assert len(EXCLUDED_REPO) > 0
+
+
+def test_is_eligible_repo_rejects_all_combos() -> None:
+    from scripts.rotate_repos import EXCLUDED_REPO, _is_eligible_repo
+
+    assert not _is_eligible_repo({"name": EXCLUDED_REPO, "archived": True, "fork": True})
+    assert not _is_eligible_repo({"name": EXCLUDED_REPO, "archived": False, "fork": False})
+    assert not _is_eligible_repo({"name": "active-repo", "archived": True, "fork": False})
+    assert not _is_eligible_repo({"name": "forked-repo", "archived": False, "fork": True})
+
+
+@pytest.mark.parametrize("name", ["alpha", "beta-repo", "my_project_123"])
+def test_is_eligible_repo_accepts_valid_names(name: str) -> None:
+    from scripts.rotate_repos import _is_eligible_repo
+
+    assert _is_eligible_repo({"name": name, "archived": False, "fork": False})
+
+
+def test_repo_names_preserves_sorted_order() -> None:
+    from scripts.rotate_repos import repo_names
+
+    repos = [{"name": "Zebra"}, {"name": "Apple"}, {"name": "Mango"}, {"name": "Banana"}]
+    names = repo_names(repos)
+    assert names == sorted(names)
+
+
+@pytest.mark.parametrize("n", [0, 1, 5, 20])
+def test_repo_names_count_matches_valid_entries(n: int) -> None:
+    from scripts.rotate_repos import repo_names
+
+    repos = [{"name": f"repo-{i}"} for i in range(n)]
+    assert len(repo_names(repos)) == n

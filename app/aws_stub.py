@@ -8,6 +8,13 @@ from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
+DEFAULT_REGION = "us-east-1"
+DEFAULT_PREFIX = "realty-edge/models"
+ARTEFACT_FILENAMES = ("model.joblib", "metrics.json")
+
+_REGION = os.getenv("AWS_REGION", DEFAULT_REGION)
+_BUCKET = os.getenv("S3_BUCKET", "")
+_PREFIX = os.getenv("S3_PREFIX", DEFAULT_PREFIX)
 
 def upload_model(local_path: str, bucket: str, key: str) -> bool:
     """Upload a model artefact to S3, falling back to a local mirror when boto3 is absent.
@@ -52,14 +59,53 @@ def download_model(bucket: str, key: str, local_path: str) -> bool:
     try:
         import boto3
 
-        s3 = boto3.client("s3")
-        s3.download_file(bucket, key, local_path)
-        logger.info("Downloaded s3://%s/%s → %s", bucket, key, local_path)
-        return True
-    except ImportError:
-        mirror = Path("s3_mirror") / bucket / key
-        if mirror.exists():
-            shutil.copy(mirror, local_path)
-            logger.info("boto3 absent — copied %s → %s", mirror, local_path)
-            return True
-    return False
+    Args:
+        local_paths: Local file paths to upload.
+
+    Returns:
+        List of S3 URIs that were successfully uploaded.
+    """
+    client = _s3_client()
+    if client is None:
+        logger.debug("S3 upload skipped (no bucket configured or boto3 missing).")
+        return []
+    uploaded: list[str] = []
+    for path in local_paths:
+        if not Path(path).exists():
+            logger.warning("Artefact not found, skipping upload: %s", path)
+            continue
+        key = f"{_PREFIX}/{Path(path).name}"
+        try:
+            client.upload_file(path, _BUCKET, key)
+            uri = f"s3://{_BUCKET}/{key}"
+            uploaded.append(uri)
+            logger.info("Uploaded artefact to %s", uri)
+        except Exception as exc:
+            logger.error("S3 upload failed for %s: %s", path, exc)
+    return uploaded
+
+
+def download_model_artefacts(local_dir: str = ".") -> list[str]:
+    """Download model artefacts from S3 to a local directory.
+
+    Args:
+        local_dir: Directory to write downloaded files into.
+
+    Returns:
+        List of local file paths that were successfully downloaded.
+    """
+    client = _s3_client()
+    if client is None:
+        logger.debug("S3 download skipped.")
+        return []
+    downloaded: list[str] = []
+    for filename in ARTEFACT_FILENAMES:
+        key = f"{_PREFIX}/{filename}"
+        local_path = os.path.join(local_dir, filename)
+        try:
+            client.download_file(_BUCKET, key, local_path)
+            downloaded.append(local_path)
+            logger.info("Downloaded %s to %s", key, local_path)
+        except Exception as exc:
+            logger.warning("S3 download failed for %s: %s", key, exc)
+    return downloaded
