@@ -178,3 +178,46 @@ def test_log_prediction_features_stored_as_json(db_session) -> None:
     assert record.id is not None
     stored = json.loads(record.features_json) if record.features_json else {}
     assert stored.get("sqft") == 2500
+
+
+def test_min_drift_samples_constant() -> None:
+    from app.monitoring import MIN_DRIFT_SAMPLES
+
+    assert MIN_DRIFT_SAMPLES >= 2
+
+
+def test_compute_drift_raises_on_too_few_samples() -> None:
+    from app.monitoring import compute_drift
+
+    import pytest
+
+    with pytest.raises(ValueError, match="at least"):
+        compute_drift([1.0], [2.0, 3.0])
+
+
+def test_compute_drift_raises_when_current_too_small() -> None:
+    from app.monitoring import compute_drift
+
+    import pytest
+
+    with pytest.raises(ValueError):
+        compute_drift([1.0, 2.0], [3.0])
+
+
+def test_drift_threshold_constant() -> None:
+    from app.monitoring import DRIFT_THRESHOLD
+
+    assert 0.0 < DRIFT_THRESHOLD < 1.0
+
+
+def test_reference_window_constant() -> None:
+    from app.monitoring import REFERENCE_WINDOW
+
+    assert REFERENCE_WINDOW > 0
+
+
+def test_default_model_version_is_string() -> None:
+    from app.monitoring import DEFAULT_MODEL_VERSION
+
+    assert isinstance(DEFAULT_MODEL_VERSION, str)
+    assert len(DEFAULT_MODEL_VERSION) > 0
