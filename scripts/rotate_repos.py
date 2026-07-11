@@ -23,6 +23,21 @@ from typing import Any
 
 log = logging.getLogger(__name__)
 GH_API = "https://api.github.com"
+EXCLUDED_REPO = "reflective-lantern"
+
+
+def date_seed(target_date: date) -> int:
+    """Convert a date to an integer seed for reproducible selection."""
+    return target_date.year * 10_000 + target_date.month * 100 + target_date.day
+
+
+def _is_eligible_repo(repo: dict[str, Any]) -> bool:
+    """Return True if the repo is active, non-fork, and not the excluded repo."""
+    return (
+        not repo.get("archived")
+        and not repo.get("fork")
+        and repo.get("name") != EXCLUDED_REPO
+    )
 
 
 def fetch_repos(owner: str, token: str) -> list[dict[str, Any]]:
@@ -34,11 +49,7 @@ def fetch_repos(owner: str, token: str) -> list[dict[str, Any]]:
     )
     with urllib.request.urlopen(req, timeout=15) as r:
         repos = json.load(r)
-    return [
-        r
-        for r in repos
-        if not r.get("archived") and not r.get("fork") and r["name"] != "reflective-lantern"
-    ]
+    return [r for r in repos if _is_eligible_repo(r)]
 
 
 def repo_names(repos: list[dict[str, Any]]) -> list[str]:
@@ -57,7 +68,7 @@ def select_repo(
     """
     if len(repos) < min_repos:
         raise ValueError(f"Need at least {min_repos} repo(s), got {len(repos)}")
-    rng = random.Random(target_date.year * 10000 + target_date.month * 100 + target_date.day)
+    rng = random.Random(date_seed(target_date))
     return rng.choice(repos)
 
 
