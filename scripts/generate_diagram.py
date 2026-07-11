@@ -2,12 +2,14 @@
 
 from __future__ import annotations
 
+import logging
 import os
 
 import matplotlib.patches as mpatches
 import matplotlib.pyplot as plt
 from matplotlib.patches import FancyBboxPatch
 
+logger = logging.getLogger(__name__)
 os.makedirs("screenshots", exist_ok=True)
 
 fig, ax = plt.subplots(figsize=(16, 9))
@@ -27,14 +29,31 @@ COLORS = {
 }
 
 
-def box(ax, x, y, w, h, label, color, fontsize=9):
-    rect = FancyBboxPatch((x, y), w, h, boxstyle="round,pad=0.1", facecolor=color, edgecolor="white", linewidth=1.2, zorder=3)
+def box(
+    ax: plt.Axes, x: float, y: float, w: float, h: float,
+    label: str, color: str, fontsize: int = 9
+) -> None:
+    """Draw a rounded rectangle with centred label text."""
+    rect = FancyBboxPatch(
+        (x, y), w, h,
+        boxstyle="round,pad=0.1", facecolor=color, edgecolor="white",
+        linewidth=1.2, zorder=3,
+    )
     ax.add_patch(rect)
-    ax.text(x + w / 2, y + h / 2, label, ha="center", va="center", color="white", fontsize=fontsize, fontweight="bold", zorder=4)
+    ax.text(
+        x + w / 2, y + h / 2, label,
+        ha="center", va="center", color="white",
+        fontsize=fontsize, fontweight="bold", zorder=4,
+    )
 
 
-def arrow(ax, x1, y1, x2, y2):
-    ax.annotate("", xy=(x2, y2), xytext=(x1, y1), arrowprops=dict(arrowstyle="->", color="white", lw=1.2), zorder=5)
+def arrow(ax: plt.Axes, x1: float, y1: float, x2: float, y2: float) -> None:
+    """Draw an annotated arrow between two points."""
+    ax.annotate(
+        "", xy=(x2, y2), xytext=(x1, y1),
+        arrowprops={"arrowstyle": "->", "color": "white", "lw": 1.2},
+        zorder=5,
+    )
 
 
 # Title
@@ -95,4 +114,4 @@ ax.legend(handles=legend_patches, loc="lower left", fontsize=8, framealpha=0.3, 
 
 plt.tight_layout()
 plt.savefig("screenshots/architecture.png", dpi=150, bbox_inches="tight")
-print("Architecture diagram saved to screenshots/architecture.png")
+logger.info("Architecture diagram saved to screenshots/architecture.png")
