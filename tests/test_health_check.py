@@ -291,3 +291,47 @@ def test_stats_has_release_reflects_field() -> None:
 def test_repo_health_name_preserved() -> None:
     h = RepoHealth(name="my-repo-123")
     assert h.name == "my-repo-123"
+
+
+def test_failing_conclusions_constant_contains_failure() -> None:
+    from scripts.health_check import FAILING_CONCLUSIONS
+
+    assert "failure" in FAILING_CONCLUSIONS
+    assert "timed_out" in FAILING_CONCLUSIONS
+
+
+def test_failing_conclusions_constant_excludes_success() -> None:
+    from scripts.health_check import FAILING_CONCLUSIONS
+
+    assert "success" not in FAILING_CONCLUSIONS
+
+
+def test_default_retries_constant_is_positive() -> None:
+    from scripts.health_check import DEFAULT_RETRIES
+
+    assert DEFAULT_RETRIES >= 1
+
+
+@pytest.mark.parametrize("conclusion", ["failure", "timed_out"])
+def test_failing_conclusions_contains_expected(conclusion: str) -> None:
+    from scripts.health_check import FAILING_CONCLUSIONS
+
+    assert conclusion in FAILING_CONCLUSIONS
+
+
+def test_workflow_runs_per_page_constant() -> None:
+    from scripts.health_check import WORKFLOW_RUNS_PER_PAGE
+
+    assert WORKFLOW_RUNS_PER_PAGE > 0
+
+
+def test_branches_per_page_constant() -> None:
+    from scripts.health_check import BRANCHES_PER_PAGE
+
+    assert BRANCHES_PER_PAGE > 0
+
+
+def test_releases_per_page_constant() -> None:
+    from scripts.health_check import RELEASES_PER_PAGE
+
+    assert RELEASES_PER_PAGE >= 1
