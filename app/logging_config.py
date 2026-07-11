@@ -1,4 +1,4 @@
-"""Structured JSON logging configuration for Volt-Cast."""
+"""Structured JSON logging configuration for Watt-Guard."""
 
 from __future__ import annotations
 
@@ -12,6 +12,14 @@ class JsonFormatter(logging.Formatter):
     """Emit log records as JSON lines for structured log ingestion."""
 
     def format(self, record: logging.LogRecord) -> str:
+        """Serialise a log record to a single JSON line.
+
+        Args:
+            record: The log record to format.
+
+        Returns:
+            JSON-encoded string with ts, level, logger, msg and optional fields.
+        """
         log: dict[str, Any] = {
             "ts": self.formatTime(record, self.datefmt),
             "level": record.levelname,
@@ -22,11 +30,18 @@ class JsonFormatter(logging.Formatter):
             log["exc"] = self.formatException(record.exc_info)
         if hasattr(record, "request_id"):
             log["request_id"] = record.request_id
+        if hasattr(record, "correlation_id"):
+            log["correlation_id"] = record.correlation_id
         return json.dumps(log, ensure_ascii=False)
 
 
 def configure_logging(level: str = "INFO", json_output: bool = False) -> None:
-    """Set up root logger with optional JSON formatting."""
+    """Set up root logger with optional JSON formatting.
+
+    Args:
+        level: Logging level name (e.g. "INFO", "DEBUG").
+        json_output: Emit structured JSON lines when True; plain text otherwise.
+    """
     handler = logging.StreamHandler(sys.stdout)
     if json_output:
         handler.setFormatter(JsonFormatter())
