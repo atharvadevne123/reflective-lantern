@@ -17,14 +17,15 @@ from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 
 from .anomaly import explain_anomaly
-from .database import AnomalyEvent, Prediction, get_db, init_db
+from .database import AnomalyEvent, get_db, init_db
 from .features import build_feature_matrix
+from .logging_config import configure_logging
 from .model import (
+    get_feature_importance,
+    get_model_version,
     score_anomaly,
     train_anomaly_detector,
     train_forecaster,
-    get_feature_importance,
-    get_model_version,
 )
 from .monitoring import (
     get_metrics_summary,
@@ -45,8 +46,6 @@ from .schemas import (
     TrainResponse,
     VersionResponse,
 )
-
-from .logging_config import configure_logging
 
 configure_logging()
 logger = logging.getLogger(__name__)

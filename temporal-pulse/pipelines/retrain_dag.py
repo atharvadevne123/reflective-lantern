@@ -52,9 +52,10 @@ def extract_recent_readings(lookback_days: int = LOOKBACK_DAYS) -> list[dict[str
 
 def run_feature_engineering(readings: list[dict[str, Any]]) -> tuple[Any, list[str]]:
     """Run the feature engineering pipeline on extracted readings."""
-    import numpy as np
-    import sys
     import os
+    import sys
+
+    import numpy as np
 
     sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
     from app.features import build_feature_matrix
@@ -67,12 +68,11 @@ def run_feature_engineering(readings: list[dict[str, Any]]) -> tuple[Any, list[s
 
 def train_and_evaluate(X: Any, contamination: float = 0.05) -> dict[str, Any]:
     """Train anomaly detector and forecaster and return metrics."""
-    import numpy as np
-    import sys
     import os
+    import sys
 
     sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
-    from app.model import train_anomaly_detector, train_forecaster, get_feature_importance
+    from app.model import get_feature_importance, train_anomaly_detector, train_forecaster
 
     if_model, scaler = train_anomaly_detector(X, contamination=contamination)
     y = X[:, 0]
@@ -84,8 +84,8 @@ def train_and_evaluate(X: Any, contamination: float = 0.05) -> dict[str, Any]:
 
 def update_reference_distributions(X: Any, feature_cols: list[str]) -> None:
     """Update the reference distributions used for KS drift testing."""
-    import sys
     import os
+    import sys
 
     sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
     from app.monitoring import update_reference_distribution

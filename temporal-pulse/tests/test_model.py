@@ -2,10 +2,11 @@
 
 from __future__ import annotations
 
+import os
+import sys
+
 import numpy as np
 import pytest
-import sys
-import os
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
@@ -20,8 +21,9 @@ class TestAnomalyDetector:
         assert scaler is not None
 
     def test_trained_model_is_isolation_forest(self, feature_matrix):
-        from app.model import train_anomaly_detector
         from sklearn.ensemble import IsolationForest
+
+        from app.model import train_anomaly_detector
         df, feature_cols = feature_matrix
         X = df[feature_cols].to_numpy(dtype=np.float32)
         model, _ = train_anomaly_detector(X)

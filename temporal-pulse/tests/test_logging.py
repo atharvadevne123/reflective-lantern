@@ -4,9 +4,8 @@ from __future__ import annotations
 
 import json
 import logging
-import pytest
-import sys
 import os
+import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
@@ -48,7 +47,7 @@ class TestConfigureLogging:
         configure_logging(level="INFO", json_format=False)
 
     def test_json_format_flag(self):
-        from app.logging_config import configure_logging, JsonFormatter
+        from app.logging_config import JsonFormatter, configure_logging
         configure_logging(level="INFO", json_format=True)
         handler = logging.getLogger().handlers[0]
         assert isinstance(handler.formatter, JsonFormatter)

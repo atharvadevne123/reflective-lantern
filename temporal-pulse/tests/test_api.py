@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-import pytest
-
 
 class TestHealth:
     def test_health_returns_200(self, client):

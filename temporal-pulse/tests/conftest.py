@@ -18,8 +18,8 @@ TEST_DATABASE_URL = "sqlite:///:memory:"
 @pytest.fixture(scope="session")
 def engine():
     """Create a test SQLAlchemy engine."""
-    import sys
     import os
+    import sys
     sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
     from sqlalchemy.pool import StaticPool
@@ -55,9 +55,8 @@ def client(engine) -> Generator:
     import sys
     sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
+    from app.database import Base, get_db
     from app.main import app
-    from app import database
-    from app.database import get_db, Base
 
     Base.metadata.create_all(engine)
     TestSession = sessionmaker(bind=engine, autocommit=False, autoflush=False)
@@ -118,8 +117,8 @@ def anomalous_reading() -> dict:
 @pytest.fixture()
 def feature_matrix(sample_readings) -> tuple:
     """Build a feature matrix from sample readings."""
-    import sys
     import os
+    import sys
     sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
     from app.features import build_feature_matrix
@@ -133,12 +132,13 @@ def feature_matrix(sample_readings) -> tuple:
 @pytest.fixture()
 def trained_models(feature_matrix):
     """Train anomaly detector and forecaster on sample data and return both."""
-    import sys
     import os
+    import sys
     sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
-    from app.model import train_anomaly_detector, train_forecaster
     import numpy as np
+
+    from app.model import train_anomaly_detector, train_forecaster
 
     df, feature_cols = feature_matrix
     X = df[feature_cols].to_numpy(dtype=np.float32)

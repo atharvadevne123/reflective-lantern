@@ -2,13 +2,13 @@
 
 from __future__ import annotations
 
+import os
+import sys
 from datetime import datetime, timedelta
 
 import numpy as np
 import pandas as pd
 import pytest
-import sys
-import os
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
@@ -143,8 +143,9 @@ class TestBuildFeatureMatrix:
         assert not df[feature_cols].isna().any().any()
 
     def test_sklearn_pipeline_fits(self, feature_matrix):
-        from app.features import build_sklearn_pipeline
         import numpy as np
+
+        from app.features import build_sklearn_pipeline
         df, feature_cols = feature_matrix
         X = df[feature_cols].to_numpy(dtype=np.float32)
         pipeline = build_sklearn_pipeline()

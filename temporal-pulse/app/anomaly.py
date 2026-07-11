@@ -6,6 +6,7 @@ import logging
 from typing import Any
 
 import numpy as np
+from sklearn.neighbors import NearestNeighbors
 
 logger = logging.getLogger(__name__)
 
@@ -16,8 +17,6 @@ try:
 except ImportError:
     FAISS_AVAILABLE = False
     logger.warning("faiss-cpu not installed; nearest-neighbour search will use sklearn fallback")
-
-from sklearn.neighbors import NearestNeighbors
 
 _INDEX: Any = None
 _INDEX_LABELS: list[dict[str, Any]] = []

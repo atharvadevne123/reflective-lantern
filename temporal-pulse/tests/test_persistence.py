@@ -2,12 +2,11 @@
 
 from __future__ import annotations
 
+import os
+import sys
 from pathlib import Path
 
 import numpy as np
-import pytest
-import sys
-import os
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
@@ -22,7 +21,7 @@ class TestSaveLoad:
 
     def test_load_restores_scoring(self, trained_models, tmp_path):
         from app import model as m
-        from app.model import save_models, load_models, score_anomaly
+        from app.model import load_models, save_models, score_anomaly
         save_models(tmp_path)
         X = trained_models["X"]
         scores_before = score_anomaly(X, trained_models["if_model"], trained_models["scaler"])

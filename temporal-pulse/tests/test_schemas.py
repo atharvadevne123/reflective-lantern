@@ -2,9 +2,10 @@
 
 from __future__ import annotations
 
-import pytest
-import sys
 import os
+import sys
+
+import pytest
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
@@ -102,7 +103,7 @@ class TestAnomalyResultSchema:
 
 class TestTrainRequest:
     def test_too_few_readings_rejected(self):
-        from app.schemas import TrainRequest, SensorReading
+        from app.schemas import SensorReading, TrainRequest
         readings = [
             SensorReading(sensor_id="s1", timestamp="2026-01-01T00:00:00", values={"t": 1.0})
         ] * 10
@@ -110,7 +111,7 @@ class TestTrainRequest:
             TrainRequest(readings=readings)
 
     def test_contamination_bounds(self):
-        from app.schemas import TrainRequest, SensorReading
+        from app.schemas import SensorReading, TrainRequest
         readings = [
             SensorReading(sensor_id="s1", timestamp="2026-01-01T00:00:00", values={"t": 1.0})
         ] * 50
