@@ -52,12 +52,25 @@
   },
   {
     "date": "2026-07-11",
+    "repo": "Supplier-Invoice-Dashboard",
     "status": "SMTP_BLOCKED",
     "error": "[Errno 97] Address family not supported by protocol"
   },
   {
     "date": "2026-07-11",
+    "repo": "Campaign-Guard",
     "status": "SMTP_BLOCKED",
     "error": "[Errno 97] Address family not supported by protocol"
+  },
+  {
+    "date": "2026-07-11",
+    "repo": "reflective-lantern (Watt-Guard)",
+    "email_to": "devneatharva@gmail.com",
+    "status": "SMTP_BLOCKED",
+    "reason": "SMTP outbound blocked in CCR remote execution environment (no raw socket egress - errno 97 EAFNOSUPPORT)",
+    "report_saved_to": "history/pending/watt_guard_report_2026-07-11.txt",
+    "commits": 60,
+    "push_status": "SUCCESS",
+    "note": "All 60 commits pushed to main. Report text saved to pending/ for manual retrieval."
   }
 ]
