@@ -215,3 +215,46 @@ def test_price_to_rent_ratio_high_rent_low_ratio() -> None:
 def test_affordability_pct_income_positive() -> None:
     result = affordability_index(predicted_value=500_000, annual_income=100_000)
     assert result["pct_income"] > 0
+
+
+def test_dom_fast_threshold_constant() -> None:
+    from app.market_context import DOM_FAST_DAYS
+
+    assert dom_classification(DOM_FAST_DAYS - 1) == "fast"
+    assert dom_classification(DOM_FAST_DAYS) == "normal"
+
+
+def test_dom_slow_threshold_constant() -> None:
+    from app.market_context import DOM_SLOW_DAYS
+
+    assert dom_classification(DOM_SLOW_DAYS) == "normal"
+    assert dom_classification(DOM_SLOW_DAYS + 1) == "slow"
+
+
+def test_affordability_threshold_constant() -> None:
+    from app.market_context import AFFORDABILITY_THRESHOLD, affordability_bucket
+
+    assert affordability_bucket(AFFORDABILITY_THRESHOLD) == "affordable"
+    assert affordability_bucket(AFFORDABILITY_THRESHOLD + 0.1) == "stretched"
+
+
+def test_stretched_threshold_constant() -> None:
+    from app.market_context import STRETCHED_THRESHOLD, affordability_bucket
+
+    assert affordability_bucket(STRETCHED_THRESHOLD) == "stretched"
+    assert affordability_bucket(STRETCHED_THRESHOLD + 0.1) == "unaffordable"
+
+
+@pytest.mark.parametrize(
+    "income,expected_loan_fraction",
+    [
+        (100_000.0, 0.80),
+        (200_000.0, 0.80),
+    ],
+)
+def test_affordability_loan_equals_80pct_at_default_down_payment(
+    income: float, expected_loan_fraction: float
+) -> None:
+    value = 500_000.0
+    result = affordability_index(value, annual_income=income)
+    assert result["loan_amount"] == pytest.approx(value * expected_loan_fraction)
