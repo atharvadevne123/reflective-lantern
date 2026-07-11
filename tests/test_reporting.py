@@ -62,3 +62,20 @@ def test_estimate_savings_single_value() -> None:
     result = estimate_savings([5.0], [8.0])
     assert result["total_saved_kwh"] == pytest.approx(3.0)
     assert result["savings_pct"] == pytest.approx(37.5)
+
+
+def test_estimate_savings_length_mismatch_raises() -> None:
+    with pytest.raises(ValueError, match="same length"):
+        estimate_savings([1.0, 2.0], [1.0])
+
+
+def test_peak_demand_empty_raises() -> None:
+    with pytest.raises(ValueError):
+        peak_demand_report([])
+
+
+@pytest.mark.parametrize("n_hours", [1, 12, 24, 48])
+def test_peak_demand_various_lengths(n_hours: int) -> None:
+    hourly = list(range(n_hours, 0, -1))
+    r = peak_demand_report([float(v) for v in hourly])
+    assert r["peak_hour"] == 0  # largest is first element
