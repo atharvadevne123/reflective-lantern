@@ -173,3 +173,44 @@ def test_linear_trend_intercept_positive_for_ascending() -> None:
     values = [100_000 + i * 10_000 for i in range(5)]
     result = linear_trend_forecast(values, horizon=1)
     assert result["intercept"] > 0
+
+
+def test_min_periods_constant() -> None:
+    from app.time_series import MIN_PERIODS
+
+    assert MIN_PERIODS >= 2
+
+
+def test_max_horizon_constant() -> None:
+    from app.time_series import MAX_HORIZON
+
+    assert MAX_HORIZON > 0
+
+
+def test_compute_sma_raises_on_zero_window() -> None:
+    from app.time_series import compute_sma
+
+    with pytest.raises(ValueError):
+        compute_sma([100.0, 200.0, 300.0], window=0)
+
+
+def test_exp_smoothing_raises_on_zero_alpha() -> None:
+    from app.time_series import exponential_smoothing_forecast
+
+    with pytest.raises(ValueError):
+        exponential_smoothing_forecast([100.0, 200.0], alpha=0.0, horizon=1)
+
+
+def test_exp_smoothing_raises_on_alpha_above_one() -> None:
+    from app.time_series import exponential_smoothing_forecast
+
+    with pytest.raises(ValueError):
+        exponential_smoothing_forecast([100.0, 200.0], alpha=1.1, horizon=1)
+
+
+@pytest.mark.parametrize("alpha", [0.01, 0.5, 1.0])
+def test_exp_smoothing_valid_alpha_range(alpha: float) -> None:
+    from app.time_series import exponential_smoothing_forecast
+
+    result = exponential_smoothing_forecast([100_000.0, 120_000.0], alpha=alpha, horizon=3)
+    assert len(result) == 3
