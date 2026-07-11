@@ -375,3 +375,42 @@ def test_is_eligible_repo_passes_valid_repo() -> None:
     from scripts.rotate_repos import _is_eligible_repo
 
     assert _is_eligible_repo({"name": "my-repo", "archived": False, "fork": False})
+
+
+def test_excluded_repo_constant_is_string() -> None:
+    from scripts.rotate_repos import EXCLUDED_REPO
+
+    assert isinstance(EXCLUDED_REPO, str)
+    assert len(EXCLUDED_REPO) > 0
+
+
+def test_is_eligible_repo_rejects_all_combos() -> None:
+    from scripts.rotate_repos import EXCLUDED_REPO, _is_eligible_repo
+
+    assert not _is_eligible_repo({"name": EXCLUDED_REPO, "archived": True, "fork": True})
+    assert not _is_eligible_repo({"name": EXCLUDED_REPO, "archived": False, "fork": False})
+    assert not _is_eligible_repo({"name": "active-repo", "archived": True, "fork": False})
+    assert not _is_eligible_repo({"name": "forked-repo", "archived": False, "fork": True})
+
+
+@pytest.mark.parametrize("name", ["alpha", "beta-repo", "my_project_123"])
+def test_is_eligible_repo_accepts_valid_names(name: str) -> None:
+    from scripts.rotate_repos import _is_eligible_repo
+
+    assert _is_eligible_repo({"name": name, "archived": False, "fork": False})
+
+
+def test_repo_names_preserves_sorted_order() -> None:
+    from scripts.rotate_repos import repo_names
+
+    repos = [{"name": "Zebra"}, {"name": "Apple"}, {"name": "Mango"}, {"name": "Banana"}]
+    names = repo_names(repos)
+    assert names == sorted(names)
+
+
+@pytest.mark.parametrize("n", [0, 1, 5, 20])
+def test_repo_names_count_matches_valid_entries(n: int) -> None:
+    from scripts.rotate_repos import repo_names
+
+    repos = [{"name": f"repo-{i}"} for i in range(n)]
+    assert len(repo_names(repos)) == n
