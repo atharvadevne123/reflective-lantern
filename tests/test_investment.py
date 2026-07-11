@@ -134,3 +134,44 @@ def test_investment_score_clamped_to_ten_at_maximum() -> None:
 def test_break_even_zero_noi_returns_inf() -> None:
     result = compute_investment_analysis(500_000, 0.0, 6, 6, 6, 0.3)
     assert result.break_even_years == float("inf")
+
+
+@pytest.mark.parametrize(
+    "school,transit,walk",
+    [
+        (1.0, 1.0, 1.0),
+        (5.0, 5.0, 5.0),
+        (10.0, 10.0, 10.0),
+    ],
+)
+def test_amenity_composite_bounded(school: float, transit: float, walk: float) -> None:
+    result = compute_investment_analysis(500_000, 0.07, school, transit, walk, 0.2)
+    assert 0 <= result.amenity_composite <= 1
+
+
+@pytest.mark.parametrize(
+    "predicted_value",
+    [100_000, 300_000, 750_000, 2_000_000],
+)
+def test_annual_rent_scales_with_value(predicted_value: float) -> None:
+    result = compute_investment_analysis(predicted_value, 0.07, 5, 5, 5, 0.3)
+    assert result.annual_rent_estimate == pytest.approx(predicted_value * 0.07)
+
+
+def test_cap_rate_positive_with_yield() -> None:
+    result = compute_investment_analysis(500_000, 0.08, 5, 5, 5, 0.3)
+    assert result.cap_rate > 0
+
+
+def test_investment_analysis_fields_present() -> None:
+    result = compute_investment_analysis(500_000, 0.07, 5, 5, 5, 0.3)
+    for field in ("annual_rent_estimate", "cap_rate", "investment_score",
+                  "break_even_years", "amenity_composite", "gross_rental_yield",
+                  "risk_score", "predicted_value"):
+        assert hasattr(result, field)
+
+
+@pytest.mark.parametrize("crime_rate", [0.0, 0.25, 0.5, 0.75, 1.0])
+def test_risk_score_equals_crime_rate_parametrized(crime_rate: float) -> None:
+    result = compute_investment_analysis(500_000, 0.07, 5, 5, 5, crime_rate)
+    assert result.risk_score == pytest.approx(crime_rate)
