@@ -241,3 +241,81 @@ def test_select_repo_returns_from_repos() -> None:
     repos = [{"name": "Alpha"}, {"name": "Beta"}]
     result = select_repo(repos, date(2026, 7, 9))
     assert result in repos
+
+
+@pytest.mark.parametrize(
+    "target_date",
+    [
+        date(2026, 1, 1),
+        date(2026, 3, 31),
+        date(2026, 6, 30),
+        date(2026, 9, 1),
+        date(2026, 12, 31),
+    ],
+)
+def test_select_repo_year_boundary_dates(target_date: date) -> None:
+    from scripts.rotate_repos import select_repo
+
+    repos = [{"name": f"Repo{i}"} for i in range(5)]
+    result = select_repo(repos, target_date)
+    assert result in repos
+    assert select_repo(repos, target_date) == result
+
+
+@pytest.mark.parametrize("n_repos", [2, 5, 10, 50])
+def test_select_repo_scales_to_pool_size(n_repos: int) -> None:
+    from datetime import date
+
+    from scripts.rotate_repos import select_repo
+
+    repos = [{"name": f"Repo{i}"} for i in range(n_repos)]
+    result = select_repo(repos, date(2026, 7, 11))
+    assert result in repos
+
+
+def test_repo_names_contains_all_valid_names() -> None:
+    from scripts.rotate_repos import repo_names
+
+    repos = [{"name": f"repo-{i}"} for i in range(10)]
+    names = repo_names(repos)
+    assert len(names) == 10
+    assert names == sorted(names)
+
+
+def test_fetch_repos_all_archived_returns_empty() -> None:
+    import json
+    import urllib.request
+    from unittest.mock import patch
+
+    from scripts.rotate_repos import fetch_repos
+
+    archived_repos = [
+        {"name": f"archived-{i}", "archived": True, "fork": False}
+        for i in range(3)
+    ]
+
+    class FakeResponse:
+        def read(self) -> bytes:
+            return json.dumps(archived_repos).encode()
+
+        def __enter__(self) -> "FakeResponse":
+            return self
+
+        def __exit__(self, *args: object) -> None:
+            pass
+
+    with patch.object(urllib.request, "urlopen", return_value=FakeResponse()):
+        repos = fetch_repos("owner", "token")
+
+    assert repos == []
+
+
+def test_select_repo_result_is_dict() -> None:
+    from datetime import date
+
+    from scripts.rotate_repos import select_repo
+
+    repos = [{"name": "A", "language": "Python"}, {"name": "B", "language": "Go"}]
+    result = select_repo(repos, date(2026, 7, 5))
+    assert isinstance(result, dict)
+    assert "name" in result
