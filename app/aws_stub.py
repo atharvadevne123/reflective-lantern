@@ -10,7 +10,16 @@ logger = logging.getLogger(__name__)
 
 
 def upload_model(local_path: str, bucket: str, key: str) -> bool:
-    """Upload model to S3, falling back to a local mirror."""
+    """Upload a model artefact to S3, falling back to a local mirror when boto3 is absent.
+
+    Args:
+        local_path: Filesystem path to the model file to upload.
+        bucket: S3 bucket name.
+        key: S3 object key (path within the bucket).
+
+    Returns:
+        True on success, False if the source file does not exist.
+    """
     src = Path(local_path)
     if not src.exists():
         logger.error("Model file not found: %s", local_path)
@@ -30,7 +39,16 @@ def upload_model(local_path: str, bucket: str, key: str) -> bool:
 
 
 def download_model(bucket: str, key: str, local_path: str) -> bool:
-    """Download model from S3 or local mirror."""
+    """Download a model artefact from S3, falling back to a local mirror when boto3 is absent.
+
+    Args:
+        bucket: S3 bucket name.
+        key: S3 object key.
+        local_path: Local filesystem destination path.
+
+    Returns:
+        True on success, False if neither S3 nor the mirror has the file.
+    """
     try:
         import boto3
 
