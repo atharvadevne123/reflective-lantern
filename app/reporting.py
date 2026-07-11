@@ -53,7 +53,12 @@ def peak_demand_report(hourly_kwh: list[float]) -> dict[str, Any]:
 
     Returns:
         Dict with peak_hour, peak_kwh, off_peak_mean, and demand_factor.
+
+    Raises:
+        ValueError: If *hourly_kwh* is empty.
     """
+    if not hourly_kwh:
+        raise ValueError("hourly_kwh must not be empty")
     arr = np.array(hourly_kwh, dtype=float)
     peak_idx = int(np.argmax(arr))
     peak_kwh = float(arr[peak_idx])
