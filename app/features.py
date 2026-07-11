@@ -13,9 +13,11 @@ class TemporalFeatureExtractor(BaseEstimator, TransformerMixin):
     """Extract hour-of-day, day-of-week, month, and cyclic encodings."""
 
     def fit(self, X: pd.DataFrame, y=None) -> TemporalFeatureExtractor:
+        """No-op fit (stateless transformer)."""
         return self
 
     def transform(self, X: pd.DataFrame) -> pd.DataFrame:
+        """Add cyclic temporal encodings and binary calendar flags to *X*."""
         df = X.copy()
         if "hour" not in df.columns:
             df["hour"] = 0
@@ -41,9 +43,11 @@ class LagFeatureExtractor(BaseEstimator, TransformerMixin):
     LAG_COLS = [1, 2, 3, 6, 12, 24, 168]
 
     def fit(self, X: pd.DataFrame, y=None) -> LagFeatureExtractor:
+        """No-op fit (stateless transformer)."""
         return self
 
     def transform(self, X: pd.DataFrame) -> pd.DataFrame:
+        """Append lag columns (lag_1h … lag_168h) for consumption_kwh."""
         df = X.copy()
         base = df.get("consumption_kwh", pd.Series(np.zeros(len(df))))
         for lag in self.LAG_COLS:
@@ -59,9 +63,11 @@ class RollingStatsExtractor(BaseEstimator, TransformerMixin):
     WINDOWS = [3, 6, 24]
 
     def fit(self, X: pd.DataFrame, y=None) -> RollingStatsExtractor:
+        """No-op fit (stateless transformer)."""
         return self
 
     def transform(self, X: pd.DataFrame) -> pd.DataFrame:
+        """Append rolling mean/std/min/max columns over 3h, 6h, and 24h windows."""
         df = X.copy()
         base = df.get("consumption_kwh", pd.Series(np.zeros(len(df))))
         for w in self.WINDOWS:
@@ -77,9 +83,11 @@ class WeatherFeatureExtractor(BaseEstimator, TransformerMixin):
     """Derive composite weather features: heat index, cooling degree hours."""
 
     def fit(self, X: pd.DataFrame, y=None) -> WeatherFeatureExtractor:
+        """No-op fit (stateless transformer)."""
         return self
 
     def transform(self, X: pd.DataFrame) -> pd.DataFrame:
+        """Add heat_index, cooling/heating degree-hours, and temp-humidity ratio."""
         df = X.copy()
         temp = df.get("temperature_c", pd.Series(np.full(len(df), 20.0)))
         hum = df.get("humidity_pct", pd.Series(np.full(len(df), 50.0)))
@@ -97,9 +105,11 @@ class OccupancyFeatureExtractor(BaseEstimator, TransformerMixin):
     """Encode occupancy and HVAC state into energy-load proxies."""
 
     def fit(self, X: pd.DataFrame, y=None) -> OccupancyFeatureExtractor:
+        """No-op fit (stateless transformer)."""
         return self
 
     def transform(self, X: pd.DataFrame) -> pd.DataFrame:
+        """Add occ_hvac_load proxy and log-occupancy density features."""
         df = X.copy()
         occ = df.get("occupancy", pd.Series(np.zeros(len(df))))
         hvac = df.get("hvac_state", pd.Series(np.zeros(len(df))))
@@ -114,10 +124,12 @@ class DropNonNumeric(BaseEstimator, TransformerMixin):
     """Drop string/datetime columns before scaling."""
 
     def fit(self, X: pd.DataFrame, y=None) -> DropNonNumeric:
+        """Record which columns are numeric at fit time."""
         self.numeric_cols_ = X.select_dtypes(include=[np.number]).columns.tolist()
         return self
 
     def transform(self, X: pd.DataFrame) -> np.ndarray:
+        """Return only the numeric columns as a NumPy array."""
         return X[self.numeric_cols_].values
 
 
