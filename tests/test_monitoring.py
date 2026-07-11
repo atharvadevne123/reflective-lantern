@@ -131,3 +131,50 @@ def test_log_prediction_various_values(db_session, predicted_value) -> None:
         correlation_id="test-pv",
     )
     assert record.predicted_value == pytest.approx(predicted_value)
+
+
+def test_compute_drift_identical_distributions_no_drift() -> None:
+    import numpy as np
+
+    rng = np.random.default_rng(123)
+    data = rng.normal(500_000, 30_000, 100).tolist()
+    result = compute_drift(data, data)
+    assert result["drift_detected"] is False
+    assert result["ks_statistic"] == pytest.approx(0.0)
+
+
+@pytest.mark.parametrize("n_samples", [20, 50, 200])
+def test_compute_drift_various_sample_sizes(n_samples) -> None:
+    import numpy as np
+
+    rng = np.random.default_rng(42)
+    ref = rng.normal(0, 1, n_samples).tolist()
+    cur = rng.normal(0, 1, n_samples).tolist()
+    result = compute_drift(ref, cur)
+    assert result["n_reference"] == n_samples
+    assert result["n_current"] == n_samples
+
+
+def test_run_drift_check_no_drift_report(db_session) -> None:
+    import numpy as np
+
+    rng = np.random.default_rng(7)
+    data = rng.normal(500_000, 30_000, 100).tolist()
+    report = run_drift_check(db_session, "stable_feature", data, data)
+    assert report.feature_name == "stable_feature"
+    assert report.drift_detected is False
+
+
+def test_log_prediction_features_stored_as_json(db_session) -> None:
+    import json
+
+    features = {"sqft": 2500, "bedrooms": 4, "bathrooms": 3.0}
+    record = log_prediction(
+        db=db_session,
+        predicted_value=750_000.0,
+        features=features,
+        correlation_id="test-json",
+    )
+    assert record.id is not None
+    stored = json.loads(record.features_json) if record.features_json else {}
+    assert stored.get("sqft") == 2500
