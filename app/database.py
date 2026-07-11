@@ -24,6 +24,14 @@ logger = logging.getLogger(__name__)
 
 DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./realty_edge.db")
 
+ADDRESS_MAX_LEN = 500
+ZIPCODE_MAX_LEN = 10
+CITY_MAX_LEN = 100
+STATE_MAX_LEN = 50
+MODEL_VERSION_MAX_LEN = 50
+CORRELATION_ID_MAX_LEN = 50
+FEATURE_NAME_MAX_LEN = 100
+
 engine = create_engine(
     DATABASE_URL,
     connect_args={"check_same_thread": False} if "sqlite" in DATABASE_URL else {},
@@ -41,10 +49,10 @@ class Property(Base):
     __tablename__ = "properties"
 
     id = Column(Integer, primary_key=True, index=True)
-    address = Column(String(500))
-    zipcode = Column(String(10), index=True)
-    city = Column(String(100))
-    state = Column(String(50))
+    address = Column(String(ADDRESS_MAX_LEN))
+    zipcode = Column(String(ZIPCODE_MAX_LEN), index=True)
+    city = Column(String(CITY_MAX_LEN))
+    state = Column(String(STATE_MAX_LEN))
     sqft = Column(Float)
     bedrooms = Column(Integer)
     bathrooms = Column(Float)
@@ -65,9 +73,9 @@ class PredictionLog(Base):
     property_id = Column(Integer, nullable=True)
     predicted_value = Column(Float)
     investment_score = Column(Float, nullable=True)
-    model_version = Column(String(50))
+    model_version = Column(String(MODEL_VERSION_MAX_LEN))
     features_json = Column(Text)
-    correlation_id = Column(String(50), index=True)
+    correlation_id = Column(String(CORRELATION_ID_MAX_LEN), index=True)
     created_at = Column(DateTime, default=datetime.utcnow)
 
 
@@ -77,7 +85,7 @@ class DriftReport(Base):
     __tablename__ = "drift_reports"
 
     id = Column(Integer, primary_key=True, index=True)
-    feature_name = Column(String(100))
+    feature_name = Column(String(FEATURE_NAME_MAX_LEN))
     ks_statistic = Column(Float)
     p_value = Column(Float)
     drift_detected = Column(Boolean)
