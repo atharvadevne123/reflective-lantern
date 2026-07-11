@@ -24,7 +24,14 @@ default_args = {
 
 
 def _fetch_training_data(**ctx: object) -> int:
-    """Pull recent readings from the DB and save to /tmp/wg_train.parquet."""
+    """Pull recent readings from the DB and save to /tmp/wg_train.parquet.
+
+    Args:
+        **ctx: Airflow task context; uses ctx["ti"] for XCom.
+
+    Returns:
+        Number of rows fetched.
+    """
     import numpy as np
     import pandas as pd
 
@@ -49,14 +56,25 @@ def _fetch_training_data(**ctx: object) -> int:
 
 
 def _validate_data_volume(**ctx: object) -> None:
-    """Gate: abort if fewer than MIN_ROWS rows available."""
-    rows = ctx["ti"].xcom_pull(task_ids="fetch_data", key="row_count")
+    """Gate: abort if fewer than MIN_ROWS rows available.
+
+    Args:
+        **ctx: Airflow task context; reads row_count XCom from fetch_data.
+
+    Raises:
+        ValueError: When the row count is below MIN_ROWS.
+    """
+    rows: int = ctx["ti"].xcom_pull(task_ids="fetch_data", key="row_count")
     if rows < MIN_ROWS:
         raise ValueError(f"Insufficient data: {rows} < {MIN_ROWS} rows required.")
 
 
 def _train(**ctx: object) -> None:
-    """Retrain and persist the model; push R2 to XCom."""
+    """Retrain and persist the model; push R2 to XCom.
+
+    Args:
+        **ctx: Airflow task context; uses ctx["ti"] for XCom.
+    """
     import pandas as pd
 
     from app.model import train_model
@@ -68,14 +86,25 @@ def _train(**ctx: object) -> None:
 
 
 def _validate_quality(**ctx: object) -> None:
-    """Gate: abort if R2 below threshold to prevent degraded model deployment."""
-    r2 = ctx["ti"].xcom_pull(task_ids="train", key="r2")
+    """Gate: abort if R2 below threshold to prevent degraded model deployment.
+
+    Args:
+        **ctx: Airflow task context; reads r2 XCom from train task.
+
+    Raises:
+        ValueError: When R2 is below R2_GATE.
+    """
+    r2: float = ctx["ti"].xcom_pull(task_ids="train", key="r2")
     if r2 < R2_GATE:
         raise ValueError(f"Model quality gate failed: R2={r2:.4f} < {R2_GATE}")
 
 
 def _deploy(**ctx: object) -> None:
-    """Signal that the new model is ready (copy artefact, notify)."""
+    """Copy the newly trained model artefact to the production path.
+
+    Args:
+        **ctx: Airflow task context (unused but required by Airflow).
+    """
     import shutil
 
     shutil.copy("model.joblib", "model_prod.joblib")
