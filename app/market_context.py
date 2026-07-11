@@ -10,6 +10,15 @@ from typing import Any
 
 logger = logging.getLogger(__name__)
 
+DOM_FAST_DAYS = 14
+DOM_SLOW_DAYS = 60
+AFFORDABILITY_THRESHOLD = 28.0
+STRETCHED_THRESHOLD = 36.0
+DEFAULT_DOWN_PAYMENT = 0.20
+DEFAULT_MORTGAGE_RATE = 0.065
+DEFAULT_TERM_YEARS = 30
+DEFAULT_ANNUAL_INCOME = 100_000.0
+
 
 def price_per_sqft(predicted_value: float, sqft: float) -> float:
     """Return price per square foot, or 0 if sqft is non-positive."""
@@ -27,19 +36,19 @@ def dom_classification(listing_days: int) -> str:
     Returns:
         One of 'fast' (<14), 'normal' (14-60), 'slow' (>60).
     """
-    if listing_days < 14:
+    if listing_days < DOM_FAST_DAYS:
         return "fast"
-    if listing_days <= 60:
+    if listing_days <= DOM_SLOW_DAYS:
         return "normal"
     return "slow"
 
 
 def affordability_index(
     predicted_value: float,
-    annual_income: float = 100_000.0,
-    down_payment_pct: float = 0.20,
-    mortgage_rate: float = 0.065,
-    term_years: int = 30,
+    annual_income: float = DEFAULT_ANNUAL_INCOME,
+    down_payment_pct: float = DEFAULT_DOWN_PAYMENT,
+    mortgage_rate: float = DEFAULT_MORTGAGE_RATE,
+    term_years: int = DEFAULT_TERM_YEARS,
 ) -> dict[str, Any]:
     """Compute a mortgage affordability index.
 
@@ -58,7 +67,7 @@ def affordability_index(
     n = term_years * 12
     monthly = loan * r * (1 + r) ** n / ((1 + r) ** n - 1) if r > 0 else loan / n
     pct_income = monthly / (annual_income / 12) * 100
-    is_affordable = pct_income <= 28.0
+    is_affordable = pct_income <= AFFORDABILITY_THRESHOLD
     logger.debug(
         "Affordability: monthly=%.0f pct_income=%.1f%% affordable=%s",
         monthly,
@@ -92,8 +101,8 @@ def affordability_bucket(pct_income: float) -> str:
     Returns:
         'affordable' (<=28%), 'stretched' (28-36%), or 'unaffordable' (>36%).
     """
-    if pct_income <= 28.0:
+    if pct_income <= AFFORDABILITY_THRESHOLD:
         return "affordable"
-    if pct_income <= 36.0:
+    if pct_income <= STRETCHED_THRESHOLD:
         return "stretched"
     return "unaffordable"
