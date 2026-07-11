@@ -11,12 +11,13 @@ import logging
 import os
 from pathlib import Path
 
+from typing import Any
+
 import joblib
 import numpy as np
 import pandas as pd
 from sklearn.ensemble import IsolationForest, RandomForestRegressor, VotingRegressor
 from sklearn.model_selection import KFold, cross_val_score
-from typing import Any
 
 try:
     from lightgbm import LGBMRegressor
@@ -103,14 +104,22 @@ def load_model() -> dict[str, Any] | None:
     """Load the forecasting model bundle or return None."""
     if not MODEL_PATH.exists():
         return None
-    return joblib.load(MODEL_PATH)
+    try:
+        return joblib.load(MODEL_PATH)
+    except Exception:
+        logger.exception("Failed to load forecasting model from %s", MODEL_PATH)
+        return None
 
 
 def load_anomaly_model() -> dict[str, Any] | None:
     """Load the anomaly detection bundle or return None."""
     if not ANOMALY_MODEL_PATH.exists():
         return None
-    return joblib.load(ANOMALY_MODEL_PATH)
+    try:
+        return joblib.load(ANOMALY_MODEL_PATH)
+    except Exception:
+        logger.exception("Failed to load anomaly model from %s", ANOMALY_MODEL_PATH)
+        return None
 
 
 def predict(model_bundle: dict[str, Any], X: pd.DataFrame) -> np.ndarray:
