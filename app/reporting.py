@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+from typing import Any
 
 import numpy as np
 
@@ -24,6 +25,11 @@ def estimate_savings(
     Returns:
         Dict with total_saved_kwh, total_saved_cost, and savings_pct.
     """
+    if len(actual_kwh) != len(baseline_kwh):
+        raise ValueError(
+            f"actual_kwh and baseline_kwh must be the same length "
+            f"(got {len(actual_kwh)} vs {len(baseline_kwh)})"
+        )
     actual = np.array(actual_kwh, dtype=float)
     baseline = np.array(baseline_kwh, dtype=float)
     saved = baseline - actual
@@ -39,7 +45,7 @@ def estimate_savings(
     }
 
 
-def peak_demand_report(hourly_kwh: list[float]) -> dict[str, object]:
+def peak_demand_report(hourly_kwh: list[float]) -> dict[str, Any]:
     """Identify peak demand windows from hourly consumption.
 
     Args:
