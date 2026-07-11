@@ -2,6 +2,8 @@
 
 from unittest.mock import MagicMock, patch
 
+import pytest
+
 from app.aws_stub import download_model_artefacts, upload_model_artefacts
 from app.mlflow_stub import log_training_run
 
@@ -145,3 +147,62 @@ def test_log_training_run_no_uri_with_tags_returns_none() -> None:
     finally:
         m._TRACKING_URI = original
     assert result is None
+
+
+def test_log_training_run_empty_params_returns_none() -> None:
+    import app.mlflow_stub as m
+
+    original = m._TRACKING_URI
+    m._TRACKING_URI = ""
+    try:
+        result = log_training_run({}, {})
+    finally:
+        m._TRACKING_URI = original
+    assert result is None
+
+
+def test_upload_multiple_files_returns_all_uris(tmp_path) -> None:
+    import app.aws_stub as s
+
+    f1 = tmp_path / "model.joblib"
+    f2 = tmp_path / "metrics.json"
+    f1.write_bytes(b"model data")
+    f2.write_bytes(b'{"r2": 0.9}')
+
+    mock_client = MagicMock()
+    with (
+        patch("app.aws_stub._s3_client", return_value=mock_client),
+        patch.object(s, "_BUCKET", "test-bucket"),
+    ):
+        result = upload_model_artefacts([str(f1), str(f2)])
+    assert len(result) == 2
+    assert all("s3://test-bucket" in uri for uri in result)
+
+
+@pytest.mark.parametrize("bucket", ["my-bucket", "prod-bucket", "staging-bucket"])
+def test_upload_bucket_name_in_uri(tmp_path, bucket: str) -> None:
+    import app.aws_stub as s
+
+    f = tmp_path / "model.joblib"
+    f.write_bytes(b"data")
+    mock_client = MagicMock()
+    with (
+        patch("app.aws_stub._s3_client", return_value=mock_client),
+        patch.object(s, "_BUCKET", bucket),
+    ):
+        result = upload_model_artefacts([str(f)])
+    assert len(result) == 1
+    assert bucket in result[0]
+
+
+def test_download_error_returns_empty(tmp_path) -> None:
+    import app.aws_stub as s
+
+    mock_client = MagicMock()
+    mock_client.download_file.side_effect = RuntimeError("Download failed")
+    with (
+        patch("app.aws_stub._s3_client", return_value=mock_client),
+        patch.object(s, "_BUCKET", "bucket"),
+    ):
+        result = download_model_artefacts(str(tmp_path))
+    assert result == []
