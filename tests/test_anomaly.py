@@ -104,3 +104,40 @@ def test_zscore_deviation_scales_with_std(std) -> None:
     )
     assert result["method"] == "zscore"
     assert "score" in result
+
+
+@pytest.mark.parametrize(
+    "predicted,median,std,expected_anomaly",
+    [
+        (500_000, 500_000, 50_000, False),
+        (700_000, 500_000, 20_000, True),
+        (400_000, 500_000, 200_000, False),
+    ],
+)
+def test_zscore_parametrized(predicted, median, std, expected_anomaly) -> None:
+    result = detect_valuation_anomaly(
+        predicted=predicted, neighborhood_median=median, neighborhood_std=std
+    )
+    assert result["is_anomaly"] == expected_anomaly
+
+
+def test_iqr_normal_value_not_anomaly() -> None:
+    ref = list(range(400_000, 600_000, 5_000))
+    result = detect_valuation_anomaly(
+        predicted=490_000, neighborhood_median=500_000, reference_values=ref
+    )
+    assert result["method"] == "iqr"
+    assert result["is_anomaly"] is False
+
+
+def test_negative_predicted_skipped() -> None:
+    result = detect_valuation_anomaly(predicted=-100_000, neighborhood_median=500_000)
+    assert result["method"] == "skipped"
+
+
+def test_score_field_present_in_zscore_result() -> None:
+    result = detect_valuation_anomaly(
+        predicted=750_000, neighborhood_median=500_000, neighborhood_std=50_000
+    )
+    assert "score" in result
+    assert isinstance(result["score"], float)
