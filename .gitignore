@@ -1,15 +1,43 @@
+# Python
 __pycache__/
 *.pyc
 *.pyo
+*.pyd
+*.so
+
+# Environment
 .env
+.env.local
+
+# Database artefacts (dev)
 *.db
+*.db-shm
+*.db-wal
+
+# ML model artefacts
 *.joblib
 metrics.json
 mlflow_runs.jsonl
 s3_mirror/
+
+# Tool caches
 .pytest_cache/
 .ruff_cache/
-dist/
-*.egg-info/
+.mypy_cache/
+
+# Coverage
 htmlcov/
 .coverage
+coverage.xml
+
+# Build / packaging
+dist/
+*.egg-info/
+build/
+
+# Node (if any JS tooling)
+node_modules/
+
+# Logs
+*.log
+screenshots/*.png
