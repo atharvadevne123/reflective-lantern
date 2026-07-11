@@ -87,3 +87,43 @@ def test_anomaly_request_valid():
     )
     assert r.temperature_c == 20.0
     assert r.hvac_state == 0
+
+
+def test_version_response_valid():
+    from app.schemas import VersionResponse
+
+    v = VersionResponse(version="1.1.0", api="v1", model="xgb+lgbm+rf")
+    assert v.version == "1.1.0"
+    assert v.api == "v1"
+
+
+@pytest.mark.parametrize("month", [0, 13, -1])
+def test_energy_reading_invalid_month(month):
+    with pytest.raises(ValidationError):
+        EnergyReadingIn(
+            building_id="b001",
+            timestamp="2025-01-01T00:00:00",
+            hour=12,
+            day_of_week=0,
+            month=month,
+            temperature_c=20.0,
+            humidity_pct=50.0,
+            occupancy=0,
+            hvac_state=0,
+        )
+
+
+@pytest.mark.parametrize("dow", [-1, 7])
+def test_energy_reading_invalid_dow(dow):
+    with pytest.raises(ValidationError):
+        EnergyReadingIn(
+            building_id="b001",
+            timestamp="2025-01-01T00:00:00",
+            hour=12,
+            day_of_week=dow,
+            month=6,
+            temperature_c=20.0,
+            humidity_pct=50.0,
+            occupancy=0,
+            hvac_state=0,
+        )
