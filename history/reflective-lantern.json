@@ -4,9 +4,81 @@
     "last_run": "2026-07-11",
     "mode": "IMPROVEMENT",
     "commits": 60,
-    "tests_before": 909,
-    "tests_after": 1189,
-    "tests_added": 280,
+    "pushed_to": "main",
+    "tiers": {
+      "Security/Correctness (1-10)": [
+        "fix(cache.py): removed undefined default_ttl reference in TTLCache.__init__",
+        "fix(middleware.py): added missing deque import, moved Any to top, removed duplicate global",
+        "fix(model.py): removed duplicate XGBRegressor import block, added missing Any import",
+        "fix(main.py): added missing from typing import Any for module-level annotations",
+        "fix(monitoring.py): added missing Session import and numpy import",
+        "fix(time_series.py): removed 5 lines of dead code after return in simple_moving_average",
+        "fix(config.py): corrected default DATABASE_URL from traffic_pulse.db to watt_guard.db",
+        "fix(validation.py): use math.isfinite to catch inf/-inf in validate_load_series",
+        "fix(reporting.py): raise ValueError on empty input in peak_demand_report",
+        "fix(test_model.py): removed stray nested method test_synthetic_loads_in_range"
+      ],
+      "Tests (11-22)": [
+        "test(test_cache.py): rewrote broken tests, added parametrized ttl/size combos",
+        "test(test_reporting.py): parametrized tariff/cost, mismatch-raises, empty-raises, length parametrize",
+        "test(test_monitoring.py): latency timer, exact same distribution, window truncation tests",
+        "test(test_api.py): batch predict after train, exceeds limit, strong drift shift",
+        "test(test_similarity.py): clear, score bounds, identical vector=1.0, k>size edge cases",
+        "test(test_validation.py): parametrized weekday, temporal key extraction, inf value",
+        "test(test_faiss_index.py): clear() reset, similarity score in range",
+        "test(test_database.py): nullable actual_kwh, drift_detected=0, severity='none'",
+        "test(test_anomaly.py): required-keys, threshold parametrize, fence-exact",
+        "test(test_time_series.py): peak_hours, detect_spikes empty, horizon parametrize",
+        "test(test_schemas.py): VersionResponse, invalid month/dow parametrize",
+        "test(test_features.py): added missing numpy and pandas imports"
+      ],
+      "Code Quality (23-33)": [
+        "docs(aws_stub.py): Google-style docstrings with Args/Returns",
+        "docs(mlflow_stub.py): full docstrings, narrowed return type to dict[str, object]|None",
+        "docs(features.py): fit/transform docstrings for all 5 transformers",
+        "refactor(faiss_index.py): clear() method, typed sims list, docstrings",
+        "refactor(similarity.py): add() docstring, size property, get_global_index()",
+        "docs(logging_config.py): fixed module docstring (Volt-Cast → Watt-Guard)",
+        "docs(schemas.py): class docstrings, add VersionResponse schema",
+        "docs(conftest.py): fixture docstrings, type-annotate create_test_db",
+        "docs(retrain_dag.py): Google-style docstrings to all DAG task functions",
+        "feat(time_series.py): add peak_hours() helper and guard empty-series",
+        "refactor(reporting.py): guard empty input in peak_demand_report"
+      ],
+      "DX (34-48)": [
+        "chore(Makefile): coverage, typecheck, check, migrate, clean, help targets",
+        "chore(.env.example): PostgreSQL pool config, LOG_JSON, Airflow vars",
+        "chore(pyproject.toml): mypy config, C4/SIM/TCH/RUF ruff rules, filterwarnings",
+        "chore(requirements.txt): grouped by category, added mypy>=1.10.0",
+        "chore(docker-compose.yml): API healthcheck, start_period, LOG_JSON env",
+        "chore(.gitignore): .mypy_cache, WAL files, build/, node_modules/, logs",
+        "ci(ci.yml): rename to Watt-Guard CI, --no-error-summary mypy, wider test tail",
+        "docs(README.md): /version and /regions endpoints, v1.1.0 badge, Testing section",
+        "docs(CONTRIBUTING.md): setup, commit format, endpoint/feature/env guides",
+        "docs(CHANGELOG.md): full 1.1.0 entry with all fixes/adds/changes",
+        "docs(monitoring.md): drift, anomaly, metrics, alerting, DB schema reference",
+        "docs(development.md): local setup, project structure, feature pipeline table",
+        "refactor(regions.py): @lru_cache on get_region()",
+        "refactor(database.py): PostgreSQL pooling env vars, index=True on timestamps",
+        "fix(scripts/example_client.py): rewritten for Watt-Guard API with logging"
+      ],
+      "Performance (49-60)": [
+        "perf(database.py): index=True on PredictionLog.timestamp and created_at",
+        "perf(regions.py): lru_cache(maxsize=32) on get_region() for repeated lookups",
+        "fix(monitoring.py): added try/except rollback in log_prediction and log_anomaly"
+      ]
+    },
+    "files_changed": 40,
+    "new_docs": ["docs/monitoring.md", "docs/development.md"],
+    "lint_status": "ruff: passed",
+    "push_status": "success"
+  },
+  {
+    "repo": "reflective-lantern",
+    "last_run": "2026-07-11",
+    "mode": "IMPROVEMENT",
+    "commits": 60,
+    "pushed_to": "main",
     "tiers": {
       "Constants/Refactoring": [
         "app/features.py: add _SCHOOL_WEIGHT, _TRANSIT_WEIGHT, _WALK_WEIGHT, _AMENITY_SCALE constants",
