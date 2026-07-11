@@ -83,9 +83,40 @@ class TestHelpers:
     def test_weekday_monday(self):
         assert is_weekend(0) is False
 
+    @pytest.mark.parametrize("dow", [0, 1, 2, 3, 4])
+    def test_weekdays_not_weekend(self, dow):
+        assert is_weekend(dow) is False
+
     def test_extract_temporal_from_datetime(self):
         dt = datetime(2026, 7, 10, 14, 30)
         result = extract_temporal_from_datetime(dt)
         assert result["hour"] == 14
         assert result["month"] == 7
         assert "is_weekend" in result
+
+    def test_extract_temporal_keys_present(self):
+        dt = datetime(2026, 1, 1, 0, 0)
+        result = extract_temporal_from_datetime(dt)
+        for key in ("hour", "day_of_week", "month", "is_weekend"):
+            assert key in result
+
+    @pytest.mark.parametrize("hour,month,dow", [
+        (0, 1, 0),
+        (23, 12, 6),
+        (12, 6, 3),
+    ])
+    def test_validate_temporal_boundary_values(self, hour, month, dow):
+        assert validate_temporal_fields(hour, dow, month) == []
+
+
+class TestValidateLoadSeriesExtended:
+    def test_single_valid_value(self):
+        assert validate_load_series([5000.0]) == []
+
+    def test_all_zeros_is_valid(self):
+        assert validate_load_series([0.0, 0.0, 0.0]) == []
+
+    @pytest.mark.parametrize("value", [float("inf"), float("-inf")])
+    def test_inf_detected(self, value):
+        errors = validate_load_series([value])
+        assert len(errors) > 0
