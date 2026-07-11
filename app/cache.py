@@ -68,6 +68,20 @@ class TTLCache:
     def __len__(self) -> int:
         return len(self._store)
 
+    def keys(self) -> list[str]:
+        """Return a snapshot of currently stored keys (may include expired entries)."""
+        return list(self._store.keys())
+
+    @property
+    def ttl(self) -> float:
+        """Return the configured TTL in seconds."""
+        return self._ttl
+
+    @property
+    def max_size(self) -> int:
+        """Return the configured maximum number of entries."""
+        return self._max_size
+
 
 neighborhood_cache: TTLCache = TTLCache(ttl_seconds=300.0)
 metrics_cache: TTLCache = TTLCache(ttl_seconds=60.0)
