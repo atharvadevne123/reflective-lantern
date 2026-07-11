@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import logging
 import os
+from collections.abc import Generator
 from datetime import datetime
 
 from sqlalchemy import (
@@ -97,7 +98,7 @@ class DriftLog(Base):
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
 
 
-def get_db() -> Session:
+def get_db() -> Generator[Session, None, None]:
     """Yield a database session."""
     db = SessionLocal()
     try:
