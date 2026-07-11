@@ -85,6 +85,7 @@ class DriftResponse(BaseModel):
 
 class HealthResponse(BaseModel):
     """API health check response."""
+
     status: str
     model_loaded: bool
     anomaly_model_loaded: bool
@@ -93,6 +94,7 @@ class HealthResponse(BaseModel):
 
 class MetricsResponse(BaseModel):
     """Aggregated monitoring metrics response."""
+
     total_predictions: int
     total_anomalies_flagged: int
     total_drift_events: int
@@ -101,4 +103,14 @@ class MetricsResponse(BaseModel):
 
 
 class BatchPredictRequest(BaseModel):
+    """Request body for the /batch_predict endpoint."""
+
     readings: list[EnergyReadingIn] = Field(..., min_length=1, max_length=100)
+
+
+class VersionResponse(BaseModel):
+    """Version and build metadata response."""
+
+    version: str
+    api: str
+    model: str
