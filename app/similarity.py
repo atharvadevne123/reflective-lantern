@@ -31,18 +31,30 @@ class BuildingSimilarityIndex:
         self._profiles.append((building_id, np.array(profile, dtype=np.float32)))
 
     def search(self, query: list[float], k: int = 5) -> list[tuple[str, float]]:
-        """Return the k most similar buildings by cosine similarity."""
+        """Return the k most similar buildings by cosine similarity.
+
+        Args:
+            query: Feature vector to search for.
+            k: Maximum number of results to return.
+
+        Returns:
+            List of (building_id, similarity_score) pairs, highest score first.
+        """
         if not self._profiles:
             return []
         q = np.array(query, dtype=np.float32)
         q_norm = q / (np.linalg.norm(q) + 1e-9)
-        scores = []
+        scores: list[tuple[str, float]] = []
         for bid, vec in self._profiles:
             v_norm = vec / (np.linalg.norm(vec) + 1e-9)
             sim = float(np.dot(q_norm, v_norm))
             scores.append((bid, sim))
         scores.sort(key=lambda x: x[1], reverse=True)
         return scores[:k]
+
+    def clear(self) -> None:
+        """Remove all profiles from the index."""
+        self._profiles.clear()
 
     def __len__(self) -> int:
         return len(self._profiles)
