@@ -34,6 +34,11 @@ MODEL_PATH = Path(os.getenv("MODEL_PATH", "model.joblib"))
 METRICS_PATH = Path(os.getenv("METRICS_PATH", "metrics.json"))
 MODEL_VERSION = "1.0.0"
 
+CV_N_SPLITS = 5
+CV_RANDOM_STATE = 42
+N_STUB_SAMPLES = 50
+N_STUB_FEATURES = 24
+
 
 def _build_ensemble() -> VotingRegressor:
     """Build the XGBoost + LightGBM + RandomForest soft-voting ensemble.
@@ -83,7 +88,7 @@ def train_model(X: pd.DataFrame, y: np.ndarray) -> tuple[Any, dict[str, float]]:
     X_scaled = scaler.fit_transform(X_features)
 
     ensemble = _build_ensemble()
-    kf = KFold(n_splits=5, shuffle=True, random_state=42)
+    kf = KFold(n_splits=CV_N_SPLITS, shuffle=True, random_state=CV_RANDOM_STATE)
     cv_r2 = cross_val_score(ensemble, X_scaled, y, cv=kf, scoring="r2")
     cv_rmse = np.sqrt(
         -cross_val_score(ensemble, X_scaled, y, cv=kf, scoring="neg_mean_squared_error")
@@ -145,8 +150,8 @@ def _synthetic_model() -> dict[str, Any]:
     """Return a minimal stub model for use in test/CI environments."""
     from sklearn.linear_model import Ridge
 
-    X_stub = np.random.default_rng(42).normal(size=(50, 24))
-    y_stub = np.random.default_rng(42).uniform(100_000, 1_000_000, size=50)
+    X_stub = np.random.default_rng(CV_RANDOM_STATE).normal(size=(N_STUB_SAMPLES, N_STUB_FEATURES))
+    y_stub = np.random.default_rng(CV_RANDOM_STATE).uniform(100_000, 1_000_000, size=N_STUB_SAMPLES)
     scaler = StandardScaler().fit(X_stub)
     ridge = Ridge().fit(scaler.transform(X_stub), y_stub)
     fp = build_feature_pipeline()
