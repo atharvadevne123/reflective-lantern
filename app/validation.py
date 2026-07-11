@@ -42,13 +42,15 @@ def validate_weather_fields(temperature_c: float, humidity_pct: float) -> list[s
 
 def validate_load_series(loads: list[float]) -> list[str]:
     """Return list of validation error messages for a load series."""
+    import math
+
     errors = []
     if not loads:
         return errors
-    out_of_range = [v for v in loads if not (MIN_LOAD_MW <= v <= MAX_LOAD_MW)]
+    out_of_range = [v for v in loads if not math.isfinite(v) or not (MIN_LOAD_MW <= v <= MAX_LOAD_MW)]
     if out_of_range:
-        errors.append(f"{len(out_of_range)} load values out of range [0, 50000 MW]")
-    nans = [i for i, v in enumerate(loads) if v != v]
+        errors.append(f"{len(out_of_range)} load values out of range or non-finite [0, 50000 MW]")
+    nans = [i for i, v in enumerate(loads) if math.isnan(v)]
     if nans:
         errors.append(f"NaN values at indices: {nans[:5]}")
     return errors
