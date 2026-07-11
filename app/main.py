@@ -232,6 +232,19 @@ def train_endpoint(db: Session = Depends(get_db)) -> dict[str, Any]:
     return {"status": "trained", "metrics": metrics_out}
 
 
+@app.get("/api/v1/version", tags=["System"])
+def version() -> dict[str, str]:
+    """Return the current API version string."""
+    return {"version": __version__}
+
+
+@app.get("/api/v1/regions", tags=["System"])
+def list_grid_regions() -> list[dict[str, Any]]:
+    """List all known grid regions with metadata."""
+    from app.regions import list_regions
+    return list_regions()
+
+
 @app.post("/api/v1/predict/batch", tags=["Forecasting"])
 def predict_batch(
     payloads: list[EnergyReadingIn],
