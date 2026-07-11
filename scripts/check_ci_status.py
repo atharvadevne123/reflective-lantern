@@ -18,8 +18,13 @@ from typing import Any
 log = logging.getLogger(__name__)
 GH_API = "https://api.github.com"
 
+FAILING_CONCLUSIONS: frozenset[str] = frozenset({"failure", "timed_out", "action_required"})
+DEFAULT_RETRIES = 3
+RUNS_PER_PAGE = 30
+REPOS_PER_PAGE = 100
 
-def _get(url: str, token: str, retries: int = 3) -> Any:
+
+def _get(url: str, token: str, retries: int = DEFAULT_RETRIES) -> Any:
     """Fetch *url* with Bearer *token*, retrying up to *retries* times on network errors."""
     req = urllib.request.Request(
         url,
@@ -39,7 +44,7 @@ def _get(url: str, token: str, retries: int = 3) -> Any:
 def get_latest_runs(owner: str, repo: str, token: str) -> list[dict[str, Any]]:
     """Return the latest run per workflow for *repo*."""
     try:
-        data = _get(f"{GH_API}/repos/{owner}/{repo}/actions/runs?per_page=30", token)
+        data = _get(f"{GH_API}/repos/{owner}/{repo}/actions/runs?per_page={RUNS_PER_PAGE}", token)
     except Exception as exc:
         log.warning("%s: could not fetch runs — %s", repo, exc)
         return []
@@ -67,7 +72,7 @@ def main() -> int:
         return 1
 
     owner = os.environ.get("GITHUB_USERNAME", "atharvadevne123")
-    repos_data = _get(f"{GH_API}/users/{owner}/repos?per_page=100&type=owner", token)
+    repos_data = _get(f"{GH_API}/users/{owner}/repos?per_page={REPOS_PER_PAGE}&type=owner", token)
     repos = [r for r in repos_data if not r.get("archived") and not r.get("fork")]
     if args.repo:
         repos = [r for r in repos if r["name"] == args.repo]
@@ -83,7 +88,7 @@ def main() -> int:
         for run in runs:
             conclusion = run.get("conclusion") or run.get("status", "unknown")
             wf_name = run.get("name", "?")
-            is_fail = conclusion in ("failure", "timed_out")
+            is_fail = conclusion in FAILING_CONCLUSIONS
             if is_fail:
                 failing += 1
             if not args.failing_only or is_fail:
