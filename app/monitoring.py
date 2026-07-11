@@ -73,7 +73,7 @@ def log_prediction(
     actual_kwh: float | None = None,
     model_version: str = "1.0.0",
 ) -> None:
-    """Persist a prediction record."""
+    """Persist a prediction record; rolls back on DB error."""
     entry = PredictionLog(
         building_id=building_id,
         timestamp=timestamp,
@@ -83,7 +83,11 @@ def log_prediction(
         latency_ms=latency_ms,
     )
     db.add(entry)
-    db.commit()
+    try:
+        db.commit()
+    except Exception:
+        db.rollback()
+        logger.exception("Failed to log prediction for building %s", building_id)
 
 
 def log_anomaly(
@@ -95,7 +99,7 @@ def log_anomaly(
     is_anomaly: int,
     severity: str,
 ) -> None:
-    """Persist an anomaly detection record."""
+    """Persist an anomaly detection record; rolls back on DB error."""
     entry = AnomalyLog(
         building_id=building_id,
         timestamp=timestamp,
@@ -105,7 +109,11 @@ def log_anomaly(
         severity=severity,
     )
     db.add(entry)
-    db.commit()
+    try:
+        db.commit()
+    except Exception:
+        db.rollback()
+        logger.exception("Failed to log anomaly for building %s", building_id)
 
 
 def get_prediction_stats(db: Session) -> dict[str, Any]:
