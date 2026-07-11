@@ -187,18 +187,18 @@ def test_min_drift_samples_constant() -> None:
 
 
 def test_compute_drift_raises_on_too_few_samples() -> None:
-    from app.monitoring import compute_drift
-
     import pytest
+
+    from app.monitoring import compute_drift
 
     with pytest.raises(ValueError, match="at least"):
         compute_drift([1.0], [2.0, 3.0])
 
 
 def test_compute_drift_raises_when_current_too_small() -> None:
-    from app.monitoring import compute_drift
-
     import pytest
+
+    from app.monitoring import compute_drift
 
     with pytest.raises(ValueError):
         compute_drift([1.0, 2.0], [3.0])

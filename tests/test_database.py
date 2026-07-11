@@ -231,8 +231,6 @@ def test_correlation_id_max_len_constant() -> None:
     assert CORRELATION_ID_MAX_LEN > 0
 
 
-import pytest
-
 @pytest.mark.parametrize("const_name,expected_min", [
     ("ADDRESS_MAX_LEN", 100),
     ("ZIPCODE_MAX_LEN", 5),

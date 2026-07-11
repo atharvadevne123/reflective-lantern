@@ -315,8 +315,6 @@ def test_cleanup_default_days_less_than_max_history() -> None:
     assert CLEANUP_DEFAULT_DAYS < MAX_HISTORY_ENTRIES
 
 
-import pytest
-
 @pytest.mark.parametrize("days", [7, 30, 90, 180])
 def test_clean_file_respects_days_parameter(tmp_path: pytest.fixture, days: int) -> None:
     import json

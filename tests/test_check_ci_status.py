@@ -195,8 +195,9 @@ def test_conclusion_success_mapping(conclusion: str, expected_success: bool) -> 
 
 
 def test_get_latest_runs_returns_list(monkeypatch) -> None:
-    from scripts.check_ci_status import get_latest_runs
     from unittest.mock import patch
+
+    from scripts.check_ci_status import get_latest_runs
 
     with patch("scripts.check_ci_status._get", return_value={"workflow_runs": []}):
         result = get_latest_runs("owner", "repo", "tok")
@@ -209,8 +210,9 @@ def test_get_latest_runs_returns_list(monkeypatch) -> None:
     ("user123", "test-project"),
 ])
 def test_get_latest_runs_accepts_various_owners(owner: str, repo: str) -> None:
-    from scripts.check_ci_status import get_latest_runs
     from unittest.mock import patch
+
+    from scripts.check_ci_status import get_latest_runs
 
     with patch("scripts.check_ci_status._get", return_value={"workflow_runs": []}):
         result = get_latest_runs(owner, repo, "token")
