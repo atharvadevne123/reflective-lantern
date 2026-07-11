@@ -449,6 +449,6 @@
     "location": "reflective-lantern/temporal-pulse (repo creation API restricted in this session)",
     "tests": 152,
     "release": "tag blocked by git proxy; project shipped at v1.0.0 in-tree",
-    "email_status": "pending"
+    "email_status": "SMTP blocked by egress proxy (ports 587/465); PDF committed to history/pending/"
   }
 ]
