@@ -217,6 +217,33 @@ def test_get_latest_runs_accepts_various_owners(owner: str, repo: str) -> None:
     assert result == []
 
 
+def test_failing_conclusions_constant_contains_failure() -> None:
+    from scripts.check_ci_status import FAILING_CONCLUSIONS
+
+    assert "failure" in FAILING_CONCLUSIONS
+    assert "timed_out" in FAILING_CONCLUSIONS
+
+
+def test_failing_conclusions_constant_excludes_success() -> None:
+    from scripts.check_ci_status import FAILING_CONCLUSIONS
+
+    assert "success" not in FAILING_CONCLUSIONS
+    assert "skipped" not in FAILING_CONCLUSIONS
+
+
+def test_default_retries_constant() -> None:
+    from scripts.check_ci_status import DEFAULT_RETRIES
+
+    assert DEFAULT_RETRIES >= 1
+
+
+@pytest.mark.parametrize("conclusion", ["failure", "timed_out", "action_required"])
+def test_all_failing_conclusions_in_set(conclusion: str) -> None:
+    from scripts.check_ci_status import FAILING_CONCLUSIONS
+
+    assert conclusion in FAILING_CONCLUSIONS
+
+
 def test_repo_flag_filters_to_single_repo(
     monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture
 ) -> None:
