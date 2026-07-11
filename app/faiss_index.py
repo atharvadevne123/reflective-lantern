@@ -31,6 +31,8 @@ except ImportError:
     logger.info("faiss not available; using brute-force NumPy fallback")
 
 DIM = 24
+DEFAULT_TOP_K = 5
+MAX_TOP_K = 50
 
 _index: Any = None
 _stored_properties: list[dict[str, Any]] = []
@@ -70,7 +72,7 @@ def add_property(vector: np.ndarray, metadata: dict[str, Any]) -> None:
     _stored_properties.append(metadata)
 
 
-def search_comparable(query_vector: np.ndarray, top_k: int = 5) -> list[dict[str, Any]]:
+def search_comparable(query_vector: np.ndarray, top_k: int = DEFAULT_TOP_K) -> list[dict[str, Any]]:
     """Return the *top_k* most similar properties from the index.
 
     Args:
