@@ -26,6 +26,7 @@ REFERENCE_WINDOW = 1000
 DRIFT_THRESHOLD = 0.05
 DRIFT_REPORT_LIMIT = 100
 DEFAULT_MODEL_VERSION = "1.0.0"
+MIN_DRIFT_SAMPLES = 2
 
 
 def compute_drift(reference: list[float], current: list[float]) -> dict[str, Any]:
@@ -39,6 +40,10 @@ def compute_drift(reference: list[float], current: list[float]) -> dict[str, Any
         Dict with ``ks_statistic``, ``p_value``, ``drift_detected``,
         ``n_reference``, and ``n_current`` keys.
     """
+    if len(reference) < MIN_DRIFT_SAMPLES or len(current) < MIN_DRIFT_SAMPLES:
+        raise ValueError(
+            f"Both reference and current must have at least {MIN_DRIFT_SAMPLES} samples"
+        )
     stat, p = ks_2samp(reference, current)
     return {
         "ks_statistic": round(float(stat), 4),
