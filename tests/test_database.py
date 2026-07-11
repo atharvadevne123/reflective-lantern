@@ -199,3 +199,48 @@ def test_neighborhood_stat_zipcode_stored(mem_db) -> None:
     found = mem_db.query(NeighborhoodStat).filter(NeighborhoodStat.zipcode == "10001").first()
     assert found is not None
     assert found.median_price == 750_000.0
+
+
+def test_address_max_len_constant() -> None:
+    from app.database import ADDRESS_MAX_LEN
+
+    assert ADDRESS_MAX_LEN > 0
+
+
+def test_zipcode_max_len_constant() -> None:
+    from app.database import ZIPCODE_MAX_LEN
+
+    assert ZIPCODE_MAX_LEN > 0
+
+
+def test_model_version_max_len_constant() -> None:
+    from app.database import MODEL_VERSION_MAX_LEN
+
+    assert MODEL_VERSION_MAX_LEN > 0
+
+
+def test_feature_name_max_len_constant() -> None:
+    from app.database import FEATURE_NAME_MAX_LEN
+
+    assert FEATURE_NAME_MAX_LEN > 0
+
+
+def test_correlation_id_max_len_constant() -> None:
+    from app.database import CORRELATION_ID_MAX_LEN
+
+    assert CORRELATION_ID_MAX_LEN > 0
+
+
+import pytest
+
+@pytest.mark.parametrize("const_name,expected_min", [
+    ("ADDRESS_MAX_LEN", 100),
+    ("ZIPCODE_MAX_LEN", 5),
+    ("CITY_MAX_LEN", 10),
+    ("STATE_MAX_LEN", 2),
+    ("MODEL_VERSION_MAX_LEN", 10),
+])
+def test_db_constants_meet_minimum_lengths(const_name: str, expected_min: int) -> None:
+    import app.database as db_module
+
+    assert getattr(db_module, const_name) >= expected_min
