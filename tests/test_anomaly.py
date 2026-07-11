@@ -181,3 +181,31 @@ def test_deviation_pct_formula(deviation_pct: float) -> None:
     predicted = median * (1 + deviation_pct / 100)
     result = detect_valuation_anomaly(predicted=predicted, neighborhood_median=median)
     assert abs(result["deviation_pct"] - deviation_pct) < 0.1
+
+
+def test_ratio_low_threshold_is_less_than_one() -> None:
+    from app.anomaly import RATIO_LOW_THRESHOLD
+
+    assert RATIO_LOW_THRESHOLD < 1.0
+
+
+def test_ratio_high_threshold_is_greater_than_one() -> None:
+    from app.anomaly import RATIO_HIGH_THRESHOLD
+
+    assert RATIO_HIGH_THRESHOLD > 1.0
+
+
+def test_min_reference_size_at_least_two() -> None:
+    from app.anomaly import MIN_REFERENCE_SIZE
+
+    assert MIN_REFERENCE_SIZE >= 2
+
+
+@pytest.mark.parametrize("predicted,median,expect_anomaly", [
+    (450_000, 500_000, False),   # within range
+    (100_000, 500_000, True),    # too low
+    (2_000_000, 500_000, True),  # too high
+])
+def test_anomaly_detection_threshold_behaviour(predicted, median, expect_anomaly) -> None:
+    result = detect_valuation_anomaly(predicted=predicted, neighborhood_median=median)
+    assert result["is_anomaly"] == expect_anomaly
