@@ -303,6 +303,7 @@ async def trigger_drift_check(db: Session = Depends(get_db)) -> dict:
     mid = len(vals) // 2
     result = run_drift_check(db, "predicted_value", vals[:mid], vals[mid:])
     return {
+        "status": "completed",
         "feature": "predicted_value",
         "ks_statistic": result.ks_statistic,
         "p_value": result.p_value,
