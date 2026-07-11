@@ -65,5 +65,39 @@
     "tests_passed": true,
     "commits": 60,
     "email_status": "network_blocked"
+  },
+  {
+    "date": "2026-07-10",
+    "mode": "improvement",
+    "improvements": [
+      "style: ruff format across all 37 source/test files",
+      "fix: moved mid-file __main__ block to end of main.py",
+      "refactor: replaced deprecated @app.on_event with lifespan context manager",
+      "perf: DB-level offset/limit pagination in list_invoices (was loading all rows)",
+      "refactor: deduplicated filter logic via _build_invoice_query in summary/view-selector",
+      "fix: exception chaining (B904) on all raise-in-except sites",
+      "feat: 6 new analytics endpoints (average-invoice-amount, average-days-to-pay, top-currencies, overdue-by-supplier, size-distribution, payment-performance)",
+      "feat: 3 new report endpoints (summary-cards, payment-summary, overdue-report)",
+      "feat: bulk import endpoints POST /invoices/bulk (JSON) and /invoices/bulk-csv",
+      "feat: GET /export/csv download with computed tax/outstanding columns",
+      "feat: GET /suppliers, /business-units, /cache-stats endpoints",
+      "feat: PUT /invoices/{n}/payment using previously-unused InvoiceUpdate schema",
+      "feat: PATCH now accepts amount_paid=0 and auto-derives payment status",
+      "feat: global per-IP rate limiting wired as app-wide dependency",
+      "fix: registered custom exception handlers (were defined but unwired)",
+      "refactor: endpoints raise domain exceptions (DuplicateInvoiceError, InvoiceNotFoundError)",
+      "feat: X-Response-Time header in middleware; Docker+compose healthchecks",
+      "feat: analytics functions invoice_size_distribution, supplier_payment_performance",
+      "feat: CLI dashboard sections for size distribution and payment performance",
+      "feat: seeder --count/--force argparse flags",
+      "chore: untracked committed .pyc files; ruff-format pre-commit hook; mypy config; CI matrix 3.11/3.12 with format check and mypy job",
+      "docs: README API table (30 endpoints), features, testing, bulk examples, architecture; CHANGELOG 1.1.0; version bump",
+      "test: 90 new tests across 8 new + 8 expanded test files (337 total, all passing)"
+    ],
+    "tests_passed": true,
+    "test_count": 337,
+    "commits": 60,
+    "push_status": "blocked_by_git_proxy \u2014 60 commits saved to pending/ as bundle+patch",
+    "email_status": "pending"
   }
 ]

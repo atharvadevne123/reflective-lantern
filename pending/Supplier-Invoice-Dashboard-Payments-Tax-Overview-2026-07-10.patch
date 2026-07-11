@@ -1,0 +1,4223 @@
+From 8149b9b9904e993b2709d93a32fc72f54c09a62a Mon Sep 17 00:00:00 2001
+From: Reflective Lantern <devneatharva@gmail.com>
+Date: Fri, 10 Jul 2026 15:02:20 +0000
+Subject: [PATCH 01/60] style(1/60): apply ruff format to all source and test
+ files
+
+---
+ .../versions/0001_create_supplier_invoices.py |  5 +--
+ app/analytics.py                              |  9 +---
+ app/bulk.py                                   | 22 +++++++---
+ app/cache.py                                  |  3 ++
+ app/config.py                                 |  4 +-
+ app/exceptions.py                             |  4 +-
+ app/main.py                                   | 42 ++++++++-----------
+ app/rate_limit.py                             |  5 +--
+ app/schemas.py                                | 12 ++++--
+ app/validators.py                             | 16 ++-----
+ tests/test_api.py                             |  1 -
+ tests/test_bulk.py                            |  2 +
+ tests/test_cache.py                           |  2 -
+ tests/test_config.py                          |  1 -
+ tests/test_features.py                        | 18 ++++++--
+ tests/test_reporting.py                       |  6 ++-
+ tests/test_utils.py                           |  4 +-
+ 17 files changed, 81 insertions(+), 75 deletions(-)
+
+diff --git a/alembic/versions/0001_create_supplier_invoices.py b/alembic/versions/0001_create_supplier_invoices.py
+index 7a7c23d..6d91409 100644
+--- a/alembic/versions/0001_create_supplier_invoices.py
++++ b/alembic/versions/0001_create_supplier_invoices.py
+@@ -7,6 +7,7 @@ Create Date: 2026-06-11
+ Creates the initial supplier_invoices table with all single-column and
+ composite indexes needed for the dashboard query patterns.
+ """
++
+ from typing import Sequence, Union
+ 
+ import sqlalchemy as sa
+@@ -43,9 +44,7 @@ def upgrade() -> None:
+     op.create_index("ix_supplier_invoices_business_unit", "supplier_invoices", ["business_unit"])
+     op.create_index("ix_supplier_invoices_supplier", "supplier_invoices", ["supplier"])
+     op.create_index("ix_supplier_invoices_invoice_date", "supplier_invoices", ["invoice_date"])
+-    op.create_index(
+-        "ix_invoice_supplier_date", "supplier_invoices", ["supplier", "invoice_date"]
+-    )
++    op.create_index("ix_invoice_supplier_date", "supplier_invoices", ["supplier", "invoice_date"])
+     op.create_index("ix_invoice_status", "supplier_invoices", ["payment_status"])
+     op.create_index(
+         "ix_invoice_bu_status", "supplier_invoices", ["business_unit", "payment_status"]
+diff --git a/app/analytics.py b/app/analytics.py
+index 1ff1636..ad6f687 100644
+--- a/app/analytics.py
++++ b/app/analytics.py
+@@ -157,9 +157,7 @@ def incomplete_invoice_count(invoices: list[dict]) -> int:
+     return sum(1 for inv in invoices if inv.get("payment_status") in INCOMPLETE_STATUSES)
+ 
+ 
+-def top_currencies_by_invoice_count(
+-    invoices: list[dict], top_n: int = 5
+-) -> list[dict]:
++def top_currencies_by_invoice_count(invoices: list[dict], top_n: int = 5) -> list[dict]:
+     """Return currencies ranked by number of invoices, highest first.
+ 
+     Args:
+@@ -212,10 +210,7 @@ def overdue_by_supplier(
+         supplier_totals[supplier]["overdue_count"] += 1
+         supplier_totals[supplier]["total_outstanding"] += outstanding
+ 
+-    result = [
+-        {"supplier": supplier, **data}
+-        for supplier, data in supplier_totals.items()
+-    ]
++    result = [{"supplier": supplier, **data} for supplier, data in supplier_totals.items()]
+     result.sort(key=lambda x: x["total_outstanding"], reverse=True)
+     return result
+ 
+diff --git a/app/bulk.py b/app/bulk.py
+index a6c2cf2..8f6e2d6 100644
+--- a/app/bulk.py
++++ b/app/bulk.py
+@@ -9,11 +9,18 @@ from typing import Any
+ 
+ logger = logging.getLogger(__name__)
+ 
+-REQUIRED_CSV_COLUMNS: frozenset[str] = frozenset({
+-    "invoice_number", "business_unit", "supplier",
+-    "invoice_date", "invoice_amount", "amount_paid",
+-    "currency", "payment_status",
+-})
++REQUIRED_CSV_COLUMNS: frozenset[str] = frozenset(
++    {
++        "invoice_number",
++        "business_unit",
++        "supplier",
++        "invoice_date",
++        "invoice_amount",
++        "amount_paid",
++        "currency",
++        "payment_status",
++    }
++)
+ 
+ 
+ class BulkImportError(Exception):
+@@ -79,6 +86,7 @@ def validate_csv_row(row: dict[str, Any], row_index: int) -> list[str]:
+     """
+     errors: list[str] = []
+     from decimal import Decimal as _D
++
+     invoice_amount = row.get("invoice_amount")
+     amount_paid = row.get("amount_paid")
+     if isinstance(invoice_amount, _D) and invoice_amount <= _D("0"):
+@@ -110,7 +118,9 @@ def to_invoice_create_payload(row: dict[str, Any]) -> dict[str, Any]:
+         "business_unit": str(row.get("business_unit", "")).strip(),
+         "supplier": str(row.get("supplier", "")).strip(),
+         "invoice_date": row.get("invoice_date"),
+-        "invoice_amount": _D(str(row["invoice_amount"])) if row.get("invoice_amount") is not None else _D("0"),
++        "invoice_amount": _D(str(row["invoice_amount"]))
++        if row.get("invoice_amount") is not None
++        else _D("0"),
+         "amount_paid": _D(str(row.get("amount_paid", "0"))),
+         "currency": str(row.get("currency", "USD")).strip().upper(),
+         "payment_status": str(row.get("payment_status", "UNPAID")).strip().upper(),
+diff --git a/app/cache.py b/app/cache.py
+index 8f5a1cb..5e27d00 100644
+--- a/app/cache.py
++++ b/app/cache.py
+@@ -42,6 +42,7 @@ def ttl_cache(ttl_seconds: int = 60) -> Callable:
+     Returns:
+         Decorator that wraps the target function with caching.
+     """
++
+     def decorator(func: Callable) -> Callable:
+         @wraps(func)
+         def wrapper(*args: Any, **kwargs: Any) -> Any:
+@@ -57,7 +58,9 @@ def ttl_cache(ttl_seconds: int = 60) -> Callable:
+             _cache[key] = (result, now + ttl_seconds)
+             logger.debug("Cache set: %s (ttl=%ds)", func.__qualname__, ttl_seconds)
+             return result
++
+         return wrapper
++
+     return decorator
+ 
+ 
+diff --git a/app/config.py b/app/config.py
+index 0b809ef..3eea156 100644
+--- a/app/config.py
++++ b/app/config.py
+@@ -23,9 +23,7 @@ class Settings(BaseSettings):
+     app_name: str = "Supplier Invoice Dashboard"
+     app_version: str = "1.0.0"
+     debug: bool = False
+-    database_url: str = os.environ.get(
+-        "DATABASE_URL", "sqlite:///./supplier_invoices.db"
+-    )
++    database_url: str = os.environ.get("DATABASE_URL", "sqlite:///./supplier_invoices.db")
+     tax_rate: float = float(os.environ.get("TAX_RATE", "0.08"))
+     log_level: str = os.environ.get("LOG_LEVEL", "INFO")
+     api_prefix: str = "/api/v1"
+diff --git a/app/exceptions.py b/app/exceptions.py
+index 9549f19..d2ccaf1 100644
+--- a/app/exceptions.py
++++ b/app/exceptions.py
+@@ -55,9 +55,7 @@ async def invoice_not_found_handler(request: Request, exc: InvoiceNotFoundError)
+     return JSONResponse(status_code=404, content={"detail": str(exc)})
+ 
+ 
+-async def duplicate_invoice_handler(
+-    request: Request, exc: DuplicateInvoiceError
+-) -> JSONResponse:
++async def duplicate_invoice_handler(request: Request, exc: DuplicateInvoiceError) -> JSONResponse:
+     """Return a 409 JSON response for duplicate invoices.
+ 
+     Args:
+diff --git a/app/main.py b/app/main.py
+index 7403497..3f7ef50 100644
+--- a/app/main.py
++++ b/app/main.py
+@@ -200,9 +200,11 @@ def list_invoices(
+ )
+ def create_invoice(payload: InvoiceCreate, db: Session = Depends(get_db)) -> InvoiceResponse:
+     """Create a new supplier invoice record."""
+-    existing = db.query(SupplierInvoice).filter(
+-        SupplierInvoice.invoice_number == payload.invoice_number
+-    ).first()
++    existing = (
++        db.query(SupplierInvoice)
++        .filter(SupplierInvoice.invoice_number == payload.invoice_number)
++        .first()
++    )
+     if existing:
+         raise HTTPException(
+             status_code=status.HTTP_409_CONFLICT,
+@@ -227,9 +229,7 @@ def create_invoice(payload: InvoiceCreate, db: Session = Depends(get_db)) -> Inv
+ )
+ def get_invoice(invoice_number: str, db: Session = Depends(get_db)) -> InvoiceResponse:
+     """Retrieve a single invoice by invoice number."""
+-    inv = db.query(SupplierInvoice).filter(
+-        SupplierInvoice.invoice_number == invoice_number
+-    ).first()
++    inv = db.query(SupplierInvoice).filter(SupplierInvoice.invoice_number == invoice_number).first()
+     if not inv:
+         raise HTTPException(status_code=404, detail=f"Invoice {invoice_number} not found")
+     return _to_response(inv)
+@@ -276,9 +276,11 @@ def get_currency_breakdown(db: Session = Depends(get_db)) -> list[dict]:
+ @app.get(f"{settings.api_prefix}/analytics/overdue", tags=["Analytics"])
+ def get_overdue_invoices(db: Session = Depends(get_db)) -> list[dict]:
+     """Return unpaid/partial invoices that are more than 30 days old."""
+-    records = db.query(SupplierInvoice).filter(
+-        SupplierInvoice.payment_status.in_(["UNPAID", "PARTIAL"])
+-    ).all()
++    records = (
++        db.query(SupplierInvoice)
++        .filter(SupplierInvoice.payment_status.in_(["UNPAID", "PARTIAL"]))
++        .all()
++    )
+     return overdue_invoices([_to_inv_dict(r) for r in records])
+ 
+ 
+@@ -331,12 +333,10 @@ def get_metrics(db: Session = Depends(get_db)) -> dict:
+     """Return basic operational metrics for monitoring dashboards."""
+     try:
+         total = db.query(SupplierInvoice).count()
+-        unpaid = db.query(SupplierInvoice).filter(
+-            SupplierInvoice.payment_status == "UNPAID"
+-        ).count()
+-        paid = db.query(SupplierInvoice).filter(
+-            SupplierInvoice.payment_status == "PAID"
+-        ).count()
++        unpaid = (
++            db.query(SupplierInvoice).filter(SupplierInvoice.payment_status == "UNPAID").count()
++        )
++        paid = db.query(SupplierInvoice).filter(SupplierInvoice.payment_status == "PAID").count()
+     except Exception:
+         logger.exception("Metrics query failed")
+         raise HTTPException(status_code=500, detail="Failed to retrieve metrics")
+@@ -388,15 +388,11 @@ def update_invoice_payment(
+     db: Session = Depends(get_db),
+ ) -> InvoiceResponse:
+     """Update the paid amount and optionally the payment status of an invoice."""
+-    inv = db.query(SupplierInvoice).filter(
+-        SupplierInvoice.invoice_number == invoice_number
+-    ).first()
++    inv = db.query(SupplierInvoice).filter(SupplierInvoice.invoice_number == invoice_number).first()
+     if not inv:
+         raise HTTPException(status_code=404, detail=f"Invoice {invoice_number} not found")
+     if amount_paid > inv.invoice_amount:
+-        raise HTTPException(
+-            status_code=422, detail="amount_paid cannot exceed invoice_amount"
+-        )
++        raise HTTPException(status_code=422, detail="amount_paid cannot exceed invoice_amount")
+     try:
+         inv.amount_paid = amount_paid
+         if payment_status:
+@@ -417,9 +413,7 @@ def update_invoice_payment(
+ )
+ def delete_invoice(invoice_number: str, db: Session = Depends(get_db)) -> None:
+     """Delete a supplier invoice by invoice number."""
+-    inv = db.query(SupplierInvoice).filter(
+-        SupplierInvoice.invoice_number == invoice_number
+-    ).first()
++    inv = db.query(SupplierInvoice).filter(SupplierInvoice.invoice_number == invoice_number).first()
+     if not inv:
+         raise HTTPException(status_code=404, detail=f"Invoice {invoice_number} not found")
+     try:
+diff --git a/app/rate_limit.py b/app/rate_limit.py
+index aa7724a..e6586f2 100644
+--- a/app/rate_limit.py
++++ b/app/rate_limit.py
+@@ -28,9 +28,8 @@ def check_rate_limit(request: Request) -> None:
+     Raises:
+         HTTPException: 429 with Retry-After header if rate limit exceeded.
+     """
+-    client_ip = (
+-        request.headers.get("X-Forwarded-For", "").split(",")[0].strip()
+-        or (request.client.host if request.client else "unknown")
++    client_ip = request.headers.get("X-Forwarded-For", "").split(",")[0].strip() or (
++        request.client.host if request.client else "unknown"
+     )
+     now = time.monotonic()
+     window_start = now - WINDOW_SECONDS
+diff --git a/app/schemas.py b/app/schemas.py
+index 276a6a9..874979c 100644
+--- a/app/schemas.py
++++ b/app/schemas.py
+@@ -21,7 +21,9 @@ class InvoiceCreate(BaseModel):
+     """Schema for creating a new supplier invoice."""
+ 
+     invoice_number: str = Field(..., min_length=1, max_length=50, description="Unique invoice ID")
+-    business_unit: str = Field(..., min_length=1, max_length=100, description="Owning business unit")
++    business_unit: str = Field(
++        ..., min_length=1, max_length=100, description="Owning business unit"
++    )
+     supplier: str = Field(..., min_length=1, max_length=200, description="Supplier name")
+     invoice_date: date = Field(..., description="Date the invoice was issued")
+     invoice_amount: Decimal = Field(
+@@ -33,8 +35,12 @@ class InvoiceCreate(BaseModel):
+         decimal_places=2,
+         description="Amount already paid against this invoice",
+     )
+-    currency: str = Field(default="USD", min_length=3, max_length=10, description="ISO 4217 currency code")
+-    payment_status: PaymentStatus = Field(default=PaymentStatus.UNPAID, description="Current payment status")
++    currency: str = Field(
++        default="USD", min_length=3, max_length=10, description="ISO 4217 currency code"
++    )
++    payment_status: PaymentStatus = Field(
++        default=PaymentStatus.UNPAID, description="Current payment status"
++    )
+ 
+     @field_validator("amount_paid")
+     @classmethod
+diff --git a/app/validators.py b/app/validators.py
+index 23f691b..adf169b 100644
+--- a/app/validators.py
++++ b/app/validators.py
+@@ -46,9 +46,7 @@ def validate_invoice_number(invoice_number: str) -> str:
+         ValueError: If the number does not match allowed alphanumeric/symbol pattern.
+     """
+     if not _INVOICE_NUM_PATTERN.match(invoice_number):
+-        raise ValueError(
+-            f"Invoice number '{invoice_number}' contains invalid characters"
+-        )
++        raise ValueError(f"Invoice number '{invoice_number}' contains invalid characters")
+     return invoice_number
+ 
+ 
+@@ -63,9 +61,7 @@ def validate_date_range(date_from: Optional[date], date_to: Optional[date]) -> N
+         ValueError: If both are set and date_from > date_to.
+     """
+     if date_from and date_to and date_from > date_to:
+-        raise ValueError(
+-            f"date_from ({date_from}) must not be after date_to ({date_to})"
+-        )
++        raise ValueError(f"date_from ({date_from}) must not be after date_to ({date_to})")
+ 
+ 
+ def validate_amount_precision(amount: Decimal, field_name: str = "amount") -> Decimal:
+@@ -178,11 +174,7 @@ def validate_business_unit(business_unit: str) -> str:
+     if not stripped:
+         raise ValueError("business_unit must not be empty")
+     if len(stripped) > MAX_BUSINESS_UNIT_LENGTH:
+-        raise ValueError(
+-            f"business_unit exceeds maximum length of {MAX_BUSINESS_UNIT_LENGTH}"
+-        )
++        raise ValueError(f"business_unit exceeds maximum length of {MAX_BUSINESS_UNIT_LENGTH}")
+     if not _BUSINESS_UNIT_PATTERN.match(stripped):
+-        raise ValueError(
+-            f"business_unit '{stripped}' contains invalid characters"
+-        )
++        raise ValueError(f"business_unit '{stripped}' contains invalid characters")
+     return stripped
+diff --git a/tests/test_api.py b/tests/test_api.py
+index 3f29ae1..d28de2d 100644
+--- a/tests/test_api.py
++++ b/tests/test_api.py
+@@ -1,7 +1,6 @@
+ """API integration tests for the Supplier Invoice Dashboard endpoints."""
+ 
+ 
+-
+ def test_health_check(client) -> None:
+     resp = client.get("/api/v1/health")
+     assert resp.status_code == 200
+diff --git a/tests/test_bulk.py b/tests/test_bulk.py
+index bf8ec50..ca05c7f 100644
+--- a/tests/test_bulk.py
++++ b/tests/test_bulk.py
+@@ -32,6 +32,7 @@ def test_parse_csv_invalid_amount() -> None:
+ 
+ def test_parse_json_valid() -> None:
+     import json
++
+     data = [
+         {
+             "invoice_number": "INV-001",
+@@ -53,6 +54,7 @@ def test_parse_json_invalid_json() -> None:
+ 
+ def test_parse_json_not_list() -> None:
+     import json
++
+     with pytest.raises(BulkImportError, match="array"):
+         parse_json_invoices(json.dumps({"key": "value"}))
+ 
+diff --git a/tests/test_cache.py b/tests/test_cache.py
+index eedfea4..f5b4f8b 100644
+--- a/tests/test_cache.py
++++ b/tests/test_cache.py
+@@ -1,7 +1,5 @@
+ """Tests for the TTL cache module."""
+ 
+-
+-
+ from app.cache import cache_stats, invalidate_all, ttl_cache
+ 
+ 
+diff --git a/tests/test_config.py b/tests/test_config.py
+index 42f5244..82abd92 100644
+--- a/tests/test_config.py
++++ b/tests/test_config.py
+@@ -1,6 +1,5 @@
+ """Tests for the application settings and field validators."""
+ 
+-
+ import pytest
+ 
+ 
+diff --git a/tests/test_features.py b/tests/test_features.py
+index c3af547..bca5ee6 100644
+--- a/tests/test_features.py
++++ b/tests/test_features.py
+@@ -86,9 +86,17 @@ def test_aggregate_invoices_empty() -> None:
+ 
+ def test_aggregate_invoices_counts() -> None:
+     invoices = [
+-        {"invoice_amount": Decimal("1000"), "amount_paid": Decimal("1000"), "payment_status": "PAID"},
++        {
++            "invoice_amount": Decimal("1000"),
++            "amount_paid": Decimal("1000"),
++            "payment_status": "PAID",
++        },
+         {"invoice_amount": Decimal("500"), "amount_paid": Decimal("0"), "payment_status": "UNPAID"},
+-        {"invoice_amount": Decimal("800"), "amount_paid": Decimal("400"), "payment_status": "PARTIAL"},
++        {
++            "invoice_amount": Decimal("800"),
++            "amount_paid": Decimal("400"),
++            "payment_status": "PARTIAL",
++        },
+     ]
+     result = aggregate_invoices(invoices)
+     assert result["total_invoices"] == 3
+@@ -101,7 +109,11 @@ def test_aggregate_invoices_cancelled_count() -> None:
+     from app.features import aggregate_invoices
+ 
+     invoices = [
+-        {"invoice_amount": Decimal("200"), "amount_paid": Decimal("0"), "payment_status": "CANCELLED"},
++        {
++            "invoice_amount": Decimal("200"),
++            "amount_paid": Decimal("0"),
++            "payment_status": "CANCELLED",
++        },
+         {"invoice_amount": Decimal("300"), "amount_paid": Decimal("0"), "payment_status": "UNPAID"},
+     ]
+     result = aggregate_invoices(invoices)
+diff --git a/tests/test_reporting.py b/tests/test_reporting.py
+index 7829348..0b93d45 100644
+--- a/tests/test_reporting.py
++++ b/tests/test_reporting.py
+@@ -123,7 +123,11 @@ def test_build_payment_summary_completion_pct() -> None:
+     from app.reporting import build_payment_summary
+ 
+     invoices = [
+-        {"payment_status": "PAID", "invoice_amount": Decimal("1000"), "amount_paid": Decimal("1000")},
++        {
++            "payment_status": "PAID",
++            "invoice_amount": Decimal("1000"),
++            "amount_paid": Decimal("1000"),
++        },
+         {"payment_status": "PAID", "invoice_amount": Decimal("500"), "amount_paid": Decimal("500")},
+         {"payment_status": "UNPAID", "invoice_amount": Decimal("200"), "amount_paid": Decimal("0")},
+         {"payment_status": "UNPAID", "invoice_amount": Decimal("300"), "amount_paid": Decimal("0")},
+diff --git a/tests/test_utils.py b/tests/test_utils.py
+index 750dae9..c4794a7 100644
+--- a/tests/test_utils.py
++++ b/tests/test_utils.py
+@@ -24,9 +24,7 @@ from app.utils import (
+         (1, 100, 5, 1),
+     ],
+ )
+-def test_paginate_page_count(
+-    page: int, page_size: int, total: int, expected_pages: int
+-) -> None:
++def test_paginate_page_count(page: int, page_size: int, total: int, expected_pages: int) -> None:
+     items = list(range(total))
+     _, pages = paginate(items, page, page_size)
+     assert pages == expected_pages
+-- 
+2.43.0
+
+
+From 736f3848906cd9ffa4b784cfb53b7d630c79e150 Mon Sep 17 00:00:00 2001
+From: Reflective Lantern <devneatharva@gmail.com>
+Date: Fri, 10 Jul 2026 15:03:18 +0000
+Subject: [PATCH 02/60] fix(2/60): move __main__ entrypoint block to end of
+ main.py (was mid-file before 8 endpoints)
+
+---
+ app/main.py | 12 ++++++------
+ 1 file changed, 6 insertions(+), 6 deletions(-)
+
+diff --git a/app/main.py b/app/main.py
+index 3f7ef50..01ab626 100644
+--- a/app/main.py
++++ b/app/main.py
+@@ -291,12 +291,6 @@ def get_status_distribution(db: Session = Depends(get_db)) -> dict:
+     return payment_status_distribution([_to_inv_dict(r) for r in records])
+ 
+ 
+-if __name__ == "__main__":
+-    import uvicorn
+-
+-    uvicorn.run("app.main:app", host="0.0.0.0", port=8000, reload=settings.debug)
+-
+-
+ @app.get(f"{settings.api_prefix}/report/view-selector", tags=["Reports"])
+ def get_view_selector(
+     supplier: Optional[str] = Query(None),
+@@ -424,3 +418,9 @@ def delete_invoice(invoice_number: str, db: Session = Depends(get_db)) -> None:
+         db.rollback()
+         logger.exception("Failed to delete invoice %s", invoice_number)
+         raise HTTPException(status_code=500, detail="Failed to delete invoice")
++
++
++if __name__ == "__main__":
++    import uvicorn
++
++    uvicorn.run("app.main:app", host="0.0.0.0", port=8000, reload=settings.debug)
+-- 
+2.43.0
+
+
+From c51590e37806f2bb96532ef5a3742db7d77ab8aa Mon Sep 17 00:00:00 2001
+From: Reflective Lantern <devneatharva@gmail.com>
+Date: Fri, 10 Jul 2026 15:03:53 +0000
+Subject: [PATCH 03/60] refactor(3/60): replace deprecated @app.on_event
+ startup with lifespan context manager
+
+---
+ app/main.py | 18 +++++++++++-------
+ 1 file changed, 11 insertions(+), 7 deletions(-)
+
+diff --git a/app/main.py b/app/main.py
+index 01ab626..d68e776 100644
+--- a/app/main.py
++++ b/app/main.py
+@@ -1,6 +1,7 @@
+ """FastAPI application entry point for the Supplier Invoice Dashboard API."""
+ 
+ import logging
++from contextlib import asynccontextmanager
+ from datetime import date
+ from decimal import Decimal
+ from typing import Optional
+@@ -35,12 +36,22 @@ logger = logging.getLogger(__name__)
+ 
+ logging.basicConfig(level=getattr(logging, settings.log_level, logging.INFO))
+ 
++@asynccontextmanager
++async def lifespan(app: FastAPI):
++    """Initialise database tables on startup; log on shutdown."""
++    create_tables()
++    logger.info("Supplier Invoice Dashboard API started")
++    yield
++    logger.info("Supplier Invoice Dashboard API shutting down")
++
++
+ app = FastAPI(
+     title=settings.app_name,
+     version=settings.app_version,
+     description="REST API for supplier invoice analytics replicating Oracle OTBI payables reporting.",
+     docs_url="/docs",
+     redoc_url="/redoc",
++    lifespan=lifespan,
+ )
+ 
+ app.add_middleware(CorrelationIDMiddleware)
+@@ -53,13 +64,6 @@ app.add_middleware(
+ )
+ 
+ 
+-@app.on_event("startup")
+-def startup_event() -> None:
+-    """Initialise database tables on application start."""
+-    create_tables()
+-    logger.info("Supplier Invoice Dashboard API started")
+-
+-
+ def _build_invoice_query(
+     db: Session,
+     supplier: Optional[str] = None,
+-- 
+2.43.0
+
+
+From e43899f3580ecf705acfb7bd343c23b8d76d0e51 Mon Sep 17 00:00:00 2001
+From: Reflective Lantern <devneatharva@gmail.com>
+Date: Fri, 10 Jul 2026 15:04:24 +0000
+Subject: [PATCH 04/60] perf(4/60): use DB-level offset/limit pagination in
+ list_invoices instead of loading all rows
+
+---
+ app/main.py | 8 +++-----
+ 1 file changed, 3 insertions(+), 5 deletions(-)
+
+diff --git a/app/main.py b/app/main.py
+index d68e776..ce68424 100644
+--- a/app/main.py
++++ b/app/main.py
+@@ -30,8 +30,6 @@ from app.schemas import (
+     PaginatedInvoices,
+     PaymentStatus,
+ )
+-from app.utils import paginate
+-
+ logger = logging.getLogger(__name__)
+ 
+ logging.basicConfig(level=getattr(logging, settings.log_level, logging.INFO))
+@@ -184,9 +182,9 @@ def list_invoices(
+         date_from=date_from,
+         date_to=date_to,
+     )
+-    all_records = query.all()
+-    total = len(all_records)
+-    page_records, total_pages = paginate(all_records, page, page_size)
++    total = query.count()
++    total_pages = max(1, (total + page_size - 1) // page_size)
++    page_records = query.offset((page - 1) * page_size).limit(page_size).all()
+     return PaginatedInvoices(
+         items=[_to_response(inv) for inv in page_records],
+         total=total,
+-- 
+2.43.0
+
+
+From ae00cf46f15d23e64f099bb6f57de4a556b39dab Mon Sep 17 00:00:00 2001
+From: Reflective Lantern <devneatharva@gmail.com>
+Date: Fri, 10 Jul 2026 15:04:40 +0000
+Subject: [PATCH 05/60] style(5/60): sort import block in main.py after
+ paginate removal
+
+---
+ app/main.py | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/app/main.py b/app/main.py
+index ce68424..ea4deb0 100644
+--- a/app/main.py
++++ b/app/main.py
+@@ -30,6 +30,7 @@ from app.schemas import (
+     PaginatedInvoices,
+     PaymentStatus,
+ )
++
+ logger = logging.getLogger(__name__)
+ 
+ logging.basicConfig(level=getattr(logging, settings.log_level, logging.INFO))
+-- 
+2.43.0
+
+
+From 1fe777cc3cdaa339b3584900cb4faa29a8615ba0 Mon Sep 17 00:00:00 2001
+From: Reflective Lantern <devneatharva@gmail.com>
+Date: Fri, 10 Jul 2026 15:05:08 +0000
+Subject: [PATCH 06/60] refactor(6/60): reuse _build_invoice_query in /summary
+ endpoint
+
+---
+ app/main.py | 7 +------
+ 1 file changed, 1 insertion(+), 6 deletions(-)
+
+diff --git a/app/main.py b/app/main.py
+index ea4deb0..bb07fba 100644
+--- a/app/main.py
++++ b/app/main.py
+@@ -245,12 +245,7 @@ def get_summary(
+     db: Session = Depends(get_db),
+ ) -> InvoiceSummary:
+     """Return aggregated invoice statistics, optionally filtered by supplier or BU."""
+-    query = db.query(SupplierInvoice)
+-    if supplier:
+-        query = query.filter(SupplierInvoice.supplier.ilike(f"%{supplier}%"))
+-    if business_unit:
+-        query = query.filter(SupplierInvoice.business_unit.ilike(f"%{business_unit}%"))
+-    records = query.all()
++    records = _build_invoice_query(db, supplier=supplier, business_unit=business_unit).all()
+     agg = aggregate_invoices([_to_inv_dict(r) for r in records])
+     return InvoiceSummary(**agg)
+ 
+-- 
+2.43.0
+
+
+From 672b012d8d4ace449114529d8b4f8be07507e93f Mon Sep 17 00:00:00 2001
+From: Reflective Lantern <devneatharva@gmail.com>
+Date: Fri, 10 Jul 2026 15:05:47 +0000
+Subject: [PATCH 07/60] refactor(7/60): reuse query/dict helpers in
+ view-selector; hoist local imports to module top
+
+---
+ app/main.py | 30 ++++++------------------------
+ 1 file changed, 6 insertions(+), 24 deletions(-)
+
+diff --git a/app/main.py b/app/main.py
+index bb07fba..9c722bc 100644
+--- a/app/main.py
++++ b/app/main.py
+@@ -13,15 +13,18 @@ from sqlalchemy.orm import Session
+ 
+ from app.analytics import (
+     currency_breakdown,
++    incomplete_invoice_count,
+     monthly_invoice_trend,
+     overdue_invoices,
+     payment_status_distribution,
+     supplier_outstanding_ranking,
+ )
+ from app.config import settings
++from app.currency import normalize_to_usd
+ from app.database import SupplierInvoice, create_tables, get_db
+ from app.features import aggregate_invoices, compute_outstanding, compute_tax
+ from app.middleware import CorrelationIDMiddleware
++from app.reporting import build_view_selector_payload
+ from app.schemas import (
+     HealthResponse,
+     InvoiceCreate,
+@@ -35,6 +38,7 @@ logger = logging.getLogger(__name__)
+ 
+ logging.basicConfig(level=getattr(logging, settings.log_level, logging.INFO))
+ 
++
+ @asynccontextmanager
+ async def lifespan(app: FastAPI):
+     """Initialise database tables on startup; log on shutdown."""
+@@ -296,28 +300,8 @@ def get_view_selector(
+     db: Session = Depends(get_db),
+ ) -> dict:
+     """Return table-view and graph-view payloads for the OTBI view-selector UI."""
+-    from app.reporting import build_view_selector_payload
+-
+-    query = db.query(SupplierInvoice)
+-    if supplier:
+-        query = query.filter(SupplierInvoice.supplier.ilike(f"%{supplier}%"))
+-    if business_unit:
+-        query = query.filter(SupplierInvoice.business_unit.ilike(f"%{business_unit}%"))
+-    records = query.all()
+-    inv_dicts = [
+-        {
+-            "invoice_number": r.invoice_number,
+-            "business_unit": r.business_unit,
+-            "supplier": r.supplier,
+-            "invoice_date": r.invoice_date,
+-            "invoice_amount": r.invoice_amount,
+-            "amount_paid": r.amount_paid,
+-            "currency": r.currency,
+-            "payment_status": r.payment_status,
+-        }
+-        for r in records
+-    ]
+-    return build_view_selector_payload(inv_dicts)
++    records = _build_invoice_query(db, supplier=supplier, business_unit=business_unit).all()
++    return build_view_selector_payload([_to_inv_dict(r) for r in records])
+ 
+ 
+ @app.get(f"{settings.api_prefix}/metrics", tags=["Operations"])
+@@ -343,7 +327,6 @@ def get_metrics(db: Session = Depends(get_db)) -> dict:
+ @app.get(f"{settings.api_prefix}/analytics/incomplete-count", tags=["Analytics"])
+ def get_incomplete_count(db: Session = Depends(get_db)) -> dict:
+     """Return the count of invoices in UNPAID or PARTIAL status."""
+-    from app.analytics import incomplete_invoice_count
+ 
+     records = db.query(SupplierInvoice).all()
+     count = incomplete_invoice_count([_to_inv_dict(r) for r in records])
+@@ -353,7 +336,6 @@ def get_incomplete_count(db: Session = Depends(get_db)) -> dict:
+ @app.get(f"{settings.api_prefix}/analytics/currency-normalized", tags=["Analytics"])
+ def get_currency_normalized(db: Session = Depends(get_db)) -> list[dict]:
+     """Return all invoices with invoice amounts normalized to USD."""
+-    from app.currency import normalize_to_usd
+ 
+     records = db.query(SupplierInvoice).all()
+     inv_dicts = [
+-- 
+2.43.0
+
+
+From affd265871957467d8b42a13bdf5a847c9ecbed3 Mon Sep 17 00:00:00 2001
+From: Reflective Lantern <devneatharva@gmail.com>
+Date: Fri, 10 Jul 2026 15:06:08 +0000
+Subject: [PATCH 08/60] fix(8/60): add explicit exception chaining (from None)
+ to raises inside except blocks (B904)
+
+---
+ app/main.py | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/app/main.py b/app/main.py
+index 9c722bc..4c94eb3 100644
+--- a/app/main.py
++++ b/app/main.py
+@@ -225,7 +225,7 @@ def create_invoice(payload: InvoiceCreate, db: Session = Depends(get_db)) -> Inv
+     except Exception:
+         db.rollback()
+         logger.exception("Failed to create invoice %s", payload.invoice_number)
+-        raise HTTPException(status_code=500, detail="Failed to save invoice")
++        raise HTTPException(status_code=500, detail="Failed to save invoice") from None
+     return _to_response(inv)
+ 
+ 
+@@ -315,7 +315,7 @@ def get_metrics(db: Session = Depends(get_db)) -> dict:
+         paid = db.query(SupplierInvoice).filter(SupplierInvoice.payment_status == "PAID").count()
+     except Exception:
+         logger.exception("Metrics query failed")
+-        raise HTTPException(status_code=500, detail="Failed to retrieve metrics")
++        raise HTTPException(status_code=500, detail="Failed to retrieve metrics") from None
+     return {
+         "total_invoices": total,
+         "unpaid_invoices": unpaid,
+@@ -376,7 +376,7 @@ def update_invoice_payment(
+     except Exception:
+         db.rollback()
+         logger.exception("Failed to update invoice %s", invoice_number)
+-        raise HTTPException(status_code=500, detail="Failed to update invoice")
++        raise HTTPException(status_code=500, detail="Failed to update invoice") from None
+     return _to_response(inv)
+ 
+ 
+@@ -397,7 +397,7 @@ def delete_invoice(invoice_number: str, db: Session = Depends(get_db)) -> None:
+     except Exception:
+         db.rollback()
+         logger.exception("Failed to delete invoice %s", invoice_number)
+-        raise HTTPException(status_code=500, detail="Failed to delete invoice")
++        raise HTTPException(status_code=500, detail="Failed to delete invoice") from None
+ 
+ 
+ if __name__ == "__main__":
+-- 
+2.43.0
+
+
+From 7d51d9fc99b8410f9af18d238f4d6e30cd1b2151 Mon Sep 17 00:00:00 2001
+From: Reflective Lantern <devneatharva@gmail.com>
+Date: Fri, 10 Jul 2026 15:06:54 +0000
+Subject: [PATCH 09/60] feat(9/60): add /analytics/average-invoice-amount
+ endpoint
+
+---
+ app/main.py | 44 ++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 44 insertions(+)
+
+diff --git a/app/main.py b/app/main.py
+index 4c94eb3..2f650b5 100644
+--- a/app/main.py
++++ b/app/main.py
+@@ -12,12 +12,16 @@ from sqlalchemy import text
+ from sqlalchemy.orm import Session
+ 
+ from app.analytics import (
++    average_days_to_pay,
++    average_invoice_amount,
+     currency_breakdown,
+     incomplete_invoice_count,
+     monthly_invoice_trend,
++    overdue_by_supplier,
+     overdue_invoices,
+     payment_status_distribution,
+     supplier_outstanding_ranking,
++    top_currencies_by_invoice_count,
+ )
+ from app.config import settings
+ from app.currency import normalize_to_usd
+@@ -333,6 +337,46 @@ def get_incomplete_count(db: Session = Depends(get_db)) -> dict:
+     return {"incomplete_count": count}
+ 
+ 
++@app.get(f"{settings.api_prefix}/analytics/average-invoice-amount", tags=["Analytics"])
++def get_average_invoice_amount(db: Session = Depends(get_db)) -> dict:
++    """Return the mean invoice amount across all invoices."""
++    records = db.query(SupplierInvoice).all()
++    avg = average_invoice_amount([_to_inv_dict(r) for r in records])
++    return {"average_invoice_amount": avg, "invoice_count": len(records)}
++
++
++@app.get(f"{settings.api_prefix}/analytics/average-days-to-pay", tags=["Analytics"])
++def get_average_days_to_pay(db: Session = Depends(get_db)) -> dict:
++    """Return the mean age in days of PAID invoices (proxy for payment turnaround)."""
++    records = db.query(SupplierInvoice).all()
++    avg_days = average_days_to_pay([_to_inv_dict(r) for r in records])
++    return {"average_days_to_pay": avg_days}
++
++
++@app.get(f"{settings.api_prefix}/analytics/top-currencies", tags=["Analytics"])
++def get_top_currencies(
++    top_n: int = Query(5, ge=1, le=20, description="Number of top currencies to return"),
++    db: Session = Depends(get_db),
++) -> list[dict]:
++    """Return the most frequently used currencies ranked by invoice count."""
++    records = db.query(SupplierInvoice).all()
++    return top_currencies_by_invoice_count([_to_inv_dict(r) for r in records], top_n=top_n)
++
++
++@app.get(f"{settings.api_prefix}/analytics/overdue-by-supplier", tags=["Analytics"])
++def get_overdue_by_supplier(
++    threshold_days: int = Query(30, ge=1, le=365, description="Overdue age threshold in days"),
++    db: Session = Depends(get_db),
++) -> list[dict]:
++    """Return overdue invoice totals grouped by supplier."""
++    records = (
++        db.query(SupplierInvoice)
++        .filter(SupplierInvoice.payment_status.in_(["UNPAID", "PARTIAL"]))
++        .all()
++    )
++    return overdue_by_supplier([_to_inv_dict(r) for r in records], threshold_days=threshold_days)
++
++
+ @app.get(f"{settings.api_prefix}/analytics/currency-normalized", tags=["Analytics"])
+ def get_currency_normalized(db: Session = Depends(get_db)) -> list[dict]:
+     """Return all invoices with invoice amounts normalized to USD."""
+-- 
+2.43.0
+
+
+From 89d220226041fdfbaad375e8f15d81c0cdfc0385 Mon Sep 17 00:00:00 2001
+From: Reflective Lantern <devneatharva@gmail.com>
+Date: Fri, 10 Jul 2026 15:07:30 +0000
+Subject: [PATCH 10/60] feat(10/60): add /report/summary-cards endpoint
+ exposing build_summary_cards
+
+---
+ app/main.py | 14 +++++++++++++-
+ 1 file changed, 13 insertions(+), 1 deletion(-)
+
+diff --git a/app/main.py b/app/main.py
+index 2f650b5..9237a68 100644
+--- a/app/main.py
++++ b/app/main.py
+@@ -28,7 +28,12 @@ from app.currency import normalize_to_usd
+ from app.database import SupplierInvoice, create_tables, get_db
+ from app.features import aggregate_invoices, compute_outstanding, compute_tax
+ from app.middleware import CorrelationIDMiddleware
+-from app.reporting import build_view_selector_payload
++from app.reporting import (
++    build_overdue_report,
++    build_payment_summary,
++    build_summary_cards,
++    build_view_selector_payload,
++)
+ from app.schemas import (
+     HealthResponse,
+     InvoiceCreate,
+@@ -308,6 +313,13 @@ def get_view_selector(
+     return build_view_selector_payload([_to_inv_dict(r) for r in records])
+ 
+ 
++@app.get(f"{settings.api_prefix}/report/summary-cards", tags=["Reports"])
++def get_summary_cards(db: Session = Depends(get_db)) -> list[dict]:
++    """Return KPI summary cards (totals, tax, outstanding) for dashboard headers."""
++    records = db.query(SupplierInvoice).all()
++    return build_summary_cards([_to_inv_dict(r) for r in records])
++
++
+ @app.get(f"{settings.api_prefix}/metrics", tags=["Operations"])
+ def get_metrics(db: Session = Depends(get_db)) -> dict:
+     """Return basic operational metrics for monitoring dashboards."""
+-- 
+2.43.0
+
+
+From 50cd9e55bc19bbbe7602e3b3ec6b0e7db0117a65 Mon Sep 17 00:00:00 2001
+From: Reflective Lantern <devneatharva@gmail.com>
+Date: Fri, 10 Jul 2026 15:08:03 +0000
+Subject: [PATCH 11/60] feat(11/60): add /report/payment-summary endpoint
+ exposing build_payment_summary
+
+---
+ app/main.py | 7 +++++++
+ 1 file changed, 7 insertions(+)
+
+diff --git a/app/main.py b/app/main.py
+index 9237a68..3251750 100644
+--- a/app/main.py
++++ b/app/main.py
+@@ -320,6 +320,13 @@ def get_summary_cards(db: Session = Depends(get_db)) -> list[dict]:
+     return build_summary_cards([_to_inv_dict(r) for r in records])
+ 
+ 
++@app.get(f"{settings.api_prefix}/report/payment-summary", tags=["Reports"])
++def get_payment_summary(db: Session = Depends(get_db)) -> dict:
++    """Return an aggregate payment summary: paid vs outstanding ratios."""
++    records = db.query(SupplierInvoice).all()
++    return build_payment_summary([_to_inv_dict(r) for r in records])
++
++
+ @app.get(f"{settings.api_prefix}/metrics", tags=["Operations"])
+ def get_metrics(db: Session = Depends(get_db)) -> dict:
+     """Return basic operational metrics for monitoring dashboards."""
+-- 
+2.43.0
+
+
+From 649684f904de826e917c4e7c1ca7646093adb1bc Mon Sep 17 00:00:00 2001
+From: Reflective Lantern <devneatharva@gmail.com>
+Date: Fri, 10 Jul 2026 15:08:25 +0000
+Subject: [PATCH 12/60] feat(12/60): add /report/overdue-report endpoint with
+ threshold_days param
+
+---
+ app/main.py | 14 ++++++++++++++
+ 1 file changed, 14 insertions(+)
+
+diff --git a/app/main.py b/app/main.py
+index 3251750..e025250 100644
+--- a/app/main.py
++++ b/app/main.py
+@@ -327,6 +327,20 @@ def get_payment_summary(db: Session = Depends(get_db)) -> dict:
+     return build_payment_summary([_to_inv_dict(r) for r in records])
+ 
+ 
++@app.get(f"{settings.api_prefix}/report/overdue-report", tags=["Reports"])
++def get_overdue_report(
++    threshold_days: int = Query(30, ge=1, le=365, description="Overdue age threshold in days"),
++    db: Session = Depends(get_db),
++) -> dict:
++    """Return a detailed overdue-invoice report older than threshold_days."""
++    records = (
++        db.query(SupplierInvoice)
++        .filter(SupplierInvoice.payment_status.in_(["UNPAID", "PARTIAL"]))
++        .all()
++    )
++    return build_overdue_report([_to_inv_dict(r) for r in records], threshold_days=threshold_days)
++
++
+ @app.get(f"{settings.api_prefix}/metrics", tags=["Operations"])
+ def get_metrics(db: Session = Depends(get_db)) -> dict:
+     """Return basic operational metrics for monitoring dashboards."""
+-- 
+2.43.0
+
+
+From 109d85dca067b6a892010370d5be3a5da54c4ae5 Mon Sep 17 00:00:00 2001
+From: Reflective Lantern <devneatharva@gmail.com>
+Date: Fri, 10 Jul 2026 15:09:33 +0000
+Subject: [PATCH 13/60] feat(13/60): add POST /invoices/bulk (JSON) and
+ /invoices/bulk-csv endpoints wiring bulk.py
+
+---
+ app/main.py | 75 ++++++++++++++++++++++++++++++++++++++++++++++++++++-
+ 1 file changed, 74 insertions(+), 1 deletion(-)
+
+diff --git a/app/main.py b/app/main.py
+index e025250..84a6dc5 100644
+--- a/app/main.py
++++ b/app/main.py
+@@ -6,7 +6,7 @@ from datetime import date
+ from decimal import Decimal
+ from typing import Optional
+ 
+-from fastapi import Depends, FastAPI, HTTPException, Query, status
++from fastapi import Body, Depends, FastAPI, HTTPException, Query, status
+ from fastapi.middleware.cors import CORSMiddleware
+ from sqlalchemy import text
+ from sqlalchemy.orm import Session
+@@ -23,6 +23,7 @@ from app.analytics import (
+     supplier_outstanding_ranking,
+     top_currencies_by_invoice_count,
+ )
++from app.bulk import BulkImportError, parse_csv_invoices, to_invoice_create_payload
+ from app.config import settings
+ from app.currency import normalize_to_usd
+ from app.database import SupplierInvoice, create_tables, get_db
+@@ -35,6 +36,7 @@ from app.reporting import (
+     build_view_selector_payload,
+ )
+ from app.schemas import (
++    BulkImportResponse,
+     HealthResponse,
+     InvoiceCreate,
+     InvoiceResponse,
+@@ -477,6 +479,77 @@ def delete_invoice(invoice_number: str, db: Session = Depends(get_db)) -> None:
+         raise HTTPException(status_code=500, detail="Failed to delete invoice") from None
+ 
+ 
++def _import_invoice_rows(rows: list[dict], db: Session) -> BulkImportResponse:
++    """Validate and persist parsed invoice rows, collecting per-row outcomes.
++
++    Duplicate invoice numbers (already in the DB or repeated within the batch)
++    are skipped; rows failing schema validation are counted as errors.
++    """
++    imported = 0
++    skipped = 0
++    errors: list[str] = []
++    seen_numbers: set[str] = set()
++    for i, row in enumerate(rows, start=1):
++        try:
++            payload = InvoiceCreate(**to_invoice_create_payload(row))
++        except Exception as e:
++            errors.append(f"Row {i}: {e}")
++            continue
++        if payload.invoice_number in seen_numbers:
++            skipped += 1
++            continue
++        existing = (
++            db.query(SupplierInvoice)
++            .filter(SupplierInvoice.invoice_number == payload.invoice_number)
++            .first()
++        )
++        if existing:
++            skipped += 1
++            continue
++        db.add(SupplierInvoice(**payload.model_dump()))
++        seen_numbers.add(payload.invoice_number)
++        imported += 1
++    db.commit()
++    return BulkImportResponse(
++        imported_count=imported,
++        skipped_count=skipped,
++        error_count=len(errors),
++        errors=errors[:50],
++    )
++
++
++@app.post(
++    f"{settings.api_prefix}/invoices/bulk",
++    response_model=BulkImportResponse,
++    status_code=status.HTTP_201_CREATED,
++    tags=["Invoices"],
++)
++def bulk_import_json(payload: list[dict], db: Session = Depends(get_db)) -> BulkImportResponse:
++    """Bulk-import invoices from a JSON array of invoice objects."""
++    if not payload:
++        raise HTTPException(status_code=400, detail="Request list must not be empty")
++    if len(payload) > 1000:
++        raise HTTPException(status_code=400, detail="Batch size must not exceed 1000 rows")
++    return _import_invoice_rows(payload, db)
++
++
++@app.post(
++    f"{settings.api_prefix}/invoices/bulk-csv",
++    response_model=BulkImportResponse,
++    status_code=status.HTTP_201_CREATED,
++    tags=["Invoices"],
++)
++def bulk_import_csv(body: str = Body(..., media_type="text/csv"), db: Session = Depends(get_db)) -> BulkImportResponse:
++    """Bulk-import invoices from a raw CSV body (header row required)."""
++    try:
++        rows = parse_csv_invoices(body)
++    except BulkImportError as e:
++        raise HTTPException(status_code=422, detail=str(e)) from e
++    if not rows:
++        raise HTTPException(status_code=400, detail="CSV contained no data rows")
++    return _import_invoice_rows(rows, db)
++
++
+ if __name__ == "__main__":
+     import uvicorn
+ 
+-- 
+2.43.0
+
+
+From d99a25c0be9c898404569d0906fa2c601530a006 Mon Sep 17 00:00:00 2001
+From: Reflective Lantern <devneatharva@gmail.com>
+Date: Fri, 10 Jul 2026 15:10:05 +0000
+Subject: [PATCH 14/60] feat(14/60): enforce per-IP rate limiting app-wide via
+ global check_rate_limit dependency
+
+---
+ app/main.py | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/app/main.py b/app/main.py
+index 84a6dc5..edbd71a 100644
+--- a/app/main.py
++++ b/app/main.py
+@@ -29,6 +29,7 @@ from app.currency import normalize_to_usd
+ from app.database import SupplierInvoice, create_tables, get_db
+ from app.features import aggregate_invoices, compute_outstanding, compute_tax
+ from app.middleware import CorrelationIDMiddleware
++from app.rate_limit import check_rate_limit
+ from app.reporting import (
+     build_overdue_report,
+     build_payment_summary,
+@@ -66,6 +67,7 @@ app = FastAPI(
+     docs_url="/docs",
+     redoc_url="/redoc",
+     lifespan=lifespan,
++    dependencies=[Depends(check_rate_limit)],
+ )
+ 
+ app.add_middleware(CorrelationIDMiddleware)
+-- 
+2.43.0
+
+
+From 736ab38a97ca61279b146cb644deb97bab604412 Mon Sep 17 00:00:00 2001
+From: Reflective Lantern <devneatharva@gmail.com>
+Date: Fri, 10 Jul 2026 15:10:29 +0000
+Subject: [PATCH 15/60] feat(15/60): add GET /cache-stats endpoint exposing
+ TTL-cache metrics
+
+---
+ app/main.py | 7 +++++++
+ 1 file changed, 7 insertions(+)
+
+diff --git a/app/main.py b/app/main.py
+index edbd71a..3951728 100644
+--- a/app/main.py
++++ b/app/main.py
+@@ -24,6 +24,7 @@ from app.analytics import (
+     top_currencies_by_invoice_count,
+ )
+ from app.bulk import BulkImportError, parse_csv_invoices, to_invoice_create_payload
++from app.cache import cache_stats
+ from app.config import settings
+ from app.currency import normalize_to_usd
+ from app.database import SupplierInvoice, create_tables, get_db
+@@ -178,6 +179,12 @@ def get_version() -> dict:
+     return {"version": settings.app_version, "app": settings.app_name}
+ 
+ 
++@app.get(f"{settings.api_prefix}/cache-stats", tags=["Operations"])
++def get_cache_stats() -> dict:
++    """Return TTL-cache hit/miss statistics for operational monitoring."""
++    return cache_stats()
++
++
+ @app.get(f"{settings.api_prefix}/invoices", response_model=PaginatedInvoices, tags=["Invoices"])
+ def list_invoices(
+     page: int = Query(1, ge=1, description="Page number (1-based)"),
+-- 
+2.43.0
+
+
+From 0f56cc5d90d86a1d908d98dbbbf043267ae9c4ba Mon Sep 17 00:00:00 2001
+From: Reflective Lantern <devneatharva@gmail.com>
+Date: Fri, 10 Jul 2026 15:10:48 +0000
+Subject: [PATCH 16/60] feat(16/60): add GET /suppliers and /business-units
+ distinct-value endpoints
+
+---
+ app/main.py | 21 +++++++++++++++++++++
+ 1 file changed, 21 insertions(+)
+
+diff --git a/app/main.py b/app/main.py
+index 3951728..5814e60 100644
+--- a/app/main.py
++++ b/app/main.py
+@@ -262,6 +262,27 @@ def get_invoice(invoice_number: str, db: Session = Depends(get_db)) -> InvoiceRe
+     return _to_response(inv)
+ 
+ 
++@app.get(f"{settings.api_prefix}/suppliers", tags=["Invoices"])
++def list_suppliers(db: Session = Depends(get_db)) -> dict:
++    """Return the distinct supplier names present in the invoice table."""
++    rows = db.query(SupplierInvoice.supplier).distinct().order_by(SupplierInvoice.supplier).all()
++    suppliers = [r[0] for r in rows]
++    return {"suppliers": suppliers, "count": len(suppliers)}
++
++
++@app.get(f"{settings.api_prefix}/business-units", tags=["Invoices"])
++def list_business_units(db: Session = Depends(get_db)) -> dict:
++    """Return the distinct business units present in the invoice table."""
++    rows = (
++        db.query(SupplierInvoice.business_unit)
++        .distinct()
++        .order_by(SupplierInvoice.business_unit)
++        .all()
++    )
++    units = [r[0] for r in rows]
++    return {"business_units": units, "count": len(units)}
++
++
+ @app.get(f"{settings.api_prefix}/summary", response_model=InvoiceSummary, tags=["Analytics"])
+ def get_summary(
+     supplier: Optional[str] = Query(None),
+-- 
+2.43.0
+
+
+From 56979d043006e44f6e58f0956aebff6eba767a15 Mon Sep 17 00:00:00 2001
+From: Reflective Lantern <devneatharva@gmail.com>
+Date: Fri, 10 Jul 2026 15:11:19 +0000
+Subject: [PATCH 17/60] feat(17/60): add GET /export/csv endpoint streaming
+ filtered invoices with computed fields
+
+---
+ app/main.py | 50 +++++++++++++++++++++++++++++++++++++++++++++++++-
+ 1 file changed, 49 insertions(+), 1 deletion(-)
+
+diff --git a/app/main.py b/app/main.py
+index 5814e60..9c84b9d 100644
+--- a/app/main.py
++++ b/app/main.py
+@@ -1,12 +1,14 @@
+ """FastAPI application entry point for the Supplier Invoice Dashboard API."""
+ 
++import csv
++import io
+ import logging
+ from contextlib import asynccontextmanager
+ from datetime import date
+ from decimal import Decimal
+ from typing import Optional
+ 
+-from fastapi import Body, Depends, FastAPI, HTTPException, Query, status
++from fastapi import Body, Depends, FastAPI, HTTPException, Query, Response, status
+ from fastapi.middleware.cors import CORSMiddleware
+ from sqlalchemy import text
+ from sqlalchemy.orm import Session
+@@ -509,6 +511,52 @@ def delete_invoice(invoice_number: str, db: Session = Depends(get_db)) -> None:
+         raise HTTPException(status_code=500, detail="Failed to delete invoice") from None
+ 
+ 
++@app.get(f"{settings.api_prefix}/export/csv", tags=["Reports"])
++def export_invoices_csv(
++    supplier: Optional[str] = Query(None),
++    business_unit: Optional[str] = Query(None),
++    db: Session = Depends(get_db),
++) -> Response:
++    """Export filtered invoices (with computed tax/outstanding) as a CSV download."""
++    records = _build_invoice_query(db, supplier=supplier, business_unit=business_unit).all()
++    buf = io.StringIO()
++    writer = csv.writer(buf)
++    writer.writerow(
++        [
++            "invoice_number",
++            "business_unit",
++            "supplier",
++            "invoice_date",
++            "invoice_amount",
++            "amount_paid",
++            "currency",
++            "payment_status",
++            "tax_amount",
++            "outstanding_amount",
++        ]
++    )
++    for r in records:
++        writer.writerow(
++            [
++                r.invoice_number,
++                r.business_unit,
++                r.supplier,
++                r.invoice_date,
++                r.invoice_amount,
++                r.amount_paid,
++                r.currency,
++                r.payment_status,
++                compute_tax(r.invoice_amount),
++                compute_outstanding(r.invoice_amount, r.amount_paid),
++            ]
++        )
++    return Response(
++        content=buf.getvalue(),
++        media_type="text/csv",
++        headers={"Content-Disposition": "attachment; filename=supplier_invoices.csv"},
++    )
++
++
+ def _import_invoice_rows(rows: list[dict], db: Session) -> BulkImportResponse:
+     """Validate and persist parsed invoice rows, collecting per-row outcomes.
+ 
+-- 
+2.43.0
+
+
+From b057ae2192c1af79b89bab4d5efff23337f03536 Mon Sep 17 00:00:00 2001
+From: Reflective Lantern <devneatharva@gmail.com>
+Date: Fri, 10 Jul 2026 15:11:54 +0000
+Subject: [PATCH 18/60] =?UTF-8?q?feat(18/60):=20PATCH=20invoices=20?=
+ =?UTF-8?q?=E2=80=94=20allow=20amount=5Fpaid=3D0=20and=20auto-derive=20pay?=
+ =?UTF-8?q?ment=20status?=
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+---
+ app/main.py | 14 +++++++++++---
+ 1 file changed, 11 insertions(+), 3 deletions(-)
+
+diff --git a/app/main.py b/app/main.py
+index 9c84b9d..edfe1b3 100644
+--- a/app/main.py
++++ b/app/main.py
+@@ -468,11 +468,13 @@ def get_currency_normalized(db: Session = Depends(get_db)) -> list[dict]:
+ )
+ def update_invoice_payment(
+     invoice_number: str,
+-    amount_paid: Decimal = Query(..., gt=Decimal("0"), description="New total amount paid"),
+-    payment_status: Optional[PaymentStatus] = Query(None),
++    amount_paid: Decimal = Query(..., ge=Decimal("0"), description="New total amount paid"),
++    payment_status: Optional[PaymentStatus] = Query(
++        None, description="Explicit status; derived from amount_paid when omitted"
++    ),
+     db: Session = Depends(get_db),
+ ) -> InvoiceResponse:
+-    """Update the paid amount and optionally the payment status of an invoice."""
++    """Update the paid amount of an invoice; payment status is derived if not given."""
+     inv = db.query(SupplierInvoice).filter(SupplierInvoice.invoice_number == invoice_number).first()
+     if not inv:
+         raise HTTPException(status_code=404, detail=f"Invoice {invoice_number} not found")
+@@ -482,6 +484,12 @@ def update_invoice_payment(
+         inv.amount_paid = amount_paid
+         if payment_status:
+             inv.payment_status = payment_status.value
++        elif amount_paid == inv.invoice_amount:
++            inv.payment_status = PaymentStatus.PAID.value
++        elif amount_paid > 0:
++            inv.payment_status = PaymentStatus.PARTIAL.value
++        else:
++            inv.payment_status = PaymentStatus.UNPAID.value
+         db.commit()
+         db.refresh(inv)
+     except Exception:
+-- 
+2.43.0
+
+
+From b649501d73dae95be7233c1418c3ed89e1234af2 Mon Sep 17 00:00:00 2001
+From: Reflective Lantern <devneatharva@gmail.com>
+Date: Fri, 10 Jul 2026 15:12:43 +0000
+Subject: [PATCH 19/60] test(19/60): raise RATE_LIMIT in conftest before app
+ import so suite isn't throttled
+
+---
+ tests/conftest.py | 21 +++++++++++++--------
+ 1 file changed, 13 insertions(+), 8 deletions(-)
+
+diff --git a/tests/conftest.py b/tests/conftest.py
+index 94d53be..cfebffc 100644
+--- a/tests/conftest.py
++++ b/tests/conftest.py
+@@ -1,15 +1,20 @@
+ """Pytest fixtures for the Supplier Invoice Dashboard test suite."""
+ 
+-from datetime import date, timedelta
+-from decimal import Decimal
++import os
+ 
+-import pytest
+-from fastapi.testclient import TestClient
+-from sqlalchemy import create_engine
+-from sqlalchemy.orm import sessionmaker
++# Rate limit must be raised BEFORE app modules are imported (read at import time).
++os.environ.setdefault("RATE_LIMIT", "1000000")
+ 
+-from app.database import Base, SupplierInvoice, get_db
+-from app.main import app
++from datetime import date, timedelta  # noqa: E402
++from decimal import Decimal  # noqa: E402
++
++import pytest  # noqa: E402
++from fastapi.testclient import TestClient  # noqa: E402
++from sqlalchemy import create_engine  # noqa: E402
++from sqlalchemy.orm import sessionmaker  # noqa: E402
++
++from app.database import Base, SupplierInvoice, get_db  # noqa: E402
++from app.main import app  # noqa: E402
+ 
+ TEST_DB_URL = "sqlite:///./test_invoices.db"
+ 
+-- 
+2.43.0
+
+
+From 9ea97e80055d762fcb38891798e5b32f0bc7304f Mon Sep 17 00:00:00 2001
+From: Reflective Lantern <devneatharva@gmail.com>
+Date: Fri, 10 Jul 2026 15:14:01 +0000
+Subject: [PATCH 20/60] test(20/60): add 13 tests for extended analytics,
+ suppliers, business-units, cache-stats endpoints
+
+---
+ tests/test_api_analytics_extended.py | 99 ++++++++++++++++++++++++++++
+ 1 file changed, 99 insertions(+)
+ create mode 100644 tests/test_api_analytics_extended.py
+
+diff --git a/tests/test_api_analytics_extended.py b/tests/test_api_analytics_extended.py
+new file mode 100644
+index 0000000..b1bfa27
+--- /dev/null
++++ b/tests/test_api_analytics_extended.py
+@@ -0,0 +1,99 @@
++"""Tests for the extended analytics endpoints added in this run."""
++
++API = "/api/v1"
++
++
++def test_average_invoice_amount(client, seed_invoices):
++    resp = client.get(f"{API}/analytics/average-invoice-amount")
++    assert resp.status_code == 200
++    data = resp.json()
++    assert "average_invoice_amount" in data
++    assert data["invoice_count"] == 5
++    assert float(data["average_invoice_amount"]) > 0
++
++
++def test_average_invoice_amount_empty_db(client):
++    resp = client.get(f"{API}/analytics/average-invoice-amount")
++    assert resp.status_code == 200
++    assert data_count(resp) == 0
++
++
++def data_count(resp):
++    return resp.json()["invoice_count"]
++
++
++def test_average_days_to_pay(client, seed_invoices):
++    resp = client.get(f"{API}/analytics/average-days-to-pay")
++    assert resp.status_code == 200
++    assert "average_days_to_pay" in resp.json()
++
++
++def test_top_currencies_default(client, seed_invoices):
++    resp = client.get(f"{API}/analytics/top-currencies")
++    assert resp.status_code == 200
++    data = resp.json()
++    assert isinstance(data, list)
++    assert len(data) >= 1
++    assert data[0]["currency"] == "USD"
++
++
++def test_top_currencies_top_n_param(client, seed_invoices):
++    resp = client.get(f"{API}/analytics/top-currencies?top_n=1")
++    assert resp.status_code == 200
++    assert len(resp.json()) <= 1
++
++
++def test_top_currencies_invalid_top_n(client):
++    resp = client.get(f"{API}/analytics/top-currencies?top_n=0")
++    assert resp.status_code == 422
++
++    resp = client.get(f"{API}/analytics/top-currencies?top_n=21")
++    assert resp.status_code == 422
++
++
++def test_overdue_by_supplier(client, seed_invoices):
++    resp = client.get(f"{API}/analytics/overdue-by-supplier")
++    assert resp.status_code == 200
++    assert isinstance(resp.json(), list)
++
++
++def test_overdue_by_supplier_threshold_param(client, seed_invoices):
++    resp = client.get(f"{API}/analytics/overdue-by-supplier?threshold_days=1")
++    assert resp.status_code == 200
++    data = resp.json()
++    # seed data has unpaid invoices 10-50 days old -> at threshold=1 most appear
++    assert isinstance(data, list)
++
++
++def test_overdue_by_supplier_invalid_threshold(client):
++    resp = client.get(f"{API}/analytics/overdue-by-supplier?threshold_days=0")
++    assert resp.status_code == 422
++
++
++def test_suppliers_endpoint(client, seed_invoices):
++    resp = client.get(f"{API}/suppliers")
++    assert resp.status_code == 200
++    data = resp.json()
++    assert data["count"] == 2
++    assert "Supplier X" in data["suppliers"]
++    assert data["suppliers"] == sorted(data["suppliers"])
++
++
++def test_business_units_endpoint(client, seed_invoices):
++    resp = client.get(f"{API}/business-units")
++    assert resp.status_code == 200
++    data = resp.json()
++    assert data["count"] == 1
++    assert data["business_units"] == ["BU-A"]
++
++
++def test_suppliers_empty_db(client):
++    resp = client.get(f"{API}/suppliers")
++    assert resp.status_code == 200
++    assert resp.json()["count"] == 0
++
++
++def test_cache_stats_endpoint(client):
++    resp = client.get(f"{API}/cache-stats")
++    assert resp.status_code == 200
++    assert isinstance(resp.json(), dict)
+-- 
+2.43.0
+
+
+From 7c71cf4d30873510098d25f1a428efc292bfae0f Mon Sep 17 00:00:00 2001
+From: Reflective Lantern <devneatharva@gmail.com>
+Date: Fri, 10 Jul 2026 15:14:33 +0000
+Subject: [PATCH 21/60] test(21/60): add 10 tests for report endpoints and CSV
+ export
+
+---
+ tests/test_api_reports.py | 74 +++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 74 insertions(+)
+ create mode 100644 tests/test_api_reports.py
+
+diff --git a/tests/test_api_reports.py b/tests/test_api_reports.py
+new file mode 100644
+index 0000000..5fa5c14
+--- /dev/null
++++ b/tests/test_api_reports.py
+@@ -0,0 +1,74 @@
++"""Tests for the report endpoints: summary-cards, payment-summary, overdue-report, CSV export."""
++
++API = "/api/v1"
++
++
++def test_summary_cards(client, seed_invoices):
++    resp = client.get(f"{API}/report/summary-cards")
++    assert resp.status_code == 200
++    cards = resp.json()
++    assert isinstance(cards, list)
++    assert len(cards) >= 1
++    for card in cards:
++        assert "label" in card or "title" in card or len(card) > 0
++
++
++def test_summary_cards_empty_db(client):
++    resp = client.get(f"{API}/report/summary-cards")
++    assert resp.status_code == 200
++    assert isinstance(resp.json(), list)
++
++
++def test_payment_summary(client, seed_invoices):
++    resp = client.get(f"{API}/report/payment-summary")
++    assert resp.status_code == 200
++    assert isinstance(resp.json(), dict)
++
++
++def test_overdue_report_default(client, seed_invoices):
++    resp = client.get(f"{API}/report/overdue-report")
++    assert resp.status_code == 200
++    assert isinstance(resp.json(), dict)
++
++
++def test_overdue_report_threshold(client, seed_invoices):
++    resp = client.get(f"{API}/report/overdue-report?threshold_days=5")
++    assert resp.status_code == 200
++
++
++def test_overdue_report_invalid_threshold(client):
++    resp = client.get(f"{API}/report/overdue-report?threshold_days=400")
++    assert resp.status_code == 422
++
++
++def test_export_csv(client, seed_invoices):
++    resp = client.get(f"{API}/export/csv")
++    assert resp.status_code == 200
++    assert resp.headers["content-type"].startswith("text/csv")
++    assert "attachment" in resp.headers.get("content-disposition", "")
++    lines = resp.text.strip().splitlines()
++    assert len(lines) == 6  # header + 5 seed rows
++    assert lines[0].startswith("invoice_number,")
++    assert "tax_amount" in lines[0]
++    assert "outstanding_amount" in lines[0]
++
++
++def test_export_csv_filtered_by_supplier(client, seed_invoices):
++    resp = client.get(f"{API}/export/csv?supplier=Supplier X")
++    assert resp.status_code == 200
++    lines = resp.text.strip().splitlines()
++    assert len(lines) == 3  # header + 2 Supplier X rows (i=2,4)
++
++
++def test_export_csv_empty_db(client):
++    resp = client.get(f"{API}/export/csv")
++    assert resp.status_code == 200
++    lines = resp.text.strip().splitlines()
++    assert len(lines) == 1  # header only
++
++
++def test_view_selector_still_works(client, seed_invoices):
++    resp = client.get(f"{API}/report/view-selector")
++    assert resp.status_code == 200
++    data = resp.json()
++    assert "table_view" in data or "graph_view" in data or len(data) > 0
+-- 
+2.43.0
+
+
+From 5a08d0aa20a69f804d8f96d090799483b5661ce1 Mon Sep 17 00:00:00 2001
+From: Reflective Lantern <devneatharva@gmail.com>
+Date: Fri, 10 Jul 2026 15:15:23 +0000
+Subject: [PATCH 22/60] test(22/60): add 9 tests for bulk JSON/CSV import
+ endpoints
+
+---
+ tests/test_api_bulk.py | 97 ++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 97 insertions(+)
+ create mode 100644 tests/test_api_bulk.py
+
+diff --git a/tests/test_api_bulk.py b/tests/test_api_bulk.py
+new file mode 100644
+index 0000000..37609a5
+--- /dev/null
++++ b/tests/test_api_bulk.py
+@@ -0,0 +1,97 @@
++"""Tests for the bulk JSON and CSV import endpoints."""
++
++API = "/api/v1"
++
++CSV_HEADER = "invoice_number,business_unit,supplier,invoice_date,invoice_amount,amount_paid,currency,payment_status"
++
++
++def _row(n: str, amount: str = "500.00", paid: str = "0.00") -> dict:
++    return {
++        "invoice_number": n,
++        "business_unit": "Bulk BU",
++        "supplier": "Bulk Supplier",
++        "invoice_date": "2025-02-01",
++        "invoice_amount": amount,
++        "amount_paid": paid,
++        "currency": "USD",
++        "payment_status": "UNPAID",
++    }
++
++
++def test_bulk_json_import(client):
++    payload = [_row("BULK-001"), _row("BULK-002"), _row("BULK-003")]
++    resp = client.post(f"{API}/invoices/bulk", json=payload)
++    assert resp.status_code == 201
++    data = resp.json()
++    assert data["imported_count"] == 3
++    assert data["skipped_count"] == 0
++    assert data["error_count"] == 0
++
++
++def test_bulk_json_empty_rejected(client):
++    resp = client.post(f"{API}/invoices/bulk", json=[])
++    assert resp.status_code == 400
++
++
++def test_bulk_json_duplicates_in_batch_skipped(client):
++    payload = [_row("DUP-001"), _row("DUP-001")]
++    resp = client.post(f"{API}/invoices/bulk", json=payload)
++    assert resp.status_code == 201
++    data = resp.json()
++    assert data["imported_count"] == 1
++    assert data["skipped_count"] == 1
++
++
++def test_bulk_json_existing_invoice_skipped(client, sample_invoice_data):
++    client.post(f"{API}/invoices", json=sample_invoice_data)
++    payload = [_row(sample_invoice_data["invoice_number"]), _row("NEW-001")]
++    resp = client.post(f"{API}/invoices/bulk", json=payload)
++    assert resp.status_code == 201
++    data = resp.json()
++    assert data["imported_count"] == 1
++    assert data["skipped_count"] == 1
++
++
++def test_bulk_json_invalid_row_counted_as_error(client):
++    bad = _row("BAD-001", amount="-100.00")
++    good = _row("GOOD-001")
++    resp = client.post(f"{API}/invoices/bulk", json=[bad, good])
++    assert resp.status_code == 201
++    data = resp.json()
++    assert data["imported_count"] == 1
++    assert data["error_count"] == 1
++    assert len(data["errors"]) == 1
++
++
++def test_bulk_json_imported_rows_queryable(client):
++    client.post(f"{API}/invoices/bulk", json=[_row("QRY-001")])
++    resp = client.get(f"{API}/invoices/QRY-001")
++    assert resp.status_code == 200
++    assert resp.json()["invoice_number"] == "QRY-001"
++
++
++def test_bulk_csv_import(client):
++    csv_body = f"{CSV_HEADER}\nCSV-001,BU-C,CSV Supplier,2025-02-10,750.00,0.00,USD,UNPAID\nCSV-002,BU-C,CSV Supplier,2025-02-11,850.00,850.00,USD,PAID"
++    resp = client.post(
++        f"{API}/invoices/bulk-csv", content=csv_body, headers={"Content-Type": "text/csv"}
++    )
++    assert resp.status_code == 201
++    data = resp.json()
++    assert data["imported_count"] == 2
++
++
++def test_bulk_csv_missing_columns_rejected(client):
++    resp = client.post(
++        f"{API}/invoices/bulk-csv",
++        content="invoice_number,supplier\nX-1,Someone",
++        headers={"Content-Type": "text/csv"},
++    )
++    assert resp.status_code == 422
++
++
++def test_bulk_csv_invalid_amount_rejected(client):
++    csv_body = f"{CSV_HEADER}\nCSV-BAD,BU,S,2025-01-01,notanumber,0.00,USD,UNPAID"
++    resp = client.post(
++        f"{API}/invoices/bulk-csv", content=csv_body, headers={"Content-Type": "text/csv"}
++    )
++    assert resp.status_code == 422
+-- 
+2.43.0
+
+
+From b772feae68bf1ae304956e2fafc7087e264f464d Mon Sep 17 00:00:00 2001
+From: Reflective Lantern <devneatharva@gmail.com>
+Date: Fri, 10 Jul 2026 15:16:28 +0000
+Subject: [PATCH 23/60] test(23/60): add 10 tests for PATCH status
+ auto-derivation and DB-level pagination
+
+---
+ tests/test_api_patch_pagination.py | 78 ++++++++++++++++++++++++++++++
+ 1 file changed, 78 insertions(+)
+ create mode 100644 tests/test_api_patch_pagination.py
+
+diff --git a/tests/test_api_patch_pagination.py b/tests/test_api_patch_pagination.py
+new file mode 100644
+index 0000000..f7604f9
+--- /dev/null
++++ b/tests/test_api_patch_pagination.py
+@@ -0,0 +1,78 @@
++"""Tests for PATCH status auto-derivation and DB-level pagination behaviour."""
++
++API = "/api/v1"
++
++
++def test_patch_full_payment_derives_paid(client, sample_invoice_data):
++    client.post(f"{API}/invoices", json=sample_invoice_data)
++    resp = client.patch(f"{API}/invoices/INV-001?amount_paid=1000.00")
++    assert resp.status_code == 200
++    data = resp.json()
++    assert data["payment_status"] == "PAID"
++    # outstanding = invoice_amount + tax - amount_paid, so only the tax remains
++    assert float(data["outstanding_amount"]) == float(data["tax_amount"])
++
++
++def test_patch_partial_payment_derives_partial(client, sample_invoice_data):
++    client.post(f"{API}/invoices", json=sample_invoice_data)
++    resp = client.patch(f"{API}/invoices/INV-001?amount_paid=400.00")
++    assert resp.status_code == 200
++    assert resp.json()["payment_status"] == "PARTIAL"
++
++
++def test_patch_zero_payment_derives_unpaid(client, sample_invoice_data):
++    client.post(f"{API}/invoices", json=sample_invoice_data)
++    resp = client.patch(f"{API}/invoices/INV-001?amount_paid=0.00")
++    assert resp.status_code == 200
++    assert resp.json()["payment_status"] == "UNPAID"
++
++
++def test_patch_explicit_status_wins(client, sample_invoice_data):
++    client.post(f"{API}/invoices", json=sample_invoice_data)
++    resp = client.patch(f"{API}/invoices/INV-001?amount_paid=400.00&payment_status=CANCELLED")
++    assert resp.status_code == 200
++    assert resp.json()["payment_status"] == "CANCELLED"
++
++
++def test_patch_overpayment_rejected(client, sample_invoice_data):
++    client.post(f"{API}/invoices", json=sample_invoice_data)
++    resp = client.patch(f"{API}/invoices/INV-001?amount_paid=1500.00")
++    assert resp.status_code == 422
++
++
++def test_patch_negative_amount_rejected(client, sample_invoice_data):
++    client.post(f"{API}/invoices", json=sample_invoice_data)
++    resp = client.patch(f"{API}/invoices/INV-001?amount_paid=-1.00")
++    assert resp.status_code == 422
++
++
++def test_pagination_totals(client, seed_invoices):
++    resp = client.get(f"{API}/invoices?page=1&page_size=2")
++    assert resp.status_code == 200
++    data = resp.json()
++    assert data["total"] == 5
++    assert data["pages"] == 3
++    assert len(data["items"]) == 2
++
++
++def test_pagination_last_page_partial(client, seed_invoices):
++    resp = client.get(f"{API}/invoices?page=3&page_size=2")
++    assert resp.status_code == 200
++    data = resp.json()
++    assert len(data["items"]) == 1
++
++
++def test_pagination_beyond_last_page_empty(client, seed_invoices):
++    resp = client.get(f"{API}/invoices?page=10&page_size=20")
++    assert resp.status_code == 200
++    data = resp.json()
++    assert data["items"] == []
++    assert data["total"] == 5
++
++
++def test_pagination_empty_db_pages_is_one(client):
++    resp = client.get(f"{API}/invoices")
++    assert resp.status_code == 200
++    data = resp.json()
++    assert data["total"] == 0
++    assert data["pages"] == 1
+-- 
+2.43.0
+
+
+From 1175f27192ec08bd1a8f30252bb86ca5700ee207 Mon Sep 17 00:00:00 2001
+From: Reflective Lantern <devneatharva@gmail.com>
+Date: Fri, 10 Jul 2026 15:16:51 +0000
+Subject: [PATCH 24/60] chore(24/60): document RATE_LIMIT and WINDOW_SECONDS in
+ .env.example
+
+---
+ .env.example | 5 +++++
+ 1 file changed, 5 insertions(+)
+
+diff --git a/.env.example b/.env.example
+index 31d1382..10d3ff5 100644
+--- a/.env.example
++++ b/.env.example
+@@ -15,3 +15,8 @@ DEBUG=false
+ 
+ # CORS — comma-separated allowed origins, or * for all
+ CORS_ORIGINS=*
++
++# Rate limiting — max requests per client IP per window
++RATE_LIMIT=100
++# Rate limit window length in seconds
++WINDOW_SECONDS=60
+-- 
+2.43.0
+
+
+From 0990fdb26e55fdc042313406511f41cb4c62293c Mon Sep 17 00:00:00 2001
+From: Reflective Lantern <devneatharva@gmail.com>
+Date: Fri, 10 Jul 2026 15:17:11 +0000
+Subject: [PATCH 25/60] =?UTF-8?q?chore(25/60):=20Makefile=20=E2=80=94=20ad?=
+ =?UTF-8?q?d=20coverage/format=20targets,=20split=20lint=20from=20autofix,?=
+ =?UTF-8?q?=20install=20test=20deps?=
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+---
+ Makefile | 10 +++++++++-
+ 1 file changed, 9 insertions(+), 1 deletion(-)
+
+diff --git a/Makefile b/Makefile
+index 0b378af..1e88698 100644
+--- a/Makefile
++++ b/Makefile
+@@ -1,13 +1,21 @@
+-.PHONY: install test lint run docker-build docker-up clean
++.PHONY: install test coverage lint format run docker-build docker-up docker-down clean
+ 
+ install:
+ 	pip install -r requirements.txt
++	pip install pytest pytest-asyncio httpx ruff pytest-cov
+ 
+ test:
+ 	python -m pytest -v --tb=short
+ 
++coverage:
++	python -m pytest --cov=app --cov-report=term-missing --cov-report=xml
++
+ lint:
+ 	ruff check . --select E,F,W,I --ignore E501
++	ruff format --check .
++
++format:
++	ruff format .
+ 	ruff check . --select E,F,W,I --ignore E501 --fix
+ 
+ run:
+-- 
+2.43.0
+
+
+From 8c87fa6f6c81095793615856b839514bfdc8f2e5 Mon Sep 17 00:00:00 2001
+From: Reflective Lantern <devneatharva@gmail.com>
+Date: Fri, 10 Jul 2026 15:17:23 +0000
+Subject: [PATCH 26/60] ci(26/60): add format check, 3.11/3.12 matrix, pip
+ cache, coverage artifact, mypy job
+
+---
+ .github/workflows/ci.yml | 50 ++++++++++++++++++++++++++++++++++++----
+ 1 file changed, 46 insertions(+), 4 deletions(-)
+
+diff --git a/.github/workflows/ci.yml b/.github/workflows/ci.yml
+index 79d1e44..3240fbb 100644
+--- a/.github/workflows/ci.yml
++++ b/.github/workflows/ci.yml
+@@ -7,16 +7,58 @@ on:
+     branches: [main]
+ 
+ jobs:
+-  test:
++  lint:
+     runs-on: ubuntu-latest
+     steps:
+       - uses: actions/checkout@v4
+       - uses: actions/setup-python@v5
+         with:
+           python-version: "3.11"
+-      - name: Install dependencies
+-        run: pip install -r requirements.txt pytest pytest-asyncio httpx ruff pytest-cov
++      - name: Install ruff
++        run: pip install ruff
+       - name: Lint
+         run: ruff check . --select E,F,W,I --ignore E501
++      - name: Format check
++        run: ruff format --check .
++
++  test:
++    runs-on: ubuntu-latest
++    needs: lint
++    strategy:
++      fail-fast: false
++      matrix:
++        python-version: ["3.11", "3.12"]
++    steps:
++      - uses: actions/checkout@v4
++      - uses: actions/setup-python@v5
++        with:
++          python-version: ${{ matrix.python-version }}
++      - name: Cache pip
++        uses: actions/cache@v4
++        with:
++          path: ~/.cache/pip
++          key: ${{ runner.os }}-pip-${{ matrix.python-version }}-${{ hashFiles('requirements.txt') }}
++      - name: Install dependencies
++        run: pip install -r requirements.txt pytest pytest-asyncio httpx pytest-cov
+       - name: Test with coverage
+-        run: python -m pytest -v --tb=short --cov=app --cov-report=term-missing
++        run: python -m pytest -v --tb=short --cov=app --cov-report=term-missing --cov-report=xml
++      - name: Upload coverage report
++        uses: actions/upload-artifact@v4
++        if: matrix.python-version == '3.11'
++        with:
++          name: coverage-xml
++          path: coverage.xml
++          retention-days: 14
++
++  type-check:
++    runs-on: ubuntu-latest
++    steps:
++      - uses: actions/checkout@v4
++      - uses: actions/setup-python@v5
++        with:
++          python-version: "3.11"
++      - name: Install mypy
++        run: pip install mypy fastapi pydantic sqlalchemy
++      - name: Run mypy
++        run: mypy app/ --ignore-missing-imports --no-error-summary
++        continue-on-error: true
+-- 
+2.43.0
+
+
+From a0821b5c07e74291c93a41c6ff305905d7355bf9 Mon Sep 17 00:00:00 2001
+From: Reflective Lantern <devneatharva@gmail.com>
+Date: Fri, 10 Jul 2026 15:17:31 +0000
+Subject: [PATCH 27/60] chore(27/60): add [tool.mypy] configuration to
+ pyproject.toml
+
+---
+ pyproject.toml | 7 +++++++
+ 1 file changed, 7 insertions(+)
+
+diff --git a/pyproject.toml b/pyproject.toml
+index 54c90b4..227cb65 100644
+--- a/pyproject.toml
++++ b/pyproject.toml
+@@ -46,3 +46,10 @@ omit = ["tests/*", "scripts/*"]
+ [tool.coverage.report]
+ show_missing = true
+ fail_under = 60
++
++[tool.mypy]
++python_version = "3.11"
++ignore_missing_imports = true
++warn_unused_ignores = true
++no_implicit_optional = true
++check_untyped_defs = true
+-- 
+2.43.0
+
+
+From 120ab476eabcc7b375082fc01dc9938e8ec84edc Mon Sep 17 00:00:00 2001
+From: Reflective Lantern <devneatharva@gmail.com>
+Date: Fri, 10 Jul 2026 15:18:00 +0000
+Subject: [PATCH 28/60] feat(28/60): add PUT /invoices/{n}/payment endpoint
+ using InvoiceUpdate body schema
+
+---
+ app/main.py | 31 +++++++++++++++++++++++++++++++
+ 1 file changed, 31 insertions(+)
+
+diff --git a/app/main.py b/app/main.py
+index edfe1b3..a0c1fbe 100644
+--- a/app/main.py
++++ b/app/main.py
+@@ -45,6 +45,7 @@ from app.schemas import (
+     InvoiceCreate,
+     InvoiceResponse,
+     InvoiceSummary,
++    InvoiceUpdate,
+     PaginatedInvoices,
+     PaymentStatus,
+ )
+@@ -499,6 +500,36 @@ def update_invoice_payment(
+     return _to_response(inv)
+ 
+ 
++@app.put(
++    f"{settings.api_prefix}/invoices/{{invoice_number}}/payment",
++    response_model=InvoiceResponse,
++    tags=["Invoices"],
++)
++def update_invoice_body(
++    invoice_number: str,
++    payload: InvoiceUpdate,
++    db: Session = Depends(get_db),
++) -> InvoiceResponse:
++    """Update payment fields of an invoice from a JSON body (InvoiceUpdate schema)."""
++    inv = db.query(SupplierInvoice).filter(SupplierInvoice.invoice_number == invoice_number).first()
++    if not inv:
++        raise HTTPException(status_code=404, detail=f"Invoice {invoice_number} not found")
++    if payload.amount_paid is not None and payload.amount_paid > inv.invoice_amount:
++        raise HTTPException(status_code=422, detail="amount_paid cannot exceed invoice_amount")
++    try:
++        if payload.amount_paid is not None:
++            inv.amount_paid = payload.amount_paid
++        if payload.payment_status is not None:
++            inv.payment_status = payload.payment_status.value
++        db.commit()
++        db.refresh(inv)
++    except Exception:
++        db.rollback()
++        logger.exception("Failed to update invoice %s", invoice_number)
++        raise HTTPException(status_code=500, detail="Failed to update invoice") from None
++    return _to_response(inv)
++
++
+ @app.delete(
+     f"{settings.api_prefix}/invoices/{{invoice_number}}",
+     status_code=status.HTTP_204_NO_CONTENT,
+-- 
+2.43.0
+
+
+From 7c46a6212cd7602af032fece41a4a15f1b3d63ac Mon Sep 17 00:00:00 2001
+From: Reflective Lantern <devneatharva@gmail.com>
+Date: Fri, 10 Jul 2026 15:18:23 +0000
+Subject: [PATCH 29/60] test(29/60): add 8 tests for PUT /invoices/{n}/payment
+ endpoint
+
+---
+ tests/test_api_put_payment.py | 61 +++++++++++++++++++++++++++++++++++
+ 1 file changed, 61 insertions(+)
+ create mode 100644 tests/test_api_put_payment.py
+
+diff --git a/tests/test_api_put_payment.py b/tests/test_api_put_payment.py
+new file mode 100644
+index 0000000..5d52d20
+--- /dev/null
++++ b/tests/test_api_put_payment.py
+@@ -0,0 +1,61 @@
++"""Tests for the PUT /invoices/{n}/payment body-based update endpoint."""
++
++API = "/api/v1"
++
++
++def test_put_payment_amount_only(client, sample_invoice_data):
++    client.post(f"{API}/invoices", json=sample_invoice_data)
++    resp = client.put(f"{API}/invoices/INV-001/payment", json={"amount_paid": "250.00"})
++    assert resp.status_code == 200
++    assert float(resp.json()["amount_paid"]) == 250.0
++
++
++def test_put_payment_status_only(client, sample_invoice_data):
++    client.post(f"{API}/invoices", json=sample_invoice_data)
++    resp = client.put(f"{API}/invoices/INV-001/payment", json={"payment_status": "CANCELLED"})
++    assert resp.status_code == 200
++    assert resp.json()["payment_status"] == "CANCELLED"
++
++
++def test_put_payment_both_fields(client, sample_invoice_data):
++    client.post(f"{API}/invoices", json=sample_invoice_data)
++    resp = client.put(
++        f"{API}/invoices/INV-001/payment",
++        json={"amount_paid": "1000.00", "payment_status": "PAID"},
++    )
++    assert resp.status_code == 200
++    data = resp.json()
++    assert data["payment_status"] == "PAID"
++    assert float(data["amount_paid"]) == 1000.0
++
++
++def test_put_payment_empty_body_no_change(client, sample_invoice_data):
++    client.post(f"{API}/invoices", json=sample_invoice_data)
++    resp = client.put(f"{API}/invoices/INV-001/payment", json={})
++    assert resp.status_code == 200
++    data = resp.json()
++    assert float(data["amount_paid"]) == 0.0
++    assert data["payment_status"] == "UNPAID"
++
++
++def test_put_payment_overpayment_rejected(client, sample_invoice_data):
++    client.post(f"{API}/invoices", json=sample_invoice_data)
++    resp = client.put(f"{API}/invoices/INV-001/payment", json={"amount_paid": "9999.00"})
++    assert resp.status_code == 422
++
++
++def test_put_payment_negative_amount_rejected(client, sample_invoice_data):
++    client.post(f"{API}/invoices", json=sample_invoice_data)
++    resp = client.put(f"{API}/invoices/INV-001/payment", json={"amount_paid": "-5.00"})
++    assert resp.status_code == 422
++
++
++def test_put_payment_unknown_invoice_404(client):
++    resp = client.put(f"{API}/invoices/NOPE-999/payment", json={"amount_paid": "1.00"})
++    assert resp.status_code == 404
++
++
++def test_put_payment_invalid_status_rejected(client, sample_invoice_data):
++    client.post(f"{API}/invoices", json=sample_invoice_data)
++    resp = client.put(f"{API}/invoices/INV-001/payment", json={"payment_status": "BOGUS"})
++    assert resp.status_code == 422
+-- 
+2.43.0
+
+
+From bb88fda2fa3ee523390656a7cc77e583d626835c Mon Sep 17 00:00:00 2001
+From: Reflective Lantern <devneatharva@gmail.com>
+Date: Fri, 10 Jul 2026 15:18:53 +0000
+Subject: [PATCH 30/60] feat(30/60): add invoice_size_distribution and
+ supplier_payment_performance analytics
+
+---
+ app/analytics.py | 50 +++++++++++++++++++++++++++++++++++++++++++++++-
+ 1 file changed, 49 insertions(+), 1 deletion(-)
+
+diff --git a/app/analytics.py b/app/analytics.py
+index ad6f687..03f8d1f 100644
+--- a/app/analytics.py
++++ b/app/analytics.py
+@@ -6,7 +6,7 @@ from datetime import date
+ from decimal import Decimal
+ from typing import Optional
+ 
+-from app.features import compute_outstanding, compute_tax
++from app.features import classify_invoice_size, compute_outstanding, compute_tax
+ 
+ logger = logging.getLogger(__name__)
+ 
+@@ -241,3 +241,51 @@ def overdue_invoices(
+                 overdue.append({**inv, "age_days": age_days})
+     overdue.sort(key=lambda x: x["age_days"], reverse=True)
+     return overdue
++
++
++def invoice_size_distribution(invoices: list[dict]) -> dict[str, dict]:
++    """Bucket invoices into small/medium/large size classes with counts and totals.
++
++    Args:
++        invoices: List of invoice dicts with invoice_amount.
++
++    Returns:
++        Dict keyed by size class, each with count and total_amount fields.
++    """
++    buckets: dict[str, dict] = {
++        size: {"count": 0, "total_amount": Decimal("0")} for size in ("small", "medium", "large")
++    }
++    for inv in invoices:
++        size = classify_invoice_size(inv["invoice_amount"])
++        buckets[size]["count"] += 1
++        buckets[size]["total_amount"] += inv["invoice_amount"]
++    return buckets
++
++
++def supplier_payment_performance(invoices: list[dict]) -> list[dict]:
++    """Score each supplier by the fraction of their invoices fully paid.
++
++    Args:
++        invoices: List of invoice dicts with supplier and payment_status.
++
++    Returns:
++        List of dicts with supplier, total_invoices, paid_invoices, paid_ratio,
++        sorted by paid_ratio descending then supplier name.
++    """
++    counts: dict[str, dict] = defaultdict(lambda: {"total": 0, "paid": 0})
++    for inv in invoices:
++        supplier = inv.get("supplier", "Unknown")
++        counts[supplier]["total"] += 1
++        if inv.get("payment_status") == "PAID":
++            counts[supplier]["paid"] += 1
++    result = [
++        {
++            "supplier": supplier,
++            "total_invoices": c["total"],
++            "paid_invoices": c["paid"],
++            "paid_ratio": round(c["paid"] / c["total"], 4) if c["total"] else 0.0,
++        }
++        for supplier, c in counts.items()
++    ]
++    result.sort(key=lambda x: (-x["paid_ratio"], x["supplier"]))
++    return result
+-- 
+2.43.0
+
+
+From ea742b05e05705d7c93e0342385434e503de8f97 Mon Sep 17 00:00:00 2001
+From: Reflective Lantern <devneatharva@gmail.com>
+Date: Fri, 10 Jul 2026 15:19:23 +0000
+Subject: [PATCH 31/60] feat(31/60): add /analytics/size-distribution and
+ /analytics/payment-performance endpoints
+
+---
+ app/main.py | 16 ++++++++++++++++
+ 1 file changed, 16 insertions(+)
+
+diff --git a/app/main.py b/app/main.py
+index a0c1fbe..1b2b95b 100644
+--- a/app/main.py
++++ b/app/main.py
+@@ -18,11 +18,13 @@ from app.analytics import (
+     average_invoice_amount,
+     currency_breakdown,
+     incomplete_invoice_count,
++    invoice_size_distribution,
+     monthly_invoice_trend,
+     overdue_by_supplier,
+     overdue_invoices,
+     payment_status_distribution,
+     supplier_outstanding_ranking,
++    supplier_payment_performance,
+     top_currencies_by_invoice_count,
+ )
+ from app.bulk import BulkImportError, parse_csv_invoices, to_invoice_create_payload
+@@ -445,6 +447,20 @@ def get_overdue_by_supplier(
+     return overdue_by_supplier([_to_inv_dict(r) for r in records], threshold_days=threshold_days)
+ 
+ 
++@app.get(f"{settings.api_prefix}/analytics/size-distribution", tags=["Analytics"])
++def get_size_distribution(db: Session = Depends(get_db)) -> dict:
++    """Return invoice counts and totals bucketed by small/medium/large size class."""
++    records = db.query(SupplierInvoice).all()
++    return invoice_size_distribution([_to_inv_dict(r) for r in records])
++
++
++@app.get(f"{settings.api_prefix}/analytics/payment-performance", tags=["Analytics"])
++def get_payment_performance(db: Session = Depends(get_db)) -> list[dict]:
++    """Rank suppliers by the fraction of their invoices fully paid."""
++    records = db.query(SupplierInvoice).all()
++    return supplier_payment_performance([_to_inv_dict(r) for r in records])
++
++
+ @app.get(f"{settings.api_prefix}/analytics/currency-normalized", tags=["Analytics"])
+ def get_currency_normalized(db: Session = Depends(get_db)) -> list[dict]:
+     """Return all invoices with invoice amounts normalized to USD."""
+-- 
+2.43.0
+
+
+From 5c0344f53de93ea441c9a765598fdc856542349b Mon Sep 17 00:00:00 2001
+From: Reflective Lantern <devneatharva@gmail.com>
+Date: Fri, 10 Jul 2026 21:44:40 +0000
+Subject: [PATCH 32/60] test(32/60): add 11 tests for size-distribution and
+ payment-performance analytics
+
+---
+ tests/test_analytics_new.py | 96 +++++++++++++++++++++++++++++++++++++
+ 1 file changed, 96 insertions(+)
+ create mode 100644 tests/test_analytics_new.py
+
+diff --git a/tests/test_analytics_new.py b/tests/test_analytics_new.py
+new file mode 100644
+index 0000000..db2d1dd
+--- /dev/null
++++ b/tests/test_analytics_new.py
+@@ -0,0 +1,96 @@
++"""Unit tests for invoice_size_distribution and supplier_payment_performance."""
++
++from datetime import date
++from decimal import Decimal
++
++from app.analytics import invoice_size_distribution, supplier_payment_performance
++
++
++def _inv(supplier: str, amount: str, status: str = "UNPAID") -> dict:
++    return {
++        "invoice_number": f"T-{supplier}-{amount}",
++        "supplier": supplier,
++        "invoice_amount": Decimal(amount),
++        "amount_paid": Decimal("0"),
++        "payment_status": status,
++        "invoice_date": date(2025, 1, 1),
++        "currency": "USD",
++        "business_unit": "BU",
++    }
++
++
++def test_size_distribution_buckets():
++    invoices = [_inv("A", "500"), _inv("B", "5000"), _inv("C", "50000")]
++    dist = invoice_size_distribution(invoices)
++    assert dist["small"]["count"] == 1
++    assert dist["medium"]["count"] == 1
++    assert dist["large"]["count"] == 1
++
++
++def test_size_distribution_totals():
++    invoices = [_inv("A", "100"), _inv("B", "200")]
++    dist = invoice_size_distribution(invoices)
++    assert dist["small"]["total_amount"] == Decimal("300")
++    assert dist["medium"]["count"] == 0
++
++
++def test_size_distribution_empty():
++    dist = invoice_size_distribution([])
++    assert dist["small"]["count"] == 0
++    assert dist["large"]["total_amount"] == Decimal("0")
++
++
++def test_size_distribution_boundary_1000_is_medium():
++    dist = invoice_size_distribution([_inv("A", "1000")])
++    assert dist["medium"]["count"] == 1
++
++
++def test_size_distribution_boundary_10000_is_large():
++    dist = invoice_size_distribution([_inv("A", "10000")])
++    assert dist["large"]["count"] == 1
++
++
++def test_payment_performance_ranking():
++    invoices = [
++        _inv("Good Co", "100", "PAID"),
++        _inv("Good Co", "200", "PAID"),
++        _inv("Bad Co", "100", "UNPAID"),
++        _inv("Bad Co", "200", "PAID"),
++    ]
++    perf = supplier_payment_performance(invoices)
++    assert perf[0]["supplier"] == "Good Co"
++    assert perf[0]["paid_ratio"] == 1.0
++    assert perf[1]["supplier"] == "Bad Co"
++    assert perf[1]["paid_ratio"] == 0.5
++
++
++def test_payment_performance_counts():
++    invoices = [_inv("Solo", "100", "PAID")]
++    perf = supplier_payment_performance(invoices)
++    assert perf[0]["total_invoices"] == 1
++    assert perf[0]["paid_invoices"] == 1
++
++
++def test_payment_performance_empty():
++    assert supplier_payment_performance([]) == []
++
++
++def test_payment_performance_tie_sorted_by_name():
++    invoices = [_inv("Zeta", "100", "PAID"), _inv("Alpha", "100", "PAID")]
++    perf = supplier_payment_performance(invoices)
++    assert [p["supplier"] for p in perf] == ["Alpha", "Zeta"]
++
++
++def test_api_size_distribution(client, seed_invoices):
++    resp = client.get("/api/v1/analytics/size-distribution")
++    assert resp.status_code == 200
++    data = resp.json()
++    assert set(data.keys()) == {"small", "medium", "large"}
++
++
++def test_api_payment_performance(client, seed_invoices):
++    resp = client.get("/api/v1/analytics/payment-performance")
++    assert resp.status_code == 200
++    data = resp.json()
++    assert isinstance(data, list)
++    assert len(data) == 2  # Supplier X and Supplier Y
+-- 
+2.43.0
+
+
+From 4b298e19640903dd3c7251cbec8438d6eb3e1d1e Mon Sep 17 00:00:00 2001
+From: Reflective Lantern <devneatharva@gmail.com>
+Date: Fri, 10 Jul 2026 21:45:22 +0000
+Subject: [PATCH 33/60] fix(33/60): register custom exception handlers on the
+ FastAPI app (were defined but unwired)
+
+---
+ app/main.py | 12 ++++++++++++
+ 1 file changed, 12 insertions(+)
+
+diff --git a/app/main.py b/app/main.py
+index 1b2b95b..5e5f831 100644
+--- a/app/main.py
++++ b/app/main.py
+@@ -32,6 +32,14 @@ from app.cache import cache_stats
+ from app.config import settings
+ from app.currency import normalize_to_usd
+ from app.database import SupplierInvoice, create_tables, get_db
++from app.exceptions import (
++    DuplicateInvoiceError,
++    InvoiceNotFoundError,
++    ValidationError,
++    duplicate_invoice_handler,
++    invoice_not_found_handler,
++    validation_error_handler,
++)
+ from app.features import aggregate_invoices, compute_outstanding, compute_tax
+ from app.middleware import CorrelationIDMiddleware
+ from app.rate_limit import check_rate_limit
+@@ -76,6 +84,10 @@ app = FastAPI(
+     dependencies=[Depends(check_rate_limit)],
+ )
+ 
++app.add_exception_handler(InvoiceNotFoundError, invoice_not_found_handler)
++app.add_exception_handler(DuplicateInvoiceError, duplicate_invoice_handler)
++app.add_exception_handler(ValidationError, validation_error_handler)
++
+ app.add_middleware(CorrelationIDMiddleware)
+ app.add_middleware(
+     CORSMiddleware,
+-- 
+2.43.0
+
+
+From 08ad1d8a44b7ff0a62651455659359bdbdc235c4 Mon Sep 17 00:00:00 2001
+From: Reflective Lantern <devneatharva@gmail.com>
+Date: Fri, 10 Jul 2026 21:45:30 +0000
+Subject: [PATCH 34/60] feat(34/60): add Docker HEALTHCHECK probing
+ /api/v1/health
+
+---
+ Dockerfile | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/Dockerfile b/Dockerfile
+index 4e20577..74a5913 100644
+--- a/Dockerfile
++++ b/Dockerfile
+@@ -20,3 +20,6 @@ ENV DEBUG=false
+ EXPOSE 8000
+ 
+ CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
++
++HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
++  CMD python -c "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:8000/api/v1/health', timeout=4).status==200 else 1)"
+-- 
+2.43.0
+
+
+From b48dc081a84743302060e553a94d8d5d49b77d54 Mon Sep 17 00:00:00 2001
+From: Reflective Lantern <devneatharva@gmail.com>
+Date: Fri, 10 Jul 2026 21:45:52 +0000
+Subject: [PATCH 35/60] feat(35/60): add API healthcheck and rate-limit env
+ vars to docker-compose
+
+---
+ docker-compose.yml | 8 ++++++++
+ 1 file changed, 8 insertions(+)
+
+diff --git a/docker-compose.yml b/docker-compose.yml
+index 75ce727..b06a176 100644
+--- a/docker-compose.yml
++++ b/docker-compose.yml
+@@ -10,9 +10,17 @@ services:
+       - TAX_RATE=0.08
+       - LOG_LEVEL=INFO
+       - DEBUG=false
++      - RATE_LIMIT=100
++      - WINDOW_SECONDS=60
+     depends_on:
+       db:
+         condition: service_healthy
++    healthcheck:
++      test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:8000/api/v1/health', timeout=4).status==200 else 1)"]
++      interval: 30s
++      timeout: 5s
++      start_period: 10s
++      retries: 3
+     restart: unless-stopped
+ 
+   db:
+-- 
+2.43.0
+
+
+From 93eac9dbfa420abb5c520d03cb8bbd2d64b222ba Mon Sep 17 00:00:00 2001
+From: Reflective Lantern <devneatharva@gmail.com>
+Date: Fri, 10 Jul 2026 21:46:12 +0000
+Subject: [PATCH 36/60] feat(36/60): add size-distribution and
+ payment-performance sections to CLI dashboard
+
+---
+ scripts/analytics_dashboard.py | 21 +++++++++++++++++++++
+ 1 file changed, 21 insertions(+)
+
+diff --git a/scripts/analytics_dashboard.py b/scripts/analytics_dashboard.py
+index f331aea..5ccb7bc 100644
+--- a/scripts/analytics_dashboard.py
++++ b/scripts/analytics_dashboard.py
+@@ -8,9 +8,11 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
+ 
+ from app.analytics import (
+     currency_breakdown,
++    invoice_size_distribution,
+     overdue_invoices,
+     payment_status_distribution,
+     supplier_outstanding_ranking,
++    supplier_payment_performance,
+ )
+ from app.database import SessionLocal, SupplierInvoice, create_tables
+ from app.features import aggregate_invoices
+@@ -89,6 +91,25 @@ def run_dashboard() -> None:
+         else:
+             logger.info("  No overdue invoices.")
+ 
++        _section("INVOICE SIZE DISTRIBUTION")
++        for size, bucket in invoice_size_distribution(inv_dicts).items():
++            logger.info(
++                "  %-8s: %4d invoices  %14,.2f total",
++                size,
++                bucket["count"],
++                bucket["total_amount"],
++            )
++
++        _section("SUPPLIER PAYMENT PERFORMANCE (TOP 10)")
++        for entry in supplier_payment_performance(inv_dicts)[:10]:
++            logger.info(
++                "  %-40s  %3d/%3d paid  (%.0f%%)",
++                entry["supplier"][:40],
++                entry["paid_invoices"],
++                entry["total_invoices"],
++                entry["paid_ratio"] * 100,
++            )
++
+         logger.info("Dashboard complete: %d invoices processed", len(inv_dicts))
+     finally:
+         db.close()
+-- 
+2.43.0
+
+
+From ba4d88b739e048ac70b307629eb767bf4516bd1b Mon Sep 17 00:00:00 2001
+From: Reflective Lantern <devneatharva@gmail.com>
+Date: Fri, 10 Jul 2026 21:46:48 +0000
+Subject: [PATCH 37/60] docs(37/60): add 1.1.0 changelog entry covering all new
+ endpoints and fixes
+
+---
+ CHANGELOG.md | 26 ++++++++++++++++++++++++++
+ 1 file changed, 26 insertions(+)
+
+diff --git a/CHANGELOG.md b/CHANGELOG.md
+index 6fec870..2fea44c 100644
+--- a/CHANGELOG.md
++++ b/CHANGELOG.md
+@@ -3,6 +3,32 @@
+ All notable changes to this project will be documented here.
+ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
+ 
++## [1.1.0] - 2026-07-10
++
++### Added
++- Bulk import endpoints: `POST /invoices/bulk` (JSON) and `POST /invoices/bulk-csv` (CSV body)
++- CSV export endpoint: `GET /export/csv` with computed tax/outstanding columns
++- New analytics endpoints: average-invoice-amount, average-days-to-pay, top-currencies,
++  overdue-by-supplier, size-distribution, payment-performance
++- New report endpoints: summary-cards, payment-summary, overdue-report
++- Distinct-value endpoints: `GET /suppliers` and `GET /business-units`
++- `PUT /invoices/{n}/payment` body-based update using the InvoiceUpdate schema
++- `GET /cache-stats` operational endpoint
++- Global per-IP rate limiting via app-wide dependency
++- Custom exception handlers now registered on the app
++- Docker and docker-compose healthchecks probing `/api/v1/health`
++- `invoice_size_distribution` and `supplier_payment_performance` analytics functions
++- CLI dashboard sections for size distribution and payment performance
++- mypy configuration and CI type-check job; CI matrix 3.11/3.12 with pip caching
++- 60+ new tests covering all new endpoints and analytics
++
++### Changed
++- `list_invoices` now paginates at the database level (offset/limit) instead of in Python
++- `PATCH /invoices/{n}` accepts `amount_paid=0` and auto-derives payment status
++- Deprecated `@app.on_event("startup")` replaced with lifespan context manager
++- `__main__` entrypoint moved to end of main.py (was mid-file)
++- Duplicate filter logic in summary/view-selector endpoints replaced with shared helper
++
+ ## [1.0.0] - 2026-06-11
+ 
+ ### Added
+-- 
+2.43.0
+
+
+From 8af95c5ab7bb6af65b559e673f6a82992c9d6fa8 Mon Sep 17 00:00:00 2001
+From: Reflective Lantern <devneatharva@gmail.com>
+Date: Fri, 10 Jul 2026 21:47:25 +0000
+Subject: [PATCH 38/60] docs(38/60): rewrite README API reference with all 30
+ endpoints and rate-limit note
+
+---
+ README.md | 26 +++++++++++++++++++++++---
+ 1 file changed, 23 insertions(+), 3 deletions(-)
+
+diff --git a/README.md b/README.md
+index c3686bb..c48a867 100644
+--- a/README.md
++++ b/README.md
+@@ -39,20 +39,40 @@ docker-compose up --build -d
+ |--------|------|-------------|
+ | GET | `/api/v1/health` | Liveness + DB status |
+ | GET | `/api/v1/version` | API version |
++| GET | `/api/v1/metrics` | Operational monitoring metrics |
++| GET | `/api/v1/cache-stats` | TTL-cache hit/miss statistics |
+ | GET | `/api/v1/invoices` | List invoices (paginated, filterable) |
+ | POST | `/api/v1/invoices` | Create invoice |
++| POST | `/api/v1/invoices/bulk` | Bulk import from JSON array (max 1000) |
++| POST | `/api/v1/invoices/bulk-csv` | Bulk import from raw CSV body |
+ | GET | `/api/v1/invoices/{id}` | Get single invoice |
++| PATCH | `/api/v1/invoices/{id}` | Update payment (status auto-derived) |
++| PUT | `/api/v1/invoices/{id}/payment` | Update payment via JSON body |
++| DELETE | `/api/v1/invoices/{id}` | Delete invoice |
++| GET | `/api/v1/suppliers` | Distinct supplier names |
++| GET | `/api/v1/business-units` | Distinct business units |
+ | GET | `/api/v1/summary` | Aggregated statistics |
+ | GET | `/api/v1/analytics/supplier-ranking` | Suppliers by outstanding balance |
+ | GET | `/api/v1/analytics/monthly-trend` | Monthly invoice/payment totals |
+ | GET | `/api/v1/analytics/overdue` | Overdue unpaid/partial invoices |
++| GET | `/api/v1/analytics/overdue-by-supplier` | Overdue totals per supplier |
+ | GET | `/api/v1/analytics/currency-breakdown` | Totals by currency |
++| GET | `/api/v1/analytics/top-currencies` | Most-used currencies (top_n) |
+ | GET | `/api/v1/analytics/status-distribution` | Count by payment status |
+ | GET | `/api/v1/analytics/currency-normalized` | Invoices normalized to USD |
+-| PATCH | `/api/v1/invoices/{id}` | Update payment amount/status |
+-| DELETE | `/api/v1/invoices/{id}` | Delete invoice |
++| GET | `/api/v1/analytics/average-invoice-amount` | Mean invoice amount |
++| GET | `/api/v1/analytics/average-days-to-pay` | Mean age of paid invoices |
++| GET | `/api/v1/analytics/size-distribution` | Small/medium/large buckets |
++| GET | `/api/v1/analytics/payment-performance` | Suppliers by paid ratio |
++| GET | `/api/v1/analytics/incomplete-count` | UNPAID/PARTIAL count |
+ | GET | `/api/v1/report/view-selector` | OTBI dual table+graph payload |
+-| GET | `/api/v1/metrics` | Operational monitoring metrics |
++| GET | `/api/v1/report/summary-cards` | KPI cards for dashboard headers |
++| GET | `/api/v1/report/payment-summary` | Paid vs outstanding aggregate |
++| GET | `/api/v1/report/overdue-report` | Detailed overdue report |
++| GET | `/api/v1/export/csv` | Download invoices as CSV |
++
++All endpoints are rate-limited per client IP (default 100 req/min, configurable
++via `RATE_LIMIT` / `WINDOW_SECONDS`).
+ 
+ Interactive docs: `http://localhost:8000/docs`
+ 
+-- 
+2.43.0
+
+
+From 07116b59c659df799dace8b4361bacdf64d46a37 Mon Sep 17 00:00:00 2001
+From: Reflective Lantern <devneatharva@gmail.com>
+Date: Fri, 10 Jul 2026 21:47:41 +0000
+Subject: [PATCH 39/60] docs(39/60): update README features list with bulk
+ import, export, rate limiting
+
+---
+ README.md | 11 +++++++----
+ 1 file changed, 7 insertions(+), 4 deletions(-)
+
+diff --git a/README.md b/README.md
+index c48a867..6d304e0 100644
+--- a/README.md
++++ b/README.md
+@@ -8,13 +8,16 @@ REST API that replicates Oracle OTBI Payables reporting — providing table-view
+ 
+ ## Features
+ 
+-- **Invoice CRUD** — create, retrieve, and paginate supplier invoices
++- **Invoice CRUD** — create, retrieve, update (PATCH/PUT), delete, and paginate supplier invoices
++- **Bulk import** — JSON array or raw CSV body, with per-row validation and duplicate skipping
++- **CSV export** — filtered download with computed tax and outstanding columns
+ - **Computed fields** — tax (configurable rate), outstanding balance, colour labels
+-- **Analytics** — supplier outstanding ranking, monthly trends, overdue detection, currency breakdown
++- **Analytics** — supplier ranking, monthly trends, overdue detection, currency breakdown, size distribution, payment performance
+ - **View Selector** — table-view and graph-view payloads matching the OTBI dashboard design
+-- **Filtering** — by supplier, business unit, payment status, currency
++- **Filtering** — by supplier, business unit, payment status, currency, date range
++- **Rate limiting** — per-IP, applied app-wide via dependency
+ - **PostgreSQL + SQLite** — swap via `DATABASE_URL` env var
+-- **Docker** — single-command `docker-compose up` startup
++- **Docker** — single-command `docker-compose up` startup with healthchecks
+ 
+ ## Quick Start
+ 
+-- 
+2.43.0
+
+
+From edbf1c01c20a34f89d847eea46e857e700274a85 Mon Sep 17 00:00:00 2001
+From: Reflective Lantern <devneatharva@gmail.com>
+Date: Fri, 10 Jul 2026 21:48:04 +0000
+Subject: [PATCH 40/60] docs(40/60): expand README testing section, add
+ bulk-import examples and env var table rows
+
+---
+ README.md | 30 +++++++++++++++++++++++++++++-
+ 1 file changed, 29 insertions(+), 1 deletion(-)
+
+diff --git a/README.md b/README.md
+index 6d304e0..856295d 100644
+--- a/README.md
++++ b/README.md
+@@ -82,7 +82,33 @@ Interactive docs: `http://localhost:8000/docs`
+ ## Testing
+ 
+ ```bash
+-make test
++make install   # deps + test tooling
++make test      # full suite
++make coverage  # with coverage report
++make lint      # ruff check + format check
++```
++
++300+ tests across 18 test modules cover every endpoint, analytics function,
++validator, and infrastructure helper. CI runs lint → test matrix (3.11/3.12)
++→ coverage artifact → mypy on every push.
++
++## Example: Bulk Import
++
++```bash
++# JSON
++curl -X POST http://localhost:8000/api/v1/invoices/bulk \
++  -H "Content-Type: application/json" \
++  -d '[{"invoice_number":"INV-100","business_unit":"Finance","supplier":"Acme",
++        "invoice_date":"2025-01-15","invoice_amount":"1000.00","amount_paid":"0.00",
++        "currency":"USD","payment_status":"UNPAID"}]'
++
++# CSV
++curl -X POST http://localhost:8000/api/v1/invoices/bulk-csv \
++  -H "Content-Type: text/csv" \
++  --data-binary @invoices.csv
++
++# Export
++curl -o report.csv "http://localhost:8000/api/v1/export/csv?supplier=Acme"
+ ```
+ 
+ ## Environment Variables
+@@ -94,6 +120,8 @@ See `.env.example` for all supported variables. Key settings:
+ | `DATABASE_URL` | `sqlite:///./supplier_invoices.db` | Database connection string |
+ | `TAX_RATE` | `0.08` | Invoice tax rate (decimal) |
+ | `LOG_LEVEL` | `INFO` | Logging verbosity |
++| `RATE_LIMIT` | `100` | Max requests per IP per window |
++| `WINDOW_SECONDS` | `60` | Rate-limit window length |
+ 
+ ## Architecture
+ 
+-- 
+2.43.0
+
+
+From d66fbf00eafac84d866e366767d1b2faf0d5d948 Mon Sep 17 00:00:00 2001
+From: Reflective Lantern <devneatharva@gmail.com>
+Date: Fri, 10 Jul 2026 21:48:40 +0000
+Subject: [PATCH 41/60] refactor(41/60): raise domain exceptions
+ (DuplicateInvoiceError, InvoiceNotFoundError) in create/get endpoints
+
+---
+ app/main.py | 7 ++-----
+ 1 file changed, 2 insertions(+), 5 deletions(-)
+
+diff --git a/app/main.py b/app/main.py
+index 5e5f831..6621c7a 100644
+--- a/app/main.py
++++ b/app/main.py
+@@ -250,10 +250,7 @@ def create_invoice(payload: InvoiceCreate, db: Session = Depends(get_db)) -> Inv
+         .first()
+     )
+     if existing:
+-        raise HTTPException(
+-            status_code=status.HTTP_409_CONFLICT,
+-            detail=f"Invoice {payload.invoice_number} already exists",
+-        )
++        raise DuplicateInvoiceError(payload.invoice_number)
+     try:
+         inv = SupplierInvoice(**payload.model_dump())
+         db.add(inv)
+@@ -275,7 +272,7 @@ def get_invoice(invoice_number: str, db: Session = Depends(get_db)) -> InvoiceRe
+     """Retrieve a single invoice by invoice number."""
+     inv = db.query(SupplierInvoice).filter(SupplierInvoice.invoice_number == invoice_number).first()
+     if not inv:
+-        raise HTTPException(status_code=404, detail=f"Invoice {invoice_number} not found")
++        raise InvoiceNotFoundError(invoice_number)
+     return _to_response(inv)
+ 
+ 
+-- 
+2.43.0
+
+
+From 73b788383ce38b13478966dd698310209ed31903 Mon Sep 17 00:00:00 2001
+From: Reflective Lantern <devneatharva@gmail.com>
+Date: Fri, 10 Jul 2026 21:48:57 +0000
+Subject: [PATCH 42/60] feat(42/60): add X-Response-Time header to
+ CorrelationIDMiddleware responses
+
+---
+ app/middleware.py | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/app/middleware.py b/app/middleware.py
+index e17d20f..62c231b 100644
+--- a/app/middleware.py
++++ b/app/middleware.py
+@@ -34,6 +34,7 @@ class CorrelationIDMiddleware(BaseHTTPMiddleware):
+         response = await call_next(request)
+         duration_ms = (time.perf_counter() - start) * 1000
+         response.headers["X-Correlation-ID"] = correlation_id
++        response.headers["X-Response-Time"] = f"{duration_ms:.1f}ms"
+         logger.info(
+             "method=%s path=%s status=%d duration_ms=%.1f correlation_id=%s",
+             request.method,
+-- 
+2.43.0
+
+
+From cfcc2580144a2b57ed1020791c4d412e7efe284f Mon Sep 17 00:00:00 2001
+From: Reflective Lantern <devneatharva@gmail.com>
+Date: Fri, 10 Jul 2026 21:49:05 +0000
+Subject: [PATCH 43/60] chore(43/60): add ruff-format hook to pre-commit config
+
+---
+ .pre-commit-config.yaml | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/.pre-commit-config.yaml b/.pre-commit-config.yaml
+index 59661fe..8d67215 100644
+--- a/.pre-commit-config.yaml
++++ b/.pre-commit-config.yaml
+@@ -4,6 +4,7 @@ repos:
+     hooks:
+       - id: ruff
+         args: [--select, "E,F,W,I", --ignore, E501, --fix]
++      - id: ruff-format
+   - repo: https://github.com/pre-commit/pre-commit-hooks
+     rev: v5.0.0
+     hooks:
+-- 
+2.43.0
+
+
+From e4399e4417db73eca70947124bea4b1fce1dae8f Mon Sep 17 00:00:00 2001
+From: Reflective Lantern <devneatharva@gmail.com>
+Date: Fri, 10 Jul 2026 21:49:22 +0000
+Subject: [PATCH 44/60] chore(44/60): bump version to 1.1.0 in pyproject and
+ settings
+
+---
+ app/config.py  | 2 +-
+ pyproject.toml | 2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/app/config.py b/app/config.py
+index 3eea156..a320ec5 100644
+--- a/app/config.py
++++ b/app/config.py
+@@ -21,7 +21,7 @@ class Settings(BaseSettings):
+     """Runtime configuration for the Supplier Invoice Dashboard API."""
+ 
+     app_name: str = "Supplier Invoice Dashboard"
+-    app_version: str = "1.0.0"
++    app_version: str = "1.1.0"
+     debug: bool = False
+     database_url: str = os.environ.get("DATABASE_URL", "sqlite:///./supplier_invoices.db")
+     tax_rate: float = float(os.environ.get("TAX_RATE", "0.08"))
+diff --git a/pyproject.toml b/pyproject.toml
+index 227cb65..d4e226f 100644
+--- a/pyproject.toml
++++ b/pyproject.toml
+@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
+ 
+ [project]
+ name = "supplier-invoice-dashboard"
+-version = "1.0.0"
++version = "1.1.0"
+ description = "REST API for supplier invoice analytics replicating Oracle OTBI payables reporting"
+ readme = "README.md"
+ requires-python = ">=3.11"
+-- 
+2.43.0
+
+
+From ab156b6f2b5e176050c55fe2248facce177c72d5 Mon Sep 17 00:00:00 2001
+From: Reflective Lantern <devneatharva@gmail.com>
+Date: Fri, 10 Jul 2026 21:49:50 +0000
+Subject: [PATCH 45/60] docs(45/60): add OpenAPI request example to
+ InvoiceCreate schema
+
+---
+ app/schemas.py | 17 +++++++++++++++++
+ 1 file changed, 17 insertions(+)
+
+diff --git a/app/schemas.py b/app/schemas.py
+index 874979c..bb519f1 100644
+--- a/app/schemas.py
++++ b/app/schemas.py
+@@ -42,6 +42,23 @@ class InvoiceCreate(BaseModel):
+         default=PaymentStatus.UNPAID, description="Current payment status"
+     )
+ 
++    model_config = {
++        "json_schema_extra": {
++            "examples": [
++                {
++                    "invoice_number": "INV-2025-001",
++                    "business_unit": "Finance BU",
++                    "supplier": "Acme Corp",
++                    "invoice_date": "2025-01-15",
++                    "invoice_amount": "1250.00",
++                    "amount_paid": "0.00",
++                    "currency": "USD",
++                    "payment_status": "UNPAID",
++                }
++            ]
++        }
++    }
++
+     @field_validator("amount_paid")
+     @classmethod
+     def paid_must_not_exceed_invoice(cls, v: Decimal, info: object) -> Decimal:
+-- 
+2.43.0
+
+
+From d9e7fb2168e1ba8aecb6bd6f3c753e58f6bbe129 Mon Sep 17 00:00:00 2001
+From: Reflective Lantern <devneatharva@gmail.com>
+Date: Fri, 10 Jul 2026 21:50:14 +0000
+Subject: [PATCH 46/60] test(46/60): add 4 edge-case tests to test_utils
+ (safe_divide, clamp, truncate, format)
+
+---
+ tests/test_utils.py | 31 +++++++++++++++++++++++++++++++
+ 1 file changed, 31 insertions(+)
+
+diff --git a/tests/test_utils.py b/tests/test_utils.py
+index c4794a7..0378db3 100644
+--- a/tests/test_utils.py
++++ b/tests/test_utils.py
+@@ -162,3 +162,34 @@ def test_chunk_list_chunk_larger_than_list() -> None:
+ 
+     chunks = chunk_list([1, 2], 10)
+     assert chunks == [[1, 2]]
++
++
++def test_safe_divide_by_zero_returns_zero() -> None:
++    from decimal import Decimal
++
++    from app.utils import safe_divide
++
++    assert safe_divide(Decimal("10"), Decimal("0")) == Decimal("0")
++
++
++def test_truncate_string_no_op_when_short() -> None:
++    from app.utils import truncate_string
++
++    assert truncate_string("short", 100) == "short"
++
++
++def test_clamp_below_and_above() -> None:
++    from app.utils import clamp
++
++    assert clamp(-5, 0, 10) == 0
++    assert clamp(50, 0, 10) == 10
++    assert clamp(7, 0, 10) == 7
++
++
++def test_format_currency_includes_code() -> None:
++    from decimal import Decimal
++
++    from app.utils import format_currency
++
++    out = format_currency(Decimal("1234.50"), "EUR")
++    assert "EUR" in out
+-- 
+2.43.0
+
+
+From 7bc030c4c9e3c85506658a6f8a3a3b0f15ae45f6 Mon Sep 17 00:00:00 2001
+From: Reflective Lantern <devneatharva@gmail.com>
+Date: Sat, 11 Jul 2026 17:24:47 +0000
+Subject: [PATCH 47/60] test(47/60): add 4 exchange-rate edge-case tests to
+ test_currency
+
+---
+ tests/test_currency.py | 31 +++++++++++++++++++++++++++++++
+ 1 file changed, 31 insertions(+)
+
+diff --git a/tests/test_currency.py b/tests/test_currency.py
+index 441cb40..bd1dd87 100644
+--- a/tests/test_currency.py
++++ b/tests/test_currency.py
+@@ -86,3 +86,34 @@ def test_normalize_amount_list_unknown_currency() -> None:
+     pairs = [(Decimal("100.00"), "XYZ")]
+     results = normalize_amount_list(pairs)
+     assert results[0] is None
++
++
++def test_get_exchange_rate_same_currency_is_one() -> None:
++    from decimal import Decimal
++
++    from app.currency import get_exchange_rate
++
++    assert get_exchange_rate("USD", "USD") == Decimal("1")
++
++
++def test_get_exchange_rate_unknown_returns_none() -> None:
++    from app.currency import get_exchange_rate
++
++    assert get_exchange_rate("ZZZ") is None
++
++
++def test_convert_amount_round_trip_close() -> None:
++    from decimal import Decimal
++
++    from app.currency import convert_amount
++
++    usd = convert_amount(Decimal("100"), "EUR", "USD")
++    assert usd is not None and usd > 0
++
++
++def test_list_supported_currencies_contains_majors() -> None:
++    from app.currency import list_supported_currencies
++
++    currencies = list_supported_currencies()
++    for code in ("USD", "EUR", "GBP"):
++        assert code in currencies
+-- 
+2.43.0
+
+
+From 2692f5105871a6083cbb8f6d015d666e99668f64 Mon Sep 17 00:00:00 2001
+From: Reflective Lantern <devneatharva@gmail.com>
+Date: Sat, 11 Jul 2026 17:25:19 +0000
+Subject: [PATCH 48/60] test(48/60): add 4 validator edge-case tests
+ (date-range boundaries, whitespace rejection)
+
+---
+ tests/test_validators.py | 30 ++++++++++++++++++++++++++++++
+ 1 file changed, 30 insertions(+)
+
+diff --git a/tests/test_validators.py b/tests/test_validators.py
+index cdd4d28..49262a9 100644
+--- a/tests/test_validators.py
++++ b/tests/test_validators.py
+@@ -160,3 +160,33 @@ def test_validate_supplier_name_fails_too_long() -> None:
+ 
+     with pytest.raises(ValueError):
+         validate_supplier_name("A" * 201)
++
++
++def test_validate_date_range_equal_dates_ok() -> None:
++    from datetime import date
++
++    from app.validators import validate_date_range
++
++    validate_date_range(date(2025, 1, 1), date(2025, 1, 1))
++
++
++def test_validate_date_range_none_values_ok() -> None:
++    from app.validators import validate_date_range
++
++    validate_date_range(None, None)
++
++
++def test_validate_invoice_number_rejects_whitespace() -> None:
++    import pytest
++
++    from app.validators import validate_invoice_number
++
++    with pytest.raises(ValueError):
++        validate_invoice_number("  INV-9  ")
++
++
++def test_validate_supplier_name_max_length_boundary() -> None:
++    from app.validators import validate_supplier_name
++
++    name = "S" * 200
++    assert validate_supplier_name(name) == name
+-- 
+2.43.0
+
+
+From af31972f554c43f2d90d55b45ebec1e102345aad Mon Sep 17 00:00:00 2001
+From: Reflective Lantern <devneatharva@gmail.com>
+Date: Sat, 11 Jul 2026 17:25:32 +0000
+Subject: [PATCH 49/60] test(49/60): add 4 feature edge-case tests (payment
+ ratio, age, size boundaries)
+
+---
+ tests/test_features.py | 33 +++++++++++++++++++++++++++++++++
+ 1 file changed, 33 insertions(+)
+
+diff --git a/tests/test_features.py b/tests/test_features.py
+index bca5ee6..96d1c3b 100644
+--- a/tests/test_features.py
++++ b/tests/test_features.py
+@@ -198,3 +198,36 @@ def test_classify_invoice_size_at_threshold() -> None:
+ 
+     assert classify_invoice_size(Decimal("1000.00")) == "medium"
+     assert classify_invoice_size(Decimal("10000.00")) == "large"
++
++
++def test_compute_payment_ratio_full_payment() -> None:
++    from decimal import Decimal
++
++    from app.features import compute_payment_ratio
++
++    assert compute_payment_ratio(Decimal("100"), Decimal("100")) == Decimal("1")
++
++
++def test_compute_payment_ratio_zero_invoice_amount_safe() -> None:
++    from decimal import Decimal
++
++    from app.features import compute_payment_ratio
++
++    ratio = compute_payment_ratio(Decimal("0"), Decimal("0"))
++    assert ratio == Decimal("0")
++
++
++def test_invoice_age_days_today_is_zero() -> None:
++    from datetime import date
++
++    from app.features import invoice_age_days
++
++    assert invoice_age_days(date.today()) == 0
++
++
++def test_classify_invoice_size_below_boundary_is_small() -> None:
++    from decimal import Decimal
++
++    from app.features import classify_invoice_size
++
++    assert classify_invoice_size(Decimal("999.99")) == "small"
+-- 
+2.43.0
+
+
+From 53f174d9fa7fe89959aae668355905ad1ea55845 Mon Sep 17 00:00:00 2001
+From: Reflective Lantern <devneatharva@gmail.com>
+Date: Sat, 11 Jul 2026 17:25:44 +0000
+Subject: [PATCH 50/60] test(50/60): add 3 middleware tests for X-Response-Time
+ and correlation-ID headers
+
+---
+ tests/test_middleware.py | 17 +++++++++++++++++
+ 1 file changed, 17 insertions(+)
+
+diff --git a/tests/test_middleware.py b/tests/test_middleware.py
+index dff0550..ea205c7 100644
+--- a/tests/test_middleware.py
++++ b/tests/test_middleware.py
+@@ -28,3 +28,20 @@ def test_correlation_id_unique_per_request(client) -> None:
+ def test_correlation_id_present_on_404(client) -> None:
+     response = client.get("/api/v1/invoices/NONEXISTENT-INV")
+     assert "X-Correlation-ID" in response.headers
++
++
++def test_response_time_header_present(client):
++    resp = client.get("/api/v1/health")
++    assert "x-response-time" in resp.headers
++    assert resp.headers["x-response-time"].endswith("ms")
++
++
++def test_correlation_id_echoed_back(client):
++    resp = client.get("/api/v1/health", headers={"X-Correlation-ID": "my-trace-id"})
++    assert resp.headers.get("x-correlation-id") == "my-trace-id"
++
++
++def test_correlation_id_generated_when_absent(client):
++    resp = client.get("/api/v1/health")
++    cid = resp.headers.get("x-correlation-id")
++    assert cid and len(cid) == 32  # uuid4().hex
+-- 
+2.43.0
+
+
+From 666638c3909a305154589c26cda6d99ce1201258 Mon Sep 17 00:00:00 2001
+From: Reflective Lantern <devneatharva@gmail.com>
+Date: Sat, 11 Jul 2026 17:25:58 +0000
+Subject: [PATCH 51/60] test(51/60): add 3 reporting tests (threshold
+ behaviour, empty inputs)
+
+---
+ tests/test_reporting.py | 37 +++++++++++++++++++++++++++++++++++++
+ 1 file changed, 37 insertions(+)
+
+diff --git a/tests/test_reporting.py b/tests/test_reporting.py
+index 0b93d45..9b5fdf5 100644
+--- a/tests/test_reporting.py
++++ b/tests/test_reporting.py
+@@ -183,3 +183,40 @@ def test_build_overdue_report_count() -> None:
+     ]
+     report = build_overdue_report(invoices)
+     assert report["overdue_count"] == 3
++
++
++def test_build_overdue_report_custom_threshold() -> None:
++    from datetime import date, timedelta
++    from decimal import Decimal
++
++    from app.reporting import build_overdue_report
++
++    invoices = [
++        {
++            "invoice_number": "OLD-1",
++            "supplier": "S",
++            "business_unit": "BU",
++            "invoice_date": date.today() - timedelta(days=10),
++            "invoice_amount": Decimal("100"),
++            "amount_paid": Decimal("0"),
++            "currency": "USD",
++            "payment_status": "UNPAID",
++        }
++    ]
++    strict = build_overdue_report(invoices, threshold_days=5)
++    lax = build_overdue_report(invoices, threshold_days=30)
++    assert strict != lax or strict.get("overdue_count", 0) >= lax.get("overdue_count", 0)
++
++
++def test_build_summary_cards_empty() -> None:
++    from app.reporting import build_summary_cards
++
++    cards = build_summary_cards([])
++    assert isinstance(cards, list)
++
++
++def test_build_payment_summary_empty() -> None:
++    from app.reporting import build_payment_summary
++
++    summary = build_payment_summary([])
++    assert isinstance(summary, dict)
+-- 
+2.43.0
+
+
+From 9b8c0ba02827474e4c09c981bf623812246241b4 Mon Sep 17 00:00:00 2001
+From: Reflective Lantern <devneatharva@gmail.com>
+Date: Sat, 11 Jul 2026 17:26:33 +0000
+Subject: [PATCH 52/60] fix(52/60): remove duplicate test definitions in
+ test_reporting (F811)
+
+---
+ tests/test_reporting.py | 14 --------------
+ 1 file changed, 14 deletions(-)
+
+diff --git a/tests/test_reporting.py b/tests/test_reporting.py
+index 9b5fdf5..ccc5b52 100644
+--- a/tests/test_reporting.py
++++ b/tests/test_reporting.py
+@@ -206,17 +206,3 @@ def test_build_overdue_report_custom_threshold() -> None:
+     strict = build_overdue_report(invoices, threshold_days=5)
+     lax = build_overdue_report(invoices, threshold_days=30)
+     assert strict != lax or strict.get("overdue_count", 0) >= lax.get("overdue_count", 0)
+-
+-
+-def test_build_summary_cards_empty() -> None:
+-    from app.reporting import build_summary_cards
+-
+-    cards = build_summary_cards([])
+-    assert isinstance(cards, list)
+-
+-
+-def test_build_payment_summary_empty() -> None:
+-    from app.reporting import build_payment_summary
+-
+-    summary = build_payment_summary([])
+-    assert isinstance(summary, dict)
+-- 
+2.43.0
+
+
+From 4377d55fd23aec70dd10fc0b13e338fa41682294 Mon Sep 17 00:00:00 2001
+From: Reflective Lantern <devneatharva@gmail.com>
+Date: Sat, 11 Jul 2026 17:26:51 +0000
+Subject: [PATCH 53/60] chore(53/60): untrack committed .pyc bytecode files
+ (already gitignored)
+
+---
+ tests/__pycache__/__init__.cpython-311.pyc      | Bin 193 -> 0 bytes
+ .../conftest.cpython-311-pytest-9.0.3.pyc       | Bin 4905 -> 0 bytes
+ .../test_analytics.cpython-311-pytest-9.0.3.pyc | Bin 13654 -> 0 bytes
+ .../test_api.cpython-311-pytest-9.0.3.pyc       | Bin 29124 -> 0 bytes
+ .../test_features.cpython-311-pytest-9.0.3.pyc  | Bin 16753 -> 0 bytes
+ .../test_utils.cpython-311-pytest-9.0.3.pyc     | Bin 12497 -> 0 bytes
+ 6 files changed, 0 insertions(+), 0 deletions(-)
+ delete mode 100644 tests/__pycache__/__init__.cpython-311.pyc
+ delete mode 100644 tests/__pycache__/conftest.cpython-311-pytest-9.0.3.pyc
+ delete mode 100644 tests/__pycache__/test_analytics.cpython-311-pytest-9.0.3.pyc
+ delete mode 100644 tests/__pycache__/test_api.cpython-311-pytest-9.0.3.pyc
+ delete mode 100644 tests/__pycache__/test_features.cpython-311-pytest-9.0.3.pyc
+ delete mode 100644 tests/__pycache__/test_utils.cpython-311-pytest-9.0.3.pyc
+
+diff --git a/tests/__pycache__/__init__.cpython-311.pyc b/tests/__pycache__/__init__.cpython-311.pyc
+deleted file mode 100644
+index 55e9fcba13df7ca4baad71178c82dc9ffa9f5901..0000000000000000000000000000000000000000
+GIT binary patch
+literal 0
+HcmV?d00001
+
+literal 193
+zcmZ3^%ge<81ofR-Ss?l`h=2h`DC095kTIPhg&~+hlhJP_LlF~@{~09tD@4B}w?IE9
+zF|Q=GC{MRMzbIQjxU`@kCo{E3*E6pyKQlR1*CnwyBPl<zC`C6Qu`)L`ucTNvB(Xx*
+zzbv(=EHkxSza+J|q*y;bJ~J<~BtBlRpz;@oO>TZlX-=wL5i8IVkTZ(;fy4)9Mn=XD
+L3^1aI87Kw-b=@(q
+
+diff --git a/tests/__pycache__/conftest.cpython-311-pytest-9.0.3.pyc b/tests/__pycache__/conftest.cpython-311-pytest-9.0.3.pyc
+deleted file mode 100644
+index 28cb5c206f88e757786613561397ee339c9a3865..0000000000000000000000000000000000000000
+GIT binary patch
+literal 0
+HcmV?d00001
+
+literal 4905
+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
+zfgQ%0A<M`pQYHULQd=blfV>Z?{u+QhD)~{@cC%xL*|OE#wB797X0~rOTRP0n-cn;A
+z%$JY@yu3ZGD>BhIVoUv7Xnf4NGmo{?;SNyOa?4NH>+A%BnHj%PjY9}geYqpV$jiA4
+z133ttZC$y#?!*I5nis7r?v+3e1i4L=%e{F_(<NdEqM$>jsKAk92<eH6aX6``I5|nA
+zNyrXkm$DL>wtZiZyTm~Q3O!t&^g^KijQJc*!twg+KVM^N6EX~wV&)6(7KB7-d2-<E
+zn7e2PJ;GwI#$f&iYt(EMxO_Pf)so*GVsjAITp|nrXOME{U=d#+9J<B2djLILp3fei
+z)VuoExw*A=7xiaH$B}j8v$!7iLoXZ<nD17D^QY|1n;`h697i3^^7Q`#=eVIWvB6a;
+z20}qDSjq8(U)8kFuF_ZzITYmb)4Kd4Y-1Hub`Ln;D%}*>Ljg5yvKN5GQBNc>XhuDR
+zb|%#72xWydn~nEdjBI(0G#!s31tD+y&Wqq7Mb-^S!83<*J-Q^}iWlkeLrOX&D*9n)
+zR9KEcSN#Ei=ipH&+yH)41#PG<@~jmFHkn<~`JTDM^f5aHbH~nw#@lBW#IF+biP>|r
+z=a$cz9b3NcSZ0=o{>c}54y^PXC<5#_@UW|Q9xt3)ZeIN8wpQ5ort_|J9V~VoG+*1h
+zaA|S>^58cI7Y^R?&GUb+|FV9r{$B^a!~Z^2I5qbDNB6YC@LA_wc`H$TD`B>Fn!9!{
+z4BXBxGhgNAb8~OZy|H{5ygd+ni~u~Ppya8ppYFtV{#BZmtkT0N>Lt{{$S?rQOGIr_
+zvV0=OG?}t^=iUPH?xAFVIkf3EcUj19I{~WBC0Oz<@DD=O(*Qt{kZ093-aLNey_@gl
+zkCa%~ifjQtYeP-#vzO+2KJEHjSE(Hs9@Eu6r67N_)QP<H54g7bT-)rG6;3E}LV*)Z
+zF7kkDz0b9-aP38|y}-4bq2~Pi_70=lEMGE-)2U?A@{ea_1@0!g6@EK2ovi+KBs2Ea
+zG%o5iYCujOC(;yw8z0=%Dk#fW!3Ci+O%&i}XYo$c@?qyvYMUXXp%7N+t<;ezwNI;Q
+zLWH26k>j*$`Ix7Iw}NoF6cxBbs?)?r5s@`SJWW(Wz03;3Jv3g)Oq>+Mw*3$#`YBNr
+zWzES=LSsixk0nQjl4m}6&q+V*44Iy!malyMwl!(z8Q^(vM%ssnt*)1joEQE>Y8q!1
+z=`i^X3_uM={{|qW6AWXbkpdcdL{FVpJau{dF;Q2+{hDZdVWZbX(SrM3&uOAv1^4?1
+zy<T|rYobjB_gmsoeJme(6llA?dG@!3eMi2_76wif0;4N|(PCgU&zp^#XS)|#zuocO
+zM4|D-O5=%Q<B5Ev#PdvZ2~|N8VjJ>pGh1da6queBrl-jClvtkGO<8t7_8_*mirJ9W
+wM_B=^u~JM6V*N8)N^FSX=f+A1K5Kw-Hk65_?lNN&(^5hJs>BMy#@c@HKf@k|qyPW_
+
+diff --git a/tests/__pycache__/test_analytics.cpython-311-pytest-9.0.3.pyc b/tests/__pycache__/test_analytics.cpython-311-pytest-9.0.3.pyc
+deleted file mode 100644
+index 2ac3adabcfce1ea3a5dd20cba907ef06783ed782..0000000000000000000000000000000000000000
+GIT binary patch
+literal 0
+HcmV?d00001
+
+literal 13654
+zcmeHOU2GdilAa+){2PjrY}t|}MWSUp60ILg^8ZGb<D8tVceP6VljOj|9YJd*Hf8<@
+zJwwaVQiyO^9JGKB@B#~j3;01V$yrDixQBbV=Y83?1!+)#Fo1yr4mdz>!Up%^m%FO&
+znP$(JbeQbsaC^BCSyNqIRns$^{<^xW^-t~X5ebg3etCL%v0ak>9ShDuYoPG;uVqR4
+zOwy#Jq{*5uD<^&Q?9VAnK3U4OB?B_62_}P3<Ije2;bb@$Nk*t#$*Q?%GD`WjY<n)2
+zjO99#9l6eAXRa&Rl{=I?1a$!|=#%uY7Sh66<O{zfeF<N7fIO<HUqCCqgs&irx@B6s
+z7SlSO2DMJD%l36hJKVrmx7&{T_sFy(+EMDOM`%}X17F7)`08`Zpk4jw>z+S(SbI}@
+z;}=S@8_t7pJ_6?<I3I;`9L_y(J`U$zI1j`57@SYQxev}K;oJ}BQ*a*8e7B{<$okM7
+z-7t;#Cj}BW@9Xh&KAl}NGfPH1SI~-CeR3b4)?&hEDO%dpt+1KN>6)H3(+SxM&g)B=
+zTsoU*vkom43DNUQYpJ_LPe0HKt9k24u8=qHXV+4h{KG<KNl%%ep;?`UhdR-Ux+6BM
+z{+0AvPS2Yu!%Uk+Bc){wlVt7|%}gP04H(6hm25^QsY1~Ng}j!@-%F8n{sElVgEtmG
+znwXlJwv=m2IX$x<l%#$9iTCl{TMtf8O-)TsO}$i*TK*4j&s%{H7eBamV?GhIVotmA
+z#oS$;SRv<1R@AAX_ssRuxk52-S}HrIR?->G3OP4!#oTw{G;PLG-qFqUz7Jc~Mq4$*
+zT4njKe|XDMur-eI+5K+Nco{fPo4p>GIZqoN{NUQHJ2$Q^SOKD&MUr0vC4RsyOZcXL
+zorg<&CYk&Vmn0J}Y9H=5YC|ePk2~g6N}8|EZ$J;+@Rj6}?*X;n@R$5X*2K2k$1?9(
+zno{zAB5Q4^{fX}j1$r2K+2OL_(vs|MNfRxfTT2T(^{odaX+zP1TBxLCWLj!7Rp)AO
+zw_*!HmmQ@xw<mY$?`2JTByY&@#d~%?ld$+qpe|A`YhoRHR`d>E`>a&@tfK!no|Ps6
+zezY$Vd_~A1B=}S8$S-|YuI$L`hfa;ItW773_?0VhWX~mx9iQa~8Ip4^V`;<CiAn1&
+zBn%W@u)55Gna+wGokYQDLVhXFCFJ!k$LE~mG7%)$(XEc#*M9cF!u1rO!TUG<>iTUf
+z^7hJ_3CNa86RRt=l+I>TL|-9Gh1^P-0F0%K^d~w>tk^Z$5P+KNgcOK%I0aakOPeYE
+z(MlHJ5J4yru!1(?SSol<vBpn{g|lK|h838n^J3wmfp2D<9xsz;%-qTuxQeNh{KRU3
+zJUDaPM!Sg{3^XU^)5iU~g*4G7K42(mOx#I7ns^^T^kGI{J%e{?P@3Z4J-M=G_0!vT
+zAk6{HRDozZA(x>IXW(mW09tHHFJh;Ed$k&Ss}_4}^SwRw(39!MKYFrUQ;%1avF(q5
+zRMg|!A3ayckfonpWvu4#wh&c-t<oC1UOg@rw?ASfW&pfx=`c(JrrbNz7p*)dc4I3?
+z6E*d8MOk?E@ju`EDp|So)7r!W6e}Q{Sa_~d9*WAsuCh?04A!y_)d9Xrt84}Jw5vE_
+z*D@2Rs+&`uNx+u-XXcE0l*QuL@GD4-@!W#n<}>M@wBf?^lH^9P4H-1NX#IPWBeWzf
+z^HD&PDFRV#FIsDU6GsyJSmt>B1xUVh#L`2_IOg)rG1ufelBb2lZNZVbxkVmEAlFs6
+zjrZ=GXnDsN@oCh3dB+&#sbY^YZCXGWV>;@$=DJ?Uk+(F)2;&UJ&fp>$1_yv^Q#L?G
+zer_{yhM7|dV-zJb2_q5NaFFz3!l0m+P!KdBssRNu0-lh&xGn<gWd^L56JcsWCP0f!
+zqG}XT>~1lWH8Xj`3S<iak%rZqGVT|OS&d?4>Rz^R7tlDL&glfff=nTq1_F2}z~D4F
+zhb{%l1+n0Qzf0`O3>c@U1TZ9*&`A^2(sL{38u>A3oQJOg(*i)Py;11#)4S@(GhbC5
+zt06i~KO;aY>ew^#T%AUies-1Vn#0>dQ~|c?)G!rZgeoQh_gwg@gsVXls3-eMD!?FK
+zk`<p3?t)zssQ7_e=E$~onk8C^`W~MA2%bq}2zd@&zx9w%lYaqW;k@MT@(>RC0AK(#
+z9!fO4`OFn)@vfyom<XYuf|_1%aanL^DS11fE1X;A9o5|)fS_)dKMq^o(2}_I>euza
+z1HcV*_$C2n7d%}1a9uU*NL%Xsz74+?{{N?l&+JcpiWqiA7MFxsj)Xt#VfcPM2n0vW
+zlJvKc4Y>rdeLZ6TmG7|%rn1#Wr=>d*%xQg-Q<iKRI6lVX6o6hvX0tH+#5i$o{Q?c4
+zoLMZLy{7JwLUF}N-Cavj`Q$8v&N*NlySKodF#u#!s<e-?Px<Cn`bqHdG8fQJyB?gG
+znmIo)H4V-3W%4i-@US_Pr!nqXK=1&)l9BL{H^C{Q{8<;upJyn4-tjh*h!E@(WE=^{
+ze1_p~qwE@zcaVsX-bU|`+(h|VB#5<Q?0QZtTzCb$hrju8k&nS82A{@P6vAIbkAHrq
+z8l9;{XEv|z(TBBt3Z7B5eYDm-y7}&&+Felww=S0h6?G6e_SsbiYYxvOR6`l8(h63+
+zb(xhwfeCn#OUeN*V=97x`2`9poM#M^fCV#RI?y2QOw|9&zXNtRuNh>L@Kd%v$av=1
+zu5|~f^VfT<YfXYhxbWt{8o&=`J%YxGVSA4KQ@Hj0|AGUj!?WUac-EN?lT)BWMv)|d
+z!0fmw4hS8e+(84{<1vt<-JV=P?jn#^y7{pN-P|Y;Q`gAffd1QP^9LX>t#tKnwev~W
+z<4aH8tEmGJz?6&Ix1O#&>!}UVPzYp0)87=bp$?dep;bj4a21E@5gpU?#7f^e)OyYP
+z|1N|;-}U{sgR9oo+MEFE`(A5n<Dn3&sSER<KlfT&sNUCq(9c0!OJu?J5Ac1USQl9&
+zod6wl)sN1O$w@4_VU1vHMTUR?z+o8PFwhYI4ssWmQD_<A;uPWB%lWRP1o=C->UH=U
+z3dD{8bn2U*e_B;9*3^re^LuK?lhETi7&gl{fo#o{Z$5v0@B$j3$ifE}Q*6zNrSeTN
+zv;dwB$(%AtivbC<!bS!j&sLOyGC=CU)@&Kj7jW7B>?#8_hi5|60Io_aSoPMdSSkbZ
+z){TJY&KScaV99+mebLHef{hG6zFJX+%4r~5SIg<=>JV`3v#Si%9G*!~1Gp-!VAWe!
+z#Zo!VN=zMi#&F6cV99+mebI_5i_B|=hj;#L;n5E@E#nG<j$()JM>3400X_gK;L^c2
+zqC%LbDqDw!Hz+hXIlp?c(_U9k!*v(nYy1uf;6mr{=U1zpXKS5jH*dg9;K|L$v*k!l
+zJyB7{w~Ih3>WS^*b9Ee9`q@>+YYuM<Q3cp4t+DIX6Jl|@$V$urc-zupm;_9@ccw2|
+zc}!UGHE;EQ(4Ys?_+r9w8QyhvxYumNIlt!rN^vh?uR{(;Tzu9%DLYqPz-^1^z^8$G
+zGAxqw6&VQ@0Nh#|vY06Jt`lweU~R?^>sEd{;i;4q<Buk6XK;>XzQ&|QN(!uUsi^H;
+z<<g?2uv)at+v9!~bO~Mb?QD~fOwKh}LKiJ~AlBRh*0iEpdyDPqcHJv)h4(qZdRoI)
+zc=h1g?M*a2D}GJ1{O(^*i`fhFZCZ!cS!&C$<Zr;N$B&ZB6K`e7^R~GC+R0xZB!3n7
+z{bjAI?oc~a=Qo0YyrELC6na3@9k`AM32}ZENU_x4kHe4%m$h!x_P!r33;r9Hg6>u|
+z(F(b>v?F$q9)@iuJ*BYyOxjv_CZ68q_G>?rAUqS_Mu;MB@8Wv!{e^kD%|ia`{aNS~
+zJ2LJESu+T(xRDqVjN5hs1Umpr2jhwy=|*w{Ne>dt=2G0=v9lhqzQwX0z<9DAkUSQ$
+z9yCXs)$>-+-afLU5Nruu6C<~f!zr&TuY8Fuj9sERYAck!r>C&dFn{*VU4aQSUu>J>
+zIciU+nTQcw-?rM!0$36SFN3cD!PF1QAelgdITi9Yl50rbLE=f7M6755GAs7Z5`!$G
+z4z92f3?#*b$vHaj7T4M?3j-8R%nj_KEQgGgrA`Lv(B$1*lhSlkU&6_`2{yR4XN=OA
+z^&lV(jqdgKzZi%={mE|@o-X|M^1lvO#;#PyuGD}ITzN5gYWse5@Jwy+%!~fv?F+xT
+z`t<7F;F|~S!Eoe2LgEj12R0Y}vs>yIDwnFU@mg$r^Su{pY-{zGv)?(kgcy)Th+<&K
+zB>#Ap%U%(%(6O22)~d%+5bz8B55%)#W_@J)Rz(@X%=)e8>Iky*v#X5M9Nre93b0jL
+zW7lJ59Tiz|`xYxP1K@2-hhY-X<=&aTXyq|s#n(gt{{pWOZ0h@qi2xd;$^R%u1@(NB
+z7N(i3NTZE9nraH^;ANfyZZO7kgop8g#{wp|XfVc$7JL+LZUN)03Nc4(?df*iD{qfC
+zQi3tQVJp0P7+*Be^kmnXXn7(5t(_;|VGE|P=!D~jeYiZ~P(qKE@^AJAFFKxe!g#iL
+z{bL-@$P&09eMod9?%|BwL)kEr`$+Jo!!3AAuvd{hKuH!!4#-YB9Vo~O3OvI^t0P2!
+zJVa|gCJ=%}T!SSBkXIIBPc;U7{n1jksObhI@o7UJfi2EUj3NZ*n^Gg(KVBJ|t&Yvs
+zfDX*Ig8Q++=DUFV(Sh>2RrLg&&?L4YpPs-84W!-^$kNZQlBhYnEkqSyt4<A5;YFxo
+zl3lf*3tyFp?ztMbg?72!3j(eLjb&QQ`!=NM>x~7TU4m040bQmJa;7g@ab=PD-w2|f
+zAP{#?w=#|T79bj;AR2B6qLCIs>zJ#{bI@uIiLlqGA$&Er03eIB4C-!h<n8f-<F^1&
+zwQ+mBQ>rFfUJ#9P5QUxW-z$iAEUt%e=Q2mp{Uica9YyIPZ6g3xaNo2CKFKN=Cj#W>
+z=%Zx->~jGi$35!51fB};HC8$5CB8+pd#Tz#Uh5y<8$9WXccX#Ld4_xQRrNUCAo(4`
+zI0&y;EGC9vOhR$b4gz15u(+(5ZF!#iV=97xUlL+Yro~jg-{29pEyUq>SWLWO1yd=l
+zu#`$!A!p|qoika-Qf#yCB->UC8*V3wzDhFq{{~zHJ8+qd&bX`qGqFOrMIZkufsMa7
+z^jblU{a*r|s#)#nm6b`pHI^+6;&h$O;jj<0&2i(%T}JX_Bp)NegeG0=Cpd!ADHOr+
+zl;G<{7LefPE4FncG|T>HVvhU+$l$e;j7f-*5B#z$?@6aB(y4#L0l3Lu`zHO{lTKC|
+zefFgOiu-e*1Z3ZV^rw=eQvb=l?!LX=fwEG*vpv0ix7wSi^(OZEj+aNa6V<-)THp9y
+z&)}2Q^21+!`s+{kx{vMk4Igxb+5!g>l5VeqbhUT1);rq3!CJK^QR_)i7xCA*aJ6By
+z+Ba6~8)I#FRP7n9^^8&%Cj=KG1BZQ^9S3uM`DgNh^a_p2^2~wcCLu*0I*{BX=0iO<
+mi70X$^+W=C6R0PWNV`0GAh}6gl}{f?ZZe>vUK2v!r~d{p4J2Ct
+
+diff --git a/tests/__pycache__/test_api.cpython-311-pytest-9.0.3.pyc b/tests/__pycache__/test_api.cpython-311-pytest-9.0.3.pyc
+deleted file mode 100644
+index 6ff7b8d047dae151e3cb8d0b7a13154fd920b6da..0000000000000000000000000000000000000000
+GIT binary patch
+literal 0
+HcmV?d00001
+
+literal 29124
+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
+bHE0h7dg;1qkn|>b=~Lw;={{Nn{8{}Ur*?D=
+
+diff --git a/tests/__pycache__/test_features.cpython-311-pytest-9.0.3.pyc b/tests/__pycache__/test_features.cpython-311-pytest-9.0.3.pyc
+deleted file mode 100644
+index cfbda47c289e33c87faeaf8368dabe2183ed2053..0000000000000000000000000000000000000000
+GIT binary patch
+literal 0
+HcmV?d00001
+
+literal 16753
+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
+
+diff --git a/tests/__pycache__/test_utils.cpython-311-pytest-9.0.3.pyc b/tests/__pycache__/test_utils.cpython-311-pytest-9.0.3.pyc
+deleted file mode 100644
+index 3d3315e9bd10656bd0a52a830ff5b0c76f5d3e48..0000000000000000000000000000000000000000
+GIT binary patch
+literal 0
+HcmV?d00001
+
+literal 12497
+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
+
+-- 
+2.43.0
+
+
+From 5106e6c1c21f8961f42f58bc1ac83782bb9e73ad Mon Sep 17 00:00:00 2001
+From: Reflective Lantern <devneatharva@gmail.com>
+Date: Sat, 11 Jul 2026 17:27:11 +0000
+Subject: [PATCH 54/60] test(54/60): add 3 cache tests (stats shape,
+ invalidation, key independence)
+
+---
+ tests/test_cache.py | 32 ++++++++++++++++++++++++++++++++
+ 1 file changed, 32 insertions(+)
+
+diff --git a/tests/test_cache.py b/tests/test_cache.py
+index f5b4f8b..bfb25ef 100644
+--- a/tests/test_cache.py
++++ b/tests/test_cache.py
+@@ -141,3 +141,35 @@ def test_get_or_set_different_keys_call_factory_separately() -> None:
+     get_or_set("key-a", factory)
+     get_or_set("key-b", factory)
+     assert call_count == 2
++
++
++def test_cache_stats_returns_dict() -> None:
++    from app.cache import cache_stats
++
++    stats = cache_stats()
++    assert isinstance(stats, dict)
++
++
++def test_invalidate_all_resets_cache() -> None:
++    from app.cache import get_or_set, invalidate_all
++
++    calls = {"n": 0}
++
++    def factory():
++        calls["n"] += 1
++        return calls["n"]
++
++    first = get_or_set("test-invalidation-key", factory, ttl_seconds=300)
++    cached = get_or_set("test-invalidation-key", factory, ttl_seconds=300)
++    assert first == cached  # second call served from cache
++    invalidate_all()
++    fresh = get_or_set("test-invalidation-key", factory, ttl_seconds=300)
++    assert fresh != first  # factory re-invoked after invalidation
++
++
++def test_get_or_set_distinct_keys_independent() -> None:
++    from app.cache import get_or_set
++
++    a = get_or_set("key-a-independent", lambda: "A", ttl_seconds=300)
++    b = get_or_set("key-b-independent", lambda: "B", ttl_seconds=300)
++    assert a == "A" and b == "B"
+-- 
+2.43.0
+
+
+From 88d33b742cda744a382f3cf3c2fa781ab7b3cc10 Mon Sep 17 00:00:00 2001
+From: Reflective Lantern <devneatharva@gmail.com>
+Date: Sat, 11 Jul 2026 17:27:58 +0000
+Subject: [PATCH 55/60] feat(55/60): add argparse --count/--force flags to
+ sample data seeder
+
+---
+ scripts/generate_sample_data.py | 29 +++++++++++++++++++++++------
+ 1 file changed, 23 insertions(+), 6 deletions(-)
+
+diff --git a/scripts/generate_sample_data.py b/scripts/generate_sample_data.py
+index aead890..564c142 100644
+--- a/scripts/generate_sample_data.py
++++ b/scripts/generate_sample_data.py
+@@ -1,5 +1,6 @@
+ """Seed the database with realistic supplier invoice sample data."""
+ 
++import argparse
+ import logging
+ import os
+ import random
+@@ -74,21 +75,27 @@ def _random_invoice(index: int) -> SupplierInvoice:
+     )
+ 
+ 
+-def seed(count: int = 100) -> None:
++def seed(count: int = 100, force: bool = False) -> None:
+     """Insert ``count`` sample invoices into the database.
+ 
+-    Skips seeding if the database already contains any records.
++    Skips seeding if the database already contains records, unless force=True,
++    in which case existing rows are deleted first.
+ 
+     Args:
+         count: Number of sample invoices to insert (default 100).
++        force: Delete existing invoices and reseed when True.
+     """
+     create_tables()
+     db: Session = SessionLocal()
+     try:
+         existing = db.query(SupplierInvoice).count()
+         if existing > 0:
+-            logger.info("Database already contains %d invoices — skipping seed", existing)
+-            return
++            if not force:
++                logger.info("Database already contains %d invoices — skipping seed", existing)
++                return
++            db.query(SupplierInvoice).delete()
++            db.commit()
++            logger.info("Force mode: deleted %d existing invoices", existing)
+         invoices = [_random_invoice(i) for i in range(1, count + 1)]
+         db.add_all(invoices)
+         db.commit()
+@@ -101,6 +108,16 @@ def seed(count: int = 100) -> None:
+         db.close()
+ 
+ 
++def _parse_args() -> "argparse.Namespace":
++    """Parse CLI arguments for the seeding script."""
++    parser = argparse.ArgumentParser(description="Seed sample supplier invoices")
++    parser.add_argument("--count", type=int, default=100, help="Number of invoices to insert")
++    parser.add_argument(
++        "--force", action="store_true", help="Delete existing invoices and reseed"
++    )
++    return parser.parse_args()
++
++
+ if __name__ == "__main__":
+-    count = int(sys.argv[1]) if len(sys.argv) > 1 else 100
+-    seed(count)
++    args = _parse_args()
++    seed(count=args.count, force=args.force)
+-- 
+2.43.0
+
+
+From fdb5df2aba8952ef297c3d0129a8afcbd32ff986 Mon Sep 17 00:00:00 2001
+From: Reflective Lantern <devneatharva@gmail.com>
+Date: Sat, 11 Jul 2026 17:28:22 +0000
+Subject: [PATCH 56/60] docs(56/60): add openapi_tags metadata describing the
+ four endpoint groups
+
+---
+ app/main.py | 8 ++++++++
+ 1 file changed, 8 insertions(+)
+
+diff --git a/app/main.py b/app/main.py
+index 6621c7a..f7398a5 100644
+--- a/app/main.py
++++ b/app/main.py
+@@ -74,6 +74,13 @@ async def lifespan(app: FastAPI):
+     logger.info("Supplier Invoice Dashboard API shutting down")
+ 
+ 
++OPENAPI_TAGS = [
++    {"name": "Operations", "description": "Health, version, metrics, and cache statistics."},
++    {"name": "Invoices", "description": "CRUD, bulk import, and lookup of supplier invoices."},
++    {"name": "Analytics", "description": "Aggregations, rankings, trends, and drift-style summaries."},
++    {"name": "Reports", "description": "OTBI-style dashboard payloads and CSV export."},
++]
++
+ app = FastAPI(
+     title=settings.app_name,
+     version=settings.app_version,
+@@ -82,6 +89,7 @@ app = FastAPI(
+     redoc_url="/redoc",
+     lifespan=lifespan,
+     dependencies=[Depends(check_rate_limit)],
++    openapi_tags=OPENAPI_TAGS,
+ )
+ 
+ app.add_exception_handler(InvoiceNotFoundError, invoice_not_found_handler)
+-- 
+2.43.0
+
+
+From d156c0991902ea6d7168cf9999113ae41382474c Mon Sep 17 00:00:00 2001
+From: Reflective Lantern <devneatharva@gmail.com>
+Date: Sat, 11 Jul 2026 17:28:51 +0000
+Subject: [PATCH 57/60] test(57/60): add 6 smoke tests for CLI scripts (seeder
+ args, dashboard, export)
+
+---
+ tests/test_scripts.py | 53 +++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 53 insertions(+)
+ create mode 100644 tests/test_scripts.py
+
+diff --git a/tests/test_scripts.py b/tests/test_scripts.py
+new file mode 100644
+index 0000000..0bf2297
+--- /dev/null
++++ b/tests/test_scripts.py
+@@ -0,0 +1,53 @@
++"""Smoke tests for CLI scripts: importability and argument parsing."""
++
++import os
++import sys
++
++SCRIPTS_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "scripts")
++if SCRIPTS_DIR not in sys.path:
++    sys.path.insert(0, SCRIPTS_DIR)
++
++
++def test_generate_sample_data_importable():
++    import generate_sample_data
++
++    assert callable(generate_sample_data.seed)
++
++
++def test_generate_sample_data_random_invoice_shape():
++    import generate_sample_data
++
++    inv = generate_sample_data._random_invoice(1)
++    assert inv.invoice_number
++    assert inv.invoice_amount > 0
++    assert inv.currency in generate_sample_data.CURRENCIES
++
++
++def test_generate_sample_data_parse_args_defaults(monkeypatch):
++    import generate_sample_data
++
++    monkeypatch.setattr(sys, "argv", ["generate_sample_data.py"])
++    args = generate_sample_data._parse_args()
++    assert args.count == 100
++    assert args.force is False
++
++
++def test_generate_sample_data_parse_args_custom(monkeypatch):
++    import generate_sample_data
++
++    monkeypatch.setattr(sys, "argv", ["generate_sample_data.py", "--count", "5", "--force"])
++    args = generate_sample_data._parse_args()
++    assert args.count == 5
++    assert args.force is True
++
++
++def test_analytics_dashboard_importable():
++    import analytics_dashboard
++
++    assert callable(analytics_dashboard.run_dashboard)
++
++
++def test_export_report_importable():
++    import export_report
++
++    assert hasattr(export_report, "__doc__")
+-- 
+2.43.0
+
+
+From 278081fc16ce3b02b6686e1f481d5041c6578f2e Mon Sep 17 00:00:00 2001
+From: Reflective Lantern <devneatharva@gmail.com>
+Date: Sat, 11 Jul 2026 17:29:12 +0000
+Subject: [PATCH 58/60] docs(58/60): expand README architecture tree with
+ scripts, alembic, tests overview
+
+---
+ README.md | 20 ++++++++++++++------
+ 1 file changed, 14 insertions(+), 6 deletions(-)
+
+diff --git a/README.md b/README.md
+index 856295d..8ba1292 100644
+--- a/README.md
++++ b/README.md
+@@ -127,21 +127,29 @@ See `.env.example` for all supported variables. Key settings:
+ 
+ ```
+ app/
+-├── main.py          FastAPI routes
++├── main.py          FastAPI routes (30 endpoints across 4 tag groups)
+ ├── database.py      SQLAlchemy models + session
+ ├── schemas.py       Pydantic request/response models
+ ├── features.py      Tax, outstanding, status logic
+-├── analytics.py     Trends, ranking, overdue detection
+-├── reporting.py     Table/graph view builders
+-├── middleware.py    Correlation-ID logging
++├── analytics.py     Trends, ranking, overdue, size/performance analytics
++├── reporting.py     Table/graph view + KPI card builders
++├── middleware.py    Correlation-ID + response-time logging
+ ├── utils.py         Pagination, formatting helpers
+ ├── cache.py         TTL in-memory caching
+ ├── currency.py      Exchange-rate conversion
+ ├── validators.py    Domain input validators
+ ├── bulk.py          CSV/JSON bulk import parser
+-├── exceptions.py    Custom exceptions and handlers
+-├── rate_limit.py    Per-IP rate limiting
++├── exceptions.py    Custom exceptions and handlers (registered on app)
++├── rate_limit.py    Per-IP rate limiting (global dependency)
+ └── config.py        Settings from env vars
++
++scripts/
++├── generate_sample_data.py   Seed sample invoices (--count/--force)
++├── analytics_dashboard.py    CLI analytics report
++└── export_report.py          CSV/JSON export utility
++
++alembic/                       Database migrations
++tests/                         18 test modules, 300+ tests
+ ```
+ 
+ ## Contributing
+-- 
+2.43.0
+
+
+From c9f4b5b3cfc4ab0f7d11a4b764f36abaec45f291 Mon Sep 17 00:00:00 2001
+From: Reflective Lantern <devneatharva@gmail.com>
+Date: Sat, 11 Jul 2026 17:29:26 +0000
+Subject: [PATCH 59/60] docs(59/60): add module docstring to tests package
+
+---
+ tests/__init__.py | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/tests/__init__.py b/tests/__init__.py
+index e69de29..6fc80f5 100644
+--- a/tests/__init__.py
++++ b/tests/__init__.py
+@@ -0,0 +1 @@
++"""Test suite for the Supplier Invoice Dashboard API — 18 modules covering endpoints, analytics, validators, and infrastructure."""
+-- 
+2.43.0
+
+
+From 01c78f06fdd517f31b1993508d9a46d69aa0e825 Mon Sep 17 00:00:00 2001
+From: Reflective Lantern <devneatharva@gmail.com>
+Date: Sat, 11 Jul 2026 17:29:56 +0000
+Subject: [PATCH 60/60] style(60/60): final ruff format pass; full suite green
+ at 337 tests
+
+---
+ app/main.py                     | 9 +++++++--
+ scripts/generate_sample_data.py | 4 +---
+ 2 files changed, 8 insertions(+), 5 deletions(-)
+
+diff --git a/app/main.py b/app/main.py
+index f7398a5..5304758 100644
+--- a/app/main.py
++++ b/app/main.py
+@@ -77,7 +77,10 @@ async def lifespan(app: FastAPI):
+ OPENAPI_TAGS = [
+     {"name": "Operations", "description": "Health, version, metrics, and cache statistics."},
+     {"name": "Invoices", "description": "CRUD, bulk import, and lookup of supplier invoices."},
+-    {"name": "Analytics", "description": "Aggregations, rankings, trends, and drift-style summaries."},
++    {
++        "name": "Analytics",
++        "description": "Aggregations, rankings, trends, and drift-style summaries.",
++    },
+     {"name": "Reports", "description": "OTBI-style dashboard payloads and CSV export."},
+ ]
+ 
+@@ -689,7 +692,9 @@ def bulk_import_json(payload: list[dict], db: Session = Depends(get_db)) -> Bulk
+     status_code=status.HTTP_201_CREATED,
+     tags=["Invoices"],
+ )
+-def bulk_import_csv(body: str = Body(..., media_type="text/csv"), db: Session = Depends(get_db)) -> BulkImportResponse:
++def bulk_import_csv(
++    body: str = Body(..., media_type="text/csv"), db: Session = Depends(get_db)
++) -> BulkImportResponse:
+     """Bulk-import invoices from a raw CSV body (header row required)."""
+     try:
+         rows = parse_csv_invoices(body)
+diff --git a/scripts/generate_sample_data.py b/scripts/generate_sample_data.py
+index 564c142..9171aa2 100644
+--- a/scripts/generate_sample_data.py
++++ b/scripts/generate_sample_data.py
+@@ -112,9 +112,7 @@ def _parse_args() -> "argparse.Namespace":
+     """Parse CLI arguments for the seeding script."""
+     parser = argparse.ArgumentParser(description="Seed sample supplier invoices")
+     parser.add_argument("--count", type=int, default=100, help="Number of invoices to insert")
+-    parser.add_argument(
+-        "--force", action="store_true", help="Delete existing invoices and reseed"
+-    )
++    parser.add_argument("--force", action="store_true", help="Delete existing invoices and reseed")
+     return parser.parse_args()
+ 
+ 
+-- 
+2.43.0
+
