@@ -11,7 +11,18 @@ _RUN_LOG = Path("mlflow_runs.jsonl")
 
 
 def log_metrics(run_name: str, metrics: dict[str, float]) -> str:
-    """Log training metrics to a local JSONL file (stub for MLflow)."""
+    """Append training metrics to the local JSONL run log.
+
+    Acts as a drop-in stub for ``mlflow.log_metrics`` when MLflow is not
+    configured.  Each call appends one JSON line to ``mlflow_runs.jsonl``.
+
+    Args:
+        run_name: Human-readable identifier for this training run.
+        metrics: Mapping of metric name to float value (e.g. ``{"r2": 0.91}``).
+
+    Returns:
+        The same *run_name* string that was passed in.
+    """
     entry = {"run": run_name, "metrics": metrics}
     with open(_RUN_LOG, "a") as fh:
         fh.write(json.dumps(entry) + "\n")
@@ -19,8 +30,15 @@ def log_metrics(run_name: str, metrics: dict[str, float]) -> str:
     return run_name
 
 
-def get_best_run(metric: str = "r2_mean") -> dict | None:
-    """Return the run with the highest value for *metric*."""
+def get_best_run(metric: str = "r2_mean") -> dict[str, object] | None:
+    """Return the logged run that achieved the highest value for *metric*.
+
+    Args:
+        metric: Name of the metric to rank by (default ``"r2_mean"``).
+
+    Returns:
+        The best run entry dict, or ``None`` if the run log does not exist.
+    """
     if not _RUN_LOG.exists():
         return None
     best = None
