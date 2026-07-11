@@ -159,3 +159,38 @@ def test_neighborhood_cache_has_positive_ttl() -> None:
 def test_metrics_cache_has_positive_ttl() -> None:
     from app.cache import metrics_cache
     assert metrics_cache.ttl > 0
+
+
+def test_max_size_property() -> None:
+    cache = TTLCache(max_size=10, ttl_seconds=60)
+    assert cache.max_size == 10
+
+
+def test_max_size_property_reflects_constructor_arg() -> None:
+    for n in [5, 50, 500]:
+        cache = TTLCache(max_size=n, ttl_seconds=60)
+        assert cache.max_size == n
+
+
+def test_keys_returns_empty_list_on_new_cache() -> None:
+    cache = TTLCache(max_size=10, ttl_seconds=60)
+    assert cache.keys() == []
+
+
+def test_keys_contains_set_key() -> None:
+    cache = TTLCache(max_size=10, ttl_seconds=60)
+    cache.set("alpha", 1)
+    assert "alpha" in cache.keys()
+
+
+def test_keys_reflects_all_stored_keys() -> None:
+    cache = TTLCache(max_size=10, ttl_seconds=60)
+    for k in ("a", "b", "c"):
+        cache.set(k, k)
+    assert set(cache.keys()) == {"a", "b", "c"}
+
+
+@pytest.mark.parametrize("ttl", [30, 60, 300, 3600])
+def test_ttl_property_various_values(ttl: int) -> None:
+    cache = TTLCache(max_size=10, ttl_seconds=ttl)
+    assert cache.ttl == ttl
