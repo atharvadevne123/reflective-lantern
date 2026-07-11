@@ -55,10 +55,11 @@ def validate_load_series(loads: list[float]) -> list[str]:
 
 
 def is_weekend(day_of_week: int) -> bool:
+    """Return True if day_of_week is Saturday (5) or Sunday (6)."""
     return day_of_week >= 5
 
 
-def extract_temporal_from_datetime(dt: datetime) -> dict:
+def extract_temporal_from_datetime(dt: datetime) -> dict[str, object]:
     """Extract hour, day_of_week, month, is_weekend from a datetime."""
     return {
         "hour": dt.hour,
