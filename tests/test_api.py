@@ -86,7 +86,7 @@ def test_drift_endpoint(client: TestClient):
     assert isinstance(data["drift_detected"], bool)
 
 
-def test_drift_insufficient_reference(client: TestClient):
+def test_drift_insufficient_reference(client: TestClient) -> None:
     payload = {
         "current_values": [1.0] * 20,
         "reference_values": [1.0] * 5,
@@ -94,13 +94,8 @@ def test_drift_insufficient_reference(client: TestClient):
     r = client.post("/api/v1/drift", json=payload)
     assert r.status_code == 400
 
-    def test_analyze_returns_trend(self, client):
-        loads = [float(3000 + i * 10) for i in range(48)]
-        data = client.post("/api/v1/analyze", json=loads).json()
-        assert "trend" in data
-        assert "direction" in data["trend"]
 
-def test_metrics_endpoint(client: TestClient):
+def test_metrics_endpoint(client: TestClient) -> None:
     r = client.get("/api/v1/metrics")
     assert r.status_code == 200
     data = r.json()
@@ -132,7 +127,36 @@ def test_predict_invalid_building_id(client: TestClient, energy_payload):
     assert r.status_code == 422
 
 
-def test_predict_invalid_hour(client: TestClient, energy_payload):
+def test_predict_invalid_hour(client: TestClient, energy_payload) -> None:
     payload = {**energy_payload, "hour": 25}
     r = client.post("/api/v1/predict", json=payload)
     assert r.status_code == 422
+
+
+def test_batch_predict_after_train(client: TestClient, energy_payload) -> None:
+    client.post("/api/v1/train")
+    batch = [energy_payload, {**energy_payload, "building_id": "bldg-002"}]
+    r = client.post("/api/v1/predict/batch", json=batch)
+    assert r.status_code == 200
+    results = r.json()
+    assert len(results) == 2
+    for res in results:
+        assert res["predicted_kwh"] >= 0
+
+
+def test_batch_predict_exceeds_limit(client: TestClient, energy_payload) -> None:
+    client.post("/api/v1/train")
+    batch = [energy_payload] * 101
+    r = client.post("/api/v1/predict/batch", json=batch)
+    assert r.status_code == 400
+
+
+def test_drift_strong_shift_detected(client: TestClient) -> None:
+    client.post("/api/v1/train")
+    payload = {
+        "current_values": [50.0 + i for i in range(30)],
+        "reference_values": [1.0 + i * 0.01 for i in range(30)],
+    }
+    r = client.post("/api/v1/drift", json=payload)
+    assert r.status_code == 200
+    assert r.json()["drift_detected"] is True
