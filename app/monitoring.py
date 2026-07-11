@@ -24,6 +24,8 @@ logger = logging.getLogger(__name__)
 
 REFERENCE_WINDOW = 1000
 DRIFT_THRESHOLD = 0.05
+DRIFT_REPORT_LIMIT = 100
+DEFAULT_MODEL_VERSION = "1.0.0"
 
 
 def compute_drift(reference: list[float], current: list[float]) -> dict[str, Any]:
@@ -53,7 +55,7 @@ def log_prediction(
     features: dict[str, Any],
     correlation_id: str,
     investment_score: float | None = None,
-    model_version: str = "1.0.0",
+    model_version: str = DEFAULT_MODEL_VERSION,
     property_id: int | None = None,
 ) -> PredictionLog:
     """Persist a prediction record to the database.
@@ -131,8 +133,8 @@ def get_recent_predictions(db: Session, limit: int = REFERENCE_WINDOW) -> list[P
 
 
 def get_drift_summary(db: Session) -> list[dict[str, Any]]:
-    """Return the 100 most recent drift reports as serialisable dicts."""
-    reports = db.query(DriftReport).order_by(DriftReport.created_at.desc()).limit(100).all()
+    """Return the most recent drift reports as serialisable dicts."""
+    reports = db.query(DriftReport).order_by(DriftReport.created_at.desc()).limit(DRIFT_REPORT_LIMIT).all()
     return [
         {
             "feature_name": r.feature_name,
