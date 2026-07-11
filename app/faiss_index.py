@@ -68,11 +68,20 @@ class LoadPatternIndex:
 
         return self._brute_force_search(q[0], k)
 
-    def _brute_force_search(self, query: np.ndarray, k: int) -> list[dict]:
+    def _brute_force_search(self, query: np.ndarray, k: int) -> list[dict[str, object]]:
+        """Cosine-similarity search without FAISS (O(n) linear scan).
+
+        Args:
+            query: Unit query vector of shape (dim,).
+            k: Number of nearest neighbours to return.
+
+        Returns:
+            Ranked list of result dicts with 'rank', 'index', 'similarity', 'metadata'.
+        """
         if not self._vectors:
             return []
         q_norm = query / (np.linalg.norm(query) + 1e-9)
-        sims = []
+        sims: list[tuple[float, int]] = []
         for i, v in enumerate(self._vectors):
             v_norm = v / (np.linalg.norm(v) + 1e-9)
             sim = float(np.dot(q_norm, v_norm))
@@ -83,8 +92,15 @@ class LoadPatternIndex:
             for r, (s, i) in enumerate(sims[:k])
         ]
 
+    def clear(self) -> None:
+        """Remove all vectors and invalidate the index."""
+        self._vectors.clear()
+        self._metadata.clear()
+        self._index = None
+
     @property
     def size(self) -> int:
+        """Number of vectors stored in the index."""
         return len(self._vectors)
 
 
