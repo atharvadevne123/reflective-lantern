@@ -19,14 +19,16 @@ TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=test_
 
 
 @pytest.fixture(scope="session", autouse=True)
-def create_test_db():
+def create_test_db() -> None:
+    """Create test DB tables once per session and drop them after."""
     Base.metadata.create_all(bind=test_engine)
-    yield
+    yield  # type: ignore[misc]
     Base.metadata.drop_all(bind=test_engine)
 
 
 @pytest.fixture
 def db_session():
+    """Yield a fresh SQLAlchemy session for each test."""
     session = TestingSessionLocal()
     try:
         yield session
@@ -36,6 +38,7 @@ def db_session():
 
 @pytest.fixture
 def client(db_session):
+    """FastAPI TestClient wired to the in-memory test database."""
     def override_get_db():
         try:
             yield db_session
@@ -50,6 +53,7 @@ def client(db_session):
 
 @pytest.fixture
 def sample_df() -> pd.DataFrame:
+    """300-row synthetic energy DataFrame for model tests."""
     rng = np.random.default_rng(42)
     n = 300
     return pd.DataFrame(
