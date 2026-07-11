@@ -15,16 +15,19 @@ from starlette.responses import Response
 
 logger = logging.getLogger(__name__)
 
+CORRELATION_ID_HEADER = "X-Correlation-ID"
+RESPONSE_TIME_HEADER = "X-Response-Time-Ms"
+
 
 class CorrelationIDMiddleware(BaseHTTPMiddleware):
     """Read or generate X-Correlation-ID and expose it on request.state."""
 
     async def dispatch(self, request: Request, call_next: object) -> Response:
         """Read or generate X-Correlation-ID, attach it to request state, and echo in response."""
-        corr_id = request.headers.get("X-Correlation-ID", str(uuid.uuid4()))
+        corr_id = request.headers.get(CORRELATION_ID_HEADER, str(uuid.uuid4()))
         request.state.correlation_id = corr_id
         response: Response = await call_next(request)
-        response.headers["X-Correlation-ID"] = corr_id
+        response.headers[CORRELATION_ID_HEADER] = corr_id
         return response
 
 
@@ -45,5 +48,5 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
             elapsed_ms,
             corr_id,
         )
-        response.headers["X-Response-Time-Ms"] = f"{elapsed_ms:.1f}"
+        response.headers[RESPONSE_TIME_HEADER] = f"{elapsed_ms:.1f}"
         return response
