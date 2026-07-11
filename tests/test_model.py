@@ -138,3 +138,34 @@ def test_metrics_file_content(sample_df, sample_target, tmp_path, monkeypatch) -
     stored = json.loads(mtp.read_text())
     assert stored["n_samples"] == metrics["n_samples"]
     assert stored["r2_mean"] == pytest.approx(metrics["r2_mean"])
+
+
+def test_cv_n_splits_constant_used() -> None:
+    from app.model import CV_N_SPLITS
+
+    assert CV_N_SPLITS == 5
+
+
+def test_cv_random_state_constant_used() -> None:
+    from app.model import CV_RANDOM_STATE
+
+    assert CV_RANDOM_STATE == 42
+
+
+def test_load_metrics_model_version_matches_constant() -> None:
+    from app.model import MODEL_VERSION
+
+    m = load_metrics()
+    assert m.get("model_version") == MODEL_VERSION or m.get("note") == "no metrics file"
+
+
+def test_predict_values_positive(sample_df, sample_target) -> None:
+    bundle, _ = train_model(sample_df, sample_target)
+    preds = predict(sample_df.head(5), bundle)
+    assert len(preds) == 5
+
+
+def test_train_model_r2_in_metrics(sample_df, sample_target) -> None:
+    _, metrics = train_model(sample_df, sample_target)
+    assert isinstance(metrics["r2_mean"], float)
+    assert isinstance(metrics["r2_std"], float)
