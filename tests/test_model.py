@@ -14,10 +14,6 @@ def test_train_returns_metrics(trained_model):
     assert metrics["r2_mean"] > -2.0
     assert metrics["mae_kwh"] >= 0
 
-    def test_synthetic_loads_in_range(self, synthetic_data):
-        _, y = synthetic_data
-        assert y.min() >= 1000
-        assert y.max() <= 8000
 
 def test_train_r2_reasonable(trained_model):
     _, metrics = trained_model
