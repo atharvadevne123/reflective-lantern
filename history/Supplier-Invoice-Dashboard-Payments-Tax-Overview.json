@@ -98,6 +98,6 @@
     "test_count": 337,
     "commits": 60,
     "push_status": "blocked_by_git_proxy \u2014 60 commits saved to pending/ as bundle+patch",
-    "email_status": "pending"
+    "email_status": "network_blocked (SMTP unreachable); PDF saved to pending/"
   }
 ]
