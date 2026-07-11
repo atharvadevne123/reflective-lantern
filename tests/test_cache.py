@@ -70,3 +70,45 @@ def test_overwrite_resets_ttl(cache) -> None:
     cache.set("k", "v1")
     cache.set("k", "v2")
     assert cache.get("k") == "v2"
+
+
+def test_multiple_keys_independent(cache) -> None:
+    cache.set("a", 1)
+    cache.set("b", 2)
+    assert cache.get("a") == 1
+    assert cache.get("b") == 2
+
+
+@pytest.mark.parametrize("key", ["key1", "key-two", "KEY_THREE", "k123"])
+def test_various_key_formats(cache, key) -> None:
+    cache.set(key, "value")
+    assert cache.get(key) == "value"
+
+
+def test_clear_then_set(cache) -> None:
+    cache.set("x", 10)
+    cache.clear()
+    cache.set("x", 20)
+    assert cache.get("x") == 20
+
+
+def test_len_after_expiry(cache) -> None:
+    tiny = TTLCache(ttl_seconds=0.01, max_size=10)
+    tiny.set("a", 1)
+    time.sleep(0.02)
+    tiny.get("a")
+    assert len(tiny) == 0
+
+
+@pytest.mark.parametrize("ttl", [0.1, 1.0, 10.0])
+def test_cache_respects_different_ttls(ttl) -> None:
+    c = TTLCache(ttl_seconds=ttl)
+    c.set("k", "v")
+    assert c.get("k") == "v"
+
+
+def test_invalidate_then_set(cache) -> None:
+    cache.set("k", "old")
+    cache.invalidate("k")
+    cache.set("k", "new")
+    assert cache.get("k") == "new"
