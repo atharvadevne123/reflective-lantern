@@ -109,3 +109,33 @@ def test_sma_valid_values_count(n) -> None:
     result = compute_sma(values, window=3)
     valid_count = sum(1 for v in result if not math.isnan(v))
     assert valid_count == max(0, n - 2)
+
+
+def test_linear_trend_returns_required_keys() -> None:
+    result = linear_trend_forecast([100_000, 110_000, 120_000], horizon=2)
+    for key in ("slope", "intercept", "r_squared", "forecasts"):
+        assert key in result
+
+
+@pytest.mark.parametrize(
+    "alpha,expected_smoothed_close_to",
+    [(0.01, 100_000), (0.99, 200_000)],
+)
+def test_exp_smoothing_alpha_effect(alpha, expected_smoothed_close_to) -> None:
+    values = [100_000] * 8 + [200_000]
+    result = exponential_smoothing_forecast(values, alpha=alpha, horizon=1)
+    diff = abs(result[0] - expected_smoothed_close_to)
+    assert diff < 150_000
+
+
+def test_sma_all_same_values() -> None:
+    values = [250_000.0] * 6
+    result = compute_sma(values, window=3)
+    for v in result[2:]:
+        assert v == pytest.approx(250_000.0)
+
+
+def test_linear_trend_r_squared_bounded() -> None:
+    values = [100_000 + i * 10_000 for i in range(10)]
+    result = linear_trend_forecast(values)
+    assert 0.0 <= result["r_squared"] <= 1.0
