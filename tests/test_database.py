@@ -4,8 +4,6 @@ from __future__ import annotations
 
 from datetime import datetime
 
-import pytest
-
 from app.database import AnomalyLog, DriftLog, EnergyReading, PredictionLog
 
 
@@ -75,3 +73,44 @@ def test_query_by_building_id(db_session):
     db_session.commit()
     rows = db_session.query(EnergyReading).filter(EnergyReading.building_id == "query-test-bldg").all()
     assert len(rows) >= 3
+
+
+def test_prediction_log_actual_kwh_nullable(db_session):
+    p = PredictionLog(
+        building_id="nullable-test",
+        timestamp=datetime.utcnow(),
+        predicted_kwh=10.0,
+        latency_ms=5.0,
+        actual_kwh=None,
+    )
+    db_session.add(p)
+    db_session.commit()
+    assert p.actual_kwh is None
+
+
+def test_drift_log_drift_detected_zero(db_session):
+    d = DriftLog(
+        feature_name="temperature_c",
+        ks_statistic=0.02,
+        p_value=0.85,
+        drift_detected=0,
+    )
+    db_session.add(d)
+    db_session.commit()
+    fetched = db_session.query(DriftLog).filter(DriftLog.feature_name == "temperature_c").first()
+    assert fetched is not None
+    assert fetched.drift_detected == 0
+
+
+def test_anomaly_log_severity_none(db_session):
+    a = AnomalyLog(
+        building_id="normal-bldg",
+        timestamp=datetime.utcnow(),
+        consumption_kwh=12.0,
+        anomaly_score=0.1,
+        is_anomaly=0,
+        severity="none",
+    )
+    db_session.add(a)
+    db_session.commit()
+    assert a.severity == "none"
