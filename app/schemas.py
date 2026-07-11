@@ -31,6 +31,8 @@ class EnergyReadingIn(BaseModel):
 
 
 class PredictResponse(BaseModel):
+    """Forecasting model output for a single building reading."""
+
     building_id: str
     timestamp: datetime
     predicted_kwh: float
@@ -54,6 +56,8 @@ class AnomalyRequest(BaseModel):
 
 
 class AnomalyResponse(BaseModel):
+    """Anomaly detection result for a single consumption reading."""
+
     building_id: str
     timestamp: datetime
     consumption_kwh: float
@@ -64,11 +68,15 @@ class AnomalyResponse(BaseModel):
 
 
 class DriftRequest(BaseModel):
+    """Request body for the /drift endpoint."""
+
     current_values: list[float] = Field(..., min_length=10, description="Current window of consumption readings")
     reference_values: list[float] | None = Field(None, description="Reference distribution (uses global if omitted)")
 
 
 class DriftResponse(BaseModel):
+    """KS-test drift detection result."""
+
     ks_statistic: float
     p_value: float
     drift_detected: bool
