@@ -4,6 +4,14 @@ from __future__ import annotations
 
 from pydantic import BaseModel, Field, field_validator
 
+_MAX_SQFT = 50_000
+_MAX_BEDROOMS = 20
+_MAX_BATHROOMS = 20.0
+_MIN_YEAR = 1800
+_MAX_YEAR = 2026
+_BATCH_MAX = 100
+_MAX_TOP_K = 20
+
 
 class PropertyInput(BaseModel):
     """Input schema for a single property valuation request.
@@ -12,12 +20,12 @@ class PropertyInput(BaseModel):
     must not precede ``year_built`` when both are supplied.
     """
 
-    sqft: float = Field(..., gt=0, le=50_000, description="Total living area in square feet")
-    bedrooms: int = Field(..., ge=1, le=20)
-    bathrooms: float = Field(..., ge=0.5, le=20)
+    sqft: float = Field(..., gt=0, le=_MAX_SQFT, description="Total living area in square feet")
+    bedrooms: int = Field(..., ge=1, le=_MAX_BEDROOMS)
+    bathrooms: float = Field(..., ge=0.5, le=_MAX_BATHROOMS)
     lot_size: float = Field(0.0, ge=0, description="Lot size in square feet")
-    year_built: int = Field(..., ge=1800, le=2026)
-    renovation_year: int | None = Field(None, ge=1800, le=2026)
+    year_built: int = Field(..., ge=_MIN_YEAR, le=_MAX_YEAR)
+    renovation_year: int | None = Field(None, ge=_MIN_YEAR, le=_MAX_YEAR)
     condition_score: float = Field(5.0, ge=1.0, le=10.0)
     zipcode: str = Field(..., min_length=5, max_length=10)
     city: str = Field("", max_length=100)
@@ -59,7 +67,7 @@ class PredictionResponse(BaseModel):
 class BatchPropertyInput(BaseModel):
     """Input schema for a batch of up to 100 property valuation requests."""
 
-    properties: list[PropertyInput] = Field(..., min_length=1, max_length=100)
+    properties: list[PropertyInput] = Field(..., min_length=1, max_length=_BATCH_MAX)
 
 
 class BatchPredictionResponse(BaseModel):
@@ -73,7 +81,7 @@ class ComparableRequest(BaseModel):
     """Request schema for comparable-property search via FAISS."""
 
     property: PropertyInput
-    top_k: int = Field(5, ge=1, le=20)
+    top_k: int = Field(5, ge=1, le=_MAX_TOP_K)
 
 
 class ComparableResponse(BaseModel):
