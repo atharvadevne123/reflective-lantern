@@ -18,9 +18,13 @@ from typing import Any
 
 logger = logging.getLogger(__name__)
 
-_REGION = os.getenv("AWS_REGION", "us-east-1")
+DEFAULT_REGION = "us-east-1"
+DEFAULT_PREFIX = "realty-edge/models"
+ARTEFACT_FILENAMES = ("model.joblib", "metrics.json")
+
+_REGION = os.getenv("AWS_REGION", DEFAULT_REGION)
 _BUCKET = os.getenv("S3_BUCKET", "")
-_PREFIX = os.getenv("S3_PREFIX", "realty-edge/models")
+_PREFIX = os.getenv("S3_PREFIX", DEFAULT_PREFIX)
 
 
 def _s3_client() -> Any | None:
@@ -81,7 +85,7 @@ def download_model_artefacts(local_dir: str = ".") -> list[str]:
         logger.debug("S3 download skipped.")
         return []
     downloaded: list[str] = []
-    for filename in ("model.joblib", "metrics.json"):
+    for filename in ARTEFACT_FILENAMES:
         key = f"{_PREFIX}/{filename}"
         local_path = os.path.join(local_dir, filename)
         try:
