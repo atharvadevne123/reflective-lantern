@@ -110,3 +110,31 @@ def test_synthetic_model_predict_finite(seed) -> None:
     preds = predict(stub, bundle)
     assert len(preds) == 1
     assert np.isfinite(preds[0])
+
+
+def test_train_model_model_version_in_metrics(sample_df, sample_target) -> None:
+    _, metrics = train_model(sample_df, sample_target)
+    assert "model_version" in metrics
+
+
+@pytest.mark.parametrize("n_samples", [20, 50])
+def test_train_model_n_samples_recorded(sample_df, sample_target, n_samples) -> None:
+    df_subset = sample_df.head(n_samples)
+    y_subset = sample_target[:n_samples]
+    _, metrics = train_model(df_subset, y_subset)
+    assert metrics["n_samples"] == n_samples
+
+
+def test_metrics_file_content(sample_df, sample_target, tmp_path, monkeypatch) -> None:
+    import json
+
+    import app.model as model_module
+
+    mtp = tmp_path / "metrics.json"
+    mp = tmp_path / "model.joblib"
+    monkeypatch.setattr(model_module, "MODEL_PATH", mp)
+    monkeypatch.setattr(model_module, "METRICS_PATH", mtp)
+    _, metrics = train_model(sample_df, sample_target)
+    stored = json.loads(mtp.read_text())
+    assert stored["n_samples"] == metrics["n_samples"]
+    assert stored["r2_mean"] == pytest.approx(metrics["r2_mean"])
