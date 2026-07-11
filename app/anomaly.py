@@ -1,22 +1,11 @@
-"""Anomaly detection for property valuations.
+"""Extended anomaly analysis: Z-score, IQR, and multi-metric severity."""
 
-Flags properties whose predicted value deviates significantly from the
-neighbourhood median using Z-score and IQR methods. This module complements
-the KS-test drift monitor by operating on individual predictions rather than
-feature distributions.
-
-Typical usage
--------------
-from app.anomaly import detect_valuation_anomaly
-result = detect_valuation_anomaly(predicted=250_000, neighborhood_median=600_000)
-if result["is_anomaly"]:
-    logger.warning("Possibly underpriced or data entry error")
-"""
+from __future__ import annotations
 
 import logging
-from typing import Any
 
 import numpy as np
+from sklearn.ensemble import IsolationForest
 
 logger = logging.getLogger(__name__)
 
@@ -26,38 +15,22 @@ RATIO_LOW_THRESHOLD = 0.4
 RATIO_HIGH_THRESHOLD = 2.5
 MIN_REFERENCE_SIZE = 4
 
-
-def detect_valuation_anomaly(
-    predicted: float,
-    neighborhood_median: float,
-    neighborhood_std: float | None = None,
-    reference_values: list[float] | None = None,
-) -> dict[str, Any]:
-    """Detect whether a predicted valuation is anomalous.
-
-    Uses Z-score if a standard deviation is provided, otherwise falls back to
-    a simple ratio-based check against the neighbourhood median.
+def zscore_flag(value: float, mean: float, std: float, threshold: float = 3.0) -> bool:
+    """Return True if *value* is more than *threshold* standard deviations from *mean*.
 
     Args:
-        predicted: The model's predicted property value.
-        neighborhood_median: Median value for comparable properties in the area.
-        neighborhood_std: Standard deviation of comparable values (optional).
-        reference_values: Full list of reference values for IQR computation.
+        value: The observation to test.
+        mean: Distribution mean.
+        std: Distribution standard deviation.
+        threshold: Number of standard deviations to use as the boundary.
 
     Returns:
-        Dict with keys: is_anomaly (bool), method (str), score (float),
-        deviation_pct (float), direction ('low'|'high'|'normal').
+        True when the observation is flagged as anomalous.
     """
-    if predicted <= 0 or neighborhood_median <= 0:
-        return {
-            "is_anomaly": False,
-            "method": "skipped",
-            "score": 0.0,
-            "deviation_pct": 0.0,
-            "direction": "normal",
-        }
+    if std < 1e-9:
+        return False
+    return abs(value - mean) / std > threshold
 
-    deviation_pct = (predicted - neighborhood_median) / neighborhood_median * 100
 
     if neighborhood_std and neighborhood_std > 0:
         zscore = abs(predicted - neighborhood_median) / neighborhood_std
@@ -83,25 +56,48 @@ def detect_valuation_anomaly(
         score = float(abs(ratio - 1.0))
         method = "ratio"
 
-    direction = (
-        "low"
-        if predicted < neighborhood_median
-        else ("high" if predicted > neighborhood_median else "normal")
-    )
+    Args:
+        value: The observation to test.
+        q1: First quartile of the reference distribution.
+        q3: Third quartile of the reference distribution.
+        k: IQR multiplier (default 1.5 = standard Tukey fence).
 
-    if is_anomaly:
-        logger.warning(
-            "Valuation anomaly detected: predicted=%.0f median=%.0f deviation=%.1f%% method=%s",
-            predicted,
-            neighborhood_median,
-            deviation_pct,
-            method,
-        )
+    Returns:
+        True when the observation is flagged as anomalous.
+    """
+    iqr = q3 - q1
+    lower = q1 - k * iqr
+    upper = q3 + k * iqr
+    return value < lower or value > upper
 
-    return {
-        "is_anomaly": bool(is_anomaly),
-        "method": method,
-        "score": round(score, 4),
-        "deviation_pct": round(deviation_pct, 2),
-        "direction": direction,
-    }
+
+def compute_severity(
+    value: float,
+    reference: list[float],
+    z_threshold: float = 3.0,
+    iqr_k: float = 1.5,
+) -> dict[str, object]:
+    """Run both Z-score and IQR tests and combine into a severity label.
+
+    Args:
+        value: Consumption reading to evaluate.
+        reference: Historical reference window.
+        z_threshold: Z-score boundary for flagging.
+        iqr_k: IQR fence multiplier.
+
+    Returns:
+        Dict with keys 'z_flag', 'iqr_flag', 'severity' ('none'|'warning'|'critical').
+    """
+    arr = np.array(reference, dtype=float)
+    mean, std = float(arr.mean()), float(arr.std())
+    q1, q3 = float(np.percentile(arr, 25)), float(np.percentile(arr, 75))
+
+    z = zscore_flag(value, mean, std, z_threshold)
+    iq = iqr_flag(value, q1, q3, iqr_k)
+
+    both = z and iq
+    either = z or iq
+    severity = "critical" if both else ("warning" if either else "none")
+
+    logger.debug("Anomaly severity=%s z=%s iqr=%s value=%.2f mean=%.2f", severity, z, iq, value, mean)
+    return {"z_flag": z, "iqr_flag": iq, "severity": severity}

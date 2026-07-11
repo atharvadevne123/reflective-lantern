@@ -1,123 +1,111 @@
-"""Tests for FastAPI endpoints."""
+"""API endpoint tests."""
+
+from __future__ import annotations
 
 import pytest
+from fastapi.testclient import TestClient
 
 
-def test_health_returns_ok(client) -> None:
-    resp = client.get("/api/v1/health")
-    assert resp.status_code == 200
-    data = resp.json()
+def test_health(client: TestClient):
+    r = client.get("/api/v1/health")
+    assert r.status_code == 200
+    data = r.json()
     assert data["status"] == "ok"
-    assert "model_version" in data
-    assert "db_connected" in data
+    assert "version" in data
 
 
-def test_metrics_endpoint(client) -> None:
-    resp = client.get("/api/v1/metrics")
-    assert resp.status_code == 200
-    data = resp.json()
-    assert "model_version" in data
+def test_train_endpoint(client: TestClient):
+    r = client.post("/api/v1/train")
+    assert r.status_code == 200
+    data = r.json()
+    assert data["status"] == "trained"
+    assert "metrics" in data
+    assert data["metrics"]["r2_mean"] > -1.0
 
 
-def test_predict_returns_valuation(client, sample_property) -> None:
-    resp = client.post("/api/v1/predict", json=sample_property)
-    assert resp.status_code == 200
-    data = resp.json()
-    assert data["predicted_value"] > 0
-    assert 0 <= data["investment_score"] <= 10
-    assert data["confidence_band_low"] < data["predicted_value"]
-    assert data["confidence_band_high"] > data["predicted_value"]
-    assert "correlation_id" in data
-    assert "model_version" in data
+def test_predict_after_train(client: TestClient, energy_payload):
+    client.post("/api/v1/train")
+    r = client.post("/api/v1/predict", json=energy_payload)
+    assert r.status_code == 200
+    data = r.json()
+    assert "predicted_kwh" in data
+    assert data["predicted_kwh"] >= 0
+    assert data["building_id"] == "bldg-001"
+    assert data["latency_ms"] >= 0
 
 
-def test_predict_confidence_band_width(client, sample_property) -> None:
-    resp = client.post("/api/v1/predict", json=sample_property)
-    data = resp.json()
-    low = data["confidence_band_low"]
-    high = data["confidence_band_high"]
-    mid = data["predicted_value"]
-    assert abs(low - mid * 0.92) < 1
-    assert abs(high - mid * 1.08) < 1
+def test_predict_no_model(client: TestClient, energy_payload):
+    """Should return 503 when model not loaded (monkeypatched)."""
+    import app.main as main_mod
+
+    original = main_mod._model_bundle
+    main_mod._model_bundle = None
+    try:
+        r = client.post("/api/v1/predict", json=energy_payload)
+        assert r.status_code == 503
+    finally:
+        main_mod._model_bundle = original
 
 
-@pytest.mark.parametrize(
-    "sqft,beds,baths",
-    [
-        (800, 1, 1.0),
-        (1500, 2, 1.5),
-        (3000, 4, 3.0),
-        (4500, 5, 4.0),
-    ],
-)
-def test_predict_various_sizes(client, sample_property, sqft, beds, baths) -> None:
-    prop = dict(sample_property)
-    prop["sqft"] = sqft
-    prop["bedrooms"] = beds
-    prop["bathrooms"] = baths
-    resp = client.post("/api/v1/predict", json=prop)
-    assert resp.status_code == 200
-    assert resp.json()["predicted_value"] > 0
+def test_anomaly_after_train(client: TestClient, energy_payload):
+    client.post("/api/v1/train")
+    anomaly_payload = {**energy_payload, "consumption_kwh": 15.0}
+    del anomaly_payload["consumption_kwh"]
+    anomaly_payload["consumption_kwh"] = 15.0
+    r = client.post("/api/v1/anomaly", json=anomaly_payload)
+    assert r.status_code == 200
+    data = r.json()
+    assert "is_anomaly" in data
+    assert "anomaly_score" in data
+    assert data["severity"] in ("none", "warning", "critical")
 
 
-def test_predict_missing_required_field(client, sample_property) -> None:
-    prop = dict(sample_property)
-    del prop["sqft"]
-    resp = client.post("/api/v1/predict", json=prop)
-    assert resp.status_code == 422
+def test_anomaly_no_model(client: TestClient, energy_payload):
+    import app.main as main_mod
+
+    original = main_mod._anomaly_bundle
+    main_mod._anomaly_bundle = None
+    try:
+        r = client.post("/api/v1/anomaly", json=energy_payload)
+        assert r.status_code == 503
+    finally:
+        main_mod._anomaly_bundle = original
 
 
-def test_predict_invalid_sqft(client, sample_property) -> None:
-    prop = dict(sample_property)
-    prop["sqft"] = -100
-    resp = client.post("/api/v1/predict", json=prop)
-    assert resp.status_code == 422
+def test_drift_endpoint(client: TestClient):
+    client.post("/api/v1/train")
+    payload = {
+        "current_values": [12.0 + i * 0.1 for i in range(30)],
+        "reference_values": [10.0 + i * 0.05 for i in range(30)],
+    }
+    r = client.post("/api/v1/drift", json=payload)
+    assert r.status_code == 200
+    data = r.json()
+    assert "ks_statistic" in data
+    assert "drift_detected" in data
+    assert isinstance(data["drift_detected"], bool)
 
 
-def test_predict_invalid_year_built(client, sample_property) -> None:
-    prop = dict(sample_property)
-    prop["year_built"] = 1700
-    resp = client.post("/api/v1/predict", json=prop)
-    assert resp.status_code == 422
+def test_drift_insufficient_reference(client: TestClient):
+    payload = {
+        "current_values": [1.0] * 20,
+        "reference_values": [1.0] * 5,
+    }
+    r = client.post("/api/v1/drift", json=payload)
+    assert r.status_code == 400
 
+    def test_analyze_returns_trend(self, client):
+        loads = [float(3000 + i * 10) for i in range(48)]
+        data = client.post("/api/v1/analyze", json=loads).json()
+        assert "trend" in data
+        assert "direction" in data["trend"]
 
-def test_batch_predict(client, sample_property) -> None:
-    body = {"properties": [sample_property, sample_property]}
-    resp = client.post("/api/v1/batch-predict", json=body)
-    assert resp.status_code == 200
-    data = resp.json()
-    assert data["count"] == 2
-    assert len(data["predictions"]) == 2
-
-
-def test_batch_predict_empty_raises(client) -> None:
-    resp = client.post("/api/v1/batch-predict", json={"properties": []})
-    assert resp.status_code == 422
-
-
-def test_comparable_properties(client, sample_property) -> None:
-    body = {"property": sample_property, "top_k": 3}
-    resp = client.post("/api/v1/comparable-properties", json=body)
-    assert resp.status_code == 200
-    data = resp.json()
-    assert "comparables" in data
-    assert "query_vector_dim" in data
-
-
-def test_neighborhood_stats_returns_default(client) -> None:
-    resp = client.get("/api/v1/neighborhood-stats/99999")
-    assert resp.status_code == 200
-    data = resp.json()
-    assert data["zipcode"] == "99999"
-    assert data["median_price"] > 0
-
-
-def test_drift_status(client) -> None:
-    resp = client.get("/api/v1/drift-status")
-    assert resp.status_code == 200
-    data = resp.json()
-    assert "drift_reports" in data
+def test_metrics_endpoint(client: TestClient):
+    r = client.get("/api/v1/metrics")
+    assert r.status_code == 200
+    data = r.json()
     assert "total_predictions" in data
+    assert "total_anomalies_flagged" in data
 
 
 def test_run_drift_check_insufficient_data(client) -> None:
@@ -128,18 +116,19 @@ def test_run_drift_check_insufficient_data(client) -> None:
     assert data["status"] in ("skipped", "completed")
 
 
-def test_correlation_id_header(client, sample_property) -> None:
-    resp = client.post(
-        "/api/v1/predict",
-        json=sample_property,
-        headers={"X-Correlation-ID": "test-corr-123"},
-    )
-    assert resp.headers.get("x-correlation-id") == "test-corr-123"
+@pytest.mark.parametrize("hour", [0, 6, 12, 18, 23])
+def test_predict_various_hours(client: TestClient, energy_payload, hour):
+    client.post("/api/v1/train")
+    payload = {**energy_payload, "hour": hour}
+    r = client.post("/api/v1/predict", json=payload)
+    assert r.status_code == 200
+    assert r.json()["predicted_kwh"] >= 0
 
 
-def test_response_time_header(client) -> None:
-    resp = client.get("/api/v1/health")
-    assert "x-response-time-ms" in resp.headers
+def test_predict_invalid_building_id(client: TestClient, energy_payload):
+    payload = {**energy_payload, "building_id": "bad id!@#"}
+    r = client.post("/api/v1/predict", json=payload)
+    assert r.status_code == 422
 
 
 def test_neighborhood_stats_known_zip(client, db_session) -> None:

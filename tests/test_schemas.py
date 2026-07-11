@@ -1,86 +1,79 @@
-"""Tests for Pydantic request/response schemas."""
+"""Schema validation tests."""
+
+from __future__ import annotations
 
 import pytest
 from pydantic import ValidationError
 
-from app.schemas import BatchPropertyInput, PropertyInput
+from app.schemas import AnomalyRequest, DriftRequest, EnergyReadingIn
 
 
-def base_props() -> dict:
-    return {
-        "sqft": 1800.0,
-        "bedrooms": 3,
-        "bathrooms": 2.0,
-        "lot_size": 5000.0,
-        "year_built": 1990,
-        "condition_score": 7.5,
-        "zipcode": "94102",
-        "school_score": 8.0,
-        "transit_score": 9.0,
-        "walkability_score": 8.5,
-        "crime_rate": 0.3,
-        "median_neighborhood_price": 1_200_000.0,
-        "median_price_per_sqft": 800.0,
-        "avg_rental_yield": 0.05,
-        "listing_days": 14,
-    }
+def test_energy_reading_valid():
+    r = EnergyReadingIn(
+        building_id="bldg-001",
+        timestamp="2025-06-01T14:00:00",
+        hour=14,
+        day_of_week=1,
+        month=6,
+        temperature_c=28.5,
+        humidity_pct=60.0,
+        occupancy=50,
+        hvac_state=1,
+        consumption_kwh=12.0,
+    )
+    assert r.building_id == "bldg-001"
+    assert r.hour == 14
 
 
-def test_valid_property_input() -> None:
-    prop = PropertyInput(**base_props())
-    assert prop.sqft == 1800.0
-    assert prop.bedrooms == 3
-
-
-@pytest.mark.parametrize(
-    "field,bad_val",
-    [
-        ("sqft", -1),
-        ("sqft", 0),
-        ("bedrooms", 0),
-        ("bedrooms", 25),
-        ("bathrooms", 0),
-        ("year_built", 1700),
-        ("year_built", 2030),
-        ("crime_rate", -0.1),
-        ("crime_rate", 1.5),
-        ("condition_score", 0.5),
-        ("condition_score", 11.0),
-        ("avg_rental_yield", -0.1),
-    ],
-)
-def test_invalid_field_raises_validation_error(field, bad_val) -> None:
-    props = base_props()
-    props[field] = bad_val
+def test_energy_reading_invalid_hour():
     with pytest.raises(ValidationError):
-        PropertyInput(**props)
+        EnergyReadingIn(
+            building_id="b",
+            timestamp="2025-01-01T00:00:00",
+            hour=25,
+            day_of_week=0,
+            month=1,
+            temperature_c=20.0,
+            humidity_pct=50.0,
+            occupancy=0,
+            hvac_state=0,
+        )
 
 
-def test_renovation_year_before_built_raises() -> None:
-    props = base_props()
-    props["renovation_year"] = 1980
-    props["year_built"] = 1990
+def test_energy_reading_invalid_building_id():
     with pytest.raises(ValidationError):
-        PropertyInput(**props)
+        EnergyReadingIn(
+            building_id="bad id!@#",
+            timestamp="2025-01-01T00:00:00",
+            hour=12,
+            day_of_week=0,
+            month=1,
+            temperature_c=20.0,
+            humidity_pct=50.0,
+            occupancy=0,
+            hvac_state=0,
+        )
 
 
-def test_renovation_year_equal_to_built_is_valid() -> None:
-    props = base_props()
-    props["renovation_year"] = 1990
-    prop = PropertyInput(**props)
-    assert prop.renovation_year == 1990
-
-
-def test_zipcode_too_short_raises() -> None:
-    props = base_props()
-    props["zipcode"] = "123"
+@pytest.mark.parametrize("temp", [-41.0, 61.0])
+def test_energy_reading_invalid_temperature(temp):
     with pytest.raises(ValidationError):
-        PropertyInput(**props)
+        EnergyReadingIn(
+            building_id="b001",
+            timestamp="2025-01-01T00:00:00",
+            hour=12,
+            day_of_week=0,
+            month=1,
+            temperature_c=temp,
+            humidity_pct=50.0,
+            occupancy=0,
+            hvac_state=0,
+        )
 
 
-def test_batch_input_empty_raises() -> None:
+def test_drift_request_min_length():
     with pytest.raises(ValidationError):
-        BatchPropertyInput(properties=[])
+        DriftRequest(current_values=[1.0, 2.0])
 
 
 def test_batch_input_too_many_raises() -> None:

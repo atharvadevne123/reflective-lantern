@@ -1,112 +1,93 @@
-"""Tests for drift detection and prediction logging."""
+"""Drift detection and monitoring tests."""
 
+from __future__ import annotations
+
+import numpy as np
 import pytest
 
-from app.monitoring import compute_drift, log_prediction, run_drift_check
+from app.monitoring import (
+    LatencyTimer,
+    compute_drift,
+    set_reference_window,
+)
 
 
-def test_compute_drift_no_drift() -> None:
-    import numpy as np
-
-    rng = np.random.default_rng(42)
-    ref = rng.normal(500_000, 50_000, 100).tolist()
-    cur = rng.normal(500_000, 50_000, 100).tolist()
+def test_compute_drift_no_drift():
+    ref = list(np.random.default_rng(1).normal(10, 2, 200))
+    cur = list(np.random.default_rng(2).normal(10, 2, 200))
     result = compute_drift(ref, cur)
     assert "ks_statistic" in result
     assert "p_value" in result
-    assert "drift_detected" in result
-    assert isinstance(result["drift_detected"], bool)
-    assert result["p_value"] > 0.05
+    assert not result["drift_detected"]
 
 
-def test_compute_drift_detects_shift() -> None:
-    import numpy as np
-
-    rng = np.random.default_rng(0)
-    ref = rng.normal(300_000, 20_000, 200).tolist()
-    cur = rng.normal(700_000, 20_000, 200).tolist()
+def test_compute_drift_detects_shift():
+    ref = list(np.random.default_rng(1).normal(10, 1, 200))
+    cur = list(np.random.default_rng(2).normal(30, 1, 200))
     result = compute_drift(ref, cur)
-    assert result["drift_detected"] is True
+    assert result["drift_detected"], f"Expected drift, p={result['p_value']}"
     assert result["ks_statistic"] > 0.5
 
 
-@pytest.mark.parametrize(
-    "ref_mean,cur_mean,expect_drift",
-    [
-        (400_000, 400_000, False),
-        (400_000, 900_000, True),
-    ],
-)
-def test_compute_drift_parametrized(ref_mean, cur_mean, expect_drift) -> None:
-    import numpy as np
+def test_compute_drift_insufficient_data():
+    result = compute_drift([1.0, 2.0], [3.0, 4.0])
+    assert not result["drift_detected"]
+    assert result["reason"] == "insufficient_data"
 
-    rng = np.random.default_rng(1)
-    ref = rng.normal(ref_mean, 10_000, 200).tolist()
-    cur = rng.normal(cur_mean, 10_000, 200).tolist()
+
+def test_compute_drift_p_value_range():
+    ref = list(range(100))
+    cur = list(range(100, 200))
     result = compute_drift(ref, cur)
-    assert result["drift_detected"] == expect_drift
-
-
-def test_compute_drift_sample_counts() -> None:
-    ref = [1.0] * 50
-    cur = [2.0] * 30
-    result = compute_drift(ref, cur)
-    assert result["n_reference"] == 50
-    assert result["n_current"] == 30
-
-
-def test_log_prediction_creates_record(db_session) -> None:
-    record = log_prediction(
-        db=db_session,
-        predicted_value=450_000.0,
-        features={"sqft": 1800, "bedrooms": 3},
-        correlation_id="test-corr-001",
-        investment_score=6.5,
-    )
-    assert record.id is not None
-    assert record.predicted_value == 450_000.0
-    assert record.correlation_id == "test-corr-001"
-    assert record.investment_score == 6.5
-
-
-def test_run_drift_check_creates_report(db_session) -> None:
-    import numpy as np
-
-    rng = np.random.default_rng(5)
-    ref = rng.normal(500_000, 30_000, 100).tolist()
-    cur = rng.normal(800_000, 30_000, 100).tolist()
-    report = run_drift_check(db_session, "test_feature", ref, cur)
-    assert report.id is not None
-    assert report.feature_name == "test_feature"
-    assert report.drift_detected is True
-
-
-def test_log_prediction_without_investment_score(db_session) -> None:
-    record = log_prediction(
-        db=db_session,
-        predicted_value=300_000.0,
-        features={"sqft": 1000},
-        correlation_id="test-corr-002",
-    )
-    assert record.investment_score is None
-
-
-def test_compute_drift_ks_statistic_range() -> None:
-    import numpy as np
-
-    rng = np.random.default_rng(99)
-    ref = rng.uniform(0, 1, 100).tolist()
-    cur = rng.uniform(0, 1, 100).tolist()
-    result = compute_drift(ref, cur)
+    assert 0.0 <= result["p_value"] <= 1.0
     assert 0.0 <= result["ks_statistic"] <= 1.0
 
 
-def test_compute_drift_p_value_range() -> None:
-    import numpy as np
+def test_set_reference_window():
+    values = list(range(600))
+    set_reference_window(values)
+    from app.monitoring import _reference_window
 
-    rng = np.random.default_rng(77)
-    ref = rng.normal(0, 1, 200).tolist()
-    cur = rng.normal(0, 1, 200).tolist()
+    assert len(_reference_window) == 500
+
+
+def test_latency_timer():
+    import time
+
+    with LatencyTimer() as t:
+        time.sleep(0.01)
+    assert t.ms >= 5.0
+
+
+def test_log_prediction(db_session):
+    from datetime import datetime
+
+    from app.monitoring import log_prediction
+
+    log_prediction(db_session, "bldg-test", datetime.utcnow(), 15.5, 12.3)
+    from app.database import PredictionLog
+
+    count = db_session.query(PredictionLog).filter(PredictionLog.building_id == "bldg-test").count()
+    assert count >= 1
+
+
+def test_log_anomaly(db_session):
+    from datetime import datetime
+
+    from app.monitoring import log_anomaly
+
+    log_anomaly(db_session, "bldg-test", datetime.utcnow(), 99.9, -0.6, 1, "critical")
+    from app.database import AnomalyLog
+
+    count = db_session.query(AnomalyLog).filter(AnomalyLog.building_id == "bldg-test").count()
+    assert count >= 1
+
+
+@pytest.mark.parametrize("mean_shift", [0, 5, 10, 20])
+def test_drift_various_shifts(mean_shift: float):
+    rng = np.random.default_rng(42)
+    ref = list(rng.normal(10, 2, 200))
+    cur = list(rng.normal(10 + mean_shift, 2, 200))
     result = compute_drift(ref, cur)
     assert 0.0 <= result["p_value"] <= 1.0
 

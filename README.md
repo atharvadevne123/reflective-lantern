@@ -3,9 +3,12 @@
 ![npm](https://github.com/atharvadevne123/reflective-lantern/actions/workflows/npm-publish.yml/badge.svg)
 ![Bump Version](https://github.com/atharvadevne123/reflective-lantern/actions/workflows/bump-version.yml/badge.svg)
 
-# Reflective Lantern
+> Smart building and industrial energy consumption forecasting and anomaly detection API.
 
-Autonomous Mon–Fri code improvement agent powered by Claude Code Cloud Routines.
+[![CI](https://github.com/atharvadevne123/reflective-lantern/actions/workflows/ci.yml/badge.svg)](https://github.com/atharvadevne123/reflective-lantern/actions)
+[![Coverage](https://img.shields.io/badge/tests-59%20passed-brightgreen)](tests/)
+[![Python 3.11](https://img.shields.io/badge/python-3.11-blue.svg)](https://python.org)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.111-009688.svg)](https://fastapi.tiangolo.com)
 
 Every weekday at 9 AM CST, Reflective Lantern wakes up, picks one of @atharvadevne123’s
 GitHub repositories, implements 60 improvements, runs tests, updates docs, pushes to main,
@@ -71,53 +74,88 @@ reflective-lantern/
 ## Utility Scripts
 
 ```bash
-make health-check          # cross-repo CI / release / branch health
-make weekly-summary        # build + email 7-day digest
-make validate-history      # validate history JSON schema
-make notion-update         # sync Notion portfolio pages
-make foundry-export        # export run history as a Foundry-ready CSV
-make foundry-sync          # export + upload to a Palantir Foundry dataset
+# Clone
+git clone https://github.com/atharvadevne123/reflective-lantern
+cd reflective-lantern && git checkout innovation/watt-guard
 
-python scripts/summarize_history.py        # tabular run history
-python scripts/rotate_repos.py             # which repo is selected today
-python scripts/check_ci_status.py --failing-only
-python scripts/report_generator.py --mode weekly
+# Install
+pip install -r requirements.txt
+
+# Run
+uvicorn app.main:app --reload
 ```
 
-Foundry setup and dataset schema are documented in [docs/foundry.md](docs/foundry.md).
+Or with Docker:
 
-## Token Efficiency
+```bash
+docker-compose up --build
+```
 
-The `prompts/system_prompt.md` file exceeds Sonnet 4.6’s 2 048-token cache threshold,
-so it is cached on first use and subsequent runs hit the cache at ~10% of the original
-input cost. Combined with one-repo-per-day rotation, estimated cost is **$0.15–0.25/run**.
+## API Reference
 
-## History
-
-The `history/` directory contains JSON logs of every run per repo. Example entry:
+### POST `/api/v1/predict`
+Forecast energy consumption for a building.
 
 ```json
 {
-  "date": "2026-06-30",
-  "mode": "improvement",
-  "commits": 60,
-  "tests_passed": true,
-  "improvements": ["added pytest suite", "fixed hardcoded API key"]
+  "building_id": "bldg-001",
+  "timestamp": "2025-06-01T14:00:00",
+  "hour": 14,
+  "day_of_week": 1,
+  "month": 6,
+  "temperature_c": 28.5,
+  "humidity_pct": 60.0,
+  "occupancy": 50,
+  "hvac_state": 1,
+  "consumption_kwh": 12.0
 }
 ```
 
-See [`history/schema.json`](history/schema.json) for the full JSON schema.
+### POST `/api/v1/anomaly`
+Detect anomalous consumption readings.
 
-## Contributing
+### POST `/api/v1/drift`
+KS-test between reference and current distributions.
 
-See [CONTRIBUTING.md](CONTRIBUTING.md). Run `make test && make lint` before
-opening a pull request.
+### GET `/api/v1/metrics`
+Prediction counts, anomaly counts, drift events, model R2/MAE.
+
+### GET `/api/v1/health`
+API liveness and model load status.
+
+### POST `/api/v1/train`
+Train both models on synthetic seed data (for demo/CI).
+
+## Feature Engineering
+
+The 7-stage sklearn Pipeline computes:
+- **Temporal**: hour/day/month cyclic sin-cos, is_weekend, is_business_hour
+- **Lag**: 1h, 2h, 3h, 6h, 12h, 24h, 168h consumption lags
+- **Rolling**: mean/std/min/max over 3h, 6h, 24h windows
+- **Weather**: heat index, cooling/heating degree-hours, temp-humidity ratio
+- **Occupancy**: occ×HVAC load proxy, log-occupancy density
+- **DropNonNumeric**: removes non-numeric columns before scaling
+- **StandardScaler**: zero-mean unit-variance normalisation
+
+## Model Monitoring
+
+Every prediction is logged to `prediction_logs`. Drift is checked via KS-test between a reference window (last 500 readings after training) and the current window. Anomaly scores from IsolationForest are logged to `anomaly_logs`.
+
+## Retraining
+
+The Airflow DAG `watt_guard_weekly_retrain` runs every Sunday. It fetches recent data, validates row count ≥ 500, retrains the model, gates on R2 ≥ 0.70, and deploys the new artefact.
+
+## Testing
+
+```bash
+pytest tests/ -v
+```
 
 ## License
 
-MIT — see [LICENSE](LICENSE) if present, otherwise open for personal use.
+MIT
 
-## Tech Stack
+## API Versioning
 
 - **Scheduler**: Claude Code Cloud Routine (`cron 0 14 * * 1-5` = 9 AM CDT)
 - **AI**: Claude Sonnet 4.6 with prompt caching

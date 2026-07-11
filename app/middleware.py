@@ -1,26 +1,42 @@
-"""Custom ASGI middleware for Realty-Edge.
+"""Rate limiting and correlation-ID middleware."""
 
-Provides:
-- CorrelationIDMiddleware: stamps every request/response with X-Correlation-ID
-- RequestLoggingMiddleware: logs method, path, status, and latency at INFO level
-"""
+from __future__ import annotations
 
-import logging
 import time
 import uuid
+from collections import defaultdict
 
+from fastapi import Request, Response
 from starlette.middleware.base import BaseHTTPMiddleware
-from starlette.requests import Request
-from starlette.responses import Response
 
-logger = logging.getLogger(__name__)
+_request_counts: dict[str, list[float]] = defaultdict(list)
+RATE_LIMIT = 200  # requests per minute
+
+
+class RateLimitMiddleware(BaseHTTPMiddleware):
+    """Reject requests exceeding RATE_LIMIT per IP per minute."""
+
+    async def dispatch(self, request: Request, call_next: Any) -> Response:
+        ip = request.client.host if request.client else "unknown"
+        now = time.time()
+        window = [t for t in _request_counts[ip] if now - t < 60]
+        _request_counts[ip] = window
+        if len(window) >= RATE_LIMIT:
+            from fastapi.responses import JSONResponse
+
+            return JSONResponse({"detail": "Rate limit exceeded. Max 200 req/min."}, status_code=429)
+        _request_counts[ip].append(now)
+        return await call_next(request)
+
+RATE_LIMIT_PER_MINUTE = 200
+_rate_buckets: dict[str, deque] = defaultdict(lambda: deque())
 
 CORRELATION_ID_HEADER = "X-Correlation-ID"
 RESPONSE_TIME_HEADER = "X-Response-Time-Ms"
 
 
 class CorrelationIDMiddleware(BaseHTTPMiddleware):
-    """Read or generate X-Correlation-ID and expose it on request.state."""
+    """Attach X-Correlation-ID to every request/response."""
 
     async def dispatch(self, request: Request, call_next: object) -> Response:
         """Read or generate X-Correlation-ID, attach it to request state, and echo in response."""

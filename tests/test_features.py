@@ -1,131 +1,104 @@
-"""Tests for feature engineering pipeline."""
+"""Feature engineering pipeline tests."""
 
-import numpy as np
-import pandas as pd
+from __future__ import annotations
+
+from __future__ import annotations
+
 import pytest
 
 from app.features import (
-    AmenityCompositeTransformer,
-    InvestmentPotentialTransformer,
-    PropertyAgeTransformer,
-    RatioFeatureTransformer,
-    TierEncoderTransformer,
+    LagFeatureExtractor,
+    OccupancyFeatureExtractor,
+    RollingStatsExtractor,
+    TemporalFeatureExtractor,
+    WeatherFeatureExtractor,
     build_feature_pipeline,
-    extract_feature_array,
+    make_feature_row,
 )
 
 
-@pytest.fixture
-def single_row() -> None:
+def _base_df(n: int = 50) -> pd.DataFrame:
+    rng = np.random.default_rng(7)
     return pd.DataFrame(
-        [
-            {
-                "sqft": 2000.0,
-                "bedrooms": 3,
-                "bathrooms": 2.0,
-                "lot_size": 6000.0,
-                "year_built": 1990,
-                "renovation_year": 2015,
-                "condition_score": 8.0,
-                "school_score": 7.0,
-                "transit_score": 6.0,
-                "walkability_score": 7.0,
-                "crime_rate": 0.25,
-                "median_neighborhood_price": 500_000.0,
-                "median_price_per_sqft": 300.0,
-                "avg_rental_yield": 0.07,
-                "listing_days": 20,
-                "list_price": 450_000.0,
-            }
-        ]
+        {
+            "hour": rng.integers(0, 24, n),
+            "day_of_week": rng.integers(0, 7, n),
+            "month": rng.integers(1, 13, n),
+            "temperature_c": rng.uniform(0, 40, n),
+            "humidity_pct": rng.uniform(20, 90, n),
+            "occupancy": rng.integers(0, 200, n),
+            "hvac_state": rng.integers(0, 2, n),
+            "consumption_kwh": rng.uniform(5, 30, n),
+        }
     )
 
 
-def test_property_age_transformer(single_row) -> None:
-    t = PropertyAgeTransformer(reference_year=2026)
-    result = t.fit_transform(single_row)
-    assert "property_age" in result.columns
-    assert result["property_age"].iloc[0] == 36
-    assert result["renovation_age"].iloc[0] == 11
+def test_temporal_adds_cyclic_columns():
+    df = _base_df()
+    out = TemporalFeatureExtractor().fit_transform(df)
+    for col in ("hour_sin", "hour_cos", "dow_sin", "dow_cos", "is_weekend", "is_business_hour"):
+        assert col in out.columns, f"Missing column: {col}"
 
 
-def test_property_age_no_renovation(single_row) -> None:
-    row = single_row.copy()
-    row["renovation_year"] = None
-    result = PropertyAgeTransformer(reference_year=2026).transform(row)
-    assert result["renovation_age"].iloc[0] == result["property_age"].iloc[0]
+def test_temporal_weekend_flag():
+    df = pd.DataFrame({"hour": [10], "day_of_week": [6], "month": [1]})
+    out = TemporalFeatureExtractor().fit_transform(df)
+    assert out["is_weekend"].iloc[0] == 1
 
 
-def test_ratio_transformer(single_row) -> None:
-    t = RatioFeatureTransformer()
-    result = t.fit_transform(single_row)
-    assert "beds_per_bath" in result.columns
-    assert "sqft_per_bed" in result.columns
-    assert result["sqft_per_bed"].iloc[0] == pytest.approx(2000 / 3, rel=1e-3)
+def test_temporal_weekday_flag():
+    df = pd.DataFrame({"hour": [10], "day_of_week": [1], "month": [1]})
+    out = TemporalFeatureExtractor().fit_transform(df)
+    assert out["is_weekend"].iloc[0] == 0
 
 
-def test_ratio_transformer_zero_beds(single_row) -> None:
-    row = single_row.copy()
-    row["bedrooms"] = 1
-    result = RatioFeatureTransformer().transform(row)
-    assert result["sqft_per_bed"].iloc[0] > 0
+def test_lag_extractor_adds_columns():
+    df = _base_df()
+    out = LagFeatureExtractor().fit_transform(df)
+    for lag in [1, 2, 3, 6, 12, 24, 168]:
+        assert f"lag_{lag}h" in out.columns
 
 
-def test_amenity_composite_transformer(single_row) -> None:
-    result = AmenityCompositeTransformer().fit_transform(single_row)
-    assert "amenity_composite" in result.columns
-    assert "risk_score" in result.columns
-    assert 0 <= result["amenity_composite"].iloc[0] <= 1
-    assert 0 <= result["risk_score"].iloc[0] <= 1
+def test_lag_extractor_no_nans():
+    df = _base_df()
+    out = LagFeatureExtractor().fit_transform(df)
+    for lag in [1, 2, 3]:
+        assert out[f"lag_{lag}h"].isna().sum() == 0
 
 
-def test_investment_potential_transformer(single_row) -> None:
-    pre = AmenityCompositeTransformer().fit_transform(single_row)
-    result = InvestmentPotentialTransformer().fit_transform(pre)
-    assert "investment_potential" in result.columns
-    assert 0 <= result["investment_potential"].iloc[0] <= 10
+def test_rolling_stats_columns():
+    df = _base_df()
+    out = RollingStatsExtractor().fit_transform(df)
+    for w in [3, 6, 24]:
+        for stat in ["mean", "std", "min", "max"]:
+            assert f"roll_{stat}_{w}h" in out.columns
 
 
-def test_tier_encoder_transformer(single_row) -> None:
-    pre = PropertyAgeTransformer().fit_transform(single_row)
-    result = TierEncoderTransformer().fit_transform(pre)
-    assert "size_tier" in result.columns
-    assert "age_tier" in result.columns
-    assert result["size_tier"].iloc[0] in [1, 2, 3, 4, 5]
+def test_weather_derived_features():
+    df = _base_df()
+    out = WeatherFeatureExtractor().fit_transform(df)
+    for col in ("heat_index", "cooling_deg_hours", "heating_deg_hours", "temp_humidity_ratio"):
+        assert col in out.columns
 
 
-def test_build_feature_pipeline(single_row) -> None:
-    pipeline = build_feature_pipeline()
-    result = pipeline.fit_transform(single_row)
-    assert isinstance(result, pd.DataFrame)
-    assert "amenity_composite" in result.columns
+def test_weather_cooling_non_negative():
+    df = pd.DataFrame({"temperature_c": [30.0], "humidity_pct": [60.0]})
+    out = WeatherFeatureExtractor().fit_transform(df)
+    assert out["cooling_deg_hours"].iloc[0] >= 0
 
 
-def test_extract_feature_array(single_row) -> None:
-    pipeline = build_feature_pipeline()
-    arr = extract_feature_array(single_row, pipeline)
-    assert arr.ndim == 2
-    assert arr.shape[0] == 1
-    assert arr.shape[1] > 0
-    assert np.all(np.isfinite(arr))
+def test_occupancy_occ_hvac_load():
+    df = pd.DataFrame({"occupancy": [100], "hvac_state": [1]})
+    out = OccupancyFeatureExtractor().fit_transform(df)
+    assert out["occ_hvac_load"].iloc[0] == 100
 
 
-@pytest.mark.parametrize(
-    "sqft,expected_tier",
-    [
-        (500, 1),
-        (1000, 2),
-        (2000, 3),
-        (3000, 4),
-        (5000, 5),
-    ],
-)
-def test_size_tier_values(single_row, sqft, expected_tier) -> None:
-    row = single_row.copy()
-    row["sqft"] = sqft
-    pre = PropertyAgeTransformer().fit_transform(row)
-    result = TierEncoderTransformer().fit_transform(pre)
-    assert result["size_tier"].iloc[0] == expected_tier
+def test_full_pipeline_output_shape():
+    df = _base_df(100)
+    pipe = build_feature_pipeline()
+    result = pipe.fit_transform(df)
+    assert result.shape[0] == 100
+    assert result.shape[1] > 10
 
 
 def test_pipeline_handles_missing_values(sample_df) -> None:

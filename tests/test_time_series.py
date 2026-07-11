@@ -1,57 +1,70 @@
-"""Tests for time-series forecasting module."""
+"""Time-series forecasting utility tests."""
 
-import math
+from __future__ import annotations
 
+import numpy as np
 import pytest
 
 from app.time_series import (
-    compute_sma,
-    exponential_smoothing_forecast,
-    linear_trend_forecast,
+    detect_spikes,
+    forecast_linear_trend,
+    seasonal_baseline,
+    simple_moving_average,
 )
 
 
-def test_sma_length_matches_input() -> None:
-    result = compute_sma([1, 2, 3, 4, 5], window=3)
-    assert len(result) == 5
+def test_sma_length():
+    result = simple_moving_average([1.0] * 10, window=3)
+    assert len(result) == 10
 
 
-def test_sma_first_values_nan() -> None:
-    result = compute_sma([1, 2, 3, 4, 5], window=3)
-    assert math.isnan(result[0])
-    assert math.isnan(result[1])
+def test_sma_flat_series():
+    result = simple_moving_average([5.0] * 20, window=5)
+    assert all(abs(v - 5.0) < 0.1 for v in result[-10:])
 
 
-def test_sma_correct_value() -> None:
-    result = compute_sma([100_000, 200_000, 300_000, 400_000], window=3)
-    assert result[2] == pytest.approx(200_000.0)
-    assert result[3] == pytest.approx(300_000.0)
+def test_seasonal_baseline_length():
+    data = list(range(48))
+    baseline = seasonal_baseline(data, period=24)
+    assert len(baseline) == 48
+
+    def test_peak_trough_indices(self):
+        period = 4
+        pattern = [1000.0, 5000.0, 2000.0, 500.0]
+        loads = pattern * 5
+        result = seasonal_summary(loads, period=period)
+        assert result["peak_period_index"] == 1
+        assert result["trough_period_index"] == 3
+
+def test_seasonal_baseline_periodicity():
+    data = [float(i % 24) for i in range(72)]
+    baseline = seasonal_baseline(data, period=24)
+    # positions 0, 24, 48 should all have the same baseline
+    assert abs(baseline[0] - baseline[24]) < 1e-9
+    assert abs(baseline[0] - baseline[48]) < 1e-9
 
 
-def test_sma_too_short_all_nan() -> None:
-    result = compute_sma([100, 200], window=5)
-    assert all(math.isnan(v) for v in result)
+def test_linear_trend_length():
+    result = forecast_linear_trend([1.0, 2.0, 3.0, 4.0], horizon=10)
+    assert len(result) == 10
 
 
-def test_linear_trend_positive_slope() -> None:
-    values = [100_000, 110_000, 120_000, 130_000, 140_000]
-    result = linear_trend_forecast(values, horizon=2)
-    assert result["slope"] > 0
-    assert len(result["forecasts"]) == 2
-    assert result["r_squared"] > 0.99
+def test_linear_trend_direction():
+    # Ascending series → future values should be higher than last historical
+    result = forecast_linear_trend(list(range(20)), horizon=5)
+    assert result[0] > 18.0
 
 
-def test_linear_trend_flat_r_squared() -> None:
-    values = [500_000] * 5
-    result = linear_trend_forecast(values, horizon=3)
-    assert result["slope"] == pytest.approx(0.0, abs=1.0)
-    assert result["r_squared"] == 0.0
+def test_detect_spikes_finds_outlier():
+    data = [10.0] * 100
+    data[50] = 1000.0
+    spikes = detect_spikes(data)
+    assert 50 in spikes
 
 
-def test_linear_trend_too_few_values() -> None:
-    result = linear_trend_forecast([100_000, 120_000], horizon=3)
-    assert result["forecasts"] == []
-    assert result["r_squared"] == 0.0
+def test_detect_spikes_empty_on_flat():
+    data = [5.0] * 50
+    assert detect_spikes(data) == []
 
 
 def test_linear_trend_forecast_extrapolates() -> None:

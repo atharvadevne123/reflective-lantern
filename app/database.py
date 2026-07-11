@@ -1,28 +1,19 @@
-"""SQLAlchemy models and session management for Realty-Edge.
+"""SQLAlchemy models and session management."""
 
-Provides ORM models for properties, prediction logs, drift reports, and
-neighbourhood stats. Exports a session factory and a FastAPI dependency.
-"""
+from __future__ import annotations
 
 import logging
 import os
+from collections.abc import Iterator
 from datetime import datetime
+from typing import Generator
 
-from sqlalchemy import (
-    Boolean,
-    Column,
-    DateTime,
-    Float,
-    Integer,
-    String,
-    Text,
-    create_engine,
-)
+from sqlalchemy import Column, DateTime, Float, Integer, String, create_engine
 from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
 
 logger = logging.getLogger(__name__)
 
-DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./realty_edge.db")
+DATABASE_URL: str = os.getenv("DATABASE_URL", "sqlite:///./watt_guard.db")
 
 ADDRESS_MAX_LEN = 500
 ZIPCODE_MAX_LEN = 10
@@ -35,18 +26,20 @@ FEATURE_NAME_MAX_LEN = 100
 engine = create_engine(
     DATABASE_URL,
     connect_args={"check_same_thread": False} if "sqlite" in DATABASE_URL else {},
+    echo=False,
 )
+
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 
 class Base(DeclarativeBase):
-    """Declarative base for all Realty-Edge ORM models."""
+    """Declarative base for all ORM models."""
 
 
-class Property(Base):
-    """ORM model for a stored property listing."""
+class EnergyReading(Base):
+    """Raw energy consumption reading from a building sensor."""
 
-    __tablename__ = "properties"
+    __tablename__ = "energy_readings"
 
     id = Column(Integer, primary_key=True, index=True)
     address = Column(String(ADDRESS_MAX_LEN))
@@ -65,7 +58,7 @@ class Property(Base):
 
 
 class PredictionLog(Base):
-    """ORM model for a single model prediction record."""
+    """Audit log of every prediction made by the forecasting model."""
 
     __tablename__ = "prediction_logs"
 
@@ -79,10 +72,10 @@ class PredictionLog(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
 
 
-class DriftReport(Base):
-    """ORM model for a KS-test drift detection report."""
+class AnomalyLog(Base):
+    """Record of anomaly detection results."""
 
-    __tablename__ = "drift_reports"
+    __tablename__ = "anomaly_logs"
 
     id = Column(Integer, primary_key=True, index=True)
     feature_name = Column(String(FEATURE_NAME_MAX_LEN))
@@ -93,37 +86,29 @@ class DriftReport(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
 
 
-class NeighborhoodStat(Base):
-    """ORM model for aggregated neighbourhood statistics by ZIP code."""
+class DriftLog(Base):
+    """KS-test drift detection result per feature."""
 
-    __tablename__ = "neighborhood_stats"
+    __tablename__ = "drift_logs"
 
-    id = Column(Integer, primary_key=True, index=True)
-    zipcode = Column(String(10), unique=True, index=True)
-    median_price = Column(Float)
-    median_price_per_sqft = Column(Float)
-    school_score = Column(Float)
-    transit_score = Column(Float)
-    walkability_score = Column(Float)
-    crime_rate = Column(Float)
-    avg_rental_yield = Column(Float)
-    updated_at = Column(DateTime, default=datetime.utcnow)
+    id: int = Column(Integer, primary_key=True, index=True)
+    feature_name: str = Column(String(64), nullable=False)
+    ks_statistic: float = Column(Float, nullable=False)
+    p_value: float = Column(Float, nullable=False)
+    drift_detected: int = Column(Integer, nullable=False)
+    checked_at: datetime = Column(DateTime, default=datetime.utcnow)
 
 
-def get_db() -> Session:
-    """Yield a database session and close it when the request ends."""
-    db = SessionLocal()
+def get_db() -> Generator[Session, None, None]:
+    """Yield a database session and ensure it is closed after use."""
+    db: Session = SessionLocal()
     try:
         yield db
     finally:
         db.close()
 
 
-def init_db() -> None:
-    """Create all tables that do not yet exist.
-
-    Safe to call on startup; existing tables are left untouched.
-    """
-    logger.info("Initialising database schema at %s", DATABASE_URL.split("@")[-1])
+def create_tables() -> None:
+    """Create all ORM tables if they do not already exist."""
     Base.metadata.create_all(bind=engine)
-    logger.info("Database ready.")
+    logger.info("Database tables ensured.")

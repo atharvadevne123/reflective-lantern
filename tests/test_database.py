@@ -1,82 +1,66 @@
-"""Tests for database models and session management."""
+"""Database model tests."""
+
+from __future__ import annotations
+
+from datetime import datetime
 
 import pytest
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
 
-from app.database import Base, DriftReport, NeighborhoodStat, PredictionLog, Property
-
-TEST_URL = "sqlite:///:memory:"
+from app.database import AnomalyLog, DriftLog, EnergyReading, PredictionLog
 
 
-@pytest.fixture(scope="module")
-def mem_db() -> None:
-    engine = create_engine(TEST_URL, connect_args={"check_same_thread": False})
-    Base.metadata.create_all(bind=engine)
-    Session = sessionmaker(bind=engine)
-    db = Session()
-    yield db
-    db.close()
-    Base.metadata.drop_all(bind=engine)
-
-
-def test_create_prediction_log(mem_db) -> None:
-    log = PredictionLog(
-        predicted_value=450_000.0,
-        model_version="1.0.0",
-        features_json='{"sqft": 1800}',
-        correlation_id="test-001",
+def test_energy_reading_insert(db_session):
+    r = EnergyReading(
+        building_id="bldg-db-test",
+        timestamp=datetime.utcnow(),
+        consumption_kwh=15.2,
+        temperature_c=22.0,
+        humidity_pct=55.0,
+        occupancy=30,
+        hvac_state=1,
     )
-    mem_db.add(log)
-    mem_db.commit()
-    assert log.id is not None
-    assert log.predicted_value == 450_000.0
+    db_session.add(r)
+    db_session.commit()
+    assert r.id is not None
 
 
-def test_create_drift_report(mem_db) -> None:
-    report = DriftReport(
-        feature_name="sqft",
-        ks_statistic=0.15,
-        p_value=0.03,
-        drift_detected=True,
-        sample_size=100,
+def test_prediction_log_insert(db_session):
+    p = PredictionLog(
+        building_id="bldg-db-test",
+        timestamp=datetime.utcnow(),
+        predicted_kwh=18.5,
+        latency_ms=12.3,
     )
-    mem_db.add(report)
-    mem_db.commit()
-    assert report.id is not None
-    assert report.drift_detected is True
+    db_session.add(p)
+    db_session.commit()
+    assert p.id is not None
+    assert p.model_version == "1.0.0"
 
 
-def test_create_neighborhood_stat(mem_db) -> None:
-    stat = NeighborhoodStat(
-        zipcode="94102",
-        median_price=1_200_000.0,
-        median_price_per_sqft=800.0,
-        school_score=8.0,
-        transit_score=9.0,
-        walkability_score=8.5,
-        crime_rate=0.25,
-        avg_rental_yield=0.05,
+def test_anomaly_log_insert(db_session):
+    a = AnomalyLog(
+        building_id="bldg-db-test",
+        timestamp=datetime.utcnow(),
+        consumption_kwh=99.0,
+        anomaly_score=-0.7,
+        is_anomaly=1,
+        severity="critical",
     )
-    mem_db.add(stat)
-    mem_db.commit()
-    assert stat.id is not None
+    db_session.add(a)
+    db_session.commit()
+    assert a.id is not None
 
 
-def test_query_prediction_logs_by_correlation(mem_db) -> None:
-    log = PredictionLog(
-        predicted_value=300_000.0,
-        model_version="1.0.0",
-        features_json="{}",
-        correlation_id="unique-corr-xyz",
+def test_drift_log_insert(db_session):
+    d = DriftLog(
+        feature_name="consumption_kwh",
+        ks_statistic=0.42,
+        p_value=0.001,
+        drift_detected=1,
     )
-    mem_db.add(log)
-    mem_db.commit()
-    results = (
-        mem_db.query(PredictionLog).filter(PredictionLog.correlation_id == "unique-corr-xyz").all()
-    )
-    assert len(results) == 1
-    assert results[0].predicted_value == 300_000.0
+    db_session.add(d)
+    db_session.commit()
+    assert d.id is not None
 
 
 def test_create_property(mem_db) -> None:

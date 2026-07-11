@@ -1,4 +1,4 @@
-"""FAISS-based comparable property search.
+"""FAISS-based similar load-period search for energy pattern matching."""
 
 Maintains a module-level index alongside a list of metadata dicts so callers
 can retrieve full context for each nearest neighbour.
@@ -14,7 +14,6 @@ used transparently so the module remains importable in all environments.
 from __future__ import annotations
 
 import logging
-from typing import Any
 
 import numpy as np
 

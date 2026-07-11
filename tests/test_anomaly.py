@@ -1,63 +1,52 @@
-"""Tests for valuation anomaly detection."""
+"""Extended anomaly analysis tests."""
 
+from __future__ import annotations
+
+import numpy as np
 import pytest
 
-from app.anomaly import detect_valuation_anomaly
+from app.anomaly import compute_severity, iqr_flag, zscore_flag
 
 
-def test_normal_value_not_anomaly() -> None:
-    result = detect_valuation_anomaly(predicted=500_000, neighborhood_median=480_000)
-    assert result["is_anomaly"] is False
-    assert result["direction"] == "high"
+def test_zscore_normal():
+    assert not zscore_flag(10.0, mean=10.0, std=2.0, threshold=3.0)
 
 
-def test_severely_underpriced_is_anomaly() -> None:
-    result = detect_valuation_anomaly(predicted=100_000, neighborhood_median=800_000)
-    assert result["is_anomaly"] is True
-    assert result["direction"] == "low"
+def test_zscore_outlier():
+    assert zscore_flag(20.0, mean=10.0, std=1.0, threshold=3.0)
 
 
-def test_severely_overpriced_is_anomaly() -> None:
-    result = detect_valuation_anomaly(predicted=3_000_000, neighborhood_median=400_000)
-    assert result["is_anomaly"] is True
-    assert result["direction"] == "high"
+def test_zscore_zero_std():
+    assert not zscore_flag(5.0, mean=5.0, std=0.0)
+
+    def test_insufficient_reference(self):
+        result = quick_anomaly_check([3000.0] * 5, [3000.0, 9000.0])
+        assert "error" in result
+
+def test_iqr_within_fence():
+    assert not iqr_flag(10.0, q1=8.0, q3=12.0)
 
 
-def test_zscore_method_used_when_std_provided() -> None:
-    result = detect_valuation_anomaly(
-        predicted=2_000_000,
-        neighborhood_median=500_000,
-        neighborhood_std=50_000,
-    )
-    assert result["method"] == "zscore"
-    assert result["is_anomaly"] is True
+def test_iqr_outside_fence():
+    assert iqr_flag(30.0, q1=8.0, q3=12.0)
 
 
-def test_zscore_within_threshold_not_anomaly() -> None:
-    result = detect_valuation_anomaly(
-        predicted=510_000,
-        neighborhood_median=500_000,
-        neighborhood_std=50_000,
-    )
-    assert result["method"] == "zscore"
-    assert result["is_anomaly"] is False
+def test_iqr_below_fence():
+    assert iqr_flag(-5.0, q1=8.0, q3=12.0)
 
 
-def test_iqr_method_used_with_reference_values() -> None:
-    ref = list(range(300_000, 600_000, 10_000))
-    result = detect_valuation_anomaly(
-        predicted=5_000_000,
-        neighborhood_median=450_000,
-        reference_values=ref,
-    )
-    assert result["method"] == "iqr"
-    assert result["is_anomaly"] is True
+def test_compute_severity_none():
+    ref = list(np.random.default_rng(1).normal(10, 1, 200))
+    result = compute_severity(10.0, ref)
+    assert result["severity"] == "none"
 
 
-def test_zero_predicted_skipped() -> None:
-    result = detect_valuation_anomaly(predicted=0, neighborhood_median=500_000)
-    assert result["is_anomaly"] is False
-    assert result["method"] == "skipped"
+def test_compute_severity_critical():
+    ref = list(np.random.default_rng(1).normal(10, 1, 200))
+    result = compute_severity(100.0, ref)
+    assert result["severity"] == "critical"
+    assert result["z_flag"] is True
+    assert result["iqr_flag"] is True
 
 
 @pytest.mark.parametrize(

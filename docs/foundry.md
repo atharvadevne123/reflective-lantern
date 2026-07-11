@@ -77,7 +77,27 @@ sandboxed runs stay green.
 
 ## Upload semantics
 
-Each sync opens a `SNAPSHOT` transaction, uploads the file, and commits.
+Each sync opens a `SNAPSHOT` transaction, uploads three files, and commits:
+
+| File | Contents |
+|---|---|
+| `reflective_lantern_runs.csv` (or `.jsonl`) | one row per automation run |
+| `reflective_lantern_ontology.json` | Repository / AutomationRun ontology objects |
+| `manifest.json` | row count, format, generator version |
+
 On any failure the transaction is aborted so the dataset never sees a
 partial write. Re-running replaces the snapshot; `run_key` keeps rows
-stable for downstream upserts.
+stable for downstream upserts. After commit the sync lists the dataset's
+files and warns if anything it uploaded is not visible. Pass
+`--no-ontology` to upload only the tabular export and manifest.
+
+## Reading data back
+
+`FoundryClient.read_table()` wraps the `readTable` endpoint:
+
+```bash
+python scripts/foundry_client.py --read-table > current.csv
+```
+
+This requires a schema applied to the dataset (open the dataset in
+Foundry and click *Apply schema* once after the first upload).

@@ -1,20 +1,6 @@
-"""Feature engineering pipeline for real estate valuation.
+"""Feature engineering pipeline for energy consumption forecasting."""
 
-The pipeline is composed of five custom sklearn-compatible transformers that
-run in sequence. Each transformer adds columns to the DataFrame in place,
-so downstream stages can reference upstream outputs.
-
-Pipeline stages
----------------
-1. PropertyAgeTransformer  – property_age, renovation_age
-2. RatioFeatureTransformer – beds_per_bath, sqft_per_bed, price_ratio_neighborhood
-3. AmenityCompositeTransformer – amenity_composite [0-1], risk_score [0-1]
-4. InvestmentPotentialTransformer – investment_potential [0-10]
-5. TierEncoderTransformer – size_tier [1-5], age_tier [1-5]
-"""
-
-import logging
-from typing import Any
+from __future__ import annotations
 
 import numpy as np
 import pandas as pd
@@ -71,55 +57,56 @@ FEATURE_COLUMNS = [
 ]
 
 
-class PropertyAgeTransformer(TransformerMixin, BaseEstimator):  # noqa: N801
-    """Compute property age and renovation recency features."""
+class TemporalFeatureExtractor(BaseEstimator, TransformerMixin):
+    """Extract hour-of-day, day-of-week, month, and cyclic encodings."""
 
-    def __init__(self, reference_year: int = 2026) -> None:
-        self.reference_year = reference_year
-
-    def fit(self, X: pd.DataFrame, y: Any = None) -> "PropertyAgeTransformer":
-        self.n_features_in_ = X.shape[1]
+    def fit(self, X: pd.DataFrame, y=None) -> TemporalFeatureExtractor:
         return self
 
     def transform(self, X: pd.DataFrame) -> pd.DataFrame:
-        X = X.copy()
-        X["property_age"] = self.reference_year - X["year_built"].clip(1800, self.reference_year)
-        renovation = (
-            X["renovation_year"]
-            if "renovation_year" in X.columns
-            else pd.Series(np.nan, index=X.index)
-        )
-        X["renovation_age"] = np.where(
-            renovation.notna() & (renovation > 0),
-            self.reference_year - renovation,
-            X["property_age"],
-        )
-        return X
+        df = X.copy()
+        if "hour" not in df.columns:
+            df["hour"] = 0
+        if "day_of_week" not in df.columns:
+            df["day_of_week"] = 0
+        if "month" not in df.columns:
+            df["month"] = 1
+
+        df["hour_sin"] = np.sin(2 * np.pi * df["hour"] / 24)
+        df["hour_cos"] = np.cos(2 * np.pi * df["hour"] / 24)
+        df["dow_sin"] = np.sin(2 * np.pi * df["day_of_week"] / 7)
+        df["dow_cos"] = np.cos(2 * np.pi * df["day_of_week"] / 7)
+        df["month_sin"] = np.sin(2 * np.pi * df["month"] / 12)
+        df["month_cos"] = np.cos(2 * np.pi * df["month"] / 12)
+        df["is_weekend"] = (df["day_of_week"] >= 5).astype(int)
+        df["is_business_hour"] = ((df["hour"] >= 8) & (df["hour"] <= 18) & (df["day_of_week"] < 5)).astype(int)
+        return df
 
 
-class RatioFeatureTransformer(TransformerMixin, BaseEstimator):
-    """Compute ratio and interaction features."""
+class LagFeatureExtractor(BaseEstimator, TransformerMixin):
+    """Add lag features for consumption (1h, 2h, 3h, 6h, 12h, 24h, 168h)."""
 
-    def fit(self, X: pd.DataFrame, y: Any = None) -> "RatioFeatureTransformer":
-        self.n_features_in_ = X.shape[1]
+    LAG_COLS = [1, 2, 3, 6, 12, 24, 168]
+
+    def fit(self, X: pd.DataFrame, y=None) -> LagFeatureExtractor:
         return self
 
     def transform(self, X: pd.DataFrame) -> pd.DataFrame:
-        X = X.copy()
-        X["beds_per_bath"] = X["bedrooms"] / (X["bathrooms"].clip(lower=0.5))
-        X["sqft_per_bed"] = X["sqft"] / (X["bedrooms"].clip(lower=1))
-        median_ppsf = X.get("median_price_per_sqft", pd.Series(np.ones(len(X))))
-        X["price_ratio_neighborhood"] = (X["sqft"] * median_ppsf) / (
-            X.get("list_price", pd.Series(np.ones(len(X)) * 1e6)).clip(lower=1)
-        )
-        return X
+        df = X.copy()
+        base = df.get("consumption_kwh", pd.Series(np.zeros(len(df))))
+        for lag in self.LAG_COLS:
+            col = f"lag_{lag}h"
+            if col not in df.columns:
+                df[col] = base.shift(lag).fillna(base.mean() if len(base) > 0 else 0.0)
+        return df
 
 
-class AmenityCompositeTransformer(TransformerMixin, BaseEstimator):
-    """Compute composite amenity and risk scores."""
+class RollingStatsExtractor(BaseEstimator, TransformerMixin):
+    """Rolling mean, std, min, max over 3h, 6h, 24h windows."""
 
-    def fit(self, X: pd.DataFrame, y: Any = None) -> "AmenityCompositeTransformer":
-        self.n_features_in_ = X.shape[1]
+    WINDOWS = [3, 6, 24]
+
+    def fit(self, X: pd.DataFrame, y=None) -> RollingStatsExtractor:
         return self
 
     def transform(self, X: pd.DataFrame) -> pd.DataFrame:
@@ -133,11 +120,10 @@ class AmenityCompositeTransformer(TransformerMixin, BaseEstimator):
         return X
 
 
-class InvestmentPotentialTransformer(TransformerMixin, BaseEstimator):
-    """Compute investment potential score from rental yield and appreciation proxies."""
+class WeatherFeatureExtractor(BaseEstimator, TransformerMixin):
+    """Derive composite weather features: heat index, cooling degree hours."""
 
-    def fit(self, X: pd.DataFrame, y: Any = None) -> "InvestmentPotentialTransformer":
-        self.n_features_in_ = X.shape[1]
+    def fit(self, X: pd.DataFrame, y=None) -> WeatherFeatureExtractor:
         return self
 
     def transform(self, X: pd.DataFrame) -> pd.DataFrame:
@@ -149,59 +135,84 @@ class InvestmentPotentialTransformer(TransformerMixin, BaseEstimator):
         return X
 
 
-class TierEncoderTransformer(TransformerMixin, BaseEstimator):
-    """Encode size and age into discrete tier features."""
+class OccupancyFeatureExtractor(BaseEstimator, TransformerMixin):
+    """Encode occupancy and HVAC state into energy-load proxies."""
 
-    def fit(self, X: pd.DataFrame, y: Any = None) -> "TierEncoderTransformer":
-        self.n_features_in_ = X.shape[1]
+    def fit(self, X: pd.DataFrame, y=None) -> OccupancyFeatureExtractor:
         return self
 
     def transform(self, X: pd.DataFrame) -> pd.DataFrame:
-        X = X.copy()
-        X["size_tier"] = (
-            pd.cut(
-                X["sqft"],
-                bins=[0, 800, 1500, 2500, 4000, 1e9],
-                labels=[1, 2, 3, 4, 5],
-            )
-            .astype(float)
-            .fillna(3.0)
-        )
-        X["age_tier"] = (
-            pd.cut(
-                X.get("property_age", pd.Series(np.zeros(len(X)))),
-                bins=[-1, 5, 15, 30, 60, 1000],
-                labels=[5, 4, 3, 2, 1],
-            )
-            .astype(float)
-            .fillna(3.0)
-        )
-        return X
+        df = X.copy()
+        occ = df.get("occupancy", pd.Series(np.zeros(len(df))))
+        hvac = df.get("hvac_state", pd.Series(np.zeros(len(df))))
+        df["occupancy"] = occ.fillna(0).clip(lower=0)
+        df["hvac_state"] = hvac.fillna(0).astype(int)
+        df["occ_hvac_load"] = df["occupancy"] * df["hvac_state"]
+        df["occupancy_density"] = np.log1p(df["occupancy"])
+        return df
+
+
+class DropNonNumeric(BaseEstimator, TransformerMixin):
+    """Drop string/datetime columns before scaling."""
+
+    def fit(self, X: pd.DataFrame, y=None) -> DropNonNumeric:
+        self.numeric_cols_ = X.select_dtypes(include=[np.number]).columns.tolist()
+        return self
+
+    def transform(self, X: pd.DataFrame) -> np.ndarray:
+        return X[self.numeric_cols_].values
+
+
+class DropColumnsTransformer(BaseEstimator, TransformerMixin):
+    """Drops non-numeric or helper columns before model training."""
+
+    DROP_COLS = ["historical_loads", "region", "timestamp"]
+
+    def fit(self, X: pd.DataFrame, y=None) -> DropColumnsTransformer:
+        self.cols_to_drop_ = [c for c in self.DROP_COLS if c in X.columns]
+        return self
+
+    def transform(self, X: pd.DataFrame) -> pd.DataFrame:
+        return X.drop(columns=self.cols_to_drop_, errors="ignore")
 
 
 def build_feature_pipeline() -> Pipeline:
     """Return a fitted-ready sklearn Pipeline of all five feature transformers."""
     return Pipeline(
-        steps=[
-            ("age", PropertyAgeTransformer()),
-            ("ratios", RatioFeatureTransformer()),
-            ("amenity", AmenityCompositeTransformer()),
-            ("investment", InvestmentPotentialTransformer()),
-            ("tiers", TierEncoderTransformer()),
+        [
+            ("temporal", TemporalFeatureExtractor()),
+            ("lag", LagFeatureExtractor()),
+            ("rolling", RollingStatsExtractor()),
+            ("weather", WeatherFeatureExtractor()),
+            ("occupancy", OccupancyFeatureExtractor()),
+            ("drop_non_numeric", DropNonNumeric()),
+            ("scaler", StandardScaler()),
         ]
     )
 
 
-def extract_feature_array(df: pd.DataFrame, pipeline: Pipeline) -> np.ndarray:
-    from sklearn.exceptions import NotFittedError
-    from sklearn.utils.validation import check_is_fitted
-
-    try:
-        check_is_fitted(pipeline)
-        transformed = pipeline.transform(df)
-    except NotFittedError:
-        transformed = pipeline.fit_transform(df)
-    available = [c for c in FEATURE_COLUMNS if c in transformed.columns]
-    result = transformed[available].fillna(0).values
-    logger.debug("Extracted %d features from %d samples", result.shape[1], result.shape[0])
-    return result
+def make_feature_row(
+    hour: int,
+    day_of_week: int,
+    month: int,
+    temperature_c: float,
+    humidity_pct: float,
+    occupancy: int,
+    hvac_state: int,
+    consumption_kwh: float = 0.0,
+) -> pd.DataFrame:
+    """Build a single-row DataFrame for inference."""
+    return pd.DataFrame(
+        [
+            {
+                "hour": hour,
+                "day_of_week": day_of_week,
+                "month": month,
+                "temperature_c": temperature_c,
+                "humidity_pct": humidity_pct,
+                "occupancy": occupancy,
+                "hvac_state": hvac_state,
+                "consumption_kwh": consumption_kwh,
+            }
+        ]
+    )

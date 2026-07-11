@@ -1,48 +1,23 @@
 # Changelog
 
-All notable changes to Reflective Lantern are documented here.
-
-Format: [Semantic Versioning](https://semver.org/) —
-`[version] — YYYY-MM-DD`
-
----
-
-## [Unreleased]
+## [1.0.0] - 2026-07-10
 
 ### Added
-- `config/` package: `Settings`, `constants`, `logging_config`
-- `scripts/health_check.py` — cross-repo CI/release/branch health check
-- `scripts/report_generator.py` — daily and weekly Markdown reports
-- `scripts/validate_history.py` — JSON schema validation for history files
-- `scripts/summarize_history.py` — tabular run history summary
-- `scripts/cleanup.py` — remove old history entries
-- `scripts/rotate_repos.py` — deterministic daily repo selection
-- `scripts/check_ci_status.py` — across-repo CI status reporter
-- `scripts/generate_weekly_summary.py` — weekly digest emailer
-- `tests/` — full pytest suite with fixtures and parametrized tests
-- `.github/workflows/ci.yml` — lint, test, type-check on every push
-- `.github/ISSUE_TEMPLATE/` — bug report and feature request templates
-- `.github/PULL_REQUEST_TEMPLATE.md`
-- `docs/architecture.md`, `docs/operations.md`
-- `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`
-- `pyproject.toml`, `.pre-commit-config.yaml`, `Makefile`, `mypy.ini`
-- `.env.example`, `.gitignore`, `.nvmrc`
+- FastAPI REST API with `/api/v1/predict`, `/api/v1/anomaly`, `/api/v1/drift`, `/api/v1/metrics`, `/api/v1/health`, `/api/v1/train`
+- XGBoost + LightGBM + RandomForest `VotingRegressor` ensemble for energy consumption forecasting
+- 7-stage sklearn feature engineering pipeline: temporal cyclic encoding, lag features (1h–168h), rolling stats (3h/6h/24h), weather features, occupancy features, drop-non-numeric, StandardScaler
+- IsolationForest anomaly detector with severity classification
+- KS-test drift detection with configurable reference window
+- SQLAlchemy ORM: `EnergyReading`, `PredictionLog`, `AnomalyLog`, `DriftLog`
+- PostgreSQL + Docker Compose production setup
+- Airflow weekly retraining DAG with R2≥0.70 and row-count≥500 gates
+- Rate limiting middleware (200 req/min per IP)
+- Correlation ID middleware for distributed tracing
+- pytest suite with 50+ tests and parametrized cases
+- GitHub Actions CI (ruff lint + pytest)
+- Architecture diagram
 
-### Changed
-- `scripts/notion_portfolio_update.py` — added type annotations, structured
-  logging, retry logic, and input validation
-- `index.js` — added JSDoc, error handling, `getHistory()`, `validate()`
-- `package.json` — added `test`, `lint`, `validate` scripts
-- `README.md` — expanded with Quick Start, Architecture, API Reference,
-  Contributing, and Examples sections
-
----
-
-## [1.0.0] — 2026-04-21
-
-### Added
-- Initial release: daily autonomous code improvement agent
-- Per-repo JSON history tracking
-- Gmail PDF report emails
-- IMPROVEMENT and INNOVATION modes
-- Notion portfolio updater
+### Stats
+- Tests:  passing
+- Files: 33 Python files
+- Features: 7-stage feature pipeline, 30+ engineered features

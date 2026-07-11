@@ -1,12 +1,8 @@
-"""Time-series price trend forecasting for Realty-Edge.
+"""Time-series forecasting utilities: trend decomposition and seasonal baselines."""
 
-Implements simple moving average (SMA), linear trend, and exponential
-smoothing forecasts for neighbourhood median price series. Used by the
-/neighborhood-stats endpoint to surface forward-looking price indicators.
-"""
+from __future__ import annotations
 
 import logging
-from typing import Any
 
 import numpy as np
 
@@ -15,18 +11,15 @@ logger = logging.getLogger(__name__)
 MIN_PERIODS = 3
 MAX_HORIZON = 120
 
-
-def compute_sma(values: list[float], window: int = 3) -> list[float]:
-    """Return a simple moving average series of the same length as values.
-
-    The first (window-1) entries are filled with NaN.
+def simple_moving_average(values: list[float], window: int) -> list[float]:
+    """Compute a simple moving average over *window* periods.
 
     Args:
-        values: Chronologically ordered price observations.
-        window: Rolling window size.
+        values: Time-ordered consumption readings.
+        window: Number of periods in the rolling window.
 
     Returns:
-        List of SMA values, NaN-padded at the start.
+        Smoothed series of the same length (leading values use partial windows).
     """
     if window < 1:
         raise ValueError(f"window must be >= 1, got {window}")
@@ -34,60 +27,70 @@ def compute_sma(values: list[float], window: int = 3) -> list[float]:
         logger.debug("SMA: series length %d < window %d, returning NaN array", len(values), window)
         return [float("nan")] * len(values)
     arr = np.array(values, dtype=float)
-    sma = np.convolve(arr, np.ones(window) / window, mode="valid")
-    pad = [float("nan")] * (window - 1)
-    return pad + sma.tolist()
+    result = np.convolve(arr, np.ones(window) / window, mode="full")[: len(arr)]
+    return result.tolist()
 
+    if len(sma) >= 2:
+        slope = float(np.polyfit(np.arange(len(sma)), sma, 1)[0])
+        direction = "increasing" if slope > 10 else "decreasing" if slope < -10 else "stable"
+    else:
+        slope = 0.0
+        direction = "stable"
 
-def linear_trend_forecast(values: list[float], horizon: int = 3) -> dict[str, Any]:
-    """Fit a linear trend and extrapolate forward by horizon steps.
+def seasonal_baseline(values: list[float], period: int = 24) -> list[float]:
+    """Compute a seasonal baseline by averaging each position modulo *period*.
 
     Args:
-        values: Chronologically ordered price observations.
+        values: Time-ordered readings (e.g. hourly).
+        period: Seasonality length (default 24 for hourly data).
+
+    Returns:
+        Seasonal baseline the same length as *values*.
+    """
+    arr = np.array(values, dtype=float)
+    n = len(arr)
+    bucket_means = np.zeros(period)
+    counts = np.zeros(period)
+    for i, v in enumerate(arr):
+        bucket_means[i % period] += v
+        counts[i % period] += 1
+    with np.errstate(invalid="ignore"):
+        bucket_means = np.where(counts > 0, bucket_means / counts, 0.0)
+    return [float(bucket_means[i % period]) for i in range(n)]
+
+
+def forecast_linear_trend(values: list[float], horizon: int = 24) -> list[float]:
+    """Fit a linear trend and extrapolate *horizon* steps ahead.
+
+    Args:
+        values: Historical readings.
         horizon: Number of future steps to forecast.
 
     Returns:
-        Dict with keys: slope, intercept, r_squared, forecasts (list).
+        List of *horizon* forecasted values.
     """
-    n = len(values)
-    if n < MIN_PERIODS:
-        return {"slope": 0.0, "intercept": 0.0, "r_squared": 0.0, "forecasts": []}
-    x = np.arange(n, dtype=float)
-    y = np.array(values, dtype=float)
-    coeffs = np.polyfit(x, y, 1)
-    slope, intercept = float(coeffs[0]), float(coeffs[1])
-    y_hat = slope * x + intercept
-    ss_res = float(np.sum((y - y_hat) ** 2))
-    ss_tot = float(np.sum((y - y.mean()) ** 2))
-    r_squared = 1.0 - ss_res / ss_tot if ss_tot > 0 else 0.0
-    forecasts = [slope * (n + i) + intercept for i in range(horizon)]
-    logger.debug("Linear trend: slope=%.2f r2=%.4f", slope, r_squared)
-    return {
-        "slope": round(slope, 2),
-        "intercept": round(intercept, 2),
-        "r_squared": round(r_squared, 4),
-        "forecasts": [round(f, 2) for f in forecasts],
-    }
+    arr = np.array(values, dtype=float)
+    x = np.arange(len(arr))
+    slope, intercept = np.polyfit(x, arr, 1)
+    future_x = np.arange(len(arr), len(arr) + horizon)
+    forecasted = slope * future_x + intercept
+    logger.debug("Linear trend: slope=%.4f intercept=%.4f horizon=%d", slope, intercept, horizon)
+    return forecasted.tolist()
 
 
-def exponential_smoothing_forecast(
-    values: list[float], alpha: float = 0.3, horizon: int = 3
-) -> list[float]:
-    """Apply single exponential smoothing and forecast horizon steps ahead.
+def detect_spikes(values: list[float], z_threshold: float = 3.0) -> list[int]:
+    """Return indices where consumption deviates more than *z_threshold* standard deviations.
 
     Args:
-        values: Chronologically ordered price observations.
-        alpha: Smoothing factor in (0, 1). Higher = more weight on recent obs.
-        horizon: Number of future steps.
+        values: Time-ordered readings.
+        z_threshold: Number of standard deviations to flag as a spike.
 
     Returns:
-        List of forecast values (length == horizon).
+        List of spike indices.
     """
     if not 0 < alpha <= 1:
         raise ValueError(f"alpha must be in (0, 1], got {alpha}")
     if not values:
         return []
-    smoothed = float(values[0])
-    for v in values[1:]:
-        smoothed = alpha * v + (1 - alpha) * smoothed
-    return [round(smoothed, 2)] * horizon
+    z_scores = np.abs((arr - mean) / std)
+    return [int(i) for i in np.where(z_scores > z_threshold)[0]]

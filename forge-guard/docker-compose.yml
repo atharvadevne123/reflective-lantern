@@ -1,0 +1,65 @@
+version: "3.9"
+
+services:
+  api:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      DATABASE_URL: "postgresql://forge:${POSTGRES_PASSWORD:-forge123}@db:5432/forge_guard"
+      MODEL_PATH: /app/model.joblib
+      METRICS_PATH: /app/metrics.json
+      MODEL_VERSION: "1.0.0"
+      RATE_LIMIT_RPM: "60"
+      CORS_ORIGINS: "*"
+    volumes:
+      - model_data:/app
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: forge
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-forge123}
+      POSTGRES_DB: forge_guard
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U forge -d forge_guard"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  retrain:
+    build: .
+    command: python pipelines/retrain_dag.py scheduled
+    environment:
+      DATABASE_URL: "postgresql://forge:${POSTGRES_PASSWORD:-forge123}@db:5432/forge_guard"
+      MODEL_PATH: /app/model.joblib
+      METRICS_PATH: /app/metrics.json
+      RETRAIN_MIN_SAMPLES: "500"
+      DRIFT_THRESHOLD: "0.3"
+    volumes:
+      - model_data:/app
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: "no"
+    profiles:
+      - retrain
+
+volumes:
+  postgres_data:
+  model_data:

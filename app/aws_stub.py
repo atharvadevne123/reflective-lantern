@@ -1,20 +1,10 @@
-"""AWS/boto3 integration stub for Realty-Edge model artefact storage.
+"""AWS S3 stub — serialises model artefacts to local disk when boto3 absent."""
 
-Uploads and downloads model artefacts (model.joblib, metrics.json) to an
-S3 bucket when AWS credentials are configured. Falls back to local disk
-when AWS is unavailable.
-
-Environment variables
----------------------
-AWS_REGION          – AWS region (default: us-east-1)
-S3_BUCKET           – Target bucket name
-S3_PREFIX           – Key prefix for artefacts (default: realty-edge/models)
-"""
+from __future__ import annotations
 
 import logging
-import os
+import shutil
 from pathlib import Path
-from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -26,24 +16,30 @@ _REGION = os.getenv("AWS_REGION", DEFAULT_REGION)
 _BUCKET = os.getenv("S3_BUCKET", "")
 _PREFIX = os.getenv("S3_PREFIX", DEFAULT_PREFIX)
 
-
-def _s3_client() -> Any | None:
-    """Return a boto3 S3 client or None if boto3 is unavailable."""
-    if not _BUCKET:
-        return None
+def upload_model(local_path: str, bucket: str, key: str) -> bool:
+    """Upload model to S3, falling back to a local mirror."""
+    src = Path(local_path)
+    if not src.exists():
+        logger.error("Model file not found: %s", local_path)
+        return False
     try:
         import boto3
 
-        return boto3.client("s3", region_name=_REGION)
+        s3 = boto3.client("s3")
+        s3.upload_file(str(src), bucket, key)
+        logger.info("Uploaded %s → s3://%s/%s", local_path, bucket, key)
     except ImportError:
-        logger.debug("boto3 not installed — S3 artefact storage disabled.")
-    except Exception as exc:
-        logger.warning("Failed to initialise boto3 client: %s", exc)
-    return None
+        mirror = Path("s3_mirror") / bucket / key
+        mirror.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy(src, mirror)
+        logger.info("boto3 absent — mirrored %s → %s", local_path, mirror)
+    return True
 
 
-def upload_model_artefacts(local_paths: list[str]) -> list[str]:
-    """Upload model artefact files to S3.
+def download_model(bucket: str, key: str, local_path: str) -> bool:
+    """Download model from S3 or local mirror."""
+    try:
+        import boto3
 
     Args:
         local_paths: Local file paths to upload.

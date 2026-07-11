@@ -1,45 +1,46 @@
-"""Tests for MLflow and AWS stubs (mocked external calls)."""
+"""MLflow stub tests."""
 
-from unittest.mock import MagicMock, patch
+from __future__ import annotations
 
 import pytest
 
 from app.aws_stub import download_model_artefacts, upload_model_artefacts
 from app.mlflow_stub import log_training_run
 
-# --- MLflow stub tests ---
+from app.mlflow_stub import get_best_run, log_metrics
 
 
-def test_log_training_run_no_uri_returns_none() -> None:
-    with patch.dict("os.environ", {"MLFLOW_TRACKING_URI": ""}):
-        result = log_training_run({"lr": 0.01}, {"r2": 0.85})
-    assert result is None
+def test_log_and_retrieve(tmp_path, monkeypatch):
+    import app.mlflow_stub as ms
 
+    monkeypatch.setattr(ms, "_RUN_LOG", tmp_path / "runs.jsonl")
+    log_metrics("run-1", {"r2_mean": 0.85, "mae_kwh": 1.2})
+    log_metrics("run-2", {"r2_mean": 0.92, "mae_kwh": 0.9})
+    best = get_best_run("r2_mean")
+    assert best is not None
+    assert best["metrics"]["r2_mean"] == pytest.approx(0.92)
 
-def test_log_training_run_mlflow_not_installed_returns_none() -> None:
-    with (
-        patch.dict("os.environ", {"MLFLOW_TRACKING_URI": "http://localhost:5000"}),
-        patch("builtins.__import__", side_effect=ImportError("mlflow not installed")),
-    ):
-        result = log_training_run({"lr": 0.01}, {"r2": 0.85})
-    assert result is None
+    def test_log_metrics_returns_run_id(self):
+        run_id = log_metrics({"r2_mean": 0.85, "rmse_mean": 250.0})
+        assert run_id.startswith("run_")
 
+def test_best_run_no_log(tmp_path, monkeypatch):
+    import app.mlflow_stub as ms
 
-def test_log_training_run_mlflow_exception_returns_none() -> None:
-    with (
-        patch.dict("os.environ", {"MLFLOW_TRACKING_URI": "http://localhost:5000"}),
-        patch("app.mlflow_stub.os.getenv", return_value="http://localhost:5000"),
-    ):
-        import app.mlflow_stub as m
+    monkeypatch.setattr(ms, "_RUN_LOG", tmp_path / "missing.jsonl")
+    assert get_best_run() is None
 
-        original = m._TRACKING_URI
-        m._TRACKING_URI = "http://localhost:5000"
-        try:
-            result = log_training_run({"lr": 0.01}, {"r2": 0.85})
-        finally:
-            m._TRACKING_URI = original
-    assert result is None
+    def test_get_best_run_by_metric(self):
+        log_metrics({"r2_mean": 0.80}, run_name="run_a")
+        log_metrics({"r2_mean": 0.90}, run_name="run_b")
+        log_metrics({"r2_mean": 0.75}, run_name="run_c")
+        best = get_best_run("r2_mean")
+        assert best is not None
+        assert best["r2_mean"] == pytest.approx(0.90, rel=0.01)
+        assert best["run_name"] == "run_b"
 
+def test_log_returns_run_name(tmp_path, monkeypatch):
+    import app.mlflow_stub as ms
 
 # --- AWS stub tests ---
 

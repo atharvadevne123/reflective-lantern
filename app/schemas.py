@@ -1,6 +1,9 @@
-"""Pydantic request/response schemas for Realty-Edge API."""
+"""Pydantic request/response schemas."""
 
 from __future__ import annotations
+
+from datetime import datetime
+from typing import Any
 
 from pydantic import BaseModel, Field, field_validator
 
@@ -13,12 +16,19 @@ _BATCH_MAX = 100
 _MAX_TOP_K = 20
 
 
-class PropertyInput(BaseModel):
-    """Input schema for a single property valuation request.
+class EnergyReadingIn(BaseModel):
+    """Input schema for a single energy reading."""
 
-    All numeric fields are validated at the boundary; ``renovation_year``
-    must not precede ``year_built`` when both are supplied.
-    """
+    building_id: str = Field(..., min_length=1, max_length=64, description="Unique building identifier")
+    timestamp: datetime = Field(..., description="Reading timestamp (ISO-8601)")
+    hour: int = Field(..., ge=0, le=23, description="Hour of day 0-23")
+    day_of_week: int = Field(..., ge=0, le=6, description="Day of week 0=Mon 6=Sun")
+    month: int = Field(..., ge=1, le=12, description="Month 1-12")
+    temperature_c: float = Field(..., ge=-40.0, le=60.0, description="Outside temperature in Celsius")
+    humidity_pct: float = Field(..., ge=0.0, le=100.0, description="Relative humidity 0-100")
+    occupancy: int = Field(..., ge=0, le=10000, description="Number of occupants")
+    hvac_state: int = Field(..., ge=0, le=1, description="HVAC on=1 off=0")
+    consumption_kwh: float = Field(0.0, ge=0.0, description="Current consumption (used for lag features)")
 
     sqft: float = Field(..., gt=0, le=_MAX_SQFT, description="Total living area in square feet")
     bedrooms: int = Field(..., ge=1, le=_MAX_BEDROOMS)
@@ -42,39 +52,34 @@ class PropertyInput(BaseModel):
 
     @field_validator("renovation_year")
     @classmethod
-    def renovation_after_built(cls, v: int | None, info: object) -> int | None:
-        if (
-            v is not None
-            and hasattr(info, "data")
-            and "year_built" in info.data
-            and v < info.data["year_built"]
-        ):
-            raise ValueError("renovation_year must be >= year_built")
+    def building_id_alphanumeric(cls, v: str) -> str:
+        if not v.replace("-", "").replace("_", "").isalnum():
+            raise ValueError("building_id must be alphanumeric with hyphens/underscores only")
         return v
 
 
-class PredictionResponse(BaseModel):
-    """Response schema for a single property valuation prediction."""
-
-    predicted_value: float
-    investment_score: float
-    confidence_band_low: float
-    confidence_band_high: float
+class PredictResponse(BaseModel):
+    building_id: str
+    timestamp: datetime
+    predicted_kwh: float
     model_version: str
-    correlation_id: str
+    latency_ms: float
 
 
-class BatchPropertyInput(BaseModel):
-    """Input schema for a batch of up to 100 property valuation requests."""
+class AnomalyRequest(BaseModel):
+    """Input for anomaly detection."""
 
     properties: list[PropertyInput] = Field(..., min_length=1, max_length=_BATCH_MAX)
 
 
-class BatchPredictionResponse(BaseModel):
-    """Response schema wrapping predictions for a batch request."""
-
-    predictions: list[PredictionResponse]
-    count: int
+class AnomalyResponse(BaseModel):
+    building_id: str
+    timestamp: datetime
+    consumption_kwh: float
+    anomaly_score: float
+    is_anomaly: bool
+    severity: str
+    latency_ms: float
 
 
 class ComparableRequest(BaseModel):
@@ -84,47 +89,29 @@ class ComparableRequest(BaseModel):
     top_k: int = Field(5, ge=1, le=_MAX_TOP_K)
 
 
-class ComparableResponse(BaseModel):
-    """Response schema containing the nearest comparable properties."""
-
-    comparables: list[dict]
-    query_vector_dim: int
-
-
-class NeighborhoodStatsResponse(BaseModel):
-    """Response schema for aggregated neighbourhood statistics."""
-
-    zipcode: str
-    median_price: float
-    median_price_per_sqft: float
-    school_score: float
-    transit_score: float
-    walkability_score: float
-    crime_rate: float
-    avg_rental_yield: float
-
-
-class DriftStatusResponse(BaseModel):
-    """Response schema for the /drift endpoint."""
-
-    drift_reports: list[dict]
-    total_predictions: int
+class DriftResponse(BaseModel):
+    ks_statistic: float
+    p_value: float
+    drift_detected: bool
+    message: str
 
 
 class HealthResponse(BaseModel):
-    """Response schema for the /health liveness check."""
-
+    """API health check response."""
     status: str
-    model_version: str
-    db_connected: bool
+    model_loaded: bool
+    anomaly_model_loaded: bool
+    version: str
 
 
 class MetricsResponse(BaseModel):
-    """Response schema for model training metrics."""
+    """Aggregated monitoring metrics response."""
+    total_predictions: int
+    total_anomalies_flagged: int
+    total_drift_events: int
+    reference_window_size: int
+    model_metrics: dict[str, Any]
 
-    r2_mean: float | None = None
-    rmse_mean: float | None = None
-    n_features: int | None = None
-    n_samples: int | None = None
-    model_version: str
-    note: str | None = None
+
+class BatchPredictRequest(BaseModel):
+    readings: list[EnergyReadingIn] = Field(..., min_length=1, max_length=100)

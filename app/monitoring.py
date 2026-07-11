@@ -1,24 +1,16 @@
-"""Drift detection and prediction logging for model monitoring.
+"""Model monitoring: KS-test drift detection and prediction logging."""
 
-Uses the Kolmogorov-Smirnov two-sample test to compare a reference window
-of feature values against a recent current window. A p-value below
-DRIFT_THRESHOLD (0.05) indicates statistically significant distribution shift.
+from __future__ import annotations
 
-Key functions
--------------
-compute_drift   – pure statistic, no DB dependency
-log_prediction  – write a prediction record to the DB
-run_drift_check – compute drift and persist the report
-"""
-
-import json
 import logging
+import time
+from datetime import datetime
 from typing import Any
 
+import numpy as np
 from scipy.stats import ks_2samp
-from sqlalchemy.orm import Session
 
-from app.database import DriftReport, PredictionLog
+from app.database import AnomalyLog, DriftLog, PredictionLog
 
 logger = logging.getLogger(__name__)
 
@@ -48,10 +40,32 @@ def compute_drift(reference: list[float], current: list[float]) -> dict[str, Any
     return {
         "ks_statistic": round(float(stat), 4),
         "p_value": round(float(p), 4),
-        "drift_detected": bool(p < DRIFT_THRESHOLD),
-        "n_reference": len(reference),
-        "n_current": len(current),
+        "drift_detected": bool(p < DRIFT_P_THRESHOLD),
     }
+
+
+def check_feature_drift(feature_values: dict[str, list[float]], db: Session) -> list[dict[str, Any]]:
+    """Check drift per feature and log results."""
+    results = []
+    for feature_name, current_vals in feature_values.items():
+        ref = _reference_window if _reference_window else current_vals
+        result = compute_drift(ref, current_vals)
+        result["feature"] = feature_name
+
+        entry = DriftLog(
+            feature_name=feature_name,
+            ks_statistic=result["ks_statistic"],
+            p_value=result["p_value"],
+            drift_detected=int(result["drift_detected"]),
+            checked_at=datetime.utcnow(),
+        )
+        db.add(entry)
+        if result["drift_detected"]:
+            logger.warning("Drift detected on feature '%s': KS=%.4f p=%.4f", feature_name, result["ks_statistic"], result["p_value"])
+        results.append(result)
+
+    db.commit()
+    return results
 
 
 def log_prediction(
@@ -82,59 +96,45 @@ def log_prediction(
         predicted_value=predicted_value,
         investment_score=investment_score,
         model_version=model_version,
-        features_json=json.dumps(features),
-        correlation_id=correlation_id,
+        latency_ms=latency_ms,
     )
-    db.add(record)
+    db.add(entry)
     db.commit()
-    db.refresh(record)
-    logger.debug(
-        "Logged prediction id=%s corr=%s value=%.0f", record.id, correlation_id, predicted_value
-    )
-    return record
 
 
-def run_drift_check(
+def log_anomaly(
     db: Session,
-    feature_name: str,
-    reference_values: list[float],
-    current_values: list[float],
-) -> DriftReport:
-    """Compute drift and persist the report to the database.
-
-    Args:
-        db: Active SQLAlchemy session.
-        feature_name: Name of the feature being monitored.
-        reference_values: Historical baseline feature values.
-        current_values: Recent feature values for comparison.
-
-    Returns:
-        The persisted ``DriftReport`` ORM instance.
-    """
-    result = compute_drift(reference_values, current_values)
-    report = DriftReport(
-        feature_name=feature_name,
-        ks_statistic=result["ks_statistic"],
-        p_value=result["p_value"],
-        drift_detected=result["drift_detected"],
-        sample_size=len(current_values),
+    building_id: str,
+    timestamp: datetime,
+    consumption_kwh: float,
+    anomaly_score: float,
+    is_anomaly: int,
+    severity: str,
+) -> None:
+    """Persist an anomaly detection record."""
+    entry = AnomalyLog(
+        building_id=building_id,
+        timestamp=timestamp,
+        consumption_kwh=consumption_kwh,
+        anomaly_score=anomaly_score,
+        is_anomaly=is_anomaly,
+        severity=severity,
     )
-    db.add(report)
+    db.add(entry)
     db.commit()
-    db.refresh(report)
-    if result["drift_detected"]:
-        logger.warning(
-            "Drift detected on feature=%s ks=%.4f p=%.4f",
-            feature_name,
-            result["ks_statistic"],
-            result["p_value"],
-        )
-    return report
 
 
-def get_recent_predictions(db: Session, limit: int = REFERENCE_WINDOW) -> list[PredictionLog]:
-    """Return the *limit* most recent prediction log rows, newest first."""
-    return db.query(PredictionLog).order_by(PredictionLog.created_at.desc()).limit(limit).all()
+def get_prediction_stats(db: Session) -> dict[str, Any]:
+    """Aggregate prediction statistics for the /metrics endpoint."""
+    total = db.query(PredictionLog).count()
+    anomalies = db.query(AnomalyLog).filter(AnomalyLog.is_anomaly == 1).count()
+    drifts = db.query(DriftLog).filter(DriftLog.drift_detected == 1).count()
+    return {
+        "total_predictions": total,
+        "total_anomalies_flagged": anomalies,
+        "total_drift_events": drifts,
+        "reference_window_size": len(_reference_window),
+    }
 
 
 def get_drift_summary(db: Session) -> list[dict[str, Any]]:
