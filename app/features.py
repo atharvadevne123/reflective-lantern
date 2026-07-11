@@ -23,6 +23,15 @@ from sklearn.pipeline import Pipeline
 
 logger = logging.getLogger(__name__)
 
+_SCHOOL_WEIGHT = 0.4
+_TRANSIT_WEIGHT = 0.3
+_WALK_WEIGHT = 0.3
+_AMENITY_SCALE = 10.0
+
+_RENTAL_YIELD_SCALE = 5.0
+_AMENITY_IP_WEIGHT = 3.0
+_RISK_IP_PENALTY = 2.0
+
 __all__ = [
     "build_feature_pipeline",
     "extract_feature_array",
@@ -119,7 +128,7 @@ class AmenityCompositeTransformer(TransformerMixin, BaseEstimator):
         transit = X.get("transit_score", pd.Series(np.ones(len(X)) * 5.0))
         walk = X.get("walkability_score", pd.Series(np.ones(len(X)) * 5.0))
         crime = X.get("crime_rate", pd.Series(np.ones(len(X)) * 0.5))
-        X["amenity_composite"] = (school * 0.4 + transit * 0.3 + walk * 0.3) / 10.0
+        X["amenity_composite"] = (school * _SCHOOL_WEIGHT + transit * _TRANSIT_WEIGHT + walk * _WALK_WEIGHT) / _AMENITY_SCALE
         X["risk_score"] = crime.clip(0, 1)
         return X
 
@@ -136,7 +145,7 @@ class InvestmentPotentialTransformer(TransformerMixin, BaseEstimator):
         rental_yield = X.get("avg_rental_yield", pd.Series(np.ones(len(X)) * 0.06))
         amenity = X.get("amenity_composite", pd.Series(np.ones(len(X)) * 0.5))
         risk = X.get("risk_score", pd.Series(np.ones(len(X)) * 0.5))
-        X["investment_potential"] = (rental_yield * 5.0 + amenity * 3.0 - risk * 2.0).clip(0, 10)
+        X["investment_potential"] = (rental_yield * _RENTAL_YIELD_SCALE + amenity * _AMENITY_IP_WEIGHT - risk * _RISK_IP_PENALTY).clip(0, 10)
         return X
 
 
@@ -171,6 +180,7 @@ class TierEncoderTransformer(TransformerMixin, BaseEstimator):
 
 
 def build_feature_pipeline() -> Pipeline:
+    """Return a fitted-ready sklearn Pipeline of all five feature transformers."""
     return Pipeline(
         steps=[
             ("age", PropertyAgeTransformer()),
