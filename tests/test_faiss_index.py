@@ -62,6 +62,26 @@ class TestLoadPatternIndex:
         results = idx.search([5.0, 6.0, 7.0], k=3)
         assert isinstance(results, list)
 
+    def test_clear_resets_size(self):
+        idx = LoadPatternIndex(dim=3)
+        idx.add([1.0, 2.0, 3.0])
+        idx.add([4.0, 5.0, 6.0])
+        idx.clear()
+        assert idx.size == 0
+
+    def test_clear_search_returns_empty(self):
+        idx = LoadPatternIndex(dim=3)
+        idx.add([1.0, 2.0, 3.0])
+        idx.clear()
+        assert idx.search([1.0, 2.0, 3.0]) == []
+
+    def test_similarity_score_in_range(self):
+        idx = LoadPatternIndex(dim=3)
+        idx.add([1.0, 0.0, 0.0])
+        idx.add([-1.0, 0.0, 0.0])
+        for r in idx.search([1.0, 0.0, 0.0]):
+            assert -1.0 <= r["similarity"] <= 1.0
+
 
 class TestGetPatternIndex:
     def test_returns_same_instance(self):
