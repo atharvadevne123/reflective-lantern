@@ -22,6 +22,12 @@ from typing import Any
 log = logging.getLogger(__name__)
 GH_API = "https://api.github.com"
 
+FAILING_CONCLUSIONS: frozenset[str] = frozenset({"failure", "timed_out"})
+DEFAULT_RETRIES = 3
+WORKFLOW_RUNS_PER_PAGE = 20
+BRANCHES_PER_PAGE = 100
+RELEASES_PER_PAGE = 1
+
 
 @dataclass
 class RepoHealth:
@@ -67,7 +73,7 @@ class RepoHealth:
         return f"{self.name}: {status}"
 
 
-def _get(url: str, token: str, retries: int = 3) -> Any:
+def _get(url: str, token: str, retries: int = DEFAULT_RETRIES) -> Any:
     """Fetch *url* with Bearer *token*, retrying up to *retries* times on error."""
     req = urllib.request.Request(
         url,
@@ -91,14 +97,17 @@ def check_repo(name: str, default_branch: str, token: str) -> RepoHealth:
 
     # Failing workflows
     try:
-        runs = _get(f"{GH_API}/repos/{owner}/{name}/actions/runs?per_page=20", token)
+        runs = _get(
+            f"{GH_API}/repos/{owner}/{name}/actions/runs?per_page={WORKFLOW_RUNS_PER_PAGE}",
+            token,
+        )
         latest: dict[int, Any] = {}
         for run in runs.get("workflow_runs", []):
             wid = run["workflow_id"]
             if wid not in latest:
                 latest[wid] = run
         for run in latest.values():
-            if run["conclusion"] in ("failure", "timed_out"):
+            if run["conclusion"] in FAILING_CONCLUSIONS:
                 health.failing_workflows.append(run["name"])
         health.has_ci = bool(latest)
     except Exception as exc:
@@ -106,14 +115,18 @@ def check_repo(name: str, default_branch: str, token: str) -> RepoHealth:
 
     # Open branches
     try:
-        branches = _get(f"{GH_API}/repos/{owner}/{name}/branches?per_page=100", token)
+        branches = _get(
+            f"{GH_API}/repos/{owner}/{name}/branches?per_page={BRANCHES_PER_PAGE}", token
+        )
         health.open_branches = [b["name"] for b in branches if b["name"] != default_branch]
     except Exception as exc:
         log.warning("Could not fetch branches for %s: %s", name, exc)
 
     # Missing release
     try:
-        releases = _get(f"{GH_API}/repos/{owner}/{name}/releases?per_page=1", token)
+        releases = _get(
+            f"{GH_API}/repos/{owner}/{name}/releases?per_page={RELEASES_PER_PAGE}", token
+        )
         health.has_release = bool(releases)
     except Exception as exc:
         log.warning("Could not fetch releases for %s: %s", name, exc)
