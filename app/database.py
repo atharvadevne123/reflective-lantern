@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import logging
 import os
-from collections.abc import Iterator
 from datetime import datetime
 from typing import Generator
 
@@ -15,11 +14,16 @@ logger = logging.getLogger(__name__)
 
 DATABASE_URL: str = os.getenv("DATABASE_URL", "sqlite:///./watt_guard.db")
 
-engine = create_engine(
-    DATABASE_URL,
-    connect_args={"check_same_thread": False} if "sqlite" in DATABASE_URL else {},
-    echo=False,
-)
+_is_sqlite = "sqlite" in DATABASE_URL
+_engine_kwargs: dict[str, object] = {"echo": False}
+if _is_sqlite:
+    _engine_kwargs["connect_args"] = {"check_same_thread": False}
+else:
+    _engine_kwargs["pool_size"] = int(os.getenv("DB_POOL_SIZE", "5"))
+    _engine_kwargs["max_overflow"] = int(os.getenv("DB_MAX_OVERFLOW", "10"))
+    _engine_kwargs["pool_pre_ping"] = True
+
+engine = create_engine(DATABASE_URL, **_engine_kwargs)
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
@@ -51,12 +55,12 @@ class PredictionLog(Base):
 
     id: int = Column(Integer, primary_key=True, index=True)
     building_id: str = Column(String(64), index=True)
-    timestamp: datetime = Column(DateTime, nullable=False)
+    timestamp: datetime = Column(DateTime, nullable=False, index=True)
     predicted_kwh: float = Column(Float, nullable=False)
     actual_kwh: float = Column(Float)
     model_version: str = Column(String(32), default="1.0.0")
     latency_ms: float = Column(Float)
-    created_at: datetime = Column(DateTime, default=datetime.utcnow)
+    created_at: datetime = Column(DateTime, default=datetime.utcnow, index=True)
 
 
 class AnomalyLog(Base):
