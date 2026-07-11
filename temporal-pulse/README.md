@@ -144,3 +144,55 @@ IoT Sensors / Clients
 ```
 
 See `screenshots/architecture.txt` for the full ASCII diagram.
+
+## Configuration
+
+All configuration is environment-based (see `.env.example`):
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `DATABASE_URL` | `sqlite:///./temporal_pulse.db` | SQLAlchemy DSN (PostgreSQL in production) |
+| `MODEL_DIR` | `/tmp/temporal_pulse_models` | Trained model artifact directory |
+| `ANOMALY_THRESHOLD` | `0.7` | Score above which a reading is flagged |
+| `CORS_ORIGINS` | `*` | Comma-separated allowed origins |
+| `RATE_LIMIT_ENABLED` | `true` | Toggle the sliding-window rate limiter |
+| `RATE_LIMIT_REQUESTS` | `120` | Max requests per window per client IP |
+| `RATE_LIMIT_WINDOW_SECONDS` | `60` | Rate limit window length |
+| `LOG_LEVEL` | `INFO` | Root log level |
+| `LOG_JSON` | `false` | Emit structured JSON log lines |
+| `RETRAIN_LOOKBACK_DAYS` | `30` | Days of data used by the retraining DAG |
+| `RETRAIN_MIN_SAMPLES` | `500` | Minimum readings required to retrain |
+
+## Testing
+
+The suite uses in-memory SQLite (StaticPool) so no services are required:
+
+```bash
+make test            # pytest with coverage
+make lint            # ruff
+make typecheck       # mypy
+```
+
+Test layout:
+
+- `tests/test_api.py` — endpoint contract tests (health, detect, drift, anomalies)
+- `tests/test_model.py` — Isolation Forest + RF training and scoring
+- `tests/test_features.py` — feature pipeline transforms
+- `tests/test_forecaster.py` — supervised prep and confidence intervals
+- `tests/test_monitoring.py` — KS drift detection and metrics
+- `tests/test_middleware.py` — rate limiter behaviour
+- `tests/test_persistence.py` — model save/load round-trips
+- `tests/test_database.py` — ORM models
+- `tests/test_pipeline.py` — retraining DAG paths
+- `tests/test_seed_data.py` — synthetic generator
+
+## Demo Data
+
+```bash
+# Generate 500 readings with ~3% injected anomalies and POST them to the API
+python scripts/seed_data.py --n 500 --api-url http://localhost:8000
+
+# Or write to a file
+python scripts/seed_data.py --n 1000 --output /tmp/readings.json
+```
+
