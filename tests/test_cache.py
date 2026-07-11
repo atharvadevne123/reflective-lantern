@@ -112,3 +112,50 @@ def test_invalidate_then_set(cache) -> None:
     cache.invalidate("k")
     cache.set("k", "new")
     assert cache.get("k") == "new"
+
+
+def test_keys_returns_stored_keys(cache) -> None:
+    cache.set("alpha", 1)
+    cache.set("beta", 2)
+    keys = cache.keys()
+    assert "alpha" in keys
+    assert "beta" in keys
+
+
+def test_keys_empty_on_fresh_cache() -> None:
+    c = TTLCache()
+    assert c.keys() == []
+
+
+def test_ttl_property_returns_configured_value() -> None:
+    c = TTLCache(ttl_seconds=120.0)
+    assert c.ttl == 120.0
+
+
+def test_max_size_property_returns_configured_value() -> None:
+    c = TTLCache(max_size=64)
+    assert c.max_size == 64
+
+
+@pytest.mark.parametrize("ttl", [30.0, 120.0, 600.0])
+def test_ttl_property_parametrized(ttl: float) -> None:
+    c = TTLCache(ttl_seconds=ttl)
+    assert c.ttl == ttl
+
+
+def test_keys_after_invalidate_removes_key(cache) -> None:
+    cache.set("to_remove", "x")
+    cache.set("keep", "y")
+    cache.invalidate("to_remove")
+    assert "to_remove" not in cache.keys()
+    assert "keep" in cache.keys()
+
+
+def test_neighborhood_cache_has_positive_ttl() -> None:
+    from app.cache import neighborhood_cache
+    assert neighborhood_cache.ttl > 0
+
+
+def test_metrics_cache_has_positive_ttl() -> None:
+    from app.cache import metrics_cache
+    assert metrics_cache.ttl > 0
