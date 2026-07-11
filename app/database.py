@@ -8,7 +8,7 @@ from collections.abc import Iterator
 from datetime import datetime
 from typing import Generator
 
-from sqlalchemy import Column, DateTime, Float, Integer, String, create_engine
+from sqlalchemy import Column, DateTime, Float, Integer, String, Text, create_engine
 from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
 
 logger = logging.getLogger(__name__)
