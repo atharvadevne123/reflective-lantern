@@ -73,11 +73,30 @@ def detect_spikes(values: list[float], z_threshold: float = 3.0) -> list[int]:
         z_threshold: Number of standard deviations to flag as a spike.
 
     Returns:
-        List of spike indices.
+        List of spike indices (empty list when std is near zero or series is empty).
     """
+    if not values:
+        return []
     arr = np.array(values, dtype=float)
-    mean, std = arr.mean(), arr.std()
+    mean, std = float(arr.mean()), float(arr.std())
     if std < 1e-9:
         return []
     z_scores = np.abs((arr - mean) / std)
     return [int(i) for i in np.where(z_scores > z_threshold)[0]]
+
+
+def peak_hours(values: list[float], top_n: int = 3) -> list[int]:
+    """Return the indices of the *top_n* highest consumption readings.
+
+    Args:
+        values: Hourly consumption readings (length ≥ top_n).
+        top_n: Number of peak periods to return.
+
+    Returns:
+        Indices of the highest *top_n* values, in descending order of magnitude.
+    """
+    if not values:
+        return []
+    arr = np.array(values, dtype=float)
+    indices = list(np.argsort(arr)[::-1][: min(top_n, len(arr))])
+    return [int(i) for i in indices]
