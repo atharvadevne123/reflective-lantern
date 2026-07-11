@@ -196,3 +196,40 @@ python scripts/seed_data.py --n 500 --api-url http://localhost:8000
 python scripts/seed_data.py --n 1000 --output /tmp/readings.json
 ```
 
+## Project Layout
+
+```
+temporal-pulse/
+├── app/
+│   ├── main.py            # FastAPI app + endpoints
+│   ├── schemas.py         # Pydantic request/response models
+│   ├── database.py        # SQLAlchemy ORM models + session
+│   ├── features.py        # Feature engineering pipeline
+│   ├── model.py           # Isolation Forest + RF ensemble, persistence
+│   ├── forecaster.py      # Multi-step forecasts with confidence intervals
+│   ├── anomaly.py         # FAISS/sklearn root cause analysis
+│   ├── monitoring.py      # KS drift tests + prediction metrics
+│   ├── middleware.py      # Sliding-window rate limiter
+│   └── logging_config.py  # Structured JSON logging
+├── pipelines/retrain_dag.py   # Airflow-compatible daily retraining
+├── migrations/                # Alembic environment + versions
+├── scripts/seed_data.py       # Synthetic data generator
+├── tests/                     # 150+ tests (in-memory SQLite)
+├── Dockerfile / docker-compose.yml
+└── .github/workflows/ci.yml   # lint + test + typecheck
+```
+
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for the development workflow,
+commit conventions, and code standards. Security disclosures: see
+[SECURITY.md](SECURITY.md).
+
+## License
+
+MIT — see [LICENSE](LICENSE).
+
+---
+
+*Built by Reflective Lantern on 2026-07-08.*
+
