@@ -282,3 +282,46 @@ def test_repo_flag_filters_to_single_repo(
         ):
             ccs.main()
         assert not any("repo-b" in u for u in call_urls)
+
+
+def test_runs_per_page_constant() -> None:
+    from scripts.check_ci_status import RUNS_PER_PAGE
+
+    assert RUNS_PER_PAGE > 0
+
+
+def test_repos_per_page_constant() -> None:
+    from scripts.check_ci_status import REPOS_PER_PAGE
+
+    assert REPOS_PER_PAGE > 0
+
+
+@pytest.mark.parametrize("conclusion", ["success", "skipped", "cancelled", "neutral"])
+def test_non_failing_conclusions_not_in_set(conclusion: str) -> None:
+    from scripts.check_ci_status import FAILING_CONCLUSIONS
+
+    assert conclusion not in FAILING_CONCLUSIONS
+
+
+def test_get_latest_runs_dedup_multiple_same_id() -> None:
+    from scripts.check_ci_status import get_latest_runs
+
+    runs = [
+        {"workflow_id": 5, "name": "Test", "conclusion": "success"},
+        {"workflow_id": 5, "name": "Test", "conclusion": "failure"},
+        {"workflow_id": 5, "name": "Test", "conclusion": "timed_out"},
+    ]
+    with patch("scripts.check_ci_status._get", return_value={"workflow_runs": runs}):
+        result = get_latest_runs("owner", "repo", "token")
+    assert len(result) == 1
+    assert result[0]["conclusion"] == "success"
+
+
+@pytest.mark.parametrize("n_runs", [0, 1, 5, 10])
+def test_get_latest_runs_result_count_bounded_by_unique_ids(n_runs: int) -> None:
+    from scripts.check_ci_status import get_latest_runs
+
+    runs = [{"workflow_id": i, "name": f"WF{i}", "conclusion": "success"} for i in range(n_runs)]
+    with patch("scripts.check_ci_status._get", return_value={"workflow_runs": runs}):
+        result = get_latest_runs("owner", "repo", "token")
+    assert len(result) == n_runs
