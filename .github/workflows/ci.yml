@@ -1,4 +1,4 @@
-name: Volt-Cast CI
+name: Watt-Guard CI
 
 on:
   push:
@@ -9,6 +9,7 @@ on:
 jobs:
   lint-and-test:
     runs-on: ubuntu-latest
+
     steps:
       - uses: actions/checkout@v4
 
@@ -28,15 +29,15 @@ jobs:
         run: ruff format --check .
 
       - name: Run tests
-        run: pytest tests/ -v --tb=short 2>&1 | tail -60
+        run: pytest tests/ -v --tb=short 2>&1 | tail -80
 
-      - name: Upload coverage
+      - name: Coverage report
         if: always()
         run: |
           pip install pytest-cov -q
-          pytest tests/ --cov=app --cov-report=term-missing 2>&1 | tail -30
+          pytest tests/ --cov=app --cov-report=term-missing -q 2>&1 | tail -30
 
-      - name: Type check
+      - name: Type check (mypy)
         run: |
           pip install mypy -q
-          mypy app/ --ignore-missing-imports --no-strict-optional 2>&1 | tail -10 || true
+          mypy app/ --ignore-missing-imports --no-error-summary 2>&1 | tail -20 || true
