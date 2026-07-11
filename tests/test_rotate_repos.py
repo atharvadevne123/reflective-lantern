@@ -319,3 +319,59 @@ def test_select_repo_result_is_dict() -> None:
     result = select_repo(repos, date(2026, 7, 5))
     assert isinstance(result, dict)
     assert "name" in result
+
+
+def test_date_seed_is_integer() -> None:
+    from datetime import date
+
+    from scripts.rotate_repos import date_seed
+
+    assert isinstance(date_seed(date(2026, 7, 11)), int)
+
+
+def test_date_seed_different_dates_produce_different_seeds() -> None:
+    from datetime import date
+
+    from scripts.rotate_repos import date_seed
+
+    s1 = date_seed(date(2026, 7, 1))
+    s2 = date_seed(date(2026, 7, 2))
+    assert s1 != s2
+
+
+@pytest.mark.parametrize(
+    "d,expected_seed",
+    [
+        (date(2026, 7, 11), 2026 * 10_000 + 7 * 100 + 11),
+        (date(2026, 1, 1), 2026 * 10_000 + 1 * 100 + 1),
+        (date(2026, 12, 31), 2026 * 10_000 + 12 * 100 + 31),
+    ],
+)
+def test_date_seed_formula(d: date, expected_seed: int) -> None:
+    from scripts.rotate_repos import date_seed
+
+    assert date_seed(d) == expected_seed
+
+
+def test_is_eligible_repo_filters_archived() -> None:
+    from scripts.rotate_repos import _is_eligible_repo
+
+    assert not _is_eligible_repo({"name": "repo", "archived": True, "fork": False})
+
+
+def test_is_eligible_repo_filters_forks() -> None:
+    from scripts.rotate_repos import _is_eligible_repo
+
+    assert not _is_eligible_repo({"name": "repo", "archived": False, "fork": True})
+
+
+def test_is_eligible_repo_filters_excluded_repo() -> None:
+    from scripts.rotate_repos import EXCLUDED_REPO, _is_eligible_repo
+
+    assert not _is_eligible_repo({"name": EXCLUDED_REPO, "archived": False, "fork": False})
+
+
+def test_is_eligible_repo_passes_valid_repo() -> None:
+    from scripts.rotate_repos import _is_eligible_repo
+
+    assert _is_eligible_repo({"name": "my-repo", "archived": False, "fork": False})
