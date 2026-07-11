@@ -126,6 +126,23 @@ API liveness and model load status.
 ### POST `/api/v1/train`
 Train both models on synthetic seed data (for demo/CI).
 
+### GET `/api/v1/version`
+Return the running API version and build metadata.
+
+```json
+{"version": "1.1.0", "api": "v1", "model": "xgb+lgbm+rf"}
+```
+
+### GET `/api/v1/regions`
+List all supported grid regions with peak load and timezone data.
+
+```json
+[
+  {"id": "northeast", "name": "Northeast Grid", "peak_load_mw": 32000, "timezone": "America/New_York"},
+  ...
+]
+```
+
 ## Feature Engineering
 
 The 7-stage sklearn Pipeline computes:
