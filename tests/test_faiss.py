@@ -140,3 +140,34 @@ def test_zero_vector_can_be_added() -> None:
     assert index_size() == 1
     results = search_comparable(zero_vec, top_k=1)
     assert len(results) == 1
+
+
+def test_default_top_k_constant() -> None:
+    from app.faiss_index import DEFAULT_TOP_K
+
+    assert DEFAULT_TOP_K > 0
+
+
+def test_max_top_k_constant_greater_than_default() -> None:
+    from app.faiss_index import DEFAULT_TOP_K, MAX_TOP_K
+
+    assert MAX_TOP_K >= DEFAULT_TOP_K
+
+
+def test_search_uses_default_top_k() -> None:
+    from app.faiss_index import DEFAULT_TOP_K, DIM
+
+    for i in range(DEFAULT_TOP_K + 2):
+        add_property(np.ones(DIM) * i, {"id": i})
+    results = search_comparable(np.zeros(DIM))
+    assert len(results) == DEFAULT_TOP_K
+
+
+@pytest.mark.parametrize("k", [1, 3, 5])
+def test_search_respects_top_k_argument(k: int) -> None:
+    from app.faiss_index import DIM
+
+    for i in range(10):
+        add_property(np.ones(DIM) * i, {"id": i})
+    results = search_comparable(np.zeros(DIM), top_k=k)
+    assert len(results) == k
