@@ -357,3 +357,56 @@ def test_foundry_configured_false_by_default(monkeypatch: pytest.MonkeyPatch) ->
         monkeypatch.delenv(var, raising=False)
     s = Settings()
     assert s.foundry_configured() is False
+
+
+def test_commit_target_constant() -> None:
+    from config.constants import COMMIT_TARGET
+
+    assert COMMIT_TARGET > 0
+
+
+def test_smtp_ports_distinct() -> None:
+    from config.constants import SMTP_PORT_SSL, SMTP_PORT_TLS
+
+    assert SMTP_PORT_TLS != SMTP_PORT_SSL
+
+
+def test_smtp_host_is_string() -> None:
+    from config.constants import SMTP_HOST
+
+    assert isinstance(SMTP_HOST, str)
+    assert len(SMTP_HOST) > 0
+
+
+def test_github_owner_is_string() -> None:
+    from config.constants import GITHUB_OWNER
+
+    assert isinstance(GITHUB_OWNER, str)
+    assert len(GITHUB_OWNER) > 0
+
+
+def test_separator_width_positive() -> None:
+    from config.constants import SEPARATOR_WIDTH
+
+    assert SEPARATOR_WIDTH > 0
+
+
+def test_weekly_summary_days_constant() -> None:
+    from config.constants import WEEKLY_SUMMARY_DAYS
+
+    assert WEEKLY_SUMMARY_DAYS > 0
+
+
+@pytest.mark.parametrize("const_name", [
+    "VERSION",
+    "SMTP_HOST",
+    "GITHUB_OWNER",
+    "GITHUB_API_BASE",
+    "REPORT_DATE_FORMAT",
+])
+def test_string_constants_are_non_empty(const_name: str) -> None:
+    import config.constants as c
+
+    val = getattr(c, const_name)
+    assert isinstance(val, str)
+    assert len(val) > 0
