@@ -14,6 +14,13 @@ _CAP_RATE_WEIGHT = 100.0
 _AMENITY_WEIGHT = 5.0
 _RISK_PENALTY = 5.0
 
+DEFAULT_OPERATING_EXPENSE_RATIO = 0.35
+_SCHOOL_WEIGHT = 0.4
+_TRANSIT_WEIGHT = 0.3
+_WALK_WEIGHT = 0.3
+INVESTMENT_SCORE_MAX = 10.0
+INVESTMENT_SCORE_MIN = 0.0
+
 
 @dataclass
 class InvestmentAnalysis:
@@ -36,7 +43,7 @@ def compute_investment_analysis(
     transit_score: float,
     walkability_score: float,
     crime_rate: float,
-    operating_expense_ratio: float = 0.35,
+    operating_expense_ratio: float = DEFAULT_OPERATING_EXPENSE_RATIO,
 ) -> InvestmentAnalysis:
     """Compute a full investment analysis for a property.
 
@@ -68,7 +75,11 @@ def compute_investment_analysis(
     noi = annual_rent * (1.0 - operating_expense_ratio)
     cap_rate = noi / predicted_value
 
-    amenity_composite = (school_score * 0.4 + transit_score * 0.3 + walkability_score * 0.3) / 10.0
+    amenity_composite = (
+        school_score * _SCHOOL_WEIGHT
+        + transit_score * _TRANSIT_WEIGHT
+        + walkability_score * _WALK_WEIGHT
+    ) / 10.0
     risk_score = float(min(max(crime_rate, 0.0), 1.0))
 
     raw_score = (
@@ -76,7 +87,7 @@ def compute_investment_analysis(
         + amenity_composite * _AMENITY_WEIGHT
         - risk_score * _RISK_PENALTY
     )
-    investment_score = float(min(max(raw_score, 0.0), 10.0))
+    investment_score = float(min(max(raw_score, INVESTMENT_SCORE_MIN), INVESTMENT_SCORE_MAX))
 
     break_even = predicted_value / noi if noi > 0 else float("inf")
 
