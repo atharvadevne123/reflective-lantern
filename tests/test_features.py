@@ -133,6 +133,43 @@ def test_pipeline_handles_missing_values(sample_df) -> None:
     df.loc[0, "renovation_year"] = None
     pipeline = build_feature_pipeline()
     result = pipeline.fit_transform(df)
-    # renovation_year is nullable; check only non-optional columns
     non_optional = [c for c in result.columns if c != "renovation_year"]
     assert not result[non_optional].isnull().all().any()
+
+
+@pytest.mark.parametrize(
+    "bedrooms,bathrooms",
+    [(1, 1.0), (2, 1.5), (4, 3.0), (6, 4.5)],
+)
+def test_beds_per_bath_various_configs(single_row, bedrooms, bathrooms) -> None:
+    row = single_row.copy()
+    row["bedrooms"] = bedrooms
+    row["bathrooms"] = bathrooms
+    result = RatioFeatureTransformer().fit_transform(row)
+    assert result["beds_per_bath"].iloc[0] == pytest.approx(bedrooms / bathrooms)
+
+
+@pytest.mark.parametrize("year_built", [1950, 1970, 1990, 2005, 2020])
+def test_property_age_various_years(single_row, year_built) -> None:
+    row = single_row.copy()
+    row["year_built"] = year_built
+    result = PropertyAgeTransformer(reference_year=2026).fit_transform(row)
+    assert result["property_age"].iloc[0] == 2026 - year_built
+
+
+def test_amenity_composite_high_scores(single_row) -> None:
+    row = single_row.copy()
+    row["school_score"] = 10.0
+    row["transit_score"] = 10.0
+    row["walkability_score"] = 10.0
+    row["crime_rate"] = 0.0
+    result = AmenityCompositeTransformer().fit_transform(row)
+    assert result["amenity_composite"].iloc[0] > 0.8
+
+
+def test_extract_feature_array_multiple_rows(sample_df) -> None:
+    pipeline = build_feature_pipeline()
+    arr = extract_feature_array(sample_df, pipeline)
+    assert arr.ndim == 2
+    assert arr.shape[0] == len(sample_df)
+    assert np.all(np.isfinite(arr))
