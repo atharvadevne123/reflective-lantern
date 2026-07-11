@@ -1,5 +1,44 @@
 # Changelog
 
+## [1.1.0] - 2026-07-11
+
+### Fixed
+- `app/cache.py`: Removed undefined `default_ttl` parameter reference in `TTLCache.__init__`; cache misses on expired keys now correctly increment the `misses` counter
+- `app/middleware.py`: Added missing `from collections import deque` import; moved `from typing import Any` to the correct top-of-file position; removed duplicate `_rate_buckets` global declaration
+- `app/model.py`: Removed duplicate `XGBRegressor` import block; added missing `from typing import Any`; wrapped `joblib.load` calls in try/except with `logger.exception`
+- `app/main.py`: Added missing `from typing import Any` (required by module-level `dict[str, Any]` annotations)
+- `app/monitoring.py`: Added missing `from sqlalchemy.orm import Session` and `import numpy as np`
+- `app/time_series.py`: Removed five lines of dead code after `return result.tolist()` in `simple_moving_average`
+- `app/config.py`: Corrected default `DATABASE_URL` from `traffic_pulse.db` to `watt_guard.db`
+- `app/logging_config.py`: Fixed module docstring (was "Volt-Cast", now "Watt-Guard")
+- `tests/test_model.py`: Removed stray nested method `test_synthetic_loads_in_range` with undefined fixture
+- `tests/test_anomaly.py`: Removed stray nested method `test_insufficient_reference` referencing undefined `quick_anomaly_check`
+- `tests/test_time_series.py`: Removed stray nested method `test_peak_trough_indices` referencing undefined `seasonal_summary`
+- `tests/test_cache.py`: Rewrote broken tests that used removed `default_ttl` param and non-existent `set(ttl=…)` overload
+- `tests/test_features.py`: Added missing `import numpy as np` and `import pandas as pd`
+
+### Added
+- `app/main.py`: New `GET /api/v1/version` endpoint returning semantic version and build info
+- `app/main.py`: New `GET /api/v1/regions` endpoint listing all supported grid regions
+- `app/regions.py`: `@lru_cache(maxsize=32)` on `get_region()` to cache repeated region lookups
+- `app/database.py`: PostgreSQL connection pooling via `DB_POOL_SIZE` and `DB_MAX_OVERFLOW` env vars; `index=True` on `PredictionLog.timestamp` and `PredictionLog.created_at`
+- `app/reporting.py`: Length mismatch guard in `estimate_savings` raising `ValueError`
+- `app/similarity.py`: `clear()` method on `BuildingSimilarityIndex`
+- `Makefile`: `coverage`, `typecheck`, `check`, `migrate`, `clean`, `help` targets
+- `.env.example`: PostgreSQL pool config, `LOG_JSON`, `AIRFLOW_HOME`, `R2_GATE`, `MIN_TRAINING_ROWS`
+- `tests/test_reporting.py`: Parametrized tariff/cost tests and additional assertion coverage
+- `tests/test_monitoring.py`: `test_latency_timer_ms_positive`, `test_compute_drift_exact_same_distribution`, `test_set_reference_window_truncates_to_500`
+- `tests/test_api.py`: `test_batch_predict_after_train`, `test_batch_predict_exceeds_limit`, `test_drift_strong_shift_detected`
+
+### Changed
+- `app/schemas.py`: Added class-level docstrings to `PredictResponse`, `AnomalyResponse`, `DriftRequest`, `DriftResponse`
+- `app/validation.py`: Narrowed return type of `extract_temporal_from_datetime` from `dict` to `dict[str, object]`
+- `app/logging_config.py`: Added `correlation_id` propagation in `JsonFormatter.format`
+- `pipelines/retrain_dag.py`: Added Google-style docstrings with Args/Returns/Raises to all DAG task functions
+- `scripts/example_client.py`: Rewritten for Watt-Guard API with logging, type hints, and full docstrings
+- `scripts/generate_diagram.py`: Type-annotated helper functions; replaced `print()` with `logger.info()`
+- `tests/conftest.py`: Added docstrings to all fixtures; type-annotated `create_test_db`
+
 ## [1.0.0] - 2026-07-10
 
 ### Added
@@ -16,8 +55,3 @@
 - pytest suite with 50+ tests and parametrized cases
 - GitHub Actions CI (ruff lint + pytest)
 - Architecture diagram
-
-### Stats
-- Tests:  passing
-- Files: 33 Python files
-- Features: 7-stage feature pipeline, 30+ engineered features
