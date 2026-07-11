@@ -206,3 +206,42 @@ def test_download_error_returns_empty(tmp_path) -> None:
     ):
         result = download_model_artefacts(str(tmp_path))
     assert result == []
+
+
+def test_default_region_constant() -> None:
+    from app.aws_stub import DEFAULT_REGION
+
+    assert isinstance(DEFAULT_REGION, str)
+    assert len(DEFAULT_REGION) > 0
+
+
+def test_default_prefix_constant() -> None:
+    from app.aws_stub import DEFAULT_PREFIX
+
+    assert isinstance(DEFAULT_PREFIX, str)
+    assert "/" in DEFAULT_PREFIX
+
+
+def test_artefact_filenames_constant() -> None:
+    from app.aws_stub import ARTEFACT_FILENAMES
+
+    assert len(ARTEFACT_FILENAMES) >= 2
+
+
+def test_artefact_filenames_contains_model() -> None:
+    from app.aws_stub import ARTEFACT_FILENAMES
+
+    assert any("model" in f for f in ARTEFACT_FILENAMES)
+
+
+def test_artefact_filenames_contains_metrics() -> None:
+    from app.aws_stub import ARTEFACT_FILENAMES
+
+    assert any("metrics" in f for f in ARTEFACT_FILENAMES)
+
+
+@pytest.mark.parametrize("filename", ["model.joblib", "metrics.json"])
+def test_artefact_filename_in_constant(filename: str) -> None:
+    from app.aws_stub import ARTEFACT_FILENAMES
+
+    assert filename in ARTEFACT_FILENAMES
