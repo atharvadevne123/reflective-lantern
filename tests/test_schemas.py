@@ -188,3 +188,55 @@ def test_state_and_city_optional() -> None:
     prop = PropertyInput(**props)
     assert prop.state == ""
     assert prop.city == ""
+
+
+def test_max_sqft_constant_used_as_upper_bound() -> None:
+    from app.schemas import _MAX_SQFT
+
+    props = base_props()
+    props["sqft"] = float(_MAX_SQFT)
+    prop = PropertyInput(**props)
+    assert prop.sqft == float(_MAX_SQFT)
+
+
+def test_sqft_exceeds_max_sqft_constant_raises() -> None:
+    from app.schemas import _MAX_SQFT
+
+    props = base_props()
+    props["sqft"] = float(_MAX_SQFT) + 1.0
+    with pytest.raises(ValidationError):
+        PropertyInput(**props)
+
+
+def test_batch_max_constant_allows_exactly_100() -> None:
+    from app.schemas import _BATCH_MAX
+
+    props = [PropertyInput(**base_props())] * _BATCH_MAX
+    body = BatchPropertyInput(properties=props)
+    assert len(body.properties) == _BATCH_MAX
+
+
+def test_year_built_min_constant_boundary() -> None:
+    from app.schemas import _MIN_YEAR
+
+    props = base_props()
+    props["year_built"] = _MIN_YEAR
+    prop = PropertyInput(**props)
+    assert prop.year_built == _MIN_YEAR
+
+
+@pytest.mark.parametrize("bedrooms", [1, 10, 20])
+def test_bedrooms_max_constant_boundary(bedrooms: int) -> None:
+    props = base_props()
+    props["bedrooms"] = bedrooms
+    prop = PropertyInput(**props)
+    assert prop.bedrooms == bedrooms
+
+
+def test_bedrooms_above_max_raises() -> None:
+    from app.schemas import _MAX_BEDROOMS
+
+    props = base_props()
+    props["bedrooms"] = _MAX_BEDROOMS + 1
+    with pytest.raises(ValidationError):
+        PropertyInput(**props)
