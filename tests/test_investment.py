@@ -175,3 +175,45 @@ def test_investment_analysis_fields_present() -> None:
 def test_risk_score_equals_crime_rate_parametrized(crime_rate: float) -> None:
     result = compute_investment_analysis(500_000, 0.07, 5, 5, 5, crime_rate)
     assert result.risk_score == pytest.approx(crime_rate)
+
+
+def test_default_operating_expense_ratio_constant() -> None:
+    from app.investment import DEFAULT_OPERATING_EXPENSE_RATIO
+
+    assert 0.0 < DEFAULT_OPERATING_EXPENSE_RATIO < 1.0
+
+
+def test_investment_score_max_constant() -> None:
+    from app.investment import INVESTMENT_SCORE_MAX
+
+    assert INVESTMENT_SCORE_MAX == 10.0
+
+
+def test_investment_score_min_constant() -> None:
+    from app.investment import INVESTMENT_SCORE_MIN
+
+    assert INVESTMENT_SCORE_MIN == 0.0
+
+
+def test_investment_score_never_exceeds_max() -> None:
+    from app.investment import INVESTMENT_SCORE_MAX
+
+    result = compute_investment_analysis(500_000, 0.20, 10.0, 10.0, 10.0, 0.0)
+    assert result.investment_score <= INVESTMENT_SCORE_MAX
+
+
+def test_investment_score_never_below_min() -> None:
+    from app.investment import INVESTMENT_SCORE_MIN
+
+    result = compute_investment_analysis(500_000, 0.001, 0.0, 0.0, 0.0, 1.0)
+    assert result.investment_score >= INVESTMENT_SCORE_MIN
+
+
+@pytest.mark.parametrize("expense_ratio", [0.25, 0.35, 0.45])
+def test_cap_rate_decreases_with_expense_ratio(expense_ratio: float) -> None:
+    result = compute_investment_analysis(
+        500_000, 0.08, 5, 5, 5, 0.2, operating_expense_ratio=expense_ratio
+    )
+    assert result.cap_rate == pytest.approx(
+        (500_000 * 0.08 * (1 - expense_ratio)) / 500_000, rel=1e-4
+    )
