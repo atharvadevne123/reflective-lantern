@@ -139,3 +139,37 @@ def test_linear_trend_r_squared_bounded() -> None:
     values = [100_000 + i * 10_000 for i in range(10)]
     result = linear_trend_forecast(values)
     assert 0.0 <= result["r_squared"] <= 1.0
+
+
+def test_sma_window_zero_raises() -> None:
+    with pytest.raises(ValueError, match="window"):
+        compute_sma([1.0, 2.0, 3.0], window=0)
+
+
+def test_exp_smoothing_invalid_alpha_raises() -> None:
+    with pytest.raises(ValueError, match="alpha"):
+        exponential_smoothing_forecast([1.0, 2.0], alpha=0.0)
+
+
+def test_exp_smoothing_alpha_above_one_raises() -> None:
+    with pytest.raises(ValueError, match="alpha"):
+        exponential_smoothing_forecast([1.0, 2.0], alpha=1.5)
+
+
+@pytest.mark.parametrize("alpha", [0.01, 0.5, 1.0])
+def test_exp_smoothing_valid_alpha_boundary(alpha: float) -> None:
+    result = exponential_smoothing_forecast([100_000.0, 200_000.0], alpha=alpha, horizon=2)
+    assert len(result) == 2
+
+
+def test_sma_window_equals_series_length() -> None:
+    values = [100.0, 200.0, 300.0]
+    result = compute_sma(values, window=3)
+    assert not any(v != v for v in result[2:])  # no NaN at last position
+    assert result[2] == pytest.approx(200.0)
+
+
+def test_linear_trend_intercept_positive_for_ascending() -> None:
+    values = [100_000 + i * 10_000 for i in range(5)]
+    result = linear_trend_forecast(values, horizon=1)
+    assert result["intercept"] > 0
