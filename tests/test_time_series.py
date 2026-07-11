@@ -8,6 +8,7 @@ import pytest
 from app.time_series import (
     detect_spikes,
     forecast_linear_trend,
+    peak_hours,
     seasonal_baseline,
     simple_moving_average,
 )
@@ -65,3 +66,35 @@ def test_sma_various_windows(window):
     data = list(np.random.default_rng(42).uniform(5, 30, 100))
     result = simple_moving_average(data, window=window)
     assert len(result) == 100
+
+
+def test_detect_spikes_empty_input():
+    assert detect_spikes([]) == []
+
+
+def test_detect_spikes_returns_indices():
+    data = [1.0] * 50 + [999.0]
+    spikes = detect_spikes(data)
+    assert 50 in spikes
+
+
+def test_peak_hours_returns_top_n():
+    data = [1.0, 5.0, 3.0, 9.0, 2.0]
+    peaks = peak_hours(data, top_n=2)
+    assert len(peaks) == 2
+    assert peaks[0] == 3  # index of 9.0
+
+
+def test_peak_hours_empty_input():
+    assert peak_hours([]) == []
+
+
+def test_peak_hours_top_n_larger_than_series():
+    data = [1.0, 2.0]
+    assert len(peak_hours(data, top_n=100)) == 2
+
+
+@pytest.mark.parametrize("horizon", [1, 6, 24, 48])
+def test_linear_trend_various_horizons(horizon):
+    result = forecast_linear_trend(list(range(30)), horizon=horizon)
+    assert len(result) == horizon
