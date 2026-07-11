@@ -240,3 +240,45 @@ def test_bedrooms_above_max_raises() -> None:
     props["bedrooms"] = _MAX_BEDROOMS + 1
     with pytest.raises(ValidationError):
         PropertyInput(**props)
+
+
+def test_min_year_constant() -> None:
+    from app.schemas import _MIN_YEAR
+
+    assert _MIN_YEAR < 1900
+
+
+def test_max_year_constant() -> None:
+    from app.schemas import _MAX_YEAR
+
+    assert _MAX_YEAR >= 2024
+
+
+def test_max_top_k_constant() -> None:
+    from app.schemas import _MAX_TOP_K
+
+    assert _MAX_TOP_K > 0
+
+
+@pytest.mark.parametrize("year", [1850, 1920, 1970, 2000, 2024])
+def test_valid_year_built_accepted(year: int) -> None:
+    props = base_props()
+    props["year_built"] = year
+    prop = PropertyInput(**props)
+    assert prop.year_built == year
+
+
+@pytest.mark.parametrize("sqft", [500.0, 1000.0, 2500.0, 5000.0])
+def test_valid_sqft_values(sqft: float) -> None:
+    props = base_props()
+    props["sqft"] = sqft
+    prop = PropertyInput(**props)
+    assert prop.sqft == sqft
+
+
+@pytest.mark.parametrize("bathrooms", [1.0, 1.5, 2.0, 3.5])
+def test_valid_bathroom_values(bathrooms: float) -> None:
+    props = base_props()
+    props["bathrooms"] = bathrooms
+    prop = PropertyInput(**props)
+    assert prop.bathrooms == bathrooms
