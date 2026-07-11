@@ -5,11 +5,23 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Any
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
 class SensorReading(BaseModel):
     """A single multivariate sensor reading."""
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "examples": [
+                {
+                    "sensor_id": "turbine-01",
+                    "timestamp": "2026-07-08T12:00:00",
+                    "values": {"temperature": 63.2, "vibration": 2.1, "rpm": 3010.5},
+                }
+            ]
+        }
+    )
 
     sensor_id: str = Field(..., min_length=1, max_length=64, description="Unique sensor identifier")
     timestamp: datetime = Field(..., description="ISO-8601 timestamp of the reading")
