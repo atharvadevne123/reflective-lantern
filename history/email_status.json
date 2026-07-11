@@ -49,5 +49,15 @@
     "run": "innovation-forge-guard",
     "status": "failed",
     "reason": "SMTP unavailable in CCR sandbox (no raw socket egress)"
+  },
+  {
+    "date": "2026-07-11",
+    "status": "SMTP_BLOCKED",
+    "error": "[Errno 97] Address family not supported by protocol"
+  },
+  {
+    "date": "2026-07-11",
+    "status": "SMTP_BLOCKED",
+    "error": "[Errno 97] Address family not supported by protocol"
   }
 ]
