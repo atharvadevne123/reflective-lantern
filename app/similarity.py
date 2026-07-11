@@ -27,7 +27,12 @@ class BuildingSimilarityIndex:
             logger.info("FAISS not installed — using brute-force cosine search.")
 
     def add(self, building_id: str, profile: list[float]) -> None:
-        """Add a building energy profile vector to the index."""
+        """Add a building energy profile vector to the index.
+
+        Args:
+            building_id: Unique identifier for the building.
+            profile: Feature vector representing the building's energy signature.
+        """
         self._profiles.append((building_id, np.array(profile, dtype=np.float32)))
 
     def search(self, query: list[float], k: int = 5) -> list[tuple[str, float]]:
@@ -57,7 +62,18 @@ class BuildingSimilarityIndex:
         self._profiles.clear()
 
     def __len__(self) -> int:
+        """Return the number of profiles stored in the index."""
+        return len(self._profiles)
+
+    @property
+    def size(self) -> int:
+        """Alias for ``len(self)``."""
         return len(self._profiles)
 
 
 _global_index = BuildingSimilarityIndex()
+
+
+def get_global_index() -> BuildingSimilarityIndex:
+    """Return the module-level singleton similarity index."""
+    return _global_index
