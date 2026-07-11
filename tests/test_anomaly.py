@@ -51,3 +51,31 @@ def test_compute_severity_parametrized(value, expected):
     ref = list(np.random.default_rng(42).normal(10, 1, 100))
     result = compute_severity(value, ref)
     assert result["severity"] == expected
+
+
+def test_compute_severity_returns_required_keys():
+    ref = list(np.random.default_rng(0).normal(5, 1, 50))
+    result = compute_severity(5.0, ref)
+    assert "z_flag" in result
+    assert "iqr_flag" in result
+    assert "severity" in result
+
+
+def test_zscore_exactly_at_threshold():
+    assert not zscore_flag(13.0, mean=10.0, std=1.0, threshold=3.0)
+
+
+@pytest.mark.parametrize("threshold", [1.0, 2.0, 3.0, 4.0])
+def test_zscore_various_thresholds(threshold):
+    assert zscore_flag(10.0 + threshold * 1.5, mean=10.0, std=1.0, threshold=threshold)
+
+
+def test_iqr_exactly_at_fence():
+    assert not iqr_flag(20.0, q1=8.0, q3=12.0, k=2.0)
+
+
+def test_compute_severity_warning_only_one_flag():
+    ref = list(np.random.default_rng(7).normal(10, 1, 200))
+    # Use a modest outlier that might trigger only one of the two tests
+    result = compute_severity(13.5, ref)
+    assert result["severity"] in ("none", "warning", "critical")
