@@ -22,6 +22,9 @@ logger = logging.getLogger(__name__)
 
 ZSCORE_THRESHOLD = 2.5
 IQR_MULTIPLIER = 1.5
+RATIO_LOW_THRESHOLD = 0.4
+RATIO_HIGH_THRESHOLD = 2.5
+MIN_REFERENCE_SIZE = 4
 
 
 def detect_valuation_anomaly(
@@ -61,7 +64,7 @@ def detect_valuation_anomaly(
         is_anomaly = zscore > ZSCORE_THRESHOLD
         method = "zscore"
         score = float(zscore)
-    elif reference_values and len(reference_values) >= 4:
+    elif reference_values and len(reference_values) >= MIN_REFERENCE_SIZE:
         arr = np.array(reference_values, dtype=float)
         q1, q3 = np.percentile(arr, [25, 75])
         iqr = q3 - q1
@@ -76,7 +79,7 @@ def detect_valuation_anomaly(
         method = "iqr"
     else:
         ratio = predicted / neighborhood_median
-        is_anomaly = ratio <= 0.4 or ratio > 2.5
+        is_anomaly = ratio <= RATIO_LOW_THRESHOLD or ratio > RATIO_HIGH_THRESHOLD
         score = float(abs(ratio - 1.0))
         method = "ratio"
 
