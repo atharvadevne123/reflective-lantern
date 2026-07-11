@@ -144,3 +144,47 @@ def test_listing_days_upper_bound_valid() -> None:
     props["listing_days"] = 3650
     prop = PropertyInput(**props)
     assert prop.listing_days == 3650
+
+
+@pytest.mark.parametrize(
+    "score_field,valid_val",
+    [
+        ("school_score", 1.0),
+        ("school_score", 10.0),
+        ("transit_score", 5.0),
+        ("walkability_score", 7.5),
+    ],
+)
+def test_score_fields_valid_range(score_field, valid_val) -> None:
+    props = base_props()
+    props[score_field] = valid_val
+    prop = PropertyInput(**props)
+    assert getattr(prop, score_field) == valid_val
+
+
+@pytest.mark.parametrize("bedrooms", [1, 3, 5, 10])
+def test_bedrooms_valid_range(bedrooms) -> None:
+    props = base_props()
+    props["bedrooms"] = bedrooms
+    prop = PropertyInput(**props)
+    assert prop.bedrooms == bedrooms
+
+
+def test_batch_input_single_property() -> None:
+    body = BatchPropertyInput(properties=[PropertyInput(**base_props())])
+    assert len(body.properties) == 1
+
+
+@pytest.mark.parametrize("bathrooms", [1.0, 1.5, 2.0, 3.5])
+def test_bathrooms_valid_range(bathrooms) -> None:
+    props = base_props()
+    props["bathrooms"] = bathrooms
+    prop = PropertyInput(**props)
+    assert prop.bathrooms == bathrooms
+
+
+def test_state_and_city_optional() -> None:
+    props = base_props()
+    prop = PropertyInput(**props)
+    assert prop.state == ""
+    assert prop.city == ""
