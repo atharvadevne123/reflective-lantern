@@ -177,6 +177,46 @@ def test_get_latest_runs_no_workflow_id_dedup() -> None:
     assert len(runs) == 1
 
 
+@pytest.mark.parametrize(
+    "conclusion,expected_success",
+    [
+        ("success", True),
+        ("failure", False),
+        ("timed_out", False),
+        ("skipped", True),
+        ("cancelled", True),
+        ("neutral", True),
+        ("action_required", False),
+    ],
+)
+def test_conclusion_success_mapping(conclusion: str, expected_success: bool) -> None:
+    failing_conclusions = {"failure", "timed_out", "action_required"}
+    assert (conclusion not in failing_conclusions) == expected_success
+
+
+def test_get_latest_runs_returns_list(monkeypatch) -> None:
+    from scripts.check_ci_status import get_latest_runs
+    from unittest.mock import patch
+
+    with patch("scripts.check_ci_status._get", return_value={"workflow_runs": []}):
+        result = get_latest_runs("owner", "repo", "tok")
+    assert isinstance(result, list)
+
+
+@pytest.mark.parametrize("owner,repo", [
+    ("alice", "my-repo"),
+    ("org-name", "backend"),
+    ("user123", "test-project"),
+])
+def test_get_latest_runs_accepts_various_owners(owner: str, repo: str) -> None:
+    from scripts.check_ci_status import get_latest_runs
+    from unittest.mock import patch
+
+    with patch("scripts.check_ci_status._get", return_value={"workflow_runs": []}):
+        result = get_latest_runs(owner, repo, "token")
+    assert result == []
+
+
 def test_repo_flag_filters_to_single_repo(
     monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture
 ) -> None:
