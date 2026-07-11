@@ -13,6 +13,7 @@ import numpy as np
 logger = logging.getLogger(__name__)
 
 MIN_PERIODS = 3
+MAX_HORIZON = 120
 
 
 def compute_sma(values: list[float], window: int = 3) -> list[float]:
@@ -27,7 +28,10 @@ def compute_sma(values: list[float], window: int = 3) -> list[float]:
     Returns:
         List of SMA values, NaN-padded at the start.
     """
+    if window < 1:
+        raise ValueError(f"window must be >= 1, got {window}")
     if len(values) < window:
+        logger.debug("SMA: series length %d < window %d, returning NaN array", len(values), window)
         return [float("nan")] * len(values)
     arr = np.array(values, dtype=float)
     sma = np.convolve(arr, np.ones(window) / window, mode="valid")
@@ -79,6 +83,8 @@ def exponential_smoothing_forecast(
     Returns:
         List of forecast values (length == horizon).
     """
+    if not 0 < alpha <= 1:
+        raise ValueError(f"alpha must be in (0, 1], got {alpha}")
     if not values:
         return []
     smoothed = float(values[0])
