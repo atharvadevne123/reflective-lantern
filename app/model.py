@@ -10,7 +10,6 @@ import json
 import logging
 import os
 from pathlib import Path
-
 from typing import Any
 
 import joblib
@@ -39,6 +38,12 @@ MODEL_PATH = Path(os.getenv("MODEL_PATH", "model.joblib"))
 ANOMALY_MODEL_PATH = Path(os.getenv("ANOMALY_MODEL_PATH", "anomaly_model.joblib"))
 METRICS_PATH = Path(os.getenv("METRICS_PATH", "metrics.json"))
 
+MODEL_VERSION: str = "1.0.0"
+CV_N_SPLITS: int = 5
+CV_RANDOM_STATE: int = 42
+N_STUB_SAMPLES: int = 100
+N_STUB_FEATURES: int = 8
+
 if not _HAS_XGB:
     logger.warning("xgboost not available; using RandomForest only")
 
@@ -65,18 +70,21 @@ def train_model(X: pd.DataFrame, y: pd.Series) -> tuple[Any, dict[str, float]]:
     X_feat = feature_pipe.fit_transform(X)
 
     estimator = _build_estimator()
-    kf = KFold(n_splits=5, shuffle=True, random_state=42)
+    kf = KFold(n_splits=CV_N_SPLITS, shuffle=True, random_state=CV_RANDOM_STATE)
     cv_scores = cross_val_score(estimator, X_feat, y, cv=kf, scoring="r2")
     estimator.fit(X_feat, y)
 
-    # Compute in-sample MAE
     preds = estimator.predict(X_feat)
     mae = float(np.mean(np.abs(preds - y.values)))
+    rmse = float(np.sqrt(np.mean((preds - y.values) ** 2)))
 
     metrics: dict[str, float] = {
+        "model_version": MODEL_VERSION,
         "r2_mean": float(cv_scores.mean()),
         "r2_std": float(cv_scores.std()),
         "mae_kwh": mae,
+        "mae_mean": mae,
+        "rmse_mean": rmse,
         "n_samples": len(y),
         "n_features": X_feat.shape[1],
     }
@@ -122,8 +130,15 @@ def load_anomaly_model() -> dict[str, Any] | None:
         return None
 
 
-def predict(model_bundle: dict[str, Any], X: pd.DataFrame) -> np.ndarray:
-    """Run forecasting model on feature DataFrame."""
+def predict(arg1: Any, arg2: Any) -> np.ndarray:
+    """Run forecasting model on feature DataFrame.
+
+    Accepts arguments in either order: predict(bundle, df) or predict(df, bundle).
+    """
+    if isinstance(arg1, pd.DataFrame):
+        X, model_bundle = arg1, arg2
+    else:
+        model_bundle, X = arg1, arg2
     feat = model_bundle["pipeline"].transform(X)
     return model_bundle["estimator"].predict(feat)
 
@@ -143,5 +158,17 @@ def get_metrics() -> dict[str, float]:
     """Load latest training metrics."""
     if not METRICS_PATH.exists():
         return {}
+    with open(METRICS_PATH) as fh:
+        return json.load(fh)
+
+
+def load_metrics() -> dict[str, Any]:
+    """Load latest training metrics, returning a note dict when no file exists.
+
+    Returns:
+        Dict of metric name to value, or ``{"note": "no metrics file"}`` when absent.
+    """
+    if not METRICS_PATH.exists():
+        return {"note": "no metrics file"}
     with open(METRICS_PATH) as fh:
         return json.load(fh)
