@@ -182,3 +182,20 @@ class DriftStatusResponse(BaseModel):
 
     drift_reports: list[DriftReport]
     total_predictions: int
+
+
+__all__ = [
+    "AnomalyIn",
+    "AnomalyOut",
+    "BatchPredictIn",
+    "BatchPredictOut",
+    "DriftIn",
+    "DriftOut",
+    "DriftReport",
+    "DriftStatusResponse",
+    "EnergyReadingIn",
+    "HealthResponse",
+    "MetricsResponse",
+    "PredictOut",
+    "VersionResponse",
+]
