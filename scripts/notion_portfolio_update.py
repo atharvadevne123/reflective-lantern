@@ -18,11 +18,11 @@ import logging
 import os
 import time
 
-import anthropic
-from dotenv import load_dotenv
-from notion_client import Client as NotionClient
-
-load_dotenv()
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass
 
 log = logging.getLogger(__name__)
 
@@ -129,7 +129,7 @@ PROJECTS: list[dict[str, object]] = [
 ]
 
 
-def generate_description(client: anthropic.Anthropic, project: dict[str, object]) -> str:
+def generate_description(client: object, project: dict[str, object]) -> str:
     """Ask Claude for a 2-sentence portfolio description for *project*."""
     github_hint = (
         f"GitHub repo: github.com/atharvadevne123/{project['github']}"
@@ -151,7 +151,7 @@ def generate_description(client: anthropic.Anthropic, project: dict[str, object]
 
 
 def update_notion_page(
-    notion: NotionClient,
+    notion: object,
     page_id: str,
     cover_url: str,
     tags: list[str],
@@ -182,7 +182,10 @@ def main(generate_descriptions: bool = False) -> None:
     if not NOTION_API_KEY:
         raise ValueError("NOTION_API_KEY environment variable is required")
 
-    ai = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
+    import anthropic as _anthropic
+    from notion_client import Client as NotionClient
+
+    ai = _anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
     notion = NotionClient(auth=NOTION_API_KEY)
 
     results: list[dict[str, str]] = []
