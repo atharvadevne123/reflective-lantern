@@ -31,7 +31,7 @@
     "tests_passed": true,
     "commits": 3,
     "run_verified": "27/27 tests passed",
-    "email_status": "failed_2525:OSError"
+    "email_status": "failed_smtp"
   },
   {
     "date": "2026-07-10",

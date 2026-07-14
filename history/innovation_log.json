@@ -189,7 +189,7 @@
     ],
     "release": "v1.0.0",
     "repo_url": "https://github.com/atharvadevne123/Climate-Pulse",
-    "email_status": "network_blocked_smtp",
+    "email_status": "network_blocked",
     "pdf_path": "/tmp/Climate-Pulse_innovation_2026-05-20.pdf"
   },
   {
@@ -264,7 +264,7 @@
     "release": "v1.0.0",
     "repo_url": "https://github.com/atharvadevne123/Supply-Pulse",
     "release_id": 330110846,
-    "email_status": "network_blocked_smtp",
+    "email_status": "network_blocked",
     "pdf_path": "/tmp/Supply-Pulse_innovation_2026-05-27.pdf"
   },
   {
@@ -336,7 +336,7 @@
       "Input validation utilities",
       "Structured JSON logging"
     ],
-    "email_status": "network_blocked_smtp"
+    "email_status": "network_blocked"
   },
   {
     "date": "2026-07-10",
@@ -437,7 +437,7 @@
       "structured JSON logging",
       "correlation IDs"
     ],
-    "email_status": "network_blocked (SMTP unavailable; PDF committed to history/reports/)",
+    "email_status": "network_blocked",
     "report_pdf": "history/reports/Traffic-Pulse_innovation_2026-07-08.pdf"
   },
   {
@@ -449,7 +449,7 @@
     "location": "reflective-lantern/temporal-pulse (repo creation API restricted in this session)",
     "tests": 152,
     "release": "tag blocked by git proxy; project shipped at v1.0.0 in-tree",
-    "email_status": "SMTP blocked by egress proxy (ports 587/465); PDF committed to history/pending/"
+    "email_status": "network_blocked"
   },
   {
     "date": "2026-07-14",
