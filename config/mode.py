@@ -51,3 +51,12 @@ def next_innovation_day(after: date | None = None) -> date:
         if is_innovation_day(candidate):
             return candidate
     raise RuntimeError("No innovation day found within 365 days")
+
+
+def days_until_next_innovation(after: date | None = None) -> int:
+    """Return how many days until the next innovation day."""
+    ref = after or date.today()
+    return (next_innovation_day(ref) - ref).days
+
+
+__all__ = ["RunMode", "determine_mode", "is_innovation_day", "next_innovation_day", "days_until_next_innovation"]
