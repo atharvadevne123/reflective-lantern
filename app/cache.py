@@ -72,4 +72,24 @@ class TTLCache:
         total = self.hits + self.misses
         return self.hits / total if total > 0 else 0.0
 
+    def get_or_set(self, key: str, default: Any) -> Any:
+        """Return cached value; if absent or expired, store *default* and return it."""
+        value = self.get(key)
+        if value is None:
+            self.set(key, default)
+            return default
+        return value
+
+    def stats(self) -> dict[str, int | float]:
+        """Return a dict snapshot of cache performance counters."""
+        return {
+            "size": self.size,
+            "hits": self.hits,
+            "misses": self.misses,
+            "hit_rate": self.hit_rate,
+        }
+
+
 prediction_cache = TTLCache(ttl_seconds=30, max_size=500)
+
+__all__ = ["TTLCache", "prediction_cache"]
