@@ -128,9 +128,29 @@ class DropNonNumeric(BaseEstimator, TransformerMixin):
         self.numeric_cols_ = X.select_dtypes(include=[np.number]).columns.tolist()
         return self
 
-    def transform(self, X: pd.DataFrame) -> np.ndarray:
-        """Return only the numeric columns as a NumPy array."""
-        return X[self.numeric_cols_].values
+    def transform(self, X: pd.DataFrame) -> pd.DataFrame:
+        """Return only the numeric columns as a DataFrame."""
+        return X[self.numeric_cols_]
+
+    def get_feature_names_out(self, input_features=None) -> np.ndarray:
+        return np.array(self.numeric_cols_)
+
+
+class DataFrameWrapper(BaseEstimator, TransformerMixin):
+    """Wrap numpy/array output back to a DataFrame, preserving column names."""
+
+    def fit(self, X: pd.DataFrame, y=None) -> DataFrameWrapper:
+        if hasattr(X, "columns"):
+            self.columns_: list[str] = list(X.columns)
+        else:
+            self.columns_ = [f"f{i}" for i in range(np.array(X).shape[1])]
+        return self
+
+    def transform(self, X: pd.DataFrame) -> pd.DataFrame:
+        if isinstance(X, pd.DataFrame):
+            return X
+        arr = np.array(X)
+        return pd.DataFrame(arr, columns=self.columns_)
 
 
 class DropColumnsTransformer(BaseEstimator, TransformerMixin):
@@ -157,8 +177,86 @@ def build_feature_pipeline() -> Pipeline:
             ("occupancy", OccupancyFeatureExtractor()),
             ("drop_non_numeric", DropNonNumeric()),
             ("scaler", StandardScaler()),
+            ("to_df", DataFrameWrapper()),
         ]
     )
+
+
+_SCHOOL_WEIGHT: float = 0.5
+_TRANSIT_WEIGHT: float = 0.3
+_WALK_WEIGHT: float = 0.2
+_AMENITY_SCALE: float = 10.0
+
+
+class RatioFeatureTransformer(BaseEstimator, TransformerMixin):
+    """Compute ratio features such as beds-per-bath."""
+
+    def fit(self, X: pd.DataFrame, y=None) -> RatioFeatureTransformer:
+        """No fitting required; returns self."""
+        return self
+
+    def transform(self, X: pd.DataFrame) -> pd.DataFrame:
+        """Add beds_per_bath column to X."""
+        out = X.copy()
+        baths = out["bathrooms"] if "bathrooms" in out.columns else pd.Series([1.0] * len(out))
+        baths = baths.where(baths != 0, other=1.0)
+        beds = out["bedrooms"] if "bedrooms" in out.columns else pd.Series([1.0] * len(out))
+        out["beds_per_bath"] = beds / baths
+        return out
+
+
+class PropertyAgeTransformer(BaseEstimator, TransformerMixin):
+    """Compute property age from year_built relative to a reference year."""
+
+    def __init__(self, reference_year: int = 2026) -> None:
+        self.reference_year = reference_year
+
+    def fit(self, X: pd.DataFrame, y=None) -> PropertyAgeTransformer:
+        """No fitting required; returns self."""
+        return self
+
+    def transform(self, X: pd.DataFrame) -> pd.DataFrame:
+        """Add property_age column to X."""
+        out = X.copy()
+        out["property_age"] = self.reference_year - out["year_built"]
+        return out
+
+
+class AmenityCompositeTransformer(BaseEstimator, TransformerMixin):
+    """Compute a composite amenity score from school, transit, walkability and crime."""
+
+    def fit(self, X: pd.DataFrame, y=None) -> AmenityCompositeTransformer:
+        """No fitting required; returns self."""
+        return self
+
+    def transform(self, X: pd.DataFrame) -> pd.DataFrame:
+        """Add amenity_composite column to X."""
+        out = X.copy()
+        school = out["school_score"] if "school_score" in out.columns else pd.Series([5.0] * len(out), index=out.index)
+        transit = out["transit_score"] if "transit_score" in out.columns else pd.Series([5.0] * len(out), index=out.index)
+        walkability = out["walkability_score"] if "walkability_score" in out.columns else pd.Series([5.0] * len(out), index=out.index)
+        out["amenity_composite"] = (
+            _SCHOOL_WEIGHT * school
+            + _TRANSIT_WEIGHT * transit
+            + _WALK_WEIGHT * walkability
+        ) / _AMENITY_SCALE
+        return out
+
+
+def extract_feature_array(X: pd.DataFrame, pipeline: Pipeline) -> np.ndarray:
+    """Apply *pipeline* to *X* and return a 2-D float array.
+
+    Args:
+        X: Input DataFrame with raw feature columns.
+        pipeline: A fitted or unfitted sklearn Pipeline.
+
+    Returns:
+        2-D numpy float array suitable for model input.
+    """
+    result = pipeline.fit_transform(X)
+    if isinstance(result, np.ndarray):
+        return result.astype(float)
+    return np.array(result, dtype=float)
 
 
 def make_feature_row(
