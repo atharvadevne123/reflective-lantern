@@ -3,7 +3,6 @@ from __future__ import annotations
 
 import numpy as np
 
-
 BUILDING_BENCHMARKS: dict[str, float] = {
     "residential": 4.5,
     "commercial": 12.0,
