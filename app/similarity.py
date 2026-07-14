@@ -91,3 +91,14 @@ def search_comparable(query_vec: list[float] | np.ndarray, top_k: int = 5) -> li
     """
     results = _global_index.search(list(query_vec), k=top_k)
     return [{"building_id": bid, "similarity_score": round(score, 4)} for bid, score in results]
+
+
+def cosine_distance(a: list[float] | np.ndarray, b: list[float] | np.ndarray) -> float:
+    """Compute 1 - cosine_similarity between two vectors."""
+    va = np.array(a, dtype=np.float32)
+    vb = np.array(b, dtype=np.float32)
+    sim = float(np.dot(va, vb) / ((np.linalg.norm(va) + 1e-9) * (np.linalg.norm(vb) + 1e-9)))
+    return round(1.0 - sim, 6)
+
+
+__all__ = ["BuildingSimilarityIndex", "cosine_distance", "get_global_index", "search_comparable"]
