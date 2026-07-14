@@ -157,3 +157,12 @@ class TestBatchPredictEndpoint:
         data = resp.json()
         assert data["count"] == 3
         assert len(data["results"]) == 3
+
+
+class TestRetrain:
+    def test_retrain_returns_202(self, client):
+        resp = client.post("/api/v1/retrain")
+        assert resp.status_code == 202
+        data = resp.json()
+        assert data["status"] == "retrained"
+        assert "metrics" in data
