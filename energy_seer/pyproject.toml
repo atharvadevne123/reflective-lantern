@@ -1,0 +1,32 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.backends.legacy:build"
+
+[project]
+name = "energy-seer"
+version = "1.0.0"
+description = "ML API for energy consumption forecasting and smart grid anomaly detection"
+readme = "README.md"
+requires-python = ">=3.11"
+license = {text = "MIT"}
+authors = [{name = "Reflective Lantern", email = "devneatharva@gmail.com"}]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
+ignore = ["E501", "B008"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["app", "rag"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+filterwarnings = ["ignore::DeprecationWarning"]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["app*", "rag*", "pipelines*"]
