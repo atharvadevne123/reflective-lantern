@@ -7,7 +7,6 @@ import time
 from datetime import datetime
 from typing import Any
 
-import numpy as np
 from scipy.stats import ks_2samp
 from sqlalchemy.orm import Session
 
@@ -127,6 +126,58 @@ def get_prediction_stats(db: Session) -> dict[str, Any]:
         "total_drift_events": drifts,
         "reference_window_size": len(_reference_window),
     }
+
+
+def get_recent_predictions(db: Session, limit: int = 200) -> list[PredictionLog]:
+    """Return the most recent prediction log entries."""
+    return db.query(PredictionLog).order_by(PredictionLog.created_at.desc()).limit(limit).all()
+
+
+def get_drift_summary(db: Session) -> list[dict[str, Any]]:
+    """Return the latest drift detection result per feature."""
+    from sqlalchemy import func
+
+    subq = (
+        db.query(DriftLog.feature_name, func.max(DriftLog.checked_at).label("latest"))
+        .group_by(DriftLog.feature_name)
+        .subquery()
+    )
+    rows = (
+        db.query(DriftLog)
+        .join(subq, (DriftLog.feature_name == subq.c.feature_name) & (DriftLog.checked_at == subq.c.latest))
+        .all()
+    )
+    return [
+        {
+            "feature_name": r.feature_name,
+            "ks_statistic": r.ks_statistic,
+            "p_value": r.p_value,
+            "drift_detected": bool(r.drift_detected),
+            "checked_at": r.checked_at.isoformat() if r.checked_at else "",
+        }
+        for r in rows
+    ]
+
+
+def run_drift_check(db: Session, feature_name: str, reference: list[float], current: list[float]) -> Any:
+    """Run a KS drift check and persist the result, returning a simple result object."""
+    from types import SimpleNamespace
+
+    result = compute_drift(reference, current)
+    entry = DriftLog(
+        feature_name=feature_name,
+        ks_statistic=result["ks_statistic"],
+        p_value=result["p_value"],
+        drift_detected=int(result["drift_detected"]),
+        checked_at=datetime.utcnow(),
+    )
+    db.add(entry)
+    try:
+        db.commit()
+    except Exception:
+        db.rollback()
+        logger.exception("Failed to persist drift check for feature %s", feature_name)
+    return SimpleNamespace(**result)
 
 
 class LatencyTimer:
