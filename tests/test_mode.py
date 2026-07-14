@@ -182,3 +182,15 @@ def test_is_innovation_day_false_on_first_wednesday_of_month() -> None:
     wed_day1 = date(2026, 7, 1)
     assert wed_day1.isoweekday() == 3
     assert not is_innovation_day(wed_day1)
+
+
+def test_mode_label_innovation() -> None:
+    from config.mode import mode_label
+
+    assert mode_label(RunMode.INNOVATION) == "Innovation Mode"
+
+
+def test_mode_label_improvement() -> None:
+    from config.mode import mode_label
+
+    assert mode_label(RunMode.IMPROVEMENT) == "Improvement Mode"
