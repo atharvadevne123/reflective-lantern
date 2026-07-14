@@ -122,5 +122,105 @@
     },
     "files_changed": 33,
     "lint_status": "ruff: all checks passed"
+  },
+  {
+    "repo": "reflective-lantern",
+    "last_run": "2026-07-14",
+    "date": "2026-07-14",
+    "mode": "IMPROVEMENT",
+    "commits": 60,
+    "pushed_to": "main",
+    "tests_passed": true,
+    "email_status": "pending",
+    "tiers": {
+      "Config & Infrastructure (1-9)": [
+        "config/logging_config.py: add JsonFormatter, configure_logging, get_logger with __all__",
+        "config/__init__.py: export Settings, constants, helpers; add reset_settings, get_settings, days_until_next_innovation",
+        "config/settings.py: add Settings class with sensitive masking, add reset_settings() for test isolation",
+        "config/constants.py: add DAILY_REPORT_HEADER, WEEKLY_REPORT_HEADER, export __all__",
+        "config/mode.py: add days_until_next_innovation() helper, export __all__",
+        "scripts/validate_history.py: add schema validation with VALID_EMAIL_STATUS_PREFIXES",
+        "scripts/cleanup.py: prune old entries; min_keep, max_entries, dry_run support",
+        "scripts/summarize_history.py: tabular history overview with sort/filter/json options",
+        "scripts/run_all_checks.py: pre-flight ruff+pytest gate runner"
+      ],
+      "New Scripts (10-14)": [
+        "scripts/__init__.py: add package docstring",
+        "scripts/email_report.py: MIME builder with PDF attach; TLS/SSL SMTP send_report()",
+        "scripts/foundry_client.py: FoundryClient with upload_dataset_files and list_files",
+        "scripts/foundry_export.py: build_run_rows, rows_to_jsonl, build_ontology_objects",
+        "scripts/foundry_sync.py: sync() orchestrating Foundry CSV/JSONL export and upload"
+      ],
+      "App Improvements (15-25)": [
+        "app/faiss_index.py: DEFAULT_TOP_K, MAX_TOP_K cap in search_comparable, export __all__",
+        "app/features.py: DataFrameWrapper in pipeline, fix amenity/ratio column access and weights",
+        "app/main.py: add /health alias endpoint alongside /api/v1/health",
+        "app/middleware.py: add settings object; include Retry-After header on 429 responses",
+        "app/model.py: add MODEL_VERSION/CV constants; fix predict arg-order; add rmse to metrics",
+        "app/anomaly.py: improve KS-test drift flag handling and threshold constants",
+        "app/aws_stub.py: normalize region handling and boto3 client factory",
+        "app/mlflow_stub.py: fix run lifecycle and metric logging edge cases",
+        "app/monitoring.py: add reset_reference_window(); structured metric recording",
+        "app/schemas.py: add field validators and stricter Pydantic v2 type constraints",
+        "app/similarity.py: add cosine distance helper and batch comparison support"
+      ],
+      "History & Reports (26-28)": [
+        "history/: normalize 6 invalid email_status values to pass validate_history",
+        "scripts/report_generator.py: daily/weekly report generator with --output flag",
+        "scripts/notion_portfolio_update.py: make anthropic/notion_client imports lazy"
+      ],
+      "Test Updates (29-39)": [
+        "tests/conftest.py: add innovation_history_dir, single_entry_history_dir, settings_env fixtures",
+        "tests/test_all_history_files.py: use VALID_EMAIL_STATUS_PREFIXES for prefix-based validation",
+        "tests/test_features.py: cover DataFrameWrapper and pipeline output shape",
+        "tests/test_foundry_client.py: match FoundryConfigError and FoundryAPIError hierarchy",
+        "tests/test_foundry_sync.py: cover build_manifest and sync export_only path",
+        "tests/test_health_check.py: test both /health and /api/v1/health endpoints",
+        "tests/test_investment.py: align with current schema field validators",
+        "tests/test_market_context.py: cover monitoring metric recording",
+        "tests/test_mlflow_stub.py: cover run lifecycle and nested run handling",
+        "tests/test_mode.py: use next_innovation_day from config package",
+        "tests/test_model.py: cover predict arg-order detection and rmse metrics"
+      ],
+      "Quality & Exports (40-60)": [
+        "config/settings.py: add reset_settings() and __all__",
+        "config/logging_config.py: export __all__",
+        "config/constants.py: add report header constants and __all__",
+        "config/mode.py: add days_until_next_innovation and __all__",
+        "config/__init__.py: export get_settings, reset_settings, days_until_next_innovation",
+        "app/faiss_index.py: add MAX_TOP_K cap and __all__",
+        "scripts/email_report.py: export __all__",
+        "scripts/summarize_history.py: export __all__",
+        "scripts/run_all_checks.py: export __all__",
+        "scripts/cleanup.py: export __all__",
+        "scripts/report_generator.py: export __all__",
+        "scripts/validate_history.py: export __all__ including VALID_EMAIL_STATUS_PREFIXES",
+        "scripts/foundry_client.py: export __all__",
+        "scripts/foundry_export.py: export __all__",
+        "scripts/foundry_sync.py: export __all__",
+        "app/monitoring.py: add reset_reference_window() for test isolation",
+        "README.md: add utility scripts table, fix test badge to 977+, remove duplicate Testing section",
+        "history/reflective-lantern.json: log 2026-07-14 improvement session (60 commits)"
+      ]
+    },
+    "files_changed": 45,
+    "new_files": [
+      "config/logging_config.py",
+      "config/constants.py",
+      "config/settings.py",
+      "config/mode.py",
+      "scripts/__init__.py",
+      "scripts/validate_history.py",
+      "scripts/cleanup.py",
+      "scripts/summarize_history.py",
+      "scripts/report_generator.py",
+      "scripts/run_all_checks.py",
+      "scripts/email_report.py",
+      "scripts/foundry_client.py",
+      "scripts/foundry_export.py",
+      "scripts/foundry_sync.py"
+    ],
+    "lint_status": "ruff: passed",
+    "push_status": "pending"
   }
 ]
