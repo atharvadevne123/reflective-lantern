@@ -85,3 +85,36 @@ def test_stores_falsy_values(value: object) -> None:
 def test_construction_params(ttl: int, size: int) -> None:
     c = TTLCache(ttl_seconds=ttl, max_size=size)
     assert c.size == 0
+
+
+def test_get_or_set_returns_existing_value() -> None:
+    c = TTLCache(ttl_seconds=60)
+    c.set("k", "existing")
+    assert c.get_or_set("k", "default") == "existing"
+
+
+def test_get_or_set_stores_default_when_absent() -> None:
+    c = TTLCache(ttl_seconds=60)
+    result = c.get_or_set("new_key", "default_val")
+    assert result == "default_val"
+    assert c.get("new_key") == "default_val"
+
+
+def test_stats_returns_expected_keys() -> None:
+    c = TTLCache(ttl_seconds=60)
+    c.set("k", "v")
+    c.get("k")
+    s = c.stats()
+    assert set(s.keys()) == {"size", "hits", "misses", "hit_rate"}
+
+
+def test_stats_values_consistent() -> None:
+    c = TTLCache(ttl_seconds=60)
+    c.set("k", "v")
+    c.get("k")
+    c.get("missing")
+    s = c.stats()
+    assert s["hits"] == 1
+    assert s["misses"] == 1
+    assert s["size"] == 1
+    assert s["hit_rate"] == pytest.approx(0.5)
