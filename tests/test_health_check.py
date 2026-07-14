@@ -6,6 +6,7 @@ from typing import Any
 from unittest.mock import patch
 
 import pytest
+
 from scripts.health_check import RepoHealth
 
 
