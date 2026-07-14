@@ -137,3 +137,14 @@ def get_metrics() -> dict[str, float]:
     if METRICS_PATH.exists():
         return json.loads(METRICS_PATH.read_text())
     return {}
+
+
+def log_training_event(metrics: dict[str, float], model_path: str = str(MODEL_PATH)) -> None:
+    """Emit a structured log line for model training completion."""
+    logger.info(
+        "model_trained r2=%.4f rmse=%.4f n_features=%d path=%s",
+        metrics.get("r2_mean", 0),
+        metrics.get("rmse_mean", 0),
+        metrics.get("n_features", 0),
+        model_path,
+    )
