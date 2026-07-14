@@ -6,7 +6,8 @@ import logging
 from contextlib import asynccontextmanager
 from typing import Any
 
-from fastapi import Depends, FastAPI, HTTPException
+import numpy as np
+from fastapi import Depends, FastAPI, HTTPException, Request
 from sqlalchemy.orm import Session
 
 from app import __version__
@@ -23,21 +24,29 @@ from app.model import (
 from app.monitoring import (
     LatencyTimer,
     compute_drift,
+    get_drift_summary,
     get_prediction_stats,
+    get_recent_predictions,
     log_anomaly,
     log_prediction,
+    run_drift_check,
     set_reference_window,
 )
 from app.schemas import (
     AnomalyRequest,
     AnomalyResponse,
+    ComparableRequest,
+    ComparableResponse,
     DriftRequest,
     DriftResponse,
+    DriftStatusResponse,
     EnergyReadingIn,
     HealthResponse,
     MetricsResponse,
+    NeighborhoodStatsResponse,
     PredictResponse,
 )
+from app.similarity import search_comparable
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(name)s %(levelname)s %(message)s")
 logger = logging.getLogger(__name__)
@@ -70,6 +79,7 @@ app.add_middleware(RateLimitMiddleware)
 app.add_middleware(CorrelationIDMiddleware)
 
 
+@app.get("/health", response_model=HealthResponse, tags=["System"])
 @app.get("/api/v1/health", response_model=HealthResponse, tags=["System"])
 def health() -> HealthResponse:
     """Return API liveness and model load status."""
@@ -268,12 +278,20 @@ def predict_batch(
                 hvac_state=payload.hvac_state,
                 consumption_kwh=payload.consumption_kwh,
             )
+            kwh_pred = float(predict(_model_bundle, row)[0])
+        results.append(
+            PredictResponse(
+                building_id=payload.building_id,
+                timestamp=payload.timestamp,
+                predicted_kwh=round(kwh_pred, 3),
+                model_version=__version__,
+                latency_ms=timer.ms,
+            )
         )
-    return BatchPredictionResponse(predictions=results, count=len(results))
+    return results
 
 
 @app.post("/api/v1/comparable-properties", response_model=ComparableResponse, tags=["Search"])
-@limiter.limit("50/minute")
 async def comparable_properties(request: Request, body: ComparableRequest) -> ComparableResponse:
     prop = body.property
     query_vec = np.array(
