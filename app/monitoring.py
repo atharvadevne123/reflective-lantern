@@ -180,6 +180,12 @@ def run_drift_check(db: Session, feature_name: str, reference: list[float], curr
     return SimpleNamespace(**result)
 
 
+def reset_reference_window() -> None:
+    """Clear the in-memory reference window (useful in tests)."""
+    global _reference_window
+    _reference_window = []
+
+
 class LatencyTimer:
     """Context manager to measure request latency in milliseconds."""
 
