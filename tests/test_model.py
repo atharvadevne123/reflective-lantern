@@ -6,6 +6,8 @@ import numpy as np
 import pandas as pd
 import pytest
 
+from app.model import load_metrics, predict, train_model
+
 
 def test_train_returns_metrics(trained_model):
     bundle, metrics = trained_model
@@ -74,7 +76,6 @@ def test_load_model_none_when_missing(tmp_path, monkeypatch):
 
 @pytest.mark.parametrize("n_samples", [100, 500, 1000])
 def test_train_various_sizes(n_samples):
-    from app.model import train_model
 
     rng = np.random.default_rng(99)
     df = pd.DataFrame(
@@ -89,7 +90,8 @@ def test_train_various_sizes(n_samples):
             "consumption_kwh": rng.uniform(5, 30, n_samples),
         }
     )
-    preds = predict(stub, bundle)
+    bundle, _ = train_model(df, df["consumption_kwh"])
+    preds = predict(bundle, df.head(1))
     assert len(preds) == 1
     assert np.isfinite(preds[0])
 
