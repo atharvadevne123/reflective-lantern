@@ -6,6 +6,7 @@ import json
 from pathlib import Path
 
 import pytest
+
 from config.constants import NON_RECORD_FILES
 
 HISTORY_DIR = Path(__file__).parent.parent / "history"
