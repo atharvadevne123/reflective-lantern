@@ -3,6 +3,7 @@
 import math
 
 import pytest
+
 from app.market_context import (
     affordability_index,
     dom_classification,
