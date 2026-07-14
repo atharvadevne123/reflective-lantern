@@ -129,5 +129,8 @@ def main() -> int:
     return 0
 
 
+__all__ = ["daily_report", "format_date", "load_all_history", "total_commits", "weekly_report"]
+
+
 if __name__ == "__main__":
     sys.exit(main())
