@@ -118,3 +118,12 @@ def get_settings() -> Settings:
     if _settings is None:
         _settings = Settings()
     return _settings
+
+
+def reset_settings() -> None:
+    """Clear the cached Settings singleton (useful in tests)."""
+    global _settings
+    _settings = None
+
+
+__all__ = ["Settings", "get_settings", "reset_settings"]
