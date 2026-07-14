@@ -6,7 +6,7 @@
 > Smart building and industrial energy consumption forecasting and anomaly detection API. — v1.1.0
 
 [![CI](https://github.com/atharvadevne123/reflective-lantern/actions/workflows/ci.yml/badge.svg)](https://github.com/atharvadevne123/reflective-lantern/actions)
-[![Coverage](https://img.shields.io/badge/tests-80%2B%20passed-brightgreen)](tests/)
+[![Coverage](https://img.shields.io/badge/tests-977%2B%20passed-brightgreen)](tests/)
 [![Python 3.11](https://img.shields.io/badge/python-3.11-blue.svg)](https://python.org)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.111-009688.svg)](https://fastapi.tiangolo.com)
 
@@ -73,10 +73,21 @@ reflective-lantern/
 
 ## Utility Scripts
 
+| Script | Purpose |
+|--------|---------|
+| `scripts/validate_history.py` | Validate history JSON files against schema |
+| `scripts/cleanup.py` | Prune history entries older than N days |
+| `scripts/summarize_history.py` | Tabular view of latest run per repo |
+| `scripts/report_generator.py` | Generate daily/weekly text reports |
+| `scripts/run_all_checks.py` | Run ruff + pytest pre-flight gates |
+| `scripts/email_report.py` | Build and send Gmail SMTP reports with PDF |
+| `scripts/foundry_export.py` | Export run rows to JSONL/CSV for Foundry |
+| `scripts/foundry_sync.py` | Sync history to Palantir Foundry dataset |
+
 ```bash
 # Clone
 git clone https://github.com/atharvadevne123/reflective-lantern
-cd reflective-lantern && git checkout innovation/watt-guard
+cd reflective-lantern
 
 # Install
 pip install -r requirements.txt
@@ -161,12 +172,6 @@ Every prediction is logged to `prediction_logs`. Drift is checked via KS-test be
 ## Retraining
 
 The Airflow DAG `watt_guard_weekly_retrain` runs every Sunday. It fetches recent data, validates row count ≥ 500, retrains the model, gates on R2 ≥ 0.70, and deploys the new artefact.
-
-## Testing
-
-```bash
-pytest tests/ -v
-```
 
 ## Testing
 
