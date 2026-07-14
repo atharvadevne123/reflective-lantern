@@ -14,7 +14,7 @@
     "tests_passed": true,
     "commits": 3,
     "run_verified": "43/43 pytest tests passing",
-    "email_status": "failed_SMTP"
+    "email_status": "failed_smtp"
   },
   {
     "date": "2026-05-01",
@@ -39,7 +39,7 @@
     "tests_passed": true,
     "commits": 60,
     "run_verified": "277/277 pytest tests passing",
-    "email_status": "failed_SMTP"
+    "email_status": "failed_smtp"
   },
   {
     "date": "2026-06-22",
@@ -73,7 +73,7 @@
       "PRE-FLIGHT: Created Campaign-Guard v1.0.0 release"
     ],
     "tests_passed": true,
-    "email_status": "failed_SMTP_address_family_not_supported",
+    "email_status": "failed_smtp",
     "commits": 61
   }
 ]

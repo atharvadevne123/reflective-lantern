@@ -37,12 +37,7 @@
       "Ruff lint: all issues fixed (import ordering, undefined names, duplicate class names)"
     ]
   },
-  "email_status": {
-    "attempted": true,
-    "sent": false,
-    "error": "SMTP outbound blocked by remote execution environment",
-    "recipient": "devneatharva@gmail.com"
-  },
+  "email_status": "failed_smtp",
   "date": "2026-06-02",
   "commits": 61
 }
