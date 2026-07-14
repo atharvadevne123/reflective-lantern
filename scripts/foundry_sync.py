@@ -94,3 +94,6 @@ def sync(
             logger.warning("Foundry upload failed: %s", exc)
 
     return summary
+
+
+__all__ = ["build_manifest", "sync"]

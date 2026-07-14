@@ -315,3 +315,6 @@ def main() -> int:
             return 1
 
     return 0
+
+
+__all__ = ["FoundryClient", "FoundryConfigError", "FoundryAPIError", "client_from_settings"]
