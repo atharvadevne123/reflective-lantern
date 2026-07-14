@@ -117,3 +117,19 @@ See `.env.example` for all configurable variables.
 ## License
 
 MIT — see [LICENSE](LICENSE).
+
+## Extended Modules
+
+| Module | Purpose |
+|--------|---------|
+| `app/validators.py` | Input validation helpers |
+| `app/cache.py` | In-memory TTL prediction cache |
+| `app/telemetry.py` | Request and prediction counters |
+| `app/demand_spike.py` | Rolling Z-score + IQR spike detection |
+| `app/forecaster.py` | Trend decomposition + moving average |
+| `app/efficiency_score.py` | Building energy efficiency A-D grader |
+| `app/peak_demand.py` | Peak hour identification + shaving savings |
+| `app/psi.py` | Population Stability Index drift metric |
+| `app/grid_report.py` | Grid health summary report generator |
+| `app/mlflow_stub.py` | MLflow experiment tracking integration |
+| `app/aws_stub.py` | AWS S3 model artifact upload stub |
