@@ -6,8 +6,13 @@ import numpy as np
 import pytest
 
 from app.time_series import (
+    cumulative_sum,
+    daily_totals,
     detect_spikes,
+    first_nonzero,
     forecast_linear_trend,
+    moving_max,
+    normalize_series,
     peak_hours,
     seasonal_baseline,
     simple_moving_average,
@@ -98,3 +103,54 @@ def test_peak_hours_top_n_larger_than_series():
 def test_linear_trend_various_horizons(horizon):
     result = forecast_linear_trend(list(range(30)), horizon=horizon)
     assert len(result) == horizon
+
+def test_cumulative_sum_basic() -> None:
+    assert cumulative_sum([1.0, 2.0, 3.0]) == [1.0, 3.0, 6.0]
+
+
+def test_cumulative_sum_empty() -> None:
+    assert cumulative_sum([]) == []
+
+
+def test_moving_max_basic() -> None:
+    import math
+    result = moving_max([1.0, 3.0, 2.0, 5.0], window=3)
+    assert math.isnan(result[0])
+    assert result[2] == pytest.approx(3.0)
+    assert result[3] == pytest.approx(5.0)
+
+
+def test_moving_max_too_short_all_nan() -> None:
+    import math
+    result = moving_max([1.0, 2.0], window=5)
+    assert all(math.isnan(v) for v in result)
+
+
+def test_normalize_series_basic() -> None:
+    result = normalize_series([0.0, 5.0, 10.0])
+    assert result == pytest.approx([0.0, 0.5, 1.0])
+
+
+def test_normalize_series_constant() -> None:
+    assert normalize_series([7.0, 7.0, 7.0]) == [0.0, 0.0, 0.0]
+
+
+def test_daily_totals_default_period() -> None:
+    result = daily_totals([1.0] * 48, period=24)
+    assert result == [24.0, 24.0]
+
+
+def test_daily_totals_empty() -> None:
+    assert daily_totals([]) == []
+
+
+def test_first_nonzero_finds_index() -> None:
+    assert first_nonzero([0.0, 0.0, 3.0]) == 2
+
+
+def test_first_nonzero_all_zeros() -> None:
+    assert first_nonzero([0.0, 0.0]) == -1
+
+
+def test_first_nonzero_empty() -> None:
+    assert first_nonzero([]) == -1
