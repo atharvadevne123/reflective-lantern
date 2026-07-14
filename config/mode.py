@@ -59,4 +59,23 @@ def days_until_next_innovation(after: date | None = None) -> int:
     return (next_innovation_day(ref) - ref).days
 
 
-__all__ = ["RunMode", "determine_mode", "is_innovation_day", "next_innovation_day", "days_until_next_innovation"]
+def mode_label(mode: RunMode) -> str:
+    """Return a short human-readable label for a RunMode value.
+
+    Args:
+        mode: A RunMode enum value.
+
+    Returns:
+        "Innovation Mode" for INNOVATION, "Improvement Mode" otherwise.
+    """
+    return "Innovation Mode" if mode == RunMode.INNOVATION else "Improvement Mode"
+
+
+__all__ = [
+    "RunMode",
+    "determine_mode",
+    "is_innovation_day",
+    "next_innovation_day",
+    "days_until_next_innovation",
+    "mode_label",
+]
