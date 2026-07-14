@@ -89,7 +89,7 @@ class DriftLog(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
 
 
-def get_db():
+def get_db() -> None:
     db = SessionLocal()
     try:
         yield db
