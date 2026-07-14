@@ -3,6 +3,7 @@
 import math
 
 import pytest
+
 from app.investment import InvestmentAnalysis, compute_investment_analysis
 
 
