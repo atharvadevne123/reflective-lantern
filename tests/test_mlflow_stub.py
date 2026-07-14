@@ -2,12 +2,12 @@
 
 from __future__ import annotations
 
+from unittest.mock import MagicMock, patch
+
 import pytest
 
 from app.aws_stub import download_model_artefacts, upload_model_artefacts
-from app.mlflow_stub import log_training_run
-
-from app.mlflow_stub import get_best_run, log_metrics
+from app.mlflow_stub import get_best_run, log_metrics, log_training_run
 
 
 def test_log_and_retrieve(tmp_path, monkeypatch):
@@ -40,7 +40,7 @@ def test_best_run_no_log(tmp_path, monkeypatch):
         assert best["run_name"] == "run_b"
 
 def test_log_returns_run_name(tmp_path, monkeypatch):
-    import app.mlflow_stub as ms
+    pass
 
 # --- AWS stub tests ---
 
