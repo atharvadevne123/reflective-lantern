@@ -7,13 +7,16 @@ import pandas as pd
 import pytest
 
 from app.features import (
+    AmenityCompositeTransformer,
     LagFeatureExtractor,
     OccupancyFeatureExtractor,
+    PropertyAgeTransformer,
+    RatioFeatureTransformer,
     RollingStatsExtractor,
     TemporalFeatureExtractor,
     WeatherFeatureExtractor,
     build_feature_pipeline,
-    make_feature_row,
+    extract_feature_array,
 )
 
 
@@ -167,9 +170,9 @@ def test_walk_weight_constant() -> None:
 
 
 def test_amenity_weights_sum_to_one() -> None:
-    from app.features import _SCHOOL_WEIGHT, _TRANSIT_WEIGHT, _WALK_WEIGHT
-
     import pytest
+
+    from app.features import _SCHOOL_WEIGHT, _TRANSIT_WEIGHT, _WALK_WEIGHT
 
     total = _SCHOOL_WEIGHT + _TRANSIT_WEIGHT + _WALK_WEIGHT
     assert total == pytest.approx(1.0)
