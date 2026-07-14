@@ -146,3 +146,18 @@ class TestComputePredictionStats:
         stats = compute_prediction_stats(db)
         assert stats["count"] == 0
         db.close()
+
+
+class TestPSIIntegration:
+    def test_psi_stable_same_data(self):
+        from app.psi import compute_psi
+        ref = [3.0 + i * 0.01 for i in range(100)]
+        result = compute_psi(ref, ref)
+        assert result["drift_level"] == "stable"
+
+    def test_psi_significant_large_shift(self):
+        from app.psi import compute_psi
+        ref = [1.0] * 100
+        cur = [100.0] * 100
+        result = compute_psi(ref, cur)
+        assert result["drift_level"] == "significant"
