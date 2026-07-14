@@ -20,6 +20,7 @@ _reference_distributions: dict[str, list[float]] = {}
 _isolation_forest: IsolationForest | None = None
 
 
+# Set reference feature distributions for KS-test drift comparisons.
 def set_reference_distributions(data: dict[str, list[float]]) -> None:
     global _reference_distributions
     _reference_distributions = {k: list(v) for k, v in data.items()}
