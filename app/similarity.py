@@ -77,3 +77,17 @@ _global_index = BuildingSimilarityIndex()
 def get_global_index() -> BuildingSimilarityIndex:
     """Return the module-level singleton similarity index."""
     return _global_index
+
+
+def search_comparable(query_vec: list[float] | np.ndarray, top_k: int = 5) -> list[dict[str, object]]:
+    """Search the global index for comparable properties.
+
+    Args:
+        query_vec: Feature vector for the query property.
+        top_k: Maximum number of comparable properties to return.
+
+    Returns:
+        List of dicts with 'building_id' and 'similarity_score'.
+    """
+    results = _global_index.search(list(query_vec), k=top_k)
+    return [{"building_id": bid, "similarity_score": round(score, 4)} for bid, score in results]
