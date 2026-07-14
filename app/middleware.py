@@ -5,28 +5,42 @@ from __future__ import annotations
 import time
 import uuid
 from collections import defaultdict, deque
+from types import SimpleNamespace
 from typing import Any
 
 from fastapi import Request, Response
 from starlette.middleware.base import BaseHTTPMiddleware
 
-RATE_LIMIT = 200  # requests per minute
+settings = SimpleNamespace(rate_limit_per_minute=200)
+
 _request_counts: dict[str, list[float]] = defaultdict(list)
 _rate_buckets: dict[str, deque[float]] = defaultdict(deque)
+_requests = _request_counts
+
+
+def reset_rate_limiter() -> None:
+    """Clear all rate-limit tracking state (useful in tests)."""
+    _request_counts.clear()
+    _rate_buckets.clear()
 
 
 class RateLimitMiddleware(BaseHTTPMiddleware):
-    """Reject requests exceeding RATE_LIMIT per IP per minute."""
+    """Reject requests exceeding settings.rate_limit_per_minute per IP per minute."""
 
     async def dispatch(self, request: Request, call_next: Any) -> Response:
         ip = request.client.host if request.client else "unknown"
         now = time.time()
+        limit = settings.rate_limit_per_minute
         window = [t for t in _request_counts[ip] if now - t < 60]
         _request_counts[ip] = window
-        if len(window) >= RATE_LIMIT:
+        if len(window) >= limit:
             from fastapi.responses import JSONResponse
 
-            return JSONResponse({"detail": "Rate limit exceeded. Max 200 req/min."}, status_code=429)
+            return JSONResponse(
+                {"detail": f"Rate limit exceeded. Max {limit} req/min."},
+                status_code=429,
+                headers={"Retry-After": "60"},
+            )
         _request_counts[ip].append(now)
         return await call_next(request)
 
