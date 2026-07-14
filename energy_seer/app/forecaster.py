@@ -11,7 +11,8 @@ def linear_trend(values: list[float]) -> dict:
     if n < 2:
         return {"slope": 0.0, "intercept": float(arr[0]) if n else 0.0, "next": 0.0}
     x = np.arange(n, dtype=float)
-    slope, intercept = float(np.polyfit(x, arr, 1))
+    coeffs = np.polyfit(x, arr, 1)
+    slope, intercept = float(coeffs[0]), float(coeffs[1])
     return {
         "slope": round(slope, 6),
         "intercept": round(intercept, 4),
