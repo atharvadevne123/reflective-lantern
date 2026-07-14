@@ -48,5 +48,8 @@ def main() -> int:
     return 0 if all(ok for _, ok, _ in results) else 1
 
 
+__all__ = ["CHECKS", "run_check"]
+
+
 if __name__ == "__main__":
     sys.exit(main())
