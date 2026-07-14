@@ -49,3 +49,6 @@ def configure_logging(level: str = "INFO", *, json_logs: bool = False) -> None:
 def get_logger(name: str) -> logging.Logger:
     """Return a named logger."""
     return logging.getLogger(name)
+
+
+__all__ = ["JsonFormatter", "configure_logging", "get_logger"]
