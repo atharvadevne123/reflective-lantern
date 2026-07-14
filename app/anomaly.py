@@ -79,3 +79,6 @@ def compute_severity(
 
     logger.debug("Anomaly severity=%s z=%s iqr=%s value=%.2f mean=%.2f", severity, z, iq, value, mean)
     return {"z_flag": z, "iqr_flag": iq, "severity": severity}
+
+
+__all__ = ["compute_severity", "iqr_flag", "zscore_flag"]
