@@ -97,5 +97,8 @@ def main() -> int | None:
     return 0
 
 
+__all__ = ["load_all_entries", "load_latest_entry"]
+
+
 if __name__ == "__main__":
     sys.exit(main() or 0)
