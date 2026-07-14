@@ -176,3 +176,6 @@ def download_model_artefacts(local_dir: str = ".") -> list[str]:
         except Exception as exc:
             logger.warning("S3 download failed for %s: %s", key, exc)
     return downloaded
+
+
+__all__ = ["DEFAULT_REGION", "DEFAULT_PREFIX", "ARTEFACT_FILENAMES", "get_s3_client", "upload_artefacts", "download_artefacts"]
