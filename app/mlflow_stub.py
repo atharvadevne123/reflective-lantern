@@ -8,6 +8,7 @@ from pathlib import Path
 
 logger = logging.getLogger(__name__)
 _RUN_LOG = Path("mlflow_runs.jsonl")
+_TRACKING_URI: str = ""
 
 
 def log_metrics(run_name: str, metrics: dict[str, float]) -> str:
@@ -27,6 +28,35 @@ def log_metrics(run_name: str, metrics: dict[str, float]) -> str:
     with open(_RUN_LOG, "a") as fh:
         fh.write(json.dumps(entry) + "\n")
     logger.info("MLflow stub: logged run '%s'  metrics=%s", run_name, metrics)
+    return run_name
+
+
+def log_training_run(
+    params: dict[str, object],
+    metrics: dict[str, float],
+    tags: dict[str, str] | None = None,
+    run_name: str = "training-run",
+) -> str | None:
+    """Log a training run with params, metrics, and optional tags.
+
+    Returns None when no tracking URI is configured.
+
+    Args:
+        params: Hyperparameter key-value pairs.
+        metrics: Metric key-value pairs.
+        tags: Optional metadata tags.
+        run_name: Human-readable run identifier.
+
+    Returns:
+        The run name on success, None if no tracking URI configured.
+    """
+    if not _TRACKING_URI:
+        logger.debug("MLflow tracking URI not set; skipping training run log.")
+        return None
+    entry = {"run": run_name, "params": params, "metrics": metrics, "tags": tags or {}}
+    with open(_RUN_LOG, "a") as fh:
+        fh.write(json.dumps(entry) + "\n")
+    logger.info("MLflow stub: logged training run '%s'", run_name)
     return run_name
 
 
