@@ -131,6 +131,7 @@ class DropRawColumnsTransformer(BaseEstimator, TransformerMixin):
 
 
 def build_feature_pipeline() -> Pipeline:
+    """Build the 7-stage sklearn feature engineering pipeline."""
     return Pipeline([
         ("lag", LagFeatureTransformer()),
         ("rolling", RollingStatsTransformer()),
@@ -143,6 +144,7 @@ def build_feature_pipeline() -> Pipeline:
 
 
 def prepare_dataframe(data: list[dict]) -> pd.DataFrame:
+    """Normalise raw reading dicts into a DataFrame with all required columns."""
     df = pd.DataFrame(data)
     for col in ["temperature_c", "humidity_pct"]:
         if col not in df.columns:
