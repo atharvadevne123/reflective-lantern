@@ -1,10 +1,12 @@
-"""AWS S3 stub — serialises model artefacts to local disk when boto3 absent."""
+"""AWS S3 stub — returns stub responses when boto3/S3 are unavailable."""
 
 from __future__ import annotations
 
 import logging
+import os
 import shutil
 from pathlib import Path
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -13,57 +15,122 @@ DEFAULT_PREFIX = "realty-edge/models"
 ARTEFACT_FILENAMES = ("model.joblib", "metrics.json")
 
 _REGION = os.getenv("AWS_REGION", DEFAULT_REGION)
-_BUCKET = os.getenv("S3_BUCKET", "")
+_BUCKET = os.getenv("S3_BUCKET", "watt-guard-models")
 _PREFIX = os.getenv("S3_PREFIX", DEFAULT_PREFIX)
 
-def upload_model(local_path: str, bucket: str, key: str) -> bool:
-    """Upload a model artefact to S3, falling back to a local mirror when boto3 is absent.
 
-    Args:
-        local_path: Filesystem path to the model file to upload.
-        bucket: S3 bucket name.
-        key: S3 object key (path within the bucket).
-
-    Returns:
-        True on success, False if the source file does not exist.
-    """
-    src = Path(local_path)
-    if not src.exists():
-        logger.error("Model file not found: %s", local_path)
-        return False
+def _s3_client() -> Any | None:
+    """Return a boto3 S3 client, or None when boto3 is absent or no bucket is configured."""
+    if not _BUCKET:
+        return None
     try:
         import boto3
 
-        s3 = boto3.client("s3")
-        s3.upload_file(str(src), bucket, key)
-        logger.info("Uploaded %s → s3://%s/%s", local_path, bucket, key)
+        return boto3.client("s3", region_name=_REGION)
     except ImportError:
+        return None
+    except Exception as exc:
+        logger.warning("Failed to create S3 client: %s", exc)
+        return None
+
+
+def upload_model(local_path: str, bucket: str = "", key: str = "") -> str:
+    """Upload a model artefact to S3, returning a stub URI when boto3 is absent.
+
+    Args:
+        local_path: Filesystem path to the model file to upload.
+        bucket: S3 bucket name (defaults to env S3_BUCKET).
+        key: S3 object key (defaults to PREFIX/filename).
+
+    Returns:
+        S3 URI string on success, or a stub URI when boto3 is unavailable.
+    """
+    bucket = bucket or _BUCKET or "stub-bucket"
+    src = Path(local_path)
+    key = key or f"{_PREFIX}/{src.name}"
+    stub_uri = f"s3://{bucket}/{key} (stub)"
+    if not src.exists():
+        logger.error("Model file not found: %s", local_path)
+        return stub_uri
+    client = _s3_client()
+    if client is None:
         mirror = Path("s3_mirror") / bucket / key
         mirror.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy(src, mirror)
         logger.info("boto3 absent — mirrored %s → %s", local_path, mirror)
-    return True
+        return stub_uri
+    try:
+        client.upload_file(str(src), bucket, key)
+        uri = f"s3://{bucket}/{key}"
+        logger.info("Uploaded %s → %s", local_path, uri)
+        return uri
+    except Exception as exc:
+        logger.error("S3 upload failed: %s", exc)
+        return stub_uri
 
 
-def download_model(bucket: str, key: str, local_path: str) -> bool:
-    """Download a model artefact from S3, falling back to a local mirror when boto3 is absent.
+def download_model(key: str, local_path: str, bucket: str = "") -> str:
+    """Download a model artefact from S3, falling back to local mirror when boto3 absent.
 
     Args:
-        bucket: S3 bucket name.
-        key: S3 object key.
+        key: S3 object key to download.
         local_path: Local filesystem destination path.
+        bucket: S3 bucket name (defaults to env S3_BUCKET).
 
     Returns:
-        True on success, False if neither S3 nor the mirror has the file.
+        Local path on success or when stub; empty string on hard failure.
     """
+    bucket = bucket or _BUCKET or "stub-bucket"
+    client = _s3_client()
+    if client is None:
+        mirror = Path("s3_mirror") / bucket / key
+        if mirror.exists():
+            shutil.copy(mirror, local_path)
+            logger.info("Restored from mirror %s", mirror)
+        else:
+            logger.debug("boto3 absent and no mirror; returning stub path %s", local_path)
+        return local_path
     try:
-        import boto3
+        client.download_file(bucket, key, local_path)
+        logger.info("Downloaded s3://%s/%s → %s", bucket, key, local_path)
+        return local_path
+    except Exception as exc:
+        logger.error("S3 download failed for %s: %s", key, exc)
+        return local_path
+
+
+def list_model_versions(bucket: str = "", prefix: str = "") -> list[str]:
+    """List model version keys available in S3.
+
+    Args:
+        bucket: S3 bucket name (defaults to env S3_BUCKET).
+        prefix: Key prefix to filter (defaults to env S3_PREFIX).
+
+    Returns:
+        List of S3 key strings; a single stub entry when boto3 is absent.
+    """
+    bucket = bucket or _BUCKET or "stub-bucket"
+    prefix = prefix or _PREFIX
+    client = _s3_client()
+    if client is None:
+        return [f"{prefix}/model.joblib (stub)"]
+    try:
+        response = client.list_objects_v2(Bucket=bucket, Prefix=prefix)
+        keys = [obj["Key"] for obj in response.get("Contents", [])]
+        return keys if keys else [f"{prefix}/model.joblib (stub)"]
+    except Exception as exc:
+        logger.error("S3 list failed: %s", exc)
+        return [f"{prefix}/model.joblib (stub)"]
+
+
+def upload_model_artefacts(local_paths: list[str]) -> list[str]:
+    """Upload multiple model artefacts to S3.
 
     Args:
         local_paths: Local file paths to upload.
 
     Returns:
-        List of S3 URIs that were successfully uploaded.
+        List of S3 URIs that were successfully uploaded; empty when no bucket or files missing.
     """
     client = _s3_client()
     if client is None:
