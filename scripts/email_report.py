@@ -85,3 +85,6 @@ def send_report(
         return True
     except Exception:
         return False
+
+
+__all__ = ["build_message", "send_report", "send_via_smtp"]
