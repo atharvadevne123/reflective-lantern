@@ -68,16 +68,8 @@ class LoadPatternIndex:
 
         return self._brute_force_search(q[0], k)
 
-    def _brute_force_search(self, query: np.ndarray, k: int) -> list[dict[str, object]]:
-        """Cosine-similarity search without FAISS (O(n) linear scan).
-
-        Args:
-            query: Unit query vector of shape (dim,).
-            k: Number of nearest neighbours to return.
-
-        Returns:
-            Ranked list of result dicts with 'rank', 'index', 'similarity', 'metadata'.
-        """
+    def _brute_force_search(self, query: np.ndarray, k: int) -> list[dict]:
+        """Cosine-similarity search without FAISS (O(n) linear scan)."""
         if not self._vectors:
             return []
         q_norm = query / (np.linalg.norm(query) + 1e-9)
@@ -106,9 +98,62 @@ class LoadPatternIndex:
 
 _pattern_index: LoadPatternIndex | None = None
 
+DIM: int = 24
+DEFAULT_TOP_K: int = 5
+MAX_TOP_K: int = 100
 
-def get_pattern_index(dim: int = 24) -> LoadPatternIndex:
+
+def get_pattern_index(dim: int = DIM) -> LoadPatternIndex:
     global _pattern_index
     if _pattern_index is None:
         _pattern_index = LoadPatternIndex(dim=dim)
     return _pattern_index
+
+
+def add_property(vector: list[float] | np.ndarray, metadata: dict | None = None) -> None:
+    """Add a property vector to the global comparable-property index.
+
+    Args:
+        vector: Feature vector; padded or truncated to DIM automatically.
+        metadata: Optional dict of property attributes (e.g. zipcode, price).
+    """
+    v = np.array(vector, dtype=np.float32)
+    if len(v) < DIM:
+        v = np.pad(v, (0, DIM - len(v)))
+    elif len(v) > DIM:
+        v = v[:DIM]
+    get_pattern_index().add(v.tolist(), metadata or {})
+
+
+def index_size() -> int:
+    """Return the number of property vectors stored in the global index."""
+    return get_pattern_index().size
+
+
+def reset_index() -> None:
+    """Clear all vectors from the global comparable-property index."""
+    get_pattern_index().clear()
+
+
+def search_comparable(query: list[float] | np.ndarray, top_k: int = DEFAULT_TOP_K) -> list[dict]:
+    """Search the global index for the top-k most similar property vectors.
+
+    Args:
+        query: Feature vector; padded or truncated to DIM automatically.
+        top_k: Maximum number of results to return.
+
+    Returns:
+        List of dicts with 'distance' and any stored metadata keys (flat).
+    """
+    q = np.array(query, dtype=np.float32)
+    if len(q) < DIM:
+        q = np.pad(q, (0, DIM - len(q)))
+    elif len(q) > DIM:
+        q = q[:DIM]
+    raw = get_pattern_index().search(q.tolist(), k=top_k)
+    results = []
+    for r in raw:
+        entry = {"distance": round(1.0 - r.get("similarity", 0.0), 6)}
+        entry.update(r.get("metadata", {}))
+        results.append(entry)
+    return results
