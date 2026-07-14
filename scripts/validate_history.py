@@ -121,6 +121,16 @@ def main() -> int:
     return 0
 
 
+__all__ = [
+    "VALID_MODES",
+    "VALID_EMAIL_STATUSES",
+    "VALID_EMAIL_STATUS_PREFIXES",
+    "validate_entry",
+    "validate_file",
+    "validate_files",
+]
+
+
 if __name__ == "__main__":
     import sys
 
