@@ -100,3 +100,106 @@ def peak_hours(values: list[float], top_n: int = 3) -> list[int]:
     arr = np.array(values, dtype=float)
     indices = list(np.argsort(arr)[::-1][: min(top_n, len(arr))])
     return [int(i) for i in indices]
+
+
+def cumulative_sum(values: list[float]) -> list[float]:
+    """Return the running cumulative sum of *values*.
+
+    Args:
+        values: Numeric series.
+
+    Returns:
+        List of the same length where element i is sum(values[:i+1]).
+    """
+    result: list[float] = []
+    total = 0.0
+    for v in values:
+        total += v
+        result.append(total)
+    return result
+
+
+def moving_max(values: list[float], window: int = 3) -> list[float]:
+    """Return the rolling maximum over *window* periods.
+
+    The first (window-1) entries are NaN-padded.
+
+    Args:
+        values: Numeric series.
+        window: Rolling window size (must be >= 1).
+
+    Returns:
+        List of rolling max values, NaN-padded at the start.
+    """
+    if not values:
+        return []
+    if len(values) < window:
+        return [float("nan")] * len(values)
+    pad = [float("nan")] * (window - 1)
+    result = [max(values[i : i + window]) for i in range(len(values) - window + 1)]
+    return pad + result
+
+
+def normalize_series(values: list[float]) -> list[float]:
+    """Scale *values* to the [0, 1] range using min-max normalization.
+
+    Returns all-zeros when the range is zero (constant series).
+
+    Args:
+        values: Numeric series.
+
+    Returns:
+        Min-max normalized list (same length as input).
+    """
+    if not values:
+        return []
+    lo, hi = min(values), max(values)
+    if hi == lo:
+        return [0.0] * len(values)
+    return [(v - lo) / (hi - lo) for v in values]
+
+
+def daily_totals(values: list[float], period: int = 24) -> list[float]:
+    """Aggregate *values* into non-overlapping blocks of size *period*.
+
+    The last block is included even if shorter than *period*.
+
+    Args:
+        values: Flat series of observations.
+        period: Aggregation block size (default 24 for hourly data).
+
+    Returns:
+        List of block sums.
+    """
+    if not values:
+        return []
+    return [sum(values[i : i + period]) for i in range(0, len(values), period)]
+
+
+def first_nonzero(values: list[float]) -> int:
+    """Return the index of the first non-zero element.
+
+    Args:
+        values: Numeric series.
+
+    Returns:
+        Index of first non-zero value, or -1 if all zeros or list is empty.
+    """
+    for i, v in enumerate(values):
+        if v != 0.0:
+            return i
+    return -1
+
+
+__all__ = [
+    "simple_moving_average",
+    "seasonal_baseline",
+    "forecast_linear_trend",
+    "detect_spikes",
+    "peak_hours",
+    "cumulative_sum",
+    "moving_max",
+    "normalize_series",
+    "daily_totals",
+    "first_nonzero",
+]
