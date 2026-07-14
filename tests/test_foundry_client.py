@@ -9,6 +9,7 @@ from typing import Any
 from unittest.mock import patch
 
 import pytest
+
 from scripts.foundry_client import (
     FoundryAPIError,
     FoundryClient,
