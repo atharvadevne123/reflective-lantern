@@ -114,3 +114,71 @@ class VersionResponse(BaseModel):
     version: str
     api: str
     model: str
+
+
+class PropertyIn(BaseModel):
+    """Single property feature vector for similarity search."""
+
+    sqft: float = Field(..., gt=0)
+    bedrooms: int = Field(..., ge=0, le=20)
+    bathrooms: float = Field(..., ge=0.0, le=20.0)
+    condition_score: float = Field(..., ge=0.0, le=10.0)
+    school_score: float = Field(5.0, ge=0.0, le=10.0)
+    transit_score: float = Field(5.0, ge=0.0, le=10.0)
+    walkability_score: float = Field(5.0, ge=0.0, le=10.0)
+    crime_rate: float = Field(0.3, ge=0.0)
+    median_price_per_sqft: float = Field(200.0, gt=0)
+    avg_rental_yield: float = Field(0.06, ge=0.0)
+    listing_days: int = Field(30, ge=0)
+    year_built: int = Field(2000, ge=1800, le=2100)
+
+
+class ComparableRequest(BaseModel):
+    """Request to find comparable properties."""
+
+    property: PropertyIn
+    top_k: int = Field(5, ge=1, le=50)
+
+
+class ComparableItem(BaseModel):
+    """A single comparable property result."""
+
+    building_id: str
+    similarity_score: float
+
+
+class ComparableResponse(BaseModel):
+    """Response containing comparable property results."""
+
+    comparables: list[ComparableItem]
+    query_vector_dim: int
+
+
+class NeighborhoodStatsResponse(BaseModel):
+    """Neighbourhood aggregate statistics response."""
+
+    zipcode: str
+    median_price: float
+    median_price_per_sqft: float
+    school_score: float
+    transit_score: float
+    walkability_score: float
+    crime_rate: float
+    avg_rental_yield: float
+
+
+class DriftReport(BaseModel):
+    """Single feature drift detection result."""
+
+    feature_name: str
+    ks_statistic: float
+    p_value: float
+    drift_detected: bool
+    checked_at: str
+
+
+class DriftStatusResponse(BaseModel):
+    """Aggregated drift status across all monitored features."""
+
+    drift_reports: list[DriftReport]
+    total_predictions: int
