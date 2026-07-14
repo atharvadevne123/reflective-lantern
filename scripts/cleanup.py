@@ -117,6 +117,9 @@ def main() -> int:
     return 0
 
 
+__all__ = ["clean_file", "count_entries"]
+
+
 if __name__ == "__main__":
     import sys
 
