@@ -102,6 +102,18 @@ DIM: int = 24
 DEFAULT_TOP_K: int = 5
 MAX_TOP_K: int = 100
 
+__all__ = [
+    "LoadPatternIndex",
+    "add_property",
+    "get_pattern_index",
+    "index_size",
+    "reset_index",
+    "search_comparable",
+    "DIM",
+    "DEFAULT_TOP_K",
+    "MAX_TOP_K",
+]
+
 
 def get_pattern_index(dim: int = DIM) -> LoadPatternIndex:
     global _pattern_index
@@ -140,11 +152,12 @@ def search_comparable(query: list[float] | np.ndarray, top_k: int = DEFAULT_TOP_
 
     Args:
         query: Feature vector; padded or truncated to DIM automatically.
-        top_k: Maximum number of results to return.
+        top_k: Maximum number of results to return (capped at MAX_TOP_K).
 
     Returns:
         List of dicts with 'distance' and any stored metadata keys (flat).
     """
+    top_k = min(top_k, MAX_TOP_K)
     q = np.array(query, dtype=np.float32)
     if len(q) < DIM:
         q = np.pad(q, (0, DIM - len(q)))
