@@ -172,3 +172,6 @@ def load_metrics() -> dict[str, Any]:
         return {"note": "no metrics file"}
     with open(METRICS_PATH) as fh:
         return json.load(fh)
+
+
+__all__ = ["get_metrics", "load_anomaly_model", "load_metrics", "load_model", "predict", "score_anomaly", "train_anomaly_model", "train_model"]
