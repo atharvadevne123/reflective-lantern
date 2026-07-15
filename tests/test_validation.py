@@ -120,3 +120,87 @@ class TestValidateLoadSeriesExtended:
     def test_inf_detected(self, value):
         errors = validate_load_series([value])
         assert len(errors) > 0
+
+
+class TestValidateBuildingId:
+    def test_valid_building_id(self):
+        from app.validation import validate_building_id
+        assert validate_building_id("bldg-001") == []
+
+    def test_empty_building_id(self):
+        from app.validation import validate_building_id
+        errors = validate_building_id("")
+        assert len(errors) > 0
+
+    def test_building_id_too_long(self):
+        from app.validation import validate_building_id
+        errors = validate_building_id("a" * 65)
+        assert len(errors) > 0
+
+    def test_building_id_invalid_chars(self):
+        from app.validation import validate_building_id
+        errors = validate_building_id("bldg@123")
+        assert len(errors) > 0
+
+    @pytest.mark.parametrize("bid", ["a", "A1", "bldg-001", "BLDG_002"])
+    def test_valid_building_ids(self, bid):
+        from app.validation import validate_building_id
+        assert validate_building_id(bid) == []
+
+
+class TestValidateBatchSize:
+    def test_valid_batch(self):
+        from app.validation import validate_batch_size
+        assert validate_batch_size(50) == []
+
+    def test_oversized_batch(self):
+        from app.validation import validate_batch_size
+        errors = validate_batch_size(101)
+        assert len(errors) > 0
+
+    def test_zero_batch(self):
+        from app.validation import validate_batch_size
+        errors = validate_batch_size(0)
+        assert len(errors) > 0
+
+    @pytest.mark.parametrize("n", [1, 50, 100])
+    def test_valid_batch_sizes(self, n):
+        from app.validation import validate_batch_size
+        assert validate_batch_size(n) == []
+
+
+class TestValidateConsumptionKwh:
+    def test_valid_value(self):
+        from app.validation import validate_consumption_kwh
+        assert validate_consumption_kwh(10.5) == []
+
+    def test_negative_value(self):
+        from app.validation import validate_consumption_kwh
+        errors = validate_consumption_kwh(-1.0)
+        assert len(errors) > 0
+
+    def test_nan_value(self):
+        import math
+        from app.validation import validate_consumption_kwh
+        errors = validate_consumption_kwh(math.nan)
+        assert len(errors) > 0
+
+
+class TestValidateFeatureVector:
+    def test_valid_vector(self):
+        from app.validation import validate_feature_vector
+        assert validate_feature_vector([1.0, 2.0, 3.0]) == []
+
+    def test_empty_vector(self):
+        from app.validation import validate_feature_vector
+        errors = validate_feature_vector([])
+        assert len(errors) > 0
+
+    def test_wrong_dim(self):
+        from app.validation import validate_feature_vector
+        errors = validate_feature_vector([1.0, 2.0, 3.0], expected_dim=5)
+        assert len(errors) > 0
+
+    def test_correct_dim(self):
+        from app.validation import validate_feature_vector
+        assert validate_feature_vector([1.0, 2.0, 3.0], expected_dim=3) == []
