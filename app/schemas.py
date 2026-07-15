@@ -184,6 +184,47 @@ class DriftStatusResponse(BaseModel):
     total_predictions: int
 
 
+class FeatureImportanceItem(BaseModel):
+    """Single feature with its importance score."""
+
+    feature: str
+    importance: float
+
+
+class FeatureImportanceResponse(BaseModel):
+    """Ranked feature importances from the trained ensemble model."""
+
+    features: list[FeatureImportanceItem]
+    top_n: int
+    model_version: str
+
+
+class AnomalyStatsResponse(BaseModel):
+    """Aggregated anomaly detection statistics."""
+
+    total_anomalies: int
+    critical_count: int
+    warning_count: int
+    anomaly_rate: float
+    mean_anomaly_score: float
+
+
+class SavingsRequest(BaseModel):
+    """Request body for the energy savings estimation endpoint."""
+
+    actual_kwh: list[float] = Field(..., min_length=1, description="Measured consumption values")
+    baseline_kwh: list[float] = Field(..., min_length=1, description="Baseline consumption values")
+    tariff_per_kwh: float = Field(0.15, gt=0.0, description="Electricity cost per kWh")
+
+
+class SavingsResponse(BaseModel):
+    """Energy savings estimation result."""
+
+    total_saved_kwh: float
+    total_saved_cost: float
+    savings_pct: float
+
+
 __all__ = [
     "AnomalyIn",
     "AnomalyOut",
