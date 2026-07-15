@@ -5,7 +5,7 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from app.anomaly import compute_severity, iqr_flag, zscore_flag
+from app.anomaly import anomaly_rate, batch_compute_severity, compute_severity, iqr_flag, zscore_flag
 
 
 def test_zscore_normal():
@@ -79,3 +79,39 @@ def test_compute_severity_warning_only_one_flag():
     # Use a modest outlier that might trigger only one of the two tests
     result = compute_severity(13.5, ref)
     assert result["severity"] in ("none", "warning", "critical")
+
+
+def test_batch_compute_severity_basic():
+    ref = list(np.random.default_rng(1).normal(10, 1, 200))
+    results = batch_compute_severity([10.0, 100.0], ref)
+    assert len(results) == 2
+    assert results[0]["severity"] == "none"
+    assert results[1]["severity"] == "critical"
+
+
+def test_batch_compute_severity_includes_value_key():
+    ref = list(np.random.default_rng(2).normal(10, 1, 100))
+    results = batch_compute_severity([10.0, 11.0], ref)
+    assert all("value" in r for r in results)
+    assert results[0]["value"] == 10.0
+
+
+def test_batch_compute_severity_small_reference():
+    results = batch_compute_severity([5.0, 6.0], [1.0, 2.0, 3.0])
+    assert all(r["severity"] == "none" for r in results)
+
+
+def test_batch_compute_severity_empty_input():
+    ref = list(np.random.default_rng(3).normal(10, 1, 100))
+    results = batch_compute_severity([], ref)
+    assert results == []
+
+
+@pytest.mark.parametrize("flagged,total,expected", [
+    ([], 0, 0.0),
+    ([{"severity": "none"}], 1, 0.0),
+    ([{"severity": "warning"}], 1, 1.0),
+    ([{"severity": "critical"}, {"severity": "none"}], 2, 0.5),
+])
+def test_anomaly_rate_parametrized(flagged, total, expected):
+    assert anomaly_rate(flagged) == pytest.approx(expected)
