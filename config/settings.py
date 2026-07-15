@@ -108,6 +108,33 @@ class Settings:
         from config.constants import GITHUB_OWNER
         return GITHUB_OWNER
 
+    def to_dict(self, include_sensitive: bool = False) -> dict[str, object]:
+        """Serialise settings to a plain dict.
+
+        Args:
+            include_sensitive: When False (default), sensitive values are masked as '***'.
+
+        Returns:
+            Dict of slot name to value, with sensitive fields masked unless requested.
+        """
+        result: dict[str, object] = {}
+        for slot in self.__slots__:
+            val = getattr(self, slot)
+            if not include_sensitive and slot in self._SENSITIVE and val:
+                result[slot] = "***"
+            else:
+                result[slot] = val
+        return result
+
+    def missing_optional(self) -> list[str]:
+        """Return a list of optional but useful env var names that are unset.
+
+        Returns:
+            List of env var names that are empty but not required.
+        """
+        optional = ["FOUNDRY_HOSTNAME", "FOUNDRY_TOKEN", "FOUNDRY_DATASET_RID", "NOTION_API_KEY"]
+        return [k for k in optional if not getattr(self, k.lower(), "")]
+
 
 _settings: Settings | None = None
 
