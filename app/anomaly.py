@@ -129,4 +129,30 @@ def anomaly_rate(severities: list[dict[str, object]]) -> float:
     return round(flagged / len(severities), 4)
 
 
-__all__ = ["anomaly_rate", "batch_compute_severity", "compute_severity", "iqr_flag", "zscore_flag"]
+__all__ = ["anomaly_rate", "batch_compute_severity", "compute_severity", "iqr_flag", "top_anomalies", "zscore_flag"]
+
+
+def top_anomalies(
+    severities: list[dict[str, object]],
+    n: int = 10,
+    severity_order: list[str] | None = None,
+) -> list[dict[str, object]]:
+    """Return the *n* most severe entries from a severity result list.
+
+    Args:
+        severities: List of dicts with at least a 'severity' key (from batch_compute_severity).
+        n: Maximum number of results to return.
+        severity_order: Ordered list from most to least severe; defaults to
+            ['critical', 'warning', 'none'].
+
+    Returns:
+        Sorted slice of the input list, most severe first, up to length *n*.
+    """
+    order = severity_order or ["critical", "warning", "none"]
+    rank = {label: i for i, label in enumerate(order)}
+    default_rank = len(order)
+
+    def _key(entry: dict[str, object]) -> int:
+        return rank.get(str(entry.get("severity", "")), default_rank)
+
+    return sorted(severities, key=_key)[:n]

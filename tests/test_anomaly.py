@@ -115,3 +115,37 @@ def test_batch_compute_severity_empty_input():
 ])
 def test_anomaly_rate_parametrized(flagged, total, expected):
     assert anomaly_rate(flagged) == pytest.approx(expected)
+
+
+def test_top_anomalies_returns_critical_first():
+    from app.anomaly import top_anomalies
+    data = [
+        {"severity": "none", "value": 10.0},
+        {"severity": "critical", "value": 100.0},
+        {"severity": "warning", "value": 15.0},
+    ]
+    result = top_anomalies(data, n=3)
+    assert result[0]["severity"] == "critical"
+    assert result[1]["severity"] == "warning"
+
+
+def test_top_anomalies_respects_n():
+    from app.anomaly import top_anomalies
+    data = [{"severity": "critical", "value": float(i)} for i in range(20)]
+    result = top_anomalies(data, n=5)
+    assert len(result) == 5
+
+
+def test_top_anomalies_empty():
+    from app.anomaly import top_anomalies
+    assert top_anomalies([], n=5) == []
+
+
+def test_top_anomalies_custom_order():
+    from app.anomaly import top_anomalies
+    data = [
+        {"severity": "none", "value": 1.0},
+        {"severity": "warning", "value": 2.0},
+    ]
+    result = top_anomalies(data, n=2, severity_order=["warning", "critical", "none"])
+    assert result[0]["severity"] == "warning"
