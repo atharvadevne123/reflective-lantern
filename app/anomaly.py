@@ -81,4 +81,52 @@ def compute_severity(
     return {"z_flag": z, "iqr_flag": iq, "severity": severity}
 
 
-__all__ = ["compute_severity", "iqr_flag", "zscore_flag"]
+def batch_compute_severity(
+    values: list[float],
+    reference: list[float],
+    z_threshold: float = 3.0,
+    iqr_k: float = 1.5,
+) -> list[dict[str, object]]:
+    """Run severity analysis on a batch of values against a shared reference.
+
+    Args:
+        values: List of consumption readings to evaluate.
+        reference: Historical reference window (must have at least MIN_REFERENCE_SIZE elements).
+        z_threshold: Z-score boundary for flagging.
+        iqr_k: IQR fence multiplier.
+
+    Returns:
+        List of severity dicts (same order as *values*), each with 'z_flag', 'iqr_flag',
+        'severity', and 'value' keys.
+    """
+    if len(reference) < MIN_REFERENCE_SIZE:
+        logger.warning(
+            "Reference window too small (%d < %d); returning 'none' for all values",
+            len(reference),
+            MIN_REFERENCE_SIZE,
+        )
+        return [{"z_flag": False, "iqr_flag": False, "severity": "none", "value": v} for v in values]
+    results = []
+    for v in values:
+        result = compute_severity(v, reference, z_threshold, iqr_k)
+        result["value"] = v
+        results.append(result)
+    return results
+
+
+def anomaly_rate(severities: list[dict[str, object]]) -> float:
+    """Return the fraction of readings flagged as anomalous (warning or critical).
+
+    Args:
+        severities: List of severity dicts as returned by batch_compute_severity.
+
+    Returns:
+        Float in [0, 1] representing the anomaly rate.
+    """
+    if not severities:
+        return 0.0
+    flagged = sum(1 for s in severities if s.get("severity") != "none")
+    return round(flagged / len(severities), 4)
+
+
+__all__ = ["anomaly_rate", "batch_compute_severity", "compute_severity", "iqr_flag", "zscore_flag"]
