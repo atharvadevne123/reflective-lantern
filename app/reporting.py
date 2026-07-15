@@ -70,3 +70,63 @@ def peak_demand_report(hourly_kwh: list[float]) -> dict[str, Any]:
         "off_peak_mean": round(mean_kwh, 3),
         "demand_factor": demand_factor,
     }
+
+
+_GRADE_THRESHOLDS: list[tuple[float, str]] = [
+    (0.20, "A+"),
+    (0.10, "A"),
+    (0.05, "A-"),
+    (0.0, "B"),
+    (-0.05, "C"),
+    (-0.15, "D"),
+]
+
+
+def energy_efficiency_grade(actual_kwh: float, baseline_kwh: float) -> str:
+    """Return a letter grade (A+…F) based on consumption vs baseline.
+
+    Args:
+        actual_kwh: Measured consumption.
+        baseline_kwh: Reference baseline consumption (must be positive).
+
+    Returns:
+        Grade string in {'A+', 'A', 'A-', 'B', 'C', 'D', 'F'}.
+    """
+    if baseline_kwh <= 0:
+        return "F"
+    reduction = (baseline_kwh - actual_kwh) / baseline_kwh
+    for threshold, grade in _GRADE_THRESHOLDS:
+        if reduction >= threshold:
+            return grade
+    return "F"
+
+
+def monthly_consumption_summary(
+    daily_kwh: list[float],
+    tariff_per_kwh: float = 0.15,
+) -> dict[str, Any]:
+    """Summarise a month of daily consumption readings.
+
+    Args:
+        daily_kwh: List of daily consumption values (kWh); typically 28-31 entries.
+        tariff_per_kwh: Electricity cost per kWh for cost estimation.
+
+    Returns:
+        Dict with total_kwh, mean_kwh, max_kwh, min_kwh, std_kwh, estimated_cost.
+
+    Raises:
+        ValueError: If *daily_kwh* is empty.
+    """
+    if not daily_kwh:
+        raise ValueError("daily_kwh must not be empty")
+    arr = np.array(daily_kwh, dtype=float)
+    total = float(arr.sum())
+    return {
+        "total_kwh": round(total, 3),
+        "mean_kwh": round(float(arr.mean()), 3),
+        "max_kwh": round(float(arr.max()), 3),
+        "min_kwh": round(float(arr.min()), 3),
+        "std_kwh": round(float(arr.std()), 3),
+        "estimated_cost": round(total * tariff_per_kwh, 2),
+        "days": len(daily_kwh),
+    }
