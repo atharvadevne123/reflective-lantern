@@ -410,3 +410,33 @@ def test_string_constants_are_non_empty(const_name: str) -> None:
     val = getattr(c, const_name)
     assert isinstance(val, str)
     assert len(val) > 0
+
+
+def test_settings_to_dict_masks_sensitive(settings_env):
+    from config.settings import get_settings
+    s = get_settings()
+    d = s.to_dict(include_sensitive=False)
+    assert d.get("gh_pat") == "***"
+    assert d.get("gmail_app_pass") == "***"
+
+
+def test_settings_to_dict_includes_sensitive_when_requested(settings_env):
+    from config.settings import get_settings
+    s = get_settings()
+    d = s.to_dict(include_sensitive=True)
+    assert d.get("gh_pat") == "ghp_test"
+
+
+def test_settings_missing_optional_returns_list(settings_env):
+    from config.settings import get_settings
+    s = get_settings()
+    missing = s.missing_optional()
+    assert isinstance(missing, list)
+
+
+def test_settings_to_dict_has_all_slots(settings_env):
+    from config.settings import get_settings
+    s = get_settings()
+    d = s.to_dict()
+    for slot in s.__slots__:
+        assert slot in d
