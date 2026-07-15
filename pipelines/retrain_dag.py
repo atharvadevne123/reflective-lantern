@@ -126,3 +126,45 @@ if _AIRFLOW:
         deploy = PythonOperator(task_id="deploy", python_callable=_deploy)
 
         fetch >> validate_vol >> train >> validate_q >> deploy
+
+
+def check_drift_before_retrain(reference_path: str = "/tmp/wg_reference.parquet") -> bool:
+    """Return True when feature drift is detected, signalling a retrain is warranted.
+
+    Compares the current training batch (read from /tmp/wg_train.parquet) against
+    a reference distribution saved at *reference_path* using a KS-test on the
+    consumption_kwh column.
+
+    Args:
+        reference_path: Path to the reference Parquet file.
+
+    Returns:
+        True when drift is detected (p-value < 0.05) or when no reference exists
+        (first-run bootstrap), False when distributions are statistically similar.
+    """
+    from pathlib import Path
+
+    import numpy as np
+    import pandas as pd
+    from scipy.stats import ks_2samp
+
+    train_path = Path("/tmp/wg_train.parquet")
+    if not train_path.exists():
+        return False
+
+    df_new = pd.read_parquet(train_path)
+    ref = Path(reference_path)
+    if not ref.exists():
+        df_new.to_parquet(reference_path, index=False)
+        return True  # first run — always retrain
+
+    df_ref = pd.read_parquet(reference_path)
+    col = "consumption_kwh"
+    if col not in df_new.columns or col not in df_ref.columns:
+        return True
+
+    _, p_value = ks_2samp(df_ref[col].dropna().values, df_new[col].dropna().values)
+    drift_detected = p_value < 0.05
+    if drift_detected:
+        df_new.to_parquet(reference_path, index=False)
+    return drift_detected
