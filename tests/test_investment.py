@@ -275,3 +275,31 @@ def test_price_to_income_ratio_zero_income():
 def test_price_to_income_ratio_parametrized(price, income, expected):
     from app.investment import price_to_income_ratio
     assert price_to_income_ratio(price, income) == pytest.approx(expected)
+
+
+def test_mortgage_payment_zero_rate_no_down():
+    from app.investment import mortgage_payment
+    p = mortgage_payment(200_000, annual_rate=0.0, term_years=10, down_payment_pct=0.0)
+    assert p == pytest.approx(200_000 / (10 * 12), rel=1e-3)
+
+
+def test_mortgage_payment_with_down_payment():
+    from app.investment import mortgage_payment
+    p_full = mortgage_payment(200_000, annual_rate=0.05, term_years=30, down_payment_pct=0.0)
+    p_down = mortgage_payment(200_000, annual_rate=0.05, term_years=30, down_payment_pct=0.20)
+    assert p_down < p_full
+
+
+def test_roi_percentage_positive_income():
+    from app.investment import roi_percentage
+    roi = roi_percentage(300_000, 250_000, annual_income=20_000, annual_expenses=5_000, hold_years=5)
+    assert roi > 0
+
+
+@pytest.mark.parametrize("term_years", [10, 15, 20, 30])
+def test_mortgage_payment_longer_term_lower_payment(term_years):
+    from app.investment import mortgage_payment
+    short = mortgage_payment(300_000, 0.06, 10)
+    long = mortgage_payment(300_000, 0.06, term_years)
+    if term_years > 10:
+        assert long < short
