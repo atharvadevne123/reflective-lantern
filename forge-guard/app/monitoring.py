@@ -144,11 +144,7 @@ def run_drift_check(
 def defect_rate(db: Session, hours: int = 24) -> dict[str, Any]:
     """Return defect rate stats for the recent window."""
     cutoff = datetime.utcnow() - timedelta(hours=hours)
-    logs = (
-        db.query(PredictionLog)
-        .filter(PredictionLog.timestamp >= cutoff)
-        .all()
-    )
+    logs = db.query(PredictionLog).filter(PredictionLog.timestamp >= cutoff).all()
     if not logs:
         return {"total": 0, "defects": 0, "defect_rate": 0.0}
     total = len(logs)

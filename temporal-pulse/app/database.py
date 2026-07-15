@@ -47,9 +47,7 @@ class SensorReading(Base):
     values = Column(JSON, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
 
-    __table_args__ = (
-        Index("ix_sensor_timestamp", "sensor_id", "timestamp"),
-    )
+    __table_args__ = (Index("ix_sensor_timestamp", "sensor_id", "timestamp"),)
 
 
 class AnomalyEvent(Base):
@@ -65,9 +63,7 @@ class AnomalyEvent(Base):
     features_snapshot = Column(JSON)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
 
-    __table_args__ = (
-        Index("ix_anomaly_sensor_ts", "sensor_id", "timestamp"),
-    )
+    __table_args__ = (Index("ix_anomaly_sensor_ts", "sensor_id", "timestamp"),)
 
 
 class Prediction(Base):

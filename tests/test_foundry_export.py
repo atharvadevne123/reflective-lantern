@@ -58,9 +58,7 @@ def test_build_run_rows_improvement_count(history_dir: Path) -> None:
 def test_build_run_rows_non_string_email_status(tmp_path: Path) -> None:
     h = tmp_path / "history"
     h.mkdir()
-    (h / "Weird.json").write_text(
-        json.dumps([{"date": "2026-07-01", "commits": 5, "email_status": {"sent": False}}])
-    )
+    (h / "Weird.json").write_text(json.dumps([{"date": "2026-07-01", "commits": 5, "email_status": {"sent": False}}]))
     rows = build_run_rows(h)
     assert rows[0]["email_status"] == ""
 
@@ -115,9 +113,7 @@ def test_build_ontology_objects_one_run_object_per_row(
 def test_build_ontology_objects_repo_aggregates(multi_repo_history_dir: Path) -> None:
     rows = build_run_rows(multi_repo_history_dir)
     objects = build_ontology_objects(rows)
-    alpha = next(
-        o for o in objects if o["objectType"] == "Repository" and o["primaryKey"] == "Alpha"
-    )
+    alpha = next(o for o in objects if o["objectType"] == "Repository" and o["primaryKey"] == "Alpha")
     assert alpha["properties"]["totalRuns"] == 2
     assert alpha["properties"]["totalCommits"] == 120
 

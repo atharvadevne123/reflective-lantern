@@ -25,7 +25,7 @@ class FakeResponse:
     def read(self) -> bytes:
         return self._body
 
-    def __enter__(self) -> "FakeResponse":
+    def __enter__(self) -> FakeResponse:
         return self
 
     def __exit__(self, *args: object) -> None:
@@ -195,9 +195,7 @@ def test_list_files_returns_paths() -> None:
 
 def test_list_files_handles_malformed_response() -> None:
     client = make_client()
-    with patch.object(
-        urllib.request, "urlopen", lambda req, timeout: FakeResponse({"data": "oops"})
-    ):
+    with patch.object(urllib.request, "urlopen", lambda req, timeout: FakeResponse({"data": "oops"})):
         assert client.list_files("ri.ds") == []
 
 
@@ -256,7 +254,7 @@ def test_read_table_returns_raw_bytes() -> None:
         def read(self) -> bytes:
             return b"a,b\n1,2\n"
 
-        def __enter__(self) -> "RawResponse":
+        def __enter__(self) -> RawResponse:
             return self
 
         def __exit__(self, *args: object) -> None:
@@ -286,9 +284,7 @@ def test_upload_dataset_files_single_transaction() -> None:
         return FakeResponse()
 
     with patch.object(urllib.request, "urlopen", fake_urlopen):
-        txn = client.upload_dataset_files(
-            "ri.ds", {"runs.csv": b"a\n", "ontology.json": b"[]", "manifest.json": b"{}"}
-        )
+        txn = client.upload_dataset_files("ri.ds", {"runs.csv": b"a\n", "ontology.json": b"[]", "manifest.json": b"{}"})
 
     assert txn == "ri.txn.multi"
     assert sum("/transactions?" in u for u in calls) == 1

@@ -21,20 +21,20 @@ class Settings:
 
     __slots__ = (
         "anthropic_api_key",
-        "gh_pat",
-        "notion_api_key",
-        "gmail_user",
-        "gmail_app_pass",
-        "report_recipient",
-        "report_subject_prefix",
-        "log_level",
-        "json_logs",
         "commit_target",
-        "pf_fix_timeout",
         "dry_run",
+        "foundry_dataset_rid",
         "foundry_hostname",
         "foundry_token",
-        "foundry_dataset_rid",
+        "gh_pat",
+        "gmail_app_pass",
+        "gmail_user",
+        "json_logs",
+        "log_level",
+        "notion_api_key",
+        "pf_fix_timeout",
+        "report_recipient",
+        "report_subject_prefix",
     )
 
     def __init__(self) -> None:
@@ -100,12 +100,14 @@ class Settings:
     def history_dir(self) -> Path:
         """Return the project history directory path."""
         from config.constants import HISTORY_DIR
+
         return HISTORY_DIR
 
     @property
     def github_owner(self) -> str:
         """Return the GitHub owner/org from constants."""
         from config.constants import GITHUB_OWNER
+
         return GITHUB_OWNER
 
     def to_dict(self, include_sensitive: bool = False) -> dict[str, object]:

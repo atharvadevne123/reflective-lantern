@@ -283,7 +283,7 @@ def test_trace_id_filter_returns_true() -> None:
 
 
 def test_add_trace_id_filter_attaches_to_handler() -> None:
-    from app.logging_config import add_trace_id_filter, TraceIdFilter
+    from app.logging_config import TraceIdFilter, add_trace_id_filter
 
     logger = logging.getLogger("test_trace_handler")
     handler = logging.StreamHandler()
@@ -294,7 +294,7 @@ def test_add_trace_id_filter_attaches_to_handler() -> None:
 
 
 def test_add_trace_id_filter_no_handlers_uses_logger() -> None:
-    from app.logging_config import add_trace_id_filter, TraceIdFilter
+    from app.logging_config import TraceIdFilter, add_trace_id_filter
 
     logger = logging.getLogger("test_trace_no_handler")
     logger.handlers.clear()

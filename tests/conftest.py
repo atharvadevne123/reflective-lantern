@@ -42,6 +42,7 @@ def db_session():
 @pytest.fixture
 def client(db_session):
     """FastAPI TestClient wired to the in-memory test database."""
+
     def override_get_db():
         try:
             yield db_session
@@ -125,6 +126,7 @@ def settings_env(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("GMAIL_APP_PASS", "test-app-pass")
     monkeypatch.setenv("REPORT_RECIPIENT", "test@gmail.com")
     import config.settings as cs
+
     cs._settings = None
 
 
@@ -134,36 +136,40 @@ def history_dir(tmp_path: Path) -> Path:
     h = tmp_path / "history"
     h.mkdir()
     (h / "SampleRepo.json").write_text(
-        _json.dumps([
-            {
-                "date": "2026-01-01",
-                "commits": 10,
-                "mode": "improvement",
-                "improvements": [{"id": 1}, {"id": 2}],
-                "tests_passed": True,
-                "email_status": "sent",
-            },
-            {
-                "date": "2026-02-01",
-                "commits": 5,
-                "mode": "improvement",
-                "improvements": [],
-                "tests_passed": False,
-                "email_status": "",
-            },
-        ])
+        _json.dumps(
+            [
+                {
+                    "date": "2026-01-01",
+                    "commits": 10,
+                    "mode": "improvement",
+                    "improvements": [{"id": 1}, {"id": 2}],
+                    "tests_passed": True,
+                    "email_status": "sent",
+                },
+                {
+                    "date": "2026-02-01",
+                    "commits": 5,
+                    "mode": "improvement",
+                    "improvements": [],
+                    "tests_passed": False,
+                    "email_status": "",
+                },
+            ]
+        )
     )
     (h / "AnotherRepo.json").write_text(
-        _json.dumps([
-            {
-                "date": "2026-01-15",
-                "commits": 3,
-                "mode": "improvement",
-                "improvements": [{"id": 1}],
-                "tests_passed": True,
-                "email_status": "",
-            }
-        ])
+        _json.dumps(
+            [
+                {
+                    "date": "2026-01-15",
+                    "commits": 3,
+                    "mode": "improvement",
+                    "improvements": [{"id": 1}],
+                    "tests_passed": True,
+                    "email_status": "",
+                }
+            ]
+        )
     )
     return h
 
@@ -173,9 +179,7 @@ def single_entry_history_dir(tmp_path: Path) -> Path:
     """A temp history dir with one repo having a last_run fallback date."""
     h = tmp_path / "history_single"
     h.mkdir()
-    (h / "OneRepo.json").write_text(
-        _json.dumps([{"last_run": "2026-06-20", "commits": 5, "mode": "improvement"}])
-    )
+    (h / "OneRepo.json").write_text(_json.dumps([{"last_run": "2026-06-20", "commits": 5, "mode": "improvement"}]))
     return h
 
 
@@ -194,20 +198,18 @@ def multi_repo_history_dir(tmp_path: Path) -> Path:
     h = tmp_path / "history_multi"
     h.mkdir()
     (h / "Alpha.json").write_text(
-        _json.dumps([
-            {"date": "2026-07-01", "commits": 60, "mode": "IMPROVEMENT", "tests_passed": True},
-            {"date": "2026-07-08", "commits": 60, "mode": "Innovation", "tests_passed": True},
-        ])
+        _json.dumps(
+            [
+                {"date": "2026-07-01", "commits": 60, "mode": "IMPROVEMENT", "tests_passed": True},
+                {"date": "2026-07-08", "commits": 60, "mode": "Innovation", "tests_passed": True},
+            ]
+        )
     )
     (h / "Beta.json").write_text(
-        _json.dumps([
-            {"date": "2026-07-05", "commits": 120, "mode": "improvement", "tests_passed": True}
-        ])
+        _json.dumps([{"date": "2026-07-05", "commits": 120, "mode": "improvement", "tests_passed": True}])
     )
     (h / "Gamma.json").write_text(
-        _json.dumps([
-            {"date": "2026-07-08", "commits": 60, "mode": "innovation", "tests_passed": False}
-        ])
+        _json.dumps([{"date": "2026-07-08", "commits": 60, "mode": "innovation", "tests_passed": False}])
     )
     return h
 
@@ -218,9 +220,11 @@ def innovation_history_dir(tmp_path: Path) -> Path:
     h = tmp_path / "history_innovation"
     h.mkdir()
     (h / "NewProject.json").write_text(
-        _json.dumps([
-            {"date": "2026-07-08", "commits": 114, "mode": "innovation", "tests_passed": True},
-        ])
+        _json.dumps(
+            [
+                {"date": "2026-07-08", "commits": 114, "mode": "innovation", "tests_passed": True},
+            ]
+        )
     )
     return h
 

@@ -204,13 +204,13 @@ def delete_artefact(key: str, bucket: str = "") -> bool:
 
 
 __all__ = [
-    "DEFAULT_REGION",
-    "DEFAULT_PREFIX",
     "ARTEFACT_FILENAMES",
-    "upload_model",
-    "download_model",
-    "list_model_versions",
-    "upload_model_artefacts",
-    "download_model_artefacts",
+    "DEFAULT_PREFIX",
+    "DEFAULT_REGION",
     "delete_artefact",
+    "download_model",
+    "download_model_artefacts",
+    "list_model_versions",
+    "upload_model",
+    "upload_model_artefacts",
 ]

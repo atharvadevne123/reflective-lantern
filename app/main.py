@@ -260,6 +260,7 @@ def version() -> dict[str, str]:
 def list_grid_regions() -> list[dict[str, Any]]:
     """List all known grid regions with metadata."""
     from app.regions import list_regions
+
     return list_regions()
 
 
@@ -328,9 +329,7 @@ async def comparable_properties(request: Request, body: ComparableRequest) -> Co
     response_model=NeighborhoodStatsResponse,
     tags=["Analytics"],
 )
-async def neighborhood_stats(
-    zipcode: str, db: Session = Depends(get_db)
-) -> NeighborhoodStatsResponse:
+async def neighborhood_stats(zipcode: str, db: Session = Depends(get_db)) -> NeighborhoodStatsResponse:
     from app.database import NeighborhoodStat
 
     stat = db.query(NeighborhoodStat).filter(NeighborhoodStat.zipcode == zipcode).first()

@@ -164,6 +164,7 @@ def test_drift_strong_shift_detected(client: TestClient) -> None:
 
 def test_feature_importance_no_model(client: TestClient):
     import app.main as main_mod
+
     original = main_mod._model_bundle
     main_mod._model_bundle = None
     try:

@@ -107,18 +107,22 @@ def test_batch_compute_severity_empty_input():
     assert results == []
 
 
-@pytest.mark.parametrize("flagged,total,expected", [
-    ([], 0, 0.0),
-    ([{"severity": "none"}], 1, 0.0),
-    ([{"severity": "warning"}], 1, 1.0),
-    ([{"severity": "critical"}, {"severity": "none"}], 2, 0.5),
-])
+@pytest.mark.parametrize(
+    "flagged,total,expected",
+    [
+        ([], 0, 0.0),
+        ([{"severity": "none"}], 1, 0.0),
+        ([{"severity": "warning"}], 1, 1.0),
+        ([{"severity": "critical"}, {"severity": "none"}], 2, 0.5),
+    ],
+)
 def test_anomaly_rate_parametrized(flagged, total, expected):
     assert anomaly_rate(flagged) == pytest.approx(expected)
 
 
 def test_top_anomalies_returns_critical_first():
     from app.anomaly import top_anomalies
+
     data = [
         {"severity": "none", "value": 10.0},
         {"severity": "critical", "value": 100.0},
@@ -131,6 +135,7 @@ def test_top_anomalies_returns_critical_first():
 
 def test_top_anomalies_respects_n():
     from app.anomaly import top_anomalies
+
     data = [{"severity": "critical", "value": float(i)} for i in range(20)]
     result = top_anomalies(data, n=5)
     assert len(result) == 5
@@ -138,11 +143,13 @@ def test_top_anomalies_respects_n():
 
 def test_top_anomalies_empty():
     from app.anomaly import top_anomalies
+
     assert top_anomalies([], n=5) == []
 
 
 def test_top_anomalies_custom_order():
     from app.anomaly import top_anomalies
+
     data = [
         {"severity": "none", "value": 1.0},
         {"severity": "warning", "value": 2.0},

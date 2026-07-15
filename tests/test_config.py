@@ -106,9 +106,7 @@ def test_get_settings_singleton() -> None:
         ("PF_FIX_TIMEOUT", "600", "pf_fix_timeout"),
     ],
 )
-def test_settings_env_overrides(
-    monkeypatch: pytest.MonkeyPatch, env_var: str, value: str, attr: str
-) -> None:
+def test_settings_env_overrides(monkeypatch: pytest.MonkeyPatch, env_var: str, value: str, attr: str) -> None:
     monkeypatch.setenv(env_var, value)
     import importlib
 
@@ -397,13 +395,16 @@ def test_weekly_summary_days_constant() -> None:
     assert WEEKLY_SUMMARY_DAYS > 0
 
 
-@pytest.mark.parametrize("const_name", [
-    "VERSION",
-    "SMTP_HOST",
-    "GITHUB_OWNER",
-    "GITHUB_API_BASE",
-    "REPORT_DATE_FORMAT",
-])
+@pytest.mark.parametrize(
+    "const_name",
+    [
+        "VERSION",
+        "SMTP_HOST",
+        "GITHUB_OWNER",
+        "GITHUB_API_BASE",
+        "REPORT_DATE_FORMAT",
+    ],
+)
 def test_string_constants_are_non_empty(const_name: str) -> None:
     import config.constants as c
 
@@ -414,6 +415,7 @@ def test_string_constants_are_non_empty(const_name: str) -> None:
 
 def test_settings_to_dict_masks_sensitive(settings_env):
     from config.settings import get_settings
+
     s = get_settings()
     d = s.to_dict(include_sensitive=False)
     assert d.get("gh_pat") == "***"
@@ -422,6 +424,7 @@ def test_settings_to_dict_masks_sensitive(settings_env):
 
 def test_settings_to_dict_includes_sensitive_when_requested(settings_env):
     from config.settings import get_settings
+
     s = get_settings()
     d = s.to_dict(include_sensitive=True)
     assert d.get("gh_pat") == "ghp_test"
@@ -429,6 +432,7 @@ def test_settings_to_dict_includes_sensitive_when_requested(settings_env):
 
 def test_settings_missing_optional_returns_list(settings_env):
     from config.settings import get_settings
+
     s = get_settings()
     missing = s.missing_optional()
     assert isinstance(missing, list)
@@ -436,6 +440,7 @@ def test_settings_missing_optional_returns_list(settings_env):
 
 def test_settings_to_dict_has_all_slots(settings_env):
     from config.settings import get_settings
+
     s = get_settings()
     d = s.to_dict()
     for slot in s.__slots__:

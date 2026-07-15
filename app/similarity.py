@@ -104,7 +104,7 @@ def cosine_distance(a: list[float] | np.ndarray, b: list[float] | np.ndarray) ->
 __all__ = ["BuildingSimilarityIndex", "cosine_distance", "get_global_index", "search_comparable"]
 
 
-def euclidean_distance(a: "list[float] | np.ndarray", b: "list[float] | np.ndarray") -> float:
+def euclidean_distance(a: list[float] | np.ndarray, b: list[float] | np.ndarray) -> float:
     """Compute Euclidean (L2) distance between two vectors.
 
     Args:
@@ -119,7 +119,7 @@ def euclidean_distance(a: "list[float] | np.ndarray", b: "list[float] | np.ndarr
     return round(float(np.linalg.norm(va - vb)), 6)
 
 
-def batch_add(index: BuildingSimilarityIndex, profiles: "list[tuple[str, list[float]]]") -> int:
+def batch_add(index: BuildingSimilarityIndex, profiles: list[tuple[str, list[float]]]) -> int:
     """Add multiple building profiles to *index* in one call.
 
     Args:

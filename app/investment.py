@@ -79,17 +79,11 @@ def compute_investment_analysis(
     cap_rate = noi / predicted_value
 
     amenity_composite = (
-        school_score * _SCHOOL_WEIGHT
-        + transit_score * _TRANSIT_WEIGHT
-        + walkability_score * _WALK_WEIGHT
+        school_score * _SCHOOL_WEIGHT + transit_score * _TRANSIT_WEIGHT + walkability_score * _WALK_WEIGHT
     ) / 10.0
     risk_score = float(min(max(crime_rate, 0.0), 1.0))
 
-    raw_score = (
-        cap_rate * _CAP_RATE_WEIGHT
-        + amenity_composite * _AMENITY_WEIGHT
-        - risk_score * _RISK_PENALTY
-    )
+    raw_score = cap_rate * _CAP_RATE_WEIGHT + amenity_composite * _AMENITY_WEIGHT - risk_score * _RISK_PENALTY
     investment_score = float(min(max(raw_score, INVESTMENT_SCORE_MIN), INVESTMENT_SCORE_MAX))
 
     break_even = predicted_value / noi if noi > 0 else float("inf")

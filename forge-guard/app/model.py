@@ -35,7 +35,6 @@ def _build_ensemble() -> VotingClassifier:
         subsample=0.8,
         colsample_bytree=0.8,
         eval_metric="logloss",
-
         random_state=42,
         n_jobs=-1,
     )

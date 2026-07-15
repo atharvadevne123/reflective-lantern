@@ -52,12 +52,8 @@ class RollingStatsTransformer(BaseEstimator, TransformerMixin):
         df = X.copy()
         for col in SENSOR_COLS:
             if col in df.columns:
-                df[f"{col}_roll_mean"] = (
-                    df[col].rolling(self.window, min_periods=1).mean()
-                )
-                df[f"{col}_roll_std"] = (
-                    df[col].rolling(self.window, min_periods=1).std().fillna(0)
-                )
+                df[f"{col}_roll_mean"] = df[col].rolling(self.window, min_periods=1).mean()
+                df[f"{col}_roll_std"] = df[col].rolling(self.window, min_periods=1).std().fillna(0)
         return df
 
 

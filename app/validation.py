@@ -113,9 +113,7 @@ def validate_consumption_kwh(value: float) -> list[str]:
     if not math.isfinite(value):
         errors.append(f"consumption_kwh must be finite, got {value}")
     elif not (MIN_CONSUMPTION_KWH <= value <= MAX_CONSUMPTION_KWH):
-        errors.append(
-            f"consumption_kwh must be {MIN_CONSUMPTION_KWH}..{MAX_CONSUMPTION_KWH}, got {value}"
-        )
+        errors.append(f"consumption_kwh must be {MIN_CONSUMPTION_KWH}..{MAX_CONSUMPTION_KWH}, got {value}")
     return errors
 
 

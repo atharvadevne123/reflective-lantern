@@ -98,7 +98,9 @@ def score_anomaly(
 
     X_scaled = scaler.transform(X)
     raw_scores = if_model.score_samples(X_scaled)
-    normalized = 1.0 - (raw_scores - raw_scores.min()) / (raw_scores.max() - raw_scores.min() + 1e-9)
+    normalized = 1.0 - (raw_scores - raw_scores.min()) / (
+        raw_scores.max() - raw_scores.min() + 1e-9
+    )
     return normalized.astype(np.float32)
 
 

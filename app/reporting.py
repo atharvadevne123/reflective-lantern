@@ -27,8 +27,7 @@ def estimate_savings(
     """
     if len(actual_kwh) != len(baseline_kwh):
         raise ValueError(
-            f"actual_kwh and baseline_kwh must be the same length "
-            f"(got {len(actual_kwh)} vs {len(baseline_kwh)})"
+            f"actual_kwh and baseline_kwh must be the same length (got {len(actual_kwh)} vs {len(baseline_kwh)})"
         )
     actual = np.array(actual_kwh, dtype=float)
     baseline = np.array(baseline_kwh, dtype=float)

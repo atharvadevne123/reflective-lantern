@@ -79,9 +79,7 @@ def test_main_stop_on_failure() -> None:
 def test_run_check_exit_codes(exit_code: int, expected_ok: bool) -> None:
     from scripts.run_all_checks import run_check
 
-    ok, elapsed = run_check(
-        "parametrized", [sys.executable, "-c", f"raise SystemExit({exit_code})"]
-    )
+    ok, elapsed = run_check("parametrized", [sys.executable, "-c", f"raise SystemExit({exit_code})"])
     assert ok is expected_ok
     assert elapsed >= 0.0
 

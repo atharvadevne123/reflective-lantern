@@ -85,7 +85,7 @@ def test_fetch_repos_filters_archived() -> None:
         def read(self) -> bytes:
             return json.dumps(mock_repos).encode()
 
-        def __enter__(self) -> "FakeResponse":
+        def __enter__(self) -> FakeResponse:
             return self
 
         def __exit__(self, *args: object) -> None:
@@ -289,16 +289,13 @@ def test_fetch_repos_all_archived_returns_empty() -> None:
 
     from scripts.rotate_repos import fetch_repos
 
-    archived_repos = [
-        {"name": f"archived-{i}", "archived": True, "fork": False}
-        for i in range(3)
-    ]
+    archived_repos = [{"name": f"archived-{i}", "archived": True, "fork": False} for i in range(3)]
 
     class FakeResponse:
         def read(self) -> bytes:
             return json.dumps(archived_repos).encode()
 
-        def __enter__(self) -> "FakeResponse":
+        def __enter__(self) -> FakeResponse:
             return self
 
         def __exit__(self, *args: object) -> None:

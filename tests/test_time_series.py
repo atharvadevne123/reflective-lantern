@@ -102,17 +102,20 @@ def test_linear_trend_various_horizons(horizon):
 
 def test_cumulative_consumption_empty():
     from app.time_series import cumulative_consumption
+
     assert cumulative_consumption([]) == []
 
 
 def test_cumulative_consumption_values():
     from app.time_series import cumulative_consumption
+
     result = cumulative_consumption([1.0, 2.0, 3.0])
     assert result == pytest.approx([1.0, 3.0, 6.0])
 
 
 def test_cumulative_consumption_monotone():
     from app.time_series import cumulative_consumption
+
     data = [0.5, 1.5, 2.0, 0.1]
     result = cumulative_consumption(data)
     assert all(result[i] <= result[i + 1] for i in range(len(result) - 1))
@@ -120,6 +123,7 @@ def test_cumulative_consumption_monotone():
 
 def test_resample_hourly_to_daily_exact():
     from app.time_series import resample_hourly_to_daily
+
     data = [1.0] * 48  # 2 full days
     result = resample_hourly_to_daily(data)
     assert result == pytest.approx([24.0, 24.0])
@@ -127,6 +131,7 @@ def test_resample_hourly_to_daily_exact():
 
 def test_resample_hourly_to_daily_partial_day():
     from app.time_series import resample_hourly_to_daily
+
     data = [1.0] * 25  # 1 day + 1 hour
     result = resample_hourly_to_daily(data)
     assert len(result) == 2
@@ -136,4 +141,5 @@ def test_resample_hourly_to_daily_partial_day():
 
 def test_resample_hourly_to_daily_empty():
     from app.time_series import resample_hourly_to_daily
+
     assert resample_hourly_to_daily([]) == []

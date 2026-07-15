@@ -93,9 +93,7 @@ def weekly_report(target: date, window_days: int = 7) -> str:
     summary_commits = 0
     repos_touched = 0
     for repo, entries in sorted(history.items()):
-        window_entries = [
-            e for e in entries if start_str <= _entry_date_str(e) <= target_str
-        ]
+        window_entries = [e for e in entries if start_str <= _entry_date_str(e) <= target_str]
         if not window_entries:
             continue
         c = sum(e.get("commits", 0) for e in window_entries)

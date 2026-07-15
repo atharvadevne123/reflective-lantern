@@ -29,35 +29,47 @@ COLORS = {
 }
 
 
-def box(
-    ax: plt.Axes, x: float, y: float, w: float, h: float,
-    label: str, color: str, fontsize: int = 9
-) -> None:
+def box(ax: plt.Axes, x: float, y: float, w: float, h: float, label: str, color: str, fontsize: int = 9) -> None:
     """Draw a rounded rectangle with centred label text."""
     rect = FancyBboxPatch(
-        (x, y), w, h,
-        boxstyle="round,pad=0.1", facecolor=color, edgecolor="white",
-        linewidth=1.2, zorder=3,
+        (x, y),
+        w,
+        h,
+        boxstyle="round,pad=0.1",
+        facecolor=color,
+        edgecolor="white",
+        linewidth=1.2,
+        zorder=3,
     )
     ax.add_patch(rect)
     ax.text(
-        x + w / 2, y + h / 2, label,
-        ha="center", va="center", color="white",
-        fontsize=fontsize, fontweight="bold", zorder=4,
+        x + w / 2,
+        y + h / 2,
+        label,
+        ha="center",
+        va="center",
+        color="white",
+        fontsize=fontsize,
+        fontweight="bold",
+        zorder=4,
     )
 
 
 def arrow(ax: plt.Axes, x1: float, y1: float, x2: float, y2: float) -> None:
     """Draw an annotated arrow between two points."""
     ax.annotate(
-        "", xy=(x2, y2), xytext=(x1, y1),
+        "",
+        xy=(x2, y2),
+        xytext=(x1, y1),
         arrowprops={"arrowstyle": "->", "color": "white", "lw": 1.2},
         zorder=5,
     )
 
 
 # Title
-ax.text(8, 8.5, "Watt-Guard — System Architecture", ha="center", va="center", color="white", fontsize=14, fontweight="bold")
+ax.text(
+    8, 8.5, "Watt-Guard — System Architecture", ha="center", va="center", color="white", fontsize=14, fontweight="bold"
+)
 
 # Clients
 box(ax, 0.3, 6.5, 1.8, 0.8, "Building\nSensors", COLORS["ext"])

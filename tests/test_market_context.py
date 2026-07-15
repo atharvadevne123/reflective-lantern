@@ -252,21 +252,23 @@ def test_stretched_threshold_constant() -> None:
         (200_000.0, 0.80),
     ],
 )
-def test_affordability_loan_equals_80pct_at_default_down_payment(
-    income: float, expected_loan_fraction: float
-) -> None:
+def test_affordability_loan_equals_80pct_at_default_down_payment(income: float, expected_loan_fraction: float) -> None:
     value = 500_000.0
     result = affordability_index(value, annual_income=income)
     assert result["loan_amount"] == pytest.approx(value * expected_loan_fraction)
 
 
-@pytest.mark.parametrize("ptr,expected", [
-    (10.0, "buy"),
-    (18.0, "neutral"),
-    (25.0, "rent"),
-])
+@pytest.mark.parametrize(
+    "ptr,expected",
+    [
+        (10.0, "buy"),
+        (18.0, "neutral"),
+        (25.0, "rent"),
+    ],
+)
 def test_rent_vs_buy_recommendation(ptr, expected):
     from app.market_context import rent_vs_buy_comparison
+
     # ptr = price / annual_rent so annual_rent = price / ptr
     price = 400_000
     annual_rent = price / ptr
@@ -276,6 +278,7 @@ def test_rent_vs_buy_recommendation(ptr, expected):
 
 def test_rent_vs_buy_has_required_keys():
     from app.market_context import rent_vs_buy_comparison
+
     result = rent_vs_buy_comparison(400_000, 20_000)
     assert "monthly_rent" in result
     assert "monthly_mortgage" in result
@@ -286,6 +289,7 @@ def test_rent_vs_buy_has_required_keys():
 
 def test_price_trend_rising():
     from app.market_context import price_trend_indicator
+
     result = price_trend_indicator(420_000, 400_000)
     assert result["trend"] == "rising"
     assert result["absolute_change"] == pytest.approx(20_000.0)
@@ -293,48 +297,56 @@ def test_price_trend_rising():
 
 def test_price_trend_falling():
     from app.market_context import price_trend_indicator
+
     result = price_trend_indicator(380_000, 400_000)
     assert result["trend"] == "falling"
 
 
 def test_price_trend_stable():
     from app.market_context import price_trend_indicator
+
     result = price_trend_indicator(401_000, 400_000)
     assert result["trend"] == "stable"
 
 
 def test_price_trend_zero_previous():
     from app.market_context import price_trend_indicator
+
     result = price_trend_indicator(400_000, 0)
     assert result["trend"] == "unknown"
 
 
 def test_hai_affordable():
     from app.market_context import housing_affordability_index
+
     result = housing_affordability_index(300_000, 100_000, mortgage_rate=0.065, term_years=30)
     assert result["hai"] > 100  # affordable
 
 
 def test_hai_unaffordable():
     from app.market_context import housing_affordability_index
+
     result = housing_affordability_index(1_500_000, 80_000, mortgage_rate=0.07)
     assert result["hai"] < 100  # unaffordable
 
 
 def test_hai_zero_income():
     from app.market_context import housing_affordability_index
+
     result = housing_affordability_index(300_000, 0)
     assert result["hai"] == 0.0
 
 
 def test_hai_zero_price():
     from app.market_context import housing_affordability_index
+
     result = housing_affordability_index(0, 100_000)
     assert result["hai"] == 0.0
 
 
 def test_hai_has_required_keys():
     from app.market_context import housing_affordability_index
+
     result = housing_affordability_index(400_000, 90_000)
     for key in ("loan_amount", "monthly_payment", "qualifying_income", "hai"):
         assert key in result
@@ -343,6 +355,7 @@ def test_hai_has_required_keys():
 @pytest.mark.parametrize("down_pct", [0.05, 0.10, 0.20, 0.30])
 def test_hai_higher_down_lowers_payment(down_pct):
     from app.market_context import housing_affordability_index
+
     full = housing_affordability_index(400_000, 80_000, down_payment_pct=0.0)
     result = housing_affordability_index(400_000, 80_000, down_payment_pct=down_pct)
     if down_pct > 0:

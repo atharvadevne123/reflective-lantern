@@ -56,7 +56,12 @@ def check_feature_drift(feature_values: dict[str, list[float]], db: Session) -> 
         )
         db.add(entry)
         if result["drift_detected"]:
-            logger.warning("Drift detected on feature '%s': KS=%.4f p=%.4f", feature_name, result["ks_statistic"], result["p_value"])
+            logger.warning(
+                "Drift detected on feature '%s': KS=%.4f p=%.4f",
+                feature_name,
+                result["ks_statistic"],
+                result["p_value"],
+            )
         results.append(result)
 
     db.commit()

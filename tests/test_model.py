@@ -193,6 +193,7 @@ def test_metrics_mae_is_non_negative(sample_df, sample_target) -> None:
 
 def test_get_feature_importance_returns_list(trained_model):
     from app.model import get_feature_importance
+
     bundle, _ = trained_model
     result = get_feature_importance(bundle)
     assert isinstance(result, list)
@@ -200,6 +201,7 @@ def test_get_feature_importance_returns_list(trained_model):
 
 def test_get_feature_importance_has_feature_and_importance_keys(trained_model):
     from app.model import get_feature_importance
+
     bundle, _ = trained_model
     result = get_feature_importance(bundle)
     if result:
@@ -209,6 +211,7 @@ def test_get_feature_importance_has_feature_and_importance_keys(trained_model):
 
 def test_get_feature_importance_sorted_descending(trained_model):
     from app.model import get_feature_importance
+
     bundle, _ = trained_model
     result = get_feature_importance(bundle)
     importances = [r["importance"] for r in result]
@@ -217,6 +220,7 @@ def test_get_feature_importance_sorted_descending(trained_model):
 
 def test_get_feature_importance_top_n_limited(trained_model):
     from app.model import get_feature_importance
+
     bundle, _ = trained_model
     result = get_feature_importance(bundle, top_n=5)
     assert len(result) <= 5
@@ -224,4 +228,5 @@ def test_get_feature_importance_top_n_limited(trained_model):
 
 def test_get_feature_importance_empty_bundle():
     from app.model import get_feature_importance
+
     assert get_feature_importance({}) == []

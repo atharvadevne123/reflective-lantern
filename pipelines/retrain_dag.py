@@ -7,6 +7,7 @@ from datetime import datetime, timedelta
 try:
     from airflow import DAG
     from airflow.operators.python import PythonOperator
+
     _AIRFLOW = True
 except ImportError:
     _AIRFLOW = False
@@ -144,7 +145,6 @@ def check_drift_before_retrain(reference_path: str = "/tmp/wg_reference.parquet"
     """
     from pathlib import Path
 
-    import numpy as np
     import pandas as pd
     from scipy.stats import ks_2samp
 

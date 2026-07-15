@@ -14,6 +14,7 @@ RATIO_LOW_THRESHOLD = 0.4
 RATIO_HIGH_THRESHOLD = 2.5
 MIN_REFERENCE_SIZE = 4
 
+
 def zscore_flag(value: float, mean: float, std: float, threshold: float = 3.0) -> bool:
     """Return True if *value* is more than *threshold* standard deviations from *mean*.
 

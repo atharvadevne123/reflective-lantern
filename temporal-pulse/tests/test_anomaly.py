@@ -15,6 +15,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 def built_index():
     """Build a small anomaly index."""
     from app import anomaly
+
     rng = np.random.default_rng(7)
     X = rng.normal(0, 1, (50, 8)).astype(np.float32)
     labels = [{"event_id": i, "cause": f"cause-{i % 3}"} for i in range(50)]
@@ -46,6 +47,7 @@ class TestBuildIndex:
 
     def test_empty_index_returns_empty(self):
         from app import anomaly
+
         anomaly._INDEX = None
         anomaly._NN_MODEL = None
         result = anomaly.find_similar_anomalies(np.zeros(8, dtype=np.float32))

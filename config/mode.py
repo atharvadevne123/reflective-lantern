@@ -27,9 +27,7 @@ def determine_mode(target_date: date | None = None) -> RunMode:
     All other weekdays are IMPROVEMENT.
     """
     d = target_date or date.today()
-    if d.isoweekday() == INNOVATION_WEEKDAY and any(
-        lo <= d.day <= hi for lo, hi in INNOVATION_DAY_RANGES
-    ):
+    if d.isoweekday() == INNOVATION_WEEKDAY and any(lo <= d.day <= hi for lo, hi in INNOVATION_DAY_RANGES):
         return RunMode.INNOVATION
     return RunMode.IMPROVEMENT
 
@@ -59,7 +57,7 @@ def days_until_next_innovation(after: date | None = None) -> int:
     return (next_innovation_day(ref) - ref).days
 
 
-__all__ = ["RunMode", "determine_mode", "is_innovation_day", "next_innovation_day", "days_until_next_innovation"]
+__all__ = ["RunMode", "days_until_next_innovation", "determine_mode", "is_innovation_day", "next_innovation_day"]
 
 
 def upcoming_innovation_days(count: int = 5, after: date | None = None) -> list[date]:

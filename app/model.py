@@ -20,12 +20,14 @@ from sklearn.model_selection import KFold, cross_val_score
 
 try:
     from lightgbm import LGBMRegressor
+
     _HAS_LGBM = True
 except ImportError:
     _HAS_LGBM = False
 
 try:
     from xgboost import XGBRegressor
+
     _HAS_XGB = True
 except ImportError:
     _HAS_XGB = False
@@ -174,7 +176,18 @@ def load_metrics() -> dict[str, Any]:
         return json.load(fh)
 
 
-__all__ = ["get_feature_importance", "get_metrics", "load_anomaly_model", "load_metrics", "load_model", "predict", "score_anomaly", "train_anomaly_model", "train_model"]
+__all__ = [
+    "get_feature_importance",
+    "get_metrics",
+    "load_anomaly_model",
+    "load_metrics",
+    "load_model",
+    "predict",
+    "score_anomaly",
+    "train_anomaly_model",
+    "train_model",
+]
+
 
 def get_feature_importance(model_bundle: dict[str, Any], top_n: int = 20) -> list[dict[str, object]]:
     """Extract feature importances from the trained ensemble, if available.
@@ -198,11 +211,7 @@ def get_feature_importance(model_bundle: dict[str, Any], top_n: int = 20) -> lis
     try:
         if hasattr(estimator, "estimators_"):
             # VotingRegressor — average importances across sub-estimators
-            sub_imps = [
-                e.feature_importances_
-                for _, e in estimator.estimators_
-                if hasattr(e, "feature_importances_")
-            ]
+            sub_imps = [e.feature_importances_ for _, e in estimator.estimators_ if hasattr(e, "feature_importances_")]
             if sub_imps:
                 importances = np.mean(sub_imps, axis=0)
         elif hasattr(estimator, "feature_importances_"):

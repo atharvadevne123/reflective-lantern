@@ -233,12 +233,16 @@ class AmenityCompositeTransformer(BaseEstimator, TransformerMixin):
         """Add amenity_composite column to X."""
         out = X.copy()
         school = out["school_score"] if "school_score" in out.columns else pd.Series([5.0] * len(out), index=out.index)
-        transit = out["transit_score"] if "transit_score" in out.columns else pd.Series([5.0] * len(out), index=out.index)
-        walkability = out["walkability_score"] if "walkability_score" in out.columns else pd.Series([5.0] * len(out), index=out.index)
+        transit = (
+            out["transit_score"] if "transit_score" in out.columns else pd.Series([5.0] * len(out), index=out.index)
+        )
+        walkability = (
+            out["walkability_score"]
+            if "walkability_score" in out.columns
+            else pd.Series([5.0] * len(out), index=out.index)
+        )
         out["amenity_composite"] = (
-            _SCHOOL_WEIGHT * school
-            + _TRANSIT_WEIGHT * transit
-            + _WALK_WEIGHT * walkability
+            _SCHOOL_WEIGHT * school + _TRANSIT_WEIGHT * transit + _WALK_WEIGHT * walkability
         ) / _AMENITY_SCALE
         return out
 
@@ -296,10 +300,8 @@ class InteractionFeatureExtractor(BaseEstimator, TransformerMixin):
         ("hour", "occupancy"),
     ]
 
-    def fit(self, X: pd.DataFrame, y=None) -> "InteractionFeatureExtractor":
-        self.available_pairs_ = [
-            (a, b) for a, b in self.PAIRS if a in X.columns and b in X.columns
-        ]
+    def fit(self, X: pd.DataFrame, y=None) -> InteractionFeatureExtractor:
+        self.available_pairs_ = [(a, b) for a, b in self.PAIRS if a in X.columns and b in X.columns]
         return self
 
     def transform(self, X: pd.DataFrame) -> pd.DataFrame:

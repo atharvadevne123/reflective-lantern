@@ -64,12 +64,7 @@ def add_cross_sensor_correlation(df: pd.DataFrame, columns: list[str]) -> pd.Dat
     for i, col_a in enumerate(columns):
         for col_b in columns[i + 1 :]:
             key = f"corr_{col_a}_{col_b}"
-            result[key] = (
-                df[col_a]
-                .rolling(10, min_periods=2)
-                .corr(df[col_b])
-                .fillna(0)
-            )
+            result[key] = df[col_a].rolling(10, min_periods=2).corr(df[col_b]).fillna(0)
     return result
 
 

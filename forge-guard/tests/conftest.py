@@ -85,6 +85,7 @@ def high_risk_payload() -> dict:
 @pytest.fixture
 def synthetic_df() -> pd.DataFrame:
     from app.features import generate_synthetic_data
+
     return generate_synthetic_data(n_samples=300, seed=0)
 
 

@@ -118,6 +118,7 @@ def test_anomaly_log_severity_none(db_session):
 
 def test_get_predictions_by_building_empty(db_session):
     from app.database import get_predictions_by_building
+
     results = get_predictions_by_building(db_session, "nonexistent-bldg")
     assert results == []
 
@@ -125,6 +126,7 @@ def test_get_predictions_by_building_empty(db_session):
 def test_get_predictions_by_building_filters(db_session):
     import uuid
     from datetime import datetime
+
     from app.database import PredictionLog, get_predictions_by_building
 
     uid = uuid.uuid4().hex[:8]
@@ -148,6 +150,7 @@ def test_get_predictions_by_building_filters(db_session):
 
 def test_get_predictions_by_building_limit(db_session):
     from datetime import datetime
+
     from app.database import PredictionLog, get_predictions_by_building
 
     for i in range(5):

@@ -10,6 +10,7 @@ logger = logging.getLogger(__name__)
 
 try:
     import faiss  # type: ignore[import]
+
     _HAS_FAISS = True
 except ImportError:
     _HAS_FAISS = False
@@ -121,15 +122,15 @@ DEFAULT_TOP_K: int = 5
 MAX_TOP_K: int = 100
 
 __all__ = [
+    "DEFAULT_TOP_K",
+    "DIM",
+    "MAX_TOP_K",
     "LoadPatternIndex",
     "add_property",
     "get_pattern_index",
     "index_size",
     "reset_index",
     "search_comparable",
-    "DIM",
-    "DEFAULT_TOP_K",
-    "MAX_TOP_K",
 ]
 
 

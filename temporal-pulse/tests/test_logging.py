@@ -13,6 +13,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 class TestJsonFormatter:
     def test_output_is_valid_json(self):
         from app.logging_config import JsonFormatter
+
         record = logging.LogRecord("test", logging.INFO, "f.py", 1, "hello", None, None)
         line = JsonFormatter().format(record)
         payload = json.loads(line)
@@ -21,6 +22,7 @@ class TestJsonFormatter:
 
     def test_includes_exception(self):
         from app.logging_config import JsonFormatter
+
         try:
             raise ValueError("boom")
         except ValueError:
@@ -33,6 +35,7 @@ class TestJsonFormatter:
 
     def test_includes_correlation_id_extra(self):
         from app.logging_config import JsonFormatter
+
         record = logging.LogRecord("test", logging.INFO, "f.py", 1, "msg", None, None)
         record.correlation_id = "abc-123"
         payload = json.loads(JsonFormatter().format(record))
@@ -42,12 +45,14 @@ class TestJsonFormatter:
 class TestConfigureLogging:
     def test_sets_level(self):
         from app.logging_config import configure_logging
+
         configure_logging(level="DEBUG", json_format=False)
         assert logging.getLogger().level == logging.DEBUG
         configure_logging(level="INFO", json_format=False)
 
     def test_json_format_flag(self):
         from app.logging_config import JsonFormatter, configure_logging
+
         configure_logging(level="INFO", json_format=True)
         handler = logging.getLogger().handlers[0]
         assert isinstance(handler.formatter, JsonFormatter)
@@ -55,6 +60,7 @@ class TestConfigureLogging:
 
     def test_quiets_noisy_loggers(self):
         from app.logging_config import configure_logging
+
         configure_logging(level="DEBUG", json_format=False)
         assert logging.getLogger("sqlalchemy.engine").level == logging.WARNING
         configure_logging(level="INFO", json_format=False)

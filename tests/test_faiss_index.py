@@ -113,6 +113,7 @@ def test_load_pattern_index_reset_clears() -> None:
 
 def test_save_vectors_empty_index() -> None:
     import numpy as np
+
     from app.faiss_index import LoadPatternIndex
 
     idx = LoadPatternIndex(dim=4)
@@ -123,6 +124,7 @@ def test_save_vectors_empty_index() -> None:
 
 def test_save_vectors_returns_copy() -> None:
     import numpy as np
+
     from app.faiss_index import LoadPatternIndex
 
     idx = LoadPatternIndex(dim=3)
@@ -134,7 +136,6 @@ def test_save_vectors_returns_copy() -> None:
 
 
 def test_save_vectors_does_not_mutate_index() -> None:
-    import numpy as np
     from app.faiss_index import LoadPatternIndex
 
     idx = LoadPatternIndex(dim=2)

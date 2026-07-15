@@ -20,11 +20,13 @@ def engine():
     """Create a test SQLAlchemy engine."""
     import os
     import sys
+
     sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
     from sqlalchemy.pool import StaticPool
 
     from app.database import Base
+
     eng = create_engine(
         TEST_DATABASE_URL,
         connect_args={"check_same_thread": False},
@@ -49,10 +51,12 @@ def db_session(engine):
 def client(engine) -> Generator:
     """Return a TestClient with the DB patched to use the in-memory engine."""
     import os
+
     os.environ["DATABASE_URL"] = TEST_DATABASE_URL
     os.environ["RATE_LIMIT_ENABLED"] = "false"
 
     import sys
+
     sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
     from app.database import Base, get_db
@@ -119,9 +123,11 @@ def feature_matrix(sample_readings) -> tuple:
     """Build a feature matrix from sample readings."""
     import os
     import sys
+
     sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
     from app.features import build_feature_matrix
+
     raw = [
         {"timestamp": r["timestamp"], "sensor_id": r["sensor_id"], **r["values"]}
         for r in sample_readings
@@ -134,6 +140,7 @@ def trained_models(feature_matrix):
     """Train anomaly detector and forecaster on sample data and return both."""
     import os
     import sys
+
     sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
     import numpy as np
@@ -145,4 +152,11 @@ def trained_models(feature_matrix):
     y = X[:, 0]
     if_model, scaler = train_anomaly_detector(X, contamination=0.05)
     rf_model, metrics = train_forecaster(X, y)
-    return {"if_model": if_model, "scaler": scaler, "rf_model": rf_model, "metrics": metrics, "X": X, "feature_cols": feature_cols}
+    return {
+        "if_model": if_model,
+        "scaler": scaler,
+        "rf_model": rf_model,
+        "metrics": metrics,
+        "X": X,
+        "feature_cols": feature_cols,
+    }

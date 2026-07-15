@@ -228,9 +228,7 @@ def test_count_entries_list_file(tmp_path: Path) -> None:
     from scripts.cleanup import count_entries
 
     f = tmp_path / "repo.json"
-    f.write_text(
-        json.dumps([{"date": "2026-07-01", "commits": 60}, {"date": "2026-07-02", "commits": 45}])
-    )
+    f.write_text(json.dumps([{"date": "2026-07-01", "commits": 60}, {"date": "2026-07-02", "commits": 45}]))
     result = count_entries(tmp_path)
     assert result["repo.json"] == 2
 
@@ -323,17 +321,11 @@ def test_clean_file_respects_days_parameter(tmp_path: pytest.fixture, days: int)
     from scripts.cleanup import clean_file
 
     today = date.today()
-    entries = [
-        {"date": (today - timedelta(days=d)).isoformat(), "value": d}
-        for d in range(0, days * 2, 5)
-    ]
+    entries = [{"date": (today - timedelta(days=d)).isoformat(), "value": d} for d in range(0, days * 2, 5)]
     path = tmp_path / "test.json"
     path.write_text(json.dumps(entries))
     cutoff = today - timedelta(days=days)
     removed = clean_file(path, cutoff)
     remaining = json.loads(path.read_text())
-    assert all(
-        date.fromisoformat(e["date"]) >= cutoff
-        for e in remaining
-    )
+    assert all(date.fromisoformat(e["date"]) >= cutoff for e in remaining)
     assert removed >= 0

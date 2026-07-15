@@ -2,10 +2,10 @@
 
 from __future__ import annotations
 
+from unittest.mock import MagicMock, patch
+
 import numpy as np
 import pandas as pd
-import pytest
-from unittest.mock import MagicMock, patch
 
 
 def _make_df(n: int = 200, mean: float = 10.0, std: float = 2.0) -> pd.DataFrame:

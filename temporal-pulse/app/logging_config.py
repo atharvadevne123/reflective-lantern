@@ -48,9 +48,7 @@ def configure_logging(level: str | None = None, json_format: bool | None = None)
     if json_format:
         handler.setFormatter(JsonFormatter())
     else:
-        handler.setFormatter(
-            logging.Formatter("%(asctime)s %(levelname)s %(name)s %(message)s")
-        )
+        handler.setFormatter(logging.Formatter("%(asctime)s %(levelname)s %(name)s %(message)s"))
     root.addHandler(handler)
 
     # Quieten noisy third-party loggers

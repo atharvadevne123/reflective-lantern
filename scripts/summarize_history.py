@@ -123,7 +123,7 @@ def export_to_csv(history_dir: Path | None = None, output_path: Path | None = No
     return len(rows)
 
 
-__all__ = ["load_all_entries", "load_latest_entry", "export_to_csv"]
+__all__ = ["export_to_csv", "load_all_entries", "load_latest_entry"]
 
 
 if __name__ == "__main__":
