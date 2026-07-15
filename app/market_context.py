@@ -188,7 +188,7 @@ def price_trend_indicator(
     }
 
 
-def affordability_index(
+def housing_affordability_index(
     median_home_price: float,
     median_household_income: float,
     mortgage_rate: float = 0.065,

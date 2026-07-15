@@ -307,3 +307,43 @@ def test_price_trend_zero_previous():
     from app.market_context import price_trend_indicator
     result = price_trend_indicator(400_000, 0)
     assert result["trend"] == "unknown"
+
+
+def test_hai_affordable():
+    from app.market_context import housing_affordability_index
+    result = housing_affordability_index(300_000, 100_000, mortgage_rate=0.065, term_years=30)
+    assert result["hai"] > 100  # affordable
+
+
+def test_hai_unaffordable():
+    from app.market_context import housing_affordability_index
+    result = housing_affordability_index(1_500_000, 80_000, mortgage_rate=0.07)
+    assert result["hai"] < 100  # unaffordable
+
+
+def test_hai_zero_income():
+    from app.market_context import housing_affordability_index
+    result = housing_affordability_index(300_000, 0)
+    assert result["hai"] == 0.0
+
+
+def test_hai_zero_price():
+    from app.market_context import housing_affordability_index
+    result = housing_affordability_index(0, 100_000)
+    assert result["hai"] == 0.0
+
+
+def test_hai_has_required_keys():
+    from app.market_context import housing_affordability_index
+    result = housing_affordability_index(400_000, 90_000)
+    for key in ("loan_amount", "monthly_payment", "qualifying_income", "hai"):
+        assert key in result
+
+
+@pytest.mark.parametrize("down_pct", [0.05, 0.10, 0.20, 0.30])
+def test_hai_higher_down_lowers_payment(down_pct):
+    from app.market_context import housing_affordability_index
+    full = housing_affordability_index(400_000, 80_000, down_payment_pct=0.0)
+    result = housing_affordability_index(400_000, 80_000, down_payment_pct=down_pct)
+    if down_pct > 0:
+        assert result["monthly_payment"] < full["monthly_payment"]
