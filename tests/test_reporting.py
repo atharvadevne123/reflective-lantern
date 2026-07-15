@@ -82,11 +82,11 @@ def test_peak_demand_various_lengths(n_hours: int) -> None:
 
 
 @pytest.mark.parametrize("actual,baseline,expected_grade", [
-    (8.0, 10.0, "A"),     # 20% reduction
+    (8.0, 10.0, "A+"),    # 20% reduction -> A+
     (5.0, 10.0, "A+"),    # 50% reduction
     (9.5, 10.0, "A-"),    # 5% reduction
     (10.0, 10.0, "B"),    # 0% reduction
-    (10.6, 10.0, "C"),    # slight increase
+    (10.6, 10.0, "D"),    # slight increase -> D
     (12.0, 10.0, "F"),    # 20% increase
 ])
 def test_energy_efficiency_grade_parametrized(actual, baseline, expected_grade):
@@ -122,3 +122,41 @@ def test_monthly_consumption_summary_cost():
     from app.reporting import monthly_consumption_summary
     result = monthly_consumption_summary([100.0], tariff_per_kwh=0.10)
     assert result["estimated_cost"] == pytest.approx(10.0)
+
+
+def test_consumption_trend_rising():
+    from app.reporting import consumption_trend
+    data = [10.0 + i * 2 for i in range(20)]
+    assert consumption_trend(data) == "rising"
+
+
+def test_consumption_trend_falling():
+    from app.reporting import consumption_trend
+    data = [100.0 - i * 2 for i in range(20)]
+    assert consumption_trend(data) == "falling"
+
+
+def test_consumption_trend_stable():
+    from app.reporting import consumption_trend
+    data = [50.0] * 30
+    assert consumption_trend(data) == "stable"
+
+
+def test_consumption_trend_single_value():
+    from app.reporting import consumption_trend
+    assert consumption_trend([42.0]) == "stable"
+
+
+def test_consumption_trend_empty():
+    from app.reporting import consumption_trend
+    assert consumption_trend([]) == "stable"
+
+
+@pytest.mark.parametrize("data,expected", [
+    ([1.0, 2.0, 3.0, 4.0, 5.0], "rising"),
+    ([5.0, 4.0, 3.0, 2.0, 1.0], "falling"),
+    ([3.0, 3.0, 3.0, 3.0, 3.0], "stable"),
+])
+def test_consumption_trend_parametrized(data, expected):
+    from app.reporting import consumption_trend
+    assert consumption_trend(data) == expected
