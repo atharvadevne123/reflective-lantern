@@ -174,4 +174,54 @@ def load_metrics() -> dict[str, Any]:
         return json.load(fh)
 
 
-__all__ = ["get_metrics", "load_anomaly_model", "load_metrics", "load_model", "predict", "score_anomaly", "train_anomaly_model", "train_model"]
+__all__ = ["get_feature_importance", "get_metrics", "load_anomaly_model", "load_metrics", "load_model", "predict", "score_anomaly", "train_anomaly_model", "train_model"]
+
+def get_feature_importance(model_bundle: dict[str, Any], top_n: int = 20) -> list[dict[str, object]]:
+    """Extract feature importances from the trained ensemble, if available.
+
+    Works with RandomForestRegressor and XGBRegressor estimators in a VotingRegressor.
+    Falls back to an empty list when the estimator does not expose feature_importances_.
+
+    Args:
+        model_bundle: Bundle returned by train_model(), containing 'pipeline' and 'estimator'.
+        top_n: Maximum number of features to return (ranked highest to lowest).
+
+    Returns:
+        List of dicts with 'feature' and 'importance' keys, sorted descending.
+    """
+    estimator = model_bundle.get("estimator")
+    pipeline = model_bundle.get("pipeline")
+    if estimator is None or pipeline is None:
+        return []
+
+    importances: np.ndarray | None = None
+    try:
+        if hasattr(estimator, "estimators_"):
+            # VotingRegressor — average importances across sub-estimators
+            sub_imps = [
+                e.feature_importances_
+                for _, e in estimator.estimators_
+                if hasattr(e, "feature_importances_")
+            ]
+            if sub_imps:
+                importances = np.mean(sub_imps, axis=0)
+        elif hasattr(estimator, "feature_importances_"):
+            importances = estimator.feature_importances_
+    except Exception:
+        logger.exception("Failed to extract feature importances")
+        return []
+
+    if importances is None:
+        return []
+
+    try:
+        feature_names: list[str] = list(pipeline.get_feature_names_out())
+    except Exception:
+        feature_names = [f"f{i}" for i in range(len(importances))]
+
+    paired = sorted(
+        zip(feature_names, importances.tolist()),
+        key=lambda x: x[1],
+        reverse=True,
+    )
+    return [{"feature": name, "importance": round(imp, 6)} for name, imp in paired[:top_n]]
