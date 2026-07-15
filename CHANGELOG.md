@@ -1,5 +1,37 @@
 # Changelog
 
+## [1.2.0] - 2026-07-15
+
+### Added
+- `app/anomaly.py`: `batch_compute_severity()` and `anomaly_rate()` for bulk severity analysis
+- `app/cache.py`: Thread-safe TTLCache with `RLock`, `__contains__`, and `stats()` method
+- `app/validation.py`: `validate_building_id`, `validate_batch_size`, `validate_consumption_kwh`, `validate_feature_vector` input validators
+- `app/regions.py`: Five new grid regions (pacific_nw, new_england, mountain, southeast, florida) plus `get_all_region_ids`, `get_region_timezone`, `get_peak_load` helpers
+- `app/investment.py`: `mortgage_payment`, `roi_percentage`, `price_to_income_ratio` financial utilities
+- `app/reporting.py`: `energy_efficiency_grade`, `monthly_consumption_summary` reporting helpers
+- `app/market_context.py`: `rent_vs_buy_comparison`, `price_trend_indicator` market analysis utilities
+- `app/similarity.py`: `euclidean_distance`, `batch_add` utility functions
+- `app/mlflow_stub.py`: `set_tracking_uri`, `log_params`, `log_artifact`, `list_runs` stub helpers
+- `app/model.py`: `get_feature_importance` to surface VotingRegressor feature importances
+- `app/monitoring.py`: `get_anomaly_stats`, `compute_feature_drift_summary` monitoring aggregates
+- `app/schemas.py`: `FeatureImportanceItem/Response`, `AnomalyStatsResponse`, `SavingsRequest/Response` schemas
+- `app/main.py`: `/api/v1/feature-importance`, `/api/v1/anomaly/stats`, `/api/v1/savings`, `/api/v1/efficiency-grade` endpoints
+- `app/database.py`: `ModelMetrics` ORM table; `get_predictions_by_building` query helper
+- `app/features.py`: `InteractionFeatureExtractor` for pairwise feature products
+- `app/faiss_index.py`: `reset()`, `__len__`, `save_vectors()` on `LoadPatternIndex`
+- `app/aws_stub.py`: `delete_artefact` helper; corrected `__all__` exports
+- `app/logging_config.py`: `TraceIdFilter`, `add_trace_id_filter` for per-request trace correlation
+- `pipelines/retrain_dag.py`: `check_drift_before_retrain` KS-test gating step
+- `scripts/summarize_history.py`: `export_to_csv` utility function
+- `config/settings.py`: `to_dict`, `missing_optional` methods on `Settings`
+- `config/constants.py`: ML/API/batch limit constants
+- `config/mode.py`: `upcoming_innovation_days`, `mode_schedule` schedule helpers
+- `.github/workflows/ci.yml`: Python 3.12 matrix; coverage XML artifact upload
+- `.github/ISSUE_TEMPLATE/bug_report.md`: Bug report issue template
+- `.github/ISSUE_TEMPLATE/feature_request.md`: Feature request issue template
+- `Makefile`: `coverage-xml`, `profile` targets; `coverage.xml` in clean rule
+- `pyproject.toml`: `[tool.coverage.run]` and `[tool.coverage.report]` configuration
+
 ## [1.1.0] - 2026-07-11
 
 ### Fixed
