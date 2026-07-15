@@ -253,3 +253,51 @@ def test_configure_logging_suppresses_noisy_loggers() -> None:
     configure_logging(level="DEBUG")
     assert logging.getLogger("urllib3").level == logging.WARNING
     assert logging.getLogger("httpx").level == logging.WARNING
+
+
+def test_trace_id_filter_adds_field() -> None:
+    from app.logging_config import TraceIdFilter
+
+    log_filter = TraceIdFilter(trace_id="abc-123")
+    record = logging.LogRecord("t", logging.INFO, "", 0, "msg", (), None)
+    log_filter.filter(record)
+    assert record.trace_id == "abc-123"
+
+
+def test_trace_id_filter_does_not_overwrite_existing() -> None:
+    from app.logging_config import TraceIdFilter
+
+    log_filter = TraceIdFilter(trace_id="new-id")
+    record = logging.LogRecord("t", logging.INFO, "", 0, "msg", (), None)
+    record.trace_id = "existing-id"  # type: ignore[attr-defined]
+    log_filter.filter(record)
+    assert record.trace_id == "existing-id"
+
+
+def test_trace_id_filter_returns_true() -> None:
+    from app.logging_config import TraceIdFilter
+
+    log_filter = TraceIdFilter()
+    record = logging.LogRecord("t", logging.INFO, "", 0, "msg", (), None)
+    assert log_filter.filter(record) is True
+
+
+def test_add_trace_id_filter_attaches_to_handler() -> None:
+    from app.logging_config import add_trace_id_filter, TraceIdFilter
+
+    logger = logging.getLogger("test_trace_handler")
+    handler = logging.StreamHandler()
+    logger.addHandler(handler)
+    add_trace_id_filter(logger, trace_id="req-xyz")
+    assert any(isinstance(f, TraceIdFilter) for f in handler.filters)
+    logger.removeHandler(handler)
+
+
+def test_add_trace_id_filter_no_handlers_uses_logger() -> None:
+    from app.logging_config import add_trace_id_filter, TraceIdFilter
+
+    logger = logging.getLogger("test_trace_no_handler")
+    logger.handlers.clear()
+    add_trace_id_filter(logger, trace_id="req-abc")
+    assert any(isinstance(f, TraceIdFilter) for f in logger.filters)
+    logger.filters.clear()
