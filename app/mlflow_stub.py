@@ -81,3 +81,60 @@ def get_best_run(metric: str = "r2_mean") -> dict[str, object] | None:
                 best_val = val
                 best = entry
     return best
+
+
+def set_tracking_uri(uri: str) -> None:
+    """Configure the MLflow tracking URI.
+
+    Args:
+        uri: Tracking server URI (e.g. 'http://localhost:5000').
+    """
+    global _TRACKING_URI
+    _TRACKING_URI = uri
+    logger.info("MLflow tracking URI set to '%s'", uri)
+
+
+def log_params(run_name: str, params: dict[str, object]) -> None:
+    """Append hyperparameter values to the local run log.
+
+    Args:
+        run_name: Identifier for the training run.
+        params: Mapping of parameter name to value.
+    """
+    entry = {"run": run_name, "params": params}
+    with open(_RUN_LOG, "a") as fh:
+        fh.write(json.dumps(entry) + "\n")
+    logger.info("MLflow stub: logged params for run '%s'", run_name)
+
+
+def log_artifact(run_name: str, artifact_path: str) -> None:
+    """Record an artifact path in the local run log.
+
+    Args:
+        run_name: Identifier for the training run.
+        artifact_path: Local or remote path to the artefact file.
+    """
+    entry = {"run": run_name, "artifact": artifact_path}
+    with open(_RUN_LOG, "a") as fh:
+        fh.write(json.dumps(entry) + "\n")
+    logger.info("MLflow stub: logged artifact '%s' for run '%s'", artifact_path, run_name)
+
+
+def list_runs() -> list[dict[str, object]]:
+    """Return all logged runs from the local JSONL log.
+
+    Returns:
+        List of run entry dicts, oldest first. Empty list when no log exists.
+    """
+    if not _RUN_LOG.exists():
+        return []
+    runs = []
+    with open(_RUN_LOG) as fh:
+        for line in fh:
+            line = line.strip()
+            if line:
+                try:
+                    runs.append(json.loads(line))
+                except json.JSONDecodeError:
+                    logger.warning("Skipping malformed run log entry")
+    return runs
