@@ -195,3 +195,62 @@ class LatencyTimer:
 
     def __exit__(self, *_: Any) -> None:
         self.ms = round((time.perf_counter() - self._start) * 1000, 2)
+
+
+def get_anomaly_stats(db: Session) -> dict[str, Any]:
+    """Return aggregated anomaly statistics from the database.
+
+    Args:
+        db: Active SQLAlchemy session.
+
+    Returns:
+        Dict with total_anomalies, critical_count, warning_count, anomaly_rate,
+        and mean_anomaly_score.
+    """
+    import statistics
+
+    all_anomalies = db.query(AnomalyLog).all()
+    total = len(all_anomalies)
+    if total == 0:
+        return {
+            "total_anomalies": 0,
+            "critical_count": 0,
+            "warning_count": 0,
+            "anomaly_rate": 0.0,
+            "mean_anomaly_score": 0.0,
+        }
+    flagged = [a for a in all_anomalies if a.is_anomaly == 1]
+    critical = [a for a in flagged if a.severity == "critical"]
+    warning = [a for a in flagged if a.severity == "warning"]
+    scores = [a.anomaly_score for a in all_anomalies]
+    mean_score = round(statistics.mean(scores), 4) if scores else 0.0
+    return {
+        "total_anomalies": total,
+        "critical_count": len(critical),
+        "warning_count": len(warning),
+        "anomaly_rate": round(len(flagged) / total, 4),
+        "mean_anomaly_score": mean_score,
+    }
+
+
+def compute_feature_drift_summary(
+    feature_values: dict[str, list[float]],
+    reference: list[float] | None = None,
+) -> list[dict[str, Any]]:
+    """Compute drift for multiple features without persisting to DB.
+
+    Args:
+        feature_values: Mapping of feature name to list of current values.
+        reference: Shared reference distribution; falls back to _reference_window.
+
+    Returns:
+        List of drift result dicts, one per feature, with 'feature', 'ks_statistic',
+        'p_value', and 'drift_detected' keys.
+    """
+    ref = reference if reference is not None else _reference_window
+    results = []
+    for name, current in feature_values.items():
+        result = compute_drift(ref if ref else current, current)
+        result["feature"] = name
+        results.append(result)
+    return results
