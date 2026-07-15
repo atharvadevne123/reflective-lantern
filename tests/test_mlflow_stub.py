@@ -293,3 +293,51 @@ def test_list_runs_returns_entries(tmp_path, monkeypatch):
     runs = stub.list_runs()
     assert len(runs) == 1
     assert runs[0]["run"] == "r1"
+
+
+def test_delete_artefact_no_bucket_returns_false() -> None:
+    import app.aws_stub as s
+    original = s._BUCKET
+    s._BUCKET = ""
+    try:
+        result = s.delete_artefact("some/key")
+    finally:
+        s._BUCKET = original
+    assert result is False
+
+
+def test_delete_artefact_no_client_returns_false() -> None:
+    from unittest.mock import patch
+    import app.aws_stub as s
+    with (
+        patch("app.aws_stub._s3_client", return_value=None),
+        patch.object(s, "_BUCKET", "bucket"),
+    ):
+        result = s.delete_artefact("some/key")
+    assert result is False
+
+
+def test_delete_artefact_s3_error_returns_false() -> None:
+    from unittest.mock import MagicMock, patch
+    import app.aws_stub as s
+    mock_client = MagicMock()
+    mock_client.delete_object.side_effect = RuntimeError("S3 error")
+    with (
+        patch("app.aws_stub._s3_client", return_value=mock_client),
+        patch.object(s, "_BUCKET", "bucket"),
+    ):
+        result = s.delete_artefact("some/key")
+    assert result is False
+
+
+def test_delete_artefact_success_returns_true() -> None:
+    from unittest.mock import MagicMock, patch
+    import app.aws_stub as s
+    mock_client = MagicMock()
+    with (
+        patch("app.aws_stub._s3_client", return_value=mock_client),
+        patch.object(s, "_BUCKET", "bucket"),
+    ):
+        result = s.delete_artefact("some/key")
+    assert result is True
+    mock_client.delete_object.assert_called_once_with(Bucket="bucket", Key="some/key")
