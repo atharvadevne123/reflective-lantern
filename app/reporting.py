@@ -130,3 +130,29 @@ def monthly_consumption_summary(
         "estimated_cost": round(total * tariff_per_kwh, 2),
         "days": len(daily_kwh),
     }
+
+
+def consumption_trend(daily_kwh: list[float]) -> str:
+    """Classify consumption trend over a period as 'rising', 'falling', or 'stable'.
+
+    Fits a simple linear regression to *daily_kwh* and classifies the slope.
+
+    Args:
+        daily_kwh: List of daily consumption values (kWh).
+
+    Returns:
+        One of 'rising', 'falling', or 'stable'.
+    """
+    if len(daily_kwh) < 2:
+        return "stable"
+    arr = np.array(daily_kwh, dtype=float)
+    x = np.arange(len(arr), dtype=float)
+    x_mean, y_mean = x.mean(), arr.mean()
+    denom = float(((x - x_mean) ** 2).sum())
+    if denom < 1e-9:
+        return "stable"
+    slope = float(((x - x_mean) * (arr - y_mean)).sum() / denom)
+    relative = abs(slope) / (y_mean + 1e-9)
+    if relative < 0.01:
+        return "stable"
+    return "rising" if slope > 0 else "falling"
