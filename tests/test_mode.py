@@ -182,3 +182,35 @@ def test_is_innovation_day_false_on_first_wednesday_of_month() -> None:
     wed_day1 = date(2026, 7, 1)
     assert wed_day1.isoweekday() == 3
     assert not is_innovation_day(wed_day1)
+
+
+def test_upcoming_innovation_days_returns_count():
+    from config.mode import upcoming_innovation_days
+    days = upcoming_innovation_days(count=3)
+    assert len(days) == 3
+
+
+def test_upcoming_innovation_days_all_innovation():
+    from config.mode import is_innovation_day, upcoming_innovation_days
+    days = upcoming_innovation_days(count=5)
+    assert all(is_innovation_day(d) for d in days)
+
+
+def test_upcoming_innovation_days_sorted():
+    from config.mode import upcoming_innovation_days
+    days = upcoming_innovation_days(count=4)
+    assert days == sorted(days)
+
+
+def test_mode_schedule_weekdays_only():
+    from config.mode import mode_schedule
+    schedule = mode_schedule(weeks=1)
+    for entry in schedule:
+        assert entry["mode"] in ("IMPROVEMENT", "INNOVATION")
+
+
+def test_mode_schedule_length():
+    from config.mode import mode_schedule
+    schedule = mode_schedule(weeks=1)
+    # 1 week = 5 weekdays
+    assert len(schedule) == 5
