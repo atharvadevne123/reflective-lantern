@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import pytest
+
 from app.similarity import BuildingSimilarityIndex
 
 
@@ -78,3 +80,44 @@ def test_search_result_tuples_have_two_elements():
     idx.add("a", [1.0, 2.0])
     for item in idx.search([1.0, 2.0]):
         assert len(item) == 2
+
+
+def test_euclidean_distance_same_vector():
+    from app.similarity import euclidean_distance
+    assert euclidean_distance([1.0, 2.0, 3.0], [1.0, 2.0, 3.0]) == pytest.approx(0.0)
+
+
+def test_euclidean_distance_different_vectors():
+    from app.similarity import euclidean_distance
+    d = euclidean_distance([0.0, 0.0], [3.0, 4.0])
+    assert d == pytest.approx(5.0, rel=1e-4)
+
+
+def test_euclidean_distance_negative_values():
+    from app.similarity import euclidean_distance
+    d = euclidean_distance([-1.0, -1.0], [1.0, 1.0])
+    assert d > 0
+
+
+@pytest.mark.parametrize("a,b,expected", [
+    ([0.0], [0.0], 0.0),
+    ([1.0, 0.0], [0.0, 1.0], pytest.approx(1.414, rel=1e-3)),
+])
+def test_euclidean_distance_parametrized(a, b, expected):
+    from app.similarity import euclidean_distance
+    assert euclidean_distance(a, b) == expected
+
+
+def test_batch_add_all_successful():
+    from app.similarity import BuildingSimilarityIndex, batch_add
+    idx = BuildingSimilarityIndex()
+    profiles = [("b1", [1.0, 0.0]), ("b2", [0.0, 1.0]), ("b3", [1.0, 1.0])]
+    added = batch_add(idx, profiles)
+    assert added == 3
+    assert len(idx) == 3
+
+
+def test_batch_add_empty():
+    from app.similarity import BuildingSimilarityIndex, batch_add
+    idx = BuildingSimilarityIndex()
+    assert batch_add(idx, []) == 0
