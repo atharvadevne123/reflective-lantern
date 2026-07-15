@@ -102,3 +102,38 @@ def cosine_distance(a: list[float] | np.ndarray, b: list[float] | np.ndarray) ->
 
 
 __all__ = ["BuildingSimilarityIndex", "cosine_distance", "get_global_index", "search_comparable"]
+
+
+def euclidean_distance(a: "list[float] | np.ndarray", b: "list[float] | np.ndarray") -> float:
+    """Compute Euclidean (L2) distance between two vectors.
+
+    Args:
+        a: First feature vector.
+        b: Second feature vector (must be same length as *a*).
+
+    Returns:
+        L2 distance rounded to 6 decimal places.
+    """
+    va = np.array(a, dtype=np.float32)
+    vb = np.array(b, dtype=np.float32)
+    return round(float(np.linalg.norm(va - vb)), 6)
+
+
+def batch_add(index: BuildingSimilarityIndex, profiles: "list[tuple[str, list[float]]]") -> int:
+    """Add multiple building profiles to *index* in one call.
+
+    Args:
+        index: Target BuildingSimilarityIndex instance.
+        profiles: List of (building_id, feature_vector) tuples.
+
+    Returns:
+        Number of profiles successfully added.
+    """
+    added = 0
+    for building_id, profile in profiles:
+        try:
+            index.add(building_id, profile)
+            added += 1
+        except Exception:
+            logger.exception("Failed to add profile for building %s", building_id)
+    return added
