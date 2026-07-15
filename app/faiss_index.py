@@ -90,6 +90,24 @@ class LoadPatternIndex:
         self._metadata.clear()
         self._index = None
 
+    def reset(self) -> None:
+        """Alias for clear(); remove all vectors and invalidate the index."""
+        self.clear()
+
+    def __len__(self) -> int:
+        """Return the number of vectors in the index."""
+        return len(self._vectors)
+
+    def save_vectors(self) -> np.ndarray:
+        """Return a copy of all stored vectors as a 2-D float32 array.
+
+        Returns:
+            Shape (n, dim) array; empty (0, dim) when the index has no vectors.
+        """
+        if not self._vectors:
+            return np.empty((0, self.dim), dtype=np.float32)
+        return np.stack(self._vectors, axis=0).copy()
+
     @property
     def size(self) -> int:
         """Number of vectors stored in the index."""
