@@ -160,3 +160,74 @@ def test_drift_strong_shift_detected(client: TestClient) -> None:
     r = client.post("/api/v1/drift", json=payload)
     assert r.status_code == 200
     assert r.json()["drift_detected"] is True
+
+
+def test_feature_importance_no_model(client: TestClient):
+    import app.main as main_mod
+    original = main_mod._model_bundle
+    main_mod._model_bundle = None
+    try:
+        r = client.get("/api/v1/feature-importance")
+        assert r.status_code == 503
+    finally:
+        main_mod._model_bundle = original
+
+
+def test_feature_importance_after_train(client: TestClient):
+    client.post("/api/v1/train")
+    r = client.get("/api/v1/feature-importance")
+    assert r.status_code == 200
+    data = r.json()
+    assert "features" in data
+    assert "top_n" in data
+    assert "model_version" in data
+    assert isinstance(data["features"], list)
+
+
+def test_anomaly_stats_endpoint(client: TestClient):
+    r = client.get("/api/v1/anomaly/stats")
+    assert r.status_code == 200
+    data = r.json()
+    assert "total_anomalies" in data
+    assert "anomaly_rate" in data
+    assert "mean_anomaly_score" in data
+
+
+def test_savings_endpoint(client: TestClient):
+    payload = {
+        "actual_kwh": [8.0, 9.0, 7.5],
+        "baseline_kwh": [10.0, 11.0, 9.0],
+        "tariff_per_kwh": 0.15,
+    }
+    r = client.post("/api/v1/savings", json=payload)
+    assert r.status_code == 200
+    data = r.json()
+    assert "total_saved_kwh" in data
+    assert "total_saved_cost" in data
+    assert "savings_pct" in data
+
+
+def test_savings_endpoint_mismatched_lengths(client: TestClient):
+    payload = {
+        "actual_kwh": [8.0, 9.0],
+        "baseline_kwh": [10.0, 11.0, 9.0],
+        "tariff_per_kwh": 0.15,
+    }
+    r = client.post("/api/v1/savings", json=payload)
+    assert r.status_code == 422
+
+
+def test_efficiency_grade_endpoint(client: TestClient):
+    r = client.get("/api/v1/efficiency-grade", params={"actual_kwh": 8.0, "baseline_kwh": 10.0})
+    assert r.status_code == 200
+    data = r.json()
+    assert "grade" in data
+    assert data["grade"] in ("A+", "A", "A-", "B", "C", "D", "F")
+
+
+@pytest.mark.parametrize("hour,expected_status", [(0, 200), (23, 200)])
+def test_predict_boundary_hours(client: TestClient, energy_payload, hour, expected_status):
+    client.post("/api/v1/train")
+    payload = {**energy_payload, "hour": hour}
+    r = client.post("/api/v1/predict", json=payload)
+    assert r.status_code == expected_status
