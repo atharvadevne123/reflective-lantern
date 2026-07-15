@@ -85,3 +85,35 @@ def test_stores_falsy_values(value: object) -> None:
 def test_construction_params(ttl: int, size: int) -> None:
     c = TTLCache(ttl_seconds=ttl, max_size=size)
     assert c.size == 0
+
+
+def test_contains_present_key():
+    c = TTLCache(ttl_seconds=10)
+    c.set("x", 99)
+    assert "x" in c
+
+
+def test_contains_missing_key():
+    c = TTLCache(ttl_seconds=10)
+    assert "missing" not in c
+
+
+def test_stats_returns_expected_keys():
+    c = TTLCache(ttl_seconds=10, max_size=50)
+    c.set("a", 1)
+    _ = c.get("a")
+    _ = c.get("b")
+    stats = c.stats()
+    assert stats["size"] == 1
+    assert stats["max_size"] == 50
+    assert stats["ttl_seconds"] == 10
+    assert stats["hits"] == 1
+    assert stats["misses"] == 1
+    assert stats["hit_rate"] == pytest.approx(0.5)
+
+
+def test_stats_empty_cache():
+    c = TTLCache()
+    stats = c.stats()
+    assert stats["size"] == 0
+    assert stats["hit_rate"] == 0.0
