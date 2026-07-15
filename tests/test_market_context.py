@@ -258,3 +258,52 @@ def test_affordability_loan_equals_80pct_at_default_down_payment(
     value = 500_000.0
     result = affordability_index(value, annual_income=income)
     assert result["loan_amount"] == pytest.approx(value * expected_loan_fraction)
+
+
+@pytest.mark.parametrize("ptr,expected", [
+    (10.0, "buy"),
+    (18.0, "neutral"),
+    (25.0, "rent"),
+])
+def test_rent_vs_buy_recommendation(ptr, expected):
+    from app.market_context import rent_vs_buy_comparison
+    # ptr = price / annual_rent so annual_rent = price / ptr
+    price = 400_000
+    annual_rent = price / ptr
+    result = rent_vs_buy_comparison(price, annual_rent)
+    assert result["recommendation"] == expected
+
+
+def test_rent_vs_buy_has_required_keys():
+    from app.market_context import rent_vs_buy_comparison
+    result = rent_vs_buy_comparison(400_000, 20_000)
+    assert "monthly_rent" in result
+    assert "monthly_mortgage" in result
+    assert "rent_premium" in result
+    assert "price_to_rent_ratio" in result
+    assert "recommendation" in result
+
+
+def test_price_trend_rising():
+    from app.market_context import price_trend_indicator
+    result = price_trend_indicator(420_000, 400_000)
+    assert result["trend"] == "rising"
+    assert result["absolute_change"] == pytest.approx(20_000.0)
+
+
+def test_price_trend_falling():
+    from app.market_context import price_trend_indicator
+    result = price_trend_indicator(380_000, 400_000)
+    assert result["trend"] == "falling"
+
+
+def test_price_trend_stable():
+    from app.market_context import price_trend_indicator
+    result = price_trend_indicator(401_000, 400_000)
+    assert result["trend"] == "stable"
+
+
+def test_price_trend_zero_previous():
+    from app.market_context import price_trend_indicator
+    result = price_trend_indicator(400_000, 0)
+    assert result["trend"] == "unknown"
