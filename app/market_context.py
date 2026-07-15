@@ -186,3 +186,49 @@ def price_trend_indicator(
         "annualised_pct_change": round(ann, 2),
         "trend": trend,
     }
+
+
+def affordability_index(
+    median_home_price: float,
+    median_household_income: float,
+    mortgage_rate: float = 0.065,
+    term_years: int = 30,
+    down_payment_pct: float = 0.20,
+) -> dict[str, float]:
+    """Calculate a Housing Affordability Index (HAI).
+
+    HAI = (qualifying income / actual income) * 100.  Values above 100 mean
+    the median household can afford the median home.
+
+    Args:
+        median_home_price: Median home price in USD.
+        median_household_income: Median annual household income in USD.
+        mortgage_rate: Annual mortgage interest rate as a decimal (default 6.5%).
+        term_years: Loan amortisation term in years (default 30).
+        down_payment_pct: Down payment fraction (default 20%).
+
+    Returns:
+        Dict with loan_amount, monthly_payment, qualifying_income, and hai.
+    """
+    if median_household_income <= 0 or median_home_price <= 0:
+        return {
+            "loan_amount": 0.0,
+            "monthly_payment": 0.0,
+            "qualifying_income": 0.0,
+            "hai": 0.0,
+        }
+    loan = median_home_price * (1.0 - down_payment_pct)
+    n = term_years * 12
+    if mortgage_rate <= 0:
+        monthly_payment = loan / n
+    else:
+        r = mortgage_rate / 12
+        monthly_payment = loan * r / (1 - (1 + r) ** -n)
+    qualifying_income = monthly_payment * 12 / 0.28  # 28% front-end ratio rule
+    hai = (median_household_income / qualifying_income) * 100 if qualifying_income > 0 else 0.0
+    return {
+        "loan_amount": round(loan, 2),
+        "monthly_payment": round(monthly_payment, 2),
+        "qualifying_income": round(qualifying_income, 2),
+        "hai": round(hai, 2),
+    }
