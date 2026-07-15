@@ -100,3 +100,40 @@ def peak_hours(values: list[float], top_n: int = 3) -> list[int]:
     arr = np.array(values, dtype=float)
     indices = list(np.argsort(arr)[::-1][: min(top_n, len(arr))])
     return [int(i) for i in indices]
+
+
+def cumulative_consumption(values: list[float]) -> list[float]:
+    """Return a cumulative sum of consumption values.
+
+    Args:
+        values: List of periodic (e.g. hourly) consumption readings in kWh.
+
+    Returns:
+        List of the same length where element i is sum(values[:i+1]).
+    """
+    if not values:
+        return []
+    result: list[float] = []
+    total = 0.0
+    for v in values:
+        total += v
+        result.append(round(total, 6))
+    return result
+
+
+def resample_hourly_to_daily(hourly: list[float]) -> list[float]:
+    """Aggregate hourly readings into daily totals.
+
+    Args:
+        hourly: List of hourly consumption values; length need not be a multiple of 24.
+
+    Returns:
+        List of daily totals; the last partial day is included if it exists.
+    """
+    if not hourly:
+        return []
+    daily: list[float] = []
+    for i in range(0, len(hourly), 24):
+        chunk = hourly[i : i + 24]
+        daily.append(round(sum(chunk), 6))
+    return daily
