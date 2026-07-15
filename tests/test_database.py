@@ -114,3 +114,46 @@ def test_anomaly_log_severity_none(db_session):
     db_session.add(a)
     db_session.commit()
     assert a.severity == "none"
+
+
+def test_get_predictions_by_building_empty(db_session):
+    from app.database import get_predictions_by_building
+    results = get_predictions_by_building(db_session, "nonexistent-bldg")
+    assert results == []
+
+
+def test_get_predictions_by_building_filters(db_session):
+    from datetime import datetime
+    from app.database import PredictionLog, get_predictions_by_building
+
+    for bid in ["bldg-A", "bldg-A", "bldg-B"]:
+        entry = PredictionLog(
+            building_id=bid,
+            timestamp=datetime.utcnow(),
+            predicted_kwh=10.0,
+            latency_ms=5.0,
+        )
+        db_session.add(entry)
+    db_session.commit()
+
+    results_a = get_predictions_by_building(db_session, "bldg-A")
+    results_b = get_predictions_by_building(db_session, "bldg-B")
+    assert len(results_a) == 2
+    assert len(results_b) == 1
+
+
+def test_get_predictions_by_building_limit(db_session):
+    from datetime import datetime
+    from app.database import PredictionLog, get_predictions_by_building
+
+    for i in range(5):
+        entry = PredictionLog(
+            building_id="bldg-limit",
+            timestamp=datetime.utcnow(),
+            predicted_kwh=float(i),
+            latency_ms=1.0,
+        )
+        db_session.add(entry)
+    db_session.commit()
+    results = get_predictions_by_building(db_session, "bldg-limit", limit=3)
+    assert len(results) == 3
