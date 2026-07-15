@@ -60,3 +60,40 @@ def days_until_next_innovation(after: date | None = None) -> int:
 
 
 __all__ = ["RunMode", "determine_mode", "is_innovation_day", "next_innovation_day", "days_until_next_innovation"]
+
+
+def upcoming_innovation_days(count: int = 5, after: date | None = None) -> list[date]:
+    """Return the next *count* innovation days after *after* (defaults to today).
+
+    Args:
+        count: Number of future innovation days to compute.
+        after: Starting reference date (defaults to today).
+
+    Returns:
+        Sorted list of upcoming innovation dates.
+    """
+    results: list[date] = []
+    current = after or date.today()
+    for _ in range(count):
+        current = next_innovation_day(current)
+        results.append(current)
+    return results
+
+
+def mode_schedule(weeks: int = 4, start: date | None = None) -> list[dict[str, object]]:
+    """Return the run-mode schedule for the next *weeks* weeks.
+
+    Args:
+        weeks: Number of weeks to project forward.
+        start: Starting date (defaults to today).
+
+    Returns:
+        List of dicts with 'date' (ISO string) and 'mode' keys for each weekday.
+    """
+    ref = start or date.today()
+    schedule: list[dict[str, object]] = []
+    for offset in range(weeks * 7):
+        d = ref + timedelta(days=offset)
+        if d.isoweekday() <= 5:  # Mon–Fri only
+            schedule.append({"date": d.isoformat(), "mode": str(determine_mode(d))})
+    return schedule
