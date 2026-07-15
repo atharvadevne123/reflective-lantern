@@ -284,3 +284,26 @@ def make_feature_row(
             }
         ]
     )
+
+
+class InteractionFeatureExtractor(BaseEstimator, TransformerMixin):
+    """Create pairwise interaction terms between key numeric features."""
+
+    PAIRS: list[tuple[str, str]] = [
+        ("temperature_c", "occupancy"),
+        ("temperature_c", "hvac_state"),
+        ("humidity_pct", "temperature_c"),
+        ("hour", "occupancy"),
+    ]
+
+    def fit(self, X: pd.DataFrame, y=None) -> "InteractionFeatureExtractor":
+        self.available_pairs_ = [
+            (a, b) for a, b in self.PAIRS if a in X.columns and b in X.columns
+        ]
+        return self
+
+    def transform(self, X: pd.DataFrame) -> pd.DataFrame:
+        df = X.copy()
+        for a, b in self.available_pairs_:
+            df[f"{a}_x_{b}"] = df[a] * df[b]
+        return df
