@@ -5,6 +5,8 @@ beyond the raw predicted value: price per square foot percentile, days-on-
 market classification, affordability index, and price-to-rent ratio.
 """
 
+from __future__ import annotations
+
 import logging
 from typing import Any
 
@@ -106,3 +108,81 @@ def affordability_bucket(pct_income: float) -> str:
     if pct_income <= STRETCHED_THRESHOLD:
         return "stretched"
     return "unaffordable"
+
+
+def rent_vs_buy_comparison(
+    predicted_value: float,
+    annual_rent: float,
+    annual_income: float = DEFAULT_ANNUAL_INCOME,
+    mortgage_rate: float = DEFAULT_MORTGAGE_RATE,
+    term_years: int = DEFAULT_TERM_YEARS,
+    down_payment_pct: float = DEFAULT_DOWN_PAYMENT,
+) -> dict[str, Any]:
+    """Compare the financial cost of renting vs buying for a property.
+
+    Args:
+        predicted_value: Property purchase price in USD.
+        annual_rent: Annual rent for a comparable property in USD.
+        annual_income: Buyer's annual household income in USD.
+        mortgage_rate: Annual mortgage interest rate as a fraction.
+        term_years: Mortgage term in years.
+        down_payment_pct: Down payment as a fraction of the purchase price.
+
+    Returns:
+        Dict with monthly_rent, monthly_mortgage, rent_premium, recommendation,
+        and price_to_rent_ratio.
+    """
+    loan = predicted_value * (1 - down_payment_pct)
+    r = mortgage_rate / 12
+    n = term_years * 12
+    monthly_mortgage = loan * r * (1 + r) ** n / ((1 + r) ** n - 1) if r > 0 else loan / n
+    monthly_rent = annual_rent / 12
+    rent_premium = monthly_rent - monthly_mortgage
+    ptr = price_to_rent_ratio(predicted_value, annual_rent)
+    recommendation = "buy" if ptr < 15 else ("neutral" if ptr <= 20 else "rent")
+    return {
+        "monthly_rent": round(monthly_rent, 2),
+        "monthly_mortgage": round(monthly_mortgage, 2),
+        "rent_premium": round(rent_premium, 2),
+        "price_to_rent_ratio": ptr,
+        "recommendation": recommendation,
+    }
+
+
+def price_trend_indicator(
+    current_price: float,
+    previous_price: float,
+    periods: int = 1,
+) -> dict[str, Any]:
+    """Compute price change direction and magnitude over *periods*.
+
+    Args:
+        current_price: Most recent property value in USD.
+        previous_price: Prior property value in USD (must be positive).
+        periods: Number of periods elapsed (used for annualised rate).
+
+    Returns:
+        Dict with absolute_change, pct_change, annualised_pct_change, and trend.
+    """
+    if previous_price <= 0:
+        return {
+            "absolute_change": 0.0,
+            "pct_change": 0.0,
+            "annualised_pct_change": 0.0,
+            "trend": "unknown",
+        }
+    abs_change = current_price - previous_price
+    pct_change = abs_change / previous_price * 100.0
+    ann = (pct_change / max(periods, 1)) if periods else pct_change
+    if pct_change > 2.0:
+        trend = "rising"
+    elif pct_change < -2.0:
+        trend = "falling"
+    else:
+        trend = "stable"
+    return {
+        "absolute_change": round(abs_change, 2),
+        "pct_change": round(pct_change, 2),
+        "annualised_pct_change": round(ann, 2),
+        "trend": trend,
+    }
