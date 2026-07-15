@@ -298,3 +298,35 @@ def test_summarize_history_returns_zero(history_dir: Path) -> None:
         with patch.object(sh, "HISTORY_DIR", history_dir):
             rc = sh.main()
     assert rc in (0, None)
+
+
+def test_export_to_csv_creates_file(history_dir: Path, tmp_path: Path) -> None:
+    from scripts.summarize_history import export_to_csv
+
+    out = tmp_path / "summary.csv"
+    count = export_to_csv(history_dir=history_dir, output_path=out)
+    assert out.exists()
+    assert count >= 0
+
+
+def test_export_to_csv_header_row(history_dir: Path, tmp_path: Path) -> None:
+    import csv
+    from scripts.summarize_history import export_to_csv
+
+    out = tmp_path / "summary.csv"
+    export_to_csv(history_dir=history_dir, output_path=out)
+    if out.exists():
+        with out.open() as fh:
+            reader = csv.DictReader(fh)
+            assert "repo" in (reader.fieldnames or [])
+
+
+def test_export_to_csv_empty_history_returns_zero(tmp_path: Path) -> None:
+    from scripts.summarize_history import export_to_csv
+
+    empty_dir = tmp_path / "history"
+    empty_dir.mkdir()
+    out = tmp_path / "out.csv"
+    count = export_to_csv(history_dir=empty_dir, output_path=out)
+    assert count == 0
+    assert not out.exists()
