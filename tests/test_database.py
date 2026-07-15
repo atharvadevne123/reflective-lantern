@@ -123,10 +123,14 @@ def test_get_predictions_by_building_empty(db_session):
 
 
 def test_get_predictions_by_building_filters(db_session):
+    import uuid
     from datetime import datetime
     from app.database import PredictionLog, get_predictions_by_building
 
-    for bid in ["bldg-A", "bldg-A", "bldg-B"]:
+    uid = uuid.uuid4().hex[:8]
+    bid_a = f"filter-A-{uid}"
+    bid_b = f"filter-B-{uid}"
+    for bid in [bid_a, bid_a, bid_b]:
         entry = PredictionLog(
             building_id=bid,
             timestamp=datetime.utcnow(),
@@ -136,8 +140,8 @@ def test_get_predictions_by_building_filters(db_session):
         db_session.add(entry)
     db_session.commit()
 
-    results_a = get_predictions_by_building(db_session, "bldg-A")
-    results_b = get_predictions_by_building(db_session, "bldg-B")
+    results_a = get_predictions_by_building(db_session, bid_a)
+    results_b = get_predictions_by_building(db_session, bid_b)
     assert len(results_a) == 2
     assert len(results_b) == 1
 
