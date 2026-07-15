@@ -104,3 +104,43 @@ def create_tables() -> None:
     """Create all ORM tables if they do not already exist."""
     Base.metadata.create_all(bind=engine)
     logger.info("Database tables ensured.")
+
+
+class ModelMetrics(Base):
+    """Snapshot of model training metrics after each retrain."""
+
+    __tablename__ = "model_metrics"
+
+    id: int = Column(Integer, primary_key=True, index=True)
+    model_version: str = Column(String(32), nullable=False, index=True)
+    r2_mean: float = Column(Float)
+    r2_std: float = Column(Float)
+    mae_kwh: float = Column(Float)
+    rmse_mean: float = Column(Float)
+    n_samples: int = Column(Integer)
+    n_features: int = Column(Integer)
+    trained_at: datetime = Column(DateTime, default=datetime.utcnow, index=True)
+
+
+def get_predictions_by_building(
+    db: Session,
+    building_id: str,
+    limit: int = 100,
+) -> list[PredictionLog]:
+    """Return the most recent prediction log entries for a specific building.
+
+    Args:
+        db: Active SQLAlchemy session.
+        building_id: Building identifier to filter on.
+        limit: Maximum number of rows to return.
+
+    Returns:
+        List of PredictionLog ORM objects, newest first.
+    """
+    return (
+        db.query(PredictionLog)
+        .filter(PredictionLog.building_id == building_id)
+        .order_by(PredictionLog.created_at.desc())
+        .limit(limit)
+        .all()
+    )
