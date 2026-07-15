@@ -200,3 +200,34 @@ def test_amenity_composite_uses_weights(school, transit, walk, single_row) -> No
     expected = (school * _SCHOOL_WEIGHT + transit * _TRANSIT_WEIGHT + walk * _WALK_WEIGHT) / _AMENITY_SCALE
     import pytest as _pytest
     assert result["amenity_composite"].iloc[0] == _pytest.approx(expected, rel=1e-3)
+
+
+def test_interaction_extractor_creates_columns() -> None:
+    from app.features import InteractionFeatureExtractor
+    df = _base_df(10)
+    tx = InteractionFeatureExtractor()
+    out = tx.fit_transform(df)
+    assert "temperature_c_x_occupancy" in out.columns
+
+
+def test_interaction_extractor_values_correct() -> None:
+    from app.features import InteractionFeatureExtractor
+    df = _base_df(5)
+    out = InteractionFeatureExtractor().fit_transform(df)
+    expected = df["temperature_c"] * df["occupancy"]
+    assert (out["temperature_c_x_occupancy"].values == expected.values).all()
+
+
+def test_interaction_extractor_missing_column_skipped() -> None:
+    from app.features import InteractionFeatureExtractor
+    df = pd.DataFrame({"temperature_c": [20.0, 25.0]})
+    out = InteractionFeatureExtractor().fit_transform(df)
+    assert "temperature_c_x_occupancy" not in out.columns
+
+
+def test_interaction_extractor_is_stateless() -> None:
+    from app.features import InteractionFeatureExtractor
+    tx = InteractionFeatureExtractor()
+    df = _base_df(4)
+    tx.fit(df)
+    assert hasattr(tx, "available_pairs_")
