@@ -55,3 +55,29 @@ def configure_logging(level: str = "INFO", json_output: bool = False) -> None:
     root.addHandler(handler)
     logging.getLogger("uvicorn.access").setLevel(logging.WARNING)
     logging.getLogger("sqlalchemy.engine").setLevel(logging.WARNING)
+
+
+class TraceIdFilter(logging.Filter):
+    """Inject a trace_id field into every log record that lacks one."""
+
+    def __init__(self, trace_id: str = "") -> None:
+        super().__init__()
+        self.trace_id = trace_id
+
+    def filter(self, record: logging.LogRecord) -> bool:
+        if not hasattr(record, "trace_id"):
+            record.trace_id = self.trace_id  # type: ignore[attr-defined]
+        return True
+
+
+def add_trace_id_filter(logger: logging.Logger, trace_id: str = "") -> None:
+    """Attach a TraceIdFilter to *logger* so every record carries a trace_id.
+
+    Args:
+        logger: The logger instance to configure.
+        trace_id: The trace identifier to stamp on records (e.g. a request UUID).
+    """
+    for handler in logger.handlers:
+        handler.addFilter(TraceIdFilter(trace_id=trace_id))
+    if not logger.handlers:
+        logger.addFilter(TraceIdFilter(trace_id=trace_id))
