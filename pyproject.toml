@@ -63,3 +63,20 @@ no_implicit_optional = true
 [tool.setuptools.packages.find]
 where = ["."]
 include = ["app*"]
+
+[tool.coverage.run]
+source = ["app"]
+omit = ["tests/*", "scripts/*", "pipelines/*"]
+branch = true
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "raise NotImplementedError",
+    "if TYPE_CHECKING:",
+    "if __name__ == .__main__.:",
+]
+show_missing = true
+skip_covered = false
+fail_under = 60
