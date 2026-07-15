@@ -38,7 +38,7 @@
         "docs(features.py): fit/transform docstrings for all 5 transformers",
         "refactor(faiss_index.py): clear() method, typed sims list, docstrings",
         "refactor(similarity.py): add() docstring, size property, get_global_index()",
-        "docs(logging_config.py): fixed module docstring (Volt-Cast → Watt-Guard)",
+        "docs(logging_config.py): fixed module docstring (Volt-Cast \u2192 Watt-Guard)",
         "docs(schemas.py): class docstrings, add VersionResponse schema",
         "docs(conftest.py): fixture docstrings, type-annotate create_test_db",
         "docs(retrain_dag.py): Google-style docstrings to all DAG task functions",
@@ -69,7 +69,10 @@
       ]
     },
     "files_changed": 40,
-    "new_docs": ["docs/monitoring.md", "docs/development.md"],
+    "new_docs": [
+      "docs/monitoring.md",
+      "docs/development.md"
+    ],
     "lint_status": "ruff: passed",
     "push_status": "success"
   },
@@ -221,6 +224,71 @@
       "scripts/foundry_sync.py"
     ],
     "lint_status": "ruff: passed",
+    "push_status": "success"
+  },
+  {
+    "repo": "reflective-lantern",
+    "last_run": "2026-07-15",
+    "date": "2026-07-15",
+    "mode": "IMPROVEMENT",
+    "commits": 60,
+    "pushed_to": "main",
+    "tests_passed": true,
+    "email_status": "pending",
+    "tiers": {
+      "Source (1-17)": [
+        "app/anomaly.py: batch_compute_severity(), anomaly_rate(), top_anomalies()",
+        "app/cache.py: thread-safe TTLCache with RLock, __contains__, stats()",
+        "app/validation.py: validate_building_id, validate_batch_size, validate_consumption_kwh, validate_feature_vector",
+        "app/regions.py: 5 new regions, get_all_region_ids, get_region_timezone, get_peak_load",
+        "app/investment.py: mortgage_payment, roi_percentage, price_to_income_ratio",
+        "app/reporting.py: energy_efficiency_grade, monthly_consumption_summary, consumption_trend",
+        "app/market_context.py: rent_vs_buy_comparison, price_trend_indicator, housing_affordability_index",
+        "app/similarity.py: euclidean_distance, batch_add",
+        "app/mlflow_stub.py: set_tracking_uri, log_params, log_artifact, list_runs",
+        "app/model.py: get_feature_importance averaging VotingRegressor sub-estimators",
+        "app/monitoring.py: get_anomaly_stats, compute_feature_drift_summary",
+        "app/schemas.py: FeatureImportanceResponse, AnomalyStatsResponse, SavingsRequest/Response",
+        "app/main.py: /feature-importance, /anomaly/stats, /savings, /efficiency-grade endpoints",
+        "app/database.py: ModelMetrics ORM table, get_predictions_by_building",
+        "config/settings.py: to_dict(), missing_optional()",
+        "config/constants.py: ML/API/batch limit constants",
+        "config/mode.py: upcoming_innovation_days(), mode_schedule()"
+      ],
+      "Source (18-40)": [
+        "app/features.py: InteractionFeatureExtractor for pairwise feature products",
+        "app/faiss_index.py: reset(), __len__, save_vectors() on LoadPatternIndex",
+        "app/aws_stub.py: delete_artefact helper, fixed __all__",
+        "app/logging_config.py: TraceIdFilter, add_trace_id_filter",
+        "app/time_series.py: cumulative_consumption, resample_hourly_to_daily",
+        "pipelines/retrain_dag.py: check_drift_before_retrain KS-test gate",
+        "scripts/summarize_history.py: export_to_csv function",
+        ".github/workflows/ci.yml: Python 3.12 matrix, coverage XML artifact upload",
+        ".github/ISSUE_TEMPLATE/bug_report.md: bug report issue template",
+        ".github/ISSUE_TEMPLATE/feature_request.md: feature request issue template",
+        "Makefile: coverage-xml, profile targets",
+        "pyproject.toml: coverage run and report config",
+        "CHANGELOG.md: v1.2.0 entry"
+      ],
+      "Tests (41-60)": [
+        "test_features.py: InteractionFeatureExtractor tests",
+        "test_mlflow_stub.py: delete_artefact tests, set_tracking_uri, log_params, list_runs",
+        "test_logging_config.py: TraceIdFilter, add_trace_id_filter tests",
+        "test_retrain_dag.py: check_drift_before_retrain tests",
+        "test_faiss_index.py: __len__, reset, save_vectors tests",
+        "test_summarize_history.py: export_to_csv tests",
+        "test_time_series.py: cumulative_consumption, resample_hourly_to_daily tests",
+        "test_market_context.py: housing_affordability_index tests",
+        "test_reporting.py: consumption_trend tests, grade threshold fixes",
+        "test_validation.py: building_id length, consumption bounds edge cases",
+        "test_investment.py: mortgage zero-rate, parametrized term, down payment tests",
+        "test_regions.py: new region ids, timezone, peak_load tests",
+        "test_anomaly.py: top_anomalies sorter tests",
+        "test_database.py: get_predictions_by_building isolation fix"
+      ]
+    },
+    "files_changed": 97,
+    "lint_status": "ruff: autofix applied",
     "push_status": "success"
   }
 ]
