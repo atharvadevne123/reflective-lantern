@@ -204,3 +204,41 @@ class TestValidateFeatureVector:
     def test_correct_dim(self):
         from app.validation import validate_feature_vector
         assert validate_feature_vector([1.0, 2.0, 3.0], expected_dim=3) == []
+
+
+class TestValidateBuildingIdEdgeCases:
+    def test_max_length_allowed(self):
+        from app.validation import validate_building_id, MAX_BUILDING_ID_LEN
+        bid = "x" * MAX_BUILDING_ID_LEN
+        assert validate_building_id(bid) == []
+
+    def test_over_max_length_rejected(self):
+        from app.validation import validate_building_id, MAX_BUILDING_ID_LEN
+        bid = "x" * (MAX_BUILDING_ID_LEN + 1)
+        assert len(validate_building_id(bid)) > 0
+
+    def test_alphanumeric_with_hyphens_valid(self):
+        from app.validation import validate_building_id
+        assert validate_building_id("bldg-001-main") == []
+
+    def test_special_chars_rejected(self):
+        from app.validation import validate_building_id
+        assert len(validate_building_id("bldg@001!")) > 0
+
+
+class TestValidateConsumptionEdgeCases:
+    def test_exact_zero_valid(self):
+        from app.validation import validate_consumption_kwh
+        assert validate_consumption_kwh(0.0) == []
+
+    def test_exact_max_valid(self):
+        from app.validation import validate_consumption_kwh, MAX_CONSUMPTION_KWH
+        assert validate_consumption_kwh(MAX_CONSUMPTION_KWH) == []
+
+    def test_above_max_rejected(self):
+        from app.validation import validate_consumption_kwh, MAX_CONSUMPTION_KWH
+        assert len(validate_consumption_kwh(MAX_CONSUMPTION_KWH + 1.0)) > 0
+
+    def test_negative_rejected(self):
+        from app.validation import validate_consumption_kwh
+        assert len(validate_consumption_kwh(-0.001)) > 0
