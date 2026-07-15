@@ -40,3 +40,46 @@ class TestRegionRegistry:
 
     def test_unknown_region_invalid(self):
         assert validate_region("unknown_grid") is False
+
+
+def test_get_all_region_ids_sorted():
+    from app.regions import get_all_region_ids
+    ids = get_all_region_ids()
+    assert ids == sorted(ids)
+
+
+def test_get_all_region_ids_contains_new_regions():
+    from app.regions import get_all_region_ids
+    ids = get_all_region_ids()
+    assert "pacific_nw" in ids
+    assert "new_england" in ids
+    assert "mountain" in ids
+    assert "southeast" in ids
+    assert "florida" in ids
+
+
+def test_get_region_timezone_known():
+    from app.regions import get_region_timezone
+    assert get_region_timezone("northeast") == "America/New_York"
+
+
+def test_get_region_timezone_unknown():
+    from app.regions import get_region_timezone
+    assert get_region_timezone("unknown_region") == "UTC"
+
+
+def test_get_peak_load_known():
+    from app.regions import get_peak_load
+    peak = get_peak_load("south")
+    assert peak == 14000.0
+
+
+def test_get_peak_load_unknown():
+    from app.regions import get_peak_load
+    assert get_peak_load("atlantis") is None
+
+
+@pytest.mark.parametrize("region_id", ["northeast", "midwest", "south", "west", "texas", "pacific_nw"])
+def test_validate_region_known(region_id):
+    from app.regions import validate_region
+    assert validate_region(region_id) is True
