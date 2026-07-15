@@ -112,3 +112,52 @@ def test_set_reference_window_truncates_to_500() -> None:
     from app.monitoring import _reference_window
     assert len(_reference_window) == 500
     assert _reference_window[0] == 500
+
+
+def test_get_anomaly_stats_empty_db(db_session):
+    from app.monitoring import get_anomaly_stats
+    stats = get_anomaly_stats(db_session)
+    assert stats["total_anomalies"] == 0
+    assert stats["anomaly_rate"] == 0.0
+
+
+def test_get_anomaly_stats_with_data(db_session):
+    from datetime import datetime
+
+    from app.database import AnomalyLog
+    from app.monitoring import get_anomaly_stats
+
+    for i, is_anomaly in enumerate([1, 0, 1]):
+        severity = "critical" if is_anomaly else "none"
+        entry = AnomalyLog(
+            building_id=f"bldg-{i}",
+            timestamp=datetime.utcnow(),
+            consumption_kwh=10.0 + i,
+            anomaly_score=-0.3 - i * 0.1,
+            is_anomaly=is_anomaly,
+            severity=severity,
+        )
+        db_session.add(entry)
+    db_session.commit()
+    stats = get_anomaly_stats(db_session)
+    assert stats["total_anomalies"] == 3
+    assert stats["critical_count"] == 2
+
+
+def test_compute_feature_drift_summary_no_reference():
+    from app.monitoring import compute_feature_drift_summary, reset_reference_window
+    reset_reference_window()
+    result = compute_feature_drift_summary({"temp": [20.0, 21.0, 22.0, 23.0, 24.0, 25.0, 26.0, 27.0, 28.0, 29.0]})
+    assert len(result) == 1
+    assert result[0]["feature"] == "temp"
+
+
+def test_compute_feature_drift_summary_with_reference():
+    from app.monitoring import compute_feature_drift_summary
+    ref = [10.0 + i * 0.1 for i in range(50)]
+    current = {"temp": [20.0 + i * 0.1 for i in range(20)]}
+    result = compute_feature_drift_summary(current, reference=ref)
+    assert len(result) == 1
+    assert "ks_statistic" in result[0]
+    assert "p_value" in result[0]
+    assert "drift_detected" in result[0]
