@@ -56,6 +56,95 @@ def validate_load_series(loads: list[float]) -> list[str]:
     return errors
 
 
+MAX_BUILDING_ID_LEN = 64
+MAX_BATCH_SIZE = 100
+MAX_FEATURE_VECTOR_DIM = 512
+MIN_CONSUMPTION_KWH = 0.0
+MAX_CONSUMPTION_KWH = 100_000.0
+
+
+def validate_building_id(building_id: str) -> list[str]:
+    """Return validation errors for a building_id string.
+
+    Args:
+        building_id: Unique building identifier to validate.
+
+    Returns:
+        List of error strings (empty when valid).
+    """
+    errors = []
+    if not building_id:
+        errors.append("building_id must not be empty")
+    elif len(building_id) > MAX_BUILDING_ID_LEN:
+        errors.append(f"building_id exceeds max length {MAX_BUILDING_ID_LEN}")
+    elif not building_id.replace("-", "").replace("_", "").isalnum():
+        errors.append("building_id must be alphanumeric with hyphens/underscores only")
+    return errors
+
+
+def validate_batch_size(n: int) -> list[str]:
+    """Return validation errors when batch size *n* exceeds MAX_BATCH_SIZE.
+
+    Args:
+        n: Number of items in the batch.
+
+    Returns:
+        List of error strings (empty when valid).
+    """
+    if n > MAX_BATCH_SIZE:
+        return [f"batch size {n} exceeds maximum {MAX_BATCH_SIZE}"]
+    if n <= 0:
+        return [f"batch size must be positive, got {n}"]
+    return []
+
+
+def validate_consumption_kwh(value: float) -> list[str]:
+    """Return validation errors for a consumption_kwh reading.
+
+    Args:
+        value: Energy consumption value in kWh.
+
+    Returns:
+        List of error strings (empty when valid).
+    """
+    import math
+
+    errors = []
+    if not math.isfinite(value):
+        errors.append(f"consumption_kwh must be finite, got {value}")
+    elif not (MIN_CONSUMPTION_KWH <= value <= MAX_CONSUMPTION_KWH):
+        errors.append(
+            f"consumption_kwh must be {MIN_CONSUMPTION_KWH}..{MAX_CONSUMPTION_KWH}, got {value}"
+        )
+    return errors
+
+
+def validate_feature_vector(vector: list[float], expected_dim: int | None = None) -> list[str]:
+    """Return validation errors for a numeric feature vector.
+
+    Args:
+        vector: List of float values representing a feature vector.
+        expected_dim: When provided, check the vector has this exact length.
+
+    Returns:
+        List of error strings (empty when valid).
+    """
+    import math
+
+    errors = []
+    if not vector:
+        errors.append("feature vector must not be empty")
+        return errors
+    if len(vector) > MAX_FEATURE_VECTOR_DIM:
+        errors.append(f"feature vector dim {len(vector)} exceeds max {MAX_FEATURE_VECTOR_DIM}")
+    if expected_dim is not None and len(vector) != expected_dim:
+        errors.append(f"expected feature vector dim {expected_dim}, got {len(vector)}")
+    non_finite = [i for i, v in enumerate(vector) if not math.isfinite(v)]
+    if non_finite:
+        errors.append(f"non-finite values at indices: {non_finite[:5]}")
+    return errors
+
+
 def is_weekend(day_of_week: int) -> bool:
     """Return True if day_of_week is Saturday (5) or Sunday (6)."""
     return day_of_week >= 5
