@@ -162,3 +162,29 @@ def batch_add(index: BuildingSimilarityIndex, profiles: list[tuple[str, list[flo
         except Exception:
             logger.exception("Failed to add profile for building %s", building_id)
     return added
+
+
+def hourly_pattern_distance(profile_a: list[float], profile_b: list[float]) -> float:
+    """Compute the mean absolute error between two 24-hour load profiles.
+
+    Both profiles must have the same length.  This metric is more interpretable
+    than cosine distance when comparing hourly energy patterns because it
+    preserves the magnitude (kWh) differences across the day.
+
+    Args:
+        profile_a: First hourly load profile (kWh per hour).
+        profile_b: Second hourly load profile (kWh per hour).
+
+    Returns:
+        Mean absolute difference in kWh per hour.
+
+    Raises:
+        ValueError: If the profiles have different lengths or are empty.
+    """
+    if not profile_a or not profile_b:
+        raise ValueError("profiles must not be empty")
+    if len(profile_a) != len(profile_b):
+        raise ValueError(
+            f"profiles must have the same length: {len(profile_a)} != {len(profile_b)}"
+        )
+    return sum(abs(a - b) for a, b in zip(profile_a, profile_b)) / len(profile_a)
