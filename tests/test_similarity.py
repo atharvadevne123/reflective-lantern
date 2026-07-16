@@ -130,3 +130,55 @@ def test_batch_add_empty():
 
     idx = BuildingSimilarityIndex()
     assert batch_add(idx, []) == 0
+
+
+def test_score_distribution_empty_index():
+    from app.similarity import BuildingSimilarityIndex, score_distribution
+
+    idx = BuildingSimilarityIndex()
+    result = score_distribution(idx, [1.0, 0.0, 0.0])
+    assert result == {"min": 0.0, "max": 0.0, "mean": 0.0, "std": 0.0}
+
+
+def test_score_distribution_single_profile():
+    from app.similarity import BuildingSimilarityIndex, score_distribution
+
+    idx = BuildingSimilarityIndex()
+    idx.add("b1", [1.0, 0.0])
+    result = score_distribution(idx, [1.0, 0.0])
+    assert result["max"] == pytest.approx(1.0, abs=1e-3)
+    assert result["min"] == result["max"]
+
+
+def test_score_distribution_keys():
+    from app.similarity import BuildingSimilarityIndex, score_distribution
+
+    idx = BuildingSimilarityIndex()
+    idx.add("b1", [1.0, 0.0])
+    idx.add("b2", [0.0, 1.0])
+    result = score_distribution(idx, [1.0, 0.0])
+    assert set(result.keys()) == {"min", "max", "mean", "std"}
+
+
+def test_score_distribution_min_le_max():
+    from app.similarity import BuildingSimilarityIndex, score_distribution
+
+    idx = BuildingSimilarityIndex()
+    for i in range(5):
+        idx.add(f"b{i}", [float(i), float(i + 1), 0.5])
+    result = score_distribution(idx, [1.0, 2.0, 0.5])
+    assert result["min"] <= result["max"]
+
+
+@pytest.mark.parametrize("n", [1, 5, 10, 50])
+def test_score_distribution_various_sizes(n):
+    import numpy as np
+    from app.similarity import BuildingSimilarityIndex, score_distribution
+
+    rng = np.random.default_rng(42)
+    idx = BuildingSimilarityIndex()
+    for i in range(n):
+        idx.add(f"b{i}", rng.uniform(0, 1, 8).tolist())
+    query = rng.uniform(0, 1, 8).tolist()
+    result = score_distribution(idx, query)
+    assert -1.0 <= result["min"] <= result["max"] <= 1.0
