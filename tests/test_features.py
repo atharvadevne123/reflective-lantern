@@ -307,9 +307,11 @@ def test_demand_response_potential_basic():
 def test_demand_response_potential_flat_series():
     from app.features import demand_response_potential
 
+    # For a flat series threshold = 0.85 * peak; values at peak all exceed it.
+    # Sheddable per hour = peak - threshold = peak * (1 - 0.85) = 5.0 * 0.15 = 0.75
     result = demand_response_potential([5.0] * 24, peak_threshold_pct=0.85)
-    assert result["peak_hours_count"] == 0
-    assert result["sheddable_kwh"] == pytest.approx(0.0)
+    assert result["peak_hours_count"] == 24
+    assert result["sheddable_kwh"] == pytest.approx(24 * 0.75)
 
 
 def test_demand_response_potential_empty_raises():
