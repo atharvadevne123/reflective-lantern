@@ -179,3 +179,41 @@ def test_ema_various_alphas(alpha):
     data = [float(i) for i in range(20)]
     result = exponential_moving_average(data, alpha=alpha)
     assert len(result) == 20
+
+
+def test_forecast_trend_with_seasonality_length():
+    from app.time_series import forecast_trend_with_seasonality
+
+    data = [float(i % 24) for i in range(72)]
+    result = forecast_trend_with_seasonality(data, horizon=12, period=24)
+    assert len(result) == 12
+
+
+def test_forecast_trend_with_seasonality_non_negative():
+    from app.time_series import forecast_trend_with_seasonality
+
+    data = [10.0 + i * 0.1 for i in range(48)]
+    result = forecast_trend_with_seasonality(data, horizon=24, period=24)
+    assert all(v >= 0 for v in result)
+
+
+def test_forecast_trend_with_seasonality_empty_input():
+    from app.time_series import forecast_trend_with_seasonality
+
+    assert forecast_trend_with_seasonality([], horizon=10) == []
+
+
+def test_forecast_trend_with_seasonality_zero_horizon():
+    from app.time_series import forecast_trend_with_seasonality
+
+    data = list(range(48))
+    assert forecast_trend_with_seasonality(data, horizon=0) == []
+
+
+@pytest.mark.parametrize("horizon,period", [(6, 12), (24, 24), (48, 24), (7, 7)])
+def test_forecast_trend_with_seasonality_parametrized(horizon, period):
+    from app.time_series import forecast_trend_with_seasonality
+
+    data = [float(i % period) * 2 + 5 for i in range(4 * period)]
+    result = forecast_trend_with_seasonality(data, horizon=horizon, period=period)
+    assert len(result) == horizon
