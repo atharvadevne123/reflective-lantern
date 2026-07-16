@@ -21,3 +21,6 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); version
 - pytest suite covering API, model, features, and monitoring.
 - GitHub Actions CI: ruff lint, format check, pytest.
 - Architecture diagram generator (matplotlib).
+- Root service banner, `/api/v1/model-info` metadata endpoint, and health uptime reporting.
+- GZip response compression and validation-error logging with correlation IDs.
+- CLI training entry (`scripts/train.py`) and demo client (`scripts/demo_request.py`).
