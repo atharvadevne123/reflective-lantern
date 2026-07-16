@@ -121,6 +121,29 @@ def cumulative_consumption(values: list[float]) -> list[float]:
     return result
 
 
+def exponential_moving_average(values: list[float], alpha: float = 0.3) -> list[float]:
+    """Compute an exponential moving average with smoothing factor *alpha*.
+
+    Args:
+        values: Time-ordered consumption readings.
+        alpha: Smoothing factor in (0, 1]; higher values weight recent obs more.
+
+    Returns:
+        EMA series of the same length as *values*.
+
+    Raises:
+        ValueError: If *alpha* is not in (0, 1].
+    """
+    if not (0 < alpha <= 1.0):
+        raise ValueError(f"alpha must be in (0, 1], got {alpha}")
+    if not values:
+        return []
+    result = [values[0]]
+    for v in values[1:]:
+        result.append(alpha * v + (1 - alpha) * result[-1])
+    return [round(x, 6) for x in result]
+
+
 def resample_hourly_to_daily(hourly: list[float]) -> list[float]:
     """Aggregate hourly readings into daily totals.
 
