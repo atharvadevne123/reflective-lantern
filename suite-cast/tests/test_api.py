@@ -135,3 +135,49 @@ def test_metrics_endpoint_has_drift_key(client):
     body = client.get("/api/v1/metrics").json()
     assert "drift" in body
     assert "ks_statistic" in body["drift"]
+
+
+def test_correlation_id_header_propagated(client, sample_booking_dict):
+    resp = client.post(
+        "/api/v1/predict",
+        json=sample_booking_dict,
+        headers={"X-Correlation-ID": "test-corr-123"},
+    )
+    assert resp.headers.get("X-Correlation-ID") == "test-corr-123"
+
+
+def test_correlation_id_generated_when_absent(client, sample_booking_dict):
+    resp = client.post("/api/v1/predict", json=sample_booking_dict)
+    assert "X-Correlation-ID" in resp.headers
+
+
+def test_predict_suite_room_type(client, sample_booking_dict):
+    payload = {**sample_booking_dict, "room_type": "suite"}
+    resp = client.post("/api/v1/predict", json=payload)
+    assert resp.status_code == 200
+
+
+def test_predict_last_minute_booking(client, sample_booking_dict):
+    payload = {**sample_booking_dict, "lead_time": 0}
+    resp = client.post("/api/v1/predict", json=payload)
+    assert resp.status_code == 200
+
+
+def test_predict_far_advance_booking(client, sample_booking_dict):
+    payload = {**sample_booking_dict, "lead_time": 365}
+    resp = client.post("/api/v1/predict", json=payload)
+    assert resp.status_code == 200
+
+
+def test_predict_high_occupancy_scenario(client, sample_booking_dict):
+    payload = {
+        **sample_booking_dict,
+        "current_occ_rate": 0.95,
+        "checkin_month": 7,
+        "special_event": 1,
+    }
+    resp = client.post("/api/v1/predict", json=payload)
+    assert resp.status_code == 200
+    body = resp.json()
+    # High demand scenario should yield medium or high tier
+    assert body["demand_tier"] in {"medium", "high"}
