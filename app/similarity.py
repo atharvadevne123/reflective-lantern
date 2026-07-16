@@ -119,6 +119,31 @@ def euclidean_distance(a: list[float] | np.ndarray, b: list[float] | np.ndarray)
     return round(float(np.linalg.norm(va - vb)), 6)
 
 
+def score_distribution(
+    index: BuildingSimilarityIndex,
+    query: list[float],
+) -> dict[str, float]:
+    """Return summary statistics of cosine similarity scores for all profiles.
+
+    Args:
+        index: BuildingSimilarityIndex to search against.
+        query: Query feature vector.
+
+    Returns:
+        Dict with 'min', 'max', 'mean', 'std' similarity scores, or zeros if empty.
+    """
+    if not index.size:
+        return {"min": 0.0, "max": 0.0, "mean": 0.0, "std": 0.0}
+    results = index.search(query, k=index.size)
+    scores = np.array([s for _, s in results], dtype=float)
+    return {
+        "min": round(float(scores.min()), 4),
+        "max": round(float(scores.max()), 4),
+        "mean": round(float(scores.mean()), 4),
+        "std": round(float(scores.std()), 4),
+    }
+
+
 def batch_add(index: BuildingSimilarityIndex, profiles: list[tuple[str, list[float]]]) -> int:
     """Add multiple building profiles to *index* in one call.
 
