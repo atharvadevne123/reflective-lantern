@@ -371,3 +371,57 @@ def test_validate_forecast_horizon_parametrized(horizon, expected_valid):
 
     errors = validate_forecast_horizon(horizon)
     assert (len(errors) == 0) == expected_valid
+
+
+def test_is_valid_temporal_input_valid():
+    from app.validation import is_valid_temporal_input
+
+    assert is_valid_temporal_input(12, 3, 6) is True
+
+
+def test_is_valid_temporal_input_bad_hour():
+    from app.validation import is_valid_temporal_input
+
+    assert is_valid_temporal_input(25, 3, 6) is False
+
+
+def test_is_valid_temporal_input_bad_month():
+    from app.validation import is_valid_temporal_input
+
+    assert is_valid_temporal_input(0, 0, 13) is False
+
+
+def test_is_valid_temporal_input_bad_dow():
+    from app.validation import is_valid_temporal_input
+
+    assert is_valid_temporal_input(0, 7, 1) is False
+
+
+def test_clamp_consumption_within_range():
+    from app.validation import clamp_consumption
+
+    assert clamp_consumption(500.0) == pytest.approx(500.0)
+
+
+def test_clamp_consumption_below_min():
+    from app.validation import clamp_consumption
+
+    assert clamp_consumption(-10.0) == pytest.approx(0.0)
+
+
+def test_clamp_consumption_above_max():
+    from app.validation import clamp_consumption
+
+    assert clamp_consumption(999_999.0) == pytest.approx(100_000.0)
+
+
+@pytest.mark.parametrize("hour,dow,month,expected", [
+    (0, 0, 1, True),
+    (23, 6, 12, True),
+    (24, 0, 1, False),
+    (0, 0, 0, False),
+])
+def test_is_valid_temporal_input_parametrized(hour, dow, month, expected):
+    from app.validation import is_valid_temporal_input
+
+    assert is_valid_temporal_input(hour, dow, month) is expected
