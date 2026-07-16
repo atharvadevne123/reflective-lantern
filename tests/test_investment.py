@@ -232,7 +232,6 @@ def test_mortgage_payment_positive():
 def test_mortgage_payment_zero_rate():
     from app.investment import mortgage_payment
 
-    loan = 120_000  # 80% of 150k
     payment = mortgage_payment(150_000, annual_rate=0.0, term_years=10, down_payment_pct=0.20)
     # loan / (10*12) = 120000 / 120 = 1000
     assert payment == pytest.approx(1000.0, rel=1e-4)
