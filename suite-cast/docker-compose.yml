@@ -1,0 +1,41 @@
+version: "3.9"
+
+services:
+  api:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      DATABASE_URL: postgresql://suite_cast:suite_cast_pw@db:5432/suite_cast
+      MODEL_VERSION: "1.0.0"
+      BASE_ROOM_RATE: "150.0"
+      RATE_LIMIT_PER_MINUTE: "60"
+      LOG_LEVEL: INFO
+      ENVIRONMENT: production
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+    volumes:
+      - model_artifacts:/app/artifacts
+
+  db:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: suite_cast
+      POSTGRES_PASSWORD: suite_cast_pw
+      POSTGRES_DB: suite_cast
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U suite_cast"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  model_artifacts:
