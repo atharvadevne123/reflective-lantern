@@ -210,3 +210,32 @@ def validate_forecast_horizon(horizon: int, max_horizon: int = MAX_FORECAST_HORI
     if horizon > max_horizon:
         errors.append(f"horizon {horizon} exceeds maximum {max_horizon}")
     return errors
+
+
+def is_valid_temporal_input(hour: int, day_of_week: int, month: int) -> bool:
+    """Return True if all temporal fields pass validation with no errors.
+
+    A convenience wrapper around :func:`validate_temporal_fields` for callers
+    that need a simple boolean result rather than a list of error messages.
+
+    Args:
+        hour: Hour of day (0-23).
+        day_of_week: Day of week (0=Monday … 6=Sunday).
+        month: Month of year (1-12).
+
+    Returns:
+        True when all fields are valid, False otherwise.
+    """
+    return not validate_temporal_fields(hour, day_of_week, month)
+
+
+def clamp_consumption(value: float) -> float:
+    """Clamp *value* to the valid consumption range [MIN_CONSUMPTION_KWH, MAX_CONSUMPTION_KWH].
+
+    Args:
+        value: Raw consumption reading that may be out of range.
+
+    Returns:
+        Clamped float within [0.0, 100000.0].
+    """
+    return max(MIN_CONSUMPTION_KWH, min(value, MAX_CONSUMPTION_KWH))
