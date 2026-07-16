@@ -291,3 +291,20 @@ def summarize_drift_history(drift_results: list[dict[str, Any]]) -> dict[str, An
         "mean_ks_statistic": round(sum(ks_values) / total, 4),
         "min_p_value": round(min(p_values), 4),
     }
+
+
+def get_reference_window_size() -> int:
+    """Return the current number of samples in the in-memory reference window."""
+    return len(_reference_window)
+
+
+def is_reference_window_ready(min_samples: int = 10) -> bool:
+    """Return True if the reference window has at least *min_samples* readings.
+
+    Args:
+        min_samples: Minimum number of samples required (default 10).
+
+    Returns:
+        True if the window is large enough for drift detection.
+    """
+    return len(_reference_window) >= min_samples
