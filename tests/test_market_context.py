@@ -449,3 +449,57 @@ def test_price_trend_consistency_parametrized(prices, expected_trend):
 
     result = price_trend_consistency(prices)
     assert result["trend"] == expected_trend
+
+
+def test_market_summary_keys():
+    from app.market_context import market_summary
+
+    result = market_summary(500_000, 30_000, 20, 1500)
+    assert set(result.keys()) >= {"price_per_sqft", "dom", "dom_classification", "price_to_rent_ratio", "affordability"}
+
+
+def test_market_summary_price_per_sqft():
+    from app.market_context import market_summary
+
+    result = market_summary(500_000, 30_000, 20, 1000)
+    assert result["price_per_sqft"] == pytest.approx(500.0)
+
+
+def test_market_summary_dom_classification_fast():
+    from app.market_context import market_summary
+
+    result = market_summary(400_000, 24_000, 5, 1200)
+    assert result["dom_classification"] == "fast"
+
+
+def test_market_summary_dom_classification_slow():
+    from app.market_context import market_summary
+
+    result = market_summary(400_000, 24_000, 90, 1200)
+    assert result["dom_classification"] == "slow"
+
+
+def test_market_summary_ptr_ratio():
+    from app.market_context import market_summary
+
+    result = market_summary(300_000, 20_000, 30, 1200)
+    assert result["price_to_rent_ratio"] == pytest.approx(15.0)
+
+
+def test_market_summary_zero_sqft():
+    from app.market_context import market_summary
+
+    result = market_summary(500_000, 30_000, 30, 0)
+    assert result["price_per_sqft"] == 0.0
+
+
+@pytest.mark.parametrize("listing_days,expected_dom", [
+    (10, "fast"),
+    (30, "normal"),
+    (75, "slow"),
+])
+def test_market_summary_dom_parametrized(listing_days, expected_dom):
+    from app.market_context import market_summary
+
+    result = market_summary(400_000, 24_000, listing_days, 1000)
+    assert result["dom_classification"] == expected_dom
