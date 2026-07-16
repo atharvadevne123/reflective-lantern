@@ -188,3 +188,25 @@ def extract_temporal_from_datetime(dt: datetime) -> dict[str, object]:
         "month": dt.month,
         "is_weekend": is_weekend(dt.weekday()),
     }
+
+
+MAX_FORECAST_HORIZON = 8760  # one year of hourly data
+MIN_FORECAST_HORIZON = 1
+
+
+def validate_forecast_horizon(horizon: int, max_horizon: int = MAX_FORECAST_HORIZON) -> list[str]:
+    """Return validation errors for a forecast horizon value.
+
+    Args:
+        horizon: Number of future steps to forecast.
+        max_horizon: Maximum allowed horizon (default 8760 = 1 year of hours).
+
+    Returns:
+        List of error strings (empty when valid).
+    """
+    errors = []
+    if horizon < MIN_FORECAST_HORIZON:
+        errors.append(f"horizon must be at least {MIN_FORECAST_HORIZON}, got {horizon}")
+    if horizon > max_horizon:
+        errors.append(f"horizon {horizon} exceeds maximum {max_horizon}")
+    return errors
