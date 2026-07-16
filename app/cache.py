@@ -20,6 +20,7 @@ class TTLCache:
         self._lock = threading.RLock()
         self.hits = 0
         self.misses = 0
+        self.evictions = 0
 
     def get(self, key: str) -> Any | None:
         """Return the cached value for *key*, or None if absent or expired."""
@@ -45,6 +46,7 @@ class TTLCache:
             if len(self._store) >= self._max:
                 oldest = min(self._store, key=lambda k: self._store[k][1])
                 del self._store[oldest]
+                self.evictions += 1
             self._store[key] = (value, time.monotonic() + self._ttl)
 
     def invalidate(self, key: str) -> None:
@@ -53,11 +55,12 @@ class TTLCache:
             self._store.pop(key, None)
 
     def clear(self) -> None:
-        """Empty the cache and reset hit/miss counters."""
+        """Empty the cache and reset hit/miss/eviction counters."""
         with self._lock:
             self._store.clear()
             self.hits = 0
             self.misses = 0
+            self.evictions = 0
 
     def evict_expired(self) -> int:
         """Remove all expired entries and return the count removed."""
@@ -72,6 +75,11 @@ class TTLCache:
         """Return True if *key* is present and not expired."""
         return self.get(key) is not None
 
+    @property
+    def eviction_count(self) -> int:
+        """Total number of LRU evictions since creation or last clear()."""
+        return self.evictions
+
     def stats(self) -> dict[str, Any]:
         """Return a snapshot of cache statistics."""
         with self._lock:
@@ -81,6 +89,7 @@ class TTLCache:
                 "ttl_seconds": self._ttl,
                 "hits": self.hits,
                 "misses": self.misses,
+                "evictions": self.evictions,
                 "hit_rate": self.hit_rate,
             }
 
