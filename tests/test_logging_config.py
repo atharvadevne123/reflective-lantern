@@ -301,3 +301,57 @@ def test_add_trace_id_filter_no_handlers_uses_logger() -> None:
     add_trace_id_filter(logger, trace_id="req-abc")
     assert any(isinstance(f, TraceIdFilter) for f in logger.filters)
     logger.filters.clear()
+
+
+def test_log_level_int_info() -> None:
+    from app.logging_config import log_level_int
+
+    assert log_level_int("INFO") == 20
+
+
+def test_log_level_int_debug() -> None:
+    from app.logging_config import log_level_int
+
+    assert log_level_int("DEBUG") == 10
+
+
+def test_log_level_int_warning() -> None:
+    from app.logging_config import log_level_int
+
+    assert log_level_int("WARNING") == 30
+
+
+def test_log_level_int_invalid_raises() -> None:
+    import pytest
+
+    from app.logging_config import log_level_int
+
+    with pytest.raises(ValueError, match="Unknown log level"):
+        log_level_int("NOTAVALIDLEVEL")
+
+
+def test_get_configured_log_level_returns_int() -> None:
+    from app.logging_config import get_configured_log_level
+
+    level = get_configured_log_level()
+    assert isinstance(level, int)
+
+
+def test_is_debug_enabled_returns_bool() -> None:
+    from app.logging_config import is_debug_enabled
+
+    result = is_debug_enabled()
+    assert isinstance(result, bool)
+
+
+@pytest.mark.parametrize("level_name,expected", [
+    ("DEBUG", 10),
+    ("INFO", 20),
+    ("WARNING", 30),
+    ("ERROR", 40),
+    ("CRITICAL", 50),
+])
+def test_log_level_int_parametrized(level_name, expected) -> None:
+    from app.logging_config import log_level_int
+
+    assert log_level_int(level_name) == expected
