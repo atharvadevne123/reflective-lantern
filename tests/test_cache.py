@@ -161,3 +161,49 @@ def test_eviction_count_parametrized(max_size, n_inserts, expected_evictions):
     for i in range(n_inserts):
         c.set(f"k_{i}", i)
     assert c.eviction_count == expected_evictions
+
+
+def test_warm_cache_inserts_entries():
+    from app.cache import TTLCache, warm_cache
+
+    c = TTLCache(ttl_seconds=60, max_size=100)
+    count = warm_cache(c, {"a": 1, "b": 2, "c": 3})
+    assert count == 3
+    assert c.get("a") == 1
+    assert c.get("b") == 2
+    assert c.get("c") == 3
+
+
+def test_warm_cache_empty_dict():
+    from app.cache import TTLCache, warm_cache
+
+    c = TTLCache(ttl_seconds=60, max_size=100)
+    count = warm_cache(c, {})
+    assert count == 0
+
+
+def test_warm_cache_returns_insert_count():
+    from app.cache import TTLCache, warm_cache
+
+    c = TTLCache(ttl_seconds=60, max_size=100)
+    entries = {f"key_{i}": i for i in range(10)}
+    count = warm_cache(c, entries)
+    assert count == 10
+
+
+def test_warm_cache_overwrite_existing():
+    from app.cache import TTLCache, warm_cache
+
+    c = TTLCache(ttl_seconds=60, max_size=100)
+    c.set("x", "old")
+    warm_cache(c, {"x": "new"})
+    assert c.get("x") == "new"
+
+
+@pytest.mark.parametrize("n", [1, 5, 20])
+def test_warm_cache_parametrized_count(n):
+    from app.cache import TTLCache, warm_cache
+
+    c = TTLCache(ttl_seconds=60, max_size=100)
+    entries = {str(i): i * 10 for i in range(n)}
+    assert warm_cache(c, entries) == n
