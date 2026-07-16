@@ -110,3 +110,48 @@ Aggregated prediction stats and the current drift report:
 }
 ```
 
+## Architecture
+
+![Architecture](screenshots/architecture.png)
+
+**Flow**: booking request → Pydantic validation → 18-feature engineering pipeline → scaled → XGBoost + LightGBM ensemble → demand score → price multiplier → response. Each prediction is written to the `predictions` table; the `/metrics` endpoint compares the last 50 production scores against the training reference distribution with a two-sample KS test (drift flagged at p < 0.05). The Airflow DAG retrains weekly, promoting the challenger only when its cross-validated AUC beats the champion by > 0.005.
+
+### Feature set (18)
+
+| Group | Features |
+|---|---|
+| Raw temporal | `lead_time`, `checkin_month`, `checkin_dayofweek`, `is_weekend` |
+| Stay profile | `length_of_stay`, `guests_count`, `special_event` |
+| Occupancy lags | `current_occ_rate`, `prev_year_occ_rate`, `yoy_occ_delta` |
+| Pricing | `room_rate`, `competitor_rate_ratio` |
+| Engineered | `lead_time_bucket`, `seasonality_score`, `weekend_summer_flag`, `advance_efficiency` |
+| Encodings | `room_type_enc`, `channel_enc` |
+
+## Project Layout
+
+```
+suite-cast/
+├── app/                # FastAPI service, model, features, monitoring
+├── pipelines/          # Airflow retraining DAG (champion/challenger)
+├── tests/              # pytest suite (API, model, features, monitoring)
+├── scripts/            # architecture diagram generator
+├── migrations/         # Alembic migration environment
+├── Dockerfile          # python:3.11-slim, uvicorn, healthcheck
+├── docker-compose.yml  # API + PostgreSQL 15
+└── .github/workflows/  # ruff lint + pytest CI
+```
+
+## Development
+
+```bash
+make lint      # ruff check
+make format    # ruff format + autofix
+make test      # pytest -v
+make clean     # remove artifacts/caches
+```
+
+Pre-commit hooks are configured (`.pre-commit-config.yaml`): `pre-commit install`.
+
+## License
+
+MIT
