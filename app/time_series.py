@@ -160,3 +160,42 @@ def resample_hourly_to_daily(hourly: list[float]) -> list[float]:
         chunk = hourly[i : i + 24]
         daily.append(round(sum(chunk), 6))
     return daily
+
+
+def forecast_trend_with_seasonality(
+    values: list[float],
+    horizon: int = 24,
+    period: int = 24,
+) -> list[float]:
+    """Forecast by combining a linear trend with a seasonal baseline.
+
+    Decomposes the series into trend + seasonal components and extrapolates both.
+
+    Args:
+        values: Historical readings (at least 2 * period elements recommended).
+        horizon: Number of future steps to forecast.
+        period: Seasonal period length (default 24 for hourly data).
+
+    Returns:
+        List of *horizon* forecasted values (clipped to 0 for energy context).
+    """
+    if not values or horizon < 1:
+        return []
+    arr = np.array(values, dtype=float)
+    n = len(arr)
+    x = np.arange(n, dtype=float)
+    slope, intercept = np.polyfit(x, arr, 1)
+    trend = slope * x + intercept
+    residual = arr - trend
+    bucket_means = np.zeros(period)
+    counts = np.zeros(period)
+    for i, v in enumerate(residual):
+        bucket_means[i % period] += v
+        counts[i % period] += 1
+    with np.errstate(invalid="ignore"):
+        bucket_means = np.where(counts > 0, bucket_means / counts, 0.0)
+    future_x = np.arange(n, n + horizon, dtype=float)
+    future_trend = slope * future_x + intercept
+    future_seasonal = np.array([bucket_means[i % period] for i in range(n, n + horizon)])
+    forecast = future_trend + future_seasonal
+    return np.clip(forecast, 0, None).tolist()
