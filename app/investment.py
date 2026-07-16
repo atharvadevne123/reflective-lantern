@@ -179,3 +179,60 @@ def price_to_income_ratio(property_price: float, annual_household_income: float)
     if annual_household_income <= 0:
         return math.inf
     return round(property_price / annual_household_income, 2)
+
+
+_SCORE_LABELS: list[tuple[float, str]] = [
+    (8.0, "excellent"),
+    (6.0, "good"),
+    (4.0, "fair"),
+    (2.0, "poor"),
+]
+
+
+def investment_score_label(score: float) -> str:
+    """Convert a numeric investment score (0-10) to a human-readable label.
+
+    Args:
+        score: Investment score in [0, 10] as returned by
+            compute_investment_analysis().
+
+    Returns:
+        One of 'excellent' (>=8), 'good' (>=6), 'fair' (>=4),
+        'poor' (>=2), or 'avoid' (<2).
+    """
+    for threshold, label in _SCORE_LABELS:
+        if score >= threshold:
+            return label
+    return "avoid"
+
+
+def portfolio_weighted_score(
+    scores: list[float],
+    weights: list[float] | None = None,
+) -> float:
+    """Compute a weighted average investment score for a property portfolio.
+
+    Args:
+        scores: List of individual property investment scores.
+        weights: Optional weight for each score (must match length). Defaults to
+            equal weights.
+
+    Returns:
+        Weighted average score rounded to 3 decimal places, or 0.0 if empty.
+
+    Raises:
+        ValueError: If *weights* length doesn't match *scores* length.
+    """
+    if not scores:
+        return 0.0
+    if weights is None:
+        weights = [1.0 / len(scores)] * len(scores)
+    if len(weights) != len(scores):
+        raise ValueError(
+            f"weights length {len(weights)} must match scores length {len(scores)}"
+        )
+    total_weight = sum(weights)
+    if total_weight <= 0:
+        return 0.0
+    weighted = sum(s * w for s, w in zip(scores, weights))
+    return round(weighted / total_weight, 3)
