@@ -155,3 +155,10 @@ Pre-commit hooks are configured (`.pre-commit-config.yaml`): `pre-commit install
 ## License
 
 MIT
+
+## Operations Notes
+
+- **Drift response**: when `/api/v1/metrics` reports `drift_detected: true`, trigger the retraining DAG manually or wait for the weekly run; the challenger only replaces the champion when its cross-validated AUC improves by more than 0.005.
+- **Rate limiting**: the API returns HTTP 429 once a client IP exceeds `RATE_LIMIT_PER_MINUTE` requests in a 60-second sliding window.
+- **Tracing**: pass an `X-Correlation-ID` header to correlate client logs with API logs; one is generated when absent.
+- **Cold start**: on first boot with no `model.joblib` present, the service trains on synthetic data (~30 s) before accepting traffic.
