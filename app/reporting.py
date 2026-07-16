@@ -237,3 +237,39 @@ def peak_demand_by_period(
                 p["is_peak"] = True
                 break
     return periods
+
+
+def consumption_efficiency_ratio(
+    actual_kwh: float,
+    target_kwh: float,
+) -> float:
+    """Return the ratio of actual to target energy consumption.
+
+    A value < 1.0 means the building consumed less than the target (efficient).
+    A value > 1.0 means consumption exceeded the target (inefficient).
+
+    Args:
+        actual_kwh: Measured energy consumption in kWh.
+        target_kwh: Target or baseline consumption in kWh.
+
+    Returns:
+        Ratio actual/target, or 0.0 if target is non-positive.
+    """
+    if target_kwh <= 0:
+        return 0.0
+    return round(actual_kwh / target_kwh, 4)
+
+
+def daily_average_consumption(hourly_series: list[float]) -> float:
+    """Compute the average daily energy consumption from an hourly time series.
+
+    Args:
+        hourly_series: Hourly kWh readings (any length).
+
+    Returns:
+        Mean daily consumption (sum over 24-hour blocks) or 0.0 for empty input.
+    """
+    if not hourly_series:
+        return 0.0
+    days = max(len(hourly_series) / 24.0, 1.0)
+    return round(sum(hourly_series) / days, 4)
