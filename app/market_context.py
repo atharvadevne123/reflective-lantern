@@ -256,3 +256,44 @@ def housing_affordability_index(
         "qualifying_income": round(qualifying_income, 2),
         "hai": round(hai, 2),
     }
+
+
+def price_trend_consistency(
+    price_series: list[float],
+) -> dict[str, object]:
+    """Analyse price trend consistency across a series of periodic price snapshots.
+
+    Args:
+        price_series: Ordered list of property values (at least 2 values).
+
+    Returns:
+        Dict with 'direction_changes', 'consistency_score' (0-1), and 'trend'.
+        'trend' is 'rising', 'falling', or 'mixed'.
+
+    Raises:
+        ValueError: If fewer than 2 values are provided.
+    """
+    if len(price_series) < 2:
+        raise ValueError("price_series must have at least 2 elements")
+    deltas = [price_series[i + 1] - price_series[i] for i in range(len(price_series) - 1)]
+    rises = sum(1 for d in deltas if d > 0)
+    falls = sum(1 for d in deltas if d < 0)
+    direction_changes = sum(
+        1 for i in range(len(deltas) - 1)
+        if (deltas[i] > 0) != (deltas[i + 1] > 0)
+    )
+    total = len(deltas)
+    majority = max(rises, falls)
+    consistency_score = round(majority / total, 4) if total else 0.0
+    if rises > falls:
+        trend = "rising"
+    elif falls > rises:
+        trend = "falling"
+    else:
+        trend = "mixed"
+    return {
+        "direction_changes": direction_changes,
+        "consistency_score": consistency_score,
+        "trend": trend,
+        "periods": total,
+    }
