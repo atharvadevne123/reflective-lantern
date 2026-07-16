@@ -309,3 +309,36 @@ class InteractionFeatureExtractor(BaseEstimator, TransformerMixin):
         for a, b in self.available_pairs_:
             df[f"{a}_x_{b}"] = df[a] * df[b]
         return df
+
+
+def normalize_consumption(
+    values: list[float],
+    method: str = "minmax",
+) -> list[float]:
+    """Normalize a consumption series to [0, 1] or zero-mean unit variance.
+
+    Args:
+        values: List of consumption readings (kWh).
+        method: 'minmax' (default) scales to [0, 1]; 'zscore' standardizes.
+
+    Returns:
+        Normalized series of the same length.
+
+    Raises:
+        ValueError: If *method* is not 'minmax' or 'zscore'.
+        ValueError: If *values* is empty.
+    """
+    if not values:
+        raise ValueError("values must not be empty")
+    if method not in ("minmax", "zscore"):
+        raise ValueError(f"method must be 'minmax' or 'zscore', got {repr(method)}")
+    arr = np.array(values, dtype=float)
+    if method == "minmax":
+        lo, hi = arr.min(), arr.max()
+        if hi - lo < 1e-9:
+            return [0.0] * len(values)
+        return ((arr - lo) / (hi - lo)).tolist()
+    mean, std = arr.mean(), arr.std()
+    if std < 1e-9:
+        return [0.0] * len(values)
+    return ((arr - mean) / std).tolist()
