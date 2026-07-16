@@ -165,3 +165,55 @@ def test_compute_feature_drift_summary_with_reference():
     assert "ks_statistic" in result[0]
     assert "p_value" in result[0]
     assert "drift_detected" in result[0]
+
+
+def test_summarize_drift_history_empty():
+    from app.monitoring import summarize_drift_history
+
+    result = summarize_drift_history([])
+    assert result["total_checks"] == 0
+    assert result["drift_count"] == 0
+    assert result["drift_rate"] == 0.0
+
+
+def test_summarize_drift_history_no_drift():
+    from app.monitoring import summarize_drift_history
+
+    checks = [
+        {"drift_detected": False, "ks_statistic": 0.05, "p_value": 0.8},
+        {"drift_detected": False, "ks_statistic": 0.03, "p_value": 0.9},
+    ]
+    result = summarize_drift_history(checks)
+    assert result["total_checks"] == 2
+    assert result["drift_count"] == 0
+    assert result["drift_rate"] == 0.0
+
+
+def test_summarize_drift_history_all_drift():
+    from app.monitoring import summarize_drift_history
+
+    checks = [
+        {"drift_detected": True, "ks_statistic": 0.4, "p_value": 0.01},
+        {"drift_detected": True, "ks_statistic": 0.5, "p_value": 0.02},
+    ]
+    result = summarize_drift_history(checks)
+    assert result["drift_count"] == 2
+    assert result["drift_rate"] == pytest.approx(1.0)
+
+
+def test_summarize_drift_history_keys():
+    from app.monitoring import summarize_drift_history
+
+    checks = [{"drift_detected": False, "ks_statistic": 0.1, "p_value": 0.3}]
+    result = summarize_drift_history(checks)
+    assert set(result.keys()) == {"total_checks", "drift_count", "drift_rate", "mean_ks_statistic", "min_p_value"}
+
+
+@pytest.mark.parametrize("n_drift,n_total", [(0, 5), (2, 5), (5, 5)])
+def test_summarize_drift_history_parametrized(n_drift, n_total):
+    from app.monitoring import summarize_drift_history
+
+    checks = [{"drift_detected": i < n_drift, "ks_statistic": 0.1, "p_value": 0.3} for i in range(n_total)]
+    result = summarize_drift_history(checks)
+    assert result["drift_count"] == n_drift
+    assert result["total_checks"] == n_total
