@@ -321,3 +321,66 @@ def test_mortgage_payment_longer_term_lower_payment(term_years):
     long = mortgage_payment(300_000, 0.06, term_years)
     if term_years > 10:
         assert long < short
+
+
+def test_investment_score_label_excellent():
+    from app.investment import investment_score_label
+
+    assert investment_score_label(9.0) == "excellent"
+
+
+def test_investment_score_label_good():
+    from app.investment import investment_score_label
+
+    assert investment_score_label(7.5) == "good"
+
+
+def test_investment_score_label_avoid():
+    from app.investment import investment_score_label
+
+    assert investment_score_label(0.5) == "avoid"
+
+
+@pytest.mark.parametrize("score,expected", [
+    (10.0, "excellent"),
+    (8.0, "excellent"),
+    (6.0, "good"),
+    (4.0, "fair"),
+    (2.0, "poor"),
+    (1.9, "avoid"),
+    (0.0, "avoid"),
+])
+def test_investment_score_label_parametrized(score, expected):
+    from app.investment import investment_score_label
+
+    assert investment_score_label(score) == expected
+
+
+def test_portfolio_weighted_score_equal_weights():
+    from app.investment import portfolio_weighted_score
+
+    scores = [4.0, 6.0, 8.0]
+    result = portfolio_weighted_score(scores)
+    assert result == pytest.approx(6.0, rel=1e-3)
+
+
+def test_portfolio_weighted_score_empty():
+    from app.investment import portfolio_weighted_score
+
+    assert portfolio_weighted_score([]) == 0.0
+
+
+def test_portfolio_weighted_score_custom_weights():
+    from app.investment import portfolio_weighted_score
+
+    scores = [2.0, 8.0]
+    weights = [0.25, 0.75]
+    result = portfolio_weighted_score(scores, weights=weights)
+    assert result == pytest.approx(6.5, rel=1e-3)
+
+
+def test_portfolio_weighted_score_mismatch_raises():
+    from app.investment import portfolio_weighted_score
+
+    with pytest.raises(ValueError):
+        portfolio_weighted_score([1.0, 2.0], weights=[0.5])
