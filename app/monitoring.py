@@ -259,3 +259,35 @@ def compute_feature_drift_summary(
         result["feature"] = name
         results.append(result)
     return results
+
+
+def summarize_drift_history(drift_results: list[dict[str, Any]]) -> dict[str, Any]:
+    """Summarize a list of drift-check results into aggregate statistics.
+
+    Args:
+        drift_results: List of dicts, each with at least 'drift_detected',
+            'ks_statistic', and 'p_value' keys (e.g. from compute_drift calls).
+
+    Returns:
+        Dict with 'total_checks', 'drift_count', 'drift_rate',
+        'mean_ks_statistic', and 'min_p_value'.
+    """
+    if not drift_results:
+        return {
+            "total_checks": 0,
+            "drift_count": 0,
+            "drift_rate": 0.0,
+            "mean_ks_statistic": 0.0,
+            "min_p_value": 1.0,
+        }
+    total = len(drift_results)
+    drifted = [r for r in drift_results if r.get("drift_detected")]
+    ks_values = [float(r.get("ks_statistic", 0.0)) for r in drift_results]
+    p_values = [float(r.get("p_value", 1.0)) for r in drift_results]
+    return {
+        "total_checks": total,
+        "drift_count": len(drifted),
+        "drift_rate": round(len(drifted) / total, 4),
+        "mean_ks_statistic": round(sum(ks_values) / total, 4),
+        "min_p_value": round(min(p_values), 4),
+    }
