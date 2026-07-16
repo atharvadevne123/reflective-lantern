@@ -23,6 +23,14 @@ MODEL_PATH = Path("model.joblib")
 LGBM_PATH = Path("lgbm_model.joblib")
 METRICS_PATH = Path("metrics.json")
 
+# Dynamic pricing envelope: multiplier = PRICE_FLOOR + demand * PRICE_SPAN
+PRICE_FLOOR: float = 0.70
+PRICE_SPAN: float = 0.90
+
+# Demand tier cutoffs on the ensemble probability
+HIGH_DEMAND_THRESHOLD: float = 0.70
+MEDIUM_DEMAND_THRESHOLD: float = 0.40
+
 # Seasonal demand index per calendar month (for synthetic data generation)
 _SEASON_SCORE: dict[int, float] = {
     1: 0.70,
@@ -222,12 +230,12 @@ def predict_demand(
     demand_score = float(per_row.mean())
 
     # Dynamic pricing: demand drives a 0.7–1.6× multiplier on the base rate
-    price_multiplier = 0.70 + demand_score * 0.90
+    price_multiplier = PRICE_FLOOR + demand_score * PRICE_SPAN
     suggested_rate = round(base_rate * price_multiplier, 2)
 
-    if demand_score >= 0.70:
+    if demand_score >= HIGH_DEMAND_THRESHOLD:
         tier = "high"
-    elif demand_score >= 0.40:
+    elif demand_score >= MEDIUM_DEMAND_THRESHOLD:
         tier = "medium"
     else:
         tier = "low"
