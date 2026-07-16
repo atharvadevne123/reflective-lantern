@@ -143,6 +143,38 @@ def validate_feature_vector(vector: list[float], expected_dim: int | None = None
     return errors
 
 
+def batch_validate_readings(
+    readings: list[dict[str, object]],
+) -> list[dict[str, object]]:
+    """Validate a batch of energy readings, returning per-row error reports.
+
+    Each reading dict should contain at minimum: 'hour', 'day_of_week', 'month',
+    'temperature_c', 'humidity_pct', 'consumption_kwh'.
+
+    Args:
+        readings: List of reading dicts to validate.
+
+    Returns:
+        List of dicts with keys 'index', 'errors', 'valid'. Only rows with
+        errors have non-empty 'errors' lists.
+    """
+    results = []
+    for idx, row in enumerate(readings):
+        errors: list[str] = []
+        errors += validate_temporal_fields(
+            int(row.get("hour", 0)),
+            int(row.get("day_of_week", 0)),
+            int(row.get("month", 1)),
+        )
+        errors += validate_weather_fields(
+            float(row.get("temperature_c", 0.0)),
+            float(row.get("humidity_pct", 0.0)),
+        )
+        errors += validate_consumption_kwh(float(row.get("consumption_kwh", 0.0)))
+        results.append({"index": idx, "errors": errors, "valid": len(errors) == 0})
+    return results
+
+
 def is_weekend(day_of_week: int) -> bool:
     """Return True if day_of_week is Saturday (5) or Sunday (6)."""
     return day_of_week >= 5
