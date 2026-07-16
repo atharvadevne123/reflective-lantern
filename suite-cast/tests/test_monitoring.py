@@ -89,3 +89,30 @@ class TestLogPrediction:
         log_prediction(db_session, {}, 0.4, 120.0, "test-2.0.0")
         pred = db_session.query(Prediction).order_by(Prediction.id.desc()).first()
         assert pred.model_version == "test-2.0.0"
+
+
+class TestGetPredictionStats:
+    def test_empty_db_returns_zero_count(self, db_session):
+        stats = get_prediction_stats(db_session)
+        assert stats["count"] == 0
+        assert stats["avg_demand_score"] is None
+
+    def test_stats_after_predictions(self, db_session):
+        for score in [0.3, 0.5, 0.7]:
+            log_prediction(db_session, {}, score, 150.0, "1.0.0")
+        stats = get_prediction_stats(db_session)
+        assert stats["count"] == 3
+        assert stats["avg_demand_score"] == pytest.approx(0.5, abs=0.01)
+
+    def test_stats_min_max_correct(self, db_session):
+        for score in [0.2, 0.5, 0.9]:
+            log_prediction(db_session, {}, score, 150.0, "1.0.0")
+        stats = get_prediction_stats(db_session)
+        assert stats["min_demand_score"] <= stats["avg_demand_score"]
+        assert stats["max_demand_score"] >= stats["avg_demand_score"]
+
+    def test_stats_respects_limit(self, db_session):
+        for _ in range(10):
+            log_prediction(db_session, {}, 0.5, 150.0, "1.0.0")
+        stats = get_prediction_stats(db_session, limit=5)
+        assert stats["count"] <= 5
