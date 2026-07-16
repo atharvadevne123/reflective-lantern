@@ -107,3 +107,56 @@ class TestHotelFeatureEngineer:
             _minimal_df(current_occ_rate=1.0, prev_year_occ_rate=0.0)
         )
         assert df["yoy_occ_delta"].iloc[0] == pytest.approx(1.0)
+
+    def test_advance_efficiency_increases_with_lead_time(self):
+        df_short = HotelFeatureEngineer().transform(_minimal_df(lead_time=1, checkin_month=7))
+        df_long = HotelFeatureEngineer().transform(_minimal_df(lead_time=180, checkin_month=7))
+        assert df_long["advance_efficiency"].iloc[0] > df_short["advance_efficiency"].iloc[0]
+
+    @pytest.mark.parametrize(
+        "room_type,expected_code",
+        [
+            ("standard", 0),
+            ("deluxe", 1),
+            ("suite", 2),
+        ],
+    )
+    def test_room_type_encoding(self, room_type, expected_code):
+        df = HotelFeatureEngineer().transform(_minimal_df(room_type=room_type))
+        assert df["room_type_enc"].iloc[0] == expected_code
+
+    @pytest.mark.parametrize(
+        "channel,expected_code",
+        [
+            ("direct", 0),
+            ("online", 1),
+            ("ota", 2),
+        ],
+    )
+    def test_channel_encoding(self, channel, expected_code):
+        df = HotelFeatureEngineer().transform(_minimal_df(booking_channel=channel))
+        assert df["channel_enc"].iloc[0] == expected_code
+
+    def test_batch_transform_preserves_row_count(self):
+        batch = pd.concat([_minimal_df() for _ in range(5)], ignore_index=True)
+        df = HotelFeatureEngineer().transform(batch)
+        assert len(df) == 5
+
+
+class TestBuildFeaturePipeline:
+    def test_pipeline_has_engineer_step(self):
+        pipe = build_feature_pipeline()
+        assert "engineer" in pipe.named_steps
+
+    def test_pipeline_has_scaler_step(self):
+        pipe = build_feature_pipeline()
+        assert "scaler" in pipe.named_steps
+
+    def test_pipeline_fit_transform_returns_array(self):
+        from app.model import generate_sample_data
+
+        X, _ = generate_sample_data(50)
+        pipe = build_feature_pipeline()
+        result = pipe.fit_transform(X)
+        assert result.shape[0] == 50
+        assert result.shape[1] == len(FEATURE_COLS)
