@@ -21,3 +21,38 @@ Hotels leave revenue on the table with static rate cards. Demand for a room-nigh
 - **Production API hygiene** — Pydantic validation, rate limiting, correlation-ID tracing, structured JSON logs, OpenAPI docs
 - **Docker-first** — single `docker compose up` brings up the API and PostgreSQL
 
+## Quick Start
+
+```bash
+# Clone and enter the project
+cd suite-cast
+
+# Install
+make install          # or: pip install -r requirements.txt
+
+# Run tests
+make test
+
+# Start the dev server (SQLite, auto-trains on first boot)
+make run
+# → http://localhost:8000/docs
+```
+
+### Docker (production-style)
+
+```bash
+docker compose up -d --build
+# API on :8000, PostgreSQL on :5432
+```
+
+### Configuration
+
+Copy `.env.example` to `.env` and adjust. Key variables:
+
+| Variable | Default | Purpose |
+|---|---|---|
+| `DATABASE_URL` | `sqlite:///./suite_cast.db` | SQLAlchemy connection string |
+| `BASE_ROOM_RATE` | `150.0` | Baseline rate for dynamic pricing |
+| `RATE_LIMIT_PER_MINUTE` | `60` | Per-IP sliding-window limit |
+| `MODEL_VERSION` | `1.0.0` | Version tag stamped on predictions |
+
