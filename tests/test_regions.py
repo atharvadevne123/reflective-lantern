@@ -124,3 +124,46 @@ def test_get_peak_load_new_regions(region_id):
     peak = get_peak_load(region_id)
     assert peak is not None
     assert peak > 0
+
+
+def test_get_regions_by_timezone_chicago():
+    from app.regions import get_regions_by_timezone
+
+    regions = get_regions_by_timezone("America/Chicago")
+    assert "midwest" in regions
+    assert "south" in regions
+    assert "texas" in regions
+
+
+def test_get_regions_by_timezone_new_york():
+    from app.regions import get_regions_by_timezone
+
+    regions = get_regions_by_timezone("America/New_York")
+    assert "northeast" in regions
+    assert "new_england" in regions
+    assert "southeast" in regions
+    assert "florida" in regions
+
+
+def test_get_regions_by_timezone_unknown():
+    from app.regions import get_regions_by_timezone
+
+    assert get_regions_by_timezone("Pacific/Auckland") == []
+
+
+def test_get_regions_by_timezone_returns_sorted():
+    from app.regions import get_regions_by_timezone
+
+    regions = get_regions_by_timezone("America/Chicago")
+    assert regions == sorted(regions)
+
+
+@pytest.mark.parametrize("tz,expected_min", [
+    ("America/New_York", 4),
+    ("America/Chicago", 3),
+    ("America/Los_Angeles", 2),
+])
+def test_get_regions_by_timezone_parametrized(tz, expected_min):
+    from app.regions import get_regions_by_timezone
+
+    assert len(get_regions_by_timezone(tz)) >= expected_min
