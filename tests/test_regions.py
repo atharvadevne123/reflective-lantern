@@ -92,7 +92,7 @@ def test_validate_region_known(region_id):
     assert validate_region(region_id) is True
 
 
-def test_get_all_region_ids_contains_new_regions():
+def test_get_all_region_ids_contains_extended_regions():
     from app.regions import get_all_region_ids
 
     ids = get_all_region_ids()
