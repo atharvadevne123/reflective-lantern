@@ -85,3 +85,80 @@ class TestTrainModel:
         probs = xgb_pipe.predict_proba(sample_booking_df)
         assert probs.shape[1] == 2
         assert 0.0 <= probs[0, 1] <= 1.0
+
+
+class TestPredictDemand:
+    def test_demand_score_in_range(self, trained_models, sample_booking_df):
+        xgb_pipe, lgbm_pipe, _ = trained_models
+        result = predict_demand(xgb_pipe, lgbm_pipe, sample_booking_df)
+        assert 0.0 <= result["demand_score"] <= 1.0
+
+    def test_suggested_rate_is_positive(self, trained_models, sample_booking_df):
+        xgb_pipe, lgbm_pipe, _ = trained_models
+        result = predict_demand(xgb_pipe, lgbm_pipe, sample_booking_df, base_rate=150.0)
+        assert result["suggested_rate"] > 0
+
+    def test_demand_tier_is_valid(self, trained_models, sample_booking_df):
+        xgb_pipe, lgbm_pipe, _ = trained_models
+        result = predict_demand(xgb_pipe, lgbm_pipe, sample_booking_df)
+        assert result["demand_tier"] in {"low", "medium", "high"}
+
+    def test_per_row_scores_length(self, trained_models, sample_booking_df):
+        xgb_pipe, lgbm_pipe, _ = trained_models
+        result = predict_demand(xgb_pipe, lgbm_pipe, sample_booking_df)
+        assert len(result["per_row_scores"]) == len(sample_booking_df)
+
+    def test_works_without_lgbm(self, trained_models, sample_booking_df):
+        xgb_pipe, _, _ = trained_models
+        result = predict_demand(xgb_pipe, None, sample_booking_df)
+        assert "demand_score" in result
+
+    @pytest.mark.parametrize("base_rate", [80.0, 150.0, 300.0])
+    def test_suggested_rate_scales_with_base(self, trained_models, sample_booking_df, base_rate):
+        xgb_pipe, lgbm_pipe, _ = trained_models
+        result = predict_demand(xgb_pipe, lgbm_pipe, sample_booking_df, base_rate=base_rate)
+        # Rate must be in [0.7×base, 1.6×base]
+        assert result["suggested_rate"] >= base_rate * 0.69
+        assert result["suggested_rate"] <= base_rate * 1.61
+
+    def test_high_demand_gives_high_tier(self, trained_models):
+        xgb_pipe, lgbm_pipe, _ = trained_models
+        from unittest.mock import patch
+
+        import numpy as np
+
+        high_probs = np.array([0.85])
+        with (
+            patch.object(
+                xgb_pipe,
+                "predict_proba",
+                return_value=np.column_stack([1 - high_probs, high_probs]),
+            ),
+            patch.object(
+                lgbm_pipe,
+                "predict_proba",
+                return_value=np.column_stack([1 - high_probs, high_probs]),
+            ),
+        ):
+            X_dummy = pd.DataFrame([{"a": 1}])
+            result = predict_demand(xgb_pipe, lgbm_pipe, X_dummy)
+        assert result["demand_tier"] == "high"
+
+    def test_low_demand_gives_low_tier(self, trained_models):
+        xgb_pipe, lgbm_pipe, _ = trained_models
+        from unittest.mock import patch
+
+        import numpy as np
+
+        low_probs = np.array([0.20])
+        with (
+            patch.object(
+                xgb_pipe, "predict_proba", return_value=np.column_stack([1 - low_probs, low_probs])
+            ),
+            patch.object(
+                lgbm_pipe, "predict_proba", return_value=np.column_stack([1 - low_probs, low_probs])
+            ),
+        ):
+            X_dummy = pd.DataFrame([{"a": 1}])
+            result = predict_demand(xgb_pipe, lgbm_pipe, X_dummy)
+        assert result["demand_tier"] == "low"
