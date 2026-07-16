@@ -200,3 +200,19 @@ def test_model_info_returns_ensemble(client):
     body = resp.json()
     assert body["ensemble"] == ["XGBClassifier", "LGBMClassifier"]
     assert body["cv_folds"] == 5
+
+
+def test_rate_limit_enforced(client, sample_booking_dict):
+    from unittest.mock import patch as _patch
+
+    import app.main as main_mod
+
+    with _patch.object(main_mod.settings, "rate_limit_per_minute", 2):
+        main_mod._request_windows.clear()
+        first = client.get("/api/v1/health")
+        second = client.get("/api/v1/health")
+        third = client.get("/api/v1/health")
+    main_mod._request_windows.clear()
+    assert first.status_code == 200
+    assert second.status_code == 200
+    assert third.status_code == 429
