@@ -130,7 +130,46 @@ def anomaly_rate(severities: list[dict[str, object]]) -> float:
     return round(flagged / len(severities), 4)
 
 
-__all__ = ["anomaly_rate", "batch_compute_severity", "compute_severity", "iqr_flag", "top_anomalies", "zscore_flag"]
+def compute_percentile_bounds(
+    reference: list[float],
+    lower_pct: float = 1.0,
+    upper_pct: float = 99.0,
+) -> dict[str, float]:
+    """Return lower and upper percentile bounds from a reference distribution.
+
+    Args:
+        reference: Historical reference window (at least 2 elements).
+        lower_pct: Lower percentile (default 1st percentile).
+        upper_pct: Upper percentile (default 99th percentile).
+
+    Returns:
+        Dict with 'lower', 'upper', 'median', and 'mean' keys.
+
+    Raises:
+        ValueError: If *reference* is empty or percentiles are out of [0, 100].
+    """
+    if not reference:
+        raise ValueError("reference must be non-empty")
+    if not (0 <= lower_pct < upper_pct <= 100):
+        raise ValueError(f"Percentiles must satisfy 0 <= lower_pct < upper_pct <= 100, got {lower_pct}, {upper_pct}")
+    arr = np.array(reference, dtype=float)
+    return {
+        "lower": round(float(np.percentile(arr, lower_pct)), 4),
+        "upper": round(float(np.percentile(arr, upper_pct)), 4),
+        "median": round(float(np.median(arr)), 4),
+        "mean": round(float(arr.mean()), 4),
+    }
+
+
+__all__ = [
+    "anomaly_rate",
+    "batch_compute_severity",
+    "compute_percentile_bounds",
+    "compute_severity",
+    "iqr_flag",
+    "top_anomalies",
+    "zscore_flag",
+]
 
 
 def top_anomalies(
