@@ -56,3 +56,57 @@ Copy `.env.example` to `.env` and adjust. Key variables:
 | `RATE_LIMIT_PER_MINUTE` | `60` | Per-IP sliding-window limit |
 | `MODEL_VERSION` | `1.0.0` | Version tag stamped on predictions |
 
+## API Reference
+
+### `POST /api/v1/predict`
+
+Predict demand and get a suggested rate.
+
+```bash
+curl -X POST http://localhost:8000/api/v1/predict \
+  -H "Content-Type: application/json" \
+  -d '{
+    "lead_time": 14,
+    "length_of_stay": 3,
+    "guests_count": 2,
+    "checkin_month": 7,
+    "checkin_dayofweek": 4,
+    "is_weekend": 1,
+    "current_occ_rate": 0.75,
+    "prev_year_occ_rate": 0.70,
+    "room_rate": 189.0,
+    "competitor_avg_rate": 175.0,
+    "special_event": 0,
+    "room_type": "deluxe",
+    "booking_channel": "online"
+  }'
+```
+
+Response:
+
+```json
+{
+  "request_id": "5f0c4d6e-...",
+  "demand_score": 0.7412,
+  "demand_tier": "high",
+  "suggested_rate": 226.51,
+  "model_version": "1.0.0"
+}
+```
+
+### `GET /api/v1/health`
+
+Liveness + model readiness + training AUC.
+
+### `GET /api/v1/metrics`
+
+Aggregated prediction stats and the current drift report:
+
+```json
+{
+  "prediction_stats": {"count": 128, "avg_demand_score": 0.61, ...},
+  "drift": {"ks_statistic": 0.08, "p_value": 0.42, "drift_detected": false},
+  "model_version": "1.0.0"
+}
+```
+
