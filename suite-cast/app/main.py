@@ -37,6 +37,7 @@ _xgb_model: Any = None
 _lgbm_model: Any = None
 _model_metrics: dict[str, Any] = {}
 _reference_scores: list[float] = []
+_started_at: float = time.monotonic()
 
 # In-memory rate-limit windows keyed by client IP
 _request_windows: dict[str, list[float]] = {}
@@ -281,4 +282,15 @@ async def metrics(db: Session = Depends(get_db)) -> dict[str, Any]:
         "drift": drift,
         "model_version": settings.model_version,
         "model_metrics": _model_metrics,
+    }
+
+
+@app.get("/", include_in_schema=False)
+async def root() -> dict[str, str]:
+    """Redirect-style service banner pointing to interactive docs."""
+    return {
+        "service": "Suite-Cast",
+        "version": settings.model_version,
+        "docs": "/docs",
+        "health": f"{settings.api_prefix}/health",
     }
