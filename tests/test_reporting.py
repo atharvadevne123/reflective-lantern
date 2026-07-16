@@ -177,3 +177,59 @@ def test_consumption_trend_parametrized(data, expected):
     from app.reporting import consumption_trend
 
     assert consumption_trend(data) == expected
+
+
+def test_seasonal_efficiency_score_keys():
+    from app.reporting import seasonal_efficiency_score
+
+    actual = [8.0] * 40
+    baseline = [10.0] * 40
+    result = seasonal_efficiency_score(actual, baseline)
+    assert "q1_savings_pct" in result
+    assert "q2_savings_pct" in result
+    assert "q3_savings_pct" in result
+    assert "q4_savings_pct" in result
+    assert "overall_score" in result
+
+
+def test_seasonal_efficiency_score_positive_savings():
+    from app.reporting import seasonal_efficiency_score
+
+    actual = [5.0] * 40
+    baseline = [10.0] * 40
+    result = seasonal_efficiency_score(actual, baseline)
+    assert result["overall_score"] == pytest.approx(50.0, rel=1e-2)
+
+
+def test_seasonal_efficiency_score_length_mismatch_raises():
+    from app.reporting import seasonal_efficiency_score
+
+    with pytest.raises(ValueError):
+        seasonal_efficiency_score([1.0, 2.0], [1.0, 2.0, 3.0])
+
+
+def test_seasonal_efficiency_score_empty_raises():
+    from app.reporting import seasonal_efficiency_score
+
+    with pytest.raises(ValueError):
+        seasonal_efficiency_score([], [])
+
+
+def test_seasonal_efficiency_score_custom_weights():
+    from app.reporting import seasonal_efficiency_score
+
+    actual = [8.0] * 40
+    baseline = [10.0] * 40
+    weights = {"q1": 0.5, "q2": 0.2, "q3": 0.2, "q4": 0.1}
+    result = seasonal_efficiency_score(actual, baseline, season_weights=weights)
+    assert "overall_score" in result
+
+
+@pytest.mark.parametrize("n", [4, 12, 24, 48, 100])
+def test_seasonal_efficiency_score_various_lengths(n):
+    from app.reporting import seasonal_efficiency_score
+
+    actual = [1.0] * n
+    baseline = [2.0] * n
+    result = seasonal_efficiency_score(actual, baseline)
+    assert result["overall_score"] == pytest.approx(50.0, rel=1e-2)
