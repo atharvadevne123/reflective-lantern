@@ -217,3 +217,71 @@ def test_forecast_trend_with_seasonality_parametrized(horizon, period):
     data = [float(i % period) * 2 + 5 for i in range(4 * period)]
     result = forecast_trend_with_seasonality(data, horizon=horizon, period=period)
     assert len(result) == horizon
+
+
+def test_moving_range_basic():
+    from app.time_series import moving_range
+
+    result = moving_range([1.0, 3.0, 2.0, 5.0])
+    assert result == pytest.approx([2.0, 1.0, 3.0])
+
+
+def test_moving_range_empty_input():
+    from app.time_series import moving_range
+
+    assert moving_range([]) == []
+
+
+def test_moving_range_single_element():
+    from app.time_series import moving_range
+
+    assert moving_range([5.0]) == []
+
+
+def test_moving_range_flat_series():
+    from app.time_series import moving_range
+
+    result = moving_range([4.0] * 10)
+    assert all(v == pytest.approx(0.0) for v in result)
+
+
+def test_moving_range_length():
+    from app.time_series import moving_range
+
+    data = list(range(20))
+    assert len(moving_range(data)) == 19
+
+
+def test_consumption_variance_flat():
+    from app.time_series import consumption_variance
+
+    assert consumption_variance([5.0] * 10) == pytest.approx(0.0)
+
+
+def test_consumption_variance_two_values():
+    from app.time_series import consumption_variance
+
+    result = consumption_variance([0.0, 2.0])
+    assert result == pytest.approx(1.0)
+
+
+def test_consumption_variance_empty():
+    from app.time_series import consumption_variance
+
+    assert consumption_variance([]) == 0.0
+
+
+def test_consumption_variance_single():
+    from app.time_series import consumption_variance
+
+    assert consumption_variance([7.0]) == 0.0
+
+
+@pytest.mark.parametrize("data,expected_len", [
+    ([1.0, 2.0, 3.0], 2),
+    ([10.0] * 5, 4),
+])
+def test_moving_range_parametrized_length(data, expected_len):
+    from app.time_series import moving_range
+
+    assert len(moving_range(data)) == expected_len
