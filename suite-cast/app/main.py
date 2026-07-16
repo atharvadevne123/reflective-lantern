@@ -332,3 +332,28 @@ async def model_info() -> dict[str, Any]:
         "cv_folds": 5,
         "metrics": _model_metrics,
     }
+
+
+@app.get(
+    f"{settings.api_prefix}/predictions",
+    summary="Recent prediction history",
+    description="Returns the most recent logged predictions, newest first (max 100).",
+    tags=["Operations"],
+)
+async def predictions(limit: int = 20, db: Session = Depends(get_db)) -> dict[str, Any]:
+    """Return the most recent prediction records."""
+    limit = max(1, min(limit, 100))
+    rows = db.query(Prediction).order_by(Prediction.timestamp.desc()).limit(limit).all()
+    return {
+        "count": len(rows),
+        "predictions": [
+            {
+                "request_id": r.request_id,
+                "timestamp": r.timestamp.isoformat(),
+                "demand_score": r.demand_score,
+                "suggested_rate": r.suggested_rate,
+                "model_version": r.model_version,
+            }
+            for r in rows
+        ],
+    }
