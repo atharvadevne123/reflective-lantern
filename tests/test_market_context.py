@@ -399,3 +399,53 @@ def test_affordability_ratio_parametrized(price, income, down, expected_max):
 
     ratio = affordability_ratio(price, income, down_payment_pct=down)
     assert ratio <= expected_max
+
+
+def test_price_trend_consistency_rising():
+    from app.market_context import price_trend_consistency
+
+    prices = [100_000, 110_000, 120_000, 130_000, 140_000]
+    result = price_trend_consistency(prices)
+    assert result["trend"] == "rising"
+    assert result["consistency_score"] == pytest.approx(1.0)
+
+
+def test_price_trend_consistency_falling():
+    from app.market_context import price_trend_consistency
+
+    prices = [200_000, 190_000, 180_000, 170_000]
+    result = price_trend_consistency(prices)
+    assert result["trend"] == "falling"
+
+
+def test_price_trend_consistency_mixed():
+    from app.market_context import price_trend_consistency
+
+    prices = [100_000, 110_000, 105_000, 115_000, 110_000]
+    result = price_trend_consistency(prices)
+    assert result["direction_changes"] > 0
+
+
+def test_price_trend_consistency_too_few_raises():
+    from app.market_context import price_trend_consistency
+
+    with pytest.raises(ValueError):
+        price_trend_consistency([100_000])
+
+
+def test_price_trend_consistency_keys():
+    from app.market_context import price_trend_consistency
+
+    result = price_trend_consistency([1.0, 2.0, 3.0])
+    assert set(result.keys()) >= {"direction_changes", "consistency_score", "trend", "periods"}
+
+
+@pytest.mark.parametrize("prices,expected_trend", [
+    ([1.0, 2.0, 3.0, 4.0, 5.0], "rising"),
+    ([5.0, 4.0, 3.0, 2.0, 1.0], "falling"),
+])
+def test_price_trend_consistency_parametrized(prices, expected_trend):
+    from app.market_context import price_trend_consistency
+
+    result = price_trend_consistency(prices)
+    assert result["trend"] == expected_trend
