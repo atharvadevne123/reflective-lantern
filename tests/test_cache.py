@@ -117,3 +117,47 @@ def test_stats_empty_cache():
     stats = c.stats()
     assert stats["size"] == 0
     assert stats["hit_rate"] == 0.0
+
+
+def test_eviction_count_initial_zero():
+    c = TTLCache(ttl_seconds=60, max_size=10)
+    assert c.eviction_count == 0
+
+
+def test_eviction_count_increments_on_overflow():
+    c = TTLCache(ttl_seconds=60, max_size=3)
+    for i in range(5):
+        c.set(f"key_{i}", i)
+    assert c.eviction_count == 2
+
+
+def test_eviction_count_resets_on_clear():
+    c = TTLCache(ttl_seconds=60, max_size=2)
+    c.set("a", 1)
+    c.set("b", 2)
+    c.set("c", 3)  # triggers eviction
+    assert c.eviction_count == 1
+    c.clear()
+    assert c.eviction_count == 0
+
+
+def test_stats_includes_evictions():
+    c = TTLCache(ttl_seconds=60, max_size=2)
+    c.set("x", 1)
+    c.set("y", 2)
+    c.set("z", 3)
+    stats = c.stats()
+    assert "evictions" in stats
+    assert stats["evictions"] == 1
+
+
+@pytest.mark.parametrize("max_size,n_inserts,expected_evictions", [
+    (5, 5, 0),
+    (5, 6, 1),
+    (3, 10, 7),
+])
+def test_eviction_count_parametrized(max_size, n_inserts, expected_evictions):
+    c = TTLCache(ttl_seconds=60, max_size=max_size)
+    for i in range(n_inserts):
+        c.set(f"k_{i}", i)
+    assert c.eviction_count == expected_evictions
