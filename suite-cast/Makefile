@@ -37,3 +37,12 @@ clean:
 	rm -rf __pycache__ .pytest_cache .ruff_cache
 	rm -f model.joblib lgbm_model.joblib metrics.json test_suite_cast.db suite_cast.db
 	find . -type d -name __pycache__ -exec rm -rf {} + 2>/dev/null || true
+
+train:
+	python scripts/train.py --samples 2000
+
+diagram:
+	python scripts/generate_diagram.py
+
+demo:
+	python scripts/demo_request.py
