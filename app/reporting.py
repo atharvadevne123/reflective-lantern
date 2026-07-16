@@ -203,3 +203,37 @@ def consumption_trend(daily_kwh: list[float]) -> str:
     if relative < 0.01:
         return "stable"
     return "rising" if slope > 0 else "falling"
+
+
+def peak_demand_by_period(
+    hourly_kwh: list[float],
+    period_hours: int = 4,
+) -> list[dict[str, object]]:
+    """Aggregate hourly consumption into fixed-length periods and find peak.
+
+    Args:
+        hourly_kwh: List of hourly consumption values.
+        period_hours: Length of each period in hours (default 4, i.e. 6 periods/day).
+
+    Returns:
+        List of dicts with 'period_start', 'total_kwh', and 'is_peak' keys.
+        'is_peak' is True for the period with the highest total consumption.
+
+    Raises:
+        ValueError: If *hourly_kwh* is empty or *period_hours* < 1.
+    """
+    if not hourly_kwh:
+        raise ValueError("hourly_kwh must not be empty")
+    if period_hours < 1:
+        raise ValueError(f"period_hours must be at least 1, got {period_hours}")
+    periods = []
+    for start in range(0, len(hourly_kwh), period_hours):
+        chunk = hourly_kwh[start : start + period_hours]
+        periods.append({"period_start": start, "total_kwh": round(sum(chunk), 3), "is_peak": False})
+    if periods:
+        max_total = max(p["total_kwh"] for p in periods)
+        for p in periods:
+            if p["total_kwh"] == max_total:
+                p["is_peak"] = True
+                break
+    return periods
