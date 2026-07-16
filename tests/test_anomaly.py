@@ -156,3 +156,42 @@ def test_top_anomalies_custom_order():
     ]
     result = top_anomalies(data, n=2, severity_order=["warning", "critical", "none"])
     assert result[0]["severity"] == "warning"
+
+
+def test_compute_percentile_bounds_basic():
+    from app.anomaly import compute_percentile_bounds
+
+    ref = list(range(1, 101))  # 1..100
+    bounds = compute_percentile_bounds(ref, lower_pct=1.0, upper_pct=99.0)
+    assert bounds["lower"] < bounds["upper"]
+    assert bounds["median"] == pytest.approx(50.5, rel=1e-2)
+
+
+def test_compute_percentile_bounds_keys():
+    from app.anomaly import compute_percentile_bounds
+
+    bounds = compute_percentile_bounds([5.0] * 20)
+    assert set(bounds.keys()) == {"lower", "upper", "median", "mean"}
+
+
+def test_compute_percentile_bounds_empty_raises():
+    from app.anomaly import compute_percentile_bounds
+
+    with pytest.raises(ValueError, match="non-empty"):
+        compute_percentile_bounds([])
+
+
+def test_compute_percentile_bounds_invalid_pct_raises():
+    from app.anomaly import compute_percentile_bounds
+
+    with pytest.raises(ValueError):
+        compute_percentile_bounds([1.0, 2.0], lower_pct=80.0, upper_pct=20.0)
+
+
+@pytest.mark.parametrize("lower,upper", [(0, 100), (5, 95), (10, 90), (25, 75)])
+def test_compute_percentile_bounds_parametrized(lower, upper):
+    from app.anomaly import compute_percentile_bounds
+
+    ref = list(np.random.default_rng(1).normal(10, 2, 200))
+    bounds = compute_percentile_bounds(ref, lower_pct=lower, upper_pct=upper)
+    assert bounds["lower"] <= bounds["upper"]
