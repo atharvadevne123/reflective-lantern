@@ -182,3 +182,49 @@ def test_score_distribution_various_sizes(n):
     query = rng.uniform(0, 1, 8).tolist()
     result = score_distribution(idx, query)
     assert -1.0 <= result["min"] <= result["max"] <= 1.0
+
+
+def test_hourly_pattern_distance_identical():
+    from app.similarity import hourly_pattern_distance
+
+    profile = [float(i) for i in range(24)]
+    assert hourly_pattern_distance(profile, profile) == pytest.approx(0.0)
+
+
+def test_hourly_pattern_distance_offset():
+    from app.similarity import hourly_pattern_distance
+
+    a = [0.0] * 24
+    b = [1.0] * 24
+    assert hourly_pattern_distance(a, b) == pytest.approx(1.0)
+
+
+def test_hourly_pattern_distance_empty_raises():
+    from app.similarity import hourly_pattern_distance
+
+    with pytest.raises(ValueError):
+        hourly_pattern_distance([], [])
+
+
+def test_hourly_pattern_distance_mismatched_length_raises():
+    from app.similarity import hourly_pattern_distance
+
+    with pytest.raises(ValueError):
+        hourly_pattern_distance([1.0] * 24, [1.0] * 12)
+
+
+def test_hourly_pattern_distance_non_negative():
+    from app.similarity import hourly_pattern_distance
+
+    a = [float(i % 24) for i in range(24)]
+    b = [float((i + 12) % 24) for i in range(24)]
+    assert hourly_pattern_distance(a, b) >= 0.0
+
+
+@pytest.mark.parametrize("offset", [0.5, 1.0, 2.0, 5.0])
+def test_hourly_pattern_distance_constant_offset(offset):
+    from app.similarity import hourly_pattern_distance
+
+    a = [10.0] * 24
+    b = [10.0 + offset] * 24
+    assert hourly_pattern_distance(a, b) == pytest.approx(offset)
