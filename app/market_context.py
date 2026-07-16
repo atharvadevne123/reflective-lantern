@@ -297,3 +297,36 @@ def price_trend_consistency(
         "trend": trend,
         "periods": total,
     }
+
+
+def market_summary(
+    predicted_value: float,
+    annual_rent: float,
+    listing_days: int,
+    sqft: float,
+    annual_income: float = DEFAULT_ANNUAL_INCOME,
+) -> dict[str, object]:
+    """Return a single-call market context summary for a property.
+
+    Combines price-per-sqft, DOM classification, affordability, and
+    price-to-rent ratio into one convenience dict.
+
+    Args:
+        predicted_value: Property price in USD.
+        annual_rent: Estimated annual rent in USD.
+        listing_days: Number of days the property has been on market.
+        sqft: Property size in square feet.
+        annual_income: Annual household income for affordability calculation.
+
+    Returns:
+        Dict with keys: price_per_sqft, dom, dom_classification,
+        price_to_rent_ratio, affordability.
+    """
+    affordability = affordability_index(predicted_value, annual_income=annual_income)
+    return {
+        "price_per_sqft": price_per_sqft(predicted_value, sqft),
+        "dom": listing_days,
+        "dom_classification": dom_classification(listing_days),
+        "price_to_rent_ratio": price_to_rent_ratio(predicted_value, annual_rent),
+        "affordability": affordability,
+    }
