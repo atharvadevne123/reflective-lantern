@@ -286,3 +286,66 @@ def test_peak_demand_by_period_counts(period_hours, n_hours, expected_count):
 
     result = peak_demand_by_period([1.0] * n_hours, period_hours=period_hours)
     assert len(result) == expected_count
+
+
+def test_consumption_efficiency_ratio_under_target():
+    from app.reporting import consumption_efficiency_ratio
+
+    assert consumption_efficiency_ratio(80.0, 100.0) == pytest.approx(0.8)
+
+
+def test_consumption_efficiency_ratio_over_target():
+    from app.reporting import consumption_efficiency_ratio
+
+    assert consumption_efficiency_ratio(120.0, 100.0) == pytest.approx(1.2)
+
+
+def test_consumption_efficiency_ratio_zero_target():
+    from app.reporting import consumption_efficiency_ratio
+
+    assert consumption_efficiency_ratio(50.0, 0.0) == 0.0
+
+
+def test_consumption_efficiency_ratio_equal():
+    from app.reporting import consumption_efficiency_ratio
+
+    assert consumption_efficiency_ratio(100.0, 100.0) == pytest.approx(1.0)
+
+
+def test_daily_average_consumption_empty():
+    from app.reporting import daily_average_consumption
+
+    assert daily_average_consumption([]) == 0.0
+
+
+def test_daily_average_consumption_one_day():
+    from app.reporting import daily_average_consumption
+
+    data = [1.0] * 24
+    assert daily_average_consumption(data) == pytest.approx(24.0)
+
+
+def test_daily_average_consumption_two_days():
+    from app.reporting import daily_average_consumption
+
+    data = [2.0] * 48
+    assert daily_average_consumption(data) == pytest.approx(48.0)
+
+
+def test_daily_average_consumption_partial_day():
+    from app.reporting import daily_average_consumption
+
+    data = [1.0] * 12
+    result = daily_average_consumption(data)
+    assert result > 0.0
+
+
+@pytest.mark.parametrize("actual,target,expected", [
+    (50.0, 100.0, 0.5),
+    (100.0, 100.0, 1.0),
+    (150.0, 100.0, 1.5),
+])
+def test_consumption_efficiency_ratio_parametrized(actual, target, expected):
+    from app.reporting import consumption_efficiency_ratio
+
+    assert consumption_efficiency_ratio(actual, target) == pytest.approx(expected)
