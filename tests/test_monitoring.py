@@ -217,3 +217,45 @@ def test_summarize_drift_history_parametrized(n_drift, n_total):
     result = summarize_drift_history(checks)
     assert result["drift_count"] == n_drift
     assert result["total_checks"] == n_total
+
+
+def test_get_reference_window_size_empty():
+    from app.monitoring import get_reference_window_size, reset_reference_window
+
+    reset_reference_window()
+    assert get_reference_window_size() == 0
+
+
+def test_get_reference_window_size_after_set():
+    from app.monitoring import get_reference_window_size, set_reference_window
+
+    set_reference_window(list(range(50)))
+    assert get_reference_window_size() == 50
+
+
+def test_is_reference_window_ready_false_when_empty():
+    from app.monitoring import is_reference_window_ready, reset_reference_window
+
+    reset_reference_window()
+    assert not is_reference_window_ready(min_samples=10)
+
+
+def test_is_reference_window_ready_true_when_sufficient():
+    from app.monitoring import is_reference_window_ready, set_reference_window
+
+    set_reference_window([5.0] * 20)
+    assert is_reference_window_ready(min_samples=10)
+
+
+@pytest.mark.parametrize("n_samples,min_samples,expected", [
+    (0, 10, False),
+    (9, 10, False),
+    (10, 10, True),
+    (100, 10, True),
+    (5, 5, True),
+])
+def test_is_reference_window_ready_parametrized(n_samples, min_samples, expected):
+    from app.monitoring import is_reference_window_ready, set_reference_window
+
+    set_reference_window([1.0] * n_samples)
+    assert is_reference_window_ready(min_samples=min_samples) == expected
