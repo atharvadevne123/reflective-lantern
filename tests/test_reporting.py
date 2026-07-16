@@ -233,3 +233,56 @@ def test_seasonal_efficiency_score_various_lengths(n):
     baseline = [2.0] * n
     result = seasonal_efficiency_score(actual, baseline)
     assert result["overall_score"] == pytest.approx(50.0, rel=1e-2)
+
+
+def test_peak_demand_by_period_basic():
+    from app.reporting import peak_demand_by_period
+
+    data = [1.0] * 24
+    data[8] = 10.0  # period starting at hour 8 (period_start=8 for period_hours=4)
+    result = peak_demand_by_period(data, period_hours=4)
+    peak_periods = [p for p in result if p["is_peak"]]
+    assert len(peak_periods) == 1
+
+
+def test_peak_demand_by_period_period_count():
+    from app.reporting import peak_demand_by_period
+
+    data = [1.0] * 24
+    result = peak_demand_by_period(data, period_hours=4)
+    assert len(result) == 6
+
+
+def test_peak_demand_by_period_empty_raises():
+    from app.reporting import peak_demand_by_period
+
+    with pytest.raises(ValueError):
+        peak_demand_by_period([])
+
+
+def test_peak_demand_by_period_bad_period_raises():
+    from app.reporting import peak_demand_by_period
+
+    with pytest.raises(ValueError):
+        peak_demand_by_period([1.0] * 24, period_hours=0)
+
+
+def test_peak_demand_by_period_keys():
+    from app.reporting import peak_demand_by_period
+
+    result = peak_demand_by_period([5.0] * 8, period_hours=4)
+    for p in result:
+        assert set(p.keys()) >= {"period_start", "total_kwh", "is_peak"}
+
+
+@pytest.mark.parametrize("period_hours,n_hours,expected_count", [
+    (4, 24, 6),
+    (6, 24, 4),
+    (8, 24, 3),
+    (1, 10, 10),
+])
+def test_peak_demand_by_period_counts(period_hours, n_hours, expected_count):
+    from app.reporting import peak_demand_by_period
+
+    result = peak_demand_by_period([1.0] * n_hours, period_hours=period_hours)
+    assert len(result) == expected_count
