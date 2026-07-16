@@ -188,6 +188,30 @@ def price_trend_indicator(
     }
 
 
+def affordability_ratio(
+    predicted_value: float,
+    annual_income: float,
+    down_payment_pct: float = DEFAULT_DOWN_PAYMENT,
+) -> float:
+    """Return the price-to-income ratio after down payment.
+
+    A common rule-of-thumb benchmark: values ≤ 3.0 are considered affordable,
+    3.0–5.0 moderately stretched, and >5.0 unaffordable.
+
+    Args:
+        predicted_value: Property price in USD.
+        annual_income: Annual household income in USD.
+        down_payment_pct: Down payment fraction (reduces the financed amount).
+
+    Returns:
+        Ratio of financed amount to annual income (0.0 if income is zero).
+    """
+    if annual_income <= 0:
+        return 0.0
+    financed = predicted_value * (1.0 - down_payment_pct)
+    return round(financed / annual_income, 3)
+
+
 def housing_affordability_index(
     median_home_price: float,
     median_household_income: float,
