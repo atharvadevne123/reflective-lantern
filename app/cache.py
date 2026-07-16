@@ -107,3 +107,23 @@ class TTLCache:
 
 
 prediction_cache = TTLCache(ttl_seconds=30, max_size=500)
+
+
+def warm_cache(cache: TTLCache, entries: dict[str, object]) -> int:
+    """Pre-populate *cache* with a dictionary of key-value pairs.
+
+    Useful for loading frequently accessed predictions at startup to avoid
+    cold-start latency on the first few API requests.
+
+    Args:
+        cache: The TTLCache instance to populate.
+        entries: Mapping of cache keys to values to insert.
+
+    Returns:
+        Number of entries successfully inserted.
+    """
+    inserted = 0
+    for key, value in entries.items():
+        cache.set(key, value)
+        inserted += 1
+    return inserted
