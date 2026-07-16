@@ -199,3 +199,36 @@ def forecast_trend_with_seasonality(
     future_seasonal = np.array([bucket_means[i % period] for i in range(n, n + horizon)])
     forecast = future_trend + future_seasonal
     return np.clip(forecast, 0, None).tolist()
+
+
+def moving_range(values: list[float]) -> list[float]:
+    """Compute the moving range (absolute successive differences) of a series.
+
+    The moving range is commonly used in statistical process control to
+    estimate short-term process variation.
+
+    Args:
+        values: Ordered list of numeric observations.
+
+    Returns:
+        List of absolute differences between consecutive values (length = len-1),
+        or an empty list if *values* has fewer than 2 elements.
+    """
+    if len(values) < 2:
+        return []
+    return [abs(values[i + 1] - values[i]) for i in range(len(values) - 1)]
+
+
+def consumption_variance(values: list[float]) -> float:
+    """Return the population variance of an energy consumption series.
+
+    Args:
+        values: List of kWh readings.
+
+    Returns:
+        Population variance as a float, or 0.0 for a series of length < 2.
+    """
+    if len(values) < 2:
+        return 0.0
+    mean = sum(values) / len(values)
+    return sum((v - mean) ** 2 for v in values) / len(values)
