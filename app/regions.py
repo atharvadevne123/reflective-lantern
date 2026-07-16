@@ -57,6 +57,22 @@ def get_region_timezone(region_id: str) -> str:
     return str(region.get("timezone", "UTC"))
 
 
+def get_regions_by_timezone(timezone: str) -> list[str]:
+    """Return all region IDs that share the given IANA *timezone*.
+
+    Args:
+        timezone: IANA timezone string to filter by (e.g. 'America/Chicago').
+
+    Returns:
+        Sorted list of region IDs whose timezone matches (case-sensitive).
+    """
+    return sorted(
+        region_id
+        for region_id, meta in KNOWN_REGIONS.items()
+        if str(meta.get("timezone", "")) == timezone
+    )
+
+
 def get_peak_load(region_id: str) -> float | None:
     """Return the nominal peak load in MW for *region_id*, or None if unknown.
 
