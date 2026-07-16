@@ -195,6 +195,7 @@ class HealthResponse(BaseModel):
     model_version: str
     auc_mean: float | None
     environment: str
+    uptime_seconds: float
 
 
 # ---------------------------------------------------------------------------
@@ -256,6 +257,7 @@ async def health() -> HealthResponse:
         model_version=settings.model_version,
         auc_mean=_model_metrics.get("auc_mean"),  # type: ignore[arg-type]
         environment=settings.environment,
+        uptime_seconds=round(time.monotonic() - _started_at, 1),
     )
 
 
