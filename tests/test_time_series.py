@@ -7,6 +7,7 @@ import pytest
 
 from app.time_series import (
     detect_spikes,
+    exponential_moving_average,
     forecast_linear_trend,
     peak_hours,
     seasonal_baseline,
@@ -143,3 +144,38 @@ def test_resample_hourly_to_daily_empty():
     from app.time_series import resample_hourly_to_daily
 
     assert resample_hourly_to_daily([]) == []
+
+
+def test_ema_length():
+    result = exponential_moving_average([1.0] * 10, alpha=0.3)
+    assert len(result) == 10
+
+
+def test_ema_first_value_equals_input():
+    data = [5.0, 10.0, 15.0]
+    result = exponential_moving_average(data, alpha=0.5)
+    assert result[0] == pytest.approx(5.0)
+
+
+def test_ema_alpha_one_equals_input():
+    data = [1.0, 2.0, 3.0, 4.0, 5.0]
+    result = exponential_moving_average(data, alpha=1.0)
+    assert result == pytest.approx(data)
+
+
+def test_ema_empty_input():
+    assert exponential_moving_average([], alpha=0.3) == []
+
+
+def test_ema_invalid_alpha_raises():
+    with pytest.raises(ValueError):
+        exponential_moving_average([1.0, 2.0], alpha=0.0)
+    with pytest.raises(ValueError):
+        exponential_moving_average([1.0, 2.0], alpha=1.5)
+
+
+@pytest.mark.parametrize("alpha", [0.1, 0.3, 0.5, 0.9, 1.0])
+def test_ema_various_alphas(alpha):
+    data = [float(i) for i in range(20)]
+    result = exponential_moving_average(data, alpha=alpha)
+    assert len(result) == 20
