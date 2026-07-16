@@ -227,3 +227,48 @@ def top_anomalies(
         return rank.get(str(entry.get("severity", "")), default_rank)
 
     return sorted(severities, key=_key)[:n]
+
+
+def compute_z_score(value: float, mean: float, std: float) -> float:
+    """Compute the Z-score of *value* given a distribution's mean and std.
+
+    Args:
+        value: The observation to score.
+        mean: Distribution mean.
+        std: Distribution standard deviation.
+
+    Returns:
+        Z-score as a float, or 0.0 when std is zero (degenerate distribution).
+    """
+    if std == 0.0:
+        return 0.0
+    return (value - mean) / std
+
+
+def flag_z_score_outliers(
+    values: list[float],
+    threshold: float = 3.0,
+) -> list[int]:
+    """Return indices of values whose absolute Z-score exceeds *threshold*.
+
+    Args:
+        values: List of numeric observations.
+        threshold: Absolute Z-score cutoff for flagging (default 3.0).
+
+    Returns:
+        Sorted list of integer indices that are statistical outliers.
+
+    Raises:
+        ValueError: If *values* is empty or *threshold* is non-positive.
+    """
+    if not values:
+        raise ValueError("values must not be empty")
+    if threshold <= 0:
+        raise ValueError(f"threshold must be positive, got {threshold}")
+    import statistics
+
+    mean = statistics.mean(values)
+    std = statistics.pstdev(values)
+    return sorted(
+        i for i, v in enumerate(values) if abs(compute_z_score(v, mean, std)) > threshold
+    )
