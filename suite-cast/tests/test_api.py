@@ -216,3 +216,23 @@ def test_rate_limit_enforced(client, sample_booking_dict):
     assert first.status_code == 200
     assert second.status_code == 200
     assert third.status_code == 429
+
+
+def test_predictions_history_returns_200(client):
+    resp = client.get("/api/v1/predictions")
+    assert resp.status_code == 200
+    assert "predictions" in resp.json()
+
+
+def test_predictions_history_after_predict(client, sample_booking_dict):
+    client.post("/api/v1/predict", json=sample_booking_dict)
+    body = client.get("/api/v1/predictions?limit=5").json()
+    assert body["count"] >= 1
+    first = body["predictions"][0]
+    assert {"request_id", "timestamp", "demand_score", "suggested_rate"} <= set(first)
+
+
+def test_predictions_history_limit_clamped(client):
+    resp = client.get("/api/v1/predictions?limit=5000")
+    assert resp.status_code == 200
+    assert resp.json()["count"] <= 100
