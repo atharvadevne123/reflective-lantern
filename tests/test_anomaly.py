@@ -246,3 +246,65 @@ def test_classify_consumption_parametrized(value, expected):
     from app.anomaly import classify_consumption
 
     assert classify_consumption(value, low_threshold=5.0, high_threshold=15.0) == expected
+
+
+def test_compute_z_score_basic():
+    from app.anomaly import compute_z_score
+
+    assert compute_z_score(10.0, mean=10.0, std=1.0) == pytest.approx(0.0)
+
+
+def test_compute_z_score_positive():
+    from app.anomaly import compute_z_score
+
+    assert compute_z_score(13.0, mean=10.0, std=1.0) == pytest.approx(3.0)
+
+
+def test_compute_z_score_negative():
+    from app.anomaly import compute_z_score
+
+    assert compute_z_score(7.0, mean=10.0, std=1.0) == pytest.approx(-3.0)
+
+
+def test_compute_z_score_zero_std():
+    from app.anomaly import compute_z_score
+
+    assert compute_z_score(5.0, mean=5.0, std=0.0) == pytest.approx(0.0)
+
+
+def test_flag_z_score_outliers_finds_outlier():
+    from app.anomaly import flag_z_score_outliers
+
+    data = [10.0] * 50 + [1000.0]
+    outliers = flag_z_score_outliers(data)
+    assert 50 in outliers
+
+
+def test_flag_z_score_outliers_none_on_flat():
+    from app.anomaly import flag_z_score_outliers
+
+    data = [5.0] * 20
+    assert flag_z_score_outliers(data) == []
+
+
+def test_flag_z_score_outliers_empty_raises():
+    from app.anomaly import flag_z_score_outliers
+
+    with pytest.raises(ValueError):
+        flag_z_score_outliers([])
+
+
+def test_flag_z_score_outliers_bad_threshold_raises():
+    from app.anomaly import flag_z_score_outliers
+
+    with pytest.raises(ValueError):
+        flag_z_score_outliers([1.0, 2.0], threshold=0.0)
+
+
+@pytest.mark.parametrize("threshold", [1.0, 2.0, 3.0])
+def test_flag_z_score_outliers_custom_threshold(threshold):
+    from app.anomaly import flag_z_score_outliers
+
+    data = [10.0] * 40 + [10000.0]
+    result = flag_z_score_outliers(data, threshold=threshold)
+    assert len(result) >= 1
