@@ -296,3 +296,21 @@ async def root() -> dict[str, str]:
         "docs": "/docs",
         "health": f"{settings.api_prefix}/health",
     }
+
+
+@app.get(
+    f"{settings.api_prefix}/model-info",
+    summary="Model metadata",
+    description="Returns training metrics, feature count, and ensemble composition.",
+    tags=["Operations"],
+)
+async def model_info() -> dict[str, Any]:
+    """Return model training metadata and ensemble composition."""
+    return {
+        "model_version": settings.model_version,
+        "ensemble": ["XGBClassifier", "LGBMClassifier"],
+        "n_features": _model_metrics.get("n_features"),
+        "n_training_samples": _model_metrics.get("n_samples"),
+        "cv_folds": 5,
+        "metrics": _model_metrics,
+    }
