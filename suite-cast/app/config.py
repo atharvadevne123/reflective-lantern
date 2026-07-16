@@ -8,7 +8,17 @@ from dataclasses import dataclass, field
 
 @dataclass
 class Settings:
-    """Central settings object populated from environment."""
+    """Central settings object populated from environment.
+
+    Attributes:
+        database_url: SQLAlchemy connection string (SQLite dev, PostgreSQL prod).
+        model_version: Version tag stamped on every logged prediction.
+        base_room_rate: Baseline nightly rate the pricing multiplier applies to.
+        rate_limit_per_minute: Per-IP sliding-window request budget.
+        api_prefix: URL prefix for versioned API routes.
+        log_level: Root logging level name (DEBUG/INFO/WARNING/ERROR).
+        environment: Deployment environment label (development/production).
+    """
 
     database_url: str = field(
         default_factory=lambda: os.getenv("DATABASE_URL", "sqlite:///./suite_cast.db")
