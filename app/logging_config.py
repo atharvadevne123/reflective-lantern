@@ -79,3 +79,35 @@ def add_trace_id_filter(logger: logging.Logger, trace_id: str = "") -> None:
         handler.addFilter(TraceIdFilter(trace_id=trace_id))
     if not logger.handlers:
         logger.addFilter(TraceIdFilter(trace_id=trace_id))
+
+
+def log_level_int(level_name: str) -> int:
+    """Convert a log level name to its integer value.
+
+    Args:
+        level_name: Log level string such as 'DEBUG', 'INFO', 'WARNING'.
+
+    Returns:
+        Integer log level (e.g. 10 for DEBUG, 20 for INFO).
+
+    Raises:
+        ValueError: If the level name is not recognised by the logging module.
+    """
+    numeric = getattr(logging, level_name.upper(), None)
+    if not isinstance(numeric, int):
+        raise ValueError(f"Unknown log level: {level_name!r}")
+    return numeric
+
+
+def get_configured_log_level() -> int:
+    """Return the root logger's current effective log level as an integer.
+
+    Returns:
+        Current effective log level integer (e.g. 20 for INFO).
+    """
+    return logging.getLogger().getEffectiveLevel()
+
+
+def is_debug_enabled() -> bool:
+    """Return True if DEBUG logging is enabled for the root logger."""
+    return logging.getLogger().isEnabledFor(logging.DEBUG)
