@@ -162,3 +162,16 @@ MIT
 - **Rate limiting**: the API returns HTTP 429 once a client IP exceeds `RATE_LIMIT_PER_MINUTE` requests in a 60-second sliding window.
 - **Tracing**: pass an `X-Correlation-ID` header to correlate client logs with API logs; one is generated when absent.
 - **Cold start**: on first boot with no `model.joblib` present, the service trains on synthetic data (~30 s) before accepting traffic.
+
+## Retraining Pipeline
+
+`pipelines/retrain_dag.py` defines a weekly Airflow DAG (`suite_cast_retraining`, Mondays 02:00 UTC):
+
+1. `extract_booking_data` — pull the last 90 days of logged predictions
+2. `validate_schema` — assert feature schema integrity
+3. `retrain_model` — retrain the ensemble with 5-fold CV
+4. `evaluate_model` — compare challenger AUC vs champion
+5. `promote_if_better` — swap artifacts only on > 0.005 AUC gain
+6. `detect_drift` — KS-test alert for downstream monitoring
+
+The module imports Airflow lazily, so it is importable (and testable) without an Airflow installation.
