@@ -112,7 +112,6 @@ async def correlation_id_middleware(request: Request, call_next: Any) -> Any:
     return response
 
 
-
 @app.exception_handler(RequestValidationError)
 async def validation_error_handler(request: Request, exc: RequestValidationError) -> JSONResponse:
     """Log rejected payloads with their correlation ID for debuggability."""
