@@ -195,3 +195,54 @@ def test_compute_percentile_bounds_parametrized(lower, upper):
     ref = list(np.random.default_rng(1).normal(10, 2, 200))
     bounds = compute_percentile_bounds(ref, lower_pct=lower, upper_pct=upper)
     assert bounds["lower"] <= bounds["upper"]
+
+
+def test_classify_consumption_low():
+    from app.anomaly import classify_consumption
+
+    assert classify_consumption(3.0, low_threshold=5.0, high_threshold=15.0) == "low"
+
+
+def test_classify_consumption_normal():
+    from app.anomaly import classify_consumption
+
+    assert classify_consumption(10.0, low_threshold=5.0, high_threshold=15.0) == "normal"
+
+
+def test_classify_consumption_high():
+    from app.anomaly import classify_consumption
+
+    assert classify_consumption(20.0, low_threshold=5.0, high_threshold=15.0) == "high"
+
+
+def test_classify_consumption_boundary_low():
+    from app.anomaly import classify_consumption
+
+    assert classify_consumption(5.0, low_threshold=5.0, high_threshold=15.0) == "normal"
+
+
+def test_classify_consumption_boundary_high():
+    from app.anomaly import classify_consumption
+
+    assert classify_consumption(15.0, low_threshold=5.0, high_threshold=15.0) == "high"
+
+
+def test_classify_consumption_invalid_thresholds():
+    from app.anomaly import classify_consumption
+
+    with pytest.raises(ValueError):
+        classify_consumption(10.0, low_threshold=20.0, high_threshold=10.0)
+
+
+@pytest.mark.parametrize("value,expected", [
+    (0.0, "low"),
+    (4.9, "low"),
+    (5.0, "normal"),
+    (14.9, "normal"),
+    (15.0, "high"),
+    (100.0, "high"),
+])
+def test_classify_consumption_parametrized(value, expected):
+    from app.anomaly import classify_consumption
+
+    assert classify_consumption(value, low_threshold=5.0, high_threshold=15.0) == expected
