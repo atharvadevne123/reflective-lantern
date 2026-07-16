@@ -191,3 +191,35 @@ MIT
 - **Repo ops**: GitHub REST API + git
 - **Notifications**: Gmail SMTP
 - **Portfolio**: Notion API + Anthropic SDK
+
+## Utility Modules
+
+### `app/investment.py`
+Real-estate investment analysis: `compute_investment_analysis`, `mortgage_payment`, `roi_percentage`, `price_to_income_ratio`, `investment_score_label`, `portfolio_weighted_score`.
+
+### `app/market_context.py`
+Buyer/investor context: `price_per_sqft`, `dom_classification`, `affordability_index`, `price_to_rent_ratio`, `affordability_bucket`, `rent_vs_buy_comparison`, `price_trend_indicator`, `affordability_ratio`, `housing_affordability_index`, `price_trend_consistency`, `market_summary`.
+
+### `app/time_series.py`
+Forecasting helpers: `simple_moving_average`, `exponential_moving_average`, `seasonal_baseline`, `forecast_linear_trend`, `forecast_trend_with_seasonality`, `detect_spikes`, `peak_hours`, `cumulative_consumption`, `resample_hourly_to_daily`, `moving_range`, `consumption_variance`.
+
+### `app/anomaly.py`
+Anomaly utilities: `IsolationForestDetector`, `score_reading`, `compute_percentile_bounds`, `classify_consumption`, `compute_z_score`, `flag_z_score_outliers`.
+
+### `app/validation.py`
+Input validation: temporal, weather, load-series, building-id, batch-size, consumption, feature-vector, forecast-horizon validators, plus `is_valid_temporal_input` and `clamp_consumption`.
+
+### `app/features.py`
+Feature engineering: full sklearn Pipeline transformers, `normalize_consumption`, `demand_response_potential`.
+
+### `app/similarity.py`
+Building profile search: `BuildingSimilarityIndex`, `batch_add`, `score_distribution`, `hourly_pattern_distance`.
+
+### `app/cache.py`
+TTL LRU cache: `TTLCache` with hit-rate tracking, eviction counter, and `warm_cache` pre-population helper.
+
+### `app/reporting.py`
+Report generation: `generate_summary_report`, `format_prediction_table`, `seasonal_efficiency_score`, `peak_demand_by_period`, `consumption_efficiency_ratio`, `daily_average_consumption`.
+
+### `app/monitoring.py`
+Drift + reference window: `push_reading`, `check_drift`, `summarize_drift_history`, `get_reference_window_size`, `is_reference_window_ready`.
