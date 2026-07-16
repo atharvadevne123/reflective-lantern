@@ -11,6 +11,7 @@ from typing import Any
 import numpy as np
 import pandas as pd
 from fastapi import Depends, FastAPI, HTTPException, Request
+from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import JSONResponse
@@ -109,6 +110,21 @@ async def correlation_id_middleware(request: Request, call_next: Any) -> Any:
     response = await call_next(request)
     response.headers["X-Correlation-ID"] = cid
     return response
+
+
+
+@app.exception_handler(RequestValidationError)
+async def validation_error_handler(request: Request, exc: RequestValidationError) -> JSONResponse:
+    """Log rejected payloads with their correlation ID for debuggability."""
+    cid = request.headers.get("X-Correlation-ID", "-")
+    logger.warning(
+        "Validation rejected %s %s cid=%s errors=%d",
+        request.method,
+        request.url.path,
+        cid,
+        len(exc.errors()),
+    )
+    return JSONResponse(status_code=422, content={"detail": exc.errors()})
 
 
 # ---------------------------------------------------------------------------
