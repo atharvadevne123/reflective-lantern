@@ -293,3 +293,58 @@ def test_normalize_consumption_length_preserved(method):
     data = list(range(1, 21))
     result = normalize_consumption(data, method=method)
     assert len(result) == len(data)
+
+
+def test_demand_response_potential_basic():
+    from app.features import demand_response_potential
+
+    loads = [10.0] * 20 + [100.0] * 4
+    result = demand_response_potential(loads, peak_threshold_pct=0.85)
+    assert result["peak_hours_count"] == 4
+    assert result["sheddable_kwh"] >= 0
+
+
+def test_demand_response_potential_flat_series():
+    from app.features import demand_response_potential
+
+    result = demand_response_potential([5.0] * 24, peak_threshold_pct=0.85)
+    assert result["peak_hours_count"] == 0
+    assert result["sheddable_kwh"] == pytest.approx(0.0)
+
+
+def test_demand_response_potential_empty_raises():
+    from app.features import demand_response_potential
+
+    with pytest.raises(ValueError):
+        demand_response_potential([])
+
+
+def test_demand_response_potential_bad_threshold_raises():
+    from app.features import demand_response_potential
+
+    with pytest.raises(ValueError):
+        demand_response_potential([1.0, 2.0], peak_threshold_pct=0.0)
+
+
+def test_demand_response_potential_keys():
+    from app.features import demand_response_potential
+
+    result = demand_response_potential([1.0, 5.0, 10.0], peak_threshold_pct=0.9)
+    assert set(result.keys()) >= {"peak_hours_count", "sheddable_kwh", "potential_pct", "peak_threshold_kwh"}
+
+
+def test_demand_response_potential_potential_pct_bounded():
+    from app.features import demand_response_potential
+
+    loads = list(range(1, 25))
+    result = demand_response_potential(loads, peak_threshold_pct=0.5)
+    assert 0.0 <= result["potential_pct"] <= 1.0
+
+
+@pytest.mark.parametrize("threshold_pct", [0.5, 0.75, 0.9, 1.0])
+def test_demand_response_potential_threshold_parametrized(threshold_pct):
+    from app.features import demand_response_potential
+
+    loads = [float(i) for i in range(1, 25)]
+    result = demand_response_potential(loads, peak_threshold_pct=threshold_pct)
+    assert result["peak_threshold_kwh"] == pytest.approx(max(loads) * threshold_pct, rel=1e-4)
