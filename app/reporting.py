@@ -131,6 +131,54 @@ def monthly_consumption_summary(
     }
 
 
+def seasonal_efficiency_score(
+    actual_kwh: list[float],
+    baseline_kwh: list[float],
+    season_weights: dict[str, float] | None = None,
+) -> dict[str, float]:
+    """Compute a weighted efficiency score across seasonal segments.
+
+    Divides the series into four equal seasonal quarters and computes
+    savings pct per quarter, then applies optional weights.
+
+    Args:
+        actual_kwh: Measured consumption series (must match baseline length).
+        baseline_kwh: Baseline consumption series.
+        season_weights: Optional mapping of quarter name to weight. Defaults to
+            equal weights for 'q1', 'q2', 'q3', 'q4'.
+
+    Returns:
+        Dict with per-quarter savings pct and a weighted 'overall_score'.
+
+    Raises:
+        ValueError: If series lengths don't match or are empty.
+    """
+    if len(actual_kwh) != len(baseline_kwh):
+        raise ValueError("actual_kwh and baseline_kwh must have the same length")
+    if not actual_kwh:
+        raise ValueError("Input series must not be empty")
+    weights = season_weights or {"q1": 0.25, "q2": 0.25, "q3": 0.25, "q4": 0.25}
+    n = len(actual_kwh)
+    quarter = max(1, n // 4)
+    quarters = {
+        "q1": (0, quarter),
+        "q2": (quarter, 2 * quarter),
+        "q3": (2 * quarter, 3 * quarter),
+        "q4": (3 * quarter, n),
+    }
+    result: dict[str, float] = {}
+    weighted_sum = 0.0
+    for name, (start, end) in quarters.items():
+        a = np.array(actual_kwh[start:end], dtype=float)
+        b = np.array(baseline_kwh[start:end], dtype=float)
+        b_total = float(b.sum())
+        pct = round(100.0 * float((b - a).sum()) / b_total, 2) if b_total > 0 else 0.0
+        result[f"{name}_savings_pct"] = pct
+        weighted_sum += pct * weights.get(name, 0.25)
+    result["overall_score"] = round(weighted_sum, 2)
+    return result
+
+
 def consumption_trend(daily_kwh: list[float]) -> str:
     """Classify consumption trend over a period as 'rising', 'falling', or 'stable'.
 
