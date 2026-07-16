@@ -239,3 +239,57 @@ def test_interaction_extractor_is_stateless() -> None:
     df = _base_df(4)
     tx.fit(df)
     assert hasattr(tx, "available_pairs_")
+
+
+def test_normalize_consumption_minmax_range():
+    from app.features import normalize_consumption
+
+    data = [2.0, 5.0, 8.0, 11.0]
+    result = normalize_consumption(data, method="minmax")
+    assert result[0] == pytest.approx(0.0)
+    assert result[-1] == pytest.approx(1.0)
+
+
+def test_normalize_consumption_zscore_mean():
+    from app.features import normalize_consumption
+
+    data = list(range(1, 11))
+    result = normalize_consumption(data, method="zscore")
+    assert abs(sum(result) / len(result)) < 1e-9
+
+
+def test_normalize_consumption_flat_minmax():
+    from app.features import normalize_consumption
+
+    result = normalize_consumption([5.0] * 10, method="minmax")
+    assert all(v == 0.0 for v in result)
+
+
+def test_normalize_consumption_flat_zscore():
+    from app.features import normalize_consumption
+
+    result = normalize_consumption([3.0] * 8, method="zscore")
+    assert all(v == 0.0 for v in result)
+
+
+def test_normalize_consumption_empty_raises():
+    from app.features import normalize_consumption
+
+    with pytest.raises(ValueError, match="empty"):
+        normalize_consumption([], method="minmax")
+
+
+def test_normalize_consumption_bad_method_raises():
+    from app.features import normalize_consumption
+
+    with pytest.raises(ValueError, match="method"):
+        normalize_consumption([1.0, 2.0], method="l2")
+
+
+@pytest.mark.parametrize("method", ["minmax", "zscore"])
+def test_normalize_consumption_length_preserved(method):
+    from app.features import normalize_consumption
+
+    data = list(range(1, 21))
+    result = normalize_consumption(data, method=method)
+    assert len(result) == len(data)
