@@ -360,3 +360,42 @@ def test_hai_higher_down_lowers_payment(down_pct):
     result = housing_affordability_index(400_000, 80_000, down_payment_pct=down_pct)
     if down_pct > 0:
         assert result["monthly_payment"] < full["monthly_payment"]
+
+
+def test_affordability_ratio_basic():
+    from app.market_context import affordability_ratio
+
+    ratio = affordability_ratio(300_000, 100_000, down_payment_pct=0.20)
+    assert ratio == pytest.approx(2.4, rel=1e-3)
+
+
+def test_affordability_ratio_zero_income():
+    from app.market_context import affordability_ratio
+
+    assert affordability_ratio(300_000, 0) == 0.0
+
+
+def test_affordability_ratio_no_down_payment():
+    from app.market_context import affordability_ratio
+
+    ratio = affordability_ratio(200_000, 100_000, down_payment_pct=0.0)
+    assert ratio == pytest.approx(2.0, rel=1e-3)
+
+
+def test_affordability_ratio_full_down_payment():
+    from app.market_context import affordability_ratio
+
+    ratio = affordability_ratio(200_000, 100_000, down_payment_pct=1.0)
+    assert ratio == pytest.approx(0.0, abs=1e-6)
+
+
+@pytest.mark.parametrize("price,income,down,expected_max", [
+    (200_000, 100_000, 0.0, 2.1),
+    (500_000, 100_000, 0.2, 4.1),
+    (150_000, 80_000, 0.1, 1.7),
+])
+def test_affordability_ratio_parametrized(price, income, down, expected_max):
+    from app.market_context import affordability_ratio
+
+    ratio = affordability_ratio(price, income, down_payment_pct=down)
+    assert ratio <= expected_max
