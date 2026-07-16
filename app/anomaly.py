@@ -161,9 +161,40 @@ def compute_percentile_bounds(
     }
 
 
+def classify_consumption(
+    value: float,
+    low_threshold: float,
+    high_threshold: float,
+) -> str:
+    """Classify a consumption reading as 'low', 'normal', or 'high'.
+
+    Args:
+        value: Consumption reading (kWh).
+        low_threshold: Upper bound for the 'low' classification.
+        high_threshold: Lower bound for the 'high' classification.
+
+    Returns:
+        'low' if value < low_threshold, 'high' if value >= high_threshold,
+        else 'normal'.
+
+    Raises:
+        ValueError: If low_threshold >= high_threshold.
+    """
+    if low_threshold >= high_threshold:
+        raise ValueError(
+            f"low_threshold must be less than high_threshold, got {low_threshold} >= {high_threshold}"
+        )
+    if value < low_threshold:
+        return "low"
+    if value >= high_threshold:
+        return "high"
+    return "normal"
+
+
 __all__ = [
     "anomaly_rate",
     "batch_compute_severity",
+    "classify_consumption",
     "compute_percentile_bounds",
     "compute_severity",
     "iqr_flag",
