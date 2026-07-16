@@ -325,3 +325,49 @@ def test_batch_validate_readings_bad_hours(bad_hour):
     readings = [{"hour": bad_hour, "day_of_week": 0, "month": 1, "temperature_c": 10.0, "humidity_pct": 50.0, "consumption_kwh": 5.0}]
     results = batch_validate_readings(readings)
     assert not results[0]["valid"]
+
+
+def test_validate_forecast_horizon_valid():
+    from app.validation import validate_forecast_horizon
+
+    assert validate_forecast_horizon(24) == []
+    assert validate_forecast_horizon(1) == []
+    assert validate_forecast_horizon(8760) == []
+
+
+def test_validate_forecast_horizon_too_small():
+    from app.validation import validate_forecast_horizon
+
+    errors = validate_forecast_horizon(0)
+    assert len(errors) > 0
+    assert any("1" in e for e in errors)
+
+
+def test_validate_forecast_horizon_too_large():
+    from app.validation import validate_forecast_horizon
+
+    errors = validate_forecast_horizon(9000, max_horizon=8760)
+    assert len(errors) > 0
+
+
+def test_validate_forecast_horizon_custom_max():
+    from app.validation import validate_forecast_horizon
+
+    assert validate_forecast_horizon(48, max_horizon=24) != []
+    assert validate_forecast_horizon(24, max_horizon=24) == []
+
+
+@pytest.mark.parametrize("horizon,expected_valid", [
+    (1, True),
+    (24, True),
+    (168, True),
+    (8760, True),
+    (0, False),
+    (-1, False),
+    (8761, False),
+])
+def test_validate_forecast_horizon_parametrized(horizon, expected_valid):
+    from app.validation import validate_forecast_horizon
+
+    errors = validate_forecast_horizon(horizon)
+    assert (len(errors) == 0) == expected_valid
