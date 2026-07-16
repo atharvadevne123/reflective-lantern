@@ -72,5 +72,12 @@
     "commits": 60,
     "push_status": "SUCCESS",
     "note": "All 60 commits pushed to main. Report text saved to pending/ for manual retrieval."
+  },
+  {
+    "date": "2026-07-16",
+    "repo": "reflective-lantern",
+    "status": "failed",
+    "reason": "SMTP blocked in remote execution environment (IPv6/port timeout)",
+    "report_content_saved": "/tmp/reflective-lantern-report-2026-07-16.txt"
   }
 ]
