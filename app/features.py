@@ -342,3 +342,46 @@ def normalize_consumption(
     if std < 1e-9:
         return [0.0] * len(values)
     return ((arr - mean) / std).tolist()
+
+
+def demand_response_potential(
+    hourly_loads: list[float],
+    peak_threshold_pct: float = 0.85,
+) -> dict[str, object]:
+    """Estimate a building's demand-response potential from its hourly load profile.
+
+    Demand response potential is measured as the fraction of hours where load
+    exceeds *peak_threshold_pct* × peak load ("peak hours") and the total kWh
+    that could be shed if those hours were capped at the threshold.
+
+    Args:
+        hourly_loads: Hourly kWh readings (at least one value).
+        peak_threshold_pct: Fraction of peak load used as the shedding ceiling
+            (default 0.85, i.e. 85 % of peak).
+
+    Returns:
+        Dict with:
+            - ``peak_hours_count``: Number of hours above threshold.
+            - ``sheddable_kwh``: Total kWh that exceeds the threshold.
+            - ``potential_pct``: Sheddable kWh as a fraction of total consumption.
+            - ``peak_threshold_kwh``: Absolute kWh threshold applied.
+
+    Raises:
+        ValueError: If *hourly_loads* is empty or *peak_threshold_pct* is not in (0, 1].
+    """
+    if not hourly_loads:
+        raise ValueError("hourly_loads must not be empty")
+    if not (0 < peak_threshold_pct <= 1.0):
+        raise ValueError(f"peak_threshold_pct must be in (0, 1], got {peak_threshold_pct}")
+    peak = max(hourly_loads)
+    threshold = peak * peak_threshold_pct
+    peak_hours = [v for v in hourly_loads if v > threshold]
+    sheddable = sum(v - threshold for v in peak_hours)
+    total = sum(hourly_loads)
+    potential_pct = sheddable / total if total > 0 else 0.0
+    return {
+        "peak_hours_count": len(peak_hours),
+        "sheddable_kwh": round(sheddable, 4),
+        "potential_pct": round(potential_pct, 4),
+        "peak_threshold_kwh": round(threshold, 4),
+    }
