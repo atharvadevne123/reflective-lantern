@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from datetime import datetime
 
+import pytest
+
 from app.database import AnomalyLog, DriftLog, EnergyReading, PredictionLog
 
 
@@ -164,3 +166,69 @@ def test_get_predictions_by_building_limit(db_session):
     db_session.commit()
     results = get_predictions_by_building(db_session, "bldg-limit", limit=3)
     assert len(results) == 3
+
+
+def test_prediction_log_missing_building_returns_empty(db_session):
+    from app.database import get_predictions_by_building
+
+    results = get_predictions_by_building(db_session, "nonexistent-building")
+    assert results == []
+
+
+def test_anomaly_log_stored_and_retrieved(db_session):
+    from datetime import datetime
+
+    from app.database import AnomalyLog
+
+    entry = AnomalyLog(
+        building_id="bldg-anomaly",
+        timestamp=datetime.utcnow(),
+        consumption_kwh=95.0,
+        anomaly_score=0.85,
+        is_anomaly=True,
+        severity="critical",
+    )
+    db_session.add(entry)
+    db_session.commit()
+    retrieved = db_session.query(AnomalyLog).filter(AnomalyLog.building_id == "bldg-anomaly").first()
+    assert retrieved is not None
+    assert retrieved.severity == "critical"
+
+
+def test_drift_log_stored_and_retrieved(db_session):
+    from datetime import datetime
+
+    from app.database import DriftLog
+
+    entry = DriftLog(
+        feature_name="consumption_kwh",
+        ks_statistic=0.42,
+        p_value=0.02,
+        drift_detected=True,
+        checked_at=datetime.utcnow(),
+    )
+    db_session.add(entry)
+    db_session.commit()
+    retrieved = db_session.query(DriftLog).filter(DriftLog.feature_name == "consumption_kwh").first()
+    assert retrieved is not None
+    assert retrieved.drift_detected is True
+
+
+@pytest.mark.parametrize("n", [1, 3, 5, 10])
+def test_prediction_log_multiple_buildings(db_session, n):
+    from datetime import datetime
+
+    from app.database import PredictionLog, get_predictions_by_building
+
+    for i in range(n):
+        db_session.add(PredictionLog(
+            building_id=f"building-{i}",
+            timestamp=datetime.utcnow(),
+            predicted_kwh=float(i * 2),
+            latency_ms=float(i),
+        ))
+    db_session.commit()
+    for i in range(n):
+        results = get_predictions_by_building(db_session, f"building-{i}")
+        assert len(results) == 1
+        assert results[0].predicted_kwh == float(i * 2)
