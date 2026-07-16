@@ -181,3 +181,22 @@ def test_predict_high_occupancy_scenario(client, sample_booking_dict):
     body = resp.json()
     # High demand scenario should yield medium or high tier
     assert body["demand_tier"] in {"medium", "high"}
+
+
+def test_root_banner(client):
+    resp = client.get("/")
+    assert resp.status_code == 200
+    assert resp.json()["service"] == "Suite-Cast"
+
+
+def test_health_reports_uptime(client):
+    resp = client.get("/api/v1/health")
+    assert resp.json()["uptime_seconds"] >= 0
+
+
+def test_model_info_returns_ensemble(client):
+    resp = client.get("/api/v1/model-info")
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["ensemble"] == ["XGBClassifier", "LGBMClassifier"]
+    assert body["cv_folds"] == 5
