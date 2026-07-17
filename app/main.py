@@ -441,3 +441,23 @@ def validate_batch_readings(body: dict) -> dict:
         "invalid_count": len(results) - valid_count,
         "results": results,
     }
+
+
+@app.get("/api/v1/stats/summary", tags=["Analytics"])
+def consumption_stats_summary(
+    actual_kwh: list[float] | None = None,
+    predicted_kwh: list[float] | None = None,
+) -> dict:
+    """Return statistical summary metrics if actual and predicted lists are provided via query."""
+    if not actual_kwh or not predicted_kwh:
+        return {"error": "Provide actual_kwh and predicted_kwh as query parameters"}
+    from app.stats_utils import mean_absolute_error, r_squared, root_mean_squared_error
+    try:
+        return {
+            "mae": mean_absolute_error(actual_kwh, predicted_kwh),
+            "rmse": root_mean_squared_error(actual_kwh, predicted_kwh),
+            "r2": r_squared(actual_kwh, predicted_kwh),
+            "n": len(actual_kwh),
+        }
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
