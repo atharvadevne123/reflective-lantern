@@ -232,3 +232,66 @@ def test_predict_boundary_hours(client: TestClient, energy_payload, hour, expect
     payload = {**energy_payload, "hour": hour}
     r = client.post("/api/v1/predict", json=payload)
     assert r.status_code == expected_status
+
+
+def test_readiness_probe_before_train(client: TestClient) -> None:
+    """Readiness probe should return 503 when models are not loaded."""
+    import app.main as main_mod
+
+    orig_model = main_mod._model_bundle
+    orig_anomaly = main_mod._anomaly_bundle
+    main_mod._model_bundle = None
+    main_mod._anomaly_bundle = None
+    try:
+        r = client.get("/api/v1/ready")
+        assert r.status_code == 503
+    finally:
+        main_mod._model_bundle = orig_model
+        main_mod._anomaly_bundle = orig_anomaly
+
+
+def test_readiness_probe_after_train(client: TestClient) -> None:
+    """Readiness probe should return 200 after models are loaded."""
+    client.post("/api/v1/train")
+    r = client.get("/api/v1/ready")
+    assert r.status_code == 200
+    assert r.json()["status"] == "ready"
+
+
+def test_version_endpoint(client: TestClient) -> None:
+    """Version endpoint should return a version string."""
+    r = client.get("/api/v1/version")
+    assert r.status_code == 200
+    data = r.json()
+    assert "version" in data
+    assert data["version"] != ""
+
+
+def test_regions_endpoint(client: TestClient) -> None:
+    """Regions endpoint should return a list of grid regions."""
+    r = client.get("/api/v1/regions")
+    assert r.status_code == 200
+    regions = r.json()
+    assert isinstance(regions, list)
+    assert len(regions) > 0
+    assert all("id" in region for region in regions)
+
+
+def test_drift_status_endpoint(client: TestClient) -> None:
+    """Drift status endpoint should return summary and total predictions."""
+    r = client.get("/api/v1/drift-status")
+    assert r.status_code == 200
+    data = r.json()
+    assert "drift_reports" in data
+    assert "total_predictions" in data
+
+
+@pytest.mark.parametrize("top_n", [5, 10, 20])
+def test_feature_importance_top_n(client: TestClient, top_n: int) -> None:
+    """Feature importance endpoint should respect top_n parameter."""
+    client.post("/api/v1/train")
+    r = client.get("/api/v1/feature-importance", params={"top_n": top_n})
+    assert r.status_code == 200
+    data = r.json()
+    assert len(data["features"]) <= top_n
+    assert data["top_n"] == top_n
