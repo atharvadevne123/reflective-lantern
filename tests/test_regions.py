@@ -167,3 +167,52 @@ def test_get_regions_by_timezone_parametrized(tz, expected_min):
     from app.regions import get_regions_by_timezone
 
     assert len(get_regions_by_timezone(tz)) >= expected_min
+
+
+def test_get_peak_load_known():
+    from app.regions import get_peak_load
+
+    result = get_peak_load("northeast")
+    assert result is not None
+    assert result == 12000.0
+
+
+def test_get_peak_load_unknown():
+    from app.regions import get_peak_load
+
+    result = get_peak_load("nonexistent_region")
+    assert result is None
+
+
+def test_get_peak_load_case_insensitive():
+    from app.regions import get_peak_load
+
+    assert get_peak_load("MIDWEST") == get_peak_load("midwest")
+
+
+@pytest.mark.parametrize("region_id,expected_mw", [
+    ("northeast", 12000.0),
+    ("south", 14000.0),
+    ("west", 8000.0),
+    ("texas", 11000.0),
+])
+def test_get_peak_load_parametrized(region_id, expected_mw):
+    from app.regions import get_peak_load
+
+    assert get_peak_load(region_id) == expected_mw
+
+
+def test_list_regions_all_have_id():
+    from app.regions import list_regions
+
+    for region in list_regions():
+        assert "id" in region
+        assert "name" in region
+        assert "peak_load_mw" in region
+
+
+def test_get_all_region_ids_is_sorted():
+    from app.regions import get_all_region_ids
+
+    ids = get_all_region_ids()
+    assert ids == sorted(ids)
