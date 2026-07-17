@@ -581,3 +581,30 @@ def cache_stats() -> dict:
     from app.cache import prediction_cache
 
     return prediction_cache.stats()
+
+
+@app.post("/api/v1/forecast/naive", tags=["Forecasting"])
+def naive_forecast_endpoint(values: list[float], steps: int = 6) -> dict:
+    """Return a naive flat forecast repeating the last observed value."""
+    from app.forecasting import forecast_summary, naive_forecast
+
+    if not values:
+        raise HTTPException(status_code=422, detail="values must not be empty")
+    if steps <= 0:
+        raise HTTPException(status_code=422, detail="steps must be positive")
+    preds = naive_forecast(values[-1], steps=steps)
+    return {"forecast": preds, "method": "naive", **forecast_summary(preds)}
+
+
+@app.post("/api/v1/forecast/ses", tags=["Forecasting"])
+def ses_forecast_endpoint(values: list[float], steps: int = 6, alpha: float = 0.3) -> dict:
+    """Return a Simple Exponential Smoothing forecast."""
+    from app.forecasting import exponential_smoothing_forecast, forecast_summary
+
+    if not values:
+        raise HTTPException(status_code=422, detail="values must not be empty")
+    try:
+        preds = exponential_smoothing_forecast(values, steps=steps, alpha=alpha)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    return {"forecast": preds, "method": "ses", "alpha": alpha, **forecast_summary(preds)}
