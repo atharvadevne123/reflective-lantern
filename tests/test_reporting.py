@@ -367,49 +367,49 @@ def test_seasonal_efficiency_score_mismatched_raises():
         seasonal_efficiency_score([1.0, 2.0], [3.0])
 
 
-def test_seasonal_efficiency_score_empty_raises():
+def test_seasonal_efficiency_score_empty_raises_v2():
     from app.reporting import seasonal_efficiency_score
     with pytest.raises(ValueError):
         seasonal_efficiency_score([], [])
 
 
-def test_consumption_trend_rising():
+def test_consumption_trend_rising_v2():
     from app.reporting import consumption_trend
     data = [float(i) for i in range(10, 40)]
     assert consumption_trend(data) == "rising"
 
 
-def test_consumption_trend_falling():
+def test_consumption_trend_falling_v2():
     from app.reporting import consumption_trend
     data = [float(i) for i in range(30, 0, -1)]
     assert consumption_trend(data) == "falling"
 
 
-def test_consumption_trend_stable():
+def test_consumption_trend_stable_v2():
     from app.reporting import consumption_trend
     data = [10.0] * 20
     assert consumption_trend(data) == "stable"
 
 
-def test_consumption_trend_single_value():
+def test_consumption_trend_single_value_v2():
     from app.reporting import consumption_trend
     assert consumption_trend([5.0]) == "stable"
 
 
-def test_peak_demand_by_period_basic():
+def test_peak_demand_by_period_basic_v2():
     from app.reporting import peak_demand_by_period
     hourly = [1.0] * 20 + [10.0] * 4
     result = peak_demand_by_period(hourly, period_hours=4)
     assert any(p["is_peak"] for p in result)
 
 
-def test_peak_demand_by_period_empty_raises():
+def test_peak_demand_by_period_empty_raises_v2():
     from app.reporting import peak_demand_by_period
     with pytest.raises(ValueError):
         peak_demand_by_period([])
 
 
-def test_peak_demand_by_period_invalid_period_raises():
+def test_peak_demand_by_period_invalid_period_raises_v2():
     from app.reporting import peak_demand_by_period
     with pytest.raises(ValueError):
         peak_demand_by_period([1.0] * 10, period_hours=0)

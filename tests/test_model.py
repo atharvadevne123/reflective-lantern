@@ -236,6 +236,7 @@ def test_get_feature_importance_empty_bundle():
 def test_train_model_various_sizes(n_samples):
     import numpy as np
     import pandas as pd
+
     from app.model import train_model
 
     rng = np.random.default_rng(1)
@@ -265,6 +266,7 @@ def test_get_feature_importance_various_top_n(trained_model, top_n):
 
 def test_predict_returns_array_for_batch(trained_model):
     import numpy as np
+
     from app.model import predict
 
     bundle, _ = trained_model
@@ -277,8 +279,9 @@ def test_predict_returns_array_for_batch(trained_model):
 
 
 def test_prediction_confidence_returns_dict(trained_model):
-    from app.model import prediction_confidence, make_feature_row_from_bundle
     import pandas as pd
+
+    from app.model import prediction_confidence
 
     bundle, _ = trained_model
     row = pd.DataFrame([{
@@ -294,8 +297,9 @@ def test_prediction_confidence_returns_dict(trained_model):
 
 
 def test_prediction_confidence_bounds_ordered(trained_model):
-    from app.model import prediction_confidence
     import pandas as pd
+
+    from app.model import prediction_confidence
 
     bundle, _ = trained_model
     row = pd.DataFrame([{
@@ -308,8 +312,9 @@ def test_prediction_confidence_bounds_ordered(trained_model):
 
 
 def test_prediction_confidence_empty_bundle():
-    from app.model import prediction_confidence
     import pandas as pd
+
+    from app.model import prediction_confidence
 
     row = pd.DataFrame([{"hour": 12}])
     result = prediction_confidence({}, row)

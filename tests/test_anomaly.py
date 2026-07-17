@@ -5,7 +5,15 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from app.anomaly import anomaly_rate, batch_compute_severity, compute_severity, consecutive_anomaly_runs, iqr_flag, zscore_flag
+from app.anomaly import (
+    anomaly_rate,
+    batch_compute_severity,
+    compute_severity,
+    consecutive_anomaly_runs,
+    flag_anomaly_rate,
+    iqr_flag,
+    zscore_flag,
+)
 
 
 def test_zscore_normal():
@@ -337,7 +345,7 @@ def test_top_anomalies_empty_input():
     assert top_anomalies([]) == []
 
 
-def test_top_anomalies_custom_order():
+def test_top_anomalies_custom_order_warning_first():
     from app.anomaly import top_anomalies
 
     data = [
@@ -357,20 +365,20 @@ def test_top_anomalies_n_parametrized(n):
     assert len(result) <= n
 
 
-def test_anomaly_rate_all_anomalies():
-    assert anomaly_rate([True, True, True]) == pytest.approx(1.0)
+def test_flag_anomaly_rate_all_anomalies():
+    assert flag_anomaly_rate([True, True, True]) == pytest.approx(1.0)
 
 
-def test_anomaly_rate_no_anomalies():
-    assert anomaly_rate([False, False, False]) == pytest.approx(0.0)
+def test_flag_anomaly_rate_no_anomalies():
+    assert flag_anomaly_rate([False, False, False]) == pytest.approx(0.0)
 
 
-def test_anomaly_rate_mixed():
-    assert anomaly_rate([True, False, True, False]) == pytest.approx(0.5)
+def test_flag_anomaly_rate_mixed():
+    assert flag_anomaly_rate([True, False, True, False]) == pytest.approx(0.5)
 
 
-def test_anomaly_rate_empty():
-    assert anomaly_rate([]) == 0.0
+def test_flag_anomaly_rate_empty():
+    assert flag_anomaly_rate([]) == 0.0
 
 
 def test_consecutive_anomaly_runs_single_run():
@@ -398,8 +406,8 @@ def test_consecutive_anomaly_runs_all_true():
 
 
 @pytest.mark.parametrize("rate,expected", [(1.0, True), (0.0, False)])
-def test_anomaly_rate_boundary(rate, expected):
+def test_flag_anomaly_rate_boundary(rate, expected):
     n = 10
     flags = [True] * int(n * rate) + [False] * (n - int(n * rate))
-    result = anomaly_rate(flags)
+    result = flag_anomaly_rate(flags)
     assert (result == pytest.approx(1.0)) == expected

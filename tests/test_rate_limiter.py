@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-import time
-
 import pytest
 
 from app.rate_limiter import TokenBucketRateLimiter, make_rate_limiter

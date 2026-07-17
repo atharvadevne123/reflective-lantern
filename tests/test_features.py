@@ -361,8 +361,9 @@ def test_normalize_consumption_minmax():
 
 
 def test_normalize_consumption_zscore():
-    from app.features import normalize_consumption
     import statistics
+
+    from app.features import normalize_consumption
     values = [1.0, 2.0, 3.0, 4.0, 5.0]
     result = normalize_consumption(values, method="zscore")
     assert abs(statistics.mean(result)) < 1e-6
@@ -394,7 +395,7 @@ def test_normalize_consumption_same_length(method):
     assert len(result) == len(values)
 
 
-def test_demand_response_potential_basic():
+def test_demand_response_potential_extended():
     from app.features import demand_response_potential
     loads = [5.0, 10.0, 15.0, 20.0, 25.0]
     result = demand_response_potential(loads, peak_threshold_pct=0.8)

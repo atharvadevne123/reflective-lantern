@@ -89,7 +89,7 @@ def test_carbon_savings_actual_exceeds_baseline():
 
 @pytest.mark.parametrize("region", ["northeast", "midwest", "south", "west", "pacific_nw"])
 def test_kwh_to_co2_kg_known_regions(region):
-    from app.carbon import kwh_to_co2_kg, GRID_CARBON_INTENSITY
+    from app.carbon import GRID_CARBON_INTENSITY, kwh_to_co2_kg
     result = kwh_to_co2_kg(100.0, region=region)
     expected = GRID_CARBON_INTENSITY[region] * 100.0
     assert abs(result - expected) < 0.01

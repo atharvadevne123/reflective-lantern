@@ -427,25 +427,25 @@ def test_is_valid_temporal_input_parametrized(hour, dow, month, expected):
     assert is_valid_temporal_input(hour, dow, month) is expected
 
 
-def test_clamp_consumption_below_min():
+def test_clamp_consumption_below_min_v2():
     from app.validation import clamp_consumption
     result = clamp_consumption(-10.0)
     assert result == 0.0
 
 
-def test_clamp_consumption_above_max():
-    from app.validation import clamp_consumption, MAX_CONSUMPTION_KWH
+def test_clamp_consumption_above_max_v2():
+    from app.validation import MAX_CONSUMPTION_KWH, clamp_consumption
     result = clamp_consumption(MAX_CONSUMPTION_KWH + 1000)
     assert result == MAX_CONSUMPTION_KWH
 
 
-def test_clamp_consumption_in_range():
+def test_clamp_consumption_in_range_v2():
     from app.validation import clamp_consumption
     result = clamp_consumption(500.0)
     assert result == 500.0
 
 
-def test_is_valid_temporal_input_valid():
+def test_is_valid_temporal_input_valid_v2():
     from app.validation import is_valid_temporal_input
     assert is_valid_temporal_input(12, 3, 6) is True
 
@@ -457,6 +457,7 @@ def test_is_valid_temporal_input_invalid_hour():
 
 def test_extract_temporal_from_datetime():
     from datetime import datetime
+
     from app.validation import extract_temporal_from_datetime
     dt = datetime(2026, 6, 15, 14, 30)
     result = extract_temporal_from_datetime(dt)
@@ -472,7 +473,7 @@ def test_extract_temporal_from_datetime():
     (0, False),
     (8761, False),
 ])
-def test_validate_forecast_horizon_parametrized(horizon, expected_valid):
+def test_validate_forecast_horizon_parametrized_v2(horizon, expected_valid):
     from app.validation import validate_forecast_horizon
     errors = validate_forecast_horizon(horizon)
     assert (len(errors) == 0) == expected_valid

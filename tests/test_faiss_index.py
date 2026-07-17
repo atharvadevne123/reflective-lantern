@@ -158,7 +158,7 @@ def test_search_comparable_returns_distance():
 
 
 def test_search_comparable_caps_top_k():
-    from app.faiss_index import add_property, reset_index, search_comparable, MAX_TOP_K
+    from app.faiss_index import MAX_TOP_K, add_property, reset_index, search_comparable
 
     reset_index()
     for i in range(5):

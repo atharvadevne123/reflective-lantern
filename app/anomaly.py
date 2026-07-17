@@ -274,7 +274,7 @@ def flag_z_score_outliers(
     )
 
 
-def anomaly_rate(flags: list[bool]) -> float:
+def flag_anomaly_rate(flags: list[bool]) -> float:
     """Return the fraction of True values in *flags* (anomaly rate).
 
     Args:

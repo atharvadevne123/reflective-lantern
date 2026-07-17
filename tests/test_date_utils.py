@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import datetime
 
 import pytest
 
@@ -29,8 +29,9 @@ def test_hours_between_same():
 
 
 def test_hours_between_24h():
-    from app.date_utils import hours_between
     from datetime import timedelta
+
+    from app.date_utils import hours_between
     start = datetime(2026, 1, 1, 0)
     end = start + timedelta(hours=24)
     assert hours_between(start, end) == 24
@@ -63,8 +64,9 @@ def test_generate_hourly_timestamps_length():
 
 
 def test_generate_hourly_timestamps_spacing():
-    from app.date_utils import generate_hourly_timestamps
     from datetime import timedelta
+
+    from app.date_utils import generate_hourly_timestamps
     start = datetime(2026, 1, 1)
     result = generate_hourly_timestamps(start, 3)
     assert result[1] - result[0] == timedelta(hours=1)

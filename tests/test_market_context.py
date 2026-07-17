@@ -532,14 +532,14 @@ def test_affordability_index_parametrized(value, income, expected_range):
     assert lo <= result <= hi
 
 
-def test_price_to_rent_ratio_basic():
+def test_price_to_rent_ratio_extended():
     from app.market_context import price_to_rent_ratio
 
     result = price_to_rent_ratio(300_000.0, 20_000.0)
     assert abs(result - 15.0) < 0.01
 
 
-def test_price_to_rent_ratio_zero_rent():
+def test_price_to_rent_ratio_zero_rent_v2():
     from app.market_context import price_to_rent_ratio
 
     result = price_to_rent_ratio(300_000.0, 0.0)

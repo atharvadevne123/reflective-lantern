@@ -169,7 +169,7 @@ def test_get_regions_by_timezone_parametrized(tz, expected_min):
     assert len(get_regions_by_timezone(tz)) >= expected_min
 
 
-def test_get_peak_load_known():
+def test_get_peak_load_known_v2():
     from app.regions import get_peak_load
 
     result = get_peak_load("northeast")
@@ -177,7 +177,7 @@ def test_get_peak_load_known():
     assert result == 12000.0
 
 
-def test_get_peak_load_unknown():
+def test_get_peak_load_unknown_v2():
     from app.regions import get_peak_load
 
     result = get_peak_load("nonexistent_region")

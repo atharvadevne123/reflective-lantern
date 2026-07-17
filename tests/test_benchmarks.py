@@ -108,7 +108,7 @@ def test_list_building_types():
 
 @pytest.mark.parametrize("building_type", ["office", "hotel", "school", "warehouse"])
 def test_benchmark_eui_known_types(building_type):
-    from app.benchmarks import benchmark_eui, ASHRAE_EUI_BENCHMARKS
+    from app.benchmarks import ASHRAE_EUI_BENCHMARKS, benchmark_eui
     result = benchmark_eui(200.0, building_type)
     assert result["benchmark_eui"] == ASHRAE_EUI_BENCHMARKS[building_type]
     assert result["rating"] in ("excellent", "good", "average", "poor")
