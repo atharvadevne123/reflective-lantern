@@ -476,3 +476,19 @@ def get_config() -> dict:
         "database_url_type": "sqlite" if "sqlite" in settings.database_url else "postgresql",
         "version": __version__,
     }
+
+
+@app.post("/api/v1/benchmark-eui", tags=["Analytics"])
+def benchmark_eui_endpoint(
+    annual_kwh: float,
+    floor_area_sqm: float,
+    building_type: str = "default",
+) -> dict:
+    """Compute EUI and benchmark against ASHRAE reference values for the building type."""
+    from app.benchmarks import benchmark_eui, compute_eui
+
+    try:
+        eui = compute_eui(annual_kwh, floor_area_sqm)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    return benchmark_eui(eui, building_type)
