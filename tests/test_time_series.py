@@ -375,3 +375,51 @@ def test_ema_same_length(alpha):
     from app.time_series import exponential_moving_average
     result = exponential_moving_average(values, alpha=alpha)
     assert len(result) == len(values)
+
+
+def test_detect_plateau_flat_series():
+    from app.time_series import detect_plateau
+    values = [10.0] * 8
+    plateaus = detect_plateau(values, tolerance=0.1)
+    assert len(plateaus) >= 1
+    assert plateaus[0][0] == 0
+    assert plateaus[0][1] == 7
+
+
+def test_detect_plateau_no_plateau():
+    from app.time_series import detect_plateau
+    values = [1.0, 5.0, 1.0, 5.0, 1.0]
+    plateaus = detect_plateau(values, tolerance=0.1)
+    assert len(plateaus) == 0
+
+
+def test_detect_plateau_empty():
+    from app.time_series import detect_plateau
+    assert detect_plateau([]) == []
+
+
+def test_clip_outliers_basic():
+    from app.time_series import clip_outliers
+    values = [1.0] * 8 + [1000.0]
+    clipped = clip_outliers(values, upper_pct=90.0)
+    assert max(clipped) < 1000.0
+
+
+def test_clip_outliers_preserves_length():
+    from app.time_series import clip_outliers
+    values = list(range(20))
+    clipped = clip_outliers([float(v) for v in values])
+    assert len(clipped) == 20
+
+
+def test_clip_outliers_empty():
+    from app.time_series import clip_outliers
+    assert clip_outliers([]) == []
+
+
+@pytest.mark.parametrize("upper_pct", [75.0, 90.0, 99.0])
+def test_clip_outliers_various_percentiles(upper_pct):
+    from app.time_series import clip_outliers
+    values = list(range(1, 101))
+    clipped = clip_outliers([float(v) for v in values], upper_pct=upper_pct)
+    assert max(clipped) <= upper_pct + 1
