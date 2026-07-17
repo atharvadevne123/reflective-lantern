@@ -31,11 +31,15 @@ def create_test_db() -> None:
 
 @pytest.fixture
 def db_session():
-    """Yield a fresh SQLAlchemy session for each test."""
+    """Yield a fresh SQLAlchemy session for each test, wiping tables afterwards."""
     session = TestingSessionLocal()
     try:
         yield session
     finally:
+        session.rollback()
+        for table in reversed(Base.metadata.sorted_tables):
+            session.execute(table.delete())
+        session.commit()
         session.close()
 
 

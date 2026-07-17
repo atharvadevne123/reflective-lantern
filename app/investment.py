@@ -228,11 +228,9 @@ def portfolio_weighted_score(
     if weights is None:
         weights = [1.0 / len(scores)] * len(scores)
     if len(weights) != len(scores):
-        raise ValueError(
-            f"weights length {len(weights)} must match scores length {len(scores)}"
-        )
+        raise ValueError(f"weights length {len(weights)} must match scores length {len(scores)}")
     total_weight = sum(weights)
     if total_weight <= 0:
         return 0.0
-    weighted = sum(s * w for s, w in zip(scores, weights))
+    weighted = sum(s * w for s, w in zip(scores, weights, strict=False))
     return round(weighted / total_weight, 3)

@@ -344,13 +344,16 @@ def test_is_debug_enabled_returns_bool() -> None:
     assert isinstance(result, bool)
 
 
-@pytest.mark.parametrize("level_name,expected", [
-    ("DEBUG", 10),
-    ("INFO", 20),
-    ("WARNING", 30),
-    ("ERROR", 40),
-    ("CRITICAL", 50),
-])
+@pytest.mark.parametrize(
+    "level_name,expected",
+    [
+        ("DEBUG", 10),
+        ("INFO", 20),
+        ("WARNING", 30),
+        ("ERROR", 40),
+        ("CRITICAL", 50),
+    ],
+)
 def test_log_level_int_parametrized(level_name, expected) -> None:
     from app.logging_config import log_level_int
 

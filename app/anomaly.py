@@ -181,9 +181,7 @@ def classify_consumption(
         ValueError: If low_threshold >= high_threshold.
     """
     if low_threshold >= high_threshold:
-        raise ValueError(
-            f"low_threshold must be less than high_threshold, got {low_threshold} >= {high_threshold}"
-        )
+        raise ValueError(f"low_threshold must be less than high_threshold, got {low_threshold} >= {high_threshold}")
     if value < low_threshold:
         return "low"
     if value >= high_threshold:

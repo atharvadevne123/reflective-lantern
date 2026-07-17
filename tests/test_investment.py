@@ -341,15 +341,18 @@ def test_investment_score_label_avoid():
     assert investment_score_label(0.5) == "avoid"
 
 
-@pytest.mark.parametrize("score,expected", [
-    (10.0, "excellent"),
-    (8.0, "excellent"),
-    (6.0, "good"),
-    (4.0, "fair"),
-    (2.0, "poor"),
-    (1.9, "avoid"),
-    (0.0, "avoid"),
-])
+@pytest.mark.parametrize(
+    "score,expected",
+    [
+        (10.0, "excellent"),
+        (8.0, "excellent"),
+        (6.0, "good"),
+        (4.0, "fair"),
+        (2.0, "poor"),
+        (1.9, "avoid"),
+        (0.0, "avoid"),
+    ],
+)
 def test_investment_score_label_parametrized(score, expected):
     from app.investment import investment_score_label
 
