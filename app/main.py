@@ -423,3 +423,21 @@ def readiness_probe() -> dict[str, str]:
     if _model_bundle is None or _anomaly_bundle is None:
         raise HTTPException(status_code=503, detail="Models not yet loaded.")
     return {"status": "ready"}
+
+
+@app.post("/api/v1/validate-batch", tags=["Validation"])
+def validate_batch_readings(body: dict) -> dict:
+    """Validate a batch of energy readings and return per-row error reports."""
+    from app.validation import batch_validate_readings
+
+    readings = body.get("readings", [])
+    if not readings:
+        raise HTTPException(status_code=400, detail="readings list must not be empty")
+    results = batch_validate_readings(readings)
+    valid_count = sum(1 for r in results if r["valid"])
+    return {
+        "total": len(results),
+        "valid_count": valid_count,
+        "invalid_count": len(results) - valid_count,
+        "results": results,
+    }
