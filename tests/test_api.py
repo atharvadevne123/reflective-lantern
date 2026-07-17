@@ -340,3 +340,23 @@ def test_validate_batch_empty_raises(client: TestClient) -> None:
     """Batch validation should return 400 for empty readings."""
     r = client.post("/api/v1/validate-batch", json={"readings": []})
     assert r.status_code == 400
+
+
+def test_config_endpoint(client: TestClient) -> None:
+    """Config endpoint should return non-sensitive settings."""
+    r = client.get("/api/v1/config")
+    assert r.status_code == 200
+    data = r.json()
+    assert "version" in data
+    assert "rate_limit_per_minute" in data
+    assert "log_level" in data
+    assert "database_url" not in data  # sensitive - should not be exposed directly
+
+
+def test_health_has_version(client: TestClient) -> None:
+    """Health endpoint should include version string."""
+    r = client.get("/api/v1/health")
+    assert r.status_code == 200
+    data = r.json()
+    assert "version" in data
+    assert data["version"].count(".") >= 1  # basic semver check
