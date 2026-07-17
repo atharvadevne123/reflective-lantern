@@ -308,3 +308,50 @@ def test_flag_z_score_outliers_custom_threshold(threshold):
     data = [10.0] * 40 + [10000.0]
     result = flag_z_score_outliers(data, threshold=threshold)
     assert len(result) >= 1
+
+
+def test_top_anomalies_returns_most_severe_first():
+    from app.anomaly import top_anomalies
+
+    data = [
+        {"severity": "none", "value": 5.0},
+        {"severity": "critical", "value": 100.0},
+        {"severity": "warning", "value": 50.0},
+    ]
+    result = top_anomalies(data, n=3)
+    assert result[0]["severity"] == "critical"
+    assert result[1]["severity"] == "warning"
+
+
+def test_top_anomalies_limits_to_n():
+    from app.anomaly import top_anomalies
+
+    data = [{"severity": "critical", "value": float(i)} for i in range(20)]
+    result = top_anomalies(data, n=5)
+    assert len(result) == 5
+
+
+def test_top_anomalies_empty_input():
+    from app.anomaly import top_anomalies
+
+    assert top_anomalies([]) == []
+
+
+def test_top_anomalies_custom_order():
+    from app.anomaly import top_anomalies
+
+    data = [
+        {"severity": "warning", "value": 5.0},
+        {"severity": "critical", "value": 10.0},
+    ]
+    result = top_anomalies(data, n=2, severity_order=["warning", "critical", "none"])
+    assert result[0]["severity"] == "warning"
+
+
+@pytest.mark.parametrize("n", [1, 5, 10])
+def test_top_anomalies_n_parametrized(n):
+    from app.anomaly import top_anomalies
+
+    data = [{"severity": "warning", "value": float(i)} for i in range(15)]
+    result = top_anomalies(data, n=n)
+    assert len(result) <= n
