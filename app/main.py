@@ -524,3 +524,15 @@ def carbon_annual_report(monthly_kwh: list[float], region: str = "default") -> d
         return annual_carbon_report(monthly_kwh, region=region)
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+
+@app.get("/api/v1/peak-hours", tags=["Analytics"])
+def peak_usage_hours(region: str = "default", top_n: int = 3) -> dict:
+    """Return the top N peak usage hours from recent prediction logs."""
+    from app.monitoring import _reference_window
+    from app.time_series import peak_hours
+
+    if not _reference_window:
+        return {"peak_hours": [], "note": "No reference data available. Train model first."}
+    peaks = peak_hours(_reference_window[:168], top_n=top_n)
+    return {"region": region, "top_n": top_n, "peak_hours": peaks}
