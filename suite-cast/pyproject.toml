@@ -1,6 +1,6 @@
 [build-system]
 requires = ["setuptools>=68", "wheel"]
-build-backend = "setuptools.backends.legacy:build"
+build-backend = "setuptools.build_meta"
 
 [project]
 name = "suite-cast"
@@ -35,6 +35,7 @@ Repository = "https://github.com/atharvadevne123/reflective-lantern"
 
 [tool.setuptools.packages.find]
 where = ["."]
+include = ["app*", "pipelines*"]
 
 [tool.ruff]
 line-length = 100
