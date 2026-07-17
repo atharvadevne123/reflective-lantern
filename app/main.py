@@ -64,7 +64,7 @@ _anomaly_bundle: dict[str, Any] | None = None
 
 
 @asynccontextmanager
-async def lifespan(app: FastAPI):
+async def lifespan(app: FastAPI):  # type: ignore[type-arg]
     global _model_bundle, _anomaly_bundle
     create_tables()
     _model_bundle = load_model()
