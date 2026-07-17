@@ -274,3 +274,44 @@ def test_predict_returns_array_for_batch(trained_model):
         assert len(preds) == 10
     except Exception:
         pass  # model may need specific feature count
+
+
+def test_prediction_confidence_returns_dict(trained_model):
+    from app.model import prediction_confidence, make_feature_row_from_bundle
+    import pandas as pd
+
+    bundle, _ = trained_model
+    row = pd.DataFrame([{
+        "hour": 12, "day_of_week": 1, "month": 6,
+        "temperature_c": 22.0, "humidity_pct": 55.0,
+        "occupancy": 50, "hvac_state": 1, "consumption_kwh": 10.0
+    }])
+    result = prediction_confidence(bundle, row)
+    assert "mean" in result
+    assert "std" in result
+    assert "lower_95" in result
+    assert "upper_95" in result
+
+
+def test_prediction_confidence_bounds_ordered(trained_model):
+    from app.model import prediction_confidence
+    import pandas as pd
+
+    bundle, _ = trained_model
+    row = pd.DataFrame([{
+        "hour": 12, "day_of_week": 1, "month": 6,
+        "temperature_c": 22.0, "humidity_pct": 55.0,
+        "occupancy": 50, "hvac_state": 1, "consumption_kwh": 10.0
+    }])
+    result = prediction_confidence(bundle, row)
+    assert result["lower_95"] <= result["mean"] <= result["upper_95"]
+
+
+def test_prediction_confidence_empty_bundle():
+    from app.model import prediction_confidence
+    import pandas as pd
+
+    row = pd.DataFrame([{"hour": 12}])
+    result = prediction_confidence({}, row)
+    assert result["mean"] == 0.0
+    assert result["std"] == 0.0
