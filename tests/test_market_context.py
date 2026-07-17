@@ -389,11 +389,14 @@ def test_affordability_ratio_full_down_payment():
     assert ratio == pytest.approx(0.0, abs=1e-6)
 
 
-@pytest.mark.parametrize("price,income,down,expected_max", [
-    (200_000, 100_000, 0.0, 2.1),
-    (500_000, 100_000, 0.2, 4.1),
-    (150_000, 80_000, 0.1, 1.7),
-])
+@pytest.mark.parametrize(
+    "price,income,down,expected_max",
+    [
+        (200_000, 100_000, 0.0, 2.1),
+        (500_000, 100_000, 0.2, 4.1),
+        (150_000, 80_000, 0.1, 1.7),
+    ],
+)
 def test_affordability_ratio_parametrized(price, income, down, expected_max):
     from app.market_context import affordability_ratio
 
@@ -440,10 +443,13 @@ def test_price_trend_consistency_keys():
     assert set(result.keys()) >= {"direction_changes", "consistency_score", "trend", "periods"}
 
 
-@pytest.mark.parametrize("prices,expected_trend", [
-    ([1.0, 2.0, 3.0, 4.0, 5.0], "rising"),
-    ([5.0, 4.0, 3.0, 2.0, 1.0], "falling"),
-])
+@pytest.mark.parametrize(
+    "prices,expected_trend",
+    [
+        ([1.0, 2.0, 3.0, 4.0, 5.0], "rising"),
+        ([5.0, 4.0, 3.0, 2.0, 1.0], "falling"),
+    ],
+)
 def test_price_trend_consistency_parametrized(prices, expected_trend):
     from app.market_context import price_trend_consistency
 
@@ -493,11 +499,14 @@ def test_market_summary_zero_sqft():
     assert result["price_per_sqft"] == 0.0
 
 
-@pytest.mark.parametrize("listing_days,expected_dom", [
-    (10, "fast"),
-    (30, "normal"),
-    (75, "slow"),
-])
+@pytest.mark.parametrize(
+    "listing_days,expected_dom",
+    [
+        (10, "fast"),
+        (30, "normal"),
+        (75, "slow"),
+    ],
+)
 def test_market_summary_dom_parametrized(listing_days, expected_dom):
     from app.market_context import market_summary
 

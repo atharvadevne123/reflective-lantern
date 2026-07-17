@@ -147,11 +147,11 @@ def get_predictions_by_building(
 
 
 def get_recent_anomalies(
-    db: "Session",
+    db: Session,
     building_id: str,
     limit: int = 10,
     severity: str | None = None,
-) -> list["AnomalyLog"]:
+) -> list[AnomalyLog]:
     """Return the most recent anomaly log entries for a building.
 
     Args:
@@ -163,17 +163,13 @@ def get_recent_anomalies(
     Returns:
         List of AnomalyLog ORM objects, newest first.
     """
-    query = (
-        db.query(AnomalyLog)
-        .filter(AnomalyLog.building_id == building_id)
-        .filter(AnomalyLog.is_anomaly == 1)
-    )
+    query = db.query(AnomalyLog).filter(AnomalyLog.building_id == building_id).filter(AnomalyLog.is_anomaly == 1)
     if severity is not None:
         query = query.filter(AnomalyLog.severity == severity)
     return query.order_by(AnomalyLog.timestamp.desc()).limit(limit).all()
 
 
-def count_anomalies_by_building(db: "Session", building_id: str) -> int:
+def count_anomalies_by_building(db: Session, building_id: str) -> int:
     """Return the total number of anomaly records for *building_id*.
 
     Args:
@@ -183,8 +179,4 @@ def count_anomalies_by_building(db: "Session", building_id: str) -> int:
     Returns:
         Integer count of rows where is_anomaly == 1.
     """
-    return (
-        db.query(AnomalyLog)
-        .filter(AnomalyLog.building_id == building_id, AnomalyLog.is_anomaly == 1)
-        .count()
-    )
+    return db.query(AnomalyLog).filter(AnomalyLog.building_id == building_id, AnomalyLog.is_anomaly == 1).count()

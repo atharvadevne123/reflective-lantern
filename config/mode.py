@@ -11,8 +11,8 @@ from config.constants import INNOVATION_DAY_RANGES, INNOVATION_WEEKDAY
 class RunMode(StrEnum):
     """Possible Reflective Lantern run modes.
 
-    IMPROVEMENT: Standard Mon–Fri 60-commit code improvement pass.
-    INNOVATION: Full project creation on qualifying Wednesdays (days 8–14 or 22–28).
+    IMPROVEMENT: Standard Mon-Fri 60-commit code improvement pass.
+    INNOVATION: Full project creation on qualifying Wednesdays (days 8-14 or 22-28).
     """
 
     IMPROVEMENT = "IMPROVEMENT"
@@ -92,6 +92,6 @@ def mode_schedule(weeks: int = 4, start: date | None = None) -> list[dict[str, o
     schedule: list[dict[str, object]] = []
     for offset in range(weeks * 7):
         d = ref + timedelta(days=offset)
-        if d.isoweekday() <= 5:  # Mon–Fri only
+        if d.isoweekday() <= 5:  # Mon-Fri only
             schedule.append({"date": d.isoformat(), "mode": str(determine_mode(d))})
     return schedule

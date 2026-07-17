@@ -10,7 +10,7 @@ from app.model import load_metrics, predict, train_model
 
 
 def test_train_returns_metrics(trained_model):
-    bundle, metrics = trained_model
+    _bundle, metrics = trained_model
     assert "r2_mean" in metrics
     assert "mae_kwh" in metrics
     assert metrics["r2_mean"] > -2.0
@@ -60,7 +60,7 @@ def test_model_persistence(sample_df, sample_y, tmp_path, monkeypatch):
 
     from app.model import train_model
 
-    bundle, _ = train_model(sample_df, sample_df["consumption_kwh"])
+    _bundle, _ = train_model(sample_df, sample_df["consumption_kwh"])
     assert model_path.exists()
     assert metrics_path.exists()
 
@@ -236,19 +236,22 @@ def test_get_feature_importance_empty_bundle():
 def test_train_model_various_sizes(n_samples):
     import numpy as np
     import pandas as pd
+
     from app.model import train_model
 
     rng = np.random.default_rng(1)
-    df = pd.DataFrame({
-        "hour": rng.integers(0, 24, n_samples),
-        "day_of_week": rng.integers(0, 7, n_samples),
-        "month": rng.integers(1, 13, n_samples),
-        "temperature_c": rng.uniform(0, 35, n_samples),
-        "humidity_pct": rng.uniform(20, 90, n_samples),
-        "occupancy": rng.integers(0, 200, n_samples),
-        "hvac_state": rng.integers(0, 2, n_samples),
-        "consumption_kwh": rng.uniform(5, 25, n_samples),
-    })
+    df = pd.DataFrame(
+        {
+            "hour": rng.integers(0, 24, n_samples),
+            "day_of_week": rng.integers(0, 7, n_samples),
+            "month": rng.integers(1, 13, n_samples),
+            "temperature_c": rng.uniform(0, 35, n_samples),
+            "humidity_pct": rng.uniform(20, 90, n_samples),
+            "occupancy": rng.integers(0, 200, n_samples),
+            "hvac_state": rng.integers(0, 2, n_samples),
+            "consumption_kwh": rng.uniform(5, 25, n_samples),
+        }
+    )
     bundle, metrics = train_model(df, pd.Series(df["consumption_kwh"]))
     assert bundle is not None
     assert "r2_mean" in metrics
@@ -265,6 +268,7 @@ def test_get_feature_importance_various_top_n(trained_model, top_n):
 
 def test_predict_returns_array_for_batch(trained_model):
     import numpy as np
+
     from app.model import predict
 
     bundle, _ = trained_model

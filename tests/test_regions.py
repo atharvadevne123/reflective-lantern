@@ -158,11 +158,14 @@ def test_get_regions_by_timezone_returns_sorted():
     assert regions == sorted(regions)
 
 
-@pytest.mark.parametrize("tz,expected_min", [
-    ("America/New_York", 4),
-    ("America/Chicago", 3),
-    ("America/Los_Angeles", 2),
-])
+@pytest.mark.parametrize(
+    "tz,expected_min",
+    [
+        ("America/New_York", 4),
+        ("America/Chicago", 3),
+        ("America/Los_Angeles", 2),
+    ],
+)
 def test_get_regions_by_timezone_parametrized(tz, expected_min):
     from app.regions import get_regions_by_timezone
 

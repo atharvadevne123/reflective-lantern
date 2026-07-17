@@ -51,7 +51,7 @@ def test_build_run_rows_normalizes_mode_case(multi_repo_history_dir: Path) -> No
 
 def test_build_run_rows_improvement_count(history_dir: Path) -> None:
     rows = build_run_rows(history_dir)
-    sample_first = [r for r in rows if r["repo"] == "SampleRepo"][0]
+    sample_first = next(r for r in rows if r["repo"] == "SampleRepo")
     assert sample_first["improvement_count"] == 2
 
 

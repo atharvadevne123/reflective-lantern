@@ -277,10 +277,13 @@ def test_consumption_variance_single():
     assert consumption_variance([7.0]) == 0.0
 
 
-@pytest.mark.parametrize("data,expected_len", [
-    ([1.0, 2.0, 3.0], 2),
-    ([10.0] * 5, 4),
-])
+@pytest.mark.parametrize(
+    "data,expected_len",
+    [
+        ([1.0, 2.0, 3.0], 2),
+        ([10.0] * 5, 4),
+    ],
+)
 def test_moving_range_parametrized_length(data, expected_len):
     from app.time_series import moving_range
 

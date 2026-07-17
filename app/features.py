@@ -331,7 +331,7 @@ def normalize_consumption(
     if not values:
         raise ValueError("values must not be empty")
     if method not in ("minmax", "zscore"):
-        raise ValueError(f"method must be 'minmax' or 'zscore', got {repr(method)}")
+        raise ValueError(f"method must be 'minmax' or 'zscore', got {method!r}")
     arr = np.array(values, dtype=float)
     if method == "minmax":
         lo, hi = arr.min(), arr.max()
@@ -351,7 +351,7 @@ def demand_response_potential(
     """Estimate a building's demand-response potential from its hourly load profile.
 
     Demand response potential is measured as the fraction of hours where load
-    exceeds *peak_threshold_pct* × peak load ("peak hours") and the total kWh
+    exceeds *peak_threshold_pct* x peak load ("peak hours") and the total kWh
     that could be shed if those hours were capped at the threshold.
 
     Args:

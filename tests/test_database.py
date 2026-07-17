@@ -221,12 +221,14 @@ def test_prediction_log_multiple_buildings(db_session, n):
     from app.database import PredictionLog, get_predictions_by_building
 
     for i in range(n):
-        db_session.add(PredictionLog(
-            building_id=f"building-{i}",
-            timestamp=datetime.utcnow(),
-            predicted_kwh=float(i * 2),
-            latency_ms=float(i),
-        ))
+        db_session.add(
+            PredictionLog(
+                building_id=f"building-{i}",
+                timestamp=datetime.utcnow(),
+                predicted_kwh=float(i * 2),
+                latency_ms=float(i),
+            )
+        )
     db_session.commit()
     for i in range(n):
         results = get_predictions_by_building(db_session, f"building-{i}")
@@ -247,14 +249,16 @@ def test_get_recent_anomalies_returns_records(db_session):
     from app.database import AnomalyLog, get_recent_anomalies
 
     for i in range(3):
-        db_session.add(AnomalyLog(
-            building_id="anomaly-query-bldg",
-            timestamp=datetime.utcnow(),
-            consumption_kwh=90.0 + i,
-            anomaly_score=0.9,
-            is_anomaly=1,
-            severity="critical",
-        ))
+        db_session.add(
+            AnomalyLog(
+                building_id="anomaly-query-bldg",
+                timestamp=datetime.utcnow(),
+                consumption_kwh=90.0 + i,
+                anomaly_score=0.9,
+                is_anomaly=1,
+                severity="critical",
+            )
+        )
     db_session.commit()
     results = get_recent_anomalies(db_session, "anomaly-query-bldg")
     assert len(results) >= 3
@@ -265,22 +269,26 @@ def test_get_recent_anomalies_severity_filter(db_session):
 
     from app.database import AnomalyLog, get_recent_anomalies
 
-    db_session.add(AnomalyLog(
-        building_id="severity-bldg",
-        timestamp=datetime.utcnow(),
-        consumption_kwh=80.0,
-        anomaly_score=0.8,
-        is_anomaly=1,
-        severity="low",
-    ))
-    db_session.add(AnomalyLog(
-        building_id="severity-bldg",
-        timestamp=datetime.utcnow(),
-        consumption_kwh=95.0,
-        anomaly_score=0.95,
-        is_anomaly=1,
-        severity="critical",
-    ))
+    db_session.add(
+        AnomalyLog(
+            building_id="severity-bldg",
+            timestamp=datetime.utcnow(),
+            consumption_kwh=80.0,
+            anomaly_score=0.8,
+            is_anomaly=1,
+            severity="low",
+        )
+    )
+    db_session.add(
+        AnomalyLog(
+            building_id="severity-bldg",
+            timestamp=datetime.utcnow(),
+            consumption_kwh=95.0,
+            anomaly_score=0.95,
+            is_anomaly=1,
+            severity="critical",
+        )
+    )
     db_session.commit()
     critical = get_recent_anomalies(db_session, "severity-bldg", severity="critical")
     assert all(r.severity == "critical" for r in critical)
@@ -299,14 +307,16 @@ def test_count_anomalies_by_building_positive(db_session):
     from app.database import AnomalyLog, count_anomalies_by_building
 
     for _ in range(4):
-        db_session.add(AnomalyLog(
-            building_id="count-bldg",
-            timestamp=datetime.utcnow(),
-            consumption_kwh=88.0,
-            anomaly_score=0.88,
-            is_anomaly=1,
-            severity="medium",
-        ))
+        db_session.add(
+            AnomalyLog(
+                building_id="count-bldg",
+                timestamp=datetime.utcnow(),
+                consumption_kwh=88.0,
+                anomaly_score=0.88,
+                is_anomaly=1,
+                severity="medium",
+            )
+        )
     db_session.commit()
     assert count_anomalies_by_building(db_session, "count-bldg") == 4
 
@@ -318,14 +328,16 @@ def test_get_recent_anomalies_limit(db_session, limit):
     from app.database import AnomalyLog, get_recent_anomalies
 
     for i in range(6):
-        db_session.add(AnomalyLog(
-            building_id="limit-anomaly-bldg",
-            timestamp=datetime.utcnow(),
-            consumption_kwh=float(90 + i),
-            anomaly_score=0.9,
-            is_anomaly=1,
-            severity="critical",
-        ))
+        db_session.add(
+            AnomalyLog(
+                building_id="limit-anomaly-bldg",
+                timestamp=datetime.utcnow(),
+                consumption_kwh=float(90 + i),
+                anomaly_score=0.9,
+                is_anomaly=1,
+                severity="critical",
+            )
+        )
     db_session.commit()
     results = get_recent_anomalies(db_session, "limit-anomaly-bldg", limit=limit)
     assert len(results) == limit
