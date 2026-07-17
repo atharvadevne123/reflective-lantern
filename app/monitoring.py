@@ -308,3 +308,20 @@ def is_reference_window_ready(min_samples: int = 10) -> bool:
         True if the window is large enough for drift detection.
     """
     return len(_reference_window) >= min_samples
+
+
+def reference_window_stats() -> dict[str, Any]:
+    """Return descriptive statistics for the in-memory reference window."""
+    vals = _reference_window
+    if not vals:
+        return {"size": 0, "mean": None, "min": None, "max": None, "std": None}
+    n = len(vals)
+    mean = sum(vals) / n
+    variance = sum((v - mean) ** 2 for v in vals) / n
+    return {
+        "size": n,
+        "mean": round(mean, 4),
+        "min": round(min(vals), 4),
+        "max": round(max(vals), 4),
+        "std": round(variance ** 0.5, 4),
+    }
