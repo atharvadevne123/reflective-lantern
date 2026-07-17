@@ -285,3 +285,93 @@ def test_moving_range_parametrized_length(data, expected_len):
     from app.time_series import moving_range
 
     assert len(moving_range(data)) == expected_len
+
+
+# --- New tests for recently added functions ---
+
+def test_moving_range_basic():
+    from app.time_series import moving_range
+    values = [1.0, 3.0, 2.0, 5.0]
+    result = moving_range(values)
+    assert result == [2.0, 1.0, 3.0]
+
+
+def test_moving_range_too_short():
+    from app.time_series import moving_range
+    assert moving_range([5.0]) == []
+    assert moving_range([]) == []
+
+
+def test_consumption_variance_flat():
+    from app.time_series import consumption_variance
+    result = consumption_variance([3.0] * 10)
+    assert result == 0.0
+
+
+def test_consumption_variance_known():
+    from app.time_series import consumption_variance
+    result = consumption_variance([2.0, 4.0])
+    assert abs(result - 1.0) < 1e-9
+
+
+def test_consumption_variance_too_short():
+    from app.time_series import consumption_variance
+    assert consumption_variance([5.0]) == 0.0
+
+
+def test_forecast_trend_with_seasonality_length():
+    from app.time_series import forecast_trend_with_seasonality
+    values = [float(i % 24) for i in range(48)]
+    result = forecast_trend_with_seasonality(values, horizon=12, period=24)
+    assert len(result) == 12
+
+
+def test_forecast_trend_with_seasonality_empty():
+    from app.time_series import forecast_trend_with_seasonality
+    assert forecast_trend_with_seasonality([], horizon=5) == []
+
+
+def test_forecast_trend_with_seasonality_non_negative():
+    from app.time_series import forecast_trend_with_seasonality
+    values = [max(0, float(i) + 5) for i in range(48)]
+    result = forecast_trend_with_seasonality(values, horizon=12)
+    assert all(v >= 0 for v in result)
+
+
+def test_resample_hourly_to_daily_full_day():
+    from app.time_series import resample_hourly_to_daily
+    hourly = [1.0] * 48
+    result = resample_hourly_to_daily(hourly)
+    assert len(result) == 2
+    assert all(abs(v - 24.0) < 1e-9 for v in result)
+
+
+def test_resample_hourly_to_daily_partial():
+    from app.time_series import resample_hourly_to_daily
+    hourly = [1.0] * 25
+    result = resample_hourly_to_daily(hourly)
+    assert len(result) == 2
+
+
+def test_resample_hourly_to_daily_empty():
+    from app.time_series import resample_hourly_to_daily
+    assert resample_hourly_to_daily([]) == []
+
+
+def test_cumulative_consumption_basic():
+    from app.time_series import cumulative_consumption
+    result = cumulative_consumption([1.0, 2.0, 3.0])
+    assert abs(result[-1] - 6.0) < 1e-6
+
+
+def test_cumulative_consumption_empty():
+    from app.time_series import cumulative_consumption
+    assert cumulative_consumption([]) == []
+
+
+@pytest.mark.parametrize("alpha", [0.1, 0.5, 0.9])
+def test_ema_same_length(alpha):
+    values = [float(i) for i in range(20)]
+    from app.time_series import exponential_moving_average
+    result = exponential_moving_average(values, alpha=alpha)
+    assert len(result) == len(values)
