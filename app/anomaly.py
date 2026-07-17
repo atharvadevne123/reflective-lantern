@@ -272,3 +272,39 @@ def flag_z_score_outliers(
     return sorted(
         i for i, v in enumerate(values) if abs(compute_z_score(v, mean, std)) > threshold
     )
+
+
+def anomaly_rate(flags: list[bool]) -> float:
+    """Return the fraction of True values in *flags* (anomaly rate).
+
+    Args:
+        flags: List of bool anomaly labels.
+
+    Returns:
+        Rate in [0, 1], or 0.0 for an empty list.
+    """
+    if not flags:
+        return 0.0
+    return sum(1 for f in flags if f) / len(flags)
+
+
+def consecutive_anomaly_runs(flags: list[bool]) -> list[tuple[int, int]]:
+    """Return (start, end) index pairs for consecutive True runs in *flags*.
+
+    Args:
+        flags: List of bool anomaly labels.
+
+    Returns:
+        List of (start, end) index tuples (inclusive) for each True run.
+    """
+    runs: list[tuple[int, int]] = []
+    start: int | None = None
+    for i, f in enumerate(flags):
+        if f and start is None:
+            start = i
+        elif not f and start is not None:
+            runs.append((start, i - 1))
+            start = None
+    if start is not None:
+        runs.append((start, len(flags) - 1))
+    return runs
