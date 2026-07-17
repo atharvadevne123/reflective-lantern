@@ -255,13 +255,12 @@ def test_train_model_various_sizes(n_samples):
 
 
 @pytest.mark.parametrize("top_n", [1, 5, 10, 20])
-def test_get_feature_importance_various_top_n(trained_model):
+def test_get_feature_importance_various_top_n(trained_model, top_n):
     from app.model import get_feature_importance
 
     bundle, _ = trained_model
-    for top_n in [1, 5, 10, 20]:
-        result = get_feature_importance(bundle, top_n=top_n)
-        assert len(result) <= top_n
+    result = get_feature_importance(bundle, top_n=top_n)
+    assert len(result) <= top_n
 
 
 def test_predict_returns_array_for_batch(trained_model):
