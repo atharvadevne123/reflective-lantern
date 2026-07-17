@@ -295,3 +295,48 @@ def test_feature_importance_top_n(client: TestClient, top_n: int) -> None:
     data = r.json()
     assert len(data["features"]) <= top_n
     assert data["top_n"] == top_n
+
+
+def test_validate_batch_valid_readings(client: TestClient) -> None:
+    """Batch validation should return all valid for correct readings."""
+    readings = [
+        {
+            "hour": 10,
+            "day_of_week": 1,
+            "month": 6,
+            "temperature_c": 22.0,
+            "humidity_pct": 55.0,
+            "consumption_kwh": 12.5,
+        }
+    ]
+    r = client.post("/api/v1/validate-batch", json={"readings": readings})
+    assert r.status_code == 200
+    data = r.json()
+    assert data["total"] == 1
+    assert data["valid_count"] == 1
+    assert data["invalid_count"] == 0
+
+
+def test_validate_batch_invalid_readings(client: TestClient) -> None:
+    """Batch validation should catch invalid hour values."""
+    readings = [
+        {
+            "hour": 99,
+            "day_of_week": 1,
+            "month": 6,
+            "temperature_c": 22.0,
+            "humidity_pct": 55.0,
+            "consumption_kwh": 12.5,
+        }
+    ]
+    r = client.post("/api/v1/validate-batch", json={"readings": readings})
+    assert r.status_code == 200
+    data = r.json()
+    assert data["invalid_count"] == 1
+    assert len(data["results"][0]["errors"]) > 0
+
+
+def test_validate_batch_empty_raises(client: TestClient) -> None:
+    """Batch validation should return 400 for empty readings."""
+    r = client.post("/api/v1/validate-batch", json={"readings": []})
+    assert r.status_code == 400
