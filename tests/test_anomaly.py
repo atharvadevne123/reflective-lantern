@@ -5,7 +5,7 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from app.anomaly import anomaly_rate, batch_compute_severity, compute_severity, iqr_flag, zscore_flag
+from app.anomaly import anomaly_rate, batch_compute_severity, compute_severity, consecutive_anomaly_runs, iqr_flag, zscore_flag
 
 
 def test_zscore_normal():
@@ -355,3 +355,51 @@ def test_top_anomalies_n_parametrized(n):
     data = [{"severity": "warning", "value": float(i)} for i in range(15)]
     result = top_anomalies(data, n=n)
     assert len(result) <= n
+
+
+def test_anomaly_rate_all_anomalies():
+    assert anomaly_rate([True, True, True]) == pytest.approx(1.0)
+
+
+def test_anomaly_rate_no_anomalies():
+    assert anomaly_rate([False, False, False]) == pytest.approx(0.0)
+
+
+def test_anomaly_rate_mixed():
+    assert anomaly_rate([True, False, True, False]) == pytest.approx(0.5)
+
+
+def test_anomaly_rate_empty():
+    assert anomaly_rate([]) == 0.0
+
+
+def test_consecutive_anomaly_runs_single_run():
+    flags = [False, True, True, True, False]
+    runs = consecutive_anomaly_runs(flags)
+    assert runs == [(1, 3)]
+
+
+def test_consecutive_anomaly_runs_multiple():
+    flags = [True, False, True, True]
+    runs = consecutive_anomaly_runs(flags)
+    assert (0, 0) in runs
+    assert (2, 3) in runs
+
+
+def test_consecutive_anomaly_runs_none():
+    flags = [False, False, False]
+    assert consecutive_anomaly_runs(flags) == []
+
+
+def test_consecutive_anomaly_runs_all_true():
+    flags = [True, True, True]
+    runs = consecutive_anomaly_runs(flags)
+    assert runs == [(0, 2)]
+
+
+@pytest.mark.parametrize("rate,expected", [(1.0, True), (0.0, False)])
+def test_anomaly_rate_boundary(rate, expected):
+    n = 10
+    flags = [True] * int(n * rate) + [False] * (n - int(n * rate))
+    result = anomaly_rate(flags)
+    assert (result == pytest.approx(1.0)) == expected
