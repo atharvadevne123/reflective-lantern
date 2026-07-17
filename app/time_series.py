@@ -232,3 +232,49 @@ def consumption_variance(values: list[float]) -> float:
         return 0.0
     mean = sum(values) / len(values)
     return sum((v - mean) ** 2 for v in values) / len(values)
+
+
+def detect_plateau(values: list[float], tolerance: float = 0.5) -> list[tuple[int, int]]:
+    """Detect flat plateaus in a time series where variance is near zero.
+
+    Returns a list of (start, end) index tuples for runs where consecutive
+    values differ by at most *tolerance*.
+    """
+    if len(values) < 2:
+        return []
+    plateaus: list[tuple[int, int]] = []
+    start = 0
+    for i in range(1, len(values)):
+        if abs(values[i] - values[i - 1]) > tolerance:
+            if i - start >= 2:
+                plateaus.append((start, i - 1))
+            start = i
+    if len(values) - start >= 2:
+        plateaus.append((start, len(values) - 1))
+    return plateaus
+
+
+def clip_outliers(values: list[float], lower_pct: float = 5.0, upper_pct: float = 95.0) -> list[float]:
+    """Clip series values to the given percentile bounds.
+
+    Args:
+        values: Input readings.
+        lower_pct: Lower bound percentile (0–100).
+        upper_pct: Upper bound percentile (0–100).
+
+    Returns:
+        Series with values clipped to the [lower_pct, upper_pct] range.
+    """
+    if not values:
+        return []
+    sorted_vals = sorted(values)
+    n = len(sorted_vals)
+
+    def percentile(p: float) -> float:
+        idx = (p / 100) * (n - 1)
+        lo, hi = int(idx), min(int(idx) + 1, n - 1)
+        return sorted_vals[lo] + (sorted_vals[hi] - sorted_vals[lo]) * (idx - lo)
+
+    lo = percentile(lower_pct)
+    hi = percentile(upper_pct)
+    return [max(lo, min(hi, v)) for v in values]
