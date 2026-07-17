@@ -211,7 +211,7 @@ def test_drift_log_stored_and_retrieved(db_session):
     db_session.commit()
     retrieved = db_session.query(DriftLog).filter(DriftLog.feature_name == "consumption_kwh").first()
     assert retrieved is not None
-    assert retrieved.drift_detected is True
+    assert bool(retrieved.drift_detected) is True
 
 
 @pytest.mark.parametrize("n", [1, 3, 5, 10])
