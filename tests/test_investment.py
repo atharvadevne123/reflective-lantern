@@ -384,3 +384,42 @@ def test_portfolio_weighted_score_mismatch_raises():
 
     with pytest.raises(ValueError):
         portfolio_weighted_score([1.0, 2.0], weights=[0.5])
+
+
+def test_compute_investment_analysis_returns_dataclass():
+    from app.investment import InvestmentAnalysis, compute_investment_analysis
+
+    result = compute_investment_analysis(
+        predicted_value=400_000.0,
+        avg_rental_yield=0.07,
+        school_score=7.0,
+        transit_score=6.0,
+        walkability_score=5.0,
+        crime_rate=0.2,
+    )
+    assert isinstance(result, InvestmentAnalysis)
+    assert 0.0 <= result.investment_score <= 10.0
+    assert result.break_even_years > 0
+
+
+@pytest.mark.parametrize("crime_rate,expected_worse", [
+    (0.1, False),
+    (0.9, True),
+])
+def test_compute_investment_high_crime_lowers_score(crime_rate, expected_worse):
+    from app.investment import compute_investment_analysis
+
+    low = compute_investment_analysis(
+        predicted_value=400_000.0, avg_rental_yield=0.07,
+        school_score=7.0, transit_score=6.0, walkability_score=5.0,
+        crime_rate=0.1
+    )
+    high = compute_investment_analysis(
+        predicted_value=400_000.0, avg_rental_yield=0.07,
+        school_score=7.0, transit_score=6.0, walkability_score=5.0,
+        crime_rate=crime_rate
+    )
+    if expected_worse:
+        assert high.investment_score <= low.investment_score
+    else:
+        assert high.investment_score == low.investment_score
