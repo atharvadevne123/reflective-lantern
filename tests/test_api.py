@@ -450,3 +450,43 @@ def test_cache_stats_endpoint(client: TestClient) -> None:
     assert "hits" in data
     assert "misses" in data
     assert "hit_rate" in data
+
+
+def test_naive_forecast_endpoint(client: TestClient) -> None:
+    """Naive forecast endpoint should return correct number of steps."""
+    r = client.post("/api/v1/forecast/naive", json=[10.0, 12.0, 11.0, 14.0], params={"steps": 5})
+    assert r.status_code == 200
+    data = r.json()
+    assert data["steps"] == 5
+    assert len(data["forecast"]) == 5
+    assert data["method"] == "naive"
+
+
+def test_naive_forecast_empty_raises(client: TestClient) -> None:
+    """Naive forecast should return 422 for empty input."""
+    r = client.post("/api/v1/forecast/naive", json=[], params={"steps": 3})
+    assert r.status_code == 422
+
+
+def test_ses_forecast_endpoint(client: TestClient) -> None:
+    """SES forecast endpoint should return smoothed forecast."""
+    r = client.post("/api/v1/forecast/ses", json=[10.0, 12.0, 11.0, 14.0], params={"steps": 3, "alpha": 0.4})
+    assert r.status_code == 200
+    data = r.json()
+    assert data["steps"] == 3
+    assert data["method"] == "ses"
+    assert data["alpha"] == pytest.approx(0.4)
+
+
+def test_ses_forecast_invalid_alpha(client: TestClient) -> None:
+    """SES forecast should return 422 for invalid alpha."""
+    r = client.post("/api/v1/forecast/ses", json=[10.0, 12.0], params={"steps": 3, "alpha": 0.0})
+    assert r.status_code == 422
+
+
+@pytest.mark.parametrize("steps", [1, 6, 24])
+def test_naive_forecast_various_steps(client: TestClient, steps: int) -> None:
+    """Naive forecast endpoint should respect steps parameter."""
+    r = client.post("/api/v1/forecast/naive", json=[15.0] * 10, params={"steps": steps})
+    assert r.status_code == 200
+    assert r.json()["steps"] == steps
