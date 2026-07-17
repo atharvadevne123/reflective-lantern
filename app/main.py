@@ -415,3 +415,11 @@ def efficiency_grade(actual_kwh: float, baseline_kwh: float) -> dict[str, str]:
     """Return an efficiency letter grade (A+…F) for a consumption vs baseline comparison."""
     grade = energy_efficiency_grade(actual_kwh, baseline_kwh)
     return {"grade": grade, "actual_kwh": str(actual_kwh), "baseline_kwh": str(baseline_kwh)}
+
+
+@app.get("/api/v1/ready", tags=["System"])
+def readiness_probe() -> dict[str, str]:
+    """Readiness probe: returns 503 until both models are loaded."""
+    if _model_bundle is None or _anomaly_bundle is None:
+        raise HTTPException(status_code=503, detail="Models not yet loaded.")
+    return {"status": "ready"}
