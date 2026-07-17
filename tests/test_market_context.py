@@ -503,3 +503,44 @@ def test_market_summary_dom_parametrized(listing_days, expected_dom):
 
     result = market_summary(400_000, 24_000, listing_days, 1000)
     assert result["dom_classification"] == expected_dom
+
+
+def test_affordability_index_default_income():
+    from app.market_context import affordability_index
+
+    result = affordability_index(300_000.0)
+    assert isinstance(result, float)
+    assert result > 0
+
+
+def test_affordability_index_zero_value():
+    from app.market_context import affordability_index
+
+    result = affordability_index(0.0)
+    assert result == 0.0
+
+
+@pytest.mark.parametrize("value,income,expected_range", [
+    (100_000, 100_000, (0, 20)),  # very affordable
+    (1_000_000, 50_000, (100, 500)),  # very expensive
+])
+def test_affordability_index_parametrized(value, income, expected_range):
+    from app.market_context import affordability_index
+
+    result = affordability_index(value, annual_income=income)
+    lo, hi = expected_range
+    assert lo <= result <= hi
+
+
+def test_price_to_rent_ratio_basic():
+    from app.market_context import price_to_rent_ratio
+
+    result = price_to_rent_ratio(300_000.0, 20_000.0)
+    assert abs(result - 15.0) < 0.01
+
+
+def test_price_to_rent_ratio_zero_rent():
+    from app.market_context import price_to_rent_ratio
+
+    result = price_to_rent_ratio(300_000.0, 0.0)
+    assert result == 0.0
