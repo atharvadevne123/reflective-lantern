@@ -478,7 +478,7 @@
     "tag": "suite-cast-v1.0.0 (local only; tag push and release API blocked for this session type)",
     "file_count": 37,
     "test_count": 100,
-    "commits": 62,
+    "commits": 65,
     "coverage_pct": 100,
     "push_status": "pushed_to_branch",
     "publish_note": "Session GitHub access scoped to reflective-lantern; standalone repo creation, tag pushes, and release creation blocked. Shipped on branch with draft PR #22. One-click publisher workflow added: .github/workflows/bootstrap-suite-cast.yml (run from Actions tab with a repo-scope PAT \u2014 creates the Suite-Cast repo, pushes the project as main via subtree split, tags v1.0.0, creates the release, and uploads the wheel asset).",
@@ -506,6 +506,7 @@
     "email_status": "network_blocked (SMTP egress to smtp.gmail.com times out; confirmed via direct TCP probe)",
     "report_pdf": "history/reports/Suite-Cast_innovation_2026-07-15.pdf",
     "ci_note": "Root-level .github/workflows/suite-cast-ci.yml runs ruff + pytest + wheel build on branch pushes and the PR (project-local workflow file kept for the standalone repo).",
-    "wheel": "suite_cast-1.0.0-py3-none-any.whl built and verified locally; build backend fixed to setuptools.build_meta"
+    "wheel": "suite_cast-1.0.0-py3-none-any.whl built and verified locally; build backend fixed to setuptools.build_meta",
+    "ci_status": "green: all 5 PR checks pass (Suite-Cast CI + Watt-Guard CI 3.11/3.12); fixed pre-existing root-suite failures (top_n parametrize, db_session isolation, ruff 0.15 lint) on main"
   }
 ]
