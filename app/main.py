@@ -461,3 +461,18 @@ def consumption_stats_summary(
         }
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+
+@app.get("/api/v1/config", tags=["System"])
+def get_config() -> dict:
+    """Return non-sensitive application configuration values."""
+    from app.config import settings
+
+    return {
+        "model_path": settings.model_path,
+        "metrics_path": settings.metrics_path,
+        "log_level": settings.log_level,
+        "rate_limit_per_minute": settings.rate_limit_per_minute,
+        "database_url_type": "sqlite" if "sqlite" in settings.database_url else "postgresql",
+        "version": __version__,
+    }
