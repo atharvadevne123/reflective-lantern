@@ -249,3 +249,18 @@ __all__ = [
     "SavingsResponse",
     "VersionResponse",
 ]
+
+
+class BatchValidationRequest(BaseModel):
+    """Request body for batch reading validation."""
+
+    readings: list[dict[str, Any]] = Field(..., min_length=1, description="List of energy reading dicts to validate")
+
+
+class BatchValidationResponse(BaseModel):
+    """Response from batch reading validation."""
+
+    total: int
+    valid_count: int
+    invalid_count: int
+    results: list[dict[str, Any]]
