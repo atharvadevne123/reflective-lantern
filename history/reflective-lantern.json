@@ -342,5 +342,56 @@
       "Added moving_range + consumption_variance to time_series.py",
       "Expanded README with full utility module reference"
     ]
+  },
+  {
+    "repo": "reflective-lantern",
+    "last_run": "2026-07-17",
+    "mode": "IMPROVEMENT",
+    "commits": 60,
+    "pushed_to": "main",
+    "tiers": {
+      "Bug Fixes (1-3)": [
+        "fix(test_model.py): add top_n param to parametrized test_get_feature_importance_various_top_n",
+        "fix(lifespan): add type: ignore[type-arg] annotation to lifespan generator",
+        "chore(app/__init__.py): bump version to 1.1.0 with module docstring"
+      ],
+      "New Endpoints (4-50)": [
+        "feat: add /api/v1/ready readiness probe",
+        "feat: add /api/v1/validate-batch endpoint",
+        "feat: add /api/v1/stats/summary endpoint",
+        "feat: add /api/v1/config non-sensitive settings endpoint",
+        "feat: add /api/v1/benchmark-eui ASHRAE EUI endpoint",
+        "feat: add /api/v1/carbon/estimate CO2 estimate endpoint",
+        "feat: add /api/v1/carbon/annual-report endpoint",
+        "feat: add /api/v1/peak-hours endpoint",
+        "feat: add /api/v1/export/csv, /data-quality, /trend, /cache/stats endpoints",
+        "feat: add /api/v1/forecast/naive and /forecast/ses endpoints"
+      ],
+      "New Modules (51-60)": [
+        "feat: add app/date_utils.py with UTC helpers, round_to_hour, generate_hourly_timestamps",
+        "feat: add app/stats_utils.py with MAE, RMSE, R-squared, MAPE, CV, percentile",
+        "feat: add app/benchmarks.py with ASHRAE EUI benchmarking and monthly distribution",
+        "feat: add app/carbon.py with CO2 emission estimates and annual carbon report",
+        "feat: add app/rate_limiter.py with token-bucket per-client rate limiting",
+        "feat: add app/energy_export.py with CSV/JSON export, filter, and aggregation",
+        "feat: add app/notifications.py with Alert dataclass and AlertQueue",
+        "feat: add app/data_quality.py with record scoring and outlier flagging",
+        "feat: add app/trend_analysis.py with linear trend, rolling mean, change-point detection",
+        "feat: add app/forecasting.py with naive, drift, seasonal-naive, SES forecasts",
+        "feat: add app/pipeline_utils.py with Pipeline introspection helpers",
+        "feat: add detect_plateau() and clip_outliers() to time_series.py",
+        "feat: add anomaly_rate() and consecutive_anomaly_runs() to anomaly.py",
+        "feat: add encode_cyclical() and feature_names_for_bundle() to features.py",
+        "feat: add prediction_confidence() to model.py for bootstrap uncertainty",
+        "feat: add reference_window_stats() to monitoring.py"
+      ],
+      "New Tests": [
+        "test: added 200+ new test functions across 15+ test files",
+        "test: parametrized tests for rate_limiter, energy_export, notifications, data_quality",
+        "test: added trend_analysis, forecasting, pipeline_utils test suites",
+        "test: extended monitoring with reference_window_stats tests",
+        "test: extended api tests for all new endpoints"
+      ]
+    }
   }
 ]
