@@ -143,3 +143,48 @@ def test_save_vectors_does_not_mutate_index() -> None:
     arr = idx.save_vectors()
     arr[0, 0] = 999.0  # modify the copy
     assert idx._vectors[0][0] == pytest.approx(3.0)
+
+
+def test_search_comparable_returns_distance():
+    from app.faiss_index import add_property, reset_index, search_comparable
+
+    reset_index()
+    add_property([1.0, 0.0, 0.0] + [0.0] * 21, {"name": "A"})
+    add_property([0.0, 1.0, 0.0] + [0.0] * 21, {"name": "B"})
+    results = search_comparable([1.0, 0.0, 0.0] + [0.0] * 21, top_k=2)
+    assert len(results) >= 1
+    assert "distance" in results[0]
+    reset_index()
+
+
+def test_search_comparable_caps_top_k():
+    from app.faiss_index import add_property, reset_index, search_comparable, MAX_TOP_K
+
+    reset_index()
+    for i in range(5):
+        add_property([float(i)] + [0.0] * 23)
+    results = search_comparable([1.0] + [0.0] * 23, top_k=MAX_TOP_K + 50)
+    assert len(results) <= MAX_TOP_K
+    reset_index()
+
+
+def test_index_size_updates():
+    from app.faiss_index import add_property, index_size, reset_index
+
+    reset_index()
+    initial = index_size()
+    add_property([1.0] * 24)
+    assert index_size() == initial + 1
+    reset_index()
+
+
+@pytest.mark.parametrize("n", [1, 3, 5])
+def test_search_comparable_returns_n_or_less(n):
+    from app.faiss_index import add_property, reset_index, search_comparable
+
+    reset_index()
+    for i in range(n):
+        add_property([float(i)] * 24)
+    results = search_comparable([0.0] * 24, top_k=n)
+    assert len(results) <= n
+    reset_index()
