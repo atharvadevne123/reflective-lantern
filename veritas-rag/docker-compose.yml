@@ -1,0 +1,13 @@
+services:
+  api:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      GENERATOR_BACKEND: ${GENERATOR_BACKEND:-extractive}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      ANTHROPIC_MODEL: ${ANTHROPIC_MODEL:-claude-opus-4-8}
+      CONFIDENCE_THRESHOLD: ${CONFIDENCE_THRESHOLD:-0.45}
+      CACHE_TTL_SECONDS: ${CACHE_TTL_SECONDS:-300}
+      LOG_LEVEL: INFO
+    restart: unless-stopped
