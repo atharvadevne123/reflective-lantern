@@ -1,3 +1,7 @@
-# Watt-Guard: Smart Energy Consumption Forecasting & Anomaly Detection
-__version__ = "1.0.0"
+"""Watt-Guard: Smart Building Energy Consumption Forecasting & Anomaly Detection."""
+
+from __future__ import annotations
+
+__version__ = "1.1.0"
 __author__ = "Reflective Lantern"
+__all__ = ["__version__", "__author__"]
