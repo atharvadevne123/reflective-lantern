@@ -1,0 +1,22 @@
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+dist/
+build/
+
+# Environment
+.env
+venv/
+.venv/
+
+# Model artifacts and local databases
+*.joblib
+metrics.json
+metrics_challenger.json
+*.db
+
+# IDE
+.idea/
+.vscode/
