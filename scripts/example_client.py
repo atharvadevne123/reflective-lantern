@@ -13,9 +13,16 @@ BASE_URL = "http://localhost:8000"
 logger = logging.getLogger(__name__)
 
 
-def predict(building_id: str, hour: int, day_of_week: int, month: int,
-            temperature_c: float, humidity_pct: float, occupancy: int,
-            hvac_state: int) -> dict:
+def predict(
+    building_id: str,
+    hour: int,
+    day_of_week: int,
+    month: int,
+    temperature_c: float,
+    humidity_pct: float,
+    occupancy: int,
+    hvac_state: int,
+) -> dict:
     """Send a single prediction request to the Watt-Guard API.
 
     Args:
@@ -58,8 +65,9 @@ def predict(building_id: str, hour: int, day_of_week: int, month: int,
 def main() -> None:
     """Run a sample prediction and print the result."""
     logging.basicConfig(level=logging.INFO, format="%(levelname)s %(message)s")
-    result = predict("bldg-001", hour=8, day_of_week=1, month=7,
-                     temperature_c=24.5, humidity_pct=55.0, occupancy=120, hvac_state=1)
+    result = predict(
+        "bldg-001", hour=8, day_of_week=1, month=7, temperature_c=24.5, humidity_pct=55.0, occupancy=120, hvac_state=1
+    )
     logger.info("Prediction result:\n%s", json.dumps(result, indent=2))
 
 

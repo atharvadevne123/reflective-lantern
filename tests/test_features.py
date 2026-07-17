@@ -184,11 +184,14 @@ def test_amenity_scale_constant() -> None:
     assert _AMENITY_SCALE > 0.0
 
 
-@pytest.mark.parametrize("school,transit,walk", [
-    (10.0, 10.0, 10.0),
-    (5.0, 5.0, 5.0),
-    (0.0, 0.0, 0.0),
-])
+@pytest.mark.parametrize(
+    "school,transit,walk",
+    [
+        (10.0, 10.0, 10.0),
+        (5.0, 5.0, 5.0),
+        (0.0, 0.0, 0.0),
+    ],
+)
 def test_amenity_composite_uses_weights(school, transit, walk, single_row) -> None:
     from app.features import _AMENITY_SCALE, _SCHOOL_WEIGHT, _TRANSIT_WEIGHT, _WALK_WEIGHT, AmenityCompositeTransformer
 
@@ -199,4 +202,151 @@ def test_amenity_composite_uses_weights(school, transit, walk, single_row) -> No
     result = AmenityCompositeTransformer().fit_transform(row)
     expected = (school * _SCHOOL_WEIGHT + transit * _TRANSIT_WEIGHT + walk * _WALK_WEIGHT) / _AMENITY_SCALE
     import pytest as _pytest
+
     assert result["amenity_composite"].iloc[0] == _pytest.approx(expected, rel=1e-3)
+
+
+def test_interaction_extractor_creates_columns() -> None:
+    from app.features import InteractionFeatureExtractor
+
+    df = _base_df(10)
+    tx = InteractionFeatureExtractor()
+    out = tx.fit_transform(df)
+    assert "temperature_c_x_occupancy" in out.columns
+
+
+def test_interaction_extractor_values_correct() -> None:
+    from app.features import InteractionFeatureExtractor
+
+    df = _base_df(5)
+    out = InteractionFeatureExtractor().fit_transform(df)
+    expected = df["temperature_c"] * df["occupancy"]
+    assert (out["temperature_c_x_occupancy"].values == expected.values).all()
+
+
+def test_interaction_extractor_missing_column_skipped() -> None:
+    from app.features import InteractionFeatureExtractor
+
+    df = pd.DataFrame({"temperature_c": [20.0, 25.0]})
+    out = InteractionFeatureExtractor().fit_transform(df)
+    assert "temperature_c_x_occupancy" not in out.columns
+
+
+def test_interaction_extractor_is_stateless() -> None:
+    from app.features import InteractionFeatureExtractor
+
+    tx = InteractionFeatureExtractor()
+    df = _base_df(4)
+    tx.fit(df)
+    assert hasattr(tx, "available_pairs_")
+
+
+def test_normalize_consumption_minmax_range():
+    from app.features import normalize_consumption
+
+    data = [2.0, 5.0, 8.0, 11.0]
+    result = normalize_consumption(data, method="minmax")
+    assert result[0] == pytest.approx(0.0)
+    assert result[-1] == pytest.approx(1.0)
+
+
+def test_normalize_consumption_zscore_mean():
+    from app.features import normalize_consumption
+
+    data = list(range(1, 11))
+    result = normalize_consumption(data, method="zscore")
+    assert abs(sum(result) / len(result)) < 1e-9
+
+
+def test_normalize_consumption_flat_minmax():
+    from app.features import normalize_consumption
+
+    result = normalize_consumption([5.0] * 10, method="minmax")
+    assert all(v == 0.0 for v in result)
+
+
+def test_normalize_consumption_flat_zscore():
+    from app.features import normalize_consumption
+
+    result = normalize_consumption([3.0] * 8, method="zscore")
+    assert all(v == 0.0 for v in result)
+
+
+def test_normalize_consumption_empty_raises():
+    from app.features import normalize_consumption
+
+    with pytest.raises(ValueError, match="empty"):
+        normalize_consumption([], method="minmax")
+
+
+def test_normalize_consumption_bad_method_raises():
+    from app.features import normalize_consumption
+
+    with pytest.raises(ValueError, match="method"):
+        normalize_consumption([1.0, 2.0], method="l2")
+
+
+@pytest.mark.parametrize("method", ["minmax", "zscore"])
+def test_normalize_consumption_length_preserved(method):
+    from app.features import normalize_consumption
+
+    data = list(range(1, 21))
+    result = normalize_consumption(data, method=method)
+    assert len(result) == len(data)
+
+
+def test_demand_response_potential_basic():
+    from app.features import demand_response_potential
+
+    loads = [10.0] * 20 + [100.0] * 4
+    result = demand_response_potential(loads, peak_threshold_pct=0.85)
+    assert result["peak_hours_count"] == 4
+    assert result["sheddable_kwh"] >= 0
+
+
+def test_demand_response_potential_flat_series():
+    from app.features import demand_response_potential
+
+    # For a flat series threshold = 0.85 * peak; values at peak all exceed it.
+    # Sheddable per hour = peak - threshold = peak * (1 - 0.85) = 5.0 * 0.15 = 0.75
+    result = demand_response_potential([5.0] * 24, peak_threshold_pct=0.85)
+    assert result["peak_hours_count"] == 24
+    assert result["sheddable_kwh"] == pytest.approx(24 * 0.75)
+
+
+def test_demand_response_potential_empty_raises():
+    from app.features import demand_response_potential
+
+    with pytest.raises(ValueError):
+        demand_response_potential([])
+
+
+def test_demand_response_potential_bad_threshold_raises():
+    from app.features import demand_response_potential
+
+    with pytest.raises(ValueError):
+        demand_response_potential([1.0, 2.0], peak_threshold_pct=0.0)
+
+
+def test_demand_response_potential_keys():
+    from app.features import demand_response_potential
+
+    result = demand_response_potential([1.0, 5.0, 10.0], peak_threshold_pct=0.9)
+    assert set(result.keys()) >= {"peak_hours_count", "sheddable_kwh", "potential_pct", "peak_threshold_kwh"}
+
+
+def test_demand_response_potential_potential_pct_bounded():
+    from app.features import demand_response_potential
+
+    loads = list(range(1, 25))
+    result = demand_response_potential(loads, peak_threshold_pct=0.5)
+    assert 0.0 <= result["potential_pct"] <= 1.0
+
+
+@pytest.mark.parametrize("threshold_pct", [0.5, 0.75, 0.9, 1.0])
+def test_demand_response_potential_threshold_parametrized(threshold_pct):
+    from app.features import demand_response_potential
+
+    loads = [float(i) for i in range(1, 25)]
+    result = demand_response_potential(loads, peak_threshold_pct=threshold_pct)
+    assert result["peak_threshold_kwh"] == pytest.approx(max(loads) * threshold_pct, rel=1e-4)

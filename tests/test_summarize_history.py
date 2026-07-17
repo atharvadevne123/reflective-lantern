@@ -61,9 +61,7 @@ def test_load_latest_entry_returns_none_on_empty_list(tmp_path: Path) -> None:
 
 
 @pytest.mark.parametrize("sort_by", ["commits", "date", "repo"])
-def test_main_runs_without_error(
-    history_path: Path, sort_by: str, capsys: pytest.CaptureFixture
-) -> None:
+def test_main_runs_without_error(history_path: Path, sort_by: str, capsys: pytest.CaptureFixture) -> None:
     import scripts.summarize_history as sh
 
     with patch.object(sh, "HISTORY_DIR", history_path):
@@ -95,9 +93,7 @@ def test_load_latest_entry_returns_none_on_nested_invalid(tmp_path: Path) -> Non
         (120, 120),
     ],
 )
-def test_load_latest_entry_commit_values(
-    tmp_path: Path, commits: int, expected_commits: int
-) -> None:
+def test_load_latest_entry_commit_values(tmp_path: Path, commits: int, expected_commits: int) -> None:
     from scripts.summarize_history import load_latest_entry
 
     f = tmp_path / "repo.json"
@@ -171,9 +167,7 @@ def test_main_json_tests_passed_field(tmp_path: Path, capsys: pytest.CaptureFixt
 
     h = tmp_path / "history"
     h.mkdir()
-    (h / "Repo.json").write_text(
-        json.dumps([{"date": "2026-07-01", "commits": 60, "tests_passed": True}])
-    )
+    (h / "Repo.json").write_text(json.dumps([{"date": "2026-07-01", "commits": 60, "tests_passed": True}]))
     with patch.object(sh, "HISTORY_DIR", h):
         with patch.object(sys, "argv", ["summarize_history.py", "--json"]):
             sh.main()
@@ -190,12 +184,8 @@ def test_filter_mode_improvement(tmp_path: Path, capsys: pytest.CaptureFixture) 
 
     h = tmp_path / "history"
     h.mkdir()
-    (h / "A.json").write_text(
-        json.dumps([{"date": "2026-07-01", "commits": 60, "mode": "improvement"}])
-    )
-    (h / "B.json").write_text(
-        json.dumps([{"date": "2026-07-08", "commits": 60, "mode": "innovation"}])
-    )
+    (h / "A.json").write_text(json.dumps([{"date": "2026-07-01", "commits": 60, "mode": "improvement"}]))
+    (h / "B.json").write_text(json.dumps([{"date": "2026-07-08", "commits": 60, "mode": "innovation"}]))
     with patch.object(sh, "HISTORY_DIR", h):
         with patch.object(sys, "argv", ["summarize_history.py", "--filter-mode", "improvement"]):
             sh.main()
@@ -212,12 +202,8 @@ def test_filter_mode_innovation(tmp_path: Path, capsys: pytest.CaptureFixture) -
 
     h = tmp_path / "history"
     h.mkdir()
-    (h / "A.json").write_text(
-        json.dumps([{"date": "2026-07-01", "commits": 60, "mode": "improvement"}])
-    )
-    (h / "B.json").write_text(
-        json.dumps([{"date": "2026-07-08", "commits": 60, "mode": "innovation"}])
-    )
+    (h / "A.json").write_text(json.dumps([{"date": "2026-07-01", "commits": 60, "mode": "improvement"}]))
+    (h / "B.json").write_text(json.dumps([{"date": "2026-07-08", "commits": 60, "mode": "innovation"}]))
     with patch.object(sh, "HISTORY_DIR", h):
         with patch.object(sys, "argv", ["summarize_history.py", "--filter-mode", "innovation"]):
             sh.main()
@@ -298,3 +284,36 @@ def test_summarize_history_returns_zero(history_dir: Path) -> None:
         with patch.object(sh, "HISTORY_DIR", history_dir):
             rc = sh.main()
     assert rc in (0, None)
+
+
+def test_export_to_csv_creates_file(history_dir: Path, tmp_path: Path) -> None:
+    from scripts.summarize_history import export_to_csv
+
+    out = tmp_path / "summary.csv"
+    count = export_to_csv(history_dir=history_dir, output_path=out)
+    assert out.exists()
+    assert count >= 0
+
+
+def test_export_to_csv_header_row(history_dir: Path, tmp_path: Path) -> None:
+    import csv
+
+    from scripts.summarize_history import export_to_csv
+
+    out = tmp_path / "summary.csv"
+    export_to_csv(history_dir=history_dir, output_path=out)
+    if out.exists():
+        with out.open() as fh:
+            reader = csv.DictReader(fh)
+            assert "repo" in (reader.fieldnames or [])
+
+
+def test_export_to_csv_empty_history_returns_zero(tmp_path: Path) -> None:
+    from scripts.summarize_history import export_to_csv
+
+    empty_dir = tmp_path / "history"
+    empty_dir.mkdir()
+    out = tmp_path / "out.csv"
+    count = export_to_csv(history_dir=empty_dir, output_path=out)
+    assert count == 0
+    assert not out.exists()

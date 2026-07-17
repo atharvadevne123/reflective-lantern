@@ -95,9 +95,7 @@ def test_check_repo_detects_open_branches(
         ([{"workflow_id": 1, "name": "CI", "conclusion": "timed_out"}], ["CI"]),
     ],
 )
-def test_check_repo_workflow_conclusions(
-    workflows: list[dict[str, str]], expected_failing: list[str]
-) -> None:
+def test_check_repo_workflow_conclusions(workflows: list[dict[str, str]], expected_failing: list[str]) -> None:
     from scripts.health_check import check_repo
 
     def mock_get(url: str, token: str) -> Any:

@@ -60,6 +60,7 @@ def main() -> None:
     output_path = "screenshots/architecture.txt"
     try:
         import os
+
         os.makedirs("screenshots", exist_ok=True)
         with open(output_path, "w") as f:
             f.write(DIAGRAM)

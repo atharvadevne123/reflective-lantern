@@ -1,5 +1,5 @@
 .PHONY: install test lint format run train diagram docker-up docker-down \
-        coverage typecheck clean help migrate check
+        coverage coverage-xml typecheck clean help migrate check profile
 
 ## help: Show this help message
 help:
@@ -59,10 +59,20 @@ docker-up:
 docker-down:
 	docker-compose down -v
 
+## coverage-xml: Run tests and export XML coverage report for CI
+coverage-xml:
+	pytest tests/ --cov=app --cov-report=xml -q
+	@echo "Coverage XML written to coverage.xml"
+
+## profile: Run tests under cProfile and show top 20 hotspots
+profile:
+	python -m cProfile -o /tmp/wattguard_profile.prof -m pytest tests/ -q 2>/dev/null; true
+	python -c "import pstats; p=pstats.Stats('/tmp/wattguard_profile.prof'); p.sort_stats('cumulative'); p.print_stats(20)"
+
 ## clean: Remove Python cache files, coverage artefacts, and test DBs
 clean:
 	find . -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null; true
 	find . -type f -name "*.pyc" -delete 2>/dev/null; true
 	rm -rf .pytest_cache htmlcov .mypy_cache .ruff_cache
-	rm -f test_watt_guard.db watt_guard.db
+	rm -f test_watt_guard.db watt_guard.db coverage.xml
 	@echo "Clean complete."

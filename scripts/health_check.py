@@ -42,9 +42,7 @@ class RepoHealth:
     @property
     def healthy(self) -> bool:
         """True when no issues were found."""
-        return not (
-            self.failing_workflows or self.open_branches or not self.has_release or not self.has_ci
-        )
+        return not (self.failing_workflows or self.open_branches or not self.has_release or not self.has_ci)
 
     @property
     def issues_count(self) -> int:
@@ -115,18 +113,14 @@ def check_repo(name: str, default_branch: str, token: str) -> RepoHealth:
 
     # Open branches
     try:
-        branches = _get(
-            f"{GH_API}/repos/{owner}/{name}/branches?per_page={BRANCHES_PER_PAGE}", token
-        )
+        branches = _get(f"{GH_API}/repos/{owner}/{name}/branches?per_page={BRANCHES_PER_PAGE}", token)
         health.open_branches = [b["name"] for b in branches if b["name"] != default_branch]
     except Exception as exc:
         log.warning("Could not fetch branches for %s: %s", name, exc)
 
     # Missing release
     try:
-        releases = _get(
-            f"{GH_API}/repos/{owner}/{name}/releases?per_page={RELEASES_PER_PAGE}", token
-        )
+        releases = _get(f"{GH_API}/repos/{owner}/{name}/releases?per_page={RELEASES_PER_PAGE}", token)
         health.has_release = bool(releases)
     except Exception as exc:
         log.warning("Could not fetch releases for %s: %s", name, exc)

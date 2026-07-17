@@ -100,11 +100,14 @@ class TestHelpers:
         for key in ("hour", "day_of_week", "month", "is_weekend"):
             assert key in result
 
-    @pytest.mark.parametrize("hour,month,dow", [
-        (0, 1, 0),
-        (23, 12, 6),
-        (12, 6, 3),
-    ])
+    @pytest.mark.parametrize(
+        "hour,month,dow",
+        [
+            (0, 1, 0),
+            (23, 12, 6),
+            (12, 6, 3),
+        ],
+    )
     def test_validate_temporal_boundary_values(self, hour, month, dow):
         assert validate_temporal_fields(hour, dow, month) == []
 
@@ -120,3 +123,305 @@ class TestValidateLoadSeriesExtended:
     def test_inf_detected(self, value):
         errors = validate_load_series([value])
         assert len(errors) > 0
+
+
+class TestValidateBuildingId:
+    def test_valid_building_id(self):
+        from app.validation import validate_building_id
+
+        assert validate_building_id("bldg-001") == []
+
+    def test_empty_building_id(self):
+        from app.validation import validate_building_id
+
+        errors = validate_building_id("")
+        assert len(errors) > 0
+
+    def test_building_id_too_long(self):
+        from app.validation import validate_building_id
+
+        errors = validate_building_id("a" * 65)
+        assert len(errors) > 0
+
+    def test_building_id_invalid_chars(self):
+        from app.validation import validate_building_id
+
+        errors = validate_building_id("bldg@123")
+        assert len(errors) > 0
+
+    @pytest.mark.parametrize("bid", ["a", "A1", "bldg-001", "BLDG_002"])
+    def test_valid_building_ids(self, bid):
+        from app.validation import validate_building_id
+
+        assert validate_building_id(bid) == []
+
+
+class TestValidateBatchSize:
+    def test_valid_batch(self):
+        from app.validation import validate_batch_size
+
+        assert validate_batch_size(50) == []
+
+    def test_oversized_batch(self):
+        from app.validation import validate_batch_size
+
+        errors = validate_batch_size(101)
+        assert len(errors) > 0
+
+    def test_zero_batch(self):
+        from app.validation import validate_batch_size
+
+        errors = validate_batch_size(0)
+        assert len(errors) > 0
+
+    @pytest.mark.parametrize("n", [1, 50, 100])
+    def test_valid_batch_sizes(self, n):
+        from app.validation import validate_batch_size
+
+        assert validate_batch_size(n) == []
+
+
+class TestValidateConsumptionKwh:
+    def test_valid_value(self):
+        from app.validation import validate_consumption_kwh
+
+        assert validate_consumption_kwh(10.5) == []
+
+    def test_negative_value(self):
+        from app.validation import validate_consumption_kwh
+
+        errors = validate_consumption_kwh(-1.0)
+        assert len(errors) > 0
+
+    def test_nan_value(self):
+        import math
+
+        from app.validation import validate_consumption_kwh
+
+        errors = validate_consumption_kwh(math.nan)
+        assert len(errors) > 0
+
+
+class TestValidateFeatureVector:
+    def test_valid_vector(self):
+        from app.validation import validate_feature_vector
+
+        assert validate_feature_vector([1.0, 2.0, 3.0]) == []
+
+    def test_empty_vector(self):
+        from app.validation import validate_feature_vector
+
+        errors = validate_feature_vector([])
+        assert len(errors) > 0
+
+    def test_wrong_dim(self):
+        from app.validation import validate_feature_vector
+
+        errors = validate_feature_vector([1.0, 2.0, 3.0], expected_dim=5)
+        assert len(errors) > 0
+
+    def test_correct_dim(self):
+        from app.validation import validate_feature_vector
+
+        assert validate_feature_vector([1.0, 2.0, 3.0], expected_dim=3) == []
+
+
+class TestValidateBuildingIdEdgeCases:
+    def test_max_length_allowed(self):
+        from app.validation import MAX_BUILDING_ID_LEN, validate_building_id
+
+        bid = "x" * MAX_BUILDING_ID_LEN
+        assert validate_building_id(bid) == []
+
+    def test_over_max_length_rejected(self):
+        from app.validation import MAX_BUILDING_ID_LEN, validate_building_id
+
+        bid = "x" * (MAX_BUILDING_ID_LEN + 1)
+        assert len(validate_building_id(bid)) > 0
+
+    def test_alphanumeric_with_hyphens_valid(self):
+        from app.validation import validate_building_id
+
+        assert validate_building_id("bldg-001-main") == []
+
+    def test_special_chars_rejected(self):
+        from app.validation import validate_building_id
+
+        assert len(validate_building_id("bldg@001!")) > 0
+
+
+class TestValidateConsumptionEdgeCases:
+    def test_exact_zero_valid(self):
+        from app.validation import validate_consumption_kwh
+
+        assert validate_consumption_kwh(0.0) == []
+
+    def test_exact_max_valid(self):
+        from app.validation import MAX_CONSUMPTION_KWH, validate_consumption_kwh
+
+        assert validate_consumption_kwh(MAX_CONSUMPTION_KWH) == []
+
+    def test_above_max_rejected(self):
+        from app.validation import MAX_CONSUMPTION_KWH, validate_consumption_kwh
+
+        assert len(validate_consumption_kwh(MAX_CONSUMPTION_KWH + 1.0)) > 0
+
+    def test_negative_rejected(self):
+        from app.validation import validate_consumption_kwh
+
+        assert len(validate_consumption_kwh(-0.001)) > 0
+
+
+def test_batch_validate_readings_all_valid():
+    from app.validation import batch_validate_readings
+
+    readings = [
+        {"hour": 12, "day_of_week": 1, "month": 6, "temperature_c": 22.0, "humidity_pct": 60.0, "consumption_kwh": 15.0},
+        {"hour": 8, "day_of_week": 0, "month": 3, "temperature_c": 5.0, "humidity_pct": 40.0, "consumption_kwh": 10.0},
+    ]
+    results = batch_validate_readings(readings)
+    assert all(r["valid"] for r in results)
+    assert len(results) == 2
+
+
+def test_batch_validate_readings_detects_errors():
+    from app.validation import batch_validate_readings
+
+    readings = [
+        {"hour": 25, "day_of_week": 1, "month": 6, "temperature_c": 22.0, "humidity_pct": 60.0, "consumption_kwh": 5.0},
+    ]
+    results = batch_validate_readings(readings)
+    assert not results[0]["valid"]
+    assert any("hour" in e for e in results[0]["errors"])
+
+
+def test_batch_validate_readings_preserves_index():
+    from app.validation import batch_validate_readings
+
+    readings = [{"hour": 0, "day_of_week": 0, "month": 1, "temperature_c": 10.0, "humidity_pct": 50.0, "consumption_kwh": 5.0}] * 5
+    results = batch_validate_readings(readings)
+    assert [r["index"] for r in results] == list(range(5))
+
+
+def test_batch_validate_readings_empty():
+    from app.validation import batch_validate_readings
+
+    assert batch_validate_readings([]) == []
+
+
+def test_batch_validate_readings_bad_temperature():
+    from app.validation import batch_validate_readings
+
+    readings = [{"hour": 12, "day_of_week": 2, "month": 7, "temperature_c": 200.0, "humidity_pct": 50.0, "consumption_kwh": 10.0}]
+    results = batch_validate_readings(readings)
+    assert not results[0]["valid"]
+    assert any("temperature_c" in e for e in results[0]["errors"])
+
+
+@pytest.mark.parametrize("bad_hour", [-1, 24, 100])
+def test_batch_validate_readings_bad_hours(bad_hour):
+    from app.validation import batch_validate_readings
+
+    readings = [{"hour": bad_hour, "day_of_week": 0, "month": 1, "temperature_c": 10.0, "humidity_pct": 50.0, "consumption_kwh": 5.0}]
+    results = batch_validate_readings(readings)
+    assert not results[0]["valid"]
+
+
+def test_validate_forecast_horizon_valid():
+    from app.validation import validate_forecast_horizon
+
+    assert validate_forecast_horizon(24) == []
+    assert validate_forecast_horizon(1) == []
+    assert validate_forecast_horizon(8760) == []
+
+
+def test_validate_forecast_horizon_too_small():
+    from app.validation import validate_forecast_horizon
+
+    errors = validate_forecast_horizon(0)
+    assert len(errors) > 0
+    assert any("1" in e for e in errors)
+
+
+def test_validate_forecast_horizon_too_large():
+    from app.validation import validate_forecast_horizon
+
+    errors = validate_forecast_horizon(9000, max_horizon=8760)
+    assert len(errors) > 0
+
+
+def test_validate_forecast_horizon_custom_max():
+    from app.validation import validate_forecast_horizon
+
+    assert validate_forecast_horizon(48, max_horizon=24) != []
+    assert validate_forecast_horizon(24, max_horizon=24) == []
+
+
+@pytest.mark.parametrize("horizon,expected_valid", [
+    (1, True),
+    (24, True),
+    (168, True),
+    (8760, True),
+    (0, False),
+    (-1, False),
+    (8761, False),
+])
+def test_validate_forecast_horizon_parametrized(horizon, expected_valid):
+    from app.validation import validate_forecast_horizon
+
+    errors = validate_forecast_horizon(horizon)
+    assert (len(errors) == 0) == expected_valid
+
+
+def test_is_valid_temporal_input_valid():
+    from app.validation import is_valid_temporal_input
+
+    assert is_valid_temporal_input(12, 3, 6) is True
+
+
+def test_is_valid_temporal_input_bad_hour():
+    from app.validation import is_valid_temporal_input
+
+    assert is_valid_temporal_input(25, 3, 6) is False
+
+
+def test_is_valid_temporal_input_bad_month():
+    from app.validation import is_valid_temporal_input
+
+    assert is_valid_temporal_input(0, 0, 13) is False
+
+
+def test_is_valid_temporal_input_bad_dow():
+    from app.validation import is_valid_temporal_input
+
+    assert is_valid_temporal_input(0, 7, 1) is False
+
+
+def test_clamp_consumption_within_range():
+    from app.validation import clamp_consumption
+
+    assert clamp_consumption(500.0) == pytest.approx(500.0)
+
+
+def test_clamp_consumption_below_min():
+    from app.validation import clamp_consumption
+
+    assert clamp_consumption(-10.0) == pytest.approx(0.0)
+
+
+def test_clamp_consumption_above_max():
+    from app.validation import clamp_consumption
+
+    assert clamp_consumption(999_999.0) == pytest.approx(100_000.0)
+
+
+@pytest.mark.parametrize("hour,dow,month,expected", [
+    (0, 0, 1, True),
+    (23, 6, 12, True),
+    (24, 0, 1, False),
+    (0, 0, 0, False),
+])
+def test_is_valid_temporal_input_parametrized(hour, dow, month, expected):
+    from app.validation import is_valid_temporal_input
+
+    assert is_valid_temporal_input(hour, dow, month) is expected

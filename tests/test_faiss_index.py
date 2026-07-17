@@ -88,3 +88,58 @@ class TestGetPatternIndex:
         a = get_pattern_index(dim=24)
         b = get_pattern_index(dim=24)
         assert a is b
+
+
+def test_load_pattern_index_len() -> None:
+    from app.faiss_index import LoadPatternIndex
+
+    idx = LoadPatternIndex(dim=3)
+    assert len(idx) == 0
+    idx.add([1.0, 2.0, 3.0])
+    assert len(idx) == 1
+    idx.add([4.0, 5.0, 6.0])
+    assert len(idx) == 2
+
+
+def test_load_pattern_index_reset_clears() -> None:
+    from app.faiss_index import LoadPatternIndex
+
+    idx = LoadPatternIndex(dim=3)
+    idx.add([1.0, 2.0, 3.0])
+    idx.reset()
+    assert len(idx) == 0
+    assert idx.search([1.0, 2.0, 3.0]) == []
+
+
+def test_save_vectors_empty_index() -> None:
+    import numpy as np
+
+    from app.faiss_index import LoadPatternIndex
+
+    idx = LoadPatternIndex(dim=4)
+    arr = idx.save_vectors()
+    assert arr.shape == (0, 4)
+    assert arr.dtype == np.float32
+
+
+def test_save_vectors_returns_copy() -> None:
+    import numpy as np
+
+    from app.faiss_index import LoadPatternIndex
+
+    idx = LoadPatternIndex(dim=3)
+    idx.add([1.0, 0.0, 0.0])
+    idx.add([0.0, 1.0, 0.0])
+    arr = idx.save_vectors()
+    assert arr.shape == (2, 3)
+    assert arr.dtype == np.float32
+
+
+def test_save_vectors_does_not_mutate_index() -> None:
+    from app.faiss_index import LoadPatternIndex
+
+    idx = LoadPatternIndex(dim=2)
+    idx.add([3.0, 4.0])
+    arr = idx.save_vectors()
+    arr[0, 0] = 999.0  # modify the copy
+    assert idx._vectors[0][0] == pytest.approx(3.0)

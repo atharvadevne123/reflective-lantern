@@ -97,7 +97,33 @@ def main() -> int | None:
     return 0
 
 
-__all__ = ["load_all_entries", "load_latest_entry"]
+def export_to_csv(history_dir: Path | None = None, output_path: Path | None = None) -> int:
+    """Write history summary to a CSV file.
+
+    Args:
+        history_dir: Directory containing per-repo JSON files (default: HISTORY_DIR).
+        output_path: Destination CSV file (default: history_dir / "summary.csv").
+
+    Returns:
+        Number of rows written.
+    """
+    import csv
+
+    history_dir = history_dir or HISTORY_DIR
+    rows = _collect_rows(history_dir)
+    if not rows:
+        return 0
+
+    dest = output_path or (history_dir / "summary.csv")
+    fieldnames = ["repo", "date", "commits", "mode", "tests_passed"]
+    with dest.open("w", newline="", encoding="utf-8") as fh:
+        writer = csv.DictWriter(fh, fieldnames=fieldnames)
+        writer.writeheader()
+        writer.writerows(rows)
+    return len(rows)
+
+
+__all__ = ["export_to_csv", "load_all_entries", "load_latest_entry"]
 
 
 if __name__ == "__main__":

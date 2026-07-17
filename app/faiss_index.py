@@ -10,6 +10,7 @@ logger = logging.getLogger(__name__)
 
 try:
     import faiss  # type: ignore[import]
+
     _HAS_FAISS = True
 except ImportError:
     _HAS_FAISS = False
@@ -90,6 +91,24 @@ class LoadPatternIndex:
         self._metadata.clear()
         self._index = None
 
+    def reset(self) -> None:
+        """Alias for clear(); remove all vectors and invalidate the index."""
+        self.clear()
+
+    def __len__(self) -> int:
+        """Return the number of vectors in the index."""
+        return len(self._vectors)
+
+    def save_vectors(self) -> np.ndarray:
+        """Return a copy of all stored vectors as a 2-D float32 array.
+
+        Returns:
+            Shape (n, dim) array; empty (0, dim) when the index has no vectors.
+        """
+        if not self._vectors:
+            return np.empty((0, self.dim), dtype=np.float32)
+        return np.stack(self._vectors, axis=0).copy()
+
     @property
     def size(self) -> int:
         """Number of vectors stored in the index."""
@@ -103,15 +122,15 @@ DEFAULT_TOP_K: int = 5
 MAX_TOP_K: int = 100
 
 __all__ = [
+    "DEFAULT_TOP_K",
+    "DIM",
+    "MAX_TOP_K",
     "LoadPatternIndex",
     "add_property",
     "get_pattern_index",
     "index_size",
     "reset_index",
     "search_comparable",
-    "DIM",
-    "DEFAULT_TOP_K",
-    "MAX_TOP_K",
 ]
 
 

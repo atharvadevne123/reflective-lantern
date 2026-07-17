@@ -24,7 +24,9 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
     exceeding RATE_LIMIT_REQUESTS within RATE_LIMIT_WINDOW_SECONDS.
     """
 
-    def __init__(self, app, requests_per_window: int | None = None, window_seconds: int | None = None):
+    def __init__(
+        self, app, requests_per_window: int | None = None, window_seconds: int | None = None
+    ):
         super().__init__(app)
         self.requests_per_window = requests_per_window or RATE_LIMIT_REQUESTS
         self.window_seconds = window_seconds or RATE_LIMIT_WINDOW_SECONDS

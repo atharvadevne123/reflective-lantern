@@ -178,4 +178,39 @@ def download_model_artefacts(local_dir: str = ".") -> list[str]:
     return downloaded
 
 
-__all__ = ["DEFAULT_REGION", "DEFAULT_PREFIX", "ARTEFACT_FILENAMES", "get_s3_client", "upload_artefacts", "download_artefacts"]
+def delete_artefact(key: str, bucket: str = "") -> bool:
+    """Delete a model artefact from S3.
+
+    Args:
+        key: S3 object key to delete.
+        bucket: S3 bucket name (defaults to env S3_BUCKET).
+
+    Returns:
+        True on success, False when boto3 absent or deletion fails.
+    """
+    bucket = bucket or _BUCKET
+    if not bucket:
+        return False
+    client = _s3_client()
+    if client is None:
+        return False
+    try:
+        client.delete_object(Bucket=bucket, Key=key)
+        logger.info("Deleted s3://%s/%s", bucket, key)
+        return True
+    except Exception as exc:
+        logger.error("S3 delete failed for %s: %s", key, exc)
+        return False
+
+
+__all__ = [
+    "ARTEFACT_FILENAMES",
+    "DEFAULT_PREFIX",
+    "DEFAULT_REGION",
+    "delete_artefact",
+    "download_model",
+    "download_model_artefacts",
+    "list_model_versions",
+    "upload_model",
+    "upload_model_artefacts",
+]

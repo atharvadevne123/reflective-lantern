@@ -36,9 +36,7 @@ def test_predict_and_batch_return_same_label(
     client: TestClient, sample_sensor_payload: dict
 ) -> None:
     single = client.post("/api/v1/predict", json=sample_sensor_payload).json()
-    batch = client.post(
-        "/api/v1/predict/batch", json={"readings": [sample_sensor_payload]}
-    ).json()
+    batch = client.post("/api/v1/predict/batch", json={"readings": [sample_sensor_payload]}).json()
     # Same input → same prediction
     assert single["prediction"] == batch["predictions"][0]["prediction"]
     assert single["defect_probability"] == batch["predictions"][0]["defect_probability"]

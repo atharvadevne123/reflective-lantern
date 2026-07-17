@@ -33,11 +33,7 @@ def date_seed(target_date: date) -> int:
 
 def _is_eligible_repo(repo: dict[str, Any]) -> bool:
     """Return True if the repo is active, non-fork, and not the excluded repo."""
-    return (
-        not repo.get("archived")
-        and not repo.get("fork")
-        and repo.get("name") != EXCLUDED_REPO
-    )
+    return not repo.get("archived") and not repo.get("fork") and repo.get("name") != EXCLUDED_REPO
 
 
 def fetch_repos(owner: str, token: str) -> list[dict[str, Any]]:

@@ -102,3 +102,89 @@ def cosine_distance(a: list[float] | np.ndarray, b: list[float] | np.ndarray) ->
 
 
 __all__ = ["BuildingSimilarityIndex", "cosine_distance", "get_global_index", "search_comparable"]
+
+
+def euclidean_distance(a: list[float] | np.ndarray, b: list[float] | np.ndarray) -> float:
+    """Compute Euclidean (L2) distance between two vectors.
+
+    Args:
+        a: First feature vector.
+        b: Second feature vector (must be same length as *a*).
+
+    Returns:
+        L2 distance rounded to 6 decimal places.
+    """
+    va = np.array(a, dtype=np.float32)
+    vb = np.array(b, dtype=np.float32)
+    return round(float(np.linalg.norm(va - vb)), 6)
+
+
+def score_distribution(
+    index: BuildingSimilarityIndex,
+    query: list[float],
+) -> dict[str, float]:
+    """Return summary statistics of cosine similarity scores for all profiles.
+
+    Args:
+        index: BuildingSimilarityIndex to search against.
+        query: Query feature vector.
+
+    Returns:
+        Dict with 'min', 'max', 'mean', 'std' similarity scores, or zeros if empty.
+    """
+    if not index.size:
+        return {"min": 0.0, "max": 0.0, "mean": 0.0, "std": 0.0}
+    results = index.search(query, k=index.size)
+    scores = np.array([s for _, s in results], dtype=float)
+    return {
+        "min": round(float(scores.min()), 4),
+        "max": round(float(scores.max()), 4),
+        "mean": round(float(scores.mean()), 4),
+        "std": round(float(scores.std()), 4),
+    }
+
+
+def batch_add(index: BuildingSimilarityIndex, profiles: list[tuple[str, list[float]]]) -> int:
+    """Add multiple building profiles to *index* in one call.
+
+    Args:
+        index: Target BuildingSimilarityIndex instance.
+        profiles: List of (building_id, feature_vector) tuples.
+
+    Returns:
+        Number of profiles successfully added.
+    """
+    added = 0
+    for building_id, profile in profiles:
+        try:
+            index.add(building_id, profile)
+            added += 1
+        except Exception:
+            logger.exception("Failed to add profile for building %s", building_id)
+    return added
+
+
+def hourly_pattern_distance(profile_a: list[float], profile_b: list[float]) -> float:
+    """Compute the mean absolute error between two 24-hour load profiles.
+
+    Both profiles must have the same length.  This metric is more interpretable
+    than cosine distance when comparing hourly energy patterns because it
+    preserves the magnitude (kWh) differences across the day.
+
+    Args:
+        profile_a: First hourly load profile (kWh per hour).
+        profile_b: Second hourly load profile (kWh per hour).
+
+    Returns:
+        Mean absolute difference in kWh per hour.
+
+    Raises:
+        ValueError: If the profiles have different lengths or are empty.
+    """
+    if not profile_a or not profile_b:
+        raise ValueError("profiles must not be empty")
+    if len(profile_a) != len(profile_b):
+        raise ValueError(
+            f"profiles must have the same length: {len(profile_a)} != {len(profile_b)}"
+        )
+    return sum(abs(a - b) for a, b in zip(profile_a, profile_b)) / len(profile_a)

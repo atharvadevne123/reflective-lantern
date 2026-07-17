@@ -22,15 +22,11 @@ class Settings:
         rate_limit_per_minute: Maximum requests per client per minute.
     """
 
-    database_url: str = field(
-        default_factory=lambda: os.getenv("DATABASE_URL", "sqlite:///./watt_guard.db")
-    )
+    database_url: str = field(default_factory=lambda: os.getenv("DATABASE_URL", "sqlite:///./watt_guard.db"))
     model_path: str = field(default_factory=lambda: os.getenv("MODEL_PATH", "model.joblib"))
     metrics_path: str = field(default_factory=lambda: os.getenv("METRICS_PATH", "metrics.json"))
     log_level: str = field(default_factory=lambda: os.getenv("LOG_LEVEL", "INFO"))
-    rate_limit_per_minute: int = field(
-        default_factory=lambda: int(os.getenv("RATE_LIMIT_PER_MINUTE", "120"))
-    )
+    rate_limit_per_minute: int = field(default_factory=lambda: int(os.getenv("RATE_LIMIT_PER_MINUTE", "120")))
 
 
 settings = Settings()

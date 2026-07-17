@@ -99,7 +99,11 @@ def multi_channel_forecast(
     for channel, series in channel_series.items():
         try:
             model, metrics = fit_channel_forecaster(series, lookback=lookback, horizon=horizon)
-            last_window = series[-lookback:] if len(series) >= lookback else np.pad(series, (lookback - len(series), 0))
+            last_window = (
+                series[-lookback:]
+                if len(series) >= lookback
+                else np.pad(series, (lookback - len(series), 0))
+            )
             fc = forecast_with_confidence(model, last_window, steps=horizon)
             results[channel] = {**fc, "metrics": metrics}
         except Exception as e:

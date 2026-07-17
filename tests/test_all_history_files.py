@@ -61,9 +61,7 @@ def test_history_file_mode_if_present_is_valid(history_file: Path) -> None:
     valid_modes = {"improvement", "innovation", "IMPROVEMENT", "INNOVATION"}
     for i, entry in enumerate(entries):
         if "mode" in entry:
-            assert entry["mode"] in valid_modes, (
-                f"{history_file.name}[{i}]: unexpected mode={entry['mode']!r}"
-            )
+            assert entry["mode"] in valid_modes, f"{history_file.name}[{i}]: unexpected mode={entry['mode']!r}"
 
 
 @pytest.mark.parametrize("history_file", HISTORY_FILES, ids=lambda p: p.stem)
@@ -93,7 +91,5 @@ def test_history_file_email_status_if_present_is_valid(history_file: Path) -> No
     for i, entry in enumerate(entries):
         if "email_status" in entry and isinstance(entry["email_status"], str):
             status = entry["email_status"]
-            valid = status in VALID_EMAIL_STATUSES or any(
-                status.startswith(p) for p in VALID_EMAIL_STATUS_PREFIXES
-            )
+            valid = status in VALID_EMAIL_STATUSES or any(status.startswith(p) for p in VALID_EMAIL_STATUS_PREFIXES)
             assert valid, f"{history_file.name}[{i}]: unrecognised email_status={status!r}"

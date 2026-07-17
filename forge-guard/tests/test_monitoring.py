@@ -39,8 +39,13 @@ def test_compute_drift_insufficient_data():
 
 def test_log_prediction_persists_record(db_session):
     sensor = {
-        "temperature": 78.0, "pressure": 50.0, "vibration": 2.0,
-        "cycle_time": 30.0, "tool_wear": 10.0, "power_consumption": 100.0, "humidity": 45.0,
+        "temperature": 78.0,
+        "pressure": 50.0,
+        "vibration": 2.0,
+        "cycle_time": 30.0,
+        "tool_wear": 10.0,
+        "power_consumption": 100.0,
+        "humidity": 45.0,
     }
     record = log_prediction(
         db=db_session,
@@ -57,8 +62,13 @@ def test_log_prediction_persists_record(db_session):
 
 def test_log_prediction_defect_case(db_session):
     sensor = {
-        "temperature": 92.0, "pressure": 62.0, "vibration": 8.0,
-        "cycle_time": 28.0, "tool_wear": 60.0, "power_consumption": 140.0, "humidity": 70.0,
+        "temperature": 92.0,
+        "pressure": 62.0,
+        "vibration": 8.0,
+        "cycle_time": 28.0,
+        "tool_wear": 60.0,
+        "power_consumption": 140.0,
+        "humidity": 70.0,
     }
     record = log_prediction(
         db=db_session, sensor_data=sensor, prediction=1, defect_probability=0.88
@@ -70,9 +80,9 @@ def test_log_prediction_defect_case(db_session):
 @pytest.mark.parametrize(
     "ref_mean,cur_mean,std,expect_drift",
     [
-        (50, 51, 20, False),   # small shift relative to wide spread — no drift
-        (50, 90, 1, True),     # large mean shift — clear drift
-        (50, 50, 5, False),    # identical distributions — no drift
+        (50, 51, 20, False),  # small shift relative to wide spread — no drift
+        (50, 90, 1, True),  # large mean shift — clear drift
+        (50, 50, 5, False),  # identical distributions — no drift
     ],
 )
 def test_drift_parametrized(ref_mean, cur_mean, std, expect_drift):

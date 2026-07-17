@@ -9,14 +9,17 @@ on:
 jobs:
   lint-and-test:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.11", "3.12"]
 
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up Python
+      - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
+          python-version: ${{ matrix.python-version }}
           cache: pip
 
       - name: Install dependencies
@@ -35,7 +38,15 @@ jobs:
         if: always()
         run: |
           pip install pytest-cov -q
-          pytest tests/ --cov=app --cov-report=term-missing -q 2>&1 | tail -30
+          pytest tests/ --cov=app --cov-report=term-missing --cov-report=xml -q 2>&1 | tail -30
+
+      - name: Upload coverage artifact
+        if: always() && matrix.python-version == '3.11'
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-xml
+          path: coverage.xml
+          retention-days: 7
 
       - name: Type check (mypy)
         run: |

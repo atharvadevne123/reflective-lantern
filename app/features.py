@@ -233,12 +233,16 @@ class AmenityCompositeTransformer(BaseEstimator, TransformerMixin):
         """Add amenity_composite column to X."""
         out = X.copy()
         school = out["school_score"] if "school_score" in out.columns else pd.Series([5.0] * len(out), index=out.index)
-        transit = out["transit_score"] if "transit_score" in out.columns else pd.Series([5.0] * len(out), index=out.index)
-        walkability = out["walkability_score"] if "walkability_score" in out.columns else pd.Series([5.0] * len(out), index=out.index)
+        transit = (
+            out["transit_score"] if "transit_score" in out.columns else pd.Series([5.0] * len(out), index=out.index)
+        )
+        walkability = (
+            out["walkability_score"]
+            if "walkability_score" in out.columns
+            else pd.Series([5.0] * len(out), index=out.index)
+        )
         out["amenity_composite"] = (
-            _SCHOOL_WEIGHT * school
-            + _TRANSIT_WEIGHT * transit
-            + _WALK_WEIGHT * walkability
+            _SCHOOL_WEIGHT * school + _TRANSIT_WEIGHT * transit + _WALK_WEIGHT * walkability
         ) / _AMENITY_SCALE
         return out
 
@@ -284,3 +288,100 @@ def make_feature_row(
             }
         ]
     )
+
+
+class InteractionFeatureExtractor(BaseEstimator, TransformerMixin):
+    """Create pairwise interaction terms between key numeric features."""
+
+    PAIRS: list[tuple[str, str]] = [
+        ("temperature_c", "occupancy"),
+        ("temperature_c", "hvac_state"),
+        ("humidity_pct", "temperature_c"),
+        ("hour", "occupancy"),
+    ]
+
+    def fit(self, X: pd.DataFrame, y=None) -> InteractionFeatureExtractor:
+        self.available_pairs_ = [(a, b) for a, b in self.PAIRS if a in X.columns and b in X.columns]
+        return self
+
+    def transform(self, X: pd.DataFrame) -> pd.DataFrame:
+        df = X.copy()
+        for a, b in self.available_pairs_:
+            df[f"{a}_x_{b}"] = df[a] * df[b]
+        return df
+
+
+def normalize_consumption(
+    values: list[float],
+    method: str = "minmax",
+) -> list[float]:
+    """Normalize a consumption series to [0, 1] or zero-mean unit variance.
+
+    Args:
+        values: List of consumption readings (kWh).
+        method: 'minmax' (default) scales to [0, 1]; 'zscore' standardizes.
+
+    Returns:
+        Normalized series of the same length.
+
+    Raises:
+        ValueError: If *method* is not 'minmax' or 'zscore'.
+        ValueError: If *values* is empty.
+    """
+    if not values:
+        raise ValueError("values must not be empty")
+    if method not in ("minmax", "zscore"):
+        raise ValueError(f"method must be 'minmax' or 'zscore', got {repr(method)}")
+    arr = np.array(values, dtype=float)
+    if method == "minmax":
+        lo, hi = arr.min(), arr.max()
+        if hi - lo < 1e-9:
+            return [0.0] * len(values)
+        return ((arr - lo) / (hi - lo)).tolist()
+    mean, std = arr.mean(), arr.std()
+    if std < 1e-9:
+        return [0.0] * len(values)
+    return ((arr - mean) / std).tolist()
+
+
+def demand_response_potential(
+    hourly_loads: list[float],
+    peak_threshold_pct: float = 0.85,
+) -> dict[str, object]:
+    """Estimate a building's demand-response potential from its hourly load profile.
+
+    Demand response potential is measured as the fraction of hours where load
+    exceeds *peak_threshold_pct* × peak load ("peak hours") and the total kWh
+    that could be shed if those hours were capped at the threshold.
+
+    Args:
+        hourly_loads: Hourly kWh readings (at least one value).
+        peak_threshold_pct: Fraction of peak load used as the shedding ceiling
+            (default 0.85, i.e. 85 % of peak).
+
+    Returns:
+        Dict with:
+            - ``peak_hours_count``: Number of hours above threshold.
+            - ``sheddable_kwh``: Total kWh that exceeds the threshold.
+            - ``potential_pct``: Sheddable kWh as a fraction of total consumption.
+            - ``peak_threshold_kwh``: Absolute kWh threshold applied.
+
+    Raises:
+        ValueError: If *hourly_loads* is empty or *peak_threshold_pct* is not in (0, 1].
+    """
+    if not hourly_loads:
+        raise ValueError("hourly_loads must not be empty")
+    if not (0 < peak_threshold_pct <= 1.0):
+        raise ValueError(f"peak_threshold_pct must be in (0, 1], got {peak_threshold_pct}")
+    peak = max(hourly_loads)
+    threshold = peak * peak_threshold_pct
+    peak_hours = [v for v in hourly_loads if v > threshold]
+    sheddable = sum(v - threshold for v in peak_hours)
+    total = sum(hourly_loads)
+    potential_pct = sheddable / total if total > 0 else 0.0
+    return {
+        "peak_hours_count": len(peak_hours),
+        "sheddable_kwh": round(sheddable, 4),
+        "potential_pct": round(potential_pct, 4),
+        "peak_threshold_kwh": round(threshold, 4),
+    }

@@ -55,9 +55,7 @@ def test_report_generator_daily_returns_string(tmp_path: Path) -> None:
 
     h = tmp_path / "history"
     h.mkdir()
-    (h / "MyRepo.json").write_text(
-        json.dumps([{"date": "2026-07-01", "commits": 60, "improvements": ["added tests"]}])
-    )
+    (h / "MyRepo.json").write_text(json.dumps([{"date": "2026-07-01", "commits": 60, "improvements": ["added tests"]}]))
     import scripts.report_generator as rg
 
     with patch.object(rg, "HISTORY_DIR", h):

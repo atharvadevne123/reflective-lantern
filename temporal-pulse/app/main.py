@@ -73,14 +73,19 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+
 @app.exception_handler(RequestValidationError)
-async def validation_exception_handler(request: Request, exc: RequestValidationError) -> JSONResponse:
+async def validation_exception_handler(
+    request: Request, exc: RequestValidationError
+) -> JSONResponse:
     """Return 422 with sanitized errors (raw input may contain non-JSON floats like NaN)."""
     errors = [
         {"loc": list(err.get("loc", [])), "msg": err.get("msg"), "type": err.get("type")}
         for err in exc.errors()
     ]
-    return JSONResponse(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, content={"detail": errors})
+    return JSONResponse(
+        status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, content={"detail": errors}
+    )
 
 
 CORS_ORIGINS = os.getenv("CORS_ORIGINS", "*").split(",")
@@ -183,8 +188,7 @@ async def detect_anomalies(
     t0 = time.perf_counter()
     try:
         raw = [
-            {"timestamp": r.timestamp, "sensor_id": r.sensor_id, **r.values}
-            for r in batch.readings
+            {"timestamp": r.timestamp, "sensor_id": r.sensor_id, **r.values} for r in batch.readings
         ]
         df, feature_cols = build_feature_matrix(raw)
         X = df[feature_cols].to_numpy(dtype=np.float32)
@@ -305,9 +309,7 @@ async def list_anomalies(
         if sensor_id:
             query = query.filter(AnomalyEvent.sensor_id == sensor_id)
         total = query.count()
-        events = (
-            query.order_by(AnomalyEvent.timestamp.desc()).offset(offset).limit(limit).all()
-        )
+        events = query.order_by(AnomalyEvent.timestamp.desc()).offset(offset).limit(limit).all()
         return {
             "total": total,
             "limit": limit,

@@ -24,9 +24,7 @@ def test_predict_returns_valid_response(client: TestClient, sample_sensor_payloa
     assert "correlation_id" in data
 
 
-def test_predict_high_risk_tends_toward_defect(
-    client: TestClient, high_risk_payload: dict
-) -> None:
+def test_predict_high_risk_tends_toward_defect(client: TestClient, high_risk_payload: dict) -> None:
     resp = client.post("/api/v1/predict", json=high_risk_payload)
     assert resp.status_code == 200
     # High-risk readings should produce non-trivial defect probability
@@ -80,12 +78,14 @@ def test_legacy_predict_alias(client: TestClient, sample_sensor_payload: dict) -
 @pytest.mark.parametrize(
     "field,bad_value",
     [
-        ("humidity", 150),   # > 100
-        ("cycle_time", 0),   # < 0.1
-        ("pressure", -5),    # < 0
+        ("humidity", 150),  # > 100
+        ("cycle_time", 0),  # < 0.1
+        ("pressure", -5),  # < 0
     ],
 )
-def test_field_validation(client: TestClient, sample_sensor_payload: dict, field: str, bad_value: float) -> None:
+def test_field_validation(
+    client: TestClient, sample_sensor_payload: dict, field: str, bad_value: float
+) -> None:
     payload = {**sample_sensor_payload, field: bad_value}
     resp = client.post("/api/v1/predict", json=payload)
     assert resp.status_code == 422

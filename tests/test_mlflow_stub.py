@@ -24,6 +24,7 @@ def test_log_and_retrieve(tmp_path, monkeypatch):
         run_id = log_metrics({"r2_mean": 0.85, "rmse_mean": 250.0})
         assert run_id.startswith("run_")
 
+
 def test_best_run_no_log(tmp_path, monkeypatch):
     import app.mlflow_stub as ms
 
@@ -39,8 +40,10 @@ def test_best_run_no_log(tmp_path, monkeypatch):
         assert best["r2_mean"] == pytest.approx(0.90, rel=0.01)
         assert best["run_name"] == "run_b"
 
+
 def test_log_returns_run_name(tmp_path, monkeypatch):
     pass
+
 
 # --- AWS stub tests ---
 
@@ -246,3 +249,111 @@ def test_artefact_filename_in_constant(filename: str) -> None:
     from app.aws_stub import ARTEFACT_FILENAMES
 
     assert filename in ARTEFACT_FILENAMES
+
+
+def test_set_tracking_uri_configures():
+    import app.mlflow_stub as stub
+    from app.mlflow_stub import set_tracking_uri
+
+    set_tracking_uri("http://localhost:5000")
+    assert stub._TRACKING_URI == "http://localhost:5000"
+    set_tracking_uri("")  # cleanup
+
+
+def test_log_params_appends_to_log(tmp_path, monkeypatch):
+    import app.mlflow_stub as stub
+
+    monkeypatch.setattr(stub, "_RUN_LOG", tmp_path / "runs.jsonl")
+    stub.log_params("run1", {"lr": 0.01, "n": 100})
+    assert (tmp_path / "runs.jsonl").exists()
+
+
+def test_log_artifact_appends_to_log(tmp_path, monkeypatch):
+    import app.mlflow_stub as stub
+
+    monkeypatch.setattr(stub, "_RUN_LOG", tmp_path / "runs.jsonl")
+    stub.log_artifact("run1", "/tmp/model.joblib")
+    content = (tmp_path / "runs.jsonl").read_text()
+    assert "model.joblib" in content
+
+
+def test_list_runs_empty_when_no_log():
+    import pathlib
+
+    import app.mlflow_stub as stub
+    from app.mlflow_stub import list_runs
+
+    orig = stub._RUN_LOG
+    stub._RUN_LOG = pathlib.Path("/tmp/nonexistent_mlruns.jsonl")
+    try:
+        assert list_runs() == []
+    finally:
+        stub._RUN_LOG = orig
+
+
+def test_list_runs_returns_entries(tmp_path, monkeypatch):
+    import json
+
+    import app.mlflow_stub as stub
+
+    log = tmp_path / "runs.jsonl"
+    log.write_text(json.dumps({"run": "r1", "metrics": {"r2": 0.9}}) + "\n")
+    monkeypatch.setattr(stub, "_RUN_LOG", log)
+    runs = stub.list_runs()
+    assert len(runs) == 1
+    assert runs[0]["run"] == "r1"
+
+
+def test_delete_artefact_no_bucket_returns_false() -> None:
+    import app.aws_stub as s
+
+    original = s._BUCKET
+    s._BUCKET = ""
+    try:
+        result = s.delete_artefact("some/key")
+    finally:
+        s._BUCKET = original
+    assert result is False
+
+
+def test_delete_artefact_no_client_returns_false() -> None:
+    from unittest.mock import patch
+
+    import app.aws_stub as s
+
+    with (
+        patch("app.aws_stub._s3_client", return_value=None),
+        patch.object(s, "_BUCKET", "bucket"),
+    ):
+        result = s.delete_artefact("some/key")
+    assert result is False
+
+
+def test_delete_artefact_s3_error_returns_false() -> None:
+    from unittest.mock import MagicMock, patch
+
+    import app.aws_stub as s
+
+    mock_client = MagicMock()
+    mock_client.delete_object.side_effect = RuntimeError("S3 error")
+    with (
+        patch("app.aws_stub._s3_client", return_value=mock_client),
+        patch.object(s, "_BUCKET", "bucket"),
+    ):
+        result = s.delete_artefact("some/key")
+    assert result is False
+
+
+def test_delete_artefact_success_returns_true() -> None:
+    from unittest.mock import MagicMock, patch
+
+    import app.aws_stub as s
+
+    mock_client = MagicMock()
+    with (
+        patch("app.aws_stub._s3_client", return_value=mock_client),
+        patch.object(s, "_BUCKET", "bucket"),
+    ):
+        result = s.delete_artefact("some/key")
+    assert result is True
+    mock_client.delete_object.assert_called_once_with(Bucket="bucket", Key="some/key")

@@ -74,8 +74,13 @@ def test_build_feature_pipeline_produces_array(small_df):
 
 def test_engineer_single_returns_2d_array():
     row = {
-        "temperature": 78.5, "pressure": 52.0, "vibration": 2.1,
-        "cycle_time": 28.0, "tool_wear": 15.0, "power_consumption": 98.0, "humidity": 45.0,
+        "temperature": 78.5,
+        "pressure": 52.0,
+        "vibration": 2.1,
+        "cycle_time": 28.0,
+        "tool_wear": 15.0,
+        "power_consumption": 98.0,
+        "humidity": 45.0,
     }
     result = engineer_single(row)
     assert result.ndim == 2
@@ -113,9 +118,13 @@ def test_engineer_single_missing_column_defaults_to_zero():
 def test_ratio_transformer_handles_zero_denominator():
     df = pd.DataFrame(
         {
-            "temperature": [75.0], "pressure": [0.0], "vibration": [2.0],
-            "cycle_time": [0.0], "tool_wear": [10.0],
-            "power_consumption": [100.0], "humidity": [45.0],
+            "temperature": [75.0],
+            "pressure": [0.0],
+            "vibration": [2.0],
+            "cycle_time": [0.0],
+            "tool_wear": [10.0],
+            "power_consumption": [100.0],
+            "humidity": [45.0],
         }
     )
     t = RatioFeatureTransformer()

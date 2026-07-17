@@ -27,9 +27,7 @@ def sample_history(tmp_path: Path) -> Path:
             ]
         )
     )
-    (h / "RepoB.json").write_text(
-        json.dumps({"last_run": "2026-06-30", "commits": 30, "mode": "improvement"})
-    )
+    (h / "RepoB.json").write_text(json.dumps({"last_run": "2026-06-30", "commits": 30, "mode": "improvement"}))
     return h
 
 
@@ -101,9 +99,7 @@ def test_load_all_history_single_dict(sample_history: Path) -> None:
         (date(2026, 1, 1), False),  # no entries on this date
     ],
 )
-def test_daily_report_date_presence(
-    sample_history: Path, target_date: date, expected_present: bool
-) -> None:
+def test_daily_report_date_presence(sample_history: Path, target_date: date, expected_present: bool) -> None:
     from scripts import report_generator as rg
 
     with patch.object(rg, "HISTORY_DIR", sample_history):
@@ -173,26 +169,20 @@ def test_daily_report_last_run_field(tmp_path: Path) -> None:
 
     h = tmp_path / "history"
     h.mkdir()
-    (h / "RepoC.json").write_text(
-        json.dumps([{"last_run": "2026-07-01", "commits": 45, "mode": "improvement"}])
-    )
+    (h / "RepoC.json").write_text(json.dumps([{"last_run": "2026-07-01", "commits": 45, "mode": "improvement"}]))
     with patch.object(rg, "HISTORY_DIR", h):
         report = rg.daily_report(date(2026, 7, 1))
     assert "RepoC" in report
     assert "45" in report
 
 
-def test_report_generator_main_weekly_stdout(
-    sample_history: Path, capsys: pytest.CaptureFixture
-) -> None:
+def test_report_generator_main_weekly_stdout(sample_history: Path, capsys: pytest.CaptureFixture) -> None:
     import sys
 
     from scripts import report_generator as rg
 
     with patch.object(rg, "HISTORY_DIR", sample_history):
-        with patch.object(
-            sys, "argv", ["report_generator.py", "--mode", "weekly", "--date", "2026-06-30"]
-        ):
+        with patch.object(sys, "argv", ["report_generator.py", "--mode", "weekly", "--date", "2026-06-30"]):
             rg.main()
     out = capsys.readouterr().out
     assert "Weekly Summary" in out
@@ -340,9 +330,8 @@ def test_weekly_report_with_multi_repo_fixture(multi_repo_history_dir: Path) -> 
 def test_total_commits_with_multi_repo_fixture(multi_repo_history_dir: Path) -> None:
     from unittest.mock import patch
 
-    from scripts.report_generator import load_all_history, total_commits
-
     from scripts import report_generator as rg
+    from scripts.report_generator import load_all_history, total_commits
 
     with patch.object(rg, "HISTORY_DIR", multi_repo_history_dir):
         history = load_all_history()

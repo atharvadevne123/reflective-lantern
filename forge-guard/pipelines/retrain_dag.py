@@ -63,6 +63,7 @@ def task_extract_training_data() -> pd.DataFrame:
     except Exception:
         logger.exception("Data extraction failed — falling back to synthetic data.")
         from app.features import generate_synthetic_data
+
         return generate_synthetic_data(n_samples=2000)
 
 
@@ -79,12 +80,7 @@ def task_check_drift() -> bool:
 
         from app.database import DriftReport
 
-        recent = (
-            db.query(DriftReport)
-            .order_by(DriftReport.timestamp.desc())
-            .limit(7)
-            .all()
-        )
+        recent = db.query(DriftReport).order_by(DriftReport.timestamp.desc()).limit(7).all()
         db.close()
 
         drifted = [r for r in recent if r.drift_detected]

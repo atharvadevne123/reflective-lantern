@@ -74,7 +74,9 @@ def find_similar_anomalies(
         indices = indices[0]
     else:
         assert _NN_MODEL is not None
-        distances_arr, indices_arr = _NN_MODEL.kneighbors(query_f32, n_neighbors=min(k, len(_INDEX_LABELS)))
+        distances_arr, indices_arr = _NN_MODEL.kneighbors(
+            query_f32, n_neighbors=min(k, len(_INDEX_LABELS))
+        )
         distances = distances_arr[0]
         indices = indices_arr[0]
 

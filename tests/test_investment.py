@@ -165,9 +165,16 @@ def test_cap_rate_positive_with_yield() -> None:
 
 def test_investment_analysis_fields_present() -> None:
     result = compute_investment_analysis(500_000, 0.07, 5, 5, 5, 0.3)
-    for field in ("annual_rent_estimate", "cap_rate", "investment_score",
-                  "break_even_years", "amenity_composite", "gross_rental_yield",
-                  "risk_score", "predicted_value"):
+    for field in (
+        "annual_rent_estimate",
+        "cap_rate",
+        "investment_score",
+        "break_even_years",
+        "amenity_composite",
+        "gross_rental_yield",
+        "risk_score",
+        "predicted_value",
+    ):
         assert hasattr(result, field)
 
 
@@ -211,9 +218,169 @@ def test_investment_score_never_below_min() -> None:
 
 @pytest.mark.parametrize("expense_ratio", [0.25, 0.35, 0.45])
 def test_cap_rate_decreases_with_expense_ratio(expense_ratio: float) -> None:
-    result = compute_investment_analysis(
-        500_000, 0.08, 5, 5, 5, 0.2, operating_expense_ratio=expense_ratio
+    result = compute_investment_analysis(500_000, 0.08, 5, 5, 5, 0.2, operating_expense_ratio=expense_ratio)
+    assert result.cap_rate == pytest.approx((500_000 * 0.08 * (1 - expense_ratio)) / 500_000, rel=1e-4)
+
+
+def test_mortgage_payment_positive():
+    from app.investment import mortgage_payment
+
+    payment = mortgage_payment(400_000, annual_rate=0.065, term_years=30)
+    assert payment > 0
+
+
+def test_mortgage_payment_zero_rate():
+    from app.investment import mortgage_payment
+
+    payment = mortgage_payment(150_000, annual_rate=0.0, term_years=10, down_payment_pct=0.20)
+    # loan / (10*12) = 120000 / 120 = 1000
+    assert payment == pytest.approx(1000.0, rel=1e-4)
+
+
+def test_mortgage_payment_zero_principal():
+    from app.investment import mortgage_payment
+
+    assert mortgage_payment(0, 0.065) == 0.0
+
+
+def test_roi_percentage_positive():
+    from app.investment import roi_percentage
+
+    roi = roi_percentage(
+        predicted_value=550_000,
+        purchase_price=400_000,
+        annual_income=30_000,
+        annual_expenses=20_000,
+        hold_years=5,
     )
-    assert result.cap_rate == pytest.approx(
-        (500_000 * 0.08 * (1 - expense_ratio)) / 500_000, rel=1e-4
-    )
+    assert roi > 0
+
+
+def test_roi_percentage_zero_purchase():
+    from app.investment import roi_percentage
+
+    assert roi_percentage(500_000, 0, 30_000, 20_000) == 0.0
+
+
+def test_price_to_income_ratio_basic():
+    from app.investment import price_to_income_ratio
+
+    ratio = price_to_income_ratio(400_000, 100_000)
+    assert ratio == pytest.approx(4.0)
+
+
+def test_price_to_income_ratio_zero_income():
+    import math
+
+    from app.investment import price_to_income_ratio
+
+    assert math.isinf(price_to_income_ratio(400_000, 0))
+
+
+@pytest.mark.parametrize(
+    "price,income,expected",
+    [
+        (200_000, 100_000, 2.0),
+        (500_000, 100_000, 5.0),
+        (300_000, 150_000, 2.0),
+    ],
+)
+def test_price_to_income_ratio_parametrized(price, income, expected):
+    from app.investment import price_to_income_ratio
+
+    assert price_to_income_ratio(price, income) == pytest.approx(expected)
+
+
+def test_mortgage_payment_zero_rate_no_down():
+    from app.investment import mortgage_payment
+
+    p = mortgage_payment(200_000, annual_rate=0.0, term_years=10, down_payment_pct=0.0)
+    assert p == pytest.approx(200_000 / (10 * 12), rel=1e-3)
+
+
+def test_mortgage_payment_with_down_payment():
+    from app.investment import mortgage_payment
+
+    p_full = mortgage_payment(200_000, annual_rate=0.05, term_years=30, down_payment_pct=0.0)
+    p_down = mortgage_payment(200_000, annual_rate=0.05, term_years=30, down_payment_pct=0.20)
+    assert p_down < p_full
+
+
+def test_roi_percentage_positive_income():
+    from app.investment import roi_percentage
+
+    roi = roi_percentage(300_000, 250_000, annual_income=20_000, annual_expenses=5_000, hold_years=5)
+    assert roi > 0
+
+
+@pytest.mark.parametrize("term_years", [10, 15, 20, 30])
+def test_mortgage_payment_longer_term_lower_payment(term_years):
+    from app.investment import mortgage_payment
+
+    short = mortgage_payment(300_000, 0.06, 10)
+    long = mortgage_payment(300_000, 0.06, term_years)
+    if term_years > 10:
+        assert long < short
+
+
+def test_investment_score_label_excellent():
+    from app.investment import investment_score_label
+
+    assert investment_score_label(9.0) == "excellent"
+
+
+def test_investment_score_label_good():
+    from app.investment import investment_score_label
+
+    assert investment_score_label(7.5) == "good"
+
+
+def test_investment_score_label_avoid():
+    from app.investment import investment_score_label
+
+    assert investment_score_label(0.5) == "avoid"
+
+
+@pytest.mark.parametrize("score,expected", [
+    (10.0, "excellent"),
+    (8.0, "excellent"),
+    (6.0, "good"),
+    (4.0, "fair"),
+    (2.0, "poor"),
+    (1.9, "avoid"),
+    (0.0, "avoid"),
+])
+def test_investment_score_label_parametrized(score, expected):
+    from app.investment import investment_score_label
+
+    assert investment_score_label(score) == expected
+
+
+def test_portfolio_weighted_score_equal_weights():
+    from app.investment import portfolio_weighted_score
+
+    scores = [4.0, 6.0, 8.0]
+    result = portfolio_weighted_score(scores)
+    assert result == pytest.approx(6.0, rel=1e-3)
+
+
+def test_portfolio_weighted_score_empty():
+    from app.investment import portfolio_weighted_score
+
+    assert portfolio_weighted_score([]) == 0.0
+
+
+def test_portfolio_weighted_score_custom_weights():
+    from app.investment import portfolio_weighted_score
+
+    scores = [2.0, 8.0]
+    weights = [0.25, 0.75]
+    result = portfolio_weighted_score(scores, weights=weights)
+    assert result == pytest.approx(6.5, rel=1e-3)
+
+
+def test_portfolio_weighted_score_mismatch_raises():
+    from app.investment import portfolio_weighted_score
+
+    with pytest.raises(ValueError):
+        portfolio_weighted_score([1.0, 2.0], weights=[0.5])

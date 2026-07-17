@@ -102,9 +102,7 @@ class FoundryClient:
         except Exception as exc:
             logger.warning("Failed to abort transaction %s: %s", transaction_rid, exc)
 
-    def upload_file(
-        self, dataset_rid: str, transaction_rid: str, filename: str, content: bytes
-    ) -> None:
+    def upload_file(self, dataset_rid: str, transaction_rid: str, filename: str, content: bytes) -> None:
         """Upload a file into an open transaction.
 
         Args:
@@ -113,10 +111,7 @@ class FoundryClient:
             filename: Logical filename within the dataset.
             content: Raw bytes to upload.
         """
-        url = (
-            f"{self.base_url}/datasets/{dataset_rid}/files/{filename}"
-            f"/upload?transactionRid={transaction_rid}"
-        )
+        url = f"{self.base_url}/datasets/{dataset_rid}/files/{filename}/upload?transactionRid={transaction_rid}"
         req = urllib.request.Request(
             url,
             data=content,
@@ -239,9 +234,7 @@ class FoundryClient:
         except Exception:
             return []
 
-    def read_table(
-        self, dataset_rid: str, branch: str = "master", format: str = "CSV"
-    ) -> bytes:
+    def read_table(self, dataset_rid: str, branch: str = "master", format: str = "CSV") -> bytes:
         """Read a Foundry dataset as raw bytes.
 
         Args:
@@ -270,6 +263,7 @@ def client_from_settings(settings: Any = None) -> FoundryClient:
     """
     if settings is None:
         from config.settings import Settings
+
         settings = Settings()
     return FoundryClient(settings.foundry_hostname, settings.foundry_token)
 
@@ -286,6 +280,7 @@ def main() -> int:
     args = parser.parse_args()
 
     from config.settings import Settings
+
     settings = Settings()
 
     if args.verify:
@@ -317,4 +312,4 @@ def main() -> int:
     return 0
 
 
-__all__ = ["FoundryClient", "FoundryConfigError", "FoundryAPIError", "client_from_settings"]
+__all__ = ["FoundryAPIError", "FoundryClient", "FoundryConfigError", "client_from_settings"]

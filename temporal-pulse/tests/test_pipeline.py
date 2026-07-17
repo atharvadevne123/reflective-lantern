@@ -12,6 +12,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(__file__)), "pip
 class TestRunPipeline:
     def test_skips_when_insufficient_data(self, monkeypatch):
         from pipelines import retrain_dag
+
         monkeypatch.setattr(retrain_dag, "extract_recent_readings", lambda *a, **k: [])
         result = retrain_dag.run_pipeline()
         assert result["status"] == "skipped"
@@ -19,6 +20,7 @@ class TestRunPipeline:
 
     def test_runs_with_sufficient_data(self, monkeypatch, sample_readings):
         from pipelines import retrain_dag
+
         raw = [
             {"timestamp": r["timestamp"], "sensor_id": r["sensor_id"], **r["values"]}
             for r in sample_readings
@@ -30,6 +32,7 @@ class TestRunPipeline:
 
     def test_failure_path_reports_error(self, monkeypatch):
         from pipelines import retrain_dag
+
         monkeypatch.setattr(
             retrain_dag, "extract_recent_readings", lambda *a, **k: [{"bad": "data"}] * 600
         )
@@ -40,6 +43,7 @@ class TestRunPipeline:
 class TestFeatureEngineering:
     def test_feature_matrix_shape(self, sample_readings):
         from pipelines import retrain_dag
+
         raw = [
             {"timestamp": r["timestamp"], "sensor_id": r["sensor_id"], **r["values"]}
             for r in sample_readings
@@ -52,6 +56,7 @@ class TestFeatureEngineering:
 class TestExtractReadings:
     def test_extract_handles_db_error(self, monkeypatch):
         from pipelines import retrain_dag
+
         monkeypatch.setattr(retrain_dag, "DATABASE_URL", "postgresql://bad:bad@nonexistent:5/db")
         readings = retrain_dag.extract_recent_readings(lookback_days=1)
         assert readings == []

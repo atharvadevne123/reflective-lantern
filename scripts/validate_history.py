@@ -36,9 +36,7 @@ def validate_entry(entry: object, filename: str, index: int) -> list[str]:
     commits = entry.get("commits")
     if commits is not None:
         if not isinstance(commits, int):
-            errors.append(
-                f"{filename}[{index}]: commits must be an int, got {type(commits).__name__}"
-            )
+            errors.append(f"{filename}[{index}]: commits must be an int, got {type(commits).__name__}")
         elif commits < 0:
             errors.append(f"{filename}[{index}]: negative commits value ({commits})")
 
@@ -122,9 +120,9 @@ def main() -> int:
 
 
 __all__ = [
-    "VALID_MODES",
     "VALID_EMAIL_STATUSES",
     "VALID_EMAIL_STATUS_PREFIXES",
+    "VALID_MODES",
     "validate_entry",
     "validate_file",
     "validate_files",

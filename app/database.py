@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import logging
 import os
+from collections.abc import Generator
 from datetime import datetime
-from typing import Generator
 
 from sqlalchemy import Column, DateTime, Float, Integer, String, create_engine
 from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
@@ -104,3 +104,87 @@ def create_tables() -> None:
     """Create all ORM tables if they do not already exist."""
     Base.metadata.create_all(bind=engine)
     logger.info("Database tables ensured.")
+
+
+class ModelMetrics(Base):
+    """Snapshot of model training metrics after each retrain."""
+
+    __tablename__ = "model_metrics"
+
+    id: int = Column(Integer, primary_key=True, index=True)
+    model_version: str = Column(String(32), nullable=False, index=True)
+    r2_mean: float = Column(Float)
+    r2_std: float = Column(Float)
+    mae_kwh: float = Column(Float)
+    rmse_mean: float = Column(Float)
+    n_samples: int = Column(Integer)
+    n_features: int = Column(Integer)
+    trained_at: datetime = Column(DateTime, default=datetime.utcnow, index=True)
+
+
+def get_predictions_by_building(
+    db: Session,
+    building_id: str,
+    limit: int = 100,
+) -> list[PredictionLog]:
+    """Return the most recent prediction log entries for a specific building.
+
+    Args:
+        db: Active SQLAlchemy session.
+        building_id: Building identifier to filter on.
+        limit: Maximum number of rows to return.
+
+    Returns:
+        List of PredictionLog ORM objects, newest first.
+    """
+    return (
+        db.query(PredictionLog)
+        .filter(PredictionLog.building_id == building_id)
+        .order_by(PredictionLog.created_at.desc())
+        .limit(limit)
+        .all()
+    )
+
+
+def get_recent_anomalies(
+    db: "Session",
+    building_id: str,
+    limit: int = 10,
+    severity: str | None = None,
+) -> list["AnomalyLog"]:
+    """Return the most recent anomaly log entries for a building.
+
+    Args:
+        db: Active SQLAlchemy session.
+        building_id: Building identifier to filter on.
+        limit: Maximum number of rows to return (default 10).
+        severity: Optional severity filter ('low', 'medium', 'critical').
+
+    Returns:
+        List of AnomalyLog ORM objects, newest first.
+    """
+    query = (
+        db.query(AnomalyLog)
+        .filter(AnomalyLog.building_id == building_id)
+        .filter(AnomalyLog.is_anomaly == 1)
+    )
+    if severity is not None:
+        query = query.filter(AnomalyLog.severity == severity)
+    return query.order_by(AnomalyLog.timestamp.desc()).limit(limit).all()
+
+
+def count_anomalies_by_building(db: "Session", building_id: str) -> int:
+    """Return the total number of anomaly records for *building_id*.
+
+    Args:
+        db: Active SQLAlchemy session.
+        building_id: Building identifier to count anomalies for.
+
+    Returns:
+        Integer count of rows where is_anomaly == 1.
+    """
+    return (
+        db.query(AnomalyLog)
+        .filter(AnomalyLog.building_id == building_id, AnomalyLog.is_anomaly == 1)
+        .count()
+    )

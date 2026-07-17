@@ -252,9 +252,254 @@ def test_stretched_threshold_constant() -> None:
         (200_000.0, 0.80),
     ],
 )
-def test_affordability_loan_equals_80pct_at_default_down_payment(
-    income: float, expected_loan_fraction: float
-) -> None:
+def test_affordability_loan_equals_80pct_at_default_down_payment(income: float, expected_loan_fraction: float) -> None:
     value = 500_000.0
     result = affordability_index(value, annual_income=income)
     assert result["loan_amount"] == pytest.approx(value * expected_loan_fraction)
+
+
+@pytest.mark.parametrize(
+    "ptr,expected",
+    [
+        (10.0, "buy"),
+        (18.0, "neutral"),
+        (25.0, "rent"),
+    ],
+)
+def test_rent_vs_buy_recommendation(ptr, expected):
+    from app.market_context import rent_vs_buy_comparison
+
+    # ptr = price / annual_rent so annual_rent = price / ptr
+    price = 400_000
+    annual_rent = price / ptr
+    result = rent_vs_buy_comparison(price, annual_rent)
+    assert result["recommendation"] == expected
+
+
+def test_rent_vs_buy_has_required_keys():
+    from app.market_context import rent_vs_buy_comparison
+
+    result = rent_vs_buy_comparison(400_000, 20_000)
+    assert "monthly_rent" in result
+    assert "monthly_mortgage" in result
+    assert "rent_premium" in result
+    assert "price_to_rent_ratio" in result
+    assert "recommendation" in result
+
+
+def test_price_trend_rising():
+    from app.market_context import price_trend_indicator
+
+    result = price_trend_indicator(420_000, 400_000)
+    assert result["trend"] == "rising"
+    assert result["absolute_change"] == pytest.approx(20_000.0)
+
+
+def test_price_trend_falling():
+    from app.market_context import price_trend_indicator
+
+    result = price_trend_indicator(380_000, 400_000)
+    assert result["trend"] == "falling"
+
+
+def test_price_trend_stable():
+    from app.market_context import price_trend_indicator
+
+    result = price_trend_indicator(401_000, 400_000)
+    assert result["trend"] == "stable"
+
+
+def test_price_trend_zero_previous():
+    from app.market_context import price_trend_indicator
+
+    result = price_trend_indicator(400_000, 0)
+    assert result["trend"] == "unknown"
+
+
+def test_hai_affordable():
+    from app.market_context import housing_affordability_index
+
+    result = housing_affordability_index(300_000, 100_000, mortgage_rate=0.065, term_years=30)
+    assert result["hai"] > 100  # affordable
+
+
+def test_hai_unaffordable():
+    from app.market_context import housing_affordability_index
+
+    result = housing_affordability_index(1_500_000, 80_000, mortgage_rate=0.07)
+    assert result["hai"] < 100  # unaffordable
+
+
+def test_hai_zero_income():
+    from app.market_context import housing_affordability_index
+
+    result = housing_affordability_index(300_000, 0)
+    assert result["hai"] == 0.0
+
+
+def test_hai_zero_price():
+    from app.market_context import housing_affordability_index
+
+    result = housing_affordability_index(0, 100_000)
+    assert result["hai"] == 0.0
+
+
+def test_hai_has_required_keys():
+    from app.market_context import housing_affordability_index
+
+    result = housing_affordability_index(400_000, 90_000)
+    for key in ("loan_amount", "monthly_payment", "qualifying_income", "hai"):
+        assert key in result
+
+
+@pytest.mark.parametrize("down_pct", [0.05, 0.10, 0.20, 0.30])
+def test_hai_higher_down_lowers_payment(down_pct):
+    from app.market_context import housing_affordability_index
+
+    full = housing_affordability_index(400_000, 80_000, down_payment_pct=0.0)
+    result = housing_affordability_index(400_000, 80_000, down_payment_pct=down_pct)
+    if down_pct > 0:
+        assert result["monthly_payment"] < full["monthly_payment"]
+
+
+def test_affordability_ratio_basic():
+    from app.market_context import affordability_ratio
+
+    ratio = affordability_ratio(300_000, 100_000, down_payment_pct=0.20)
+    assert ratio == pytest.approx(2.4, rel=1e-3)
+
+
+def test_affordability_ratio_zero_income():
+    from app.market_context import affordability_ratio
+
+    assert affordability_ratio(300_000, 0) == 0.0
+
+
+def test_affordability_ratio_no_down_payment():
+    from app.market_context import affordability_ratio
+
+    ratio = affordability_ratio(200_000, 100_000, down_payment_pct=0.0)
+    assert ratio == pytest.approx(2.0, rel=1e-3)
+
+
+def test_affordability_ratio_full_down_payment():
+    from app.market_context import affordability_ratio
+
+    ratio = affordability_ratio(200_000, 100_000, down_payment_pct=1.0)
+    assert ratio == pytest.approx(0.0, abs=1e-6)
+
+
+@pytest.mark.parametrize("price,income,down,expected_max", [
+    (200_000, 100_000, 0.0, 2.1),
+    (500_000, 100_000, 0.2, 4.1),
+    (150_000, 80_000, 0.1, 1.7),
+])
+def test_affordability_ratio_parametrized(price, income, down, expected_max):
+    from app.market_context import affordability_ratio
+
+    ratio = affordability_ratio(price, income, down_payment_pct=down)
+    assert ratio <= expected_max
+
+
+def test_price_trend_consistency_rising():
+    from app.market_context import price_trend_consistency
+
+    prices = [100_000, 110_000, 120_000, 130_000, 140_000]
+    result = price_trend_consistency(prices)
+    assert result["trend"] == "rising"
+    assert result["consistency_score"] == pytest.approx(1.0)
+
+
+def test_price_trend_consistency_falling():
+    from app.market_context import price_trend_consistency
+
+    prices = [200_000, 190_000, 180_000, 170_000]
+    result = price_trend_consistency(prices)
+    assert result["trend"] == "falling"
+
+
+def test_price_trend_consistency_mixed():
+    from app.market_context import price_trend_consistency
+
+    prices = [100_000, 110_000, 105_000, 115_000, 110_000]
+    result = price_trend_consistency(prices)
+    assert result["direction_changes"] > 0
+
+
+def test_price_trend_consistency_too_few_raises():
+    from app.market_context import price_trend_consistency
+
+    with pytest.raises(ValueError):
+        price_trend_consistency([100_000])
+
+
+def test_price_trend_consistency_keys():
+    from app.market_context import price_trend_consistency
+
+    result = price_trend_consistency([1.0, 2.0, 3.0])
+    assert set(result.keys()) >= {"direction_changes", "consistency_score", "trend", "periods"}
+
+
+@pytest.mark.parametrize("prices,expected_trend", [
+    ([1.0, 2.0, 3.0, 4.0, 5.0], "rising"),
+    ([5.0, 4.0, 3.0, 2.0, 1.0], "falling"),
+])
+def test_price_trend_consistency_parametrized(prices, expected_trend):
+    from app.market_context import price_trend_consistency
+
+    result = price_trend_consistency(prices)
+    assert result["trend"] == expected_trend
+
+
+def test_market_summary_keys():
+    from app.market_context import market_summary
+
+    result = market_summary(500_000, 30_000, 20, 1500)
+    assert set(result.keys()) >= {"price_per_sqft", "dom", "dom_classification", "price_to_rent_ratio", "affordability"}
+
+
+def test_market_summary_price_per_sqft():
+    from app.market_context import market_summary
+
+    result = market_summary(500_000, 30_000, 20, 1000)
+    assert result["price_per_sqft"] == pytest.approx(500.0)
+
+
+def test_market_summary_dom_classification_fast():
+    from app.market_context import market_summary
+
+    result = market_summary(400_000, 24_000, 5, 1200)
+    assert result["dom_classification"] == "fast"
+
+
+def test_market_summary_dom_classification_slow():
+    from app.market_context import market_summary
+
+    result = market_summary(400_000, 24_000, 90, 1200)
+    assert result["dom_classification"] == "slow"
+
+
+def test_market_summary_ptr_ratio():
+    from app.market_context import market_summary
+
+    result = market_summary(300_000, 20_000, 30, 1200)
+    assert result["price_to_rent_ratio"] == pytest.approx(15.0)
+
+
+def test_market_summary_zero_sqft():
+    from app.market_context import market_summary
+
+    result = market_summary(500_000, 30_000, 30, 0)
+    assert result["price_per_sqft"] == 0.0
+
+
+@pytest.mark.parametrize("listing_days,expected_dom", [
+    (10, "fast"),
+    (30, "normal"),
+    (75, "slow"),
+])
+def test_market_summary_dom_parametrized(listing_days, expected_dom):
+    from app.market_context import market_summary
+
+    result = market_summary(400_000, 24_000, listing_days, 1000)
+    assert result["dom_classification"] == expected_dom

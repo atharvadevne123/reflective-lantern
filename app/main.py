@@ -15,6 +15,7 @@ from app.database import create_tables, get_db
 from app.features import make_feature_row
 from app.middleware import CorrelationIDMiddleware, RateLimitMiddleware
 from app.model import (
+    get_feature_importance,
     get_metrics,
     load_anomaly_model,
     load_model,
@@ -24,6 +25,7 @@ from app.model import (
 from app.monitoring import (
     LatencyTimer,
     compute_drift,
+    get_anomaly_stats,
     get_drift_summary,
     get_prediction_stats,
     get_recent_predictions,
@@ -32,19 +34,25 @@ from app.monitoring import (
     run_drift_check,
     set_reference_window,
 )
+from app.reporting import energy_efficiency_grade, estimate_savings
 from app.schemas import (
     AnomalyRequest,
     AnomalyResponse,
+    AnomalyStatsResponse,
     ComparableRequest,
     ComparableResponse,
     DriftRequest,
     DriftResponse,
     DriftStatusResponse,
     EnergyReadingIn,
+    FeatureImportanceItem,
+    FeatureImportanceResponse,
     HealthResponse,
     MetricsResponse,
     NeighborhoodStatsResponse,
     PredictResponse,
+    SavingsRequest,
+    SavingsResponse,
 )
 from app.similarity import search_comparable
 
@@ -252,6 +260,7 @@ def version() -> dict[str, str]:
 def list_grid_regions() -> list[dict[str, Any]]:
     """List all known grid regions with metadata."""
     from app.regions import list_regions
+
     return list_regions()
 
 
@@ -320,9 +329,7 @@ async def comparable_properties(request: Request, body: ComparableRequest) -> Co
     response_model=NeighborhoodStatsResponse,
     tags=["Analytics"],
 )
-async def neighborhood_stats(
-    zipcode: str, db: Session = Depends(get_db)
-) -> NeighborhoodStatsResponse:
+async def neighborhood_stats(zipcode: str, db: Session = Depends(get_db)) -> NeighborhoodStatsResponse:
     from app.database import NeighborhoodStat
 
     stat = db.query(NeighborhoodStat).filter(NeighborhoodStat.zipcode == zipcode).first()
@@ -371,3 +378,40 @@ async def trigger_drift_check(db: Session = Depends(get_db)) -> dict:
         "p_value": result.p_value,
         "drift_detected": result.drift_detected,
     }
+
+
+@app.get("/api/v1/feature-importance", response_model=FeatureImportanceResponse, tags=["Forecasting"])
+def feature_importance(top_n: int = 20) -> FeatureImportanceResponse:
+    """Return the top N most important features from the trained forecasting model."""
+    if _model_bundle is None:
+        raise HTTPException(status_code=503, detail="Model not loaded. Run /api/v1/train first.")
+    items = get_feature_importance(_model_bundle, top_n=top_n)
+    return FeatureImportanceResponse(
+        features=[FeatureImportanceItem(**i) for i in items],
+        top_n=top_n,
+        model_version=__version__,
+    )
+
+
+@app.get("/api/v1/anomaly/stats", response_model=AnomalyStatsResponse, tags=["Anomaly Detection"])
+def anomaly_stats(db: Session = Depends(get_db)) -> AnomalyStatsResponse:
+    """Return aggregated anomaly detection statistics."""
+    stats = get_anomaly_stats(db)
+    return AnomalyStatsResponse(**stats)
+
+
+@app.post("/api/v1/savings", response_model=SavingsResponse, tags=["Reporting"])
+def savings_estimate(body: SavingsRequest) -> SavingsResponse:
+    """Estimate energy savings and cost reduction versus a baseline consumption series."""
+    try:
+        result = estimate_savings(body.actual_kwh, body.baseline_kwh, body.tariff_per_kwh)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    return SavingsResponse(**result)
+
+
+@app.get("/api/v1/efficiency-grade", tags=["Reporting"])
+def efficiency_grade(actual_kwh: float, baseline_kwh: float) -> dict[str, str]:
+    """Return an efficiency letter grade (A+…F) for a consumption vs baseline comparison."""
+    grade = energy_efficiency_grade(actual_kwh, baseline_kwh)
+    return {"grade": grade, "actual_kwh": str(actual_kwh), "baseline_kwh": str(baseline_kwh)}

@@ -21,20 +21,20 @@ class Settings:
 
     __slots__ = (
         "anthropic_api_key",
-        "gh_pat",
-        "notion_api_key",
-        "gmail_user",
-        "gmail_app_pass",
-        "report_recipient",
-        "report_subject_prefix",
-        "log_level",
-        "json_logs",
         "commit_target",
-        "pf_fix_timeout",
         "dry_run",
+        "foundry_dataset_rid",
         "foundry_hostname",
         "foundry_token",
-        "foundry_dataset_rid",
+        "gh_pat",
+        "gmail_app_pass",
+        "gmail_user",
+        "json_logs",
+        "log_level",
+        "notion_api_key",
+        "pf_fix_timeout",
+        "report_recipient",
+        "report_subject_prefix",
     )
 
     def __init__(self) -> None:
@@ -100,13 +100,42 @@ class Settings:
     def history_dir(self) -> Path:
         """Return the project history directory path."""
         from config.constants import HISTORY_DIR
+
         return HISTORY_DIR
 
     @property
     def github_owner(self) -> str:
         """Return the GitHub owner/org from constants."""
         from config.constants import GITHUB_OWNER
+
         return GITHUB_OWNER
+
+    def to_dict(self, include_sensitive: bool = False) -> dict[str, object]:
+        """Serialise settings to a plain dict.
+
+        Args:
+            include_sensitive: When False (default), sensitive values are masked as '***'.
+
+        Returns:
+            Dict of slot name to value, with sensitive fields masked unless requested.
+        """
+        result: dict[str, object] = {}
+        for slot in self.__slots__:
+            val = getattr(self, slot)
+            if not include_sensitive and slot in self._SENSITIVE and val:
+                result[slot] = "***"
+            else:
+                result[slot] = val
+        return result
+
+    def missing_optional(self) -> list[str]:
+        """Return a list of optional but useful env var names that are unset.
+
+        Returns:
+            List of env var names that are empty but not required.
+        """
+        optional = ["FOUNDRY_HOSTNAME", "FOUNDRY_TOKEN", "FOUNDRY_DATASET_RID", "NOTION_API_KEY"]
+        return [k for k in optional if not getattr(self, k.lower(), "")]
 
 
 _settings: Settings | None = None

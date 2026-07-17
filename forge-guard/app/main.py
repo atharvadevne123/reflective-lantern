@@ -42,7 +42,10 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 
 
 TAGS_METADATA = [
-    {"name": "inference", "description": "Defect prediction endpoints — single, batch, and explainability."},
+    {
+        "name": "inference",
+        "description": "Defect prediction endpoints — single, batch, and explainability.",
+    },
     {"name": "ops", "description": "Health, metrics, drift reports, and retraining triggers."},
 ]
 
@@ -109,6 +112,7 @@ class SensorInput(BaseModel):
     @classmethod
     def must_be_finite(cls, v: float) -> float:
         import math
+
         if not math.isfinite(v):
             raise ValueError("Value must be finite")
         return v
@@ -245,8 +249,13 @@ async def predict_batch(
     for reading in payload.readings:
         feats = engineer_single(reading)
         label, prob = predict(_model, feats)
-        log_prediction(db=db, sensor_data=reading, prediction=label,
-                       defect_probability=prob, model_version=MODEL_VERSION)
+        log_prediction(
+            db=db,
+            sensor_data=reading,
+            prediction=label,
+            defect_probability=prob,
+            model_version=MODEL_VERSION,
+        )
         results.append({"prediction": label, "defect_probability": prob})
 
     return BatchPredictionResponse(
