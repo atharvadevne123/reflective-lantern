@@ -115,3 +115,33 @@ def test_summarize_drift_history_mixed():
     assert summary["total_checks"] == 2
     assert summary["drift_count"] == 1
     assert summary["drift_rate"] == 0.5
+
+
+def test_reference_window_stats_empty():
+    from app.monitoring import reference_window_stats, set_reference_window
+
+    set_reference_window([])
+    stats = reference_window_stats()
+    assert stats["size"] == 0
+    assert stats["mean"] is None
+
+
+def test_reference_window_stats_populated():
+    from app.monitoring import reference_window_stats, set_reference_window
+
+    set_reference_window([10.0, 20.0, 30.0, 40.0, 50.0])
+    stats = reference_window_stats()
+    assert stats["size"] == 5
+    assert stats["mean"] == pytest.approx(30.0)
+    assert stats["min"] == pytest.approx(10.0)
+    assert stats["max"] == pytest.approx(50.0)
+    assert stats["std"] is not None
+
+
+def test_reference_window_stats_has_all_keys():
+    from app.monitoring import reference_window_stats, set_reference_window
+
+    set_reference_window([5.0, 10.0, 15.0])
+    stats = reference_window_stats()
+    for key in ("size", "mean", "min", "max", "std"):
+        assert key in stats
