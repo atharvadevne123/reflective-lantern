@@ -425,3 +425,65 @@ def test_is_valid_temporal_input_parametrized(hour, dow, month, expected):
     from app.validation import is_valid_temporal_input
 
     assert is_valid_temporal_input(hour, dow, month) is expected
+
+
+def test_clamp_consumption_below_min():
+    from app.validation import clamp_consumption
+    result = clamp_consumption(-10.0)
+    assert result == 0.0
+
+
+def test_clamp_consumption_above_max():
+    from app.validation import clamp_consumption, MAX_CONSUMPTION_KWH
+    result = clamp_consumption(MAX_CONSUMPTION_KWH + 1000)
+    assert result == MAX_CONSUMPTION_KWH
+
+
+def test_clamp_consumption_in_range():
+    from app.validation import clamp_consumption
+    result = clamp_consumption(500.0)
+    assert result == 500.0
+
+
+def test_is_valid_temporal_input_valid():
+    from app.validation import is_valid_temporal_input
+    assert is_valid_temporal_input(12, 3, 6) is True
+
+
+def test_is_valid_temporal_input_invalid_hour():
+    from app.validation import is_valid_temporal_input
+    assert is_valid_temporal_input(25, 3, 6) is False
+
+
+def test_extract_temporal_from_datetime():
+    from datetime import datetime
+    from app.validation import extract_temporal_from_datetime
+    dt = datetime(2026, 6, 15, 14, 30)
+    result = extract_temporal_from_datetime(dt)
+    assert result["hour"] == 14
+    assert result["month"] == 6
+    assert "is_weekend" in result
+
+
+@pytest.mark.parametrize("horizon,expected_valid", [
+    (1, True),
+    (24, True),
+    (8760, True),
+    (0, False),
+    (8761, False),
+])
+def test_validate_forecast_horizon_parametrized(horizon, expected_valid):
+    from app.validation import validate_forecast_horizon
+    errors = validate_forecast_horizon(horizon)
+    assert (len(errors) == 0) == expected_valid
+
+
+def test_batch_validate_readings_mixed():
+    from app.validation import batch_validate_readings
+    readings = [
+        {"hour": 10, "day_of_week": 1, "month": 6, "temperature_c": 22.0, "humidity_pct": 55.0, "consumption_kwh": 12.5},
+        {"hour": 99, "day_of_week": 1, "month": 6, "temperature_c": 22.0, "humidity_pct": 55.0, "consumption_kwh": 12.5},
+    ]
+    results = batch_validate_readings(readings)
+    assert results[0]["valid"] is True
+    assert results[1]["valid"] is False
