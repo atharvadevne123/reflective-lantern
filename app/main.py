@@ -492,3 +492,35 @@ def benchmark_eui_endpoint(
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
     return benchmark_eui(eui, building_type)
+
+
+@app.get("/api/v1/carbon/estimate", tags=["Sustainability"])
+def carbon_estimate(
+    kwh: float,
+    region: str = "default",
+) -> dict:
+    """Estimate CO2 emissions (kg) for a given energy consumption (kWh)."""
+    from app.carbon import co2_kg_to_tonnes, kwh_to_co2_kg, trees_equivalent
+
+    try:
+        co2_kg = kwh_to_co2_kg(kwh, region=region)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    return {
+        "kwh": kwh,
+        "region": region,
+        "co2_kg": co2_kg,
+        "co2_tonnes": co2_kg_to_tonnes(co2_kg),
+        "trees_equivalent": trees_equivalent(co2_kg),
+    }
+
+
+@app.post("/api/v1/carbon/annual-report", tags=["Sustainability"])
+def carbon_annual_report(monthly_kwh: list[float], region: str = "default") -> dict:
+    """Generate an annual carbon footprint report from 12 monthly consumption values."""
+    from app.carbon import annual_carbon_report
+
+    try:
+        return annual_carbon_report(monthly_kwh, region=region)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
