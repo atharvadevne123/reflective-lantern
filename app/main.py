@@ -536,3 +536,48 @@ def peak_usage_hours(region: str = "default", top_n: int = 3) -> dict:
         return {"peak_hours": [], "note": "No reference data available. Train model first."}
     peaks = peak_hours(_reference_window[:168], top_n=top_n)
     return {"region": region, "top_n": top_n, "peak_hours": peaks}
+
+
+@app.post("/api/v1/export/csv", tags=["Export"])
+def export_records_csv(records: list[dict]) -> dict:
+    """Export a list of energy records as a CSV string."""
+    from app.energy_export import records_to_csv, summarize_export
+
+    csv_str = records_to_csv(records)
+    summary = summarize_export(records)
+    return {"csv": csv_str, "summary": summary}
+
+
+@app.post("/api/v1/data-quality", tags=["Analytics"])
+def data_quality_score(records: list[dict]) -> dict:
+    """Score a batch of energy records for data quality."""
+    from app.data_quality import batch_score, quality_summary
+
+    if not records:
+        raise HTTPException(status_code=400, detail="records list must not be empty")
+    scored = batch_score(records)
+    return {"scored_records": scored, "summary": quality_summary(scored)}
+
+
+@app.post("/api/v1/trend", tags=["Analytics"])
+def trend_analysis_endpoint(values: list[float]) -> dict:
+    """Compute linear trend analysis for a time-series of consumption values."""
+    from app.trend_analysis import linear_trend
+
+    if len(values) < 2:
+        raise HTTPException(status_code=422, detail="At least 2 values required for trend analysis")
+    result = linear_trend(values)
+    return {
+        "slope": result.slope,
+        "intercept": result.intercept,
+        "direction": result.direction,
+        "r_squared": result.r_squared,
+    }
+
+
+@app.get("/api/v1/cache/stats", tags=["System"])
+def cache_stats() -> dict:
+    """Return prediction cache hit/miss statistics."""
+    from app.cache import prediction_cache
+
+    return prediction_cache.stats()
