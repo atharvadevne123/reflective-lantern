@@ -173,6 +173,7 @@ def test_score_distribution_min_le_max():
 @pytest.mark.parametrize("n", [1, 5, 10, 50])
 def test_score_distribution_various_sizes(n):
     import numpy as np
+
     from app.similarity import BuildingSimilarityIndex, score_distribution
 
     rng = np.random.default_rng(42)

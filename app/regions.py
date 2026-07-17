@@ -66,11 +66,7 @@ def get_regions_by_timezone(timezone: str) -> list[str]:
     Returns:
         Sorted list of region IDs whose timezone matches (case-sensitive).
     """
-    return sorted(
-        region_id
-        for region_id, meta in KNOWN_REGIONS.items()
-        if str(meta.get("timezone", "")) == timezone
-    )
+    return sorted(region_id for region_id, meta in KNOWN_REGIONS.items() if str(meta.get("timezone", "")) == timezone)
 
 
 def get_peak_load(region_id: str) -> float | None:

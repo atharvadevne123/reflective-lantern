@@ -275,12 +275,15 @@ def test_peak_demand_by_period_keys():
         assert set(p.keys()) >= {"period_start", "total_kwh", "is_peak"}
 
 
-@pytest.mark.parametrize("period_hours,n_hours,expected_count", [
-    (4, 24, 6),
-    (6, 24, 4),
-    (8, 24, 3),
-    (1, 10, 10),
-])
+@pytest.mark.parametrize(
+    "period_hours,n_hours,expected_count",
+    [
+        (4, 24, 6),
+        (6, 24, 4),
+        (8, 24, 3),
+        (1, 10, 10),
+    ],
+)
 def test_peak_demand_by_period_counts(period_hours, n_hours, expected_count):
     from app.reporting import peak_demand_by_period
 
@@ -340,11 +343,14 @@ def test_daily_average_consumption_partial_day():
     assert result > 0.0
 
 
-@pytest.mark.parametrize("actual,target,expected", [
-    (50.0, 100.0, 0.5),
-    (100.0, 100.0, 1.0),
-    (150.0, 100.0, 1.5),
-])
+@pytest.mark.parametrize(
+    "actual,target,expected",
+    [
+        (50.0, 100.0, 0.5),
+        (100.0, 100.0, 1.0),
+        (150.0, 100.0, 1.5),
+    ],
+)
 def test_consumption_efficiency_ratio_parametrized(actual, target, expected):
     from app.reporting import consumption_efficiency_ratio
 

@@ -229,7 +229,7 @@ def get_feature_importance(model_bundle: dict[str, Any], top_n: int = 20) -> lis
         feature_names = [f"f{i}" for i in range(len(importances))]
 
     paired = sorted(
-        zip(feature_names, importances.tolist()),
+        zip(feature_names, importances.tolist(), strict=False),
         key=lambda x: x[1],
         reverse=True,
     )

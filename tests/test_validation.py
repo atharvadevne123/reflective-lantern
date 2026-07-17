@@ -276,7 +276,14 @@ def test_batch_validate_readings_all_valid():
     from app.validation import batch_validate_readings
 
     readings = [
-        {"hour": 12, "day_of_week": 1, "month": 6, "temperature_c": 22.0, "humidity_pct": 60.0, "consumption_kwh": 15.0},
+        {
+            "hour": 12,
+            "day_of_week": 1,
+            "month": 6,
+            "temperature_c": 22.0,
+            "humidity_pct": 60.0,
+            "consumption_kwh": 15.0,
+        },
         {"hour": 8, "day_of_week": 0, "month": 3, "temperature_c": 5.0, "humidity_pct": 40.0, "consumption_kwh": 10.0},
     ]
     results = batch_validate_readings(readings)
@@ -298,7 +305,9 @@ def test_batch_validate_readings_detects_errors():
 def test_batch_validate_readings_preserves_index():
     from app.validation import batch_validate_readings
 
-    readings = [{"hour": 0, "day_of_week": 0, "month": 1, "temperature_c": 10.0, "humidity_pct": 50.0, "consumption_kwh": 5.0}] * 5
+    readings = [
+        {"hour": 0, "day_of_week": 0, "month": 1, "temperature_c": 10.0, "humidity_pct": 50.0, "consumption_kwh": 5.0}
+    ] * 5
     results = batch_validate_readings(readings)
     assert [r["index"] for r in results] == list(range(5))
 
@@ -312,7 +321,16 @@ def test_batch_validate_readings_empty():
 def test_batch_validate_readings_bad_temperature():
     from app.validation import batch_validate_readings
 
-    readings = [{"hour": 12, "day_of_week": 2, "month": 7, "temperature_c": 200.0, "humidity_pct": 50.0, "consumption_kwh": 10.0}]
+    readings = [
+        {
+            "hour": 12,
+            "day_of_week": 2,
+            "month": 7,
+            "temperature_c": 200.0,
+            "humidity_pct": 50.0,
+            "consumption_kwh": 10.0,
+        }
+    ]
     results = batch_validate_readings(readings)
     assert not results[0]["valid"]
     assert any("temperature_c" in e for e in results[0]["errors"])
@@ -322,7 +340,16 @@ def test_batch_validate_readings_bad_temperature():
 def test_batch_validate_readings_bad_hours(bad_hour):
     from app.validation import batch_validate_readings
 
-    readings = [{"hour": bad_hour, "day_of_week": 0, "month": 1, "temperature_c": 10.0, "humidity_pct": 50.0, "consumption_kwh": 5.0}]
+    readings = [
+        {
+            "hour": bad_hour,
+            "day_of_week": 0,
+            "month": 1,
+            "temperature_c": 10.0,
+            "humidity_pct": 50.0,
+            "consumption_kwh": 5.0,
+        }
+    ]
     results = batch_validate_readings(readings)
     assert not results[0]["valid"]
 
@@ -357,15 +384,18 @@ def test_validate_forecast_horizon_custom_max():
     assert validate_forecast_horizon(24, max_horizon=24) == []
 
 
-@pytest.mark.parametrize("horizon,expected_valid", [
-    (1, True),
-    (24, True),
-    (168, True),
-    (8760, True),
-    (0, False),
-    (-1, False),
-    (8761, False),
-])
+@pytest.mark.parametrize(
+    "horizon,expected_valid",
+    [
+        (1, True),
+        (24, True),
+        (168, True),
+        (8760, True),
+        (0, False),
+        (-1, False),
+        (8761, False),
+    ],
+)
 def test_validate_forecast_horizon_parametrized(horizon, expected_valid):
     from app.validation import validate_forecast_horizon
 
@@ -415,12 +445,15 @@ def test_clamp_consumption_above_max():
     assert clamp_consumption(999_999.0) == pytest.approx(100_000.0)
 
 
-@pytest.mark.parametrize("hour,dow,month,expected", [
-    (0, 0, 1, True),
-    (23, 6, 12, True),
-    (24, 0, 1, False),
-    (0, 0, 0, False),
-])
+@pytest.mark.parametrize(
+    "hour,dow,month,expected",
+    [
+        (0, 0, 1, True),
+        (23, 6, 12, True),
+        (24, 0, 1, False),
+        (0, 0, 0, False),
+    ],
+)
 def test_is_valid_temporal_input_parametrized(hour, dow, month, expected):
     from app.validation import is_valid_temporal_input
 

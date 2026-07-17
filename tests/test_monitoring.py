@@ -247,13 +247,16 @@ def test_is_reference_window_ready_true_when_sufficient():
     assert is_reference_window_ready(min_samples=10)
 
 
-@pytest.mark.parametrize("n_samples,min_samples,expected", [
-    (0, 10, False),
-    (9, 10, False),
-    (10, 10, True),
-    (100, 10, True),
-    (5, 5, True),
-])
+@pytest.mark.parametrize(
+    "n_samples,min_samples,expected",
+    [
+        (0, 10, False),
+        (9, 10, False),
+        (10, 10, True),
+        (100, 10, True),
+        (5, 5, True),
+    ],
+)
 def test_is_reference_window_ready_parametrized(n_samples, min_samples, expected):
     from app.monitoring import is_reference_window_ready, set_reference_window
 

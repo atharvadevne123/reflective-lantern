@@ -234,14 +234,17 @@ def test_classify_consumption_invalid_thresholds():
         classify_consumption(10.0, low_threshold=20.0, high_threshold=10.0)
 
 
-@pytest.mark.parametrize("value,expected", [
-    (0.0, "low"),
-    (4.9, "low"),
-    (5.0, "normal"),
-    (14.9, "normal"),
-    (15.0, "high"),
-    (100.0, "high"),
-])
+@pytest.mark.parametrize(
+    "value,expected",
+    [
+        (0.0, "low"),
+        (4.9, "low"),
+        (5.0, "normal"),
+        (14.9, "normal"),
+        (15.0, "high"),
+        (100.0, "high"),
+    ],
+)
 def test_classify_consumption_parametrized(value, expected):
     from app.anomaly import classify_consumption
 

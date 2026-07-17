@@ -151,11 +151,14 @@ def test_stats_includes_evictions():
     assert stats["evictions"] == 1
 
 
-@pytest.mark.parametrize("max_size,n_inserts,expected_evictions", [
-    (5, 5, 0),
-    (5, 6, 1),
-    (3, 10, 7),
-])
+@pytest.mark.parametrize(
+    "max_size,n_inserts,expected_evictions",
+    [
+        (5, 5, 0),
+        (5, 6, 1),
+        (3, 10, 7),
+    ],
+)
 def test_eviction_count_parametrized(max_size, n_inserts, expected_evictions):
     c = TTLCache(ttl_seconds=60, max_size=max_size)
     for i in range(n_inserts):

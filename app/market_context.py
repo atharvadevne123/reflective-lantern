@@ -196,7 +196,7 @@ def affordability_ratio(
     """Return the price-to-income ratio after down payment.
 
     A common rule-of-thumb benchmark: values ≤ 3.0 are considered affordable,
-    3.0–5.0 moderately stretched, and >5.0 unaffordable.
+    3.0-5.0 moderately stretched, and >5.0 unaffordable.
 
     Args:
         predicted_value: Property price in USD.
@@ -278,10 +278,7 @@ def price_trend_consistency(
     deltas = [price_series[i + 1] - price_series[i] for i in range(len(price_series) - 1)]
     rises = sum(1 for d in deltas if d > 0)
     falls = sum(1 for d in deltas if d < 0)
-    direction_changes = sum(
-        1 for i in range(len(deltas) - 1)
-        if (deltas[i] > 0) != (deltas[i + 1] > 0)
-    )
+    direction_changes = sum(1 for i in range(len(deltas) - 1) if (deltas[i] > 0) != (deltas[i + 1] > 0))
     total = len(deltas)
     majority = max(rises, falls)
     consistency_score = round(majority / total, 4) if total else 0.0
