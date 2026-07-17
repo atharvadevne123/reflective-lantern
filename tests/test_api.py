@@ -394,3 +394,59 @@ def test_carbon_annual_report_wrong_months(client: TestClient) -> None:
     monthly = [100.0] * 11
     r = client.post("/api/v1/carbon/annual-report", json=monthly)
     assert r.status_code == 422
+
+
+def test_export_csv_endpoint(client: TestClient) -> None:
+    """Export endpoint should return a CSV string and summary."""
+    records = [{"hour": 8, "consumption_kwh": 12.0}, {"hour": 14, "consumption_kwh": 20.0}]
+    r = client.post("/api/v1/export/csv", json=records)
+    assert r.status_code == 200
+    data = r.json()
+    assert "csv" in data
+    assert "summary" in data
+    assert data["summary"]["total_records"] == 2
+
+
+def test_data_quality_endpoint(client: TestClient) -> None:
+    """Data quality endpoint should return scored records and summary."""
+    records = [
+        {"hour": 10, "month": 6, "day_of_week": 2, "consumption_kwh": 15.0},
+        {"hour": 99, "month": 6, "day_of_week": 2, "consumption_kwh": 15.0},
+    ]
+    r = client.post("/api/v1/data-quality", json=records)
+    assert r.status_code == 200
+    data = r.json()
+    assert "scored_records" in data
+    assert "summary" in data
+    assert data["summary"]["total_records"] == 2
+
+
+def test_data_quality_empty_raises(client: TestClient) -> None:
+    """Data quality endpoint should return 400 for empty input."""
+    r = client.post("/api/v1/data-quality", json=[])
+    assert r.status_code == 400
+
+
+def test_trend_endpoint_rising(client: TestClient) -> None:
+    """Trend endpoint should detect a rising series."""
+    r = client.post("/api/v1/trend", json=[1.0, 2.0, 3.0, 4.0, 5.0])
+    assert r.status_code == 200
+    data = r.json()
+    assert data["direction"] == "rising"
+    assert data["slope"] > 0
+
+
+def test_trend_endpoint_too_short(client: TestClient) -> None:
+    """Trend endpoint should return 422 for single value."""
+    r = client.post("/api/v1/trend", json=[5.0])
+    assert r.status_code == 422
+
+
+def test_cache_stats_endpoint(client: TestClient) -> None:
+    """Cache stats endpoint should return hit/miss statistics."""
+    r = client.get("/api/v1/cache/stats")
+    assert r.status_code == 200
+    data = r.json()
+    assert "hits" in data
+    assert "misses" in data
+    assert "hit_rate" in data
