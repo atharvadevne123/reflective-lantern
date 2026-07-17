@@ -350,3 +350,75 @@ def test_demand_response_potential_threshold_parametrized(threshold_pct):
     loads = [float(i) for i in range(1, 25)]
     result = demand_response_potential(loads, peak_threshold_pct=threshold_pct)
     assert result["peak_threshold_kwh"] == pytest.approx(max(loads) * threshold_pct, rel=1e-4)
+
+
+def test_normalize_consumption_minmax():
+    from app.features import normalize_consumption
+    values = [0.0, 5.0, 10.0]
+    result = normalize_consumption(values, method="minmax")
+    assert abs(result[0] - 0.0) < 1e-9
+    assert abs(result[-1] - 1.0) < 1e-9
+
+
+def test_normalize_consumption_zscore():
+    from app.features import normalize_consumption
+    import statistics
+    values = [1.0, 2.0, 3.0, 4.0, 5.0]
+    result = normalize_consumption(values, method="zscore")
+    assert abs(statistics.mean(result)) < 1e-6
+
+
+def test_normalize_consumption_invalid_method():
+    from app.features import normalize_consumption
+    with pytest.raises(ValueError, match="method must be"):
+        normalize_consumption([1.0, 2.0], method="unknown")
+
+
+def test_normalize_consumption_empty():
+    from app.features import normalize_consumption
+    with pytest.raises(ValueError, match="must not be empty"):
+        normalize_consumption([])
+
+
+def test_normalize_consumption_constant_minmax():
+    from app.features import normalize_consumption
+    result = normalize_consumption([5.0] * 10, method="minmax")
+    assert all(v == 0.0 for v in result)
+
+
+@pytest.mark.parametrize("method", ["minmax", "zscore"])
+def test_normalize_consumption_same_length(method):
+    from app.features import normalize_consumption
+    values = [1.0, 2.0, 3.0, 4.0, 5.0]
+    result = normalize_consumption(values, method=method)
+    assert len(result) == len(values)
+
+
+def test_demand_response_potential_basic():
+    from app.features import demand_response_potential
+    loads = [5.0, 10.0, 15.0, 20.0, 25.0]
+    result = demand_response_potential(loads, peak_threshold_pct=0.8)
+    assert "peak_hours_count" in result
+    assert "sheddable_kwh" in result
+    assert "potential_pct" in result
+    assert result["peak_hours_count"] >= 1
+
+
+def test_demand_response_potential_empty():
+    from app.features import demand_response_potential
+    with pytest.raises(ValueError, match="must not be empty"):
+        demand_response_potential([])
+
+
+def test_demand_response_potential_invalid_threshold():
+    from app.features import demand_response_potential
+    with pytest.raises(ValueError, match="peak_threshold_pct"):
+        demand_response_potential([1.0, 2.0], peak_threshold_pct=0.0)
+
+
+@pytest.mark.parametrize("threshold", [0.5, 0.8, 1.0])
+def test_demand_response_potential_thresholds(threshold):
+    from app.features import demand_response_potential
+    loads = list(range(1, 25))
+    result = demand_response_potential(loads, peak_threshold_pct=threshold)
+    assert 0.0 <= result["potential_pct"] <= 1.0
