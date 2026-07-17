@@ -234,3 +234,59 @@ def get_feature_importance(model_bundle: dict[str, Any], top_n: int = 20) -> lis
         reverse=True,
     )
     return [{"feature": name, "importance": round(imp, 6)} for name, imp in paired[:top_n]]
+
+
+def prediction_confidence(
+    bundle: dict,
+    X: pd.DataFrame,
+    n_estimates: int = 10,
+) -> dict[str, float]:
+    """Estimate prediction confidence via bootstrap sampling of the voting ensemble.
+
+    Runs *n_estimates* random sub-predictions from the ensemble members and
+    returns the spread as a confidence proxy.
+
+    Args:
+        bundle: Fitted model bundle as returned by :func:`train_model`.
+        X: Single-row DataFrame to predict on.
+        n_estimates: Number of bootstrap samples to draw.
+
+    Returns:
+        Dict with 'mean', 'std', 'lower_95', and 'upper_95' prediction bounds.
+    """
+    rng = np.random.default_rng(0)
+    pipeline = bundle.get("pipeline")
+    model = bundle.get("model")
+    if pipeline is None or model is None:
+        return {"mean": 0.0, "std": 0.0, "lower_95": 0.0, "upper_95": 0.0}
+
+    X_feat = pipeline.transform(X)
+    if hasattr(X_feat, "values"):
+        X_arr = X_feat.values.astype(float)
+    else:
+        X_arr = np.array(X_feat, dtype=float)
+
+    estimates = []
+    estimators = getattr(model, "estimators_", None)
+    if estimators and len(estimators) > 1:
+        for _ in range(n_estimates):
+            idx = rng.integers(0, len(estimators))
+            sub_model = estimators[idx]
+            try:
+                pred = float(sub_model.predict(X_arr)[0])
+                estimates.append(pred)
+            except Exception:
+                pass
+    if not estimates:
+        base = float(model.predict(X_arr)[0])
+        estimates = [base]
+
+    mean_pred = float(np.mean(estimates))
+    std_pred = float(np.std(estimates)) if len(estimates) > 1 else 0.0
+    margin = 1.96 * std_pred
+    return {
+        "mean": round(mean_pred, 4),
+        "std": round(std_pred, 4),
+        "lower_95": round(max(0.0, mean_pred - margin), 4),
+        "upper_95": round(mean_pred + margin, 4),
+    }
