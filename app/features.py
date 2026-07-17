@@ -385,3 +385,40 @@ def demand_response_potential(
         "potential_pct": round(potential_pct, 4),
         "peak_threshold_kwh": round(threshold, 4),
     }
+
+
+def encode_cyclical(value: float, max_value: float) -> tuple[float, float]:
+    """Encode a cyclical feature as (sin, cos) pair.
+
+    Useful for encoding hour-of-day (max_value=24), day-of-week (7), or month (12)
+    without discontinuities at the period boundary.
+
+    Args:
+        value: The raw cyclical value.
+        max_value: The period length (e.g. 24 for hours).
+
+    Returns:
+        (sin_encoded, cos_encoded) tuple.
+    """
+    sin_val = float(np.sin(2 * np.pi * value / max_value))
+    cos_val = float(np.cos(2 * np.pi * value / max_value))
+    return round(sin_val, 6), round(cos_val, 6)
+
+
+def feature_names_for_bundle(bundle: dict) -> list[str]:
+    """Return the feature column names expected by the model in *bundle*.
+
+    Extracts column names from the pipeline's feature step if available,
+    otherwise returns an empty list.
+    """
+    model = bundle.get("model")
+    if model is None:
+        return []
+    try:
+        return list(model.feature_names_in_)
+    except AttributeError:
+        pass
+    try:
+        return list(model[:-1].get_feature_names_out())
+    except Exception:
+        return []
