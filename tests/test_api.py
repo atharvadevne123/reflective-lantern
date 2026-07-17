@@ -360,3 +360,37 @@ def test_health_has_version(client: TestClient) -> None:
     data = r.json()
     assert "version" in data
     assert data["version"].count(".") >= 1  # basic semver check
+
+
+def test_carbon_estimate_endpoint(client: TestClient) -> None:
+    """Carbon estimate endpoint should return CO2 values."""
+    r = client.get("/api/v1/carbon/estimate", params={"kwh": 100.0, "region": "default"})
+    assert r.status_code == 200
+    data = r.json()
+    assert "co2_kg" in data
+    assert "co2_tonnes" in data
+    assert "trees_equivalent" in data
+    assert data["co2_kg"] > 0
+
+
+def test_carbon_estimate_negative_kwh(client: TestClient) -> None:
+    """Carbon estimate should return 422 for negative kWh."""
+    r = client.get("/api/v1/carbon/estimate", params={"kwh": -10.0})
+    assert r.status_code == 422
+
+
+def test_carbon_annual_report_endpoint(client: TestClient) -> None:
+    """Annual carbon report should accept 12 monthly values."""
+    monthly = [100.0] * 12
+    r = client.post("/api/v1/carbon/annual-report", params={"region": "northeast"}, json=monthly)
+    assert r.status_code == 200
+    data = r.json()
+    assert "total_co2_kg" in data
+    assert len(data["monthly_co2_kg"]) == 12
+
+
+def test_carbon_annual_report_wrong_months(client: TestClient) -> None:
+    """Annual carbon report should return 422 for non-12 month list."""
+    monthly = [100.0] * 11
+    r = client.post("/api/v1/carbon/annual-report", json=monthly)
+    assert r.status_code == 422
