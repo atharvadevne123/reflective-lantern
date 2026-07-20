@@ -7,13 +7,13 @@ from datetime import datetime
 import pytest
 
 
-def test_utc_now_is_aware():
+def test_utc_now_is_aware() -> None:
     from app.date_utils import utc_now
     now = utc_now()
     assert now.tzinfo is not None
 
 
-def test_round_to_hour_zeroes_minutes():
+def test_round_to_hour_zeroes_minutes() -> None:
     from app.date_utils import round_to_hour
     dt = datetime(2026, 6, 15, 14, 47, 33)
     result = round_to_hour(dt)
@@ -22,13 +22,13 @@ def test_round_to_hour_zeroes_minutes():
     assert result.hour == 14
 
 
-def test_hours_between_same():
+def test_hours_between_same() -> None:
     from app.date_utils import hours_between
     dt = datetime(2026, 1, 1, 12)
     assert hours_between(dt, dt) == 0
 
 
-def test_hours_between_24h():
+def test_hours_between_24h() -> None:
     from datetime import timedelta
 
     from app.date_utils import hours_between
@@ -37,33 +37,33 @@ def test_hours_between_24h():
     assert hours_between(start, end) == 24
 
 
-def test_iso_to_datetime_basic():
+def test_iso_to_datetime_basic() -> None:
     from app.date_utils import iso_to_datetime
     result = iso_to_datetime("2026-06-15T14:30:00")
     assert result.year == 2026
     assert result.hour == 14
 
 
-def test_iso_to_datetime_with_z():
+def test_iso_to_datetime_with_z() -> None:
     from app.date_utils import iso_to_datetime
     result = iso_to_datetime("2026-06-15T14:30:00Z")
     assert result.tzinfo is not None
 
 
-def test_iso_to_datetime_invalid_raises():
+def test_iso_to_datetime_invalid_raises() -> None:
     from app.date_utils import iso_to_datetime
     with pytest.raises(ValueError, match="Cannot parse"):
         iso_to_datetime("not-a-date")
 
 
-def test_generate_hourly_timestamps_length():
+def test_generate_hourly_timestamps_length() -> None:
     from app.date_utils import generate_hourly_timestamps
     start = datetime(2026, 1, 1)
     result = generate_hourly_timestamps(start, 24)
     assert len(result) == 24
 
 
-def test_generate_hourly_timestamps_spacing():
+def test_generate_hourly_timestamps_spacing() -> None:
     from datetime import timedelta
 
     from app.date_utils import generate_hourly_timestamps
@@ -72,38 +72,38 @@ def test_generate_hourly_timestamps_spacing():
     assert result[1] - result[0] == timedelta(hours=1)
 
 
-def test_generate_hourly_timestamps_zero_raises():
+def test_generate_hourly_timestamps_zero_raises() -> None:
     from app.date_utils import generate_hourly_timestamps
     with pytest.raises(ValueError):
         generate_hourly_timestamps(datetime(2026, 1, 1), 0)
 
 
-def test_is_business_hour_true():
+def test_is_business_hour_true() -> None:
     from app.date_utils import is_business_hour
     dt = datetime(2026, 6, 15, 10, 0)  # Monday 10am
     assert is_business_hour(dt) is True
 
 
-def test_is_business_hour_false_weekend():
+def test_is_business_hour_false_weekend() -> None:
     from app.date_utils import is_business_hour
     dt = datetime(2026, 6, 14, 10, 0)  # Sunday
     assert is_business_hour(dt) is False
 
 
-def test_is_business_hour_false_early():
+def test_is_business_hour_false_early() -> None:
     from app.date_utils import is_business_hour
     dt = datetime(2026, 6, 15, 7, 0)  # Monday 7am
     assert is_business_hour(dt) is False
 
 
-def test_week_of_year():
+def test_week_of_year() -> None:
     from app.date_utils import week_of_year
     dt = datetime(2026, 1, 5)  # First week
     assert 1 <= week_of_year(dt) <= 2
 
 
 @pytest.mark.parametrize("n_hours", [1, 6, 24, 168])
-def test_generate_hourly_timestamps_various_lengths(n_hours):
+def test_generate_hourly_timestamps_various_lengths(n_hours) -> None:
     from app.date_utils import generate_hourly_timestamps
     result = generate_hourly_timestamps(datetime(2026, 1, 1), n_hours)
     assert len(result) == n_hours
