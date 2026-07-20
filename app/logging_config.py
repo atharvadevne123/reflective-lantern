@@ -111,3 +111,15 @@ def get_configured_log_level() -> int:
 def is_debug_enabled() -> bool:
     """Return True if DEBUG logging is enabled for the root logger."""
     return logging.getLogger().isEnabledFor(logging.DEBUG)
+
+__all__ = [
+    "JsonFormatter",
+    "TraceIdFilter",
+    "configure_logging",
+    "add_trace_id_filter",
+    "log_level_int",
+    "get_configured_log_level",
+    "is_debug_enabled",
+    "format",
+    "filter",
+]
