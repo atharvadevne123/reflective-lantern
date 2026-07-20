@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import functools
 import logging
 
 logger = logging.getLogger(__name__)
@@ -25,6 +26,12 @@ KG_TO_TONNES = 0.001
 TREES_PER_TONNE_CO2_PER_YEAR = 50.0
 
 
+@functools.lru_cache(maxsize=32)
+def _grid_intensity(region: str) -> float:
+    """Return cached grid carbon intensity for *region* (kg CO2e/kWh)."""
+    return GRID_CARBON_INTENSITY.get(region, GRID_CARBON_INTENSITY["default"])
+
+
 def kwh_to_co2_kg(kwh: float, region: str = "default") -> float:
     """Convert energy consumption (kWh) to CO2 equivalent in kilograms.
 
@@ -40,7 +47,7 @@ def kwh_to_co2_kg(kwh: float, region: str = "default") -> float:
     """
     if kwh < 0:
         raise ValueError(f"kwh must be non-negative, got {kwh}")
-    intensity = GRID_CARBON_INTENSITY.get(region.lower(), GRID_CARBON_INTENSITY["default"])
+    intensity = _grid_intensity(region.lower())
     result = kwh * intensity
     logger.debug("CO2 estimate: %.3f kWh × %.4f kg/kWh = %.4f kg CO2e", kwh, intensity, result)
     return round(result, 4)
