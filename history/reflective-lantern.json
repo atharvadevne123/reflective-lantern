@@ -408,6 +408,6 @@
     ],
     "tests_passed": true,
     "commits": 63,
-    "email_status": "pending"
+    "email_status": "smtp_blocked_remote_env"
   }
 ]
