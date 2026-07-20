@@ -414,3 +414,43 @@ def test_flag_anomaly_rate_boundary(rate, expected) -> None:
     flags = [True] * int(n * rate) + [False] * (n - int(n * rate))
     result = flag_anomaly_rate(flags)
     assert (result == pytest.approx(1.0)) == expected
+
+
+@pytest.mark.parametrize("value,mean,std,threshold,expected", [
+    (10.0, 10.0, 2.0, 3.0, False),    # within threshold
+    (19.0, 10.0, 2.0, 3.0, True),     # 4.5 stdev away
+    (10.0, 10.0, 0.0, 3.0, False),    # zero std -> not anomaly
+    (100.0, 10.0, 1.0, 3.0, True),    # far outlier
+])
+def test_zscore_flag_parametrized(value: float, mean: float, std: float, threshold: float, expected: bool) -> None:
+    assert zscore_flag(value, mean=mean, std=std, threshold=threshold) == expected
+
+
+@pytest.mark.parametrize("value,q1,q3,expected", [
+    (10.0, 8.0, 12.0, False),    # within fence
+    (30.0, 8.0, 12.0, True),     # above upper fence
+    (-5.0, 8.0, 12.0, True),     # below lower fence
+    (12.0, 8.0, 12.0, False),    # exactly at q3
+])
+def test_iqr_flag_parametrized(value: float, q1: float, q3: float, expected: bool) -> None:
+    assert iqr_flag(value, q1=q1, q3=q3) == expected
+
+
+def test_compute_severity_small_reference() -> None:
+    result = compute_severity(10.0, reference=[5.0, 6.0])
+    assert "severity" in result
+
+
+def test_batch_compute_severity_empty() -> None:
+    result = batch_compute_severity([], reference=[10.0, 11.0, 12.0, 9.0, 10.5])
+    assert result == []
+
+
+def test_anomaly_rate_all_true() -> None:
+    flags = [True] * 10
+    assert anomaly_rate(flags) == pytest.approx(1.0)
+
+
+def test_anomaly_rate_all_false() -> None:
+    flags = [False] * 10
+    assert anomaly_rate(flags) == pytest.approx(0.0)
