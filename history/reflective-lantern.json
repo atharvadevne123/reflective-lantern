@@ -393,5 +393,21 @@
         "test: extended api tests for all new endpoints"
       ]
     }
+  },
+  {
+    "date": "2026-07-20",
+    "mode": "improvement",
+    "improvements": [
+      "Added -> None return annotations to 20 test files",
+      "Added __all__ export lists to 20+ app modules",
+      "Added functools.lru_cache to grid carbon intensity lookup",
+      "Improved exponential_smoothing_forecast docstring",
+      "Added parametrized test edge cases to 12 test files",
+      "Fixed duplicate test function names and ruff F822 errors",
+      "Fixed test assertions to match actual function signatures"
+    ],
+    "tests_passed": true,
+    "commits": 63,
+    "email_status": "pending"
   }
 ]
