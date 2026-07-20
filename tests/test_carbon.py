@@ -5,47 +5,47 @@ from __future__ import annotations
 import pytest
 
 
-def test_kwh_to_co2_kg_default_region():
+def test_kwh_to_co2_kg_default_region() -> None:
     from app.carbon import kwh_to_co2_kg
     result = kwh_to_co2_kg(100.0)
     assert result > 0.0
     assert result == pytest.approx(35.0, rel=0.01)
 
 
-def test_kwh_to_co2_kg_pacific_nw():
+def test_kwh_to_co2_kg_pacific_nw() -> None:
     from app.carbon import kwh_to_co2_kg
     result = kwh_to_co2_kg(100.0, region="pacific_nw")
     assert result == pytest.approx(10.0, rel=0.01)
 
 
-def test_kwh_to_co2_kg_negative_raises():
+def test_kwh_to_co2_kg_negative_raises() -> None:
     from app.carbon import kwh_to_co2_kg
     with pytest.raises(ValueError, match="non-negative"):
         kwh_to_co2_kg(-5.0)
 
 
-def test_kwh_to_co2_kg_zero():
+def test_kwh_to_co2_kg_zero() -> None:
     from app.carbon import kwh_to_co2_kg
     assert kwh_to_co2_kg(0.0) == 0.0
 
 
-def test_co2_kg_to_tonnes():
+def test_co2_kg_to_tonnes() -> None:
     from app.carbon import co2_kg_to_tonnes
     assert co2_kg_to_tonnes(1000.0) == pytest.approx(1.0, rel=0.001)
 
 
-def test_trees_equivalent_basic():
+def test_trees_equivalent_basic() -> None:
     from app.carbon import trees_equivalent
     result = trees_equivalent(20.0)
     assert result == pytest.approx(1.0, rel=0.01)
 
 
-def test_trees_equivalent_zero():
+def test_trees_equivalent_zero() -> None:
     from app.carbon import trees_equivalent
     assert trees_equivalent(0.0) == 0.0
 
 
-def test_annual_carbon_report_valid():
+def test_annual_carbon_report_valid() -> None:
     from app.carbon import annual_carbon_report
     monthly = [100.0] * 12
     result = annual_carbon_report(monthly)
@@ -54,41 +54,41 @@ def test_annual_carbon_report_valid():
     assert result["total_co2_kg"] > 0
 
 
-def test_annual_carbon_report_wrong_months():
+def test_annual_carbon_report_wrong_months() -> None:
     from app.carbon import annual_carbon_report
     with pytest.raises(ValueError, match="12 elements"):
         annual_carbon_report([100.0] * 11)
 
 
-def test_annual_carbon_report_has_trees():
+def test_annual_carbon_report_has_trees() -> None:
     from app.carbon import annual_carbon_report
     result = annual_carbon_report([500.0] * 12)
     assert "trees_equivalent" in result
     assert result["trees_equivalent"] >= 0
 
 
-def test_carbon_savings_basic():
+def test_carbon_savings_basic() -> None:
     from app.carbon import carbon_savings
     result = carbon_savings(actual_kwh=80.0, baseline_kwh=100.0)
     assert result["saved_kwh"] == pytest.approx(20.0, rel=0.01)
     assert result["saved_co2_kg"] > 0
 
 
-def test_carbon_savings_no_savings():
+def test_carbon_savings_no_savings() -> None:
     from app.carbon import carbon_savings
     result = carbon_savings(actual_kwh=100.0, baseline_kwh=100.0)
     assert result["saved_kwh"] == 0.0
     assert result["saved_co2_kg"] == 0.0
 
 
-def test_carbon_savings_actual_exceeds_baseline():
+def test_carbon_savings_actual_exceeds_baseline() -> None:
     from app.carbon import carbon_savings
     result = carbon_savings(actual_kwh=150.0, baseline_kwh=100.0)
     assert result["saved_kwh"] == 0.0
 
 
 @pytest.mark.parametrize("region", ["northeast", "midwest", "south", "west", "pacific_nw"])
-def test_kwh_to_co2_kg_known_regions(region):
+def test_kwh_to_co2_kg_known_regions(region) -> None:
     from app.carbon import GRID_CARBON_INTENSITY, kwh_to_co2_kg
     result = kwh_to_co2_kg(100.0, region=region)
     expected = GRID_CARBON_INTENSITY[region] * 100.0
