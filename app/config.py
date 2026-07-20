@@ -30,3 +30,7 @@ class Settings:
 
 
 settings = Settings()
+
+__all__ = [
+    "Settings",
+]
