@@ -110,3 +110,47 @@ def test_valid_hours_score_100(hour) -> None:
     rec = {**GOOD_RECORD, "hour": hour}
     result = score_record(rec)
     assert result["dq_score"] == 100
+
+
+@pytest.mark.parametrize("month", [1, 6, 12])
+def test_valid_months_score_100(month: int) -> None:
+    rec = {**GOOD_RECORD, "month": month}
+    result = score_record(rec)
+    assert result["dq_score"] == 100
+
+
+@pytest.mark.parametrize("month", [0, 13, 99])
+def test_invalid_months_deduct_points(month: int) -> None:
+    rec = {**GOOD_RECORD, "month": month}
+    result = score_record(rec)
+    assert result["dq_score"] < 100
+
+
+@pytest.mark.parametrize("dow", [0, 3, 6])
+def test_valid_dow_score_100(dow: int) -> None:
+    rec = {**GOOD_RECORD, "day_of_week": dow}
+    result = score_record(rec)
+    assert result["dq_score"] == 100
+
+
+def test_batch_score_empty_list() -> None:
+    assert batch_score([]) == []
+
+
+def test_score_record_preserves_original_fields() -> None:
+    result = score_record(GOOD_RECORD)
+    for key in GOOD_RECORD:
+        assert key in result
+
+
+def test_quality_summary_has_required_keys() -> None:
+    scored = batch_score([GOOD_RECORD])
+    s = quality_summary(scored)
+    for key in ("mean_score", "n_perfect", "n_failing", "n_records"):
+        assert key in s, f"Missing key: {key}"
+
+
+def test_flag_outliers_high_threshold_no_outliers() -> None:
+    records = [{"kwh": 10.0 + i} for i in range(5)]
+    outliers = flag_outliers(records, "kwh", z_threshold=100.0)
+    assert outliers == []
