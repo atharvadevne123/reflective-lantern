@@ -222,14 +222,14 @@ def test_cap_rate_decreases_with_expense_ratio(expense_ratio: float) -> None:
     assert result.cap_rate == pytest.approx((500_000 * 0.08 * (1 - expense_ratio)) / 500_000, rel=1e-4)
 
 
-def test_mortgage_payment_positive():
+def test_mortgage_payment_positive() -> None:
     from app.investment import mortgage_payment
 
     payment = mortgage_payment(400_000, annual_rate=0.065, term_years=30)
     assert payment > 0
 
 
-def test_mortgage_payment_zero_rate():
+def test_mortgage_payment_zero_rate() -> None:
     from app.investment import mortgage_payment
 
     payment = mortgage_payment(150_000, annual_rate=0.0, term_years=10, down_payment_pct=0.20)
@@ -237,13 +237,13 @@ def test_mortgage_payment_zero_rate():
     assert payment == pytest.approx(1000.0, rel=1e-4)
 
 
-def test_mortgage_payment_zero_principal():
+def test_mortgage_payment_zero_principal() -> None:
     from app.investment import mortgage_payment
 
     assert mortgage_payment(0, 0.065) == 0.0
 
 
-def test_roi_percentage_positive():
+def test_roi_percentage_positive() -> None:
     from app.investment import roi_percentage
 
     roi = roi_percentage(
@@ -256,20 +256,20 @@ def test_roi_percentage_positive():
     assert roi > 0
 
 
-def test_roi_percentage_zero_purchase():
+def test_roi_percentage_zero_purchase() -> None:
     from app.investment import roi_percentage
 
     assert roi_percentage(500_000, 0, 30_000, 20_000) == 0.0
 
 
-def test_price_to_income_ratio_basic():
+def test_price_to_income_ratio_basic() -> None:
     from app.investment import price_to_income_ratio
 
     ratio = price_to_income_ratio(400_000, 100_000)
     assert ratio == pytest.approx(4.0)
 
 
-def test_price_to_income_ratio_zero_income():
+def test_price_to_income_ratio_zero_income() -> None:
     import math
 
     from app.investment import price_to_income_ratio
@@ -285,20 +285,20 @@ def test_price_to_income_ratio_zero_income():
         (300_000, 150_000, 2.0),
     ],
 )
-def test_price_to_income_ratio_parametrized(price, income, expected):
+def test_price_to_income_ratio_parametrized(price, income, expected) -> None:
     from app.investment import price_to_income_ratio
 
     assert price_to_income_ratio(price, income) == pytest.approx(expected)
 
 
-def test_mortgage_payment_zero_rate_no_down():
+def test_mortgage_payment_zero_rate_no_down() -> None:
     from app.investment import mortgage_payment
 
     p = mortgage_payment(200_000, annual_rate=0.0, term_years=10, down_payment_pct=0.0)
     assert p == pytest.approx(200_000 / (10 * 12), rel=1e-3)
 
 
-def test_mortgage_payment_with_down_payment():
+def test_mortgage_payment_with_down_payment() -> None:
     from app.investment import mortgage_payment
 
     p_full = mortgage_payment(200_000, annual_rate=0.05, term_years=30, down_payment_pct=0.0)
@@ -306,7 +306,7 @@ def test_mortgage_payment_with_down_payment():
     assert p_down < p_full
 
 
-def test_roi_percentage_positive_income():
+def test_roi_percentage_positive_income() -> None:
     from app.investment import roi_percentage
 
     roi = roi_percentage(300_000, 250_000, annual_income=20_000, annual_expenses=5_000, hold_years=5)
@@ -314,7 +314,7 @@ def test_roi_percentage_positive_income():
 
 
 @pytest.mark.parametrize("term_years", [10, 15, 20, 30])
-def test_mortgage_payment_longer_term_lower_payment(term_years):
+def test_mortgage_payment_longer_term_lower_payment(term_years) -> None:
     from app.investment import mortgage_payment
 
     short = mortgage_payment(300_000, 0.06, 10)
@@ -323,19 +323,19 @@ def test_mortgage_payment_longer_term_lower_payment(term_years):
         assert long < short
 
 
-def test_investment_score_label_excellent():
+def test_investment_score_label_excellent() -> None:
     from app.investment import investment_score_label
 
     assert investment_score_label(9.0) == "excellent"
 
 
-def test_investment_score_label_good():
+def test_investment_score_label_good() -> None:
     from app.investment import investment_score_label
 
     assert investment_score_label(7.5) == "good"
 
 
-def test_investment_score_label_avoid():
+def test_investment_score_label_avoid() -> None:
     from app.investment import investment_score_label
 
     assert investment_score_label(0.5) == "avoid"
@@ -353,13 +353,13 @@ def test_investment_score_label_avoid():
         (0.0, "avoid"),
     ],
 )
-def test_investment_score_label_parametrized(score, expected):
+def test_investment_score_label_parametrized(score, expected) -> None:
     from app.investment import investment_score_label
 
     assert investment_score_label(score) == expected
 
 
-def test_portfolio_weighted_score_equal_weights():
+def test_portfolio_weighted_score_equal_weights() -> None:
     from app.investment import portfolio_weighted_score
 
     scores = [4.0, 6.0, 8.0]
@@ -367,13 +367,13 @@ def test_portfolio_weighted_score_equal_weights():
     assert result == pytest.approx(6.0, rel=1e-3)
 
 
-def test_portfolio_weighted_score_empty():
+def test_portfolio_weighted_score_empty() -> None:
     from app.investment import portfolio_weighted_score
 
     assert portfolio_weighted_score([]) == 0.0
 
 
-def test_portfolio_weighted_score_custom_weights():
+def test_portfolio_weighted_score_custom_weights() -> None:
     from app.investment import portfolio_weighted_score
 
     scores = [2.0, 8.0]
@@ -382,14 +382,14 @@ def test_portfolio_weighted_score_custom_weights():
     assert result == pytest.approx(6.5, rel=1e-3)
 
 
-def test_portfolio_weighted_score_mismatch_raises():
+def test_portfolio_weighted_score_mismatch_raises() -> None:
     from app.investment import portfolio_weighted_score
 
     with pytest.raises(ValueError):
         portfolio_weighted_score([1.0, 2.0], weights=[0.5])
 
 
-def test_compute_investment_analysis_returns_dataclass():
+def test_compute_investment_analysis_returns_dataclass() -> None:
     from app.investment import InvestmentAnalysis, compute_investment_analysis
 
     result = compute_investment_analysis(
@@ -409,7 +409,7 @@ def test_compute_investment_analysis_returns_dataclass():
     (0.1, False),
     (0.9, True),
 ])
-def test_compute_investment_high_crime_lowers_score(crime_rate, expected_worse):
+def test_compute_investment_high_crime_lowers_score(crime_rate, expected_worse) -> None:
     from app.investment import compute_investment_analysis
 
     low = compute_investment_analysis(
