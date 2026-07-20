@@ -89,3 +89,11 @@ def summarize_export(records: list[dict[str, Any]]) -> dict[str, Any]:
         "min_kwh": min(kwh_vals) if kwh_vals else None,
         "max_kwh": max(kwh_vals) if kwh_vals else None,
     }
+
+__all__ = [
+    "records_to_csv",
+    "records_to_json",
+    "filter_records",
+    "aggregate_by_hour",
+    "summarize_export",
+]
