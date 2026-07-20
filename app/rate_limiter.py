@@ -79,3 +79,13 @@ def make_rate_limiter(
 ) -> TokenBucketRateLimiter:
     """Factory returning a new :class:`TokenBucketRateLimiter` with defaults."""
     return TokenBucketRateLimiter(capacity=capacity, rate_per_second=rate_per_second)
+
+__all__ = [
+    "TokenBucketRateLimiter",
+    "make_rate_limiter",
+    "is_allowed",
+    "remaining_tokens",
+    "reset",
+    "clear",
+    "client_count",
+]
