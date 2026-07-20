@@ -239,3 +239,19 @@ def clamp_consumption(value: float) -> float:
         Clamped float within [0.0, 100000.0].
     """
     return max(MIN_CONSUMPTION_KWH, min(value, MAX_CONSUMPTION_KWH))
+
+__all__ = [
+    "validate_temporal_fields",
+    "validate_weather_fields",
+    "validate_load_series",
+    "validate_building_id",
+    "validate_batch_size",
+    "validate_consumption_kwh",
+    "validate_feature_vector",
+    "batch_validate_readings",
+    "is_weekend",
+    "extract_temporal_from_datetime",
+    "validate_forecast_horizon",
+    "is_valid_temporal_input",
+    "clamp_consumption",
+]
