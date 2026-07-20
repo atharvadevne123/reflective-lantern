@@ -8,7 +8,7 @@ from pydantic import ValidationError
 from app.schemas import AnomalyRequest, DriftRequest, EnergyReadingIn
 
 
-def test_energy_reading_valid():
+def test_energy_reading_valid() -> None:
     r = EnergyReadingIn(
         building_id="bldg-001",
         timestamp="2025-06-01T14:00:00",
@@ -25,7 +25,7 @@ def test_energy_reading_valid():
     assert r.hour == 14
 
 
-def test_energy_reading_invalid_hour():
+def test_energy_reading_invalid_hour() -> None:
     with pytest.raises(ValidationError):
         EnergyReadingIn(
             building_id="b",
@@ -40,7 +40,7 @@ def test_energy_reading_invalid_hour():
         )
 
 
-def test_energy_reading_invalid_building_id():
+def test_energy_reading_invalid_building_id() -> None:
     with pytest.raises(ValidationError):
         EnergyReadingIn(
             building_id="bad id!@#",
@@ -56,7 +56,7 @@ def test_energy_reading_invalid_building_id():
 
 
 @pytest.mark.parametrize("temp", [-41.0, 61.0])
-def test_energy_reading_invalid_temperature(temp):
+def test_energy_reading_invalid_temperature(temp) -> None:
     with pytest.raises(ValidationError):
         EnergyReadingIn(
             building_id="b001",
@@ -71,12 +71,12 @@ def test_energy_reading_invalid_temperature(temp):
         )
 
 
-def test_drift_request_min_length():
+def test_drift_request_min_length() -> None:
     with pytest.raises(ValidationError):
         DriftRequest(current_values=[1.0, 2.0])
 
 
-def test_anomaly_request_valid():
+def test_anomaly_request_valid() -> None:
     r = AnomalyRequest(
         building_id="b-99",
         timestamp="2025-03-15T08:00:00",
@@ -89,7 +89,7 @@ def test_anomaly_request_valid():
     assert r.hvac_state == 0
 
 
-def test_version_response_valid():
+def test_version_response_valid() -> None:
     from app.schemas import VersionResponse
 
     v = VersionResponse(version="1.1.0", api="v1", model="xgb+lgbm+rf")
@@ -98,7 +98,7 @@ def test_version_response_valid():
 
 
 @pytest.mark.parametrize("month", [0, 13, -1])
-def test_energy_reading_invalid_month(month):
+def test_energy_reading_invalid_month(month) -> None:
     with pytest.raises(ValidationError):
         EnergyReadingIn(
             building_id="b001",
@@ -114,7 +114,7 @@ def test_energy_reading_invalid_month(month):
 
 
 @pytest.mark.parametrize("dow", [-1, 7])
-def test_energy_reading_invalid_dow(dow):
+def test_energy_reading_invalid_dow(dow) -> None:
     with pytest.raises(ValidationError):
         EnergyReadingIn(
             building_id="b001",
