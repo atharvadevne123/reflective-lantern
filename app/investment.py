@@ -234,3 +234,13 @@ def portfolio_weighted_score(
         return 0.0
     weighted = sum(s * w for s, w in zip(scores, weights, strict=False))
     return round(weighted / total_weight, 3)
+
+__all__ = [
+    "InvestmentAnalysis",
+    "compute_investment_analysis",
+    "mortgage_payment",
+    "roi_percentage",
+    "price_to_income_ratio",
+    "investment_score_label",
+    "portfolio_weighted_score",
+]
