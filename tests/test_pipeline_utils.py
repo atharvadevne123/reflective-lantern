@@ -119,3 +119,42 @@ def test_bundle_pipeline_info_empty_bundle() -> None:
 def test_has_step_parametrize(step_name) -> None:
     pipe = make_test_pipeline()
     assert has_step(pipe, step_name) is True
+
+
+@pytest.mark.parametrize("step_name", ["scaler", "regressor"])
+def test_has_step_parametrized(step_name: str) -> None:
+    pipe = make_test_pipeline()
+    assert has_step(pipe, step_name) is True
+
+
+@pytest.mark.parametrize("invalid_step", ["normalizer", "pca", "forest"])
+def test_has_step_false_parametrized(invalid_step: str) -> None:
+    pipe = make_test_pipeline()
+    assert has_step(pipe, invalid_step) is False
+
+
+def test_get_step_none_for_missing() -> None:
+    pipe = make_test_pipeline()
+    assert get_step(pipe, "nonexistent") is None
+
+
+def test_pipeline_param_count_positive() -> None:
+    pipe = make_test_pipeline()
+    count = pipeline_param_count(pipe)
+    assert count > 0
+
+
+def test_pipeline_param_count_non_pipeline() -> None:
+    assert pipeline_param_count("not a pipeline") == 0
+
+
+def test_describe_pipeline_has_steps_key() -> None:
+    pipe = make_test_pipeline()
+    desc = describe_pipeline(pipe)
+    assert "steps" in desc
+    assert desc["n_steps"] == 2
+
+
+def test_describe_pipeline_non_pipeline_returns_empty() -> None:
+    desc = describe_pipeline("not a pipeline")
+    assert desc.get("n_steps", 0) == 0 or "steps" not in desc or desc["steps"] == []
