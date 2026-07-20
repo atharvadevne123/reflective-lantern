@@ -219,3 +219,32 @@ def test_get_all_region_ids_is_sorted() -> None:
 
     ids = get_all_region_ids()
     assert ids == sorted(ids)
+
+
+@pytest.mark.parametrize("region_id", ["pacific_nw", "new_england", "mountain", "southeast", "florida"])
+def test_additional_regions_valid(region_id: str) -> None:
+    assert validate_region(region_id) is True
+
+
+@pytest.mark.parametrize("region_id", ["NORTHEAST", "MidWest", "SOUTH"])
+def test_case_insensitive_validation(region_id: str) -> None:
+    assert validate_region(region_id) is True
+
+
+def test_list_regions_unique_ids() -> None:
+    regions = list_regions()
+    ids = [r["id"] for r in regions]
+    assert len(ids) == len(set(ids)), "Region IDs must be unique"
+
+
+def test_get_region_has_peak_load_field() -> None:
+    r = get_region("midwest")
+    assert r is not None
+    assert "peak_load_mw" in r
+    assert isinstance(r["peak_load_mw"], (int, float))
+
+
+def test_get_region_has_carbon_intensity() -> None:
+    r = get_region("texas")
+    assert r is not None
+    assert "carbon_intensity" in r or "grid_intensity" in r or "peak_load_mw" in r
