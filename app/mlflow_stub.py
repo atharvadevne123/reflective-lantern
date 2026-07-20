@@ -138,3 +138,13 @@ def list_runs() -> list[dict[str, object]]:
                 except json.JSONDecodeError:
                     logger.warning("Skipping malformed run log entry")
     return runs
+
+__all__ = [
+    "log_metrics",
+    "log_training_run",
+    "get_best_run",
+    "set_tracking_uri",
+    "log_params",
+    "log_artifact",
+    "list_runs",
+]
