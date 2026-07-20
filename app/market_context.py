@@ -327,3 +327,17 @@ def market_summary(
         "price_to_rent_ratio": price_to_rent_ratio(predicted_value, annual_rent),
         "affordability": affordability,
     }
+
+__all__ = [
+    "price_per_sqft",
+    "dom_classification",
+    "affordability_index",
+    "price_to_rent_ratio",
+    "affordability_bucket",
+    "rent_vs_buy_comparison",
+    "price_trend_indicator",
+    "affordability_ratio",
+    "housing_affordability_index",
+    "price_trend_consistency",
+    "market_summary",
+]
