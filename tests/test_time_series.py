@@ -429,7 +429,7 @@ def test_clip_outliers_various_percentiles(upper_pct) -> None:
 
 
 @pytest.mark.parametrize("window", [1, 3, 5, 10])
-def test_sma_various_windows(window: int) -> None:
+def test_sma_window_length(window: int) -> None:
     values = [float(i) for i in range(20)]
     result = simple_moving_average(values, window=window)
     assert len(result) == len(values)
@@ -451,7 +451,7 @@ def test_forecast_linear_trend_horizons(horizon: int) -> None:
     assert len(result) == horizon
 
 
-def test_detect_spikes_returns_indices() -> None:
+def test_detect_spikes_returns_index() -> None:
     values = [5.0] * 20 + [100.0] + [5.0] * 20
     spikes = detect_spikes(values, threshold=3.0)
     assert 20 in spikes

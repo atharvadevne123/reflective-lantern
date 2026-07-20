@@ -128,16 +128,10 @@ def warm_cache(cache: TTLCache, entries: dict[str, object]) -> int:
         inserted += 1
     return inserted
 
+
 __all__ = [
+    "logger",
     "TTLCache",
+    "prediction_cache",
     "warm_cache",
-    "get",
-    "set",
-    "invalidate",
-    "clear",
-    "evict_expired",
-    "eviction_count",
-    "stats",
-    "size",
-    "hit_rate",
 ]

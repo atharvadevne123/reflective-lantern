@@ -279,7 +279,9 @@ def clip_outliers(values: list[float], lower_pct: float = 5.0, upper_pct: float 
     hi = percentile(upper_pct)
     return [max(lo, min(hi, v)) for v in values]
 
+
 __all__ = [
+    "logger",
     "simple_moving_average",
     "seasonal_baseline",
     "forecast_linear_trend",
@@ -293,5 +295,4 @@ __all__ = [
     "consumption_variance",
     "detect_plateau",
     "clip_outliers",
-    "percentile",
 ]

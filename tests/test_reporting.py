@@ -437,14 +437,14 @@ def test_peak_demand_by_period_parametrized(period_hours) -> None:
     (12.0, 10.0, "C"),         # increase -> C or D
     (100.0, 10.0, "F"),        # massive increase -> F
 ])
-def test_energy_efficiency_grade_parametrized(actual: float, baseline: float, expected_grade: str) -> None:
+def test_energy_efficiency_grade_param(actual: float, baseline: float, expected_grade: str) -> None:
     from app.reporting import energy_efficiency_grade
     result = energy_efficiency_grade(actual, baseline)
     assert isinstance(result, str)
     assert result in ("A+", "A", "A-", "B", "C", "D", "F")
 
 
-def test_energy_efficiency_grade_zero_baseline() -> None:
+def test_energy_efficiency_grade_zero_bl() -> None:
     from app.reporting import energy_efficiency_grade
     assert energy_efficiency_grade(10.0, 0.0) == "F"
 
@@ -456,14 +456,14 @@ def test_peak_demand_all_equal_demand_factor_one() -> None:
     assert r["demand_factor"] == pytest.approx(1.0)
 
 
-def test_peak_demand_empty_raises() -> None:
+def test_peak_demand_empty_list_raises() -> None:
     from app.reporting import peak_demand_report
     with pytest.raises(ValueError):
         peak_demand_report([])
 
 
 @pytest.mark.parametrize("length_mismatch", [(5, 10), (10, 5), (0, 5)])
-def test_estimate_savings_length_mismatch_raises(length_mismatch: tuple) -> None:
+def test_estimate_savings_mismatch_raises(length_mismatch: tuple) -> None:
     from app.reporting import estimate_savings
     n1, n2 = length_mismatch
     with pytest.raises(ValueError):

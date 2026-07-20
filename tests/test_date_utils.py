@@ -110,16 +110,18 @@ def test_generate_hourly_timestamps_various_lengths(n_hours) -> None:
 
 
 @pytest.mark.parametrize("n_hours", [1, 6, 24, 168])
-def test_generate_hourly_timestamps_various_lengths(n_hours: int) -> None:
+def test_generate_hourly_timestamps_parametrized(n_hours: int) -> None:
     from datetime import datetime
+
     from app.date_utils import generate_hourly_timestamps
     start = datetime(2026, 1, 1, 0)
     result = generate_hourly_timestamps(start, n_hours)
     assert len(result) == n_hours
 
 
-def test_generate_hourly_timestamps_spacing() -> None:
+def test_generate_hourly_timestamps_hourly_gaps() -> None:
     from datetime import datetime, timedelta
+
     from app.date_utils import generate_hourly_timestamps
     start = datetime(2026, 6, 1, 12)
     result = generate_hourly_timestamps(start, 5)
@@ -128,8 +130,9 @@ def test_generate_hourly_timestamps_spacing() -> None:
         assert diff == timedelta(hours=1)
 
 
-def test_generate_hourly_timestamps_zero_raises() -> None:
+def test_generate_hourly_timestamps_invalid_n() -> None:
     from datetime import datetime
+
     from app.date_utils import generate_hourly_timestamps
     with pytest.raises(ValueError):
         generate_hourly_timestamps(datetime(2026, 1, 1), 0)
@@ -145,6 +148,7 @@ def test_generate_hourly_timestamps_zero_raises() -> None:
 ])
 def test_is_business_hour_parametrized(hour: int, expected: bool) -> None:
     from datetime import datetime
+
     from app.date_utils import is_business_hour
     dt = datetime(2026, 7, 20, hour)  # Monday
     assert is_business_hour(dt) == expected
@@ -152,6 +156,7 @@ def test_is_business_hour_parametrized(hour: int, expected: bool) -> None:
 
 def test_is_business_hour_weekend_false() -> None:
     from datetime import datetime
+
     from app.date_utils import is_business_hour
     saturday = datetime(2026, 7, 18, 12)  # Saturday noon
     assert not is_business_hour(saturday)
@@ -159,6 +164,7 @@ def test_is_business_hour_weekend_false() -> None:
 
 def test_week_of_year_january_first() -> None:
     from datetime import datetime
+
     from app.date_utils import week_of_year
     dt = datetime(2026, 1, 5)  # First week of 2026
     assert 1 <= week_of_year(dt) <= 2

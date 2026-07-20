@@ -158,7 +158,7 @@ def test_linear_trend_two_values() -> None:
     assert result.direction == "rising"
 
 
-def test detect_change_points_empty() -> None:
+def test_detect_change_points_empty() -> None:
     result = detect_change_points([])
     assert result == []
 

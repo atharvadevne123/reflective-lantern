@@ -423,6 +423,7 @@ def feature_names_for_bundle(bundle: dict) -> list[str]:
     except Exception:
         return []
 
+
 __all__ = [
     "TemporalFeatureExtractor",
     "LagFeatureExtractor",
@@ -432,18 +433,15 @@ __all__ = [
     "DropNonNumeric",
     "DataFrameWrapper",
     "DropColumnsTransformer",
+    "build_feature_pipeline",
     "RatioFeatureTransformer",
     "PropertyAgeTransformer",
     "AmenityCompositeTransformer",
-    "InteractionFeatureExtractor",
-    "build_feature_pipeline",
     "extract_feature_array",
     "make_feature_row",
+    "InteractionFeatureExtractor",
     "normalize_consumption",
     "demand_response_potential",
     "encode_cyclical",
     "feature_names_for_bundle",
-    "fit",
-    "transform",
-    "get_feature_names_out",
 ]

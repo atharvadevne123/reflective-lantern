@@ -113,7 +113,7 @@ def test_kwh_to_co2_kg_case_insensitive() -> None:
 
 
 def test_kwh_to_co2_kg_unknown_region_uses_default() -> None:
-    from app.carbon import kwh_to_co2_kg, GRID_CARBON_INTENSITY
+    from app.carbon import GRID_CARBON_INTENSITY, kwh_to_co2_kg
     result = kwh_to_co2_kg(100.0, region="atlantis")
     assert result == pytest.approx(100.0 * GRID_CARBON_INTENSITY["default"])
 

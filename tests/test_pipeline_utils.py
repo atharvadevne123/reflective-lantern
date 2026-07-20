@@ -138,13 +138,13 @@ def test_get_step_none_for_missing() -> None:
     assert get_step(pipe, "nonexistent") is None
 
 
-def test_pipeline_param_count_positive() -> None:
+def test_pipeline_param_count_is_positive() -> None:
     pipe = make_test_pipeline()
     count = pipeline_param_count(pipe)
     assert count > 0
 
 
-def test_pipeline_param_count_non_pipeline() -> None:
+def test_pipeline_param_count_no_pipeline() -> None:
     assert pipeline_param_count("not a pipeline") == 0
 
 

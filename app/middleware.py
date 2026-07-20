@@ -55,9 +55,10 @@ class CorrelationIDMiddleware(BaseHTTPMiddleware):
         response.headers["X-Correlation-ID"] = correlation_id
         return response
 
+
 __all__ = [
+    "settings",
+    "reset_rate_limiter",
     "RateLimitMiddleware",
     "CorrelationIDMiddleware",
-    "reset_rate_limiter",
-    "dispatch",
 ]
