@@ -80,3 +80,13 @@ def bundle_pipeline_info(bundle: dict[str, Any]) -> dict[str, Any]:
     if model is None:
         return {"error": "no model in bundle"}
     return describe_pipeline(model)
+
+__all__ = [
+    "get_step_names",
+    "has_step",
+    "get_step",
+    "pipeline_param_count",
+    "describe_pipeline",
+    "clone_params",
+    "bundle_pipeline_info",
+]
