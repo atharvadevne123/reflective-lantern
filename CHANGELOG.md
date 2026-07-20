@@ -1,5 +1,15 @@
 # Changelog
 
+## [2026-07-20] — Improvement Run
+
+### Changed
+- Added `-> None` return type annotations to all test functions across 20 test files
+- Added `__all__` export lists to 20+ app modules (carbon, date_utils, data_quality, forecasting, investment, reporting, stats_utils, trend_analysis, pipeline_utils, time_series, regions, benchmarks, cache, database, features, monitoring, validation, market_context, energy_export, notifications, middleware, mlflow_stub, logging_config, rate_limiter, config)
+- Added `functools.lru_cache` to grid carbon intensity lookup in `app/carbon.py` for repeated region queries
+- Improved docstring for `exponential_smoothing_forecast` with full Returns and Raises clauses
+- Expanded parametrized test coverage in `test_forecasting.py`, `test_stats_utils.py`, `test_carbon.py`, `test_trend_analysis.py`, `test_data_quality.py`, `test_investment.py`, `test_date_utils.py`, `test_anomaly.py`, `test_reporting.py`, `test_pipeline_utils.py`, `test_regions.py`, `test_time_series.py`
+
+
 ## [1.2.0] - 2026-07-15
 
 ### Added
