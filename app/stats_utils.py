@@ -136,3 +136,12 @@ def percentile(values: list[float], p: float) -> float:
     hi = min(lo + 1, n - 1)
     frac = idx - lo
     return round(sorted_vals[lo] * (1 - frac) + sorted_vals[hi] * frac, 6)
+
+__all__ = [
+    "mean_absolute_error",
+    "root_mean_squared_error",
+    "r_squared",
+    "mape",
+    "coefficient_of_variation",
+    "percentile",
+]
