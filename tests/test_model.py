@@ -9,7 +9,7 @@ import pytest
 from app.model import load_metrics, predict, train_model
 
 
-def test_train_returns_metrics(trained_model):
+def test_train_returns_metrics(trained_model) -> None:
     _bundle, metrics = trained_model
     assert "r2_mean" in metrics
     assert "mae_kwh" in metrics
@@ -17,12 +17,12 @@ def test_train_returns_metrics(trained_model):
     assert metrics["mae_kwh"] >= 0
 
 
-def test_train_r2_reasonable(trained_model):
+def test_train_r2_reasonable(trained_model) -> None:
     _, metrics = trained_model
     assert metrics["r2_mean"] > 0.0, f"R2 too low: {metrics['r2_mean']}"
 
 
-def test_predict_shape(trained_model, sample_df):
+def test_predict_shape(trained_model, sample_df) -> None:
     from app.model import predict
 
     bundle, _ = trained_model
@@ -30,7 +30,7 @@ def test_predict_shape(trained_model, sample_df):
     assert len(preds) == len(sample_df)
 
 
-def test_predict_non_negative(trained_model, sample_df):
+def test_predict_non_negative(trained_model, sample_df) -> None:
     from app.model import predict
 
     bundle, _ = trained_model
@@ -38,7 +38,7 @@ def test_predict_non_negative(trained_model, sample_df):
     assert np.all(preds >= -10), "Predictions should be near-positive for energy kWh"
 
 
-def test_anomaly_model_scores(trained_anomaly_model, sample_df):
+def test_anomaly_model_scores(trained_anomaly_model, sample_df) -> None:
     from app.features import make_feature_row
     from app.model import score_anomaly
 
@@ -50,7 +50,7 @@ def test_anomaly_model_scores(trained_anomaly_model, sample_df):
     assert result["severity"] in ("none", "warning", "critical")
 
 
-def test_model_persistence(sample_df, sample_y, tmp_path, monkeypatch):
+def test_model_persistence(sample_df, sample_y, tmp_path, monkeypatch) -> None:
     from app import model as model_mod
 
     model_path = tmp_path / "model.joblib"
@@ -65,7 +65,7 @@ def test_model_persistence(sample_df, sample_y, tmp_path, monkeypatch):
     assert metrics_path.exists()
 
 
-def test_load_model_none_when_missing(tmp_path, monkeypatch):
+def test_load_model_none_when_missing(tmp_path, monkeypatch) -> None:
     from app import model as model_mod
 
     monkeypatch.setattr(model_mod, "MODEL_PATH", tmp_path / "nonexistent.joblib")
@@ -75,7 +75,7 @@ def test_load_model_none_when_missing(tmp_path, monkeypatch):
 
 
 @pytest.mark.parametrize("n_samples", [100, 500, 1000])
-def test_train_various_sizes(n_samples):
+def test_train_various_sizes(n_samples) -> None:
 
     rng = np.random.default_rng(99)
     df = pd.DataFrame(
@@ -191,7 +191,7 @@ def test_metrics_mae_is_non_negative(sample_df, sample_target) -> None:
     assert metrics.get("mae_mean", 0.0) >= 0.0
 
 
-def test_get_feature_importance_returns_list(trained_model):
+def test_get_feature_importance_returns_list(trained_model) -> None:
     from app.model import get_feature_importance
 
     bundle, _ = trained_model
@@ -199,7 +199,7 @@ def test_get_feature_importance_returns_list(trained_model):
     assert isinstance(result, list)
 
 
-def test_get_feature_importance_has_feature_and_importance_keys(trained_model):
+def test_get_feature_importance_has_feature_and_importance_keys(trained_model) -> None:
     from app.model import get_feature_importance
 
     bundle, _ = trained_model
@@ -209,7 +209,7 @@ def test_get_feature_importance_has_feature_and_importance_keys(trained_model):
         assert "importance" in result[0]
 
 
-def test_get_feature_importance_sorted_descending(trained_model):
+def test_get_feature_importance_sorted_descending(trained_model) -> None:
     from app.model import get_feature_importance
 
     bundle, _ = trained_model
@@ -218,7 +218,7 @@ def test_get_feature_importance_sorted_descending(trained_model):
     assert importances == sorted(importances, reverse=True)
 
 
-def test_get_feature_importance_top_n_limited(trained_model):
+def test_get_feature_importance_top_n_limited(trained_model) -> None:
     from app.model import get_feature_importance
 
     bundle, _ = trained_model
@@ -226,14 +226,14 @@ def test_get_feature_importance_top_n_limited(trained_model):
     assert len(result) <= 5
 
 
-def test_get_feature_importance_empty_bundle():
+def test_get_feature_importance_empty_bundle() -> None:
     from app.model import get_feature_importance
 
     assert get_feature_importance({}) == []
 
 
 @pytest.mark.parametrize("n_samples", [100, 500, 1000])
-def test_train_model_various_sizes(n_samples):
+def test_train_model_various_sizes(n_samples) -> None:
     import numpy as np
     import pandas as pd
 
@@ -258,7 +258,7 @@ def test_train_model_various_sizes(n_samples):
 
 
 @pytest.mark.parametrize("top_n", [1, 5, 10, 20])
-def test_get_feature_importance_various_top_n(trained_model, top_n):
+def test_get_feature_importance_various_top_n(trained_model, top_n) -> None:
     from app.model import get_feature_importance
 
     bundle, _ = trained_model
@@ -266,7 +266,7 @@ def test_get_feature_importance_various_top_n(trained_model, top_n):
     assert len(result) <= top_n
 
 
-def test_predict_returns_array_for_batch(trained_model):
+def test_predict_returns_array_for_batch(trained_model) -> None:
     import numpy as np
 
     from app.model import predict
@@ -280,7 +280,7 @@ def test_predict_returns_array_for_batch(trained_model):
         pass  # model may need specific feature count
 
 
-def test_prediction_confidence_returns_dict(trained_model):
+def test_prediction_confidence_returns_dict(trained_model) -> None:
     import pandas as pd
 
     from app.model import prediction_confidence
@@ -298,7 +298,7 @@ def test_prediction_confidence_returns_dict(trained_model):
     assert "upper_95" in result
 
 
-def test_prediction_confidence_bounds_ordered(trained_model):
+def test_prediction_confidence_bounds_ordered(trained_model) -> None:
     import pandas as pd
 
     from app.model import prediction_confidence
@@ -313,7 +313,7 @@ def test_prediction_confidence_bounds_ordered(trained_model):
     assert result["lower_95"] <= result["mean"] <= result["upper_95"]
 
 
-def test_prediction_confidence_empty_bundle():
+def test_prediction_confidence_empty_bundle() -> None:
     import pandas as pd
 
     from app.model import prediction_confidence
