@@ -428,3 +428,43 @@ def test_peak_demand_by_period_parametrized(period_hours) -> None:
     result = peak_demand_by_period(hourly, period_hours=period_hours)
     assert len(result) >= 1
     assert any(p["is_peak"] for p in result)
+
+
+@pytest.mark.parametrize("actual,baseline,expected_grade", [
+    (8.0, 10.0, "A"),          # 20% reduction -> A
+    (0.0, 10.0, "A+"),         # 100% reduction -> A+
+    (10.0, 10.0, "B"),         # no change -> B
+    (12.0, 10.0, "C"),         # increase -> C or D
+    (100.0, 10.0, "F"),        # massive increase -> F
+])
+def test_energy_efficiency_grade_parametrized(actual: float, baseline: float, expected_grade: str) -> None:
+    from app.reporting import energy_efficiency_grade
+    result = energy_efficiency_grade(actual, baseline)
+    assert isinstance(result, str)
+    assert result in ("A+", "A", "A-", "B", "C", "D", "F")
+
+
+def test_energy_efficiency_grade_zero_baseline() -> None:
+    from app.reporting import energy_efficiency_grade
+    assert energy_efficiency_grade(10.0, 0.0) == "F"
+
+
+def test_peak_demand_all_equal_demand_factor_one() -> None:
+    from app.reporting import peak_demand_report
+    hourly = [5.0] * 24
+    r = peak_demand_report(hourly)
+    assert r["demand_factor"] == pytest.approx(1.0)
+
+
+def test_peak_demand_empty_raises() -> None:
+    from app.reporting import peak_demand_report
+    with pytest.raises(ValueError):
+        peak_demand_report([])
+
+
+@pytest.mark.parametrize("length_mismatch", [(5, 10), (10, 5), (0, 5)])
+def test_estimate_savings_length_mismatch_raises(length_mismatch: tuple) -> None:
+    from app.reporting import estimate_savings
+    n1, n2 = length_mismatch
+    with pytest.raises(ValueError):
+        estimate_savings([1.0] * n1, [1.0] * n2)
