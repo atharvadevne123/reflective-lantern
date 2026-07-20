@@ -25,52 +25,52 @@ def make_test_pipeline() -> Pipeline:
     ])
 
 
-def test_get_step_names():
+def test_get_step_names() -> None:
     pipe = make_test_pipeline()
     names = get_step_names(pipe)
     assert names == ["scaler", "regressor"]
 
 
-def test_get_step_names_non_pipeline():
+def test_get_step_names_non_pipeline() -> None:
     assert get_step_names("not a pipeline") == []
 
 
-def test_has_step_true():
+def test_has_step_true() -> None:
     pipe = make_test_pipeline()
     assert has_step(pipe, "scaler") is True
 
 
-def test_has_step_false():
+def test_has_step_false() -> None:
     pipe = make_test_pipeline()
     assert has_step(pipe, "nonexistent") is False
 
 
-def test_get_step_returns_estimator():
+def test_get_step_returns_estimator() -> None:
     pipe = make_test_pipeline()
     step = get_step(pipe, "scaler")
     assert isinstance(step, StandardScaler)
 
 
-def test_get_step_missing():
+def test_get_step_missing() -> None:
     pipe = make_test_pipeline()
     assert get_step(pipe, "missing") is None
 
 
-def test_get_step_non_pipeline():
+def test_get_step_non_pipeline() -> None:
     assert get_step("not a pipeline", "step") is None
 
 
-def test_pipeline_param_count_positive():
+def test_pipeline_param_count_positive() -> None:
     pipe = make_test_pipeline()
     count = pipeline_param_count(pipe)
     assert count > 0
 
 
-def test_pipeline_param_count_non_pipeline():
+def test_pipeline_param_count_non_pipeline() -> None:
     assert pipeline_param_count(object()) == 0
 
 
-def test_describe_pipeline_structure():
+def test_describe_pipeline_structure() -> None:
     pipe = make_test_pipeline()
     desc = describe_pipeline(pipe)
     assert desc["n_steps"] == 2
@@ -79,43 +79,43 @@ def test_describe_pipeline_structure():
     assert desc["steps"][1]["name"] == "regressor"
 
 
-def test_describe_pipeline_class_names():
+def test_describe_pipeline_class_names() -> None:
     pipe = make_test_pipeline()
     desc = describe_pipeline(pipe)
     assert desc["steps"][0]["class"] == "StandardScaler"
     assert desc["steps"][1]["class"] == "LinearRegression"
 
 
-def test_describe_pipeline_non_pipeline():
+def test_describe_pipeline_non_pipeline() -> None:
     desc = describe_pipeline(object())
     assert desc["n_steps"] == 0
 
 
-def test_clone_params_dict():
+def test_clone_params_dict() -> None:
     pipe = make_test_pipeline()
     params = clone_params(pipe)
     assert isinstance(params, dict)
     assert len(params) > 0
 
 
-def test_clone_params_non_pipeline():
+def test_clone_params_non_pipeline() -> None:
     result = clone_params(object())
     assert result == {}
 
 
-def test_bundle_pipeline_info_with_model():
+def test_bundle_pipeline_info_with_model() -> None:
     pipe = make_test_pipeline()
     info = bundle_pipeline_info({"model": pipe})
     assert "n_steps" in info
     assert info["n_steps"] == 2
 
 
-def test_bundle_pipeline_info_empty_bundle():
+def test_bundle_pipeline_info_empty_bundle() -> None:
     info = bundle_pipeline_info({})
     assert "error" in info
 
 
 @pytest.mark.parametrize("step_name", ["scaler", "regressor"])
-def test_has_step_parametrize(step_name):
+def test_has_step_parametrize(step_name) -> None:
     pipe = make_test_pipeline()
     assert has_step(pipe, step_name) is True
