@@ -325,3 +325,23 @@ def reference_window_stats() -> dict[str, Any]:
         "max": round(max(vals), 4),
         "std": round(variance ** 0.5, 4),
     }
+
+__all__ = [
+    "LatencyTimer",
+    "set_reference_window",
+    "compute_drift",
+    "check_feature_drift",
+    "log_prediction",
+    "log_anomaly",
+    "get_prediction_stats",
+    "get_recent_predictions",
+    "get_drift_summary",
+    "run_drift_check",
+    "reset_reference_window",
+    "get_anomaly_stats",
+    "compute_feature_drift_summary",
+    "summarize_drift_history",
+    "get_reference_window_size",
+    "is_reference_window_ready",
+    "reference_window_stats",
+]
