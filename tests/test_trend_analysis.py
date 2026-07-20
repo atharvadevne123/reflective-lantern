@@ -123,3 +123,48 @@ def test_linear_trend_direction_parametrize(n, expected_dir) -> None:
         values = [5.0] * 5
     result = linear_trend(values)
     assert result.direction == expected_dir
+
+
+@pytest.mark.parametrize("values,expected_direction", [
+    ([1.0, 2.0, 3.0, 4.0, 5.0], "rising"),
+    ([5.0, 4.0, 3.0, 2.0, 1.0], "falling"),
+    ([10.0, 10.0, 10.0, 10.0], "stable"),
+])
+def test_linear_trend_direction_parametrized(values: list, expected_direction: str) -> None:
+    result = linear_trend(values)
+    assert result.direction == expected_direction
+
+
+@pytest.mark.parametrize("old,new,expected_pct", [
+    (100.0, 110.0, 10.0),
+    (100.0, 90.0, -10.0),
+    (50.0, 100.0, 100.0),
+    (200.0, 100.0, -50.0),
+])
+def test_percentage_change_parametrized(old: float, new: float, expected_pct: float) -> None:
+    assert percentage_change(old, new) == pytest.approx(expected_pct, rel=1e-4)
+
+
+@pytest.mark.parametrize("window", [1, 2, 3, 5])
+def test_rolling_mean_window_lengths(window: int) -> None:
+    values = [float(i) for i in range(1, 11)]
+    result = rolling_mean(values, window=window)
+    assert len(result) == len(values)
+
+
+def test_linear_trend_two_values() -> None:
+    result = linear_trend([0.0, 4.0])
+    assert result.slope == pytest.approx(4.0)
+    assert result.direction == "rising"
+
+
+def test detect_change_points_empty() -> None:
+    result = detect_change_points([])
+    assert result == []
+
+
+def test_seasonal_decompose_naive_length() -> None:
+    values = [float(i % 4) for i in range(24)]
+    result = seasonal_decompose_naive(values, period=4)
+    assert "trend" in result
+    assert len(result["trend"]) == len(values)
