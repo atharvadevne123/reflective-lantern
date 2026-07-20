@@ -92,19 +92,19 @@ def test_peak_demand_various_lengths(n_hours: int) -> None:
         (12.0, 10.0, "F"),  # 20% increase
     ],
 )
-def test_energy_efficiency_grade_parametrized(actual, baseline, expected_grade):
+def test_energy_efficiency_grade_parametrized(actual, baseline, expected_grade) -> None:
     from app.reporting import energy_efficiency_grade
 
     assert energy_efficiency_grade(actual, baseline) == expected_grade
 
 
-def test_energy_efficiency_grade_zero_baseline():
+def test_energy_efficiency_grade_zero_baseline() -> None:
     from app.reporting import energy_efficiency_grade
 
     assert energy_efficiency_grade(10.0, 0.0) == "F"
 
 
-def test_monthly_consumption_summary_basic():
+def test_monthly_consumption_summary_basic() -> None:
     from app.reporting import monthly_consumption_summary
 
     daily = [10.0 + i * 0.1 for i in range(30)]
@@ -118,48 +118,48 @@ def test_monthly_consumption_summary_basic():
     assert result["days"] == 30
 
 
-def test_monthly_consumption_summary_empty():
+def test_monthly_consumption_summary_empty() -> None:
     from app.reporting import monthly_consumption_summary
 
     with pytest.raises(ValueError):
         monthly_consumption_summary([])
 
 
-def test_monthly_consumption_summary_cost():
+def test_monthly_consumption_summary_cost() -> None:
     from app.reporting import monthly_consumption_summary
 
     result = monthly_consumption_summary([100.0], tariff_per_kwh=0.10)
     assert result["estimated_cost"] == pytest.approx(10.0)
 
 
-def test_consumption_trend_rising():
+def test_consumption_trend_rising() -> None:
     from app.reporting import consumption_trend
 
     data = [10.0 + i * 2 for i in range(20)]
     assert consumption_trend(data) == "rising"
 
 
-def test_consumption_trend_falling():
+def test_consumption_trend_falling() -> None:
     from app.reporting import consumption_trend
 
     data = [100.0 - i * 2 for i in range(20)]
     assert consumption_trend(data) == "falling"
 
 
-def test_consumption_trend_stable():
+def test_consumption_trend_stable() -> None:
     from app.reporting import consumption_trend
 
     data = [50.0] * 30
     assert consumption_trend(data) == "stable"
 
 
-def test_consumption_trend_single_value():
+def test_consumption_trend_single_value() -> None:
     from app.reporting import consumption_trend
 
     assert consumption_trend([42.0]) == "stable"
 
 
-def test_consumption_trend_empty():
+def test_consumption_trend_empty() -> None:
     from app.reporting import consumption_trend
 
     assert consumption_trend([]) == "stable"
@@ -173,13 +173,13 @@ def test_consumption_trend_empty():
         ([3.0, 3.0, 3.0, 3.0, 3.0], "stable"),
     ],
 )
-def test_consumption_trend_parametrized(data, expected):
+def test_consumption_trend_parametrized(data, expected) -> None:
     from app.reporting import consumption_trend
 
     assert consumption_trend(data) == expected
 
 
-def test_seasonal_efficiency_score_keys():
+def test_seasonal_efficiency_score_keys() -> None:
     from app.reporting import seasonal_efficiency_score
 
     actual = [8.0] * 40
@@ -192,7 +192,7 @@ def test_seasonal_efficiency_score_keys():
     assert "overall_score" in result
 
 
-def test_seasonal_efficiency_score_positive_savings():
+def test_seasonal_efficiency_score_positive_savings() -> None:
     from app.reporting import seasonal_efficiency_score
 
     actual = [5.0] * 40
@@ -201,21 +201,21 @@ def test_seasonal_efficiency_score_positive_savings():
     assert result["overall_score"] == pytest.approx(50.0, rel=1e-2)
 
 
-def test_seasonal_efficiency_score_length_mismatch_raises():
+def test_seasonal_efficiency_score_length_mismatch_raises() -> None:
     from app.reporting import seasonal_efficiency_score
 
     with pytest.raises(ValueError):
         seasonal_efficiency_score([1.0, 2.0], [1.0, 2.0, 3.0])
 
 
-def test_seasonal_efficiency_score_empty_raises():
+def test_seasonal_efficiency_score_empty_raises() -> None:
     from app.reporting import seasonal_efficiency_score
 
     with pytest.raises(ValueError):
         seasonal_efficiency_score([], [])
 
 
-def test_seasonal_efficiency_score_custom_weights():
+def test_seasonal_efficiency_score_custom_weights() -> None:
     from app.reporting import seasonal_efficiency_score
 
     actual = [8.0] * 40
@@ -226,7 +226,7 @@ def test_seasonal_efficiency_score_custom_weights():
 
 
 @pytest.mark.parametrize("n", [4, 12, 24, 48, 100])
-def test_seasonal_efficiency_score_various_lengths(n):
+def test_seasonal_efficiency_score_various_lengths(n) -> None:
     from app.reporting import seasonal_efficiency_score
 
     actual = [1.0] * n
@@ -235,7 +235,7 @@ def test_seasonal_efficiency_score_various_lengths(n):
     assert result["overall_score"] == pytest.approx(50.0, rel=1e-2)
 
 
-def test_peak_demand_by_period_basic():
+def test_peak_demand_by_period_basic() -> None:
     from app.reporting import peak_demand_by_period
 
     data = [1.0] * 24
@@ -245,7 +245,7 @@ def test_peak_demand_by_period_basic():
     assert len(peak_periods) == 1
 
 
-def test_peak_demand_by_period_period_count():
+def test_peak_demand_by_period_period_count() -> None:
     from app.reporting import peak_demand_by_period
 
     data = [1.0] * 24
@@ -253,21 +253,21 @@ def test_peak_demand_by_period_period_count():
     assert len(result) == 6
 
 
-def test_peak_demand_by_period_empty_raises():
+def test_peak_demand_by_period_empty_raises() -> None:
     from app.reporting import peak_demand_by_period
 
     with pytest.raises(ValueError):
         peak_demand_by_period([])
 
 
-def test_peak_demand_by_period_bad_period_raises():
+def test_peak_demand_by_period_bad_period_raises() -> None:
     from app.reporting import peak_demand_by_period
 
     with pytest.raises(ValueError):
         peak_demand_by_period([1.0] * 24, period_hours=0)
 
 
-def test_peak_demand_by_period_keys():
+def test_peak_demand_by_period_keys() -> None:
     from app.reporting import peak_demand_by_period
 
     result = peak_demand_by_period([5.0] * 8, period_hours=4)
@@ -284,58 +284,58 @@ def test_peak_demand_by_period_keys():
         (1, 10, 10),
     ],
 )
-def test_peak_demand_by_period_counts(period_hours, n_hours, expected_count):
+def test_peak_demand_by_period_counts(period_hours, n_hours, expected_count) -> None:
     from app.reporting import peak_demand_by_period
 
     result = peak_demand_by_period([1.0] * n_hours, period_hours=period_hours)
     assert len(result) == expected_count
 
 
-def test_consumption_efficiency_ratio_under_target():
+def test_consumption_efficiency_ratio_under_target() -> None:
     from app.reporting import consumption_efficiency_ratio
 
     assert consumption_efficiency_ratio(80.0, 100.0) == pytest.approx(0.8)
 
 
-def test_consumption_efficiency_ratio_over_target():
+def test_consumption_efficiency_ratio_over_target() -> None:
     from app.reporting import consumption_efficiency_ratio
 
     assert consumption_efficiency_ratio(120.0, 100.0) == pytest.approx(1.2)
 
 
-def test_consumption_efficiency_ratio_zero_target():
+def test_consumption_efficiency_ratio_zero_target() -> None:
     from app.reporting import consumption_efficiency_ratio
 
     assert consumption_efficiency_ratio(50.0, 0.0) == 0.0
 
 
-def test_consumption_efficiency_ratio_equal():
+def test_consumption_efficiency_ratio_equal() -> None:
     from app.reporting import consumption_efficiency_ratio
 
     assert consumption_efficiency_ratio(100.0, 100.0) == pytest.approx(1.0)
 
 
-def test_daily_average_consumption_empty():
+def test_daily_average_consumption_empty() -> None:
     from app.reporting import daily_average_consumption
 
     assert daily_average_consumption([]) == 0.0
 
 
-def test_daily_average_consumption_one_day():
+def test_daily_average_consumption_one_day() -> None:
     from app.reporting import daily_average_consumption
 
     data = [1.0] * 24
     assert daily_average_consumption(data) == pytest.approx(24.0)
 
 
-def test_daily_average_consumption_two_days():
+def test_daily_average_consumption_two_days() -> None:
     from app.reporting import daily_average_consumption
 
     data = [2.0] * 48
     assert daily_average_consumption(data) == pytest.approx(48.0)
 
 
-def test_daily_average_consumption_partial_day():
+def test_daily_average_consumption_partial_day() -> None:
     from app.reporting import daily_average_consumption
 
     data = [1.0] * 12
@@ -351,13 +351,13 @@ def test_daily_average_consumption_partial_day():
         (150.0, 100.0, 1.5),
     ],
 )
-def test_consumption_efficiency_ratio_parametrized(actual, target, expected):
+def test_consumption_efficiency_ratio_parametrized(actual, target, expected) -> None:
     from app.reporting import consumption_efficiency_ratio
 
     assert consumption_efficiency_ratio(actual, target) == pytest.approx(expected)
 
 
-def test_seasonal_efficiency_score_basic():
+def test_seasonal_efficiency_score_basic() -> None:
     from app.reporting import seasonal_efficiency_score
     actual = [8.0] * 40
     baseline = [10.0] * 40
@@ -367,62 +367,62 @@ def test_seasonal_efficiency_score_basic():
     assert result["overall_score"] > 0
 
 
-def test_seasonal_efficiency_score_mismatched_raises():
+def test_seasonal_efficiency_score_mismatched_raises() -> None:
     from app.reporting import seasonal_efficiency_score
     with pytest.raises(ValueError):
         seasonal_efficiency_score([1.0, 2.0], [3.0])
 
 
-def test_seasonal_efficiency_score_empty_raises_v2():
+def test_seasonal_efficiency_score_empty_raises_v2() -> None:
     from app.reporting import seasonal_efficiency_score
     with pytest.raises(ValueError):
         seasonal_efficiency_score([], [])
 
 
-def test_consumption_trend_rising_v2():
+def test_consumption_trend_rising_v2() -> None:
     from app.reporting import consumption_trend
     data = [float(i) for i in range(10, 40)]
     assert consumption_trend(data) == "rising"
 
 
-def test_consumption_trend_falling_v2():
+def test_consumption_trend_falling_v2() -> None:
     from app.reporting import consumption_trend
     data = [float(i) for i in range(30, 0, -1)]
     assert consumption_trend(data) == "falling"
 
 
-def test_consumption_trend_stable_v2():
+def test_consumption_trend_stable_v2() -> None:
     from app.reporting import consumption_trend
     data = [10.0] * 20
     assert consumption_trend(data) == "stable"
 
 
-def test_consumption_trend_single_value_v2():
+def test_consumption_trend_single_value_v2() -> None:
     from app.reporting import consumption_trend
     assert consumption_trend([5.0]) == "stable"
 
 
-def test_peak_demand_by_period_basic_v2():
+def test_peak_demand_by_period_basic_v2() -> None:
     from app.reporting import peak_demand_by_period
     hourly = [1.0] * 20 + [10.0] * 4
     result = peak_demand_by_period(hourly, period_hours=4)
     assert any(p["is_peak"] for p in result)
 
 
-def test_peak_demand_by_period_empty_raises_v2():
+def test_peak_demand_by_period_empty_raises_v2() -> None:
     from app.reporting import peak_demand_by_period
     with pytest.raises(ValueError):
         peak_demand_by_period([])
 
 
-def test_peak_demand_by_period_invalid_period_raises_v2():
+def test_peak_demand_by_period_invalid_period_raises_v2() -> None:
     from app.reporting import peak_demand_by_period
     with pytest.raises(ValueError):
         peak_demand_by_period([1.0] * 10, period_hours=0)
 
 
 @pytest.mark.parametrize("period_hours", [2, 4, 6])
-def test_peak_demand_by_period_parametrized(period_hours):
+def test_peak_demand_by_period_parametrized(period_hours) -> None:
     from app.reporting import peak_demand_by_period
     hourly = [float(i) for i in range(24)]
     result = peak_demand_by_period(hourly, period_hours=period_hours)
