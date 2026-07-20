@@ -7,12 +7,12 @@ import pytest
 from app.similarity import BuildingSimilarityIndex
 
 
-def test_empty_index_returns_empty():
+def test_empty_index_returns_empty() -> None:
     idx = BuildingSimilarityIndex()
     assert idx.search([1.0, 2.0, 3.0]) == []
 
 
-def test_add_and_search():
+def test_add_and_search() -> None:
     idx = BuildingSimilarityIndex()
     idx.add("A", [1.0, 0.0, 0.0])
     idx.add("B", [0.0, 1.0, 0.0])
@@ -21,7 +21,7 @@ def test_add_and_search():
     assert results[0][1] > 0.9
 
 
-def test_similarity_ordering():
+def test_similarity_ordering() -> None:
     idx = BuildingSimilarityIndex()
     idx.add("close", [1.0, 1.0, 0.0])
     idx.add("far", [0.0, 0.0, 1.0])
@@ -29,14 +29,14 @@ def test_similarity_ordering():
     assert results[0][0] == "close"
 
 
-def test_len():
+def test_len() -> None:
     idx = BuildingSimilarityIndex()
     idx.add("x", [1.0])
     idx.add("y", [2.0])
     assert len(idx) == 2
 
 
-def test_k_limit():
+def test_k_limit() -> None:
     idx = BuildingSimilarityIndex()
     for i in range(10):
         idx.add(f"b{i}", [float(i), float(i + 1)])
@@ -44,7 +44,7 @@ def test_k_limit():
     assert len(results) == 3
 
 
-def test_clear_resets_index():
+def test_clear_resets_index() -> None:
     idx = BuildingSimilarityIndex()
     idx.add("x", [1.0, 2.0])
     idx.add("y", [3.0, 4.0])
@@ -53,7 +53,7 @@ def test_clear_resets_index():
     assert idx.search([1.0, 2.0]) == []
 
 
-def test_scores_between_neg1_and_1():
+def test_scores_between_neg1_and_1() -> None:
     idx = BuildingSimilarityIndex()
     idx.add("a", [1.0, 0.0])
     idx.add("b", [-1.0, 0.0])
@@ -61,41 +61,41 @@ def test_scores_between_neg1_and_1():
         assert -1.0 <= score <= 1.0
 
 
-def test_identical_vectors_score_one():
+def test_identical_vectors_score_one() -> None:
     idx = BuildingSimilarityIndex()
     idx.add("same", [3.0, 4.0])
     results = idx.search([3.0, 4.0], k=1)
     assert abs(results[0][1] - 1.0) < 1e-5
 
 
-def test_k_larger_than_index():
+def test_k_larger_than_index() -> None:
     idx = BuildingSimilarityIndex()
     idx.add("only", [1.0])
     results = idx.search([1.0], k=100)
     assert len(results) == 1
 
 
-def test_search_result_tuples_have_two_elements():
+def test_search_result_tuples_have_two_elements() -> None:
     idx = BuildingSimilarityIndex()
     idx.add("a", [1.0, 2.0])
     for item in idx.search([1.0, 2.0]):
         assert len(item) == 2
 
 
-def test_euclidean_distance_same_vector():
+def test_euclidean_distance_same_vector() -> None:
     from app.similarity import euclidean_distance
 
     assert euclidean_distance([1.0, 2.0, 3.0], [1.0, 2.0, 3.0]) == pytest.approx(0.0)
 
 
-def test_euclidean_distance_different_vectors():
+def test_euclidean_distance_different_vectors() -> None:
     from app.similarity import euclidean_distance
 
     d = euclidean_distance([0.0, 0.0], [3.0, 4.0])
     assert d == pytest.approx(5.0, rel=1e-4)
 
 
-def test_euclidean_distance_negative_values():
+def test_euclidean_distance_negative_values() -> None:
     from app.similarity import euclidean_distance
 
     d = euclidean_distance([-1.0, -1.0], [1.0, 1.0])
@@ -109,13 +109,13 @@ def test_euclidean_distance_negative_values():
         ([1.0, 0.0], [0.0, 1.0], pytest.approx(1.414, rel=1e-3)),
     ],
 )
-def test_euclidean_distance_parametrized(a, b, expected):
+def test_euclidean_distance_parametrized(a, b, expected) -> None:
     from app.similarity import euclidean_distance
 
     assert euclidean_distance(a, b) == expected
 
 
-def test_batch_add_all_successful():
+def test_batch_add_all_successful() -> None:
     from app.similarity import BuildingSimilarityIndex, batch_add
 
     idx = BuildingSimilarityIndex()
@@ -125,14 +125,14 @@ def test_batch_add_all_successful():
     assert len(idx) == 3
 
 
-def test_batch_add_empty():
+def test_batch_add_empty() -> None:
     from app.similarity import BuildingSimilarityIndex, batch_add
 
     idx = BuildingSimilarityIndex()
     assert batch_add(idx, []) == 0
 
 
-def test_score_distribution_empty_index():
+def test_score_distribution_empty_index() -> None:
     from app.similarity import BuildingSimilarityIndex, score_distribution
 
     idx = BuildingSimilarityIndex()
@@ -140,7 +140,7 @@ def test_score_distribution_empty_index():
     assert result == {"min": 0.0, "max": 0.0, "mean": 0.0, "std": 0.0}
 
 
-def test_score_distribution_single_profile():
+def test_score_distribution_single_profile() -> None:
     from app.similarity import BuildingSimilarityIndex, score_distribution
 
     idx = BuildingSimilarityIndex()
@@ -150,7 +150,7 @@ def test_score_distribution_single_profile():
     assert result["min"] == result["max"]
 
 
-def test_score_distribution_keys():
+def test_score_distribution_keys() -> None:
     from app.similarity import BuildingSimilarityIndex, score_distribution
 
     idx = BuildingSimilarityIndex()
@@ -160,7 +160,7 @@ def test_score_distribution_keys():
     assert set(result.keys()) == {"min", "max", "mean", "std"}
 
 
-def test_score_distribution_min_le_max():
+def test_score_distribution_min_le_max() -> None:
     from app.similarity import BuildingSimilarityIndex, score_distribution
 
     idx = BuildingSimilarityIndex()
@@ -171,7 +171,7 @@ def test_score_distribution_min_le_max():
 
 
 @pytest.mark.parametrize("n", [1, 5, 10, 50])
-def test_score_distribution_various_sizes(n):
+def test_score_distribution_various_sizes(n) -> None:
     import numpy as np
 
     from app.similarity import BuildingSimilarityIndex, score_distribution
@@ -185,14 +185,14 @@ def test_score_distribution_various_sizes(n):
     assert -1.0 <= result["min"] <= result["max"] <= 1.0
 
 
-def test_hourly_pattern_distance_identical():
+def test_hourly_pattern_distance_identical() -> None:
     from app.similarity import hourly_pattern_distance
 
     profile = [float(i) for i in range(24)]
     assert hourly_pattern_distance(profile, profile) == pytest.approx(0.0)
 
 
-def test_hourly_pattern_distance_offset():
+def test_hourly_pattern_distance_offset() -> None:
     from app.similarity import hourly_pattern_distance
 
     a = [0.0] * 24
@@ -200,21 +200,21 @@ def test_hourly_pattern_distance_offset():
     assert hourly_pattern_distance(a, b) == pytest.approx(1.0)
 
 
-def test_hourly_pattern_distance_empty_raises():
+def test_hourly_pattern_distance_empty_raises() -> None:
     from app.similarity import hourly_pattern_distance
 
     with pytest.raises(ValueError):
         hourly_pattern_distance([], [])
 
 
-def test_hourly_pattern_distance_mismatched_length_raises():
+def test_hourly_pattern_distance_mismatched_length_raises() -> None:
     from app.similarity import hourly_pattern_distance
 
     with pytest.raises(ValueError):
         hourly_pattern_distance([1.0] * 24, [1.0] * 12)
 
 
-def test_hourly_pattern_distance_non_negative():
+def test_hourly_pattern_distance_non_negative() -> None:
     from app.similarity import hourly_pattern_distance
 
     a = [float(i % 24) for i in range(24)]
@@ -223,7 +223,7 @@ def test_hourly_pattern_distance_non_negative():
 
 
 @pytest.mark.parametrize("offset", [0.5, 1.0, 2.0, 5.0])
-def test_hourly_pattern_distance_constant_offset(offset):
+def test_hourly_pattern_distance_constant_offset(offset) -> None:
     from app.similarity import hourly_pattern_distance
 
     a = [10.0] * 24
