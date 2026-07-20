@@ -110,3 +110,10 @@ def annual_to_monthly_estimate(annual_kwh: float, profile: list[float] | None = 
 def list_building_types() -> list[str]:
     """Return sorted list of supported building type keys."""
     return sorted(ASHRAE_EUI_BENCHMARKS.keys())
+
+__all__ = [
+    "compute_eui",
+    "benchmark_eui",
+    "annual_to_monthly_estimate",
+    "list_building_types",
+]
