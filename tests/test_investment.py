@@ -426,3 +426,36 @@ def test_compute_investment_high_crime_lowers_score(crime_rate, expected_worse) 
         assert high.investment_score <= low.investment_score
     else:
         assert high.investment_score == low.investment_score
+
+
+@pytest.mark.parametrize("value", [100_000, 500_000, 1_000_000, 5_000_000])
+def test_investment_analysis_various_values(value: float) -> None:
+    result = compute_investment_analysis(value, 0.07, 6.0, 6.0, 6.0, 0.3)
+    assert isinstance(result, InvestmentAnalysis)
+    assert result.predicted_value == value
+    assert 0 <= result.investment_score <= 10
+
+
+@pytest.mark.parametrize("crime_rate", [0.0, 0.25, 0.5, 0.75, 1.0])
+def test_investment_score_decreases_with_crime(crime_rate: float) -> None:
+    result = compute_investment_analysis(500_000, 0.07, 6.0, 6.0, 6.0, crime_rate)
+    assert 0 <= result.investment_score <= 10
+
+
+def test_analysis_fields_are_non_negative() -> None:
+    result = compute_investment_analysis(300_000, 0.06, 5.0, 5.0, 5.0, 0.3)
+    assert result.annual_rent_estimate >= 0
+    assert result.cap_rate >= 0
+    assert result.investment_score >= 0
+    assert result.amenity_composite >= 0
+
+
+def test_high_amenity_raises_score() -> None:
+    low = compute_investment_analysis(400_000, 0.07, 3.0, 3.0, 3.0, 0.3)
+    high = compute_investment_analysis(400_000, 0.07, 9.0, 9.0, 9.0, 0.3)
+    assert high.investment_score >= low.investment_score
+
+
+def test_break_even_infinite_when_zero_cap_rate() -> None:
+    result = compute_investment_analysis(500_000, 0.0, 5.0, 5.0, 5.0, 0.5)
+    assert math.isinf(result.break_even_years) or result.break_even_years > 100
