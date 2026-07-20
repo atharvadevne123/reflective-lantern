@@ -422,3 +422,28 @@ def feature_names_for_bundle(bundle: dict) -> list[str]:
         return list(model[:-1].get_feature_names_out())
     except Exception:
         return []
+
+__all__ = [
+    "TemporalFeatureExtractor",
+    "LagFeatureExtractor",
+    "RollingStatsExtractor",
+    "WeatherFeatureExtractor",
+    "OccupancyFeatureExtractor",
+    "DropNonNumeric",
+    "DataFrameWrapper",
+    "DropColumnsTransformer",
+    "RatioFeatureTransformer",
+    "PropertyAgeTransformer",
+    "AmenityCompositeTransformer",
+    "InteractionFeatureExtractor",
+    "build_feature_pipeline",
+    "extract_feature_array",
+    "make_feature_row",
+    "normalize_consumption",
+    "demand_response_potential",
+    "encode_cyclical",
+    "feature_names_for_bundle",
+    "fit",
+    "transform",
+    "get_feature_names_out",
+]
