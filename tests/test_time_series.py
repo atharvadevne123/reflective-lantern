@@ -426,3 +426,45 @@ def test_clip_outliers_various_percentiles(upper_pct) -> None:
     values = list(range(1, 101))
     clipped = clip_outliers([float(v) for v in values], upper_pct=upper_pct)
     assert max(clipped) <= upper_pct + 1
+
+
+@pytest.mark.parametrize("window", [1, 3, 5, 10])
+def test_sma_various_windows(window: int) -> None:
+    values = [float(i) for i in range(20)]
+    result = simple_moving_average(values, window=window)
+    assert len(result) == len(values)
+
+
+@pytest.mark.parametrize("period", [4, 7, 12, 24])
+def test_seasonal_baseline_various_periods(period: int) -> None:
+    data = [float(i % period) for i in range(period * 4)]
+    baseline = seasonal_baseline(data, period=period)
+    assert len(baseline) == len(data)
+    # Verify periodicity
+    assert abs(baseline[0] - baseline[period]) < 1e-9
+
+
+@pytest.mark.parametrize("horizon", [1, 5, 10, 24])
+def test_forecast_linear_trend_horizons(horizon: int) -> None:
+    history = [float(i) for i in range(10)]
+    result = forecast_linear_trend(history, horizon=horizon)
+    assert len(result) == horizon
+
+
+def test_detect_spikes_returns_indices() -> None:
+    values = [5.0] * 20 + [100.0] + [5.0] * 20
+    spikes = detect_spikes(values, threshold=3.0)
+    assert 20 in spikes
+
+
+def test_detect_spikes_no_spikes() -> None:
+    values = [10.0 + i * 0.1 for i in range(20)]
+    spikes = detect_spikes(values, threshold=10.0)
+    assert len(spikes) == 0
+
+
+@pytest.mark.parametrize("n_peaks", [3, 5, 10])
+def test_peak_hours_returns_correct_count(n_peaks: int) -> None:
+    values = [float(i) for i in range(24)]
+    peaks = peak_hours(values, n=n_peaks)
+    assert len(peaks) == min(n_peaks, 24)
