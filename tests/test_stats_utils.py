@@ -135,3 +135,52 @@ def test_percentile_various_p(p) -> None:
     values = list(range(1, 101))
     result = percentile(values, p)
     assert 1 <= result <= 100
+
+
+@pytest.mark.parametrize("actual,predicted,expected_mae", [
+    ([0.0, 0.0, 0.0], [1.0, 1.0, 1.0], 1.0),
+    ([1.0, 2.0, 3.0], [1.0, 2.0, 3.0], 0.0),
+    ([10.0], [8.0], 2.0),
+])
+def test_mae_parametrized(actual: list, predicted: list, expected_mae: float) -> None:
+    from app.stats_utils import mean_absolute_error
+    assert mean_absolute_error(actual, predicted) == pytest.approx(expected_mae, rel=1e-4)
+
+
+@pytest.mark.parametrize("actual,predicted", [
+    ([1.0, 2.0], [1.0]),
+    ([1.0], [1.0, 2.0]),
+])
+def test_mae_length_mismatch_raises(actual: list, predicted: list) -> None:
+    from app.stats_utils import mean_absolute_error
+    with pytest.raises(ValueError):
+        mean_absolute_error(actual, predicted)
+
+
+@pytest.mark.parametrize("p,expected_percentile", [
+    (0.0, 1.0),
+    (50.0, 3.0),
+    (100.0, 5.0),
+])
+def test_percentile_parametrized(p: float, expected_percentile: float) -> None:
+    from app.stats_utils import percentile
+    values = [1.0, 2.0, 3.0, 4.0, 5.0]
+    result = percentile(values, p)
+    assert result == pytest.approx(expected_percentile, abs=1.0)
+
+
+def test_coefficient_of_variation_zero_mean() -> None:
+    from app.stats_utils import coefficient_of_variation
+    assert coefficient_of_variation([0.0, 0.0, 0.0]) == 0.0
+
+
+def test_r_squared_perfect_fit() -> None:
+    from app.stats_utils import r_squared
+    values = [1.0, 2.0, 3.0, 4.0, 5.0]
+    assert r_squared(values, values) == pytest.approx(1.0)
+
+
+def test_mape_raises_on_zero_actual() -> None:
+    from app.stats_utils import mape
+    with pytest.raises(ValueError, match="zero"):
+        mape([0.0, 1.0], [0.5, 1.0])
