@@ -63,9 +63,15 @@ def exponential_smoothing_forecast(
     all *steps* horizons (all equal for simple ES).
 
     Args:
-        values: Historical observations.
-        steps: Number of steps ahead to forecast.
-        alpha: Smoothing parameter in (0, 1].
+        values: Historical observations (must be non-empty for non-empty output).
+        steps: Number of steps ahead to forecast. Returns empty list if <= 0.
+        alpha: Smoothing parameter in (0, 1]. Raises ValueError if out of range.
+
+    Returns:
+        List of *steps* floats (all equal to the final smoothed level).
+
+    Raises:
+        ValueError: If *alpha* is not in (0, 1].
     """
     if not values or steps <= 0:
         return []
