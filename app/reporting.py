@@ -273,3 +273,15 @@ def daily_average_consumption(hourly_series: list[float]) -> float:
         return 0.0
     days = max(len(hourly_series) / 24.0, 1.0)
     return round(sum(hourly_series) / days, 4)
+
+__all__ = [
+    "estimate_savings",
+    "peak_demand_report",
+    "energy_efficiency_grade",
+    "monthly_consumption_summary",
+    "seasonal_efficiency_score",
+    "consumption_trend",
+    "peak_demand_by_period",
+    "consumption_efficiency_ratio",
+    "daily_average_consumption",
+]
