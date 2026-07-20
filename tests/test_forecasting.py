@@ -109,3 +109,41 @@ def test_forecast_summary_empty() -> None:
 def test_naive_forecast_various_steps(steps) -> None:
     result = naive_forecast(15.0, steps=steps)
     assert len(result) == steps
+
+
+@pytest.mark.parametrize("alpha", [0.1, 0.3, 0.5, 0.7, 0.9, 1.0])
+def test_exponential_smoothing_valid_alphas(alpha: float) -> None:
+    result = exponential_smoothing_forecast([5.0, 10.0, 15.0], steps=3, alpha=alpha)
+    assert len(result) == 3
+    assert all(isinstance(v, float) for v in result)
+
+
+@pytest.mark.parametrize("steps", [1, 2, 5, 10])
+def test_drift_forecast_various_steps(steps: int) -> None:
+    values = [float(i) for i in range(1, 8)]
+    result = drift_forecast(values, steps=steps)
+    assert len(result) == steps
+
+
+@pytest.mark.parametrize("period", [4, 7, 12, 24])
+def test_seasonal_naive_various_periods(period: int) -> None:
+    values = [float(i % period) for i in range(period * 3)]
+    result = seasonal_naive_forecast(values, steps=period, period=period)
+    assert len(result) == period
+
+
+def test_naive_forecast_value_preserved() -> None:
+    result = naive_forecast(42.0, steps=1)
+    assert result[0] == pytest.approx(42.0)
+
+
+def test_drift_forecast_zero_steps() -> None:
+    assert drift_forecast([1.0, 2.0, 3.0], steps=0) == []
+
+
+def test_forecast_summary_single_value() -> None:
+    s = forecast_summary([7.5])
+    assert s["mean"] == pytest.approx(7.5)
+    assert s["min"] == 7.5
+    assert s["max"] == 7.5
+    assert s["steps"] == 1
