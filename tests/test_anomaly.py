@@ -446,11 +446,11 @@ def test_batch_compute_severity_empty() -> None:
     assert result == []
 
 
-def test_anomaly_rate_all_true() -> None:
-    flags = [True] * 10
-    assert anomaly_rate(flags) == pytest.approx(1.0)
+def test_anomaly_rate_all_critical() -> None:
+    severities = [{"severity": "critical", "z_flagged": True, "iqr_flagged": True} for _ in range(10)]
+    assert anomaly_rate(severities) == pytest.approx(1.0)
 
 
-def test_anomaly_rate_all_false() -> None:
-    flags = [False] * 10
-    assert anomaly_rate(flags) == pytest.approx(0.0)
+def test_anomaly_rate_all_none() -> None:
+    severities = [{"severity": "none", "z_flagged": False, "iqr_flagged": False} for _ in range(10)]
+    assert anomaly_rate(severities) == pytest.approx(0.0)

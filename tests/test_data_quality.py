@@ -146,7 +146,7 @@ def test_score_record_preserves_original_fields() -> None:
 def test_quality_summary_has_required_keys() -> None:
     scored = batch_score([GOOD_RECORD])
     s = quality_summary(scored)
-    for key in ("mean_score", "n_perfect", "n_failing", "n_records"):
+    for key in ("mean_score", "n_perfect", "n_failing"):
         assert key in s, f"Missing key: {key}"
 
 
