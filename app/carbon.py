@@ -130,3 +130,14 @@ def carbon_savings(
         "saved_co2_tonnes": co2_kg_to_tonnes(saved_co2_kg),
         "trees_saved": trees_equivalent(saved_co2_kg),
     }
+
+__all__ = [
+    "GRID_CARBON_INTENSITY",
+    "KG_TO_TONNES",
+    "TREES_PER_TONNE_CO2_PER_YEAR",
+    "kwh_to_co2_kg",
+    "co2_kg_to_tonnes",
+    "trees_equivalent",
+    "annual_carbon_report",
+    "carbon_savings",
+]
