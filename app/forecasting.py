@@ -88,3 +88,11 @@ def forecast_summary(forecasts: list[float]) -> dict[str, Any]:
         "total": round(sum(forecasts), 4),
         "steps": len(forecasts),
     }
+
+__all__ = [
+    "naive_forecast",
+    "drift_forecast",
+    "seasonal_naive_forecast",
+    "exponential_smoothing_forecast",
+    "forecast_summary",
+]
