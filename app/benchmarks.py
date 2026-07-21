@@ -167,6 +167,7 @@ __all__ = [
     "benchmark_eui",
     "compare_buildings",
     "compute_eui",
+    "efficiency_gap",
     "energy_intensity_ratio",
     "list_building_types",
     "site_eui",
@@ -191,3 +192,25 @@ def energy_intensity_ratio(
     if reference_eui == 0.0:
         return 0.0
     return round(actual_eui / reference_eui, 4)
+
+
+def efficiency_gap(
+    actual_kwh: float,
+    target_kwh: float,
+) -> float:
+    """Compute the efficiency gap as the percentage reduction needed to hit target.
+
+    A positive result means actual exceeds target (needs improvement);
+    negative means actual is already below target (exceeds goal).
+
+    Args:
+        actual_kwh: Measured energy consumption in kWh.
+        target_kwh: Target energy consumption in kWh.
+
+    Returns:
+        Gap as a percentage of target, rounded to 4 decimal places.
+        Returns 0.0 if target_kwh is zero.
+    """
+    if target_kwh == 0.0:
+        return 0.0
+    return round((actual_kwh - target_kwh) / target_kwh * 100.0, 4)
