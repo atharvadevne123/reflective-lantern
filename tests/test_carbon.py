@@ -208,3 +208,31 @@ def test_daily_carbon_estimate_regions(region: str, expected_gt: float) -> None:
     from app.carbon import daily_carbon_estimate
     result = daily_carbon_estimate([10.0] * 8, region=region)
     assert result["total_co2_kg"] > expected_gt
+
+
+def test_carbon_intensity_by_hour_basic() -> None:
+    from app.carbon import carbon_intensity_by_hour
+    result = carbon_intensity_by_hour([10.0, 20.0, 30.0])
+    assert len(result) == 3
+    assert result[0] < result[1] < result[2]
+
+
+def test_carbon_intensity_by_hour_empty() -> None:
+    from app.carbon import carbon_intensity_by_hour
+    assert carbon_intensity_by_hour([]) == []
+
+
+def test_carbon_intensity_by_hour_sums_to_daily() -> None:
+    from app.carbon import carbon_intensity_by_hour, kwh_to_co2_kg
+    hourly = [5.0] * 24
+    result = carbon_intensity_by_hour(hourly)
+    total = sum(result)
+    expected = kwh_to_co2_kg(120.0)
+    assert abs(total - expected) < 0.01
+
+
+def test_carbon_intensity_by_hour_region() -> None:
+    from app.carbon import carbon_intensity_by_hour
+    default_result = carbon_intensity_by_hour([10.0])
+    pacific_result = carbon_intensity_by_hour([10.0], region="pacific_nw")
+    assert pacific_result[0] < default_result[0]
