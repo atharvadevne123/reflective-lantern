@@ -6,7 +6,9 @@ import pytest
 
 from app.forecasting import (
     drift_forecast,
+    ensemble_forecast,
     exponential_smoothing_forecast,
+    forecast_bias,
     forecast_summary,
     naive_forecast,
     seasonal_naive_forecast,
@@ -186,3 +188,50 @@ def test_seasonal_naive_forecast_period_larger_than_history() -> None:
     values = [1.0, 2.0, 3.0]
     result = seasonal_naive_forecast(values, steps=5, period=24)
     assert len(result) == 5
+
+
+def test_ensemble_forecast_length() -> None:
+    result = ensemble_forecast(HISTORY, steps=5)
+    assert len(result) == 5
+
+
+def test_ensemble_forecast_empty_values() -> None:
+    assert ensemble_forecast([], steps=5) == []
+
+
+def test_ensemble_forecast_zero_steps() -> None:
+    assert ensemble_forecast(HISTORY, steps=0) == []
+
+
+def test_ensemble_forecast_values_in_range() -> None:
+    result = ensemble_forecast([10.0] * 30, steps=5)
+    assert all(8.0 <= v <= 12.0 for v in result)
+
+
+def test_forecast_bias_positive() -> None:
+    actual = [10.0, 10.0, 10.0]
+    predicted = [12.0, 12.0, 12.0]
+    assert forecast_bias(actual, predicted) == pytest.approx(2.0)
+
+
+def test_forecast_bias_negative() -> None:
+    actual = [10.0, 10.0]
+    predicted = [8.0, 8.0]
+    assert forecast_bias(actual, predicted) == pytest.approx(-2.0)
+
+
+def test_forecast_bias_zero() -> None:
+    actual = [5.0, 7.0]
+    predicted = [7.0, 5.0]
+    assert forecast_bias(actual, predicted) == pytest.approx(0.0)
+
+
+def test_forecast_bias_empty_raises() -> None:
+    with pytest.raises(ValueError):
+        forecast_bias([], [1.0])
+
+
+@pytest.mark.parametrize("w", [(0.5, 0.3, 0.2), (1.0, 0.0, 0.0), (0.0, 1.0, 0.0)])
+def test_ensemble_forecast_custom_weights(w) -> None:
+    result = ensemble_forecast(HISTORY, steps=3, weights=w)
+    assert len(result) == 3
