@@ -238,8 +238,10 @@ def portfolio_weighted_score(
 __all__ = [
     "InvestmentAnalysis",
     "compute_investment_analysis",
+    "discounted_cash_flow",
     "investment_score_label",
     "mortgage_payment",
+    "payback_period",
     "portfolio_weighted_score",
     "price_to_income_ratio",
     "roi_percentage",
@@ -277,3 +279,36 @@ def discounted_cash_flow(
     if terminal_value:
         npv += terminal_value / (1 + discount_rate) ** n
     return round(npv, 2)
+
+
+def payback_period(
+    initial_investment: float,
+    annual_cash_flows: list[float],
+) -> float:
+    """Compute the simple payback period in years for an investment.
+
+    Returns the (possibly fractional) year at which cumulative cash flows
+    recover the initial investment. Returns float('inf') if the investment
+    is never recovered within the provided cash flow horizon.
+
+    Args:
+        initial_investment: Upfront cost (positive number).
+        annual_cash_flows: Net cash flows per year (can include negative years).
+
+    Returns:
+        Payback period in years; float('inf') if never recovered.
+
+    Raises:
+        ValueError: If *initial_investment* is negative.
+    """
+    if initial_investment < 0:
+        raise ValueError(f"initial_investment must be non-negative, got {initial_investment}")
+    cumulative = 0.0
+    for year, cf in enumerate(annual_cash_flows, start=1):
+        prev = cumulative
+        cumulative += cf
+        if cumulative >= initial_investment:
+            remaining = initial_investment - prev
+            fraction = remaining / cf if cf != 0 else 0.0
+            return round(year - 1 + fraction, 4)
+    return float("inf")
