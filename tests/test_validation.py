@@ -11,6 +11,7 @@ from app.validation import (
     is_weekend,
     validate_coordinate,
     validate_load_series,
+    validate_price,
     validate_reading_dict,
     validate_temporal_fields,
     validate_weather_fields,
@@ -604,3 +605,28 @@ class TestValidateCoordinate:
     ])
     def test_valid_coords_parametrized(self, lat: float, lon: float) -> None:
         assert validate_coordinate(lat, lon) == []
+
+
+class TestValidatePrice:
+    def test_valid_price(self) -> None:
+        assert validate_price(250000.0) == []
+
+    def test_zero_price_valid(self) -> None:
+        assert validate_price(0.0) == []
+
+    def test_negative_price_invalid(self) -> None:
+        errors = validate_price(-1.0)
+        assert any("non-negative" in e for e in errors)
+
+    def test_inf_price_invalid(self) -> None:
+        errors = validate_price(float("inf"))
+        assert len(errors) > 0
+
+    def test_nan_price_invalid(self) -> None:
+        import math
+        errors = validate_price(math.nan)
+        assert len(errors) > 0
+
+    @pytest.mark.parametrize("price", [0.0, 1.0, 100000.0, 999999999.0])
+    def test_valid_prices_parametrized(self, price: float) -> None:
+        assert validate_price(price) == []
