@@ -169,3 +169,42 @@ def test_trees_equivalent_large_value() -> None:
     result = trees_equivalent(1_000_000.0)
     assert result > 0
     assert isinstance(result, float)
+
+
+def test_daily_carbon_estimate_basic() -> None:
+    from app.carbon import daily_carbon_estimate
+    hourly = [10.0] * 24
+    result = daily_carbon_estimate(hourly)
+    assert result["total_kwh"] == pytest.approx(240.0)
+    assert result["total_co2_kg"] > 0
+    assert "trees_equivalent" in result
+
+
+def test_daily_carbon_estimate_partial_day() -> None:
+    from app.carbon import daily_carbon_estimate
+    result = daily_carbon_estimate([5.0] * 12)
+    assert result["total_kwh"] == pytest.approx(60.0)
+
+
+def test_daily_carbon_estimate_empty() -> None:
+    from app.carbon import daily_carbon_estimate
+    result = daily_carbon_estimate([])
+    assert result["total_kwh"] == 0.0
+    assert result["total_co2_kg"] == 0.0
+
+
+def test_daily_carbon_estimate_too_many_hours_raises() -> None:
+    from app.carbon import daily_carbon_estimate
+    with pytest.raises(ValueError, match="24"):
+        daily_carbon_estimate([1.0] * 25)
+
+
+@pytest.mark.parametrize("region,expected_gt", [
+    ("pacific_nw", 0.0),
+    ("midwest", 0.0),
+    ("default", 0.0),
+])
+def test_daily_carbon_estimate_regions(region: str, expected_gt: float) -> None:
+    from app.carbon import daily_carbon_estimate
+    result = daily_carbon_estimate([10.0] * 8, region=region)
+    assert result["total_co2_kg"] > expected_gt
