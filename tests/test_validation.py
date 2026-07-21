@@ -9,6 +9,7 @@ import pytest
 from app.validation import (
     extract_temporal_from_datetime,
     is_weekend,
+    validate_coordinate,
     validate_load_series,
     validate_reading_dict,
     validate_temporal_fields,
@@ -570,3 +571,36 @@ class TestValidateReadingDict:
     def test_out_of_range_temporal_fails(self, field: str, value: int) -> None:
         result = validate_reading_dict({**self.VALID_READING, field: value})
         assert result["valid"] is False
+
+
+class TestValidateCoordinate:
+    def test_valid_coord(self) -> None:
+        assert validate_coordinate(37.7749, -122.4194) == []
+
+    def test_invalid_lat_too_high(self) -> None:
+        errors = validate_coordinate(91.0, 0.0)
+        assert any("latitude" in e for e in errors)
+
+    def test_invalid_lat_too_low(self) -> None:
+        errors = validate_coordinate(-91.0, 0.0)
+        assert any("latitude" in e for e in errors)
+
+    def test_invalid_lon_too_high(self) -> None:
+        errors = validate_coordinate(0.0, 181.0)
+        assert any("longitude" in e for e in errors)
+
+    def test_invalid_lon_too_low(self) -> None:
+        errors = validate_coordinate(0.0, -181.0)
+        assert any("longitude" in e for e in errors)
+
+    def test_boundary_values_valid(self) -> None:
+        assert validate_coordinate(90.0, 180.0) == []
+        assert validate_coordinate(-90.0, -180.0) == []
+
+    @pytest.mark.parametrize("lat,lon", [
+        (0.0, 0.0),
+        (51.5074, -0.1278),
+        (-33.8688, 151.2093),
+    ])
+    def test_valid_coords_parametrized(self, lat: float, lon: float) -> None:
+        assert validate_coordinate(lat, lon) == []
