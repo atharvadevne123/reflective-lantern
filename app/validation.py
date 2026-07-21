@@ -240,6 +240,43 @@ def clamp_consumption(value: float) -> float:
     """
     return max(MIN_CONSUMPTION_KWH, min(value, MAX_CONSUMPTION_KWH))
 
+def validate_reading_dict(reading: dict[str, object]) -> dict[str, object]:
+    """Run all validators against a single energy reading dict.
+
+    Combines temporal, weather, and consumption validation into one call.
+
+    Args:
+        reading: Dict with energy-reading fields (hour, day_of_week, month,
+            temperature_c, humidity_pct, consumption_kwh).
+
+    Returns:
+        Dict with ``valid`` (bool), ``errors`` (list[str]), and ``warnings`` (list[str]).
+    """
+    errors: list[str] = []
+
+    hour = reading.get("hour", 0)
+    dow = reading.get("day_of_week", 0)
+    month = reading.get("month", 1)
+    errors.extend(validate_temporal_fields(int(hour), int(dow), int(month)))
+
+    temp = reading.get("temperature_c")
+    hum = reading.get("humidity_pct")
+    if temp is not None and hum is not None:
+        errors.extend(validate_weather_fields(float(temp), float(hum)))
+
+    kwh = reading.get("consumption_kwh")
+    if kwh is not None:
+        errors.extend(validate_consumption_kwh(float(kwh)))
+    else:
+        errors.append("consumption_kwh is required")
+
+    building_id = reading.get("building_id")
+    if building_id is not None:
+        errors.extend(validate_building_id(str(building_id)))
+
+    return {"valid": len(errors) == 0, "errors": errors, "warnings": []}
+
+
 __all__ = [
     "batch_validate_readings",
     "clamp_consumption",
@@ -252,6 +289,7 @@ __all__ = [
     "validate_feature_vector",
     "validate_forecast_horizon",
     "validate_load_series",
+    "validate_reading_dict",
     "validate_temporal_fields",
     "validate_weather_fields",
 ]
