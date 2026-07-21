@@ -147,3 +147,42 @@ def test_forecast_summary_single_value() -> None:
     assert s["min"] == 7.5
     assert s["max"] == 7.5
     assert s["steps"] == 1
+
+
+@pytest.mark.parametrize("last,steps", [(0.0, 1), (100.0, 5), (0.001, 10)])
+def test_naive_forecast_boundary_values(last: float, steps: int) -> None:
+    result = naive_forecast(last, steps=steps)
+    assert len(result) == steps
+    assert all(v == pytest.approx(last) for v in result)
+
+
+def test_drift_forecast_declining_history() -> None:
+    values = [10.0, 8.0, 6.0, 4.0, 2.0]
+    result = drift_forecast(values, steps=3)
+    assert result[0] < values[-1]
+    assert result[1] < result[0]
+
+
+def test_drift_forecast_flat_history() -> None:
+    values = [5.0, 5.0, 5.0, 5.0]
+    result = drift_forecast(values, steps=4)
+    assert all(v == pytest.approx(5.0) for v in result)
+
+
+@pytest.mark.parametrize("alpha", [0.01, 1.0])
+def test_exponential_smoothing_boundary_alphas(alpha: float) -> None:
+    result = exponential_smoothing_forecast([1.0, 2.0, 3.0], steps=2, alpha=alpha)
+    assert len(result) == 2
+    assert all(v > 0 for v in result)
+
+
+def test_forecast_summary_total_matches_sum() -> None:
+    forecasts = [2.5, 3.5, 4.0]
+    s = forecast_summary(forecasts)
+    assert s["total"] == pytest.approx(sum(forecasts), rel=1e-4)
+
+
+def test_seasonal_naive_forecast_period_larger_than_history() -> None:
+    values = [1.0, 2.0, 3.0]
+    result = seasonal_naive_forecast(values, steps=5, period=24)
+    assert len(result) == 5
