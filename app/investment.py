@@ -240,6 +240,7 @@ __all__ = [
     "compute_investment_analysis",
     "discounted_cash_flow",
     "investment_score_label",
+    "margin_of_safety",
     "mortgage_payment",
     "payback_period",
     "portfolio_weighted_score",
@@ -312,3 +313,25 @@ def payback_period(
             fraction = remaining / cf if cf != 0 else 0.0
             return round(year - 1 + fraction, 4)
     return float("inf")
+
+
+def margin_of_safety(
+    intrinsic_value: float,
+    market_price: float,
+) -> float:
+    """Compute the margin of safety as a percentage.
+
+    Margin of safety = (intrinsic_value - market_price) / intrinsic_value * 100.
+    A positive value indicates the asset is undervalued relative to intrinsic value.
+
+    Args:
+        intrinsic_value: Estimated intrinsic (fair) value of the property.
+        market_price: Current market asking price.
+
+    Returns:
+        Margin of safety in percent, rounded to 4 decimal places.
+        Returns 0.0 if intrinsic_value is zero.
+    """
+    if intrinsic_value == 0.0:
+        return 0.0
+    return round((intrinsic_value - market_price) / intrinsic_value * 100.0, 4)
