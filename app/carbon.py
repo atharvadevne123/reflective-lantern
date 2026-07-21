@@ -170,9 +170,26 @@ __all__ = [
     "KG_TO_TONNES",
     "TREES_PER_TONNE_CO2_PER_YEAR",
     "annual_carbon_report",
+    "carbon_intensity_by_hour",
     "carbon_savings",
     "co2_kg_to_tonnes",
     "daily_carbon_estimate",
     "kwh_to_co2_kg",
     "trees_equivalent",
 ]
+
+
+def carbon_intensity_by_hour(
+    hourly_kwh: list[float],
+    region: str = "default",
+) -> list[float]:
+    """Return per-hour CO2 emissions (kg) from a list of hourly energy readings.
+
+    Args:
+        hourly_kwh: List of hourly energy consumption values in kWh.
+        region: Grid region identifier.
+
+    Returns:
+        List of CO2 emissions in kg for each hour, same length as *hourly_kwh*.
+    """
+    return [kwh_to_co2_kg(kwh, region) for kwh in hourly_kwh]
