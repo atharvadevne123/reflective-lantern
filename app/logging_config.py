@@ -115,11 +115,11 @@ def is_debug_enabled() -> bool:
 __all__ = [
     "JsonFormatter",
     "TraceIdFilter",
-    "configure_logging",
     "add_trace_id_filter",
-    "log_level_int",
+    "configure_logging",
+    "filter",
+    "format",
     "get_configured_log_level",
     "is_debug_enabled",
-    "format",
-    "filter",
+    "log_level_int",
 ]

@@ -130,8 +130,8 @@ def warm_cache(cache: TTLCache, entries: dict[str, object]) -> int:
 
 
 __all__ = [
-    "logger",
     "TTLCache",
+    "logger",
     "prediction_cache",
     "warm_cache",
 ]

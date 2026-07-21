@@ -24,7 +24,7 @@ def linear_trend(values: list[float]) -> TrendResult:
     xs = list(range(n))
     mean_x = sum(xs) / n
     mean_y = sum(values) / n
-    ss_xy = sum((x - mean_x) * (y - mean_y) for x, y in zip(xs, values))
+    ss_xy = sum((x - mean_x) * (y - mean_y) for x, y in zip(xs, values, strict=False))
     ss_xx = sum((x - mean_x) ** 2 for x in xs)
     slope = ss_xy / ss_xx if ss_xx != 0 else 0.0
     intercept = mean_y - slope * mean_x
@@ -32,7 +32,7 @@ def linear_trend(values: list[float]) -> TrendResult:
     if ss_tot == 0:
         r_sq = 1.0
     else:
-        residuals = [y - (slope * x + intercept) for x, y in zip(xs, values)]
+        residuals = [y - (slope * x + intercept) for x, y in zip(xs, values, strict=False)]
         ss_res = sum(r ** 2 for r in residuals)
         r_sq = 1 - ss_res / ss_tot
     if slope > 0.01:
@@ -92,14 +92,14 @@ def seasonal_decompose_naive(
     if len(values) < period * 2:
         return {"trend": list(values), "seasonal": [0.0] * len(values), "residual": [0.0] * len(values)}
     trend = rolling_mean(values, period)
-    detrended = [v - t for v, t in zip(values, trend)]
+    detrended = [v - t for v, t in zip(values, trend, strict=False)]
     seasonal: list[float] = [0.0] * len(values)
     for s in range(period):
         idxs = list(range(s, len(values), period))
         avg = sum(detrended[i] for i in idxs) / len(idxs)
         for i in idxs:
             seasonal[i] = avg
-    residual = [v - t - s for v, t, s in zip(values, trend, seasonal)]
+    residual = [v - t - s for v, t, s in zip(values, trend, seasonal, strict=False)]
     return {
         "trend": [round(x, 4) for x in trend],
         "seasonal": [round(x, 4) for x in seasonal],
@@ -108,9 +108,9 @@ def seasonal_decompose_naive(
 
 __all__ = [
     "TrendResult",
+    "detect_change_points",
     "linear_trend",
     "percentage_change",
     "rolling_mean",
-    "detect_change_points",
     "seasonal_decompose_naive",
 ]

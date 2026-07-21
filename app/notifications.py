@@ -105,8 +105,8 @@ def make_drift_alert(ks_stat: float, p_value: float) -> Alert:
 
 __all__ = [
     "Alert",
-    "severity_rank",
     "AlertQueue",
     "make_anomaly_alert",
     "make_drift_alert",
+    "severity_rank",
 ]

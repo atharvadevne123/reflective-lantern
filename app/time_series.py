@@ -259,8 +259,8 @@ def clip_outliers(values: list[float], lower_pct: float = 5.0, upper_pct: float 
 
     Args:
         values: Input readings.
-        lower_pct: Lower bound percentile (0–100).
-        upper_pct: Upper bound percentile (0–100).
+        lower_pct: Lower bound percentile (0-100).
+        upper_pct: Upper bound percentile (0-100).
 
     Returns:
         Series with values clipped to the [lower_pct, upper_pct] range.
@@ -281,18 +281,18 @@ def clip_outliers(values: list[float], lower_pct: float = 5.0, upper_pct: float 
 
 
 __all__ = [
-    "logger",
-    "simple_moving_average",
-    "seasonal_baseline",
-    "forecast_linear_trend",
-    "detect_spikes",
-    "peak_hours",
-    "cumulative_consumption",
-    "exponential_moving_average",
-    "resample_hourly_to_daily",
-    "forecast_trend_with_seasonality",
-    "moving_range",
-    "consumption_variance",
-    "detect_plateau",
     "clip_outliers",
+    "consumption_variance",
+    "cumulative_consumption",
+    "detect_plateau",
+    "detect_spikes",
+    "exponential_moving_average",
+    "forecast_linear_trend",
+    "forecast_trend_with_seasonality",
+    "logger",
+    "moving_range",
+    "peak_hours",
+    "resample_hourly_to_daily",
+    "seasonal_baseline",
+    "simple_moving_average",
 ]

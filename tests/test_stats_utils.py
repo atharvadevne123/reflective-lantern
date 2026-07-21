@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import pytest
 
+from app.stats_utils import geometric_mean, harmonic_mean, weighted_average
+
 
 def test_mae_perfect() -> None:
     from app.stats_utils import mean_absolute_error
@@ -184,9 +186,6 @@ def test_mape_raises_on_zero_actual() -> None:
     from app.stats_utils import mape
     with pytest.raises(ValueError, match="zero"):
         mape([0.0, 1.0], [0.5, 1.0])
-
-
-from app.stats_utils import geometric_mean, harmonic_mean, weighted_average
 
 
 def test_geometric_mean_basic() -> None:

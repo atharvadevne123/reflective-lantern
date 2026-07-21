@@ -85,11 +85,11 @@ def get_peak_load(region_id: str) -> float | None:
     return float(peak) if peak is not None else None
 
 __all__ = [
-    "get_region",
-    "list_regions",
-    "validate_region",
     "get_all_region_ids",
+    "get_peak_load",
+    "get_region",
     "get_region_timezone",
     "get_regions_by_timezone",
-    "get_peak_load",
+    "list_regions",
+    "validate_region",
 ]

@@ -82,11 +82,11 @@ def bundle_pipeline_info(bundle: dict[str, Any]) -> dict[str, Any]:
     return describe_pipeline(model)
 
 __all__ = [
+    "bundle_pipeline_info",
+    "clone_params",
+    "describe_pipeline",
+    "get_step",
     "get_step_names",
     "has_step",
-    "get_step",
     "pipeline_param_count",
-    "describe_pipeline",
-    "clone_params",
-    "bundle_pipeline_info",
 ]

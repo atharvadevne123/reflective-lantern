@@ -329,15 +329,15 @@ def market_summary(
     }
 
 __all__ = [
-    "price_per_sqft",
-    "dom_classification",
-    "affordability_index",
-    "price_to_rent_ratio",
     "affordability_bucket",
-    "rent_vs_buy_comparison",
-    "price_trend_indicator",
+    "affordability_index",
     "affordability_ratio",
+    "dom_classification",
     "housing_affordability_index",
-    "price_trend_consistency",
     "market_summary",
+    "price_per_sqft",
+    "price_to_rent_ratio",
+    "price_trend_consistency",
+    "price_trend_indicator",
+    "rent_vs_buy_comparison",
 ]

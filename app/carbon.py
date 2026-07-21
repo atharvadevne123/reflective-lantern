@@ -49,7 +49,7 @@ def kwh_to_co2_kg(kwh: float, region: str = "default") -> float:
         raise ValueError(f"kwh must be non-negative, got {kwh}")
     intensity = _grid_intensity(region.lower())
     result = kwh * intensity
-    logger.debug("CO2 estimate: %.3f kWh × %.4f kg/kWh = %.4f kg CO2e", kwh, intensity, result)
+    logger.debug("CO2 estimate: %.3f kWh x %.4f kg/kWh = %.4f kg CO2e", kwh, intensity, result)
     return round(result, 4)
 
 
@@ -142,9 +142,9 @@ __all__ = [
     "GRID_CARBON_INTENSITY",
     "KG_TO_TONNES",
     "TREES_PER_TONNE_CO2_PER_YEAR",
-    "kwh_to_co2_kg",
-    "co2_kg_to_tonnes",
-    "trees_equivalent",
     "annual_carbon_report",
     "carbon_savings",
+    "co2_kg_to_tonnes",
+    "kwh_to_co2_kg",
+    "trees_equivalent",
 ]

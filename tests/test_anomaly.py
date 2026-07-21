@@ -10,6 +10,7 @@ from app.anomaly import (
     batch_compute_severity,
     compute_severity,
     consecutive_anomaly_runs,
+    ewma_smooth,
     flag_anomaly_rate,
     iqr_flag,
     zscore_flag,
@@ -484,8 +485,6 @@ def test_compute_severity_warning_zone() -> None:
     result = compute_severity(10.5, ref, z_threshold=3.0)
     assert "severity" in result
 
-
-from app.anomaly import ewma_smooth
 
 
 def test_ewma_smooth_length() -> None:

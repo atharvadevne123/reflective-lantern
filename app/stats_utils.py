@@ -23,7 +23,7 @@ def mean_absolute_error(actual: list[float], predicted: list[float]) -> float:
         raise ValueError("Input lists must not be empty")
     if len(actual) != len(predicted):
         raise ValueError(f"Lists must have the same length, got {len(actual)} vs {len(predicted)}")
-    return round(sum(abs(a - p) for a, p in zip(actual, predicted)) / len(actual), 6)
+    return round(sum(abs(a - p) for a, p in zip(actual, predicted, strict=False)) / len(actual), 6)
 
 
 def root_mean_squared_error(actual: list[float], predicted: list[float]) -> float:
@@ -43,7 +43,7 @@ def root_mean_squared_error(actual: list[float], predicted: list[float]) -> floa
         raise ValueError("Input lists must not be empty")
     if len(actual) != len(predicted):
         raise ValueError(f"Lists must have the same length, got {len(actual)} vs {len(predicted)}")
-    mse = sum((a - p) ** 2 for a, p in zip(actual, predicted)) / len(actual)
+    mse = sum((a - p) ** 2 for a, p in zip(actual, predicted, strict=False)) / len(actual)
     return round(math.sqrt(mse), 6)
 
 
@@ -66,7 +66,7 @@ def r_squared(actual: list[float], predicted: list[float]) -> float:
         raise ValueError(f"Lists must have the same length, got {len(actual)} vs {len(predicted)}")
     mean_actual = statistics.mean(actual)
     ss_tot = sum((a - mean_actual) ** 2 for a in actual)
-    ss_res = sum((a - p) ** 2 for a, p in zip(actual, predicted))
+    ss_res = sum((a - p) ** 2 for a, p in zip(actual, predicted, strict=False))
     if ss_tot < 1e-12:
         return 1.0 if ss_res < 1e-12 else 0.0
     return round(1.0 - ss_res / ss_tot, 6)
@@ -91,7 +91,7 @@ def mape(actual: list[float], predicted: list[float]) -> float:
         raise ValueError(f"Lists must have the same length, got {len(actual)} vs {len(predicted)}")
     if any(a == 0 for a in actual):
         raise ValueError("MAPE is undefined when any actual value is zero")
-    return round(100.0 * sum(abs(a - p) / abs(a) for a, p in zip(actual, predicted)) / len(actual), 4)
+    return round(100.0 * sum(abs(a - p) / abs(a) for a, p in zip(actual, predicted, strict=False)) / len(actual), 4)
 
 
 def coefficient_of_variation(values: list[float]) -> float:
@@ -138,14 +138,14 @@ def percentile(values: list[float], p: float) -> float:
     return round(sorted_vals[lo] * (1 - frac) + sorted_vals[hi] * frac, 6)
 
 __all__ = [
-    "mean_absolute_error",
-    "root_mean_squared_error",
-    "r_squared",
-    "mape",
     "coefficient_of_variation",
-    "percentile",
     "geometric_mean",
     "harmonic_mean",
+    "mape",
+    "mean_absolute_error",
+    "percentile",
+    "r_squared",
+    "root_mean_squared_error",
     "weighted_average",
 ]
 
@@ -211,4 +211,4 @@ def weighted_average(values: list[float], weights: list[float]) -> float:
     total_weight = sum(weights)
     if total_weight <= 0:
         raise ValueError("weights must sum to a positive value")
-    return round(sum(v * w for v, w in zip(values, weights)) / total_weight, 6)
+    return round(sum(v * w for v, w in zip(values, weights, strict=False)) / total_weight, 6)

@@ -57,8 +57,8 @@ class CorrelationIDMiddleware(BaseHTTPMiddleware):
 
 
 __all__ = [
-    "settings",
-    "reset_rate_limiter",
-    "RateLimitMiddleware",
     "CorrelationIDMiddleware",
+    "RateLimitMiddleware",
+    "reset_rate_limiter",
+    "settings",
 ]

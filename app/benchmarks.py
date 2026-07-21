@@ -112,8 +112,8 @@ def list_building_types() -> list[str]:
     return sorted(ASHRAE_EUI_BENCHMARKS.keys())
 
 __all__ = [
-    "compute_eui",
-    "benchmark_eui",
     "annual_to_monthly_estimate",
+    "benchmark_eui",
+    "compute_eui",
     "list_building_types",
 ]

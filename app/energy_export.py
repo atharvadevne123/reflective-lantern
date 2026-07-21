@@ -61,7 +61,7 @@ def filter_records(
 
 
 def aggregate_by_hour(records: list[dict[str, Any]]) -> list[dict[str, Any]]:
-    """Return mean consumption_kwh grouped by hour (0–23).
+    """Return mean consumption_kwh grouped by hour (0-23).
 
     Records without ``hour`` or ``consumption_kwh`` are skipped.
     """
@@ -91,9 +91,9 @@ def summarize_export(records: list[dict[str, Any]]) -> dict[str, Any]:
     }
 
 __all__ = [
+    "aggregate_by_hour",
+    "filter_records",
     "records_to_csv",
     "records_to_json",
-    "filter_records",
-    "aggregate_by_hour",
     "summarize_export",
 ]

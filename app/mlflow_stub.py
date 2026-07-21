@@ -140,11 +140,11 @@ def list_runs() -> list[dict[str, object]]:
     return runs
 
 __all__ = [
-    "log_metrics",
-    "log_training_run",
     "get_best_run",
-    "set_tracking_uri",
-    "log_params",
-    "log_artifact",
     "list_runs",
+    "log_artifact",
+    "log_metrics",
+    "log_params",
+    "log_training_run",
+    "set_tracking_uri",
 ]

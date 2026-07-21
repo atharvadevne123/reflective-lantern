@@ -2,12 +2,12 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 
 def utc_now() -> datetime:
     """Return the current UTC datetime (timezone-aware)."""
-    return datetime.now(tz=timezone.utc)
+    return datetime.now(tz=UTC)
 
 
 def round_to_hour(dt: datetime) -> datetime:
@@ -96,11 +96,11 @@ def week_of_year(dt: datetime) -> int:
     return dt.isocalendar()[1]
 
 __all__ = [
-    "utc_now",
-    "round_to_hour",
-    "hours_between",
-    "iso_to_datetime",
     "generate_hourly_timestamps",
+    "hours_between",
     "is_business_hour",
+    "iso_to_datetime",
+    "round_to_hour",
+    "utc_now",
     "week_of_year",
 ]

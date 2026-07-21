@@ -137,7 +137,7 @@ def ensemble_forecast(
 
 
 def forecast_bias(actual: list[float], predicted: list[float]) -> float:
-    """Compute mean forecast bias (predicted − actual), indicating over/under-prediction.
+    """Compute mean forecast bias (predicted - actual), indicating over/under-prediction.
 
     Args:
         actual: Ground-truth observations.
@@ -153,15 +153,15 @@ def forecast_bias(actual: list[float], predicted: list[float]) -> float:
         raise ValueError("actual and predicted must not be empty")
     if len(actual) != len(predicted):
         raise ValueError(f"Length mismatch: {len(actual)} vs {len(predicted)}")
-    return round(sum(p - a for p, a in zip(predicted, actual)) / len(actual), 6)
+    return round(sum(p - a for p, a in zip(predicted, actual, strict=False)) / len(actual), 6)
 
 
 __all__ = [
-    "naive_forecast",
     "drift_forecast",
-    "seasonal_naive_forecast",
-    "exponential_smoothing_forecast",
-    "forecast_summary",
     "ensemble_forecast",
+    "exponential_smoothing_forecast",
     "forecast_bias",
+    "forecast_summary",
+    "naive_forecast",
+    "seasonal_naive_forecast",
 ]

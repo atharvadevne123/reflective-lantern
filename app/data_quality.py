@@ -10,7 +10,7 @@ _VALID_DOW_RANGE = (0, 6)
 
 
 def score_record(record: dict[str, Any]) -> dict[str, Any]:
-    """Compute a data-quality score (0–100) for a single energy record.
+    """Compute a data-quality score (0-100) for a single energy record.
 
     Each check contributes points. Missing or out-of-range fields deduct points.
     Returns the original record augmented with ``dq_score`` and ``dq_issues``.
@@ -116,8 +116,8 @@ def flag_outliers(
     ]
 
 __all__ = [
-    "score_record",
     "batch_score",
-    "quality_summary",
     "flag_outliers",
+    "quality_summary",
+    "score_record",
 ]
