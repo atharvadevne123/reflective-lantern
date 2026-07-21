@@ -179,3 +179,31 @@ def test_energy_intensity_ratio_zero_reference() -> None:
 def test_energy_intensity_ratio_parametrized(actual: float, ref: float, expected: float) -> None:
     from app.benchmarks import energy_intensity_ratio
     assert energy_intensity_ratio(actual, ref) == pytest.approx(expected, rel=1e-4)
+
+
+class TestEfficiencyGap:
+    def test_over_target(self) -> None:
+        # actual 120, target 100 → 20% over
+        from app.benchmarks import efficiency_gap
+        assert efficiency_gap(120.0, 100.0) == pytest.approx(20.0, rel=1e-4)
+
+    def test_under_target(self) -> None:
+        from app.benchmarks import efficiency_gap
+        assert efficiency_gap(80.0, 100.0) == pytest.approx(-20.0, rel=1e-4)
+
+    def test_equal_values(self) -> None:
+        from app.benchmarks import efficiency_gap
+        assert efficiency_gap(100.0, 100.0) == pytest.approx(0.0, abs=1e-9)
+
+    def test_zero_target_returns_zero(self) -> None:
+        from app.benchmarks import efficiency_gap
+        assert efficiency_gap(50.0, 0.0) == 0.0
+
+    def test_zero_actual(self) -> None:
+        from app.benchmarks import efficiency_gap
+        assert efficiency_gap(0.0, 100.0) == pytest.approx(-100.0, rel=1e-4)
+
+    def test_large_gap(self) -> None:
+        from app.benchmarks import efficiency_gap
+        result = efficiency_gap(500.0, 200.0)
+        assert result == pytest.approx(150.0, rel=1e-4)
