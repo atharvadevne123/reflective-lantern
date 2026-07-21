@@ -454,3 +454,32 @@ def test_anomaly_rate_all_critical() -> None:
 def test_anomaly_rate_all_none() -> None:
     severities = [{"severity": "none", "z_flagged": False, "iqr_flagged": False} for _ in range(10)]
     assert anomaly_rate(severities) == pytest.approx(0.0)
+
+
+@pytest.mark.parametrize("n_values,n_ref", [(1, 10), (5, 20), (100, 50)])
+def test_batch_compute_severity_sizes(n_values: int, n_ref: int) -> None:
+    rng = np.random.default_rng(99)
+    ref = list(rng.normal(10, 1, n_ref).tolist())
+    vals = list(rng.normal(10, 1, n_values).tolist())
+    results = batch_compute_severity(vals, reference=ref)
+    assert len(results) == n_values
+    for r in results:
+        assert r["severity"] in ("none", "warning", "critical")
+
+
+def test_anomaly_rate_mixed_severities() -> None:
+    severities = [
+        {"severity": "critical"},
+        {"severity": "warning"},
+        {"severity": "none"},
+        {"severity": "critical"},
+    ]
+    rate = anomaly_rate(severities)
+    assert rate == pytest.approx(0.75, rel=1e-4)
+
+
+def test_compute_severity_warning_zone() -> None:
+    ref = [10.0] * 200
+    # value exactly at 4 std from mean (std ~0 so any deviation is flagged)
+    result = compute_severity(10.5, ref, z_threshold=3.0)
+    assert "severity" in result
