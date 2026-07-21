@@ -129,3 +129,43 @@ def test_carbon_savings_no_actual_reduction() -> None:
 def test_kwh_to_co2_kg_non_negative_output(kwh: float) -> None:
     from app.carbon import kwh_to_co2_kg
     assert kwh_to_co2_kg(kwh) >= 0.0
+
+
+@pytest.mark.parametrize("kg,expected_tonnes", [
+    (0.0, 0.0),
+    (500.0, 0.5),
+    (2000.0, 2.0),
+])
+def test_co2_kg_to_tonnes_parametrized(kg: float, expected_tonnes: float) -> None:
+    from app.carbon import co2_kg_to_tonnes
+    assert co2_kg_to_tonnes(kg) == pytest.approx(expected_tonnes, rel=1e-4)
+
+
+def test_annual_carbon_report_returns_region() -> None:
+    from app.carbon import annual_carbon_report
+    result = annual_carbon_report([100.0] * 12, region="west")
+    assert result["region"] == "west"
+
+
+def test_annual_carbon_report_empty_list_raises() -> None:
+    from app.carbon import annual_carbon_report
+    with pytest.raises(ValueError):
+        annual_carbon_report([])
+
+
+@pytest.mark.parametrize("actual,baseline,expected_saved", [
+    (50.0, 100.0, 50.0),
+    (0.0, 100.0, 100.0),
+    (100.0, 50.0, 0.0),
+])
+def test_carbon_savings_parametrized(actual: float, baseline: float, expected_saved: float) -> None:
+    from app.carbon import carbon_savings
+    result = carbon_savings(actual_kwh=actual, baseline_kwh=baseline)
+    assert result["saved_kwh"] == pytest.approx(expected_saved, rel=1e-4)
+
+
+def test_trees_equivalent_large_value() -> None:
+    from app.carbon import trees_equivalent
+    result = trees_equivalent(1_000_000.0)
+    assert result > 0
+    assert isinstance(result, float)
