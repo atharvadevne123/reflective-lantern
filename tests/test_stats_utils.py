@@ -11,6 +11,7 @@ from app.stats_utils import (
     normalize_series,
     percentile_rank,
     weighted_average,
+    zscore,
 )
 
 
@@ -337,3 +338,31 @@ def test_percentile_rank_below_all() -> None:
 def test_percentile_rank_parametrized(target: float, expected_pct: float) -> None:
     values = [1.0, 2.0, 3.0, 4.0, 5.0]
     assert percentile_rank(values, target) == pytest.approx(expected_pct)
+
+
+class TestZscore:
+    def test_mean_element_is_zero(self) -> None:
+        vals = [1.0, 2.0, 3.0, 4.0, 5.0]
+        assert zscore(vals, 3.0) == pytest.approx(0.0, abs=1e-6)
+
+    def test_above_mean_is_positive(self) -> None:
+        vals = [0.0, 0.0, 0.0, 0.0, 10.0]
+        assert zscore(vals, 10.0) > 0
+
+    def test_below_mean_is_negative(self) -> None:
+        vals = [5.0, 10.0, 15.0]
+        assert zscore(vals, 5.0) < 0
+
+    def test_constant_series_returns_zero(self) -> None:
+        vals = [4.0, 4.0, 4.0]
+        assert zscore(vals, 4.0) == 0.0
+
+    def test_empty_raises_value_error(self) -> None:
+        with pytest.raises(ValueError):
+            zscore([], 1.0)
+
+    def test_known_zscore(self) -> None:
+        # mean=0, std=1 → zscore of 2 is 2.0
+        vals = [-1.0, 0.0, 1.0]
+        result = zscore(vals, 0.0)
+        assert result == pytest.approx(0.0, abs=1e-4)
