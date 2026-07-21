@@ -11,6 +11,7 @@ from app.time_series import (
     find_changepoints,
     forecast_linear_trend,
     load_factor,
+    moving_median,
     peak_hours,
     peak_to_valley_ratio,
     rolling_zscore,
@@ -557,3 +558,31 @@ def test_peak_to_valley_ratio_constant() -> None:
 ])
 def test_load_factor_parametrized(values: list, expected_lf: float) -> None:
     assert load_factor(values) == pytest.approx(expected_lf, rel=1e-4)
+
+
+def test_moving_median_constant_series() -> None:
+    result = moving_median([5.0, 5.0, 5.0, 5.0], window=3)
+    assert all(v == pytest.approx(5.0) for v in result)
+
+
+def test_moving_median_length_preserved() -> None:
+    values = [1.0, 3.0, 2.0, 4.0, 5.0]
+    result = moving_median(values, window=3)
+    assert len(result) == len(values)
+
+
+def test_moving_median_empty() -> None:
+    assert moving_median([], window=3) == []
+
+
+def test_moving_median_window_1_equals_input() -> None:
+    values = [3.0, 1.0, 4.0, 1.0, 5.0]
+    result = moving_median(values, window=1)
+    assert result == pytest.approx(values)
+
+
+@pytest.mark.parametrize("window", [1, 3, 5])
+def test_moving_median_various_windows(window: int) -> None:
+    values = [float(i) for i in range(10)]
+    result = moving_median(values, window=window)
+    assert len(result) == len(values)
