@@ -244,3 +244,36 @@ __all__ = [
     "price_to_income_ratio",
     "roi_percentage",
 ]
+
+
+def discounted_cash_flow(
+    annual_cash_flows: list[float],
+    discount_rate: float,
+    terminal_value: float = 0.0,
+) -> float:
+    """Compute the net present value (NPV) of a real estate investment.
+
+    Discounts each year's net cash flow back to today at *discount_rate*,
+    and adds a terminal (exit) value discounted to year N.
+
+    Args:
+        annual_cash_flows: Net operating income per year (NOI - debt service).
+        discount_rate: Annual discount rate as a fraction (e.g. 0.08 for 8%).
+        terminal_value: Expected sale proceeds at the end of the holding period.
+
+    Returns:
+        NPV in USD, rounded to 2 decimal places. Positive NPV indicates
+        a value-creating investment at the given discount rate.
+
+    Raises:
+        ValueError: If *discount_rate* is negative.
+    """
+    if discount_rate < 0:
+        raise ValueError(f"discount_rate must be non-negative, got {discount_rate}")
+    if not annual_cash_flows:
+        return 0.0
+    n = len(annual_cash_flows)
+    npv = sum(cf / (1 + discount_rate) ** (i + 1) for i, cf in enumerate(annual_cash_flows))
+    if terminal_value:
+        npv += terminal_value / (1 + discount_rate) ** n
+    return round(npv, 2)
