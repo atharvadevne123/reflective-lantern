@@ -146,6 +146,7 @@ __all__ = [
     "mean_absolute_error",
     "normalize_series",
     "percentile",
+    "percentile_rank",
     "r_squared",
     "root_mean_squared_error",
     "weighted_average",
@@ -259,3 +260,24 @@ def interquartile_range(values: list[float]) -> float:
         return sorted_vals[lo] + (sorted_vals[hi] - sorted_vals[lo]) * (idx - lo)
 
     return round(_pct(0.75) - _pct(0.25), 6)
+
+
+def percentile_rank(values: list[float], target: float) -> float:
+    """Return the percentile rank of *target* within *values*.
+
+    Percentile rank = (number of values <= target) / total * 100.
+
+    Args:
+        values: Reference distribution (non-empty list).
+        target: Value whose rank is to be computed.
+
+    Returns:
+        Percentile rank in [0.0, 100.0].
+
+    Raises:
+        ValueError: If *values* is empty.
+    """
+    if not values:
+        raise ValueError("values must not be empty")
+    count = sum(1 for v in values if v <= target)
+    return round(count / len(values) * 100.0, 4)
