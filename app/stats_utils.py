@@ -144,4 +144,71 @@ __all__ = [
     "mape",
     "coefficient_of_variation",
     "percentile",
+    "geometric_mean",
+    "harmonic_mean",
+    "weighted_average",
 ]
+
+
+def geometric_mean(values: list[float]) -> float:
+    """Compute the geometric mean of *values*.
+
+    Args:
+        values: List of positive numeric values.
+
+    Returns:
+        Geometric mean as a float.
+
+    Raises:
+        ValueError: If *values* is empty or any value is non-positive.
+    """
+    if not values:
+        raise ValueError("values must not be empty")
+    if any(v <= 0 for v in values):
+        raise ValueError("All values must be positive for geometric mean")
+    log_sum = sum(math.log(v) for v in values)
+    return round(math.exp(log_sum / len(values)), 6)
+
+
+def harmonic_mean(values: list[float]) -> float:
+    """Compute the harmonic mean of *values*.
+
+    Useful for averaging rates and ratios (e.g. energy efficiency metrics).
+
+    Args:
+        values: List of positive numeric values.
+
+    Returns:
+        Harmonic mean as a float.
+
+    Raises:
+        ValueError: If *values* is empty or any value is zero or negative.
+    """
+    if not values:
+        raise ValueError("values must not be empty")
+    if any(v <= 0 for v in values):
+        raise ValueError("All values must be positive for harmonic mean")
+    return round(len(values) / sum(1.0 / v for v in values), 6)
+
+
+def weighted_average(values: list[float], weights: list[float]) -> float:
+    """Compute the weighted average of *values*.
+
+    Args:
+        values: Numeric observations.
+        weights: Non-negative weights (must sum to > 0 and match len(values)).
+
+    Returns:
+        Weighted average as a float.
+
+    Raises:
+        ValueError: If inputs are empty, have mismatched lengths, or weights sum to zero.
+    """
+    if not values or not weights:
+        raise ValueError("values and weights must not be empty")
+    if len(values) != len(weights):
+        raise ValueError(f"Length mismatch: {len(values)} values vs {len(weights)} weights")
+    total_weight = sum(weights)
+    if total_weight <= 0:
+        raise ValueError("weights must sum to a positive value")
+    return round(sum(v * w for v, w in zip(values, weights)) / total_weight, 6)
