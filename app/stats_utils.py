@@ -141,8 +141,10 @@ __all__ = [
     "coefficient_of_variation",
     "geometric_mean",
     "harmonic_mean",
+    "interquartile_range",
     "mape",
     "mean_absolute_error",
+    "normalize_series",
     "percentile",
     "r_squared",
     "root_mean_squared_error",
@@ -212,3 +214,48 @@ def weighted_average(values: list[float], weights: list[float]) -> float:
     if total_weight <= 0:
         raise ValueError("weights must sum to a positive value")
     return round(sum(v * w for v, w in zip(values, weights, strict=False)) / total_weight, 6)
+
+
+def normalize_series(values: list[float]) -> list[float]:
+    """Min-max normalize a series to the [0, 1] range.
+
+    Args:
+        values: List of numeric observations.
+
+    Returns:
+        Normalized series; returns list of zeros if all values are identical.
+
+    Raises:
+        ValueError: If *values* is empty.
+    """
+    if not values:
+        raise ValueError("values must not be empty")
+    lo, hi = min(values), max(values)
+    if hi == lo:
+        return [0.0] * len(values)
+    return [round((v - lo) / (hi - lo), 6) for v in values]
+
+
+def interquartile_range(values: list[float]) -> float:
+    """Return the interquartile range (IQR = Q3 - Q1) of a series.
+
+    Args:
+        values: List of numeric observations (at least 1 element).
+
+    Returns:
+        IQR as a float. Returns 0.0 for a single-element list.
+
+    Raises:
+        ValueError: If *values* is empty.
+    """
+    if not values:
+        raise ValueError("values must not be empty")
+    sorted_vals = sorted(values)
+    n = len(sorted_vals)
+
+    def _pct(p: float) -> float:
+        idx = p * (n - 1)
+        lo, hi = int(idx), min(int(idx) + 1, n - 1)
+        return sorted_vals[lo] + (sorted_vals[hi] - sorted_vals[lo]) * (idx - lo)
+
+    return round(_pct(0.75) - _pct(0.25), 6)
