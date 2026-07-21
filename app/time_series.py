@@ -351,6 +351,47 @@ def rolling_zscore(values: list[float], window: int = 24) -> list[float]:
     return zscores
 
 
+def load_factor(values: list[float]) -> float:
+    """Compute the load factor (average load / peak load) for a series.
+
+    The load factor is a dimensionless ratio in [0, 1] that measures how
+    efficiently a system uses its peak capacity over a period.
+
+    Args:
+        values: Time-ordered load readings (all non-negative).
+
+    Returns:
+        Load factor in [0.0, 1.0]. Returns 0.0 for an empty or all-zero series.
+    """
+    if not values:
+        return 0.0
+    peak = max(values)
+    if peak == 0.0:
+        return 0.0
+    avg = sum(values) / len(values)
+    return round(avg / peak, 6)
+
+
+def peak_to_valley_ratio(values: list[float]) -> float:
+    """Return the ratio of peak to minimum (valley) value in the series.
+
+    Useful for quantifying load variability. Returns 0.0 for empty or
+    all-zero (no valley) series.
+
+    Args:
+        values: Time-ordered readings.
+
+    Returns:
+        Peak-to-valley ratio; 0.0 if the minimum is zero or the series is empty.
+    """
+    if not values:
+        return 0.0
+    valley = min(values)
+    if valley == 0.0:
+        return 0.0
+    return round(max(values) / valley, 6)
+
+
 __all__ = [
     "clip_outliers",
     "consumption_variance",
@@ -361,9 +402,11 @@ __all__ = [
     "find_changepoints",
     "forecast_linear_trend",
     "forecast_trend_with_seasonality",
+    "load_factor",
     "logger",
     "moving_range",
     "peak_hours",
+    "peak_to_valley_ratio",
     "resample_hourly_to_daily",
     "rolling_zscore",
     "seasonal_baseline",
