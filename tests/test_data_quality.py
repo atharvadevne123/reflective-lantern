@@ -4,7 +4,14 @@ from __future__ import annotations
 
 import pytest
 
-from app.data_quality import batch_score, flag_outliers, quality_summary, score_record
+from app.data_quality import (
+    batch_score,
+    completeness_score,
+    detect_duplicates,
+    flag_outliers,
+    quality_summary,
+    score_record,
+)
 
 GOOD_RECORD = {
     "hour": 10,
@@ -154,3 +161,49 @@ def test_flag_outliers_high_threshold_no_outliers() -> None:
     records = [{"kwh": 10.0 + i} for i in range(5)]
     outliers = flag_outliers(records, "kwh", z_threshold=100.0)
     assert outliers == []
+
+
+def test_detect_duplicates_no_duplicates() -> None:
+    records = [{"id": 1}, {"id": 2}, {"id": 3}]
+    assert detect_duplicates(records, key_fields=["id"]) == []
+
+
+def test_detect_duplicates_with_duplicates() -> None:
+    records = [{"id": 1}, {"id": 2}, {"id": 1}]
+    dupes = detect_duplicates(records, key_fields=["id"])
+    assert 2 in dupes
+
+
+def test_detect_duplicates_empty() -> None:
+    assert detect_duplicates([]) == []
+
+
+def test_detect_duplicates_all_fields() -> None:
+    records = [{"a": 1, "b": 2}, {"a": 1, "b": 2}, {"a": 1, "b": 3}]
+    dupes = detect_duplicates(records)
+    assert dupes == [1]
+
+
+@pytest.mark.parametrize("n_dupes,expected_count", [(0, 0), (1, 1), (3, 3)])
+def test_detect_duplicates_count(n_dupes: int, expected_count: int) -> None:
+    records = [{"id": 0}] * (n_dupes + 1)
+    assert len(detect_duplicates(records, key_fields=["id"])) == expected_count
+
+
+def test_completeness_score_all_complete() -> None:
+    records = [{"a": 1, "b": 2}, {"a": 3, "b": 4}]
+    assert completeness_score(records, required_fields=["a", "b"]) == pytest.approx(1.0)
+
+
+def test_completeness_score_none_complete() -> None:
+    records = [{"a": None}, {"a": None}]
+    assert completeness_score(records, required_fields=["a"]) == pytest.approx(0.0)
+
+
+def test_completeness_score_partial() -> None:
+    records = [{"a": 1}, {"a": None}]
+    assert completeness_score(records, required_fields=["a"]) == pytest.approx(0.5)
+
+
+def test_completeness_score_empty_records() -> None:
+    assert completeness_score([], required_fields=["a"]) == 0.0
