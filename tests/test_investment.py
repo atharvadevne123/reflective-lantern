@@ -4,7 +4,7 @@ import math
 
 import pytest
 
-from app.investment import InvestmentAnalysis, compute_investment_analysis
+from app.investment import InvestmentAnalysis, compute_investment_analysis, discounted_cash_flow
 
 
 def test_basic_investment_analysis() -> None:
@@ -460,8 +460,6 @@ def test_break_even_infinite_when_zero_cap_rate() -> None:
     result = compute_investment_analysis(500_000, 0.0, 5.0, 5.0, 5.0, 0.5)
     assert math.isinf(result.break_even_years) or result.break_even_years > 100
 
-
-from app.investment import discounted_cash_flow
 
 
 def test_dcf_zero_discount_rate() -> None:
