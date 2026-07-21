@@ -306,3 +306,31 @@ def consecutive_anomaly_runs(flags: list[bool]) -> list[tuple[int, int]]:
     if start is not None:
         runs.append((start, len(flags) - 1))
     return runs
+
+
+def ewma_smooth(
+    values: list[float],
+    alpha: float = 0.3,
+) -> list[float]:
+    """Apply Exponentially Weighted Moving Average smoothing to *values*.
+
+    Reduces noise in real-time sensor readings while preserving trend.
+
+    Args:
+        values: Time-ordered sensor readings.
+        alpha: Smoothing factor in (0, 1]. Higher values weight recent observations more.
+
+    Returns:
+        Smoothed series of the same length as *values*.
+
+    Raises:
+        ValueError: If *values* is empty or *alpha* is out of (0, 1].
+    """
+    if not values:
+        raise ValueError("values must not be empty")
+    if not (0 < alpha <= 1):
+        raise ValueError(f"alpha must be in (0, 1], got {alpha}")
+    result = [values[0]]
+    for v in values[1:]:
+        result.append(alpha * v + (1 - alpha) * result[-1])
+    return [round(x, 6) for x in result]
