@@ -4,7 +4,13 @@ from __future__ import annotations
 
 import pytest
 
-from app.stats_utils import geometric_mean, harmonic_mean, weighted_average
+from app.stats_utils import (
+    geometric_mean,
+    harmonic_mean,
+    interquartile_range,
+    normalize_series,
+    weighted_average,
+)
 
 
 def test_mae_perfect() -> None:
@@ -251,3 +257,47 @@ def test_weighted_average_mismatched_lengths_raises() -> None:
 ])
 def test_geometric_mean_parametrized(vals: list, expected: float) -> None:
     assert geometric_mean(vals) == pytest.approx(expected, rel=1e-4)
+
+
+def test_normalize_series_basic() -> None:
+    result = normalize_series([0.0, 5.0, 10.0])
+    assert result[0] == pytest.approx(0.0)
+    assert result[-1] == pytest.approx(1.0)
+    assert result[1] == pytest.approx(0.5)
+
+
+def test_normalize_series_constant() -> None:
+    assert normalize_series([7.0, 7.0, 7.0]) == [0.0, 0.0, 0.0]
+
+
+def test_normalize_series_empty_raises() -> None:
+    with pytest.raises(ValueError):
+        normalize_series([])
+
+
+def test_normalize_series_length_preserved() -> None:
+    vals = [1.0, 3.0, 7.0, 2.0, 9.0]
+    result = normalize_series(vals)
+    assert len(result) == len(vals)
+
+
+def test_interquartile_range_basic() -> None:
+    result = interquartile_range([1.0, 2.0, 3.0, 4.0, 5.0])
+    assert result == pytest.approx(2.0, rel=1e-4)
+
+
+def test_interquartile_range_single() -> None:
+    assert interquartile_range([42.0]) == 0.0
+
+
+def test_interquartile_range_empty_raises() -> None:
+    with pytest.raises(ValueError):
+        interquartile_range([])
+
+
+@pytest.mark.parametrize("values,expected_iqr", [
+    ([1.0, 2.0, 3.0, 4.0], pytest.approx(1.5, rel=0.1)),
+    ([10.0, 10.0, 10.0, 10.0], 0.0),
+])
+def test_interquartile_range_parametrized(values: list, expected_iqr: object) -> None:
+    assert interquartile_range(values) == expected_iqr
