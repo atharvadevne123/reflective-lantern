@@ -483,3 +483,35 @@ def test_compute_severity_warning_zone() -> None:
     # value exactly at 4 std from mean (std ~0 so any deviation is flagged)
     result = compute_severity(10.5, ref, z_threshold=3.0)
     assert "severity" in result
+
+
+from app.anomaly import ewma_smooth
+
+
+def test_ewma_smooth_length() -> None:
+    result = ewma_smooth([1.0, 2.0, 3.0, 4.0], alpha=0.3)
+    assert len(result) == 4
+
+
+def test_ewma_smooth_first_value_unchanged() -> None:
+    values = [10.0, 20.0, 30.0]
+    result = ewma_smooth(values, alpha=0.5)
+    assert result[0] == pytest.approx(10.0)
+
+
+def test_ewma_smooth_empty_raises() -> None:
+    with pytest.raises(ValueError, match="empty"):
+        ewma_smooth([])
+
+
+def test_ewma_smooth_invalid_alpha_raises() -> None:
+    with pytest.raises(ValueError, match="alpha"):
+        ewma_smooth([1.0, 2.0], alpha=0.0)
+
+
+@pytest.mark.parametrize("alpha", [0.1, 0.5, 1.0])
+def test_ewma_smooth_monotone_input(alpha: float) -> None:
+    values = [float(i) for i in range(1, 11)]
+    result = ewma_smooth(values, alpha=alpha)
+    assert len(result) == len(values)
+    assert all(isinstance(v, float) for v in result)
