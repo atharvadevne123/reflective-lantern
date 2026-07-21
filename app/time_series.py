@@ -280,6 +280,77 @@ def clip_outliers(values: list[float], lower_pct: float = 5.0, upper_pct: float 
     return [max(lo, min(hi, v)) for v in values]
 
 
+def find_changepoints(
+    values: list[float],
+    min_segment_len: int = 5,
+    threshold_multiplier: float = 2.0,
+) -> list[int]:
+    """Identify abrupt level-shift change points in a time series.
+
+    Uses a simple cumulative sum (CUSUM) approach to detect points where the
+    running mean changes significantly.
+
+    Args:
+        values: Time-ordered readings.
+        min_segment_len: Minimum samples required between change points.
+        threshold_multiplier: Number of std deviations above the CUSUM variance
+            needed to flag a change point.
+
+    Returns:
+        Sorted list of indices where level shifts are detected.
+    """
+    if len(values) < 2 * min_segment_len:
+        return []
+    arr = np.array(values, dtype=float)
+    n = len(arr)
+    mean = arr.mean()
+    std = arr.std()
+    if std < 1e-9:
+        return []
+    cusum = np.cumsum(arr - mean)
+    threshold = threshold_multiplier * std * np.sqrt(n)
+    changepoints: list[int] = []
+    last_cp = 0
+    for i in range(min_segment_len, n - min_segment_len):
+        if i - last_cp < min_segment_len:
+            continue
+        local_max = max(abs(cusum[last_cp:i + 1]))
+        if local_max > threshold:
+            changepoints.append(i)
+            last_cp = i
+    return changepoints
+
+
+def rolling_zscore(values: list[float], window: int = 24) -> list[float]:
+    """Compute rolling Z-scores for anomaly detection in streaming data.
+
+    Each position's Z-score is computed relative to the preceding *window*
+    values (or all available values for early positions).
+
+    Args:
+        values: Time-ordered readings.
+        window: Rolling window size.
+
+    Returns:
+        List of Z-scores the same length as *values*. First position is 0.0.
+    """
+    if not values:
+        return []
+    zscores = [0.0]
+    for i in range(1, len(values)):
+        segment = values[max(0, i - window):i]
+        if len(segment) < 2:
+            zscores.append(0.0)
+            continue
+        arr = np.array(segment)
+        std = float(arr.std())
+        if std < 1e-9:
+            zscores.append(0.0)
+        else:
+            zscores.append(round((values[i] - float(arr.mean())) / std, 4))
+    return zscores
+
+
 __all__ = [
     "clip_outliers",
     "consumption_variance",
@@ -287,12 +358,14 @@ __all__ = [
     "detect_plateau",
     "detect_spikes",
     "exponential_moving_average",
+    "find_changepoints",
     "forecast_linear_trend",
     "forecast_trend_with_seasonality",
     "logger",
     "moving_range",
     "peak_hours",
     "resample_hourly_to_daily",
+    "rolling_zscore",
     "seasonal_baseline",
     "simple_moving_average",
 ]
