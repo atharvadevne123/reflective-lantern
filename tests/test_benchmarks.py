@@ -112,3 +112,46 @@ def test_benchmark_eui_known_types(building_type):
     result = benchmark_eui(200.0, building_type)
     assert result["benchmark_eui"] == ASHRAE_EUI_BENCHMARKS[building_type]
     assert result["rating"] in ("excellent", "good", "average", "poor")
+
+def test_site_eui_basic() -> None:
+    from app.benchmarks import site_eui
+    result = site_eui(10000.0, 1076.39)  # ~100 sqm in sqft
+    assert result == pytest.approx(100.0, rel=1e-2)
+
+
+def test_site_eui_zero_area_raises() -> None:
+    from app.benchmarks import site_eui
+    with pytest.raises(ValueError, match="floor_area_sqft"):
+        site_eui(1000.0, 0.0)
+
+
+def test_site_eui_negative_kwh_raises() -> None:
+    from app.benchmarks import site_eui
+    with pytest.raises(ValueError, match="annual_kwh"):
+        site_eui(-1.0, 500.0)
+
+
+def test_compare_buildings_ranks_by_eui() -> None:
+    from app.benchmarks import compare_buildings
+    buildings = [
+        {"name": "A", "annual_kwh": 20000.0, "floor_area_sqm": 100.0},
+        {"name": "B", "annual_kwh": 10000.0, "floor_area_sqm": 100.0},
+    ]
+    results = compare_buildings(buildings)
+    assert results[0]["name"] == "B"
+    assert results[0]["rank"] == 1
+    assert results[1]["rank"] == 2
+
+
+def test_compare_buildings_empty() -> None:
+    from app.benchmarks import compare_buildings
+    assert compare_buildings([]) == []
+
+
+def test_compare_buildings_single_building() -> None:
+    from app.benchmarks import compare_buildings
+    buildings = [{"name": "X", "annual_kwh": 5000.0, "floor_area_sqm": 50.0}]
+    results = compare_buildings(buildings)
+    assert len(results) == 1
+    assert results[0]["rank"] == 1
+    assert "rating" in results[0]
