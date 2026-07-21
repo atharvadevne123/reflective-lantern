@@ -236,3 +236,34 @@ def test_carbon_intensity_by_hour_region() -> None:
     default_result = carbon_intensity_by_hour([10.0])
     pacific_result = carbon_intensity_by_hour([10.0], region="pacific_nw")
     assert pacific_result[0] < default_result[0]
+
+
+def test_tree_offset_days_basic() -> None:
+    from app.carbon import tree_offset_days
+    result = tree_offset_days(20.0, num_trees=1)
+    assert result == pytest.approx(365.0, rel=0.01)
+
+
+def test_tree_offset_days_zero_co2() -> None:
+    from app.carbon import tree_offset_days
+    assert tree_offset_days(0.0) == 0.0
+
+
+def test_tree_offset_days_more_trees() -> None:
+    from app.carbon import tree_offset_days
+    single = tree_offset_days(100.0, num_trees=1)
+    ten = tree_offset_days(100.0, num_trees=10)
+    assert abs(single - 10 * ten) < 0.1
+
+
+def test_tree_offset_days_invalid_trees_raises() -> None:
+    from app.carbon import tree_offset_days
+    with pytest.raises(ValueError, match="num_trees"):
+        tree_offset_days(50.0, num_trees=0)
+
+
+@pytest.mark.parametrize("co2,trees", [(10.0, 1), (10.0, 5), (365.0, 1)])
+def test_tree_offset_days_parametrized(co2: float, trees: int) -> None:
+    from app.carbon import tree_offset_days
+    result = tree_offset_days(co2, num_trees=trees)
+    assert result > 0
