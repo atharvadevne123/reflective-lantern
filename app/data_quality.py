@@ -121,3 +121,52 @@ __all__ = [
     "quality_summary",
     "score_record",
 ]
+
+
+def detect_duplicates(
+    records: list[dict[str, Any]],
+    key_fields: list[str] | None = None,
+) -> list[int]:
+    """Return indices of duplicate records based on *key_fields*.
+
+    Two records are considered duplicates if all *key_fields* have identical values.
+    When *key_fields* is None, all fields are used as the key.
+
+    Args:
+        records: List of dicts representing energy readings.
+        key_fields: Fields to use as a composite key. Uses all keys if None.
+
+    Returns:
+        Sorted list of integer indices for duplicate records (second and later occurrences).
+    """
+    seen: set[tuple] = set()
+    duplicates: list[int] = []
+    for i, record in enumerate(records):
+        if key_fields is None:
+            key = tuple(sorted(record.items()))
+        else:
+            key = tuple(record.get(f) for f in key_fields)
+        if key in seen:
+            duplicates.append(i)
+        else:
+            seen.add(key)
+    return duplicates
+
+
+def completeness_score(records: list[dict[str, Any]], required_fields: list[str]) -> float:
+    """Compute the fraction of records that have all *required_fields* populated.
+
+    Args:
+        records: List of dicts to check.
+        required_fields: Field names that must be non-None and non-empty.
+
+    Returns:
+        Float in [0.0, 1.0]; 1.0 means every record is complete.
+    """
+    if not records:
+        return 0.0
+    complete = sum(
+        1 for r in records
+        if all(r.get(f) is not None and r.get(f) != "" for f in required_fields)
+    )
+    return round(complete / len(records), 4)
