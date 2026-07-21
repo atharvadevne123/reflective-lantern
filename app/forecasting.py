@@ -95,10 +95,73 @@ def forecast_summary(forecasts: list[float]) -> dict[str, Any]:
         "steps": len(forecasts),
     }
 
+def ensemble_forecast(
+    values: list[float],
+    steps: int,
+    alpha: float = 0.3,
+    period: int = 24,
+    weights: tuple[float, float, float] = (0.4, 0.3, 0.3),
+) -> list[float]:
+    """Combine naive, drift, and seasonal naive forecasts into a weighted ensemble.
+
+    Args:
+        values: Historical observations.
+        steps: Number of steps to forecast.
+        alpha: Smoothing factor for the exponential smoothing component.
+        period: Seasonal period for the seasonal naive component.
+        weights: Relative weights for (drift, seasonal, exponential_smoothing).
+
+    Returns:
+        Blended forecast as a list of *steps* floats.
+
+    Raises:
+        ValueError: If *values* is empty, *steps* <= 0, or weights don't sum to a
+            positive value.
+    """
+    if not values or steps <= 0:
+        return []
+    w_drift, w_seasonal, w_ses = weights
+    total_w = w_drift + w_seasonal + w_ses
+    if total_w <= 0:
+        raise ValueError("weights must sum to a positive value")
+
+    d = drift_forecast(values, steps)
+    s = seasonal_naive_forecast(values, steps, period=period)
+    e = exponential_smoothing_forecast(values, steps, alpha=alpha)
+
+    result = []
+    for i in range(steps):
+        blended = (w_drift * d[i] + w_seasonal * s[i] + w_ses * e[i]) / total_w
+        result.append(round(blended, 4))
+    return result
+
+
+def forecast_bias(actual: list[float], predicted: list[float]) -> float:
+    """Compute mean forecast bias (predicted − actual), indicating over/under-prediction.
+
+    Args:
+        actual: Ground-truth observations.
+        predicted: Forecasted values.
+
+    Returns:
+        Mean bias; positive means over-prediction, negative means under-prediction.
+
+    Raises:
+        ValueError: If inputs are empty or have different lengths.
+    """
+    if not actual or not predicted:
+        raise ValueError("actual and predicted must not be empty")
+    if len(actual) != len(predicted):
+        raise ValueError(f"Length mismatch: {len(actual)} vs {len(predicted)}")
+    return round(sum(p - a for p, a in zip(predicted, actual)) / len(actual), 6)
+
+
 __all__ = [
     "naive_forecast",
     "drift_forecast",
     "seasonal_naive_forecast",
     "exponential_smoothing_forecast",
     "forecast_summary",
+    "ensemble_forecast",
+    "forecast_bias",
 ]
