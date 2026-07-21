@@ -10,7 +10,9 @@ from app.time_series import (
     exponential_moving_average,
     find_changepoints,
     forecast_linear_trend,
+    load_factor,
     peak_hours,
+    peak_to_valley_ratio,
     rolling_zscore,
     seasonal_baseline,
     simple_moving_average,
@@ -512,3 +514,46 @@ def test_rolling_zscore_various_windows(window: int) -> None:
     values = [float(i % 10) for i in range(50)]
     result = rolling_zscore(values, window=window)
     assert len(result) == len(values)
+
+
+def test_load_factor_uniform() -> None:
+    result = load_factor([5.0, 5.0, 5.0, 5.0])
+    assert result == pytest.approx(1.0)
+
+
+def test_load_factor_basic() -> None:
+    result = load_factor([1.0, 2.0, 3.0, 4.0])
+    assert result == pytest.approx(0.625)
+
+
+def test_load_factor_empty() -> None:
+    assert load_factor([]) == 0.0
+
+
+def test_load_factor_all_zeros() -> None:
+    assert load_factor([0.0, 0.0, 0.0]) == 0.0
+
+
+def test_peak_to_valley_ratio_basic() -> None:
+    result = peak_to_valley_ratio([2.0, 4.0, 6.0, 8.0])
+    assert result == pytest.approx(4.0)
+
+
+def test_peak_to_valley_ratio_empty() -> None:
+    assert peak_to_valley_ratio([]) == 0.0
+
+
+def test_peak_to_valley_ratio_zero_valley() -> None:
+    assert peak_to_valley_ratio([0.0, 5.0, 10.0]) == 0.0
+
+
+def test_peak_to_valley_ratio_constant() -> None:
+    assert peak_to_valley_ratio([3.0, 3.0, 3.0]) == pytest.approx(1.0)
+
+
+@pytest.mark.parametrize("values,expected_lf", [
+    ([10.0, 10.0], 1.0),
+    ([0.0, 10.0], 0.5),
+])
+def test_load_factor_parametrized(values: list, expected_lf: float) -> None:
+    assert load_factor(values) == pytest.approx(expected_lf, rel=1e-4)
