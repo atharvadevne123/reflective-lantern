@@ -175,6 +175,7 @@ __all__ = [
     "co2_kg_to_tonnes",
     "daily_carbon_estimate",
     "kwh_to_co2_kg",
+    "tree_offset_days",
     "trees_equivalent",
 ]
 
@@ -193,3 +194,27 @@ def carbon_intensity_by_hour(
         List of CO2 emissions in kg for each hour, same length as *hourly_kwh*.
     """
     return [kwh_to_co2_kg(kwh, region) for kwh in hourly_kwh]
+
+
+def tree_offset_days(co2_kg: float, num_trees: int = 1) -> float:
+    """Estimate how many days *num_trees* need to offset *co2_kg* of emissions.
+
+    Uses the approximation that a mature tree sequesters ~20 kg CO2/year.
+
+    Args:
+        co2_kg: CO2 equivalent in kilograms to offset.
+        num_trees: Number of trees contributing to the offset.
+
+    Returns:
+        Number of days to offset the emissions, rounded to 2 decimal places.
+        Returns 0.0 for zero or negative CO2.
+
+    Raises:
+        ValueError: If *num_trees* is less than 1.
+    """
+    if num_trees < 1:
+        raise ValueError(f"num_trees must be at least 1, got {num_trees}")
+    if co2_kg <= 0:
+        return 0.0
+    kg_per_tree_per_day = 20.0 / 365.0
+    return round(co2_kg / (num_trees * kg_per_tree_per_day), 2)
