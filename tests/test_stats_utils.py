@@ -184,3 +184,71 @@ def test_mape_raises_on_zero_actual() -> None:
     from app.stats_utils import mape
     with pytest.raises(ValueError, match="zero"):
         mape([0.0, 1.0], [0.5, 1.0])
+
+
+from app.stats_utils import geometric_mean, harmonic_mean, weighted_average
+
+
+def test_geometric_mean_basic() -> None:
+    assert geometric_mean([1.0, 4.0]) == pytest.approx(2.0, rel=1e-4)
+
+
+def test_geometric_mean_single() -> None:
+    assert geometric_mean([5.0]) == pytest.approx(5.0)
+
+
+def test_geometric_mean_empty_raises() -> None:
+    with pytest.raises(ValueError):
+        geometric_mean([])
+
+
+def test_geometric_mean_negative_raises() -> None:
+    with pytest.raises(ValueError):
+        geometric_mean([1.0, -2.0])
+
+
+def test_harmonic_mean_basic() -> None:
+    result = harmonic_mean([1.0, 2.0, 4.0])
+    assert result == pytest.approx(12.0 / 7.0, rel=1e-4)
+
+
+def test_harmonic_mean_single() -> None:
+    assert harmonic_mean([8.0]) == pytest.approx(8.0)
+
+
+def test_harmonic_mean_empty_raises() -> None:
+    with pytest.raises(ValueError):
+        harmonic_mean([])
+
+
+def test_harmonic_mean_zero_raises() -> None:
+    with pytest.raises(ValueError):
+        harmonic_mean([0.0, 1.0])
+
+
+def test_weighted_average_basic() -> None:
+    result = weighted_average([10.0, 20.0], [1.0, 1.0])
+    assert result == pytest.approx(15.0)
+
+
+def test_weighted_average_unequal_weights() -> None:
+    result = weighted_average([10.0, 30.0], [3.0, 1.0])
+    assert result == pytest.approx(15.0, rel=1e-4)
+
+
+def test_weighted_average_empty_raises() -> None:
+    with pytest.raises(ValueError):
+        weighted_average([], [])
+
+
+def test_weighted_average_mismatched_lengths_raises() -> None:
+    with pytest.raises(ValueError):
+        weighted_average([1.0, 2.0], [1.0])
+
+
+@pytest.mark.parametrize("vals,expected", [
+    ([2.0, 8.0], 4.0),
+    ([1.0, 1.0, 1.0], 1.0),
+])
+def test_geometric_mean_parametrized(vals: list, expected: float) -> None:
+    assert geometric_mean(vals) == pytest.approx(expected, rel=1e-4)
