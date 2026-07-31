@@ -229,3 +229,55 @@ def test_hourly_pattern_distance_constant_offset(offset) -> None:
     a = [10.0] * 24
     b = [10.0 + offset] * 24
     assert hourly_pattern_distance(a, b) == pytest.approx(offset)
+
+
+def test_building_similarity_index_add_and_size() -> None:
+    from app.similarity import BuildingSimilarityIndex
+
+    idx = BuildingSimilarityIndex()
+    assert idx.size == 0
+    idx.add("b1", [1.0] * 24)
+    assert idx.size == 1
+
+
+def test_building_similarity_index_clear() -> None:
+    from app.similarity import BuildingSimilarityIndex
+
+    idx = BuildingSimilarityIndex()
+    idx.add("b1", [1.0] * 24)
+    idx.clear()
+    assert idx.size == 0
+
+
+def test_building_similarity_search_returns_list() -> None:
+    from app.similarity import BuildingSimilarityIndex
+
+    idx = BuildingSimilarityIndex()
+    for i in range(5):
+        idx.add(f"b{i}", [float(i)] * 24)
+    results = idx.search([2.0] * 24, k=3)
+    assert isinstance(results, list)
+    assert len(results) <= 3
+
+
+def test_batch_add_returns_count() -> None:
+    from app.similarity import BuildingSimilarityIndex, batch_add
+
+    idx = BuildingSimilarityIndex()
+    profiles = [(f"b{i}", [float(i)] * 24) for i in range(5)]
+    count = batch_add(idx, profiles)
+    assert count == 5
+
+
+@pytest.mark.parametrize("k", [1, 3, 5])
+def test_search_comparable_top_k(k: int) -> None:
+    from app.similarity import BuildingSimilarityIndex, get_global_index
+
+    idx = get_global_index()
+    idx.clear()
+    for i in range(10):
+        idx.add(f"b{i}", [float(i + 1)] * 24)
+    from app.similarity import search_comparable
+    results = search_comparable([5.0] * 24, top_k=k)
+    assert len(results) <= k
+    idx.clear()
