@@ -286,11 +286,20 @@ def test_prediction_confidence_returns_dict(trained_model) -> None:
     from app.model import prediction_confidence
 
     bundle, _ = trained_model
-    row = pd.DataFrame([{
-        "hour": 12, "day_of_week": 1, "month": 6,
-        "temperature_c": 22.0, "humidity_pct": 55.0,
-        "occupancy": 50, "hvac_state": 1, "consumption_kwh": 10.0
-    }])
+    row = pd.DataFrame(
+        [
+            {
+                "hour": 12,
+                "day_of_week": 1,
+                "month": 6,
+                "temperature_c": 22.0,
+                "humidity_pct": 55.0,
+                "occupancy": 50,
+                "hvac_state": 1,
+                "consumption_kwh": 10.0,
+            }
+        ]
+    )
     result = prediction_confidence(bundle, row)
     assert "mean" in result
     assert "std" in result
@@ -304,11 +313,20 @@ def test_prediction_confidence_bounds_ordered(trained_model) -> None:
     from app.model import prediction_confidence
 
     bundle, _ = trained_model
-    row = pd.DataFrame([{
-        "hour": 12, "day_of_week": 1, "month": 6,
-        "temperature_c": 22.0, "humidity_pct": 55.0,
-        "occupancy": 50, "hvac_state": 1, "consumption_kwh": 10.0
-    }])
+    row = pd.DataFrame(
+        [
+            {
+                "hour": 12,
+                "day_of_week": 1,
+                "month": 6,
+                "temperature_c": 22.0,
+                "humidity_pct": 55.0,
+                "occupancy": 50,
+                "hvac_state": 1,
+                "consumption_kwh": 10.0,
+            }
+        ]
+    )
     result = prediction_confidence(bundle, row)
     assert result["lower_95"] <= result["mean"] <= result["upper_95"]
 

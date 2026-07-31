@@ -152,10 +152,13 @@ def test_make_drift_alert_has_ks_stat():
     assert "ks_statistic" in a.metadata
 
 
-@pytest.mark.parametrize("score,is_critical,expected_sev", [
-    (0.5, False, "warning"),
-    (0.95, True, "critical"),
-])
+@pytest.mark.parametrize(
+    "score,is_critical,expected_sev",
+    [
+        (0.5, False, "warning"),
+        (0.95, True, "critical"),
+    ],
+)
 def test_make_anomaly_alert_severity(score, is_critical, expected_sev):
     a = make_anomaly_alert("zone-1", score, is_critical=is_critical)
     assert a.severity == expected_sev

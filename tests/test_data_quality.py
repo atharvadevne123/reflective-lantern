@@ -92,8 +92,12 @@ def test_quality_summary_empty() -> None:
 
 def test_flag_outliers_detects_extreme_value() -> None:
     records = [
-        {"kwh": 10.0}, {"kwh": 10.5}, {"kwh": 9.8},
-        {"kwh": 10.1}, {"kwh": 10.2}, {"kwh": 500.0},
+        {"kwh": 10.0},
+        {"kwh": 10.5},
+        {"kwh": 9.8},
+        {"kwh": 10.1},
+        {"kwh": 10.2},
+        {"kwh": 500.0},
     ]
     outliers = flag_outliers(records, "kwh", z_threshold=2.0)
     assert len(outliers) == 1
@@ -211,12 +215,14 @@ def test_completeness_score_empty_records() -> None:
 
 def test_detect_data_gaps_no_gaps() -> None:
     from app.data_quality import detect_data_gaps
+
     ts = [0, 3600, 7200, 10800]
     assert detect_data_gaps(ts, expected_interval=3600) == []
 
 
 def test_detect_data_gaps_single_gap() -> None:
     from app.data_quality import detect_data_gaps
+
     ts = [0, 3600, 10800]  # gap of 2h between index 1 and 2
     gaps = detect_data_gaps(ts, expected_interval=3600)
     assert len(gaps) == 1
@@ -225,16 +231,19 @@ def test_detect_data_gaps_single_gap() -> None:
 
 def test_detect_data_gaps_empty() -> None:
     from app.data_quality import detect_data_gaps
+
     assert detect_data_gaps([]) == []
 
 
 def test_detect_data_gaps_single_element() -> None:
     from app.data_quality import detect_data_gaps
+
     assert detect_data_gaps([1000]) == []
 
 
 def test_detect_data_gaps_multiple_gaps() -> None:
     from app.data_quality import detect_data_gaps
+
     ts = [0, 7200, 14400, 21600]  # all gaps are 2h, expected 1h
     gaps = detect_data_gaps(ts, expected_interval=3600)
     assert len(gaps) == 3

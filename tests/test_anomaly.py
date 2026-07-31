@@ -417,22 +417,28 @@ def test_flag_anomaly_rate_boundary(rate, expected) -> None:
     assert (result == pytest.approx(1.0)) == expected
 
 
-@pytest.mark.parametrize("value,mean,std,threshold,expected", [
-    (10.0, 10.0, 2.0, 3.0, False),    # within threshold
-    (19.0, 10.0, 2.0, 3.0, True),     # 4.5 stdev away
-    (10.0, 10.0, 0.0, 3.0, False),    # zero std -> not anomaly
-    (100.0, 10.0, 1.0, 3.0, True),    # far outlier
-])
+@pytest.mark.parametrize(
+    "value,mean,std,threshold,expected",
+    [
+        (10.0, 10.0, 2.0, 3.0, False),  # within threshold
+        (19.0, 10.0, 2.0, 3.0, True),  # 4.5 stdev away
+        (10.0, 10.0, 0.0, 3.0, False),  # zero std -> not anomaly
+        (100.0, 10.0, 1.0, 3.0, True),  # far outlier
+    ],
+)
 def test_zscore_flag_parametrized(value: float, mean: float, std: float, threshold: float, expected: bool) -> None:
     assert zscore_flag(value, mean=mean, std=std, threshold=threshold) == expected
 
 
-@pytest.mark.parametrize("value,q1,q3,expected", [
-    (10.0, 8.0, 12.0, False),    # within fence
-    (30.0, 8.0, 12.0, True),     # above upper fence
-    (-5.0, 8.0, 12.0, True),     # below lower fence
-    (12.0, 8.0, 12.0, False),    # exactly at q3
-])
+@pytest.mark.parametrize(
+    "value,q1,q3,expected",
+    [
+        (10.0, 8.0, 12.0, False),  # within fence
+        (30.0, 8.0, 12.0, True),  # above upper fence
+        (-5.0, 8.0, 12.0, True),  # below lower fence
+        (12.0, 8.0, 12.0, False),  # exactly at q3
+    ],
+)
 def test_iqr_flag_parametrized(value: float, q1: float, q3: float, expected: bool) -> None:
     assert iqr_flag(value, q1=q1, q3=q3) == expected
 
@@ -486,7 +492,6 @@ def test_compute_severity_warning_zone() -> None:
     assert "severity" in result
 
 
-
 def test_ewma_smooth_length() -> None:
     result = ewma_smooth([1.0, 2.0, 3.0, 4.0], alpha=0.3)
     assert len(result) == 4
@@ -531,16 +536,19 @@ def test_compute_severity_result_has_required_keys() -> None:
 
 def test_classify_consumption_low_inline() -> None:
     from app.anomaly import classify_consumption
+
     assert classify_consumption(5.0, 10.0, 20.0) == "low"
 
 
 def test_classify_consumption_normal_inline() -> None:
     from app.anomaly import classify_consumption
+
     assert classify_consumption(15.0, 10.0, 20.0) == "normal"
 
 
 def test_classify_consumption_high_inline() -> None:
     from app.anomaly import classify_consumption
+
     assert classify_consumption(25.0, 10.0, 20.0) == "high"
 
 
@@ -554,11 +562,14 @@ def test_anomaly_rate_all_critical_simple() -> None:
     assert anomaly_rate(severities) == pytest.approx(1.0)
 
 
-@pytest.mark.parametrize("n_anomalies,n_total,expected", [
-    (1, 4, 0.25),
-    (2, 4, 0.5),
-    (3, 4, 0.75),
-])
+@pytest.mark.parametrize(
+    "n_anomalies,n_total,expected",
+    [
+        (1, 4, 0.25),
+        (2, 4, 0.5),
+        (3, 4, 0.75),
+    ],
+)
 def test_anomaly_rate_partial(n_anomalies, n_total, expected) -> None:
     severities = [{"severity": "warning"}] * n_anomalies + [{"severity": "none"}] * (n_total - n_anomalies)
     assert anomaly_rate(severities) == pytest.approx(expected)

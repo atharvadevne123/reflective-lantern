@@ -127,22 +127,28 @@ def test_linear_trend_direction_parametrize(n, expected_dir) -> None:
     assert result.direction == expected_dir
 
 
-@pytest.mark.parametrize("values,expected_direction", [
-    ([1.0, 2.0, 3.0, 4.0, 5.0], "rising"),
-    ([5.0, 4.0, 3.0, 2.0, 1.0], "falling"),
-    ([10.0, 10.0, 10.0, 10.0], "stable"),
-])
+@pytest.mark.parametrize(
+    "values,expected_direction",
+    [
+        ([1.0, 2.0, 3.0, 4.0, 5.0], "rising"),
+        ([5.0, 4.0, 3.0, 2.0, 1.0], "falling"),
+        ([10.0, 10.0, 10.0, 10.0], "stable"),
+    ],
+)
 def test_linear_trend_direction_parametrized(values: list, expected_direction: str) -> None:
     result = linear_trend(values)
     assert result.direction == expected_direction
 
 
-@pytest.mark.parametrize("old,new,expected_pct", [
-    (100.0, 110.0, 10.0),
-    (100.0, 90.0, -10.0),
-    (50.0, 100.0, 100.0),
-    (200.0, 100.0, -50.0),
-])
+@pytest.mark.parametrize(
+    "old,new,expected_pct",
+    [
+        (100.0, 110.0, 10.0),
+        (100.0, 90.0, -10.0),
+        (50.0, 100.0, 100.0),
+        (200.0, 100.0, -50.0),
+    ],
+)
 def test_percentage_change_parametrized(old: float, new: float, expected_pct: float) -> None:
     assert percentage_change(old, new) == pytest.approx(expected_pct, rel=1e-4)
 
@@ -258,6 +264,7 @@ def test_rolling_mean_output_length(n: int) -> None:
 
 def test_seasonal_decompose_residual_near_zero_for_pure_seasonal() -> None:
     import math
+
     pattern = [math.sin(2 * math.pi * i / 12) * 10 + 20 for i in range(24)]
     decomp = seasonal_decompose_naive(pattern, period=12)
     assert "residual" in decomp

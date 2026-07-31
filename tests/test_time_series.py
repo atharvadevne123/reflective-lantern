@@ -297,8 +297,10 @@ def test_moving_range_parametrized_length(data, expected_len) -> None:
 
 # --- New tests for recently added functions ---
 
+
 def test_moving_range_basic_v2() -> None:
     from app.time_series import moving_range
+
     values = [1.0, 3.0, 2.0, 5.0]
     result = moving_range(values)
     assert result == [2.0, 1.0, 3.0]
@@ -306,29 +308,34 @@ def test_moving_range_basic_v2() -> None:
 
 def test_moving_range_too_short_v2() -> None:
     from app.time_series import moving_range
+
     assert moving_range([5.0]) == []
     assert moving_range([]) == []
 
 
 def test_consumption_variance_flat_v2() -> None:
     from app.time_series import consumption_variance
+
     result = consumption_variance([3.0] * 10)
     assert result == 0.0
 
 
 def test_consumption_variance_known_v2() -> None:
     from app.time_series import consumption_variance
+
     result = consumption_variance([2.0, 4.0])
     assert abs(result - 1.0) < 1e-9
 
 
 def test_consumption_variance_too_short_v2() -> None:
     from app.time_series import consumption_variance
+
     assert consumption_variance([5.0]) == 0.0
 
 
 def test_forecast_trend_with_seasonality_length_v2() -> None:
     from app.time_series import forecast_trend_with_seasonality
+
     values = [float(i % 24) for i in range(48)]
     result = forecast_trend_with_seasonality(values, horizon=12, period=24)
     assert len(result) == 12
@@ -336,11 +343,13 @@ def test_forecast_trend_with_seasonality_length_v2() -> None:
 
 def test_forecast_trend_with_seasonality_empty_v2() -> None:
     from app.time_series import forecast_trend_with_seasonality
+
     assert forecast_trend_with_seasonality([], horizon=5) == []
 
 
 def test_forecast_trend_with_seasonality_non_negative_v2() -> None:
     from app.time_series import forecast_trend_with_seasonality
+
     values = [max(0, float(i) + 5) for i in range(48)]
     result = forecast_trend_with_seasonality(values, horizon=12)
     assert all(v >= 0 for v in result)
@@ -348,6 +357,7 @@ def test_forecast_trend_with_seasonality_non_negative_v2() -> None:
 
 def test_resample_hourly_to_daily_full_day_v2() -> None:
     from app.time_series import resample_hourly_to_daily
+
     hourly = [1.0] * 48
     result = resample_hourly_to_daily(hourly)
     assert len(result) == 2
@@ -356,6 +366,7 @@ def test_resample_hourly_to_daily_full_day_v2() -> None:
 
 def test_resample_hourly_to_daily_partial_v2() -> None:
     from app.time_series import resample_hourly_to_daily
+
     hourly = [1.0] * 25
     result = resample_hourly_to_daily(hourly)
     assert len(result) == 2
@@ -363,17 +374,20 @@ def test_resample_hourly_to_daily_partial_v2() -> None:
 
 def test_resample_hourly_to_daily_empty_v2() -> None:
     from app.time_series import resample_hourly_to_daily
+
     assert resample_hourly_to_daily([]) == []
 
 
 def test_cumulative_consumption_basic_v2() -> None:
     from app.time_series import cumulative_consumption
+
     result = cumulative_consumption([1.0, 2.0, 3.0])
     assert abs(result[-1] - 6.0) < 1e-6
 
 
 def test_cumulative_consumption_empty_v2() -> None:
     from app.time_series import cumulative_consumption
+
     assert cumulative_consumption([]) == []
 
 
@@ -381,12 +395,14 @@ def test_cumulative_consumption_empty_v2() -> None:
 def test_ema_same_length(alpha) -> None:
     values = [float(i) for i in range(20)]
     from app.time_series import exponential_moving_average
+
     result = exponential_moving_average(values, alpha=alpha)
     assert len(result) == len(values)
 
 
 def test_detect_plateau_flat_series() -> None:
     from app.time_series import detect_plateau
+
     values = [10.0] * 8
     plateaus = detect_plateau(values, tolerance=0.1)
     assert len(plateaus) >= 1
@@ -396,6 +412,7 @@ def test_detect_plateau_flat_series() -> None:
 
 def test_detect_plateau_no_plateau() -> None:
     from app.time_series import detect_plateau
+
     values = [1.0, 5.0, 1.0, 5.0, 1.0]
     plateaus = detect_plateau(values, tolerance=0.1)
     assert len(plateaus) == 0
@@ -403,11 +420,13 @@ def test_detect_plateau_no_plateau() -> None:
 
 def test_detect_plateau_empty() -> None:
     from app.time_series import detect_plateau
+
     assert detect_plateau([]) == []
 
 
 def test_clip_outliers_basic() -> None:
     from app.time_series import clip_outliers
+
     values = [1.0] * 8 + [1000.0]
     clipped = clip_outliers(values, upper_pct=90.0)
     assert max(clipped) < 1000.0
@@ -415,6 +434,7 @@ def test_clip_outliers_basic() -> None:
 
 def test_clip_outliers_preserves_length() -> None:
     from app.time_series import clip_outliers
+
     values = list(range(20))
     clipped = clip_outliers([float(v) for v in values])
     assert len(clipped) == 20
@@ -422,12 +442,14 @@ def test_clip_outliers_preserves_length() -> None:
 
 def test_clip_outliers_empty() -> None:
     from app.time_series import clip_outliers
+
     assert clip_outliers([]) == []
 
 
 @pytest.mark.parametrize("upper_pct", [75.0, 90.0, 99.0])
 def test_clip_outliers_various_percentiles(upper_pct) -> None:
     from app.time_series import clip_outliers
+
     values = list(range(1, 101))
     clipped = clip_outliers([float(v) for v in values], upper_pct=upper_pct)
     assert max(clipped) <= upper_pct + 1
@@ -552,10 +574,13 @@ def test_peak_to_valley_ratio_constant() -> None:
     assert peak_to_valley_ratio([3.0, 3.0, 3.0]) == pytest.approx(1.0)
 
 
-@pytest.mark.parametrize("values,expected_lf", [
-    ([10.0, 10.0], 1.0),
-    ([0.0, 10.0], 0.5),
-])
+@pytest.mark.parametrize(
+    "values,expected_lf",
+    [
+        ([10.0, 10.0], 1.0),
+        ([0.0, 10.0], 0.5),
+    ],
+)
 def test_load_factor_parametrized(values: list, expected_lf: float) -> None:
     assert load_factor(values) == pytest.approx(expected_lf, rel=1e-4)
 
@@ -590,6 +615,7 @@ def test_moving_median_various_windows(window: int) -> None:
 
 def test_clip_outliers_returns_same_length() -> None:
     from app.time_series import clip_outliers
+
     values = [1.0, 2.0, 100.0, 3.0, 4.0]
     result = clip_outliers(values)
     assert len(result) == len(values)
@@ -597,6 +623,7 @@ def test_clip_outliers_returns_same_length() -> None:
 
 def test_clip_outliers_reduces_extreme() -> None:
     from app.time_series import clip_outliers
+
     values = [1.0, 2.0, 3.0, 4.0, 1000.0]
     result = clip_outliers(values, upper_pct=95.0)
     assert result[-1] <= 1000.0
@@ -604,28 +631,35 @@ def test_clip_outliers_reduces_extreme() -> None:
 
 def test_load_factor_returns_float() -> None:
     from app.time_series import load_factor
+
     result = load_factor([10.0, 20.0, 30.0])
     assert isinstance(result, float)
 
 
 def test_load_factor_constant_input_is_one() -> None:
     from app.time_series import load_factor
+
     result = load_factor([15.0] * 10)
     assert result == pytest.approx(1.0)
 
 
 def test_peak_to_valley_ratio_greater_than_one() -> None:
     from app.time_series import peak_to_valley_ratio
+
     result = peak_to_valley_ratio([1.0, 5.0, 2.0, 8.0, 3.0])
     assert result >= 1.0
 
 
-@pytest.mark.parametrize("values", [
-    [1.0, 2.0, 3.0],
-    [10.0, 10.0, 10.0],
-    [5.0, 3.0, 8.0, 2.0],
-])
+@pytest.mark.parametrize(
+    "values",
+    [
+        [1.0, 2.0, 3.0],
+        [10.0, 10.0, 10.0],
+        [5.0, 3.0, 8.0, 2.0],
+    ],
+)
 def test_load_factor_various_inputs(values) -> None:
     from app.time_series import load_factor
+
     result = load_factor(values)
     assert 0.0 <= result <= 1.0

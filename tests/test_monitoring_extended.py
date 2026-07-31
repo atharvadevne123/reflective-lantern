@@ -66,11 +66,14 @@ def test_is_reference_window_ready_true():
     assert is_reference_window_ready(min_samples=10)
 
 
-@pytest.mark.parametrize("n_samples,min_samples,expected", [
-    (5, 10, False),
-    (10, 10, True),
-    (20, 15, True),
-])
+@pytest.mark.parametrize(
+    "n_samples,min_samples,expected",
+    [
+        (5, 10, False),
+        (10, 10, True),
+        (20, 15, True),
+    ],
+)
 def test_is_reference_window_ready_parametrized(n_samples, min_samples, expected):
     set_reference_window([1.0] * n_samples)
     assert is_reference_window_ready(min_samples=min_samples) == expected
@@ -78,10 +81,12 @@ def test_is_reference_window_ready_parametrized(n_samples, min_samples, expected
 
 def test_compute_feature_drift_summary_multiple_features():
     set_reference_window([1.0] * 100)
-    results = compute_feature_drift_summary({
-        "temperature": [1.0] * 30,
-        "humidity": [100.0] * 30,
-    })
+    results = compute_feature_drift_summary(
+        {
+            "temperature": [1.0] * 30,
+            "humidity": [100.0] * 30,
+        }
+    )
     assert len(results) == 2
     features = {r["feature"] for r in results}
     assert "temperature" in features

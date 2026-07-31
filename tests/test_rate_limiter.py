@@ -82,6 +82,7 @@ def test_separate_clients_independent():
     limiter.is_allowed("client-a")
     assert limiter.is_allowed("client-b") is True
 
+
 @pytest.mark.parametrize("n_clients", [1, 5, 10])
 def test_clear_resets_all_clients(n_clients):
     limiter = TokenBucketRateLimiter(capacity=10.0, rate_per_second=1.0)

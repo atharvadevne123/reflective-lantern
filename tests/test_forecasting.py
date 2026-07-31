@@ -240,6 +240,7 @@ def test_ensemble_forecast_custom_weights(w) -> None:
 @pytest.mark.parametrize("steps", [1, 3, 6, 12, 24])
 def test_naive_forecast_various_steps_value_check(steps: int) -> None:
     from app.forecasting import naive_forecast
+
     result = naive_forecast(10.0, steps)
     assert len(result) == steps
     assert all(v == pytest.approx(10.0) for v in result)
@@ -247,6 +248,7 @@ def test_naive_forecast_various_steps_value_check(steps: int) -> None:
 
 def test_drift_forecast_constant_returns_last() -> None:
     from app.forecasting import drift_forecast
+
     values = [5.0, 5.0, 5.0, 5.0]
     result = drift_forecast(values, steps=3)
     assert all(v == pytest.approx(5.0) for v in result)
@@ -254,6 +256,7 @@ def test_drift_forecast_constant_returns_last() -> None:
 
 def test_seasonal_naive_uses_period() -> None:
     from app.forecasting import seasonal_naive_forecast
+
     pattern = [float(i) for i in range(24)]
     result = seasonal_naive_forecast(pattern * 3, steps=24, period=24)
     assert len(result) == 24
@@ -262,6 +265,7 @@ def test_seasonal_naive_uses_period() -> None:
 @pytest.mark.parametrize("alpha", [0.1, 0.5, 0.9])
 def test_exponential_smoothing_various_alpha(alpha: float) -> None:
     from app.forecasting import exponential_smoothing_forecast
+
     values = [10.0] * 20
     result = exponential_smoothing_forecast(values, steps=5, alpha=alpha)
     assert len(result) == 5
@@ -270,23 +274,27 @@ def test_exponential_smoothing_various_alpha(alpha: float) -> None:
 
 def test_naive_forecast_zero_steps_empty() -> None:
     from app.forecasting import naive_forecast
+
     assert naive_forecast(5.0, 0) == []
 
 
 def test_forecast_bias_returns_float() -> None:
     from app.forecasting import forecast_bias
+
     result = forecast_bias([10.0, 20.0], [12.0, 18.0])
     assert isinstance(result, float)
 
 
 def test_forecast_bias_negative_when_under_predicting() -> None:
     from app.forecasting import forecast_bias
+
     result = forecast_bias([10.0, 10.0], [8.0, 8.0])
     assert result < 0
 
 
 def test_ensemble_forecast_returns_correct_length() -> None:
     from app.forecasting import ensemble_forecast
+
     values = [float(i) for i in range(72)]
     result = ensemble_forecast(values, steps=12)
     assert len(result) == 12
@@ -294,6 +302,7 @@ def test_ensemble_forecast_returns_correct_length() -> None:
 
 def test_ensemble_forecast_constant_input() -> None:
     from app.forecasting import ensemble_forecast
+
     values = [5.0] * 48
     result = ensemble_forecast(values, steps=6)
     assert len(result) == 6
@@ -302,6 +311,7 @@ def test_ensemble_forecast_constant_input() -> None:
 @pytest.mark.parametrize("steps", [1, 6, 12])
 def test_ensemble_forecast_various_steps(steps: int) -> None:
     from app.forecasting import ensemble_forecast
+
     values = [float(i % 24) for i in range(72)]
     result = ensemble_forecast(values, steps=steps)
     assert len(result) == steps

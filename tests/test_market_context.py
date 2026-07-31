@@ -529,10 +529,13 @@ def test_affordability_index_zero_value() -> None:
     assert result["monthly_payment"] == 0.0
 
 
-@pytest.mark.parametrize("value,income,expected_range", [
-    (100_000, 100_000, (0, 20)),  # very affordable
-    (1_000_000, 50_000, (100, 500)),  # very expensive
-])
+@pytest.mark.parametrize(
+    "value,income,expected_range",
+    [
+        (100_000, 100_000, (0, 20)),  # very affordable
+        (1_000_000, 50_000, (100, 500)),  # very expensive
+    ],
+)
 def test_affordability_index_parametrized(value, income, expected_range) -> None:
     from app.market_context import affordability_index
 

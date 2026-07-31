@@ -19,10 +19,12 @@ from app.pipeline_utils import (
 
 
 def make_test_pipeline() -> Pipeline:
-    return Pipeline([
-        ("scaler", StandardScaler()),
-        ("regressor", LinearRegression()),
-    ])
+    return Pipeline(
+        [
+            ("scaler", StandardScaler()),
+            ("regressor", LinearRegression()),
+        ]
+    )
 
 
 def test_get_step_names() -> None:
