@@ -116,3 +116,33 @@ def test_summarize_export_empty():
 def test_filter_min_kwh_parametrize(min_kwh, expected_count):
     result = filter_records(SAMPLE, min_kwh=min_kwh)
     assert len(result) == expected_count
+
+
+@pytest.mark.parametrize("max_kwh,expected_count", [(100.0, 4), (10.0, 2), (0.0, 0)])
+def test_filter_max_kwh_parametrize(max_kwh, expected_count):
+    result = filter_records(SAMPLE, max_kwh=max_kwh)
+    assert len(result) == expected_count
+
+
+def test_records_to_json_empty():
+    result = records_to_json([])
+    assert result == "[]"
+
+
+def test_aggregate_by_hour_counts():
+    result = aggregate_by_hour(SAMPLE)
+    assert all("count" in r for r in result)
+    hour8 = next(r for r in result if r["hour"] == 8)
+    assert hour8["count"] == 2
+
+
+def test_summarize_export_min_max():
+    s = summarize_export(SAMPLE)
+    assert s["min_kwh"] == pytest.approx(5.0)
+    assert s["max_kwh"] == pytest.approx(20.0)
+
+
+@pytest.mark.parametrize("hour,expected_count", [(8, 2), (14, 2), (0, 0)])
+def test_filter_by_hour_parametrize(hour, expected_count):
+    result = filter_records(SAMPLE, hour=hour)
+    assert len(result) == expected_count
