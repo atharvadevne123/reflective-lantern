@@ -586,3 +586,46 @@ def test_moving_median_various_windows(window: int) -> None:
     values = [float(i) for i in range(10)]
     result = moving_median(values, window=window)
     assert len(result) == len(values)
+
+
+def test_clip_outliers_returns_same_length() -> None:
+    from app.time_series import clip_outliers
+    values = [1.0, 2.0, 100.0, 3.0, 4.0]
+    result = clip_outliers(values)
+    assert len(result) == len(values)
+
+
+def test_clip_outliers_reduces_extreme() -> None:
+    from app.time_series import clip_outliers
+    values = [1.0, 2.0, 3.0, 4.0, 1000.0]
+    result = clip_outliers(values, upper_pct=95.0)
+    assert result[-1] <= 1000.0
+
+
+def test_load_factor_returns_float() -> None:
+    from app.time_series import load_factor
+    result = load_factor([10.0, 20.0, 30.0])
+    assert isinstance(result, float)
+
+
+def test_load_factor_constant_input_is_one() -> None:
+    from app.time_series import load_factor
+    result = load_factor([15.0] * 10)
+    assert result == pytest.approx(1.0)
+
+
+def test_peak_to_valley_ratio_greater_than_one() -> None:
+    from app.time_series import peak_to_valley_ratio
+    result = peak_to_valley_ratio([1.0, 5.0, 2.0, 8.0, 3.0])
+    assert result >= 1.0
+
+
+@pytest.mark.parametrize("values", [
+    [1.0, 2.0, 3.0],
+    [10.0, 10.0, 10.0],
+    [5.0, 3.0, 8.0, 2.0],
+])
+def test_load_factor_various_inputs(values) -> None:
+    from app.time_series import load_factor
+    result = load_factor(values)
+    assert 0.0 <= result <= 1.0
