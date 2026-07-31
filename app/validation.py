@@ -171,7 +171,12 @@ def batch_validate_readings(
             float(row.get("humidity_pct", 0.0)),
         )
         errors += validate_consumption_kwh(float(row.get("consumption_kwh", 0.0)))
+        if errors:
+            logger.debug("Validation failed for reading %d: %s", idx, errors)
         results.append({"index": idx, "errors": errors, "valid": len(errors) == 0})
+    n_invalid = sum(1 for r in results if not r["valid"])
+    if n_invalid:
+        logger.warning("batch_validate_readings: %d/%d readings invalid", n_invalid, len(readings))
     return results
 
 
