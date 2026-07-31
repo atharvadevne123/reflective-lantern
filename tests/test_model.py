@@ -322,3 +322,42 @@ def test_prediction_confidence_empty_bundle() -> None:
     result = prediction_confidence({}, row)
     assert result["mean"] == 0.0
     assert result["std"] == 0.0
+
+
+def test_get_feature_importance_empty_bundle_returns_empty() -> None:
+    from app.model import get_feature_importance
+
+    result = get_feature_importance({})
+    assert result == []
+
+
+def test_get_feature_importance_returns_list(trained_model) -> None:
+    from app.model import get_feature_importance
+
+    bundle, _ = trained_model
+    result = get_feature_importance(bundle)
+    assert isinstance(result, list)
+
+
+def test_get_feature_importance_top_n(trained_model) -> None:
+    from app.model import get_feature_importance
+
+    bundle, _ = trained_model
+    result = get_feature_importance(bundle, top_n=3)
+    assert len(result) <= 3
+
+
+def test_get_metrics_returns_dict() -> None:
+    from app.model import get_metrics
+
+    result = get_metrics()
+    assert isinstance(result, dict)
+
+
+@pytest.mark.parametrize("top_n", [1, 5, 10])
+def test_get_feature_importance_top_n_parametrized(top_n: int, trained_model) -> None:
+    from app.model import get_feature_importance
+
+    bundle, _ = trained_model
+    result = get_feature_importance(bundle, top_n=top_n)
+    assert len(result) <= top_n
