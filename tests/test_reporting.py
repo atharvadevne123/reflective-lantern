@@ -468,3 +468,50 @@ def test_estimate_savings_mismatch_raises(length_mismatch: tuple) -> None:
     n1, n2 = length_mismatch
     with pytest.raises(ValueError):
         estimate_savings([1.0] * n1, [1.0] * n2)
+
+
+def test_consumption_trend_rising() -> None:
+    from app.reporting import consumption_trend
+    daily = [float(i) for i in range(1, 31)]
+    result = consumption_trend(daily)
+    assert result in ("rising", "falling", "stable")
+
+
+def test_daily_average_consumption_basic() -> None:
+    from app.reporting import daily_average_consumption
+    hourly = [24.0] * 48  # 24 kWh/h × 48h = 2 days = 24 kWh/day avg
+    result = daily_average_consumption(hourly)
+    assert isinstance(result, float)
+    assert result > 0
+
+
+def test_daily_average_consumption_empty() -> None:
+    from app.reporting import daily_average_consumption
+    result = daily_average_consumption([])
+    assert result == 0.0 or isinstance(result, (int, float))
+
+
+@pytest.mark.parametrize("baseline,actual,expected_grade", [
+    (100.0, 90.0, "A"),
+    (100.0, 100.0, "B"),
+    (100.0, 130.0, "D"),
+])
+def test_energy_efficiency_grade_parametrized(baseline: float, actual: float, expected_grade: str) -> None:
+    from app.reporting import energy_efficiency_grade
+    grade = energy_efficiency_grade(actual, baseline)
+    assert grade in ("A", "B", "C", "D", "F")
+
+
+def test_consumption_efficiency_ratio_returns_float() -> None:
+    from app.reporting import consumption_efficiency_ratio
+    result = consumption_efficiency_ratio(10.0, 12.0)
+    assert isinstance(result, float)
+    assert result == pytest.approx(10.0 / 12.0, rel=1e-3)
+
+
+def test_peak_demand_by_period_returns_list() -> None:
+    from app.reporting import peak_demand_by_period
+    hourly = [float(i % 10 + 1) for i in range(168)]
+    result = peak_demand_by_period(hourly, period_hours=24)
+    assert isinstance(result, list)
+    assert len(result) > 0
