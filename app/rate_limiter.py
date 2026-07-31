@@ -78,9 +78,7 @@ class TokenBucketRateLimiter:
             return len(self._buckets)
 
 
-def make_rate_limiter(
-    capacity: float = 60.0, rate_per_second: float = 1.0
-) -> TokenBucketRateLimiter:
+def make_rate_limiter(capacity: float = 60.0, rate_per_second: float = 1.0) -> TokenBucketRateLimiter:
     """Factory returning a new :class:`TokenBucketRateLimiter` with defaults."""
     return TokenBucketRateLimiter(capacity=capacity, rate_per_second=rate_per_second)
 

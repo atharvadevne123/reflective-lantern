@@ -99,6 +99,7 @@ def week_of_year(dt: datetime) -> int:
     """
     return dt.isocalendar()[1]
 
+
 __all__ = [
     "generate_hourly_timestamps",
     "hours_between",

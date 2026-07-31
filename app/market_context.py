@@ -328,6 +328,7 @@ def market_summary(
         "affordability": affordability,
     }
 
+
 __all__ = [
     "affordability_bucket",
     "affordability_index",

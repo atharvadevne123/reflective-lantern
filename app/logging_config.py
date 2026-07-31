@@ -112,6 +112,7 @@ def is_debug_enabled() -> bool:
     """Return True if DEBUG logging is enabled for the root logger."""
     return logging.getLogger().isEnabledFor(logging.DEBUG)
 
+
 __all__ = [
     "JsonFormatter",
     "TraceIdFilter",

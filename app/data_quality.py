@@ -98,7 +98,9 @@ def quality_summary(scored: list[dict[str, Any]]) -> dict[str, Any]:
         "n_perfect": sum(1 for s in scores if s == 100),
         "n_failing": sum(1 for s in scores if s < 60),
     }
-    logger.debug("quality_summary: n=%d mean=%.1f n_failing=%d", len(scored), summary["mean_score"], summary["n_failing"])
+    logger.debug(
+        "quality_summary: n=%d mean=%.1f n_failing=%d", len(scored), summary["mean_score"], summary["n_failing"]
+    )
     return summary
 
 
@@ -113,13 +115,11 @@ def flag_outliers(
         return []
     mean = sum(vals) / len(vals)
     variance = sum((v - mean) ** 2 for v in vals) / len(vals)
-    std = variance ** 0.5
+    std = variance**0.5
     if std == 0:
         return []
-    return [
-        r for r in records
-        if field in r and abs((float(r[field]) - mean) / std) > z_threshold
-    ]
+    return [r for r in records if field in r and abs((float(r[field]) - mean) / std) > z_threshold]
+
 
 __all__ = [
     "batch_score",
@@ -174,10 +174,7 @@ def completeness_score(records: list[dict[str, Any]], required_fields: list[str]
     """
     if not records:
         return 0.0
-    complete = sum(
-        1 for r in records
-        if all(r.get(f) is not None and r.get(f) != "" for f in required_fields)
-    )
+    complete = sum(1 for r in records if all(r.get(f) is not None and r.get(f) != "" for f in required_fields))
     return round(complete / len(records), 4)
 
 

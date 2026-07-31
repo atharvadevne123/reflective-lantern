@@ -139,6 +139,7 @@ def list_runs() -> list[dict[str, object]]:
                     logger.warning("Skipping malformed run log entry")
     return runs
 
+
 __all__ = [
     "get_best_run",
     "list_runs",

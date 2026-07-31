@@ -75,10 +75,7 @@ def aggregate_by_hour(records: list[dict[str, Any]]) -> list[dict[str, Any]]:
         if h is None or kwh is None:
             continue
         buckets.setdefault(int(h), []).append(float(kwh))
-    return [
-        {"hour": h, "mean_kwh": sum(vals) / len(vals), "count": len(vals)}
-        for h, vals in sorted(buckets.items())
-    ]
+    return [{"hour": h, "mean_kwh": sum(vals) / len(vals), "count": len(vals)} for h, vals in sorted(buckets.items())]
 
 
 def summarize_export(records: list[dict[str, Any]]) -> dict[str, Any]:
@@ -93,6 +90,7 @@ def summarize_export(records: list[dict[str, Any]]) -> dict[str, Any]:
         "min_kwh": min(kwh_vals) if kwh_vals else None,
         "max_kwh": max(kwh_vals) if kwh_vals else None,
     }
+
 
 __all__ = [
     "aggregate_by_hour",

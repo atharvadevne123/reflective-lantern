@@ -100,6 +100,7 @@ def forecast_summary(forecasts: list[float]) -> dict[str, Any]:
     logger.debug("forecast_summary: steps=%d mean=%.4f", result["steps"], result["mean"])
     return result
 
+
 def ensemble_forecast(
     values: list[float],
     steps: int,

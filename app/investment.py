@@ -235,6 +235,7 @@ def portfolio_weighted_score(
     weighted = sum(s * w for s, w in zip(scores, weights, strict=False))
     return round(weighted / total_weight, 3)
 
+
 __all__ = [
     "InvestmentAnalysis",
     "compute_investment_analysis",

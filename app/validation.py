@@ -245,6 +245,7 @@ def clamp_consumption(value: float) -> float:
     """
     return max(MIN_CONSUMPTION_KWH, min(value, MAX_CONSUMPTION_KWH))
 
+
 def validate_reading_dict(reading: dict[str, object]) -> dict[str, object]:
     """Run all validators against a single energy reading dict.
 

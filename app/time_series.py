@@ -314,7 +314,7 @@ def find_changepoints(
     for i in range(min_segment_len, n - min_segment_len):
         if i - last_cp < min_segment_len:
             continue
-        local_max = max(abs(cusum[last_cp:i + 1]))
+        local_max = max(abs(cusum[last_cp : i + 1]))
         if local_max > threshold:
             changepoints.append(i)
             last_cp = i
@@ -338,7 +338,7 @@ def rolling_zscore(values: list[float], window: int = 24) -> list[float]:
         return []
     zscores = [0.0]
     for i in range(1, len(values)):
-        segment = values[max(0, i - window):i]
+        segment = values[max(0, i - window) : i]
         if len(segment) < 2:
             zscores.append(0.0)
             continue
@@ -433,7 +433,7 @@ def moving_median(values: list[float], window: int) -> list[float]:
         return []
     result: list[float] = []
     for i in range(len(values)):
-        chunk = sorted(values[max(0, i - window + 1): i + 1])
+        chunk = sorted(values[max(0, i - window + 1) : i + 1])
         n = len(chunk)
         mid = n // 2
         if n % 2 == 0:

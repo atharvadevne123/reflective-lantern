@@ -140,6 +140,7 @@ def percentile(values: list[float], p: float) -> float:
     frac = idx - lo
     return round(sorted_vals[lo] * (1 - frac) + sorted_vals[hi] * frac, 6)
 
+
 __all__ = [
     "coefficient_of_variation",
     "geometric_mean",
@@ -309,7 +310,7 @@ def zscore(values: list[float], value: float) -> float:
     n = len(values)
     mean = sum(values) / n
     variance = sum((v - mean) ** 2 for v in values) / n
-    std = variance ** 0.5
+    std = variance**0.5
     if std < 1e-9:
         return 0.0
     result = round((value - mean) / std, 6)

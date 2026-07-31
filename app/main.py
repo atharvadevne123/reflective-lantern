@@ -452,6 +452,7 @@ def consumption_stats_summary(
     if not actual_kwh or not predicted_kwh:
         return {"error": "Provide actual_kwh and predicted_kwh as query parameters"}
     from app.stats_utils import mean_absolute_error, r_squared, root_mean_squared_error
+
     try:
         return {
             "mae": mean_absolute_error(actual_kwh, predicted_kwh),

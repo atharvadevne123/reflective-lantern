@@ -52,11 +52,13 @@ def describe_pipeline(pipeline: Any) -> dict[str, Any]:
     try:
         steps_info = []
         for name, estimator in pipeline.steps:
-            steps_info.append({
-                "name": name,
-                "class": type(estimator).__name__,
-                "n_params": len(estimator.get_params()) if hasattr(estimator, "get_params") else 0,
-            })
+            steps_info.append(
+                {
+                    "name": name,
+                    "class": type(estimator).__name__,
+                    "n_params": len(estimator.get_params()) if hasattr(estimator, "get_params") else 0,
+                }
+            )
         return {
             "type": type(pipeline).__name__,
             "n_steps": len(pipeline.steps),
@@ -86,6 +88,7 @@ def bundle_pipeline_info(bundle: dict[str, Any]) -> dict[str, Any]:
     info = describe_pipeline(model)
     logger.debug("bundle_pipeline_info: steps=%d", len(info.get("steps", [])))
     return info
+
 
 __all__ = [
     "bundle_pipeline_info",

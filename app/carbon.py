@@ -138,6 +138,7 @@ def carbon_savings(
         "trees_saved": trees_equivalent(saved_co2_kg),
     }
 
+
 def daily_carbon_estimate(
     hourly_kwh: list[float],
     region: str = "default",
