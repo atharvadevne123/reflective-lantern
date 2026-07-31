@@ -514,3 +514,51 @@ def test_ewma_smooth_monotone_input(alpha: float) -> None:
     result = ewma_smooth(values, alpha=alpha)
     assert len(result) == len(values)
     assert all(isinstance(v, float) for v in result)
+
+
+def test_compute_severity_no_anomaly_returns_none() -> None:
+    ref = [10.0] * 20
+    result = compute_severity(10.0, ref)
+    assert result["severity"] == "none"
+
+
+def test_compute_severity_result_has_required_keys() -> None:
+    ref = [float(i) for i in range(1, 21)]
+    result = compute_severity(50.0, ref)
+    assert "severity" in result
+    assert "z_flag" in result
+
+
+def test_classify_consumption_low() -> None:
+    from app.anomaly import classify_consumption
+    assert classify_consumption(5.0, 10.0, 20.0) == "low"
+
+
+def test_classify_consumption_normal() -> None:
+    from app.anomaly import classify_consumption
+    assert classify_consumption(15.0, 10.0, 20.0) == "normal"
+
+
+def test_classify_consumption_high() -> None:
+    from app.anomaly import classify_consumption
+    assert classify_consumption(25.0, 10.0, 20.0) == "high"
+
+
+def test_anomaly_rate_all_none_severity() -> None:
+    severities = [{"severity": "none"}] * 10
+    assert anomaly_rate(severities) == pytest.approx(0.0)
+
+
+def test_anomaly_rate_all_critical() -> None:
+    severities = [{"severity": "critical"}] * 5
+    assert anomaly_rate(severities) == pytest.approx(1.0)
+
+
+@pytest.mark.parametrize("n_anomalies,n_total,expected", [
+    (1, 4, 0.25),
+    (2, 4, 0.5),
+    (3, 4, 0.75),
+])
+def test_anomaly_rate_partial(n_anomalies, n_total, expected) -> None:
+    severities = [{"severity": "warning"}] * n_anomalies + [{"severity": "none"}] * (n_total - n_anomalies)
+    assert anomaly_rate(severities) == pytest.approx(expected)
