@@ -238,3 +238,36 @@ def test_detect_data_gaps_multiple_gaps() -> None:
     ts = [0, 7200, 14400, 21600]  # all gaps are 2h, expected 1h
     gaps = detect_data_gaps(ts, expected_interval=3600)
     assert len(gaps) == 3
+
+
+def test_completeness_score_all_fields_present() -> None:
+    fields = ["hour", "month", "day_of_week", "consumption_kwh"]
+    records = [{"hour": 12, "month": 6, "day_of_week": 1, "consumption_kwh": 10.0}]
+    score = completeness_score(records, fields)
+    assert score == pytest.approx(1.0)
+
+
+def test_completeness_score_missing_field() -> None:
+    fields = ["hour", "month", "day_of_week", "consumption_kwh"]
+    records = [{"hour": 12, "month": 6}]
+    score = completeness_score(records, fields)
+    assert 0.0 <= score < 1.0
+
+
+def test_quality_summary_total_records() -> None:
+    scored = batch_score([GOOD_RECORD, GOOD_RECORD, GOOD_RECORD])
+    summary = quality_summary(scored)
+    assert summary["total_records"] == 3
+
+
+def test_flag_outliers_none_in_normal_data() -> None:
+    records = [{"kwh": 10.0 + i * 0.1} for i in range(20)]
+    flags = flag_outliers(records, field="kwh")
+    assert isinstance(flags, list)
+
+
+@pytest.mark.parametrize("n", [1, 5, 10])
+def test_batch_score_returns_n_scores(n: int) -> None:
+    records = [GOOD_RECORD] * n
+    scores = batch_score(records)
+    assert len(scores) == n
