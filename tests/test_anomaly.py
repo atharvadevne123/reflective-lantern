@@ -529,17 +529,17 @@ def test_compute_severity_result_has_required_keys() -> None:
     assert "z_flag" in result
 
 
-def test_classify_consumption_low() -> None:
+def test_classify_consumption_low_inline() -> None:
     from app.anomaly import classify_consumption
     assert classify_consumption(5.0, 10.0, 20.0) == "low"
 
 
-def test_classify_consumption_normal() -> None:
+def test_classify_consumption_normal_inline() -> None:
     from app.anomaly import classify_consumption
     assert classify_consumption(15.0, 10.0, 20.0) == "normal"
 
 
-def test_classify_consumption_high() -> None:
+def test_classify_consumption_high_inline() -> None:
     from app.anomaly import classify_consumption
     assert classify_consumption(25.0, 10.0, 20.0) == "high"
 
@@ -549,7 +549,7 @@ def test_anomaly_rate_all_none_severity() -> None:
     assert anomaly_rate(severities) == pytest.approx(0.0)
 
 
-def test_anomaly_rate_all_critical() -> None:
+def test_anomaly_rate_all_critical_simple() -> None:
     severities = [{"severity": "critical"}] * 5
     assert anomaly_rate(severities) == pytest.approx(1.0)
 

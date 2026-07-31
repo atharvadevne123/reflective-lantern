@@ -263,7 +263,7 @@ def test_validate_entry_detects_invalid_mode() -> None:
 
 
 @pytest.mark.parametrize("mode", ["IMPROVEMENT", "INNOVATION", "improvement", "innovation"])
-def test_validate_entry_valid_modes(mode: str) -> None:
+def test_validate_entry_valid_modes_parametrized(mode: str) -> None:
     from scripts.validate_history import validate_entry
 
     entry = {"date": "2026-07-31", "commits": 60, "mode": mode}

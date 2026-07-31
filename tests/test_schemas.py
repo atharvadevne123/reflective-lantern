@@ -157,7 +157,7 @@ def test_drift_request_valid() -> None:
     assert len(r.current) == 3
 
 
-def test_anomaly_request_valid() -> None:
+def test_anomaly_request_valid_minimal() -> None:
     r = AnomalyRequest(
         building_id="b001",
         hour=10,

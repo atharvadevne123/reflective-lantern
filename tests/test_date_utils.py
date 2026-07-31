@@ -184,7 +184,7 @@ def test_week_of_year_parametrized(month, day, expected_min, expected_max) -> No
 
 
 def test_hours_between_negative_is_negative() -> None:
-    from datetime import datetime, timedelta
+    from datetime import datetime
 
     from app.date_utils import hours_between
     start = datetime(2026, 1, 2, 0)

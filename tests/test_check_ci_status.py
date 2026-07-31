@@ -354,7 +354,7 @@ def test_runs_per_page_positive() -> None:
     assert RUNS_PER_PAGE > 0
 
 
-def test_get_latest_runs_deduplicates_by_workflow_id() -> None:
+def test_get_latest_runs_deduplicates_keeps_first() -> None:
     from unittest.mock import patch
 
     from scripts.check_ci_status import get_latest_runs

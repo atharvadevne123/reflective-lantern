@@ -222,7 +222,7 @@ def test_list_building_types_are_strings() -> None:
         assert isinstance(t, str)
 
 
-def test_site_eui_basic() -> None:
+def test_site_eui_basic_inline() -> None:
     from app.benchmarks import site_eui
     result = site_eui(10000.0, 1000.0)
     assert isinstance(result, float)
@@ -235,7 +235,7 @@ def test_annual_to_monthly_estimate_length() -> None:
     assert len(result) == 12
 
 
-def test_annual_to_monthly_estimate_sums_to_annual() -> None:
+def test_annual_to_monthly_estimate_sums_to_annual_approx() -> None:
     from app.benchmarks import annual_to_monthly_estimate
     annual = 12000.0
     result = annual_to_monthly_estimate(annual)

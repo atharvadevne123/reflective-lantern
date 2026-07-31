@@ -271,7 +271,7 @@ def test_batch_add_returns_count() -> None:
 
 @pytest.mark.parametrize("k", [1, 3, 5])
 def test_search_comparable_top_k(k: int) -> None:
-    from app.similarity import BuildingSimilarityIndex, get_global_index
+    from app.similarity import get_global_index
 
     idx = get_global_index()
     idx.clear()

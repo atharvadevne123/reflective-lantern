@@ -470,7 +470,7 @@ def test_estimate_savings_mismatch_raises(length_mismatch: tuple) -> None:
         estimate_savings([1.0] * n1, [1.0] * n2)
 
 
-def test_consumption_trend_rising() -> None:
+def test_consumption_trend_direction_sequence() -> None:
     from app.reporting import consumption_trend
     daily = [float(i) for i in range(1, 31)]
     result = consumption_trend(daily)
@@ -479,13 +479,13 @@ def test_consumption_trend_rising() -> None:
 
 def test_daily_average_consumption_basic() -> None:
     from app.reporting import daily_average_consumption
-    hourly = [24.0] * 48  # 24 kWh/h × 48h = 2 days = 24 kWh/day avg
+    hourly = [24.0] * 48  # 24 kWh/h x 48h = 2 days = 24 kWh/day avg
     result = daily_average_consumption(hourly)
     assert isinstance(result, float)
     assert result > 0
 
 
-def test_daily_average_consumption_empty() -> None:
+def test_daily_average_consumption_empty_result() -> None:
     from app.reporting import daily_average_consumption
     result = daily_average_consumption([])
     assert result == 0.0 or isinstance(result, (int, float))
@@ -496,7 +496,7 @@ def test_daily_average_consumption_empty() -> None:
     (100.0, 100.0, "B"),
     (100.0, 130.0, "D"),
 ])
-def test_energy_efficiency_grade_parametrized(baseline: float, actual: float, expected_grade: str) -> None:
+def test_energy_efficiency_grade_simple_cases(baseline: float, actual: float, expected_grade: str) -> None:
     from app.reporting import energy_efficiency_grade
     grade = energy_efficiency_grade(actual, baseline)
     assert grade in ("A", "B", "C", "D", "F")

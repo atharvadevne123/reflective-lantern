@@ -434,17 +434,17 @@ def test_encode_cyclical_returns_two_floats():
 
 def test_encode_cyclical_zero_is_zero_sin():
     from app.features import encode_cyclical
-    sin_val, cos_val = encode_cyclical(0.0, 24.0)
+    sin_val, _cos_val = encode_cyclical(0.0, 24.0)
     assert abs(sin_val) < 1e-9
 
 
 def test_encode_cyclical_half_period_sine_near_zero():
     from app.features import encode_cyclical
-    sin_val, cos_val = encode_cyclical(12.0, 24.0)
+    sin_val, _cos_val = encode_cyclical(12.0, 24.0)
     assert abs(sin_val) < 1e-9
 
 
-def test_normalize_consumption_minmax_range():
+def test_normalize_consumption_minmax_endpoints():
     from app.features import normalize_consumption
     result = normalize_consumption([0.0, 5.0, 10.0], method="minmax")
     assert result[0] == pytest.approx(0.0)
@@ -459,7 +459,7 @@ def test_normalize_consumption_zscore_returns_list():
 
 
 @pytest.mark.parametrize("method", ["minmax", "zscore"])
-def test_normalize_consumption_length_preserved(method):
+def test_normalize_consumption_length_preserved_method(method):
     from app.features import normalize_consumption
     values = [float(i) for i in range(10)]
     result = normalize_consumption(values, method=method)

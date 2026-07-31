@@ -187,7 +187,7 @@ def test_clone_params_returns_dict() -> None:
 
 
 @pytest.mark.parametrize("step_name", ["scaler", "regressor"])
-def test_has_step_parametrized(step_name: str) -> None:
+def test_has_step_true_parametrized(step_name: str) -> None:
     pipe = make_test_pipeline()
     assert has_step(pipe, step_name) is True
 

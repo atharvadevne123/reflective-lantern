@@ -368,32 +368,32 @@ class TestZscore:
         assert result == pytest.approx(0.0, abs=1e-4)
 
 
-def test_weighted_average_basic() -> None:
+def test_weighted_average_equal_weights() -> None:
     from app.stats_utils import weighted_average
     result = weighted_average([1.0, 2.0, 3.0], [1.0, 1.0, 1.0])
     assert result == pytest.approx(2.0)
 
 
-def test_weighted_average_unequal_weights() -> None:
+def test_weighted_average_skewed_weights() -> None:
     from app.stats_utils import weighted_average
     result = weighted_average([0.0, 10.0], [1.0, 9.0])
     assert result == pytest.approx(9.0)
 
 
-def test_weighted_average_empty_raises() -> None:
+def test_weighted_average_empty_raises_inline() -> None:
     from app.stats_utils import weighted_average
     with pytest.raises(ValueError):
         weighted_average([], [])
 
 
-def test_harmonic_mean_basic() -> None:
+def test_harmonic_mean_is_float() -> None:
     from app.stats_utils import harmonic_mean
     result = harmonic_mean([1.0, 2.0, 4.0])
     assert isinstance(result, float)
     assert result > 0
 
 
-def test_geometric_mean_basic() -> None:
+def test_geometric_mean_two_values() -> None:
     from app.stats_utils import geometric_mean
     result = geometric_mean([1.0, 4.0])
     assert result == pytest.approx(2.0, rel=1e-4)
@@ -403,6 +403,6 @@ def test_geometric_mean_basic() -> None:
     ([1.0, 1.0, 1.0], 1.0),
     ([2.0, 8.0], 4.0),
 ])
-def test_geometric_mean_parametrized(values, expected) -> None:
+def test_geometric_mean_known_values(values, expected) -> None:
     from app.stats_utils import geometric_mean
     assert geometric_mean(values) == pytest.approx(expected, rel=1e-4)

@@ -331,7 +331,7 @@ def test_get_feature_importance_empty_bundle_returns_empty() -> None:
     assert result == []
 
 
-def test_get_feature_importance_returns_list(trained_model) -> None:
+def test_get_feature_importance_returns_list_trained(trained_model) -> None:
     from app.model import get_feature_importance
 
     bundle, _ = trained_model

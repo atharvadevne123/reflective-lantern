@@ -238,7 +238,7 @@ def test_ensemble_forecast_custom_weights(w) -> None:
 
 
 @pytest.mark.parametrize("steps", [1, 3, 6, 12, 24])
-def test_naive_forecast_various_steps(steps: int) -> None:
+def test_naive_forecast_various_steps_value_check(steps: int) -> None:
     from app.forecasting import naive_forecast
     result = naive_forecast(10.0, steps)
     assert len(result) == steps

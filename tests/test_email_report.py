@@ -169,7 +169,7 @@ def test_build_message_body_contains_text() -> None:
 
 
 @pytest.mark.parametrize("subject", ["Daily Report", "Alert: Drift Detected", "Test Run 60/60"])
-def test_build_message_various_subjects(subject: str) -> None:
+def test_build_message_subject_preserved(subject: str) -> None:
     from scripts.email_report import build_message
 
     msg = build_message(subject, "body text", "a@b.com", "c@d.com")
