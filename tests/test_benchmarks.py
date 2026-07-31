@@ -207,3 +207,45 @@ class TestEfficiencyGap:
         from app.benchmarks import efficiency_gap
         result = efficiency_gap(500.0, 200.0)
         assert result == pytest.approx(150.0, rel=1e-4)
+
+
+def test_list_building_types_not_empty() -> None:
+    from app.benchmarks import list_building_types
+    types = list_building_types()
+    assert isinstance(types, list)
+    assert len(types) > 0
+
+
+def test_list_building_types_are_strings() -> None:
+    from app.benchmarks import list_building_types
+    for t in list_building_types():
+        assert isinstance(t, str)
+
+
+def test_site_eui_basic() -> None:
+    from app.benchmarks import site_eui
+    result = site_eui(10000.0, 1000.0)
+    assert isinstance(result, float)
+    assert result > 0
+
+
+def test_annual_to_monthly_estimate_length() -> None:
+    from app.benchmarks import annual_to_monthly_estimate
+    result = annual_to_monthly_estimate(12000.0)
+    assert len(result) == 12
+
+
+def test_annual_to_monthly_estimate_sums_to_annual() -> None:
+    from app.benchmarks import annual_to_monthly_estimate
+    annual = 12000.0
+    result = annual_to_monthly_estimate(annual)
+    assert sum(result) == pytest.approx(annual, rel=1e-3)
+
+
+@pytest.mark.parametrize("building_type", ["hospital", "hotel", "default"])
+def test_benchmark_eui_known_type(building_type: str) -> None:
+    from app.benchmarks import benchmark_eui
+    result = benchmark_eui(100.0, building_type)
+    assert isinstance(result, dict)
+    assert "benchmark_eui" in result
+    assert result["benchmark_eui"] > 0
