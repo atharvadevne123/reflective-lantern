@@ -4,7 +4,13 @@ import math
 
 import pytest
 
-from app.investment import InvestmentAnalysis, compute_investment_analysis, discounted_cash_flow, margin_of_safety, payback_period
+from app.investment import (
+    InvestmentAnalysis,
+    compute_investment_analysis,
+    discounted_cash_flow,
+    margin_of_safety,
+    payback_period,
+)
 
 
 def test_basic_investment_analysis() -> None:
