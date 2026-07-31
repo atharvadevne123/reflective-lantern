@@ -2,7 +2,10 @@
 
 from __future__ import annotations
 
+import logging
 from functools import lru_cache
+
+logger = logging.getLogger(__name__)
 
 RegionDict = dict[str, object]
 
@@ -80,6 +83,7 @@ def get_peak_load(region_id: str) -> float | None:
     """
     region = get_region(region_id)
     if region is None:
+        logger.debug("get_peak_load: unknown region_id=%r", region_id)
         return None
     peak = region.get("peak_load_mw")
     return float(peak) if peak is not None else None
