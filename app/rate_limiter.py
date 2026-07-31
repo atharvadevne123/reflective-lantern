@@ -2,9 +2,12 @@
 
 from __future__ import annotations
 
+import logging
 import threading
 import time
 from dataclasses import dataclass, field
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -46,6 +49,7 @@ class TokenBucketRateLimiter:
             if bucket.tokens >= 1.0:
                 bucket.tokens -= 1.0
                 return True
+            logger.debug("rate_limit: client=%r throttled tokens=%.2f", client_key, bucket.tokens)
             return False
 
     def remaining_tokens(self, client_key: str) -> float:
