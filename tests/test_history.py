@@ -235,3 +235,37 @@ def test_validate_files_empty_list() -> None:
 
     result = validate_files([])
     assert result == {}
+
+
+def test_validate_entry_returns_list_of_errors() -> None:
+    from scripts.validate_history import validate_entry
+
+    entry = {"date": "2026-07-31", "commits": 60, "mode": "IMPROVEMENT"}
+    errors = validate_entry(entry, "test.json", 0)
+    assert isinstance(errors, list)
+    assert errors == []
+
+
+def test_validate_entry_detects_negative_commits() -> None:
+    from scripts.validate_history import validate_entry
+
+    entry = {"date": "2026-07-31", "commits": -1, "mode": "IMPROVEMENT"}
+    errors = validate_entry(entry, "test.json", 0)
+    assert len(errors) > 0
+
+
+def test_validate_entry_detects_invalid_mode() -> None:
+    from scripts.validate_history import validate_entry
+
+    entry = {"date": "2026-07-31", "commits": 60, "mode": "UNKNOWN_MODE"}
+    errors = validate_entry(entry, "test.json", 0)
+    assert len(errors) > 0
+
+
+@pytest.mark.parametrize("mode", ["IMPROVEMENT", "INNOVATION", "improvement", "innovation"])
+def test_validate_entry_valid_modes(mode: str) -> None:
+    from scripts.validate_history import validate_entry
+
+    entry = {"date": "2026-07-31", "commits": 60, "mode": mode}
+    errors = validate_entry(entry, "test.json", 0)
+    assert errors == []
