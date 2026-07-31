@@ -377,3 +377,37 @@ def test_monthly_co2_breakdown_returns_list() -> None:
     result = monthly_co2_breakdown(kwh_per_month)
     assert isinstance(result, list)
     assert len(result) == 12
+
+
+def test_carbon_saved_kwh_returns_dict() -> None:
+    from app.carbon import carbon_saved_kwh
+    result = carbon_saved_kwh(100.0, 80.0)
+    assert isinstance(result, dict)
+    assert "co2_kg_saved" in result
+
+
+def test_carbon_saved_kwh_positive_when_actual_less() -> None:
+    from app.carbon import carbon_saved_kwh
+    result = carbon_saved_kwh(100.0, 80.0)
+    assert result["co2_kg_saved"] > 0
+
+
+def test_annual_carbon_report_returns_dict() -> None:
+    from app.carbon import annual_carbon_report
+    result = annual_carbon_report([100.0] * 12)
+    assert isinstance(result, dict)
+    assert "total_co2_kg" in result
+
+
+def test_annual_carbon_report_12_month_input() -> None:
+    from app.carbon import annual_carbon_report
+    result = annual_carbon_report([50.0] * 12)
+    assert result["total_co2_kg"] > 0
+
+
+@pytest.mark.parametrize("region", ["northeast", "west", "default"])
+def test_carbon_saved_kwh_various_regions(region: str) -> None:
+    from app.carbon import carbon_saved_kwh
+    result = carbon_saved_kwh(200.0, 150.0, region=region)
+    assert "co2_kg_saved" in result
+    assert result["co2_kg_saved"] >= 0
