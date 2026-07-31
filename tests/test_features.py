@@ -423,3 +423,44 @@ def test_demand_response_potential_thresholds(threshold):
     loads = list(range(1, 25))
     result = demand_response_potential(loads, peak_threshold_pct=threshold)
     assert 0.0 <= result["potential_pct"] <= 1.0
+
+
+def test_encode_cyclical_returns_two_floats():
+    from app.features import encode_cyclical
+    sin_val, cos_val = encode_cyclical(0.0, 24.0)
+    assert isinstance(sin_val, float)
+    assert isinstance(cos_val, float)
+
+
+def test_encode_cyclical_zero_is_zero_sin():
+    from app.features import encode_cyclical
+    sin_val, cos_val = encode_cyclical(0.0, 24.0)
+    assert abs(sin_val) < 1e-9
+
+
+def test_encode_cyclical_half_period_sine_near_zero():
+    from app.features import encode_cyclical
+    sin_val, cos_val = encode_cyclical(12.0, 24.0)
+    assert abs(sin_val) < 1e-9
+
+
+def test_normalize_consumption_minmax_range():
+    from app.features import normalize_consumption
+    result = normalize_consumption([0.0, 5.0, 10.0], method="minmax")
+    assert result[0] == pytest.approx(0.0)
+    assert result[-1] == pytest.approx(1.0)
+
+
+def test_normalize_consumption_zscore_returns_list():
+    from app.features import normalize_consumption
+    result = normalize_consumption([10.0, 20.0, 30.0], method="zscore")
+    assert isinstance(result, list)
+    assert len(result) == 3
+
+
+@pytest.mark.parametrize("method", ["minmax", "zscore"])
+def test_normalize_consumption_length_preserved(method):
+    from app.features import normalize_consumption
+    values = [float(i) for i in range(10)]
+    result = normalize_consumption(values, method=method)
+    assert len(result) == len(values)
