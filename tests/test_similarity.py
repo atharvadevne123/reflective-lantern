@@ -281,3 +281,38 @@ def test_search_comparable_top_k(k: int) -> None:
     results = search_comparable([5.0] * 24, top_k=k)
     assert len(results) <= k
     idx.clear()
+
+
+def test_cosine_distance_identical_vectors() -> None:
+    from app.similarity import cosine_distance
+    assert cosine_distance([1.0, 0.0, 0.0], [1.0, 0.0, 0.0]) == pytest.approx(0.0, abs=1e-6)
+
+
+def test_cosine_distance_orthogonal_vectors() -> None:
+    from app.similarity import cosine_distance
+    assert cosine_distance([1.0, 0.0], [0.0, 1.0]) == pytest.approx(1.0, abs=1e-6)
+
+
+def test_cosine_distance_range() -> None:
+    from app.similarity import cosine_distance
+    a = [1.0, 2.0, 3.0]
+    b = [4.0, 5.0, 6.0]
+    d = cosine_distance(a, b)
+    assert 0.0 <= d <= 2.0
+
+
+@pytest.mark.parametrize("n_dims", [3, 10, 24])
+def test_cosine_distance_same_vector_various_dims(n_dims: int) -> None:
+    from app.similarity import cosine_distance
+    v = [1.0] * n_dims
+    assert cosine_distance(v, v) == pytest.approx(0.0, abs=1e-6)
+
+
+def test_building_similarity_index_search_returns_tuples() -> None:
+    from app.similarity import BuildingSimilarityIndex
+    idx = BuildingSimilarityIndex()
+    idx.add("bld-A", [1.0, 2.0, 3.0])
+    results = idx.search([1.0, 2.0, 3.0], k=1)
+    assert len(results) == 1
+    assert isinstance(results[0], tuple)
+    assert results[0][0] == "bld-A"
