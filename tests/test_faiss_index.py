@@ -188,3 +188,44 @@ def test_search_comparable_returns_n_or_less(n):
     results = search_comparable([0.0] * 24, top_k=n)
     assert len(results) <= n
     reset_index()
+
+
+def test_add_property_increments_index():
+    from app.faiss_index import add_property, index_size, reset_index
+
+    reset_index()
+    assert index_size() == 0
+    add_property([1.0] * 24)
+    add_property([2.0] * 24)
+    assert index_size() == 2
+    reset_index()
+
+
+def test_reset_index_empties_store():
+    from app.faiss_index import add_property, index_size, reset_index
+
+    reset_index()
+    add_property([0.5] * 24)
+    reset_index()
+    assert index_size() == 0
+
+
+def test_search_comparable_returns_list():
+    from app.faiss_index import add_property, reset_index, search_comparable
+
+    reset_index()
+    for i in range(5):
+        add_property([float(i + 1)] * 24)
+    results = search_comparable([3.0] * 24, top_k=3)
+    assert isinstance(results, list)
+    reset_index()
+
+
+@pytest.mark.parametrize("dim_val", [0.0, 5.0, 10.0, 100.0])
+def test_add_property_various_values(dim_val: float) -> None:
+    from app.faiss_index import add_property, index_size, reset_index
+
+    reset_index()
+    add_property([dim_val] * 24)
+    assert index_size() == 1
+    reset_index()
