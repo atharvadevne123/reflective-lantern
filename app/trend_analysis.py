@@ -2,8 +2,11 @@
 
 from __future__ import annotations
 
+import logging
 import math
 from typing import NamedTuple
+
+logger = logging.getLogger(__name__)
 
 
 class TrendResult(NamedTuple):
@@ -79,7 +82,10 @@ def detect_change_points(values: list[float], threshold: float = 2.0) -> list[in
     std_d = math.sqrt(variance) if variance > 0 else 0.0
     if std_d == 0:
         return []
-    return [i + 1 for i, d in enumerate(diffs) if abs((d - mean_d) / std_d) > threshold]
+    cps = [i + 1 for i, d in enumerate(diffs) if abs((d - mean_d) / std_d) > threshold]
+    if cps:
+        logger.debug("detect_change_points: found %d change point(s) in series of length %d", len(cps), len(values))
+    return cps
 
 
 def seasonal_decompose_naive(
