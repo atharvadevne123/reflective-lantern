@@ -85,9 +85,10 @@ def quality_summary(scored: list[dict[str, Any]]) -> dict[str, Any]:
         Dict with mean_score, min_score, max_score, n_perfect, n_failing (score < 60).
     """
     if not scored:
-        return {"mean_score": 0.0, "min_score": 0, "max_score": 0, "n_perfect": 0, "n_failing": 0}
+        return {"total_records": 0, "mean_score": 0.0, "min_score": 0, "max_score": 0, "n_perfect": 0, "n_failing": 0}
     scores = [r["dq_score"] for r in scored]
     return {
+        "total_records": len(scored),
         "mean_score": round(sum(scores) / len(scores), 2),
         "min_score": min(scores),
         "max_score": max(scores),
