@@ -341,3 +341,68 @@ def test_get_recent_anomalies_limit(db_session, limit):
     db_session.commit()
     results = get_recent_anomalies(db_session, "limit-anomaly-bldg", limit=limit)
     assert len(results) == limit
+
+
+def test_drift_log_can_be_created(db_session):
+    from app.database import DriftLog
+
+    entry = DriftLog(
+        feature_name="consumption_kwh",
+        ks_statistic=0.15,
+        p_value=0.03,
+        drift_detected=1,
+    )
+    db_session.add(entry)
+    db_session.commit()
+    assert entry.id is not None
+
+
+def test_model_metrics_can_be_created(db_session):
+    from app.database import ModelMetrics
+
+    m = ModelMetrics(
+        model_version="v1.0",
+        r2_mean=0.95,
+        mae_kwh=1.2,
+        rmse_mean=1.8,
+    )
+    db_session.add(m)
+    db_session.commit()
+    assert m.id is not None
+
+
+def test_energy_reading_fields(db_session):
+    from datetime import datetime
+
+    from app.database import EnergyReading
+
+    r = EnergyReading(
+        building_id="field-test",
+        timestamp=datetime.utcnow(),
+        consumption_kwh=20.0,
+        temperature_c=21.0,
+        humidity_pct=50.0,
+    )
+    db_session.add(r)
+    db_session.commit()
+    assert r.building_id == "field-test"
+    assert r.consumption_kwh == 20.0
+
+
+@pytest.mark.parametrize("severity", ["low", "medium", "high", "critical"])
+def test_anomaly_log_severity_field(db_session, severity):
+    from datetime import datetime
+
+    from app.database import AnomalyLog
+
+    log = AnomalyLog(
+        building_id="sev-test",
+        timestamp=datetime.utcnow(),
+        consumption_kwh=55.0,
+        anomaly_score=0.7,
+        is_anomaly=1,
+        severity=severity,
+    )
+    db_session.add(log)
+    db_session.commit()
+    assert log.severity == severity
