@@ -445,3 +445,41 @@ def test_settings_to_dict_has_all_slots(settings_env):
     d = s.to_dict()
     for slot in s.__slots__:
         assert slot in d
+
+
+def test_settings_is_valid_true(settings_env):
+    from config.settings import get_settings
+
+    s = get_settings()
+    assert s.is_valid() is True
+
+
+def test_settings_commit_target_positive(settings_env):
+    from config.settings import get_settings
+
+    s = get_settings()
+    assert s.commit_target > 0
+
+
+def test_settings_log_level_is_string(settings_env):
+    from config.settings import get_settings
+
+    s = get_settings()
+    assert isinstance(s.log_level, str)
+
+
+def test_settings_github_owner_is_string(settings_env):
+    from config.settings import get_settings
+
+    s = get_settings()
+    assert isinstance(s.github_owner, str)
+
+
+@pytest.mark.parametrize("field", ["gh_pat", "gmail_app_pass"])
+def test_settings_sensitive_fields_masked(settings_env, field):
+    from config.settings import get_settings
+
+    s = get_settings()
+    d = s.to_dict(include_sensitive=False)
+    if field in d and d[field] not in (None, ""):
+        assert d[field] == "***", f"{field} should be masked"
