@@ -7,7 +7,7 @@ from pathlib import Path
 
 from config.constants import HISTORY_DIR, NON_RECORD_FILES
 
-VALID_MODES: frozenset[str] = frozenset({"improvement", "IMPROVEMENT", "innovation", "INNOVATION"})
+VALID_MODES: frozenset[str] = frozenset({"improvement", "IMPROVEMENT", "innovation", "INNOVATION", "user-requested"})
 VALID_EMAIL_STATUSES: frozenset[str] = frozenset(
     {"pending", "sent", "skipped", "failed_smtp", "network_blocked", "pdf_generated_ok", ""}
 )
