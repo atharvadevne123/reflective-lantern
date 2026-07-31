@@ -336,3 +336,44 @@ class TestCarbonSavedKwh:
         result = carbon_saved_kwh(100.0, 0.0)
         assert result["pct_reduction"] == pytest.approx(100.0, rel=1e-4)
         assert result["kwh_saved"] == pytest.approx(100.0, rel=1e-4)
+
+
+def test_kwh_to_co2_pacific_nw_lowest() -> None:
+    from app.carbon import kwh_to_co2_kg
+    pacific = kwh_to_co2_kg(100.0, "pacific_nw")
+    midwest = kwh_to_co2_kg(100.0, "midwest")
+    assert pacific < midwest
+
+
+def test_co2_kg_to_tonnes_basic() -> None:
+    from app.carbon import co2_kg_to_tonnes
+    assert co2_kg_to_tonnes(1000.0) == pytest.approx(1.0)
+
+
+def test_trees_equivalent_is_positive() -> None:
+    from app.carbon import trees_equivalent
+    result = trees_equivalent(1000.0)
+    assert result > 0
+
+
+@pytest.mark.parametrize("kwh", [0.0, 10.0, 100.0, 1000.0])
+def test_kwh_to_co2_various_kwh(kwh: float) -> None:
+    from app.carbon import kwh_to_co2_kg
+    result = kwh_to_co2_kg(kwh)
+    assert result >= 0.0
+    assert result == pytest.approx(kwh * 0.35, rel=1e-3)
+
+
+def test_tree_offset_days_positive_trees() -> None:
+    from app.carbon import tree_offset_days
+    result = tree_offset_days(365.0, num_trees=10)
+    assert isinstance(result, float)
+    assert result > 0
+
+
+def test_monthly_co2_breakdown_returns_list() -> None:
+    from app.carbon import monthly_co2_breakdown
+    kwh_per_month = [100.0] * 12
+    result = monthly_co2_breakdown(kwh_per_month)
+    assert isinstance(result, list)
+    assert len(result) == 12
