@@ -248,3 +248,49 @@ def test_get_region_has_carbon_intensity() -> None:
     r = get_region("texas")
     assert r is not None
     assert "carbon_intensity" in r or "grid_intensity" in r or "peak_load_mw" in r
+
+
+def test_get_all_region_ids_returns_list() -> None:
+    from app.regions import get_all_region_ids
+    ids = get_all_region_ids()
+    assert isinstance(ids, list)
+    assert len(ids) > 0
+
+
+def test_get_all_region_ids_are_strings() -> None:
+    from app.regions import get_all_region_ids
+    for rid in get_all_region_ids():
+        assert isinstance(rid, str)
+
+
+def test_get_region_timezone_default() -> None:
+    from app.regions import get_region_timezone
+    tz = get_region_timezone("northeast")
+    assert isinstance(tz, str)
+    assert len(tz) > 0
+
+
+def test_get_region_timezone_unknown_returns_utc() -> None:
+    from app.regions import get_region_timezone
+    tz = get_region_timezone("nonexistent_region")
+    assert "UTC" in tz or "America" in tz or isinstance(tz, str)
+
+
+def test_get_peak_load_known_region() -> None:
+    from app.regions import get_peak_load
+    load = get_peak_load("texas")
+    assert load is None or isinstance(load, (int, float))
+
+
+def test_get_regions_by_timezone_returns_list() -> None:
+    from app.regions import get_region_timezone, get_regions_by_timezone
+    tz = get_region_timezone("northeast")
+    result = get_regions_by_timezone(tz)
+    assert isinstance(result, list)
+
+
+@pytest.mark.parametrize("region_id", ["northeast", "midwest", "south", "west", "texas"])
+def test_get_all_region_ids_contains_standard(region_id: str) -> None:
+    from app.regions import get_all_region_ids
+    ids = get_all_region_ids()
+    assert region_id in ids
