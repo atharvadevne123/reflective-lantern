@@ -168,3 +168,55 @@ def test_week_of_year_january_first() -> None:
     from app.date_utils import week_of_year
     dt = datetime(2026, 1, 5)  # First week of 2026
     assert 1 <= week_of_year(dt) <= 2
+
+
+@pytest.mark.parametrize("month,day,expected_min,expected_max", [
+    (1, 1, 1, 2),
+    (6, 15, 24, 26),
+    (12, 31, 52, 54),
+])
+def test_week_of_year_parametrized(month, day, expected_min, expected_max) -> None:
+    from datetime import datetime
+
+    from app.date_utils import week_of_year
+    dt = datetime(2026, month, day)
+    assert expected_min <= week_of_year(dt) <= expected_max
+
+
+def test_hours_between_negative_is_negative() -> None:
+    from datetime import datetime, timedelta
+
+    from app.date_utils import hours_between
+    start = datetime(2026, 1, 2, 0)
+    end = datetime(2026, 1, 1, 0)
+    result = hours_between(start, end)
+    assert result <= 0
+
+
+def test_round_to_hour_already_on_hour() -> None:
+    from datetime import datetime
+
+    from app.date_utils import round_to_hour
+    dt = datetime(2026, 6, 1, 9, 0, 0)
+    result = round_to_hour(dt)
+    assert result.hour == 9
+    assert result.minute == 0
+
+
+@pytest.mark.parametrize("h", [0, 6, 12, 18, 23])
+def test_is_business_hour_boundary_hours(h: int) -> None:
+    from datetime import datetime
+
+    from app.date_utils import is_business_hour
+    dt = datetime(2026, 7, 20, h)  # Monday
+    result = is_business_hour(dt)
+    assert isinstance(result, bool)
+
+
+def test_generate_hourly_timestamps_first_element_matches_start() -> None:
+    from datetime import datetime
+
+    from app.date_utils import generate_hourly_timestamps
+    start = datetime(2026, 3, 15, 8)
+    result = generate_hourly_timestamps(start, 10)
+    assert result[0] == start
