@@ -147,3 +147,45 @@ def test_send_report_returns_false_without_credentials(
     monkeypatch.delenv("GMAIL_APP_PASS", raising=False)
     result = send_report(subject="Test", body="body")
     assert result is False
+
+
+def test_build_message_subject() -> None:
+    from scripts.email_report import build_message
+
+    msg = build_message("My Subject", "body", "a@b.com", "c@d.com")
+    assert msg["Subject"] == "My Subject"
+
+
+def test_build_message_body_contains_text() -> None:
+    from scripts.email_report import build_message
+
+    msg = build_message("S", "my body text", "a@b.com", "c@d.com")
+    payload = msg.get_payload()
+    if isinstance(payload, list):
+        combined = " ".join(p.get_payload() or "" for p in payload)
+    else:
+        combined = payload or ""
+    assert "my body text" in combined
+
+
+@pytest.mark.parametrize("subject", ["Daily Report", "Alert: Drift Detected", "Test Run 60/60"])
+def test_build_message_various_subjects(subject: str) -> None:
+    from scripts.email_report import build_message
+
+    msg = build_message(subject, "body text", "a@b.com", "c@d.com")
+    assert msg["Subject"] == subject
+
+
+def test_send_via_smtp_raises_on_all_failures(monkeypatch) -> None:
+    import smtplib
+
+    from scripts.email_report import build_message, send_via_smtp
+
+    def boom(*args, **kwargs):
+        raise smtplib.SMTPException("connection refused")
+
+    monkeypatch.setattr(smtplib, "SMTP_SSL", boom)
+    monkeypatch.setattr(smtplib, "SMTP", boom)
+    msg = build_message("S", "b", "a@b.com", "c@d.com")
+    with pytest.raises(RuntimeError, match="All SMTP attempts failed"):
+        send_via_smtp(msg, "user@gmail.com", "fakepass", "c@d.com")
