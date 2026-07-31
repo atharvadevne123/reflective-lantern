@@ -271,3 +271,37 @@ def test_exponential_smoothing_various_alpha(alpha: float) -> None:
 def test_naive_forecast_zero_steps_empty() -> None:
     from app.forecasting import naive_forecast
     assert naive_forecast(5.0, 0) == []
+
+
+def test_forecast_bias_returns_float() -> None:
+    from app.forecasting import forecast_bias
+    result = forecast_bias([10.0, 20.0], [12.0, 18.0])
+    assert isinstance(result, float)
+
+
+def test_forecast_bias_negative_when_under_predicting() -> None:
+    from app.forecasting import forecast_bias
+    result = forecast_bias([10.0, 10.0], [8.0, 8.0])
+    assert result < 0
+
+
+def test_ensemble_forecast_returns_correct_length() -> None:
+    from app.forecasting import ensemble_forecast
+    values = [float(i) for i in range(72)]
+    result = ensemble_forecast(values, steps=12)
+    assert len(result) == 12
+
+
+def test_ensemble_forecast_constant_input() -> None:
+    from app.forecasting import ensemble_forecast
+    values = [5.0] * 48
+    result = ensemble_forecast(values, steps=6)
+    assert len(result) == 6
+
+
+@pytest.mark.parametrize("steps", [1, 6, 12])
+def test_ensemble_forecast_various_steps(steps: int) -> None:
+    from app.forecasting import ensemble_forecast
+    values = [float(i % 24) for i in range(72)]
+    result = ensemble_forecast(values, steps=steps)
+    assert len(result) == steps
