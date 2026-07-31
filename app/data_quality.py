@@ -2,7 +2,10 @@
 
 from __future__ import annotations
 
+import logging
 from typing import Any
+
+logger = logging.getLogger(__name__)
 
 _VALID_HOUR_RANGE = (0, 23)
 _VALID_MONTH_RANGE = (1, 12)
@@ -87,7 +90,7 @@ def quality_summary(scored: list[dict[str, Any]]) -> dict[str, Any]:
     if not scored:
         return {"total_records": 0, "mean_score": 0.0, "min_score": 0, "max_score": 0, "n_perfect": 0, "n_failing": 0}
     scores = [r["dq_score"] for r in scored]
-    return {
+    summary = {
         "total_records": len(scored),
         "mean_score": round(sum(scores) / len(scores), 2),
         "min_score": min(scores),
@@ -95,6 +98,8 @@ def quality_summary(scored: list[dict[str, Any]]) -> dict[str, Any]:
         "n_perfect": sum(1 for s in scores if s == 100),
         "n_failing": sum(1 for s in scores if s < 60),
     }
+    logger.debug("quality_summary: n=%d mean=%.1f n_failing=%d", len(scored), summary["mean_score"], summary["n_failing"])
+    return summary
 
 
 def flag_outliers(
