@@ -2,7 +2,10 @@
 
 from __future__ import annotations
 
+import logging
 from datetime import UTC, datetime, timedelta
+
+logger = logging.getLogger(__name__)
 
 
 def utc_now() -> datetime:
@@ -51,6 +54,7 @@ def iso_to_datetime(iso_str: str) -> datetime:
     try:
         return datetime.fromisoformat(iso_str.replace("Z", "+00:00"))
     except (ValueError, AttributeError) as exc:
+        logger.debug("iso_to_datetime: parse failed for %r", iso_str)
         raise ValueError(f"Cannot parse ISO-8601 datetime: {iso_str!r}") from exc
 
 
