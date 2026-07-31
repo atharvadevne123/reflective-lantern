@@ -2,8 +2,11 @@
 
 from __future__ import annotations
 
+import logging
 import math
 import statistics
+
+logger = logging.getLogger(__name__)
 
 
 def mean_absolute_error(actual: list[float], predicted: list[float]) -> float:
@@ -309,4 +312,7 @@ def zscore(values: list[float], value: float) -> float:
     std = variance ** 0.5
     if std < 1e-9:
         return 0.0
-    return round((value - mean) / std, 6)
+    result = round((value - mean) / std, 6)
+    if abs(result) > 3.0:
+        logger.debug("zscore: extreme value detected z=%.4f (n=%d)", result, n)
+    return result
