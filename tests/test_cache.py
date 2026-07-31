@@ -210,3 +210,46 @@ def test_warm_cache_parametrized_count(n) -> None:
     c = TTLCache(ttl_seconds=60, max_size=100)
     entries = {str(i): i * 10 for i in range(n)}
     assert warm_cache(c, entries) == n
+
+
+def test_ttl_cache_get_returns_none_missing() -> None:
+    from app.cache import TTLCache
+
+    c = TTLCache(ttl_seconds=30, max_size=10)
+    assert c.get("nonexistent") is None
+
+
+def test_ttl_cache_set_and_get() -> None:
+    from app.cache import TTLCache
+
+    c = TTLCache(ttl_seconds=60, max_size=10)
+    c.set("k", 42)
+    assert c.get("k") == 42
+
+
+def test_ttl_cache_size_increments() -> None:
+    from app.cache import TTLCache
+
+    c = TTLCache(ttl_seconds=60, max_size=100)
+    assert c.size == 0
+    c.set("a", 1)
+    c.set("b", 2)
+    assert c.size == 2
+
+
+def test_ttl_cache_clear_resets_size() -> None:
+    from app.cache import TTLCache
+
+    c = TTLCache(ttl_seconds=60, max_size=10)
+    c.set("x", 99)
+    c.clear()
+    assert c.size == 0
+
+
+@pytest.mark.parametrize("ttl", [1, 30, 300, 3600])
+def test_ttl_cache_accepts_various_ttls(ttl: int) -> None:
+    from app.cache import TTLCache
+
+    c = TTLCache(ttl_seconds=ttl, max_size=5)
+    c.set("key", "val")
+    assert c.get("key") == "val"
