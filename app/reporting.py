@@ -323,8 +323,51 @@ __all__ = [
     "daily_average_consumption",
     "energy_efficiency_grade",
     "estimate_savings",
+    "kwh_to_wh",
     "monthly_consumption_summary",
     "peak_demand_by_period",
     "peak_demand_report",
     "seasonal_efficiency_score",
+    "tariff_cost",
+    "wh_to_kwh",
 ]
+
+
+def kwh_to_wh(kwh: float) -> float:
+    """Convert kilowatt-hours to watt-hours.
+
+    Args:
+        kwh: Energy in kilowatt-hours.
+
+    Returns:
+        Equivalent energy in watt-hours.
+    """
+    return round(kwh * 1000.0, 4)
+
+
+def wh_to_kwh(wh: float) -> float:
+    """Convert watt-hours to kilowatt-hours.
+
+    Args:
+        wh: Energy in watt-hours.
+
+    Returns:
+        Equivalent energy in kilowatt-hours.
+    """
+    return round(wh / 1000.0, 6)
+
+
+def tariff_cost(kwh: float, tariff_per_kwh: float) -> float:
+    """Compute energy cost for a given consumption and tariff rate.
+
+    Args:
+        kwh: Energy consumption in kilowatt-hours.
+        tariff_per_kwh: Electricity tariff in currency per kWh.
+
+    Returns:
+        Total cost rounded to 4 decimal places.
+        Returns 0.0 for non-positive kwh.
+    """
+    if kwh <= 0:
+        return 0.0
+    return round(kwh * tariff_per_kwh, 4)
