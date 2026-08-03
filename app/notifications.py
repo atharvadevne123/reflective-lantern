@@ -112,7 +112,40 @@ def make_drift_alert(ks_stat: float, p_value: float) -> Alert:
 __all__ = [
     "Alert",
     "AlertQueue",
+    "alert_summary",
+    "highest_severity",
     "make_anomaly_alert",
     "make_drift_alert",
     "severity_rank",
 ]
+
+
+def alert_summary(alerts: list[Alert]) -> dict[str, int]:
+    """Return a count of alerts grouped by severity.
+
+    Args:
+        alerts: List of :class:`Alert` instances.
+
+    Returns:
+        Dict mapping severity name to count (info, warning, critical).
+    """
+    summary: dict[str, int] = {"info": 0, "warning": 0, "critical": 0}
+    for a in alerts:
+        key = a.severity.lower()
+        if key in summary:
+            summary[key] += 1
+    return summary
+
+
+def highest_severity(alerts: list[Alert]) -> str:
+    """Return the highest severity level among *alerts*.
+
+    Args:
+        alerts: List of :class:`Alert` instances.
+
+    Returns:
+        Severity string ('info', 'warning', 'critical'), or 'none' if empty.
+    """
+    if not alerts:
+        return "none"
+    return max(alerts, key=lambda a: severity_rank(a.severity)).severity
