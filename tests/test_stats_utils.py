@@ -461,3 +461,98 @@ def test_geometric_mean_known_values(values, expected) -> None:
     from app.stats_utils import geometric_mean
 
     assert geometric_mean(values) == pytest.approx(expected, rel=1e-4)
+
+
+class TestCoefficientOfVariation:
+    def test_identical_values_returns_zero(self) -> None:
+        from app.stats_utils import coefficient_of_variation
+
+        assert coefficient_of_variation([5.0] * 10) == 0.0
+
+    def test_known_cv(self) -> None:
+        from app.stats_utils import coefficient_of_variation
+
+        # Values 0,2,4: mean=2, std=sqrt(8/3)≈1.633
+        result = coefficient_of_variation([0.0, 2.0, 4.0])
+        assert result == pytest.approx(81.6497, rel=1e-3)
+
+    def test_empty_raises(self) -> None:
+        import pytest as _pytest
+
+        from app.stats_utils import coefficient_of_variation
+
+        with _pytest.raises(ValueError):
+            coefficient_of_variation([])
+
+    def test_zero_mean_raises(self) -> None:
+        import pytest as _pytest
+
+        from app.stats_utils import coefficient_of_variation
+
+        with _pytest.raises(ValueError, match="near zero"):
+            coefficient_of_variation([0.0, 0.0, 0.0])
+
+    @pytest.mark.parametrize("vals", [[1.0, 2.0, 3.0], [10.0, 20.0]])
+    def test_returns_positive_float(self, vals: list) -> None:
+        from app.stats_utils import coefficient_of_variation
+
+        result = coefficient_of_variation(vals)
+        assert result > 0.0
+
+
+class TestExponentialMovingAverage:
+    def test_single_element(self) -> None:
+        from app.stats_utils import exponential_moving_average
+
+        assert exponential_moving_average([5.0]) == [5.0]
+
+    def test_alpha_1_equals_input(self) -> None:
+        from app.stats_utils import exponential_moving_average
+
+        vals = [1.0, 2.0, 3.0, 4.0]
+        result = exponential_moving_average(vals, alpha=1.0)
+        assert result == pytest.approx(vals, abs=1e-5)
+
+    def test_same_length_as_input(self) -> None:
+        from app.stats_utils import exponential_moving_average
+
+        vals = [1.0, 2.0, 3.0, 4.0, 5.0]
+        assert len(exponential_moving_average(vals)) == len(vals)
+
+    def test_invalid_alpha_raises(self) -> None:
+        import pytest as _pytest
+
+        from app.stats_utils import exponential_moving_average
+
+        with _pytest.raises(ValueError):
+            exponential_moving_average([1.0, 2.0], alpha=0.0)
+
+
+class TestWinsorize:
+    def test_no_clipping_needed(self) -> None:
+        from app.stats_utils import winsorize
+
+        vals = [1.0, 2.0, 3.0, 4.0, 5.0]
+        result = winsorize(vals, lower_pct=0.0, upper_pct=100.0)
+        assert result == vals
+
+    def test_clips_extremes(self) -> None:
+        from app.stats_utils import winsorize
+
+        vals = [0.0, 1.0, 2.0, 3.0, 100.0]
+        result = winsorize(vals, lower_pct=10.0, upper_pct=90.0)
+        assert max(result) < 100.0
+
+    def test_same_length(self) -> None:
+        from app.stats_utils import winsorize
+
+        vals = list(range(20))
+        assert len(winsorize(vals)) == len(vals)
+
+    @pytest.mark.parametrize("lower,upper", [(5.0, 95.0), (25.0, 75.0)])
+    def test_result_within_bounds(self, lower: float, upper: float) -> None:
+        from app.stats_utils import winsorize
+
+        vals = list(range(100))
+        result = winsorize(vals, lower_pct=lower, upper_pct=upper)
+        assert min(result) >= vals[int(lower)]
