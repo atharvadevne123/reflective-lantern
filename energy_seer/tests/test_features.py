@@ -146,3 +146,43 @@ class TestBuildFeaturePipeline:
         if hasattr(result, "columns"):
             assert "consumption_kwh" not in result.columns
             assert "building_type" not in result.columns
+
+
+class TestFeatureColumnNames:
+    def test_returns_list(self) -> None:
+        from energy_seer.app.features import feature_column_names
+        result = feature_column_names()
+        assert isinstance(result, list)
+        assert len(result) > 0
+
+    def test_sorted(self) -> None:
+        from energy_seer.app.features import feature_column_names
+        result = feature_column_names()
+        assert result == sorted(result)
+
+    def test_known_columns_present(self) -> None:
+        from energy_seer.app.features import feature_column_names
+        cols = feature_column_names()
+        assert "lag_1h" in cols
+        assert "rolling_mean_24h" in cols
+
+
+class TestValidateDataframeColumns:
+    def test_no_missing(self) -> None:
+        import pandas as pd
+        from energy_seer.app.features import validate_dataframe_columns
+        df = pd.DataFrame({"consumption_kwh": [1], "hour_of_day": [0], "day_of_week": [0]})
+        assert validate_dataframe_columns(df) == []
+
+    def test_missing_column(self) -> None:
+        import pandas as pd
+        from energy_seer.app.features import validate_dataframe_columns
+        df = pd.DataFrame({"consumption_kwh": [1]})
+        missing = validate_dataframe_columns(df)
+        assert "hour_of_day" in missing
+
+    def test_custom_required(self) -> None:
+        import pandas as pd
+        from energy_seer.app.features import validate_dataframe_columns
+        df = pd.DataFrame({"a": [1], "b": [2]})
+        assert validate_dataframe_columns(df, ["a", "c"]) == ["c"]
