@@ -33,4 +33,38 @@ settings = Settings()
 
 __all__ = [
     "Settings",
+    "effective_log_level",
+    "get_settings",
+    "is_production",
+    "settings",
 ]
+
+
+def get_settings() -> Settings:
+    """Return the module-level :class:`Settings` singleton.
+
+    Returns:
+        The application-wide Settings instance.
+    """
+    return settings
+
+
+def is_production() -> bool:
+    """Return True when DATABASE_URL points to a non-SQLite database.
+
+    Useful for guarding prod-only code paths such as Prometheus export
+    or strict rate-limiting.
+
+    Returns:
+        True when the database URL does not start with 'sqlite'.
+    """
+    return not settings.database_url.startswith("sqlite")
+
+
+def effective_log_level() -> str:
+    """Return the configured log level in upper-case form.
+
+    Returns:
+        Log level string such as 'INFO', 'DEBUG', 'WARNING'.
+    """
+    return settings.log_level.upper()
