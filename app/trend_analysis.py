@@ -153,10 +153,77 @@ def rate_of_change(values: list[float], lag: int = 1) -> list[float]:
     return [percentage_change(values[i - lag], values[i]) for i in range(lag, len(values))]
 
 
+def momentum_score(
+    values: list[float],
+    short_window: int = 7,
+    long_window: int = 30,
+) -> dict[str, float]:
+    """Compute a momentum score by comparing short and long moving averages.
+
+    A positive score indicates short-term consumption is rising faster than the
+    long-term baseline (bullish momentum); negative is the reverse.
+
+    Args:
+        values: Time-ordered consumption readings (kWh).
+        short_window: Periods for the short-term moving average (default 7).
+        long_window: Periods for the long-term moving average (default 30).
+
+    Returns:
+        Dict with 'short_ma', 'long_ma', 'momentum', and 'signal'
+        ('increasing'|'decreasing'|'neutral').
+
+    Raises:
+        ValueError: If *values* is shorter than *long_window* or windows are invalid.
+    """
+    if short_window < 1 or long_window < 1:
+        raise ValueError("Window sizes must be >= 1")
+    if short_window >= long_window:
+        raise ValueError(f"short_window ({short_window}) must be less than long_window ({long_window})")
+    if len(values) < long_window:
+        raise ValueError(f"Need at least {long_window} values, got {len(values)}")
+    short_ma = sum(values[-short_window:]) / short_window
+    long_ma = sum(values[-long_window:]) / long_window
+    momentum = round(short_ma - long_ma, 4)
+    relative_threshold = long_ma * 0.01 if long_ma != 0 else 0.0
+    if momentum > relative_threshold:
+        signal = "increasing"
+    elif momentum < -relative_threshold:
+        signal = "decreasing"
+    else:
+        signal = "neutral"
+    return {
+        "short_ma": round(short_ma, 4),
+        "long_ma": round(long_ma, 4),
+        "momentum": momentum,
+        "signal": signal,
+    }
+
+
+def cumulative_sum(values: list[float]) -> list[float]:
+    """Return the cumulative sum of *values* (CUSUM).
+
+    Useful for detecting long-run drift and structural shifts in a series.
+
+    Args:
+        values: Time-ordered readings.
+
+    Returns:
+        Cumulative sum list of the same length as *values*.
+    """
+    result: list[float] = []
+    total = 0.0
+    for v in values:
+        total += v
+        result.append(round(total, 6))
+    return result
+
+
 __all__ = [
     "TrendResult",
+    "cumulative_sum",
     "detect_change_points",
     "linear_trend",
+    "momentum_score",
     "percentage_change",
     "rate_of_change",
     "rolling_mean",
