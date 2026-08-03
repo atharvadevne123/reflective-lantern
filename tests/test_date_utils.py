@@ -252,3 +252,62 @@ def test_generate_hourly_timestamps_first_element_matches_start() -> None:
     start = datetime(2026, 3, 15, 8)
     result = generate_hourly_timestamps(start, 10)
     assert result[0] == start
+
+
+class TestDatetimeToIso:
+    def test_naive_becomes_utc(self) -> None:
+        from datetime import datetime
+        from app.date_utils import datetime_to_iso
+        dt = datetime(2026, 8, 3, 12, 0, 0)
+        result = datetime_to_iso(dt)
+        assert "+00:00" in result
+
+    def test_aware_preserved(self) -> None:
+        from datetime import datetime, timezone, timedelta
+        from app.date_utils import datetime_to_iso
+        tz = timezone(timedelta(hours=5, minutes=30))
+        dt = datetime(2026, 8, 3, 17, 30, 0, tzinfo=tz)
+        assert "+05:30" in datetime_to_iso(dt)
+
+    def test_returns_string(self) -> None:
+        from datetime import datetime
+        from app.date_utils import datetime_to_iso
+        assert isinstance(datetime_to_iso(datetime(2026, 1, 1)), str)
+
+
+class TestStartOfDay:
+    def test_zeroes_time(self) -> None:
+        from datetime import datetime
+        from app.date_utils import start_of_day
+        dt = datetime(2026, 8, 3, 15, 45, 30)
+        result = start_of_day(dt)
+        assert result.hour == 0 and result.minute == 0 and result.second == 0
+
+    def test_preserves_date(self) -> None:
+        from datetime import datetime
+        from app.date_utils import start_of_day
+        dt = datetime(2026, 8, 3, 15, 45)
+        result = start_of_day(dt)
+        assert result.date() == dt.date()
+
+
+class TestDaysBetween:
+    def test_positive(self) -> None:
+        from datetime import datetime
+        from app.date_utils import days_between
+        start = datetime(2026, 1, 1)
+        end = datetime(2026, 1, 8)
+        assert days_between(start, end) == 7
+
+    def test_same_day(self) -> None:
+        from datetime import datetime
+        from app.date_utils import days_between
+        dt = datetime(2026, 6, 1)
+        assert days_between(dt, dt) == 0
+
+    def test_negative(self) -> None:
+        from datetime import datetime
+        from app.date_utils import days_between
+        start = datetime(2026, 2, 1)
+        end = datetime(2026, 1, 1)
+        assert days_between(start, end) == -31
