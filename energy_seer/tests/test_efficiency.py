@@ -59,3 +59,54 @@ class TestForecasterEdgeCases:
         preds = moving_average_forecast([3.0] * 48, steps=24)
         assert len(preds) == 24
         assert all(abs(p - 3.0) < 0.001 for p in preds)
+
+
+class TestEfficiencyDelta:
+    def test_improvement_positive_delta(self):
+        from app.efficiency_score import efficiency_delta
+        result = efficiency_delta(60.0, 80.0)
+        assert result["delta"] == pytest.approx(20.0)
+        assert result["direction"] == "improved"
+
+    def test_degradation_negative_delta(self):
+        from app.efficiency_score import efficiency_delta
+        result = efficiency_delta(80.0, 60.0)
+        assert result["direction"] == "degraded"
+
+    def test_unchanged_when_equal(self):
+        from app.efficiency_score import efficiency_delta
+        result = efficiency_delta(70.0, 70.0)
+        assert result["direction"] == "unchanged"
+        assert result["delta"] == 0.0
+
+    def test_grade_keys_present(self):
+        from app.efficiency_score import efficiency_delta
+        result = efficiency_delta(50.0, 85.0)
+        assert "grade_before" in result
+        assert "grade_after" in result
+
+    def test_grade_upgrade(self):
+        from app.efficiency_score import efficiency_delta
+        result = efficiency_delta(55.0, 85.0)
+        assert result["grade_before"] == "B"
+        assert result["grade_after"] == "A"
+
+
+class TestComputeEfficiencyScoreValidation:
+    def test_negative_consumption_raises(self):
+        import pytest
+        from app.efficiency_score import compute_efficiency_score
+        with pytest.raises(ValueError, match="non-negative"):
+            compute_efficiency_score(-1.0, "residential")
+
+    def test_zero_floor_area_raises(self):
+        import pytest
+        from app.efficiency_score import compute_efficiency_score
+        with pytest.raises(ValueError, match="positive"):
+            compute_efficiency_score(10.0, "office", floor_area_sqm=0.0)
+
+    @pytest.mark.parametrize("building", ["residential", "commercial", "hospital"])
+    def test_known_types_return_grade(self, building):
+        from app.efficiency_score import compute_efficiency_score
+        result = compute_efficiency_score(5.0, building)
+        assert result["grade"] in {"A", "B", "C", "D"}
