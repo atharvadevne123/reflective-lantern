@@ -543,3 +543,55 @@ def test_peak_demand_by_period_returns_list() -> None:
     result = peak_demand_by_period(hourly, period_hours=24)
     assert isinstance(result, list)
     assert len(result) > 0
+
+
+class TestBenchmarkVsPortfolio:
+    def test_best_building_gets_grade_a(self) -> None:
+        from app.reporting import benchmark_vs_portfolio
+
+        result = benchmark_vs_portfolio(1.0, [5.0, 10.0, 15.0, 20.0])
+        assert result["grade"] == "A"
+
+    def test_worst_building_gets_grade_d(self) -> None:
+        from app.reporting import benchmark_vs_portfolio
+
+        result = benchmark_vs_portfolio(100.0, [5.0, 10.0, 15.0, 20.0])
+        assert result["grade"] == "D"
+
+    def test_returns_required_keys(self) -> None:
+        from app.reporting import benchmark_vs_portfolio
+
+        result = benchmark_vs_portfolio(10.0, [5.0, 10.0, 15.0, 20.0])
+        for key in ("percentile", "rank", "total_peers", "is_above_median", "grade"):
+            assert key in result
+
+    def test_empty_portfolio_raises(self) -> None:
+        import pytest
+
+        from app.reporting import benchmark_vs_portfolio
+
+        with pytest.raises(ValueError):
+            benchmark_vs_portfolio(10.0, [])
+
+    def test_percentile_in_range(self) -> None:
+        from app.reporting import benchmark_vs_portfolio
+
+        result = benchmark_vs_portfolio(50.0, list(range(1, 101)))
+        assert 0 <= result["percentile"] <= 100
+
+    def test_total_peers_count(self) -> None:
+        from app.reporting import benchmark_vs_portfolio
+
+        portfolio = [float(i) for i in range(20)]
+        result = benchmark_vs_portfolio(10.0, portfolio)
+        assert result["total_peers"] == 20
+
+    @pytest.mark.parametrize("kwh,portfolio,expected_above", [
+        (20.0, [10.0, 15.0, 25.0], True),
+        (5.0, [10.0, 15.0, 25.0], False),
+    ])
+    def test_is_above_median(self, kwh: float, portfolio: list, expected_above: bool) -> None:
+        from app.reporting import benchmark_vs_portfolio
+
+        result = benchmark_vs_portfolio(kwh, portfolio)
+        assert result["is_above_median"] == expected_above
