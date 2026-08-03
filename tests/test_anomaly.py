@@ -573,3 +573,77 @@ def test_anomaly_rate_all_critical_simple() -> None:
 def test_anomaly_rate_partial(n_anomalies, n_total, expected) -> None:
     severities = [{"severity": "warning"}] * n_anomalies + [{"severity": "none"}] * (n_total - n_anomalies)
     assert anomaly_rate(severities) == pytest.approx(expected)
+
+
+class TestEwmaSmooth:
+    def test_single_value(self) -> None:
+        from app.anomaly import ewma_smooth
+        assert ewma_smooth([5.0]) == [5.0]
+
+    def test_smoothing_reduces_spike(self) -> None:
+        from app.anomaly import ewma_smooth
+        values = [1.0, 1.0, 100.0, 1.0, 1.0]
+        result = ewma_smooth(values, alpha=0.3)
+        assert result[2] < 100.0
+
+    def test_alpha_one_is_identity(self) -> None:
+        from app.anomaly import ewma_smooth
+        values = [1.0, 2.0, 3.0]
+        result = ewma_smooth(values, alpha=1.0)
+        assert result == pytest.approx([1.0, 2.0, 3.0])
+
+    def test_raises_empty(self) -> None:
+        from app.anomaly import ewma_smooth
+        import pytest
+        with pytest.raises(ValueError):
+            ewma_smooth([])
+
+    def test_raises_bad_alpha(self) -> None:
+        from app.anomaly import ewma_smooth
+        import pytest
+        with pytest.raises(ValueError):
+            ewma_smooth([1.0], alpha=0.0)
+
+
+class TestConsecutiveAnomalyRuns:
+    def test_single_run(self) -> None:
+        from app.anomaly import consecutive_anomaly_runs
+        flags = [False, True, True, True, False]
+        assert consecutive_anomaly_runs(flags) == [(1, 3)]
+
+    def test_no_anomalies(self) -> None:
+        from app.anomaly import consecutive_anomaly_runs
+        assert consecutive_anomaly_runs([False, False]) == []
+
+    def test_trailing_run(self) -> None:
+        from app.anomaly import consecutive_anomaly_runs
+        flags = [False, True, True]
+        assert consecutive_anomaly_runs(flags) == [(1, 2)]
+
+    def test_multiple_runs(self) -> None:
+        from app.anomaly import consecutive_anomaly_runs
+        flags = [True, False, True]
+        runs = consecutive_anomaly_runs(flags)
+        assert len(runs) == 2
+
+    def test_all_true(self) -> None:
+        from app.anomaly import consecutive_anomaly_runs
+        assert consecutive_anomaly_runs([True, True, True]) == [(0, 2)]
+
+
+class TestFlagAnomalyRate:
+    def test_empty(self) -> None:
+        from app.anomaly import flag_anomaly_rate
+        assert flag_anomaly_rate([]) == 0.0
+
+    def test_none_flagged(self) -> None:
+        from app.anomaly import flag_anomaly_rate
+        assert flag_anomaly_rate([False, False, False]) == 0.0
+
+    def test_all_flagged(self) -> None:
+        from app.anomaly import flag_anomaly_rate
+        assert flag_anomaly_rate([True, True]) == 1.0
+
+    def test_half_flagged(self) -> None:
+        from app.anomaly import flag_anomaly_rate
+        assert flag_anomaly_rate([True, False]) == pytest.approx(0.5)
