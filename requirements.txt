@@ -17,7 +17,7 @@ numpy>=2.4.6
 pandas>=2.2.2
 
 # --- Utilities ---
-matplotlib>=3.8.4
+matplotlib>=3.11.1
 httpx>=0.27.0
 
 # --- Dev / Test ---
