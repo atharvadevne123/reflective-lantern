@@ -79,15 +79,47 @@ def clone_params(pipeline: Any) -> dict[str, Any]:
 def bundle_pipeline_info(bundle: dict[str, Any]) -> dict[str, Any]:
     """Extract pipeline description from a model bundle dict.
 
-    Expects bundle to have a ``"model"`` key that is a Pipeline.
+    Expects bundle to have a ``"pipeline"`` or ``"model"`` key that is a Pipeline.
+    Falls back gracefully when neither key is present.
     """
-    model = bundle.get("model")
-    if model is None:
-        logger.warning("bundle_pipeline_info: no 'model' key in bundle")
-        return {"error": "no model in bundle"}
-    info = describe_pipeline(model)
+    pipeline = bundle.get("pipeline") or bundle.get("model")
+    if pipeline is None:
+        logger.warning("bundle_pipeline_info: no 'pipeline' or 'model' key in bundle")
+        return {"error": "no pipeline in bundle"}
+    info = describe_pipeline(pipeline)
     logger.debug("bundle_pipeline_info: steps=%d", len(info.get("steps", [])))
     return info
+
+
+def is_fitted(estimator: Any) -> bool:
+    """Return True if *estimator* appears to have been fitted.
+
+    Checks for the presence of attributes ending in ``_`` (sklearn convention).
+
+    Args:
+        estimator: Any sklearn-compatible estimator or pipeline.
+
+    Returns:
+        True when at least one fitted attribute is found.
+    """
+    fitted_attrs = [a for a in dir(estimator) if a.endswith("_") and not a.startswith("__")]
+    return len(fitted_attrs) > 0
+
+
+def step_is_fitted(pipeline: Any, step_name: str) -> bool:
+    """Return True if the named step within *pipeline* has been fitted.
+
+    Args:
+        pipeline: sklearn Pipeline or compatible object.
+        step_name: Name of the pipeline step to check.
+
+    Returns:
+        True when the step exists and appears fitted; False otherwise.
+    """
+    step = get_step(pipeline, step_name)
+    if step is None:
+        return False
+    return is_fitted(step)
 
 
 __all__ = [
@@ -97,5 +129,7 @@ __all__ = [
     "get_step",
     "get_step_names",
     "has_step",
+    "is_fitted",
     "pipeline_param_count",
+    "step_is_fitted",
 ]
