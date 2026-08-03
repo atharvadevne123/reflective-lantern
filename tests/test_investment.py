@@ -571,3 +571,44 @@ class TestMarginOfSafety:
     def test_large_values(self) -> None:
         result = margin_of_safety(1_000_000.0, 750_000.0)
         assert result == pytest.approx(25.0, rel=1e-4)
+
+
+class TestIrrEstimate:
+    def test_simple_positive_irr(self) -> None:
+        from app.investment import irr_estimate
+
+        irr = irr_estimate(1000.0, [200.0] * 8)
+        assert irr > 0.0
+
+    def test_negative_investment_raises(self) -> None:
+        import pytest
+
+        from app.investment import irr_estimate
+
+        with pytest.raises(ValueError, match="positive"):
+            irr_estimate(-100.0, [50.0])
+
+    def test_no_return_gives_zero(self) -> None:
+        from app.investment import irr_estimate
+
+        irr = irr_estimate(1000.0, [0.0] * 5)
+        assert irr == 0.0
+
+    def test_with_terminal_value(self) -> None:
+        from app.investment import irr_estimate
+
+        irr = irr_estimate(1000.0, [50.0] * 5, terminal_value=1200.0)
+        assert irr > 0.0
+
+    def test_returns_float(self) -> None:
+        from app.investment import irr_estimate
+
+        result = irr_estimate(500.0, [100.0, 200.0, 300.0])
+        assert isinstance(result, float)
+
+    @pytest.mark.parametrize("flows", [[100.0, 200.0, 300.0], [50.0] * 10, [500.0, -100.0, 300.0]])
+    def test_irr_returns_numeric(self, flows: list) -> None:
+        from app.investment import irr_estimate
+
+        result = irr_estimate(500.0, flows)
+        assert isinstance(result, float)
