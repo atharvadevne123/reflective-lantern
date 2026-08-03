@@ -102,342 +102,104 @@ def peak_hours(values: list[float], top_n: int = 3) -> list[int]:
     return [int(i) for i in indices]
 
 
-def cumulative_consumption(values: list[float]) -> list[float]:
-    """Return a cumulative sum of consumption values.
+def cumulative_sum(values: list[float]) -> list[float]:
+    """Return the running cumulative sum of *values*.
 
     Args:
-        values: List of periodic (e.g. hourly) consumption readings in kWh.
+        values: Numeric series.
 
     Returns:
         List of the same length where element i is sum(values[:i+1]).
     """
-    if not values:
-        return []
     result: list[float] = []
     total = 0.0
     for v in values:
         total += v
-        result.append(round(total, 6))
+        result.append(total)
     return result
 
 
-def exponential_moving_average(values: list[float], alpha: float = 0.3) -> list[float]:
-    """Compute an exponential moving average with smoothing factor *alpha*.
+def moving_max(values: list[float], window: int = 3) -> list[float]:
+    """Return the rolling maximum over *window* periods.
+
+    The first (window-1) entries are NaN-padded.
 
     Args:
-        values: Time-ordered consumption readings.
-        alpha: Smoothing factor in (0, 1]; higher values weight recent obs more.
-
-    Returns:
-        EMA series of the same length as *values*.
-
-    Raises:
-        ValueError: If *alpha* is not in (0, 1].
-    """
-    if not (0 < alpha <= 1.0):
-        raise ValueError(f"alpha must be in (0, 1], got {alpha}")
-    if not values:
-        return []
-    result = [values[0]]
-    for v in values[1:]:
-        result.append(alpha * v + (1 - alpha) * result[-1])
-    return [round(x, 6) for x in result]
-
-
-def resample_hourly_to_daily(hourly: list[float]) -> list[float]:
-    """Aggregate hourly readings into daily totals.
-
-    Args:
-        hourly: List of hourly consumption values; length need not be a multiple of 24.
-
-    Returns:
-        List of daily totals; the last partial day is included if it exists.
-    """
-    if not hourly:
-        return []
-    daily: list[float] = []
-    for i in range(0, len(hourly), 24):
-        chunk = hourly[i : i + 24]
-        daily.append(round(sum(chunk), 6))
-    return daily
-
-
-def forecast_trend_with_seasonality(
-    values: list[float],
-    horizon: int = 24,
-    period: int = 24,
-) -> list[float]:
-    """Forecast by combining a linear trend with a seasonal baseline.
-
-    Decomposes the series into trend + seasonal components and extrapolates both.
-
-    Args:
-        values: Historical readings (at least 2 * period elements recommended).
-        horizon: Number of future steps to forecast.
-        period: Seasonal period length (default 24 for hourly data).
-
-    Returns:
-        List of *horizon* forecasted values (clipped to 0 for energy context).
-    """
-    if not values or horizon < 1:
-        return []
-    arr = np.array(values, dtype=float)
-    n = len(arr)
-    x = np.arange(n, dtype=float)
-    slope, intercept = np.polyfit(x, arr, 1)
-    trend = slope * x + intercept
-    residual = arr - trend
-    bucket_means = np.zeros(period)
-    counts = np.zeros(period)
-    for i, v in enumerate(residual):
-        bucket_means[i % period] += v
-        counts[i % period] += 1
-    with np.errstate(invalid="ignore"):
-        bucket_means = np.where(counts > 0, bucket_means / counts, 0.0)
-    future_x = np.arange(n, n + horizon, dtype=float)
-    future_trend = slope * future_x + intercept
-    future_seasonal = np.array([bucket_means[i % period] for i in range(n, n + horizon)])
-    forecast = future_trend + future_seasonal
-    return np.clip(forecast, 0, None).tolist()
-
-
-def moving_range(values: list[float]) -> list[float]:
-    """Compute the moving range (absolute successive differences) of a series.
-
-    The moving range is commonly used in statistical process control to
-    estimate short-term process variation.
-
-    Args:
-        values: Ordered list of numeric observations.
-
-    Returns:
-        List of absolute differences between consecutive values (length = len-1),
-        or an empty list if *values* has fewer than 2 elements.
-    """
-    if len(values) < 2:
-        return []
-    return [abs(values[i + 1] - values[i]) for i in range(len(values) - 1)]
-
-
-def consumption_variance(values: list[float]) -> float:
-    """Return the population variance of an energy consumption series.
-
-    Args:
-        values: List of kWh readings.
-
-    Returns:
-        Population variance as a float, or 0.0 for a series of length < 2.
-    """
-    if len(values) < 2:
-        return 0.0
-    mean = sum(values) / len(values)
-    return sum((v - mean) ** 2 for v in values) / len(values)
-
-
-def detect_plateau(values: list[float], tolerance: float = 0.5) -> list[tuple[int, int]]:
-    """Detect flat plateaus in a time series where variance is near zero.
-
-    Returns a list of (start, end) index tuples for runs where consecutive
-    values differ by at most *tolerance*.
-    """
-    if len(values) < 2:
-        return []
-    plateaus: list[tuple[int, int]] = []
-    start = 0
-    for i in range(1, len(values)):
-        if abs(values[i] - values[i - 1]) > tolerance:
-            if i - start >= 2:
-                plateaus.append((start, i - 1))
-            start = i
-    if len(values) - start >= 2:
-        plateaus.append((start, len(values) - 1))
-    return plateaus
-
-
-def clip_outliers(values: list[float], lower_pct: float = 5.0, upper_pct: float = 95.0) -> list[float]:
-    """Clip series values to the given percentile bounds.
-
-    Args:
-        values: Input readings.
-        lower_pct: Lower bound percentile (0-100).
-        upper_pct: Upper bound percentile (0-100).
-
-    Returns:
-        Series with values clipped to the [lower_pct, upper_pct] range.
-    """
-    if not values:
-        return []
-    sorted_vals = sorted(values)
-    n = len(sorted_vals)
-
-    def percentile(p: float) -> float:
-        idx = (p / 100) * (n - 1)
-        lo, hi = int(idx), min(int(idx) + 1, n - 1)
-        return sorted_vals[lo] + (sorted_vals[hi] - sorted_vals[lo]) * (idx - lo)
-
-    lo = percentile(lower_pct)
-    hi = percentile(upper_pct)
-    return [max(lo, min(hi, v)) for v in values]
-
-
-def find_changepoints(
-    values: list[float],
-    min_segment_len: int = 5,
-    threshold_multiplier: float = 2.0,
-) -> list[int]:
-    """Identify abrupt level-shift change points in a time series.
-
-    Uses a simple cumulative sum (CUSUM) approach to detect points where the
-    running mean changes significantly.
-
-    Args:
-        values: Time-ordered readings.
-        min_segment_len: Minimum samples required between change points.
-        threshold_multiplier: Number of std deviations above the CUSUM variance
-            needed to flag a change point.
-
-    Returns:
-        Sorted list of indices where level shifts are detected.
-    """
-    if len(values) < 2 * min_segment_len:
-        return []
-    arr = np.array(values, dtype=float)
-    n = len(arr)
-    mean = arr.mean()
-    std = arr.std()
-    if std < 1e-9:
-        return []
-    cusum = np.cumsum(arr - mean)
-    threshold = threshold_multiplier * std * np.sqrt(n)
-    changepoints: list[int] = []
-    last_cp = 0
-    for i in range(min_segment_len, n - min_segment_len):
-        if i - last_cp < min_segment_len:
-            continue
-        local_max = max(abs(cusum[last_cp:i + 1]))
-        if local_max > threshold:
-            changepoints.append(i)
-            last_cp = i
-    return changepoints
-
-
-def rolling_zscore(values: list[float], window: int = 24) -> list[float]:
-    """Compute rolling Z-scores for anomaly detection in streaming data.
-
-    Each position's Z-score is computed relative to the preceding *window*
-    values (or all available values for early positions).
-
-    Args:
-        values: Time-ordered readings.
-        window: Rolling window size.
-
-    Returns:
-        List of Z-scores the same length as *values*. First position is 0.0.
-    """
-    if not values:
-        return []
-    zscores = [0.0]
-    for i in range(1, len(values)):
-        segment = values[max(0, i - window):i]
-        if len(segment) < 2:
-            zscores.append(0.0)
-            continue
-        arr = np.array(segment)
-        std = float(arr.std())
-        if std < 1e-9:
-            zscores.append(0.0)
-        else:
-            zscores.append(round((values[i] - float(arr.mean())) / std, 4))
-    return zscores
-
-
-def load_factor(values: list[float]) -> float:
-    """Compute the load factor (average load / peak load) for a series.
-
-    The load factor is a dimensionless ratio in [0, 1] that measures how
-    efficiently a system uses its peak capacity over a period.
-
-    Args:
-        values: Time-ordered load readings (all non-negative).
-
-    Returns:
-        Load factor in [0.0, 1.0]. Returns 0.0 for an empty or all-zero series.
-    """
-    if not values:
-        return 0.0
-    peak = max(values)
-    if peak == 0.0:
-        return 0.0
-    avg = sum(values) / len(values)
-    return round(avg / peak, 6)
-
-
-def peak_to_valley_ratio(values: list[float]) -> float:
-    """Return the ratio of peak to minimum (valley) value in the series.
-
-    Useful for quantifying load variability. Returns 0.0 for empty or
-    all-zero (no valley) series.
-
-    Args:
-        values: Time-ordered readings.
-
-    Returns:
-        Peak-to-valley ratio; 0.0 if the minimum is zero or the series is empty.
-    """
-    if not values:
-        return 0.0
-    valley = min(values)
-    if valley == 0.0:
-        return 0.0
-    return round(max(values) / valley, 6)
-
-
-__all__ = [
-    "clip_outliers",
-    "consumption_variance",
-    "cumulative_consumption",
-    "detect_plateau",
-    "detect_spikes",
-    "exponential_moving_average",
-    "find_changepoints",
-    "forecast_linear_trend",
-    "forecast_trend_with_seasonality",
-    "load_factor",
-    "logger",
-    "moving_median",
-    "moving_range",
-    "peak_hours",
-    "peak_to_valley_ratio",
-    "resample_hourly_to_daily",
-    "rolling_zscore",
-    "seasonal_baseline",
-    "simple_moving_average",
-]
-
-
-def moving_median(values: list[float], window: int) -> list[float]:
-    """Compute a rolling median over *window* periods.
-
-    Each position uses the preceding *window* values (or all available
-    for positions near the start).
-
-    Args:
-        values: Time-ordered readings.
+        values: Numeric series.
         window: Rolling window size (must be >= 1).
 
     Returns:
-        Rolling median series the same length as *values*.
-        Returns empty list for empty input or window < 1.
+        List of rolling max values, NaN-padded at the start.
     """
-    if not values or window < 1:
+    if not values:
         return []
-    result: list[float] = []
-    for i in range(len(values)):
-        chunk = sorted(values[max(0, i - window + 1): i + 1])
-        n = len(chunk)
-        mid = n // 2
-        if n % 2 == 0:
-            result.append(round((chunk[mid - 1] + chunk[mid]) / 2.0, 6))
-        else:
-            result.append(round(chunk[mid], 6))
-    return result
+    if len(values) < window:
+        return [float("nan")] * len(values)
+    pad = [float("nan")] * (window - 1)
+    result = [max(values[i : i + window]) for i in range(len(values) - window + 1)]
+    return pad + result
+
+
+def normalize_series(values: list[float]) -> list[float]:
+    """Scale *values* to the [0, 1] range using min-max normalization.
+
+    Returns all-zeros when the range is zero (constant series).
+
+    Args:
+        values: Numeric series.
+
+    Returns:
+        Min-max normalized list (same length as input).
+    """
+    if not values:
+        return []
+    lo, hi = min(values), max(values)
+    if hi == lo:
+        return [0.0] * len(values)
+    return [(v - lo) / (hi - lo) for v in values]
+
+
+def daily_totals(values: list[float], period: int = 24) -> list[float]:
+    """Aggregate *values* into non-overlapping blocks of size *period*.
+
+    The last block is included even if shorter than *period*.
+
+    Args:
+        values: Flat series of observations.
+        period: Aggregation block size (default 24 for hourly data).
+
+    Returns:
+        List of block sums.
+    """
+    if not values:
+        return []
+    return [sum(values[i : i + period]) for i in range(0, len(values), period)]
+
+
+def first_nonzero(values: list[float]) -> int:
+    """Return the index of the first non-zero element.
+
+    Args:
+        values: Numeric series.
+
+    Returns:
+        Index of first non-zero value, or -1 if all zeros or list is empty.
+    """
+    for i, v in enumerate(values):
+        if v != 0.0:
+            return i
+    return -1
+
+
+__all__ = [
+    "simple_moving_average",
+    "seasonal_baseline",
+    "forecast_linear_trend",
+    "detect_spikes",
+    "peak_hours",
+    "cumulative_sum",
+    "moving_max",
+    "normalize_series",
+    "daily_totals",
+    "first_nonzero",
+]

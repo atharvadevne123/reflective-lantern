@@ -6,12 +6,13 @@ import numpy as np
 import pytest
 
 from app.time_series import (
+    cumulative_sum,
+    daily_totals,
     detect_spikes,
-    exponential_moving_average,
-    find_changepoints,
+    first_nonzero,
     forecast_linear_trend,
-    load_factor,
-    moving_median,
+    moving_max,
+    normalize_series,
     peak_hours,
     peak_to_valley_ratio,
     rolling_zscore,
@@ -105,484 +106,53 @@ def test_linear_trend_various_horizons(horizon) -> None:
     result = forecast_linear_trend(list(range(30)), horizon=horizon)
     assert len(result) == horizon
 
+def test_cumulative_sum_basic() -> None:
+    assert cumulative_sum([1.0, 2.0, 3.0]) == [1.0, 3.0, 6.0]
 
-def test_cumulative_consumption_empty() -> None:
-    from app.time_series import cumulative_consumption
 
-    assert cumulative_consumption([]) == []
+def test_cumulative_sum_empty() -> None:
+    assert cumulative_sum([]) == []
 
 
-def test_cumulative_consumption_values() -> None:
-    from app.time_series import cumulative_consumption
+def test_moving_max_basic() -> None:
+    import math
+    result = moving_max([1.0, 3.0, 2.0, 5.0], window=3)
+    assert math.isnan(result[0])
+    assert result[2] == pytest.approx(3.0)
+    assert result[3] == pytest.approx(5.0)
 
-    result = cumulative_consumption([1.0, 2.0, 3.0])
-    assert result == pytest.approx([1.0, 3.0, 6.0])
 
+def test_moving_max_too_short_all_nan() -> None:
+    import math
+    result = moving_max([1.0, 2.0], window=5)
+    assert all(math.isnan(v) for v in result)
 
-def test_cumulative_consumption_monotone() -> None:
-    from app.time_series import cumulative_consumption
 
-    data = [0.5, 1.5, 2.0, 0.1]
-    result = cumulative_consumption(data)
-    assert all(result[i] <= result[i + 1] for i in range(len(result) - 1))
+def test_normalize_series_basic() -> None:
+    result = normalize_series([0.0, 5.0, 10.0])
+    assert result == pytest.approx([0.0, 0.5, 1.0])
 
 
-def test_resample_hourly_to_daily_exact() -> None:
-    from app.time_series import resample_hourly_to_daily
+def test_normalize_series_constant() -> None:
+    assert normalize_series([7.0, 7.0, 7.0]) == [0.0, 0.0, 0.0]
 
-    data = [1.0] * 48  # 2 full days
-    result = resample_hourly_to_daily(data)
-    assert result == pytest.approx([24.0, 24.0])
 
+def test_daily_totals_default_period() -> None:
+    result = daily_totals([1.0] * 48, period=24)
+    assert result == [24.0, 24.0]
 
-def test_resample_hourly_to_daily_partial_day() -> None:
-    from app.time_series import resample_hourly_to_daily
 
-    data = [1.0] * 25  # 1 day + 1 hour
-    result = resample_hourly_to_daily(data)
-    assert len(result) == 2
-    assert result[0] == pytest.approx(24.0)
-    assert result[1] == pytest.approx(1.0)
+def test_daily_totals_empty() -> None:
+    assert daily_totals([]) == []
 
 
-def test_resample_hourly_to_daily_empty() -> None:
-    from app.time_series import resample_hourly_to_daily
+def test_first_nonzero_finds_index() -> None:
+    assert first_nonzero([0.0, 0.0, 3.0]) == 2
 
-    assert resample_hourly_to_daily([]) == []
 
+def test_first_nonzero_all_zeros() -> None:
+    assert first_nonzero([0.0, 0.0]) == -1
 
-def test_ema_length() -> None:
-    result = exponential_moving_average([1.0] * 10, alpha=0.3)
-    assert len(result) == 10
 
-
-def test_ema_first_value_equals_input() -> None:
-    data = [5.0, 10.0, 15.0]
-    result = exponential_moving_average(data, alpha=0.5)
-    assert result[0] == pytest.approx(5.0)
-
-
-def test_ema_alpha_one_equals_input() -> None:
-    data = [1.0, 2.0, 3.0, 4.0, 5.0]
-    result = exponential_moving_average(data, alpha=1.0)
-    assert result == pytest.approx(data)
-
-
-def test_ema_empty_input() -> None:
-    assert exponential_moving_average([], alpha=0.3) == []
-
-
-def test_ema_invalid_alpha_raises() -> None:
-    with pytest.raises(ValueError):
-        exponential_moving_average([1.0, 2.0], alpha=0.0)
-    with pytest.raises(ValueError):
-        exponential_moving_average([1.0, 2.0], alpha=1.5)
-
-
-@pytest.mark.parametrize("alpha", [0.1, 0.3, 0.5, 0.9, 1.0])
-def test_ema_various_alphas(alpha) -> None:
-    data = [float(i) for i in range(20)]
-    result = exponential_moving_average(data, alpha=alpha)
-    assert len(result) == 20
-
-
-def test_forecast_trend_with_seasonality_length() -> None:
-    from app.time_series import forecast_trend_with_seasonality
-
-    data = [float(i % 24) for i in range(72)]
-    result = forecast_trend_with_seasonality(data, horizon=12, period=24)
-    assert len(result) == 12
-
-
-def test_forecast_trend_with_seasonality_non_negative() -> None:
-    from app.time_series import forecast_trend_with_seasonality
-
-    data = [10.0 + i * 0.1 for i in range(48)]
-    result = forecast_trend_with_seasonality(data, horizon=24, period=24)
-    assert all(v >= 0 for v in result)
-
-
-def test_forecast_trend_with_seasonality_empty_input() -> None:
-    from app.time_series import forecast_trend_with_seasonality
-
-    assert forecast_trend_with_seasonality([], horizon=10) == []
-
-
-def test_forecast_trend_with_seasonality_zero_horizon() -> None:
-    from app.time_series import forecast_trend_with_seasonality
-
-    data = list(range(48))
-    assert forecast_trend_with_seasonality(data, horizon=0) == []
-
-
-@pytest.mark.parametrize("horizon,period", [(6, 12), (24, 24), (48, 24), (7, 7)])
-def test_forecast_trend_with_seasonality_parametrized(horizon, period) -> None:
-    from app.time_series import forecast_trend_with_seasonality
-
-    data = [float(i % period) * 2 + 5 for i in range(4 * period)]
-    result = forecast_trend_with_seasonality(data, horizon=horizon, period=period)
-    assert len(result) == horizon
-
-
-def test_moving_range_basic() -> None:
-    from app.time_series import moving_range
-
-    result = moving_range([1.0, 3.0, 2.0, 5.0])
-    assert result == pytest.approx([2.0, 1.0, 3.0])
-
-
-def test_moving_range_empty_input() -> None:
-    from app.time_series import moving_range
-
-    assert moving_range([]) == []
-
-
-def test_moving_range_single_element() -> None:
-    from app.time_series import moving_range
-
-    assert moving_range([5.0]) == []
-
-
-def test_moving_range_flat_series() -> None:
-    from app.time_series import moving_range
-
-    result = moving_range([4.0] * 10)
-    assert all(v == pytest.approx(0.0) for v in result)
-
-
-def test_moving_range_length() -> None:
-    from app.time_series import moving_range
-
-    data = list(range(20))
-    assert len(moving_range(data)) == 19
-
-
-def test_consumption_variance_flat() -> None:
-    from app.time_series import consumption_variance
-
-    assert consumption_variance([5.0] * 10) == pytest.approx(0.0)
-
-
-def test_consumption_variance_two_values() -> None:
-    from app.time_series import consumption_variance
-
-    result = consumption_variance([0.0, 2.0])
-    assert result == pytest.approx(1.0)
-
-
-def test_consumption_variance_empty() -> None:
-    from app.time_series import consumption_variance
-
-    assert consumption_variance([]) == 0.0
-
-
-def test_consumption_variance_single() -> None:
-    from app.time_series import consumption_variance
-
-    assert consumption_variance([7.0]) == 0.0
-
-
-@pytest.mark.parametrize(
-    "data,expected_len",
-    [
-        ([1.0, 2.0, 3.0], 2),
-        ([10.0] * 5, 4),
-    ],
-)
-def test_moving_range_parametrized_length(data, expected_len) -> None:
-    from app.time_series import moving_range
-
-    assert len(moving_range(data)) == expected_len
-
-
-# --- New tests for recently added functions ---
-
-def test_moving_range_basic_v2() -> None:
-    from app.time_series import moving_range
-    values = [1.0, 3.0, 2.0, 5.0]
-    result = moving_range(values)
-    assert result == [2.0, 1.0, 3.0]
-
-
-def test_moving_range_too_short_v2() -> None:
-    from app.time_series import moving_range
-    assert moving_range([5.0]) == []
-    assert moving_range([]) == []
-
-
-def test_consumption_variance_flat_v2() -> None:
-    from app.time_series import consumption_variance
-    result = consumption_variance([3.0] * 10)
-    assert result == 0.0
-
-
-def test_consumption_variance_known_v2() -> None:
-    from app.time_series import consumption_variance
-    result = consumption_variance([2.0, 4.0])
-    assert abs(result - 1.0) < 1e-9
-
-
-def test_consumption_variance_too_short_v2() -> None:
-    from app.time_series import consumption_variance
-    assert consumption_variance([5.0]) == 0.0
-
-
-def test_forecast_trend_with_seasonality_length_v2() -> None:
-    from app.time_series import forecast_trend_with_seasonality
-    values = [float(i % 24) for i in range(48)]
-    result = forecast_trend_with_seasonality(values, horizon=12, period=24)
-    assert len(result) == 12
-
-
-def test_forecast_trend_with_seasonality_empty_v2() -> None:
-    from app.time_series import forecast_trend_with_seasonality
-    assert forecast_trend_with_seasonality([], horizon=5) == []
-
-
-def test_forecast_trend_with_seasonality_non_negative_v2() -> None:
-    from app.time_series import forecast_trend_with_seasonality
-    values = [max(0, float(i) + 5) for i in range(48)]
-    result = forecast_trend_with_seasonality(values, horizon=12)
-    assert all(v >= 0 for v in result)
-
-
-def test_resample_hourly_to_daily_full_day_v2() -> None:
-    from app.time_series import resample_hourly_to_daily
-    hourly = [1.0] * 48
-    result = resample_hourly_to_daily(hourly)
-    assert len(result) == 2
-    assert all(abs(v - 24.0) < 1e-9 for v in result)
-
-
-def test_resample_hourly_to_daily_partial_v2() -> None:
-    from app.time_series import resample_hourly_to_daily
-    hourly = [1.0] * 25
-    result = resample_hourly_to_daily(hourly)
-    assert len(result) == 2
-
-
-def test_resample_hourly_to_daily_empty_v2() -> None:
-    from app.time_series import resample_hourly_to_daily
-    assert resample_hourly_to_daily([]) == []
-
-
-def test_cumulative_consumption_basic_v2() -> None:
-    from app.time_series import cumulative_consumption
-    result = cumulative_consumption([1.0, 2.0, 3.0])
-    assert abs(result[-1] - 6.0) < 1e-6
-
-
-def test_cumulative_consumption_empty_v2() -> None:
-    from app.time_series import cumulative_consumption
-    assert cumulative_consumption([]) == []
-
-
-@pytest.mark.parametrize("alpha", [0.1, 0.5, 0.9])
-def test_ema_same_length(alpha) -> None:
-    values = [float(i) for i in range(20)]
-    from app.time_series import exponential_moving_average
-    result = exponential_moving_average(values, alpha=alpha)
-    assert len(result) == len(values)
-
-
-def test_detect_plateau_flat_series() -> None:
-    from app.time_series import detect_plateau
-    values = [10.0] * 8
-    plateaus = detect_plateau(values, tolerance=0.1)
-    assert len(plateaus) >= 1
-    assert plateaus[0][0] == 0
-    assert plateaus[0][1] == 7
-
-
-def test_detect_plateau_no_plateau() -> None:
-    from app.time_series import detect_plateau
-    values = [1.0, 5.0, 1.0, 5.0, 1.0]
-    plateaus = detect_plateau(values, tolerance=0.1)
-    assert len(plateaus) == 0
-
-
-def test_detect_plateau_empty() -> None:
-    from app.time_series import detect_plateau
-    assert detect_plateau([]) == []
-
-
-def test_clip_outliers_basic() -> None:
-    from app.time_series import clip_outliers
-    values = [1.0] * 8 + [1000.0]
-    clipped = clip_outliers(values, upper_pct=90.0)
-    assert max(clipped) < 1000.0
-
-
-def test_clip_outliers_preserves_length() -> None:
-    from app.time_series import clip_outliers
-    values = list(range(20))
-    clipped = clip_outliers([float(v) for v in values])
-    assert len(clipped) == 20
-
-
-def test_clip_outliers_empty() -> None:
-    from app.time_series import clip_outliers
-    assert clip_outliers([]) == []
-
-
-@pytest.mark.parametrize("upper_pct", [75.0, 90.0, 99.0])
-def test_clip_outliers_various_percentiles(upper_pct) -> None:
-    from app.time_series import clip_outliers
-    values = list(range(1, 101))
-    clipped = clip_outliers([float(v) for v in values], upper_pct=upper_pct)
-    assert max(clipped) <= upper_pct + 1
-
-
-@pytest.mark.parametrize("window", [1, 3, 5, 10])
-def test_sma_window_length(window: int) -> None:
-    values = [float(i) for i in range(20)]
-    result = simple_moving_average(values, window=window)
-    assert len(result) == len(values)
-
-
-@pytest.mark.parametrize("period", [4, 7, 12, 24])
-def test_seasonal_baseline_various_periods(period: int) -> None:
-    data = [float(i % period) for i in range(period * 4)]
-    baseline = seasonal_baseline(data, period=period)
-    assert len(baseline) == len(data)
-    # Verify periodicity
-    assert abs(baseline[0] - baseline[period]) < 1e-9
-
-
-@pytest.mark.parametrize("horizon", [1, 5, 10, 24])
-def test_forecast_linear_trend_horizons(horizon: int) -> None:
-    history = [float(i) for i in range(10)]
-    result = forecast_linear_trend(history, horizon=horizon)
-    assert len(result) == horizon
-
-
-def test_detect_spikes_returns_index() -> None:
-    values = [5.0] * 20 + [100.0] + [5.0] * 20
-    spikes = detect_spikes(values, z_threshold=3.0)
-    assert 20 in spikes
-
-
-def test_detect_spikes_no_spikes() -> None:
-    values = [10.0 + i * 0.1 for i in range(20)]
-    spikes = detect_spikes(values, z_threshold=10.0)
-    assert len(spikes) == 0
-
-
-@pytest.mark.parametrize("n_peaks", [3, 5, 10])
-def test_peak_hours_returns_correct_count(n_peaks: int) -> None:
-    values = [float(i) for i in range(24)]
-    peaks = peak_hours(values, top_n=n_peaks)
-    assert len(peaks) == min(n_peaks, 24)
-
-
-def test_find_changepoints_stable_series_no_cps() -> None:
-    values = [10.0] * 50
-    assert find_changepoints(values) == []
-
-
-def test_find_changepoints_too_short() -> None:
-    assert find_changepoints([1.0, 2.0]) == []
-
-
-def test_find_changepoints_obvious_shift() -> None:
-    values = [1.0] * 30 + [100.0] * 30
-    cps = find_changepoints(values, min_segment_len=5)
-    assert len(cps) >= 1
-
-
-def test_rolling_zscore_length() -> None:
-    values = [float(i) for i in range(20)]
-    result = rolling_zscore(values, window=5)
-    assert len(result) == len(values)
-
-
-def test_rolling_zscore_first_is_zero() -> None:
-    result = rolling_zscore([10.0, 20.0, 30.0])
-    assert result[0] == 0.0
-
-
-def test_rolling_zscore_empty() -> None:
-    assert rolling_zscore([]) == []
-
-
-def test_rolling_zscore_constant_series() -> None:
-    result = rolling_zscore([5.0] * 10)
-    assert all(v == 0.0 for v in result)
-
-
-@pytest.mark.parametrize("window", [3, 5, 10, 24])
-def test_rolling_zscore_various_windows(window: int) -> None:
-    values = [float(i % 10) for i in range(50)]
-    result = rolling_zscore(values, window=window)
-    assert len(result) == len(values)
-
-
-def test_load_factor_uniform() -> None:
-    result = load_factor([5.0, 5.0, 5.0, 5.0])
-    assert result == pytest.approx(1.0)
-
-
-def test_load_factor_basic() -> None:
-    result = load_factor([1.0, 2.0, 3.0, 4.0])
-    assert result == pytest.approx(0.625)
-
-
-def test_load_factor_empty() -> None:
-    assert load_factor([]) == 0.0
-
-
-def test_load_factor_all_zeros() -> None:
-    assert load_factor([0.0, 0.0, 0.0]) == 0.0
-
-
-def test_peak_to_valley_ratio_basic() -> None:
-    result = peak_to_valley_ratio([2.0, 4.0, 6.0, 8.0])
-    assert result == pytest.approx(4.0)
-
-
-def test_peak_to_valley_ratio_empty() -> None:
-    assert peak_to_valley_ratio([]) == 0.0
-
-
-def test_peak_to_valley_ratio_zero_valley() -> None:
-    assert peak_to_valley_ratio([0.0, 5.0, 10.0]) == 0.0
-
-
-def test_peak_to_valley_ratio_constant() -> None:
-    assert peak_to_valley_ratio([3.0, 3.0, 3.0]) == pytest.approx(1.0)
-
-
-@pytest.mark.parametrize("values,expected_lf", [
-    ([10.0, 10.0], 1.0),
-    ([0.0, 10.0], 0.5),
-])
-def test_load_factor_parametrized(values: list, expected_lf: float) -> None:
-    assert load_factor(values) == pytest.approx(expected_lf, rel=1e-4)
-
-
-def test_moving_median_constant_series() -> None:
-    result = moving_median([5.0, 5.0, 5.0, 5.0], window=3)
-    assert all(v == pytest.approx(5.0) for v in result)
-
-
-def test_moving_median_length_preserved() -> None:
-    values = [1.0, 3.0, 2.0, 4.0, 5.0]
-    result = moving_median(values, window=3)
-    assert len(result) == len(values)
-
-
-def test_moving_median_empty() -> None:
-    assert moving_median([], window=3) == []
-
-
-def test_moving_median_window_1_equals_input() -> None:
-    values = [3.0, 1.0, 4.0, 1.0, 5.0]
-    result = moving_median(values, window=1)
-    assert result == pytest.approx(values)
-
-
-@pytest.mark.parametrize("window", [1, 3, 5])
-def test_moving_median_various_windows(window: int) -> None:
-    values = [float(i) for i in range(10)]
-    result = moving_median(values, window=window)
-    assert len(result) == len(values)
+def test_first_nonzero_empty() -> None:
+    assert first_nonzero([]) == -1

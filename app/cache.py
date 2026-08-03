@@ -105,33 +105,24 @@ class TTLCache:
         total = self.hits + self.misses
         return self.hits / total if total > 0 else 0.0
 
+    def get_or_set(self, key: str, default: Any) -> Any:
+        """Return cached value; if absent or expired, store *default* and return it."""
+        value = self.get(key)
+        if value is None:
+            self.set(key, default)
+            return default
+        return value
+
+    def stats(self) -> dict[str, int | float]:
+        """Return a dict snapshot of cache performance counters."""
+        return {
+            "size": self.size,
+            "hits": self.hits,
+            "misses": self.misses,
+            "hit_rate": self.hit_rate,
+        }
+
 
 prediction_cache = TTLCache(ttl_seconds=30, max_size=500)
 
-
-def warm_cache(cache: TTLCache, entries: dict[str, object]) -> int:
-    """Pre-populate *cache* with a dictionary of key-value pairs.
-
-    Useful for loading frequently accessed predictions at startup to avoid
-    cold-start latency on the first few API requests.
-
-    Args:
-        cache: The TTLCache instance to populate.
-        entries: Mapping of cache keys to values to insert.
-
-    Returns:
-        Number of entries successfully inserted.
-    """
-    inserted = 0
-    for key, value in entries.items():
-        cache.set(key, value)
-        inserted += 1
-    return inserted
-
-
-__all__ = [
-    "TTLCache",
-    "logger",
-    "prediction_cache",
-    "warm_cache",
-]
+__all__ = ["TTLCache", "prediction_cache"]

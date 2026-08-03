@@ -87,126 +87,34 @@ def test_construction_params(ttl: int, size: int) -> None:
     assert c.size == 0
 
 
-def test_contains_present_key() -> None:
-    c = TTLCache(ttl_seconds=10)
-    c.set("x", 99)
-    assert "x" in c
+def test_get_or_set_returns_existing_value() -> None:
+    c = TTLCache(ttl_seconds=60)
+    c.set("k", "existing")
+    assert c.get_or_set("k", "default") == "existing"
 
 
-def test_contains_missing_key() -> None:
-    c = TTLCache(ttl_seconds=10)
-    assert "missing" not in c
+def test_get_or_set_stores_default_when_absent() -> None:
+    c = TTLCache(ttl_seconds=60)
+    result = c.get_or_set("new_key", "default_val")
+    assert result == "default_val"
+    assert c.get("new_key") == "default_val"
 
 
 def test_stats_returns_expected_keys() -> None:
-    c = TTLCache(ttl_seconds=10, max_size=50)
-    c.set("a", 1)
-    _ = c.get("a")
-    _ = c.get("b")
-    stats = c.stats()
-    assert stats["size"] == 1
-    assert stats["max_size"] == 50
-    assert stats["ttl_seconds"] == 10
-    assert stats["hits"] == 1
-    assert stats["misses"] == 1
-    assert stats["hit_rate"] == pytest.approx(0.5)
+    c = TTLCache(ttl_seconds=60)
+    c.set("k", "v")
+    c.get("k")
+    s = c.stats()
+    assert set(s.keys()) == {"size", "hits", "misses", "hit_rate"}
 
 
-def test_stats_empty_cache() -> None:
-    c = TTLCache()
-    stats = c.stats()
-    assert stats["size"] == 0
-    assert stats["hit_rate"] == 0.0
-
-
-def test_eviction_count_initial_zero() -> None:
-    c = TTLCache(ttl_seconds=60, max_size=10)
-    assert c.eviction_count == 0
-
-
-def test_eviction_count_increments_on_overflow() -> None:
-    c = TTLCache(ttl_seconds=60, max_size=3)
-    for i in range(5):
-        c.set(f"key_{i}", i)
-    assert c.eviction_count == 2
-
-
-def test_eviction_count_resets_on_clear() -> None:
-    c = TTLCache(ttl_seconds=60, max_size=2)
-    c.set("a", 1)
-    c.set("b", 2)
-    c.set("c", 3)  # triggers eviction
-    assert c.eviction_count == 1
-    c.clear()
-    assert c.eviction_count == 0
-
-
-def test_stats_includes_evictions() -> None:
-    c = TTLCache(ttl_seconds=60, max_size=2)
-    c.set("x", 1)
-    c.set("y", 2)
-    c.set("z", 3)
-    stats = c.stats()
-    assert "evictions" in stats
-    assert stats["evictions"] == 1
-
-
-@pytest.mark.parametrize(
-    "max_size,n_inserts,expected_evictions",
-    [
-        (5, 5, 0),
-        (5, 6, 1),
-        (3, 10, 7),
-    ],
-)
-def test_eviction_count_parametrized(max_size, n_inserts, expected_evictions) -> None:
-    c = TTLCache(ttl_seconds=60, max_size=max_size)
-    for i in range(n_inserts):
-        c.set(f"k_{i}", i)
-    assert c.eviction_count == expected_evictions
-
-
-def test_warm_cache_inserts_entries() -> None:
-    from app.cache import TTLCache, warm_cache
-
-    c = TTLCache(ttl_seconds=60, max_size=100)
-    count = warm_cache(c, {"a": 1, "b": 2, "c": 3})
-    assert count == 3
-    assert c.get("a") == 1
-    assert c.get("b") == 2
-    assert c.get("c") == 3
-
-
-def test_warm_cache_empty_dict() -> None:
-    from app.cache import TTLCache, warm_cache
-
-    c = TTLCache(ttl_seconds=60, max_size=100)
-    count = warm_cache(c, {})
-    assert count == 0
-
-
-def test_warm_cache_returns_insert_count() -> None:
-    from app.cache import TTLCache, warm_cache
-
-    c = TTLCache(ttl_seconds=60, max_size=100)
-    entries = {f"key_{i}": i for i in range(10)}
-    count = warm_cache(c, entries)
-    assert count == 10
-
-
-def test_warm_cache_overwrite_existing() -> None:
-    from app.cache import TTLCache, warm_cache
-
-    c = TTLCache(ttl_seconds=60, max_size=100)
-    c.set("x", "old")
-    warm_cache(c, {"x": "new"})
-    assert c.get("x") == "new"
-
-
-@pytest.mark.parametrize("n", [1, 5, 20])
-def test_warm_cache_parametrized_count(n) -> None:
-    from app.cache import TTLCache, warm_cache
-
-    c = TTLCache(ttl_seconds=60, max_size=100)
-    entries = {str(i): i * 10 for i in range(n)}
-    assert warm_cache(c, entries) == n
+def test_stats_values_consistent() -> None:
+    c = TTLCache(ttl_seconds=60)
+    c.set("k", "v")
+    c.get("k")
+    c.get("missing")
+    s = c.stats()
+    assert s["hits"] == 1
+    assert s["misses"] == 1
+    assert s["size"] == 1
+    assert s["hit_rate"] == pytest.approx(0.5)

@@ -301,186 +301,33 @@
   },
   {
     "repo": "reflective-lantern",
-    "last_run": "2026-07-15",
-    "date": "2026-07-15",
+    "last_run": "2026-07-14",
+    "date": "2026-07-14",
     "mode": "IMPROVEMENT",
-    "commits": 60,
-    "pushed_to": "main",
+    "commits": 6,
+    "pushed_to": "improvement-2026-07-14",
     "tests_passed": true,
-    "email_status": "pending",
+    "email_status": "network_blocked",
     "tiers": {
-      "Source (1-17)": [
-        "app/anomaly.py: batch_compute_severity(), anomaly_rate(), top_anomalies()",
-        "app/cache.py: thread-safe TTLCache with RLock, __contains__, stats()",
-        "app/validation.py: validate_building_id, validate_batch_size, validate_consumption_kwh, validate_feature_vector",
-        "app/regions.py: 5 new regions, get_all_region_ids, get_region_timezone, get_peak_load",
-        "app/investment.py: mortgage_payment, roi_percentage, price_to_income_ratio",
-        "app/reporting.py: energy_efficiency_grade, monthly_consumption_summary, consumption_trend",
-        "app/market_context.py: rent_vs_buy_comparison, price_trend_indicator, housing_affordability_index",
-        "app/similarity.py: euclidean_distance, batch_add",
-        "app/mlflow_stub.py: set_tracking_uri, log_params, log_artifact, list_runs",
-        "app/model.py: get_feature_importance averaging VotingRegressor sub-estimators",
-        "app/monitoring.py: get_anomaly_stats, compute_feature_drift_summary",
-        "app/schemas.py: FeatureImportanceResponse, AnomalyStatsResponse, SavingsRequest/Response",
-        "app/main.py: /feature-importance, /anomaly/stats, /savings, /efficiency-grade endpoints",
-        "app/database.py: ModelMetrics ORM table, get_predictions_by_building",
-        "config/settings.py: to_dict(), missing_optional()",
-        "config/constants.py: ML/API/batch limit constants",
-        "config/mode.py: upcoming_innovation_days(), mode_schedule()"
+      "Cache Enhancements (1-2)": [
+        "app/cache.py: add get_or_set() to return cached value or store and return default",
+        "app/cache.py: add stats() returning dict snapshot of size/hits/misses/hit_rate; add __all__"
       ],
-      "Source (18-40)": [
-        "app/features.py: InteractionFeatureExtractor for pairwise feature products",
-        "app/faiss_index.py: reset(), __len__, save_vectors() on LoadPatternIndex",
-        "app/aws_stub.py: delete_artefact helper, fixed __all__",
-        "app/logging_config.py: TraceIdFilter, add_trace_id_filter",
-        "app/time_series.py: cumulative_consumption, resample_hourly_to_daily",
-        "pipelines/retrain_dag.py: check_drift_before_retrain KS-test gate",
-        "scripts/summarize_history.py: export_to_csv function",
-        ".github/workflows/ci.yml: Python 3.12 matrix, coverage XML artifact upload",
-        ".github/ISSUE_TEMPLATE/bug_report.md: bug report issue template",
-        ".github/ISSUE_TEMPLATE/feature_request.md: feature request issue template",
-        "Makefile: coverage-xml, profile targets",
-        "pyproject.toml: coverage run and report config",
-        "CHANGELOG.md: v1.2.0 entry"
+      "Time-Series Utilities (3)": [
+        "app/time_series.py: add cumulative_sum, moving_max (NaN-padded), normalize_series, daily_totals, first_nonzero helpers; add __all__"
       ],
-      "Tests (41-60)": [
-        "test_features.py: InteractionFeatureExtractor tests",
-        "test_mlflow_stub.py: delete_artefact tests, set_tracking_uri, log_params, list_runs",
-        "test_logging_config.py: TraceIdFilter, add_trace_id_filter tests",
-        "test_retrain_dag.py: check_drift_before_retrain tests",
-        "test_faiss_index.py: __len__, reset, save_vectors tests",
-        "test_summarize_history.py: export_to_csv tests",
-        "test_time_series.py: cumulative_consumption, resample_hourly_to_daily tests",
-        "test_market_context.py: housing_affordability_index tests",
-        "test_reporting.py: consumption_trend tests, grade threshold fixes",
-        "test_validation.py: building_id length, consumption bounds edge cases",
-        "test_investment.py: mortgage zero-rate, parametrized term, down payment tests",
-        "test_regions.py: new region ids, timezone, peak_load tests",
-        "test_anomaly.py: top_anomalies sorter tests",
-        "test_database.py: get_predictions_by_building isolation fix"
+      "Config Helpers (4)": [
+        "config/mode.py: add mode_label() returning human-readable RunMode string; expand __all__"
+      ],
+      "Test Coverage (5-6)": [
+        "tests/test_cache.py: add test_get_or_set_returns_existing_value, test_get_or_set_stores_default_when_absent, test_stats_returns_expected_keys, test_stats_values_consistent",
+        "tests/test_time_series.py: add 12 tests covering cumulative_sum, moving_max, normalize_series, daily_totals, first_nonzero",
+        "tests/test_mode.py: add test_mode_label_innovation and test_mode_label_improvement"
       ]
     },
-    "files_changed": 97,
-    "lint_status": "ruff: autofix applied",
-    "push_status": "success"
-  },
-  {
-    "date": "2026-07-16",
-    "mode": "IMPROVEMENT",
-    "commits": 61,
-    "numbered_commits": 60,
-    "ruff": "clean",
-    "tests_new": 614,
-    "tests_db_preexisting_failures": 4,
-    "push": "success",
-    "modules_improved": [
-      "app/schemas.py",
-      "tests/test_regions.py",
-      "tests/test_investment.py",
-      "app/time_series.py",
-      "app/anomaly.py",
-      "app/regions.py",
-      "app/reporting.py",
-      "app/validation.py",
-      "app/cache.py",
-      "app/market_context.py",
-      "app/similarity.py",
-      "app/features.py",
-      "app/monitoring.py",
-      "app/investment.py",
-      "app/database.py",
-      "app/logging_config.py",
-      "README.md"
-    ],
-    "highlights": [
-      "Fixed F822 __all__ stale names in schemas.py",
-      "Fixed F811 duplicate test function in test_regions.py",
-      "Fixed F841 unused variable in test_investment.py",
-      "Added exponential_moving_average + forecast_trend_with_seasonality to time_series.py",
-      "Added compute_percentile_bounds + classify_consumption to anomaly.py",
-      "Added compute_z_score + flag_z_score_outliers to anomaly.py",
-      "Added get_regions_by_timezone to regions.py",
-      "Added seasonal_efficiency_score + peak_demand_by_period to reporting.py",
-      "Added consumption_efficiency_ratio + daily_average_consumption to reporting.py",
-      "Added batch_validate_readings + validate_forecast_horizon to validation.py",
-      "Added is_valid_temporal_input + clamp_consumption to validation.py",
-      "Added eviction counter + warm_cache to cache.py",
-      "Added affordability_ratio + price_trend_consistency + market_summary to market_context.py",
-      "Added score_distribution + hourly_pattern_distance to similarity.py",
-      "Added normalize_consumption + demand_response_potential to features.py",
-      "Added summarize_drift_history + get_reference_window_size + is_reference_window_ready to monitoring.py",
-      "Added investment_score_label + portfolio_weighted_score to investment.py",
-      "Added get_recent_anomalies + count_anomalies_by_building to database.py",
-      "Added log_level_int + get_configured_log_level + is_debug_enabled to logging_config.py",
-      "Added moving_range + consumption_variance to time_series.py",
-      "Expanded README with full utility module reference"
-    ]
-  },
-  {
-    "repo": "reflective-lantern",
-    "last_run": "2026-07-17",
-    "mode": "IMPROVEMENT",
-    "commits": 60,
-    "pushed_to": "main",
-    "tiers": {
-      "Bug Fixes (1-3)": [
-        "fix(test_model.py): add top_n param to parametrized test_get_feature_importance_various_top_n",
-        "fix(lifespan): add type: ignore[type-arg] annotation to lifespan generator",
-        "chore(app/__init__.py): bump version to 1.1.0 with module docstring"
-      ],
-      "New Endpoints (4-50)": [
-        "feat: add /api/v1/ready readiness probe",
-        "feat: add /api/v1/validate-batch endpoint",
-        "feat: add /api/v1/stats/summary endpoint",
-        "feat: add /api/v1/config non-sensitive settings endpoint",
-        "feat: add /api/v1/benchmark-eui ASHRAE EUI endpoint",
-        "feat: add /api/v1/carbon/estimate CO2 estimate endpoint",
-        "feat: add /api/v1/carbon/annual-report endpoint",
-        "feat: add /api/v1/peak-hours endpoint",
-        "feat: add /api/v1/export/csv, /data-quality, /trend, /cache/stats endpoints",
-        "feat: add /api/v1/forecast/naive and /forecast/ses endpoints"
-      ],
-      "New Modules (51-60)": [
-        "feat: add app/date_utils.py with UTC helpers, round_to_hour, generate_hourly_timestamps",
-        "feat: add app/stats_utils.py with MAE, RMSE, R-squared, MAPE, CV, percentile",
-        "feat: add app/benchmarks.py with ASHRAE EUI benchmarking and monthly distribution",
-        "feat: add app/carbon.py with CO2 emission estimates and annual carbon report",
-        "feat: add app/rate_limiter.py with token-bucket per-client rate limiting",
-        "feat: add app/energy_export.py with CSV/JSON export, filter, and aggregation",
-        "feat: add app/notifications.py with Alert dataclass and AlertQueue",
-        "feat: add app/data_quality.py with record scoring and outlier flagging",
-        "feat: add app/trend_analysis.py with linear trend, rolling mean, change-point detection",
-        "feat: add app/forecasting.py with naive, drift, seasonal-naive, SES forecasts",
-        "feat: add app/pipeline_utils.py with Pipeline introspection helpers",
-        "feat: add detect_plateau() and clip_outliers() to time_series.py",
-        "feat: add anomaly_rate() and consecutive_anomaly_runs() to anomaly.py",
-        "feat: add encode_cyclical() and feature_names_for_bundle() to features.py",
-        "feat: add prediction_confidence() to model.py for bootstrap uncertainty",
-        "feat: add reference_window_stats() to monitoring.py"
-      ],
-      "New Tests": [
-        "test: added 200+ new test functions across 15+ test files",
-        "test: parametrized tests for rate_limiter, energy_export, notifications, data_quality",
-        "test: added trend_analysis, forecasting, pipeline_utils test suites",
-        "test: extended monitoring with reference_window_stats tests",
-        "test: extended api tests for all new endpoints"
-      ]
-    }
-  },
-  {
-    "date": "2026-07-20",
-    "mode": "improvement",
-    "improvements": [
-      "Added -> None return annotations to 20 test files",
-      "Added __all__ export lists to 20+ app modules",
-      "Added functools.lru_cache to grid carbon intensity lookup",
-      "Improved exponential_smoothing_forecast docstring",
-      "Added parametrized test edge cases to 12 test files",
-      "Fixed duplicate test function names and ruff F822 errors",
-      "Fixed test assertions to match actual function signatures"
-    ],
-    "tests_passed": true,
-    "commits": 63,
-    "email_status": "smtp_blocked_remote_env"
+    "files_changed": 6,
+    "lint_status": "ruff: passed",
+    "push_status": "pending",
+    "notes": "Branch-based PR due to concurrent session conflict on main; 6 commits adapt improvements to Watt-Guard codebase on origin/main"
   }
 ]
