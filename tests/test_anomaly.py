@@ -593,14 +593,16 @@ class TestEwmaSmooth:
         assert result == pytest.approx([1.0, 2.0, 3.0])
 
     def test_raises_empty(self) -> None:
-        from app.anomaly import ewma_smooth
         import pytest
+
+        from app.anomaly import ewma_smooth
         with pytest.raises(ValueError):
             ewma_smooth([])
 
     def test_raises_bad_alpha(self) -> None:
-        from app.anomaly import ewma_smooth
         import pytest
+
+        from app.anomaly import ewma_smooth
         with pytest.raises(ValueError):
             ewma_smooth([1.0], alpha=0.0)
 

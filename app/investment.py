@@ -368,7 +368,7 @@ def irr_estimate(
     """
     if initial_investment <= 0:
         raise ValueError(f"initial_investment must be positive, got {initial_investment}")
-    all_flows = [-initial_investment] + list(annual_cash_flows)
+    all_flows = [-initial_investment, *list(annual_cash_flows)]
     if terminal_value:
         all_flows[-1] += terminal_value
 

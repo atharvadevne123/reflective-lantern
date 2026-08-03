@@ -95,12 +95,14 @@ class TestEfficiencyDelta:
 class TestComputeEfficiencyScoreValidation:
     def test_negative_consumption_raises(self):
         import pytest
+
         from app.efficiency_score import compute_efficiency_score
         with pytest.raises(ValueError, match="non-negative"):
             compute_efficiency_score(-1.0, "residential")
 
     def test_zero_floor_area_raises(self):
         import pytest
+
         from app.efficiency_score import compute_efficiency_score
         with pytest.raises(ValueError, match="positive"):
             compute_efficiency_score(10.0, "office", floor_area_sqm=0.0)

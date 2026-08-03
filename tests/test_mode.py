@@ -191,7 +191,7 @@ def test_mode_label_innovation() -> None:
 
 
 def test_mode_label_improvement() -> None:
-    from config.mode import mode_label
+    from config.mode import upcoming_innovation_days
 
     days = upcoming_innovation_days(count=5)
     assert all(is_innovation_day(d) for d in days)

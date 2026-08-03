@@ -80,19 +80,6 @@ class TTLCache:
         """Total number of LRU evictions since creation or last clear()."""
         return self.evictions
 
-    def stats(self) -> dict[str, Any]:
-        """Return a snapshot of cache statistics."""
-        with self._lock:
-            return {
-                "size": len(self._store),
-                "max_size": self._max,
-                "ttl_seconds": self._ttl,
-                "hits": self.hits,
-                "misses": self.misses,
-                "evictions": self.evictions,
-                "hit_rate": self.hit_rate,
-            }
-
     @property
     def size(self) -> int:
         """Current number of entries (including potentially expired ones)."""

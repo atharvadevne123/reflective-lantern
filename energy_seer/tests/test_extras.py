@@ -1,8 +1,6 @@
 """Tests for validators, cache, telemetry, forecaster, demand spike."""
 from __future__ import annotations
 
-import time
-
 import pytest
 
 

@@ -315,20 +315,23 @@ class TestMomentumScore:
             assert key in result
 
     def test_raises_on_short_window_zero(self) -> None:
-        from app.trend_analysis import momentum_score
         import pytest
+
+        from app.trend_analysis import momentum_score
         with pytest.raises(ValueError):
             momentum_score([1.0] * 30, short_window=0)
 
     def test_raises_short_ge_long(self) -> None:
-        from app.trend_analysis import momentum_score
         import pytest
+
+        from app.trend_analysis import momentum_score
         with pytest.raises(ValueError):
             momentum_score([1.0] * 30, short_window=10, long_window=10)
 
     def test_raises_insufficient_values(self) -> None:
-        from app.trend_analysis import momentum_score
         import pytest
+
+        from app.trend_analysis import momentum_score
         with pytest.raises(ValueError):
             momentum_score([1.0] * 5, short_window=3, long_window=10)
 

@@ -122,25 +122,19 @@ def cumulative_sum(values: list[float]) -> list[float]:
 def moving_max(values: list[float], window: int = 3) -> list[float]:
     """Return the rolling maximum over *window* periods.
 
-    The first (window-1) entries are NaN-padded.
-
     Args:
         values: Time-ordered consumption readings.
-        alpha: Smoothing factor in (0, 1]; higher values weight recent obs more.
+        window: Number of periods to include in each rolling window.
 
     Returns:
-        EMA series of the same length as *values*.
-
-    Raises:
-        ValueError: If *alpha* is not in (0, 1].
+        Rolling maximum series of the same length as *values*.
     """
-    if not (0 < alpha <= 1.0):
-        raise ValueError(f"alpha must be in (0, 1], got {alpha}")
     if not values:
         return []
-    result = [values[0]]
-    for v in values[1:]:
-        result.append(alpha * v + (1 - alpha) * result[-1])
+    result: list[float] = []
+    for i in range(len(values)):
+        start = max(0, i - window + 1)
+        result.append(max(values[start : i + 1]))
     return [round(x, 6) for x in result]
 
 
@@ -393,19 +387,25 @@ def peak_to_valley_ratio(values: list[float]) -> float:
 
 
 __all__ = [
+    "autocorrelation",
     "clip_outliers",
     "consumption_variance",
     "cumulative_consumption",
+    "cumulative_sum",
+    "daily_totals",
     "detect_plateau",
     "detect_spikes",
     "exponential_moving_average",
     "find_changepoints",
+    "first_nonzero",
     "forecast_linear_trend",
     "forecast_trend_with_seasonality",
+    "holt_winters_smooth",
     "load_factor",
-    "logger",
+    "moving_max",
     "moving_median",
     "moving_range",
+    "normalize_series",
     "peak_hours",
     "peak_to_valley_ratio",
     "resample_hourly_to_daily",
@@ -508,3 +508,91 @@ def holt_winters_smooth(
         trend = beta * (level - prev_level) + (1.0 - beta) * trend
         result.append(round(level, 6))
     return result
+
+
+def exponential_moving_average(values: list[float], alpha: float = 0.3) -> list[float]:
+    """Compute an exponential moving average (EMA) of *values*.
+
+    Args:
+        values: Time-ordered readings.
+        alpha: Smoothing factor in (0, 1]. Higher values give more weight to recent data.
+
+    Returns:
+        EMA series of the same length as *values*.
+
+    Raises:
+        ValueError: If *alpha* is not in (0, 1].
+    """
+    if not values:
+        return []
+    if not (0 < alpha <= 1):
+        raise ValueError(f"alpha must be in (0, 1], got {alpha}")
+    result = [values[0]]
+    for v in values[1:]:
+        result.append(alpha * v + (1.0 - alpha) * result[-1])
+    return [round(x, 6) for x in result]
+
+
+def daily_totals(values: list[float], period: int = 24) -> list[float]:
+    """Aggregate *values* into totals over fixed *period*-length chunks.
+
+    Args:
+        values: Time-ordered readings (any length).
+        period: Number of readings per chunk (default 24 for hourly data).
+
+    Returns:
+        List of chunk totals; the last partial chunk is included if it exists.
+    """
+    if not values:
+        return []
+    result: list[float] = []
+    for i in range(0, len(values), period):
+        result.append(round(sum(values[i : i + period]), 6))
+    return result
+
+
+def normalize_series(values: list[float]) -> list[float]:
+    """Min-max normalise *values* to the [0, 1] range.
+
+    Args:
+        values: Numeric series.
+
+    Returns:
+        Normalised series of the same length. Returns all zeros for a constant series.
+    """
+    if not values:
+        return []
+    lo, hi = min(values), max(values)
+    if hi == lo:
+        return [0.0] * len(values)
+    return [round((v - lo) / (hi - lo), 6) for v in values]
+
+
+def first_nonzero(values: list[float]) -> int:
+    """Return the index of the first non-zero element in *values*.
+
+    Args:
+        values: Numeric series.
+
+    Returns:
+        0-based index of the first non-zero value, or -1 if all values are zero
+        or the series is empty.
+    """
+    for i, v in enumerate(values):
+        if v != 0.0:
+            return i
+    return -1
+
+
+def cumulative_consumption(values: list[float]) -> list[float]:
+    """Return the running cumulative sum of *values*.
+
+    Alias for :func:`cumulative_sum` for energy-domain naming consistency.
+
+    Args:
+        values: Numeric series of energy readings.
+
+    Returns:
+        List of the same length where element i is sum(values[:i+1]).
+    """
+    return cumulative_sum(values)

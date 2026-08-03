@@ -286,7 +286,7 @@ def benchmark_vs_portfolio(
         portfolio_kwh: Peer buildings' daily consumption values.
 
     Returns:
-        Dict with 'percentile' (0–100), 'rank' (1-indexed), 'total_peers',
+        Dict with 'percentile' (0-100), 'rank' (1-indexed), 'total_peers',
         'is_above_median', and 'grade' (A if bottom 25%, D if top 25%).
 
     Raises:

@@ -279,6 +279,7 @@ class TestPipelineStepTypes:
     def test_returns_class_names(self) -> None:
         from sklearn.pipeline import Pipeline
         from sklearn.preprocessing import StandardScaler
+
         from app.pipeline_utils import pipeline_step_types
         p = Pipeline([("scaler", StandardScaler())])
         result = pipeline_step_types(p)
@@ -286,7 +287,8 @@ class TestPipelineStepTypes:
 
     def test_multiple_steps(self) -> None:
         from sklearn.pipeline import Pipeline
-        from sklearn.preprocessing import StandardScaler, MinMaxScaler
+        from sklearn.preprocessing import MinMaxScaler, StandardScaler
+
         from app.pipeline_utils import pipeline_step_types
         p = Pipeline([("std", StandardScaler()), ("mm", MinMaxScaler())])
         result = pipeline_step_types(p)
@@ -298,6 +300,7 @@ class TestFirstStep:
     def test_returns_first(self) -> None:
         from sklearn.pipeline import Pipeline
         from sklearn.preprocessing import StandardScaler
+
         from app.pipeline_utils import first_step
         scaler = StandardScaler()
         p = Pipeline([("scaler", scaler)])

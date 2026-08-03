@@ -257,13 +257,15 @@ def test_generate_hourly_timestamps_first_element_matches_start() -> None:
 class TestDatetimeToIso:
     def test_naive_becomes_utc(self) -> None:
         from datetime import datetime
+
         from app.date_utils import datetime_to_iso
         dt = datetime(2026, 8, 3, 12, 0, 0)
         result = datetime_to_iso(dt)
         assert "+00:00" in result
 
     def test_aware_preserved(self) -> None:
-        from datetime import datetime, timezone, timedelta
+        from datetime import datetime, timedelta, timezone
+
         from app.date_utils import datetime_to_iso
         tz = timezone(timedelta(hours=5, minutes=30))
         dt = datetime(2026, 8, 3, 17, 30, 0, tzinfo=tz)
@@ -271,6 +273,7 @@ class TestDatetimeToIso:
 
     def test_returns_string(self) -> None:
         from datetime import datetime
+
         from app.date_utils import datetime_to_iso
         assert isinstance(datetime_to_iso(datetime(2026, 1, 1)), str)
 
@@ -278,6 +281,7 @@ class TestDatetimeToIso:
 class TestStartOfDay:
     def test_zeroes_time(self) -> None:
         from datetime import datetime
+
         from app.date_utils import start_of_day
         dt = datetime(2026, 8, 3, 15, 45, 30)
         result = start_of_day(dt)
@@ -285,6 +289,7 @@ class TestStartOfDay:
 
     def test_preserves_date(self) -> None:
         from datetime import datetime
+
         from app.date_utils import start_of_day
         dt = datetime(2026, 8, 3, 15, 45)
         result = start_of_day(dt)
@@ -294,6 +299,7 @@ class TestStartOfDay:
 class TestDaysBetween:
     def test_positive(self) -> None:
         from datetime import datetime
+
         from app.date_utils import days_between
         start = datetime(2026, 1, 1)
         end = datetime(2026, 1, 8)
@@ -301,12 +307,14 @@ class TestDaysBetween:
 
     def test_same_day(self) -> None:
         from datetime import datetime
+
         from app.date_utils import days_between
         dt = datetime(2026, 6, 1)
         assert days_between(dt, dt) == 0
 
     def test_negative(self) -> None:
         from datetime import datetime
+
         from app.date_utils import days_between
         start = datetime(2026, 2, 1)
         end = datetime(2026, 1, 1)

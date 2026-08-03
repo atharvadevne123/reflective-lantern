@@ -239,7 +239,6 @@ def normalize_record(record: dict[str, Any]) -> dict[str, Any]:
 
 
 __all__ = [
-    "aggregate_by_hour",
     "batch_score",
     "completeness_score",
     "detect_data_gaps",

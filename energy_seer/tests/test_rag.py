@@ -23,7 +23,6 @@ class TestBuildPatternVector:
 
 class TestRetriever:
     def test_find_similar_no_index_returns_empty(self):
-        import app.monitoring as m
         from rag import retriever
         retriever._index = None
         retriever._meta = []
@@ -31,7 +30,6 @@ class TestRetriever:
         assert result == []
 
     def test_baseline_consumption_fallback(self):
-        import app.monitoring as m
         from rag import retriever
         retriever._index = None
         retriever._meta = []

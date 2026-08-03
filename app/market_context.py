@@ -336,22 +336,22 @@ def neighbourhood_score(
     safety_score: float = 7.0,
     weights: dict[str, float] | None = None,
 ) -> dict[str, float]:
-    """Compute a composite neighbourhood quality score (0–10).
+    """Compute a composite neighbourhood quality score (0-10).
 
     Each component is weighted and combined into a single index.  Scores
     outside [0, 10] are clamped before aggregation.
 
     Args:
-        school_score: School quality rating 0–10.
-        transit_score: Public transit quality 0–10.
-        walkability_score: Walk Score equivalent 0–10.
-        safety_score: Neighbourhood safety score 0–10 (default 7.0).
+        school_score: School quality rating 0-10.
+        transit_score: Public transit quality 0-10.
+        walkability_score: Walk Score equivalent 0-10.
+        safety_score: Neighbourhood safety score 0-10 (default 7.0).
         weights: Custom weight mapping with keys 'school', 'transit',
             'walkability', 'safety'.  Must sum to 1.0; defaults to
             equal weighting (0.25 each).
 
     Returns:
-        Dict with 'composite_score' (rounded to 2 dp), 'grade' (A–D),
+        Dict with 'composite_score' (rounded to 2 dp), 'grade' (A-D),
         and individual component scores.
 
     Raises:

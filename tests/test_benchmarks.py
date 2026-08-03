@@ -315,7 +315,7 @@ class TestEnergyIntensityRatio:
         assert energy_intensity_ratio(100.0, 100.0) == pytest.approx(1.0)
 
 
-class TestEfficiencyGap:
+class TestEfficiencyGapNew:
     def test_positive_gap(self) -> None:
         from app.benchmarks import efficiency_gap
         assert efficiency_gap(120.0, 100.0) == pytest.approx(20.0)

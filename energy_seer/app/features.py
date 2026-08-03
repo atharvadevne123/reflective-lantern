@@ -183,7 +183,7 @@ def feature_column_names() -> list[str]:
     ])
 
 
-def validate_dataframe_columns(df: "pd.DataFrame", required: list[str] | None = None) -> list[str]:
+def validate_dataframe_columns(df: pd.DataFrame, required: list[str] | None = None) -> list[str]:
     """Return missing required columns from *df*.
 
     Args:

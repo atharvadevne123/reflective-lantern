@@ -155,7 +155,7 @@ class TestRecordsToJsonl:
         from app.energy_export import records_to_jsonl
 
         out = records_to_jsonl(SAMPLE)
-        lines = [l for l in out.strip().split("\n") if l]
+        lines = [ln for ln in out.strip().split("\n") if ln]
         for line in lines:
             parsed = json.loads(line)
             assert isinstance(parsed, dict)
@@ -164,7 +164,7 @@ class TestRecordsToJsonl:
         from app.energy_export import records_to_jsonl
 
         out = records_to_jsonl(SAMPLE)
-        lines = [l for l in out.strip().split("\n") if l]
+        lines = [ln for ln in out.strip().split("\n") if ln]
         assert len(lines) == len(SAMPLE)
 
     def test_empty_records_returns_empty_string(self) -> None:
