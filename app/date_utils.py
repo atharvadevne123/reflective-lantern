@@ -101,11 +101,54 @@ def week_of_year(dt: datetime) -> int:
 
 
 __all__ = [
+    "datetime_to_iso",
+    "days_between",
     "generate_hourly_timestamps",
     "hours_between",
     "is_business_hour",
     "iso_to_datetime",
     "round_to_hour",
+    "start_of_day",
     "utc_now",
     "week_of_year",
 ]
+
+
+def datetime_to_iso(dt: datetime) -> str:
+    """Serialise *dt* to an ISO-8601 string with UTC offset.
+
+    Args:
+        dt: Datetime to serialise (naive datetimes are assumed UTC).
+
+    Returns:
+        ISO-8601 string, e.g. '2026-08-03T12:00:00+00:00'.
+    """
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=UTC)
+    return dt.isoformat()
+
+
+def start_of_day(dt: datetime) -> datetime:
+    """Return midnight (00:00:00) of the same day as *dt*.
+
+    Args:
+        dt: Any datetime.
+
+    Returns:
+        Datetime with time zeroed to midnight, preserving tzinfo.
+    """
+    return dt.replace(hour=0, minute=0, second=0, microsecond=0)
+
+
+def days_between(start: datetime, end: datetime) -> int:
+    """Return the number of whole calendar days between *start* and *end*.
+
+    Args:
+        start: Earlier datetime.
+        end: Later datetime.
+
+    Returns:
+        Integer day count (can be negative if end < start).
+    """
+    delta = end - start
+    return delta.days
