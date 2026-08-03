@@ -483,3 +483,50 @@ def test_carbon_saved_kwh_various_regions(region: str) -> None:
     result = carbon_saved_kwh(200.0, 150.0, region=region)
     assert "co2_kg_saved" in result
     assert result["co2_kg_saved"] >= 0
+
+
+class TestCompareRegions:
+    def test_returns_list(self) -> None:
+        from app.carbon import compare_regions
+
+        result = compare_regions(100.0)
+        assert isinstance(result, list)
+        assert len(result) > 0
+
+    def test_sorted_by_co2_ascending(self) -> None:
+        from app.carbon import compare_regions
+
+        result = compare_regions(100.0)
+        co2_vals = [r["co2_kg"] for r in result]
+        assert co2_vals == sorted(co2_vals)
+
+    def test_custom_regions(self) -> None:
+        from app.carbon import compare_regions
+
+        result = compare_regions(50.0, regions=["northeast", "midwest"])
+        assert len(result) == 2
+        regions_in_result = {r["region"] for r in result}
+        assert regions_in_result == {"northeast", "midwest"}
+
+    def test_zero_kwh_gives_zero_co2(self) -> None:
+        from app.carbon import compare_regions
+
+        result = compare_regions(0.0, regions=["default"])
+        assert result[0]["co2_kg"] == 0.0
+
+    def test_negative_kwh_raises(self) -> None:
+        import pytest
+
+        from app.carbon import compare_regions
+
+        with pytest.raises(ValueError, match="non-negative"):
+            compare_regions(-1.0)
+
+    @pytest.mark.parametrize("kwh", [1.0, 10.0, 500.0])
+    def test_each_result_has_required_keys(self, kwh: float) -> None:
+        from app.carbon import compare_regions
+
+        for item in compare_regions(kwh, regions=["northeast", "west"]):
+            assert "region" in item
+            assert "co2_kg" in item
+            assert "intensity_kg_per_kwh" in item
