@@ -34,3 +34,59 @@ class TestComputePSI:
         from app.psi import compute_psi
         result = compute_psi(list(range(n)), list(range(n // 2, n + n // 2)))
         assert result["psi"] >= 0
+
+
+class TestPsiReport:
+    def test_returns_dict_per_feature(self):
+        from app.psi import psi_report
+        data = {
+            "consumption": (list(range(50)), list(range(50))),
+            "temperature": (list(range(50)), list(range(25, 75))),
+        }
+        result = psi_report(data)
+        assert "consumption" in result
+        assert "temperature" in result
+
+    def test_summary_key_present(self):
+        from app.psi import psi_report
+        data = {"feat": (list(range(50)), list(range(50)))}
+        result = psi_report(data)
+        assert "summary" in result
+        assert "max_psi" in result["summary"]
+
+    def test_identical_distributions_stable(self):
+        from app.psi import psi_report
+        ref = list(range(100))
+        result = psi_report({"x": (ref, list(ref))})
+        assert result["x"]["drift_level"] == "stable"
+
+    def test_empty_report_has_summary(self):
+        from app.psi import psi_report
+        result = psi_report({})
+        assert isinstance(result, dict)
+
+    def test_psi_returns_bins_used(self):
+        from app.psi import compute_psi
+        result = compute_psi(list(range(20)), list(range(20)))
+        assert "bins_used" in result
+
+
+class TestSpikeSeverity:
+    def test_normal_value(self):
+        from app.demand_spike import spike_severity
+        assert spike_severity(5.0, 5.0, 1.0) == "normal"
+
+    def test_moderate_spike(self):
+        from app.demand_spike import spike_severity
+        # z=3.0 > threshold=2.5
+        assert spike_severity(8.0, 5.0, 1.0, z_threshold=2.5) == "moderate"
+
+    def test_zero_std_returns_normal(self):
+        from app.demand_spike import spike_severity
+        assert spike_severity(100.0, 5.0, 0.0) == "normal"
+
+    @pytest.mark.parametrize("value,expected", [(5.5, "normal"), (8.0, "moderate"), (15.0, "high"), (30.0, "critical")])
+    def test_severity_levels(self, value, expected):
+        from app.demand_spike import spike_severity
+        result = spike_severity(value, mean=5.0, std=1.0, z_threshold=2.5)
+        assert result == expected
