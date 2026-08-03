@@ -275,7 +275,49 @@ def daily_average_consumption(hourly_series: list[float]) -> float:
     return round(sum(hourly_series) / days, 4)
 
 
+def benchmark_vs_portfolio(
+    building_kwh: float,
+    portfolio_kwh: list[float],
+) -> dict[str, object]:
+    """Compare a single building's consumption against a portfolio of peers.
+
+    Args:
+        building_kwh: Target building's daily energy consumption in kWh.
+        portfolio_kwh: Peer buildings' daily consumption values.
+
+    Returns:
+        Dict with 'percentile' (0–100), 'rank' (1-indexed), 'total_peers',
+        'is_above_median', and 'grade' (A if bottom 25%, D if top 25%).
+
+    Raises:
+        ValueError: If *portfolio_kwh* is empty.
+    """
+    if not portfolio_kwh:
+        raise ValueError("portfolio_kwh must not be empty")
+    arr = np.array(portfolio_kwh, dtype=float)
+    n = len(arr)
+    rank = int((arr <= building_kwh).sum())
+    percentile = round(rank / n * 100.0, 2)
+    median = float(np.median(arr))
+    if percentile <= 25:
+        grade = "A"
+    elif percentile <= 50:
+        grade = "B"
+    elif percentile <= 75:
+        grade = "C"
+    else:
+        grade = "D"
+    return {
+        "percentile": percentile,
+        "rank": rank,
+        "total_peers": n,
+        "is_above_median": bool(building_kwh > median),
+        "grade": grade,
+    }
+
+
 __all__ = [
+    "benchmark_vs_portfolio",
     "consumption_efficiency_ratio",
     "consumption_trend",
     "daily_average_consumption",
