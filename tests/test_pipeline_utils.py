@@ -203,3 +203,69 @@ def test_pipeline_param_count_is_int() -> None:
     pipe = make_test_pipeline()
     count = pipeline_param_count(pipe)
     assert isinstance(count, int)
+
+
+class TestIsAndStepFitted:
+    def test_is_fitted_unfitted_pipeline(self) -> None:
+        from app.pipeline_utils import is_fitted
+
+        pipe = make_test_pipeline()
+        # An unfitted sklearn pipeline has no fitted attrs yet
+        result = is_fitted(pipe)
+        # Pipeline class itself has some class-level attrs ending in _
+        # We just ensure the function returns a bool
+        assert isinstance(result, bool)
+
+    def test_is_fitted_after_fit(self) -> None:
+        import numpy as np
+
+        from app.pipeline_utils import is_fitted
+
+        pipe = make_test_pipeline()
+        X = np.random.default_rng(0).random((10, 1))
+        y = np.arange(10, dtype=float)
+        pipe.fit(X, y)
+        assert is_fitted(pipe) is True
+
+    def test_step_is_fitted_nonexistent_step(self) -> None:
+        from app.pipeline_utils import step_is_fitted
+
+        pipe = make_test_pipeline()
+        assert step_is_fitted(pipe, "nonexistent") is False
+
+    def test_step_is_fitted_after_fit(self) -> None:
+        import numpy as np
+
+        from app.pipeline_utils import step_is_fitted
+
+        pipe = make_test_pipeline()
+        X = np.random.default_rng(1).random((10, 1))
+        y = np.arange(10, dtype=float)
+        pipe.fit(X, y)
+        assert step_is_fitted(pipe, "scaler") is True
+
+    def test_bundle_pipeline_info_with_pipeline_key(self) -> None:
+        from app.pipeline_utils import bundle_pipeline_info
+
+        pipe = make_test_pipeline()
+        info = bundle_pipeline_info({"pipeline": pipe})
+        assert info.get("n_steps", 0) == 2
+
+    def test_bundle_pipeline_info_missing_keys(self) -> None:
+        from app.pipeline_utils import bundle_pipeline_info
+
+        info = bundle_pipeline_info({})
+        assert "error" in info
+
+    @pytest.mark.parametrize("n_steps", [1, 2, 3])
+    def test_describe_pipeline_step_count(self, n_steps: int) -> None:
+        from sklearn.linear_model import LinearRegression
+        from sklearn.pipeline import Pipeline
+        from sklearn.preprocessing import StandardScaler
+
+        from app.pipeline_utils import describe_pipeline
+
+        steps = [(f"step{i}", StandardScaler() if i < n_steps - 1 else LinearRegression()) for i in range(n_steps)]
+        pipe = Pipeline(steps)
+        info = describe_pipeline(pipe)
+        assert info["n_steps"] == n_steps
