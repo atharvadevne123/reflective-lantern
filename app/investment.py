@@ -241,6 +241,7 @@ __all__ = [
     "compute_investment_analysis",
     "discounted_cash_flow",
     "investment_score_label",
+    "irr_estimate",
     "margin_of_safety",
     "mortgage_payment",
     "payback_period",
@@ -336,3 +337,52 @@ def margin_of_safety(
     if intrinsic_value == 0.0:
         return 0.0
     return round((intrinsic_value - market_price) / intrinsic_value * 100.0, 4)
+
+
+def irr_estimate(
+    initial_investment: float,
+    annual_cash_flows: list[float],
+    terminal_value: float = 0.0,
+    iterations: int = 100,
+    tolerance: float = 1e-6,
+) -> float:
+    """Estimate Internal Rate of Return (IRR) using bisection search.
+
+    Finds the discount rate at which NPV = 0 for the given cash-flow stream.
+
+    Args:
+        initial_investment: Upfront cost in USD (positive number).
+        annual_cash_flows: Net cash flows per year (excluding initial investment).
+        terminal_value: Expected sale proceeds at end of holding period.
+        iterations: Maximum bisection iterations (default 100).
+        tolerance: Convergence tolerance for NPV (default 1e-6).
+
+    Returns:
+        IRR as a decimal fraction (e.g. 0.12 for 12%).
+        Returns 0.0 when no positive return is possible.
+
+    Raises:
+        ValueError: If *initial_investment* is non-positive.
+    """
+    if initial_investment <= 0:
+        raise ValueError(f"initial_investment must be positive, got {initial_investment}")
+    all_flows = [-initial_investment] + list(annual_cash_flows)
+    if terminal_value:
+        all_flows[-1] += terminal_value
+
+    def _npv(rate: float) -> float:
+        return sum(cf / (1 + rate) ** i for i, cf in enumerate(all_flows))
+
+    lo, hi = -0.999, 10.0
+    if _npv(lo) * _npv(hi) > 0:
+        return 0.0
+    for _ in range(iterations):
+        mid = (lo + hi) / 2
+        npv_mid = _npv(mid)
+        if abs(npv_mid) < tolerance:
+            return round(mid, 6)
+        if _npv(lo) * npv_mid < 0:
+            hi = mid
+        else:
+            lo = mid
+    return round((lo + hi) / 2, 6)
