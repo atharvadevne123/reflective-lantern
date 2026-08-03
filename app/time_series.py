@@ -440,3 +440,71 @@ def moving_median(values: list[float], window: int) -> list[float]:
         else:
             result.append(round(chunk[mid], 6))
     return result
+
+
+def autocorrelation(values: list[float], lag: int = 1) -> float:
+    """Compute the autocorrelation of *values* at the given *lag*.
+
+    Measures how strongly the series correlates with its own past values,
+    useful for detecting seasonality and trend persistence.
+
+    Args:
+        values: Time-ordered observations (at least lag+2 elements).
+        lag: Time lag in number of periods (default 1 = one-step autocorrelation).
+
+    Returns:
+        Pearson autocorrelation coefficient in [-1, 1].
+        Returns 0.0 when the series has insufficient length or zero variance.
+
+    Raises:
+        ValueError: If *lag* is less than 1 or *values* is empty.
+    """
+    if not values:
+        raise ValueError("values must not be empty")
+    if lag < 1:
+        raise ValueError(f"lag must be >= 1, got {lag}")
+    n = len(values)
+    if n <= lag + 1:
+        return 0.0
+    arr = np.array(values, dtype=float)
+    mean = arr.mean()
+    variance = float(((arr - mean) ** 2).mean())
+    if variance < 1e-12:
+        return 0.0
+    cov = float(((arr[lag:] - mean) * (arr[:-lag] - mean)).mean())
+    return round(cov / variance, 6)
+
+
+def holt_winters_smooth(
+    values: list[float],
+    alpha: float = 0.3,
+    beta: float = 0.1,
+) -> list[float]:
+    """Apply Holt's double exponential smoothing (trend-corrected EMA).
+
+    Suitable for series with a linear trend but no seasonality.
+
+    Args:
+        values: Time-ordered observations (at least 2 elements).
+        alpha: Level smoothing factor in (0, 1].
+        beta: Trend smoothing factor in (0, 1].
+
+    Returns:
+        Smoothed series of the same length as *values*.
+
+    Raises:
+        ValueError: If *values* has fewer than 2 elements or parameters are invalid.
+    """
+    if len(values) < 2:
+        raise ValueError("values must have at least 2 elements")
+    if not (0 < alpha <= 1) or not (0 < beta <= 1):
+        raise ValueError(f"alpha and beta must be in (0, 1], got alpha={alpha}, beta={beta}")
+    level = values[0]
+    trend = values[1] - values[0]
+    result = [round(level, 6)]
+    for v in values[1:]:
+        prev_level = level
+        level = alpha * v + (1.0 - alpha) * (level + trend)
+        trend = beta * (level - prev_level) + (1.0 - beta) * trend
+        result.append(round(level, 6))
+    return result
