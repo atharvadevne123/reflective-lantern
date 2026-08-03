@@ -2,7 +2,10 @@
 
 from __future__ import annotations
 
+import logging
 from typing import Any
+
+logger = logging.getLogger(__name__)
 
 
 def naive_forecast(last_value: float, steps: int) -> list[float]:
@@ -87,13 +90,16 @@ def forecast_summary(forecasts: list[float]) -> dict[str, Any]:
     """Return mean, min, max, and total for a forecast list."""
     if not forecasts:
         return {"mean": 0.0, "min": None, "max": None, "total": 0.0, "steps": 0}
-    return {
+    result = {
         "mean": round(sum(forecasts) / len(forecasts), 4),
         "min": min(forecasts),
         "max": max(forecasts),
         "total": round(sum(forecasts), 4),
         "steps": len(forecasts),
     }
+    logger.debug("forecast_summary: steps=%d mean=%.4f", result["steps"], result["mean"])
+    return result
+
 
 def ensemble_forecast(
     values: list[float],

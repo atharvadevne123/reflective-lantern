@@ -2,8 +2,11 @@
 
 from __future__ import annotations
 
+import logging
 from dataclasses import dataclass, field
 from typing import Any
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -46,6 +49,9 @@ class AlertQueue:
         if len(self._alerts) >= self._max:
             self._alerts.pop(0)
         self._alerts.append(alert)
+        logger.debug(
+            "AlertQueue.push: severity=%s source=%s queue_size=%d", alert.severity, alert.source, len(self._alerts)
+        )
 
     def filter_by_severity(self, min_severity: str) -> list[Alert]:
         """Return alerts at or above *min_severity*."""

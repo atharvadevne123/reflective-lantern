@@ -2,8 +2,11 @@
 
 from __future__ import annotations
 
+import logging
 import math
 from typing import NamedTuple
+
+logger = logging.getLogger(__name__)
 
 
 class TrendResult(NamedTuple):
@@ -33,7 +36,7 @@ def linear_trend(values: list[float]) -> TrendResult:
         r_sq = 1.0
     else:
         residuals = [y - (slope * x + intercept) for x, y in zip(xs, values, strict=False)]
-        ss_res = sum(r ** 2 for r in residuals)
+        ss_res = sum(r**2 for r in residuals)
         r_sq = 1 - ss_res / ss_tot
     if slope > 0.01:
         direction = "rising"
@@ -41,7 +44,9 @@ def linear_trend(values: list[float]) -> TrendResult:
         direction = "falling"
     else:
         direction = "stable"
-    return TrendResult(slope=round(slope, 6), intercept=round(intercept, 6), direction=direction, r_squared=round(r_sq, 6))
+    return TrendResult(
+        slope=round(slope, 6), intercept=round(intercept, 6), direction=direction, r_squared=round(r_sq, 6)
+    )
 
 
 def percentage_change(old: float, new: float) -> float:
@@ -79,12 +84,13 @@ def detect_change_points(values: list[float], threshold: float = 2.0) -> list[in
     std_d = math.sqrt(variance) if variance > 0 else 0.0
     if std_d == 0:
         return []
-    return [i + 1 for i, d in enumerate(diffs) if abs((d - mean_d) / std_d) > threshold]
+    cps = [i + 1 for i, d in enumerate(diffs) if abs((d - mean_d) / std_d) > threshold]
+    if cps:
+        logger.debug("detect_change_points: found %d change point(s) in series of length %d", len(cps), len(values))
+    return cps
 
 
-def seasonal_decompose_naive(
-    values: list[float], period: int
-) -> dict[str, list[float]]:
+def seasonal_decompose_naive(values: list[float], period: int) -> dict[str, list[float]]:
     """Naive additive seasonal decomposition (trend + seasonal + residual).
 
     Uses a rolling mean of length *period* as the trend component.
@@ -105,6 +111,7 @@ def seasonal_decompose_naive(
         "seasonal": [round(x, 4) for x in seasonal],
         "residual": [round(x, 4) for x in residual],
     }
+
 
 def year_over_year_growth(monthly_series: list[float], period: int = 12) -> list[float]:
     """Compute year-over-year growth rates for a monthly consumption series.
@@ -143,10 +150,7 @@ def rate_of_change(values: list[float], lag: int = 1) -> list[float]:
     """
     if lag < 1 or len(values) <= lag:
         return []
-    return [
-        percentage_change(values[i - lag], values[i])
-        for i in range(lag, len(values))
-    ]
+    return [percentage_change(values[i - lag], values[i]) for i in range(lag, len(values))]
 
 
 __all__ = [

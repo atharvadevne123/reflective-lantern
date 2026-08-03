@@ -267,9 +267,7 @@ def flag_z_score_outliers(
 
     mean = statistics.mean(values)
     std = statistics.pstdev(values)
-    return sorted(
-        i for i, v in enumerate(values) if abs(compute_z_score(v, mean, std)) > threshold
-    )
+    return sorted(i for i, v in enumerate(values) if abs(compute_z_score(v, mean, std)) > threshold)
 
 
 def flag_anomaly_rate(flags: list[bool]) -> float:

@@ -2,8 +2,11 @@
 
 from __future__ import annotations
 
+import logging
 import math
 import statistics
+
+logger = logging.getLogger(__name__)
 
 
 def mean_absolute_error(actual: list[float], predicted: list[float]) -> float:
@@ -136,6 +139,7 @@ def percentile(values: list[float], p: float) -> float:
     hi = min(lo + 1, n - 1)
     frac = idx - lo
     return round(sorted_vals[lo] * (1 - frac) + sorted_vals[hi] * frac, 6)
+
 
 __all__ = [
     "coefficient_of_variation",
@@ -306,7 +310,10 @@ def zscore(values: list[float], value: float) -> float:
     n = len(values)
     mean = sum(values) / n
     variance = sum((v - mean) ** 2 for v in values) / n
-    std = variance ** 0.5
+    std = variance**0.5
     if std < 1e-9:
         return 0.0
-    return round((value - mean) / std, 6)
+    result = round((value - mean) / std, 6)
+    if abs(result) > 3.0:
+        logger.debug("zscore: extreme value detected z=%.4f (n=%d)", result, n)
+    return result

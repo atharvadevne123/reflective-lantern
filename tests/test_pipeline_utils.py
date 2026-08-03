@@ -19,10 +19,12 @@ from app.pipeline_utils import (
 
 
 def make_test_pipeline() -> Pipeline:
-    return Pipeline([
-        ("scaler", StandardScaler()),
-        ("regressor", LinearRegression()),
-    ])
+    return Pipeline(
+        [
+            ("scaler", StandardScaler()),
+            ("regressor", LinearRegression()),
+        ]
+    )
 
 
 def test_get_step_names() -> None:
@@ -158,3 +160,46 @@ def test_describe_pipeline_has_steps_key() -> None:
 def test_describe_pipeline_non_pipeline_returns_empty() -> None:
     desc = describe_pipeline("not a pipeline")
     assert desc.get("n_steps", 0) == 0 or "steps" not in desc or desc["steps"] == []
+
+
+def test_bundle_pipeline_info_has_step_count() -> None:
+    pipe = make_test_pipeline()
+    info = bundle_pipeline_info({"model": pipe})
+    assert "n_steps" in info
+    assert info["n_steps"] == 2
+
+
+def test_bundle_pipeline_info_has_steps() -> None:
+    pipe = make_test_pipeline()
+    info = bundle_pipeline_info({"model": pipe})
+    assert "steps" in info
+    step_names = [s["name"] for s in info["steps"]]
+    assert "scaler" in step_names
+
+
+def test_bundle_pipeline_info_no_model_returns_error() -> None:
+    info = bundle_pipeline_info({})
+    assert "error" in info
+
+
+def test_clone_params_returns_dict() -> None:
+    pipe = make_test_pipeline()
+    params = clone_params(pipe)
+    assert isinstance(params, dict)
+
+
+@pytest.mark.parametrize("step_name", ["scaler", "regressor"])
+def test_has_step_true_parametrized(step_name: str) -> None:
+    pipe = make_test_pipeline()
+    assert has_step(pipe, step_name) is True
+
+
+def test_get_step_names_length() -> None:
+    pipe = make_test_pipeline()
+    assert len(get_step_names(pipe)) == 2
+
+
+def test_pipeline_param_count_is_int() -> None:
+    pipe = make_test_pipeline()
+    count = pipeline_param_count(pipe)
+    assert isinstance(count, int)

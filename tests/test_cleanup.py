@@ -329,3 +329,53 @@ def test_clean_file_respects_days_parameter(tmp_path: pytest.fixture, days: int)
     remaining = json.loads(path.read_text())
     assert all(date.fromisoformat(e["date"]) >= cutoff for e in remaining)
     assert removed >= 0
+
+
+def test_count_entries_empty_directory(tmp_path) -> None:
+    from scripts.cleanup import count_entries
+
+    result = count_entries(tmp_path)
+    assert result == {}
+
+
+def test_count_entries_single_file(tmp_path) -> None:
+    import json
+
+    from scripts.cleanup import count_entries
+
+    f = tmp_path / "data.json"
+    f.write_text(json.dumps([{"a": 1}, {"a": 2}]))
+    result = count_entries(tmp_path)
+    assert result.get("data.json") == 2
+
+
+def test_count_entries_invalid_json_returns_zero(tmp_path) -> None:
+    from scripts.cleanup import count_entries
+
+    f = tmp_path / "bad.json"
+    f.write_text("not valid json {{{")
+    result = count_entries(tmp_path)
+    assert result.get("bad.json") == 0
+
+
+def test_count_entries_dict_file_returns_one(tmp_path) -> None:
+    import json
+
+    from scripts.cleanup import count_entries
+
+    f = tmp_path / "single.json"
+    f.write_text(json.dumps({"key": "value"}))
+    result = count_entries(tmp_path)
+    assert result.get("single.json") == 1
+
+
+@pytest.mark.parametrize("n", [0, 1, 5])
+def test_count_entries_list_of_n(tmp_path, n: int) -> None:
+    import json
+
+    from scripts.cleanup import count_entries
+
+    f = tmp_path / "items.json"
+    f.write_text(json.dumps([{"i": i} for i in range(n)]))
+    result = count_entries(tmp_path)
+    assert result.get("items.json") == n

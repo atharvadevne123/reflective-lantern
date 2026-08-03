@@ -5,7 +5,10 @@ from __future__ import annotations
 import csv
 import io
 import json
+import logging
 from typing import Any
+
+logger = logging.getLogger(__name__)
 
 
 def records_to_csv(records: list[dict[str, Any]], columns: list[str] | None = None) -> str:
@@ -72,15 +75,13 @@ def aggregate_by_hour(records: list[dict[str, Any]]) -> list[dict[str, Any]]:
         if h is None or kwh is None:
             continue
         buckets.setdefault(int(h), []).append(float(kwh))
-    return [
-        {"hour": h, "mean_kwh": sum(vals) / len(vals), "count": len(vals)}
-        for h, vals in sorted(buckets.items())
-    ]
+    return [{"hour": h, "mean_kwh": sum(vals) / len(vals), "count": len(vals)} for h, vals in sorted(buckets.items())]
 
 
 def summarize_export(records: list[dict[str, Any]]) -> dict[str, Any]:
     """Return a basic summary dict for a batch of energy records."""
     kwh_vals = [float(r["consumption_kwh"]) for r in records if "consumption_kwh" in r]
+    logger.debug("summarize_export: %d records, %d with kwh values", len(records), len(kwh_vals))
     return {
         "total_records": len(records),
         "records_with_kwh": len(kwh_vals),
@@ -89,6 +90,7 @@ def summarize_export(records: list[dict[str, Any]]) -> dict[str, Any]:
         "min_kwh": min(kwh_vals) if kwh_vals else None,
         "max_kwh": max(kwh_vals) if kwh_vals else None,
     }
+
 
 __all__ = [
     "aggregate_by_hour",

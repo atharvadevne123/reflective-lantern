@@ -229,3 +229,96 @@ def test_hourly_pattern_distance_constant_offset(offset) -> None:
     a = [10.0] * 24
     b = [10.0 + offset] * 24
     assert hourly_pattern_distance(a, b) == pytest.approx(offset)
+
+
+def test_building_similarity_index_add_and_size() -> None:
+    from app.similarity import BuildingSimilarityIndex
+
+    idx = BuildingSimilarityIndex()
+    assert idx.size == 0
+    idx.add("b1", [1.0] * 24)
+    assert idx.size == 1
+
+
+def test_building_similarity_index_clear() -> None:
+    from app.similarity import BuildingSimilarityIndex
+
+    idx = BuildingSimilarityIndex()
+    idx.add("b1", [1.0] * 24)
+    idx.clear()
+    assert idx.size == 0
+
+
+def test_building_similarity_search_returns_list() -> None:
+    from app.similarity import BuildingSimilarityIndex
+
+    idx = BuildingSimilarityIndex()
+    for i in range(5):
+        idx.add(f"b{i}", [float(i)] * 24)
+    results = idx.search([2.0] * 24, k=3)
+    assert isinstance(results, list)
+    assert len(results) <= 3
+
+
+def test_batch_add_returns_count() -> None:
+    from app.similarity import BuildingSimilarityIndex, batch_add
+
+    idx = BuildingSimilarityIndex()
+    profiles = [(f"b{i}", [float(i)] * 24) for i in range(5)]
+    count = batch_add(idx, profiles)
+    assert count == 5
+
+
+@pytest.mark.parametrize("k", [1, 3, 5])
+def test_search_comparable_top_k(k: int) -> None:
+    from app.similarity import get_global_index
+
+    idx = get_global_index()
+    idx.clear()
+    for i in range(10):
+        idx.add(f"b{i}", [float(i + 1)] * 24)
+    from app.similarity import search_comparable
+
+    results = search_comparable([5.0] * 24, top_k=k)
+    assert len(results) <= k
+    idx.clear()
+
+
+def test_cosine_distance_identical_vectors() -> None:
+    from app.similarity import cosine_distance
+
+    assert cosine_distance([1.0, 0.0, 0.0], [1.0, 0.0, 0.0]) == pytest.approx(0.0, abs=1e-6)
+
+
+def test_cosine_distance_orthogonal_vectors() -> None:
+    from app.similarity import cosine_distance
+
+    assert cosine_distance([1.0, 0.0], [0.0, 1.0]) == pytest.approx(1.0, abs=1e-6)
+
+
+def test_cosine_distance_range() -> None:
+    from app.similarity import cosine_distance
+
+    a = [1.0, 2.0, 3.0]
+    b = [4.0, 5.0, 6.0]
+    d = cosine_distance(a, b)
+    assert 0.0 <= d <= 2.0
+
+
+@pytest.mark.parametrize("n_dims", [3, 10, 24])
+def test_cosine_distance_same_vector_various_dims(n_dims: int) -> None:
+    from app.similarity import cosine_distance
+
+    v = [1.0] * n_dims
+    assert cosine_distance(v, v) == pytest.approx(0.0, abs=1e-6)
+
+
+def test_building_similarity_index_search_returns_tuples() -> None:
+    from app.similarity import BuildingSimilarityIndex
+
+    idx = BuildingSimilarityIndex()
+    idx.add("bld-A", [1.0, 2.0, 3.0])
+    results = idx.search([1.0, 2.0, 3.0], k=1)
+    assert len(results) == 1
+    assert isinstance(results[0], tuple)
+    assert results[0][0] == "bld-A"

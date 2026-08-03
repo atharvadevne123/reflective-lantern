@@ -333,3 +333,47 @@ def test_releases_per_page_constant() -> None:
     from scripts.health_check import RELEASES_PER_PAGE
 
     assert RELEASES_PER_PAGE >= 1
+
+
+def test_repo_health_healthy_when_no_issues() -> None:
+    from scripts.health_check import RepoHealth
+
+    h = RepoHealth(name="myrepo")
+    assert h.healthy is True
+
+
+def test_repo_health_not_healthy_with_failing_workflow() -> None:
+    from scripts.health_check import RepoHealth
+
+    h = RepoHealth(name="myrepo", failing_workflows=["CI"])
+    assert h.healthy is False
+
+
+def test_repo_health_issues_count_correct() -> None:
+    from scripts.health_check import RepoHealth
+
+    h = RepoHealth(name="myrepo", failing_workflows=["CI", "Lint"], open_branches=["old-branch"])
+    assert h.issues_count == 3
+
+
+def test_repo_health_summary_line_ok() -> None:
+    from scripts.health_check import RepoHealth
+
+    h = RepoHealth(name="testrepo")
+    assert "OK" in h.summary_line()
+
+
+def test_repo_health_summary_line_issues() -> None:
+    from scripts.health_check import RepoHealth
+
+    h = RepoHealth(name="testrepo", has_ci=False)
+    assert "ISSUES" in h.summary_line()
+
+
+def test_repo_health_stats_has_all_keys() -> None:
+    from scripts.health_check import RepoHealth
+
+    h = RepoHealth(name="testrepo")
+    stats = h.stats()
+    for key in ("failing_workflows", "open_branches", "has_release", "has_ci", "issues_count", "healthy"):
+        assert key in stats

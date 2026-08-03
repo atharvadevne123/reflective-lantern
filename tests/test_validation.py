@@ -465,29 +465,34 @@ def test_is_valid_temporal_input_parametrized(hour, dow, month, expected) -> Non
 
 def test_clamp_consumption_below_min_v2() -> None:
     from app.validation import clamp_consumption
+
     result = clamp_consumption(-10.0)
     assert result == 0.0
 
 
 def test_clamp_consumption_above_max_v2() -> None:
     from app.validation import MAX_CONSUMPTION_KWH, clamp_consumption
+
     result = clamp_consumption(MAX_CONSUMPTION_KWH + 1000)
     assert result == MAX_CONSUMPTION_KWH
 
 
 def test_clamp_consumption_in_range_v2() -> None:
     from app.validation import clamp_consumption
+
     result = clamp_consumption(500.0)
     assert result == 500.0
 
 
 def test_is_valid_temporal_input_valid_v2() -> None:
     from app.validation import is_valid_temporal_input
+
     assert is_valid_temporal_input(12, 3, 6) is True
 
 
 def test_is_valid_temporal_input_invalid_hour() -> None:
     from app.validation import is_valid_temporal_input
+
     assert is_valid_temporal_input(25, 3, 6) is False
 
 
@@ -495,6 +500,7 @@ def test_extract_temporal_from_datetime() -> None:
     from datetime import datetime
 
     from app.validation import extract_temporal_from_datetime
+
     dt = datetime(2026, 6, 15, 14, 30)
     result = extract_temporal_from_datetime(dt)
     assert result["hour"] == 14
@@ -502,24 +508,43 @@ def test_extract_temporal_from_datetime() -> None:
     assert "is_weekend" in result
 
 
-@pytest.mark.parametrize("horizon,expected_valid", [
-    (1, True),
-    (24, True),
-    (8760, True),
-    (0, False),
-    (8761, False),
-])
+@pytest.mark.parametrize(
+    "horizon,expected_valid",
+    [
+        (1, True),
+        (24, True),
+        (8760, True),
+        (0, False),
+        (8761, False),
+    ],
+)
 def test_validate_forecast_horizon_parametrized_v2(horizon, expected_valid) -> None:
     from app.validation import validate_forecast_horizon
+
     errors = validate_forecast_horizon(horizon)
     assert (len(errors) == 0) == expected_valid
 
 
 def test_batch_validate_readings_mixed() -> None:
     from app.validation import batch_validate_readings
+
     readings = [
-        {"hour": 10, "day_of_week": 1, "month": 6, "temperature_c": 22.0, "humidity_pct": 55.0, "consumption_kwh": 12.5},
-        {"hour": 99, "day_of_week": 1, "month": 6, "temperature_c": 22.0, "humidity_pct": 55.0, "consumption_kwh": 12.5},
+        {
+            "hour": 10,
+            "day_of_week": 1,
+            "month": 6,
+            "temperature_c": 22.0,
+            "humidity_pct": 55.0,
+            "consumption_kwh": 12.5,
+        },
+        {
+            "hour": 99,
+            "day_of_week": 1,
+            "month": 6,
+            "temperature_c": 22.0,
+            "humidity_pct": 55.0,
+            "consumption_kwh": 12.5,
+        },
     ]
     results = batch_validate_readings(readings)
     assert results[0]["valid"] is True
@@ -562,13 +587,16 @@ class TestValidateReadingDict:
         assert "errors" in result
         assert "warnings" in result
 
-    @pytest.mark.parametrize("field,value", [
-        ("hour", -1),
-        ("hour", 24),
-        ("month", 0),
-        ("month", 13),
-        ("day_of_week", 7),
-    ])
+    @pytest.mark.parametrize(
+        "field,value",
+        [
+            ("hour", -1),
+            ("hour", 24),
+            ("month", 0),
+            ("month", 13),
+            ("day_of_week", 7),
+        ],
+    )
     def test_out_of_range_temporal_fails(self, field: str, value: int) -> None:
         result = validate_reading_dict({**self.VALID_READING, field: value})
         assert result["valid"] is False
@@ -598,11 +626,14 @@ class TestValidateCoordinate:
         assert validate_coordinate(90.0, 180.0) == []
         assert validate_coordinate(-90.0, -180.0) == []
 
-    @pytest.mark.parametrize("lat,lon", [
-        (0.0, 0.0),
-        (51.5074, -0.1278),
-        (-33.8688, 151.2093),
-    ])
+    @pytest.mark.parametrize(
+        "lat,lon",
+        [
+            (0.0, 0.0),
+            (51.5074, -0.1278),
+            (-33.8688, 151.2093),
+        ],
+    )
     def test_valid_coords_parametrized(self, lat: float, lon: float) -> None:
         assert validate_coordinate(lat, lon) == []
 
@@ -624,6 +655,7 @@ class TestValidatePrice:
 
     def test_nan_price_invalid(self) -> None:
         import math
+
         errors = validate_price(math.nan)
         assert len(errors) > 0
 

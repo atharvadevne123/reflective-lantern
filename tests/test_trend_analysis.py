@@ -127,22 +127,28 @@ def test_linear_trend_direction_parametrize(n, expected_dir) -> None:
     assert result.direction == expected_dir
 
 
-@pytest.mark.parametrize("values,expected_direction", [
-    ([1.0, 2.0, 3.0, 4.0, 5.0], "rising"),
-    ([5.0, 4.0, 3.0, 2.0, 1.0], "falling"),
-    ([10.0, 10.0, 10.0, 10.0], "stable"),
-])
+@pytest.mark.parametrize(
+    "values,expected_direction",
+    [
+        ([1.0, 2.0, 3.0, 4.0, 5.0], "rising"),
+        ([5.0, 4.0, 3.0, 2.0, 1.0], "falling"),
+        ([10.0, 10.0, 10.0, 10.0], "stable"),
+    ],
+)
 def test_linear_trend_direction_parametrized(values: list, expected_direction: str) -> None:
     result = linear_trend(values)
     assert result.direction == expected_direction
 
 
-@pytest.mark.parametrize("old,new,expected_pct", [
-    (100.0, 110.0, 10.0),
-    (100.0, 90.0, -10.0),
-    (50.0, 100.0, 100.0),
-    (200.0, 100.0, -50.0),
-])
+@pytest.mark.parametrize(
+    "old,new,expected_pct",
+    [
+        (100.0, 110.0, 10.0),
+        (100.0, 90.0, -10.0),
+        (50.0, 100.0, 100.0),
+        (200.0, 100.0, -50.0),
+    ],
+)
 def test_percentage_change_parametrized(old: float, new: float, expected_pct: float) -> None:
     assert percentage_change(old, new) == pytest.approx(expected_pct, rel=1e-4)
 
@@ -236,3 +242,42 @@ def test_rate_of_change_various_lags(lag: int) -> None:
     values = [float(i * 10) for i in range(1, 8)]
     result = rate_of_change(values, lag=lag)
     assert len(result) == len(values) - lag
+
+
+def test_linear_trend_result_has_slope() -> None:
+    result = linear_trend([1.0, 2.0, 3.0, 4.0, 5.0])
+    assert hasattr(result, "slope")
+    assert result.slope > 0
+
+
+def test_linear_trend_result_has_direction() -> None:
+    result = linear_trend([5.0, 4.0, 3.0, 2.0, 1.0])
+    assert result.direction == "falling"
+
+
+@pytest.mark.parametrize("n", [5, 10, 20])
+def test_rolling_mean_output_length(n: int) -> None:
+    values = [float(i) for i in range(n)]
+    result = rolling_mean(values, window=3)
+    assert len(result) == n
+
+
+def test_seasonal_decompose_residual_near_zero_for_pure_seasonal() -> None:
+    import math
+
+    pattern = [math.sin(2 * math.pi * i / 12) * 10 + 20 for i in range(24)]
+    decomp = seasonal_decompose_naive(pattern, period=12)
+    assert "residual" in decomp
+
+
+def test_year_over_year_growth_positive() -> None:
+    monthly = [10.0] * 12 + [12.0] * 12
+    growth = year_over_year_growth(monthly, period=12)
+    assert all(g > 0 for g in growth)
+
+
+@pytest.mark.parametrize("window", [2, 5, 10])
+def test_rolling_mean_window_smaller_than_length(window: int) -> None:
+    values = list(range(20))
+    result = rolling_mean([float(v) for v in values], window=window)
+    assert len(result) == 20

@@ -328,3 +328,55 @@ def test_get_latest_runs_result_count_bounded_by_unique_ids(n_runs: int) -> None
     with patch("scripts.check_ci_status._get", return_value={"workflow_runs": runs}):
         result = get_latest_runs("owner", "repo", "token")
     assert len(result) == n_runs
+
+
+def test_failing_conclusions_contains_failure() -> None:
+    from scripts.check_ci_status import FAILING_CONCLUSIONS
+
+    assert "failure" in FAILING_CONCLUSIONS
+
+
+def test_failing_conclusions_contains_timed_out() -> None:
+    from scripts.check_ci_status import FAILING_CONCLUSIONS
+
+    assert "timed_out" in FAILING_CONCLUSIONS
+
+
+def test_default_retries_positive() -> None:
+    from scripts.check_ci_status import DEFAULT_RETRIES
+
+    assert DEFAULT_RETRIES > 0
+
+
+def test_runs_per_page_positive() -> None:
+    from scripts.check_ci_status import RUNS_PER_PAGE
+
+    assert RUNS_PER_PAGE > 0
+
+
+def test_get_latest_runs_deduplicates_keeps_first() -> None:
+    from unittest.mock import patch
+
+    from scripts.check_ci_status import get_latest_runs
+
+    runs = [
+        {"workflow_id": 1, "name": "A", "conclusion": "success"},
+        {"workflow_id": 1, "name": "A", "conclusion": "failure"},
+        {"workflow_id": 2, "name": "B", "conclusion": "success"},
+    ]
+    with patch("scripts.check_ci_status._get", return_value={"workflow_runs": runs}):
+        result = get_latest_runs("owner", "repo", "token")
+    assert len(result) == 2
+
+
+@pytest.mark.parametrize("conclusion", ["success", "skipped", "neutral"])
+def test_get_latest_runs_keeps_passing_conclusions(conclusion) -> None:
+    from unittest.mock import patch
+
+    from scripts.check_ci_status import get_latest_runs
+
+    runs = [{"workflow_id": 7, "name": "W", "conclusion": conclusion}]
+    with patch("scripts.check_ci_status._get", return_value={"workflow_runs": runs}):
+        result = get_latest_runs("owner", "repo", "token")
+    assert len(result) == 1
+    assert result[0]["conclusion"] == conclusion

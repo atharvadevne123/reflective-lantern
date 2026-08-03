@@ -113,3 +113,52 @@ def test_alert_queue_length_parametrize(n_alerts):
     for i in range(n_alerts):
         q.push(Alert(severity="info", message=f"m{i}"))
     assert len(q) == n_alerts
+
+
+def test_alert_to_dict_severity_matches():
+    for sev in ("info", "warning", "critical"):
+        a = Alert(severity=sev, message="test")
+        assert a.to_dict()["severity"] == sev
+
+
+def test_alert_with_custom_source():
+    a = Alert(severity="info", message="msg", source="sensor-42")
+    d = a.to_dict()
+    assert d["source"] == "sensor-42"
+
+
+def test_alert_with_metadata():
+    a = Alert(severity="warning", message="msg", metadata={"score": 0.9})
+    assert a.to_dict()["metadata"]["score"] == pytest.approx(0.9)
+
+
+def test_alert_queue_summary_empty():
+    q = AlertQueue()
+    s = q.summary()
+    assert s["info"] == 0
+    assert s["warning"] == 0
+    assert s["critical"] == 0
+
+
+def test_alert_queue_filter_no_match():
+    q = AlertQueue()
+    q.push(Alert(severity="info", message="x"))
+    result = q.filter_by_severity("critical")
+    assert result == []
+
+
+def test_make_drift_alert_has_ks_stat():
+    a = make_drift_alert(0.7, 0.01)
+    assert "ks_statistic" in a.metadata
+
+
+@pytest.mark.parametrize(
+    "score,is_critical,expected_sev",
+    [
+        (0.5, False, "warning"),
+        (0.95, True, "critical"),
+    ],
+)
+def test_make_anomaly_alert_severity(score, is_critical, expected_sev):
+    a = make_anomaly_alert("zone-1", score, is_critical=is_critical)
+    assert a.severity == expected_sev

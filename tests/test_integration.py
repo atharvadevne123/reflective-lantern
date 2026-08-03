@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import sys
+from datetime import date, timedelta
 from pathlib import Path
 from unittest.mock import patch
 
@@ -109,11 +110,12 @@ def test_cleanup_main_removes_old_entries(tmp_path: Path) -> None:
     h = tmp_path / "history"
     h.mkdir()
     f = h / "OldData.json"
+    recent_date = (date.today() - timedelta(days=1)).isoformat()
     f.write_text(
         json.dumps(
             [
                 {"date": "2020-01-01", "commits": 5},
-                {"date": "2026-06-30", "commits": 60},
+                {"date": recent_date, "commits": 60},
             ]
         )
     )
@@ -125,7 +127,7 @@ def test_cleanup_main_removes_old_entries(tmp_path: Path) -> None:
     assert result == 0
     kept = json.loads(f.read_text())
     assert len(kept) == 1
-    assert kept[0]["date"] == "2026-06-30"
+    assert kept[0]["date"] == recent_date
 
 
 def test_summarize_history_sort_by_commits(tmp_path: Path, capsys: pytest.CaptureFixture) -> None:

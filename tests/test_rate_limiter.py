@@ -81,3 +81,31 @@ def test_separate_clients_independent():
     limiter = TokenBucketRateLimiter(capacity=1.0, rate_per_second=0.01)
     limiter.is_allowed("client-a")
     assert limiter.is_allowed("client-b") is True
+
+
+@pytest.mark.parametrize("n_clients", [1, 5, 10])
+def test_clear_resets_all_clients(n_clients):
+    limiter = TokenBucketRateLimiter(capacity=10.0, rate_per_second=1.0)
+    for i in range(n_clients):
+        limiter.is_allowed(f"c-{i}")
+    limiter.clear()
+    assert limiter.client_count == 0
+
+
+def test_is_allowed_returns_bool():
+    limiter = TokenBucketRateLimiter(capacity=5.0, rate_per_second=1.0)
+    result = limiter.is_allowed("test")
+    assert isinstance(result, bool)
+
+
+def test_remaining_tokens_after_clear():
+    limiter = TokenBucketRateLimiter(capacity=5.0, rate_per_second=0.01)
+    limiter.is_allowed("c")
+    limiter.clear()
+    assert limiter.remaining_tokens("c") == 5.0
+
+
+@pytest.mark.parametrize("rate", [0.1, 0.5, 1.0, 5.0])
+def test_make_rate_limiter_various_rates(rate):
+    limiter = make_rate_limiter(capacity=10.0, rate_per_second=rate)
+    assert limiter.is_allowed("test") is True

@@ -323,8 +323,9 @@ def reference_window_stats() -> dict[str, Any]:
         "mean": round(mean, 4),
         "min": round(min(vals), 4),
         "max": round(max(vals), 4),
-        "std": round(variance ** 0.5, 4),
+        "std": round(variance**0.5, 4),
     }
+
 
 __all__ = [
     "LatencyTimer",

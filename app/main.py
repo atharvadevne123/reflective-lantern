@@ -64,7 +64,7 @@ _anomaly_bundle: dict[str, Any] | None = None
 
 
 @asynccontextmanager
-async def lifespan(app: FastAPI):  # type: ignore[type-arg]
+async def lifespan(app: FastAPI) -> Any:  # type: ignore[type-arg]
     global _model_bundle, _anomaly_bundle
     create_tables()
     _model_bundle = load_model()
@@ -452,6 +452,7 @@ def consumption_stats_summary(
     if not actual_kwh or not predicted_kwh:
         return {"error": "Provide actual_kwh and predicted_kwh as query parameters"}
     from app.stats_utils import mean_absolute_error, r_squared, root_mean_squared_error
+
     try:
         return {
             "mae": mean_absolute_error(actual_kwh, predicted_kwh),

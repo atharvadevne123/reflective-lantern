@@ -381,19 +381,23 @@ from sqlalchemy.orm import sessionmaker
 engine = create_engine("sqlite:///./test.db", connect_args={"check_same_thread": False})
 TestingSession = sessionmaker(bind=engine)
 
+
 @pytest.fixture
 def db():
     from app.database import Base
+
     Base.metadata.create_all(bind=engine)
     s = TestingSession()
     yield s
     s.close()
     Base.metadata.drop_all(bind=engine)
 
+
 @pytest.fixture
 def client(db):
     from app.main import app
     from app.database import get_db
+
     app.dependency_overrides[get_db] = lambda: db
     with TestClient(app) as c:
         yield c
@@ -483,10 +487,11 @@ For ML/data science repos: generate an architecture diagram if one doesn't exist
 ```python
 # scripts/generate_diagram.py
 import matplotlib.pyplot as plt, os
-os.makedirs('screenshots', exist_ok=True)
+
+os.makedirs("screenshots", exist_ok=True)
 fig, ax = plt.subplots(figsize=(12, 6))
 # draw labeled boxes and arrows for data flow
-plt.savefig('screenshots/architecture.png', dpi=150, bbox_inches='tight')
+plt.savefig("screenshots/architecture.png", dpi=150, bbox_inches="tight")
 ```
 Commit it and add `![Architecture](screenshots/architecture.png)` to README.
 
@@ -961,16 +966,19 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import cross_val_score
 import joblib, json
 
+
 def train_model(X, y):
-    pipeline = Pipeline([
-        ('scaler', StandardScaler()),
-        ('model', XGBClassifier(n_estimators=100, max_depth=4, use_label_encoder=False, eval_metric='logloss'))
-    ])
-    cv_scores = cross_val_score(pipeline, X, y, cv=5, scoring='roc_auc')
+    pipeline = Pipeline(
+        [
+            ("scaler", StandardScaler()),
+            ("model", XGBClassifier(n_estimators=100, max_depth=4, use_label_encoder=False, eval_metric="logloss")),
+        ]
+    )
+    cv_scores = cross_val_score(pipeline, X, y, cv=5, scoring="roc_auc")
     pipeline.fit(X, y)
-    metrics = {'auc_mean': float(cv_scores.mean()), 'auc_std': float(cv_scores.std())}
-    joblib.dump(pipeline, 'model.joblib')
-    with open('metrics.json', 'w') as f:
+    metrics = {"auc_mean": float(cv_scores.mean()), "auc_std": float(cv_scores.std())}
+    joblib.dump(pipeline, "model.joblib")
+    with open("metrics.json", "w") as f:
         json.dump(metrics, f)
     return pipeline, metrics
 ```
@@ -980,9 +988,10 @@ def train_model(X, y):
 from scipy.stats import ks_2samp
 import numpy as np
 
+
 def compute_drift(reference: list[float], current: list[float]) -> dict:
     stat, p_value = ks_2samp(reference, current)
-    return {'ks_statistic': stat, 'p_value': p_value, 'drift_detected': p_value < 0.05}
+    return {"ks_statistic": stat, "p_value": p_value, "drift_detected": p_value < 0.05}
 ```
 
 **For `docker-compose.yml`**:

@@ -4,7 +4,13 @@ import math
 
 import pytest
 
-from app.investment import InvestmentAnalysis, compute_investment_analysis, discounted_cash_flow, margin_of_safety, payback_period
+from app.investment import (
+    InvestmentAnalysis,
+    compute_investment_analysis,
+    discounted_cash_flow,
+    margin_of_safety,
+    payback_period,
+)
 
 
 def test_basic_investment_analysis() -> None:
@@ -405,22 +411,31 @@ def test_compute_investment_analysis_returns_dataclass() -> None:
     assert result.break_even_years > 0
 
 
-@pytest.mark.parametrize("crime_rate,expected_worse", [
-    (0.1, False),
-    (0.9, True),
-])
+@pytest.mark.parametrize(
+    "crime_rate,expected_worse",
+    [
+        (0.1, False),
+        (0.9, True),
+    ],
+)
 def test_compute_investment_high_crime_lowers_score(crime_rate, expected_worse) -> None:
     from app.investment import compute_investment_analysis
 
     low = compute_investment_analysis(
-        predicted_value=400_000.0, avg_rental_yield=0.07,
-        school_score=7.0, transit_score=6.0, walkability_score=5.0,
-        crime_rate=0.1
+        predicted_value=400_000.0,
+        avg_rental_yield=0.07,
+        school_score=7.0,
+        transit_score=6.0,
+        walkability_score=5.0,
+        crime_rate=0.1,
     )
     high = compute_investment_analysis(
-        predicted_value=400_000.0, avg_rental_yield=0.07,
-        school_score=7.0, transit_score=6.0, walkability_score=5.0,
-        crime_rate=crime_rate
+        predicted_value=400_000.0,
+        avg_rental_yield=0.07,
+        school_score=7.0,
+        transit_score=6.0,
+        walkability_score=5.0,
+        crime_rate=crime_rate,
     )
     if expected_worse:
         assert high.investment_score <= low.investment_score
@@ -459,7 +474,6 @@ def test_high_amenity_raises_score() -> None:
 def test_break_even_infinite_when_zero_cap_rate() -> None:
     result = compute_investment_analysis(500_000, 0.0, 5.0, 5.0, 5.0, 0.5)
     assert math.isinf(result.break_even_years) or result.break_even_years > 100
-
 
 
 def test_dcf_zero_discount_rate() -> None:
@@ -522,11 +536,14 @@ def test_payback_period_negative_investment_raises() -> None:
         payback_period(-100.0, [50.0])
 
 
-@pytest.mark.parametrize("invest,flows,expected", [
-    (300.0, [100.0, 100.0, 100.0], 3.0),
-    (150.0, [100.0, 100.0], 1.5),
-    (0.0, [1.0], 0.0),
-])
+@pytest.mark.parametrize(
+    "invest,flows,expected",
+    [
+        (300.0, [100.0, 100.0, 100.0], 3.0),
+        (150.0, [100.0, 100.0], 1.5),
+        (0.0, [1.0], 0.0),
+    ],
+)
 def test_payback_period_parametrized(invest: float, flows: list, expected: float) -> None:
     result = payback_period(invest, flows)
     assert result == pytest.approx(expected, rel=1e-4)

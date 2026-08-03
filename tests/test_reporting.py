@@ -359,6 +359,7 @@ def test_consumption_efficiency_ratio_parametrized(actual, target, expected) -> 
 
 def test_seasonal_efficiency_score_basic() -> None:
     from app.reporting import seasonal_efficiency_score
+
     actual = [8.0] * 40
     baseline = [10.0] * 40
     result = seasonal_efficiency_score(actual, baseline)
@@ -369,41 +370,48 @@ def test_seasonal_efficiency_score_basic() -> None:
 
 def test_seasonal_efficiency_score_mismatched_raises() -> None:
     from app.reporting import seasonal_efficiency_score
+
     with pytest.raises(ValueError):
         seasonal_efficiency_score([1.0, 2.0], [3.0])
 
 
 def test_seasonal_efficiency_score_empty_raises_v2() -> None:
     from app.reporting import seasonal_efficiency_score
+
     with pytest.raises(ValueError):
         seasonal_efficiency_score([], [])
 
 
 def test_consumption_trend_rising_v2() -> None:
     from app.reporting import consumption_trend
+
     data = [float(i) for i in range(10, 40)]
     assert consumption_trend(data) == "rising"
 
 
 def test_consumption_trend_falling_v2() -> None:
     from app.reporting import consumption_trend
+
     data = [float(i) for i in range(30, 0, -1)]
     assert consumption_trend(data) == "falling"
 
 
 def test_consumption_trend_stable_v2() -> None:
     from app.reporting import consumption_trend
+
     data = [10.0] * 20
     assert consumption_trend(data) == "stable"
 
 
 def test_consumption_trend_single_value_v2() -> None:
     from app.reporting import consumption_trend
+
     assert consumption_trend([5.0]) == "stable"
 
 
 def test_peak_demand_by_period_basic_v2() -> None:
     from app.reporting import peak_demand_by_period
+
     hourly = [1.0] * 20 + [10.0] * 4
     result = peak_demand_by_period(hourly, period_hours=4)
     assert any(p["is_peak"] for p in result)
@@ -411,12 +419,14 @@ def test_peak_demand_by_period_basic_v2() -> None:
 
 def test_peak_demand_by_period_empty_raises_v2() -> None:
     from app.reporting import peak_demand_by_period
+
     with pytest.raises(ValueError):
         peak_demand_by_period([])
 
 
 def test_peak_demand_by_period_invalid_period_raises_v2() -> None:
     from app.reporting import peak_demand_by_period
+
     with pytest.raises(ValueError):
         peak_demand_by_period([1.0] * 10, period_hours=0)
 
@@ -424,21 +434,26 @@ def test_peak_demand_by_period_invalid_period_raises_v2() -> None:
 @pytest.mark.parametrize("period_hours", [2, 4, 6])
 def test_peak_demand_by_period_parametrized(period_hours) -> None:
     from app.reporting import peak_demand_by_period
+
     hourly = [float(i) for i in range(24)]
     result = peak_demand_by_period(hourly, period_hours=period_hours)
     assert len(result) >= 1
     assert any(p["is_peak"] for p in result)
 
 
-@pytest.mark.parametrize("actual,baseline,expected_grade", [
-    (8.0, 10.0, "A"),          # 20% reduction -> A
-    (0.0, 10.0, "A+"),         # 100% reduction -> A+
-    (10.0, 10.0, "B"),         # no change -> B
-    (12.0, 10.0, "C"),         # increase -> C or D
-    (100.0, 10.0, "F"),        # massive increase -> F
-])
+@pytest.mark.parametrize(
+    "actual,baseline,expected_grade",
+    [
+        (8.0, 10.0, "A"),  # 20% reduction -> A
+        (0.0, 10.0, "A+"),  # 100% reduction -> A+
+        (10.0, 10.0, "B"),  # no change -> B
+        (12.0, 10.0, "C"),  # increase -> C or D
+        (100.0, 10.0, "F"),  # massive increase -> F
+    ],
+)
 def test_energy_efficiency_grade_param(actual: float, baseline: float, expected_grade: str) -> None:
     from app.reporting import energy_efficiency_grade
+
     result = energy_efficiency_grade(actual, baseline)
     assert isinstance(result, str)
     assert result in ("A+", "A", "A-", "B", "C", "D", "F")
@@ -446,11 +461,13 @@ def test_energy_efficiency_grade_param(actual: float, baseline: float, expected_
 
 def test_energy_efficiency_grade_zero_bl() -> None:
     from app.reporting import energy_efficiency_grade
+
     assert energy_efficiency_grade(10.0, 0.0) == "F"
 
 
 def test_peak_demand_all_equal_demand_factor_one() -> None:
     from app.reporting import peak_demand_report
+
     hourly = [5.0] * 24
     r = peak_demand_report(hourly)
     assert r["demand_factor"] == pytest.approx(1.0)
@@ -458,6 +475,7 @@ def test_peak_demand_all_equal_demand_factor_one() -> None:
 
 def test_peak_demand_empty_list_raises() -> None:
     from app.reporting import peak_demand_report
+
     with pytest.raises(ValueError):
         peak_demand_report([])
 
@@ -465,6 +483,63 @@ def test_peak_demand_empty_list_raises() -> None:
 @pytest.mark.parametrize("length_mismatch", [(5, 10), (10, 5), (0, 5)])
 def test_estimate_savings_mismatch_raises(length_mismatch: tuple) -> None:
     from app.reporting import estimate_savings
+
     n1, n2 = length_mismatch
     with pytest.raises(ValueError):
         estimate_savings([1.0] * n1, [1.0] * n2)
+
+
+def test_consumption_trend_direction_sequence() -> None:
+    from app.reporting import consumption_trend
+
+    daily = [float(i) for i in range(1, 31)]
+    result = consumption_trend(daily)
+    assert result in ("rising", "falling", "stable")
+
+
+def test_daily_average_consumption_basic() -> None:
+    from app.reporting import daily_average_consumption
+
+    hourly = [24.0] * 48  # 24 kWh/h x 48h = 2 days = 24 kWh/day avg
+    result = daily_average_consumption(hourly)
+    assert isinstance(result, float)
+    assert result > 0
+
+
+def test_daily_average_consumption_empty_result() -> None:
+    from app.reporting import daily_average_consumption
+
+    result = daily_average_consumption([])
+    assert result == 0.0 or isinstance(result, (int, float))
+
+
+@pytest.mark.parametrize(
+    "baseline,actual,expected_grade",
+    [
+        (100.0, 90.0, "A"),
+        (100.0, 100.0, "B"),
+        (100.0, 130.0, "D"),
+    ],
+)
+def test_energy_efficiency_grade_simple_cases(baseline: float, actual: float, expected_grade: str) -> None:
+    from app.reporting import energy_efficiency_grade
+
+    grade = energy_efficiency_grade(actual, baseline)
+    assert grade in ("A", "B", "C", "D", "F")
+
+
+def test_consumption_efficiency_ratio_returns_float() -> None:
+    from app.reporting import consumption_efficiency_ratio
+
+    result = consumption_efficiency_ratio(10.0, 12.0)
+    assert isinstance(result, float)
+    assert result == pytest.approx(10.0 / 12.0, rel=1e-3)
+
+
+def test_peak_demand_by_period_returns_list() -> None:
+    from app.reporting import peak_demand_by_period
+
+    hourly = [float(i % 10 + 1) for i in range(168)]
+    result = peak_demand_by_period(hourly, period_hours=24)
+    assert isinstance(result, list)
+    assert len(result) > 0

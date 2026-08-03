@@ -2,9 +2,12 @@
 
 from __future__ import annotations
 
+import logging
 import threading
 import time
 from dataclasses import dataclass, field
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -46,6 +49,7 @@ class TokenBucketRateLimiter:
             if bucket.tokens >= 1.0:
                 bucket.tokens -= 1.0
                 return True
+            logger.debug("rate_limit: client=%r throttled tokens=%.2f", client_key, bucket.tokens)
             return False
 
     def remaining_tokens(self, client_key: str) -> float:
@@ -74,9 +78,7 @@ class TokenBucketRateLimiter:
             return len(self._buckets)
 
 
-def make_rate_limiter(
-    capacity: float = 60.0, rate_per_second: float = 1.0
-) -> TokenBucketRateLimiter:
+def make_rate_limiter(capacity: float = 60.0, rate_per_second: float = 1.0) -> TokenBucketRateLimiter:
     """Factory returning a new :class:`TokenBucketRateLimiter` with defaults."""
     return TokenBucketRateLimiter(capacity=capacity, rate_per_second=rate_per_second)
 

@@ -274,6 +274,7 @@ def daily_average_consumption(hourly_series: list[float]) -> float:
     days = max(len(hourly_series) / 24.0, 1.0)
     return round(sum(hourly_series) / days, 4)
 
+
 __all__ = [
     "consumption_efficiency_ratio",
     "consumption_trend",

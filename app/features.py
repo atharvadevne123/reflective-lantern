@@ -2,11 +2,15 @@
 
 from __future__ import annotations
 
+import logging
+
 import numpy as np
 import pandas as pd
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
+
+logger = logging.getLogger(__name__)
 
 
 class TemporalFeatureExtractor(BaseEstimator, TransformerMixin):
@@ -331,6 +335,7 @@ def normalize_consumption(
     if not values:
         raise ValueError("values must not be empty")
     if method not in ("minmax", "zscore"):
+        logger.debug("normalize_consumption: invalid method=%r", method)
         raise ValueError(f"method must be 'minmax' or 'zscore', got {method!r}")
     arr = np.array(values, dtype=float)
     if method == "minmax":

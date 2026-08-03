@@ -286,11 +286,20 @@ def test_prediction_confidence_returns_dict(trained_model) -> None:
     from app.model import prediction_confidence
 
     bundle, _ = trained_model
-    row = pd.DataFrame([{
-        "hour": 12, "day_of_week": 1, "month": 6,
-        "temperature_c": 22.0, "humidity_pct": 55.0,
-        "occupancy": 50, "hvac_state": 1, "consumption_kwh": 10.0
-    }])
+    row = pd.DataFrame(
+        [
+            {
+                "hour": 12,
+                "day_of_week": 1,
+                "month": 6,
+                "temperature_c": 22.0,
+                "humidity_pct": 55.0,
+                "occupancy": 50,
+                "hvac_state": 1,
+                "consumption_kwh": 10.0,
+            }
+        ]
+    )
     result = prediction_confidence(bundle, row)
     assert "mean" in result
     assert "std" in result
@@ -304,11 +313,20 @@ def test_prediction_confidence_bounds_ordered(trained_model) -> None:
     from app.model import prediction_confidence
 
     bundle, _ = trained_model
-    row = pd.DataFrame([{
-        "hour": 12, "day_of_week": 1, "month": 6,
-        "temperature_c": 22.0, "humidity_pct": 55.0,
-        "occupancy": 50, "hvac_state": 1, "consumption_kwh": 10.0
-    }])
+    row = pd.DataFrame(
+        [
+            {
+                "hour": 12,
+                "day_of_week": 1,
+                "month": 6,
+                "temperature_c": 22.0,
+                "humidity_pct": 55.0,
+                "occupancy": 50,
+                "hvac_state": 1,
+                "consumption_kwh": 10.0,
+            }
+        ]
+    )
     result = prediction_confidence(bundle, row)
     assert result["lower_95"] <= result["mean"] <= result["upper_95"]
 
@@ -322,3 +340,42 @@ def test_prediction_confidence_empty_bundle() -> None:
     result = prediction_confidence({}, row)
     assert result["mean"] == 0.0
     assert result["std"] == 0.0
+
+
+def test_get_feature_importance_empty_bundle_returns_empty() -> None:
+    from app.model import get_feature_importance
+
+    result = get_feature_importance({})
+    assert result == []
+
+
+def test_get_feature_importance_returns_list_trained(trained_model) -> None:
+    from app.model import get_feature_importance
+
+    bundle, _ = trained_model
+    result = get_feature_importance(bundle)
+    assert isinstance(result, list)
+
+
+def test_get_feature_importance_top_n(trained_model) -> None:
+    from app.model import get_feature_importance
+
+    bundle, _ = trained_model
+    result = get_feature_importance(bundle, top_n=3)
+    assert len(result) <= 3
+
+
+def test_get_metrics_returns_dict() -> None:
+    from app.model import get_metrics
+
+    result = get_metrics()
+    assert isinstance(result, dict)
+
+
+@pytest.mark.parametrize("top_n", [1, 5, 10])
+def test_get_feature_importance_top_n_parametrized(top_n: int, trained_model) -> None:
+    from app.model import get_feature_importance
+
+    bundle, _ = trained_model
+    result = get_feature_importance(bundle, top_n=top_n)
+    assert len(result) <= top_n
