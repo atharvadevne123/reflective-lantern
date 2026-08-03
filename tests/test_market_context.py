@@ -558,3 +558,51 @@ def test_price_to_rent_ratio_zero_rent_v2() -> None:
 
     result = price_to_rent_ratio(300_000.0, 0.0)
     assert math.isinf(result)
+
+
+class TestNeighbourhoodScore:
+    def test_returns_composite_and_grade(self) -> None:
+        from app.market_context import neighbourhood_score
+
+        result = neighbourhood_score(8.0, 7.0, 9.0)
+        assert "composite_score" in result
+        assert "grade" in result
+
+    def test_high_scores_give_grade_a(self) -> None:
+        from app.market_context import neighbourhood_score
+
+        result = neighbourhood_score(9.0, 9.0, 9.0, safety_score=9.0)
+        assert result["grade"] == "A"
+
+    def test_low_scores_give_grade_d(self) -> None:
+        from app.market_context import neighbourhood_score
+
+        result = neighbourhood_score(1.0, 1.0, 1.0, safety_score=1.0)
+        assert result["grade"] == "D"
+
+    def test_clamping_above_10(self) -> None:
+        from app.market_context import neighbourhood_score
+
+        result = neighbourhood_score(15.0, 15.0, 15.0, safety_score=15.0)
+        assert result["composite_score"] <= 10.0
+
+    def test_clamping_below_0(self) -> None:
+        from app.market_context import neighbourhood_score
+
+        result = neighbourhood_score(-5.0, -5.0, -5.0, safety_score=-5.0)
+        assert result["composite_score"] >= 0.0
+
+    def test_custom_weights_invalid_raises(self) -> None:
+        import pytest
+
+        from app.market_context import neighbourhood_score
+
+        with pytest.raises(ValueError, match="sum to 1.0"):
+            neighbourhood_score(7.0, 7.0, 7.0, weights={"school": 0.5, "transit": 0.5, "walkability": 0.5, "safety": 0.5})
+
+    @pytest.mark.parametrize("school,transit,walk", [(5, 5, 5), (8, 3, 6), (10, 10, 10)])
+    def test_score_within_bounds(self, school: float, transit: float, walk: float) -> None:
+        from app.market_context import neighbourhood_score
+
+        result = neighbourhood_score(school, transit, walk)
+        assert 0.0 <= result["composite_score"] <= 10.0
