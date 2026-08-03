@@ -555,7 +555,8 @@
     "artifacts": [
       "pending/Care-Compass-2026-08-03.bundle",
       "pending/Care-Compass-2026-08-03.patch",
-      "pending/Care-Compass_report_2026-08-03.pdf"
+      "pending/Care-Compass_report_2026-08-03.pdf",
+      ".github/workflows/bootstrap-care-compass.yml"
     ],
     "file_count": 39,
     "test_count": 75,
@@ -579,6 +580,7 @@
       "Structured JSON logging with correlation IDs",
       "Rate limiting middleware",
       "Automated retraining pipeline (Airflow-compatible)"
-    ]
+    ],
+    "publish_route": "Run the 'Publish Care-Compass Repo' workflow from the Actions tab with a repo-scoped PAT. It restores all 66 commits and the v1.0.0 tag from the bundle, creates the repo, pushes, releases, and uploads the wheel."
   }
 ]

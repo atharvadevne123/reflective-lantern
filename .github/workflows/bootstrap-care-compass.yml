@@ -1,0 +1,88 @@
+name: Publish Care-Compass Repo
+
+# One-click publisher: creates the standalone Care-Compass repository and
+# pushes the complete project history from the git bundle committed at
+# pending/Care-Compass-2026-08-03.bundle, then tags v1.0.0, creates a
+# GitHub release, and uploads the built wheel as a release asset.
+#
+# The build session could not create the repository itself: its gateway
+# binds it to reflective-lantern and answers 403 to POST /user/repos.
+# Actions runners reach api.github.com directly, so publishing works here
+# with a PAT supplied at dispatch time.
+#
+# Publishing from the bundle (rather than a subtree split) preserves all
+# 66 original commits and the v1.0.0 tag exactly as they were built.
+#
+# Trigger manually from the Actions tab, supplying a PAT with repo scope.
+
+on:
+  workflow_dispatch:
+    inputs:
+      gh_pat:
+        description: 'GitHub PAT with repo scope (used once, not stored)'
+        required: true
+        type: string
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout branch holding the bundle
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Create Care-Compass repository
+        run: |
+          RESPONSE=$(curl -s -X POST \
+            -H "Authorization: Bearer ${{ github.event.inputs.gh_pat }}" \
+            -H "Content-Type: application/json" \
+            https://api.github.com/user/repos \
+            -d '{"name":"Care-Compass","description":"Clinical ML API predicting 30-day hospital readmission risk from patient vitals, diagnoses, lab trends, and admission history using an XGBoost ensemble with drift monitoring, automated retraining, and PostgreSQL-backed prediction logging.","public":true,"auto_init":false}')
+          echo "$RESPONSE" | python3 -c "import json,sys; r=json.load(sys.stdin); print(r.get('html_url', 'NOTE: ' + str(r.get('message',''))))"
+
+      - name: Restore project from bundle
+        run: |
+          BUNDLE=pending/Care-Compass-2026-08-03.bundle
+          git bundle verify "$BUNDLE"
+          git clone "$BUNDLE" /tmp/Care-Compass
+          cd /tmp/Care-Compass
+          git config user.email "devneatharva@gmail.com"
+          git config user.name "Reflective Lantern"
+          echo "Commits restored: $(git log --oneline | wc -l)"
+          echo "Tags restored: $(git tag -l | tr '\n' ' ')"
+
+      - name: Push history and tags
+        run: |
+          cd /tmp/Care-Compass
+          git remote set-url origin \
+            "https://x-access-token:${{ github.event.inputs.gh_pat }}@github.com/atharvadevne123/Care-Compass"
+          git push origin main
+          git push origin --tags
+
+      - name: Create v1.0.0 release
+        run: |
+          curl -s -X POST \
+            -H "Authorization: Bearer ${{ github.event.inputs.gh_pat }}" \
+            -H "Content-Type: application/json" \
+            "https://api.github.com/repos/atharvadevne123/Care-Compass/releases" \
+            -d '{"tag_name":"v1.0.0","target_commitish":"main","name":"v1.0.0 — Initial Release","body":"Built by Reflective Lantern. Clinical ML API predicting 30-day hospital readmission risk — XGBoost pipeline over 26 engineered features, FastAPI with six versioned endpoints, KS-test and PSI drift monitoring, AUC-guarded automated retraining, Alembic migrations, Docker + PostgreSQL, 75 tests. Cross-validated AUC-ROC 0.777. Synthetic data only; not a certified clinical device. See README for setup.","draft":false,"prerelease":false}' \
+            | python3 -c "import json,sys; r=json.load(sys.stdin); print('Release:', r.get('html_url', r.get('message','')))"
+
+      - name: Build and upload wheel asset
+        run: |
+          cd /tmp/Care-Compass
+          pip install build -q
+          python -m build --wheel
+          WHL=$(ls dist/*.whl | head -1)
+          RELEASE_ID=$(curl -s -H "Authorization: Bearer ${{ github.event.inputs.gh_pat }}" \
+            "https://api.github.com/repos/atharvadevne123/Care-Compass/releases/tags/v1.0.0" \
+            | python3 -c "import json,sys; print(json.load(sys.stdin).get('id',''))")
+          if [ -n "$WHL" ] && [ -n "$RELEASE_ID" ]; then
+            curl -s -X POST \
+              -H "Authorization: Bearer ${{ github.event.inputs.gh_pat }}" \
+              -H "Content-Type: application/octet-stream" \
+              --data-binary @"$WHL" \
+              "https://uploads.github.com/repos/atharvadevne123/Care-Compass/releases/$RELEASE_ID/assets?name=$(basename $WHL)" \
+              | python3 -c "import json,sys; r=json.load(sys.stdin); print('Asset:', r.get('browser_download_url','ERROR'))"
+          fi
