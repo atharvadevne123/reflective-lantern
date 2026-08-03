@@ -317,3 +317,88 @@ def zscore(values: list[float], value: float) -> float:
     if abs(result) > 3.0:
         logger.debug("zscore: extreme value detected z=%.4f (n=%d)", result, n)
     return result
+
+
+def coefficient_of_variation(values: list[float]) -> float:
+    """Compute the coefficient of variation (CV) as std/mean.
+
+    CV expresses variability relative to the mean, useful for comparing
+    dispersion across series with different scales.
+
+    Args:
+        values: Non-empty list of numeric observations (mean must be non-zero).
+
+    Returns:
+        CV as a percentage (std / mean * 100), rounded to 4 decimal places.
+        Returns 0.0 when all values are identical.
+
+    Raises:
+        ValueError: If *values* is empty or the mean is zero.
+    """
+    if not values:
+        raise ValueError("values must not be empty")
+    n = len(values)
+    mean = sum(values) / n
+    if abs(mean) < 1e-12:
+        raise ValueError(f"Mean is near zero ({mean:.6e}); CV is undefined")
+    variance = sum((v - mean) ** 2 for v in values) / n
+    std = variance ** 0.5
+    if std < 1e-12:
+        return 0.0
+    return round(std / abs(mean) * 100.0, 4)
+
+
+def exponential_moving_average(values: list[float], alpha: float = 0.3) -> list[float]:
+    """Compute Exponential Moving Average (EMA) of a time series.
+
+    EMA weights recent observations more heavily than earlier ones.
+
+    Args:
+        values: Time-ordered observations (at least one element).
+        alpha: Smoothing factor in (0, 1].  Higher values give more weight to
+            recent observations; lower values produce smoother series.
+
+    Returns:
+        EMA series of the same length as *values*.
+
+    Raises:
+        ValueError: If *values* is empty or *alpha* is outside (0, 1].
+    """
+    if not values:
+        raise ValueError("values must not be empty")
+    if not (0 < alpha <= 1):
+        raise ValueError(f"alpha must be in (0, 1], got {alpha}")
+    ema = [values[0]]
+    for v in values[1:]:
+        ema.append(alpha * v + (1.0 - alpha) * ema[-1])
+    return [round(x, 6) for x in ema]
+
+
+def winsorize(values: list[float], lower_pct: float = 5.0, upper_pct: float = 95.0) -> list[float]:
+    """Clip extreme values to specified percentile bounds (Winsorisation).
+
+    Replaces values below the lower percentile and above the upper percentile
+    with the respective boundary values, reducing the influence of outliers.
+
+    Args:
+        values: Input list of numeric observations.
+        lower_pct: Lower percentile cutoff in [0, 100).
+        upper_pct: Upper percentile cutoff in (0, 100].
+
+    Returns:
+        Winsorised list of the same length as *values*.
+
+    Raises:
+        ValueError: If *values* is empty or percentile bounds are invalid.
+    """
+    if not values:
+        raise ValueError("values must not be empty")
+    if not (0 <= lower_pct < upper_pct <= 100):
+        raise ValueError(f"Percentiles must satisfy 0 <= lower_pct < upper_pct <= 100, got {lower_pct}, {upper_pct}")
+    sorted_vals = sorted(values)
+    n = len(sorted_vals)
+    lo_idx = int(lower_pct / 100.0 * (n - 1))
+    hi_idx = int(upper_pct / 100.0 * (n - 1))
+    lo_val = sorted_vals[lo_idx]
+    hi_val = sorted_vals[hi_idx]
+    return [max(lo_val, min(hi_val, v)) for v in values]
