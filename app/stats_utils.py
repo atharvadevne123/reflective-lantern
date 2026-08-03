@@ -97,24 +97,6 @@ def mape(actual: list[float], predicted: list[float]) -> float:
     return round(100.0 * sum(abs(a - p) / abs(a) for a, p in zip(actual, predicted, strict=False)) / len(actual), 4)
 
 
-def coefficient_of_variation(values: list[float]) -> float:
-    """Compute the coefficient of variation (CV = std/mean * 100%).
-
-    Args:
-        values: List of numeric values (length >= 2, non-zero mean).
-
-    Returns:
-        CV as a percentage, or 0.0 for degenerate inputs.
-    """
-    if len(values) < 2:
-        return 0.0
-    mean = statistics.mean(values)
-    if abs(mean) < 1e-12:
-        return 0.0
-    std = statistics.pstdev(values)
-    return round(100.0 * std / abs(mean), 4)
-
-
 def percentile(values: list[float], p: float) -> float:
     """Return the p-th percentile of *values* using linear interpolation.
 
