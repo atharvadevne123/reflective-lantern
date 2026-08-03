@@ -244,9 +244,48 @@ __all__ = [
     "completeness_score",
     "detect_data_gaps",
     "detect_duplicates",
+    "field_value_counts",
     "flag_outliers",
     "normalize_record",
+    "null_rate",
     "quality_summary",
     "schema_validate",
     "score_record",
 ]
+
+
+def field_value_counts(
+    records: list[dict[str, Any]],
+    field: str,
+) -> dict[str, int]:
+    """Return a frequency table of values for *field* across *records*.
+
+    Args:
+        records: List of record dicts.
+        field: Field name to count distinct values for.
+
+    Returns:
+        Dict mapping each distinct value to its occurrence count, sorted by
+        count descending.
+    """
+    counts: dict[str, int] = {}
+    for rec in records:
+        val = str(rec.get(field, ""))
+        counts[val] = counts.get(val, 0) + 1
+    return dict(sorted(counts.items(), key=lambda x: x[1], reverse=True))
+
+
+def null_rate(records: list[dict[str, Any]], field: str) -> float:
+    """Return the fraction of records where *field* is None or missing.
+
+    Args:
+        records: List of record dicts.
+        field: Field name to check for null values.
+
+    Returns:
+        Null rate in [0.0, 1.0]; 0.0 for an empty list.
+    """
+    if not records:
+        return 0.0
+    null_count = sum(1 for r in records if r.get(field) is None)
+    return round(null_count / len(records), 4)
