@@ -662,3 +662,84 @@ def test_load_factor_various_inputs(values) -> None:
 
     result = load_factor(values)
     assert 0.0 <= result <= 1.0
+
+
+class TestAutocorrelation:
+    def test_perfect_correlation_at_lag0_like(self) -> None:
+        from app.time_series import autocorrelation
+
+        vals = [1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0]
+        result = autocorrelation(vals, lag=1)
+        assert isinstance(result, float)
+
+    def test_returns_value_between_minus1_and_1(self) -> None:
+        from app.time_series import autocorrelation
+
+        vals = [float(i % 3) for i in range(24)]
+        result = autocorrelation(vals, lag=3)
+        assert -1.0 <= result <= 1.0
+
+    def test_constant_series_returns_zero(self) -> None:
+        from app.time_series import autocorrelation
+
+        assert autocorrelation([5.0] * 10, lag=1) == 0.0
+
+    def test_too_short_returns_zero(self) -> None:
+        from app.time_series import autocorrelation
+
+        assert autocorrelation([1.0, 2.0], lag=3) == 0.0
+
+    def test_invalid_lag_raises(self) -> None:
+        import pytest
+
+        from app.time_series import autocorrelation
+
+        with pytest.raises(ValueError):
+            autocorrelation([1.0, 2.0, 3.0], lag=0)
+
+    @pytest.mark.parametrize("lag", [1, 2, 4, 8])
+    def test_various_lags(self, lag: int) -> None:
+        from app.time_series import autocorrelation
+
+        vals = [float(i) for i in range(50)]
+        result = autocorrelation(vals, lag=lag)
+        assert -1.0 <= result <= 1.0
+
+
+class TestHoltWintersSmooth:
+    def test_same_length_as_input(self) -> None:
+        from app.time_series import holt_winters_smooth
+
+        vals = [1.0, 2.0, 3.0, 4.0, 5.0]
+        assert len(holt_winters_smooth(vals)) == len(vals)
+
+    def test_flat_series_stays_flat(self) -> None:
+        from app.time_series import holt_winters_smooth
+
+        vals = [5.0] * 10
+        result = holt_winters_smooth(vals)
+        assert all(abs(r - 5.0) < 0.5 for r in result)
+
+    def test_too_few_elements_raises(self) -> None:
+        import pytest
+
+        from app.time_series import holt_winters_smooth
+
+        with pytest.raises(ValueError):
+            holt_winters_smooth([1.0])
+
+    def test_invalid_alpha_raises(self) -> None:
+        import pytest
+
+        from app.time_series import holt_winters_smooth
+
+        with pytest.raises(ValueError):
+            holt_winters_smooth([1.0, 2.0, 3.0], alpha=0.0)
+
+    @pytest.mark.parametrize("alpha,beta", [(0.1, 0.1), (0.5, 0.3), (0.9, 0.5)])
+    def test_various_params_return_list(self, alpha: float, beta: float) -> None:
+        from app.time_series import holt_winters_smooth
+
+        vals = [float(i) for i in range(10)]
+        result = holt_winters_smooth(vals, alpha=alpha, beta=beta)
+        assert len(result) == len(vals)
