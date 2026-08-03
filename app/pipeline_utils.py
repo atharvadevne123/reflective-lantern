@@ -126,10 +126,42 @@ __all__ = [
     "bundle_pipeline_info",
     "clone_params",
     "describe_pipeline",
+    "first_step",
     "get_step",
     "get_step_names",
     "has_step",
     "is_fitted",
     "pipeline_param_count",
+    "pipeline_step_types",
     "step_is_fitted",
 ]
+
+
+def pipeline_step_types(pipeline: Any) -> dict[str, str]:
+    """Return a mapping of step name to transformer class name.
+
+    Args:
+        pipeline: sklearn Pipeline or object with a ``steps`` attribute.
+
+    Returns:
+        Dict of step_name → class_name, or empty dict if no steps.
+    """
+    steps = getattr(pipeline, "steps", None)
+    if not steps:
+        return {}
+    return {name: type(step).__name__ for name, step in steps}
+
+
+def first_step(pipeline: Any) -> Any:
+    """Return the first transformer in *pipeline*'s step list.
+
+    Args:
+        pipeline: sklearn Pipeline or object with a ``steps`` attribute.
+
+    Returns:
+        The first step object, or None if the pipeline has no steps.
+    """
+    steps = getattr(pipeline, "steps", None)
+    if not steps:
+        return None
+    return steps[0][1]
