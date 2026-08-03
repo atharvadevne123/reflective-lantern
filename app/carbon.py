@@ -175,6 +175,7 @@ __all__ = [
     "carbon_saved_kwh",
     "carbon_savings",
     "co2_kg_to_tonnes",
+    "compare_regions",
     "daily_carbon_estimate",
     "kwh_to_co2_kg",
     "monthly_co2_breakdown",
@@ -271,3 +272,35 @@ def carbon_saved_kwh(
         "co2_kg_saved": round(co2_saved, 4),
         "pct_reduction": round(pct, 4),
     }
+
+
+def compare_regions(kwh: float, regions: list[str] | None = None) -> list[dict[str, float]]:
+    """Compare carbon footprint for *kwh* across multiple grid regions.
+
+    Useful for helping users understand how location choice affects emissions.
+
+    Args:
+        kwh: Energy consumption in kilowatt-hours.
+        regions: List of region identifiers to compare.  Defaults to all
+            known regions in ``GRID_CARBON_INTENSITY``.
+
+    Returns:
+        List of dicts with 'region', 'intensity_kg_per_kwh', and 'co2_kg',
+        sorted from lowest to highest CO2 impact.
+
+    Raises:
+        ValueError: If *kwh* is negative.
+    """
+    if kwh < 0:
+        raise ValueError(f"kwh must be non-negative, got {kwh}")
+    if regions is None:
+        regions = [r for r in GRID_CARBON_INTENSITY if r != "default"]
+    results = [
+        {
+            "region": r,
+            "intensity_kg_per_kwh": _grid_intensity(r),
+            "co2_kg": kwh_to_co2_kg(kwh, r),
+        }
+        for r in regions
+    ]
+    return sorted(results, key=lambda x: x["co2_kg"])
