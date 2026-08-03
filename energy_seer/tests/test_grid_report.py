@@ -47,3 +47,64 @@ class TestGenerateGridReport:
             0,
         )
         assert len(result["recommendations"]) > 0
+
+
+class TestSummariseAlerts:
+    def test_no_alerts(self) -> None:
+        from energy_seer.app.grid_report import summarise_alerts
+        assert summarise_alerts({"alerts": []}) == "No alerts."
+
+    def test_formats_alerts(self) -> None:
+        from energy_seer.app.grid_report import summarise_alerts
+        result = summarise_alerts({"alerts": ["Alert A", "Alert B"]})
+        assert "- Alert A" in result
+        assert "- Alert B" in result
+
+    def test_missing_key(self) -> None:
+        from energy_seer.app.grid_report import summarise_alerts
+        assert summarise_alerts({}) == "No alerts."
+
+
+class TestReportStatusCode:
+    def test_healthy(self) -> None:
+        from energy_seer.app.grid_report import report_status_code
+        assert report_status_code({"status": "healthy"}) == 200
+
+    def test_warning(self) -> None:
+        from energy_seer.app.grid_report import report_status_code
+        assert report_status_code({"status": "warning"}) == 207
+
+    def test_critical(self) -> None:
+        from energy_seer.app.grid_report import report_status_code
+        assert report_status_code({"status": "critical"}) == 503
+
+    def test_unknown_defaults_200(self) -> None:
+        from energy_seer.app.grid_report import report_status_code
+        assert report_status_code({"status": "unknown"}) == 200
+
+
+class TestMergeReports:
+    def test_empty_list(self) -> None:
+        from energy_seer.app.grid_report import merge_reports
+        result = merge_reports([])
+        assert result["status"] == "healthy"
+        assert result["anomaly_count"] == 0
+
+    def test_worst_status_wins(self) -> None:
+        from energy_seer.app.grid_report import merge_reports
+        reports = [
+            {"status": "healthy", "alerts": [], "anomaly_count": 0},
+            {"status": "critical", "alerts": ["x"], "anomaly_count": 5},
+        ]
+        result = merge_reports(reports)
+        assert result["status"] == "critical"
+
+    def test_alert_combination(self) -> None:
+        from energy_seer.app.grid_report import merge_reports
+        reports = [
+            {"status": "warning", "alerts": ["A"], "anomaly_count": 1},
+            {"status": "warning", "alerts": ["B"], "anomaly_count": 2},
+        ]
+        result = merge_reports(reports)
+        assert "A" in result["alerts"] and "B" in result["alerts"]
+        assert result["anomaly_count"] == 3
