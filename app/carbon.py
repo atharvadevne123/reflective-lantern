@@ -171,6 +171,7 @@ __all__ = [
     "KG_TO_TONNES",
     "TREES_PER_TONNE_CO2_PER_YEAR",
     "annual_carbon_report",
+    "carbon_budget_remaining",
     "carbon_intensity_by_hour",
     "carbon_saved_kwh",
     "carbon_savings",
@@ -304,3 +305,33 @@ def compare_regions(kwh: float, regions: list[str] | None = None) -> list[dict[s
         for r in regions
     ]
     return sorted(results, key=lambda x: x["co2_kg"])
+
+
+def carbon_budget_remaining(
+    annual_budget_kg: float,
+    consumed_kg: float,
+) -> dict[str, float]:
+    """Compute how much CO2 budget is remaining given consumption so far.
+
+    Args:
+        annual_budget_kg: Total annual CO2 allowance in kg.
+        consumed_kg: CO2 already emitted in kg.
+
+    Returns:
+        Dict with 'remaining_kg', 'used_pct', and 'on_track' (bool as float 1.0/0.0).
+
+    Raises:
+        ValueError: If either argument is negative.
+    """
+    if annual_budget_kg < 0:
+        raise ValueError(f"annual_budget_kg must be non-negative, got {annual_budget_kg}")
+    if consumed_kg < 0:
+        raise ValueError(f"consumed_kg must be non-negative, got {consumed_kg}")
+    remaining = max(0.0, annual_budget_kg - consumed_kg)
+    used_pct = round(consumed_kg / annual_budget_kg * 100.0, 2) if annual_budget_kg > 0 else 0.0
+    on_track = 1.0 if consumed_kg <= annual_budget_kg else 0.0
+    return {
+        "remaining_kg": round(remaining, 4),
+        "used_pct": used_pct,
+        "on_track": on_track,
+    }
