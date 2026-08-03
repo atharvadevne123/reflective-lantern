@@ -121,17 +121,6 @@ def flag_outliers(
     return [r for r in records if field in r and abs((float(r[field]) - mean) / std) > z_threshold]
 
 
-__all__ = [
-    "batch_score",
-    "completeness_score",
-    "detect_data_gaps",
-    "detect_duplicates",
-    "flag_outliers",
-    "quality_summary",
-    "score_record",
-]
-
-
 def detect_duplicates(
     records: list[dict[str, Any]],
     key_fields: list[str] | None = None,
@@ -202,3 +191,62 @@ def detect_data_gaps(
         if diff > expected_interval:
             gaps.append((timestamps[i - 1], timestamps[i]))
     return gaps
+
+
+def schema_validate(
+    record: dict[str, Any],
+    schema: dict[str, type],
+) -> list[str]:
+    """Validate that *record* fields match their expected Python types.
+
+    Args:
+        record: The record dict to validate.
+        schema: Mapping of field name to expected Python type (e.g. ``{"kwh": float}``).
+
+    Returns:
+        List of validation error strings, empty if all fields conform.
+    """
+    errors: list[str] = []
+    for field, expected_type in schema.items():
+        value = record.get(field)
+        if value is None:
+            errors.append(f"missing:{field}")
+        elif not isinstance(value, expected_type):
+            errors.append(f"type_error:{field} expected {expected_type.__name__}, got {type(value).__name__}")
+    return errors
+
+
+def normalize_record(record: dict[str, Any]) -> dict[str, Any]:
+    """Return a copy of *record* with string fields stripped and lower-cased.
+
+    Numeric fields are left untouched. Useful for standardising building IDs,
+    region names, and building type labels before insertion.
+
+    Args:
+        record: Input record dict.
+
+    Returns:
+        New dict with string values stripped of leading/trailing whitespace
+        and converted to lower-case.
+    """
+    out: dict[str, Any] = {}
+    for k, v in record.items():
+        if isinstance(v, str):
+            out[k] = v.strip().lower()
+        else:
+            out[k] = v
+    return out
+
+
+__all__ = [
+    "aggregate_by_hour",
+    "batch_score",
+    "completeness_score",
+    "detect_data_gaps",
+    "detect_duplicates",
+    "flag_outliers",
+    "normalize_record",
+    "quality_summary",
+    "schema_validate",
+    "score_record",
+]
