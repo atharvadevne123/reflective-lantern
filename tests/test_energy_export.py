@@ -146,3 +146,83 @@ def test_summarize_export_min_max():
 def test_filter_by_hour_parametrize(hour, expected_count):
     result = filter_records(SAMPLE, hour=hour)
     assert len(result) == expected_count
+
+
+class TestRecordsToJsonl:
+    def test_each_line_valid_json(self) -> None:
+        import json
+
+        from app.energy_export import records_to_jsonl
+
+        out = records_to_jsonl(SAMPLE)
+        lines = [l for l in out.strip().split("\n") if l]
+        for line in lines:
+            parsed = json.loads(line)
+            assert isinstance(parsed, dict)
+
+    def test_line_count_matches_records(self) -> None:
+        from app.energy_export import records_to_jsonl
+
+        out = records_to_jsonl(SAMPLE)
+        lines = [l for l in out.strip().split("\n") if l]
+        assert len(lines) == len(SAMPLE)
+
+    def test_empty_records_returns_empty_string(self) -> None:
+        from app.energy_export import records_to_jsonl
+
+        assert records_to_jsonl([]) == ""
+
+    def test_output_ends_with_newline(self) -> None:
+        from app.energy_export import records_to_jsonl
+
+        out = records_to_jsonl(SAMPLE[:1])
+        assert out.endswith("\n")
+
+
+class TestDeduplicateRecords:
+    def test_removes_exact_duplicates(self) -> None:
+        from app.energy_export import deduplicate_records
+
+        records = [
+            {"building_id": "A", "timestamp": "2024-01-01", "kwh": 5.0},
+            {"building_id": "A", "timestamp": "2024-01-01", "kwh": 5.0},
+            {"building_id": "B", "timestamp": "2024-01-01", "kwh": 3.0},
+        ]
+        result = deduplicate_records(records)
+        assert len(result) == 2
+
+    def test_preserves_first_occurrence(self) -> None:
+        from app.energy_export import deduplicate_records
+
+        records = [
+            {"building_id": "A", "timestamp": "T1", "kwh": 1.0},
+            {"building_id": "A", "timestamp": "T1", "kwh": 2.0},
+        ]
+        result = deduplicate_records(records)
+        assert result[0]["kwh"] == 1.0
+
+    def test_custom_key_fields(self) -> None:
+        from app.energy_export import deduplicate_records
+
+        records = [
+            {"meter_id": "M1", "hour": 8, "kwh": 4.0},
+            {"meter_id": "M1", "hour": 8, "kwh": 5.0},
+            {"meter_id": "M2", "hour": 8, "kwh": 3.0},
+        ]
+        result = deduplicate_records(records, key_fields=["meter_id", "hour"])
+        assert len(result) == 2
+
+    def test_no_duplicates_unchanged(self) -> None:
+        from app.energy_export import deduplicate_records
+
+        records = [{"building_id": str(i), "timestamp": "T1"} for i in range(5)]
+        result = deduplicate_records(records)
+        assert len(result) == 5
+
+    @pytest.mark.parametrize("n_dupes", [1, 5, 10])
+    def test_single_unique_key_collapses_all(self, n_dupes: int) -> None:
+        from app.energy_export import deduplicate_records
+
+        records = [{"building_id": "X", "timestamp": "T"} for _ in range(n_dupes)]
+        result = deduplicate_records(records)
+        assert len(result) == 1
