@@ -159,3 +159,55 @@ def prepare_dataframe(data: list[dict]) -> pd.DataFrame:
         df["building_type"] = "residential"
     df["is_holiday"] = df["is_holiday"].astype(int)
     return df
+
+
+def feature_column_names() -> list[str]:
+    """Return the list of feature column names produced by the pipeline.
+
+    Returns:
+        Sorted list of expected feature names after pipeline transformation.
+    """
+    return sorted([
+        "lag_1h",
+        "lag_24h",
+        "rolling_mean_24h",
+        "rolling_std_24h",
+        "hour_sin",
+        "hour_cos",
+        "dow_sin",
+        "dow_cos",
+        "is_weekend",
+        "is_holiday",
+        "temp_humidity_ratio",
+        "building_type_encoded",
+    ])
+
+
+def validate_dataframe_columns(df: "pd.DataFrame", required: list[str] | None = None) -> list[str]:
+    """Return missing required columns from *df*.
+
+    Args:
+        df: Input DataFrame to check.
+        required: List of required column names.  Defaults to
+            ['consumption_kwh', 'hour_of_day', 'day_of_week'].
+
+    Returns:
+        List of column names that are absent from *df* (empty if all present).
+    """
+    if required is None:
+        required = ["consumption_kwh", "hour_of_day", "day_of_week"]
+    return [col for col in required if col not in df.columns]
+
+
+__all__ = [
+    "BuildingEncoderTransformer",
+    "DropRawColumnsTransformer",
+    "LagFeatureTransformer",
+    "RollingStatsTransformer",
+    "TemporalFeatureTransformer",
+    "WeatherRatioTransformer",
+    "build_feature_pipeline",
+    "feature_column_names",
+    "prepare_dataframe",
+    "validate_dataframe_columns",
+]
