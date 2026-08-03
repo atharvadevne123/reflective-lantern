@@ -249,3 +249,64 @@ def test_ttl_cache_accepts_various_ttls(ttl: int) -> None:
     c = TTLCache(ttl_seconds=ttl, max_size=5)
     c.set("key", "val")
     assert c.get("key") == "val"
+
+
+class TestTTLCacheGetOrSet:
+    def test_sets_on_miss(self) -> None:
+        from app.cache import TTLCache
+        c = TTLCache(ttl_seconds=60)
+        result = c.get_or_set("k", 42)
+        assert result == 42
+        assert c.get("k") == 42
+
+    def test_returns_existing_on_hit(self) -> None:
+        from app.cache import TTLCache
+        c = TTLCache(ttl_seconds=60)
+        c.set("k", 99)
+        result = c.get_or_set("k", 0)
+        assert result == 99
+
+    def test_different_keys_isolated(self) -> None:
+        from app.cache import TTLCache
+        c = TTLCache(ttl_seconds=60)
+        c.get_or_set("a", 1)
+        c.get_or_set("b", 2)
+        assert c.get("a") == 1
+        assert c.get("b") == 2
+
+
+class TestTTLCacheStats:
+    def test_stats_keys(self) -> None:
+        from app.cache import TTLCache
+        c = TTLCache(ttl_seconds=60)
+        s = c.stats()
+        assert "size" in s and "hits" in s and "misses" in s and "hit_rate" in s
+
+    def test_hit_rate_after_ops(self) -> None:
+        from app.cache import TTLCache
+        c = TTLCache(ttl_seconds=60)
+        c.set("x", 1)
+        c.get("x")     # hit
+        c.get("y")     # miss
+        assert c.hit_rate == pytest.approx(0.5)
+
+    def test_eviction_count_increases(self) -> None:
+        from app.cache import TTLCache
+        c = TTLCache(ttl_seconds=60, max_size=2)
+        c.set("a", 1)
+        c.set("b", 2)
+        c.set("c", 3)   # triggers eviction
+        assert c.eviction_count >= 1
+
+
+class TestTTLCacheContains:
+    def test_present(self) -> None:
+        from app.cache import TTLCache
+        c = TTLCache(ttl_seconds=60)
+        c.set("key", "val")
+        assert "key" in c
+
+    def test_absent(self) -> None:
+        from app.cache import TTLCache
+        c = TTLCache(ttl_seconds=60)
+        assert "nope" not in c
