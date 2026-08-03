@@ -280,3 +280,70 @@ def test_batch_score_returns_n_scores(n: int) -> None:
     records = [GOOD_RECORD] * n
     scores = batch_score(records)
     assert len(scores) == n
+
+
+class TestSchemaValidate:
+    def test_valid_record_returns_no_errors(self) -> None:
+        from app.data_quality import schema_validate
+
+        schema = {"consumption_kwh": float, "hour": int}
+        record = {"consumption_kwh": 5.0, "hour": 14}
+        assert schema_validate(record, schema) == []
+
+    def test_missing_field_returns_error(self) -> None:
+        from app.data_quality import schema_validate
+
+        errors = schema_validate({}, {"kwh": float})
+        assert any("missing:kwh" in e for e in errors)
+
+    def test_wrong_type_returns_error(self) -> None:
+        from app.data_quality import schema_validate
+
+        errors = schema_validate({"kwh": "not_a_float"}, {"kwh": float})
+        assert any("type_error:kwh" in e for e in errors)
+
+    def test_multiple_fields_all_errors(self) -> None:
+        from app.data_quality import schema_validate
+
+        schema = {"a": int, "b": str}
+        errors = schema_validate({"a": "x", "b": 123}, schema)
+        assert len(errors) == 2
+
+    @pytest.mark.parametrize("expected_type,value", [(int, 42), (float, 3.14), (str, "hello")])
+    def test_correct_types_pass(self, expected_type: type, value) -> None:
+        from app.data_quality import schema_validate
+
+        errors = schema_validate({"field": value}, {"field": expected_type})
+        assert errors == []
+
+
+class TestNormalizeRecord:
+    def test_strips_whitespace(self) -> None:
+        from app.data_quality import normalize_record
+
+        result = normalize_record({"region": "  NORTHEAST  "})
+        assert result["region"] == "northeast"
+
+    def test_lowercases_strings(self) -> None:
+        from app.data_quality import normalize_record
+
+        result = normalize_record({"building_type": "COMMERCIAL"})
+        assert result["building_type"] == "commercial"
+
+    def test_numeric_fields_unchanged(self) -> None:
+        from app.data_quality import normalize_record
+
+        result = normalize_record({"kwh": 42.5, "hour": 14})
+        assert result["kwh"] == 42.5
+        assert result["hour"] == 14
+
+    def test_empty_record(self) -> None:
+        from app.data_quality import normalize_record
+
+        assert normalize_record({}) == {}
+
+    @pytest.mark.parametrize("input_val,expected", [("Hello", "hello"), ("  Test  ", "test"), ("ok", "ok")])
+    def test_various_strings(self, input_val: str, expected: str) -> None:
+        from app.data_quality import normalize_record
+
+        assert normalize_record({"x": input_val})["x"] == expected
