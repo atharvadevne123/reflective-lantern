@@ -92,10 +92,56 @@ def summarize_export(records: list[dict[str, Any]]) -> dict[str, Any]:
     }
 
 
+def records_to_jsonl(records: list[dict[str, Any]]) -> str:
+    """Serialize *records* to newline-delimited JSON (JSONL) format.
+
+    Each record becomes one JSON line. Useful for streaming large exports.
+
+    Args:
+        records: List of row dicts to serialise.
+
+    Returns:
+        A string where each line is a valid JSON object, terminated by a newline.
+    """
+    lines = [json.dumps(rec, default=str) for rec in records]
+    return "\n".join(lines) + ("\n" if lines else "")
+
+
+def deduplicate_records(
+    records: list[dict[str, Any]],
+    key_fields: list[str] | None = None,
+) -> list[dict[str, Any]]:
+    """Remove duplicate records based on *key_fields*.
+
+    Preserves the first occurrence of each unique key combination.
+
+    Args:
+        records: Input list of record dicts.
+        key_fields: Field names used to compute the uniqueness key.
+            Defaults to ``["building_id", "timestamp"]``.
+
+    Returns:
+        Deduplicated list in original order.
+    """
+    if key_fields is None:
+        key_fields = ["building_id", "timestamp"]
+    seen: set[tuple] = set()
+    out: list[dict[str, Any]] = []
+    for rec in records:
+        key = tuple(rec.get(f) for f in key_fields)
+        if key not in seen:
+            seen.add(key)
+            out.append(rec)
+    logger.debug("deduplicate_records: %d -> %d records", len(records), len(out))
+    return out
+
+
 __all__ = [
     "aggregate_by_hour",
+    "deduplicate_records",
     "filter_records",
     "records_to_csv",
     "records_to_json",
+    "records_to_jsonl",
     "summarize_export",
 ]
