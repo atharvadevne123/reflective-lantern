@@ -53,3 +53,34 @@ class TestPeakShavingSavings:
         vals = list(range(1, 25))
         result = estimate_peak_shaving_savings(vals, shave_pct=shave)
         assert result["savings_kwh"] >= 0
+
+
+class TestDemandFlexibilityScore:
+    def test_returns_required_keys(self):
+        from app.peak_demand import demand_flexibility_score
+        result = demand_flexibility_score([1.0] * 24)
+        for key in ("flexible_kwh", "peak_kwh", "flexibility_ratio", "shiftable_pct"):
+            assert key in result
+
+    def test_all_flexible_hours_ratio_near_1(self):
+        from app.peak_demand import demand_flexibility_score
+        result = demand_flexibility_score([1.0] * 24, flexible_hours=list(range(24)))
+        assert abs(result["flexibility_ratio"] - 1.0) < 0.01
+
+    def test_no_flexible_hours_ratio_zero(self):
+        from app.peak_demand import demand_flexibility_score
+        result = demand_flexibility_score([1.0] * 24, flexible_hours=[])
+        assert result["flexibility_ratio"] == 0.0
+
+    def test_flexible_and_peak_sum_to_total(self):
+        from app.peak_demand import demand_flexibility_score
+        vals = list(range(1, 25))
+        result = demand_flexibility_score(vals)
+        total = sum(vals)
+        assert abs(result["flexible_kwh"] + result["peak_kwh"] - total) < 0.01
+
+    @pytest.mark.parametrize("flex_hours", [[0, 1, 2], [22, 23], list(range(8))])
+    def test_ratio_within_bounds(self, flex_hours):
+        from app.peak_demand import demand_flexibility_score
+        result = demand_flexibility_score([2.0] * 24, flexible_hours=flex_hours)
+        assert 0.0 <= result["flexibility_ratio"] <= 1.0
