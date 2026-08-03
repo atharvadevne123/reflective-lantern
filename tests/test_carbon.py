@@ -530,3 +530,37 @@ class TestCompareRegions:
             assert "region" in item
             assert "co2_kg" in item
             assert "intensity_kg_per_kwh" in item
+
+
+class TestCarbonBudgetRemaining:
+    def test_within_budget(self) -> None:
+        from app.carbon import carbon_budget_remaining
+        result = carbon_budget_remaining(1000.0, 400.0)
+        assert result["remaining_kg"] == pytest.approx(600.0)
+        assert result["on_track"] == 1.0
+
+    def test_over_budget(self) -> None:
+        from app.carbon import carbon_budget_remaining
+        result = carbon_budget_remaining(500.0, 600.0)
+        assert result["remaining_kg"] == 0.0
+        assert result["on_track"] == 0.0
+
+    def test_used_pct(self) -> None:
+        from app.carbon import carbon_budget_remaining
+        result = carbon_budget_remaining(1000.0, 500.0)
+        assert result["used_pct"] == pytest.approx(50.0)
+
+    def test_zero_budget(self) -> None:
+        from app.carbon import carbon_budget_remaining
+        result = carbon_budget_remaining(0.0, 0.0)
+        assert result["used_pct"] == 0.0
+
+    def test_negative_budget_raises(self) -> None:
+        from app.carbon import carbon_budget_remaining
+        with pytest.raises(ValueError):
+            carbon_budget_remaining(-100.0, 0.0)
+
+    def test_negative_consumed_raises(self) -> None:
+        from app.carbon import carbon_budget_remaining
+        with pytest.raises(ValueError):
+            carbon_budget_remaining(1000.0, -10.0)
