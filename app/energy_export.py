@@ -140,8 +140,48 @@ __all__ = [
     "aggregate_by_hour",
     "deduplicate_records",
     "filter_records",
+    "partition_records",
     "records_to_csv",
     "records_to_json",
     "records_to_jsonl",
+    "sort_records",
     "summarize_export",
 ]
+
+
+def sort_records(
+    records: list[dict[str, Any]],
+    key: str = "timestamp",
+    reverse: bool = False,
+) -> list[dict[str, Any]]:
+    """Return *records* sorted by *key* field.
+
+    Args:
+        records: List of record dicts to sort.
+        key: Field name to sort by (default 'timestamp').
+        reverse: Sort descending when True (default False).
+
+    Returns:
+        New sorted list (original is not mutated).
+    """
+    return sorted(records, key=lambda r: r.get(key, ""), reverse=reverse)
+
+
+def partition_records(
+    records: list[dict[str, Any]],
+    field: str,
+    value: object,
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    """Split *records* into two lists: those matching *value* and those not.
+
+    Args:
+        records: Input list of record dicts.
+        field: Field name to compare.
+        value: Value to match against.
+
+    Returns:
+        Tuple (matches, non_matches).
+    """
+    matches = [r for r in records if r.get(field) == value]
+    non_matches = [r for r in records if r.get(field) != value]
+    return matches, non_matches
