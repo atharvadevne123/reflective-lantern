@@ -295,3 +295,39 @@ def test_benchmark_eui_known_type(building_type: str) -> None:
     assert isinstance(result, dict)
     assert "benchmark_eui" in result
     assert result["benchmark_eui"] > 0
+
+
+class TestEnergyIntensityRatio:
+    def test_below_reference(self) -> None:
+        from app.benchmarks import energy_intensity_ratio
+        assert energy_intensity_ratio(80.0, 100.0) == pytest.approx(0.8, rel=1e-4)
+
+    def test_above_reference(self) -> None:
+        from app.benchmarks import energy_intensity_ratio
+        assert energy_intensity_ratio(120.0, 100.0) == pytest.approx(1.2, rel=1e-4)
+
+    def test_zero_reference_returns_zero(self) -> None:
+        from app.benchmarks import energy_intensity_ratio
+        assert energy_intensity_ratio(100.0, 0.0) == 0.0
+
+    def test_equal_returns_one(self) -> None:
+        from app.benchmarks import energy_intensity_ratio
+        assert energy_intensity_ratio(100.0, 100.0) == pytest.approx(1.0)
+
+
+class TestEfficiencyGap:
+    def test_positive_gap(self) -> None:
+        from app.benchmarks import efficiency_gap
+        assert efficiency_gap(120.0, 100.0) == pytest.approx(20.0)
+
+    def test_negative_gap(self) -> None:
+        from app.benchmarks import efficiency_gap
+        assert efficiency_gap(80.0, 100.0) == pytest.approx(-20.0)
+
+    def test_zero_target(self) -> None:
+        from app.benchmarks import efficiency_gap
+        assert efficiency_gap(100.0, 0.0) == 0.0
+
+    def test_no_gap(self) -> None:
+        from app.benchmarks import efficiency_gap
+        assert efficiency_gap(100.0, 100.0) == pytest.approx(0.0)
