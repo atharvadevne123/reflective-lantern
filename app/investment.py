@@ -240,8 +240,10 @@ __all__ = [
     "InvestmentAnalysis",
     "compute_investment_analysis",
     "discounted_cash_flow",
+    "gross_rent_multiplier",
     "investment_score_label",
     "irr_estimate",
+    "loan_to_value_ratio",
     "margin_of_safety",
     "mortgage_payment",
     "payback_period",
@@ -386,3 +388,47 @@ def irr_estimate(
         else:
             lo = mid
     return round((lo + hi) / 2, 6)
+
+
+def loan_to_value_ratio(
+    loan_amount: float,
+    property_value: float,
+) -> float:
+    """Compute the Loan-to-Value (LTV) ratio.
+
+    LTV = loan_amount / property_value * 100.
+    A ratio > 80% typically requires private mortgage insurance (PMI).
+
+    Args:
+        loan_amount: Principal loan amount in USD.
+        property_value: Current market value of the property in USD.
+
+    Returns:
+        LTV ratio as a percentage, rounded to 2 decimal places.
+        Returns 0.0 if property_value is zero.
+    """
+    if property_value <= 0:
+        return 0.0
+    return round(loan_amount / property_value * 100.0, 2)
+
+
+def gross_rent_multiplier(
+    property_price: float,
+    annual_gross_rent: float,
+) -> float:
+    """Compute the Gross Rent Multiplier (GRM) for a rental property.
+
+    GRM = property_price / annual_gross_rent.
+    A lower GRM indicates better cash-flow relative to price.
+
+    Args:
+        property_price: Market price of the property in USD.
+        annual_gross_rent: Annual gross rental income in USD.
+
+    Returns:
+        GRM (unit-less ratio), rounded to 2 decimal places.
+        Returns float('inf') when annual_gross_rent is zero.
+    """
+    if annual_gross_rent <= 0:
+        return float("inf")
+    return round(property_price / annual_gross_rent, 2)
