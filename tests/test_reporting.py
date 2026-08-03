@@ -595,3 +595,45 @@ class TestBenchmarkVsPortfolio:
 
         result = benchmark_vs_portfolio(kwh, portfolio)
         assert result["is_above_median"] == expected_above
+
+
+class TestKwhToWh:
+    def test_basic(self) -> None:
+        from app.reporting import kwh_to_wh
+        assert kwh_to_wh(1.0) == pytest.approx(1000.0)
+
+    def test_zero(self) -> None:
+        from app.reporting import kwh_to_wh
+        assert kwh_to_wh(0.0) == 0.0
+
+    def test_fractional(self) -> None:
+        from app.reporting import kwh_to_wh
+        assert kwh_to_wh(0.5) == pytest.approx(500.0)
+
+
+class TestWhToKwh:
+    def test_basic(self) -> None:
+        from app.reporting import wh_to_kwh
+        assert wh_to_kwh(1000.0) == pytest.approx(1.0)
+
+    def test_zero(self) -> None:
+        from app.reporting import wh_to_kwh
+        assert wh_to_kwh(0.0) == 0.0
+
+
+class TestTariffCost:
+    def test_basic(self) -> None:
+        from app.reporting import tariff_cost
+        assert tariff_cost(10.0, 0.15) == pytest.approx(1.5)
+
+    def test_zero_kwh(self) -> None:
+        from app.reporting import tariff_cost
+        assert tariff_cost(0.0, 0.15) == 0.0
+
+    def test_negative_kwh(self) -> None:
+        from app.reporting import tariff_cost
+        assert tariff_cost(-5.0, 0.15) == 0.0
+
+    def test_free_tariff(self) -> None:
+        from app.reporting import tariff_cost
+        assert tariff_cost(100.0, 0.0) == 0.0
