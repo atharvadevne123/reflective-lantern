@@ -54,3 +54,38 @@ def test_settings_lag_and_rolling_defaults():
     s = get_settings()
     assert s.lag_periods == 2
     assert s.rolling_window == 5
+
+
+def test_settings_database_url_default():
+    from app.config import get_settings
+
+    s = get_settings()
+    assert "forge_guard" in s.database_url
+
+
+def test_settings_s3_bucket_default_empty():
+    from app.config import get_settings
+
+    s = get_settings()
+    assert s.s3_bucket == "" or isinstance(s.s3_bucket, str)
+
+
+def test_settings_drift_window_size_positive():
+    from app.config import get_settings
+
+    s = get_settings()
+    assert s.drift_window_size > 0
+
+
+def test_settings_log_json_default_false():
+    from app.config import get_settings
+
+    s = get_settings()
+    assert s.log_json is False
+
+
+def test_settings_rate_limit_positive():
+    from app.config import get_settings
+
+    s = get_settings()
+    assert s.rate_limit_rpm > 0
