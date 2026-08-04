@@ -209,3 +209,30 @@ def test_engineer_single_no_nan_on_extreme_values():
     }
     result = engineer_single(row)
     assert not np.isnan(result).any()
+
+
+def test_lag_transformer_is_idempotent_on_fit(small_df):
+    t = LagFeatureTransformer(lags=1)
+    t.fit(small_df)
+    out1 = t.transform(small_df)
+    t.fit(small_df)
+    out2 = t.transform(small_df)
+    pd.testing.assert_frame_equal(out1, out2)
+
+
+def test_rolling_stats_no_nan_in_std(small_df):
+    t = RollingStatsTransformer(window=3)
+    out = t.fit_transform(small_df)
+    assert not out["temperature_roll_std"].isna().any()
+
+
+def test_generate_synthetic_data_has_both_classes():
+    df = generate_synthetic_data(n_samples=1000, seed=0)
+    assert df["defect"].nunique() == 2
+
+
+def test_pipeline_transform_without_refit_raises_or_works(small_df):
+    pipe = build_feature_pipeline()
+    pipe.fit(small_df)
+    out = pipe.transform(small_df)
+    assert isinstance(out, np.ndarray)
