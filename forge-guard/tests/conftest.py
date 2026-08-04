@@ -98,3 +98,38 @@ def feature_arrays(synthetic_df: pd.DataFrame):
     X = pipe.fit_transform(synthetic_df[feat_cols])
     y = synthetic_df["defect"].values
     return X, y
+
+
+@pytest.fixture
+def low_risk_payload() -> dict:
+    """Sensor reading expected to produce a low defect probability."""
+    return {
+        "temperature": 70.0,
+        "pressure": 48.0,
+        "vibration": 1.0,
+        "cycle_time": 32.0,
+        "tool_wear": 5.0,
+        "power_consumption": 85.0,
+        "humidity": 40.0,
+    }
+
+
+@pytest.fixture
+def boundary_payload() -> dict:
+    """Sensor reading at the boundary of valid ranges."""
+    return {
+        "temperature": -50.0,
+        "pressure": 0.0,
+        "vibration": 0.0,
+        "cycle_time": 0.1,
+        "tool_wear": 0.0,
+        "power_consumption": 0.0,
+        "humidity": 0.0,
+    }
+
+
+@pytest.fixture
+def large_synthetic_df() -> pd.DataFrame:
+    from app.features import generate_synthetic_data
+
+    return generate_synthetic_data(n_samples=1000, seed=99)
