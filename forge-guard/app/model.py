@@ -18,6 +18,10 @@ from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 from xgboost import XGBClassifier
 
+# sklearn >=1.9 VotingClassifier requires _estimator_type set at the class level
+if not hasattr(XGBClassifier, "_estimator_type") or XGBClassifier._estimator_type != "classifier":
+    XGBClassifier._estimator_type = "classifier"  # type: ignore[attr-defined]
+
 from app.features import generate_synthetic_data
 
 logger = logging.getLogger(__name__)
@@ -39,7 +43,6 @@ def _build_ensemble() -> VotingClassifier:
         random_state=42,
         n_jobs=-1,
     )
-    xgb._estimator_type = "classifier"  # noqa: SLF001 — required for sklearn >=1.9 VotingClassifier
     rf = RandomForestClassifier(
         n_estimators=150,
         max_depth=7,
