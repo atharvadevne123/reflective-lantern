@@ -131,3 +131,39 @@ def test_train_on_varying_sample_sizes(n_samples):
     y = df["defect"].values
     pipe, metrics = train_model(X, y, cv_folds=2)
     assert metrics["n_samples"] == n_samples
+
+
+def test_feature_importance_values_sum_near_one(feature_arrays, tmp_path, monkeypatch):
+    from app import model as m
+
+    monkeypatch.setattr(m, "MODEL_PATH", tmp_path / "model.joblib")
+    monkeypatch.setattr(m, "METRICS_PATH", tmp_path / "metrics.json")
+    X, y = feature_arrays
+    pipe, _ = m.train_model(X, y, cv_folds=2)
+    importances = m.feature_importance(pipe)
+    total = sum(importances.values())
+    assert 0.9 <= total <= 1.1
+
+
+def test_load_model_raises_on_corrupt_file(tmp_path, monkeypatch):
+    from app import model as m
+
+    bad_file = tmp_path / "bad.joblib"
+    bad_file.write_bytes(b"not a joblib file")
+    monkeypatch.setattr(m, "MODEL_PATH", bad_file)
+    monkeypatch.setattr(m, "METRICS_PATH", tmp_path / "metrics.json")
+    with pytest.raises(RuntimeError):
+        m.load_model()
+
+
+def test_predict_batch_consistency(feature_arrays, tmp_path, monkeypatch):
+    from app import model as m
+
+    monkeypatch.setattr(m, "MODEL_PATH", tmp_path / "model.joblib")
+    monkeypatch.setattr(m, "METRICS_PATH", tmp_path / "metrics.json")
+    X, y = feature_arrays
+    pipe, _ = m.train_model(X, y, cv_folds=2)
+    label1, prob1 = m.predict(pipe, X[:1])
+    label2, prob2 = m.predict(pipe, X[:1])
+    assert label1 == label2
+    assert prob1 == prob2
