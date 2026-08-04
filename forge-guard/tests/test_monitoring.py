@@ -150,3 +150,55 @@ def test_log_prediction_various_probabilities(db_session, prob):
         db=db_session, sensor_data=sensor, prediction=int(prob > 0.5), defect_probability=prob
     )
     assert record.defect_probability == prob
+
+
+def test_compute_zscore_outliers_no_outliers():
+    from app.monitoring import compute_zscore_outliers
+
+    values = [10.0] * 20  # identical values — no outliers
+    result = compute_zscore_outliers(values)
+    assert result["outlier_count"] == 0
+
+
+def test_compute_zscore_outliers_detects_spike():
+    from app.monitoring import compute_zscore_outliers
+
+    values = [10.0] * 19 + [1000.0]  # one extreme outlier
+    result = compute_zscore_outliers(values)
+    assert result["outlier_count"] >= 1
+    assert 19 in result["outlier_indices"]
+
+
+def test_compute_zscore_outliers_insufficient_data():
+    from app.monitoring import compute_zscore_outliers
+
+    result = compute_zscore_outliers([1.0, 2.0])
+    assert result["outlier_count"] == 0
+    assert result["mean"] is None
+
+
+def test_model_prediction_summary_empty(db_session):
+    from app.monitoring import model_prediction_summary
+
+    result = model_prediction_summary(db_session, "99.0.0")
+    assert result["total"] == 0
+    assert result["model_version"] == "99.0.0"
+
+
+def test_model_prediction_summary_with_data(db_session):
+    from app.monitoring import model_prediction_summary
+
+    sensor = {
+        "temperature": 75.0, "pressure": 50.0, "vibration": 2.0,
+        "cycle_time": 30.0, "tool_wear": 10.0, "power_consumption": 100.0, "humidity": 45.0,
+    }
+    for _ in range(3):
+        log_prediction(db=db_session, sensor_data=sensor, prediction=0, defect_probability=0.1,
+                       model_version="test-v1")
+    log_prediction(db=db_session, sensor_data=sensor, prediction=1, defect_probability=0.9,
+                   model_version="test-v1")
+
+    result = model_prediction_summary(db_session, "test-v1")
+    assert result["total"] == 4
+    assert result["defects"] == 1
+    assert abs(result["defect_rate"] - 0.25) < 0.01
