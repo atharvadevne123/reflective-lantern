@@ -325,8 +325,7 @@ async def anomaly_check(
 @app.get(
     "/api/v1/export/predictions",
     tags=["ops"],
-    summary="Export recent prediction logs as CSV",
-    response_class=None,
+    summary="Export recent prediction logs as JSON summary",
 )
 async def export_predictions(
     db: Annotated[Session, Depends(get_db)],

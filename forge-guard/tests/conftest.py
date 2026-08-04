@@ -35,14 +35,29 @@ def setup_test_db():
 
 @pytest.fixture
 def db_session():
-    """Return a fresh database session per test, rolling back after."""
-    connection = engine.connect()
-    transaction = connection.begin()
-    session = TestSessionLocal(bind=connection)
-    yield session
-    session.close()
-    transaction.rollback()
-    connection.close()
+    """Return a fresh database session per test, truncating all tables after.
+
+    Creates a new session, yields it, then deletes all rows from shared tables
+    and commits the cleanup so the next test starts with a clean slate.
+    """
+    from app.database import DriftReport, PredictionLog, RetrainingRun
+
+    session = TestSessionLocal()
+    try:
+        yield session
+    finally:
+        session.close()
+        # Clean up between tests so state doesn't leak
+        cleanup = TestSessionLocal()
+        try:
+            cleanup.query(PredictionLog).delete()
+            cleanup.query(DriftReport).delete()
+            cleanup.query(RetrainingRun).delete()
+            cleanup.commit()
+        except Exception:
+            cleanup.rollback()
+        finally:
+            cleanup.close()
 
 
 @pytest.fixture(scope="module")

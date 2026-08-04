@@ -18,9 +18,19 @@ from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 from xgboost import XGBClassifier
 
-# sklearn >=1.9 VotingClassifier requires _estimator_type set at the class level
-if not hasattr(XGBClassifier, "_estimator_type") or XGBClassifier._estimator_type != "classifier":
-    XGBClassifier._estimator_type = "classifier"  # type: ignore[attr-defined]
+# sklearn >=1.9 uses get_tags().__sklearn_tags__().estimator_type to validate classifiers.
+# XGBClassifier 2.1.x doesn't set estimator_type in its __sklearn_tags__, causing
+# VotingClassifier to reject it.  Patch at class level so clones inherit the fix.
+_orig_xgb_tags = XGBClassifier.__sklearn_tags__  # type: ignore[attr-defined]
+
+
+def _patched_xgb_tags(self):  # type: ignore[no-untyped-def]
+    tags = _orig_xgb_tags(self)
+    tags.estimator_type = "classifier"
+    return tags
+
+
+XGBClassifier.__sklearn_tags__ = _patched_xgb_tags  # type: ignore[method-assign]
 
 from app.features import generate_synthetic_data
 
@@ -71,7 +81,9 @@ def train_model(
     )
 
     cv = StratifiedKFold(n_splits=cv_folds, shuffle=True, random_state=42)
-    cv_scores = cross_val_score(full_pipeline, X, y, cv=cv, scoring="roc_auc", n_jobs=-1)
+    # n_jobs=1: parallelised cross-val spawns subprocesses that miss the
+    # XGBClassifier._estimator_type patch for sklearn >=1.9 compatibility.
+    cv_scores = cross_val_score(full_pipeline, X, y, cv=cv, scoring="roc_auc", n_jobs=1)
     logger.info("CV AUC: %.4f ± %.4f", cv_scores.mean(), cv_scores.std())
 
     full_pipeline.fit(X, y)

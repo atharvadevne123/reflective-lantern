@@ -66,6 +66,7 @@ def test_prediction_summary_json_empty(db_session):
     assert result["total"] == 0
     assert result["defect_rate"] == 0.0
     assert "exported_at" in result
+    assert "defect_count" in result
 
 
 def test_prediction_summary_json_with_data(db_session):
@@ -101,7 +102,7 @@ def test_prediction_summary_json_keys(db_session):
     from app.reporting import prediction_summary_json
 
     result = prediction_summary_json(db_session)
-    for key in ("total", "defects", "defect_rate", "exported_at"):
+    for key in ("total", "defect_count", "defect_rate", "exported_at"):
         assert key in result
 
 
