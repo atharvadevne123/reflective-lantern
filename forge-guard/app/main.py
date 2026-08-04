@@ -278,3 +278,40 @@ async def trigger_retrain() -> dict[str, str]:
     thread.start()
     logger.info("Retraining pipeline triggered via API.")
     return {"status": "accepted", "message": "Retraining started in background."}
+
+
+@app.get(
+    "/api/v1/version",
+    tags=["ops"],
+    summary="Return service version information",
+)
+async def version() -> dict[str, str]:
+    """Return the API and model version for observability and deployment tracking."""
+    import platform
+
+    return {
+        "api_version": "1.0.0",
+        "model_version": MODEL_VERSION,
+        "python_version": platform.python_version(),
+        "service": "forge-guard",
+    }
+
+
+@app.get(
+    "/api/v1/anomaly",
+    tags=["inference"],
+    summary="Check if a sensor reading is anomalous using FAISS nearest-neighbour",
+)
+async def anomaly_check(
+    payload: SensorInput,
+) -> dict:
+    """Compare a sensor reading against healthy-production reference vectors.
+
+    Returns nearest-neighbour L2 distance and anomaly flag.
+    """
+    from app.features import engineer_single as _eng
+    from app.faiss_index import is_anomalous, load_index
+
+    load_index()
+    features = _eng(payload.model_dump())
+    return is_anomalous(features)
