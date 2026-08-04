@@ -84,3 +84,45 @@ def test_export_predictions_csv_window(db_session, hours):
     _add_predictions(db_session, 2)
     result = export_predictions_csv(db_session, hours=hours)
     assert result  # should always have header
+
+
+def test_export_predictions_csv_has_sensor_columns(db_session):
+    from app.reporting import export_predictions_csv
+
+    _add_predictions(db_session, 1)
+    result = export_predictions_csv(db_session)
+    reader = csv.reader(io.StringIO(result))
+    header = next(reader)
+    assert "temperature" in header
+    assert "vibration" in header
+
+
+def test_prediction_summary_json_keys(db_session):
+    from app.reporting import prediction_summary_json
+
+    result = prediction_summary_json(db_session)
+    for key in ("total", "defects", "defect_rate", "exported_at"):
+        assert key in result
+
+
+def test_export_drift_with_data(db_session):
+    from app.database import DriftReport
+    from app.reporting import export_drift_reports_json
+
+    db_session.add(DriftReport(
+        feature="pressure", ks_statistic=0.35, p_value=0.02,
+        drift_detected=True, window_size=300, model_version="1.0.0",
+    ))
+    db_session.commit()
+    result = export_drift_reports_json(db_session)
+    assert len(result) >= 1
+    assert result[0]["feature"] == "pressure"
+
+
+def test_export_predictions_csv_respects_limit(db_session):
+    from app.reporting import export_predictions_csv
+
+    _add_predictions(db_session, 5)
+    result = export_predictions_csv(db_session, limit=2)
+    lines = result.strip().splitlines()
+    assert len(lines) <= 3  # header + up to 2 rows
