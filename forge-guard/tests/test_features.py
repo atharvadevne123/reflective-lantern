@@ -144,3 +144,68 @@ def test_synthetic_data_reproducible(seed):
     a = generate_synthetic_data(n_samples=50, seed=seed)
     b = generate_synthetic_data(n_samples=50, seed=seed)
     pd.testing.assert_frame_equal(a, b)
+
+
+@pytest.mark.parametrize("window", [3, 5, 10])
+def test_rolling_window_parametrized(small_df, window):
+    t = RollingStatsTransformer(window=window)
+    out = t.fit_transform(small_df)
+    assert "temperature_roll_mean" in out.columns
+    assert not out["temperature_roll_mean"].isna().any()
+
+
+def test_engineer_single_all_sensors_present():
+    row = {
+        "temperature": 75.0,
+        "pressure": 50.0,
+        "vibration": 2.1,
+        "cycle_time": 28.0,
+        "tool_wear": 15.0,
+        "power_consumption": 98.0,
+        "humidity": 45.0,
+    }
+    result = engineer_single(row)
+    assert result.shape[0] == 1
+    assert result.shape[1] >= 7
+
+
+@pytest.mark.parametrize(
+    "n_samples", [50, 200, 500]
+)
+def test_synthetic_data_various_sizes(n_samples):
+    df = generate_synthetic_data(n_samples=n_samples, seed=7)
+    assert len(df) == n_samples
+    assert df["defect"].isin([0, 1]).all()
+
+
+def test_polynomial_transformer_values_correct(small_df):
+    t = PolynomialSensorTransformer()
+    out = t.fit_transform(small_df)
+    expected = small_df["vibration"] ** 2
+    pd.testing.assert_series_equal(
+        out["vibration_sq"].reset_index(drop=True),
+        expected.reset_index(drop=True),
+        check_names=False,
+    )
+
+
+def test_pipeline_fit_and_transform_shape_consistent(small_df):
+    pipe = build_feature_pipeline()
+    X_fit = pipe.fit_transform(small_df)
+    # transform again should give same shape
+    X_t = pipe.transform(small_df)
+    assert X_fit.shape == X_t.shape
+
+
+def test_engineer_single_no_nan_on_extreme_values():
+    row = {
+        "temperature": 299.9,
+        "pressure": 199.9,
+        "vibration": 49.9,
+        "cycle_time": 599.9,
+        "tool_wear": 499.9,
+        "power_consumption": 499.9,
+        "humidity": 99.9,
+    }
+    result = engineer_single(row)
+    assert not np.isnan(result).any()
