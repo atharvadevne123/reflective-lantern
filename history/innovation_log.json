@@ -542,5 +542,45 @@
       "Docker",
       "GitHub Actions CI"
     ]
+  },
+  {
+    "date": "2026-08-03",
+    "project": "Care-Compass",
+    "description": "Clinical ML API predicting 30-day hospital readmission risk from patient vitals, diagnoses, lab trends and admission history using an XGBoost pipeline with KS-test and PSI drift monitoring, automated retraining, and PostgreSQL-backed prediction logging.",
+    "inspired_by": "MLOps demand for production-grade clinical decision support and readmission-penalty reduction programmes",
+    "chosen_keywords": "hospital readmission patient clinical care discharge",
+    "repo_url": "https://github.com/atharvadevne123/Care-Compass",
+    "published": false,
+    "publish_blocked_reason": "Session gateway refused repository creation (403 on POST /user/repos): this session is bound to the reflective-lantern repository. Outbound SMTP is also unavailable (raw TCP to port 465 unsupported by the egress proxy), so the email report was not sent.",
+    "artifacts": [
+      "pending/Care-Compass-2026-08-03.bundle",
+      "pending/Care-Compass-2026-08-03.patch",
+      "pending/Care-Compass_report_2026-08-03.pdf",
+      ".github/workflows/bootstrap-care-compass.yml"
+    ],
+    "file_count": 39,
+    "test_count": 75,
+    "tests_passed": true,
+    "commits": 66,
+    "cv_auc_roc": 0.777,
+    "coverage_pct": 100,
+    "archetype": "Prediction API + Drift Detection + Automated Retraining",
+    "stack": [
+      "Python 3.11",
+      "FastAPI (6 versioned endpoints under /api/v1)",
+      "XGBoost",
+      "sklearn Pipeline (26 features)",
+      "KS-test + PSI drift monitoring",
+      "SQLAlchemy",
+      "Alembic migrations",
+      "Docker + PostgreSQL",
+      "pytest (75 tests)",
+      "GitHub Actions CI (ruff + pytest, Python 3.10-3.12)",
+      "5-fold stratified CV AUC-ROC",
+      "Structured JSON logging with correlation IDs",
+      "Rate limiting middleware",
+      "Automated retraining pipeline (Airflow-compatible)"
+    ],
+    "publish_route": "Run the 'Publish Care-Compass Repo' workflow from the Actions tab with a repo-scoped PAT. It restores all 66 commits and the v1.0.0 tag from the bundle, creates the repo, pushes, releases, and uploads the wheel."
   }
 ]
