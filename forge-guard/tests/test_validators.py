@@ -96,3 +96,39 @@ def test_sanitize_handles_non_numeric():
 
     result = sanitize_sensor_reading({**VALID, "temperature": "bad"})
     assert result["temperature"] == 75.0
+
+
+def test_validate_returns_empty_list_for_boundary_low():
+    from app.validators import validate_sensor_reading
+
+    reading = {**VALID, "temperature": -50.0, "pressure": 0.0, "humidity": 0.0}
+    errors = validate_sensor_reading(reading)
+    assert errors == []
+
+
+def test_validate_returns_errors_for_all_bad_fields():
+    from app.validators import validate_sensor_reading
+
+    bad = {k: -9999.0 for k in VALID}
+    errors = validate_sensor_reading(bad)
+    assert len(errors) >= len(VALID)
+
+
+def test_is_valid_false_for_nan():
+    from app.validators import is_valid_sensor_reading
+
+    assert is_valid_sensor_reading({**VALID, "vibration": math.nan}) is False
+
+
+def test_sanitize_nan_replaced_with_median():
+    from app.validators import sanitize_sensor_reading
+
+    result = sanitize_sensor_reading({**VALID, "temperature": math.nan})
+    assert math.isfinite(result["temperature"])
+
+
+def test_sanitize_inf_clipped():
+    from app.validators import sanitize_sensor_reading
+
+    result = sanitize_sensor_reading({**VALID, "tool_wear": math.inf})
+    assert math.isfinite(result["tool_wear"])
