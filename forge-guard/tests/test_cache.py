@@ -74,3 +74,40 @@ def test_cache_max_size_eviction():
         reading = {**SAMPLE, "temperature": float(i * 10)}
         c.set(reading, i)
     assert c.size() <= 3
+
+
+def test_cache_thread_safety():
+    import threading
+
+    from app.cache import TTLCache
+
+    c = TTLCache(ttl_seconds=60, max_size=1000)
+    errors = []
+
+    def writer(idx: int) -> None:
+        try:
+            reading = {**SAMPLE, "temperature": float(idx)}
+            c.set(reading, idx)
+        except Exception as e:
+            errors.append(e)
+
+    threads = [threading.Thread(target=writer, args=(i,)) for i in range(50)]
+    for t in threads:
+        t.start()
+    for t in threads:
+        t.join()
+
+    assert not errors
+    assert c.size() <= 50
+
+
+def test_cache_overwrite_same_key(cache):
+    cache.set(SAMPLE, (0, 0.1))
+    cache.set(SAMPLE, (1, 0.9))
+    assert cache.get(SAMPLE) == (1, 0.9)
+
+
+def test_cache_purge_returns_zero_when_none_expired(cache):
+    cache.set(SAMPLE, (0, 0.5))
+    removed = cache.purge()
+    assert removed == 0
