@@ -106,3 +106,33 @@ def test_configure_logging_clears_previous_handlers():
     configure_logging(level="WARNING", json_output=False)
     second_count = len(logging.getLogger().handlers)
     assert second_count == first_count  # No duplicate handlers
+
+
+def test_json_formatter_model_version_field():
+    formatter = JsonFormatter()
+    record = logging.LogRecord(
+        name="test", level=logging.INFO, pathname="x.py", lineno=1,
+        msg="model log", args=(), exc_info=None,
+    )
+    record.model_version = "1.1.0"
+    payload = json.loads(formatter.format(record))
+    assert payload.get("model_version") == "1.1.0"
+
+
+def test_configure_logging_json_output_sets_formatter():
+    configure_logging(level="INFO", json_output=True)
+    handler = logging.getLogger().handlers[0]
+    assert isinstance(handler.formatter, JsonFormatter)
+
+
+def test_json_formatter_message_formatting():
+    formatter = JsonFormatter()
+    record = logging.LogRecord(
+        name="test", level=logging.INFO, pathname="x.py", lineno=1,
+        msg="value is %d and %.2f",
+        args=(42, 3.14),
+        exc_info=None,
+    )
+    payload = json.loads(formatter.format(record))
+    assert "42" in payload["message"]
+    assert "3.14" in payload["message"]
