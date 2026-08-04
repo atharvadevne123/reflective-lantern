@@ -202,3 +202,37 @@ def test_model_prediction_summary_with_data(db_session):
     assert result["total"] == 4
     assert result["defects"] == 1
     assert abs(result["defect_rate"] - 0.25) < 0.01
+
+
+def test_compute_drift_returns_rounded_values():
+    import numpy as np
+
+    rng = np.random.default_rng(10)
+    ref = list(rng.normal(50, 5, 100))
+    cur = list(rng.normal(55, 5, 100))
+    result = compute_drift(ref, cur)
+    assert isinstance(result["ks_statistic"], float)
+    assert isinstance(result["p_value"], float)
+    assert isinstance(result["drift_detected"], bool)
+
+
+def test_compute_zscore_outliers_custom_threshold():
+    from app.monitoring import compute_zscore_outliers
+
+    values = [10.0] * 18 + [40.0, 50.0]
+    result_tight = compute_zscore_outliers(values, threshold=1.0)
+    result_loose = compute_zscore_outliers(values, threshold=5.0)
+    assert result_tight["outlier_count"] >= result_loose["outlier_count"]
+
+
+def test_defect_rate_all_defects(db_session):
+    from app.monitoring import defect_rate
+
+    sensor = {
+        "temperature": 92.0, "pressure": 62.0, "vibration": 8.0,
+        "cycle_time": 28.0, "tool_wear": 60.0, "power_consumption": 140.0, "humidity": 70.0,
+    }
+    for _ in range(5):
+        log_prediction(db=db_session, sensor_data=sensor, prediction=1, defect_probability=0.95)
+    result = defect_rate(db_session)
+    assert result["defect_rate"] == 1.0
