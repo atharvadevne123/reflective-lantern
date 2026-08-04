@@ -81,6 +81,10 @@ def test_legacy_predict_alias(client: TestClient, sample_sensor_payload: dict) -
         ("humidity", 150),  # > 100
         ("cycle_time", 0),  # < 0.1
         ("pressure", -5),  # < 0
+        ("temperature", -100),  # < -50
+        ("vibration", -1),  # < 0
+        ("tool_wear", -10),  # < 0
+        ("power_consumption", -1),  # < 0
     ],
 )
 def test_field_validation(
@@ -89,3 +93,55 @@ def test_field_validation(
     payload = {**sample_sensor_payload, field: bad_value}
     resp = client.post("/api/v1/predict", json=payload)
     assert resp.status_code == 422
+
+
+def test_version_endpoint_returns_expected_keys(client: TestClient) -> None:
+    resp = client.get("/api/v1/version")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert "api_version" in data
+    assert "model_version" in data
+    assert "python_version" in data
+    assert "service" in data
+    assert data["service"] == "forge-guard"
+
+
+def test_feature_importance_returns_dict(client: TestClient) -> None:
+    resp = client.get("/api/v1/feature-importance")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert isinstance(data, dict)
+    assert len(data) > 0
+    for v in data.values():
+        assert 0.0 <= v <= 1.0
+
+
+def test_retrain_endpoint_accepted(client: TestClient) -> None:
+    resp = client.post("/api/v1/retrain")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data.get("status") == "accepted"
+
+
+def test_legacy_metrics_alias(client: TestClient) -> None:
+    resp = client.get("/metrics")
+    assert resp.status_code == 200
+    assert "model_metrics" in resp.json()
+
+
+@pytest.mark.parametrize("content_type", ["application/json"])
+def test_predict_content_type(
+    client: TestClient, sample_sensor_payload: dict, content_type: str
+) -> None:
+    resp = client.post(
+        "/api/v1/predict",
+        json=sample_sensor_payload,
+        headers={"Content-Type": content_type},
+    )
+    assert resp.status_code == 200
+
+
+def test_health_model_loaded_flag(client: TestClient) -> None:
+    resp = client.get("/health")
+    data = resp.json()
+    assert isinstance(data["model_loaded"], bool)
