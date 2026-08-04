@@ -70,6 +70,11 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+from app.middleware import RequestTimingMiddleware, SecurityHeadersMiddleware  # noqa: E402
+
+app.add_middleware(RequestTimingMiddleware)
+app.add_middleware(SecurityHeadersMiddleware)
+
 _RATE_WINDOW: dict[str, list[float]] = {}
 RATE_LIMIT = int(os.getenv("RATE_LIMIT_RPM", "60"))
 
@@ -309,8 +314,8 @@ async def anomaly_check(
 
     Returns nearest-neighbour L2 distance and anomaly flag.
     """
-    from app.features import engineer_single as _eng
     from app.faiss_index import is_anomalous, load_index
+    from app.features import engineer_single as _eng
 
     load_index()
     features = _eng(payload.model_dump())
