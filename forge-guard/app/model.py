@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import logging
 import os
+from functools import lru_cache
 from pathlib import Path
 from typing import Any
 
@@ -141,11 +142,18 @@ def predict(
     return label, round(float(prob), 4)
 
 
+@lru_cache(maxsize=1)
+def _read_metrics_cached(path_str: str) -> dict[str, Any]:
+    """Read and cache metrics JSON from disk. Cache is invalidated on path change."""
+    path = Path(path_str)
+    if path.exists():
+        return json.loads(path.read_text())
+    return {}
+
+
 def get_metrics() -> dict[str, Any]:
     """Return persisted training metrics or empty dict if none exist."""
-    if METRICS_PATH.exists():
-        return json.loads(METRICS_PATH.read_text())
-    return {}
+    return _read_metrics_cached(str(METRICS_PATH))
 
 
 def feature_importance(model: Pipeline) -> dict[str, float]:
