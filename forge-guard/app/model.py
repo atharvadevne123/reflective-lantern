@@ -39,6 +39,7 @@ def _build_ensemble() -> VotingClassifier:
         random_state=42,
         n_jobs=-1,
     )
+    xgb._estimator_type = "classifier"  # noqa: SLF001 — required for sklearn >=1.9 VotingClassifier
     rf = RandomForestClassifier(
         n_estimators=150,
         max_depth=7,
