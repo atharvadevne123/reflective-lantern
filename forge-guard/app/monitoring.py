@@ -154,3 +154,60 @@ def defect_rate(db: Session, hours: int = 24) -> dict[str, Any]:
         "defects": defects,
         "defect_rate": round(defects / total, 4),
     }
+
+
+def compute_zscore_outliers(
+    values: list[float],
+    threshold: float = 3.0,
+) -> dict[str, Any]:
+    """Detect outliers in *values* using the Z-score method.
+
+    Returns the count of outliers, their indices, and descriptive stats.
+    A Z-score above *threshold* (default 3σ) is flagged as an outlier.
+    Returns empty result when fewer than 3 values are provided.
+    """
+    n = len(values)
+    if n < 3:
+        return {"outlier_count": 0, "outlier_indices": [], "mean": None, "std": None}
+
+    mean = sum(values) / n
+    variance = sum((v - mean) ** 2 for v in values) / n
+    std = variance**0.5
+
+    if std < 1e-12:
+        return {"outlier_count": 0, "outlier_indices": [], "mean": round(mean, 4), "std": 0.0}
+
+    outlier_indices = [i for i, v in enumerate(values) if abs(v - mean) / std > threshold]
+    return {
+        "outlier_count": len(outlier_indices),
+        "outlier_indices": outlier_indices,
+        "mean": round(mean, 4),
+        "std": round(std, 4),
+    }
+
+
+def model_prediction_summary(db: Session, model_version: str) -> dict[str, Any]:
+    """Return aggregate prediction statistics for a specific model version.
+
+    Useful for comparing behaviour across model versions after a rollout.
+    """
+    logs = (
+        db.query(PredictionLog)
+        .filter(PredictionLog.model_version == model_version)
+        .all()
+    )
+    if not logs:
+        return {"model_version": model_version, "total": 0}
+
+    total = len(logs)
+    defects = sum(1 for r in logs if r.prediction == 1)
+    probs = [r.defect_probability for r in logs]
+    avg_prob = sum(probs) / total
+
+    return {
+        "model_version": model_version,
+        "total": total,
+        "defects": defects,
+        "defect_rate": round(defects / total, 4),
+        "avg_defect_probability": round(avg_prob, 4),
+    }
