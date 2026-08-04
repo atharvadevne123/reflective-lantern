@@ -617,35 +617,43 @@ class TestIrrEstimate:
 class TestLoanToValueRatio:
     def test_basic(self) -> None:
         from app.investment import loan_to_value_ratio
+
         assert loan_to_value_ratio(160000, 200000) == pytest.approx(80.0)
 
     def test_full_loan(self) -> None:
         from app.investment import loan_to_value_ratio
+
         assert loan_to_value_ratio(200000, 200000) == pytest.approx(100.0)
 
     def test_zero_property_value(self) -> None:
         from app.investment import loan_to_value_ratio
+
         assert loan_to_value_ratio(100000, 0) == 0.0
 
     def test_zero_loan(self) -> None:
         from app.investment import loan_to_value_ratio
+
         assert loan_to_value_ratio(0, 200000) == pytest.approx(0.0)
 
 
 class TestGrossRentMultiplier:
     def test_basic(self) -> None:
         from app.investment import gross_rent_multiplier
+
         assert gross_rent_multiplier(200000, 20000) == pytest.approx(10.0)
 
     def test_zero_rent_returns_inf(self) -> None:
         from app.investment import gross_rent_multiplier
+
         assert gross_rent_multiplier(200000, 0) == float("inf")
 
     def test_high_rent(self) -> None:
         from app.investment import gross_rent_multiplier
+
         result = gross_rent_multiplier(100000, 50000)
         assert result == pytest.approx(2.0)
 
     def test_negative_rent_returns_inf(self) -> None:
         from app.investment import gross_rent_multiplier
+
         assert gross_rent_multiplier(200000, -1000) == float("inf")

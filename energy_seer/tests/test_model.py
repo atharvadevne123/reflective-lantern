@@ -23,7 +23,13 @@ class TestGenerateSyntheticData:
         from app.model import generate_synthetic_data
 
         X, _ = generate_synthetic_data(100)
-        required = {"consumption_kwh", "temperature_c", "humidity_pct", "hour_of_day", "day_of_week"}
+        required = {
+            "consumption_kwh",
+            "temperature_c",
+            "humidity_pct",
+            "hour_of_day",
+            "day_of_week",
+        }
         assert required.issubset(set(X.columns))
 
 

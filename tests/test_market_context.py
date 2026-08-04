@@ -598,7 +598,9 @@ class TestNeighbourhoodScore:
         from app.market_context import neighbourhood_score
 
         with pytest.raises(ValueError, match=r"sum to 1\.0"):
-            neighbourhood_score(7.0, 7.0, 7.0, weights={"school": 0.5, "transit": 0.5, "walkability": 0.5, "safety": 0.5})
+            neighbourhood_score(
+                7.0, 7.0, 7.0, weights={"school": 0.5, "transit": 0.5, "walkability": 0.5, "safety": 0.5}
+            )
 
     @pytest.mark.parametrize("school,transit,walk", [(5, 5, 5), (8, 3, 6), (10, 10, 10)])
     def test_score_within_bounds(self, school: float, transit: float, walk: float) -> None:

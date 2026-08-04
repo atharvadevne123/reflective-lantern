@@ -62,15 +62,17 @@ def generate_synthetic_data(n: int = 2000) -> tuple[pd.DataFrame, pd.Series]:
     cooling = np.where(temp > 22, (temp - 22) * 0.3, 0.0)
     heating = np.where(temp < 10, (10 - temp) * 0.2, 0.0)
     consumption = (base * weekend_factor + cooling + heating).clip(min=0.1)
-    df = pd.DataFrame({
-        "consumption_kwh": consumption,
-        "temperature_c": temp,
-        "humidity_pct": 50.0 + rng.normal(0, 10, n),
-        "hour_of_day": hours,
-        "day_of_week": days,
-        "is_holiday": (rng.random(n) < 0.03).astype(int),
-        "building_type": rng.choice(["residential", "commercial", "office"], n),
-    })
+    df = pd.DataFrame(
+        {
+            "consumption_kwh": consumption,
+            "temperature_c": temp,
+            "humidity_pct": 50.0 + rng.normal(0, 10, n),
+            "hour_of_day": hours,
+            "day_of_week": days,
+            "is_holiday": (rng.random(n) < 0.03).astype(int),
+            "building_type": rng.choice(["residential", "commercial", "office"], n),
+        }
+    )
     return df, pd.Series(consumption)
 
 

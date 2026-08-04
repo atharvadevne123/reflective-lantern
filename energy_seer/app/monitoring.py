@@ -29,7 +29,12 @@ def set_reference_distributions(data: dict[str, list[float]]) -> None:
 
 def compute_drift(reference: list[float], current: list[float]) -> dict:
     if len(reference) < 5 or len(current) < 5:
-        return {"ks_statistic": 0.0, "p_value": 1.0, "drift_detected": False, "error": "insufficient_data"}
+        return {
+            "ks_statistic": 0.0,
+            "p_value": 1.0,
+            "drift_detected": False,
+            "error": "insufficient_data",
+        }
     stat, p = ks_2samp(reference, current)
     return {
         "ks_statistic": round(float(stat), 4),

@@ -1,4 +1,5 @@
 """Generate a grid health summary report from recent monitoring data."""
+
 from __future__ import annotations
 
 from typing import Any

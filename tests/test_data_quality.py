@@ -352,6 +352,7 @@ class TestNormalizeRecord:
 class TestFieldValueCounts:
     def test_basic_counts(self) -> None:
         from app.data_quality import field_value_counts
+
         records = [{"type": "A"}, {"type": "B"}, {"type": "A"}]
         result = field_value_counts(records, "type")
         assert result["A"] == 2
@@ -359,37 +360,44 @@ class TestFieldValueCounts:
 
     def test_missing_field_counted_as_empty_string(self) -> None:
         from app.data_quality import field_value_counts
+
         records = [{"x": 1}, {"x": 1}]
         result = field_value_counts(records, "type")
         assert "" in result
 
     def test_sorted_descending(self) -> None:
         from app.data_quality import field_value_counts
+
         records = [{"k": "a"}, {"k": "b"}, {"k": "b"}, {"k": "b"}]
         keys = list(field_value_counts(records, "k").keys())
         assert keys[0] == "b"
 
     def test_empty_records(self) -> None:
         from app.data_quality import field_value_counts
+
         assert field_value_counts([], "type") == {}
 
 
 class TestNullRate:
     def test_all_null(self) -> None:
         from app.data_quality import null_rate
+
         records = [{"a": None}, {"a": None}]
         assert null_rate(records, "a") == pytest.approx(1.0)
 
     def test_none_null(self) -> None:
         from app.data_quality import null_rate
+
         records = [{"a": 1}, {"a": 2}]
         assert null_rate(records, "a") == pytest.approx(0.0)
 
     def test_partial_null(self) -> None:
         from app.data_quality import null_rate
+
         records = [{"a": 1}, {"a": None}]
         assert null_rate(records, "a") == pytest.approx(0.5)
 
     def test_empty_list(self) -> None:
         from app.data_quality import null_rate
+
         assert null_rate([], "a") == 0.0

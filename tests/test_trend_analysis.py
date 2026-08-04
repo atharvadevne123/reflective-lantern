@@ -288,6 +288,7 @@ class TestMomentumScore:
 
     def test_increasing_signal(self) -> None:
         from app.trend_analysis import momentum_score
+
         values = [1.0] * 23 + [5.0] * 7
         result = momentum_score(values, short_window=7, long_window=30)
         assert result["signal"] == "increasing"
@@ -295,6 +296,7 @@ class TestMomentumScore:
 
     def test_decreasing_signal(self) -> None:
         from app.trend_analysis import momentum_score
+
         values = [5.0] * 23 + [1.0] * 7
         result = momentum_score(values, short_window=7, long_window=30)
         assert result["signal"] == "decreasing"
@@ -302,6 +304,7 @@ class TestMomentumScore:
 
     def test_neutral_signal(self) -> None:
         from app.trend_analysis import momentum_score
+
         values = [3.0] * 30
         result = momentum_score(values, short_window=7, long_window=30)
         assert result["signal"] == "neutral"
@@ -309,6 +312,7 @@ class TestMomentumScore:
 
     def test_keys_present(self) -> None:
         from app.trend_analysis import momentum_score
+
         values = list(range(1, 31))
         result = momentum_score(values)
         for key in ("short_ma", "long_ma", "momentum", "signal"):
@@ -318,6 +322,7 @@ class TestMomentumScore:
         import pytest
 
         from app.trend_analysis import momentum_score
+
         with pytest.raises(ValueError):
             momentum_score([1.0] * 30, short_window=0)
 
@@ -325,6 +330,7 @@ class TestMomentumScore:
         import pytest
 
         from app.trend_analysis import momentum_score
+
         with pytest.raises(ValueError):
             momentum_score([1.0] * 30, short_window=10, long_window=10)
 
@@ -332,6 +338,7 @@ class TestMomentumScore:
         import pytest
 
         from app.trend_analysis import momentum_score
+
         with pytest.raises(ValueError):
             momentum_score([1.0] * 5, short_window=3, long_window=10)
 
@@ -341,22 +348,27 @@ class TestCumulativeSum:
 
     def test_basic(self) -> None:
         from app.trend_analysis import cumulative_sum
+
         assert cumulative_sum([1.0, 2.0, 3.0]) == [1.0, 3.0, 6.0]
 
     def test_empty(self) -> None:
         from app.trend_analysis import cumulative_sum
+
         assert cumulative_sum([]) == []
 
     def test_single(self) -> None:
         from app.trend_analysis import cumulative_sum
+
         assert cumulative_sum([7.5]) == [7.5]
 
     def test_negatives(self) -> None:
         from app.trend_analysis import cumulative_sum
+
         result = cumulative_sum([-1.0, -2.0, 3.0])
         assert result == [-1.0, -3.0, 0.0]
 
     def test_length_preserved(self) -> None:
         from app.trend_analysis import cumulative_sum
+
         values = list(range(1, 11))
         assert len(cumulative_sum([float(v) for v in values])) == 10

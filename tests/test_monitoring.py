@@ -267,16 +267,19 @@ def test_is_reference_window_ready_parametrized(n_samples, min_samples, expected
 class TestReferenceWindowStats:
     def setup_method(self) -> None:
         from app.monitoring import reset_reference_window
+
         reset_reference_window()
 
     def test_empty_window(self) -> None:
         from app.monitoring import reference_window_stats
+
         result = reference_window_stats()
         assert result["size"] == 0
         assert result["mean"] is None
 
     def test_populated_window(self) -> None:
         from app.monitoring import reference_window_stats, set_reference_window
+
         set_reference_window([1.0, 2.0, 3.0, 4.0, 5.0])
         result = reference_window_stats()
         assert result["size"] == 5
@@ -284,6 +287,7 @@ class TestReferenceWindowStats:
 
     def test_stats_keys(self) -> None:
         from app.monitoring import reference_window_stats, set_reference_window
+
         set_reference_window([10.0, 20.0])
         s = reference_window_stats()
         for key in ("size", "mean", "min", "max", "std"):
@@ -291,6 +295,7 @@ class TestReferenceWindowStats:
 
     def test_single_value(self) -> None:
         from app.monitoring import reference_window_stats, set_reference_window
+
         set_reference_window([42.0])
         s = reference_window_stats()
         assert s["min"] == s["max"] == pytest.approx(42.0)

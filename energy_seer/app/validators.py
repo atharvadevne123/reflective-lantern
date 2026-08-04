@@ -1,4 +1,5 @@
 """Input validation helpers for Energy-Seer API."""
+
 from __future__ import annotations
 
 
@@ -20,7 +21,9 @@ def validate_meter_id(meter_id: str) -> str:
 def validate_feature_window(values: list[float], min_length: int = 5) -> list[float]:
     """Ensure a feature window has enough data points for statistical tests."""
     if len(values) < min_length:
-        raise ValueError(f"Feature window must have at least {min_length} values, got {len(values)}")
+        raise ValueError(
+            f"Feature window must have at least {min_length} values, got {len(values)}"
+        )
     return values
 
 

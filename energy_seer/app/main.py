@@ -95,6 +95,7 @@ async def rate_limit_middleware(request: Request, call_next):
 
 # ── Pydantic schemas ──────────────────────────────────────────────────────────
 
+
 class EnergyReadingIn(BaseModel):
     meter_id: str = Field(..., min_length=1, max_length=64, description="Unique meter identifier")
     consumption_kwh: float = Field(..., ge=0, le=10000, description="Current consumption in kWh")
@@ -108,7 +109,16 @@ class EnergyReadingIn(BaseModel):
     @field_validator("building_type")
     @classmethod
     def validate_building_type(cls, v: str) -> str:
-        allowed = {"residential", "commercial", "industrial", "data_center", "hospital", "school", "office", "retail"}
+        allowed = {
+            "residential",
+            "commercial",
+            "industrial",
+            "data_center",
+            "hospital",
+            "school",
+            "office",
+            "retail",
+        }
         if v.lower() not in allowed:
             raise ValueError(f"building_type must be one of {allowed}")
         return v.lower()
@@ -143,6 +153,7 @@ class ForecastRequest(BaseModel):
 
 
 # ── Endpoints ─────────────────────────────────────────────────────────────────
+
 
 @app.get("/api/v1/health", tags=["System"])
 async def health() -> dict:
@@ -260,12 +271,14 @@ async def multi_step_forecast(
             step_readings.append(r_copy)
 
         preds = predict(_model_bundle, step_readings, horizon_h=1)
-        forecasts.append({
-            "step": step + 1,
-            "hour_offset": step,
-            "predictions_kwh": preds,
-            "meter_ids": [r["meter_id"] for r in step_readings],
-        })
+        forecasts.append(
+            {
+                "step": step + 1,
+                "hour_offset": step,
+                "predictions_kwh": preds,
+                "meter_ids": [r["meter_id"] for r in step_readings],
+            }
+        )
 
     return {"steps": req.steps, "forecast": forecasts}
 

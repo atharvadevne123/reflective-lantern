@@ -1,4 +1,5 @@
 """Detect demand spikes using rolling Z-score and IQR methods."""
+
 from __future__ import annotations
 
 import logging

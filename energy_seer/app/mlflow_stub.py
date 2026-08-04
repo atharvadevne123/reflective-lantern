@@ -1,4 +1,5 @@
 """MLflow experiment tracking stub — swappable for a real MLflow client."""
+
 from __future__ import annotations
 
 import logging

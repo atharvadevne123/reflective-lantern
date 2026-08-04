@@ -167,11 +167,13 @@ def test_make_anomaly_alert_severity(score, is_critical, expected_sev):
 class TestAlertSummary:
     def test_empty(self) -> None:
         from app.notifications import alert_summary
+
         result = alert_summary([])
         assert result == {"info": 0, "warning": 0, "critical": 0}
 
     def test_counts(self) -> None:
         from app.notifications import Alert, alert_summary
+
         alerts = [
             Alert("info", "i"),
             Alert("warning", "w"),
@@ -185,6 +187,7 @@ class TestAlertSummary:
 
     def test_unknown_severity_not_counted(self) -> None:
         from app.notifications import Alert, alert_summary
+
         alerts = [Alert("unknown", "u")]
         result = alert_summary(alerts)
         assert sum(result.values()) == 0
@@ -193,19 +196,23 @@ class TestAlertSummary:
 class TestHighestSeverity:
     def test_empty_returns_none(self) -> None:
         from app.notifications import highest_severity
+
         assert highest_severity([]) == "none"
 
     def test_returns_critical(self) -> None:
         from app.notifications import Alert, highest_severity
+
         alerts = [Alert("info", "i"), Alert("critical", "c")]
         assert highest_severity(alerts) == "critical"
 
     def test_returns_warning(self) -> None:
         from app.notifications import Alert, highest_severity
+
         alerts = [Alert("info", "i"), Alert("warning", "w")]
         assert highest_severity(alerts) == "warning"
 
     def test_all_info(self) -> None:
         from app.notifications import Alert, highest_severity
+
         alerts = [Alert("info", "a"), Alert("info", "b")]
         assert highest_severity(alerts) == "info"

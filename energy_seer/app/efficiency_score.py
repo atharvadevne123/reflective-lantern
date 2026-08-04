@@ -1,4 +1,5 @@
 """Building energy efficiency scoring based on consumption patterns."""
+
 from __future__ import annotations
 
 import logging
@@ -64,7 +65,10 @@ def compute_efficiency_score(
     grade = _grade(score)
     logger.debug(
         "efficiency_score: building=%s score=%.1f grade=%s ratio=%.4f",
-        btype, score, grade, ratio,
+        btype,
+        score,
+        grade,
+        ratio,
     )
     return {
         "score": round(score, 1),

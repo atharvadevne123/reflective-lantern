@@ -45,7 +45,9 @@ class RollingStatsTransformer(BaseEstimator, TransformerMixin):
         if "consumption_kwh" in df.columns:
             for w in self.windows:
                 df[f"rolling_mean_{w}h"] = df["consumption_kwh"].rolling(w, min_periods=1).mean()
-                df[f"rolling_std_{w}h"] = df["consumption_kwh"].rolling(w, min_periods=1).std().fillna(0)
+                df[f"rolling_std_{w}h"] = (
+                    df["consumption_kwh"].rolling(w, min_periods=1).std().fillna(0)
+                )
                 df[f"rolling_max_{w}h"] = df["consumption_kwh"].rolling(w, min_periods=1).max()
         return df
 
@@ -61,8 +63,12 @@ class TemporalFeatureTransformer(BaseEstimator, TransformerMixin):
         if "hour_of_day" in df.columns:
             df["hour_sin"] = np.sin(2 * np.pi * df["hour_of_day"] / 24)
             df["hour_cos"] = np.cos(2 * np.pi * df["hour_of_day"] / 24)
-            df["is_peak_morning"] = ((df["hour_of_day"] >= 7) & (df["hour_of_day"] <= 9)).astype(int)
-            df["is_peak_evening"] = ((df["hour_of_day"] >= 17) & (df["hour_of_day"] <= 21)).astype(int)
+            df["is_peak_morning"] = ((df["hour_of_day"] >= 7) & (df["hour_of_day"] <= 9)).astype(
+                int
+            )
+            df["is_peak_evening"] = ((df["hour_of_day"] >= 17) & (df["hour_of_day"] <= 21)).astype(
+                int
+            )
             df["is_offpeak"] = ((df["hour_of_day"] >= 0) & (df["hour_of_day"] <= 5)).astype(int)
         if "day_of_week" in df.columns:
             df["day_sin"] = np.sin(2 * np.pi * df["day_of_week"] / 7)
@@ -132,15 +138,17 @@ class DropRawColumnsTransformer(BaseEstimator, TransformerMixin):
 
 def build_feature_pipeline() -> Pipeline:
     """Build the 7-stage sklearn feature engineering pipeline."""
-    return Pipeline([
-        ("lag", LagFeatureTransformer()),
-        ("rolling", RollingStatsTransformer()),
-        ("temporal", TemporalFeatureTransformer()),
-        ("weather", WeatherRatioTransformer()),
-        ("building", BuildingEncoderTransformer()),
-        ("drop_raw", DropRawColumnsTransformer()),
-        ("scaler", StandardScaler()),
-    ])
+    return Pipeline(
+        [
+            ("lag", LagFeatureTransformer()),
+            ("rolling", RollingStatsTransformer()),
+            ("temporal", TemporalFeatureTransformer()),
+            ("weather", WeatherRatioTransformer()),
+            ("building", BuildingEncoderTransformer()),
+            ("drop_raw", DropRawColumnsTransformer()),
+            ("scaler", StandardScaler()),
+        ]
+    )
 
 
 def prepare_dataframe(data: list[dict]) -> pd.DataFrame:
@@ -167,20 +175,22 @@ def feature_column_names() -> list[str]:
     Returns:
         Sorted list of expected feature names after pipeline transformation.
     """
-    return sorted([
-        "lag_1h",
-        "lag_24h",
-        "rolling_mean_24h",
-        "rolling_std_24h",
-        "hour_sin",
-        "hour_cos",
-        "dow_sin",
-        "dow_cos",
-        "is_weekend",
-        "is_holiday",
-        "temp_humidity_ratio",
-        "building_type_encoded",
-    ])
+    return sorted(
+        [
+            "lag_1h",
+            "lag_24h",
+            "rolling_mean_24h",
+            "rolling_std_24h",
+            "hour_sin",
+            "hour_cos",
+            "dow_sin",
+            "dow_cos",
+            "is_weekend",
+            "is_holiday",
+            "temp_humidity_ratio",
+            "building_type_encoded",
+        ]
+    )
 
 
 def validate_dataframe_columns(df: pd.DataFrame, required: list[str] | None = None) -> list[str]:

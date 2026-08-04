@@ -324,7 +324,7 @@ def coefficient_of_variation(values: list[float]) -> float:
     if abs(mean) < 1e-12:
         raise ValueError(f"Mean is near zero ({mean:.6e}); CV is undefined")
     variance = sum((v - mean) ** 2 for v in values) / n
-    std = variance ** 0.5
+    std = variance**0.5
     if std < 1e-12:
         return 0.0
     return round(std / abs(mean) * 100.0, 4)

@@ -1,4 +1,5 @@
 """Population Stability Index (PSI) for feature distribution drift detection."""
+
 from __future__ import annotations
 
 import logging
@@ -44,7 +45,9 @@ def compute_psi(
         either sample has fewer than 5 observations.
     """
     if len(reference) < 5 or len(current) < 5:
-        logger.debug("compute_psi: insufficient data (ref=%d, cur=%d)", len(reference), len(current))
+        logger.debug(
+            "compute_psi: insufficient data (ref=%d, cur=%d)", len(reference), len(current)
+        )
         return {"psi": 0.0, "drift_level": "insufficient_data", "bins_used": 0}
 
     lo = min(min(reference), min(current))
@@ -91,9 +94,15 @@ def psi_report(
         results[feature] = compute_psi(ref, cur, bins=bins)
 
     if results:
-        feature_psi = {k: float(v["psi"]) for k, v in results.items() if isinstance(v.get("psi"), float)}  # type: ignore[arg-type]
+        feature_psi = {
+            k: float(v["psi"]) for k, v in results.items() if isinstance(v.get("psi"), float)
+        }  # type: ignore[arg-type]
         worst = max(feature_psi, key=lambda k: feature_psi[k]) if feature_psi else None
-        drifted = sum(1 for v in results.values() if v.get("drift_level") not in ("stable", "insufficient_data"))
+        drifted = sum(
+            1
+            for v in results.values()
+            if v.get("drift_level") not in ("stable", "insufficient_data")
+        )
         results["summary"] = {
             "max_psi": round(max(feature_psi.values(), default=0.0), 6),
             "drifted_features": drifted,

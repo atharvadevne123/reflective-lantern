@@ -60,7 +60,12 @@ def sample_reading() -> dict:
 def sample_readings(sample_reading) -> list[dict]:
     return [
         sample_reading,
-        {**sample_reading, "meter_id": "meter_002", "consumption_kwh": 8.2, "building_type": "commercial"},
+        {
+            **sample_reading,
+            "meter_id": "meter_002",
+            "consumption_kwh": 8.2,
+            "building_type": "commercial",
+        },
         {**sample_reading, "meter_id": "meter_003", "consumption_kwh": 2.1, "hour_of_day": 3},
     ]
 

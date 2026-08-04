@@ -99,7 +99,9 @@ with DAG(
 ) as dag:
     fetch = PythonOperator(task_id="fetch_training_data", python_callable=_fetch_training_data)
     retrain = PythonOperator(task_id="retrain_model", python_callable=_retrain_model)
-    refresh_anomaly = PythonOperator(task_id="refresh_anomaly_detector", python_callable=_refresh_anomaly_detector)
+    refresh_anomaly = PythonOperator(
+        task_id="refresh_anomaly_detector", python_callable=_refresh_anomaly_detector
+    )
     rebuild_rag = PythonOperator(task_id="rebuild_rag_index", python_callable=_rebuild_rag_index)
     notify = PythonOperator(task_id="notify_completion", python_callable=_notify_completion)
 

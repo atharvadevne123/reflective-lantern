@@ -274,6 +274,7 @@ class TestIsAndStepFitted:
 class TestPipelineStepTypes:
     def test_empty_pipeline(self) -> None:
         from app.pipeline_utils import pipeline_step_types
+
         assert pipeline_step_types(object()) == {}
 
     def test_returns_class_names(self) -> None:
@@ -281,6 +282,7 @@ class TestPipelineStepTypes:
         from sklearn.preprocessing import StandardScaler
 
         from app.pipeline_utils import pipeline_step_types
+
         p = Pipeline([("scaler", StandardScaler())])
         result = pipeline_step_types(p)
         assert result == {"scaler": "StandardScaler"}
@@ -290,6 +292,7 @@ class TestPipelineStepTypes:
         from sklearn.preprocessing import MinMaxScaler, StandardScaler
 
         from app.pipeline_utils import pipeline_step_types
+
         p = Pipeline([("std", StandardScaler()), ("mm", MinMaxScaler())])
         result = pipeline_step_types(p)
         assert len(result) == 2
@@ -302,10 +305,12 @@ class TestFirstStep:
         from sklearn.preprocessing import StandardScaler
 
         from app.pipeline_utils import first_step
+
         scaler = StandardScaler()
         p = Pipeline([("scaler", scaler)])
         assert first_step(p) is scaler
 
     def test_empty_returns_none(self) -> None:
         from app.pipeline_utils import first_step
+
         assert first_step(object()) is None

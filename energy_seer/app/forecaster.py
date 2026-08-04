@@ -1,4 +1,5 @@
 """Lightweight time-series forecasting: trend + seasonality decomposition."""
+
 from __future__ import annotations
 
 import numpy as np

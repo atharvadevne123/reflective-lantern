@@ -47,8 +47,12 @@ class TestPredictEndpoint:
         assert len(resp.json()["predictions_kwh"]) == 3
 
     def test_predict_horizon_multiplies_output(self, client, sample_reading):
-        r1 = client.post("/api/v1/predict", json={"readings": [sample_reading], "horizon_h": 1}).json()
-        r6 = client.post("/api/v1/predict", json={"readings": [sample_reading], "horizon_h": 6}).json()
+        r1 = client.post(
+            "/api/v1/predict", json={"readings": [sample_reading], "horizon_h": 1}
+        ).json()
+        r6 = client.post(
+            "/api/v1/predict", json={"readings": [sample_reading], "horizon_h": 6}
+        ).json()
         assert r6["predictions_kwh"][0] > r1["predictions_kwh"][0]
 
     def test_predict_invalid_building_type(self, client, sample_reading):

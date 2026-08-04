@@ -1,4 +1,5 @@
 """Peak demand prediction: identify highest-consumption hours in a forecast window."""
+
 from __future__ import annotations
 
 import logging

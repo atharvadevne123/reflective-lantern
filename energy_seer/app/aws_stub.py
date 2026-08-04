@@ -1,4 +1,5 @@
 """AWS S3 / boto3 stub for model artifact upload — swappable for real boto3."""
+
 from __future__ import annotations
 
 import logging

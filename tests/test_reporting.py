@@ -586,10 +586,13 @@ class TestBenchmarkVsPortfolio:
         result = benchmark_vs_portfolio(10.0, portfolio)
         assert result["total_peers"] == 20
 
-    @pytest.mark.parametrize("kwh,portfolio,expected_above", [
-        (20.0, [10.0, 15.0, 25.0], True),
-        (5.0, [10.0, 15.0, 25.0], False),
-    ])
+    @pytest.mark.parametrize(
+        "kwh,portfolio,expected_above",
+        [
+            (20.0, [10.0, 15.0, 25.0], True),
+            (5.0, [10.0, 15.0, 25.0], False),
+        ],
+    )
     def test_is_above_median(self, kwh: float, portfolio: list, expected_above: bool) -> None:
         from app.reporting import benchmark_vs_portfolio
 
@@ -600,40 +603,49 @@ class TestBenchmarkVsPortfolio:
 class TestKwhToWh:
     def test_basic(self) -> None:
         from app.reporting import kwh_to_wh
+
         assert kwh_to_wh(1.0) == pytest.approx(1000.0)
 
     def test_zero(self) -> None:
         from app.reporting import kwh_to_wh
+
         assert kwh_to_wh(0.0) == 0.0
 
     def test_fractional(self) -> None:
         from app.reporting import kwh_to_wh
+
         assert kwh_to_wh(0.5) == pytest.approx(500.0)
 
 
 class TestWhToKwh:
     def test_basic(self) -> None:
         from app.reporting import wh_to_kwh
+
         assert wh_to_kwh(1000.0) == pytest.approx(1.0)
 
     def test_zero(self) -> None:
         from app.reporting import wh_to_kwh
+
         assert wh_to_kwh(0.0) == 0.0
 
 
 class TestTariffCost:
     def test_basic(self) -> None:
         from app.reporting import tariff_cost
+
         assert tariff_cost(10.0, 0.15) == pytest.approx(1.5)
 
     def test_zero_kwh(self) -> None:
         from app.reporting import tariff_cost
+
         assert tariff_cost(0.0, 0.15) == 0.0
 
     def test_negative_kwh(self) -> None:
         from app.reporting import tariff_cost
+
         assert tariff_cost(-5.0, 0.15) == 0.0
 
     def test_free_tariff(self) -> None:
         from app.reporting import tariff_cost
+
         assert tariff_cost(100.0, 0.0) == 0.0

@@ -1,4 +1,5 @@
 """In-memory TTL cache for prediction results."""
+
 from __future__ import annotations
 
 import time

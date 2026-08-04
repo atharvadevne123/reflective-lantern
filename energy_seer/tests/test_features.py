@@ -8,15 +8,17 @@ import pytest
 
 @pytest.fixture
 def sample_df():
-    return pd.DataFrame({
-        "consumption_kwh": [3.0, 4.5, 2.8, 6.1, 5.0],
-        "temperature_c": [15.0, 22.0, 8.0, 35.0, 20.0],
-        "humidity_pct": [50.0, 65.0, 45.0, 80.0, 55.0],
-        "hour_of_day": [8, 14, 2, 18, 12],
-        "day_of_week": [0, 2, 5, 3, 1],
-        "is_holiday": [0, 0, 0, 0, 1],
-        "building_type": ["residential", "commercial", "residential", "industrial", "office"],
-    })
+    return pd.DataFrame(
+        {
+            "consumption_kwh": [3.0, 4.5, 2.8, 6.1, 5.0],
+            "temperature_c": [15.0, 22.0, 8.0, 35.0, 20.0],
+            "humidity_pct": [50.0, 65.0, 45.0, 80.0, 55.0],
+            "hour_of_day": [8, 14, 2, 18, 12],
+            "day_of_week": [0, 2, 5, 3, 1],
+            "is_holiday": [0, 0, 0, 0, 1],
+            "building_type": ["residential", "commercial", "residential", "industrial", "office"],
+        }
+    )
 
 
 class TestLagFeatureTransformer:
@@ -126,7 +128,10 @@ class TestBuildingEncoderTransformer:
         out = BuildingEncoderTransformer().fit_transform(sample_df)
         res_rows = sample_df["building_type"] == "residential"
         ind_rows = sample_df["building_type"] == "industrial"
-        assert out.loc[res_rows, "building_intensity"].iloc[0] < out.loc[ind_rows, "building_intensity"].iloc[0]
+        assert (
+            out.loc[res_rows, "building_intensity"].iloc[0]
+            < out.loc[ind_rows, "building_intensity"].iloc[0]
+        )
 
 
 class TestBuildFeaturePipeline:
@@ -151,17 +156,20 @@ class TestBuildFeaturePipeline:
 class TestFeatureColumnNames:
     def test_returns_list(self) -> None:
         from energy_seer.app.features import feature_column_names
+
         result = feature_column_names()
         assert isinstance(result, list)
         assert len(result) > 0
 
     def test_sorted(self) -> None:
         from energy_seer.app.features import feature_column_names
+
         result = feature_column_names()
         assert result == sorted(result)
 
     def test_known_columns_present(self) -> None:
         from energy_seer.app.features import feature_column_names
+
         cols = feature_column_names()
         assert "lag_1h" in cols
         assert "rolling_mean_24h" in cols
@@ -171,12 +179,14 @@ class TestValidateDataframeColumns:
     def test_no_missing(self) -> None:
         import pandas as pd
         from energy_seer.app.features import validate_dataframe_columns
+
         df = pd.DataFrame({"consumption_kwh": [1], "hour_of_day": [0], "day_of_week": [0]})
         assert validate_dataframe_columns(df) == []
 
     def test_missing_column(self) -> None:
         import pandas as pd
         from energy_seer.app.features import validate_dataframe_columns
+
         df = pd.DataFrame({"consumption_kwh": [1]})
         missing = validate_dataframe_columns(df)
         assert "hour_of_day" in missing
@@ -184,5 +194,6 @@ class TestValidateDataframeColumns:
     def test_custom_required(self) -> None:
         import pandas as pd
         from energy_seer.app.features import validate_dataframe_columns
+
         df = pd.DataFrame({"a": [1], "b": [2]})
         assert validate_dataframe_columns(df, ["a", "c"]) == ["c"]

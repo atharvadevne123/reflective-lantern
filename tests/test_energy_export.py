@@ -231,18 +231,21 @@ class TestDeduplicateRecords:
 class TestSortRecords:
     def test_sorts_ascending(self) -> None:
         from app.energy_export import sort_records
+
         records = [{"ts": "2026-08-03"}, {"ts": "2026-08-01"}, {"ts": "2026-08-02"}]
         result = sort_records(records, key="ts")
         assert result[0]["ts"] == "2026-08-01"
 
     def test_sorts_descending(self) -> None:
         from app.energy_export import sort_records
+
         records = [{"ts": "2026-08-01"}, {"ts": "2026-08-03"}]
         result = sort_records(records, key="ts", reverse=True)
         assert result[0]["ts"] == "2026-08-03"
 
     def test_does_not_mutate_input(self) -> None:
         from app.energy_export import sort_records
+
         records = [{"ts": "b"}, {"ts": "a"}]
         original = list(records)
         sort_records(records, key="ts")
@@ -250,12 +253,14 @@ class TestSortRecords:
 
     def test_empty(self) -> None:
         from app.energy_export import sort_records
+
         assert sort_records([], key="ts") == []
 
 
 class TestPartitionRecords:
     def test_splits_by_value(self) -> None:
         from app.energy_export import partition_records
+
         records = [
             {"type": "A"},
             {"type": "B"},
@@ -267,6 +272,7 @@ class TestPartitionRecords:
 
     def test_no_matches(self) -> None:
         from app.energy_export import partition_records
+
         records = [{"type": "X"}]
         matches, non_matches = partition_records(records, "type", "Y")
         assert matches == []
@@ -274,6 +280,7 @@ class TestPartitionRecords:
 
     def test_all_match(self) -> None:
         from app.energy_export import partition_records
+
         records = [{"k": 1}, {"k": 1}]
         matches, non_matches = partition_records(records, "k", 1)
         assert len(matches) == 2

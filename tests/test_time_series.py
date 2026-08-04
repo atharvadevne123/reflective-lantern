@@ -110,6 +110,7 @@ def test_linear_trend_various_horizons(horizon) -> None:
     result = forecast_linear_trend(list(range(30)), horizon=horizon)
     assert len(result) == horizon
 
+
 def test_cumulative_sum_basic() -> None:
     assert cumulative_sum([1.0, 2.0, 3.0]) == [1.0, 3.0, 6.0]
 
@@ -120,6 +121,7 @@ def test_cumulative_sum_empty() -> None:
 
 def test_moving_max_basic() -> None:
     import math
+
     result = moving_max([1.0, 3.0, 2.0, 5.0], window=3)
     assert math.isnan(result[0])
     assert result[2] == pytest.approx(3.0)
@@ -128,6 +130,7 @@ def test_moving_max_basic() -> None:
 
 def test_moving_max_too_short_all_nan() -> None:
     import math
+
     result = moving_max([1.0, 2.0], window=5)
     assert all(math.isnan(v) for v in result)
 
@@ -156,7 +159,6 @@ def test_first_nonzero_finds_index() -> None:
 
 def test_first_nonzero_all_zeros() -> None:
     assert first_nonzero([0.0, 0.0]) == -1
-
 
 
 def test_ema_first_value_equals_input() -> None:

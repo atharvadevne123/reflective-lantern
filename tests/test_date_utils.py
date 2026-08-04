@@ -259,6 +259,7 @@ class TestDatetimeToIso:
         from datetime import datetime
 
         from app.date_utils import datetime_to_iso
+
         dt = datetime(2026, 8, 3, 12, 0, 0)
         result = datetime_to_iso(dt)
         assert "+00:00" in result
@@ -267,6 +268,7 @@ class TestDatetimeToIso:
         from datetime import datetime, timedelta, timezone
 
         from app.date_utils import datetime_to_iso
+
         tz = timezone(timedelta(hours=5, minutes=30))
         dt = datetime(2026, 8, 3, 17, 30, 0, tzinfo=tz)
         assert "+05:30" in datetime_to_iso(dt)
@@ -275,6 +277,7 @@ class TestDatetimeToIso:
         from datetime import datetime
 
         from app.date_utils import datetime_to_iso
+
         assert isinstance(datetime_to_iso(datetime(2026, 1, 1)), str)
 
 
@@ -283,6 +286,7 @@ class TestStartOfDay:
         from datetime import datetime
 
         from app.date_utils import start_of_day
+
         dt = datetime(2026, 8, 3, 15, 45, 30)
         result = start_of_day(dt)
         assert result.hour == 0 and result.minute == 0 and result.second == 0
@@ -291,6 +295,7 @@ class TestStartOfDay:
         from datetime import datetime
 
         from app.date_utils import start_of_day
+
         dt = datetime(2026, 8, 3, 15, 45)
         result = start_of_day(dt)
         assert result.date() == dt.date()
@@ -301,6 +306,7 @@ class TestDaysBetween:
         from datetime import datetime
 
         from app.date_utils import days_between
+
         start = datetime(2026, 1, 1)
         end = datetime(2026, 1, 8)
         assert days_between(start, end) == 7
@@ -309,6 +315,7 @@ class TestDaysBetween:
         from datetime import datetime
 
         from app.date_utils import days_between
+
         dt = datetime(2026, 6, 1)
         assert days_between(dt, dt) == 0
 
@@ -316,6 +323,7 @@ class TestDaysBetween:
         from datetime import datetime
 
         from app.date_utils import days_between
+
         start = datetime(2026, 2, 1)
         end = datetime(2026, 1, 1)
         assert days_between(start, end) == -31

@@ -16,14 +16,17 @@ META_PATH = Path("rag/energy_patterns_meta.json")
 
 def build_pattern_vector(reading: dict) -> np.ndarray:
     """Convert a reading dict into a fixed-length feature vector for FAISS."""
-    return np.array([
-        float(reading.get("consumption_kwh", 0)),
-        float(reading.get("temperature_c", 20)),
-        float(reading.get("humidity_pct", 50)),
-        float(reading.get("hour_of_day", 12)),
-        float(reading.get("day_of_week", 0)),
-        float(reading.get("is_holiday", 0)),
-    ], dtype=np.float32)
+    return np.array(
+        [
+            float(reading.get("consumption_kwh", 0)),
+            float(reading.get("temperature_c", 20)),
+            float(reading.get("humidity_pct", 50)),
+            float(reading.get("hour_of_day", 12)),
+            float(reading.get("day_of_week", 0)),
+            float(reading.get("is_holiday", 0)),
+        ],
+        dtype=np.float32,
+    )
 
 
 def ingest_patterns(patterns: list[dict]) -> int:
