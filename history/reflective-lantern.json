@@ -512,5 +512,40 @@
     "tests_passed": true,
     "commits": 60,
     "email_status": "smtp_blocked_remote_env"
+  },
+  {
+    "date": "2026-08-04",
+    "mode": "improvement",
+    "project": "forge-guard",
+    "improvements": [
+      "Added GET /api/v1/version endpoint returning api_version, model_version, python_version, service",
+      "Added POST /api/v1/anomaly endpoint for FAISS nearest-neighbour anomaly detection",
+      "Added GET /api/v1/export/predictions and /api/v1/export/drift endpoints",
+      "Created app/config.py with centralised Settings class using lru_cache singleton",
+      "Created app/cache.py with thread-safe TTL prediction cache (30s, 2048 max entries)",
+      "Created app/validators.py with domain-range validation and sanitize_sensor_reading()",
+      "Created app/middleware.py with RequestTimingMiddleware (X-Process-Time) and SecurityHeadersMiddleware",
+      "Created app/reporting.py with CSV/JSON export utilities for predictions and drift reports",
+      "Created app/health.py with check_model_loaded, check_database_reachable, composite_health",
+      "Added compute_zscore_outliers and model_prediction_summary to monitoring.py",
+      "Added DriftCheckResult and ModelSummaryResponse Pydantic schemas",
+      "Added DB indexes on timestamp, prediction, model_version, correlation_id columns",
+      "Added lru_cache to model metrics disk read (_read_metrics_cached)",
+      "Added Google-style docstrings to all public API functions",
+      "Extended Makefile with install-dev, test-cov, typecheck, healthcheck, and seed targets",
+      "Added scripts/healthcheck.py probing /health with exit code",
+      "Added SECURITY.md and CODE_OF_CONDUCT.md community health files",
+      "Added 9 new test modules: test_config, test_cache, test_validators, test_middleware, test_reporting, test_aws_stub, test_mlflow_compat, test_health, expanded existing 13 test files",
+      "Fixed XGBClassifier.__sklearn_tags__ monkey-patch for sklearn 1.9.0 VotingClassifier compatibility",
+      "Fixed cross_val_score n_jobs=1 to avoid subprocess losing the class-level sklearn patch",
+      "Fixed db_session fixture to truncate tables between tests for clean state isolation",
+      "Updated CHANGELOG.md with 1.1.0 release entry",
+      "Updated pyproject.toml with mypy config and expanded dev extras",
+      "Improved scripts/seed_data.py with argparse CLI and batch commit support",
+      "Improved scripts/benchmark.py with stdev, SLA pass/fail flag, and exit code"
+    ],
+    "commit_count": 63,
+    "tests_passing": 248,
+    "tests_modules": 22
   }
 ]
