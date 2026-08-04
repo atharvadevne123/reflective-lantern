@@ -105,8 +105,16 @@ def task_engineer_features(df: pd.DataFrame) -> tuple[np.ndarray, np.ndarray]:
     return X, y
 
 
-def task_retrain_model(X: np.ndarray, y: np.ndarray) -> dict:
-    """Train new model and compare AUC against production model."""
+def task_retrain_model(X: np.ndarray, y: np.ndarray) -> dict[str, float | bool]:
+    """Train new model and compare AUC against production model.
+
+    Args:
+        X: Feature matrix of shape (n_samples, n_features).
+        y: Binary label array of shape (n_samples,).
+
+    Returns:
+        Dict with keys ``auc_before``, ``auc_after``, and ``improved``.
+    """
     from app.model import get_metrics, train_model
 
     old_metrics = get_metrics()
@@ -119,8 +127,13 @@ def task_retrain_model(X: np.ndarray, y: np.ndarray) -> dict:
     return {"auc_before": old_auc, "auc_after": new_auc, "improved": new_auc >= old_auc - 0.01}
 
 
-def task_record_run(run_result: dict, trigger: str = "scheduled") -> None:
-    """Write retraining result to database."""
+def task_record_run(run_result: dict[str, float | bool], trigger: str = "scheduled") -> None:
+    """Write retraining result to the retraining_runs database table.
+
+    Args:
+        run_result: Output of task_retrain_model with auc_before/after/improved keys.
+        trigger: Source of the pipeline run (``"scheduled"``, ``"api"``, or ``"manual"``).
+    """
     try:
         from sqlalchemy import create_engine
         from sqlalchemy.orm import sessionmaker
