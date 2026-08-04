@@ -108,7 +108,11 @@ def train_model(
 
 
 def load_model() -> Pipeline:
-    """Load the trained model pipeline from disk, training if absent."""
+    """Load the trained model pipeline from disk, training if absent.
+
+    Falls back to synthetic-data training when no model file exists.
+    Raises RuntimeError if the file is present but cannot be deserialised.
+    """
     if not MODEL_PATH.exists():
         logger.warning("No model found at %s — training on synthetic data.", MODEL_PATH)
         df = generate_synthetic_data()
@@ -120,7 +124,11 @@ def load_model() -> Pipeline:
         y = df["defect"].values
         train_model(X, y)
 
-    return joblib.load(MODEL_PATH)
+    try:
+        return joblib.load(MODEL_PATH)
+    except Exception as exc:
+        logger.error("Failed to load model from %s: %s", MODEL_PATH, exc)
+        raise RuntimeError(f"Model load failed: {exc}") from exc
 
 
 def predict(
