@@ -38,3 +38,27 @@ def test_batch_response_round_trip():
 def test_batch_input_boundary_sizes(n: int):
     payload = BatchSensorInput(readings=[{"temperature": 75.0}] * n)
     assert len(payload.readings) == n
+
+
+def test_batch_response_multiple_predictions():
+    preds = [{"prediction": i % 2, "defect_probability": 0.1 * i} for i in range(5)]
+    resp = BatchPredictionResponse(predictions=preds, count=5, model_version="1.0.0")
+    assert resp.count == 5
+    assert len(resp.predictions) == 5
+
+
+def test_batch_input_preserves_sensor_values():
+    reading = {"temperature": 82.5, "pressure": 53.1, "vibration": 3.7}
+    payload = BatchSensorInput(readings=[reading])
+    assert payload.readings[0]["temperature"] == 82.5
+
+
+def test_batch_response_model_version_propagated():
+    resp = BatchPredictionResponse(predictions=[], count=0, model_version="2.3.1")
+    assert resp.model_version == "2.3.1"
+
+
+@pytest.mark.parametrize("version", ["1.0.0", "2.0.0", "1.1.0-beta"])
+def test_batch_response_accepts_various_version_strings(version):
+    resp = BatchPredictionResponse(predictions=[], count=0, model_version=version)
+    assert resp.model_version == version
