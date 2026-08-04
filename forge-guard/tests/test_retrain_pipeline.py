@@ -45,3 +45,32 @@ def test_run_pipeline_aborts_gracefully_on_no_data(monkeypatch, caplog):
 
     monkeypatch.setattr(retrain_dag, "task_extract_training_data", lambda: pd.DataFrame())
     retrain_dag.run_pipeline(trigger="manual")  # must not raise
+
+
+def test_task_engineer_features_no_nan(synthetic_df: pd.DataFrame):
+    import numpy as np
+
+    from pipelines.retrain_dag import task_engineer_features
+
+    X, y = task_engineer_features(synthetic_df)
+    assert not np.isnan(X).any()
+
+
+def test_task_retrain_model_metrics_keys(synthetic_df, tmp_path, monkeypatch):
+    from app import model as m
+    from pipelines.retrain_dag import task_engineer_features, task_retrain_model
+
+    monkeypatch.setattr(m, "MODEL_PATH", tmp_path / "model.joblib")
+    monkeypatch.setattr(m, "METRICS_PATH", tmp_path / "metrics.json")
+
+    X, y = task_engineer_features(synthetic_df)
+    result = task_retrain_model(X, y)
+    for key in ("auc_before", "auc_after", "improved"):
+        assert key in result
+
+
+def test_task_extract_returns_dataframe(monkeypatch):
+    from pipelines import retrain_dag
+
+    df = retrain_dag.task_extract_training_data()
+    assert isinstance(df, pd.DataFrame)
