@@ -29,3 +29,21 @@ def test_rate_limit_window_resets(client: TestClient, monkeypatch) -> None:
     assert resp.status_code == 200
 
     app_main._RATE_WINDOW.clear()
+
+
+def test_rate_limit_first_request_always_succeeds(client: TestClient, monkeypatch) -> None:
+    monkeypatch.setattr(app_main, "RATE_LIMIT", 1)
+    app_main._RATE_WINDOW.clear()
+    resp = client.get("/health")
+    assert resp.status_code == 200
+    app_main._RATE_WINDOW.clear()
+
+
+def test_rate_limit_does_not_affect_different_paths(client: TestClient, monkeypatch) -> None:
+    monkeypatch.setattr(app_main, "RATE_LIMIT", 100)
+    app_main._RATE_WINDOW.clear()
+    r1 = client.get("/health")
+    r2 = client.get("/api/v1/version")
+    assert r1.status_code == 200
+    assert r2.status_code == 200
+    app_main._RATE_WINDOW.clear()
