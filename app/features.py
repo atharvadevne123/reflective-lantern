@@ -450,3 +450,90 @@ __all__ = [
     "make_feature_row",
     "normalize_consumption",
 ]
+
+
+def lag_features(values: list[float], lags: list[int]) -> dict[str, list[float]]:
+    """Create lagged feature columns from a time series.
+
+    Args:
+        values: Input time series.
+        lags: List of lag offsets (positive integers).
+
+    Returns:
+        Dict mapping "lag_{n}" -> list of lagged values (NaN as None for missing).
+
+    Raises:
+        ValueError: If any lag is non-positive.
+    """
+    if any(lag <= 0 for lag in lags):
+        raise ValueError("All lags must be positive")
+    result = {}
+    for lag in lags:
+        lagged = [None] * lag + list(values[:-lag] if lag < len(values) else [])
+        result[f"lag_{lag}"] = lagged[: len(values)]
+    return result
+
+
+def difference_feature(values: list[float], order: int = 1) -> list[float]:
+    """Compute nth-order difference of a series.
+
+    Args:
+        values: Input numeric series.
+        order: Order of differencing. Default 1.
+
+    Returns:
+        Differenced series of length max(0, len(values) - order).
+
+    Raises:
+        ValueError: If order < 1.
+    """
+    if order < 1:
+        raise ValueError("order must be at least 1")
+    result = list(values)
+    for _ in range(order):
+        result = [result[i] - result[i - 1] for i in range(1, len(result))]
+    return result
+
+
+def ratio_feature(numerator: list[float], denominator: list[float]) -> list[float]:
+    """Element-wise ratio of two series; divides numerator by denominator.
+
+    Args:
+        numerator: Numerator series.
+        denominator: Denominator series.
+
+    Returns:
+        List of ratios. Entries where denominator is 0 return 0.0.
+
+    Raises:
+        ValueError: If series have different lengths or are empty.
+    """
+    if not numerator or not denominator:
+        raise ValueError("Series must be non-empty")
+    if len(numerator) != len(denominator):
+        raise ValueError("Series must have the same length")
+    return [
+        round(n / d, 6) if d != 0 else 0.0
+        for n, d in zip(numerator, denominator)
+    ]
+
+
+def clip_feature_values(
+    values: list[float], low: float, high: float
+) -> list[float]:
+    """Clip feature values to [low, high] range.
+
+    Args:
+        values: Input feature series.
+        low: Lower bound.
+        high: Upper bound.
+
+    Returns:
+        Clipped list of floats.
+
+    Raises:
+        ValueError: If low > high.
+    """
+    if low > high:
+        raise ValueError("low must be <= high")
+    return [round(max(low, min(high, v)), 6) for v in values]
