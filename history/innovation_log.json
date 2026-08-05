@@ -544,43 +544,53 @@
     ]
   },
   {
-    "date": "2026-08-03",
-    "project": "Care-Compass",
-    "description": "Clinical ML API predicting 30-day hospital readmission risk from patient vitals, diagnoses, lab trends and admission history using an XGBoost pipeline with KS-test and PSI drift monitoring, automated retraining, and PostgreSQL-backed prediction logging.",
-    "inspired_by": "MLOps demand for production-grade clinical decision support and readmission-penalty reduction programmes",
-    "chosen_keywords": "hospital readmission patient clinical care discharge",
-    "repo_url": "https://github.com/atharvadevne123/Care-Compass",
-    "published": false,
-    "publish_blocked_reason": "Session gateway refused repository creation (403 on POST /user/repos): this session is bound to the reflective-lantern repository. Outbound SMTP is also unavailable (raw TCP to port 465 unsupported by the egress proxy), so the email report was not sent.",
-    "artifacts": [
-      "pending/Care-Compass-2026-08-03.bundle",
-      "pending/Care-Compass-2026-08-03.patch",
-      "pending/Care-Compass_report_2026-08-03.pdf",
-      ".github/workflows/bootstrap-care-compass.yml"
-    ],
-    "file_count": 39,
-    "test_count": 75,
+    "date": "2026-08-05",
+    "mode": "innovation",
+    "project": "Cart-Mind",
+    "description": "Real-time product recommendation and purchase intent prediction API using a LightGBM/XGBoost/RandomForest soft-voting ensemble over 29 engineered features, FAISS item-similarity search, KS-test and PSI drift monitoring, TTL caching, and champion/challenger automated retraining.",
+    "inspired_by": "Portfolio gap analysis \u2014 recommender systems and purchase-intent ranking were the largest untouched ML domain. HN API and GitHub trending were unreachable (egress policy returns 403 on non-proxied HTTP), so the topic was chosen by duplicate-gate elimination against 32 existing repos and 20 prior log entries.",
+    "chosen_keywords": "recommendation retail product basket collaborative filtering",
+    "repo_branch": "innovation/cart-mind",
+    "repo_url": "https://github.com/atharvadevne123/reflective-lantern/tree/innovation/cart-mind",
+    "file_count": 36,
+    "test_count": 186,
     "tests_passed": true,
-    "commits": 66,
-    "cv_auc_roc": 0.777,
+    "commits": 62,
     "coverage_pct": 100,
-    "archetype": "Prediction API + Drift Detection + Automated Retraining",
+    "cv_auc_roc": 0.7169,
+    "cv_auc_std": 0.0187,
+    "archetype": "Prediction API + Recommendation + Drift Detection + Automated Retraining",
     "stack": [
       "Python 3.11",
-      "FastAPI (6 versioned endpoints under /api/v1)",
-      "XGBoost",
-      "sklearn Pipeline (26 features)",
+      "FastAPI (9 versioned endpoints under /api/v1)",
+      "LightGBM + XGBoost + RandomForest soft-voting ensemble",
+      "sklearn Pipeline (5 stages, 29 features from 16 raw columns)",
+      "FAISS IndexFlatL2 with exact brute-force fallback",
       "KS-test + PSI drift monitoring",
-      "SQLAlchemy",
+      "Cross-field payload coherence validation",
+      "Thread-safe TTL cache (300s, LRU)",
+      "SQLAlchemy ORM (4 tables)",
       "Alembic migrations",
-      "Docker + PostgreSQL",
-      "pytest (75 tests)",
-      "GitHub Actions CI (ruff + pytest, Python 3.10-3.12)",
+      "PostgreSQL + Docker (non-root, readiness healthcheck)",
+      "Airflow champion/challenger retraining DAG",
+      "pytest (186 tests across 9 modules)",
+      "GitHub Actions CI (ruff lint + format + pytest + wheel, 3.11/3.12)",
       "5-fold stratified CV AUC-ROC",
-      "Structured JSON logging with correlation IDs",
-      "Rate limiting middleware",
-      "Automated retraining pipeline (Airflow-compatible)"
+      "Rate limiting, correlation IDs, GZip, structured JSON logging"
     ],
-    "publish_route": "Run the 'Publish Care-Compass Repo' workflow from the Actions tab with a repo-scoped PAT. It restores all 66 commits and the v1.0.0 tag from the bundle, creates the repo, pushes, releases, and uploads the wheel."
+    "bugs_found_and_fixed": [
+      {
+        "title": "Champion/challenger compared the challenger against itself",
+        "detail": "train_model writes metrics.json as a side effect; retrain_task read the champion AUC from that same file after training, loading the challenger's own metrics. The gate was 'auc >= auc' \u2014 always true \u2014 so every challenger was promoted, including regressions. Champion is now read before training via read_champion_auc(); a rejected run restores the champion's metrics."
+      },
+      {
+        "title": "Ad-hoc FAISS index builds clobbered the serving index",
+        "detail": "build_faiss_index wrote to the shared FAISS_INDEX_PATH unconditionally, so any caller building a throwaway index replaced the deployed one. Tests building dim-8/dim-16 indexes left a mismatched index on disk and the similarity endpoint failed on an opaque FAISS assertion. Persistence is now opt-in; load_faiss_index rejects a dimension mismatch and rebuilds; search_similar_items raises a clear ValueError."
+      }
+    ],
+    "data_note": "No proprietary dataset ships with the repo. make_purchase_labels generates signal-bearing labels from a logistic transform of a latent propensity score over real conversion drivers, with Gaussian noise keeping the problem non-separable. CV AUC 0.717 reflects genuine but imperfect signal; a bootstrap fit on random labels scored 0.524 as expected for noise.",
+    "publish_blocked_reason": "Standalone repo creation returned 403 \u2014 this session's GitHub access is bound to the reflective-lantern repository. Shipped on branch innovation/cart-mind with a draft PR.",
+    "email_status": "network_blocked \u2014 raw TCP to smtp.gmail.com:465 and :587 both time out; the egress proxy passes HTTPS only. Report committed to history/reports/ instead.",
+    "report_pdf": "history/reports/Cart-Mind_innovation_2026-08-05.pdf"
   }
 ]
