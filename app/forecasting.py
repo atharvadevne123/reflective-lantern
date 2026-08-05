@@ -171,3 +171,110 @@ __all__ = [
     "naive_forecast",
     "seasonal_naive_forecast",
 ]
+
+
+def forecast_with_uncertainty(
+    values: list[float],
+    horizon: int = 12,
+    n_boot: int = 100,
+) -> dict[str, list[float]]:
+    """Produce a naive forecast with bootstrap uncertainty bounds.
+
+    Resamples the residuals of a naive forecast to build empirical prediction
+    intervals. Residuals are computed as the difference between each observation
+    and the previous one.
+
+    Args:
+        values: Historical time series.
+        horizon: Number of steps to forecast ahead.
+        n_boot: Number of bootstrap iterations for uncertainty estimation.
+
+    Returns:
+        Dict with 'point' (list of length *horizon*), 'lower_80', and 'upper_80'
+        interval lists at the 10th and 90th percentile of bootstrap draws.
+
+    Raises:
+        ValueError: If *values* has fewer than 2 elements, or *horizon* < 1.
+    """
+    import random
+    if len(values) < 2:
+        raise ValueError("values must have at least 2 elements")
+    if horizon < 1:
+        raise ValueError(f"horizon must be at least 1, got {horizon}")
+    last = values[-1]
+    point = [last] * horizon
+    residuals = [values[i] - values[i - 1] for i in range(1, len(values))]
+    if not residuals:
+        return {"point": point, "lower_80": point[:], "upper_80": point[:]}
+    draws: list[list[float]] = []
+    for _ in range(n_boot):
+        sample = [last + random.choice(residuals) for _ in range(horizon)]
+        draws.append(sample)
+    lower = [round(sorted(draws[j][i] for j in range(n_boot))[int(0.10 * n_boot)], 4) for i in range(horizon)]
+    upper = [round(sorted(draws[j][i] for j in range(n_boot))[int(0.90 * n_boot)], 4) for i in range(horizon)]
+    return {"point": [round(v, 4) for v in point], "lower_80": lower, "upper_80": upper}
+
+
+def forecast_error_metrics(actual: list[float], forecast: list[float]) -> dict[str, float]:
+    """Compute a comprehensive set of forecast error metrics.
+
+    Args:
+        actual: Ground-truth observations.
+        forecast: Forecasted values, same length as *actual*.
+
+    Returns:
+        Dict with mae, rmse, mape (capped at 999 where actual=0), and bias.
+
+    Raises:
+        ValueError: If inputs are empty or have different lengths.
+    """
+    import math
+    if not actual or not forecast:
+        raise ValueError("actual and forecast must not be empty")
+    if len(actual) != len(forecast):
+        raise ValueError(f"Length mismatch: {len(actual)} vs {len(forecast)}")
+    n = len(actual)
+    mae = sum(abs(a - f) for a, f in zip(actual, forecast)) / n
+    rmse = math.sqrt(sum((a - f) ** 2 for a, f in zip(actual, forecast)) / n)
+    mape_vals = []
+    for a, f in zip(actual, forecast):
+        if abs(a) > 1e-9:
+            mape_vals.append(abs(a - f) / abs(a) * 100.0)
+        else:
+            mape_vals.append(999.0)
+    mape = sum(mape_vals) / len(mape_vals)
+    bias = sum(f - a for a, f in zip(actual, forecast)) / n
+    return {
+        "mae": round(mae, 4),
+        "rmse": round(rmse, 4),
+        "mape": round(mape, 4),
+        "bias": round(bias, 4),
+    }
+
+
+def forecast_coverage(
+    actual: list[float],
+    lower: list[float],
+    upper: list[float],
+) -> float:
+    """Compute the empirical coverage of prediction intervals.
+
+    Returns the fraction of actual observations that fall within [lower, upper].
+
+    Args:
+        actual: Ground-truth observations.
+        lower: Lower bounds of the prediction interval (same length).
+        upper: Upper bounds of the prediction interval (same length).
+
+    Returns:
+        Coverage fraction in [0, 1], rounded to 4 decimal places.
+
+    Raises:
+        ValueError: If inputs have different lengths or are empty.
+    """
+    if not actual or not lower or not upper:
+        raise ValueError("All inputs must be non-empty")
+    if len(actual) != len(lower) or len(actual) != len(upper):
+        raise ValueError("actual, lower, and upper must have the same length")
+    covered = sum(1 for a, lo, hi in zip(actual, lower, upper) if lo <= a <= hi)
+    return round(covered / len(actual), 4)
