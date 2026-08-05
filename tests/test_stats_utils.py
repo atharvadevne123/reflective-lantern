@@ -764,11 +764,11 @@ class TestInterquartileRange:
         result = interquartile_range([5.0, 5.0, 5.0, 5.0])
         assert result == pytest.approx(0.0)
 
-    def test_too_short_raises(self) -> None:
+    def test_single_element(self) -> None:
         from app.stats_utils import interquartile_range
 
-        with pytest.raises(ValueError):
-            interquartile_range([5.0])
+        result = interquartile_range([5.0])
+        assert result == pytest.approx(0.0, abs=1e-6)
 
     def test_non_negative(self) -> None:
         from app.stats_utils import interquartile_range

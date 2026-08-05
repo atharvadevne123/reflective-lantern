@@ -517,6 +517,7 @@ class TestValueRangeCheck:
 class TestDataFreshnessScore:
     def test_all_fresh(self) -> None:
         import time
+
         from app.data_quality import data_freshness_score
 
         now = time.time()
@@ -527,6 +528,7 @@ class TestDataFreshnessScore:
 
     def test_all_stale(self) -> None:
         import time
+
         from app.data_quality import data_freshness_score
 
         old = time.time() - 7200
@@ -542,6 +544,7 @@ class TestDataFreshnessScore:
 
     def test_mixed_freshness(self) -> None:
         import time
+
         from app.data_quality import data_freshness_score
 
         now = time.time()
@@ -553,6 +556,7 @@ class TestDataFreshnessScore:
 
     def test_result_keys(self) -> None:
         import time
+
         from app.data_quality import data_freshness_score
 
         records = [{"ts": time.time()}]

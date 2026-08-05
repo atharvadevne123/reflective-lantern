@@ -282,32 +282,6 @@ def top_k_similar(
     return dists[:k]
 
 
-def cosine_distance(a: list[float], b: list[float]) -> float:
-    """Compute cosine distance (1 - cosine_similarity) between two vectors.
-
-    Args:
-        a: First vector.
-        b: Second vector (same length as a).
-
-    Returns:
-        Cosine distance in [0, 2].
-
-    Raises:
-        ValueError: If vectors have different lengths or are empty.
-    """
-    if not a or not b:
-        raise ValueError("Vectors must be non-empty")
-    if len(a) != len(b):
-        raise ValueError("Vectors must have the same length")
-    dot = sum(ai * bi for ai, bi in zip(a, b))
-    norm_a = sum(ai ** 2 for ai in a) ** 0.5
-    norm_b = sum(bi ** 2 for bi in b) ** 0.5
-    if norm_a == 0 or norm_b == 0:
-        return 1.0
-    similarity = dot / (norm_a * norm_b)
-    return round(1.0 - similarity, 6)
-
-
 def weighted_jaccard_similarity(
     a: dict[str, float], b: dict[str, float]
 ) -> float:

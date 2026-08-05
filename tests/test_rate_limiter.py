@@ -156,7 +156,7 @@ class TestIsRateLimited:
 
 class TestMakeStrictLimiter:
     def test_returns_limiter(self) -> None:
-        from app.rate_limiter import make_strict_limiter, TokenBucketRateLimiter
+        from app.rate_limiter import TokenBucketRateLimiter, make_strict_limiter
 
         limiter = make_strict_limiter(10.0)
         assert isinstance(limiter, TokenBucketRateLimiter)

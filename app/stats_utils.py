@@ -544,25 +544,3 @@ def running_mean(values: list[float]) -> list[float]:
     return result
 
 
-def interquartile_range(values: list[float]) -> float:
-    """Compute the interquartile range (IQR = Q3 - Q1) of a dataset.
-
-    Args:
-        values: Numeric series with at least 2 elements.
-
-    Returns:
-        IQR as a float.
-
-    Raises:
-        ValueError: If fewer than 2 values are provided.
-    """
-    if len(values) < 2:
-        raise ValueError("Need at least 2 values to compute IQR")
-    sorted_vals = sorted(values)
-    n = len(sorted_vals)
-    mid = n // 2
-    lower = sorted_vals[:mid]
-    upper = sorted_vals[mid + (n % 2):]
-    q1 = sum(lower) / len(lower) if lower else sorted_vals[0]
-    q3 = sum(upper) / len(upper) if upper else sorted_vals[-1]
-    return round(q3 - q1, 6)

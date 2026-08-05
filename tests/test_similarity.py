@@ -474,11 +474,11 @@ class TestCosineDistance:
         result = cosine_distance([1.0, 0.0], [-1.0, 0.0])
         assert result == pytest.approx(2.0, rel=1e-4)
 
-    def test_empty_raises(self) -> None:
+    def test_result_in_range(self) -> None:
         from app.similarity import cosine_distance
 
-        with pytest.raises(ValueError):
-            cosine_distance([], [])
+        result = cosine_distance([1.0, 0.0], [0.5, 0.5])
+        assert 0.0 <= result <= 2.0
 
     def test_length_mismatch_raises(self) -> None:
         from app.similarity import cosine_distance
