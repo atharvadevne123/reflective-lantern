@@ -596,3 +596,161 @@ def cumulative_consumption(values: list[float]) -> list[float]:
         List of the same length where element i is sum(values[:i+1]).
     """
     return cumulative_sum(values)
+
+
+def detect_trend_reversal(values: list[float], window: int = 5) -> list[int]:
+    """Detect trend reversal points in a time series.
+
+    A reversal is flagged at index *i* when the slope of the previous *window*
+    values has opposite sign to the slope of the *window* values starting at *i*.
+
+    Args:
+        values: Time-ordered numeric readings.
+        window: Look-back (and look-ahead) window size for slope estimation.
+
+    Returns:
+        Binary list of the same length; 1 at reversal points, 0 elsewhere.
+
+    Raises:
+        ValueError: If *values* is too short or *window* < 2.
+    """
+    if window < 2:
+        raise ValueError(f"window must be at least 2, got {window}")
+    n = len(values)
+    if n < 2 * window:
+        return [0] * n
+    result = [0] * n
+    arr = np.array(values, dtype=float)
+    for i in range(window, n - window):
+        before = arr[i - window : i]
+        after = arr[i : i + window]
+        slope_before = np.polyfit(np.arange(window), before, 1)[0]
+        slope_after = np.polyfit(np.arange(window), after, 1)[0]
+        if slope_before * slope_after < 0:
+            result[i] = 1
+    return result
+
+
+def monthly_totals(daily_values: list[float], days_per_month: list[int] | None = None) -> list[float]:
+    """Aggregate a daily series into monthly totals.
+
+    Args:
+        daily_values: Daily numeric readings.
+        days_per_month: List of day-counts per month (default 12 months of 30 days).
+
+    Returns:
+        List of monthly sums.
+
+    Raises:
+        ValueError: If the total days in *days_per_month* exceeds len(*daily_values*).
+    """
+    if days_per_month is None:
+        days_per_month = [30] * 12
+    total = sum(days_per_month)
+    if total > len(daily_values):
+        raise ValueError(
+            f"days_per_month total ({total}) exceeds available daily values ({len(daily_values)})"
+        )
+    result = []
+    idx = 0
+    for n_days in days_per_month:
+        result.append(round(sum(daily_values[idx : idx + n_days]), 6))
+        idx += n_days
+    return result
+
+
+def seasonal_variance(values: list[float], period: int = 24) -> float:
+    """Compute the mean variance across seasonal buckets.
+
+    Partitions *values* into *period* buckets (by index mod *period*) and returns
+    the average of per-bucket variances, indicating how spread each seasonal
+    slot is relative to its mean.
+
+    Args:
+        values: Time-ordered numeric readings.
+        period: Seasonality period (e.g. 24 for hourly data).
+
+    Returns:
+        Mean per-bucket variance, rounded to 6 decimal places.
+
+    Raises:
+        ValueError: If *values* is empty or *period* < 1.
+    """
+    if not values:
+        raise ValueError("values must not be empty")
+    if period < 1:
+        raise ValueError(f"period must be at least 1, got {period}")
+    import statistics
+    buckets: list[list[float]] = [[] for _ in range(period)]
+    for i, v in enumerate(values):
+        buckets[i % period].append(v)
+    variances = [statistics.pvariance(b) for b in buckets if len(b) >= 2]
+    if not variances:
+        return 0.0
+    return round(sum(variances) / len(variances), 6)
+
+
+def trailing_average(values: list[float], n: int) -> list[float]:
+    """Compute the trailing *n*-period average for each position.
+
+    At position *i* the result is the mean of values[max(0, i-n+1):i+1].
+
+    Args:
+        values: Time-ordered numeric readings.
+        n: Trailing window length (>= 1).
+
+    Returns:
+        Trailing averages list of the same length as *values*.
+
+    Raises:
+        ValueError: If *values* is empty or *n* < 1.
+    """
+    if not values:
+        raise ValueError("values must not be empty")
+    if n < 1:
+        raise ValueError(f"n must be at least 1, got {n}")
+    result = []
+    for i in range(len(values)):
+        chunk = values[max(0, i - n + 1) : i + 1]
+        result.append(round(sum(chunk) / len(chunk), 6))
+    return result
+
+
+def detect_outlier_windows(
+    values: list[float],
+    window: int = 24,
+    threshold_std: float = 2.0,
+) -> list[tuple[int, int]]:
+    """Detect windows with anomalously high mean consumption.
+
+    Splits *values* into non-overlapping windows of size *window* and flags
+    any window whose mean exceeds the global mean by more than *threshold_std*
+    standard deviations.
+
+    Args:
+        values: Time-ordered numeric readings.
+        window: Length of each non-overlapping assessment window.
+        threshold_std: Number of global standard deviations above the global
+            mean to use as the anomaly threshold.
+
+    Returns:
+        List of (start_index, end_index) tuples for flagged windows.
+
+    Raises:
+        ValueError: If *values* is empty or *window* < 1.
+    """
+    if not values:
+        raise ValueError("values must not be empty")
+    if window < 1:
+        raise ValueError(f"window must be at least 1, got {window}")
+    import statistics
+    arr = np.array(values, dtype=float)
+    global_mean = float(arr.mean())
+    global_std = float(arr.std()) if len(arr) > 1 else 0.0
+    cutoff = global_mean + threshold_std * global_std
+    flagged = []
+    for start in range(0, len(values), window):
+        chunk = values[start : start + window]
+        if sum(chunk) / len(chunk) > cutoff:
+            flagged.append((start, start + len(chunk) - 1))
+    return flagged
