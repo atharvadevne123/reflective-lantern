@@ -401,3 +401,160 @@ class TestNullRate:
         from app.data_quality import null_rate
 
         assert null_rate([], "a") == 0.0
+
+
+class TestDuplicateRate:
+    def test_no_duplicates(self) -> None:
+        from app.data_quality import duplicate_rate
+
+        records = [{"id": 1, "v": "a"}, {"id": 2, "v": "b"}, {"id": 3, "v": "c"}]
+        assert duplicate_rate(records, ["id"]) == pytest.approx(0.0)
+
+    def test_all_duplicates(self) -> None:
+        from app.data_quality import duplicate_rate
+
+        records = [{"id": 1}, {"id": 1}, {"id": 1}]
+        rate = duplicate_rate(records, ["id"])
+        assert rate == pytest.approx(2 / 3, rel=1e-4)
+
+    def test_empty_records(self) -> None:
+        from app.data_quality import duplicate_rate
+
+        assert duplicate_rate([], ["id"]) == 0.0
+
+    def test_compound_key(self) -> None:
+        from app.data_quality import duplicate_rate
+
+        records = [
+            {"a": 1, "b": 1},
+            {"a": 1, "b": 2},
+            {"a": 1, "b": 1},
+        ]
+        rate = duplicate_rate(records, ["a", "b"])
+        assert rate == pytest.approx(1 / 3, rel=1e-4)
+
+    def test_single_record(self) -> None:
+        from app.data_quality import duplicate_rate
+
+        assert duplicate_rate([{"id": 99}], ["id"]) == 0.0
+
+
+class TestFieldCompleteness:
+    def test_all_present(self) -> None:
+        from app.data_quality import field_completeness
+
+        records = [{"a": 1, "b": 2}, {"a": 3, "b": 4}]
+        result = field_completeness(records, ["a", "b"])
+        assert result["a"] == pytest.approx(1.0)
+        assert result["b"] == pytest.approx(1.0)
+
+    def test_none_present(self) -> None:
+        from app.data_quality import field_completeness
+
+        records = [{"a": None}, {"a": None}]
+        result = field_completeness(records, ["a"])
+        assert result["a"] == pytest.approx(0.0)
+
+    def test_empty_records(self) -> None:
+        from app.data_quality import field_completeness
+
+        result = field_completeness([], ["x", "y"])
+        assert result == {"x": 0.0, "y": 0.0}
+
+    def test_partial_completeness(self) -> None:
+        from app.data_quality import field_completeness
+
+        records = [{"a": 1}, {"a": None}, {"a": 3}, {"a": None}]
+        result = field_completeness(records, ["a"])
+        assert result["a"] == pytest.approx(0.5)
+
+    def test_multiple_fields(self) -> None:
+        from app.data_quality import field_completeness
+
+        records = [{"a": 1, "b": None}, {"a": 2, "b": 3}]
+        result = field_completeness(records, ["a", "b"])
+        assert result["a"] == pytest.approx(1.0)
+        assert result["b"] == pytest.approx(0.5)
+
+
+class TestValueRangeCheck:
+    def test_all_in_range(self) -> None:
+        from app.data_quality import value_range_check
+
+        records = [{"v": 5}, {"v": 10}, {"v": 15}]
+        result = value_range_check(records, "v", 0, 20)
+        assert result["out_of_range_count"] == 0
+        assert result["out_of_range_rate"] == pytest.approx(0.0)
+
+    def test_all_out_of_range(self) -> None:
+        from app.data_quality import value_range_check
+
+        records = [{"v": -5}, {"v": 200}]
+        result = value_range_check(records, "v", 0, 100)
+        assert result["out_of_range_count"] == 2
+
+    def test_empty_records(self) -> None:
+        from app.data_quality import value_range_check
+
+        result = value_range_check([], "v", 0, 100)
+        assert result["total_checked"] == 0
+
+    def test_boundary_values_in_range(self) -> None:
+        from app.data_quality import value_range_check
+
+        records = [{"v": 0}, {"v": 100}]
+        result = value_range_check(records, "v", 0, 100)
+        assert result["out_of_range_count"] == 0
+
+    def test_rate_correct(self) -> None:
+        from app.data_quality import value_range_check
+
+        records = [{"v": 1}, {"v": 2}, {"v": 200}, {"v": 300}]
+        result = value_range_check(records, "v", 0, 10)
+        assert result["out_of_range_rate"] == pytest.approx(0.5)
+
+
+class TestDataFreshnessScore:
+    def test_all_fresh(self) -> None:
+        import time
+        from app.data_quality import data_freshness_score
+
+        now = time.time()
+        records = [{"ts": now - 100}, {"ts": now - 200}]
+        result = data_freshness_score(records, "ts", max_age_seconds=3600)
+        assert result["fresh_count"] == 2
+        assert result["freshness_rate"] == pytest.approx(1.0)
+
+    def test_all_stale(self) -> None:
+        import time
+        from app.data_quality import data_freshness_score
+
+        old = time.time() - 7200
+        records = [{"ts": old}, {"ts": old}]
+        result = data_freshness_score(records, "ts", max_age_seconds=3600)
+        assert result["stale_count"] == 2
+
+    def test_empty_records(self) -> None:
+        from app.data_quality import data_freshness_score
+
+        result = data_freshness_score([], "ts")
+        assert result["total_records"] == 0
+
+    def test_mixed_freshness(self) -> None:
+        import time
+        from app.data_quality import data_freshness_score
+
+        now = time.time()
+        records = [{"ts": now - 100}, {"ts": now - 7200}]
+        result = data_freshness_score(records, "ts", max_age_seconds=3600)
+        assert result["fresh_count"] == 1
+        assert result["stale_count"] == 1
+        assert result["freshness_rate"] == pytest.approx(0.5)
+
+    def test_result_keys(self) -> None:
+        import time
+        from app.data_quality import data_freshness_score
+
+        records = [{"ts": time.time()}]
+        result = data_freshness_score(records, "ts")
+        assert set(result.keys()) >= {"total_records", "fresh_count", "stale_count", "freshness_rate"}
