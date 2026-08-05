@@ -314,3 +314,79 @@ class TestFirstStep:
         from app.pipeline_utils import first_step
 
         assert first_step(object()) is None
+
+
+class _FakePipeline:
+    def __init__(self, steps):
+        self.steps = steps
+
+
+class TestCountPipelineSteps:
+    def test_two_steps(self) -> None:
+        from app.pipeline_utils import count_pipeline_steps
+
+        pipe = _FakePipeline([("a", object()), ("b", object())])
+        assert count_pipeline_steps(pipe) == 2
+
+    def test_no_steps_attr(self) -> None:
+        from app.pipeline_utils import count_pipeline_steps
+
+        assert count_pipeline_steps(object()) == 0
+
+    def test_empty_steps(self) -> None:
+        from app.pipeline_utils import count_pipeline_steps
+
+        assert count_pipeline_steps(_FakePipeline([])) == 0
+
+
+class TestLastStep:
+    def test_returns_last(self) -> None:
+        from app.pipeline_utils import last_step
+
+        obj = object()
+        pipe = _FakePipeline([("a", object()), ("b", obj)])
+        assert last_step(pipe) is obj
+
+    def test_empty_returns_none(self) -> None:
+        from app.pipeline_utils import last_step
+
+        assert last_step(_FakePipeline([])) is None
+
+    def test_no_steps_attr(self) -> None:
+        from app.pipeline_utils import last_step
+
+        assert last_step(object()) is None
+
+
+class TestStepNamesToSet:
+    def test_basic(self) -> None:
+        from app.pipeline_utils import step_names_to_set
+
+        pipe = _FakePipeline([("scaler", object()), ("model", object())])
+        result = step_names_to_set(pipe)
+        assert result == {"scaler", "model"}
+
+    def test_empty(self) -> None:
+        from app.pipeline_utils import step_names_to_set
+
+        assert step_names_to_set(_FakePipeline([])) == set()
+
+    def test_no_steps_attr(self) -> None:
+        from app.pipeline_utils import step_names_to_set
+
+        assert step_names_to_set(object()) == set()
+
+
+class TestPipelineMemoryUsageKb:
+    def test_positive_result(self) -> None:
+        from app.pipeline_utils import pipeline_memory_usage_kb
+
+        result = pipeline_memory_usage_kb({"a": [1, 2, 3]})
+        assert result > 0
+
+    def test_larger_object_bigger(self) -> None:
+        from app.pipeline_utils import pipeline_memory_usage_kb
+
+        small = pipeline_memory_usage_kb([1])
+        large = pipeline_memory_usage_kb(list(range(1000)))
+        assert large > small
