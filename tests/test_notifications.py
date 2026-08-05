@@ -216,3 +216,88 @@ class TestHighestSeverity:
 
         alerts = [Alert("info", "a"), Alert("info", "b")]
         assert highest_severity(alerts) == "info"
+
+
+class TestFilterAlertsBySeverity:
+    def test_filters_info(self) -> None:
+        from app.notifications import Alert, filter_alerts_by_severity
+
+        alerts = [
+            Alert("info", "msg1"),
+            Alert("critical", "msg2"),
+            Alert("warning", "msg3"),
+        ]
+        result = filter_alerts_by_severity(alerts, "critical")
+        assert all(a.severity == "critical" for a in result)
+
+    def test_empty_input(self) -> None:
+        from app.notifications import filter_alerts_by_severity
+
+        assert filter_alerts_by_severity([], "info") == []
+
+    def test_all_pass_info_threshold(self) -> None:
+        from app.notifications import Alert, filter_alerts_by_severity
+
+        alerts = [Alert("warning", "x"), Alert("critical", "y")]
+        result = filter_alerts_by_severity(alerts, "info")
+        assert len(result) == 2
+
+
+class TestDeduplicateAlerts:
+    def test_removes_duplicates(self) -> None:
+        from app.notifications import Alert, deduplicate_alerts
+
+        alerts = [Alert("info", "dup"), Alert("critical", "dup"), Alert("info", "unique")]
+        result = deduplicate_alerts(alerts)
+        assert len(result) == 2
+
+    def test_empty(self) -> None:
+        from app.notifications import deduplicate_alerts
+
+        assert deduplicate_alerts([]) == []
+
+    def test_no_duplicates(self) -> None:
+        from app.notifications import Alert, deduplicate_alerts
+
+        alerts = [Alert("info", "a"), Alert("info", "b")]
+        assert len(deduplicate_alerts(alerts)) == 2
+
+
+class TestFormatAlertText:
+    def test_format_contains_severity(self) -> None:
+        from app.notifications import Alert, format_alert_text
+
+        a = Alert("warning", "Drift detected")
+        result = format_alert_text(a)
+        assert "WARNING" in result
+        assert "Drift detected" in result
+
+    def test_format_structure(self) -> None:
+        from app.notifications import Alert, format_alert_text
+
+        a = Alert("info", "test message")
+        result = format_alert_text(a)
+        assert result.startswith("[")
+
+
+class TestBatchAlertsBySeverity:
+    def test_groups_correctly(self) -> None:
+        from app.notifications import Alert, batch_alerts_by_severity
+
+        alerts = [Alert("info", "a"), Alert("critical", "b"), Alert("info", "c")]
+        batches = batch_alerts_by_severity(alerts)
+        assert len(batches["info"]) == 2
+        assert len(batches["critical"]) == 1
+
+    def test_empty(self) -> None:
+        from app.notifications import batch_alerts_by_severity
+
+        assert batch_alerts_by_severity([]) == {}
+
+    def test_single_severity(self) -> None:
+        from app.notifications import Alert, batch_alerts_by_severity
+
+        alerts = [Alert("critical", "x"), Alert("critical", "y")]
+        batches = batch_alerts_by_severity(alerts)
+        assert "critical" in batches
+        assert len(batches["critical"]) == 2
