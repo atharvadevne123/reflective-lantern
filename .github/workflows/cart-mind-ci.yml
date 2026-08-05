@@ -1,0 +1,48 @@
+name: Cart-Mind CI
+
+on:
+  push:
+    branches: [main, "innovation/cart-mind"]
+    paths:
+      - "cart-mind/**"
+      - ".github/workflows/cart-mind-ci.yml"
+  pull_request:
+    paths:
+      - "cart-mind/**"
+      - ".github/workflows/cart-mind-ci.yml"
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: cart-mind
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11", "3.12"]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+          cache-dependency-path: cart-mind/requirements.txt
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Ruff lint
+        run: python -m ruff check .
+
+      - name: Ruff format check
+        run: python -m ruff format --check .
+
+      - name: Run pytest
+        run: python -m pytest tests/ -v --tb=short
+
+      - name: Build wheel
+        run: pip install build && python -m build --wheel --sdist
