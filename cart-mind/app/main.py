@@ -146,9 +146,22 @@ def _row_to_df(data: dict) -> pd.DataFrame:
 # ---------------------------------------------------------------------------
 
 
-@app.get("/api/v1/health", response_model=HealthResponse, tags=["System"])
-def health():
-    """Return service health and readiness status."""
+@app.get(
+    "/api/v1/health",
+    response_model=HealthResponse,
+    tags=["System"],
+    summary="Liveness and readiness",
+    description=(
+        "Reports whether the model and FAISS index finished loading. Both flags must "
+        "be true before the service can answer prediction traffic."
+    ),
+)
+def health() -> HealthResponse:
+    """Return service health and readiness status.
+
+    Returns:
+        Health status with model and index load flags.
+    """
     return HealthResponse(
         status="healthy",
         model_loaded="model" in _state,
@@ -162,9 +175,22 @@ def health():
 # ---------------------------------------------------------------------------
 
 
-@app.get("/api/v1/metrics", response_model=MetricsResponse, tags=["System"])
-def metrics():
-    """Return aggregated request counts and latency percentiles."""
+@app.get(
+    "/api/v1/metrics",
+    response_model=MetricsResponse,
+    tags=["System"],
+    summary="Request counters and latency percentiles",
+    description=(
+        "Per-route request counts, drift-alert and error totals, and p50/p95/p99 "
+        "latency over a rolling 1000-request window."
+    ),
+)
+def metrics() -> MetricsResponse:
+    """Return aggregated request counts and latency percentiles.
+
+    Returns:
+        Counters and latency percentiles since process start.
+    """
     return MetricsResponse(**COUNTERS.snapshot())
 
 
@@ -173,13 +199,35 @@ def metrics():
 # ---------------------------------------------------------------------------
 
 
-@app.post("/api/v1/predict", response_model=IntentResponse, tags=["Prediction"])
+@app.post(
+    "/api/v1/predict",
+    response_model=IntentResponse,
+    tags=["Prediction"],
+    summary="Score one user-item pair",
+    description=(
+        "Returns the probability that a user purchases a given item, from the "
+        "soft-voting ensemble. Payloads failing a cross-field coherence check are "
+        "still scored, but come back with confidence 'low' and the warnings attached."
+    ),
+)
 def predict_purchase_intent(
     payload: UserItemFeatures,
     request: Request,
     db: Session = Depends(get_db),
-):
-    """Predict probability that a user will purchase a given item."""
+) -> IntentResponse:
+    """Predict the probability that a user purchases a given item.
+
+    Args:
+        payload: User and item features for the pair being scored.
+        request: Incoming request, carrying the correlation ID.
+        db: Database session used to log the prediction.
+
+    Returns:
+        Purchase probability, binary label, confidence band, and any warnings.
+
+    Raises:
+        HTTPException: 503 when the model is not loaded.
+    """
     cid = _get_correlation_id(request)
     t0 = time.perf_counter()
     model = _state.get("model")
@@ -234,13 +282,35 @@ def predict_purchase_intent(
 # ---------------------------------------------------------------------------
 
 
-@app.post("/api/v1/recommend", response_model=RecommendResponse, tags=["Recommendation"])
+@app.post(
+    "/api/v1/recommend",
+    response_model=RecommendResponse,
+    tags=["Recommendation"],
+    summary="Top-K recommendations for a user",
+    description=(
+        "Oversamples candidates from the catalogue, scores each with the intent "
+        "ensemble, and returns the top-K rank-ordered. Results are cached per user "
+        "and top_k for the cache TTL."
+    ),
+)
 def recommend_items(
     payload: RecommendRequest,
     request: Request,
     db: Session = Depends(get_db),
-):
-    """Return top-K item recommendations ranked by predicted purchase intent."""
+) -> RecommendResponse:
+    """Return top-K item recommendations ranked by predicted purchase intent.
+
+    Args:
+        payload: User features and the requested result count.
+        request: Incoming request, carrying the correlation ID.
+        db: Database session used to log the prediction.
+
+    Returns:
+        Rank-ordered recommendations with their intent scores.
+
+    Raises:
+        HTTPException: 503 when the model is not loaded.
+    """
     cid = _get_correlation_id(request)
     t0 = time.perf_counter()
     model = _state.get("model")
@@ -325,13 +395,35 @@ def recommend_items(
 # ---------------------------------------------------------------------------
 
 
-@app.post("/api/v1/similar", response_model=SimilarItemsResponse, tags=["Recommendation"])
+@app.post(
+    "/api/v1/similar",
+    response_model=SimilarItemsResponse,
+    tags=["Recommendation"],
+    summary="Items similar to a seed item",
+    description=(
+        "FAISS L2 nearest-neighbour lookup over item embeddings. Falls back to a "
+        "brute-force index when faiss-cpu is unavailable, so the endpoint degrades "
+        "in speed rather than failing."
+    ),
+)
 def similar_items(
     payload: SimilarItemsRequest,
     request: Request,
     db: Session = Depends(get_db),
-):
-    """Find items most similar to the seed item using FAISS nearest-neighbour search."""
+) -> SimilarItemsResponse:
+    """Find the items most similar to a seed item.
+
+    Args:
+        payload: Seed item ID and the requested neighbour count.
+        request: Incoming request, carrying the correlation ID.
+        db: Database session used to log the lookup.
+
+    Returns:
+        Nearest neighbours with similarity scores, nearest first.
+
+    Raises:
+        HTTPException: 503 when the FAISS index is not loaded.
+    """
     cid = _get_correlation_id(request)
     t0 = time.perf_counter()
     index = _state.get("index")
@@ -382,13 +474,32 @@ def similar_items(
 # ---------------------------------------------------------------------------
 
 
-@app.post("/api/v1/drift", response_model=DriftResponse, tags=["Monitoring"])
+@app.post(
+    "/api/v1/drift",
+    response_model=DriftResponse,
+    tags=["Monitoring"],
+    summary="Check feature distributions for drift",
+    description=(
+        "Runs a KS test and a PSI calculation against the rolling reference window "
+        "for each supplied feature, persisting both to drift_logs. Features with "
+        "fewer than 20 observations return no verdict rather than a spurious one."
+    ),
+)
 def check_drift(
     payload: DriftRequest,
     request: Request,
     db: Session = Depends(get_db),
-):
-    """Run KS-test drift analysis on provided feature distributions."""
+) -> DriftResponse:
+    """Run KS and PSI drift analysis on the supplied feature distributions.
+
+    Args:
+        payload: Map of feature name to recent observed values.
+        request: Incoming request, carrying the correlation ID.
+        db: Database session used to persist drift results.
+
+    Returns:
+        Per-feature drift results and the list of features flagged as drifted.
+    """
     results = check_all_features(payload.feature_values, db)
     drifted = [f for f, r in results.items() if r.get("drift_detected")]
     COUNTERS.drift_alerts += len(drifted)
