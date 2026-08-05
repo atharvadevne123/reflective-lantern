@@ -1,4 +1,11 @@
-"""ML model training, inference, and FAISS item-similarity index."""
+"""Model training, inference, and the FAISS item-similarity index.
+
+The intent model is a soft-voting ensemble of LightGBM, XGBoost, and a random
+forest, wrapped in a single sklearn ``Pipeline`` together with the feature
+stages. Keeping the transforms inside the fitted pipeline means training and
+serving cannot drift apart: there is exactly one transform path, and it is the
+one that gets pickled.
+"""
 
 from __future__ import annotations
 
@@ -40,6 +47,16 @@ _FEATURE_COLS = USER_COLS + ITEM_COLS + INTERACTION_COLS
 
 
 def _build_ensemble() -> VotingClassifier:
+    """Build the soft-voting ensemble.
+
+    Soft voting averages predicted probabilities rather than taking a majority
+    of hard labels, which preserves the calibration the ranking endpoints need —
+    ``/recommend`` sorts by score, so a well-ordered probability matters more
+    than the 0.5 threshold decision.
+
+    Returns:
+        An unfitted ``VotingClassifier`` over LightGBM, XGBoost, and a forest.
+    """
     lgbm = LGBMClassifier(
         n_estimators=200,
         max_depth=5,
@@ -66,7 +83,23 @@ def _build_ensemble() -> VotingClassifier:
 
 
 def train_model(X: pd.DataFrame, y: pd.Series) -> tuple[Pipeline, dict[str, Any]]:
-    """Train the intent prediction pipeline with 5-fold CV and return metrics."""
+    """Train the intent pipeline, score it with 5-fold CV, and persist it.
+
+    Cross-validation runs on the full pipeline rather than the bare estimator, so
+    the feature transforms are re-fitted inside each fold and the AUC does not
+    inherit leakage from transforms fitted on the whole dataset.
+
+    Note:
+        Writes ``MODEL_PATH`` and ``METRICS_PATH`` as a side effect. Callers that
+        need the incumbent's metrics must read them *before* calling this.
+
+    Args:
+        X: Raw feature frame; transforms are applied inside the pipeline.
+        y: Binary purchase labels.
+
+    Returns:
+        The fitted pipeline paired with its cross-validated metrics.
+    """
     feat_pipe = build_feature_pipeline()
     ensemble = _build_ensemble()
 
@@ -92,6 +125,15 @@ def train_model(X: pd.DataFrame, y: pd.Series) -> tuple[Pipeline, dict[str, Any]
 
 
 def load_model() -> Pipeline:
+    """Load the persisted pipeline, training a bootstrap model if none exists.
+
+    The bootstrap path exists so a fresh checkout serves traffic immediately. It
+    fits on random labels and is therefore near-chance by construction — run
+    ``scripts/train.py`` to replace it with a model that has learned something.
+
+    Returns:
+        A fitted pipeline ready for inference.
+    """
     if not MODEL_PATH.exists():
         logger.warning("No saved model found; training bootstrap model.")
         df = make_sample_dataframe(n=500)
@@ -104,7 +146,15 @@ def load_model() -> Pipeline:
 
 
 def predict_intent(pipeline: Pipeline, X: pd.DataFrame) -> tuple[list[float], list[int]]:
-    """Return (probabilities, predicted_labels) for purchase intent."""
+    """Score rows for purchase intent.
+
+    Args:
+        pipeline: Fitted pipeline from :func:`train_model` or :func:`load_model`.
+        X: Raw feature frame with one row per user-item pair.
+
+    Returns:
+        Positive-class probabilities and their 0.5-thresholded labels.
+    """
     proba = pipeline.predict_proba(X)[:, 1]
     labels = (proba >= 0.5).astype(int)
     return proba.tolist(), labels.tolist()
@@ -218,7 +268,13 @@ def search_similar_items(
 
 
 class _BruteForceIndex:
-    """Brute-force cosine-similarity fallback when FAISS is unavailable."""
+    """Exact L2 nearest-neighbour fallback used when FAISS is unavailable.
+
+    Mirrors the slice of the FAISS API this module uses (``search``, ``add``, and
+    an absent ``d`` attribute), so the similarity endpoint keeps working on hosts
+    where ``faiss-cpu`` will not install. Exact rather than approximate, so it is
+    O(n) per query — correct, and fine at catalogue sizes in the low thousands.
+    """
 
     def __init__(self, vectors: np.ndarray, item_ids: list[str]) -> None:
         self._vecs = vectors.astype(np.float32)
