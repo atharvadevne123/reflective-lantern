@@ -87,3 +87,64 @@ __all__ = [
     "TokenBucketRateLimiter",
     "make_rate_limiter",
 ]
+
+
+def limiter_utilization(limiter: "TokenBucketRateLimiter") -> float:
+    """Return the fraction of token capacity currently consumed.
+
+    Args:
+        limiter: A TokenBucketRateLimiter instance.
+
+    Returns:
+        Float in [0, 1] where 0 = full capacity available, 1 = fully consumed.
+    """
+    bucket = limiter._bucket
+    tokens = bucket.tokens
+    capacity = bucket.capacity
+    consumed = capacity - tokens
+    return round(max(0.0, min(1.0, consumed / capacity)), 4)
+
+
+def reset_limiter(limiter: "TokenBucketRateLimiter") -> None:
+    """Reset a rate limiter to its full token capacity.
+
+    Args:
+        limiter: A TokenBucketRateLimiter instance to reset.
+    """
+    import time
+
+    with limiter._lock:
+        limiter._bucket.tokens = limiter._bucket.capacity
+        limiter._bucket.last_refill = time.monotonic()
+
+
+def is_rate_limited(limiter: "TokenBucketRateLimiter", cost: float = 1.0) -> bool:
+    """Check whether a request of given cost would be rate-limited WITHOUT consuming tokens.
+
+    Args:
+        limiter: A TokenBucketRateLimiter instance.
+        cost: Token cost of the request. Default 1.0.
+
+    Returns:
+        True if the request would be denied (insufficient tokens), else False.
+    """
+    bucket = limiter._bucket
+    import time
+
+    with limiter._lock:
+        now = time.monotonic()
+        elapsed = now - bucket.last_refill
+        refilled = min(bucket.capacity, bucket.tokens + elapsed * limiter._rate)
+    return refilled < cost
+
+
+def make_strict_limiter(max_per_second: float) -> "TokenBucketRateLimiter":
+    """Create a rate limiter with capacity = max_per_second (burst of 1 second).
+
+    Args:
+        max_per_second: Allowed requests per second.
+
+    Returns:
+        TokenBucketRateLimiter configured for the given rate.
+    """
+    return make_rate_limiter(capacity=max_per_second, rate_per_second=max_per_second)
