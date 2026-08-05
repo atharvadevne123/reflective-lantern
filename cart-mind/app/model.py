@@ -32,6 +32,10 @@ METRICS_PATH = Path(os.getenv("METRICS_PATH", "metrics.json"))
 FAISS_INDEX_PATH = Path(os.getenv("FAISS_INDEX_PATH", "faiss_index.idx"))
 ITEM_IDS_PATH = Path(os.getenv("ITEM_IDS_PATH", "item_ids.json"))
 
+# Dimensionality of item embeddings. Build and query paths must agree on this,
+# so it lives in one place rather than being repeated as a literal.
+EMBED_DIM = int(os.getenv("EMBED_DIM", "32"))
+
 _FEATURE_COLS = USER_COLS + ITEM_COLS + INTERACTION_COLS
 
 
@@ -111,16 +115,32 @@ def predict_intent(pipeline: Pipeline, X: pd.DataFrame) -> tuple[list[float], li
 # ---------------------------------------------------------------------------
 
 
-def build_faiss_index(item_vectors: np.ndarray, item_ids: list[str]) -> Any:
-    """Build a FAISS flat-L2 index from item embedding vectors."""
+def build_faiss_index(item_vectors: np.ndarray, item_ids: list[str], persist: bool = False) -> Any:
+    """Build a FAISS flat-L2 index from item embedding vectors.
+
+    Persistence is opt-in. Writing to the shared index path by default meant any
+    caller building a throwaway index silently replaced the deployed serving
+    index — including tests, which then left a mismatched-dimension index on disk
+    for the API to trip over.
+
+    Args:
+        item_vectors: Item embeddings, shape ``(n_items, dim)``.
+        item_ids: Item IDs positionally aligned to ``item_vectors``.
+        persist: Write the index and IDs to disk, replacing the serving index.
+
+    Returns:
+        A FAISS index, or a :class:`_BruteForceIndex` if FAISS is unavailable.
+    """
     try:
         import faiss  # type: ignore
 
         d = item_vectors.shape[1]
         index = faiss.IndexFlatL2(d)
         index.add(item_vectors.astype(np.float32))
-        faiss.write_index(index, str(FAISS_INDEX_PATH))
-        ITEM_IDS_PATH.write_text(json.dumps(item_ids))
+        if persist:
+            faiss.write_index(index, str(FAISS_INDEX_PATH))
+            ITEM_IDS_PATH.write_text(json.dumps(item_ids))
+            logger.info("FAISS index persisted to %s", FAISS_INDEX_PATH)
         logger.info("FAISS index built: %d items, dim=%d", len(item_ids), d)
         return index
     except ImportError:
@@ -129,20 +149,36 @@ def build_faiss_index(item_vectors: np.ndarray, item_ids: list[str]) -> Any:
 
 
 def load_faiss_index() -> tuple[Any, list[str]]:
-    """Load the FAISS index and corresponding item IDs."""
+    """Load the persisted FAISS index, or build a synthetic one as a fallback.
+
+    A persisted index is only accepted if its dimensionality matches
+    :data:`EMBED_DIM`. A stale index left behind at a different dimension would
+    otherwise be loaded happily and then fail at query time, deep inside FAISS,
+    with an opaque assertion — so it is rejected here and rebuilt instead.
+
+    Returns:
+        The loaded or freshly built index, paired with its item IDs.
+    """
     try:
         import faiss  # type: ignore
 
         if FAISS_INDEX_PATH.exists() and ITEM_IDS_PATH.exists():
             index = faiss.read_index(str(FAISS_INDEX_PATH))
-            item_ids = json.loads(ITEM_IDS_PATH.read_text())
-            return index, item_ids
+            if index.d == EMBED_DIM:
+                item_ids = json.loads(ITEM_IDS_PATH.read_text())
+                logger.info("Loaded FAISS index: %d items, dim=%d", index.ntotal, index.d)
+                return index, item_ids
+            logger.warning(
+                "Discarding persisted index: dim=%d, expected %d. Rebuilding.",
+                index.d,
+                EMBED_DIM,
+            )
     except ImportError:
         pass
 
     logger.info("Generating synthetic FAISS index.")
     rng = np.random.default_rng(0)
-    vecs = rng.random((200, 32)).astype(np.float32)
+    vecs = rng.random((200, EMBED_DIM)).astype(np.float32)
     ids = [f"item_{i:04d}" for i in range(200)]
     index = build_faiss_index(vecs, ids)
     return index, ids
@@ -151,8 +187,26 @@ def load_faiss_index() -> tuple[Any, list[str]]:
 def search_similar_items(
     index: Any, item_ids: list[str], query_vector: np.ndarray, top_k: int = 5
 ) -> list[dict[str, Any]]:
-    """Return top-k most similar items to the query vector."""
+    """Return the top-k items nearest to the query vector.
+
+    Args:
+        index: A FAISS index or :class:`_BruteForceIndex`.
+        item_ids: Item IDs positionally aligned to the index contents.
+        query_vector: Query embedding; must match the index dimensionality.
+        top_k: Number of neighbours to return.
+
+    Returns:
+        Neighbours as ``{"item_id", "similarity_score"}``, nearest first.
+
+    Raises:
+        ValueError: If the query dimensionality does not match the index.
+    """
     query = query_vector.astype(np.float32).reshape(1, -1)
+    index_dim = getattr(index, "d", None)
+    if index_dim is not None and query.shape[1] != index_dim:
+        raise ValueError(
+            f"Query dimension {query.shape[1]} does not match index dimension {index_dim}"
+        )
     distances, indices = index.search(query, top_k + 1)
     results = []
     for dist, idx in zip(distances[0], indices[0], strict=False):
