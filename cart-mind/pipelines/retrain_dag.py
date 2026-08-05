@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import contextlib
 import json
 import logging
 import os
@@ -21,49 +20,88 @@ DEFAULT_ARGS = {
 AUC_GATE = float(os.getenv("RETRAIN_AUC_GATE", "0.70"))
 MIN_ROWS = int(os.getenv("RETRAIN_MIN_ROWS", "500"))
 
+# Module-level so the champion-comparison path is patchable in tests and the
+# dependency on the metrics file is visible at import rather than buried in a call.
+METRICS_PATH = Path(os.getenv("METRICS_PATH", "metrics.json"))
+
+# Rows pulled per retraining run. Configurable so a deployment can trade training
+# cost against sample size without editing code.
+TRAIN_ROWS = int(os.getenv("RETRAIN_ROWS", "1000"))
+
 
 def _fetch_training_data() -> tuple:
     """Fetch labelled interaction records from PostgreSQL."""
-    import numpy as np
-    import pandas as pd
+    from app.features import (
+        INTERACTION_COLS,
+        ITEM_COLS,
+        USER_COLS,
+        make_purchase_labels,
+        make_sample_dataframe,
+    )
 
-    from app.features import INTERACTION_COLS, ITEM_COLS, USER_COLS, make_sample_dataframe
-
-    df = make_sample_dataframe(n=1000, seed=int(datetime.utcnow().timestamp()) % 9999)
-    rng = np.random.default_rng(42)
-    y = (rng.random(len(df)) > 0.65).astype(int)
+    df = make_sample_dataframe(n=TRAIN_ROWS, seed=int(datetime.utcnow().timestamp()) % 9999)
     cols = USER_COLS + ITEM_COLS + INTERACTION_COLS
-    return df[cols], pd.Series(y, name="purchased")
+    # Signal-bearing labels, matching what scripts/train.py fits on: a retraining
+    # gate calibrated against pure noise would reject every honest challenger.
+    return df[cols], make_purchase_labels(df)
+
+
+def read_champion_auc() -> float:
+    """Read the incumbent champion's cross-validated AUC.
+
+    Returns:
+        The champion's AUC, or ``0.0`` when no readable metrics file exists —
+        which correctly makes any challenger clearing the absolute gate an
+        improvement on having no model at all.
+    """
+    if not METRICS_PATH.exists():
+        return 0.0
+    try:
+        return float(json.loads(METRICS_PATH.read_text()).get("auc_mean", 0.0))
+    except (OSError, json.JSONDecodeError, TypeError, ValueError):
+        logger.warning("Champion metrics unreadable; treating as no champion.", exc_info=True)
+        return 0.0
 
 
 def retrain_task(**context) -> dict:
-    """Train a challenger model and compare against champion AUC."""
-    from app.model import METRICS_PATH, MODEL_PATH, train_model
+    """Train a challenger and promote it only if it beats the champion.
+
+    The champion's AUC is read *before* training. ``train_model`` writes
+    ``metrics.json`` as a side effect, so reading afterwards would load the
+    challenger's own metrics and compare it against itself — a check that always
+    passes and silently promotes every model, including regressions.
+
+    Returns:
+        Mapping with ``status`` (``promoted``/``rejected``/``skipped``) plus the
+        challenger and champion AUCs.
+    """
+    import joblib
+
+    from app.model import MODEL_PATH, train_model
 
     X, y = _fetch_training_data()
     if len(y) < MIN_ROWS:
         logger.warning("Only %d rows — skipping retrain (gate=%d).", len(y), MIN_ROWS)
         return {"status": "skipped", "reason": "insufficient_data"}
 
+    # Read the champion first: train_model overwrites METRICS_PATH.
+    champion_auc = read_champion_auc()
+
     challenger_pipe, metrics = train_model(X, y)
     auc = metrics["auc_mean"]
 
-    # Read champion metrics if they exist
-    champion_auc = 0.0
-    if METRICS_PATH.exists():
-        with contextlib.suppress(Exception):
-            champion_auc = json.loads(METRICS_PATH.read_text()).get("auc_mean", 0.0)
-
     if auc >= AUC_GATE and auc >= champion_auc:
-        import joblib
-
         joblib.dump(challenger_pipe, MODEL_PATH)
         METRICS_PATH.write_text(json.dumps(metrics, indent=2))
         logger.info("Champion promoted: AUC %.4f (champion was %.4f).", auc, champion_auc)
         return {"status": "promoted", "auc": auc, "champion_auc": champion_auc}
 
+    # Restore the champion's metrics: train_model already clobbered them.
+    if champion_auc > 0.0:
+        METRICS_PATH.write_text(json.dumps({"auc_mean": champion_auc}, indent=2))
+
     logger.warning(
-        "Challenger rejected: AUC %.4f < gate %.2f or champion %.4f.",
+        "Challenger rejected: AUC %.4f below gate %.2f or champion %.4f.",
         auc,
         AUC_GATE,
         champion_auc,
