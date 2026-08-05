@@ -657,3 +657,122 @@ class TestGrossRentMultiplier:
         from app.investment import gross_rent_multiplier
 
         assert gross_rent_multiplier(200000, -1000) == float("inf")
+
+
+class TestAnnualizedReturn:
+    def test_basic(self) -> None:
+        from app.investment import annualized_return
+
+        result = annualized_return(1.0, 10.0)
+        assert result == pytest.approx((2.0) ** 0.1 - 1, rel=1e-4)
+
+    def test_one_year(self) -> None:
+        from app.investment import annualized_return
+
+        assert annualized_return(0.10, 1.0) == pytest.approx(0.10, rel=1e-4)
+
+    def test_zero_years_raises(self) -> None:
+        from app.investment import annualized_return
+
+        with pytest.raises(ValueError, match="positive"):
+            annualized_return(0.5, 0.0)
+
+    def test_total_return_minus_one_raises(self) -> None:
+        from app.investment import annualized_return
+
+        with pytest.raises(ValueError, match="> -1"):
+            annualized_return(-1.0, 5.0)
+
+    @pytest.mark.parametrize("total,years", [(0.0, 5.0), (0.5, 3.0), (2.0, 10.0)])
+    def test_positive_return_positive_result(self, total: float, years: float) -> None:
+        from app.investment import annualized_return
+
+        assert annualized_return(total, years) >= 0.0
+
+
+class TestNetPresentValue:
+    def test_zero_discount(self) -> None:
+        from app.investment import net_present_value
+
+        flows = [-1000.0, 200.0, 300.0, 400.0, 500.0]
+        result = net_present_value(flows, 0.0)
+        assert result == pytest.approx(400.0, rel=1e-4)
+
+    def test_positive_npv(self) -> None:
+        from app.investment import net_present_value
+
+        flows = [-100.0, 60.0, 60.0]
+        result = net_present_value(flows, 0.10)
+        assert result > 0
+
+    def test_empty_raises(self) -> None:
+        from app.investment import net_present_value
+
+        with pytest.raises(ValueError, match="empty"):
+            net_present_value([], 0.05)
+
+    def test_discount_rate_below_minus_one_raises(self) -> None:
+        from app.investment import net_present_value
+
+        with pytest.raises(ValueError, match="> -1"):
+            net_present_value([-100.0, 50.0], -2.0)
+
+    def test_single_cash_flow(self) -> None:
+        from app.investment import net_present_value
+
+        assert net_present_value([-500.0], 0.10) == pytest.approx(-500.0, rel=1e-4)
+
+
+class TestPropertyYieldAnalysis:
+    def test_basic(self) -> None:
+        from app.investment import property_yield_analysis
+
+        result = property_yield_analysis(200_000.0, 20_000.0)
+        assert result["gross_yield_pct"] == pytest.approx(10.0, rel=1e-4)
+
+    def test_with_expenses(self) -> None:
+        from app.investment import property_yield_analysis
+
+        result = property_yield_analysis(200_000.0, 20_000.0, 5_000.0)
+        assert result["net_yield_pct"] < result["gross_yield_pct"]
+
+    def test_zero_market_value_raises(self) -> None:
+        from app.investment import property_yield_analysis
+
+        with pytest.raises(ValueError, match="positive"):
+            property_yield_analysis(0.0, 12_000.0)
+
+    def test_keys_present(self) -> None:
+        from app.investment import property_yield_analysis
+
+        result = property_yield_analysis(300_000.0, 18_000.0)
+        assert set(result.keys()) >= {"gross_yield_pct", "net_yield_pct", "net_operating_income", "expense_ratio_pct"}
+
+
+class TestEquityRatio:
+    def test_no_loan(self) -> None:
+        from app.investment import equity_ratio
+
+        assert equity_ratio(200_000.0, 0.0) == pytest.approx(1.0, rel=1e-4)
+
+    def test_fully_leveraged(self) -> None:
+        from app.investment import equity_ratio
+
+        assert equity_ratio(200_000.0, 200_000.0) == pytest.approx(0.0, abs=1e-4)
+
+    def test_zero_market_value(self) -> None:
+        from app.investment import equity_ratio
+
+        assert equity_ratio(0.0, 0.0) == 0.0
+
+    def test_negative_loan_raises(self) -> None:
+        from app.investment import equity_ratio
+
+        with pytest.raises(ValueError, match="non-negative"):
+            equity_ratio(100_000.0, -5_000.0)
+
+    def test_result_in_zero_one(self) -> None:
+        from app.investment import equity_ratio
+
+        result = equity_ratio(300_000.0, 120_000.0)
+        assert 0.0 <= result <= 1.0
