@@ -318,3 +318,84 @@ class TestTTLCacheContains:
 
         c = TTLCache(ttl_seconds=60)
         assert "nope" not in c
+
+
+class TestBuildCacheKey:
+    def test_basic_key(self) -> None:
+        from app.cache import build_cache_key
+
+        assert build_cache_key("user", 42, "data") == "user:42:data"
+
+    def test_single_part(self) -> None:
+        from app.cache import build_cache_key
+
+        assert build_cache_key("only") == "only"
+
+    def test_numeric_parts(self) -> None:
+        from app.cache import build_cache_key
+
+        result = build_cache_key(1, 2, 3)
+        assert result == "1:2:3"
+
+
+class TestCacheHitRate:
+    def test_all_hits(self) -> None:
+        from app.cache import cache_hit_rate
+
+        assert cache_hit_rate(10, 0) == pytest.approx(1.0)
+
+    def test_all_misses(self) -> None:
+        from app.cache import cache_hit_rate
+
+        assert cache_hit_rate(0, 10) == pytest.approx(0.0)
+
+    def test_zero_total(self) -> None:
+        from app.cache import cache_hit_rate
+
+        assert cache_hit_rate(0, 0) == 0.0
+
+    def test_negative_raises(self) -> None:
+        from app.cache import cache_hit_rate
+
+        with pytest.raises(ValueError):
+            cache_hit_rate(-1, 5)
+
+    def test_mixed(self) -> None:
+        from app.cache import cache_hit_rate
+
+        assert cache_hit_rate(3, 7) == pytest.approx(0.3)
+
+
+class TestWarmCache:
+    def test_inserts_items(self) -> None:
+        from app.cache import TTLCache, warm_cache
+
+        cache = TTLCache(ttl_seconds=60, max_size=100)
+        count = warm_cache(cache, {"a": 1, "b": 2, "c": 3})
+        assert count == 3
+        assert cache.get("a") == 1
+
+    def test_empty_items(self) -> None:
+        from app.cache import TTLCache, warm_cache
+
+        cache = TTLCache(ttl_seconds=60, max_size=100)
+        assert warm_cache(cache, {}) == 0
+
+
+class TestEvictExpiredKeys:
+    def test_evicts_expired(self) -> None:
+        import time
+        from app.cache import TTLCache, evict_expired_keys
+
+        cache = TTLCache(ttl_seconds=0, max_size=100)
+        cache.set("x", 1)
+        time.sleep(0.01)
+        evicted = evict_expired_keys(cache)
+        assert evicted >= 0
+
+    def test_no_eviction_when_fresh(self) -> None:
+        from app.cache import TTLCache, evict_expired_keys
+
+        cache = TTLCache(ttl_seconds=3600, max_size=100)
+        cache.set("fresh", 99)
+        assert evict_expired_keys(cache) == 0

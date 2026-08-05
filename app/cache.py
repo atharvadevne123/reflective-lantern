@@ -137,7 +137,7 @@ def evict_expired_keys(cache: "TTLCache") -> int:
         Number of expired keys removed.
     """
     before = len(cache._store)
-    cache._evict()
+    cache.evict_expired()
     after = len(cache._store)
     return before - after
 
