@@ -165,3 +165,63 @@ def first_step(pipeline: Any) -> Any:
     if not steps:
         return None
     return steps[0][1]
+
+
+def count_pipeline_steps(pipeline: Any) -> int:
+    """Return the number of steps in a sklearn-style pipeline.
+
+    Args:
+        pipeline: A pipeline with a ``steps`` attribute.
+
+    Returns:
+        Number of steps, or 0 if no steps attribute.
+    """
+    steps = getattr(pipeline, "steps", None)
+    if steps is None:
+        return 0
+    return len(steps)
+
+
+def last_step(pipeline: Any) -> Any:
+    """Return the last estimator in a sklearn-style pipeline.
+
+    Args:
+        pipeline: A pipeline with a ``steps`` attribute.
+
+    Returns:
+        The last step's estimator, or None if the pipeline has no steps.
+    """
+    steps = getattr(pipeline, "steps", None)
+    if not steps:
+        return None
+    return steps[-1][1]
+
+
+def step_names_to_set(pipeline: Any) -> set[str]:
+    """Return step names as a set for O(1) membership tests.
+
+    Args:
+        pipeline: A pipeline with a ``steps`` attribute.
+
+    Returns:
+        Set of step name strings.
+    """
+    steps = getattr(pipeline, "steps", None)
+    if steps is None:
+        return set()
+    return {name for name, _ in steps}
+
+
+def pipeline_memory_usage_kb(pipeline: Any) -> float:
+    """Estimate pickle-based memory footprint of a pipeline in kibibytes.
+
+    Args:
+        pipeline: Any picklable object (e.g. a sklearn pipeline).
+
+    Returns:
+        Estimated size in KiB.
+    """
+    import pickle
+
+    data = pickle.dumps(pipeline)
+    return round(len(data) / 1024, 4)
