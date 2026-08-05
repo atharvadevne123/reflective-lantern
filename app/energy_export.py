@@ -185,3 +185,80 @@ def partition_records(
     matches = [r for r in records if r.get(field) == value]
     non_matches = [r for r in records if r.get(field) != value]
     return matches, non_matches
+
+
+def count_records_by_field(records: list[dict], field: str) -> dict[str, int]:
+    """Count records grouped by a field's value.
+
+    Args:
+        records: List of record dicts.
+        field: Field name to group by.
+
+    Returns:
+        Dict mapping field value -> record count.
+    """
+    counts: dict[str, int] = {}
+    for rec in records:
+        key = str(rec.get(field, ""))
+        counts[key] = counts.get(key, 0) + 1
+    return counts
+
+
+def records_to_tsv(records: list[dict], columns: list[str] | None = None) -> str:
+    """Serialize records to tab-separated values.
+
+    Args:
+        records: List of dicts.
+        columns: Ordered column names; if None, use sorted keys from first record.
+
+    Returns:
+        TSV string with header row.
+    """
+    if not records:
+        return ""
+    cols = columns if columns else sorted(records[0].keys())
+    lines = ["\t".join(cols)]
+    for rec in records:
+        lines.append("\t".join(str(rec.get(c, "")) for c in cols))
+    return "\n".join(lines)
+
+
+def merge_records(base: list[dict], override: list[dict], key: str) -> list[dict]:
+    """Merge two record lists, with *override* records taking precedence by key.
+
+    Args:
+        base: Base list of records.
+        override: Override records that replace or add to base.
+        key: Field name used as the merge key.
+
+    Returns:
+        Merged list with overrides applied.
+    """
+    merged: dict[str, dict] = {str(r.get(key)): r for r in base}
+    for rec in override:
+        merged[str(rec.get(key))] = rec
+    return list(merged.values())
+
+
+def sample_records(records: list[dict], n: int, seed: int = 42) -> list[dict]:
+    """Return a reproducible sample of up to n records.
+
+    Args:
+        records: Source records.
+        n: Number of records to sample.
+        seed: Random seed for reproducibility.
+
+    Returns:
+        Sampled subset of records.
+
+    Raises:
+        ValueError: If n < 0.
+    """
+    if n < 0:
+        raise ValueError("n must be non-negative")
+    import random
+
+    rng = random.Random(seed)
+    pool = list(records)
+    rng.shuffle(pool)
+    return pool[:n]
