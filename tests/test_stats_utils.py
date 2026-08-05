@@ -556,3 +556,169 @@ class TestWinsorize:
         vals = list(range(100))
         result = winsorize(vals, lower_pct=lower, upper_pct=upper)
         assert min(result) >= vals[int(lower)]
+
+
+class TestRollingStd:
+    def test_basic(self) -> None:
+        from app.stats_utils import rolling_std
+
+        result = rolling_std([1.0, 2.0, 3.0, 4.0, 5.0], window=3)
+        assert len(result) == 5
+
+    def test_empty_raises(self) -> None:
+        from app.stats_utils import rolling_std
+
+        with pytest.raises(ValueError, match="empty"):
+            rolling_std([], window=3)
+
+    def test_window_one_raises(self) -> None:
+        from app.stats_utils import rolling_std
+
+        with pytest.raises(ValueError, match="at least 2"):
+            rolling_std([1.0, 2.0], window=1)
+
+    def test_constant_series_std_zero(self) -> None:
+        from app.stats_utils import rolling_std
+
+        result = rolling_std([5.0] * 10, window=4)
+        assert all(v == pytest.approx(0.0, abs=1e-6) for v in result[3:])
+
+    @pytest.mark.parametrize("window", [2, 3, 5])
+    def test_output_length_matches_input(self, window: int) -> None:
+        from app.stats_utils import rolling_std
+
+        vals = list(range(1, 11))
+        assert len(rolling_std(vals, window=window)) == 10
+
+
+class TestComputeEntropy:
+    def test_uniform_dist(self) -> None:
+        import math
+
+        from app.stats_utils import compute_entropy
+
+        result = compute_entropy([1.0, 1.0, 1.0, 1.0])
+        assert result == pytest.approx(math.log(4), rel=1e-4)
+
+    def test_single_element_zero_entropy(self) -> None:
+        from app.stats_utils import compute_entropy
+
+        assert compute_entropy([1.0]) == pytest.approx(0.0, abs=1e-6)
+
+    def test_empty_raises(self) -> None:
+        from app.stats_utils import compute_entropy
+
+        with pytest.raises(ValueError, match="empty"):
+            compute_entropy([])
+
+    def test_zero_sum_raises(self) -> None:
+        from app.stats_utils import compute_entropy
+
+        with pytest.raises(ValueError, match="positive"):
+            compute_entropy([0.0, 0.0])
+
+    def test_positive_result(self) -> None:
+        from app.stats_utils import compute_entropy
+
+        assert compute_entropy([2.0, 3.0, 5.0]) > 0.0
+
+
+class TestComputeCorrelation:
+    def test_perfect_positive(self) -> None:
+        from app.stats_utils import compute_correlation
+
+        x = [1.0, 2.0, 3.0, 4.0, 5.0]
+        assert compute_correlation(x, x) == pytest.approx(1.0, rel=1e-4)
+
+    def test_perfect_negative(self) -> None:
+        from app.stats_utils import compute_correlation
+
+        x = [1.0, 2.0, 3.0]
+        y = [3.0, 2.0, 1.0]
+        assert compute_correlation(x, y) == pytest.approx(-1.0, rel=1e-4)
+
+    def test_length_mismatch_raises(self) -> None:
+        from app.stats_utils import compute_correlation
+
+        with pytest.raises(ValueError, match="same length"):
+            compute_correlation([1.0, 2.0], [1.0])
+
+    def test_too_short_raises(self) -> None:
+        from app.stats_utils import compute_correlation
+
+        with pytest.raises(ValueError, match="2 observations"):
+            compute_correlation([1.0], [1.0])
+
+    def test_constant_series_returns_zero(self) -> None:
+        from app.stats_utils import compute_correlation
+
+        assert compute_correlation([5.0, 5.0, 5.0], [1.0, 2.0, 3.0]) == pytest.approx(0.0, abs=1e-6)
+
+    @pytest.mark.parametrize("n", [5, 10, 20])
+    def test_result_in_range(self, n: int) -> None:
+        from app.stats_utils import compute_correlation
+
+        x = list(range(n))
+        y = [v + 0.1 * (i % 3) for i, v in enumerate(x)]
+        r = compute_correlation(x, y)
+        assert -1.0 <= r <= 1.0
+
+
+class TestComputeSkewness:
+    def test_symmetric_distribution_near_zero(self) -> None:
+        from app.stats_utils import compute_skewness
+
+        vals = [1.0, 2.0, 3.0, 4.0, 5.0]
+        assert abs(compute_skewness(vals)) < 0.1
+
+    def test_too_few_raises(self) -> None:
+        from app.stats_utils import compute_skewness
+
+        with pytest.raises(ValueError, match="3 observations"):
+            compute_skewness([1.0, 2.0])
+
+    def test_positive_skew_detected(self) -> None:
+        from app.stats_utils import compute_skewness
+
+        vals = [1.0, 1.0, 1.0, 1.0, 10.0]
+        assert compute_skewness(vals) > 0.0
+
+    def test_returns_float(self) -> None:
+        from app.stats_utils import compute_skewness
+
+        result = compute_skewness([1.0, 2.0, 3.0, 4.0, 5.0])
+        assert isinstance(result, float)
+
+
+class TestRollingPercentile:
+    def test_p50_equals_moving_median(self) -> None:
+        from app.stats_utils import rolling_percentile
+
+        vals = [1.0, 2.0, 3.0, 4.0, 5.0]
+        result = rolling_percentile(vals, window=3, pct=50.0)
+        assert len(result) == 5
+
+    def test_empty_raises(self) -> None:
+        from app.stats_utils import rolling_percentile
+
+        with pytest.raises(ValueError, match="empty"):
+            rolling_percentile([], window=3, pct=50.0)
+
+    def test_pct_out_of_range_raises(self) -> None:
+        from app.stats_utils import rolling_percentile
+
+        with pytest.raises(ValueError, match="pct"):
+            rolling_percentile([1.0, 2.0], window=2, pct=101.0)
+
+    def test_window_zero_raises(self) -> None:
+        from app.stats_utils import rolling_percentile
+
+        with pytest.raises(ValueError, match="at least 1"):
+            rolling_percentile([1.0, 2.0], window=0, pct=50.0)
+
+    @pytest.mark.parametrize("pct", [0.0, 25.0, 50.0, 75.0, 100.0])
+    def test_output_length(self, pct: float) -> None:
+        from app.stats_utils import rolling_percentile
+
+        vals = list(range(1, 11, 1))
+        assert len(rolling_percentile(vals, window=3, pct=pct)) == 10
