@@ -722,3 +722,56 @@ class TestRollingPercentile:
 
         vals = list(range(1, 11, 1))
         assert len(rolling_percentile(vals, window=3, pct=pct)) == 10
+
+
+class TestRunningMean:
+    def test_basic(self) -> None:
+        from app.stats_utils import running_mean
+
+        result = running_mean([1.0, 2.0, 3.0])
+        assert result[0] == pytest.approx(1.0)
+        assert result[1] == pytest.approx(1.5)
+        assert result[2] == pytest.approx(2.0)
+
+    def test_empty(self) -> None:
+        from app.stats_utils import running_mean
+
+        assert running_mean([]) == []
+
+    def test_length_preserved(self) -> None:
+        from app.stats_utils import running_mean
+
+        vals = [float(i) for i in range(10)]
+        assert len(running_mean(vals)) == 10
+
+    def test_constant_series(self) -> None:
+        from app.stats_utils import running_mean
+
+        result = running_mean([5.0, 5.0, 5.0])
+        assert all(v == pytest.approx(5.0) for v in result)
+
+
+class TestInterquartileRange:
+    def test_basic(self) -> None:
+        from app.stats_utils import interquartile_range
+
+        result = interquartile_range([1.0, 2.0, 3.0, 4.0, 5.0])
+        assert result > 0
+
+    def test_constant_series(self) -> None:
+        from app.stats_utils import interquartile_range
+
+        result = interquartile_range([5.0, 5.0, 5.0, 5.0])
+        assert result == pytest.approx(0.0)
+
+    def test_too_short_raises(self) -> None:
+        from app.stats_utils import interquartile_range
+
+        with pytest.raises(ValueError):
+            interquartile_range([5.0])
+
+    def test_non_negative(self) -> None:
+        from app.stats_utils import interquartile_range
+
+        result = interquartile_range([10.0, 20.0, 30.0, 40.0])
+        assert result >= 0
