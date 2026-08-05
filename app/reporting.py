@@ -371,3 +371,83 @@ def tariff_cost(kwh: float, tariff_per_kwh: float) -> float:
     if kwh <= 0:
         return 0.0
     return round(kwh * tariff_per_kwh, 4)
+
+
+def summarize_energy_period(readings: list[float], label: str = "period") -> dict:
+    """Return a summary dict for an energy readings period.
+
+    Args:
+        readings: List of energy readings in kWh.
+        label: Human-readable period label.
+
+    Returns:
+        Dict with label, count, total, mean, min, max.
+
+    Raises:
+        ValueError: If readings is empty.
+    """
+    if not readings:
+        raise ValueError("readings must be non-empty")
+    total = sum(readings)
+    return {
+        "label": label,
+        "count": len(readings),
+        "total": round(total, 4),
+        "mean": round(total / len(readings), 4),
+        "min": min(readings),
+        "max": max(readings),
+    }
+
+
+def format_report_row(data: dict, fields: list[str], separator: str = ",") -> str:
+    """Format a data dict as a delimited row string.
+
+    Args:
+        data: Dict of field names to values.
+        fields: Ordered list of field names to include.
+        separator: Delimiter character.
+
+    Returns:
+        Delimited string of field values.
+    """
+    return separator.join(str(data.get(f, "")) for f in fields)
+
+
+def aggregate_daily_report(hourly: list[float]) -> list[float]:
+    """Aggregate hourly readings into daily totals.
+
+    Args:
+        hourly: List of hourly energy readings (kWh). Length need not be multiple of 24.
+
+    Returns:
+        List of daily totals (last partial day included if any).
+    """
+    if not hourly:
+        return []
+    days = []
+    for i in range(0, len(hourly), 24):
+        days.append(round(sum(hourly[i : i + 24]), 4))
+    return days
+
+
+def report_anomaly_summary(flags: list[bool]) -> dict:
+    """Summarise a boolean anomaly flag sequence.
+
+    Args:
+        flags: List of booleans where True = anomaly.
+
+    Returns:
+        Dict with total, anomaly_count, normal_count, anomaly_rate.
+
+    Raises:
+        ValueError: If flags is empty.
+    """
+    if not flags:
+        raise ValueError("flags must be non-empty")
+    anomaly_count = sum(flags)
+    return {
+        "total": len(flags),
+        "anomaly_count": anomaly_count,
+        "normal_count": len(flags) - anomaly_count,
+        "anomaly_rate": round(anomaly_count / len(flags), 4),
+    }
