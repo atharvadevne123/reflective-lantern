@@ -335,3 +335,93 @@ def carbon_budget_remaining(
         "used_pct": used_pct,
         "on_track": on_track,
     }
+
+
+def emission_factor_change(
+    old_region: str,
+    new_region: str,
+    kwh: float,
+) -> dict[str, float]:
+    """Estimate the CO2 impact of switching from one grid region to another.
+
+    Args:
+        old_region: Current grid region identifier.
+        new_region: Target grid region identifier.
+        kwh: Annual energy consumption in kilowatt-hours.
+
+    Returns:
+        Dict with old_co2_kg, new_co2_kg, co2_change_kg, and pct_change.
+
+    Raises:
+        ValueError: If *kwh* is negative.
+    """
+    if kwh < 0:
+        raise ValueError(f"kwh must be non-negative, got {kwh}")
+    old_co2 = kwh_to_co2_kg(kwh, old_region)
+    new_co2 = kwh_to_co2_kg(kwh, new_region)
+    change = new_co2 - old_co2
+    pct = round(change / old_co2 * 100.0, 4) if old_co2 > 0 else 0.0
+    return {
+        "old_co2_kg": old_co2,
+        "new_co2_kg": new_co2,
+        "co2_change_kg": round(change, 4),
+        "pct_change": pct,
+    }
+
+
+def co2_per_building_type(
+    kwh_per_sqft: float,
+    sqft: float,
+    building_type: str = "office",
+    region: str = "default",
+) -> dict[str, float]:
+    """Estimate CO2 emissions for a building based on type and size.
+
+    Applies a type-based intensity adjustment on top of the regional
+    grid intensity, reflecting different usage patterns for building types.
+
+    Args:
+        kwh_per_sqft: Annual energy use intensity (kWh per square foot).
+        sqft: Floor area in square feet.
+        building_type: One of 'office', 'retail', 'industrial', 'residential'.
+        region: Grid region identifier.
+
+    Returns:
+        Dict with total_kwh, total_co2_kg, and intensity_factor.
+    """
+    _type_factors: dict[str, float] = {
+        "office": 1.0,
+        "retail": 1.2,
+        "industrial": 1.5,
+        "residential": 0.8,
+    }
+    factor = _type_factors.get(building_type.lower(), 1.0)
+    adjusted_kwh = kwh_per_sqft * sqft * factor
+    total_co2 = kwh_to_co2_kg(adjusted_kwh, region)
+    return {
+        "total_kwh": round(adjusted_kwh, 4),
+        "total_co2_kg": total_co2,
+        "intensity_factor": factor,
+    }
+
+
+def carbon_score(co2_kg: float, max_kg: float) -> float:
+    """Compute a normalized 0-100 carbon score (100 = best / cleanest).
+
+    Args:
+        co2_kg: Actual CO2 emissions in kilograms.
+        max_kg: Theoretical maximum CO2 emissions for this context.
+
+    Returns:
+        Score in [0, 100]; 100 when co2_kg == 0, decreasing as emissions rise.
+        Clamped to 0 when co2_kg >= max_kg.
+
+    Raises:
+        ValueError: If *max_kg* is not positive or *co2_kg* is negative.
+    """
+    if max_kg <= 0:
+        raise ValueError(f"max_kg must be positive, got {max_kg}")
+    if co2_kg < 0:
+        raise ValueError(f"co2_kg must be non-negative, got {co2_kg}")
+    score = max(0.0, (1.0 - co2_kg / max_kg) * 100.0)
+    return round(score, 4)
