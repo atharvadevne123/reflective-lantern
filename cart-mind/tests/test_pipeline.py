@@ -42,10 +42,15 @@ class TestRetrainTask:
         monkeypatch.setattr("pipelines.retrain_dag.MIN_ROWS", 10)
         monkeypatch.setattr("pipelines.retrain_dag.TRAIN_ROWS", 120)
         monkeypatch.setattr("pipelines.retrain_dag.AUC_GATE", 0.0)
+        # Point the champion path at an empty tmp dir. Left unpatched, read_champion_auc
+        # picks up whatever metrics.json sits in the working directory, and promotion
+        # then depends on that incumbent's AUC — making the outcome order-dependent.
+        monkeypatch.setattr("pipelines.retrain_dag.METRICS_PATH", tmp_path / "champion.json")
         monkeypatch.setattr("app.model.MODEL_PATH", tmp_path / "m.joblib")
         monkeypatch.setattr("app.model.METRICS_PATH", tmp_path / "metrics.json")
         result = retrain_task()
         assert result["status"] == "promoted"
+        assert result["champion_auc"] == 0.0
         assert 0.0 <= result["auc"] <= 1.0
 
     def test_rejects_when_below_auc_gate(self, monkeypatch, tmp_path):
@@ -53,6 +58,7 @@ class TestRetrainTask:
         monkeypatch.setattr("pipelines.retrain_dag.MIN_ROWS", 10)
         monkeypatch.setattr("pipelines.retrain_dag.TRAIN_ROWS", 120)
         monkeypatch.setattr("pipelines.retrain_dag.AUC_GATE", 1.01)
+        monkeypatch.setattr("pipelines.retrain_dag.METRICS_PATH", tmp_path / "champion.json")
         monkeypatch.setattr("app.model.MODEL_PATH", tmp_path / "m.joblib")
         monkeypatch.setattr("app.model.METRICS_PATH", tmp_path / "metrics.json")
         result = retrain_task()

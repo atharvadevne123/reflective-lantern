@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 import logging
 import os
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 logger = logging.getLogger(__name__)
@@ -39,7 +39,7 @@ def _fetch_training_data() -> tuple:
         make_sample_dataframe,
     )
 
-    df = make_sample_dataframe(n=TRAIN_ROWS, seed=int(datetime.utcnow().timestamp()) % 9999)
+    df = make_sample_dataframe(n=TRAIN_ROWS, seed=int(datetime.now(UTC).timestamp()) % 9999)
     cols = USER_COLS + ITEM_COLS + INTERACTION_COLS
     # Signal-bearing labels, matching what scripts/train.py fits on: a retraining
     # gate calibrated against pure noise would reject every honest challenger.
@@ -129,7 +129,7 @@ def drift_report_task(**context) -> dict:
         db.close()
 
     drifted = [f for f, r in results.items() if r.get("drift_detected")]
-    report_path = Path("history/reports") / f"cart_mind_drift_{datetime.utcnow().date()}.json"
+    report_path = Path("history/reports") / f"cart_mind_drift_{datetime.now(UTC).date()}.json"
     report_path.parent.mkdir(parents=True, exist_ok=True)
     report_path.write_text(json.dumps({"drifted": drifted, "results": results}, indent=2))
     logger.info("Drift report written: %s", report_path)

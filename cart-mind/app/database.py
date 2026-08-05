@@ -9,7 +9,7 @@ loop instead of a synthetic one.
 
 import logging
 import os
-from datetime import datetime
+from datetime import UTC, datetime
 
 from sqlalchemy import (
     Column,
@@ -23,6 +23,12 @@ from sqlalchemy import (
 from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
 
 logger = logging.getLogger(__name__)
+
+
+def _utcnow() -> datetime:
+    """Return an aware UTC timestamp (datetime.utcnow is deprecated in 3.12)."""
+    return datetime.now(UTC)
+
 
 DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./cart_mind.db")
 
@@ -51,7 +57,7 @@ class PredictionLog(Base):
     score = Column(Float)
     model_version = Column(String(32))
     latency_ms = Column(Float)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=_utcnow)
 
 
 class DriftLog(Base):
@@ -65,7 +71,7 @@ class DriftLog(Base):
     p_value = Column(Float)
     drift_detected = Column(Integer)  # 0/1
     window_size = Column(Integer)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=_utcnow)
 
 
 class UserProfile(Base):
@@ -79,8 +85,8 @@ class UserProfile(Base):
     avg_order_value = Column(Float)
     purchase_count = Column(Integer)
     preferred_category = Column(String(64))
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=_utcnow)
+    updated_at = Column(DateTime, default=_utcnow, onupdate=_utcnow)
 
 
 class ItemCatalog(Base):
@@ -96,7 +102,7 @@ class ItemCatalog(Base):
     avg_rating = Column(Float)
     review_count = Column(Integer)
     description = Column(Text)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=_utcnow)
 
 
 def init_db() -> None:
