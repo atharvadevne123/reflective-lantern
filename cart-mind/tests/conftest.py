@@ -122,3 +122,21 @@ def similar_payload() -> dict:
         "item_inventory_level": 85,
         "item_discount_pct": 10.0,
     }
+
+
+@pytest.fixture(autouse=True)
+def _isolate_caches():
+    """Clear the module-level TTL caches between tests.
+
+    The recommendation and similarity caches are process-global singletons, so
+    without this a cached response from one test satisfies another test's request
+    and hit-rate assertions see counters carried over from earlier cases. Ordinary
+    test isolation, made explicit because the shared state lives outside fixtures.
+    """
+    from app.cache import RECOMMENDATION_CACHE, SIMILARITY_CACHE
+
+    RECOMMENDATION_CACHE.clear()
+    SIMILARITY_CACHE.clear()
+    yield
+    RECOMMENDATION_CACHE.clear()
+    SIMILARITY_CACHE.clear()
