@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import logging
 import time
 import uuid
@@ -16,9 +17,11 @@ from sqlalchemy.orm import Session
 from starlette.middleware.base import BaseHTTPMiddleware
 
 from app import __version__
+from app.cache import RECOMMENDATION_CACHE, SIMILARITY_CACHE
 from app.database import get_db, init_db
 from app.features import INTERACTION_COLS, ITEM_COLS, USER_COLS
 from app.model import (
+    METRICS_PATH,
     load_faiss_index,
     load_model,
     predict_intent,
@@ -31,17 +34,22 @@ from app.monitoring import (
     update_reference_window,
 )
 from app.schemas import (
+    BatchPredictRequest,
+    BatchPredictResponse,
+    CacheStatsResponse,
     DriftRequest,
     DriftResponse,
     HealthResponse,
     IntentResponse,
     MetricsResponse,
+    ModelInfoResponse,
     RecommendRequest,
     RecommendResponse,
     SimilarItemsRequest,
     SimilarItemsResponse,
     UserItemFeatures,
 )
+from app.validation import validate_payload
 
 logging.basicConfig(
     level=logging.INFO,
@@ -178,12 +186,23 @@ def predict_purchase_intent(
         raise HTTPException(status_code=503, detail="Model not loaded")
 
     row = payload.model_dump()
+    warnings = validate_payload(row)
+    if warnings:
+        logger.warning("Scoring request %s despite %d coherence warning(s)", cid, len(warnings))
+
     X = _row_to_df(row)
     proba, labels = predict_intent(model, X)
     score = proba[0]
     latency = (time.perf_counter() - t0) * 1000
 
-    confidence = "high" if score > 0.75 or score < 0.25 else "medium"
+    # An incoherent payload describes a state the model never saw in training, so
+    # its output should not be presented as a confident one regardless of margin.
+    if warnings:
+        confidence = "low"
+    elif score > 0.75 or score < 0.25:
+        confidence = "high"
+    else:
+        confidence = "medium"
 
     log_prediction(
         db=db,
@@ -205,6 +224,7 @@ def predict_purchase_intent(
         confidence=confidence,
         model_version=__version__,
         correlation_id=cid,
+        warnings=warnings,
     )
 
 
@@ -226,6 +246,20 @@ def recommend_items(
     item_ids = _state.get("item_ids", [])
     if model is None:
         raise HTTPException(status_code=503, detail="Model not loaded")
+
+    cache_key = (
+        f"rec:{payload.user_id}:{payload.top_k}:{payload.purchase_count}:{payload.avg_order_value}"
+    )
+    cached = RECOMMENDATION_CACHE.get(cache_key)
+    if cached is not None:
+        COUNTERS.record("recommend", (time.perf_counter() - t0) * 1000)
+        logger.info("Recommendation cache hit for %s", payload.user_id)
+        return RecommendResponse(
+            user_id=payload.user_id,
+            recommendations=cached,
+            count=len(cached),
+            correlation_id=cid,
+        )
 
     rng = np.random.default_rng(abs(hash(payload.user_id)) % (2**32))
     k = min(payload.top_k * 3, len(item_ids) or 50)
@@ -269,6 +303,8 @@ def recommend_items(
         for i, (iid, score) in enumerate(ranked)
     ]
 
+    RECOMMENDATION_CACHE.set(cache_key, recommendations)
+
     latency = (time.perf_counter() - t0) * 1000
     log_prediction(
         db, cid, payload.user_id, None, "recommend", ranked[0][1] if ranked else 0.0, latency
@@ -302,10 +338,23 @@ def similar_items(
     if index is None:
         raise HTTPException(status_code=503, detail="FAISS index not loaded")
 
+    cache_key = f"sim:{payload.item_id}:{payload.top_k}"
+    cached = SIMILARITY_CACHE.get(cache_key)
+    if cached is not None:
+        COUNTERS.record("similar", (time.perf_counter() - t0) * 1000)
+        logger.info("Similarity cache hit for %s", payload.item_id)
+        return SimilarItemsResponse(
+            seed_item_id=payload.item_id,
+            similar_items=cached,
+            count=len(cached),
+            correlation_id=cid,
+        )
+
     rng = np.random.default_rng(abs(hash(payload.item_id)) % (2**32))
     query_vec = rng.random(32).astype(np.float32)
 
     results = search_similar_items(index, item_ids, query_vec, top_k=payload.top_k)
+    SIMILARITY_CACHE.set(cache_key, results)
 
     latency = (time.perf_counter() - t0) * 1000
     log_prediction(
@@ -346,4 +395,149 @@ def check_drift(
         results=results,
         drifted_features=drifted,
         total_checked=len(results),
+    )
+
+
+# ---------------------------------------------------------------------------
+# Batch prediction
+# ---------------------------------------------------------------------------
+
+
+@app.post(
+    "/api/v1/predict/batch",
+    response_model=BatchPredictResponse,
+    tags=["Prediction"],
+    summary="Score many user-item pairs in one call",
+    description=(
+        "Scores up to 500 user-item pairs in a single vectorised pass through the "
+        "ensemble. Substantially cheaper than issuing N single-prediction calls, "
+        "since the feature pipeline and all three estimators run once over the "
+        "whole frame rather than once per row."
+    ),
+)
+def predict_batch(
+    payload: BatchPredictRequest,
+    request: Request,
+    db: Session = Depends(get_db),
+) -> BatchPredictResponse:
+    """Score a batch of user-item pairs in a single vectorised inference pass.
+
+    Args:
+        payload: Batch of user-item feature rows.
+        request: Incoming request, carrying the correlation ID.
+        db: Database session for prediction logging.
+
+    Returns:
+        Per-row probabilities plus the batch mean.
+
+    Raises:
+        HTTPException: 503 when the model is not loaded.
+    """
+    cid = _get_correlation_id(request)
+    t0 = time.perf_counter()
+    model = _state.get("model")
+    if model is None:
+        raise HTTPException(status_code=503, detail="Model not loaded")
+
+    rows = [item.model_dump() for item in payload.items]
+    X = pd.DataFrame([{col: r.get(col, 0) for col in _FEATURE_COLS} for r in rows])
+    probas, labels = predict_intent(model, X)
+
+    predictions = [
+        {
+            "user_id": r["user_id"],
+            "item_id": r["item_id"],
+            "purchase_probability": round(p, 4),
+            "will_purchase": bool(lab),
+        }
+        for r, p, lab in zip(rows, probas, labels, strict=True)
+    ]
+
+    latency = (time.perf_counter() - t0) * 1000
+    COUNTERS.record("intent", latency)
+    update_reference_window("purchase_probability", probas)
+    log_prediction(db, cid, rows[0]["user_id"], None, "batch", float(np.mean(probas)), latency)
+    logger.info(
+        "Batch prediction: %d rows in %.1fms (%.2fms/row)",
+        len(rows),
+        latency,
+        latency / len(rows),
+    )
+
+    return BatchPredictResponse(
+        predictions=predictions,
+        count=len(predictions),
+        mean_probability=round(float(np.mean(probas)), 4),
+        correlation_id=cid,
+    )
+
+
+# ---------------------------------------------------------------------------
+# Model info
+# ---------------------------------------------------------------------------
+
+
+@app.get(
+    "/api/v1/model/info",
+    response_model=ModelInfoResponse,
+    tags=["System"],
+    summary="Inspect the deployed model",
+    description=(
+        "Returns the serving model's cross-validated metrics, ensemble composition, "
+        "and feature-pipeline stages. Metric fields are null when no metrics.json "
+        "has been written yet — that is, when the API is serving a bootstrap model."
+    ),
+)
+def model_info() -> ModelInfoResponse:
+    """Return metadata and CV metrics for the currently deployed model.
+
+    Returns:
+        Model version, CV metrics (null if unavailable), and architecture summary.
+    """
+    metrics: dict[str, Any] = {}
+    if METRICS_PATH.exists():
+        try:
+            metrics = json.loads(METRICS_PATH.read_text())
+        except (OSError, json.JSONDecodeError):
+            logger.warning("metrics.json present but unreadable", exc_info=True)
+
+    return ModelInfoResponse(
+        model_version=metrics.get("model_version", __version__),
+        auc_mean=metrics.get("auc_mean"),
+        auc_std=metrics.get("auc_std"),
+        n_features=metrics.get("n_features"),
+        n_samples=metrics.get("n_samples"),
+        positive_rate=metrics.get("positive_rate"),
+        ensemble_members=["LightGBM", "XGBoost", "RandomForest"],
+        feature_stages=[
+            "ratios",
+            "interactions",
+            "lag_rolling",
+            "discount_encoding",
+            "scaler",
+        ],
+    )
+
+
+# ---------------------------------------------------------------------------
+# Cache stats
+# ---------------------------------------------------------------------------
+
+
+@app.get(
+    "/api/v1/cache/stats",
+    response_model=CacheStatsResponse,
+    tags=["System"],
+    summary="Inspect cache hit rates",
+    description="Returns entry counts, hit/miss counters and hit rates for both TTL caches.",
+)
+def cache_stats() -> CacheStatsResponse:
+    """Return hit-rate statistics for the recommendation and similarity caches.
+
+    Returns:
+        Statistics for both caches.
+    """
+    return CacheStatsResponse(
+        recommendation_cache=RECOMMENDATION_CACHE.stats(),
+        similarity_cache=SIMILARITY_CACHE.stats(),
     )

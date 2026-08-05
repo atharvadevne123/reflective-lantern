@@ -60,6 +60,10 @@ class IntentResponse(BaseModel):
     confidence: str
     model_version: str
     correlation_id: str
+    warnings: list[str] = Field(
+        default_factory=list,
+        description="Cross-field coherence warnings; non-empty forces confidence to 'low'",
+    )
 
 
 class RecommendResponse(BaseModel):
