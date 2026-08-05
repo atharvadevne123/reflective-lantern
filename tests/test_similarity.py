@@ -453,3 +453,63 @@ class TestTopKSimilar:
         result = top_k_similar(query, candidates, k=3)
         dists = [d for _, d in result]
         assert dists == sorted(dists)
+
+
+class TestCosineDistance:
+    def test_identical_vectors(self) -> None:
+        from app.similarity import cosine_distance
+
+        result = cosine_distance([1.0, 0.0, 0.0], [1.0, 0.0, 0.0])
+        assert result == pytest.approx(0.0, abs=1e-6)
+
+    def test_orthogonal_vectors(self) -> None:
+        from app.similarity import cosine_distance
+
+        result = cosine_distance([1.0, 0.0], [0.0, 1.0])
+        assert result == pytest.approx(1.0, rel=1e-4)
+
+    def test_opposite_vectors(self) -> None:
+        from app.similarity import cosine_distance
+
+        result = cosine_distance([1.0, 0.0], [-1.0, 0.0])
+        assert result == pytest.approx(2.0, rel=1e-4)
+
+    def test_empty_raises(self) -> None:
+        from app.similarity import cosine_distance
+
+        with pytest.raises(ValueError):
+            cosine_distance([], [])
+
+    def test_length_mismatch_raises(self) -> None:
+        from app.similarity import cosine_distance
+
+        with pytest.raises(ValueError):
+            cosine_distance([1.0, 2.0], [1.0])
+
+
+class TestWeightedJaccardSimilarity:
+    def test_identical_dicts(self) -> None:
+        from app.similarity import weighted_jaccard_similarity
+
+        d = {"a": 1.0, "b": 2.0}
+        assert weighted_jaccard_similarity(d, d) == pytest.approx(1.0)
+
+    def test_disjoint_dicts(self) -> None:
+        from app.similarity import weighted_jaccard_similarity
+
+        a = {"x": 1.0}
+        b = {"y": 1.0}
+        assert weighted_jaccard_similarity(a, b) == pytest.approx(0.0)
+
+    def test_empty_dicts(self) -> None:
+        from app.similarity import weighted_jaccard_similarity
+
+        assert weighted_jaccard_similarity({}, {}) == 0.0
+
+    def test_partial_overlap(self) -> None:
+        from app.similarity import weighted_jaccard_similarity
+
+        a = {"a": 2.0, "b": 0.0}
+        b = {"a": 1.0, "c": 1.0}
+        result = weighted_jaccard_similarity(a, b)
+        assert 0.0 <= result <= 1.0
