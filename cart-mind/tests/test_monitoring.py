@@ -135,3 +135,89 @@ class TestCounters:
         snap = c.snapshot()
         assert isinstance(snap, dict)
         assert "p50_latency_ms" in snap
+
+
+class TestComputePSI:
+    def test_identical_distributions_are_stable(self):
+        from app.monitoring import compute_psi
+
+        rng = np.random.default_rng(0)
+        result = compute_psi(rng.normal(0, 1, 1000).tolist(), rng.normal(0, 1, 1000).tolist())
+        assert result["severity"] == "stable"
+        assert result["drift_detected"] is False
+
+    def test_shifted_distribution_flagged_major(self):
+        from app.monitoring import compute_psi
+
+        rng = np.random.default_rng(1)
+        result = compute_psi(rng.normal(0, 1, 1000).tolist(), rng.normal(3, 1, 1000).tolist())
+        assert result["severity"] == "major"
+        assert result["drift_detected"] is True
+
+    def test_psi_is_non_negative(self):
+        from app.monitoring import compute_psi
+
+        rng = np.random.default_rng(2)
+        result = compute_psi(rng.uniform(0, 1, 500).tolist(), rng.uniform(0, 1, 500).tolist())
+        assert result["psi"] >= 0.0
+
+    def test_insufficient_data_returns_reason(self):
+        from app.monitoring import compute_psi
+
+        result = compute_psi([1.0, 2.0], [3.0])
+        assert result["psi"] is None
+        assert result["reason"] == "insufficient_data"
+
+    def test_constant_reference_is_degenerate(self):
+        from app.monitoring import compute_psi
+
+        result = compute_psi([5.0] * 100, [5.0] * 100)
+        assert result["psi"] is None
+        assert result["reason"] == "degenerate_reference"
+
+    def test_empty_bins_do_not_produce_infinity(self):
+        """Disjoint supports must yield a finite PSI, not inf from a zero bin."""
+        from app.monitoring import compute_psi
+
+        rng = np.random.default_rng(3)
+        result = compute_psi(rng.uniform(0, 1, 300).tolist(), rng.uniform(100, 101, 300).tolist())
+        assert result["psi"] is not None
+        assert np.isfinite(result["psi"])
+
+    def test_psi_grows_with_shift_magnitude(self):
+        from app.monitoring import compute_psi
+
+        rng = np.random.default_rng(4)
+        ref = rng.normal(0, 1, 1000).tolist()
+        small = compute_psi(ref, rng.normal(0.3, 1, 1000).tolist())["psi"]
+        large = compute_psi(ref, rng.normal(2.0, 1, 1000).tolist())["psi"]
+        assert large > small
+
+    def test_psi_converges_toward_zero_with_sample_size(self):
+        """Unlike a KS p-value, PSI must not grow more alarming with sample size.
+
+        For two samples from the same distribution a KS test grows more
+        significant as n rises. PSI does the opposite: bin frequencies stabilise
+        and the score converges toward zero. Small samples read noisy-high
+        (~20 observations per bin at n=200), which is why the implementation
+        docstring asks for a few hundred observations before acting on a value.
+        """
+        from app.monitoring import compute_psi
+
+        rng = np.random.default_rng(5)
+        small = compute_psi(rng.normal(0, 1, 200).tolist(), rng.normal(0, 1, 200).tolist())["psi"]
+        large = compute_psi(rng.normal(0, 1, 5000).tolist(), rng.normal(0, 1, 5000).tolist())[
+            "psi"
+        ]
+        assert large <= small
+        assert large < 0.05
+
+    @pytest.mark.parametrize("bins", [5, 10, 20])
+    def test_various_bin_counts(self, bins):
+        from app.monitoring import compute_psi
+
+        rng = np.random.default_rng(bins)
+        result = compute_psi(
+            rng.normal(0, 1, 500).tolist(), rng.normal(0, 1, 500).tolist(), bins=bins
+        )
+        assert result["psi"] is not None
