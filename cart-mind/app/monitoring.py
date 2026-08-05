@@ -1,0 +1,155 @@
+"""Drift detection, prediction logging, and monitoring utilities."""
+
+from __future__ import annotations
+
+import logging
+import time
+from collections import deque
+from threading import Lock
+from typing import Any
+
+import numpy as np
+from scipy.stats import ks_2samp
+from sqlalchemy.orm import Session
+
+from app.database import DriftLog, PredictionLog
+
+logger = logging.getLogger(__name__)
+
+# Rolling window for drift detection (per feature)
+_REFERENCE_WINDOW: dict[str, deque] = {}
+_REFERENCE_LOCK = Lock()
+REFERENCE_WINDOW_SIZE = 500
+DRIFT_P_THRESHOLD = 0.05
+
+
+def compute_drift(reference: list[float], current: list[float]) -> dict[str, Any]:
+    """Run KS-test between reference and current feature distributions."""
+    if len(reference) < 20 or len(current) < 20:
+        return {
+            "ks_statistic": None,
+            "p_value": None,
+            "drift_detected": False,
+            "reason": "insufficient_data",
+        }
+    stat, p = ks_2samp(reference, current)
+    return {
+        "ks_statistic": round(float(stat), 4),
+        "p_value": round(float(p), 4),
+        "drift_detected": bool(p < DRIFT_P_THRESHOLD),
+    }
+
+
+def update_reference_window(feature_name: str, values: list[float]) -> None:
+    """Append new observations to the rolling reference window."""
+    with _REFERENCE_LOCK:
+        if feature_name not in _REFERENCE_WINDOW:
+            _REFERENCE_WINDOW[feature_name] = deque(maxlen=REFERENCE_WINDOW_SIZE)
+        _REFERENCE_WINDOW[feature_name].extend(values)
+
+
+def get_reference_window(feature_name: str) -> list[float]:
+    with _REFERENCE_LOCK:
+        return list(_REFERENCE_WINDOW.get(feature_name, []))
+
+
+def check_all_features(
+    feature_values: dict[str, list[float]],
+    db: Session,
+) -> dict[str, dict[str, Any]]:
+    """Check drift for every feature and log results to the DB."""
+    results: dict[str, dict[str, Any]] = {}
+    for feat, current in feature_values.items():
+        reference = get_reference_window(feat)
+        result = compute_drift(reference, current)
+        results[feat] = result
+        if result.get("ks_statistic") is not None:
+            db.add(
+                DriftLog(
+                    feature_name=feat,
+                    ks_statistic=result["ks_statistic"],
+                    p_value=result["p_value"],
+                    drift_detected=int(result["drift_detected"]),
+                    window_size=len(current),
+                )
+            )
+    db.commit()
+    drifted = [f for f, r in results.items() if r.get("drift_detected")]
+    if drifted:
+        logger.warning("Drift detected in features: %s", drifted)
+    return results
+
+
+def log_prediction(
+    db: Session,
+    correlation_id: str,
+    user_id: str,
+    item_id: str | None,
+    prediction_type: str,
+    score: float,
+    latency_ms: float,
+    model_version: str = "1.0.0",
+) -> None:
+    """Persist a single prediction record to the database."""
+    db.add(
+        PredictionLog(
+            correlation_id=correlation_id,
+            user_id=user_id,
+            item_id=item_id,
+            prediction_type=prediction_type,
+            score=score,
+            model_version=model_version,
+            latency_ms=round(latency_ms, 2),
+        )
+    )
+    db.commit()
+
+
+# ---------------------------------------------------------------------------
+# In-memory metrics counters (for /metrics endpoint)
+# ---------------------------------------------------------------------------
+
+
+class _Counters:
+    def __init__(self) -> None:
+        self._lock = Lock()
+        self.total_requests = 0
+        self.intent_requests = 0
+        self.recommend_requests = 0
+        self.similar_requests = 0
+        self.drift_alerts = 0
+        self.errors = 0
+        self._latencies: deque[float] = deque(maxlen=1000)
+        self._start = time.time()
+
+    def record(self, route: str, latency_ms: float, error: bool = False) -> None:
+        with self._lock:
+            self.total_requests += 1
+            if route == "intent":
+                self.intent_requests += 1
+            elif route == "recommend":
+                self.recommend_requests += 1
+            elif route == "similar":
+                self.similar_requests += 1
+            if error:
+                self.errors += 1
+            self._latencies.append(latency_ms)
+
+    def snapshot(self) -> dict[str, Any]:
+        with self._lock:
+            lats = list(self._latencies)
+        return {
+            "uptime_seconds": round(time.time() - self._start, 1),
+            "total_requests": self.total_requests,
+            "intent_requests": self.intent_requests,
+            "recommend_requests": self.recommend_requests,
+            "similar_requests": self.similar_requests,
+            "drift_alerts": self.drift_alerts,
+            "errors": self.errors,
+            "p50_latency_ms": round(float(np.percentile(lats, 50)), 2) if lats else 0.0,
+            "p95_latency_ms": round(float(np.percentile(lats, 95)), 2) if lats else 0.0,
+            "p99_latency_ms": round(float(np.percentile(lats, 99)), 2) if lats else 0.0,
+        }
+
+
+COUNTERS = _Counters()
