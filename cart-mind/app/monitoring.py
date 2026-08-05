@@ -153,3 +153,85 @@ class _Counters:
 
 
 COUNTERS = _Counters()
+
+
+# ---------------------------------------------------------------------------
+# Population Stability Index
+# ---------------------------------------------------------------------------
+
+# Conventional PSI reading: <0.10 stable, 0.10-0.25 moderate shift, >0.25 major shift.
+PSI_MODERATE_THRESHOLD = 0.10
+PSI_MAJOR_THRESHOLD = 0.25
+
+
+def compute_psi(reference: list[float], current: list[float], bins: int = 10) -> dict[str, Any]:
+    """Compute the Population Stability Index between two distributions.
+
+    PSI complements the KS test rather than duplicating it. KS is sensitive to
+    the single largest gap between two CDFs and returns a p-value that grows
+    more significant purely with sample size — on a high-traffic endpoint it
+    will eventually flag drift that is real but far too small to matter. PSI
+    instead sums relative frequency shifts across quantile bins, giving a
+    magnitude that is stable under sample size and reads directly as an effect
+    size against long-established thresholds.
+
+    Args:
+        reference: Baseline distribution values.
+        current: Recent distribution values to compare against the baseline.
+        bins: Number of quantile bins to discretise into.
+
+    Note:
+        PSI is noisy on small samples — at n=200 across 10 bins there are only
+        ~20 observations per bin, which can inflate the score past the
+        ``moderate`` threshold on two samples drawn from the same distribution.
+        Prefer a few hundred observations per side before acting on a reading.
+
+    Returns:
+        Mapping with the PSI value, a severity label, and a drift flag. When
+        either sample is too small, returns ``psi: None`` with a reason.
+    """
+    if len(reference) < 20 or len(current) < 20:
+        return {
+            "psi": None,
+            "severity": "unknown",
+            "drift_detected": False,
+            "reason": "insufficient_data",
+        }
+
+    ref = np.asarray(reference, dtype=float)
+    cur = np.asarray(current, dtype=float)
+
+    # Quantile edges from the reference, so bins carry equal baseline mass.
+    edges = np.unique(np.quantile(ref, np.linspace(0, 1, bins + 1)))
+    if len(edges) < 3:
+        return {
+            "psi": None,
+            "severity": "unknown",
+            "drift_detected": False,
+            "reason": "degenerate_reference",
+        }
+    edges[0], edges[-1] = -np.inf, np.inf
+
+    ref_pct = np.histogram(ref, bins=edges)[0] / len(ref)
+    cur_pct = np.histogram(cur, bins=edges)[0] / len(cur)
+
+    # Floor empty bins: an unpopulated bin would otherwise send PSI to infinity.
+    floor = 1e-4
+    ref_pct = np.clip(ref_pct, floor, None)
+    cur_pct = np.clip(cur_pct, floor, None)
+
+    psi = float(np.sum((cur_pct - ref_pct) * np.log(cur_pct / ref_pct)))
+
+    if psi >= PSI_MAJOR_THRESHOLD:
+        severity = "major"
+    elif psi >= PSI_MODERATE_THRESHOLD:
+        severity = "moderate"
+    else:
+        severity = "stable"
+
+    return {
+        "psi": round(psi, 4),
+        "severity": severity,
+        "drift_detected": psi >= PSI_MODERATE_THRESHOLD,
+        "n_bins": len(edges) - 1,
+    }
