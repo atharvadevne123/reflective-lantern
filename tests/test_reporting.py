@@ -649,3 +649,106 @@ class TestTariffCost:
         from app.reporting import tariff_cost
 
         assert tariff_cost(100.0, 0.0) == 0.0
+
+
+class TestSummarizeEnergyPeriod:
+    def test_basic_summary(self) -> None:
+        from app.reporting import summarize_energy_period
+
+        result = summarize_energy_period([10.0, 20.0, 30.0], label="Jan")
+        assert result["label"] == "Jan"
+        assert result["total"] == pytest.approx(60.0)
+        assert result["mean"] == pytest.approx(20.0)
+        assert result["min"] == 10.0
+        assert result["max"] == 30.0
+        assert result["count"] == 3
+
+    def test_empty_raises(self) -> None:
+        from app.reporting import summarize_energy_period
+
+        with pytest.raises(ValueError):
+            summarize_energy_period([])
+
+    def test_single_value(self) -> None:
+        from app.reporting import summarize_energy_period
+
+        result = summarize_energy_period([5.0])
+        assert result["min"] == result["max"] == 5.0
+
+
+class TestFormatReportRow:
+    def test_basic_row(self) -> None:
+        from app.reporting import format_report_row
+
+        data = {"a": 1, "b": 2, "c": 3}
+        assert format_report_row(data, ["a", "b", "c"]) == "1,2,3"
+
+    def test_custom_separator(self) -> None:
+        from app.reporting import format_report_row
+
+        data = {"x": "hello", "y": "world"}
+        assert format_report_row(data, ["x", "y"], separator="|") == "hello|world"
+
+    def test_missing_field(self) -> None:
+        from app.reporting import format_report_row
+
+        data = {"a": 1}
+        result = format_report_row(data, ["a", "missing"])
+        assert "1" in result
+
+
+class TestAggregateDailyReport:
+    def test_full_day(self) -> None:
+        from app.reporting import aggregate_daily_report
+
+        hourly = [1.0] * 24
+        result = aggregate_daily_report(hourly)
+        assert len(result) == 1
+        assert result[0] == pytest.approx(24.0)
+
+    def test_two_days(self) -> None:
+        from app.reporting import aggregate_daily_report
+
+        hourly = [2.0] * 48
+        result = aggregate_daily_report(hourly)
+        assert len(result) == 2
+
+    def test_empty(self) -> None:
+        from app.reporting import aggregate_daily_report
+
+        assert aggregate_daily_report([]) == []
+
+    def test_partial_day(self) -> None:
+        from app.reporting import aggregate_daily_report
+
+        hourly = [1.0] * 36
+        result = aggregate_daily_report(hourly)
+        assert len(result) == 2
+
+
+class TestReportAnomalySummary:
+    def test_all_normal(self) -> None:
+        from app.reporting import report_anomaly_summary
+
+        result = report_anomaly_summary([False, False, False])
+        assert result["anomaly_count"] == 0
+        assert result["anomaly_rate"] == pytest.approx(0.0)
+
+    def test_all_anomaly(self) -> None:
+        from app.reporting import report_anomaly_summary
+
+        result = report_anomaly_summary([True, True])
+        assert result["anomaly_rate"] == pytest.approx(1.0)
+
+    def test_mixed(self) -> None:
+        from app.reporting import report_anomaly_summary
+
+        result = report_anomaly_summary([True, False, True, False])
+        assert result["anomaly_count"] == 2
+        assert result["anomaly_rate"] == pytest.approx(0.5)
+
+    def test_empty_raises(self) -> None:
+        from app.reporting import report_anomaly_summary
+
+        with pytest.raises(ValueError):
+            report_anomaly_summary([])
