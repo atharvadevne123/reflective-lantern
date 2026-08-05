@@ -749,3 +749,164 @@ class TestHoltWintersSmooth:
         vals = [float(i) for i in range(10)]
         result = holt_winters_smooth(vals, alpha=alpha, beta=beta)
         assert len(result) == len(vals)
+
+
+class TestDetectTrendReversal:
+    def test_basic_returns_list(self) -> None:
+        from app.time_series import detect_trend_reversal
+
+        vals = list(range(20))
+        result = detect_trend_reversal(vals, window=4)
+        assert len(result) == 20
+
+    def test_values_binary(self) -> None:
+        from app.time_series import detect_trend_reversal
+
+        vals = list(range(20))
+        result = detect_trend_reversal(vals, window=4)
+        assert all(v in (0, 1) for v in result)
+
+    def test_too_short_all_zero(self) -> None:
+        from app.time_series import detect_trend_reversal
+
+        result = detect_trend_reversal([1.0, 2.0, 3.0], window=5)
+        assert all(v == 0 for v in result)
+
+    def test_window_one_raises(self) -> None:
+        from app.time_series import detect_trend_reversal
+
+        with pytest.raises(ValueError, match="at least 2"):
+            detect_trend_reversal([1.0, 2.0, 3.0, 4.0], window=1)
+
+    def test_v_shape_detects_reversal(self) -> None:
+        from app.time_series import detect_trend_reversal
+
+        vals = [5.0, 4.0, 3.0, 2.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0]
+        result = detect_trend_reversal(vals, window=3)
+        assert any(v == 1 for v in result)
+
+
+class TestMonthlyTotals:
+    def test_basic(self) -> None:
+        from app.time_series import monthly_totals
+
+        daily = [1.0] * 360
+        result = monthly_totals(daily, [30] * 12)
+        assert len(result) == 12
+        assert all(v == pytest.approx(30.0) for v in result)
+
+    def test_too_few_days_raises(self) -> None:
+        from app.time_series import monthly_totals
+
+        with pytest.raises(ValueError, match="exceeds"):
+            monthly_totals([1.0] * 10, [30] * 12)
+
+    def test_default_12_months(self) -> None:
+        from app.time_series import monthly_totals
+
+        daily = [2.0] * 360
+        result = monthly_totals(daily)
+        assert len(result) == 12
+
+    @pytest.mark.parametrize("n_months", [1, 3, 6])
+    def test_sum_equals_input_sum(self, n_months: int) -> None:
+        from app.time_series import monthly_totals
+
+        daily = list(range(30 * n_months))
+        result = monthly_totals(daily, [30] * n_months)
+        assert sum(result) == pytest.approx(sum(daily), rel=1e-5)
+
+
+class TestSeasonalVariance:
+    def test_constant_series_zero_variance(self) -> None:
+        from app.time_series import seasonal_variance
+
+        result = seasonal_variance([5.0] * 48, period=24)
+        assert result == pytest.approx(0.0, abs=1e-6)
+
+    def test_empty_raises(self) -> None:
+        from app.time_series import seasonal_variance
+
+        with pytest.raises(ValueError, match="empty"):
+            seasonal_variance([], period=24)
+
+    def test_period_zero_raises(self) -> None:
+        from app.time_series import seasonal_variance
+
+        with pytest.raises(ValueError, match="at least 1"):
+            seasonal_variance([1.0, 2.0, 3.0], period=0)
+
+    def test_positive_variance(self) -> None:
+        from app.time_series import seasonal_variance
+
+        vals = [float(i % 10) for i in range(100)]
+        assert seasonal_variance(vals, period=10) >= 0.0
+
+
+class TestTrailingAverage:
+    def test_basic(self) -> None:
+        from app.time_series import trailing_average
+
+        result = trailing_average([1.0, 2.0, 3.0, 4.0, 5.0], n=3)
+        assert len(result) == 5
+        assert result[2] == pytest.approx(2.0, rel=1e-4)
+
+    def test_n1_equals_input(self) -> None:
+        from app.time_series import trailing_average
+
+        vals = [1.0, 5.0, 3.0, 7.0]
+        assert trailing_average(vals, n=1) == vals
+
+    def test_empty_raises(self) -> None:
+        from app.time_series import trailing_average
+
+        with pytest.raises(ValueError, match="empty"):
+            trailing_average([], n=3)
+
+    def test_n_zero_raises(self) -> None:
+        from app.time_series import trailing_average
+
+        with pytest.raises(ValueError, match="at least 1"):
+            trailing_average([1.0, 2.0], n=0)
+
+    @pytest.mark.parametrize("n", [1, 2, 5])
+    def test_output_length(self, n: int) -> None:
+        from app.time_series import trailing_average
+
+        vals = list(range(1, 11))
+        assert len(trailing_average(vals, n=n)) == 10
+
+
+class TestDetectOutlierWindows:
+    def test_no_outliers(self) -> None:
+        from app.time_series import detect_outlier_windows
+
+        vals = [1.0] * 48
+        assert detect_outlier_windows(vals, window=24) == []
+
+    def test_empty_raises(self) -> None:
+        from app.time_series import detect_outlier_windows
+
+        with pytest.raises(ValueError, match="empty"):
+            detect_outlier_windows([], window=24)
+
+    def test_window_zero_raises(self) -> None:
+        from app.time_series import detect_outlier_windows
+
+        with pytest.raises(ValueError, match="at least 1"):
+            detect_outlier_windows([1.0, 2.0], window=0)
+
+    def test_spike_window_flagged(self) -> None:
+        from app.time_series import detect_outlier_windows
+
+        vals = [1.0] * 24 + [1000.0] * 24 + [1.0] * 24
+        result = detect_outlier_windows(vals, window=24, threshold_std=1.0)
+        assert len(result) > 0
+
+    def test_returns_tuple_pairs(self) -> None:
+        from app.time_series import detect_outlier_windows
+
+        vals = [1.0] * 48 + [999.0] * 24
+        result = detect_outlier_windows(vals, window=24, threshold_std=1.0)
+        for start, end in result:
+            assert start <= end
