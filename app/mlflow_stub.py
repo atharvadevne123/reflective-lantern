@@ -152,7 +152,7 @@ __all__ = [
 
 
 def delete_run(run_name: str) -> bool:
-    """Delete a run from the in-memory store by name.
+    """Delete a run from the run log by name.
 
     Args:
         run_name: The run name to delete.
@@ -160,10 +160,16 @@ def delete_run(run_name: str) -> bool:
     Returns:
         True if a run was deleted, False if not found.
     """
-    global _runs
-    before = len(_runs)
-    _runs = [r for r in _runs if r.get("run_name") != run_name]
-    return len(_runs) < before
+    runs = list_runs()
+    filtered = [r for r in runs if r.get("run") != run_name]
+    if len(filtered) == len(runs):
+        return False
+    import json
+
+    with open(_RUN_LOG, "w") as fh:
+        for r in filtered:
+            fh.write(json.dumps(r) + "\n")
+    return True
 
 
 def run_exists(run_name: str) -> bool:
@@ -175,19 +181,19 @@ def run_exists(run_name: str) -> bool:
     Returns:
         True if found, False otherwise.
     """
-    return any(r.get("run_name") == run_name for r in _runs)
+    return any(r.get("run") == run_name for r in list_runs())
 
 
 def clear_runs() -> int:
-    """Clear all runs from the in-memory store.
+    """Clear all runs from the run log file.
 
     Returns:
         Number of runs removed.
     """
-    global _runs
-    count = len(_runs)
-    _runs = []
-    return count
+    runs = list_runs()
+    if _RUN_LOG.exists():
+        _RUN_LOG.write_text("")
+    return len(runs)
 
 
 def run_count() -> int:
@@ -196,4 +202,4 @@ def run_count() -> int:
     Returns:
         Integer count.
     """
-    return len(_runs)
+    return len(list_runs())
