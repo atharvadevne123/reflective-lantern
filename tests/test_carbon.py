@@ -570,3 +570,111 @@ class TestCarbonBudgetRemaining:
 
         with pytest.raises(ValueError):
             carbon_budget_remaining(1000.0, -10.0)
+
+
+class TestEmissionFactorChange:
+    def test_cleaner_region_negative_change(self) -> None:
+        from app.carbon import emission_factor_change
+
+        result = emission_factor_change("midwest", "pacific_nw", 1000.0)
+        assert result["co2_change_kg"] < 0
+
+    def test_same_region_no_change(self) -> None:
+        from app.carbon import emission_factor_change
+
+        result = emission_factor_change("default", "default", 100.0)
+        assert result["co2_change_kg"] == pytest.approx(0.0, abs=1e-6)
+
+    def test_negative_kwh_raises(self) -> None:
+        from app.carbon import emission_factor_change
+
+        with pytest.raises(ValueError, match="non-negative"):
+            emission_factor_change("default", "midwest", -100.0)
+
+    def test_keys_present(self) -> None:
+        from app.carbon import emission_factor_change
+
+        result = emission_factor_change("northeast", "south", 500.0)
+        assert set(result.keys()) >= {"old_co2_kg", "new_co2_kg", "co2_change_kg", "pct_change"}
+
+    def test_zero_kwh(self) -> None:
+        from app.carbon import emission_factor_change
+
+        result = emission_factor_change("midwest", "west", 0.0)
+        assert result["co2_change_kg"] == pytest.approx(0.0, abs=1e-6)
+
+
+class TestCo2PerBuildingType:
+    def test_basic(self) -> None:
+        from app.carbon import co2_per_building_type
+
+        result = co2_per_building_type(15.0, 1000.0)
+        assert result["total_kwh"] == pytest.approx(15_000.0, rel=1e-4)
+        assert result["total_co2_kg"] > 0
+
+    def test_industrial_higher_than_residential(self) -> None:
+        from app.carbon import co2_per_building_type
+
+        industrial = co2_per_building_type(10.0, 1000.0, building_type="industrial")
+        residential = co2_per_building_type(10.0, 1000.0, building_type="residential")
+        assert industrial["total_co2_kg"] > residential["total_co2_kg"]
+
+    def test_keys_present(self) -> None:
+        from app.carbon import co2_per_building_type
+
+        result = co2_per_building_type(10.0, 500.0, building_type="office")
+        assert set(result.keys()) >= {"total_kwh", "total_co2_kg", "intensity_factor"}
+
+    def test_unknown_type_uses_default(self) -> None:
+        from app.carbon import co2_per_building_type
+
+        result = co2_per_building_type(10.0, 1000.0, building_type="warehouse")
+        assert result["intensity_factor"] == 1.0
+
+    @pytest.mark.parametrize("btype", ["office", "retail", "industrial", "residential"])
+    def test_known_types(self, btype: str) -> None:
+        from app.carbon import co2_per_building_type
+
+        result = co2_per_building_type(12.0, 2000.0, building_type=btype)
+        assert result["total_kwh"] > 0
+
+
+class TestCarbonScore:
+    def test_zero_emissions_perfect_score(self) -> None:
+        from app.carbon import carbon_score
+
+        assert carbon_score(0.0, 1000.0) == pytest.approx(100.0, rel=1e-4)
+
+    def test_max_emissions_zero_score(self) -> None:
+        from app.carbon import carbon_score
+
+        assert carbon_score(1000.0, 1000.0) == pytest.approx(0.0, abs=1e-6)
+
+    def test_half_emissions(self) -> None:
+        from app.carbon import carbon_score
+
+        assert carbon_score(500.0, 1000.0) == pytest.approx(50.0, rel=1e-4)
+
+    def test_negative_max_raises(self) -> None:
+        from app.carbon import carbon_score
+
+        with pytest.raises(ValueError, match="positive"):
+            carbon_score(100.0, 0.0)
+
+    def test_negative_co2_raises(self) -> None:
+        from app.carbon import carbon_score
+
+        with pytest.raises(ValueError, match="non-negative"):
+            carbon_score(-1.0, 1000.0)
+
+    def test_over_max_clamped_to_zero(self) -> None:
+        from app.carbon import carbon_score
+
+        assert carbon_score(2000.0, 1000.0) == pytest.approx(0.0, abs=1e-6)
+
+    @pytest.mark.parametrize("co2,max_kg", [(100.0, 1000.0), (0.0, 500.0), (250.0, 500.0)])
+    def test_score_in_range(self, co2: float, max_kg: float) -> None:
+        from app.carbon import carbon_score
+
+        result = carbon_score(co2, max_kg)
+        assert 0.0 <= result <= 100.0
