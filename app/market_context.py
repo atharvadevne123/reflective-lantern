@@ -392,3 +392,92 @@ __all__ = [
     "price_trend_indicator",
     "rent_vs_buy_comparison",
 ]
+
+
+def price_growth_rate(old_price: float, new_price: float, years: float = 1.0) -> float:
+    """Compute the annualized price growth rate between two values.
+
+    Args:
+        old_price: Starting price in USD.
+        new_price: Ending price in USD.
+        years: Number of years between measurements (> 0).
+
+    Returns:
+        Annualized growth rate as a percentage, rounded to 4 decimal places.
+
+    Raises:
+        ValueError: If *old_price* is not positive or *years* is not positive.
+    """
+    if old_price <= 0:
+        raise ValueError(f"old_price must be positive, got {old_price}")
+    if years <= 0:
+        raise ValueError(f"years must be positive, got {years}")
+    rate = ((new_price / old_price) ** (1.0 / years) - 1.0) * 100.0
+    return round(rate, 4)
+
+
+def market_heat_index(dom: int, pct_over_asking: float) -> str:
+    """Classify market temperature based on days-on-market and over-asking percentage.
+
+    A simple heuristic that classifies the market as 'hot', 'warm', 'neutral',
+    or 'cool' based on two key signals.
+
+    Args:
+        dom: Median days on market for recently sold properties.
+        pct_over_asking: Percentage of homes selling above asking price (0-100).
+
+    Returns:
+        One of 'hot', 'warm', 'neutral', or 'cool'.
+    """
+    if dom < 14 and pct_over_asking >= 50:
+        return "hot"
+    if dom < 30 and pct_over_asking >= 25:
+        return "warm"
+    if dom < 60:
+        return "neutral"
+    return "cool"
+
+
+def vacancy_adjusted_yield(gross_yield: float, vacancy_rate: float) -> float:
+    """Compute the vacancy-adjusted net yield for a rental property.
+
+    Accounts for the proportion of the year the property sits vacant.
+
+    Args:
+        gross_yield: Annual gross rental yield as a percentage (e.g. 6.0 for 6%).
+        vacancy_rate: Expected vacancy rate as a decimal fraction (e.g. 0.05 for 5%).
+
+    Returns:
+        Effective yield after accounting for vacancy, rounded to 4 decimal places.
+
+    Raises:
+        ValueError: If *vacancy_rate* is not in [0, 1].
+    """
+    if not (0.0 <= vacancy_rate <= 1.0):
+        raise ValueError(f"vacancy_rate must be in [0, 1], got {vacancy_rate}")
+    return round(gross_yield * (1.0 - vacancy_rate), 4)
+
+
+def normalize_market_features(features: dict[str, float]) -> dict[str, float]:
+    """Normalize a dict of market feature values to [0, 1] range.
+
+    Uses min-max normalization across all values in the dict.
+
+    Args:
+        features: Dict of feature_name -> numeric value.
+
+    Returns:
+        Dict with the same keys; values normalized to [0, 1].
+        If all values are equal, all normalized values are 0.5.
+
+    Raises:
+        ValueError: If *features* is empty.
+    """
+    if not features:
+        raise ValueError("features must not be empty")
+    min_v = min(features.values())
+    max_v = max(features.values())
+    rng = max_v - min_v
+    if rng < 1e-12:
+        return {k: 0.5 for k in features}
+    return {k: round((v - min_v) / rng, 6) for k, v in features.items()}
