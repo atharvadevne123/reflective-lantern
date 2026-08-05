@@ -1,4 +1,10 @@
-"""Drift detection, prediction logging, and monitoring utilities."""
+"""Drift detection, prediction logging, and request counters.
+
+Two complementary drift signals are reported for every feature. The KS test
+answers "is this shift statistically real?", while PSI answers "is it big enough
+to care about?" — a distinction that matters in production, where enough traffic
+makes almost any shift statistically significant.
+"""
 
 from __future__ import annotations
 
@@ -24,7 +30,17 @@ DRIFT_P_THRESHOLD = 0.05
 
 
 def compute_drift(reference: list[float], current: list[float]) -> dict[str, Any]:
-    """Run KS-test between reference and current feature distributions."""
+    """Run a two-sample KS test between reference and current distributions.
+
+    Args:
+        reference: Baseline values from the rolling reference window.
+        current: Recently observed values.
+
+    Returns:
+        Mapping with the KS statistic, p-value, and drift flag. Samples under 20
+        observations return no verdict with ``reason: "insufficient_data"``,
+        since a KS test on a handful of points is not worth acting on.
+    """
     if len(reference) < 20 or len(current) < 20:
         return {
             "ks_statistic": None,
@@ -41,7 +57,16 @@ def compute_drift(reference: list[float], current: list[float]) -> dict[str, Any
 
 
 def update_reference_window(feature_name: str, values: list[float]) -> None:
-    """Append new observations to the rolling reference window."""
+    """Append observations to a feature's rolling reference window.
+
+    The window is a bounded deque, so the baseline tracks recent behaviour rather
+    than growing without limit — drift is measured against the recent past, not
+    against everything ever seen.
+
+    Args:
+        feature_name: Feature whose window should be extended.
+        values: Observations to append.
+    """
     with _REFERENCE_LOCK:
         if feature_name not in _REFERENCE_WINDOW:
             _REFERENCE_WINDOW[feature_name] = deque(maxlen=REFERENCE_WINDOW_SIZE)
@@ -57,7 +82,15 @@ def check_all_features(
     feature_values: dict[str, list[float]],
     db: Session,
 ) -> dict[str, dict[str, Any]]:
-    """Check drift for every feature and log results to the DB."""
+    """Check every supplied feature for drift and persist the results.
+
+    Args:
+        feature_values: Map of feature name to recently observed values.
+        db: Session used to write one :class:`DriftLog` row per feature.
+
+    Returns:
+        Per-feature results carrying both the KS verdict and the PSI severity.
+    """
     results: dict[str, dict[str, Any]] = {}
     for feat, current in feature_values.items():
         reference = get_reference_window(feat)
@@ -85,7 +118,7 @@ def check_all_features(
     return results
 
 
-def log_prediction(
+def log_prediction(  # noqa: PLR0913
     db: Session,
     correlation_id: str,
     user_id: str,
@@ -95,7 +128,18 @@ def log_prediction(
     latency_ms: float,
     model_version: str = "1.0.0",
 ) -> None:
-    """Persist a single prediction record to the database."""
+    """Persist one prediction record.
+
+    Args:
+        db: Database session.
+        correlation_id: Request correlation ID, for tracing a row to a request.
+        user_id: User the prediction was made for.
+        item_id: Item scored, or ``None`` for batch and recommendation calls.
+        prediction_type: One of ``intent``, ``recommend``, ``similar``, ``batch``.
+        score: Model output being recorded.
+        latency_ms: Server-side inference latency.
+        model_version: Version string of the serving model.
+    """
     db.add(
         PredictionLog(
             correlation_id=correlation_id,
@@ -116,6 +160,12 @@ def log_prediction(
 
 
 class _Counters:
+    """Thread-safe request counters and a rolling latency window.
+
+    Latencies live in a bounded deque, so percentiles describe recent traffic and
+    memory stays flat regardless of uptime.
+    """
+
     def __init__(self) -> None:
         self._lock = Lock()
         self.total_requests = 0
@@ -128,6 +178,13 @@ class _Counters:
         self._start = time.time()
 
     def record(self, route: str, latency_ms: float, error: bool = False) -> None:
+        """Record one request against the counters.
+
+        Args:
+            route: Route label — ``intent``, ``recommend``, or ``similar``.
+            latency_ms: Observed latency in milliseconds.
+            error: Whether the request failed.
+        """
         with self._lock:
             self.total_requests += 1
             if route == "intent":
@@ -141,6 +198,11 @@ class _Counters:
             self._latencies.append(latency_ms)
 
     def snapshot(self) -> dict[str, Any]:
+        """Return a point-in-time view of the counters.
+
+        Returns:
+            Counts, uptime, and p50/p95/p99 latency over the rolling window.
+        """
         with self._lock:
             lats = list(self._latencies)
         return {
