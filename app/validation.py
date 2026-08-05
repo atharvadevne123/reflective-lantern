@@ -343,3 +343,79 @@ __all__ = [
     "validate_temporal_fields",
     "validate_weather_fields",
 ]
+
+
+def validate_percentage(value: float, field_name: str = "value") -> list[str]:
+    """Validate that *value* is a percentage in [0, 100].
+
+    Args:
+        value: Numeric value to validate.
+        field_name: Name of the field for error message context.
+
+    Returns:
+        List of error strings (empty when valid).
+    """
+    errors: list[str] = []
+    if not (0.0 <= value <= 100.0):
+        errors.append(f"{field_name} must be in [0, 100], got {value}")
+    return errors
+
+
+def validate_positive_float(value: float, field_name: str = "value") -> list[str]:
+    """Validate that *value* is a strictly positive finite float.
+
+    Args:
+        value: Numeric value to validate.
+        field_name: Name of the field for error message context.
+
+    Returns:
+        List of error strings (empty when valid).
+    """
+    import math
+    errors: list[str] = []
+    if not math.isfinite(value):
+        errors.append(f"{field_name} must be finite, got {value}")
+    elif value <= 0:
+        errors.append(f"{field_name} must be positive, got {value}")
+    return errors
+
+
+def sanitize_string_input(s: str, max_length: int = 255, field_name: str = "input") -> str:
+    """Strip whitespace and validate that *s* is non-empty and within *max_length*.
+
+    Args:
+        s: String to sanitize.
+        max_length: Maximum allowed length after stripping.
+        field_name: Field name for error messages.
+
+    Returns:
+        Stripped string.
+
+    Raises:
+        ValueError: If *s* is empty after stripping or exceeds *max_length*.
+    """
+    stripped = s.strip()
+    if not stripped:
+        raise ValueError(f"{field_name} must not be empty or whitespace-only")
+    if len(stripped) > max_length:
+        raise ValueError(f"{field_name} exceeds max length {max_length} (got {len(stripped)})")
+    return stripped
+
+
+def validate_non_negative_float(value: float, field_name: str = "value") -> list[str]:
+    """Validate that *value* is a non-negative finite float.
+
+    Args:
+        value: Numeric value to validate.
+        field_name: Name of the field for error message context.
+
+    Returns:
+        List of error strings (empty when valid).
+    """
+    import math
+    errors: list[str] = []
+    if not math.isfinite(value):
+        errors.append(f"{field_name} must be finite, got {value}")
+    elif value < 0:
+        errors.append(f"{field_name} must be non-negative, got {value}")
+    return errors
