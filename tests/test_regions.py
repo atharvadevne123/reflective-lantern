@@ -304,3 +304,69 @@ def test_get_all_region_ids_contains_standard(region_id: str) -> None:
 
     ids = get_all_region_ids()
     assert region_id in ids
+
+
+class TestRegionCount:
+    def test_positive(self) -> None:
+        from app.regions import region_count
+
+        assert region_count() > 0
+
+    def test_matches_list_length(self) -> None:
+        from app.regions import list_regions, region_count
+
+        assert region_count() == len(list_regions())
+
+
+class TestGetRegionNames:
+    def test_returns_list(self) -> None:
+        from app.regions import get_region_names
+
+        result = get_region_names()
+        assert isinstance(result, list)
+        assert len(result) > 0
+
+    def test_sorted(self) -> None:
+        from app.regions import get_region_names
+
+        names = get_region_names()
+        assert names == sorted(names)
+
+
+class TestRegionsByPeakLoad:
+    def test_returns_list(self) -> None:
+        from app.regions import regions_by_peak_load
+
+        result = regions_by_peak_load()
+        assert isinstance(result, list)
+
+    def test_descending_by_default(self) -> None:
+        from app.regions import list_regions, regions_by_peak_load
+
+        result = regions_by_peak_load(descending=True)
+        regions = {r["id"]: r.get("peak_load_mw") for r in list_regions()}
+        loads = [regions[rid] for rid in result if regions.get(rid) is not None]
+        assert loads == sorted(loads, reverse=True)
+
+
+class TestRegionIdsForTimezones:
+    def test_returns_list(self) -> None:
+        from app.regions import region_ids_for_timezones
+
+        result = region_ids_for_timezones(["UTC"])
+        assert isinstance(result, list)
+
+    def test_empty_timezones(self) -> None:
+        from app.regions import region_ids_for_timezones
+
+        assert region_ids_for_timezones([]) == []
+
+    def test_known_timezone(self) -> None:
+        from app.regions import get_region_timezone, get_all_region_ids, region_ids_for_timezones
+
+        ids = get_all_region_ids()
+        if not ids:
+            return
+        tz = get_region_timezone(ids[0])
+        result = region_ids_for_timezones([tz])
+        assert ids[0] in result
