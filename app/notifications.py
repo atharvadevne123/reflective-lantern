@@ -149,3 +149,63 @@ def highest_severity(alerts: list[Alert]) -> str:
     if not alerts:
         return "none"
     return max(alerts, key=lambda a: severity_rank(a.severity)).severity
+
+
+def filter_alerts_by_severity(alerts: list["Alert"], min_severity: str) -> list["Alert"]:
+    """Return only alerts at or above the minimum severity level.
+
+    Args:
+        alerts: List of Alert objects.
+        min_severity: Minimum severity string ("low", "medium", "high", "critical").
+
+    Returns:
+        Filtered list of alerts.
+    """
+    min_rank = severity_rank(min_severity)
+    return [a for a in alerts if severity_rank(a.severity) >= min_rank]
+
+
+def deduplicate_alerts(alerts: list["Alert"]) -> list["Alert"]:
+    """Remove duplicate alerts that share the same message.
+
+    Args:
+        alerts: List of Alert objects.
+
+    Returns:
+        List with unique messages, preserving first occurrence order.
+    """
+    seen: set[str] = set()
+    result = []
+    for alert in alerts:
+        if alert.message not in seen:
+            seen.add(alert.message)
+            result.append(alert)
+    return result
+
+
+def format_alert_text(alert: "Alert") -> str:
+    """Format an Alert as a human-readable text line.
+
+    Args:
+        alert: Alert object with severity, message, timestamp attributes.
+
+    Returns:
+        Formatted string like "[HIGH] Drift detected - 2024-01-01T12:00:00".
+    """
+    ts = getattr(alert, "timestamp", "")
+    return f"[{alert.severity.upper()}] {alert.message} - {ts}"
+
+
+def batch_alerts_by_severity(alerts: list["Alert"]) -> dict[str, list["Alert"]]:
+    """Group alerts into batches by severity level.
+
+    Args:
+        alerts: List of Alert objects.
+
+    Returns:
+        Dict mapping severity -> list of matching alerts.
+    """
+    batches: dict[str, list["Alert"]] = {}
+    for alert in alerts:
+        batches.setdefault(alert.severity, []).append(alert)
+    return batches
