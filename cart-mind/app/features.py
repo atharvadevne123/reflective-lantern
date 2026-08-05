@@ -1,4 +1,11 @@
-"""Feature engineering pipeline for Cart-Mind recommendation system."""
+"""Feature engineering for Cart-Mind.
+
+Five sklearn transformers turn 16 raw user, item, and interaction columns into 29
+features. They are transformers rather than a preprocessing function so they can
+be fitted inside cross-validation folds: :class:`LagRollingFeatures` learns
+normalisation constants from the training data, and computing those over the full
+dataset would leak test-fold information into the reported AUC.
+"""
 
 from __future__ import annotations
 
@@ -39,7 +46,12 @@ INTERACTION_COLS = [
 
 
 class RatioFeatures(BaseEstimator, TransformerMixin):
-    """Compute cross-column ratio features to capture relative signals."""
+    """Cross-column ratios capturing relative rather than absolute signals.
+
+    A £200 item means something different to a shopper whose average order is £50
+    than to one who routinely spends £500, so the ratios carry signal the raw
+    columns cannot. All divisions are epsilon-guarded against zero denominators.
+    """
 
     def fit(self, X: pd.DataFrame, y: Any = None) -> RatioFeatures:
         return self
@@ -56,7 +68,11 @@ class RatioFeatures(BaseEstimator, TransformerMixin):
 
 
 class InteractionFeatures(BaseEstimator, TransformerMixin):
-    """Compute user-item affinity and basket features."""
+    """User-item affinity, recency decay, and price sensitivity.
+
+    ``recency_weight`` decays exponentially with a 30-day scale, encoding that a
+    lapsed shopper's history should count for less without discarding it outright.
+    """
 
     def fit(self, X: pd.DataFrame, y: Any = None) -> InteractionFeatures:
         return self
@@ -76,7 +92,11 @@ class InteractionFeatures(BaseEstimator, TransformerMixin):
 
 
 class LagRollingFeatures(BaseEstimator, TransformerMixin):
-    """Add synthetic rolling-window purchase velocity features."""
+    """Purchase-velocity features normalised against training-set means.
+
+    The means are learned in ``fit`` and reused in ``transform``, so a fold's
+    normalisation never sees data from outside that fold.
+    """
 
     def fit(self, X: pd.DataFrame, y: Any = None) -> LagRollingFeatures:
         self.session_mean_ = float(X["session_count_7d"].mean())
@@ -94,7 +114,12 @@ class LagRollingFeatures(BaseEstimator, TransformerMixin):
 
 
 class DiscountEncoder(BaseEstimator, TransformerMixin):
-    """Encode discount buckets and inventory pressure."""
+    """Discount buckets and a low-stock scarcity flag.
+
+    Discount is bucketed rather than left continuous because its effect on
+    conversion is closer to stepwise than linear — shoppers respond to "half
+    price" as a category, not to each percentage point equally.
+    """
 
     DISCOUNT_BINS = [0, 5, 15, 30, 50, 100]
     DISCOUNT_LABELS = [0, 1, 2, 3, 4]
@@ -115,7 +140,12 @@ class DiscountEncoder(BaseEstimator, TransformerMixin):
 
 
 def build_feature_pipeline() -> Pipeline:
-    """Build the 5-stage sklearn feature engineering pipeline."""
+    """Build the five-stage feature pipeline.
+
+    Returns:
+        An unfitted pipeline: ratios, interactions, lag/rolling, discount
+        encoding, then standard scaling.
+    """
     return Pipeline(
         [
             ("ratios", RatioFeatures()),
@@ -153,7 +183,19 @@ def get_feature_names(pipeline: Pipeline) -> list[str]:
 
 
 def make_sample_dataframe(n: int = 100, seed: int = 42) -> pd.DataFrame:
-    """Generate a realistic synthetic dataset for training and testing."""
+    """Generate a synthetic interaction dataset.
+
+    This repository ships no proprietary retail data, so training and tests run
+    on generated rows. Pair with :func:`make_purchase_labels` for labels that
+    carry signal; random labels produce a near-chance model.
+
+    Args:
+        n: Number of rows to generate.
+        seed: Seed for reproducibility.
+
+    Returns:
+        Frame with all 16 raw feature columns.
+    """
     rng = np.random.default_rng(seed)
     return pd.DataFrame(
         {
