@@ -62,6 +62,11 @@ def check_all_features(
     for feat, current in feature_values.items():
         reference = get_reference_window(feat)
         result = compute_drift(reference, current)
+        # PSI is reported alongside KS so a caller can weigh statistical
+        # significance against effect size before deciding to retrain.
+        psi_result = compute_psi(reference, current)
+        result["psi"] = psi_result.get("psi")
+        result["psi_severity"] = psi_result.get("severity")
         results[feat] = result
         if result.get("ks_statistic") is not None:
             db.add(
