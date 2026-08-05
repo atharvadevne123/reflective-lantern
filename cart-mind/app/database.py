@@ -1,4 +1,11 @@
-"""SQLAlchemy database models and session management."""
+"""SQLAlchemy models and session management for Cart-Mind.
+
+Four tables back the service: ``prediction_logs`` and ``drift_logs`` capture what
+the model did and how its inputs behaved, while ``user_profiles`` and
+``item_catalog`` hold the entity data recommendations are drawn from. The
+prediction and drift tables are what give the retraining DAG a real feedback
+loop instead of a synthetic one.
+"""
 
 import logging
 import os
@@ -32,6 +39,8 @@ class Base(DeclarativeBase):
 
 
 class PredictionLog(Base):
+    """One row per scored request, for monitoring and retraining feedback."""
+
     __tablename__ = "prediction_logs"
 
     id = Column(Integer, primary_key=True, index=True)
@@ -46,6 +55,8 @@ class PredictionLog(Base):
 
 
 class DriftLog(Base):
+    """One row per feature per drift check, with the KS statistic and verdict."""
+
     __tablename__ = "drift_logs"
 
     id = Column(Integer, primary_key=True, index=True)
@@ -58,6 +69,8 @@ class DriftLog(Base):
 
 
 class UserProfile(Base):
+    """Aggregated per-user shopping behaviour used to build request features."""
+
     __tablename__ = "user_profiles"
 
     id = Column(Integer, primary_key=True, index=True)
@@ -71,6 +84,8 @@ class UserProfile(Base):
 
 
 class ItemCatalog(Base):
+    """Product catalogue backing candidate generation and similarity search."""
+
     __tablename__ = "item_catalog"
 
     id = Column(Integer, primary_key=True, index=True)
@@ -85,11 +100,21 @@ class ItemCatalog(Base):
 
 
 def init_db() -> None:
+    """Create every table that does not yet exist.
+
+    Safe to call repeatedly — ``create_all`` skips existing tables. Alembic owns
+    schema changes in production; this is the convenience path for local runs.
+    """
     Base.metadata.create_all(bind=engine)
     logger.info("Database tables initialised")
 
 
 def get_db():
+    """Yield a request-scoped database session, closing it on completion.
+
+    Yields:
+        An open SQLAlchemy session, closed when the request finishes.
+    """
     db: Session = SessionLocal()
     try:
         yield db
