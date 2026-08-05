@@ -327,3 +327,143 @@ class TestDaysBetween:
         start = datetime(2026, 2, 1)
         end = datetime(2026, 1, 1)
         assert days_between(start, end) == -31
+
+
+class TestFormatDuration:
+    def test_seconds_only(self) -> None:
+        from app.date_utils import format_duration
+
+        assert format_duration(45.0) == "45s"
+
+    def test_minutes_and_seconds(self) -> None:
+        from app.date_utils import format_duration
+
+        assert format_duration(125.0) == "2m 5s"
+
+    def test_hours_minutes_seconds(self) -> None:
+        from app.date_utils import format_duration
+
+        assert format_duration(3723.0) == "1h 2m 3s"
+
+    def test_zero(self) -> None:
+        from app.date_utils import format_duration
+
+        assert format_duration(0.0) == "0s"
+
+    def test_negative_raises(self) -> None:
+        from app.date_utils import format_duration
+
+        with pytest.raises(ValueError, match="non-negative"):
+            format_duration(-1.0)
+
+    @pytest.mark.parametrize("seconds,expected", [(60.0, "1m 0s"), (3600.0, "1h 0m 0s"), (86400.0, "24h 0m 0s")])
+    def test_boundary_values(self, seconds: float, expected: str) -> None:
+        from app.date_utils import format_duration
+
+        assert format_duration(seconds) == expected
+
+
+class TestIsLeapYear:
+    def test_known_leap_year(self) -> None:
+        from app.date_utils import is_leap_year
+
+        assert is_leap_year(2024) is True
+
+    def test_known_non_leap(self) -> None:
+        from app.date_utils import is_leap_year
+
+        assert is_leap_year(2023) is False
+
+    def test_century_not_leap(self) -> None:
+        from app.date_utils import is_leap_year
+
+        assert is_leap_year(1900) is False
+
+    def test_400_year_leap(self) -> None:
+        from app.date_utils import is_leap_year
+
+        assert is_leap_year(2000) is True
+
+    def test_zero_raises(self) -> None:
+        from app.date_utils import is_leap_year
+
+        with pytest.raises(ValueError, match="positive"):
+            is_leap_year(0)
+
+    @pytest.mark.parametrize("year,expected", [(2020, True), (2100, False), (2000, True), (1999, False)])
+    def test_parametrized(self, year: int, expected: bool) -> None:
+        from app.date_utils import is_leap_year
+
+        assert is_leap_year(year) == expected
+
+
+class TestDaysInMonth:
+    def test_january(self) -> None:
+        from app.date_utils import days_in_month
+
+        assert days_in_month(2026, 1) == 31
+
+    def test_february_non_leap(self) -> None:
+        from app.date_utils import days_in_month
+
+        assert days_in_month(2023, 2) == 28
+
+    def test_february_leap(self) -> None:
+        from app.date_utils import days_in_month
+
+        assert days_in_month(2024, 2) == 29
+
+    def test_april_30_days(self) -> None:
+        from app.date_utils import days_in_month
+
+        assert days_in_month(2026, 4) == 30
+
+    def test_invalid_month_raises(self) -> None:
+        from app.date_utils import days_in_month
+
+        with pytest.raises(ValueError, match="1-12"):
+            days_in_month(2026, 13)
+
+    @pytest.mark.parametrize("month,days", [(1, 31), (3, 31), (6, 30), (9, 30), (12, 31)])
+    def test_standard_months(self, month: int, days: int) -> None:
+        from app.date_utils import days_in_month
+
+        assert days_in_month(2026, month) == days
+
+
+class TestNextBusinessDay:
+    def test_monday_returns_tuesday(self) -> None:
+        from datetime import datetime
+
+        from app.date_utils import next_business_day
+
+        monday = datetime(2026, 8, 3)  # Monday
+        result = next_business_day(monday)
+        assert result.weekday() == 1  # Tuesday
+
+    def test_friday_returns_monday(self) -> None:
+        from datetime import datetime
+
+        from app.date_utils import next_business_day
+
+        friday = datetime(2026, 8, 7)  # Friday
+        result = next_business_day(friday)
+        assert result.weekday() == 0  # Monday
+
+    def test_saturday_returns_monday(self) -> None:
+        from datetime import datetime
+
+        from app.date_utils import next_business_day
+
+        saturday = datetime(2026, 8, 8)  # Saturday
+        result = next_business_day(saturday)
+        assert result.weekday() == 0  # Monday
+
+    def test_sunday_returns_monday(self) -> None:
+        from datetime import datetime
+
+        from app.date_utils import next_business_day
+
+        sunday = datetime(2026, 8, 9)  # Sunday
+        result = next_business_day(sunday)
+        assert result.weekday() == 0  # Monday
