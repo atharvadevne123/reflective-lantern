@@ -229,3 +229,71 @@ def test_add_property_various_values(dim_val: float) -> None:
     add_property([dim_val] * 24)
     assert index_size() == 1
     reset_index()
+
+
+class TestIndexIsEmpty:
+    def test_empty_after_reset(self) -> None:
+        from app.faiss_index import index_is_empty, reset_index
+
+        reset_index()
+        assert index_is_empty() is True
+
+    def test_not_empty_after_add(self) -> None:
+        from app.faiss_index import DIM, add_property, index_is_empty, reset_index
+
+        reset_index()
+        add_property([0.0] * DIM)
+        assert index_is_empty() is False
+
+
+class TestBatchAddProperties:
+    def test_adds_multiple(self) -> None:
+        from app.faiss_index import DIM, batch_add_properties, index_size, reset_index
+
+        reset_index()
+        vecs = [[float(i)] * DIM for i in range(3)]
+        count = batch_add_properties(vecs)
+        assert count == 3
+        assert index_size() == 3
+
+    def test_empty_list(self) -> None:
+        from app.faiss_index import batch_add_properties, reset_index
+
+        reset_index()
+        assert batch_add_properties([]) == 0
+
+
+class TestTopKDistances:
+    def test_returns_list(self) -> None:
+        from app.faiss_index import DIM, add_property, reset_index, top_k_distances
+
+        reset_index()
+        add_property([1.0] * DIM)
+        result = top_k_distances([1.0] * DIM, top_k=1)
+        assert isinstance(result, list)
+        assert len(result) <= 1
+
+    def test_empty_index(self) -> None:
+        from app.faiss_index import DIM, reset_index, top_k_distances
+
+        reset_index()
+        result = top_k_distances([0.0] * DIM, top_k=5)
+        assert result == []
+
+
+class TestIndexSummary:
+    def test_keys_present(self) -> None:
+        from app.faiss_index import index_summary
+
+        result = index_summary()
+        assert "size" in result
+        assert "is_empty" in result
+        assert "dim" in result
+
+    def test_empty_after_reset(self) -> None:
+        from app.faiss_index import index_summary, reset_index
+
+        reset_index()
+        result = index_summary()
+        assert result["is_empty"] is True
+        assert result["size"] == 0
