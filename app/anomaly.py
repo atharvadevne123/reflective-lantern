@@ -337,3 +337,117 @@ def ewma_smooth(
     for v in values[1:]:
         result.append(alpha * v + (1 - alpha) * result[-1])
     return [round(x, 6) for x in result]
+
+
+def anomaly_density(flags: list[int], window_size: int = 24) -> list[float]:
+    """Compute the density of anomalies in a sliding window.
+
+    At each position *i* the density is the fraction of the trailing *window_size*
+    observations that are flagged as anomalous.
+
+    Args:
+        flags: Binary anomaly flags (1 = anomaly, 0 = normal).
+        window_size: Sliding window length.
+
+    Returns:
+        Float list of the same length as *flags* with density values in [0, 1].
+
+    Raises:
+        ValueError: If *flags* is empty or *window_size* < 1.
+    """
+    if not flags:
+        raise ValueError("flags must not be empty")
+    if window_size < 1:
+        raise ValueError(f"window_size must be at least 1, got {window_size}")
+    result = []
+    for i in range(len(flags)):
+        start = max(0, i - window_size + 1)
+        chunk = flags[start : i + 1]
+        result.append(round(sum(chunk) / len(chunk), 4))
+    return result
+
+
+def anomaly_burst_score(flags: list[int], burst_window: int = 6) -> float:
+    """Score the burstiness of anomalies in *flags*.
+
+    Counts the maximum number of anomalies observed in any contiguous
+    *burst_window* of the series, normalised by *burst_window*.
+
+    Args:
+        flags: Binary anomaly flags (1 = anomaly, 0 = normal).
+        burst_window: Size of the evaluation window.
+
+    Returns:
+        Burst score in [0, 1]; 1.0 means all window slots are anomalous.
+
+    Raises:
+        ValueError: If *flags* is empty or *burst_window* < 1.
+    """
+    if not flags:
+        raise ValueError("flags must not be empty")
+    if burst_window < 1:
+        raise ValueError(f"burst_window must be at least 1, got {burst_window}")
+    max_in_window = 0
+    for i in range(len(flags)):
+        window = flags[i : i + burst_window]
+        max_in_window = max(max_in_window, sum(window))
+    return round(max_in_window / burst_window, 4)
+
+
+def percentile_anomaly_flag(
+    value: float,
+    reference: list[float],
+    lower_pct: float = 5.0,
+    upper_pct: float = 95.0,
+) -> bool:
+    """Flag *value* as anomalous if it falls outside the *reference* percentile range.
+
+    Args:
+        value: Observation to evaluate.
+        reference: Reference distribution of historical values.
+        lower_pct: Lower percentile bound in [0, 100).
+        upper_pct: Upper percentile bound in (0, 100].
+
+    Returns:
+        True when *value* is outside the [lower_pct, upper_pct] range.
+
+    Raises:
+        ValueError: If *reference* is empty or percentile bounds are invalid.
+    """
+    if not reference:
+        raise ValueError("reference must not be empty")
+    if not (0 <= lower_pct < upper_pct <= 100):
+        raise ValueError(f"Percentiles must satisfy 0 <= lower < upper <= 100, got {lower_pct}, {upper_pct}")
+    sorted_ref = sorted(reference)
+    n = len(sorted_ref)
+    lo_idx = int(lower_pct / 100.0 * (n - 1))
+    hi_idx = int(upper_pct / 100.0 * (n - 1))
+    lo_val = sorted_ref[lo_idx]
+    hi_val = sorted_ref[hi_idx]
+    return value < lo_val or value > hi_val
+
+
+def consecutive_normal_runs(flags: list[int]) -> list[tuple[int, int]]:
+    """Return spans of consecutive normal (0) observations.
+
+    Args:
+        flags: Binary anomaly flags (1 = anomaly, 0 = normal).
+
+    Returns:
+        List of (start, end) index pairs for consecutive normal spans.
+    """
+    if not flags:
+        return []
+    runs = []
+    start = None
+    for i, f in enumerate(flags):
+        if f == 0:
+            if start is None:
+                start = i
+        else:
+            if start is not None:
+                runs.append((start, i - 1))
+                start = None
+    if start is not None:
+        runs.append((start, len(flags) - 1))
+    return runs
