@@ -221,3 +221,33 @@ class TestComputePSI:
             rng.normal(0, 1, 500).tolist(), rng.normal(0, 1, 500).tolist(), bins=bins
         )
         assert result["psi"] is not None
+
+
+class TestCheckAllFeaturesReportsPSI:
+    def test_results_include_psi_fields(self, db_session):
+        from app.monitoring import check_all_features, update_reference_window
+
+        rng = np.random.default_rng(11)
+        update_reference_window("psi_feat", rng.normal(0, 1, 400).tolist())
+        results = check_all_features({"psi_feat": rng.normal(0, 1, 300).tolist()}, db_session)
+        assert "psi" in results["psi_feat"]
+        assert "psi_severity" in results["psi_feat"]
+
+    def test_ks_and_psi_agree_on_large_shift(self, db_session):
+        from app.monitoring import check_all_features, update_reference_window
+
+        rng = np.random.default_rng(12)
+        update_reference_window("shift_feat", rng.normal(0, 1, 400).tolist())
+        results = check_all_features({"shift_feat": rng.normal(5, 1, 300).tolist()}, db_session)
+        assert results["shift_feat"]["drift_detected"] is True
+        assert results["shift_feat"]["psi_severity"] == "major"
+
+    def test_drift_rows_persisted(self, db_session):
+        from app.database import DriftLog
+        from app.monitoring import check_all_features, update_reference_window
+
+        rng = np.random.default_rng(13)
+        update_reference_window("persist_feat", rng.normal(0, 1, 400).tolist())
+        before = db_session.query(DriftLog).count()
+        check_all_features({"persist_feat": rng.normal(0, 1, 300).tolist()}, db_session)
+        assert db_session.query(DriftLog).count() > before
