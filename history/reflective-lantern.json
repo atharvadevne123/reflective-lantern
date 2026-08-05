@@ -545,6 +545,7 @@
       "Improved scripts/benchmark.py with stdev, SLA pass/fail flag, and exit code"
     ],
     "commit_count": 63,
+    "commits": 63,
     "tests_passing": 248,
     "tests_modules": 22
   }
