@@ -339,3 +339,89 @@ class TestEfficiencyGapNew:
         from app.benchmarks import efficiency_gap
 
         assert efficiency_gap(100.0, 100.0) == pytest.approx(0.0)
+
+
+class TestCarbonIntensityBenchmark:
+    def test_basic(self) -> None:
+        from app.benchmarks import carbon_intensity_benchmark
+
+        result = carbon_intensity_benchmark(1000.0, 0.5, 100.0)
+        assert result == pytest.approx(5.0)
+
+    def test_non_positive_kwh(self) -> None:
+        from app.benchmarks import carbon_intensity_benchmark
+
+        with pytest.raises(ValueError):
+            carbon_intensity_benchmark(0.0, 0.5, 100.0)
+
+    def test_non_positive_area(self) -> None:
+        from app.benchmarks import carbon_intensity_benchmark
+
+        with pytest.raises(ValueError):
+            carbon_intensity_benchmark(1000.0, 0.5, 0.0)
+
+
+class TestPercentageBelowBenchmark:
+    def test_better_than_benchmark(self) -> None:
+        from app.benchmarks import percentage_below_benchmark
+
+        result = percentage_below_benchmark(80.0, 100.0)
+        assert result == pytest.approx(20.0)
+
+    def test_worse_than_benchmark(self) -> None:
+        from app.benchmarks import percentage_below_benchmark
+
+        result = percentage_below_benchmark(120.0, 100.0)
+        assert result < 0
+
+    def test_zero_benchmark_raises(self) -> None:
+        from app.benchmarks import percentage_below_benchmark
+
+        with pytest.raises(ValueError):
+            percentage_below_benchmark(50.0, 0.0)
+
+
+class TestWeightedAverageEui:
+    def test_equal_weights(self) -> None:
+        from app.benchmarks import weighted_average_eui
+
+        result = weighted_average_eui([100.0, 200.0], [1.0, 1.0])
+        assert result == pytest.approx(150.0)
+
+    def test_empty_raises(self) -> None:
+        from app.benchmarks import weighted_average_eui
+
+        with pytest.raises(ValueError):
+            weighted_average_eui([], [])
+
+    def test_length_mismatch(self) -> None:
+        from app.benchmarks import weighted_average_eui
+
+        with pytest.raises(ValueError):
+            weighted_average_eui([1.0, 2.0], [1.0])
+
+
+class TestEnergyStarScore:
+    def test_median_gets_50(self) -> None:
+        from app.benchmarks import energy_star_score
+
+        result = energy_star_score(100.0, 100.0, 50.0)
+        assert result == pytest.approx(50.0)
+
+    def test_best_gets_100(self) -> None:
+        from app.benchmarks import energy_star_score
+
+        result = energy_star_score(50.0, 100.0, 50.0)
+        assert result == pytest.approx(100.0)
+
+    def test_score_clamped_at_zero(self) -> None:
+        from app.benchmarks import energy_star_score
+
+        result = energy_star_score(200.0, 100.0, 50.0)
+        assert result == pytest.approx(0.0)
+
+    def test_equal_median_best_raises(self) -> None:
+        from app.benchmarks import energy_star_score
+
+        with pytest.raises(ValueError):
+            energy_star_score(100.0, 100.0, 100.0)
