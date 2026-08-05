@@ -214,3 +214,87 @@ def efficiency_gap(
     if target_kwh == 0.0:
         return 0.0
     return round((actual_kwh - target_kwh) / target_kwh * 100.0, 4)
+
+
+def carbon_intensity_benchmark(kwh: float, emission_factor: float, floor_area_sqm: float) -> float:
+    """Calculate carbon intensity benchmark (kg CO2 per sqm).
+
+    Args:
+        kwh: Total energy consumed in kWh.
+        emission_factor: kg CO2 per kWh.
+        floor_area_sqm: Floor area in square metres.
+
+    Returns:
+        Carbon intensity in kg CO2 per sqm.
+
+    Raises:
+        ValueError: If any argument is non-positive.
+    """
+    if kwh <= 0 or emission_factor <= 0 or floor_area_sqm <= 0:
+        raise ValueError("All arguments must be positive")
+    return round(kwh * emission_factor / floor_area_sqm, 4)
+
+
+def percentage_below_benchmark(
+    actual_eui: float, benchmark_eui: float
+) -> float:
+    """Return percentage difference of actual EUI below benchmark (negative = over benchmark).
+
+    Args:
+        actual_eui: Measured EUI value.
+        benchmark_eui: Target benchmark EUI value.
+
+    Returns:
+        Percentage below benchmark (positive = better than benchmark).
+
+    Raises:
+        ValueError: If benchmark_eui is zero.
+    """
+    if benchmark_eui == 0:
+        raise ValueError("benchmark_eui cannot be zero")
+    return round((benchmark_eui - actual_eui) / benchmark_eui * 100.0, 4)
+
+
+def weighted_average_eui(
+    euis: list[float], weights: list[float]
+) -> float:
+    """Compute weighted average EUI across multiple buildings.
+
+    Args:
+        euis: List of EUI values.
+        weights: Corresponding weights (e.g., floor areas).
+
+    Returns:
+        Weighted average EUI.
+
+    Raises:
+        ValueError: If lists are empty or of different lengths.
+    """
+    if not euis or not weights:
+        raise ValueError("euis and weights must be non-empty")
+    if len(euis) != len(weights):
+        raise ValueError("euis and weights must have the same length")
+    total_weight = sum(weights)
+    if total_weight == 0:
+        raise ValueError("Total weight cannot be zero")
+    return round(sum(e * w for e, w in zip(euis, weights)) / total_weight, 4)
+
+
+def energy_star_score(eui: float, median_eui: float, best_eui: float) -> float:
+    """Estimate an ENERGY STAR-like score (0-100) for a building.
+
+    Args:
+        eui: Building's EUI.
+        median_eui: Median EUI for the building type.
+        best_eui: Best (lowest) achievable EUI for the type.
+
+    Returns:
+        Score between 0 and 100.
+
+    Raises:
+        ValueError: If median_eui equals best_eui.
+    """
+    if median_eui == best_eui:
+        raise ValueError("median_eui and best_eui cannot be equal")
+    score = 50 + 50 * (median_eui - eui) / (median_eui - best_eui)
+    return round(max(0.0, min(100.0, score)), 2)
