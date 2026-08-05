@@ -6,6 +6,15 @@ install:
 test:
 	python -m pytest tests/ -v --tb=short 2>&1 | tail -80
 
+test-fast:
+	python -m pytest tests/ -q --tb=line --ignore=tests/test_pipeline.py
+
+train:
+	python -m scripts.train
+
+diagram:
+	python scripts/generate_diagram.py
+
 lint:
 	python -m ruff check .
 
