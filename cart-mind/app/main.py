@@ -21,6 +21,7 @@ from app.cache import RECOMMENDATION_CACHE, SIMILARITY_CACHE
 from app.database import get_db, init_db
 from app.features import INTERACTION_COLS, ITEM_COLS, USER_COLS
 from app.model import (
+    EMBED_DIM,
     METRICS_PATH,
     load_faiss_index,
     load_model,
@@ -351,7 +352,7 @@ def similar_items(
         )
 
     rng = np.random.default_rng(abs(hash(payload.item_id)) % (2**32))
-    query_vec = rng.random(32).astype(np.float32)
+    query_vec = rng.random(EMBED_DIM).astype(np.float32)
 
     results = search_similar_items(index, item_ids, query_vec, top_k=payload.top_k)
     SIMILARITY_CACHE.set(cache_key, results)
