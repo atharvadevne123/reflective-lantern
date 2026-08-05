@@ -432,3 +432,106 @@ def gross_rent_multiplier(
     if annual_gross_rent <= 0:
         return float("inf")
     return round(property_price / annual_gross_rent, 2)
+
+
+def annualized_return(total_return: float, years: float) -> float:
+    """Compute the compound annualized return from a total return over *years*.
+
+    Uses the formula: (1 + total_return) ** (1 / years) - 1.
+
+    Args:
+        total_return: Total return as a decimal fraction (e.g. 0.50 for 50%).
+        years: Investment holding period in years (> 0).
+
+    Returns:
+        Annualized return as a decimal fraction, rounded to 6 decimal places.
+
+    Raises:
+        ValueError: If *years* is not positive or *total_return* <= -1.
+    """
+    if years <= 0:
+        raise ValueError(f"years must be positive, got {years}")
+    if total_return <= -1:
+        raise ValueError(f"total_return must be > -1, got {total_return}")
+    return round((1 + total_return) ** (1.0 / years) - 1, 6)
+
+
+def net_present_value(cash_flows: list[float], discount_rate: float) -> float:
+    """Compute the Net Present Value (NPV) of a series of cash flows.
+
+    The first element is treated as the initial investment (typically negative).
+    Subsequent elements are future cash flows discounted at *discount_rate* per period.
+
+    Args:
+        cash_flows: Ordered list of cash flows (period 0, 1, 2, …).
+        discount_rate: Discount rate per period as a decimal fraction.
+
+    Returns:
+        NPV rounded to 2 decimal places.
+
+    Raises:
+        ValueError: If *cash_flows* is empty or *discount_rate* <= -1.
+    """
+    if not cash_flows:
+        raise ValueError("cash_flows must not be empty")
+    if discount_rate <= -1:
+        raise ValueError(f"discount_rate must be > -1, got {discount_rate}")
+    npv = sum(cf / (1 + discount_rate) ** t for t, cf in enumerate(cash_flows))
+    return round(npv, 2)
+
+
+def property_yield_analysis(
+    market_value: float,
+    annual_rent: float,
+    annual_expenses: float = 0.0,
+) -> dict[str, float]:
+    """Compute a basic yield analysis for an investment property.
+
+    Args:
+        market_value: Current market value of the property in USD.
+        annual_rent: Annual gross rental income in USD.
+        annual_expenses: Annual operating expenses (maintenance, taxes, etc.) in USD.
+
+    Returns:
+        Dict with gross_yield_pct, net_yield_pct, net_operating_income, and
+        expense_ratio_pct.
+
+    Raises:
+        ValueError: If *market_value* is not positive.
+    """
+    if market_value <= 0:
+        raise ValueError(f"market_value must be positive, got {market_value}")
+    gross_yield = round(annual_rent / market_value * 100.0, 4)
+    noi = annual_rent - annual_expenses
+    net_yield = round(noi / market_value * 100.0, 4)
+    expense_ratio = round(annual_expenses / annual_rent * 100.0, 4) if annual_rent > 0 else 0.0
+    return {
+        "gross_yield_pct": gross_yield,
+        "net_yield_pct": net_yield,
+        "net_operating_income": round(noi, 2),
+        "expense_ratio_pct": expense_ratio,
+    }
+
+
+def equity_ratio(market_value: float, outstanding_loan: float) -> float:
+    """Compute the equity ratio (owner's equity as a fraction of market value).
+
+    Args:
+        market_value: Current market value of the property in USD.
+        outstanding_loan: Remaining loan principal in USD.
+
+    Returns:
+        Equity ratio in [0, 1], rounded to 4 decimal places.
+        Returns 0.0 if market_value is zero.
+
+    Raises:
+        ValueError: If *outstanding_loan* is negative or *market_value* < 0.
+    """
+    if market_value < 0:
+        raise ValueError(f"market_value must be non-negative, got {market_value}")
+    if outstanding_loan < 0:
+        raise ValueError(f"outstanding_loan must be non-negative, got {outstanding_loan}")
+    if market_value == 0.0:
+        return 0.0
+    equity = max(0.0, market_value - outstanding_loan)
+    return round(equity / market_value, 4)
