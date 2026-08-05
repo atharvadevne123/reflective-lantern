@@ -315,3 +315,109 @@ def test_ensemble_forecast_various_steps(steps: int) -> None:
     values = [float(i % 24) for i in range(72)]
     result = ensemble_forecast(values, steps=steps)
     assert len(result) == steps
+
+
+class TestForecastWithUncertainty:
+    def test_returns_dict_with_keys(self) -> None:
+        from app.forecasting import forecast_with_uncertainty
+
+        result = forecast_with_uncertainty([1.0, 2.0, 3.0, 4.0, 5.0], horizon=3)
+        assert set(result.keys()) == {"point", "lower_80", "upper_80"}
+
+    def test_output_length(self) -> None:
+        from app.forecasting import forecast_with_uncertainty
+
+        result = forecast_with_uncertainty([1.0] * 10, horizon=5)
+        assert len(result["point"]) == 5
+        assert len(result["lower_80"]) == 5
+        assert len(result["upper_80"]) == 5
+
+    def test_too_short_raises(self) -> None:
+        from app.forecasting import forecast_with_uncertainty
+
+        with pytest.raises(ValueError, match="2 elements"):
+            forecast_with_uncertainty([1.0], horizon=3)
+
+    def test_horizon_zero_raises(self) -> None:
+        from app.forecasting import forecast_with_uncertainty
+
+        with pytest.raises(ValueError, match="at least 1"):
+            forecast_with_uncertainty([1.0, 2.0, 3.0], horizon=0)
+
+    def test_lower_le_upper(self) -> None:
+        from app.forecasting import forecast_with_uncertainty
+
+        result = forecast_with_uncertainty(list(range(1, 25)), horizon=6, n_boot=50)
+        for lo, hi in zip(result["lower_80"], result["upper_80"]):
+            assert lo <= hi
+
+
+class TestForecastErrorMetrics:
+    def test_perfect_forecast(self) -> None:
+        from app.forecasting import forecast_error_metrics
+
+        vals = [1.0, 2.0, 3.0, 4.0]
+        result = forecast_error_metrics(vals, vals)
+        assert result["mae"] == pytest.approx(0.0, abs=1e-6)
+        assert result["rmse"] == pytest.approx(0.0, abs=1e-6)
+
+    def test_keys_present(self) -> None:
+        from app.forecasting import forecast_error_metrics
+
+        result = forecast_error_metrics([1.0, 2.0], [1.1, 2.1])
+        assert set(result.keys()) >= {"mae", "rmse", "mape", "bias"}
+
+    def test_empty_raises(self) -> None:
+        from app.forecasting import forecast_error_metrics
+
+        with pytest.raises(ValueError, match="empty"):
+            forecast_error_metrics([], [])
+
+    def test_length_mismatch_raises(self) -> None:
+        from app.forecasting import forecast_error_metrics
+
+        with pytest.raises(ValueError, match="Length mismatch"):
+            forecast_error_metrics([1.0, 2.0], [1.0])
+
+    def test_bias_positive_when_over_predicted(self) -> None:
+        from app.forecasting import forecast_error_metrics
+
+        result = forecast_error_metrics([1.0, 2.0, 3.0], [2.0, 3.0, 4.0])
+        assert result["bias"] == pytest.approx(1.0, rel=1e-4)
+
+
+class TestForecastCoverage:
+    def test_full_coverage(self) -> None:
+        from app.forecasting import forecast_coverage
+
+        actual = [5.0, 5.0, 5.0]
+        result = forecast_coverage(actual, [4.0, 4.0, 4.0], [6.0, 6.0, 6.0])
+        assert result == pytest.approx(1.0, rel=1e-4)
+
+    def test_no_coverage(self) -> None:
+        from app.forecasting import forecast_coverage
+
+        actual = [5.0, 5.0, 5.0]
+        result = forecast_coverage(actual, [6.0, 6.0, 6.0], [7.0, 7.0, 7.0])
+        assert result == pytest.approx(0.0, abs=1e-6)
+
+    def test_empty_raises(self) -> None:
+        from app.forecasting import forecast_coverage
+
+        with pytest.raises(ValueError, match="non-empty"):
+            forecast_coverage([], [], [])
+
+    def test_length_mismatch_raises(self) -> None:
+        from app.forecasting import forecast_coverage
+
+        with pytest.raises(ValueError, match="same length"):
+            forecast_coverage([1.0, 2.0], [0.5, 1.5, 2.5], [1.5, 2.5, 3.5])
+
+    def test_result_in_range(self) -> None:
+        from app.forecasting import forecast_coverage
+
+        actual = [float(i) for i in range(10)]
+        lower = [float(i) - 2 for i in range(10)]
+        upper = [float(i) + 2 for i in range(10)]
+        result = forecast_coverage(actual, lower, upper)
+        assert 0.0 <= result <= 1.0
