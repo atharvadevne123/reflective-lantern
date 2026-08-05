@@ -608,3 +608,136 @@ class TestNeighbourhoodScore:
 
         result = neighbourhood_score(school, transit, walk)
         assert 0.0 <= result["composite_score"] <= 10.0
+
+
+class TestPriceGrowthRate:
+    def test_positive_growth(self) -> None:
+        from app.market_context import price_growth_rate
+
+        result = price_growth_rate(100_000.0, 121_000.0, years=2.0)
+        assert result == pytest.approx(10.0, rel=1e-3)
+
+    def test_no_growth(self) -> None:
+        from app.market_context import price_growth_rate
+
+        assert price_growth_rate(100_000.0, 100_000.0) == pytest.approx(0.0, abs=1e-4)
+
+    def test_negative_growth(self) -> None:
+        from app.market_context import price_growth_rate
+
+        result = price_growth_rate(100_000.0, 90_000.0)
+        assert result < 0.0
+
+    def test_zero_old_price_raises(self) -> None:
+        from app.market_context import price_growth_rate
+
+        with pytest.raises(ValueError, match="positive"):
+            price_growth_rate(0.0, 100_000.0)
+
+    def test_zero_years_raises(self) -> None:
+        from app.market_context import price_growth_rate
+
+        with pytest.raises(ValueError, match="positive"):
+            price_growth_rate(100_000.0, 120_000.0, years=0.0)
+
+    @pytest.mark.parametrize("old,new,yrs", [(100.0, 200.0, 10.0), (500.0, 750.0, 5.0)])
+    def test_returns_float(self, old: float, new: float, yrs: float) -> None:
+        from app.market_context import price_growth_rate
+
+        assert isinstance(price_growth_rate(old, new, yrs), float)
+
+
+class TestMarketHeatIndex:
+    def test_hot_market(self) -> None:
+        from app.market_context import market_heat_index
+
+        assert market_heat_index(10, 60.0) == "hot"
+
+    def test_warm_market(self) -> None:
+        from app.market_context import market_heat_index
+
+        assert market_heat_index(20, 30.0) == "warm"
+
+    def test_neutral_market(self) -> None:
+        from app.market_context import market_heat_index
+
+        assert market_heat_index(45, 10.0) == "neutral"
+
+    def test_cool_market(self) -> None:
+        from app.market_context import market_heat_index
+
+        assert market_heat_index(90, 5.0) == "cool"
+
+    @pytest.mark.parametrize("dom,pct,expected", [
+        (5, 75, "hot"),
+        (25, 40, "warm"),
+        (50, 5, "neutral"),
+        (120, 2, "cool"),
+    ])
+    def test_parametrized(self, dom: int, pct: float, expected: str) -> None:
+        from app.market_context import market_heat_index
+
+        assert market_heat_index(dom, pct) == expected
+
+
+class TestVacancyAdjustedYield:
+    def test_zero_vacancy(self) -> None:
+        from app.market_context import vacancy_adjusted_yield
+
+        assert vacancy_adjusted_yield(6.0, 0.0) == pytest.approx(6.0, rel=1e-4)
+
+    def test_full_vacancy(self) -> None:
+        from app.market_context import vacancy_adjusted_yield
+
+        assert vacancy_adjusted_yield(6.0, 1.0) == pytest.approx(0.0, abs=1e-6)
+
+    def test_partial_vacancy(self) -> None:
+        from app.market_context import vacancy_adjusted_yield
+
+        assert vacancy_adjusted_yield(10.0, 0.1) == pytest.approx(9.0, rel=1e-4)
+
+    def test_invalid_rate_raises(self) -> None:
+        from app.market_context import vacancy_adjusted_yield
+
+        with pytest.raises(ValueError, match="\\[0, 1\\]"):
+            vacancy_adjusted_yield(5.0, 1.5)
+
+    @pytest.mark.parametrize("yield_pct,vac", [(8.0, 0.05), (6.0, 0.0), (10.0, 0.2)])
+    def test_result_non_negative(self, yield_pct: float, vac: float) -> None:
+        from app.market_context import vacancy_adjusted_yield
+
+        assert vacancy_adjusted_yield(yield_pct, vac) >= 0.0
+
+
+class TestNormalizeMarketFeatures:
+    def test_basic(self) -> None:
+        from app.market_context import normalize_market_features
+
+        result = normalize_market_features({"a": 0.0, "b": 50.0, "c": 100.0})
+        assert result["a"] == pytest.approx(0.0, abs=1e-6)
+        assert result["c"] == pytest.approx(1.0, rel=1e-4)
+
+    def test_empty_raises(self) -> None:
+        from app.market_context import normalize_market_features
+
+        with pytest.raises(ValueError, match="empty"):
+            normalize_market_features({})
+
+    def test_constant_values_return_half(self) -> None:
+        from app.market_context import normalize_market_features
+
+        result = normalize_market_features({"a": 5.0, "b": 5.0, "c": 5.0})
+        assert all(v == 0.5 for v in result.values())
+
+    def test_keys_preserved(self) -> None:
+        from app.market_context import normalize_market_features
+
+        features = {"school": 8.0, "transit": 4.0, "walk": 6.0}
+        result = normalize_market_features(features)
+        assert set(result.keys()) == set(features.keys())
+
+    def test_values_in_range(self) -> None:
+        from app.market_context import normalize_market_features
+
+        result = normalize_market_features({"a": 1.0, "b": 5.0, "c": 3.0})
+        assert all(0.0 <= v <= 1.0 for v in result.values())
