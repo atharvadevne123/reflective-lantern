@@ -480,3 +480,107 @@ def test_normalize_consumption_length_preserved_method(method):
     values = [float(i) for i in range(10)]
     result = normalize_consumption(values, method=method)
     assert len(result) == len(values)
+
+
+class TestLagFeatures:
+    def test_single_lag(self) -> None:
+        from app.features import lag_features
+
+        result = lag_features([1.0, 2.0, 3.0, 4.0], lags=[1])
+        assert result["lag_1"] == [None, 1.0, 2.0, 3.0]
+
+    def test_two_lags(self) -> None:
+        from app.features import lag_features
+
+        result = lag_features([10.0, 20.0, 30.0, 40.0], lags=[1, 2])
+        assert "lag_1" in result and "lag_2" in result
+
+    def test_invalid_lag(self) -> None:
+        from app.features import lag_features
+
+        with pytest.raises(ValueError):
+            lag_features([1.0, 2.0], lags=[0])
+
+    def test_length_preserved(self) -> None:
+        from app.features import lag_features
+
+        vals = [float(i) for i in range(10)]
+        result = lag_features(vals, lags=[3])
+        assert len(result["lag_3"]) == 10
+
+
+class TestDifferenceFeature:
+    def test_first_order(self) -> None:
+        from app.features import difference_feature
+
+        result = difference_feature([1.0, 3.0, 6.0, 10.0], order=1)
+        assert result == pytest.approx([2.0, 3.0, 4.0])
+
+    def test_second_order(self) -> None:
+        from app.features import difference_feature
+
+        result = difference_feature([1.0, 2.0, 4.0, 7.0], order=2)
+        assert len(result) == 2
+
+    def test_invalid_order(self) -> None:
+        from app.features import difference_feature
+
+        with pytest.raises(ValueError):
+            difference_feature([1.0, 2.0], order=0)
+
+    def test_constant_series(self) -> None:
+        from app.features import difference_feature
+
+        result = difference_feature([5.0, 5.0, 5.0], order=1)
+        assert all(v == pytest.approx(0.0) for v in result)
+
+
+class TestRatioFeature:
+    def test_basic(self) -> None:
+        from app.features import ratio_feature
+
+        result = ratio_feature([10.0, 20.0], [2.0, 4.0])
+        assert result == pytest.approx([5.0, 5.0])
+
+    def test_zero_denominator(self) -> None:
+        from app.features import ratio_feature
+
+        result = ratio_feature([5.0], [0.0])
+        assert result == [0.0]
+
+    def test_empty_raises(self) -> None:
+        from app.features import ratio_feature
+
+        with pytest.raises(ValueError):
+            ratio_feature([], [])
+
+    def test_length_mismatch_raises(self) -> None:
+        from app.features import ratio_feature
+
+        with pytest.raises(ValueError):
+            ratio_feature([1.0, 2.0], [1.0])
+
+
+class TestClipFeatureValues:
+    def test_clips_below(self) -> None:
+        from app.features import clip_feature_values
+
+        result = clip_feature_values([-5.0, 3.0], low=0.0, high=10.0)
+        assert result[0] == pytest.approx(0.0)
+
+    def test_clips_above(self) -> None:
+        from app.features import clip_feature_values
+
+        result = clip_feature_values([5.0, 20.0], low=0.0, high=10.0)
+        assert result[1] == pytest.approx(10.0)
+
+    def test_invalid_range_raises(self) -> None:
+        from app.features import clip_feature_values
+
+        with pytest.raises(ValueError):
+            clip_feature_values([1.0], low=10.0, high=5.0)
+
+    def test_empty(self) -> None:
+        from app.features import clip_feature_values
+
+        assert clip_feature_values([], low=0.0, high=1.0) == []
