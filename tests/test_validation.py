@@ -662,3 +662,139 @@ class TestValidatePrice:
     @pytest.mark.parametrize("price", [0.0, 1.0, 100000.0, 999999999.0])
     def test_valid_prices_parametrized(self, price: float) -> None:
         assert validate_price(price) == []
+
+
+class TestValidatePercentage:
+    def test_valid_zero(self) -> None:
+        from app.validation import validate_percentage
+
+        assert validate_percentage(0.0) == []
+
+    def test_valid_100(self) -> None:
+        from app.validation import validate_percentage
+
+        assert validate_percentage(100.0) == []
+
+    def test_below_range(self) -> None:
+        from app.validation import validate_percentage
+
+        errors = validate_percentage(-1.0)
+        assert len(errors) > 0
+
+    def test_above_range(self) -> None:
+        from app.validation import validate_percentage
+
+        errors = validate_percentage(101.0)
+        assert len(errors) > 0
+
+    def test_field_name_in_error(self) -> None:
+        from app.validation import validate_percentage
+
+        errors = validate_percentage(200.0, field_name="occupancy")
+        assert any("occupancy" in e for e in errors)
+
+    @pytest.mark.parametrize("pct", [0.0, 25.0, 50.0, 75.0, 100.0])
+    def test_valid_values_parametrized(self, pct: float) -> None:
+        from app.validation import validate_percentage
+
+        assert validate_percentage(pct) == []
+
+
+class TestValidatePositiveFloat:
+    def test_valid_positive(self) -> None:
+        from app.validation import validate_positive_float
+
+        assert validate_positive_float(5.0) == []
+
+    def test_zero_invalid(self) -> None:
+        from app.validation import validate_positive_float
+
+        errors = validate_positive_float(0.0)
+        assert len(errors) > 0
+
+    def test_negative_invalid(self) -> None:
+        from app.validation import validate_positive_float
+
+        errors = validate_positive_float(-1.0)
+        assert len(errors) > 0
+
+    def test_inf_invalid(self) -> None:
+        from app.validation import validate_positive_float
+
+        errors = validate_positive_float(float("inf"))
+        assert len(errors) > 0
+
+    def test_field_name_in_error(self) -> None:
+        from app.validation import validate_positive_float
+
+        errors = validate_positive_float(0.0, field_name="price")
+        assert any("price" in e for e in errors)
+
+    @pytest.mark.parametrize("val", [0.001, 1.0, 100.0, 1e6])
+    def test_valid_values_parametrized(self, val: float) -> None:
+        from app.validation import validate_positive_float
+
+        assert validate_positive_float(val) == []
+
+
+class TestSanitizeStringInput:
+    def test_strips_whitespace(self) -> None:
+        from app.validation import sanitize_string_input
+
+        assert sanitize_string_input("  hello  ") == "hello"
+
+    def test_empty_raises(self) -> None:
+        from app.validation import sanitize_string_input
+
+        with pytest.raises(ValueError, match="empty"):
+            sanitize_string_input("")
+
+    def test_whitespace_only_raises(self) -> None:
+        from app.validation import sanitize_string_input
+
+        with pytest.raises(ValueError, match="empty"):
+            sanitize_string_input("   ")
+
+    def test_exceeds_max_length_raises(self) -> None:
+        from app.validation import sanitize_string_input
+
+        with pytest.raises(ValueError, match="max length"):
+            sanitize_string_input("a" * 256, max_length=255)
+
+    def test_exact_max_length_ok(self) -> None:
+        from app.validation import sanitize_string_input
+
+        result = sanitize_string_input("a" * 10, max_length=10)
+        assert result == "a" * 10
+
+
+class TestValidateNonNegativeFloat:
+    def test_zero_valid(self) -> None:
+        from app.validation import validate_non_negative_float
+
+        assert validate_non_negative_float(0.0) == []
+
+    def test_positive_valid(self) -> None:
+        from app.validation import validate_non_negative_float
+
+        assert validate_non_negative_float(5.0) == []
+
+    def test_negative_invalid(self) -> None:
+        from app.validation import validate_non_negative_float
+
+        errors = validate_non_negative_float(-0.1)
+        assert len(errors) > 0
+
+    def test_nan_invalid(self) -> None:
+        import math
+
+        from app.validation import validate_non_negative_float
+
+        errors = validate_non_negative_float(math.nan)
+        assert len(errors) > 0
+
+    def test_field_name_in_error(self) -> None:
+        from app.validation import validate_non_negative_float
+
+        errors = validate_non_negative_float(-1.0, field_name="consumption")
+        assert any("consumption" in e for e in errors)
