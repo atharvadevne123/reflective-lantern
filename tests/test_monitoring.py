@@ -300,3 +300,103 @@ class TestReferenceWindowStats:
         s = reference_window_stats()
         assert s["min"] == s["max"] == pytest.approx(42.0)
         assert s["std"] == pytest.approx(0.0)
+
+
+class TestZscoreAlert:
+    def test_no_alerts(self) -> None:
+        from app.monitoring import zscore_alert
+
+        result = zscore_alert([1.0, 1.0, 1.0, 1.0, 1.0])
+        assert result == []
+
+    def test_detects_outlier(self) -> None:
+        from app.monitoring import zscore_alert
+
+        values = [1.0] * 19 + [100.0]
+        result = zscore_alert(values, threshold=3.0)
+        assert 19 in result
+
+    def test_invalid_threshold(self) -> None:
+        from app.monitoring import zscore_alert
+
+        with pytest.raises(ValueError):
+            zscore_alert([1.0, 2.0], threshold=0.0)
+
+    def test_too_short_raises(self) -> None:
+        from app.monitoring import zscore_alert
+
+        with pytest.raises(ValueError):
+            zscore_alert([5.0])
+
+
+class TestDriftSeverity:
+    def test_no_drift(self) -> None:
+        from app.monitoring import drift_severity
+
+        assert drift_severity(0.5) == "none"
+
+    def test_moderate(self) -> None:
+        from app.monitoring import drift_severity
+
+        assert drift_severity(0.02) == "moderate"
+
+    def test_severe(self) -> None:
+        from app.monitoring import drift_severity
+
+        assert drift_severity(0.001) == "severe"
+
+    def test_boundary(self) -> None:
+        from app.monitoring import drift_severity
+
+        assert drift_severity(0.05) == "none"
+
+
+class TestRollingAnomalyRate:
+    def test_all_normal(self) -> None:
+        from app.monitoring import rolling_anomaly_rate
+
+        result = rolling_anomaly_rate([False] * 5)
+        assert all(r == 0.0 for r in result)
+
+    def test_all_anomaly(self) -> None:
+        from app.monitoring import rolling_anomaly_rate
+
+        result = rolling_anomaly_rate([True] * 5)
+        assert all(r == pytest.approx(1.0) for r in result)
+
+    def test_length_preserved(self) -> None:
+        from app.monitoring import rolling_anomaly_rate
+
+        assert len(rolling_anomaly_rate([True, False, True, False], window=2)) == 4
+
+    def test_empty(self) -> None:
+        from app.monitoring import rolling_anomaly_rate
+
+        assert rolling_anomaly_rate([]) == []
+
+    def test_invalid_window(self) -> None:
+        from app.monitoring import rolling_anomaly_rate
+
+        with pytest.raises(ValueError):
+            rolling_anomaly_rate([True], window=0)
+
+
+class TestAlertCountByLevel:
+    def test_basic(self) -> None:
+        from app.monitoring import alert_count_by_level
+
+        alerts = [{"level": "warn"}, {"level": "error"}, {"level": "warn"}]
+        result = alert_count_by_level(alerts)
+        assert result["warn"] == 2
+        assert result["error"] == 1
+
+    def test_empty(self) -> None:
+        from app.monitoring import alert_count_by_level
+
+        assert alert_count_by_level([]) == {}
+
+    def test_missing_level_key(self) -> None:
+        from app.monitoring import alert_count_by_level
+
+        result = alert_count_by_level([{}])
+        assert "unknown" in result
