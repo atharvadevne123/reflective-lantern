@@ -98,3 +98,50 @@ __all__ = [
     "list_regions",
     "validate_region",
 ]
+
+
+def region_count() -> int:
+    """Return the total number of known regions.
+
+    Returns:
+        Integer count of regions in the registry.
+    """
+    return len(list_regions())
+
+
+def get_region_names() -> list[str]:
+    """Return a list of human-readable region names.
+
+    Returns:
+        Sorted list of region name strings.
+    """
+    return sorted(r.get("name", r["id"]) for r in list_regions())
+
+
+def regions_by_peak_load(descending: bool = True) -> list[str]:
+    """Return region IDs sorted by peak load capacity.
+
+    Args:
+        descending: If True, highest peak load first. Default True.
+
+    Returns:
+        List of region ID strings sorted by peak load.
+    """
+    regions = [r for r in list_regions() if r.get("peak_load_mw") is not None]
+    regions.sort(key=lambda r: r["peak_load_mw"], reverse=descending)  # type: ignore[index]
+    return [r["id"] for r in regions]
+
+
+def region_ids_for_timezones(timezones: list[str]) -> list[str]:
+    """Return region IDs that match any of the given timezones.
+
+    Args:
+        timezones: List of timezone strings to match.
+
+    Returns:
+        Sorted list of matching region IDs.
+    """
+    tz_set = set(timezones)
+    return sorted(
+        r["id"] for r in list_regions() if r.get("timezone") in tz_set
+    )
