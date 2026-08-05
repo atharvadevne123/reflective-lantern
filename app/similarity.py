@@ -186,3 +186,97 @@ def hourly_pattern_distance(profile_a: list[float], profile_b: list[float]) -> f
     if len(profile_a) != len(profile_b):
         raise ValueError(f"profiles must have the same length: {len(profile_a)} != {len(profile_b)}")
     return sum(abs(a - b) for a, b in zip(profile_a, profile_b, strict=False)) / len(profile_a)
+
+
+def jaccard_similarity(set_a: set[str], set_b: set[str]) -> float:
+    """Compute the Jaccard similarity coefficient between two sets.
+
+    Args:
+        set_a: First set of categorical labels or identifiers.
+        set_b: Second set of categorical labels or identifiers.
+
+    Returns:
+        Jaccard similarity in [0, 1]; 1.0 for identical sets, 0.0 for disjoint.
+        Returns 0.0 if both sets are empty.
+    """
+    if not set_a and not set_b:
+        return 0.0
+    intersection = len(set_a & set_b)
+    union = len(set_a | set_b)
+    return round(intersection / union, 6) if union > 0 else 0.0
+
+
+def normalize_distances(distances: list[float]) -> list[float]:
+    """Normalize a list of distances to [0, 1] using min-max scaling.
+
+    Args:
+        distances: List of non-negative distance values.
+
+    Returns:
+        Normalized distances; all 0.5 when all values are equal.
+
+    Raises:
+        ValueError: If *distances* is empty.
+    """
+    if not distances:
+        raise ValueError("distances must not be empty")
+    min_d = min(distances)
+    max_d = max(distances)
+    rng = max_d - min_d
+    if rng < 1e-12:
+        return [0.5] * len(distances)
+    return [round((d - min_d) / rng, 6) for d in distances]
+
+
+def manhattan_distance(a: list[float], b: list[float]) -> float:
+    """Compute the Manhattan (L1) distance between two vectors.
+
+    Args:
+        a: First numeric vector.
+        b: Second numeric vector, same length as *a*.
+
+    Returns:
+        Sum of absolute element-wise differences.
+
+    Raises:
+        ValueError: If vectors have different lengths or are empty.
+    """
+    if not a or not b:
+        raise ValueError("vectors must not be empty")
+    if len(a) != len(b):
+        raise ValueError(f"vectors must have the same length: {len(a)} != {len(b)}")
+    return round(sum(abs(ai - bi) for ai, bi in zip(a, b)), 6)
+
+
+def top_k_similar(
+    query: list[float],
+    candidates: list[list[float]],
+    k: int = 5,
+) -> list[tuple[int, float]]:
+    """Return the *k* most similar candidates to *query* by cosine distance.
+
+    Args:
+        query: Query vector.
+        candidates: List of candidate vectors (each must match query length).
+        k: Number of top results to return.
+
+    Returns:
+        List of (index, distance) pairs, sorted ascending by cosine distance.
+
+    Raises:
+        ValueError: If *query* is empty or *k* < 1.
+    """
+    if not query:
+        raise ValueError("query must not be empty")
+    if k < 1:
+        raise ValueError(f"k must be at least 1, got {k}")
+    dists = []
+    for i, cand in enumerate(candidates):
+        if len(cand) == len(query):
+            try:
+                d = cosine_distance(query, cand)
+            except Exception:
+                d = float("inf")
+            dists.append((i, d))
+    dists.sort(key=lambda x: x[1])
+    return dists[:k]
