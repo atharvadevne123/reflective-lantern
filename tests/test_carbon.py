@@ -678,3 +678,57 @@ class TestCarbonScore:
 
         result = carbon_score(co2, max_kg)
         assert 0.0 <= result <= 100.0
+
+
+class TestAnnualEmissionEstimate:
+    def test_full_year(self) -> None:
+        from app.carbon import annual_emission_estimate
+
+        monthly = [100.0] * 12
+        result = annual_emission_estimate(monthly, emission_factor=0.5)
+        assert result == pytest.approx(600.0)
+
+    def test_partial_year_extrapolates(self) -> None:
+        from app.carbon import annual_emission_estimate
+
+        monthly = [100.0] * 6
+        result = annual_emission_estimate(monthly, emission_factor=0.5)
+        assert result == pytest.approx(600.0)
+
+    def test_empty_raises(self) -> None:
+        from app.carbon import annual_emission_estimate
+
+        with pytest.raises(ValueError):
+            annual_emission_estimate([], 0.5)
+
+    def test_invalid_factor_raises(self) -> None:
+        from app.carbon import annual_emission_estimate
+
+        with pytest.raises(ValueError):
+            annual_emission_estimate([100.0], 0.0)
+
+
+class TestCarbonReductionPotential:
+    def test_positive_reduction(self) -> None:
+        from app.carbon import carbon_reduction_potential
+
+        result = carbon_reduction_potential(1000.0, 800.0, 0.5)
+        assert result == pytest.approx(100.0)
+
+    def test_zero_reduction(self) -> None:
+        from app.carbon import carbon_reduction_potential
+
+        result = carbon_reduction_potential(500.0, 500.0, 0.5)
+        assert result == pytest.approx(0.0)
+
+    def test_negative_when_increase(self) -> None:
+        from app.carbon import carbon_reduction_potential
+
+        result = carbon_reduction_potential(500.0, 700.0, 0.5)
+        assert result < 0
+
+    def test_invalid_factor_raises(self) -> None:
+        from app.carbon import carbon_reduction_potential
+
+        with pytest.raises(ValueError):
+            carbon_reduction_potential(1000.0, 800.0, -0.1)
