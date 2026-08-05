@@ -743,7 +743,6 @@ def detect_outlier_windows(
         raise ValueError("values must not be empty")
     if window < 1:
         raise ValueError(f"window must be at least 1, got {window}")
-    import statistics
     arr = np.array(values, dtype=float)
     global_mean = float(arr.mean())
     global_std = float(arr.std()) if len(arr) > 1 else 0.0

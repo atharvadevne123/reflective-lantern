@@ -385,6 +385,7 @@ class TestWarmCache:
 class TestEvictExpiredKeys:
     def test_evicts_expired(self) -> None:
         import time
+
         from app.cache import TTLCache, evict_expired_keys
 
         cache = TTLCache(ttl_seconds=0, max_size=100)

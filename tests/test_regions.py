@@ -362,7 +362,7 @@ class TestRegionIdsForTimezones:
         assert region_ids_for_timezones([]) == []
 
     def test_known_timezone(self) -> None:
-        from app.regions import get_region_timezone, get_all_region_ids, region_ids_for_timezones
+        from app.regions import get_all_region_ids, get_region_timezone, region_ids_for_timezones
 
         ids = get_all_region_ids()
         if not ids:

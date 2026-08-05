@@ -244,8 +244,8 @@ def upload_dict_as_json(data: dict, key: str, bucket: str = "") -> str:
         Upload URI string.
     """
     import json
-    import tempfile
     import os
+    import tempfile
 
     with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as fh:
         json.dump(data, fh)
