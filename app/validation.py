@@ -419,3 +419,49 @@ def validate_non_negative_float(value: float, field_name: str = "value") -> list
     elif value < 0:
         errors.append(f"{field_name} must be non-negative, got {value}")
     return errors
+
+
+def validate_enum_field(value: str, allowed: list[str], field_name: str = "field") -> str:
+    """Validate that a string value belongs to an allowed set.
+
+    Args:
+        value: The value to validate.
+        allowed: List of permitted string values.
+        field_name: Human-readable field name for error messages.
+
+    Returns:
+        The validated value unchanged.
+
+    Raises:
+        ValueError: If value is not in the allowed set.
+    """
+    if value not in allowed:
+        raise ValueError(
+            f"{field_name} must be one of {allowed!r}; got {value!r}"
+        )
+    return value
+
+
+def validate_date_range(start: str, end: str) -> tuple[str, str]:
+    """Validate that start <= end for ISO-8601 date strings.
+
+    Args:
+        start: ISO-8601 start date string (e.g., "2024-01-01").
+        end: ISO-8601 end date string.
+
+    Returns:
+        Tuple of (start, end) if valid.
+
+    Raises:
+        ValueError: If start > end or dates are not parseable.
+    """
+    from datetime import date
+
+    try:
+        start_date = date.fromisoformat(start)
+        end_date = date.fromisoformat(end)
+    except (ValueError, TypeError) as exc:
+        raise ValueError(f"Invalid date format: {exc}") from exc
+    if start_date > end_date:
+        raise ValueError(f"start ({start}) must be <= end ({end})")
+    return start, end
