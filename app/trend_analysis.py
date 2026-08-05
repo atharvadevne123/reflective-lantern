@@ -230,3 +230,93 @@ __all__ = [
     "seasonal_decompose_naive",
     "year_over_year_growth",
 ]
+
+
+def exponential_weighted_mean(values: list[float], alpha: float = 0.3) -> list[float]:
+    """Compute exponential weighted moving average of a series.
+
+    Args:
+        values: Input numeric series.
+        alpha: Smoothing factor in (0, 1].
+
+    Returns:
+        List of EWMA values, same length as input.
+
+    Raises:
+        ValueError: If alpha is not in (0, 1].
+    """
+    if not (0 < alpha <= 1):
+        raise ValueError("alpha must be in (0, 1]")
+    if not values:
+        return []
+    result = [values[0]]
+    for v in values[1:]:
+        result.append(alpha * v + (1 - alpha) * result[-1])
+    return [round(x, 6) for x in result]
+
+
+def trend_strength(values: list[float]) -> float:
+    """Estimate trend strength as R-squared of a linear fit.
+
+    Args:
+        values: Numeric series with at least 2 elements.
+
+    Returns:
+        R-squared value in [0, 1] where 1 = perfect linear trend.
+
+    Raises:
+        ValueError: If fewer than 2 values are provided.
+    """
+    if len(values) < 2:
+        raise ValueError("Need at least 2 values")
+    n = len(values)
+    x_mean = (n - 1) / 2
+    y_mean = sum(values) / n
+    ss_tot = sum((v - y_mean) ** 2 for v in values)
+    if ss_tot == 0:
+        return 1.0
+    ss_res = sum(
+        (values[i] - (y_mean + (i - x_mean) * sum((i - x_mean) * (v - y_mean) for i, v in enumerate(values)) / sum((i - x_mean) ** 2 for i in range(n)))) ** 2
+        for i in range(n)
+    )
+    return round(max(0.0, 1.0 - ss_res / ss_tot), 6)
+
+
+def peak_valley_count(values: list[float]) -> dict[str, int]:
+    """Count local peaks and valleys in a series.
+
+    Args:
+        values: Numeric series.
+
+    Returns:
+        Dict with 'peaks' and 'valleys' counts.
+    """
+    if len(values) < 3:
+        return {"peaks": 0, "valleys": 0}
+    peaks = valleys = 0
+    for i in range(1, len(values) - 1):
+        if values[i] > values[i - 1] and values[i] > values[i + 1]:
+            peaks += 1
+        elif values[i] < values[i - 1] and values[i] < values[i + 1]:
+            valleys += 1
+    return {"peaks": peaks, "valleys": valleys}
+
+
+def normalised_range(values: list[float]) -> float:
+    """Return (max - min) / mean of a series, a relative spread metric.
+
+    Args:
+        values: Numeric series with at least 1 element.
+
+    Returns:
+        Normalised range as a float.
+
+    Raises:
+        ValueError: If values is empty or mean is zero.
+    """
+    if not values:
+        raise ValueError("values must be non-empty")
+    mean = sum(values) / len(values)
+    if mean == 0:
+        raise ValueError("mean is zero, cannot normalise")
+    return round((max(values) - min(values)) / mean, 6)
