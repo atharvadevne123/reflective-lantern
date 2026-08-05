@@ -384,3 +384,142 @@ def winsorize(values: list[float], lower_pct: float = 5.0, upper_pct: float = 95
     lo_val = sorted_vals[lo_idx]
     hi_val = sorted_vals[hi_idx]
     return [max(lo_val, min(hi_val, v)) for v in values]
+
+
+def rolling_std(values: list[float], window: int) -> list[float]:
+    """Compute rolling standard deviation over *window* periods.
+
+    Args:
+        values: Time-ordered numeric readings.
+        window: Number of periods in the rolling window.
+
+    Returns:
+        Rolling std list of the same length; leading values use partial windows.
+
+    Raises:
+        ValueError: If *window* is less than 2 or *values* is empty.
+    """
+    if not values:
+        raise ValueError("values must not be empty")
+    if window < 2:
+        raise ValueError(f"window must be at least 2, got {window}")
+    import statistics
+    result = []
+    for i in range(len(values)):
+        start = max(0, i - window + 1)
+        chunk = values[start : i + 1]
+        result.append(round(statistics.pstdev(chunk), 6) if len(chunk) >= 2 else 0.0)
+    return result
+
+
+def compute_entropy(values: list[float]) -> float:
+    """Compute Shannon entropy of a probability distribution.
+
+    Normalises *values* to a probability distribution before computing entropy.
+
+    Args:
+        values: Non-negative numeric counts or weights.
+
+    Returns:
+        Shannon entropy in nats (natural logarithm), rounded to 6 decimal places.
+
+    Raises:
+        ValueError: If *values* is empty or all values are zero.
+    """
+    import math
+    if not values:
+        raise ValueError("values must not be empty")
+    total = sum(values)
+    if total <= 0:
+        raise ValueError("sum of values must be positive")
+    probs = [v / total for v in values if v > 0]
+    entropy = -sum(p * math.log(p) for p in probs)
+    return round(entropy, 6)
+
+
+def compute_correlation(x: list[float], y: list[float]) -> float:
+    """Compute Pearson correlation coefficient between two series.
+
+    Args:
+        x: First series.
+        y: Second series, same length as *x*.
+
+    Returns:
+        Pearson r in [-1, 1], rounded to 6 decimal places.
+
+    Raises:
+        ValueError: If series are not equal in length or have fewer than 2 elements.
+    """
+    import math
+    if len(x) != len(y):
+        raise ValueError(f"x and y must have the same length, got {len(x)} vs {len(y)}")
+    if len(x) < 2:
+        raise ValueError("at least 2 observations required")
+    n = len(x)
+    mx = sum(x) / n
+    my = sum(y) / n
+    num = sum((xi - mx) * (yi - my) for xi, yi in zip(x, y))
+    denom_x = math.sqrt(sum((xi - mx) ** 2 for xi in x))
+    denom_y = math.sqrt(sum((yi - my) ** 2 for yi in y))
+    if denom_x < 1e-12 or denom_y < 1e-12:
+        return 0.0
+    return round(num / (denom_x * denom_y), 6)
+
+
+def compute_skewness(values: list[float]) -> float:
+    """Compute the sample skewness of a distribution.
+
+    Uses the Fisher-Pearson standardised moment coefficient (G1).
+
+    Args:
+        values: Numeric observations.
+
+    Returns:
+        Skewness coefficient, rounded to 6 decimal places.
+
+    Raises:
+        ValueError: If fewer than 3 observations are provided.
+    """
+    import math
+    if len(values) < 3:
+        raise ValueError("at least 3 observations required for skewness")
+    n = len(values)
+    mean = sum(values) / n
+    m2 = sum((v - mean) ** 2 for v in values) / n
+    m3 = sum((v - mean) ** 3 for v in values) / n
+    if m2 < 1e-12:
+        return 0.0
+    skew = m3 / (m2 ** 1.5)
+    adj = math.sqrt(n * (n - 1)) / (n - 2) * skew
+    return round(adj, 6)
+
+
+def rolling_percentile(values: list[float], window: int, pct: float) -> list[float]:
+    """Compute the rolling *pct*-th percentile over *window* periods.
+
+    Args:
+        values: Time-ordered numeric readings.
+        window: Number of periods in the rolling window.
+        pct: Percentile to compute, in [0, 100].
+
+    Returns:
+        Rolling percentile list of the same length as *values*.
+
+    Raises:
+        ValueError: If *window* < 1, *values* is empty, or *pct* out of range.
+    """
+    if not values:
+        raise ValueError("values must not be empty")
+    if window < 1:
+        raise ValueError(f"window must be at least 1, got {window}")
+    if not (0.0 <= pct <= 100.0):
+        raise ValueError(f"pct must be in [0, 100], got {pct}")
+    result = []
+    for i in range(len(values)):
+        start = max(0, i - window + 1)
+        chunk = sorted(values[start : i + 1])
+        idx = (pct / 100.0) * (len(chunk) - 1)
+        lo, hi = int(idx), min(int(idx) + 1, len(chunk) - 1)
+        val = chunk[lo] + (chunk[hi] - chunk[lo]) * (idx - lo)
+        result.append(round(val, 6))
+    return result
