@@ -372,3 +372,111 @@ class TestCumulativeSum:
 
         values = list(range(1, 11))
         assert len(cumulative_sum([float(v) for v in values])) == 10
+
+
+class TestExponentialWeightedMean:
+    def test_length_preserved(self) -> None:
+        from app.trend_analysis import exponential_weighted_mean
+
+        result = exponential_weighted_mean([1.0, 2.0, 3.0, 4.0])
+        assert len(result) == 4
+
+    def test_first_value_unchanged(self) -> None:
+        from app.trend_analysis import exponential_weighted_mean
+
+        result = exponential_weighted_mean([5.0, 6.0, 7.0])
+        assert result[0] == pytest.approx(5.0)
+
+    def test_empty(self) -> None:
+        from app.trend_analysis import exponential_weighted_mean
+
+        assert exponential_weighted_mean([]) == []
+
+    def test_invalid_alpha(self) -> None:
+        from app.trend_analysis import exponential_weighted_mean
+
+        with pytest.raises(ValueError):
+            exponential_weighted_mean([1.0, 2.0], alpha=0.0)
+
+    def test_alpha_1_returns_values(self) -> None:
+        from app.trend_analysis import exponential_weighted_mean
+
+        vals = [1.0, 2.0, 3.0]
+        result = exponential_weighted_mean(vals, alpha=1.0)
+        assert result == pytest.approx(vals)
+
+
+class TestTrendStrength:
+    def test_perfect_linear(self) -> None:
+        from app.trend_analysis import trend_strength
+
+        assert trend_strength([1.0, 2.0, 3.0, 4.0, 5.0]) == pytest.approx(1.0, rel=1e-3)
+
+    def test_constant_series(self) -> None:
+        from app.trend_analysis import trend_strength
+
+        assert trend_strength([3.0, 3.0, 3.0]) == pytest.approx(1.0)
+
+    def test_too_short_raises(self) -> None:
+        from app.trend_analysis import trend_strength
+
+        with pytest.raises(ValueError):
+            trend_strength([5.0])
+
+    def test_result_in_range(self) -> None:
+        from app.trend_analysis import trend_strength
+
+        result = trend_strength([1.0, 3.0, 2.0, 5.0, 4.0])
+        assert 0.0 <= result <= 1.0
+
+
+class TestPeakValleyCount:
+    def test_no_peaks_short(self) -> None:
+        from app.trend_analysis import peak_valley_count
+
+        result = peak_valley_count([1.0, 2.0])
+        assert result == {"peaks": 0, "valleys": 0}
+
+    def test_one_peak(self) -> None:
+        from app.trend_analysis import peak_valley_count
+
+        result = peak_valley_count([1.0, 3.0, 1.0])
+        assert result["peaks"] == 1
+        assert result["valleys"] == 0
+
+    def test_one_valley(self) -> None:
+        from app.trend_analysis import peak_valley_count
+
+        result = peak_valley_count([3.0, 1.0, 3.0])
+        assert result["valleys"] == 1
+
+    def test_multiple_peaks(self) -> None:
+        from app.trend_analysis import peak_valley_count
+
+        result = peak_valley_count([1.0, 3.0, 1.0, 4.0, 1.0])
+        assert result["peaks"] == 2
+
+
+class TestNormalisedRange:
+    def test_basic(self) -> None:
+        from app.trend_analysis import normalised_range
+
+        result = normalised_range([2.0, 4.0, 6.0])
+        assert result > 0
+
+    def test_constant_range_is_zero(self) -> None:
+        from app.trend_analysis import normalised_range
+
+        assert normalised_range([5.0, 5.0, 5.0]) == pytest.approx(0.0)
+
+    def test_empty_raises(self) -> None:
+        from app.trend_analysis import normalised_range
+
+        with pytest.raises(ValueError):
+            normalised_range([])
+
+    def test_zero_mean_raises(self) -> None:
+        from app.trend_analysis import normalised_range
+
+        with pytest.raises(ValueError):
+            normalised_range([0.0, 0.0, 0.0])
