@@ -106,3 +106,34 @@ class DriftResponse(BaseModel):
     results: dict[str, dict]
     drifted_features: list[str]
     total_checked: int
+
+
+class BatchPredictRequest(BaseModel):
+    """Batch of user-item pairs to score in a single call."""
+
+    items: list[UserItemFeatures] = Field(
+        ..., min_length=1, max_length=500, description="User-item pairs to score (1-500)"
+    )
+
+
+class BatchPredictResponse(BaseModel):
+    predictions: list[dict]
+    count: int
+    mean_probability: float
+    correlation_id: str
+
+
+class ModelInfoResponse(BaseModel):
+    model_version: str
+    auc_mean: float | None
+    auc_std: float | None
+    n_features: int | None
+    n_samples: int | None
+    positive_rate: float | None
+    ensemble_members: list[str]
+    feature_stages: list[str]
+
+
+class CacheStatsResponse(BaseModel):
+    recommendation_cache: dict
+    similarity_cache: dict
