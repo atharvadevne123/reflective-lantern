@@ -285,3 +285,95 @@ class TestPartitionRecords:
         matches, non_matches = partition_records(records, "k", 1)
         assert len(matches) == 2
         assert non_matches == []
+
+
+class TestCountRecordsByField:
+    def test_basic(self) -> None:
+        from app.energy_export import count_records_by_field
+
+        records = [{"type": "A"}, {"type": "B"}, {"type": "A"}]
+        result = count_records_by_field(records, "type")
+        assert result["A"] == 2
+        assert result["B"] == 1
+
+    def test_empty(self) -> None:
+        from app.energy_export import count_records_by_field
+
+        assert count_records_by_field([], "type") == {}
+
+    def test_missing_field(self) -> None:
+        from app.energy_export import count_records_by_field
+
+        result = count_records_by_field([{"x": 1}], "type")
+        assert "" in result
+
+
+class TestRecordsToTsv:
+    def test_basic(self) -> None:
+        from app.energy_export import records_to_tsv
+
+        records = [{"a": 1, "b": 2}]
+        result = records_to_tsv(records, columns=["a", "b"])
+        assert "\t" in result
+        assert "a\tb" in result
+
+    def test_empty(self) -> None:
+        from app.energy_export import records_to_tsv
+
+        assert records_to_tsv([]) == ""
+
+    def test_two_rows(self) -> None:
+        from app.energy_export import records_to_tsv
+
+        records = [{"x": 1}, {"x": 2}]
+        lines = records_to_tsv(records, columns=["x"]).split("\n")
+        assert len(lines) == 3
+
+
+class TestMergeRecords:
+    def test_override_replaces(self) -> None:
+        from app.energy_export import merge_records
+
+        base = [{"id": "1", "v": 10}]
+        override = [{"id": "1", "v": 99}]
+        result = merge_records(base, override, key="id")
+        assert len(result) == 1
+        assert result[0]["v"] == 99
+
+    def test_adds_new(self) -> None:
+        from app.energy_export import merge_records
+
+        base = [{"id": "1", "v": 10}]
+        override = [{"id": "2", "v": 20}]
+        result = merge_records(base, override, key="id")
+        assert len(result) == 2
+
+
+class TestSampleRecords:
+    def test_size(self) -> None:
+        from app.energy_export import sample_records
+
+        records = [{"i": i} for i in range(20)]
+        result = sample_records(records, n=5)
+        assert len(result) == 5
+
+    def test_reproducible(self) -> None:
+        from app.energy_export import sample_records
+
+        records = [{"i": i} for i in range(50)]
+        a = sample_records(records, n=10, seed=7)
+        b = sample_records(records, n=10, seed=7)
+        assert a == b
+
+    def test_negative_n_raises(self) -> None:
+        from app.energy_export import sample_records
+
+        with pytest.raises(ValueError):
+            sample_records([{"x": 1}], n=-1)
+
+    def test_n_larger_than_records(self) -> None:
+        from app.energy_export import sample_records
+
+        records = [{"i": i} for i in range(3)]
+        result = sample_records(records, n=10)
+        assert len(result) == 3
