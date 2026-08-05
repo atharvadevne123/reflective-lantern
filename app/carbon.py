@@ -425,3 +425,51 @@ def carbon_score(co2_kg: float, max_kg: float) -> float:
         raise ValueError(f"co2_kg must be non-negative, got {co2_kg}")
     score = max(0.0, (1.0 - co2_kg / max_kg) * 100.0)
     return round(score, 4)
+
+
+def annual_emission_estimate(
+    monthly_kwh: list[float], emission_factor: float
+) -> float:
+    """Estimate total annual CO2 emissions from monthly consumption data.
+
+    Args:
+        monthly_kwh: List of monthly energy consumption values in kWh.
+        emission_factor: kg CO2 per kWh.
+
+    Returns:
+        Estimated annual CO2 in kg.
+
+    Raises:
+        ValueError: If monthly_kwh is empty or emission_factor is non-positive.
+    """
+    if not monthly_kwh:
+        raise ValueError("monthly_kwh must be non-empty")
+    if emission_factor <= 0:
+        raise ValueError("emission_factor must be positive")
+    total_kwh = sum(monthly_kwh)
+    if len(monthly_kwh) < 12:
+        total_kwh = total_kwh / len(monthly_kwh) * 12
+    return round(total_kwh * emission_factor, 4)
+
+
+def carbon_reduction_potential(
+    baseline_kwh: float,
+    target_kwh: float,
+    emission_factor: float,
+) -> float:
+    """Compute CO2 reduction potential when reducing consumption from baseline to target.
+
+    Args:
+        baseline_kwh: Current energy consumption in kWh.
+        target_kwh: Target energy consumption in kWh.
+        emission_factor: kg CO2 per kWh.
+
+    Returns:
+        CO2 reduction in kg (positive = reduction achieved).
+
+    Raises:
+        ValueError: If emission_factor is non-positive.
+    """
+    if emission_factor <= 0:
+        raise ValueError("emission_factor must be positive")
+    return round((baseline_kwh - target_kwh) * emission_factor, 4)
