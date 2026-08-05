@@ -288,3 +288,119 @@ def null_rate(records: list[dict[str, Any]], field: str) -> float:
         return 0.0
     null_count = sum(1 for r in records if r.get(field) is None)
     return round(null_count / len(records), 4)
+
+
+def duplicate_rate(records: list[dict[str, Any]], key_fields: list[str]) -> float:
+    """Compute the fraction of records that are duplicates based on *key_fields*.
+
+    Args:
+        records: List of record dicts.
+        key_fields: Field names that together form a unique key.
+
+    Returns:
+        Fraction in [0, 1] of records that are duplicated (non-first occurrences).
+    """
+    if not records:
+        return 0.0
+    seen: set[tuple[Any, ...]] = set()
+    duplicates = 0
+    for rec in records:
+        key = tuple(rec.get(f) for f in key_fields)
+        if key in seen:
+            duplicates += 1
+        else:
+            seen.add(key)
+    return round(duplicates / len(records), 4)
+
+
+def field_completeness(records: list[dict[str, Any]], required_fields: list[str]) -> dict[str, float]:
+    """Compute completeness rate (1 - null_rate) for each required field.
+
+    Args:
+        records: List of record dicts.
+        required_fields: List of field names to check.
+
+    Returns:
+        Dict mapping field name to its completeness rate in [0, 1].
+    """
+    if not records:
+        return {f: 0.0 for f in required_fields}
+    result = {}
+    for field in required_fields:
+        present = sum(1 for r in records if r.get(field) is not None)
+        result[field] = round(present / len(records), 4)
+    return result
+
+
+def value_range_check(
+    records: list[dict[str, Any]],
+    field: str,
+    min_val: float,
+    max_val: float,
+) -> dict[str, Any]:
+    """Check how many records have *field* values outside [min_val, max_val].
+
+    Args:
+        records: List of record dicts.
+        field: Numeric field name to check.
+        min_val: Minimum acceptable value.
+        max_val: Maximum acceptable value.
+
+    Returns:
+        Dict with total_checked, out_of_range_count, and out_of_range_rate.
+    """
+    total = 0
+    out_of_range = 0
+    for rec in records:
+        val = rec.get(field)
+        if val is not None:
+            try:
+                fval = float(val)
+                total += 1
+                if not (min_val <= fval <= max_val):
+                    out_of_range += 1
+            except (TypeError, ValueError):
+                pass
+    rate = round(out_of_range / total, 4) if total > 0 else 0.0
+    return {
+        "total_checked": total,
+        "out_of_range_count": out_of_range,
+        "out_of_range_rate": rate,
+    }
+
+
+def data_freshness_score(
+    records: list[dict[str, Any]],
+    timestamp_field: str,
+    max_age_seconds: float = 3600.0,
+) -> dict[str, Any]:
+    """Compute a freshness score based on how recent the records' timestamps are.
+
+    Args:
+        records: List of record dicts.
+        timestamp_field: Field name containing ISO 8601 or Unix epoch timestamps.
+        max_age_seconds: Age threshold in seconds; records older than this are stale.
+
+    Returns:
+        Dict with total_records, fresh_count, stale_count, and freshness_rate.
+    """
+    import time
+    now = time.time()
+    fresh = 0
+    stale = 0
+    for rec in records:
+        ts = rec.get(timestamp_field)
+        if ts is None:
+            stale += 1
+            continue
+        try:
+            age = now - float(ts)
+            if age <= max_age_seconds:
+                fresh += 1
+            else:
+                stale += 1
+        except (TypeError, ValueError):
+            stale += 1
+    total = fresh + stale
+    rate = round(fresh / total, 4) if total > 0 else 0.0
+    return {"total_records": total, "fresh_count": fresh, "stale_count": stale, "freshness_rate": rate}
