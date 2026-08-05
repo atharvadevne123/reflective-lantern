@@ -109,3 +109,61 @@ def test_remaining_tokens_after_clear():
 def test_make_rate_limiter_various_rates(rate):
     limiter = make_rate_limiter(capacity=10.0, rate_per_second=rate)
     assert limiter.is_allowed("test") is True
+
+
+class TestLimiterUtilization:
+    def test_full_capacity_is_zero(self) -> None:
+        from app.rate_limiter import limiter_utilization, make_rate_limiter
+
+        limiter = make_rate_limiter(capacity=10.0, rate_per_second=1.0)
+        assert limiter_utilization(limiter, "c1") == pytest.approx(0.0, abs=0.05)
+
+    def test_after_consume_increases(self) -> None:
+        from app.rate_limiter import limiter_utilization, make_rate_limiter
+
+        limiter = make_rate_limiter(capacity=10.0, rate_per_second=1.0)
+        for _ in range(5):
+            limiter.is_allowed("c2")
+        assert limiter_utilization(limiter, "c2") > 0.0
+
+
+class TestResetLimiter:
+    def test_resets_to_full(self) -> None:
+        from app.rate_limiter import limiter_utilization, make_rate_limiter, reset_limiter
+
+        limiter = make_rate_limiter(capacity=10.0, rate_per_second=1.0)
+        for _ in range(8):
+            limiter.is_allowed("c3")
+        reset_limiter(limiter, "c3")
+        assert limiter_utilization(limiter, "c3") == pytest.approx(0.0, abs=0.05)
+
+
+class TestIsRateLimited:
+    def test_not_limited_when_full(self) -> None:
+        from app.rate_limiter import is_rate_limited, make_rate_limiter
+
+        limiter = make_rate_limiter(capacity=10.0, rate_per_second=1.0)
+        assert is_rate_limited(limiter, "c4") is False
+
+    def test_limited_when_empty(self) -> None:
+        from app.rate_limiter import is_rate_limited, make_rate_limiter
+
+        limiter = make_rate_limiter(capacity=2.0, rate_per_second=0.001)
+        limiter.is_allowed("c5")
+        limiter.is_allowed("c5")
+        assert is_rate_limited(limiter, "c5") is True
+
+
+class TestMakeStrictLimiter:
+    def test_returns_limiter(self) -> None:
+        from app.rate_limiter import make_strict_limiter, TokenBucketRateLimiter
+
+        limiter = make_strict_limiter(10.0)
+        assert isinstance(limiter, TokenBucketRateLimiter)
+
+    def test_allows_within_rate(self) -> None:
+        from app.rate_limiter import make_strict_limiter
+
+        limiter = make_strict_limiter(5.0)
+        for _ in range(5):
+            limiter.is_allowed("strict_client")

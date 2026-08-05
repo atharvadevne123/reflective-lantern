@@ -89,53 +89,43 @@ __all__ = [
 ]
 
 
-def limiter_utilization(limiter: "TokenBucketRateLimiter") -> float:
-    """Return the fraction of token capacity currently consumed.
+def limiter_utilization(limiter: "TokenBucketRateLimiter", client_key: str = "default") -> float:
+    """Return the fraction of token capacity currently consumed for a client.
 
     Args:
         limiter: A TokenBucketRateLimiter instance.
+        client_key: The client identifier. Default "default".
 
     Returns:
         Float in [0, 1] where 0 = full capacity available, 1 = fully consumed.
     """
-    bucket = limiter._bucket
-    tokens = bucket.tokens
-    capacity = bucket.capacity
-    consumed = capacity - tokens
+    remaining = limiter.remaining_tokens(client_key)
+    capacity = limiter._capacity
+    consumed = capacity - remaining
     return round(max(0.0, min(1.0, consumed / capacity)), 4)
 
 
-def reset_limiter(limiter: "TokenBucketRateLimiter") -> None:
-    """Reset a rate limiter to its full token capacity.
-
-    Args:
-        limiter: A TokenBucketRateLimiter instance to reset.
-    """
-    import time
-
-    with limiter._lock:
-        limiter._bucket.tokens = limiter._bucket.capacity
-        limiter._bucket.last_refill = time.monotonic()
-
-
-def is_rate_limited(limiter: "TokenBucketRateLimiter", cost: float = 1.0) -> bool:
-    """Check whether a request of given cost would be rate-limited WITHOUT consuming tokens.
+def reset_limiter(limiter: "TokenBucketRateLimiter", client_key: str = "default") -> None:
+    """Reset a client's token bucket to full capacity.
 
     Args:
         limiter: A TokenBucketRateLimiter instance.
-        cost: Token cost of the request. Default 1.0.
+        client_key: The client identifier. Default "default".
+    """
+    limiter.reset(client_key)
+
+
+def is_rate_limited(limiter: "TokenBucketRateLimiter", client_key: str = "default") -> bool:
+    """Check whether a client's next request would be rate-limited WITHOUT consuming tokens.
+
+    Args:
+        limiter: A TokenBucketRateLimiter instance.
+        client_key: The client identifier. Default "default".
 
     Returns:
-        True if the request would be denied (insufficient tokens), else False.
+        True if the next is_allowed call would be denied, else False.
     """
-    bucket = limiter._bucket
-    import time
-
-    with limiter._lock:
-        now = time.monotonic()
-        elapsed = now - bucket.last_refill
-        refilled = min(bucket.capacity, bucket.tokens + elapsed * limiter._rate)
-    return refilled < cost
+    return limiter.remaining_tokens(client_key) < 1.0
 
 
 def make_strict_limiter(max_per_second: float) -> "TokenBucketRateLimiter":
