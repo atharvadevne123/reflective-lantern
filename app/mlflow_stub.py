@@ -149,3 +149,51 @@ __all__ = [
     "log_training_run",
     "set_tracking_uri",
 ]
+
+
+def delete_run(run_name: str) -> bool:
+    """Delete a run from the in-memory store by name.
+
+    Args:
+        run_name: The run name to delete.
+
+    Returns:
+        True if a run was deleted, False if not found.
+    """
+    global _runs
+    before = len(_runs)
+    _runs = [r for r in _runs if r.get("run_name") != run_name]
+    return len(_runs) < before
+
+
+def run_exists(run_name: str) -> bool:
+    """Check whether a run with the given name exists.
+
+    Args:
+        run_name: Run name to look up.
+
+    Returns:
+        True if found, False otherwise.
+    """
+    return any(r.get("run_name") == run_name for r in _runs)
+
+
+def clear_runs() -> int:
+    """Clear all runs from the in-memory store.
+
+    Returns:
+        Number of runs removed.
+    """
+    global _runs
+    count = len(_runs)
+    _runs = []
+    return count
+
+
+def run_count() -> int:
+    """Return the total number of stored runs.
+
+    Returns:
+        Integer count.
+    """
+    return len(_runs)
