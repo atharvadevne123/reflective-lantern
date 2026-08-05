@@ -280,3 +280,51 @@ def top_k_similar(
             dists.append((i, d))
     dists.sort(key=lambda x: x[1])
     return dists[:k]
+
+
+def cosine_distance(a: list[float], b: list[float]) -> float:
+    """Compute cosine distance (1 - cosine_similarity) between two vectors.
+
+    Args:
+        a: First vector.
+        b: Second vector (same length as a).
+
+    Returns:
+        Cosine distance in [0, 2].
+
+    Raises:
+        ValueError: If vectors have different lengths or are empty.
+    """
+    if not a or not b:
+        raise ValueError("Vectors must be non-empty")
+    if len(a) != len(b):
+        raise ValueError("Vectors must have the same length")
+    dot = sum(ai * bi for ai, bi in zip(a, b))
+    norm_a = sum(ai ** 2 for ai in a) ** 0.5
+    norm_b = sum(bi ** 2 for bi in b) ** 0.5
+    if norm_a == 0 or norm_b == 0:
+        return 1.0
+    similarity = dot / (norm_a * norm_b)
+    return round(1.0 - similarity, 6)
+
+
+def weighted_jaccard_similarity(
+    a: dict[str, float], b: dict[str, float]
+) -> float:
+    """Compute weighted Jaccard similarity between two feature-weight dicts.
+
+    Args:
+        a: First dict of feature -> weight.
+        b: Second dict of feature -> weight.
+
+    Returns:
+        Weighted Jaccard similarity in [0, 1].
+    """
+    keys = set(a) | set(b)
+    if not keys:
+        return 0.0
+    intersection = sum(min(a.get(k, 0.0), b.get(k, 0.0)) for k in keys)
+    union = sum(max(a.get(k, 0.0), b.get(k, 0.0)) for k in keys)
+    if union == 0:
+        return 0.0
+    return round(intersection / union, 6)
