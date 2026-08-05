@@ -20,8 +20,10 @@ Given a shopper and an item, Cart-Mind answers three questions:
 | Question | Endpoint | Method |
 |---|---|---|
 | Will this user buy this item? | `POST /api/v1/predict` | Soft-voting ensemble over 29 engineered features |
+| …and for a whole batch? | `POST /api/v1/predict/batch` | One vectorised pass over up to 500 pairs |
 | What should we show this user? | `POST /api/v1/recommend` | Candidate generation + intent-ranked top-K |
 | What else is like this item? | `POST /api/v1/similar` | FAISS L2 nearest neighbours over item embeddings |
+| Are the inputs still normal? | `POST /api/v1/drift` | KS test + PSI against a rolling reference window |
 
 Every prediction is logged to PostgreSQL with a correlation ID and latency, so the drift
 monitor and the weekly retraining DAG have a real feedback loop to work from.
@@ -192,6 +194,27 @@ Liveness and readiness — reports whether the model and FAISS index are loaded.
 Request counters, drift-alert count, error count, and p50/p95/p99 latency over a
 rolling 1000-request window.
 
+### `POST /api/v1/predict/batch`
+
+Score up to 500 user-item pairs in one vectorised pass. Cheaper than N single
+calls: the feature pipeline and all three estimators run once over the whole
+frame rather than once per row.
+
+```bash
+curl -X POST http://localhost:8000/api/v1/predict/batch \
+  -H "Content-Type: application/json" \
+  -d '{"items": [{"user_id": "u_001", "item_id": "i_abc", "click_count": 3}]}'
+```
+
+### `GET /api/v1/model/info`
+
+CV metrics, ensemble composition, and pipeline stages for the deployed model.
+Metric fields are `null` when the API is serving a bootstrap model.
+
+### `GET /api/v1/cache/stats`
+
+Entry counts, hit/miss counters, and hit rates for both TTL caches.
+
 ---
 
 ## Architecture
@@ -257,9 +280,21 @@ pipeline, gates, and monitoring all carry over unchanged.
 
 ### Drift detection
 
-Two-sample Kolmogorov–Smirnov test against a thread-safe rolling reference window
-(500 observations per feature, `collections.deque`). `p < 0.05` flags drift; every check is
-written to `drift_logs` with the KS statistic and window size.
+Every check reports two complementary signals against a thread-safe rolling reference
+window (500 observations per feature, `collections.deque`):
+
+- **KS test** — two-sample Kolmogorov–Smirnov; `p < 0.05` flags drift. Answers *is this
+  shift statistically real?*
+- **PSI** — Population Stability Index over 10 quantile bins, graded `stable` /
+  `moderate` (≥0.10) / `major` (≥0.25). Answers *is it big enough to care about?*
+
+Both are reported because KS alone misleads at scale: its p-value grows more significant
+purely with sample size, so a high-traffic endpoint will eventually flag shifts far too
+small to act on. PSI is an effect size and stays stable under `n`. Empty bins are floored
+so disjoint supports yield a finite score rather than infinity, and features with fewer
+than 20 observations return no verdict rather than a spurious one.
+
+Every check is written to `drift_logs` with the KS statistic, p-value, and window size.
 
 ### Retraining
 
@@ -272,16 +307,42 @@ plain functions.
 
 ---
 
+### Caching
+
+Recommendation and similarity results are cached in a thread-safe TTL cache (300s, LRU
+eviction past 1000 entries). Both are read-heavy and repeat within a browsing session, so
+the cache removes redundant inference without letting results outlive their usefulness.
+
+### Input validation
+
+Pydantic covers per-field ranges. `app/validation.py` adds the cross-field checks it
+cannot express — a shopper cannot have last purchased before they registered, a click
+implies a view, a rating implies a review. These describe states that cannot physically
+occur, so the model never saw them in training. Such a request is still scored (refusing
+to answer is worse for a serving path than answering cautiously), but comes back with
+`confidence: "low"` and the warnings attached.
+
 ## Testing
 
 ```bash
 make test
 ```
 
-60+ tests across four modules: endpoint contracts and validation (`test_api.py`), training
-and FAISS search (`test_model.py`), per-transformer feature assertions (`test_features.py`),
-and drift/logging/counters (`test_monitoring.py`). Tests run against an isolated SQLite
-database via a `get_db` dependency override — no external services required.
+180+ tests across nine modules:
+
+| Module | Covers |
+|---|---|
+| `test_api.py` | Endpoint contracts, field validation, error codes |
+| `test_endpoints_v2.py` | Batch scoring, model info, cache stats |
+| `test_model.py` | Training, CV metrics, FAISS and fallback search |
+| `test_features.py` | Per-transformer assertions, label signal |
+| `test_monitoring.py` | KS and PSI drift, reference window, counters |
+| `test_pipeline.py` | Champion/challenger gates, drift reporting |
+| `test_cache.py` | TTL expiry, LRU eviction, hit rates |
+| `test_validation.py` | Coherence checks, confidence downgrade |
+
+Tests run against an isolated SQLite database via a `get_db` dependency override — no
+external services required.
 
 ## CI
 
