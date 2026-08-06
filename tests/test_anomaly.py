@@ -514,3 +514,67 @@ def test_ewma_smooth_monotone_input(alpha: float) -> None:
     result = ewma_smooth(values, alpha=alpha)
     assert len(result) == len(values)
     assert all(isinstance(v, float) for v in result)
+
+
+# Tests for anomaly_summary and rolling_anomaly_flag
+from app.anomaly import anomaly_summary, rolling_anomaly_flag
+
+
+def test_anomaly_summary_empty() -> None:
+    assert anomaly_summary([]) == {"none": 0, "warning": 0, "critical": 0}
+
+
+def test_anomaly_summary_counts() -> None:
+    sevs = [
+        {"severity": "none"},
+        {"severity": "warning"},
+        {"severity": "critical"},
+        {"severity": "critical"},
+    ]
+    s = anomaly_summary(sevs)
+    assert s["none"] == 1
+    assert s["warning"] == 1
+    assert s["critical"] == 2
+
+
+def test_anomaly_summary_all_none() -> None:
+    sevs = [{"severity": "none"}] * 5
+    s = anomaly_summary(sevs)
+    assert s["none"] == 5
+    assert s["warning"] == 0
+    assert s["critical"] == 0
+
+
+def test_rolling_anomaly_flag_length() -> None:
+    values = [1.0, 2.0, 3.0, 4.0, 5.0, 100.0, 3.0, 2.0, 1.0]
+    flags = rolling_anomaly_flag(values, window=5)
+    assert len(flags) == len(values)
+
+
+def test_rolling_anomaly_flag_empty_raises() -> None:
+    with pytest.raises(ValueError):
+        rolling_anomaly_flag([])
+
+
+def test_rolling_anomaly_flag_small_window_raises() -> None:
+    with pytest.raises(ValueError):
+        rolling_anomaly_flag([1.0, 2.0], window=1)
+
+
+def test_rolling_anomaly_flag_constant_no_flags() -> None:
+    values = [5.0] * 20
+    flags = rolling_anomaly_flag(values, window=5)
+    assert not any(flags)
+
+
+def test_rolling_anomaly_flag_outlier_flagged() -> None:
+    values = [1.0] * 10 + [1000.0] + [1.0] * 10
+    flags = rolling_anomaly_flag(values, window=5)
+    assert flags[10] is True
+
+
+@pytest.mark.parametrize("n", [5, 10, 20])
+def test_rolling_anomaly_flag_length_param(n: int) -> None:
+    values = list(range(n))
+    flags = rolling_anomaly_flag(values, window=3)
+    assert len(flags) == n
