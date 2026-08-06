@@ -117,6 +117,9 @@ def flag_outliers(
 
 __all__ = [
     "batch_score",
+    "completeness_score",
+    "detect_data_gaps",
+    "detect_duplicates",
     "flag_outliers",
     "quality_summary",
     "score_record",
@@ -170,3 +173,29 @@ def completeness_score(records: list[dict[str, Any]], required_fields: list[str]
         if all(r.get(f) is not None and r.get(f) != "" for f in required_fields)
     )
     return round(complete / len(records), 4)
+
+
+def detect_data_gaps(
+    timestamps: list[int],
+    expected_interval: int = 3600,
+) -> list[tuple[int, int]]:
+    """Detect gaps in a sequence of Unix timestamps.
+
+    Returns (start, end) timestamp pairs where the gap between consecutive
+    readings exceeds *expected_interval* seconds.
+
+    Args:
+        timestamps: Sorted list of Unix timestamps (seconds since epoch).
+        expected_interval: Expected gap between readings in seconds (default 3600 = 1 hour).
+
+    Returns:
+        List of (gap_start, gap_end) tuples for each detected gap.
+    """
+    if len(timestamps) < 2:
+        return []
+    gaps: list[tuple[int, int]] = []
+    for i in range(1, len(timestamps)):
+        diff = timestamps[i] - timestamps[i - 1]
+        if diff > expected_interval:
+            gaps.append((timestamps[i - 1], timestamps[i]))
+    return gaps
