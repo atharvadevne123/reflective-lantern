@@ -277,6 +277,24 @@ def validate_reading_dict(reading: dict[str, object]) -> dict[str, object]:
     return {"valid": len(errors) == 0, "errors": errors, "warnings": []}
 
 
+def validate_coordinate(lat: float, lon: float) -> list[str]:
+    """Return validation errors for a geographic coordinate pair.
+
+    Args:
+        lat: Latitude in decimal degrees (-90 to 90).
+        lon: Longitude in decimal degrees (-180 to 180).
+
+    Returns:
+        List of error strings (empty when valid).
+    """
+    errors: list[str] = []
+    if not (-90.0 <= lat <= 90.0):
+        errors.append(f"latitude must be in [-90, 90], got {lat}")
+    if not (-180.0 <= lon <= 180.0):
+        errors.append(f"longitude must be in [-180, 180], got {lon}")
+    return errors
+
+
 __all__ = [
     "batch_validate_readings",
     "clamp_consumption",
@@ -286,6 +304,7 @@ __all__ = [
     "validate_batch_size",
     "validate_building_id",
     "validate_consumption_kwh",
+    "validate_coordinate",
     "validate_feature_vector",
     "validate_forecast_horizon",
     "validate_load_series",
