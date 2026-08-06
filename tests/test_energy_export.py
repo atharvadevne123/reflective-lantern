@@ -179,3 +179,75 @@ def test_normalize_kwh_empty():
 def test_top_buildings_n_parametrize(n, expected_len):
     result = top_buildings_by_kwh(SAMPLE, n=n)
     assert len(result) == expected_len
+
+
+# Tests for split_by_day and kwh_stats_by_building
+from app.energy_export import kwh_stats_by_building, split_by_day
+
+
+def test_split_by_day_basic() -> None:
+    records = [
+        {"timestamp": "2024-06-01T10:00:00", "v": 1},
+        {"timestamp": "2024-06-01T14:00:00", "v": 2},
+        {"timestamp": "2024-06-02T08:00:00", "v": 3},
+    ]
+    buckets = split_by_day(records)
+    assert "2024-06-01" in buckets
+    assert "2024-06-02" in buckets
+    assert len(buckets["2024-06-01"]) == 2
+    assert len(buckets["2024-06-02"]) == 1
+
+
+def test_split_by_day_missing_field_goes_to_unknown() -> None:
+    records = [{"v": 1}]
+    buckets = split_by_day(records)
+    assert "_unknown" in buckets
+
+
+def test_split_by_day_empty() -> None:
+    assert split_by_day([]) == {}
+
+
+def test_kwh_stats_by_building_basic() -> None:
+    records = [
+        {"building_id": "A", "consumption_kwh": 10.0},
+        {"building_id": "A", "consumption_kwh": 20.0},
+        {"building_id": "B", "consumption_kwh": 15.0},
+    ]
+    result = kwh_stats_by_building(records)
+    assert "A" in result
+    assert "B" in result
+    assert result["A"]["total"] == pytest.approx(30.0)
+    assert result["A"]["count"] == 2.0
+    assert result["B"]["mean"] == pytest.approx(15.0)
+
+
+def test_kwh_stats_by_building_missing_fields_skipped() -> None:
+    records = [
+        {"building_id": "A"},
+        {"consumption_kwh": 10.0},
+        {},
+    ]
+    result = kwh_stats_by_building(records)
+    assert result == {}
+
+
+def test_kwh_stats_by_building_empty() -> None:
+    assert kwh_stats_by_building([]) == {}
+
+
+def test_kwh_stats_by_building_keys() -> None:
+    records = [{"building_id": "X", "consumption_kwh": 5.0}]
+    stats = kwh_stats_by_building(records)
+    assert "total" in stats["X"]
+    assert "mean" in stats["X"]
+    assert "min" in stats["X"]
+    assert "max" in stats["X"]
+    assert "count" in stats["X"]
+
+
+@pytest.mark.parametrize("n", [1, 3, 5])
+def test_split_by_day_single_day_count(n: int) -> None:
+    records = [{"timestamp": "2024-01-15T00:00:00", "v": i} for i in range(n)]
+    buckets = split_by_day(records)
+    assert len(buckets["2024-01-15"]) == n
