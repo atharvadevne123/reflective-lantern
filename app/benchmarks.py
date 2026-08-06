@@ -111,9 +111,62 @@ def list_building_types() -> list[str]:
     """Return sorted list of supported building type keys."""
     return sorted(ASHRAE_EUI_BENCHMARKS.keys())
 
+
+def site_eui(annual_kwh: float, floor_area_sqft: float) -> float:
+    """Compute Site Energy Use Intensity from annual kWh and floor area in sq ft.
+
+    Converts square feet to square metres internally before computing EUI.
+
+    Args:
+        annual_kwh: Total annual energy consumption in kWh.
+        floor_area_sqft: Building floor area in square feet.
+
+    Returns:
+        EUI in kWh/m²/year, rounded to 2 decimal places.
+
+    Raises:
+        ValueError: If *floor_area_sqft* is non-positive or *annual_kwh* is negative.
+    """
+    if floor_area_sqft <= 0:
+        raise ValueError(f"floor_area_sqft must be positive, got {floor_area_sqft}")
+    sqm = floor_area_sqft * 0.092903
+    return compute_eui(annual_kwh, sqm)
+
+
+def compare_buildings(
+    buildings: list[dict[str, object]],
+) -> list[dict[str, object]]:
+    """Rank buildings by EUI and append benchmark ratings.
+
+    Each building dict must contain 'name', 'annual_kwh', 'floor_area_sqm',
+    and optionally 'building_type'.
+
+    Args:
+        buildings: List of building descriptor dicts.
+
+    Returns:
+        List of result dicts with EUI, benchmark, rating, and rank (1 = best).
+    """
+    results = []
+    for b in buildings:
+        name = str(b.get("name", "unknown"))
+        kwh = float(b.get("annual_kwh", 0))
+        sqm = float(b.get("floor_area_sqm", 1))
+        btype = str(b.get("building_type", "default"))
+        eui_val = compute_eui(kwh, sqm)
+        bmark = benchmark_eui(eui_val, btype)
+        results.append({"name": name, **bmark})
+    results.sort(key=lambda r: float(r["eui"]))
+    for rank, r in enumerate(results, start=1):
+        r["rank"] = rank
+    return results
+
+
 __all__ = [
     "annual_to_monthly_estimate",
     "benchmark_eui",
+    "compare_buildings",
     "compute_eui",
     "list_building_types",
+    "site_eui",
 ]
