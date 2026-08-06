@@ -305,3 +305,62 @@ def test_double_exponential_smoothing_increasing() -> None:
     values = [float(i) for i in range(1, 11)]
     result = double_exponential_smoothing(values, alpha=0.5, beta=0.5)
     assert result[-1] > result[0]
+
+
+# Tests for trend_reversal_count and exponential_growth_rate
+from app.trend_analysis import exponential_growth_rate, trend_reversal_count
+
+
+def test_trend_reversal_count_monotone() -> None:
+    assert trend_reversal_count([1.0, 2.0, 3.0, 4.0]) == 0
+
+
+def test_trend_reversal_count_alternating() -> None:
+    values = [1.0, 3.0, 1.0, 3.0, 1.0]
+    count = trend_reversal_count(values)
+    assert count == 3
+
+
+def test_trend_reversal_count_empty() -> None:
+    assert trend_reversal_count([]) == 0
+
+
+def test_trend_reversal_count_single() -> None:
+    assert trend_reversal_count([5.0]) == 0
+
+
+def test_trend_reversal_count_two() -> None:
+    assert trend_reversal_count([1.0, 2.0]) == 0
+
+
+def test_trend_reversal_count_one_reversal() -> None:
+    assert trend_reversal_count([1.0, 3.0, 2.0]) == 1
+
+
+def test_exponential_growth_rate_doubling() -> None:
+    import math
+    values = [1.0, 2.0]
+    rate = exponential_growth_rate(values)
+    assert rate == pytest.approx(math.log(2.0), rel=1e-4)
+
+
+def test_exponential_growth_rate_flat() -> None:
+    values = [5.0, 5.0, 5.0]
+    assert exponential_growth_rate(values) == pytest.approx(0.0)
+
+
+def test_exponential_growth_rate_empty_raises() -> None:
+    with pytest.raises(ValueError):
+        exponential_growth_rate([5.0])
+
+
+def test_exponential_growth_rate_non_positive_raises() -> None:
+    with pytest.raises(ValueError):
+        exponential_growth_rate([1.0, 0.0, 2.0])
+
+
+@pytest.mark.parametrize("n", [3, 5, 8])
+def test_trend_reversal_count_nonzero_param(n: int) -> None:
+    values = [float(i % 2) for i in range(n)]
+    count = trend_reversal_count(values)
+    assert count >= 0
