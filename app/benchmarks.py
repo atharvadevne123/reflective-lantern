@@ -167,11 +167,59 @@ __all__ = [
     "benchmark_eui",
     "compare_buildings",
     "compute_eui",
+    "eui_percentile_category",
     "efficiency_gap",
     "energy_intensity_ratio",
     "list_building_types",
     "site_eui",
+    "target_eui",
 ]
+
+
+def target_eui(building_type: str, improvement_pct: float = 20.0) -> float:
+    """Return a target EUI for *building_type* given a percentage improvement goal.
+
+    Args:
+        building_type: Building type key in ASHRAE_EUI_BENCHMARKS.
+        improvement_pct: Desired percentage improvement over the benchmark (0-100).
+
+    Returns:
+        Target EUI in kWh/m²/year, rounded to 2 decimal places.
+
+    Raises:
+        ValueError: If *improvement_pct* is not in [0, 100].
+    """
+    if not (0.0 <= improvement_pct <= 100.0):
+        raise ValueError(f"improvement_pct must be in [0, 100], got {improvement_pct}")
+    benchmark = ASHRAE_EUI_BENCHMARKS.get(building_type.lower(), ASHRAE_EUI_BENCHMARKS["default"])
+    return round(benchmark * (1.0 - improvement_pct / 100.0), 2)
+
+
+def eui_percentile_category(eui: float, building_type: str = "default") -> str:
+    """Classify an EUI into an ENERGY STAR-style percentile category.
+
+    Categories relative to the ASHRAE benchmark for *building_type*:
+    - 'top_25'  : EUI <= 50% of benchmark (very efficient)
+    - 'median'  : EUI <= 90% of benchmark
+    - 'average' : EUI <= 110% of benchmark
+    - 'bottom_25': EUI > 110% of benchmark (inefficient)
+
+    Args:
+        eui: Building EUI in kWh/m²/year.
+        building_type: Building type for benchmark lookup.
+
+    Returns:
+        Category string: 'top_25', 'median', 'average', or 'bottom_25'.
+    """
+    benchmark = ASHRAE_EUI_BENCHMARKS.get(building_type.lower(), ASHRAE_EUI_BENCHMARKS["default"])
+    ratio = eui / benchmark if benchmark > 0 else float("inf")
+    if ratio <= 0.5:
+        return "top_25"
+    if ratio <= 0.9:
+        return "median"
+    if ratio <= 1.1:
+        return "average"
+    return "bottom_25"
 
 
 def energy_intensity_ratio(
