@@ -404,6 +404,7 @@ __all__ = [
     "forecast_trend_with_seasonality",
     "load_factor",
     "logger",
+    "moving_median",
     "moving_range",
     "peak_hours",
     "peak_to_valley_ratio",
@@ -412,3 +413,31 @@ __all__ = [
     "seasonal_baseline",
     "simple_moving_average",
 ]
+
+
+def moving_median(values: list[float], window: int) -> list[float]:
+    """Compute a rolling median over *window* periods.
+
+    Each position uses the preceding *window* values (or all available
+    for positions near the start).
+
+    Args:
+        values: Time-ordered readings.
+        window: Rolling window size (must be >= 1).
+
+    Returns:
+        Rolling median series the same length as *values*.
+        Returns empty list for empty input or window < 1.
+    """
+    if not values or window < 1:
+        return []
+    result: list[float] = []
+    for i in range(len(values)):
+        chunk = sorted(values[max(0, i - window + 1): i + 1])
+        n = len(chunk)
+        mid = n // 2
+        if n % 2 == 0:
+            result.append(round((chunk[mid - 1] + chunk[mid]) / 2.0, 6))
+        else:
+            result.append(round(chunk[mid], 6))
+    return result
