@@ -251,3 +251,75 @@ def test_format_iso_various_dates(month, day) -> None:
     iso = format_iso(dt)
     assert "T" in iso
     assert iso.startswith("2026")
+
+
+# Tests for start_of_month and clamp_to_range
+from datetime import UTC, datetime
+
+import pytest
+
+from app.date_utils import clamp_to_range, start_of_month
+
+
+def test_start_of_month_basic() -> None:
+    dt = datetime(2024, 6, 15, 14, 30, 0)
+    result = start_of_month(dt)
+    assert result.day == 1
+    assert result.hour == 0
+    assert result.minute == 0
+    assert result.month == 6
+    assert result.year == 2024
+
+
+def test_start_of_month_preserves_year() -> None:
+    dt = datetime(2023, 12, 31, 23, 59, 59)
+    result = start_of_month(dt)
+    assert result.year == 2023
+    assert result.month == 12
+    assert result.day == 1
+
+
+def test_start_of_month_already_first() -> None:
+    dt = datetime(2024, 3, 1, 0, 0, 0)
+    assert start_of_month(dt) == dt
+
+
+@pytest.mark.parametrize("month", [1, 3, 6, 9, 12])
+def test_start_of_month_parametrize(month: int) -> None:
+    dt = datetime(2024, month, 15, 10, 0, 0)
+    result = start_of_month(dt)
+    assert result.month == month
+    assert result.day == 1
+
+
+def test_clamp_to_range_within() -> None:
+    lo = datetime(2024, 1, 1)
+    hi = datetime(2024, 12, 31)
+    mid = datetime(2024, 6, 15)
+    assert clamp_to_range(mid, lo, hi) == mid
+
+
+def test_clamp_to_range_below() -> None:
+    lo = datetime(2024, 6, 1)
+    hi = datetime(2024, 12, 31)
+    before = datetime(2024, 1, 1)
+    assert clamp_to_range(before, lo, hi) == lo
+
+
+def test_clamp_to_range_above() -> None:
+    lo = datetime(2024, 1, 1)
+    hi = datetime(2024, 6, 30)
+    after = datetime(2024, 12, 31)
+    assert clamp_to_range(after, lo, hi) == hi
+
+
+def test_clamp_to_range_invalid_range_raises() -> None:
+    lo = datetime(2024, 12, 31)
+    hi = datetime(2024, 1, 1)
+    with pytest.raises(ValueError):
+        clamp_to_range(datetime(2024, 6, 15), lo, hi)
+
+
+def test_clamp_to_range_equal_bounds() -> None:
+    bound = datetime(2024, 6, 15)
+    assert clamp_to_range(bound, bound, bound) == bound
