@@ -144,11 +144,14 @@ __all__ = [
     "interquartile_range",
     "mape",
     "mean_absolute_error",
+    "mode_count",
     "normalize_series",
     "percentile",
     "percentile_rank",
     "r_squared",
     "root_mean_squared_error",
+    "trimmed_mean",
+    "variance",
     "weighted_average",
     "zscore",
 ]
@@ -310,3 +313,79 @@ def zscore(values: list[float], value: float) -> float:
     if std < 1e-9:
         return 0.0
     return round((value - mean) / std, 6)
+
+
+def trimmed_mean(values: list[float], trim_pct: float = 0.1) -> float:
+    """Compute the trimmed (truncated) mean by removing extreme values.
+
+    Trims *trim_pct* of values from each tail before computing the mean.
+
+    Args:
+        values: Non-empty list of numeric values.
+        trim_pct: Fraction to remove from each tail (0.0–0.5 exclusive).
+
+    Returns:
+        Trimmed mean rounded to 6 decimal places.
+
+    Raises:
+        ValueError: If *values* is empty or *trim_pct* is out of range.
+    """
+    if not values:
+        raise ValueError("values must not be empty")
+    if not 0.0 <= trim_pct < 0.5:
+        raise ValueError(f"trim_pct must be in [0, 0.5), got {trim_pct}")
+    n = len(values)
+    k = int(n * trim_pct)
+    sorted_vals = sorted(values)
+    trimmed = sorted_vals[k: n - k] if k > 0 else sorted_vals
+    if not trimmed:
+        return round(sum(sorted_vals) / n, 6)
+    return round(sum(trimmed) / len(trimmed), 6)
+
+
+def variance(values: list[float], population: bool = True) -> float:
+    """Compute the variance of *values*.
+
+    Args:
+        values: Non-empty list of numeric values.
+        population: If True compute population variance (÷ n); else sample (÷ n-1).
+
+    Returns:
+        Variance rounded to 6 decimal places.
+
+    Raises:
+        ValueError: If *values* is empty (or has < 2 elements for sample variance).
+    """
+    if not values:
+        raise ValueError("values must not be empty")
+    if not population and len(values) < 2:
+        raise ValueError("Sample variance requires at least 2 values")
+    n = len(values)
+    mean = sum(values) / n
+    sq_diffs = sum((v - mean) ** 2 for v in values)
+    divisor = n if population else n - 1
+    return round(sq_diffs / divisor, 6)
+
+
+def mode_count(values: list[float]) -> tuple[float, int]:
+    """Return the mode and its frequency from *values*.
+
+    If multiple values share the highest frequency, the smallest is returned.
+
+    Args:
+        values: Non-empty list of numeric values.
+
+    Returns:
+        Tuple of (mode_value, count).
+
+    Raises:
+        ValueError: If *values* is empty.
+    """
+    if not values:
+        raise ValueError("values must not be empty")
+    freq: dict[float, int] = {}
+    for v in values:
+        freq[v] = freq.get(v, 0) + 1
+    max_count = max(freq.values())
+    mode = min(k for k, c in freq.items() if c == max_count)
+    return mode, max_count
