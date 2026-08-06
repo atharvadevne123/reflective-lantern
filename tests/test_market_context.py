@@ -6,9 +6,13 @@ import pytest
 
 from app.market_context import (
     affordability_index,
+    comparable_value_adjustment,
     dom_classification,
+    market_heat_score,
+    price_per_bedroom,
     price_per_sqft,
     price_to_rent_ratio,
+    value_gap,
 )
 
 
@@ -553,3 +557,90 @@ def test_price_to_rent_ratio_zero_rent_v2() -> None:
 
     result = price_to_rent_ratio(300_000.0, 0.0)
     assert result == 0.0
+
+
+def test_price_per_bedroom_basic() -> None:
+    assert price_per_bedroom(400_000.0, 4) == pytest.approx(100_000.0)
+
+
+def test_price_per_bedroom_zero_bedrooms() -> None:
+    assert price_per_bedroom(400_000.0, 0) == 0.0
+
+
+def test_price_per_bedroom_negative_bedrooms() -> None:
+    assert price_per_bedroom(400_000.0, -1) == 0.0
+
+
+@pytest.mark.parametrize("price,beds,expected", [
+    (300_000.0, 3, 100_000.0),
+    (200_000.0, 2, 100_000.0),
+    (500_000.0, 5, 100_000.0),
+])
+def test_price_per_bedroom_parametrize(price, beds, expected) -> None:
+    assert price_per_bedroom(price, beds) == pytest.approx(expected)
+
+
+def test_market_heat_score_hot_market() -> None:
+    score = market_heat_score(days_on_market=5, list_to_sale_ratio=1.05, inventory_months=0.5)
+    assert score > 7.0
+
+
+def test_market_heat_score_cold_market() -> None:
+    score = market_heat_score(days_on_market=90, list_to_sale_ratio=0.90, inventory_months=12.0)
+    assert score < 3.0
+
+
+def test_market_heat_score_range() -> None:
+    score = market_heat_score(30, 1.0, 3.0)
+    assert 0.0 <= score <= 10.0
+
+
+def test_value_gap_underpriced() -> None:
+    gap = value_gap(estimated_value=300_000.0, list_price=250_000.0)
+    assert gap > 0
+
+
+def test_value_gap_overpriced() -> None:
+    gap = value_gap(estimated_value=200_000.0, list_price=250_000.0)
+    assert gap < 0
+
+
+def test_value_gap_zero_list_price() -> None:
+    assert value_gap(300_000.0, 0.0) == 0.0
+
+
+def test_value_gap_at_fair_value() -> None:
+    assert value_gap(300_000.0, 300_000.0) == pytest.approx(0.0)
+
+
+def test_comparable_value_adjustment_larger_subject() -> None:
+    result = comparable_value_adjustment(
+        subject_sqft=1500.0, comp_sqft=1000.0, comp_price=200_000.0, price_per_sqft_adj=100.0
+    )
+    assert result == pytest.approx(250_000.0)
+
+
+def test_comparable_value_adjustment_smaller_subject() -> None:
+    result = comparable_value_adjustment(
+        subject_sqft=800.0, comp_sqft=1000.0, comp_price=200_000.0, price_per_sqft_adj=100.0
+    )
+    assert result == pytest.approx(180_000.0)
+
+
+def test_comparable_value_adjustment_equal_sqft() -> None:
+    result = comparable_value_adjustment(
+        subject_sqft=1000.0, comp_sqft=1000.0, comp_price=200_000.0
+    )
+    assert result == pytest.approx(200_000.0)
+
+
+@pytest.mark.parametrize("dom,ratio,inv,hot", [
+    (5, 1.05, 0.5, True),
+    (90, 0.90, 12.0, False),
+])
+def test_market_heat_score_parametrize(dom, ratio, inv, hot) -> None:
+    score = market_heat_score(dom, ratio, inv)
+    if hot:
+        assert score >= 5.0
+    else:
+        assert score <= 5.0
