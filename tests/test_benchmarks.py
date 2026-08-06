@@ -155,3 +155,27 @@ def test_compare_buildings_single_building() -> None:
     assert len(results) == 1
     assert results[0]["rank"] == 1
     assert "rating" in results[0]
+
+def test_energy_intensity_ratio_basic() -> None:
+    from app.benchmarks import energy_intensity_ratio
+    assert energy_intensity_ratio(150.0, 200.0) == pytest.approx(0.75)
+
+
+def test_energy_intensity_ratio_equal() -> None:
+    from app.benchmarks import energy_intensity_ratio
+    assert energy_intensity_ratio(200.0, 200.0) == pytest.approx(1.0)
+
+
+def test_energy_intensity_ratio_zero_reference() -> None:
+    from app.benchmarks import energy_intensity_ratio
+    assert energy_intensity_ratio(150.0, 0.0) == 0.0
+
+
+@pytest.mark.parametrize("actual,ref,expected", [
+    (100.0, 200.0, 0.5),
+    (200.0, 100.0, 2.0),
+    (0.0, 100.0, 0.0),
+])
+def test_energy_intensity_ratio_parametrized(actual: float, ref: float, expected: float) -> None:
+    from app.benchmarks import energy_intensity_ratio
+    assert energy_intensity_ratio(actual, ref) == pytest.approx(expected, rel=1e-4)
