@@ -332,8 +332,53 @@ __all__ = [
     "validate_feature_vector",
     "validate_forecast_horizon",
     "validate_load_series",
+    "validate_percentage",
     "validate_price",
     "validate_reading_dict",
+    "validate_region_id",
     "validate_temporal_fields",
     "validate_weather_fields",
 ]
+
+
+def validate_percentage(value: float, field_name: str = "value") -> list[str]:
+    """Return validation errors when *value* is not a valid percentage in [0, 100].
+
+    Args:
+        value: Numeric value expected to be a percentage.
+        field_name: Label for the field (used in error messages).
+
+    Returns:
+        List of error strings (empty when valid).
+    """
+    import math
+
+    errors: list[str] = []
+    if not math.isfinite(value):
+        errors.append(f"{field_name} must be finite, got {value}")
+    elif not (0.0 <= value <= 100.0):
+        errors.append(f"{field_name} must be in [0, 100], got {value}")
+    return errors
+
+
+def validate_region_id(region_id: str) -> list[str]:
+    """Return validation errors for a grid region identifier.
+
+    Checks that *region_id* is a non-empty string consisting only of
+    lowercase alphanumeric characters and underscores.
+
+    Args:
+        region_id: Grid region identifier string to validate.
+
+    Returns:
+        List of error strings (empty when valid).
+    """
+    errors: list[str] = []
+    if not region_id:
+        errors.append("region_id must not be empty")
+        return errors
+    if not region_id.replace("_", "").isalnum():
+        errors.append(f"region_id must be alphanumeric with underscores only, got {region_id!r}")
+    if not region_id.islower():
+        errors.append(f"region_id must be lowercase, got {region_id!r}")
+    return errors
