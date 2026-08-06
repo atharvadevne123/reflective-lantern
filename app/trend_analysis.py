@@ -127,11 +127,34 @@ def year_over_year_growth(monthly_series: list[float], period: int = 12) -> list
     return result
 
 
+def rate_of_change(values: list[float], lag: int = 1) -> list[float]:
+    """Compute the rate of change between values separated by *lag* periods.
+
+    Rate of change = (value[i] - value[i-lag]) / abs(value[i-lag]) * 100
+    when value[i-lag] != 0, else 0.0.
+
+    Args:
+        values: Time-ordered readings.
+        lag: Number of periods to look back (default 1).
+
+    Returns:
+        List of percentage changes, length = len(values) - lag.
+        Empty list if len(values) <= lag.
+    """
+    if lag < 1 or len(values) <= lag:
+        return []
+    return [
+        percentage_change(values[i - lag], values[i])
+        for i in range(lag, len(values))
+    ]
+
+
 __all__ = [
     "TrendResult",
     "detect_change_points",
     "linear_trend",
     "percentage_change",
+    "rate_of_change",
     "rolling_mean",
     "seasonal_decompose_naive",
     "year_over_year_growth",
