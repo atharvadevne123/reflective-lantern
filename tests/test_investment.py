@@ -636,3 +636,49 @@ class TestDebtServiceCoverageRatio:
     ])
     def test_dscr_parametrize(self, noi, debt, expected) -> None:
         assert debt_service_coverage_ratio(noi, debt) == pytest.approx(expected)
+
+
+# Tests for break_even_occupancy and operating_expense_ratio
+import pytest
+
+from app.investment import break_even_occupancy, operating_expense_ratio
+
+
+class TestBreakEvenOccupancy:
+    def test_basic(self) -> None:
+        result = break_even_occupancy(30_000.0, 20_000.0, 100_000.0)
+        assert result == pytest.approx(0.5)
+
+    def test_zero_rent_returns_zero(self) -> None:
+        assert break_even_occupancy(10_000.0, 5_000.0, 0.0) == pytest.approx(0.0)
+
+    def test_above_one_when_unviable(self) -> None:
+        result = break_even_occupancy(80_000.0, 30_000.0, 50_000.0)
+        assert result > 1.0
+
+    def test_perfectly_covered(self) -> None:
+        result = break_even_occupancy(50_000.0, 50_000.0, 100_000.0)
+        assert result == pytest.approx(1.0)
+
+    @pytest.mark.parametrize("opex,debt,gross", [
+        (20_000.0, 10_000.0, 100_000.0),
+        (40_000.0, 20_000.0, 200_000.0),
+    ])
+    def test_parametrize(self, opex: float, debt: float, gross: float) -> None:
+        result = break_even_occupancy(opex, debt, gross)
+        assert result == pytest.approx((opex + debt) / gross)
+
+
+class TestOperatingExpenseRatio:
+    def test_basic(self) -> None:
+        assert operating_expense_ratio(30_000.0, 100_000.0) == pytest.approx(30.0)
+
+    def test_zero_egi_returns_zero(self) -> None:
+        assert operating_expense_ratio(10_000.0, 0.0) == pytest.approx(0.0)
+
+    def test_full_expense(self) -> None:
+        assert operating_expense_ratio(100_000.0, 100_000.0) == pytest.approx(100.0)
+
+    def test_low_expense(self) -> None:
+        result = operating_expense_ratio(10_000.0, 100_000.0)
+        assert result == pytest.approx(10.0)
