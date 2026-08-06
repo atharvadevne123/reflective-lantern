@@ -1,0 +1,41 @@
+version: "3.9"
+
+services:
+  api:
+    build: .
+    container_name: temporal-pulse-api
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=postgresql://tp_user:tp_password@db:5432/temporal_pulse
+      - ANOMALY_THRESHOLD=0.7
+      - CORS_ORIGINS=*
+      - MODEL_DIR=/app/models
+    volumes:
+      - model_storage:/app/models
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
+  db:
+    image: postgres:16-alpine
+    container_name: temporal-pulse-db
+    environment:
+      - POSTGRES_USER=tp_user
+      - POSTGRES_PASSWORD=tp_password
+      - POSTGRES_DB=temporal_pulse
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U tp_user -d temporal_pulse"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  model_storage:

@@ -1,0 +1,82 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.backends.legacy:build"
+
+[project]
+name = "watt-guard"
+version = "1.0.0"
+description = "Smart building energy consumption forecasting and anomaly detection API"
+readme = "README.md"
+requires-python = ">=3.11"
+license = {text = "MIT"}
+authors = [{name = "Reflective Lantern", email = "devneatharva@gmail.com"}]
+keywords = ["energy", "forecasting", "anomaly-detection", "ml", "fastapi"]
+classifiers = [
+    "Programming Language :: Python :: 3.11",
+    "License :: OSI Approved :: MIT License",
+]
+dependencies = [
+    "fastapi>=0.111.0",
+    "uvicorn[standard]>=0.29.0",
+    "pydantic>=2.7.0",
+    "sqlalchemy>=2.0.30",
+    "scipy>=1.13.0",
+    "scikit-learn>=1.4.2",
+    "xgboost>=2.0.3",
+    "lightgbm>=4.3.0",
+    "joblib>=1.4.0",
+    "numpy>=1.26.4",
+    "pandas>=2.2.2",
+]
+
+[project.urls]
+Repository = "https://github.com/atharvadevne123/reflective-lantern/tree/innovation/watt-guard"
+
+[tool.ruff]
+line-length = 120
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "C4", "SIM", "TCH", "RUF"]
+ignore = ["E501", "B008", "SIM108", "RUF012", "TC001", "TC002", "TC003"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["S101", "SIM117"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-v --tb=short"
+filterwarnings = ["ignore::DeprecationWarning"]
+
+[tool.mypy]
+python_version = "3.11"
+ignore_missing_imports = true
+disallow_untyped_defs = true
+warn_return_any = true
+warn_unused_ignores = true
+no_implicit_optional = true
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["app*"]
+
+[tool.coverage.run]
+source = ["app"]
+omit = ["tests/*", "scripts/*", "pipelines/*"]
+branch = true
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "raise NotImplementedError",
+    "if TYPE_CHECKING:",
+    "if __name__ == .__main__.:",
+]
+show_missing = true
+skip_covered = false
+fail_under = 60

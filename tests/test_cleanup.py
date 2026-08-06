@@ -1,0 +1,331 @@
+"""Tests for scripts.cleanup."""
+
+from __future__ import annotations
+
+import json
+from datetime import date
+from pathlib import Path
+
+import pytest
+
+
+@pytest.fixture()
+def history_path(tmp_path: Path) -> Path:
+    return tmp_path / "history"
+
+
+def write_history(path: Path, entries: list) -> Path:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(entries))
+    return path
+
+
+def test_clean_removes_old_entries(tmp_path: Path) -> None:
+    from scripts.cleanup import clean_file
+
+    f = write_history(
+        tmp_path / "repo.json",
+        [
+            {"date": "2020-01-01", "commits": 5},
+            {"date": "2026-06-30", "commits": 60},
+        ],
+    )
+    removed = clean_file(f, cutoff=date(2026, 1, 1))
+    assert removed == 1
+    kept = json.loads(f.read_text())
+    assert len(kept) == 1
+    assert kept[0]["date"] == "2026-06-30"
+
+
+def test_clean_dry_run_does_not_modify(tmp_path: Path) -> None:
+    from scripts.cleanup import clean_file
+
+    original = [{"date": "2020-01-01", "commits": 5}]
+    f = write_history(tmp_path / "repo.json", original)
+    removed = clean_file(f, cutoff=date(2026, 1, 1), dry_run=True)
+    assert removed == 1
+    assert json.loads(f.read_text()) == original
+
+
+def test_clean_keeps_recent_entries(tmp_path: Path) -> None:
+    from scripts.cleanup import clean_file
+
+    f = write_history(
+        tmp_path / "repo.json",
+        [
+            {"date": "2026-06-01", "commits": 60},
+            {"date": "2026-06-15", "commits": 60},
+        ],
+    )
+    removed = clean_file(f, cutoff=date(2026, 1, 1))
+    assert removed == 0
+
+
+def test_clean_handles_invalid_json(tmp_path: Path) -> None:
+    from scripts.cleanup import clean_file
+
+    f = tmp_path / "bad.json"
+    f.write_text("{not valid")
+    removed = clean_file(f, cutoff=date(2026, 1, 1))
+    assert removed == 0
+
+
+def test_clean_handles_missing_date_field(tmp_path: Path) -> None:
+    from scripts.cleanup import clean_file
+
+    f = write_history(
+        tmp_path / "repo.json",
+        [
+            {"commits": 60},  # no date field — should not be removed
+        ],
+    )
+    removed = clean_file(f, cutoff=date(2026, 1, 1))
+    assert removed == 0
+
+
+def test_clean_single_dict_format(tmp_path: Path) -> None:
+    from scripts.cleanup import clean_file
+
+    f = tmp_path / "old.json"
+    f.write_text(json.dumps({"last_run": "2020-01-01", "commits": 5}))
+    removed = clean_file(f, cutoff=date(2026, 1, 1))
+    assert removed == 1
+
+
+@pytest.mark.parametrize("days,expected_removed", [(30, 1), (3650, 1)])
+def test_clean_parametrized(tmp_path: Path, days: int, expected_removed: int) -> None:
+    from datetime import timedelta
+
+    from scripts.cleanup import clean_file
+
+    old_date = (date.today() - timedelta(days=days + 1)).isoformat()
+    f = write_history(tmp_path / "repo.json", [{"date": old_date, "commits": 5}])
+    cutoff = date.today() - timedelta(days=days)
+    removed = clean_file(f, cutoff=cutoff)
+    assert removed == expected_removed
+
+
+def test_clean_file_last_run_field(tmp_path: Path) -> None:
+    """Entries using 'last_run' instead of 'date' should also be cleaned."""
+    from scripts.cleanup import clean_file
+
+    f = write_history(
+        tmp_path / "repo.json",
+        [
+            {"last_run": "2020-06-01", "commits": 10},
+            {"last_run": "2026-06-30", "commits": 60},
+        ],
+    )
+    removed = clean_file(f, cutoff=date(2026, 1, 1))
+    assert removed == 1
+    kept = json.loads(f.read_text())
+    assert len(kept) == 1
+
+
+def test_clean_file_mixed_date_formats(tmp_path: Path) -> None:
+    """Entries with both date and last_run should use 'date' field."""
+    from scripts.cleanup import clean_file
+
+    f = write_history(
+        tmp_path / "repo.json",
+        [
+            {"date": "2025-01-01", "last_run": "2026-06-30", "commits": 5},
+        ],
+    )
+    # 'date' field is 2025-01-01, which is older than cutoff 2026-01-01
+    removed = clean_file(f, cutoff=date(2026, 1, 1))
+    assert removed == 1
+
+
+@pytest.mark.parametrize("content", ["null", '"string"', "42"])
+def test_clean_file_non_list_non_dict(tmp_path: Path, content: str) -> None:
+    """Non-list, non-dict JSON root should return 0 removals."""
+    from scripts.cleanup import clean_file
+
+    f = tmp_path / "repo.json"
+    f.write_text(content)
+    removed = clean_file(f, cutoff=date(2026, 1, 1))
+    assert removed == 0
+
+
+def test_clean_file_empty_list(tmp_path: Path) -> None:
+    from scripts.cleanup import clean_file
+
+    f = write_history(tmp_path / "repo.json", [])
+    removed = clean_file(f, cutoff=date(2026, 1, 1))
+    assert removed == 0
+
+
+def test_clean_file_max_entries_truncates(tmp_path: Path) -> None:
+    from scripts.cleanup import clean_file
+
+    entries = [{"date": f"2026-0{i + 1}-01", "commits": i} for i in range(5)]
+    f = write_history(tmp_path / "big.json", entries)
+    removed = clean_file(f, cutoff=date(2020, 1, 1), max_entries=3)
+    assert removed == 2
+    kept = json.loads(f.read_text())
+    assert len(kept) == 3
+    # most recent 3 entries kept (slicing from the end)
+    assert kept[-1]["date"] == "2026-05-01"
+
+
+def test_clean_file_max_entries_no_truncation_needed(tmp_path: Path) -> None:
+    from scripts.cleanup import clean_file
+
+    entries = [{"date": "2026-06-01", "commits": 10}]
+    f = write_history(tmp_path / "small.json", entries)
+    removed = clean_file(f, cutoff=date(2020, 1, 1), max_entries=5)
+    assert removed == 0
+    assert len(json.loads(f.read_text())) == 1
+
+
+def test_clean_file_max_entries_none_no_truncation(tmp_path: Path) -> None:
+    from scripts.cleanup import clean_file
+
+    entries = [{"date": f"2026-0{i + 1}-01", "commits": i} for i in range(5)]
+    f = write_history(tmp_path / "nolimit.json", entries)
+    clean_file(f, cutoff=date(2020, 1, 1), max_entries=None)
+    assert len(json.loads(f.read_text())) == 5
+
+
+def test_clean_file_min_keep_preserves_recent_entry(tmp_path: Path) -> None:
+    from scripts.cleanup import clean_file
+
+    # Only one very old entry, min_keep=1 should retain it
+    entries = [{"date": "2020-01-01", "commits": 5}]
+    f = write_history(tmp_path / "minkeep.json", entries)
+    removed = clean_file(f, cutoff=date(2026, 1, 1), min_keep=1)
+    assert removed == 0
+    assert len(json.loads(f.read_text())) == 1
+
+
+def test_clean_file_min_keep_zero_removes_all(tmp_path: Path) -> None:
+    from scripts.cleanup import clean_file
+
+    entries = [{"date": "2020-01-01", "commits": 5}]
+    f = write_history(tmp_path / "nminkeep.json", entries)
+    removed = clean_file(f, cutoff=date(2026, 1, 1), min_keep=0)
+    assert removed == 1
+    assert json.loads(f.read_text()) == []
+
+
+def test_clean_file_min_keep_selects_most_recent(tmp_path: Path) -> None:
+    from scripts.cleanup import clean_file
+
+    entries = [
+        {"date": "2020-01-01", "commits": 1},
+        {"date": "2021-06-01", "commits": 2},
+    ]
+    f = write_history(tmp_path / "minkeep2.json", entries)
+    clean_file(f, cutoff=date(2026, 1, 1), min_keep=1)
+    remaining = json.loads(f.read_text())
+    # The last entry (most recent by position) should be preserved
+    assert len(remaining) == 1
+    assert remaining[0]["commits"] == 2
+
+
+def test_count_entries_list_file(tmp_path: Path) -> None:
+    from scripts.cleanup import count_entries
+
+    f = tmp_path / "repo.json"
+    f.write_text(json.dumps([{"date": "2026-07-01", "commits": 60}, {"date": "2026-07-02", "commits": 45}]))
+    result = count_entries(tmp_path)
+    assert result["repo.json"] == 2
+
+
+def test_count_entries_dict_file(tmp_path: Path) -> None:
+    from scripts.cleanup import count_entries
+
+    f = tmp_path / "single.json"
+    f.write_text(json.dumps({"date": "2026-07-01", "commits": 60}))
+    result = count_entries(tmp_path)
+    assert result["single.json"] == 1
+
+
+def test_count_entries_invalid_json(tmp_path: Path) -> None:
+    from scripts.cleanup import count_entries
+
+    f = tmp_path / "bad.json"
+    f.write_text("{broken")
+    result = count_entries(tmp_path)
+    assert result["bad.json"] == 0
+
+
+def test_count_entries_empty_dir(tmp_path: Path) -> None:
+    from scripts.cleanup import count_entries
+
+    result = count_entries(tmp_path)
+    assert result == {}
+
+
+def test_entry_date_with_date_field() -> None:
+    from datetime import date
+
+    from scripts.cleanup import _entry_date
+
+    entry = {"date": "2026-07-09", "commits": 60}
+    result = _entry_date(entry)
+    assert result == date(2026, 7, 9)
+
+
+def test_entry_date_with_last_run_field() -> None:
+    from datetime import date
+
+    from scripts.cleanup import _entry_date
+
+    entry = {"last_run": "2026-06-01", "commits": 45}
+    result = _entry_date(entry)
+    assert result == date(2026, 6, 1)
+
+
+def test_entry_date_invalid_returns_none() -> None:
+    from scripts.cleanup import _entry_date
+
+    entry = {"date": "not-a-date"}
+    result = _entry_date(entry)
+    assert result is None
+
+
+def test_entry_date_missing_returns_none() -> None:
+    from scripts.cleanup import _entry_date
+
+    result = _entry_date({"commits": 60})
+    assert result is None
+
+
+def test_cleanup_default_days_constant() -> None:
+    from config.constants import CLEANUP_DEFAULT_DAYS
+
+    assert CLEANUP_DEFAULT_DAYS > 0
+
+
+def test_max_history_entries_constant() -> None:
+    from config.constants import MAX_HISTORY_ENTRIES
+
+    assert MAX_HISTORY_ENTRIES > 0
+
+
+def test_cleanup_default_days_less_than_max_history() -> None:
+    from config.constants import CLEANUP_DEFAULT_DAYS, MAX_HISTORY_ENTRIES
+
+    # MAX_HISTORY_ENTRIES represents the cap per file; cleanup threshold
+    # should be meaningful (≤ max-history-days equivalent)
+    assert CLEANUP_DEFAULT_DAYS < MAX_HISTORY_ENTRIES
+
+
+@pytest.mark.parametrize("days", [7, 30, 90, 180])
+def test_clean_file_respects_days_parameter(tmp_path: pytest.fixture, days: int) -> None:
+    import json
+    from datetime import date, timedelta
+
+    from scripts.cleanup import clean_file
+
+    today = date.today()
+    entries = [{"date": (today - timedelta(days=d)).isoformat(), "value": d} for d in range(0, days * 2, 5)]
+    path = tmp_path / "test.json"
+    path.write_text(json.dumps(entries))
+    cutoff = today - timedelta(days=days)
+    removed = clean_file(path, cutoff)
+    remaining = json.loads(path.read_text())
+    assert all(date.fromisoformat(e["date"]) >= cutoff for e in remaining)
+    assert removed >= 0

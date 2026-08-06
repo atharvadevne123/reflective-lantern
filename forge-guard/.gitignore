@@ -1,0 +1,14 @@
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+*.db
+model.joblib
+metrics.json
+faiss_index.bin
+faiss_ref_vectors.npy
+mlruns/
+.env
+dist/
+build/
+*.egg-info/

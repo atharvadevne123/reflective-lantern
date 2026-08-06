@@ -1,0 +1,49 @@
+
+Temporal-Pulse — Architecture Diagram
+======================================
+
+  ┌─────────────────────────────────────────────────────────┐
+  │                    Client / IoT Sensors                  │
+  └─────────────────────┬───────────────────────────────────┘
+                        │ HTTP POST /api/v1/detect
+                        ▼
+  ┌─────────────────────────────────────────────────────────┐
+  │               FastAPI Application (uvicorn)              │
+  │                                                         │
+  │  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐  │
+  │  │  /detect     │  │  /forecast   │  │  /drift      │  │
+  │  │  /train      │  │  /health     │  │  /metrics    │  │
+  │  └──────┬───────┘  └──────┬───────┘  └──────┬───────┘  │
+  │         │                 │                 │           │
+  │  ┌──────▼───────────────────────────────────▼───────┐   │
+  │  │           Feature Engineering Pipeline            │   │
+  │  │  Rolling Stats • Lags • ROC • Time Encoding      │   │
+  │  │  Cross-Sensor Correlation • RobustScaler         │   │
+  │  └──────┬───────────────────────────────────────────┘   │
+  │         │                                               │
+  │  ┌──────▼───────────────────────────────────────────┐   │
+  │  │              ML Ensemble                         │   │
+  │  │  Isolation Forest (anomaly scoring)              │   │
+  │  │  Random Forest   (multi-step forecasting)        │   │
+  │  │  FAISS           (nearest-neighbour explanation) │   │
+  │  └──────┬───────────────────────────────────────────┘   │
+  │         │                                               │
+  │  ┌──────▼───────────────────────────────────────────┐   │
+  │  │           Monitoring & Drift Detection            │   │
+  │  │   KS-test per feature • Latency tracking         │   │
+  │  │   Prediction logging  • Anomaly event store      │   │
+  │  └──────────────────────────────────────────────────┘   │
+  └──────────────────────────┬──────────────────────────────┘
+                             │ SQLAlchemy ORM
+                             ▼
+  ┌─────────────────────────────────────────────────────────┐
+  │                   PostgreSQL Database                    │
+  │  sensor_readings • anomaly_events • predictions         │
+  │  drift_logs                                             │
+  └─────────────────────────────────────────────────────────┘
+                             │
+                    ┌────────▼────────┐
+                    │ Retraining DAG  │
+                    │ (Airflow/cron)  │
+                    │ Daily @midnight │
+                    └─────────────────┘

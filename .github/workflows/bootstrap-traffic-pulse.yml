@@ -1,0 +1,50 @@
+name: Publish Traffic-Pulse Repo
+
+# One-click publisher: creates the standalone Traffic-Pulse repository and
+# pushes the innovation/traffic-pulse branch (60 commits) to it as main,
+# then tags v1.0.0 and creates a GitHub release.
+#
+# Trigger manually from the Actions tab, supplying a PAT with repo scope.
+
+on:
+  workflow_dispatch:
+    inputs:
+      gh_pat:
+        description: 'GitHub PAT with repo scope (used once, not stored)'
+        required: true
+        type: string
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create Traffic-Pulse repository
+        run: |
+          RESPONSE=$(curl -s -X POST \
+            -H "Authorization: Bearer ${{ github.event.inputs.gh_pat }}" \
+            -H "Content-Type: application/json" \
+            https://api.github.com/user/repos \
+            -d '{"name":"Traffic-Pulse","description":"Real-time urban traffic congestion prediction and incident detection API using XGBoost-LightGBM ensemble with temporal features, route scoring, and automated drift detection.","public":true,"auto_init":false}')
+          echo "$RESPONSE" | python3 -c "import json,sys; r=json.load(sys.stdin); print(r.get('html_url', 'NOTE: ' + str(r.get('message',''))))"
+
+      - name: Checkout innovation branch
+        uses: actions/checkout@v7
+        with:
+          ref: innovation/traffic-pulse
+          fetch-depth: 0
+
+      - name: Push to new repository as main
+        run: |
+          git push "https://x-access-token:${{ github.event.inputs.gh_pat }}@github.com/atharvadevne123/Traffic-Pulse" \
+            HEAD:refs/heads/main
+
+      - name: Tag and release v1.0.0
+        run: |
+          git tag -f v1.0.0
+          git push -f "https://x-access-token:${{ github.event.inputs.gh_pat }}@github.com/atharvadevne123/Traffic-Pulse" v1.0.0
+          curl -s -X POST \
+            -H "Authorization: Bearer ${{ github.event.inputs.gh_pat }}" \
+            -H "Content-Type: application/json" \
+            "https://api.github.com/repos/atharvadevne123/Traffic-Pulse/releases" \
+            -d '{"tag_name":"v1.0.0","target_commitish":"main","name":"v1.0.0 — Initial Release","body":"Built by Reflective Lantern. Urban traffic congestion prediction API — XGBoost+LightGBM ensemble, 26 engineered features, KS-test drift detection, automated retraining, Docker+PostgreSQL, 85 tests. See README for setup.","draft":false,"prerelease":false}' \
+            | python3 -c "import json,sys; r=json.load(sys.stdin); print('Release:', r.get('html_url', r.get('message','')))"

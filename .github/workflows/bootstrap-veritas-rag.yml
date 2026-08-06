@@ -1,0 +1,71 @@
+name: Publish Veritas-Rag Repo
+
+# One-click publisher: creates the standalone Veritas-Rag repository and
+# pushes the veritas-rag/ project (from innovation/veritas-rag) to it as
+# main, then tags v1.0.0, creates a release, and uploads the wheel.
+#
+# Trigger manually from the Actions tab, supplying a PAT with repo scope.
+
+on:
+  workflow_dispatch:
+    inputs:
+      gh_pat:
+        description: 'GitHub PAT with repo scope (used once, not stored)'
+        required: true
+        type: string
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create Veritas-Rag repository
+        run: |
+          RESPONSE=$(curl -s -X POST \
+            -H "Authorization: Bearer ${{ github.event.inputs.gh_pat }}" \
+            -H "Content-Type: application/json" \
+            https://api.github.com/user/repos \
+            -d '{"name":"Veritas-Rag","description":"Near-zero-hallucination RAG system for 10M documents with hybrid BM25-semantic retrieval, FAISS ANN reranking, chunk trust scoring, constrained cited generation, and insufficient-evidence fallback.","public":true,"auto_init":false}')
+          echo "$RESPONSE" | python3 -c "import json,sys; r=json.load(sys.stdin); print(r.get('html_url', 'NOTE: ' + str(r.get('message',''))))"
+
+      - name: Checkout innovation branch
+        uses: actions/checkout@v4
+        with:
+          ref: innovation/veritas-rag
+          fetch-depth: 0
+
+      - name: Export veritas-rag subdirectory as repository root
+        run: |
+          git config user.email "devneatharva@gmail.com"
+          git config user.name "Reflective Lantern"
+          git subtree split --prefix=veritas-rag -b veritas-rag-export
+          git push "https://x-access-token:${{ github.event.inputs.gh_pat }}@github.com/atharvadevne123/Veritas-Rag" \
+            veritas-rag-export:refs/heads/main
+
+      - name: Tag and release v1.0.0
+        run: |
+          git checkout veritas-rag-export
+          git tag -f v1.0.0
+          git push -f "https://x-access-token:${{ github.event.inputs.gh_pat }}@github.com/atharvadevne123/Veritas-Rag" v1.0.0
+          curl -s -X POST \
+            -H "Authorization: Bearer ${{ github.event.inputs.gh_pat }}" \
+            -H "Content-Type: application/json" \
+            "https://api.github.com/repos/atharvadevne123/Veritas-Rag/releases" \
+            -d '{"tag_name":"v1.0.0","target_commitish":"main","name":"v1.0.0 — Initial Release","body":"Built by Reflective Lantern. Ten-stage near-zero-hallucination RAG: hybrid BM25+semantic retrieval, FAISS ANN + reranking, trust scoring, constrained cited generation, insufficient-evidence fallback, adversarial evaluation gate, caching, and full observability. 108 tests. See README for setup.","draft":false,"prerelease":false}' \
+            | python3 -c "import json,sys; r=json.load(sys.stdin); print('Release:', r.get('html_url', r.get('message','')))"
+
+      - name: Build and upload wheel asset
+        run: |
+          pip install build -q
+          python -m build --wheel
+          WHL=$(ls dist/*.whl | head -1)
+          RELEASE_ID=$(curl -s -H "Authorization: Bearer ${{ github.event.inputs.gh_pat }}" \
+            "https://api.github.com/repos/atharvadevne123/Veritas-Rag/releases/tags/v1.0.0" \
+            | python3 -c "import json,sys; print(json.load(sys.stdin).get('id',''))")
+          if [ -n "$WHL" ] && [ -n "$RELEASE_ID" ]; then
+            curl -s -X POST \
+              -H "Authorization: Bearer ${{ github.event.inputs.gh_pat }}" \
+              -H "Content-Type: application/octet-stream" \
+              --data-binary @"$WHL" \
+              "https://uploads.github.com/repos/atharvadevne123/Veritas-Rag/releases/$RELEASE_ID/assets?name=$(basename $WHL)" \
+              | python3 -c "import json,sys; r=json.load(sys.stdin); print('Asset:', r.get('browser_download_url','ERROR'))"
+          fi

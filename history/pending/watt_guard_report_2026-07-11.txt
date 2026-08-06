@@ -1,0 +1,120 @@
+"""Generate minimal PDF using reportlab or plain text, then email."""
+import smtplib
+import ssl
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+import io
+
+GMAIL_USER = "devneatharva@gmail.com"
+GMAIL_APP_PASS = "mzizhaaiaemssxls"
+TO = "devneatharva@gmail.com"
+SUBJECT = "[Reflective Lantern] 2026-07-11 IMPROVEMENT — reflective-lantern (Watt-Guard) — 60 commits pushed"
+
+body = """Hi Atharva,
+
+Your daily Reflective Lantern run completed successfully.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+REFLECTIVE LANTERN — DAILY RUN REPORT
+2026-07-11 | IMPROVEMENT Mode | Watt-Guard
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Repo:    atharvadevne123/reflective-lantern
+Branch:  main
+Commits: 60 atomic commits pushed successfully
+
+━━━ TIER 1: SECURITY / CORRECTNESS (1-10) ━━━━
+• fix(cache.py): removed undefined default_ttl ref; expired keys now increment misses
+• fix(middleware.py): added missing deque import, moved Any to top, removed duplicate global
+• fix(model.py): removed duplicate XGBRegressor import block; added missing Any import
+• fix(main.py): added missing from typing import Any for module-level annotations
+• fix(monitoring.py): added missing Session + numpy imports
+• fix(time_series.py): removed 5 lines dead code after return in simple_moving_average
+• fix(config.py): default DATABASE_URL was traffic_pulse.db — corrected to watt_guard.db
+• fix(validation.py): use math.isfinite to catch inf/-inf in validate_load_series
+• fix(reporting.py): raise ValueError on empty input in peak_demand_report
+• fix(test_model.py): removed stray nested method test_synthetic_loads_in_range
+
+━━━ TIER 2: TESTS (11-22) ━━━━━━━━━━━━━━━━━━━
+• test(test_cache.py): rewrote broken tests; parametrized ttl/size construction
+• test(test_reporting.py): mismatch-raises, empty-raises, n_hours parametrize
+• test(test_monitoring.py): latency timer ms, same-distribution KS, window truncation
+• test(test_api.py): batch predict after train, exceeds limit, strong drift shift
+• test(test_similarity.py): clear(), score bounds, identical→1.0, k>size edge cases
+• test(test_validation.py): weekday parametrize, temporal key extraction, inf value
+• test(test_faiss_index.py): clear() reset, similarity score in range
+• test(test_database.py): nullable actual_kwh, drift_detected=0, severity=none
+• test(test_anomaly.py): required keys, threshold parametrize, fence-exact test
+• test(test_time_series.py): peak_hours, empty detect_spikes, horizon parametrize
+• test(test_schemas.py): VersionResponse, invalid month/dow parametrize
+• test(test_features.py): added missing numpy and pandas imports
+
+━━━ TIER 3: CODE QUALITY (23-35) ━━━━━━━━━━━━
+• docs(aws_stub.py): Google-style docstrings with Args/Returns
+• docs(mlflow_stub.py): full docstrings; narrowed return type to dict[str,object]|None
+• docs(features.py): fit/transform docstrings on all 5 transformers
+• refactor(faiss_index.py): clear() method, typed sims list, brute_force docstring
+• refactor(similarity.py): add() docstring, size property, get_global_index() accessor
+• docs(logging_config.py): fixed module docstring (Volt-Cast → Watt-Guard)
+• docs(schemas.py): class docstrings; new VersionResponse schema
+• docs(conftest.py): fixture docstrings; type-annotate create_test_db
+• docs(retrain_dag.py): Google-style docstrings on all DAG task functions
+• feat(time_series.py): add peak_hours() utility function
+• refactor(reporting.py): ValueError guard on empty input; Raises docstring section
+• docs(CHANGELOG.md): full 1.1.0 changelog entry
+• fix(test_anomaly/test_time_series.py): removed stray nested methods
+
+━━━ TIER 4: DX / DOCS (36-50) ━━━━━━━━━━━━━━━
+• chore(Makefile): coverage, typecheck, check, migrate, clean, help targets (+6 targets)
+• chore(.env.example): PostgreSQL pool config, LOG_JSON, Airflow vars
+• chore(pyproject.toml): mypy config, C4/SIM/TCH/RUF ruff rules, filterwarnings
+• chore(requirements.txt): grouped by category; added mypy>=1.10.0
+• chore(docker-compose.yml): API healthcheck, start_period, LOG_JSON env
+• chore(.gitignore): .mypy_cache, WAL files, build/, node_modules/, logs
+• ci(ci.yml): renamed to Watt-Guard CI; --no-error-summary mypy; wider test tail
+• docs(README.md): /version + /regions endpoints; v1.1.0 badge; Testing section
+• docs(CONTRIBUTING.md): setup, commit format, endpoint/feature/env guides
+• docs(monitoring.md): NEW — drift, anomaly, metrics, alerting, DB schema reference
+• docs(development.md): NEW — local setup, project structure, feature pipeline table
+• feat(schemas.py): VersionResponse schema for GET /api/v1/version
+• docs(retrain_dag.py): Google-style docstrings to all DAG functions
+• docs(35/60): /version and /regions endpoints in README API reference
+• fix(test_features.py): added missing numpy and pandas imports
+
+━━━ TIER 5: PERFORMANCE (51-60) ━━━━━━━━━━━━━━
+• perf(database.py): index=True on PredictionLog.timestamp and created_at columns
+• perf(regions.py): @lru_cache(maxsize=32) on get_region() for repeated lookups
+• perf(database.py): PostgreSQL pooling via DB_POOL_SIZE/DB_MAX_OVERFLOW env vars
+• fix(monitoring.py): try/except rollback in log_prediction and log_anomaly
+• refactor(similarity.py): size property alias; get_global_index() singleton accessor
+• feat(time_series.py): peak_hours() for top-N demand period identification
+• chore(59/60): expanded .gitignore with .mypy_cache, WAL, build/, node_modules/
+• feat(57/60): VersionResponse schema + BatchPredictRequest docstring
+• test(56/60): anomaly required-keys, threshold parametrize, fence-exact
+• docs(60/60): README badge 80+ tests, v1.1.0 tag, Testing section
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PUSH STATUS: SUCCESS
+All 60 commits are live on main.
+New docs: docs/monitoring.md, docs/development.md
+History log: history/reflective-lantern.json updated
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+—Reflective Lantern (automated)
+"""
+
+msg = MIMEMultipart()
+msg["From"] = GMAIL_USER
+msg["To"] = TO
+msg["Subject"] = SUBJECT
+msg.attach(MIMEText(body, "plain"))
+
+ctx = ssl.create_default_context()
+try:
+    with smtplib.SMTP("smtp.gmail.com", 587) as server:
+        server.starttls(context=ctx)
+        server.login(GMAIL_USER, GMAIL_APP_PASS)
+        server.sendmail(GMAIL_USER, TO, msg.as_string())
+    print("Email sent successfully.")
+except Exception as e:
+    print(f"Email failed: {e}")

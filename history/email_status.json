@@ -1,0 +1,93 @@
+[
+  {
+    "date": "2026-05-08",
+    "repo": "Automated-data-preprocessing-udf-sql-pipeline",
+    "email_to": "devneatharva@gmail.com",
+    "status": "BLOCKED",
+    "reason": "SMTP outbound blocked in sandbox environment (errno 97 EAFNOSUPPORT)",
+    "commits": 60,
+    "tests": 1001
+  },
+  {
+    "date": "2026-05-14",
+    "repo": "Churn-Shield",
+    "email_to": "devneatharva@gmail.com",
+    "status": "BLOCKED",
+    "reason": "SMTP outbound blocked in sandbox environment - IPv4 connection to smtp.gmail.com:587 timed out",
+    "pdf_generated": "/tmp/churn_shield_report.pdf",
+    "commits": 61,
+    "tests": 134
+  },
+  {
+    "date": "2026-05-28",
+    "repo": "Climate-Pulse",
+    "email_to": "devneatharva@gmail.com",
+    "status": "BLOCKED",
+    "reason": "SMTP outbound blocked in remote execution environment - smtp.gmail.com:465 and :587 both timed out (IPv4 forced)",
+    "report_script": "/tmp/send_report.py",
+    "commits": 60,
+    "tests_before": 186,
+    "tests_after": 358
+  },
+  {
+    "date": "2026-06-03",
+    "repo": "FraudDetectionAI",
+    "status": "blocked - container SMTP outbound blocked (EAFNOSUPPORT)"
+  },
+  {
+    "date": "2026-07-10",
+    "repo": "Gmail-job-Automation",
+    "email_to": "devneatharva@gmail.com",
+    "status": "BLOCKED",
+    "reason": "SMTP outbound blocked in remote execution environment - smtp.gmail.com:465 and :587 both timed out",
+    "commits": 60,
+    "tests_before": 27,
+    "tests_after": 128
+  },
+  {
+    "date": "2026-07-10",
+    "run": "innovation-forge-guard",
+    "status": "failed",
+    "reason": "SMTP unavailable in CCR sandbox (no raw socket egress)"
+  },
+  {
+    "date": "2026-07-11",
+    "repo": "Supplier-Invoice-Dashboard",
+    "status": "SMTP_BLOCKED",
+    "error": "[Errno 97] Address family not supported by protocol"
+  },
+  {
+    "date": "2026-07-11",
+    "repo": "Campaign-Guard",
+    "status": "SMTP_BLOCKED",
+    "error": "[Errno 97] Address family not supported by protocol"
+  },
+  {
+    "date": "2026-07-11",
+    "repo": "reflective-lantern (Watt-Guard)",
+    "email_to": "devneatharva@gmail.com",
+    "status": "SMTP_BLOCKED",
+    "reason": "SMTP outbound blocked in CCR remote execution environment (no raw socket egress - errno 97 EAFNOSUPPORT)",
+    "report_saved_to": "history/pending/watt_guard_report_2026-07-11.txt",
+    "commits": 60,
+    "push_status": "SUCCESS",
+    "note": "All 60 commits pushed to main. Report text saved to pending/ for manual retrieval."
+  },
+  {
+    "date": "2026-07-16",
+    "repo": "reflective-lantern",
+    "status": "failed",
+    "reason": "SMTP blocked in remote execution environment (IPv6/port timeout)",
+    "report_content_saved": "/tmp/reflective-lantern-report-2026-07-16.txt"
+  },
+  {
+    "date": "2026-07-17",
+    "repo": "reflective-lantern",
+    "email_to": "devneatharva@gmail.com",
+    "status": "SMTP_BLOCKED",
+    "reason": "SMTP outbound blocked in CCR remote execution environment (errno 97 EAFNOSUPPORT - no raw socket egress)",
+    "commits": 60,
+    "push_status": "SUCCESS",
+    "note": "60 commits pushed to main. 11 new modules, 14 new endpoints, 200+ new tests."
+  }
+]

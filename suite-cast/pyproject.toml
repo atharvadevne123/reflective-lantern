@@ -1,0 +1,68 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "suite-cast"
+version = "1.0.0"
+description = "Hotel booking demand forecasting and dynamic pricing API"
+requires-python = ">=3.11"
+readme = "README.md"
+license = { text = "MIT" }
+authors = [{ name = "Reflective Lantern", email = "devneatharva@gmail.com" }]
+keywords = ["hotel", "demand-forecasting", "dynamic-pricing", "machine-learning", "fastapi"]
+classifiers = [
+    "Programming Language :: Python :: 3.11",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+dependencies = [
+    "fastapi>=0.115.0",
+    "uvicorn[standard]>=0.30.6",
+    "pydantic>=2.9.2",
+    "sqlalchemy>=2.0.35",
+    "xgboost>=2.1.1",
+    "lightgbm>=4.5.0",
+    "scikit-learn>=1.5.2",
+    "pandas>=2.2.3",
+    "numpy>=1.26.4",
+    "scipy>=1.14.1",
+    "joblib>=1.4.2",
+]
+
+[project.urls]
+Repository = "https://github.com/atharvadevne123/reflective-lantern"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["app*", "pipelines*"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B", "SIM"]
+ignore = [
+    "E501",    # line too long (handled by formatter)
+    "B008",    # do not perform function calls in default args
+    "UP007",   # X | Y union syntax (FastAPI compat)
+    "SIM108",  # ternary operators
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["S101", "ANN", "D"]
+"pipelines/*" = ["ANN003", "ANN001", "ANN201"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+addopts = "-v --tb=short"
+filterwarnings = [
+    "ignore::DeprecationWarning",
+    "ignore::UserWarning",
+]

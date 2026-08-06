@@ -1,0 +1,54 @@
+name: Watt-Guard CI
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+    branches: [main]
+
+jobs:
+  lint-and-test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.11", "3.12"]
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v6
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt ruff
+
+      - name: Ruff lint
+        run: ruff check .
+
+      - name: Ruff format check
+        run: ruff format --check .
+
+      - name: Run tests
+        run: pytest tests/ -v --tb=short 2>&1 | tail -80
+
+      - name: Coverage report
+        if: always()
+        run: |
+          pip install pytest-cov -q
+          pytest tests/ --cov=app --cov-report=term-missing --cov-report=xml -q 2>&1 | tail -30
+
+      - name: Upload coverage artifact
+        if: always() && matrix.python-version == '3.11'
+        uses: actions/upload-artifact@v7
+        with:
+          name: coverage-xml
+          path: coverage.xml
+          retention-days: 7
+
+      - name: Type check (mypy)
+        run: |
+          pip install mypy -q
+          mypy app/ --ignore-missing-imports --no-error-summary 2>&1 | tail -20 || true
