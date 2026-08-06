@@ -96,11 +96,66 @@ def week_of_year(dt: datetime) -> int:
     return dt.isocalendar()[1]
 
 __all__ = [
+    "days_until",
+    "format_iso",
     "generate_hourly_timestamps",
     "hours_between",
     "is_business_hour",
+    "is_weekend",
     "iso_to_datetime",
+    "quarter_of_year",
     "round_to_hour",
     "utc_now",
     "week_of_year",
 ]
+
+
+def quarter_of_year(dt: datetime) -> int:
+    """Return the calendar quarter (1-4) for *dt*.
+
+    Args:
+        dt: Any datetime.
+
+    Returns:
+        Integer 1, 2, 3, or 4.
+    """
+    return (dt.month - 1) // 3 + 1
+
+
+def is_weekend(dt: datetime) -> bool:
+    """Return True if *dt* falls on a Saturday or Sunday.
+
+    Args:
+        dt: Any datetime.
+
+    Returns:
+        True when weekday is 5 (Saturday) or 6 (Sunday).
+    """
+    return dt.weekday() >= 5
+
+
+def days_until(dt: datetime, target: datetime) -> int:
+    """Return the number of whole days from *dt* to *target*.
+
+    Negative when *target* is in the past relative to *dt*.
+
+    Args:
+        dt: Reference datetime.
+        target: Target datetime.
+
+    Returns:
+        Integer number of days (may be negative).
+    """
+    return (target.date() - dt.date()).days
+
+
+def format_iso(dt: datetime) -> str:
+    """Format *dt* as an ISO 8601 string with second precision.
+
+    Args:
+        dt: Any datetime.
+
+    Returns:
+        String like '2024-06-15T14:30:00'.
+    """
+    return dt.strftime("%Y-%m-%dT%H:%M:%S")
