@@ -9,6 +9,7 @@ from app.stats_utils import (
     harmonic_mean,
     interquartile_range,
     normalize_series,
+    percentile_rank,
     weighted_average,
 )
 
@@ -301,3 +302,38 @@ def test_interquartile_range_empty_raises() -> None:
 ])
 def test_interquartile_range_parametrized(values: list, expected_iqr: object) -> None:
     assert interquartile_range(values) == expected_iqr
+
+
+def test_percentile_rank_minimum() -> None:
+    result = percentile_rank([1.0, 2.0, 3.0, 4.0, 5.0], 1.0)
+    assert result == pytest.approx(20.0)
+
+
+def test_percentile_rank_maximum() -> None:
+    result = percentile_rank([1.0, 2.0, 3.0, 4.0, 5.0], 5.0)
+    assert result == pytest.approx(100.0)
+
+
+def test_percentile_rank_empty_raises() -> None:
+    with pytest.raises(ValueError):
+        percentile_rank([], 5.0)
+
+
+def test_percentile_rank_above_all() -> None:
+    result = percentile_rank([1.0, 2.0, 3.0], 10.0)
+    assert result == pytest.approx(100.0)
+
+
+def test_percentile_rank_below_all() -> None:
+    result = percentile_rank([5.0, 6.0, 7.0], 0.0)
+    assert result == pytest.approx(0.0)
+
+
+@pytest.mark.parametrize("target,expected_pct", [
+    (1.0, 20.0),
+    (3.0, 60.0),
+    (5.0, 100.0),
+])
+def test_percentile_rank_parametrized(target: float, expected_pct: float) -> None:
+    values = [1.0, 2.0, 3.0, 4.0, 5.0]
+    assert percentile_rank(values, target) == pytest.approx(expected_pct)
