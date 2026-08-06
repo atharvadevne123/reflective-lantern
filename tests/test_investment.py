@@ -4,7 +4,7 @@ import math
 
 import pytest
 
-from app.investment import InvestmentAnalysis, compute_investment_analysis, discounted_cash_flow
+from app.investment import InvestmentAnalysis, compute_investment_analysis, discounted_cash_flow, payback_period
 
 
 def test_basic_investment_analysis() -> None:
@@ -495,3 +495,38 @@ def test_dcf_various_rates(rate: float) -> None:
     result = discounted_cash_flow([1000.0, 2000.0, 3000.0], discount_rate=rate)
     assert isinstance(result, float)
     assert result > 0
+
+
+def test_payback_period_basic() -> None:
+    result = payback_period(10000.0, [5000.0, 5000.0, 5000.0])
+    assert result == pytest.approx(2.0)
+
+
+def test_payback_period_never_recovered() -> None:
+    result = payback_period(10000.0, [100.0, 100.0])
+    assert result == float("inf")
+
+
+def test_payback_period_first_year() -> None:
+    result = payback_period(1000.0, [2000.0, 500.0])
+    assert result == pytest.approx(0.5)
+
+
+def test_payback_period_zero_investment() -> None:
+    result = payback_period(0.0, [100.0, 200.0])
+    assert result == pytest.approx(0.0)
+
+
+def test_payback_period_negative_investment_raises() -> None:
+    with pytest.raises(ValueError, match="non-negative"):
+        payback_period(-100.0, [50.0])
+
+
+@pytest.mark.parametrize("invest,flows,expected", [
+    (300.0, [100.0, 100.0, 100.0], 3.0),
+    (150.0, [100.0, 100.0], 1.5),
+    (0.0, [1.0], 0.0),
+])
+def test_payback_period_parametrized(invest: float, flows: list, expected: float) -> None:
+    result = payback_period(invest, flows)
+    assert result == pytest.approx(expected, rel=1e-4)
