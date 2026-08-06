@@ -11,6 +11,7 @@ from app.trend_analysis import (
     percentage_change,
     rolling_mean,
     seasonal_decompose_naive,
+    year_over_year_growth,
 )
 
 
@@ -168,3 +169,36 @@ def test_seasonal_decompose_naive_length() -> None:
     result = seasonal_decompose_naive(values, period=4)
     assert "trend" in result
     assert len(result["trend"]) == len(values)
+
+
+def test_year_over_year_growth_basic() -> None:
+    monthly = [100.0] * 12 + [110.0] * 12
+    result = year_over_year_growth(monthly)
+    assert len(result) == 12
+    for v in result:
+        assert v == pytest.approx(10.0, rel=1e-4)
+
+
+def test_year_over_year_growth_decline() -> None:
+    monthly = [200.0] * 12 + [100.0] * 12
+    result = year_over_year_growth(monthly)
+    assert all(v == pytest.approx(-50.0, rel=1e-4) for v in result)
+
+
+def test_year_over_year_growth_too_short() -> None:
+    assert year_over_year_growth([100.0] * 11) == []
+
+
+def test_year_over_year_growth_exact_period() -> None:
+    monthly = [50.0] * 12 + [75.0]
+    result = year_over_year_growth(monthly)
+    assert len(result) == 1
+    assert result[0] == pytest.approx(50.0, rel=1e-4)
+
+
+@pytest.mark.parametrize("period", [4, 12, 6])
+def test_year_over_year_growth_custom_period(period: int) -> None:
+    series = [10.0] * period + [12.0] * period
+    result = year_over_year_growth(series, period=period)
+    assert len(result) == period
+    assert all(v == pytest.approx(20.0, rel=1e-4) for v in result)
