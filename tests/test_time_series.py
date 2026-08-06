@@ -681,3 +681,63 @@ def test_min_max_scale_parametrize(values, expected_min, expected_max) -> None:
     result = min_max_scale(values)
     assert min(result) == pytest.approx(expected_min)
     assert max(result) == pytest.approx(expected_max)
+
+
+# Tests for percent_change and pair_difference
+from app.time_series import pair_difference, percent_change
+
+
+def test_percent_change_length() -> None:
+    values = [1.0, 2.0, 3.0, 4.0]
+    result = percent_change(values)
+    assert len(result) == len(values) - 1
+
+
+def test_percent_change_doubling() -> None:
+    result = percent_change([1.0, 2.0])
+    assert result[0] == pytest.approx(100.0)
+
+
+def test_percent_change_halving() -> None:
+    result = percent_change([2.0, 1.0])
+    assert result[0] == pytest.approx(-50.0)
+
+
+def test_percent_change_empty_returns_empty() -> None:
+    assert percent_change([]) == []
+
+
+def test_percent_change_single_returns_empty() -> None:
+    assert percent_change([5.0]) == []
+
+
+def test_percent_change_zero_denominator_raises() -> None:
+    with pytest.raises(ValueError):
+        percent_change([0.0, 1.0])
+
+
+def test_pair_difference_basic() -> None:
+    result = pair_difference([5.0, 7.0, 9.0], [1.0, 2.0, 3.0])
+    assert result == pytest.approx([4.0, 5.0, 6.0])
+
+
+def test_pair_difference_zero_diff() -> None:
+    result = pair_difference([1.0, 2.0], [1.0, 2.0])
+    assert all(v == pytest.approx(0.0) for v in result)
+
+
+def test_pair_difference_length_mismatch_raises() -> None:
+    with pytest.raises(ValueError):
+        pair_difference([1.0, 2.0], [1.0])
+
+
+def test_pair_difference_empty() -> None:
+    assert pair_difference([], []) == []
+
+
+@pytest.mark.parametrize("n", [3, 5, 10])
+def test_pair_difference_length_param(n: int) -> None:
+    a = [float(i) for i in range(n)]
+    b = [0.0] * n
+    result = pair_difference(a, b)
+    assert len(result) == n
