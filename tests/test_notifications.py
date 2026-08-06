@@ -7,8 +7,11 @@ import pytest
 from app.notifications import (
     Alert,
     AlertQueue,
+    deduplicate_alerts,
+    group_alerts_by_severity,
     make_anomaly_alert,
     make_drift_alert,
+    make_performance_alert,
     severity_rank,
 )
 
@@ -113,3 +116,75 @@ def test_alert_queue_length_parametrize(n_alerts):
     for i in range(n_alerts):
         q.push(Alert(severity="info", message=f"m{i}"))
     assert len(q) == n_alerts
+
+
+def test_make_performance_alert_warning() -> None:
+    alert = make_performance_alert("accuracy", 0.85, 0.90)
+    assert alert.severity == "warning"
+    assert "accuracy" in alert.message
+
+
+def test_make_performance_alert_critical() -> None:
+    alert = make_performance_alert("loss", 0.95, 0.50, is_critical=True)
+    assert alert.severity == "critical"
+
+
+def test_make_performance_alert_metadata() -> None:
+    alert = make_performance_alert("f1", 0.70, 0.80)
+    assert alert.metadata["metric"] == "f1"
+    assert alert.metadata["current_value"] == pytest.approx(0.70)
+
+
+@pytest.mark.parametrize("metric,value,threshold", [
+    ("accuracy", 0.85, 0.90),
+    ("latency_ms", 250.0, 200.0),
+])
+def test_make_performance_alert_parametrize(metric, value, threshold) -> None:
+    alert = make_performance_alert(metric, value, threshold)
+    assert metric in alert.tags
+
+
+def test_deduplicate_alerts_removes_duplicates() -> None:
+    a1 = Alert(severity="warning", message="duplicate msg")
+    a2 = Alert(severity="warning", message="duplicate msg")
+    result = deduplicate_alerts([a1, a2])
+    assert len(result) == 1
+
+
+def test_deduplicate_alerts_keeps_unique() -> None:
+    a1 = Alert(severity="warning", message="msg1")
+    a2 = Alert(severity="info", message="msg2")
+    result = deduplicate_alerts([a1, a2])
+    assert len(result) == 2
+
+
+def test_deduplicate_alerts_empty() -> None:
+    assert deduplicate_alerts([]) == []
+
+
+def test_group_alerts_by_severity_keys() -> None:
+    result = group_alerts_by_severity([])
+    assert "info" in result
+    assert "warning" in result
+    assert "critical" in result
+
+
+def test_group_alerts_by_severity_correct() -> None:
+    alerts = [
+        Alert(severity="info", message="i"),
+        Alert(severity="warning", message="w"),
+        Alert(severity="critical", message="c"),
+    ]
+    grouped = group_alerts_by_severity(alerts)
+    assert len(grouped["info"]) == 1
+    assert len(grouped["warning"]) == 1
+    assert len(grouped["critical"]) == 1
+
+
+def test_group_alerts_by_severity_multiple_warnings() -> None:
+    alerts = [
+        Alert(severity="warning", message="w1"),
+        Alert(severity="warning", message="w2"),
+    ]
+    grouped = group_alerts_by_severity(alerts)
+    assert len(grouped["warning"]) == 2
