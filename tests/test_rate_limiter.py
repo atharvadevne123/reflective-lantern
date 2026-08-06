@@ -81,3 +81,64 @@ def test_separate_clients_independent():
     limiter = TokenBucketRateLimiter(capacity=1.0, rate_per_second=0.01)
     limiter.is_allowed("client-a")
     assert limiter.is_allowed("client-b") is True
+
+
+# Tests for make_strict_limiter and burst_capacity_fraction
+import pytest
+
+from app.rate_limiter import burst_capacity_fraction, make_strict_limiter
+
+
+def test_make_strict_limiter_returns_limiter() -> None:
+    limiter = make_strict_limiter(60)
+    assert limiter is not None
+
+
+def test_make_strict_limiter_capacity() -> None:
+    limiter = make_strict_limiter(30)
+    assert limiter._capacity == pytest.approx(30.0)
+
+
+def test_make_strict_limiter_rate() -> None:
+    limiter = make_strict_limiter(60)
+    assert limiter._rate == pytest.approx(1.0)
+
+
+def test_make_strict_limiter_invalid_raises() -> None:
+    with pytest.raises(ValueError):
+        make_strict_limiter(0)
+
+
+def test_make_strict_limiter_allows_first_request() -> None:
+    limiter = make_strict_limiter(10)
+    assert limiter.is_allowed("client") is True
+
+
+def test_burst_capacity_fraction_full() -> None:
+    limiter = make_rate_limiter(capacity=10.0, rate_per_second=1.0)
+    frac = burst_capacity_fraction(limiter, "new_client")
+    assert frac == pytest.approx(1.0)
+
+
+def test_burst_capacity_fraction_after_use() -> None:
+    limiter = make_rate_limiter(capacity=10.0, rate_per_second=0.01)
+    for _ in range(5):
+        limiter.is_allowed("c")
+    frac = burst_capacity_fraction(limiter, "c")
+    assert frac < 1.0
+    assert frac >= 0.0
+
+
+def test_burst_capacity_fraction_empty_bucket() -> None:
+    limiter = make_rate_limiter(capacity=2.0, rate_per_second=0.001)
+    limiter.is_allowed("c")
+    limiter.is_allowed("c")
+    frac = burst_capacity_fraction(limiter, "c")
+    assert frac == pytest.approx(0.0)
+
+
+@pytest.mark.parametrize("rpm", [10, 30, 60, 120])
+def test_make_strict_limiter_parametrize(rpm: int) -> None:
+    limiter = make_strict_limiter(rpm)
+    assert limiter._capacity == pytest.approx(float(rpm))
+    assert limiter._rate == pytest.approx(rpm / 60.0)
