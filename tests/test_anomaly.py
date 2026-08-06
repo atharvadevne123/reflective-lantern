@@ -7,12 +7,14 @@ import pytest
 
 from app.anomaly import (
     anomaly_rate,
+    anomaly_summary,
     batch_compute_severity,
     compute_severity,
     consecutive_anomaly_runs,
     ewma_smooth,
     flag_anomaly_rate,
     iqr_flag,
+    rolling_anomaly_flag,
     zscore_flag,
 )
 
@@ -417,22 +419,28 @@ def test_flag_anomaly_rate_boundary(rate, expected) -> None:
     assert (result == pytest.approx(1.0)) == expected
 
 
-@pytest.mark.parametrize("value,mean,std,threshold,expected", [
-    (10.0, 10.0, 2.0, 3.0, False),    # within threshold
-    (19.0, 10.0, 2.0, 3.0, True),     # 4.5 stdev away
-    (10.0, 10.0, 0.0, 3.0, False),    # zero std -> not anomaly
-    (100.0, 10.0, 1.0, 3.0, True),    # far outlier
-])
+@pytest.mark.parametrize(
+    "value,mean,std,threshold,expected",
+    [
+        (10.0, 10.0, 2.0, 3.0, False),  # within threshold
+        (19.0, 10.0, 2.0, 3.0, True),  # 4.5 stdev away
+        (10.0, 10.0, 0.0, 3.0, False),  # zero std -> not anomaly
+        (100.0, 10.0, 1.0, 3.0, True),  # far outlier
+    ],
+)
 def test_zscore_flag_parametrized(value: float, mean: float, std: float, threshold: float, expected: bool) -> None:
     assert zscore_flag(value, mean=mean, std=std, threshold=threshold) == expected
 
 
-@pytest.mark.parametrize("value,q1,q3,expected", [
-    (10.0, 8.0, 12.0, False),    # within fence
-    (30.0, 8.0, 12.0, True),     # above upper fence
-    (-5.0, 8.0, 12.0, True),     # below lower fence
-    (12.0, 8.0, 12.0, False),    # exactly at q3
-])
+@pytest.mark.parametrize(
+    "value,q1,q3,expected",
+    [
+        (10.0, 8.0, 12.0, False),  # within fence
+        (30.0, 8.0, 12.0, True),  # above upper fence
+        (-5.0, 8.0, 12.0, True),  # below lower fence
+        (12.0, 8.0, 12.0, False),  # exactly at q3
+    ],
+)
 def test_iqr_flag_parametrized(value: float, q1: float, q3: float, expected: bool) -> None:
     assert iqr_flag(value, q1=q1, q3=q3) == expected
 
@@ -486,7 +494,6 @@ def test_compute_severity_warning_zone() -> None:
     assert "severity" in result
 
 
-
 def test_ewma_smooth_length() -> None:
     result = ewma_smooth([1.0, 2.0, 3.0, 4.0], alpha=0.3)
     assert len(result) == 4
@@ -516,8 +523,281 @@ def test_ewma_smooth_monotone_input(alpha: float) -> None:
     assert all(isinstance(v, float) for v in result)
 
 
-# Tests for anomaly_summary and rolling_anomaly_flag
-from app.anomaly import anomaly_summary, rolling_anomaly_flag
+def test_compute_severity_no_anomaly_returns_none() -> None:
+    ref = [10.0] * 20
+    result = compute_severity(10.0, ref)
+    assert result["severity"] == "none"
+
+
+def test_compute_severity_result_has_required_keys() -> None:
+    ref = [float(i) for i in range(1, 21)]
+    result = compute_severity(50.0, ref)
+    assert "severity" in result
+    assert "z_flag" in result
+
+
+def test_classify_consumption_low_inline() -> None:
+    from app.anomaly import classify_consumption
+
+    assert classify_consumption(5.0, 10.0, 20.0) == "low"
+
+
+def test_classify_consumption_normal_inline() -> None:
+    from app.anomaly import classify_consumption
+
+    assert classify_consumption(15.0, 10.0, 20.0) == "normal"
+
+
+def test_classify_consumption_high_inline() -> None:
+    from app.anomaly import classify_consumption
+
+    assert classify_consumption(25.0, 10.0, 20.0) == "high"
+
+
+def test_anomaly_rate_all_none_severity() -> None:
+    severities = [{"severity": "none"}] * 10
+    assert anomaly_rate(severities) == pytest.approx(0.0)
+
+
+def test_anomaly_rate_all_critical_simple() -> None:
+    severities = [{"severity": "critical"}] * 5
+    assert anomaly_rate(severities) == pytest.approx(1.0)
+
+
+@pytest.mark.parametrize(
+    "n_anomalies,n_total,expected",
+    [
+        (1, 4, 0.25),
+        (2, 4, 0.5),
+        (3, 4, 0.75),
+    ],
+)
+def test_anomaly_rate_partial(n_anomalies, n_total, expected) -> None:
+    severities = [{"severity": "warning"}] * n_anomalies + [{"severity": "none"}] * (n_total - n_anomalies)
+    assert anomaly_rate(severities) == pytest.approx(expected)
+
+
+class TestEwmaSmooth:
+    def test_single_value(self) -> None:
+        from app.anomaly import ewma_smooth
+
+        assert ewma_smooth([5.0]) == [5.0]
+
+    def test_smoothing_reduces_spike(self) -> None:
+        from app.anomaly import ewma_smooth
+
+        values = [1.0, 1.0, 100.0, 1.0, 1.0]
+        result = ewma_smooth(values, alpha=0.3)
+        assert result[2] < 100.0
+
+    def test_alpha_one_is_identity(self) -> None:
+        from app.anomaly import ewma_smooth
+
+        values = [1.0, 2.0, 3.0]
+        result = ewma_smooth(values, alpha=1.0)
+        assert result == pytest.approx([1.0, 2.0, 3.0])
+
+    def test_raises_empty(self) -> None:
+        import pytest
+
+        from app.anomaly import ewma_smooth
+
+        with pytest.raises(ValueError):
+            ewma_smooth([])
+
+    def test_raises_bad_alpha(self) -> None:
+        import pytest
+
+        from app.anomaly import ewma_smooth
+
+        with pytest.raises(ValueError):
+            ewma_smooth([1.0], alpha=0.0)
+
+
+class TestConsecutiveAnomalyRuns:
+    def test_single_run(self) -> None:
+        from app.anomaly import consecutive_anomaly_runs
+
+        flags = [False, True, True, True, False]
+        assert consecutive_anomaly_runs(flags) == [(1, 3)]
+
+    def test_no_anomalies(self) -> None:
+        from app.anomaly import consecutive_anomaly_runs
+
+        assert consecutive_anomaly_runs([False, False]) == []
+
+    def test_trailing_run(self) -> None:
+        from app.anomaly import consecutive_anomaly_runs
+
+        flags = [False, True, True]
+        assert consecutive_anomaly_runs(flags) == [(1, 2)]
+
+    def test_multiple_runs(self) -> None:
+        from app.anomaly import consecutive_anomaly_runs
+
+        flags = [True, False, True]
+        runs = consecutive_anomaly_runs(flags)
+        assert len(runs) == 2
+
+    def test_all_true(self) -> None:
+        from app.anomaly import consecutive_anomaly_runs
+
+        assert consecutive_anomaly_runs([True, True, True]) == [(0, 2)]
+
+
+class TestFlagAnomalyRate:
+    def test_empty(self) -> None:
+        from app.anomaly import flag_anomaly_rate
+
+        assert flag_anomaly_rate([]) == 0.0
+
+    def test_none_flagged(self) -> None:
+        from app.anomaly import flag_anomaly_rate
+
+        assert flag_anomaly_rate([False, False, False]) == 0.0
+
+    def test_all_flagged(self) -> None:
+        from app.anomaly import flag_anomaly_rate
+
+        assert flag_anomaly_rate([True, True]) == 1.0
+
+    def test_half_flagged(self) -> None:
+        from app.anomaly import flag_anomaly_rate
+
+        assert flag_anomaly_rate([True, False]) == pytest.approx(0.5)
+
+
+class TestAnomalyDensity:
+    def test_no_anomalies(self) -> None:
+        from app.anomaly import anomaly_density
+
+        result = anomaly_density([0] * 10, window_size=5)
+        assert all(v == 0.0 for v in result)
+
+    def test_all_anomalies(self) -> None:
+        from app.anomaly import anomaly_density
+
+        result = anomaly_density([1] * 10, window_size=5)
+        assert all(v == 1.0 for v in result)
+
+    def test_empty_raises(self) -> None:
+        from app.anomaly import anomaly_density
+
+        with pytest.raises(ValueError, match="empty"):
+            anomaly_density([], window_size=5)
+
+    def test_window_zero_raises(self) -> None:
+        from app.anomaly import anomaly_density
+
+        with pytest.raises(ValueError, match="at least 1"):
+            anomaly_density([0, 1, 0], window_size=0)
+
+    def test_output_length(self) -> None:
+        from app.anomaly import anomaly_density
+
+        flags = [0, 1, 0, 1, 0, 0, 1]
+        assert len(anomaly_density(flags, window_size=3)) == 7
+
+    @pytest.mark.parametrize("window", [1, 3, 6])
+    def test_values_in_range(self, window: int) -> None:
+        from app.anomaly import anomaly_density
+
+        flags = [0, 1, 0, 1, 0, 1, 0, 1]
+        result = anomaly_density(flags, window_size=window)
+        assert all(0.0 <= v <= 1.0 for v in result)
+
+
+class TestAnomalyBurstScore:
+    def test_no_anomalies_zero_score(self) -> None:
+        from app.anomaly import anomaly_burst_score
+
+        assert anomaly_burst_score([0] * 12, burst_window=4) == 0.0
+
+    def test_all_anomalies_one_score(self) -> None:
+        from app.anomaly import anomaly_burst_score
+
+        assert anomaly_burst_score([1] * 8, burst_window=4) == 1.0
+
+    def test_empty_raises(self) -> None:
+        from app.anomaly import anomaly_burst_score
+
+        with pytest.raises(ValueError, match="empty"):
+            anomaly_burst_score([], burst_window=3)
+
+    def test_burst_window_zero_raises(self) -> None:
+        from app.anomaly import anomaly_burst_score
+
+        with pytest.raises(ValueError, match="at least 1"):
+            anomaly_burst_score([1, 0, 1], burst_window=0)
+
+    def test_result_in_range(self) -> None:
+        from app.anomaly import anomaly_burst_score
+
+        score = anomaly_burst_score([0, 1, 1, 0, 0, 1], burst_window=3)
+        assert 0.0 <= score <= 1.0
+
+
+class TestPercentileAnomalyFlag:
+    def test_value_within_range(self) -> None:
+        from app.anomaly import percentile_anomaly_flag
+
+        ref = list(range(1, 101))
+        assert percentile_anomaly_flag(50.0, ref) is False
+
+    def test_value_above_range(self) -> None:
+        from app.anomaly import percentile_anomaly_flag
+
+        ref = list(range(1, 101))
+        assert percentile_anomaly_flag(200.0, ref) is True
+
+    def test_value_below_range(self) -> None:
+        from app.anomaly import percentile_anomaly_flag
+
+        ref = list(range(1, 101))
+        assert percentile_anomaly_flag(-5.0, ref) is True
+
+    def test_empty_reference_raises(self) -> None:
+        from app.anomaly import percentile_anomaly_flag
+
+        with pytest.raises(ValueError, match="empty"):
+            percentile_anomaly_flag(5.0, [])
+
+    def test_invalid_percentiles_raises(self) -> None:
+        from app.anomaly import percentile_anomaly_flag
+
+        with pytest.raises(ValueError):
+            percentile_anomaly_flag(5.0, [1.0, 2.0], lower_pct=90.0, upper_pct=10.0)
+
+
+class TestConsecutiveNormalRuns:
+    def test_all_normal(self) -> None:
+        from app.anomaly import consecutive_normal_runs
+
+        result = consecutive_normal_runs([0, 0, 0, 0])
+        assert result == [(0, 3)]
+
+    def test_all_anomalous(self) -> None:
+        from app.anomaly import consecutive_normal_runs
+
+        result = consecutive_normal_runs([1, 1, 1])
+        assert result == []
+
+    def test_empty_returns_empty(self) -> None:
+        from app.anomaly import consecutive_normal_runs
+
+        assert consecutive_normal_runs([]) == []
+
+    def test_alternating(self) -> None:
+        from app.anomaly import consecutive_normal_runs
+
+        flags = [0, 1, 0, 1, 0]
+        result = consecutive_normal_runs(flags)
+        assert len(result) == 3
+
+    def test_single_normal(self) -> None:
+        from app.anomaly import consecutive_normal_runs
+
+        assert consecutive_normal_runs([0]) == [(0, 0)]
 
 
 def test_anomaly_summary_empty() -> None:

@@ -4,12 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from app.similarity import (
-    BuildingSimilarityIndex,
-    chebyshev_distance,
-    manhattan_distance,
-    pearson_similarity,
-)
+from app.similarity import BuildingSimilarityIndex, chebyshev_distance, manhattan_distance, pearson_similarity
 
 
 def test_empty_index_returns_empty() -> None:
@@ -234,6 +229,290 @@ def test_hourly_pattern_distance_constant_offset(offset) -> None:
     a = [10.0] * 24
     b = [10.0 + offset] * 24
     assert hourly_pattern_distance(a, b) == pytest.approx(offset)
+
+
+def test_building_similarity_index_add_and_size() -> None:
+    from app.similarity import BuildingSimilarityIndex
+
+    idx = BuildingSimilarityIndex()
+    assert idx.size == 0
+    idx.add("b1", [1.0] * 24)
+    assert idx.size == 1
+
+
+def test_building_similarity_index_clear() -> None:
+    from app.similarity import BuildingSimilarityIndex
+
+    idx = BuildingSimilarityIndex()
+    idx.add("b1", [1.0] * 24)
+    idx.clear()
+    assert idx.size == 0
+
+
+def test_building_similarity_search_returns_list() -> None:
+    from app.similarity import BuildingSimilarityIndex
+
+    idx = BuildingSimilarityIndex()
+    for i in range(5):
+        idx.add(f"b{i}", [float(i)] * 24)
+    results = idx.search([2.0] * 24, k=3)
+    assert isinstance(results, list)
+    assert len(results) <= 3
+
+
+def test_batch_add_returns_count() -> None:
+    from app.similarity import BuildingSimilarityIndex, batch_add
+
+    idx = BuildingSimilarityIndex()
+    profiles = [(f"b{i}", [float(i)] * 24) for i in range(5)]
+    count = batch_add(idx, profiles)
+    assert count == 5
+
+
+@pytest.mark.parametrize("k", [1, 3, 5])
+def test_search_comparable_top_k(k: int) -> None:
+    from app.similarity import get_global_index
+
+    idx = get_global_index()
+    idx.clear()
+    for i in range(10):
+        idx.add(f"b{i}", [float(i + 1)] * 24)
+    from app.similarity import search_comparable
+
+    results = search_comparable([5.0] * 24, top_k=k)
+    assert len(results) <= k
+    idx.clear()
+
+
+def test_cosine_distance_identical_vectors() -> None:
+    from app.similarity import cosine_distance
+
+    assert cosine_distance([1.0, 0.0, 0.0], [1.0, 0.0, 0.0]) == pytest.approx(0.0, abs=1e-6)
+
+
+def test_cosine_distance_orthogonal_vectors() -> None:
+    from app.similarity import cosine_distance
+
+    assert cosine_distance([1.0, 0.0], [0.0, 1.0]) == pytest.approx(1.0, abs=1e-6)
+
+
+def test_cosine_distance_range() -> None:
+    from app.similarity import cosine_distance
+
+    a = [1.0, 2.0, 3.0]
+    b = [4.0, 5.0, 6.0]
+    d = cosine_distance(a, b)
+    assert 0.0 <= d <= 2.0
+
+
+@pytest.mark.parametrize("n_dims", [3, 10, 24])
+def test_cosine_distance_same_vector_various_dims(n_dims: int) -> None:
+    from app.similarity import cosine_distance
+
+    v = [1.0] * n_dims
+    assert cosine_distance(v, v) == pytest.approx(0.0, abs=1e-6)
+
+
+def test_building_similarity_index_search_returns_tuples() -> None:
+    from app.similarity import BuildingSimilarityIndex
+
+    idx = BuildingSimilarityIndex()
+    idx.add("bld-A", [1.0, 2.0, 3.0])
+    results = idx.search([1.0, 2.0, 3.0], k=1)
+    assert len(results) == 1
+    assert isinstance(results[0], tuple)
+    assert results[0][0] == "bld-A"
+
+
+class TestJaccardSimilarity:
+    def test_identical_sets(self) -> None:
+        from app.similarity import jaccard_similarity
+
+        assert jaccard_similarity({"a", "b", "c"}, {"a", "b", "c"}) == pytest.approx(1.0, rel=1e-4)
+
+    def test_disjoint_sets(self) -> None:
+        from app.similarity import jaccard_similarity
+
+        assert jaccard_similarity({"a", "b"}, {"c", "d"}) == pytest.approx(0.0, abs=1e-6)
+
+    def test_partial_overlap(self) -> None:
+        from app.similarity import jaccard_similarity
+
+        result = jaccard_similarity({"a", "b", "c"}, {"b", "c", "d"})
+        assert 0.0 < result < 1.0
+
+    def test_both_empty(self) -> None:
+        from app.similarity import jaccard_similarity
+
+        assert jaccard_similarity(set(), set()) == 0.0
+
+    def test_one_empty(self) -> None:
+        from app.similarity import jaccard_similarity
+
+        assert jaccard_similarity(set(), {"a", "b"}) == pytest.approx(0.0, abs=1e-6)
+
+    @pytest.mark.parametrize("overlap", [1, 2, 3])
+    def test_symmetric(self, overlap: int) -> None:
+        from app.similarity import jaccard_similarity
+
+        a = set("abc"[:overlap])
+        b = set("bcd"[:overlap])
+        assert jaccard_similarity(a, b) == jaccard_similarity(b, a)
+
+
+class TestNormalizeDistances:
+    def test_basic(self) -> None:
+        from app.similarity import normalize_distances
+
+        result = normalize_distances([0.0, 5.0, 10.0])
+        assert result[0] == pytest.approx(0.0, abs=1e-6)
+        assert result[-1] == pytest.approx(1.0, rel=1e-4)
+
+    def test_empty_raises(self) -> None:
+        from app.similarity import normalize_distances
+
+        with pytest.raises(ValueError, match="empty"):
+            normalize_distances([])
+
+    def test_equal_values_returns_half(self) -> None:
+        from app.similarity import normalize_distances
+
+        result = normalize_distances([3.0, 3.0, 3.0])
+        assert all(v == 0.5 for v in result)
+
+    def test_output_length(self) -> None:
+        from app.similarity import normalize_distances
+
+        assert len(normalize_distances([1.0, 2.0, 3.0, 4.0])) == 4
+
+    @pytest.mark.parametrize("distances", [[0.1, 0.5, 0.9], [10.0, 20.0, 30.0]])
+    def test_values_in_range(self, distances: list) -> None:
+        from app.similarity import normalize_distances
+
+        result = normalize_distances(distances)
+        assert all(0.0 <= v <= 1.0 for v in result)
+
+
+class TestManhattanDistance:
+    def test_basic(self) -> None:
+        from app.similarity import manhattan_distance
+
+        assert manhattan_distance([0.0, 0.0], [3.0, 4.0]) == pytest.approx(7.0, rel=1e-4)
+
+    def test_identical_vectors(self) -> None:
+        from app.similarity import manhattan_distance
+
+        assert manhattan_distance([1.0, 2.0, 3.0], [1.0, 2.0, 3.0]) == pytest.approx(0.0, abs=1e-6)
+
+    def test_empty_raises(self) -> None:
+        from app.similarity import manhattan_distance
+
+        with pytest.raises(ValueError, match="empty"):
+            manhattan_distance([], [])
+
+    def test_length_mismatch_raises(self) -> None:
+        from app.similarity import manhattan_distance
+
+        with pytest.raises(ValueError, match="same length"):
+            manhattan_distance([1.0, 2.0], [1.0])
+
+    @pytest.mark.parametrize("a,b,expected", [([1.0], [4.0], 3.0), ([0.0, 0.0, 0.0], [1.0, 1.0, 1.0], 3.0)])
+    def test_parametrized(self, a: list, b: list, expected: float) -> None:
+        from app.similarity import manhattan_distance
+
+        assert manhattan_distance(a, b) == pytest.approx(expected, rel=1e-4)
+
+
+class TestTopKSimilar:
+    def test_basic(self) -> None:
+        from app.similarity import top_k_similar
+
+        query = [1.0, 0.0, 0.0]
+        candidates = [[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]]
+        result = top_k_similar(query, candidates, k=1)
+        assert len(result) == 1
+        assert result[0][0] == 0
+
+    def test_empty_query_raises(self) -> None:
+        from app.similarity import top_k_similar
+
+        with pytest.raises(ValueError, match="empty"):
+            top_k_similar([], [[1.0, 2.0]], k=1)
+
+    def test_k_zero_raises(self) -> None:
+        from app.similarity import top_k_similar
+
+        with pytest.raises(ValueError, match="at least 1"):
+            top_k_similar([1.0, 2.0], [[1.0, 2.0]], k=0)
+
+    def test_result_sorted_ascending(self) -> None:
+        from app.similarity import top_k_similar
+
+        query = [1.0, 0.0]
+        candidates = [[0.0, 1.0], [1.0, 0.0], [0.5, 0.5]]
+        result = top_k_similar(query, candidates, k=3)
+        dists = [d for _, d in result]
+        assert dists == sorted(dists)
+
+
+class TestCosineDistance:
+    def test_identical_vectors(self) -> None:
+        from app.similarity import cosine_distance
+
+        result = cosine_distance([1.0, 0.0, 0.0], [1.0, 0.0, 0.0])
+        assert result == pytest.approx(0.0, abs=1e-6)
+
+    def test_orthogonal_vectors(self) -> None:
+        from app.similarity import cosine_distance
+
+        result = cosine_distance([1.0, 0.0], [0.0, 1.0])
+        assert result == pytest.approx(1.0, rel=1e-4)
+
+    def test_opposite_vectors(self) -> None:
+        from app.similarity import cosine_distance
+
+        result = cosine_distance([1.0, 0.0], [-1.0, 0.0])
+        assert result == pytest.approx(2.0, rel=1e-4)
+
+    def test_result_in_range(self) -> None:
+        from app.similarity import cosine_distance
+
+        result = cosine_distance([1.0, 0.0], [0.5, 0.5])
+        assert 0.0 <= result <= 2.0
+
+    def test_length_mismatch_raises(self) -> None:
+        from app.similarity import cosine_distance
+
+        with pytest.raises(ValueError):
+            cosine_distance([1.0, 2.0], [1.0])
+
+
+class TestWeightedJaccardSimilarity:
+    def test_identical_dicts(self) -> None:
+        from app.similarity import weighted_jaccard_similarity
+
+        d = {"a": 1.0, "b": 2.0}
+        assert weighted_jaccard_similarity(d, d) == pytest.approx(1.0)
+
+    def test_disjoint_dicts(self) -> None:
+        from app.similarity import weighted_jaccard_similarity
+
+        a = {"x": 1.0}
+        b = {"y": 1.0}
+        assert weighted_jaccard_similarity(a, b) == pytest.approx(0.0)
+
+    def test_empty_dicts(self) -> None:
+        from app.similarity import weighted_jaccard_similarity
+
+        assert weighted_jaccard_similarity({}, {}) == 0.0
+
+    def test_partial_overlap(self) -> None:
+        from app.similarity import weighted_jaccard_similarity
+
+        a = {"a": 2.0, "b": 0.0}
+        b = {"a": 1.0, "c": 1.0}
+        result = weighted_jaccard_similarity(a, b)
+        assert 0.0 <= result <= 1.0
 
 
 def test_manhattan_distance_basic() -> None:

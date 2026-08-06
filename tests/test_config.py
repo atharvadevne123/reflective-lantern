@@ -445,3 +445,70 @@ def test_settings_to_dict_has_all_slots(settings_env):
     d = s.to_dict()
     for slot in s.__slots__:
         assert slot in d
+
+
+def test_settings_is_valid_true(settings_env):
+    from config.settings import get_settings
+
+    s = get_settings()
+    assert s.is_valid() is True
+
+
+def test_settings_commit_target_positive(settings_env):
+    from config.settings import get_settings
+
+    s = get_settings()
+    assert s.commit_target > 0
+
+
+def test_settings_log_level_is_string(settings_env):
+    from config.settings import get_settings
+
+    s = get_settings()
+    assert isinstance(s.log_level, str)
+
+
+def test_settings_github_owner_is_string(settings_env):
+    from config.settings import get_settings
+
+    s = get_settings()
+    assert isinstance(s.github_owner, str)
+
+
+@pytest.mark.parametrize("field", ["gh_pat", "gmail_app_pass"])
+def test_settings_sensitive_fields_masked(settings_env, field):
+    from config.settings import get_settings
+
+    s = get_settings()
+    d = s.to_dict(include_sensitive=False)
+    if field in d and d[field] not in (None, ""):
+        assert d[field] == "***", f"{field} should be masked"
+
+
+class TestIsProduction:
+    def test_sqlite_is_not_production(self) -> None:
+        from app.config import is_production
+
+        assert not is_production()
+
+    def test_effective_log_level_uppercase(self) -> None:
+        from app.config import effective_log_level
+
+        result = effective_log_level()
+        assert result == result.upper()
+
+    def test_effective_log_level_is_string(self) -> None:
+        from app.config import effective_log_level
+
+        assert isinstance(effective_log_level(), str)
+
+    def test_get_settings_returns_settings(self) -> None:
+        from app.config import Settings, get_settings
+
+        result = get_settings()
+        assert isinstance(result, Settings)
+
+    def test_get_settings_same_instance(self) -> None:
+        from app.config import get_settings, settings
+
+        assert get_settings() is settings

@@ -286,11 +286,20 @@ def test_prediction_confidence_returns_dict(trained_model) -> None:
     from app.model import prediction_confidence
 
     bundle, _ = trained_model
-    row = pd.DataFrame([{
-        "hour": 12, "day_of_week": 1, "month": 6,
-        "temperature_c": 22.0, "humidity_pct": 55.0,
-        "occupancy": 50, "hvac_state": 1, "consumption_kwh": 10.0
-    }])
+    row = pd.DataFrame(
+        [
+            {
+                "hour": 12,
+                "day_of_week": 1,
+                "month": 6,
+                "temperature_c": 22.0,
+                "humidity_pct": 55.0,
+                "occupancy": 50,
+                "hvac_state": 1,
+                "consumption_kwh": 10.0,
+            }
+        ]
+    )
     result = prediction_confidence(bundle, row)
     assert "mean" in result
     assert "std" in result
@@ -304,11 +313,20 @@ def test_prediction_confidence_bounds_ordered(trained_model) -> None:
     from app.model import prediction_confidence
 
     bundle, _ = trained_model
-    row = pd.DataFrame([{
-        "hour": 12, "day_of_week": 1, "month": 6,
-        "temperature_c": 22.0, "humidity_pct": 55.0,
-        "occupancy": 50, "hvac_state": 1, "consumption_kwh": 10.0
-    }])
+    row = pd.DataFrame(
+        [
+            {
+                "hour": 12,
+                "day_of_week": 1,
+                "month": 6,
+                "temperature_c": 22.0,
+                "humidity_pct": 55.0,
+                "occupancy": 50,
+                "hvac_state": 1,
+                "consumption_kwh": 10.0,
+            }
+        ]
+    )
     result = prediction_confidence(bundle, row)
     assert result["lower_95"] <= result["mean"] <= result["upper_95"]
 
@@ -322,3 +340,135 @@ def test_prediction_confidence_empty_bundle() -> None:
     result = prediction_confidence({}, row)
     assert result["mean"] == 0.0
     assert result["std"] == 0.0
+
+
+def test_get_feature_importance_empty_bundle_returns_empty() -> None:
+    from app.model import get_feature_importance
+
+    result = get_feature_importance({})
+    assert result == []
+
+
+def test_get_feature_importance_returns_list_trained(trained_model) -> None:
+    from app.model import get_feature_importance
+
+    bundle, _ = trained_model
+    result = get_feature_importance(bundle)
+    assert isinstance(result, list)
+
+
+def test_get_feature_importance_top_n(trained_model) -> None:
+    from app.model import get_feature_importance
+
+    bundle, _ = trained_model
+    result = get_feature_importance(bundle, top_n=3)
+    assert len(result) <= 3
+
+
+def test_get_metrics_returns_dict() -> None:
+    from app.model import get_metrics
+
+    result = get_metrics()
+    assert isinstance(result, dict)
+
+
+@pytest.mark.parametrize("top_n", [1, 5, 10])
+def test_get_feature_importance_top_n_parametrized(top_n: int, trained_model) -> None:
+    from app.model import get_feature_importance
+
+    bundle, _ = trained_model
+    result = get_feature_importance(bundle, top_n=top_n)
+    assert len(result) <= top_n
+
+
+class TestResidualStatistics:
+    def test_perfect_predictions(self) -> None:
+        from app.model import residual_statistics
+
+        result = residual_statistics([1.0, 2.0, 3.0], [1.0, 2.0, 3.0])
+        assert result["mean_residual"] == pytest.approx(0.0, abs=1e-6)
+        assert result["max_abs_residual"] == pytest.approx(0.0, abs=1e-6)
+
+    def test_empty_raises(self) -> None:
+        from app.model import residual_statistics
+
+        with pytest.raises(ValueError):
+            residual_statistics([], [])
+
+    def test_length_mismatch_raises(self) -> None:
+        from app.model import residual_statistics
+
+        with pytest.raises(ValueError):
+            residual_statistics([1.0, 2.0], [1.0])
+
+    def test_keys_present(self) -> None:
+        from app.model import residual_statistics
+
+        result = residual_statistics([1.0, 2.0], [1.1, 2.1])
+        assert set(result.keys()) == {"mean_residual", "std_residual", "max_abs_residual"}
+
+
+class TestClipPredictions:
+    def test_clips_low(self) -> None:
+        from app.model import clip_predictions
+
+        result = clip_predictions([-5.0, 3.0, -1.0])
+        assert all(v >= 0.0 for v in result)
+
+    def test_clips_high(self) -> None:
+        from app.model import clip_predictions
+
+        result = clip_predictions([1.0, 200.0, 50.0], high=100.0)
+        assert all(v <= 100.0 for v in result)
+
+    def test_no_clip_needed(self) -> None:
+        from app.model import clip_predictions
+
+        vals = [5.0, 10.0, 15.0]
+        result = clip_predictions(vals, low=0.0, high=20.0)
+        assert result == pytest.approx(vals)
+
+    def test_empty(self) -> None:
+        from app.model import clip_predictions
+
+        assert clip_predictions([]) == []
+
+
+class TestModelVersionString:
+    def test_format(self) -> None:
+        from app.model import model_version_string
+
+        result = model_version_string("watt_guard", 3, "2024-01-15")
+        assert result == "watt_guard_v3_2024-01-15"
+
+    def test_version_included(self) -> None:
+        from app.model import model_version_string
+
+        result = model_version_string("m", 42, "ts")
+        assert "v42" in result
+
+
+class TestThresholdAccuracy:
+    def test_all_within(self) -> None:
+        from app.model import threshold_accuracy
+
+        result = threshold_accuracy([100.0, 100.0], [105.0, 95.0], tolerance=0.1)
+        assert result == pytest.approx(1.0)
+
+    def test_none_within(self) -> None:
+        from app.model import threshold_accuracy
+
+        result = threshold_accuracy([100.0], [200.0], tolerance=0.1)
+        assert result == pytest.approx(0.0)
+
+    def test_empty_raises(self) -> None:
+        from app.model import threshold_accuracy
+
+        with pytest.raises(ValueError):
+            threshold_accuracy([], [])
+
+    def test_length_mismatch_raises(self) -> None:
+        from app.model import threshold_accuracy
+
+        with pytest.raises(ValueError):
+            threshold_accuracy([1.0, 2.0], [1.0])

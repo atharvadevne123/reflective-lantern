@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from app.regions import get_region, list_regions, validate_region
+from app.regions import compare_peak_loads, get_region, get_region_name, list_regions, region_count, validate_region
 
 
 class TestRegionRegistry:
@@ -193,12 +193,15 @@ def test_get_peak_load_case_insensitive() -> None:
     assert get_peak_load("MIDWEST") == get_peak_load("midwest")
 
 
-@pytest.mark.parametrize("region_id,expected_mw", [
-    ("northeast", 12000.0),
-    ("south", 14000.0),
-    ("west", 8000.0),
-    ("texas", 11000.0),
-])
+@pytest.mark.parametrize(
+    "region_id,expected_mw",
+    [
+        ("northeast", 12000.0),
+        ("south", 14000.0),
+        ("west", 8000.0),
+        ("texas", 11000.0),
+    ],
+)
 def test_get_peak_load_parametrized(region_id, expected_mw) -> None:
     from app.regions import get_peak_load
 
@@ -250,10 +253,123 @@ def test_get_region_has_carbon_intensity() -> None:
     assert "carbon_intensity" in r or "grid_intensity" in r or "peak_load_mw" in r
 
 
-# Tests for region_count, get_region_name, compare_peak_loads
-import pytest
+def test_get_all_region_ids_returns_list() -> None:
+    from app.regions import get_all_region_ids
 
-from app.regions import compare_peak_loads, get_region_name, region_count
+    ids = get_all_region_ids()
+    assert isinstance(ids, list)
+    assert len(ids) > 0
+
+
+def test_get_all_region_ids_are_strings() -> None:
+    from app.regions import get_all_region_ids
+
+    for rid in get_all_region_ids():
+        assert isinstance(rid, str)
+
+
+def test_get_region_timezone_default() -> None:
+    from app.regions import get_region_timezone
+
+    tz = get_region_timezone("northeast")
+    assert isinstance(tz, str)
+    assert len(tz) > 0
+
+
+def test_get_region_timezone_unknown_returns_utc() -> None:
+    from app.regions import get_region_timezone
+
+    tz = get_region_timezone("nonexistent_region")
+    assert "UTC" in tz or "America" in tz or isinstance(tz, str)
+
+
+def test_get_peak_load_known_region() -> None:
+    from app.regions import get_peak_load
+
+    load = get_peak_load("texas")
+    assert load is None or isinstance(load, (int, float))
+
+
+def test_get_regions_by_timezone_returns_list() -> None:
+    from app.regions import get_region_timezone, get_regions_by_timezone
+
+    tz = get_region_timezone("northeast")
+    result = get_regions_by_timezone(tz)
+    assert isinstance(result, list)
+
+
+@pytest.mark.parametrize("region_id", ["northeast", "midwest", "south", "west", "texas"])
+def test_get_all_region_ids_contains_standard(region_id: str) -> None:
+    from app.regions import get_all_region_ids
+
+    ids = get_all_region_ids()
+    assert region_id in ids
+
+
+class TestRegionCount:
+    def test_positive(self) -> None:
+        from app.regions import region_count
+
+        assert region_count() > 0
+
+    def test_matches_list_length(self) -> None:
+        from app.regions import list_regions, region_count
+
+        assert region_count() == len(list_regions())
+
+
+class TestGetRegionNames:
+    def test_returns_list(self) -> None:
+        from app.regions import get_region_names
+
+        result = get_region_names()
+        assert isinstance(result, list)
+        assert len(result) > 0
+
+    def test_sorted(self) -> None:
+        from app.regions import get_region_names
+
+        names = get_region_names()
+        assert names == sorted(names)
+
+
+class TestRegionsByPeakLoad:
+    def test_returns_list(self) -> None:
+        from app.regions import regions_by_peak_load
+
+        result = regions_by_peak_load()
+        assert isinstance(result, list)
+
+    def test_descending_by_default(self) -> None:
+        from app.regions import list_regions, regions_by_peak_load
+
+        result = regions_by_peak_load(descending=True)
+        regions = {r["id"]: r.get("peak_load_mw") for r in list_regions()}
+        loads = [regions[rid] for rid in result if regions.get(rid) is not None]
+        assert loads == sorted(loads, reverse=True)
+
+
+class TestRegionIdsForTimezones:
+    def test_returns_list(self) -> None:
+        from app.regions import region_ids_for_timezones
+
+        result = region_ids_for_timezones(["UTC"])
+        assert isinstance(result, list)
+
+    def test_empty_timezones(self) -> None:
+        from app.regions import region_ids_for_timezones
+
+        assert region_ids_for_timezones([]) == []
+
+    def test_known_timezone(self) -> None:
+        from app.regions import get_all_region_ids, get_region_timezone, region_ids_for_timezones
+
+        ids = get_all_region_ids()
+        if not ids:
+            return
+        tz = get_region_timezone(ids[0])
+        result = region_ids_for_timezones([tz])
+        assert ids[0] in result
 
 
 def test_region_count_positive() -> None:

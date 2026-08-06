@@ -66,11 +66,14 @@ def test_is_reference_window_ready_true():
     assert is_reference_window_ready(min_samples=10)
 
 
-@pytest.mark.parametrize("n_samples,min_samples,expected", [
-    (5, 10, False),
-    (10, 10, True),
-    (20, 15, True),
-])
+@pytest.mark.parametrize(
+    "n_samples,min_samples,expected",
+    [
+        (5, 10, False),
+        (10, 10, True),
+        (20, 15, True),
+    ],
+)
 def test_is_reference_window_ready_parametrized(n_samples, min_samples, expected):
     set_reference_window([1.0] * n_samples)
     assert is_reference_window_ready(min_samples=min_samples) == expected
@@ -78,10 +81,12 @@ def test_is_reference_window_ready_parametrized(n_samples, min_samples, expected
 
 def test_compute_feature_drift_summary_multiple_features():
     set_reference_window([1.0] * 100)
-    results = compute_feature_drift_summary({
-        "temperature": [1.0] * 30,
-        "humidity": [100.0] * 30,
-    })
+    results = compute_feature_drift_summary(
+        {
+            "temperature": [1.0] * 30,
+            "humidity": [100.0] * 30,
+        }
+    )
     assert len(results) == 2
     features = {r["feature"] for r in results}
     assert "temperature" in features
@@ -145,3 +150,39 @@ def test_reference_window_stats_has_all_keys():
     stats = reference_window_stats()
     for key in ("size", "mean", "min", "max", "std"):
         assert key in stats
+
+
+def test_compute_drift_equal_distributions():
+    values = [float(i) for i in range(50)]
+    result = compute_drift(values, values)
+    assert result["ks_statistic"] == pytest.approx(0.0)
+    assert result["p_value"] >= 0.05
+
+
+@pytest.mark.parametrize("shift", [10.0, 50.0, 100.0])
+def test_compute_drift_detects_increasing_shift(shift):
+    ref = [0.0] * 50
+    current = [shift] * 50
+    result = compute_drift(ref, current)
+    assert result["drift_detected"] is True
+
+
+def test_reset_reference_window_clears_data():
+    set_reference_window([1.0] * 30)
+    reset_reference_window()
+    assert get_reference_window_size() == 0
+
+
+def test_compute_feature_drift_summary_returns_list():
+    set_reference_window([1.0] * 50)
+    results = compute_feature_drift_summary({"feat": [1.0] * 20})
+    assert isinstance(results, list)
+    assert len(results) == 1
+
+
+def test_summarize_drift_history_single_entry():
+    results = [{"drift_detected": False, "ks_statistic": 0.05, "p_value": 0.6}]
+    summary = summarize_drift_history(results)
+    assert summary["total_checks"] == 1
+    assert summary["drift_count"] == 0
+    assert summary["drift_rate"] == 0.0

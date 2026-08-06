@@ -13,7 +13,9 @@ from app.data_quality import (
     flag_outliers,
     quality_summary,
     range_violation_count,
+    records_missing_field,
     score_record,
+    unique_values,
 )
 
 GOOD_RECORD = {
@@ -95,8 +97,12 @@ def test_quality_summary_empty() -> None:
 
 def test_flag_outliers_detects_extreme_value() -> None:
     records = [
-        {"kwh": 10.0}, {"kwh": 10.5}, {"kwh": 9.8},
-        {"kwh": 10.1}, {"kwh": 10.2}, {"kwh": 500.0},
+        {"kwh": 10.0},
+        {"kwh": 10.5},
+        {"kwh": 9.8},
+        {"kwh": 10.1},
+        {"kwh": 10.2},
+        {"kwh": 500.0},
     ]
     outliers = flag_outliers(records, "kwh", z_threshold=2.0)
     assert len(outliers) == 1
@@ -214,12 +220,14 @@ def test_completeness_score_empty_records() -> None:
 
 def test_detect_data_gaps_no_gaps() -> None:
     from app.data_quality import detect_data_gaps
+
     ts = [0, 3600, 7200, 10800]
     assert detect_data_gaps(ts, expected_interval=3600) == []
 
 
 def test_detect_data_gaps_single_gap() -> None:
     from app.data_quality import detect_data_gaps
+
     ts = [0, 3600, 10800]  # gap of 2h between index 1 and 2
     gaps = detect_data_gaps(ts, expected_interval=3600)
     assert len(gaps) == 1
@@ -228,19 +236,337 @@ def test_detect_data_gaps_single_gap() -> None:
 
 def test_detect_data_gaps_empty() -> None:
     from app.data_quality import detect_data_gaps
+
     assert detect_data_gaps([]) == []
 
 
 def test_detect_data_gaps_single_element() -> None:
     from app.data_quality import detect_data_gaps
+
     assert detect_data_gaps([1000]) == []
 
 
 def test_detect_data_gaps_multiple_gaps() -> None:
     from app.data_quality import detect_data_gaps
+
     ts = [0, 7200, 14400, 21600]  # all gaps are 2h, expected 1h
     gaps = detect_data_gaps(ts, expected_interval=3600)
     assert len(gaps) == 3
+
+
+def test_completeness_score_all_fields_present() -> None:
+    fields = ["hour", "month", "day_of_week", "consumption_kwh"]
+    records = [{"hour": 12, "month": 6, "day_of_week": 1, "consumption_kwh": 10.0}]
+    score = completeness_score(records, fields)
+    assert score == pytest.approx(1.0)
+
+
+def test_completeness_score_missing_field() -> None:
+    fields = ["hour", "month", "day_of_week", "consumption_kwh"]
+    records = [{"hour": 12, "month": 6}]
+    score = completeness_score(records, fields)
+    assert 0.0 <= score < 1.0
+
+
+def test_quality_summary_total_records() -> None:
+    scored = batch_score([GOOD_RECORD, GOOD_RECORD, GOOD_RECORD])
+    summary = quality_summary(scored)
+    assert summary["total_records"] == 3
+
+
+def test_flag_outliers_none_in_normal_data() -> None:
+    records = [{"kwh": 10.0 + i * 0.1} for i in range(20)]
+    flags = flag_outliers(records, field="kwh")
+    assert isinstance(flags, list)
+
+
+@pytest.mark.parametrize("n", [1, 5, 10])
+def test_batch_score_returns_n_scores(n: int) -> None:
+    records = [GOOD_RECORD] * n
+    scores = batch_score(records)
+    assert len(scores) == n
+
+
+class TestSchemaValidate:
+    def test_valid_record_returns_no_errors(self) -> None:
+        from app.data_quality import schema_validate
+
+        schema = {"consumption_kwh": float, "hour": int}
+        record = {"consumption_kwh": 5.0, "hour": 14}
+        assert schema_validate(record, schema) == []
+
+    def test_missing_field_returns_error(self) -> None:
+        from app.data_quality import schema_validate
+
+        errors = schema_validate({}, {"kwh": float})
+        assert any("missing:kwh" in e for e in errors)
+
+    def test_wrong_type_returns_error(self) -> None:
+        from app.data_quality import schema_validate
+
+        errors = schema_validate({"kwh": "not_a_float"}, {"kwh": float})
+        assert any("type_error:kwh" in e for e in errors)
+
+    def test_multiple_fields_all_errors(self) -> None:
+        from app.data_quality import schema_validate
+
+        schema = {"a": int, "b": str}
+        errors = schema_validate({"a": "x", "b": 123}, schema)
+        assert len(errors) == 2
+
+    @pytest.mark.parametrize("expected_type,value", [(int, 42), (float, 3.14), (str, "hello")])
+    def test_correct_types_pass(self, expected_type: type, value) -> None:
+        from app.data_quality import schema_validate
+
+        errors = schema_validate({"field": value}, {"field": expected_type})
+        assert errors == []
+
+
+class TestNormalizeRecord:
+    def test_strips_whitespace(self) -> None:
+        from app.data_quality import normalize_record
+
+        result = normalize_record({"region": "  NORTHEAST  "})
+        assert result["region"] == "northeast"
+
+    def test_lowercases_strings(self) -> None:
+        from app.data_quality import normalize_record
+
+        result = normalize_record({"building_type": "COMMERCIAL"})
+        assert result["building_type"] == "commercial"
+
+    def test_numeric_fields_unchanged(self) -> None:
+        from app.data_quality import normalize_record
+
+        result = normalize_record({"kwh": 42.5, "hour": 14})
+        assert result["kwh"] == 42.5
+        assert result["hour"] == 14
+
+    def test_empty_record(self) -> None:
+        from app.data_quality import normalize_record
+
+        assert normalize_record({}) == {}
+
+    @pytest.mark.parametrize("input_val,expected", [("Hello", "hello"), ("  Test  ", "test"), ("ok", "ok")])
+    def test_various_strings(self, input_val: str, expected: str) -> None:
+        from app.data_quality import normalize_record
+
+        assert normalize_record({"x": input_val})["x"] == expected
+
+
+class TestFieldValueCounts:
+    def test_basic_counts(self) -> None:
+        from app.data_quality import field_value_counts
+
+        records = [{"type": "A"}, {"type": "B"}, {"type": "A"}]
+        result = field_value_counts(records, "type")
+        assert result["A"] == 2
+        assert result["B"] == 1
+
+    def test_missing_field_counted_as_empty_string(self) -> None:
+        from app.data_quality import field_value_counts
+
+        records = [{"x": 1}, {"x": 1}]
+        result = field_value_counts(records, "type")
+        assert "" in result
+
+    def test_sorted_descending(self) -> None:
+        from app.data_quality import field_value_counts
+
+        records = [{"k": "a"}, {"k": "b"}, {"k": "b"}, {"k": "b"}]
+        keys = list(field_value_counts(records, "k").keys())
+        assert keys[0] == "b"
+
+    def test_empty_records(self) -> None:
+        from app.data_quality import field_value_counts
+
+        assert field_value_counts([], "type") == {}
+
+
+class TestNullRate:
+    def test_all_null(self) -> None:
+        from app.data_quality import null_rate
+
+        records = [{"a": None}, {"a": None}]
+        assert null_rate(records, "a") == pytest.approx(1.0)
+
+    def test_none_null(self) -> None:
+        from app.data_quality import null_rate
+
+        records = [{"a": 1}, {"a": 2}]
+        assert null_rate(records, "a") == pytest.approx(0.0)
+
+    def test_partial_null(self) -> None:
+        from app.data_quality import null_rate
+
+        records = [{"a": 1}, {"a": None}]
+        assert null_rate(records, "a") == pytest.approx(0.5)
+
+    def test_empty_list(self) -> None:
+        from app.data_quality import null_rate
+
+        assert null_rate([], "a") == 0.0
+
+
+class TestDuplicateRate:
+    def test_no_duplicates(self) -> None:
+        from app.data_quality import duplicate_rate
+
+        records = [{"id": 1, "v": "a"}, {"id": 2, "v": "b"}, {"id": 3, "v": "c"}]
+        assert duplicate_rate(records, ["id"]) == pytest.approx(0.0)
+
+    def test_all_duplicates(self) -> None:
+        from app.data_quality import duplicate_rate
+
+        records = [{"id": 1}, {"id": 1}, {"id": 1}]
+        rate = duplicate_rate(records, ["id"])
+        assert rate == pytest.approx(2 / 3, rel=1e-4)
+
+    def test_empty_records(self) -> None:
+        from app.data_quality import duplicate_rate
+
+        assert duplicate_rate([], ["id"]) == 0.0
+
+    def test_compound_key(self) -> None:
+        from app.data_quality import duplicate_rate
+
+        records = [
+            {"a": 1, "b": 1},
+            {"a": 1, "b": 2},
+            {"a": 1, "b": 1},
+        ]
+        rate = duplicate_rate(records, ["a", "b"])
+        assert rate == pytest.approx(1 / 3, rel=1e-4)
+
+    def test_single_record(self) -> None:
+        from app.data_quality import duplicate_rate
+
+        assert duplicate_rate([{"id": 99}], ["id"]) == 0.0
+
+
+class TestFieldCompleteness:
+    def test_all_present(self) -> None:
+        from app.data_quality import field_completeness
+
+        records = [{"a": 1, "b": 2}, {"a": 3, "b": 4}]
+        result = field_completeness(records, ["a", "b"])
+        assert result["a"] == pytest.approx(1.0)
+        assert result["b"] == pytest.approx(1.0)
+
+    def test_none_present(self) -> None:
+        from app.data_quality import field_completeness
+
+        records = [{"a": None}, {"a": None}]
+        result = field_completeness(records, ["a"])
+        assert result["a"] == pytest.approx(0.0)
+
+    def test_empty_records(self) -> None:
+        from app.data_quality import field_completeness
+
+        result = field_completeness([], ["x", "y"])
+        assert result == {"x": 0.0, "y": 0.0}
+
+    def test_partial_completeness(self) -> None:
+        from app.data_quality import field_completeness
+
+        records = [{"a": 1}, {"a": None}, {"a": 3}, {"a": None}]
+        result = field_completeness(records, ["a"])
+        assert result["a"] == pytest.approx(0.5)
+
+    def test_multiple_fields(self) -> None:
+        from app.data_quality import field_completeness
+
+        records = [{"a": 1, "b": None}, {"a": 2, "b": 3}]
+        result = field_completeness(records, ["a", "b"])
+        assert result["a"] == pytest.approx(1.0)
+        assert result["b"] == pytest.approx(0.5)
+
+
+class TestValueRangeCheck:
+    def test_all_in_range(self) -> None:
+        from app.data_quality import value_range_check
+
+        records = [{"v": 5}, {"v": 10}, {"v": 15}]
+        result = value_range_check(records, "v", 0, 20)
+        assert result["out_of_range_count"] == 0
+        assert result["out_of_range_rate"] == pytest.approx(0.0)
+
+    def test_all_out_of_range(self) -> None:
+        from app.data_quality import value_range_check
+
+        records = [{"v": -5}, {"v": 200}]
+        result = value_range_check(records, "v", 0, 100)
+        assert result["out_of_range_count"] == 2
+
+    def test_empty_records(self) -> None:
+        from app.data_quality import value_range_check
+
+        result = value_range_check([], "v", 0, 100)
+        assert result["total_checked"] == 0
+
+    def test_boundary_values_in_range(self) -> None:
+        from app.data_quality import value_range_check
+
+        records = [{"v": 0}, {"v": 100}]
+        result = value_range_check(records, "v", 0, 100)
+        assert result["out_of_range_count"] == 0
+
+    def test_rate_correct(self) -> None:
+        from app.data_quality import value_range_check
+
+        records = [{"v": 1}, {"v": 2}, {"v": 200}, {"v": 300}]
+        result = value_range_check(records, "v", 0, 10)
+        assert result["out_of_range_rate"] == pytest.approx(0.5)
+
+
+class TestDataFreshnessScore:
+    def test_all_fresh(self) -> None:
+        import time
+
+        from app.data_quality import data_freshness_score
+
+        now = time.time()
+        records = [{"ts": now - 100}, {"ts": now - 200}]
+        result = data_freshness_score(records, "ts", max_age_seconds=3600)
+        assert result["fresh_count"] == 2
+        assert result["freshness_rate"] == pytest.approx(1.0)
+
+    def test_all_stale(self) -> None:
+        import time
+
+        from app.data_quality import data_freshness_score
+
+        old = time.time() - 7200
+        records = [{"ts": old}, {"ts": old}]
+        result = data_freshness_score(records, "ts", max_age_seconds=3600)
+        assert result["stale_count"] == 2
+
+    def test_empty_records(self) -> None:
+        from app.data_quality import data_freshness_score
+
+        result = data_freshness_score([], "ts")
+        assert result["total_records"] == 0
+
+    def test_mixed_freshness(self) -> None:
+        import time
+
+        from app.data_quality import data_freshness_score
+
+        now = time.time()
+        records = [{"ts": now - 100}, {"ts": now - 7200}]
+        result = data_freshness_score(records, "ts", max_age_seconds=3600)
+        assert result["fresh_count"] == 1
+        assert result["stale_count"] == 1
+        assert result["freshness_rate"] == pytest.approx(0.5)
+
+    def test_result_keys(self) -> None:
+        import time
+
+        from app.data_quality import data_freshness_score
+
+        records = [{"ts": time.time()}]
+        result = data_freshness_score(records, "ts")
+        assert set(result.keys()) >= {"total_records", "fresh_count", "stale_count", "freshness_rate"}
 
 
 def test_field_type_consistency_all_match() -> None:
@@ -314,10 +640,6 @@ def test_fill_missing_does_not_modify_original() -> None:
 
 def test_fill_missing_empty_records() -> None:
     assert fill_missing([], "x", fill_value=0.0) == []
-
-
-# Tests for unique_values and records_missing_field
-from app.data_quality import records_missing_field, unique_values
 
 
 def test_unique_values_basic() -> None:

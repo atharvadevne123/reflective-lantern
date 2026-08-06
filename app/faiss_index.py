@@ -124,8 +124,8 @@ MAX_TOP_K: int = 100
 __all__ = [
     "DEFAULT_TOP_K",
     "DIM",
-    "MAX_TOP_K",
     "LoadPatternIndex",
+    "MAX_TOP_K",
     "add_property",
     "get_pattern_index",
     "index_size",
@@ -189,3 +189,64 @@ def search_comparable(query: list[float] | np.ndarray, top_k: int = DEFAULT_TOP_
         entry.update(r.get("metadata", {}))
         results.append(entry)
     return results
+
+
+def index_is_empty() -> bool:
+    """Return True if the global FAISS index contains no vectors.
+
+    Returns:
+        True when index_size() == 0.
+    """
+    return index_size() == 0
+
+
+def batch_add_properties(
+    vectors: list[list[float]], metadata_list: list[dict | None] | None = None
+) -> int:
+    """Add multiple property vectors to the index in one call.
+
+    Args:
+        vectors: List of embedding vectors.
+        metadata_list: Optional parallel list of metadata dicts. Defaults to all None.
+
+    Returns:
+        Number of vectors successfully added.
+    """
+    if metadata_list is None:
+        metadata_list = [None] * len(vectors)
+    added = 0
+    for vec, meta in zip(vectors, metadata_list):
+        try:
+            add_property(vec, meta)
+            added += 1
+        except Exception:
+            pass
+    return added
+
+
+def top_k_distances(query: list[float], top_k: int = 5) -> list[float]:
+    """Return only the distance scores from a similarity search.
+
+    Args:
+        query: Query embedding vector.
+        top_k: Number of results. Default 5.
+
+    Returns:
+        Sorted list of distance scores (ascending = more similar).
+    """
+    results = search_comparable(query, top_k=top_k)
+    return [r["distance"] for r in results]
+
+
+def index_summary() -> dict[str, object]:
+    """Return a summary dict describing the current index state.
+
+    Returns:
+        Dict with 'size', 'is_empty', and 'dim' keys.
+    """
+    size = index_size()
+    return {
+        "size": size,
+        "is_empty": size == 0,
+        "dim": DIM,
+    }

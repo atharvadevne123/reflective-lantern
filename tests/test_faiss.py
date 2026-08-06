@@ -171,3 +171,28 @@ def test_search_respects_top_k_argument(k: int) -> None:
         add_property(np.ones(DIM) * i, {"id": i})
     results = search_comparable(np.zeros(DIM), top_k=k)
     assert len(results) == k
+
+
+def test_add_property_with_metadata() -> None:
+    add_property(np.zeros(DIM), {"building": "b1", "floor_area": 500})
+    assert index_size() == 1
+
+
+def test_search_empty_index_returns_empty() -> None:
+    assert index_size() == 0
+    results = search_comparable(np.zeros(DIM), top_k=5)
+    assert results == []
+
+
+def test_search_result_has_score_field() -> None:
+    add_property(np.ones(DIM) * 1.0, {"id": "x"})
+    results = search_comparable(np.ones(DIM) * 1.0, top_k=1)
+    assert len(results) == 1
+    assert "score" in results[0] or "distance" in results[0] or "similarity" in results[0]
+
+
+@pytest.mark.parametrize("n_vecs", [1, 5, 10])
+def test_index_size_after_adding(n_vecs: int) -> None:
+    for i in range(n_vecs):
+        add_property(np.ones(DIM) * float(i), {"id": i})
+    assert index_size() == n_vecs

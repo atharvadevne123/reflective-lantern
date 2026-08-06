@@ -6,13 +6,14 @@ import pytest
 
 from app.investment import (
     InvestmentAnalysis,
+    break_even_occupancy,
     cash_on_cash_return,
     compute_investment_analysis,
     debt_service_coverage_ratio,
     discounted_cash_flow,
     equity_multiple,
-    gross_rent_multiplier,
     margin_of_safety,
+    operating_expense_ratio,
     payback_period,
 )
 
@@ -415,22 +416,31 @@ def test_compute_investment_analysis_returns_dataclass() -> None:
     assert result.break_even_years > 0
 
 
-@pytest.mark.parametrize("crime_rate,expected_worse", [
-    (0.1, False),
-    (0.9, True),
-])
+@pytest.mark.parametrize(
+    "crime_rate,expected_worse",
+    [
+        (0.1, False),
+        (0.9, True),
+    ],
+)
 def test_compute_investment_high_crime_lowers_score(crime_rate, expected_worse) -> None:
     from app.investment import compute_investment_analysis
 
     low = compute_investment_analysis(
-        predicted_value=400_000.0, avg_rental_yield=0.07,
-        school_score=7.0, transit_score=6.0, walkability_score=5.0,
-        crime_rate=0.1
+        predicted_value=400_000.0,
+        avg_rental_yield=0.07,
+        school_score=7.0,
+        transit_score=6.0,
+        walkability_score=5.0,
+        crime_rate=0.1,
     )
     high = compute_investment_analysis(
-        predicted_value=400_000.0, avg_rental_yield=0.07,
-        school_score=7.0, transit_score=6.0, walkability_score=5.0,
-        crime_rate=crime_rate
+        predicted_value=400_000.0,
+        avg_rental_yield=0.07,
+        school_score=7.0,
+        transit_score=6.0,
+        walkability_score=5.0,
+        crime_rate=crime_rate,
     )
     if expected_worse:
         assert high.investment_score <= low.investment_score
@@ -469,7 +479,6 @@ def test_high_amenity_raises_score() -> None:
 def test_break_even_infinite_when_zero_cap_rate() -> None:
     result = compute_investment_analysis(500_000, 0.0, 5.0, 5.0, 5.0, 0.5)
     assert math.isinf(result.break_even_years) or result.break_even_years > 100
-
 
 
 def test_dcf_zero_discount_rate() -> None:
@@ -532,11 +541,14 @@ def test_payback_period_negative_investment_raises() -> None:
         payback_period(-100.0, [50.0])
 
 
-@pytest.mark.parametrize("invest,flows,expected", [
-    (300.0, [100.0, 100.0, 100.0], 3.0),
-    (150.0, [100.0, 100.0], 1.5),
-    (0.0, [1.0], 0.0),
-])
+@pytest.mark.parametrize(
+    "invest,flows,expected",
+    [
+        (300.0, [100.0, 100.0, 100.0], 3.0),
+        (150.0, [100.0, 100.0], 1.5),
+        (0.0, [1.0], 0.0),
+    ],
+)
 def test_payback_period_parametrized(invest: float, flows: list, expected: float) -> None:
     result = payback_period(invest, flows)
     assert result == pytest.approx(expected, rel=1e-4)
@@ -566,23 +578,209 @@ class TestMarginOfSafety:
         assert result == pytest.approx(25.0, rel=1e-4)
 
 
+class TestIrrEstimate:
+    def test_simple_positive_irr(self) -> None:
+        from app.investment import irr_estimate
+
+        irr = irr_estimate(1000.0, [200.0] * 8)
+        assert irr > 0.0
+
+    def test_negative_investment_raises(self) -> None:
+        import pytest
+
+        from app.investment import irr_estimate
+
+        with pytest.raises(ValueError, match="positive"):
+            irr_estimate(-100.0, [50.0])
+
+    def test_no_return_gives_zero(self) -> None:
+        from app.investment import irr_estimate
+
+        irr = irr_estimate(1000.0, [0.0] * 5)
+        assert irr == 0.0
+
+    def test_with_terminal_value(self) -> None:
+        from app.investment import irr_estimate
+
+        irr = irr_estimate(1000.0, [50.0] * 5, terminal_value=1200.0)
+        assert irr > 0.0
+
+    def test_returns_float(self) -> None:
+        from app.investment import irr_estimate
+
+        result = irr_estimate(500.0, [100.0, 200.0, 300.0])
+        assert isinstance(result, float)
+
+    @pytest.mark.parametrize("flows", [[100.0, 200.0, 300.0], [50.0] * 10, [500.0, -100.0, 300.0]])
+    def test_irr_returns_numeric(self, flows: list) -> None:
+        from app.investment import irr_estimate
+
+        result = irr_estimate(500.0, flows)
+        assert isinstance(result, float)
+
+
+class TestLoanToValueRatio:
+    def test_basic(self) -> None:
+        from app.investment import loan_to_value_ratio
+
+        assert loan_to_value_ratio(160000, 200000) == pytest.approx(80.0)
+
+    def test_full_loan(self) -> None:
+        from app.investment import loan_to_value_ratio
+
+        assert loan_to_value_ratio(200000, 200000) == pytest.approx(100.0)
+
+    def test_zero_property_value(self) -> None:
+        from app.investment import loan_to_value_ratio
+
+        assert loan_to_value_ratio(100000, 0) == 0.0
+
+    def test_zero_loan(self) -> None:
+        from app.investment import loan_to_value_ratio
+
+        assert loan_to_value_ratio(0, 200000) == pytest.approx(0.0)
+
+
 class TestGrossRentMultiplier:
-    def test_basic_grm(self) -> None:
-        assert gross_rent_multiplier(300_000.0, 30_000.0) == pytest.approx(10.0)
+    def test_basic(self) -> None:
+        from app.investment import gross_rent_multiplier
 
-    def test_zero_rent_returns_zero(self) -> None:
-        assert gross_rent_multiplier(300_000.0, 0.0) == 0.0
+        assert gross_rent_multiplier(200000, 20000) == pytest.approx(10.0)
 
-    def test_high_yield_low_grm(self) -> None:
-        assert gross_rent_multiplier(100_000.0, 25_000.0) == pytest.approx(4.0)
+    def test_zero_rent_returns_inf(self) -> None:
+        from app.investment import gross_rent_multiplier
 
-    @pytest.mark.parametrize("price,rent,expected", [
-        (500_000.0, 50_000.0, 10.0),
-        (200_000.0, 20_000.0, 10.0),
-        (1_000_000.0, 100_000.0, 10.0),
-    ])
-    def test_grm_parametrize(self, price, rent, expected) -> None:
-        assert gross_rent_multiplier(price, rent) == pytest.approx(expected)
+        assert gross_rent_multiplier(200000, 0) == float("inf")
+
+    def test_high_rent(self) -> None:
+        from app.investment import gross_rent_multiplier
+
+        result = gross_rent_multiplier(100000, 50000)
+        assert result == pytest.approx(2.0)
+
+    def test_negative_rent_returns_inf(self) -> None:
+        from app.investment import gross_rent_multiplier
+
+        assert gross_rent_multiplier(200000, -1000) == float("inf")
+
+
+class TestAnnualizedReturn:
+    def test_basic(self) -> None:
+        from app.investment import annualized_return
+
+        result = annualized_return(1.0, 10.0)
+        assert result == pytest.approx((2.0) ** 0.1 - 1, rel=1e-4)
+
+    def test_one_year(self) -> None:
+        from app.investment import annualized_return
+
+        assert annualized_return(0.10, 1.0) == pytest.approx(0.10, rel=1e-4)
+
+    def test_zero_years_raises(self) -> None:
+        from app.investment import annualized_return
+
+        with pytest.raises(ValueError, match="positive"):
+            annualized_return(0.5, 0.0)
+
+    def test_total_return_minus_one_raises(self) -> None:
+        from app.investment import annualized_return
+
+        with pytest.raises(ValueError, match="> -1"):
+            annualized_return(-1.0, 5.0)
+
+    @pytest.mark.parametrize("total,years", [(0.0, 5.0), (0.5, 3.0), (2.0, 10.0)])
+    def test_positive_return_positive_result(self, total: float, years: float) -> None:
+        from app.investment import annualized_return
+
+        assert annualized_return(total, years) >= 0.0
+
+
+class TestNetPresentValue:
+    def test_zero_discount(self) -> None:
+        from app.investment import net_present_value
+
+        flows = [-1000.0, 200.0, 300.0, 400.0, 500.0]
+        result = net_present_value(flows, 0.0)
+        assert result == pytest.approx(400.0, rel=1e-4)
+
+    def test_positive_npv(self) -> None:
+        from app.investment import net_present_value
+
+        flows = [-100.0, 60.0, 60.0]
+        result = net_present_value(flows, 0.10)
+        assert result > 0
+
+    def test_empty_raises(self) -> None:
+        from app.investment import net_present_value
+
+        with pytest.raises(ValueError, match="empty"):
+            net_present_value([], 0.05)
+
+    def test_discount_rate_below_minus_one_raises(self) -> None:
+        from app.investment import net_present_value
+
+        with pytest.raises(ValueError, match="> -1"):
+            net_present_value([-100.0, 50.0], -2.0)
+
+    def test_single_cash_flow(self) -> None:
+        from app.investment import net_present_value
+
+        assert net_present_value([-500.0], 0.10) == pytest.approx(-500.0, rel=1e-4)
+
+
+class TestPropertyYieldAnalysis:
+    def test_basic(self) -> None:
+        from app.investment import property_yield_analysis
+
+        result = property_yield_analysis(200_000.0, 20_000.0)
+        assert result["gross_yield_pct"] == pytest.approx(10.0, rel=1e-4)
+
+    def test_with_expenses(self) -> None:
+        from app.investment import property_yield_analysis
+
+        result = property_yield_analysis(200_000.0, 20_000.0, 5_000.0)
+        assert result["net_yield_pct"] < result["gross_yield_pct"]
+
+    def test_zero_market_value_raises(self) -> None:
+        from app.investment import property_yield_analysis
+
+        with pytest.raises(ValueError, match="positive"):
+            property_yield_analysis(0.0, 12_000.0)
+
+    def test_keys_present(self) -> None:
+        from app.investment import property_yield_analysis
+
+        result = property_yield_analysis(300_000.0, 18_000.0)
+        assert set(result.keys()) >= {"gross_yield_pct", "net_yield_pct", "net_operating_income", "expense_ratio_pct"}
+
+
+class TestEquityRatio:
+    def test_no_loan(self) -> None:
+        from app.investment import equity_ratio
+
+        assert equity_ratio(200_000.0, 0.0) == pytest.approx(1.0, rel=1e-4)
+
+    def test_fully_leveraged(self) -> None:
+        from app.investment import equity_ratio
+
+        assert equity_ratio(200_000.0, 200_000.0) == pytest.approx(0.0, abs=1e-4)
+
+    def test_zero_market_value(self) -> None:
+        from app.investment import equity_ratio
+
+        assert equity_ratio(0.0, 0.0) == 0.0
+
+    def test_negative_loan_raises(self) -> None:
+        from app.investment import equity_ratio
+
+        with pytest.raises(ValueError, match="non-negative"):
+            equity_ratio(100_000.0, -5_000.0)
+
+    def test_result_in_zero_one(self) -> None:
+        from app.investment import equity_ratio
+
+        result = equity_ratio(300_000.0, 120_000.0)
+        assert 0.0 <= result <= 1.0
 
 
 class TestEquityMultiple:
@@ -636,12 +834,6 @@ class TestDebtServiceCoverageRatio:
     ])
     def test_dscr_parametrize(self, noi, debt, expected) -> None:
         assert debt_service_coverage_ratio(noi, debt) == pytest.approx(expected)
-
-
-# Tests for break_even_occupancy and operating_expense_ratio
-import pytest
-
-from app.investment import break_even_occupancy, operating_expense_ratio
 
 
 class TestBreakEvenOccupancy:

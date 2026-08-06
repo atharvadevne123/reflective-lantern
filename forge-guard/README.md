@@ -160,10 +160,15 @@ The pipeline:
 ## Development
 
 ```bash
-make install    # pip install -r requirements.txt
-make test       # pytest
-make lint       # ruff check + format --check
-make diagram    # regenerate screenshots/architecture.png
+make install      # pip install -r requirements.txt
+make install-dev  # + pytest, httpx, ruff, mypy
+make test         # pytest -v
+make test-cov     # pytest --cov=app
+make lint         # ruff check + format --check
+make typecheck    # mypy app/
+make healthcheck  # probe /health, exit 0/1
+make diagram      # regenerate screenshots/architecture.png
+make seed         # seed demo data via scripts/seed_data.py
 ```
 
 ---
@@ -197,6 +202,52 @@ Predict up to 100 readings in one request:
 
 Returns per-feature importance scores from the XGBoost sub-estimator —
 useful for identifying which sensor most influences defect predictions.
+
+### `GET /api/v1/version`
+
+Returns service version metadata:
+
+```json
+{
+  "api_version": "1.0.0",
+  "model_version": "1.0.0",
+  "python_version": "3.11.9",
+  "service": "forge-guard"
+}
+```
+
+### `POST /api/v1/anomaly`
+
+FAISS nearest-neighbour anomaly check — returns whether the reading falls
+outside the training manifold:
+
+```json
+{"reading": {"temperature": 92.0, "pressure": 61.0, ...}}
+```
+
+Response: `{"is_anomaly": true, "distance": 4.23, "threshold": 3.5}`
+
+### `GET /api/v1/export/predictions`
+
+Export recent prediction logs as a JSON summary.  
+Query param: `hours` (default 24), `limit` (default 1000).
+
+### `GET /api/v1/export/drift`
+
+Export recent drift reports as a JSON array.  
+Query param: `hours` (default 24), `limit` (default 500).
+
+---
+
+## New Modules
+
+| Module | Purpose |
+|---|---|
+| `app/config.py` | Centralised `Settings` class with `lru_cache` singleton |
+| `app/cache.py` | Thread-safe TTL prediction cache (default 30 s, 2048 entries) |
+| `app/validators.py` | Domain-range validation + `sanitize_sensor_reading()` |
+| `app/middleware.py` | `RequestTimingMiddleware` (X-Process-Time) + `SecurityHeadersMiddleware` |
+| `app/reporting.py` | CSV/JSON export utilities for predictions and drift reports |
 
 ---
 

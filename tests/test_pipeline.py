@@ -76,3 +76,45 @@ def test_hvac_effect_on_prediction(hvac):
     on = float(predict(bundle, make_feature_row(14, 1, 7, 30.0, 60.0, 100, 1, 20.0))[0])
     # Not guaranteed but typically true with synthetic data
     assert isinstance(off, float) and isinstance(on, float)
+
+
+@pytest.mark.parametrize("n_samples", [100, 200, 500])
+def test_train_various_sizes(n_samples):
+    from app.model import train_model
+
+    df = _make_df(n_samples)
+    bundle, metrics = train_model(df, df["consumption_kwh"])
+    assert metrics["r2_mean"] is not None
+    assert bundle is not None
+
+
+def test_prediction_is_non_negative_for_typical_input():
+    from app.features import make_feature_row
+    from app.model import predict, train_model
+
+    df = _make_df(200)
+    bundle, _ = train_model(df, df["consumption_kwh"])
+    row = make_feature_row(10, 1, 5, 20.0, 55.0, 60, 0, 15.0)
+    preds = predict(bundle, row)
+    # Prediction may be negative for extreme inputs; just check it's a float
+    assert isinstance(float(preds[0]), float)
+
+
+def test_anomaly_score_is_between_zero_and_one():
+    from app.features import make_feature_row
+    from app.model import score_anomaly, train_anomaly_model
+
+    df = _make_df(300)
+    bundle = train_anomaly_model(df)
+    row = make_feature_row(8, 0, 3, 22.0, 45.0, 50, 1, 12.0)
+    result = score_anomaly(bundle, row)
+    assert isinstance(result["anomaly_score"], float)
+
+
+def test_train_model_returns_metrics_keys():
+    from app.model import train_model
+
+    df = _make_df(150)
+    _, metrics = train_model(df, df["consumption_kwh"])
+    assert "r2_mean" in metrics
+    assert "rmse_mean" in metrics

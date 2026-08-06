@@ -6,6 +6,7 @@ from unittest.mock import MagicMock, patch
 
 import numpy as np
 import pandas as pd
+import pytest
 
 
 def _make_df(n: int = 200, mean: float = 10.0, std: float = 2.0) -> pd.DataFrame:
@@ -71,6 +72,33 @@ def test_check_drift_similar_distributions_returns_false(tmp_path) -> None:
     ):
         result = check_drift_before_retrain(reference_path=ref_path)
     assert result == False  # noqa: E712 — np.False_ != False with `is`
+
+
+@pytest.mark.parametrize("mean_offset", [50.0, 100.0, 200.0])
+def test_check_drift_large_offset_returns_true(tmp_path, mean_offset: float) -> None:
+    from pipelines.retrain_dag import check_drift_before_retrain
+
+    df_ref = _make_df(n=500, mean=10.0, std=1.0)
+    df_new = _make_df(n=500, mean=10.0 + mean_offset, std=1.0)
+    ref_path = str(tmp_path / "ref.parquet")
+
+    train_mock = MagicMock()
+    train_mock.exists.return_value = True
+    ref_mock = MagicMock()
+    ref_mock.exists.return_value = True
+    call_count = [0]
+
+    def fake_read(p, **kw):
+        call_count[0] += 1
+        return df_new if call_count[0] == 1 else df_ref
+
+    with (
+        patch("pathlib.Path", side_effect=lambda p: train_mock if "wg_train" in str(p) else ref_mock),
+        patch("pandas.read_parquet", side_effect=fake_read),
+        patch("pandas.DataFrame.to_parquet"),
+    ):
+        result = check_drift_before_retrain(reference_path=ref_path)
+    assert bool(result) is True
 
 
 def test_check_drift_different_distributions_returns_true(tmp_path) -> None:

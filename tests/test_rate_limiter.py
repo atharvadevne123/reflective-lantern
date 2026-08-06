@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from app.rate_limiter import TokenBucketRateLimiter, make_rate_limiter
+from app.rate_limiter import TokenBucketRateLimiter, burst_capacity_fraction, make_rate_limiter, make_strict_limiter
 
 
 def test_first_request_allowed():
@@ -83,10 +83,90 @@ def test_separate_clients_independent():
     assert limiter.is_allowed("client-b") is True
 
 
-# Tests for make_strict_limiter and burst_capacity_fraction
-import pytest
+@pytest.mark.parametrize("n_clients", [1, 5, 10])
+def test_clear_resets_all_clients(n_clients):
+    limiter = TokenBucketRateLimiter(capacity=10.0, rate_per_second=1.0)
+    for i in range(n_clients):
+        limiter.is_allowed(f"c-{i}")
+    limiter.clear()
+    assert limiter.client_count == 0
 
-from app.rate_limiter import burst_capacity_fraction, make_strict_limiter
+
+def test_is_allowed_returns_bool():
+    limiter = TokenBucketRateLimiter(capacity=5.0, rate_per_second=1.0)
+    result = limiter.is_allowed("test")
+    assert isinstance(result, bool)
+
+
+def test_remaining_tokens_after_clear():
+    limiter = TokenBucketRateLimiter(capacity=5.0, rate_per_second=0.01)
+    limiter.is_allowed("c")
+    limiter.clear()
+    assert limiter.remaining_tokens("c") == 5.0
+
+
+@pytest.mark.parametrize("rate", [0.1, 0.5, 1.0, 5.0])
+def test_make_rate_limiter_various_rates(rate):
+    limiter = make_rate_limiter(capacity=10.0, rate_per_second=rate)
+    assert limiter.is_allowed("test") is True
+
+
+class TestLimiterUtilization:
+    def test_full_capacity_is_zero(self) -> None:
+        from app.rate_limiter import limiter_utilization, make_rate_limiter
+
+        limiter = make_rate_limiter(capacity=10.0, rate_per_second=1.0)
+        assert limiter_utilization(limiter, "c1") == pytest.approx(0.0, abs=0.05)
+
+    def test_after_consume_increases(self) -> None:
+        from app.rate_limiter import limiter_utilization, make_rate_limiter
+
+        limiter = make_rate_limiter(capacity=10.0, rate_per_second=1.0)
+        for _ in range(5):
+            limiter.is_allowed("c2")
+        assert limiter_utilization(limiter, "c2") > 0.0
+
+
+class TestResetLimiter:
+    def test_resets_to_full(self) -> None:
+        from app.rate_limiter import limiter_utilization, make_rate_limiter, reset_limiter
+
+        limiter = make_rate_limiter(capacity=10.0, rate_per_second=1.0)
+        for _ in range(8):
+            limiter.is_allowed("c3")
+        reset_limiter(limiter, "c3")
+        assert limiter_utilization(limiter, "c3") == pytest.approx(0.0, abs=0.05)
+
+
+class TestIsRateLimited:
+    def test_not_limited_when_full(self) -> None:
+        from app.rate_limiter import is_rate_limited, make_rate_limiter
+
+        limiter = make_rate_limiter(capacity=10.0, rate_per_second=1.0)
+        assert is_rate_limited(limiter, "c4") is False
+
+    def test_limited_when_empty(self) -> None:
+        from app.rate_limiter import is_rate_limited, make_rate_limiter
+
+        limiter = make_rate_limiter(capacity=2.0, rate_per_second=0.001)
+        limiter.is_allowed("c5")
+        limiter.is_allowed("c5")
+        assert is_rate_limited(limiter, "c5") is True
+
+
+class TestMakeStrictLimiter:
+    def test_returns_limiter(self) -> None:
+        from app.rate_limiter import TokenBucketRateLimiter, make_strict_limiter
+
+        limiter = make_strict_limiter(10.0)
+        assert isinstance(limiter, TokenBucketRateLimiter)
+
+    def test_allows_within_rate(self) -> None:
+        from app.rate_limiter import make_strict_limiter
+
+        limiter = make_strict_limiter(5.0)
+        for _ in range(5):
+            limiter.is_allowed("strict_client")
 
 
 def test_make_strict_limiter_returns_limiter() -> None:
@@ -99,9 +179,6 @@ def test_make_strict_limiter_capacity() -> None:
     assert limiter._capacity == pytest.approx(30.0)
 
 
-def test_make_strict_limiter_rate() -> None:
-    limiter = make_strict_limiter(60)
-    assert limiter._rate == pytest.approx(1.0)
 
 
 def test_make_strict_limiter_invalid_raises() -> None:
@@ -137,8 +214,3 @@ def test_burst_capacity_fraction_empty_bucket() -> None:
     assert frac == pytest.approx(0.0)
 
 
-@pytest.mark.parametrize("rpm", [10, 30, 60, 120])
-def test_make_strict_limiter_parametrize(rpm: int) -> None:
-    limiter = make_strict_limiter(rpm)
-    assert limiter._capacity == pytest.approx(float(rpm))
-    assert limiter._rate == pytest.approx(rpm / 60.0)

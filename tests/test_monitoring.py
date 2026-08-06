@@ -262,3 +262,141 @@ def test_is_reference_window_ready_parametrized(n_samples, min_samples, expected
 
     set_reference_window([1.0] * n_samples)
     assert is_reference_window_ready(min_samples=min_samples) == expected
+
+
+class TestReferenceWindowStats:
+    def setup_method(self) -> None:
+        from app.monitoring import reset_reference_window
+
+        reset_reference_window()
+
+    def test_empty_window(self) -> None:
+        from app.monitoring import reference_window_stats
+
+        result = reference_window_stats()
+        assert result["size"] == 0
+        assert result["mean"] is None
+
+    def test_populated_window(self) -> None:
+        from app.monitoring import reference_window_stats, set_reference_window
+
+        set_reference_window([1.0, 2.0, 3.0, 4.0, 5.0])
+        result = reference_window_stats()
+        assert result["size"] == 5
+        assert result["mean"] == pytest.approx(3.0)
+
+    def test_stats_keys(self) -> None:
+        from app.monitoring import reference_window_stats, set_reference_window
+
+        set_reference_window([10.0, 20.0])
+        s = reference_window_stats()
+        for key in ("size", "mean", "min", "max", "std"):
+            assert key in s
+
+    def test_single_value(self) -> None:
+        from app.monitoring import reference_window_stats, set_reference_window
+
+        set_reference_window([42.0])
+        s = reference_window_stats()
+        assert s["min"] == s["max"] == pytest.approx(42.0)
+        assert s["std"] == pytest.approx(0.0)
+
+
+class TestZscoreAlert:
+    def test_no_alerts(self) -> None:
+        from app.monitoring import zscore_alert
+
+        result = zscore_alert([1.0, 1.0, 1.0, 1.0, 1.0])
+        assert result == []
+
+    def test_detects_outlier(self) -> None:
+        from app.monitoring import zscore_alert
+
+        values = [1.0] * 19 + [100.0]
+        result = zscore_alert(values, threshold=3.0)
+        assert 19 in result
+
+    def test_invalid_threshold(self) -> None:
+        from app.monitoring import zscore_alert
+
+        with pytest.raises(ValueError):
+            zscore_alert([1.0, 2.0], threshold=0.0)
+
+    def test_too_short_raises(self) -> None:
+        from app.monitoring import zscore_alert
+
+        with pytest.raises(ValueError):
+            zscore_alert([5.0])
+
+
+class TestDriftSeverity:
+    def test_no_drift(self) -> None:
+        from app.monitoring import drift_severity
+
+        assert drift_severity(0.5) == "none"
+
+    def test_moderate(self) -> None:
+        from app.monitoring import drift_severity
+
+        assert drift_severity(0.02) == "moderate"
+
+    def test_severe(self) -> None:
+        from app.monitoring import drift_severity
+
+        assert drift_severity(0.001) == "severe"
+
+    def test_boundary(self) -> None:
+        from app.monitoring import drift_severity
+
+        assert drift_severity(0.05) == "none"
+
+
+class TestRollingAnomalyRate:
+    def test_all_normal(self) -> None:
+        from app.monitoring import rolling_anomaly_rate
+
+        result = rolling_anomaly_rate([False] * 5)
+        assert all(r == 0.0 for r in result)
+
+    def test_all_anomaly(self) -> None:
+        from app.monitoring import rolling_anomaly_rate
+
+        result = rolling_anomaly_rate([True] * 5)
+        assert all(r == pytest.approx(1.0) for r in result)
+
+    def test_length_preserved(self) -> None:
+        from app.monitoring import rolling_anomaly_rate
+
+        assert len(rolling_anomaly_rate([True, False, True, False], window=2)) == 4
+
+    def test_empty(self) -> None:
+        from app.monitoring import rolling_anomaly_rate
+
+        assert rolling_anomaly_rate([]) == []
+
+    def test_invalid_window(self) -> None:
+        from app.monitoring import rolling_anomaly_rate
+
+        with pytest.raises(ValueError):
+            rolling_anomaly_rate([True], window=0)
+
+
+class TestAlertCountByLevel:
+    def test_basic(self) -> None:
+        from app.monitoring import alert_count_by_level
+
+        alerts = [{"level": "warn"}, {"level": "error"}, {"level": "warn"}]
+        result = alert_count_by_level(alerts)
+        assert result["warn"] == 2
+        assert result["error"] == 1
+
+    def test_empty(self) -> None:
+        from app.monitoring import alert_count_by_level
+
+        assert alert_count_by_level([]) == {}
+
+    def test_missing_level_key(self) -> None:
+        from app.monitoring import alert_count_by_level
+
+        result = alert_count_by_level([{}])
+        assert "unknown" in result

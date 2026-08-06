@@ -32,7 +32,7 @@ class PredictionLog(Base):
     __tablename__ = "prediction_logs"
 
     id = Column(Integer, primary_key=True, index=True)
-    timestamp = Column(DateTime, default=datetime.utcnow, nullable=False)
+    timestamp = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)
     temperature = Column(Float, nullable=False)
     pressure = Column(Float, nullable=False)
     vibration = Column(Float, nullable=False)
@@ -40,10 +40,10 @@ class PredictionLog(Base):
     tool_wear = Column(Float, nullable=False)
     power_consumption = Column(Float, nullable=False)
     humidity = Column(Float, nullable=False)
-    prediction = Column(Integer, nullable=False)
+    prediction = Column(Integer, nullable=False, index=True)
     defect_probability = Column(Float, nullable=False)
-    model_version = Column(String(32), nullable=False, default="1.0.0")
-    correlation_id = Column(String(64), nullable=True)
+    model_version = Column(String(32), nullable=False, default="1.0.0", index=True)
+    correlation_id = Column(String(64), nullable=True, index=True)
 
 
 class DriftReport(Base):

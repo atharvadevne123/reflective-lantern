@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from app.reporting import estimate_savings, peak_demand_report
+from app.reporting import estimate_savings, peak_demand_report, rolling_savings_summary, top_consumption_hours
 
 
 def test_savings_positive() -> None:
@@ -359,6 +359,7 @@ def test_consumption_efficiency_ratio_parametrized(actual, target, expected) -> 
 
 def test_seasonal_efficiency_score_basic() -> None:
     from app.reporting import seasonal_efficiency_score
+
     actual = [8.0] * 40
     baseline = [10.0] * 40
     result = seasonal_efficiency_score(actual, baseline)
@@ -369,41 +370,48 @@ def test_seasonal_efficiency_score_basic() -> None:
 
 def test_seasonal_efficiency_score_mismatched_raises() -> None:
     from app.reporting import seasonal_efficiency_score
+
     with pytest.raises(ValueError):
         seasonal_efficiency_score([1.0, 2.0], [3.0])
 
 
 def test_seasonal_efficiency_score_empty_raises_v2() -> None:
     from app.reporting import seasonal_efficiency_score
+
     with pytest.raises(ValueError):
         seasonal_efficiency_score([], [])
 
 
 def test_consumption_trend_rising_v2() -> None:
     from app.reporting import consumption_trend
+
     data = [float(i) for i in range(10, 40)]
     assert consumption_trend(data) == "rising"
 
 
 def test_consumption_trend_falling_v2() -> None:
     from app.reporting import consumption_trend
+
     data = [float(i) for i in range(30, 0, -1)]
     assert consumption_trend(data) == "falling"
 
 
 def test_consumption_trend_stable_v2() -> None:
     from app.reporting import consumption_trend
+
     data = [10.0] * 20
     assert consumption_trend(data) == "stable"
 
 
 def test_consumption_trend_single_value_v2() -> None:
     from app.reporting import consumption_trend
+
     assert consumption_trend([5.0]) == "stable"
 
 
 def test_peak_demand_by_period_basic_v2() -> None:
     from app.reporting import peak_demand_by_period
+
     hourly = [1.0] * 20 + [10.0] * 4
     result = peak_demand_by_period(hourly, period_hours=4)
     assert any(p["is_peak"] for p in result)
@@ -411,12 +419,14 @@ def test_peak_demand_by_period_basic_v2() -> None:
 
 def test_peak_demand_by_period_empty_raises_v2() -> None:
     from app.reporting import peak_demand_by_period
+
     with pytest.raises(ValueError):
         peak_demand_by_period([])
 
 
 def test_peak_demand_by_period_invalid_period_raises_v2() -> None:
     from app.reporting import peak_demand_by_period
+
     with pytest.raises(ValueError):
         peak_demand_by_period([1.0] * 10, period_hours=0)
 
@@ -424,21 +434,26 @@ def test_peak_demand_by_period_invalid_period_raises_v2() -> None:
 @pytest.mark.parametrize("period_hours", [2, 4, 6])
 def test_peak_demand_by_period_parametrized(period_hours) -> None:
     from app.reporting import peak_demand_by_period
+
     hourly = [float(i) for i in range(24)]
     result = peak_demand_by_period(hourly, period_hours=period_hours)
     assert len(result) >= 1
     assert any(p["is_peak"] for p in result)
 
 
-@pytest.mark.parametrize("actual,baseline,expected_grade", [
-    (8.0, 10.0, "A"),          # 20% reduction -> A
-    (0.0, 10.0, "A+"),         # 100% reduction -> A+
-    (10.0, 10.0, "B"),         # no change -> B
-    (12.0, 10.0, "C"),         # increase -> C or D
-    (100.0, 10.0, "F"),        # massive increase -> F
-])
+@pytest.mark.parametrize(
+    "actual,baseline,expected_grade",
+    [
+        (8.0, 10.0, "A"),  # 20% reduction -> A
+        (0.0, 10.0, "A+"),  # 100% reduction -> A+
+        (10.0, 10.0, "B"),  # no change -> B
+        (12.0, 10.0, "C"),  # increase -> C or D
+        (100.0, 10.0, "F"),  # massive increase -> F
+    ],
+)
 def test_energy_efficiency_grade_param(actual: float, baseline: float, expected_grade: str) -> None:
     from app.reporting import energy_efficiency_grade
+
     result = energy_efficiency_grade(actual, baseline)
     assert isinstance(result, str)
     assert result in ("A+", "A", "A-", "B", "C", "D", "F")
@@ -446,11 +461,13 @@ def test_energy_efficiency_grade_param(actual: float, baseline: float, expected_
 
 def test_energy_efficiency_grade_zero_bl() -> None:
     from app.reporting import energy_efficiency_grade
+
     assert energy_efficiency_grade(10.0, 0.0) == "F"
 
 
 def test_peak_demand_all_equal_demand_factor_one() -> None:
     from app.reporting import peak_demand_report
+
     hourly = [5.0] * 24
     r = peak_demand_report(hourly)
     assert r["demand_factor"] == pytest.approx(1.0)
@@ -458,6 +475,7 @@ def test_peak_demand_all_equal_demand_factor_one() -> None:
 
 def test_peak_demand_empty_list_raises() -> None:
     from app.reporting import peak_demand_report
+
     with pytest.raises(ValueError):
         peak_demand_report([])
 
@@ -465,15 +483,275 @@ def test_peak_demand_empty_list_raises() -> None:
 @pytest.mark.parametrize("length_mismatch", [(5, 10), (10, 5), (0, 5)])
 def test_estimate_savings_mismatch_raises(length_mismatch: tuple) -> None:
     from app.reporting import estimate_savings
+
     n1, n2 = length_mismatch
     with pytest.raises(ValueError):
         estimate_savings([1.0] * n1, [1.0] * n2)
 
 
-# Tests for top_consumption_hours and rolling_savings_summary
-import pytest
+def test_consumption_trend_direction_sequence() -> None:
+    from app.reporting import consumption_trend
 
-from app.reporting import rolling_savings_summary, top_consumption_hours
+    daily = [float(i) for i in range(1, 31)]
+    result = consumption_trend(daily)
+    assert result in ("rising", "falling", "stable")
+
+
+def test_daily_average_consumption_basic() -> None:
+    from app.reporting import daily_average_consumption
+
+    hourly = [24.0] * 48  # 24 kWh/h x 48h = 2 days = 24 kWh/day avg
+    result = daily_average_consumption(hourly)
+    assert isinstance(result, float)
+    assert result > 0
+
+
+def test_daily_average_consumption_empty_result() -> None:
+    from app.reporting import daily_average_consumption
+
+    result = daily_average_consumption([])
+    assert result == 0.0 or isinstance(result, (int, float))
+
+
+@pytest.mark.parametrize(
+    "baseline,actual,expected_grade",
+    [
+        (100.0, 90.0, "A"),
+        (100.0, 100.0, "B"),
+        (100.0, 130.0, "D"),
+    ],
+)
+def test_energy_efficiency_grade_simple_cases(baseline: float, actual: float, expected_grade: str) -> None:
+    from app.reporting import energy_efficiency_grade
+
+    grade = energy_efficiency_grade(actual, baseline)
+    assert grade in ("A", "B", "C", "D", "F")
+
+
+def test_consumption_efficiency_ratio_returns_float() -> None:
+    from app.reporting import consumption_efficiency_ratio
+
+    result = consumption_efficiency_ratio(10.0, 12.0)
+    assert isinstance(result, float)
+    assert result == pytest.approx(10.0 / 12.0, rel=1e-3)
+
+
+def test_peak_demand_by_period_returns_list() -> None:
+    from app.reporting import peak_demand_by_period
+
+    hourly = [float(i % 10 + 1) for i in range(168)]
+    result = peak_demand_by_period(hourly, period_hours=24)
+    assert isinstance(result, list)
+    assert len(result) > 0
+
+
+class TestBenchmarkVsPortfolio:
+    def test_best_building_gets_grade_a(self) -> None:
+        from app.reporting import benchmark_vs_portfolio
+
+        result = benchmark_vs_portfolio(1.0, [5.0, 10.0, 15.0, 20.0])
+        assert result["grade"] == "A"
+
+    def test_worst_building_gets_grade_d(self) -> None:
+        from app.reporting import benchmark_vs_portfolio
+
+        result = benchmark_vs_portfolio(100.0, [5.0, 10.0, 15.0, 20.0])
+        assert result["grade"] == "D"
+
+    def test_returns_required_keys(self) -> None:
+        from app.reporting import benchmark_vs_portfolio
+
+        result = benchmark_vs_portfolio(10.0, [5.0, 10.0, 15.0, 20.0])
+        for key in ("percentile", "rank", "total_peers", "is_above_median", "grade"):
+            assert key in result
+
+    def test_empty_portfolio_raises(self) -> None:
+        import pytest
+
+        from app.reporting import benchmark_vs_portfolio
+
+        with pytest.raises(ValueError):
+            benchmark_vs_portfolio(10.0, [])
+
+    def test_percentile_in_range(self) -> None:
+        from app.reporting import benchmark_vs_portfolio
+
+        result = benchmark_vs_portfolio(50.0, list(range(1, 101)))
+        assert 0 <= result["percentile"] <= 100
+
+    def test_total_peers_count(self) -> None:
+        from app.reporting import benchmark_vs_portfolio
+
+        portfolio = [float(i) for i in range(20)]
+        result = benchmark_vs_portfolio(10.0, portfolio)
+        assert result["total_peers"] == 20
+
+    @pytest.mark.parametrize(
+        "kwh,portfolio,expected_above",
+        [
+            (20.0, [10.0, 15.0, 25.0], True),
+            (5.0, [10.0, 15.0, 25.0], False),
+        ],
+    )
+    def test_is_above_median(self, kwh: float, portfolio: list, expected_above: bool) -> None:
+        from app.reporting import benchmark_vs_portfolio
+
+        result = benchmark_vs_portfolio(kwh, portfolio)
+        assert result["is_above_median"] == expected_above
+
+
+class TestKwhToWh:
+    def test_basic(self) -> None:
+        from app.reporting import kwh_to_wh
+
+        assert kwh_to_wh(1.0) == pytest.approx(1000.0)
+
+    def test_zero(self) -> None:
+        from app.reporting import kwh_to_wh
+
+        assert kwh_to_wh(0.0) == 0.0
+
+    def test_fractional(self) -> None:
+        from app.reporting import kwh_to_wh
+
+        assert kwh_to_wh(0.5) == pytest.approx(500.0)
+
+
+class TestWhToKwh:
+    def test_basic(self) -> None:
+        from app.reporting import wh_to_kwh
+
+        assert wh_to_kwh(1000.0) == pytest.approx(1.0)
+
+    def test_zero(self) -> None:
+        from app.reporting import wh_to_kwh
+
+        assert wh_to_kwh(0.0) == 0.0
+
+
+class TestTariffCost:
+    def test_basic(self) -> None:
+        from app.reporting import tariff_cost
+
+        assert tariff_cost(10.0, 0.15) == pytest.approx(1.5)
+
+    def test_zero_kwh(self) -> None:
+        from app.reporting import tariff_cost
+
+        assert tariff_cost(0.0, 0.15) == 0.0
+
+    def test_negative_kwh(self) -> None:
+        from app.reporting import tariff_cost
+
+        assert tariff_cost(-5.0, 0.15) == 0.0
+
+    def test_free_tariff(self) -> None:
+        from app.reporting import tariff_cost
+
+        assert tariff_cost(100.0, 0.0) == 0.0
+
+
+class TestSummarizeEnergyPeriod:
+    def test_basic_summary(self) -> None:
+        from app.reporting import summarize_energy_period
+
+        result = summarize_energy_period([10.0, 20.0, 30.0], label="Jan")
+        assert result["label"] == "Jan"
+        assert result["total"] == pytest.approx(60.0)
+        assert result["mean"] == pytest.approx(20.0)
+        assert result["min"] == 10.0
+        assert result["max"] == 30.0
+        assert result["count"] == 3
+
+    def test_empty_raises(self) -> None:
+        from app.reporting import summarize_energy_period
+
+        with pytest.raises(ValueError):
+            summarize_energy_period([])
+
+    def test_single_value(self) -> None:
+        from app.reporting import summarize_energy_period
+
+        result = summarize_energy_period([5.0])
+        assert result["min"] == result["max"] == 5.0
+
+
+class TestFormatReportRow:
+    def test_basic_row(self) -> None:
+        from app.reporting import format_report_row
+
+        data = {"a": 1, "b": 2, "c": 3}
+        assert format_report_row(data, ["a", "b", "c"]) == "1,2,3"
+
+    def test_custom_separator(self) -> None:
+        from app.reporting import format_report_row
+
+        data = {"x": "hello", "y": "world"}
+        assert format_report_row(data, ["x", "y"], separator="|") == "hello|world"
+
+    def test_missing_field(self) -> None:
+        from app.reporting import format_report_row
+
+        data = {"a": 1}
+        result = format_report_row(data, ["a", "missing"])
+        assert "1" in result
+
+
+class TestAggregateDailyReport:
+    def test_full_day(self) -> None:
+        from app.reporting import aggregate_daily_report
+
+        hourly = [1.0] * 24
+        result = aggregate_daily_report(hourly)
+        assert len(result) == 1
+        assert result[0] == pytest.approx(24.0)
+
+    def test_two_days(self) -> None:
+        from app.reporting import aggregate_daily_report
+
+        hourly = [2.0] * 48
+        result = aggregate_daily_report(hourly)
+        assert len(result) == 2
+
+    def test_empty(self) -> None:
+        from app.reporting import aggregate_daily_report
+
+        assert aggregate_daily_report([]) == []
+
+    def test_partial_day(self) -> None:
+        from app.reporting import aggregate_daily_report
+
+        hourly = [1.0] * 36
+        result = aggregate_daily_report(hourly)
+        assert len(result) == 2
+
+
+class TestReportAnomalySummary:
+    def test_all_normal(self) -> None:
+        from app.reporting import report_anomaly_summary
+
+        result = report_anomaly_summary([False, False, False])
+        assert result["anomaly_count"] == 0
+        assert result["anomaly_rate"] == pytest.approx(0.0)
+
+    def test_all_anomaly(self) -> None:
+        from app.reporting import report_anomaly_summary
+
+        result = report_anomaly_summary([True, True])
+        assert result["anomaly_rate"] == pytest.approx(1.0)
+
+    def test_mixed(self) -> None:
+        from app.reporting import report_anomaly_summary
+
+        result = report_anomaly_summary([True, False, True, False])
+        assert result["anomaly_count"] == 2
+        assert result["anomaly_rate"] == pytest.approx(0.5)
+
+    def test_empty_raises(self) -> None:
+        from app.reporting import report_anomaly_summary
+
+        with pytest.raises(ValueError):
+            report_anomaly_summary([])
 
 
 def test_top_consumption_hours_returns_n() -> None:

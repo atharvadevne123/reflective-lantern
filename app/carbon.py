@@ -138,6 +138,7 @@ def carbon_savings(
         "trees_saved": trees_equivalent(saved_co2_kg),
     }
 
+
 def daily_carbon_estimate(
     hourly_kwh: list[float],
     region: str = "default",
@@ -170,12 +171,14 @@ __all__ = [
     "KG_TO_TONNES",
     "TREES_PER_TONNE_CO2_PER_YEAR",
     "annual_carbon_report",
+    "carbon_budget_remaining",
     "carbon_intensity_by_hour",
     "carbon_per_sqm",
     "carbon_reduction_pct",
     "carbon_saved_kwh",
     "carbon_savings",
     "co2_kg_to_tonnes",
+    "compare_regions",
     "daily_carbon_estimate",
     "fleet_emission_factor",
     "kwh_to_co2_kg",
@@ -274,6 +277,206 @@ def carbon_saved_kwh(
         "co2_kg_saved": round(co2_saved, 4),
         "pct_reduction": round(pct, 4),
     }
+
+
+def compare_regions(kwh: float, regions: list[str] | None = None) -> list[dict[str, float]]:
+    """Compare carbon footprint for *kwh* across multiple grid regions.
+
+    Useful for helping users understand how location choice affects emissions.
+
+    Args:
+        kwh: Energy consumption in kilowatt-hours.
+        regions: List of region identifiers to compare.  Defaults to all
+            known regions in ``GRID_CARBON_INTENSITY``.
+
+    Returns:
+        List of dicts with 'region', 'intensity_kg_per_kwh', and 'co2_kg',
+        sorted from lowest to highest CO2 impact.
+
+    Raises:
+        ValueError: If *kwh* is negative.
+    """
+    if kwh < 0:
+        raise ValueError(f"kwh must be non-negative, got {kwh}")
+    if regions is None:
+        regions = [r for r in GRID_CARBON_INTENSITY if r != "default"]
+    results = [
+        {
+            "region": r,
+            "intensity_kg_per_kwh": _grid_intensity(r),
+            "co2_kg": kwh_to_co2_kg(kwh, r),
+        }
+        for r in regions
+    ]
+    return sorted(results, key=lambda x: x["co2_kg"])
+
+
+def carbon_budget_remaining(
+    annual_budget_kg: float,
+    consumed_kg: float,
+) -> dict[str, float]:
+    """Compute how much CO2 budget is remaining given consumption so far.
+
+    Args:
+        annual_budget_kg: Total annual CO2 allowance in kg.
+        consumed_kg: CO2 already emitted in kg.
+
+    Returns:
+        Dict with 'remaining_kg', 'used_pct', and 'on_track' (bool as float 1.0/0.0).
+
+    Raises:
+        ValueError: If either argument is negative.
+    """
+    if annual_budget_kg < 0:
+        raise ValueError(f"annual_budget_kg must be non-negative, got {annual_budget_kg}")
+    if consumed_kg < 0:
+        raise ValueError(f"consumed_kg must be non-negative, got {consumed_kg}")
+    remaining = max(0.0, annual_budget_kg - consumed_kg)
+    used_pct = round(consumed_kg / annual_budget_kg * 100.0, 2) if annual_budget_kg > 0 else 0.0
+    on_track = 1.0 if consumed_kg <= annual_budget_kg else 0.0
+    return {
+        "remaining_kg": round(remaining, 4),
+        "used_pct": used_pct,
+        "on_track": on_track,
+    }
+
+
+def emission_factor_change(
+    old_region: str,
+    new_region: str,
+    kwh: float,
+) -> dict[str, float]:
+    """Estimate the CO2 impact of switching from one grid region to another.
+
+    Args:
+        old_region: Current grid region identifier.
+        new_region: Target grid region identifier.
+        kwh: Annual energy consumption in kilowatt-hours.
+
+    Returns:
+        Dict with old_co2_kg, new_co2_kg, co2_change_kg, and pct_change.
+
+    Raises:
+        ValueError: If *kwh* is negative.
+    """
+    if kwh < 0:
+        raise ValueError(f"kwh must be non-negative, got {kwh}")
+    old_co2 = kwh_to_co2_kg(kwh, old_region)
+    new_co2 = kwh_to_co2_kg(kwh, new_region)
+    change = new_co2 - old_co2
+    pct = round(change / old_co2 * 100.0, 4) if old_co2 > 0 else 0.0
+    return {
+        "old_co2_kg": old_co2,
+        "new_co2_kg": new_co2,
+        "co2_change_kg": round(change, 4),
+        "pct_change": pct,
+    }
+
+
+def co2_per_building_type(
+    kwh_per_sqft: float,
+    sqft: float,
+    building_type: str = "office",
+    region: str = "default",
+) -> dict[str, float]:
+    """Estimate CO2 emissions for a building based on type and size.
+
+    Applies a type-based intensity adjustment on top of the regional
+    grid intensity, reflecting different usage patterns for building types.
+
+    Args:
+        kwh_per_sqft: Annual energy use intensity (kWh per square foot).
+        sqft: Floor area in square feet.
+        building_type: One of 'office', 'retail', 'industrial', 'residential'.
+        region: Grid region identifier.
+
+    Returns:
+        Dict with total_kwh, total_co2_kg, and intensity_factor.
+    """
+    _type_factors: dict[str, float] = {
+        "office": 1.0,
+        "retail": 1.2,
+        "industrial": 1.5,
+        "residential": 0.8,
+    }
+    factor = _type_factors.get(building_type.lower(), 1.0)
+    adjusted_kwh = kwh_per_sqft * sqft * factor
+    total_co2 = kwh_to_co2_kg(adjusted_kwh, region)
+    return {
+        "total_kwh": round(adjusted_kwh, 4),
+        "total_co2_kg": total_co2,
+        "intensity_factor": factor,
+    }
+
+
+def carbon_score(co2_kg: float, max_kg: float) -> float:
+    """Compute a normalized 0-100 carbon score (100 = best / cleanest).
+
+    Args:
+        co2_kg: Actual CO2 emissions in kilograms.
+        max_kg: Theoretical maximum CO2 emissions for this context.
+
+    Returns:
+        Score in [0, 100]; 100 when co2_kg == 0, decreasing as emissions rise.
+        Clamped to 0 when co2_kg >= max_kg.
+
+    Raises:
+        ValueError: If *max_kg* is not positive or *co2_kg* is negative.
+    """
+    if max_kg <= 0:
+        raise ValueError(f"max_kg must be positive, got {max_kg}")
+    if co2_kg < 0:
+        raise ValueError(f"co2_kg must be non-negative, got {co2_kg}")
+    score = max(0.0, (1.0 - co2_kg / max_kg) * 100.0)
+    return round(score, 4)
+
+
+def annual_emission_estimate(
+    monthly_kwh: list[float], emission_factor: float
+) -> float:
+    """Estimate total annual CO2 emissions from monthly consumption data.
+
+    Args:
+        monthly_kwh: List of monthly energy consumption values in kWh.
+        emission_factor: kg CO2 per kWh.
+
+    Returns:
+        Estimated annual CO2 in kg.
+
+    Raises:
+        ValueError: If monthly_kwh is empty or emission_factor is non-positive.
+    """
+    if not monthly_kwh:
+        raise ValueError("monthly_kwh must be non-empty")
+    if emission_factor <= 0:
+        raise ValueError("emission_factor must be positive")
+    total_kwh = sum(monthly_kwh)
+    if len(monthly_kwh) < 12:
+        total_kwh = total_kwh / len(monthly_kwh) * 12
+    return round(total_kwh * emission_factor, 4)
+
+
+def carbon_reduction_potential(
+    baseline_kwh: float,
+    target_kwh: float,
+    emission_factor: float,
+) -> float:
+    """Compute CO2 reduction potential when reducing consumption from baseline to target.
+
+    Args:
+        baseline_kwh: Current energy consumption in kWh.
+        target_kwh: Target energy consumption in kWh.
+        emission_factor: kg CO2 per kWh.
+
+    Returns:
+        CO2 reduction in kg (positive = reduction achieved).
+
+    Raises:
+        ValueError: If emission_factor is non-positive.
+    """
+    if emission_factor <= 0:
+        raise ValueError("emission_factor must be positive")
+    return round((baseline_kwh - target_kwh) * emission_factor, 4)
 
 
 def lifetime_carbon_savings(

@@ -70,6 +70,11 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+from app.middleware import RequestTimingMiddleware, SecurityHeadersMiddleware  # noqa: E402
+
+app.add_middleware(RequestTimingMiddleware)
+app.add_middleware(SecurityHeadersMiddleware)
+
 _RATE_WINDOW: dict[str, list[float]] = {}
 RATE_LIMIT = int(os.getenv("RATE_LIMIT_RPM", "60"))
 
@@ -278,3 +283,75 @@ async def trigger_retrain() -> dict[str, str]:
     thread.start()
     logger.info("Retraining pipeline triggered via API.")
     return {"status": "accepted", "message": "Retraining started in background."}
+
+
+@app.get(
+    "/api/v1/version",
+    tags=["ops"],
+    summary="Return service version information",
+)
+async def version() -> dict[str, str]:
+    """Return the API and model version for observability and deployment tracking."""
+    import platform
+
+    return {
+        "api_version": "1.0.0",
+        "model_version": MODEL_VERSION,
+        "python_version": platform.python_version(),
+        "service": "forge-guard",
+    }
+
+
+@app.get(
+    "/api/v1/anomaly",
+    tags=["inference"],
+    summary="Check if a sensor reading is anomalous using FAISS nearest-neighbour",
+)
+async def anomaly_check(
+    payload: SensorInput,
+) -> dict:
+    """Compare a sensor reading against healthy-production reference vectors.
+
+    Returns nearest-neighbour L2 distance and anomaly flag.
+    """
+    from app.faiss_index import is_anomalous, load_index
+    from app.features import engineer_single as _eng
+
+    load_index()
+    features = _eng(payload.model_dump())
+    return is_anomalous(features)
+
+
+@app.get(
+    "/api/v1/export/predictions",
+    tags=["ops"],
+    summary="Export recent prediction logs as JSON summary",
+)
+async def export_predictions(
+    db: Annotated[Session, Depends(get_db)],
+    hours: int = 24,
+    limit: int = 10000,
+) -> dict[str, Any]:
+    """Return a summary and first 100 rows of recent prediction logs as JSON.
+
+    For full CSV export integrate with the reporting module directly.
+    """
+    from app.reporting import prediction_summary_json
+
+    summary = prediction_summary_json(db, hours=hours)
+    return summary
+
+
+@app.get(
+    "/api/v1/export/drift",
+    tags=["ops"],
+    summary="Export recent drift reports as JSON",
+)
+async def export_drift(
+    db: Annotated[Session, Depends(get_db)],
+    hours: int = 24,
+) -> list[dict[str, Any]]:
+    """Return drift reports from the most recent monitoring window."""
+    from app.reporting import export_drift_reports_json
+
+    return export_drift_reports_json(db, hours=hours)

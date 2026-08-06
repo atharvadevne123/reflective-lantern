@@ -323,8 +323,9 @@ def reference_window_stats() -> dict[str, Any]:
         "mean": round(mean, 4),
         "min": round(min(vals), 4),
         "max": round(max(vals), 4),
-        "std": round(variance ** 0.5, 4),
+        "std": round(variance**0.5, 4),
     }
+
 
 __all__ = [
     "LatencyTimer",
@@ -345,3 +346,86 @@ __all__ = [
     "set_reference_window",
     "summarize_drift_history",
 ]
+
+
+def zscore_alert(values: list[float], threshold: float = 3.0) -> list[int]:
+    """Return indices of values that exceed the z-score threshold.
+
+    Args:
+        values: Numeric series.
+        threshold: Number of standard deviations to flag. Default 3.0.
+
+    Returns:
+        Sorted list of indices where |z-score| > threshold.
+
+    Raises:
+        ValueError: If threshold <= 0 or values has fewer than 2 elements.
+    """
+    if threshold <= 0:
+        raise ValueError("threshold must be positive")
+    if len(values) < 2:
+        raise ValueError("Need at least 2 values to compute z-scores")
+    mean = sum(values) / len(values)
+    variance = sum((v - mean) ** 2 for v in values) / len(values)
+    std = variance ** 0.5
+    if std == 0:
+        return []
+    return [i for i, v in enumerate(values) if abs((v - mean) / std) > threshold]
+
+
+def drift_severity(p_value: float, alpha: float = 0.05) -> str:
+    """Classify drift severity based on a statistical test p-value.
+
+    Args:
+        p_value: p-value from a drift test (KS, chi-squared, etc.).
+        alpha: Significance level. Default 0.05.
+
+    Returns:
+        One of "none", "moderate", or "severe".
+    """
+    if p_value >= alpha:
+        return "none"
+    if p_value >= alpha / 5:
+        return "moderate"
+    return "severe"
+
+
+def rolling_anomaly_rate(flags: list[bool], window: int = 10) -> list[float]:
+    """Compute rolling anomaly rate over a boolean flag series.
+
+    Args:
+        flags: Boolean anomaly indicators.
+        window: Rolling window size. Default 10.
+
+    Returns:
+        List of anomaly rates, one per window position (length = len(flags)).
+
+    Raises:
+        ValueError: If window < 1.
+    """
+    if window < 1:
+        raise ValueError("window must be at least 1")
+    if not flags:
+        return []
+    result = []
+    for i in range(len(flags)):
+        start = max(0, i - window + 1)
+        chunk = flags[start : i + 1]
+        result.append(round(sum(chunk) / len(chunk), 4))
+    return result
+
+
+def alert_count_by_level(alerts: list[dict]) -> dict[str, int]:
+    """Aggregate alert records by their severity level.
+
+    Args:
+        alerts: List of alert dicts, each with a 'level' key.
+
+    Returns:
+        Dict mapping level -> count.
+    """
+    counts: dict[str, int] = {}
+    for alert in alerts:
+        level = str(alert.get("level", "unknown"))
+        counts[level] = counts.get(level, 0) + 1
+    return counts

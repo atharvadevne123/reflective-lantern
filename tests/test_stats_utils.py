@@ -8,6 +8,7 @@ from app.stats_utils import (
     geometric_mean,
     harmonic_mean,
     interquartile_range,
+    median_absolute_deviation,
     mode_count,
     normalize_series,
     percentile_rank,
@@ -16,56 +17,66 @@ from app.stats_utils import (
     weighted_average,
     zscore,
 )
+from app.trend_analysis import rolling_mean
 
 
 def test_mae_perfect() -> None:
     from app.stats_utils import mean_absolute_error
+
     assert mean_absolute_error([1.0, 2.0, 3.0], [1.0, 2.0, 3.0]) == 0.0
 
 
 def test_mae_basic() -> None:
     from app.stats_utils import mean_absolute_error
+
     result = mean_absolute_error([1.0, 2.0, 3.0], [2.0, 3.0, 4.0])
     assert abs(result - 1.0) < 1e-6
 
 
 def test_mae_empty_raises() -> None:
     from app.stats_utils import mean_absolute_error
+
     with pytest.raises(ValueError):
         mean_absolute_error([], [])
 
 
 def test_mae_mismatched_raises() -> None:
     from app.stats_utils import mean_absolute_error
+
     with pytest.raises(ValueError):
         mean_absolute_error([1.0, 2.0], [1.0])
 
 
 def test_rmse_perfect() -> None:
     from app.stats_utils import root_mean_squared_error
+
     assert root_mean_squared_error([1.0, 2.0, 3.0], [1.0, 2.0, 3.0]) == 0.0
 
 
 def test_rmse_basic() -> None:
     from app.stats_utils import root_mean_squared_error
+
     result = root_mean_squared_error([0.0, 0.0], [1.0, 1.0])
     assert abs(result - 1.0) < 1e-6
 
 
 def test_rmse_empty_raises() -> None:
     from app.stats_utils import root_mean_squared_error
+
     with pytest.raises(ValueError):
         root_mean_squared_error([], [])
 
 
 def test_r_squared_perfect() -> None:
     from app.stats_utils import r_squared
+
     actual = [1.0, 2.0, 3.0, 4.0]
     assert abs(r_squared(actual, actual) - 1.0) < 1e-6
 
 
 def test_r_squared_no_better_than_mean() -> None:
     from app.stats_utils import r_squared
+
     actual = [1.0, 2.0, 3.0]
     predicted = [2.0, 2.0, 2.0]  # constant = mean
     result = r_squared(actual, predicted)
@@ -74,70 +85,82 @@ def test_r_squared_no_better_than_mean() -> None:
 
 def test_r_squared_empty_raises() -> None:
     from app.stats_utils import r_squared
+
     with pytest.raises(ValueError):
         r_squared([], [])
 
 
 def test_mape_basic() -> None:
     from app.stats_utils import mape
+
     result = mape([100.0, 200.0], [110.0, 190.0])
     assert result > 0
 
 
 def test_mape_zero_actual_raises() -> None:
     from app.stats_utils import mape
+
     with pytest.raises(ValueError, match="undefined"):
         mape([0.0, 1.0], [1.0, 1.0])
 
 
 def test_mape_empty_raises() -> None:
     from app.stats_utils import mape
+
     with pytest.raises(ValueError):
         mape([], [])
 
 
 def test_coefficient_of_variation_flat() -> None:
     from app.stats_utils import coefficient_of_variation
+
     assert coefficient_of_variation([5.0] * 10) == 0.0
 
 
 def test_coefficient_of_variation_nonzero() -> None:
     from app.stats_utils import coefficient_of_variation
+
     result = coefficient_of_variation([1.0, 2.0, 3.0, 4.0, 5.0])
     assert result > 0
 
 
 def test_coefficient_of_variation_too_short() -> None:
     from app.stats_utils import coefficient_of_variation
+
     assert coefficient_of_variation([5.0]) == 0.0
 
 
 def test_percentile_median() -> None:
     from app.stats_utils import percentile
+
     result = percentile([1.0, 2.0, 3.0, 4.0, 5.0], 50)
     assert abs(result - 3.0) < 0.01
 
 
 def test_percentile_min() -> None:
     from app.stats_utils import percentile
+
     result = percentile([1.0, 2.0, 3.0], 0)
     assert result == 1.0
 
 
 def test_percentile_max() -> None:
     from app.stats_utils import percentile
+
     result = percentile([1.0, 2.0, 3.0], 100)
     assert result == 3.0
 
 
 def test_percentile_empty_raises() -> None:
     from app.stats_utils import percentile
+
     with pytest.raises(ValueError, match="must not be empty"):
         percentile([], 50)
 
 
 def test_percentile_invalid_p_raises() -> None:
     from app.stats_utils import percentile
+
     with pytest.raises(ValueError, match="p must be"):
         percentile([1.0, 2.0], 101)
 
@@ -145,38 +168,51 @@ def test_percentile_invalid_p_raises() -> None:
 @pytest.mark.parametrize("p", [0, 25, 50, 75, 100])
 def test_percentile_various_p(p) -> None:
     from app.stats_utils import percentile
+
     values = list(range(1, 101))
     result = percentile(values, p)
     assert 1 <= result <= 100
 
 
-@pytest.mark.parametrize("actual,predicted,expected_mae", [
-    ([0.0, 0.0, 0.0], [1.0, 1.0, 1.0], 1.0),
-    ([1.0, 2.0, 3.0], [1.0, 2.0, 3.0], 0.0),
-    ([10.0], [8.0], 2.0),
-])
+@pytest.mark.parametrize(
+    "actual,predicted,expected_mae",
+    [
+        ([0.0, 0.0, 0.0], [1.0, 1.0, 1.0], 1.0),
+        ([1.0, 2.0, 3.0], [1.0, 2.0, 3.0], 0.0),
+        ([10.0], [8.0], 2.0),
+    ],
+)
 def test_mae_parametrized(actual: list, predicted: list, expected_mae: float) -> None:
     from app.stats_utils import mean_absolute_error
+
     assert mean_absolute_error(actual, predicted) == pytest.approx(expected_mae, rel=1e-4)
 
 
-@pytest.mark.parametrize("actual,predicted", [
-    ([1.0, 2.0], [1.0]),
-    ([1.0], [1.0, 2.0]),
-])
+@pytest.mark.parametrize(
+    "actual,predicted",
+    [
+        ([1.0, 2.0], [1.0]),
+        ([1.0], [1.0, 2.0]),
+    ],
+)
 def test_mae_length_mismatch_raises(actual: list, predicted: list) -> None:
     from app.stats_utils import mean_absolute_error
+
     with pytest.raises(ValueError):
         mean_absolute_error(actual, predicted)
 
 
-@pytest.mark.parametrize("p,expected_percentile", [
-    (0.0, 1.0),
-    (50.0, 3.0),
-    (100.0, 5.0),
-])
+@pytest.mark.parametrize(
+    "p,expected_percentile",
+    [
+        (0.0, 1.0),
+        (50.0, 3.0),
+        (100.0, 5.0),
+    ],
+)
 def test_percentile_parametrized(p: float, expected_percentile: float) -> None:
     from app.stats_utils import percentile
+
     values = [1.0, 2.0, 3.0, 4.0, 5.0]
     result = percentile(values, p)
     assert result == pytest.approx(expected_percentile, abs=1.0)
@@ -184,17 +220,20 @@ def test_percentile_parametrized(p: float, expected_percentile: float) -> None:
 
 def test_coefficient_of_variation_zero_mean() -> None:
     from app.stats_utils import coefficient_of_variation
+
     assert coefficient_of_variation([0.0, 0.0, 0.0]) == 0.0
 
 
 def test_r_squared_perfect_fit() -> None:
     from app.stats_utils import r_squared
+
     values = [1.0, 2.0, 3.0, 4.0, 5.0]
     assert r_squared(values, values) == pytest.approx(1.0)
 
 
 def test_mape_raises_on_zero_actual() -> None:
     from app.stats_utils import mape
+
     with pytest.raises(ValueError, match="zero"):
         mape([0.0, 1.0], [0.5, 1.0])
 
@@ -256,10 +295,13 @@ def test_weighted_average_mismatched_lengths_raises() -> None:
         weighted_average([1.0, 2.0], [1.0])
 
 
-@pytest.mark.parametrize("vals,expected", [
-    ([2.0, 8.0], 4.0),
-    ([1.0, 1.0, 1.0], 1.0),
-])
+@pytest.mark.parametrize(
+    "vals,expected",
+    [
+        ([2.0, 8.0], 4.0),
+        ([1.0, 1.0, 1.0], 1.0),
+    ],
+)
 def test_geometric_mean_parametrized(vals: list, expected: float) -> None:
     assert geometric_mean(vals) == pytest.approx(expected, rel=1e-4)
 
@@ -300,10 +342,13 @@ def test_interquartile_range_empty_raises() -> None:
         interquartile_range([])
 
 
-@pytest.mark.parametrize("values,expected_iqr", [
-    ([1.0, 2.0, 3.0, 4.0], pytest.approx(1.5, rel=0.1)),
-    ([10.0, 10.0, 10.0, 10.0], 0.0),
-])
+@pytest.mark.parametrize(
+    "values,expected_iqr",
+    [
+        ([1.0, 2.0, 3.0, 4.0], pytest.approx(1.5, rel=0.1)),
+        ([10.0, 10.0, 10.0, 10.0], 0.0),
+    ],
+)
 def test_interquartile_range_parametrized(values: list, expected_iqr: object) -> None:
     assert interquartile_range(values) == expected_iqr
 
@@ -333,11 +378,14 @@ def test_percentile_rank_below_all() -> None:
     assert result == pytest.approx(0.0)
 
 
-@pytest.mark.parametrize("target,expected_pct", [
-    (1.0, 20.0),
-    (3.0, 60.0),
-    (5.0, 100.0),
-])
+@pytest.mark.parametrize(
+    "target,expected_pct",
+    [
+        (1.0, 20.0),
+        (3.0, 60.0),
+        (5.0, 100.0),
+    ],
+)
 def test_percentile_rank_parametrized(target: float, expected_pct: float) -> None:
     values = [1.0, 2.0, 3.0, 4.0, 5.0]
     assert percentile_rank(values, target) == pytest.approx(expected_pct)
@@ -369,6 +417,369 @@ class TestZscore:
         vals = [-1.0, 0.0, 1.0]
         result = zscore(vals, 0.0)
         assert result == pytest.approx(0.0, abs=1e-4)
+
+
+def test_weighted_average_equal_weights() -> None:
+    from app.stats_utils import weighted_average
+
+    result = weighted_average([1.0, 2.0, 3.0], [1.0, 1.0, 1.0])
+    assert result == pytest.approx(2.0)
+
+
+def test_weighted_average_skewed_weights() -> None:
+    from app.stats_utils import weighted_average
+
+    result = weighted_average([0.0, 10.0], [1.0, 9.0])
+    assert result == pytest.approx(9.0)
+
+
+def test_weighted_average_empty_raises_inline() -> None:
+    from app.stats_utils import weighted_average
+
+    with pytest.raises(ValueError):
+        weighted_average([], [])
+
+
+def test_harmonic_mean_is_float() -> None:
+    from app.stats_utils import harmonic_mean
+
+    result = harmonic_mean([1.0, 2.0, 4.0])
+    assert isinstance(result, float)
+    assert result > 0
+
+
+def test_geometric_mean_two_values() -> None:
+    from app.stats_utils import geometric_mean
+
+    result = geometric_mean([1.0, 4.0])
+    assert result == pytest.approx(2.0, rel=1e-4)
+
+
+@pytest.mark.parametrize(
+    "values,expected",
+    [
+        ([1.0, 1.0, 1.0], 1.0),
+        ([2.0, 8.0], 4.0),
+    ],
+)
+def test_geometric_mean_known_values(values, expected) -> None:
+    from app.stats_utils import geometric_mean
+
+    assert geometric_mean(values) == pytest.approx(expected, rel=1e-4)
+
+
+class TestCoefficientOfVariation:
+    def test_identical_values_returns_zero(self) -> None:
+        from app.stats_utils import coefficient_of_variation
+
+        assert coefficient_of_variation([5.0] * 10) == 0.0
+
+    def test_known_cv(self) -> None:
+        from app.stats_utils import coefficient_of_variation
+
+        # Values 0,2,4: mean=2, std=sqrt(8/3)≈1.633
+        result = coefficient_of_variation([0.0, 2.0, 4.0])
+        assert result == pytest.approx(81.6497, rel=1e-3)
+
+    def test_empty_raises(self) -> None:
+        import pytest as _pytest
+
+        from app.stats_utils import coefficient_of_variation
+
+        with _pytest.raises(ValueError):
+            coefficient_of_variation([])
+
+    def test_zero_mean_raises(self) -> None:
+        import pytest as _pytest
+
+        from app.stats_utils import coefficient_of_variation
+
+        with _pytest.raises(ValueError, match="near zero"):
+            coefficient_of_variation([0.0, 0.0, 0.0])
+
+    @pytest.mark.parametrize("vals", [[1.0, 2.0, 3.0], [10.0, 20.0]])
+    def test_returns_positive_float(self, vals: list) -> None:
+        from app.stats_utils import coefficient_of_variation
+
+        result = coefficient_of_variation(vals)
+        assert result > 0.0
+
+
+class TestExponentialMovingAverage:
+    def test_single_element(self) -> None:
+        from app.stats_utils import exponential_moving_average
+
+        assert exponential_moving_average([5.0]) == [5.0]
+
+    def test_alpha_1_equals_input(self) -> None:
+        from app.stats_utils import exponential_moving_average
+
+        vals = [1.0, 2.0, 3.0, 4.0]
+        result = exponential_moving_average(vals, alpha=1.0)
+        assert result == pytest.approx(vals, abs=1e-5)
+
+    def test_same_length_as_input(self) -> None:
+        from app.stats_utils import exponential_moving_average
+
+        vals = [1.0, 2.0, 3.0, 4.0, 5.0]
+        assert len(exponential_moving_average(vals)) == len(vals)
+
+    def test_invalid_alpha_raises(self) -> None:
+        import pytest as _pytest
+
+        from app.stats_utils import exponential_moving_average
+
+        with _pytest.raises(ValueError):
+            exponential_moving_average([1.0, 2.0], alpha=0.0)
+
+
+class TestWinsorize:
+    def test_no_clipping_needed(self) -> None:
+        from app.stats_utils import winsorize
+
+        vals = [1.0, 2.0, 3.0, 4.0, 5.0]
+        result = winsorize(vals, lower_pct=0.0, upper_pct=100.0)
+        assert result == vals
+
+    def test_clips_extremes(self) -> None:
+        from app.stats_utils import winsorize
+
+        vals = [0.0, 1.0, 2.0, 3.0, 100.0]
+        result = winsorize(vals, lower_pct=10.0, upper_pct=90.0)
+        assert max(result) < 100.0
+
+    def test_same_length(self) -> None:
+        from app.stats_utils import winsorize
+
+        vals = list(range(20))
+        assert len(winsorize(vals)) == len(vals)
+
+    @pytest.mark.parametrize("lower,upper", [(5.0, 95.0), (25.0, 75.0)])
+    def test_result_within_bounds(self, lower: float, upper: float) -> None:
+        from app.stats_utils import winsorize
+
+        vals = list(range(100))
+        result = winsorize(vals, lower_pct=lower, upper_pct=upper)
+        assert min(result) >= vals[int(lower)]
+
+
+class TestRollingStd:
+    def test_basic(self) -> None:
+        from app.stats_utils import rolling_std
+
+        result = rolling_std([1.0, 2.0, 3.0, 4.0, 5.0], window=3)
+        assert len(result) == 5
+
+    def test_empty_raises(self) -> None:
+        from app.stats_utils import rolling_std
+
+        with pytest.raises(ValueError, match="empty"):
+            rolling_std([], window=3)
+
+    def test_window_one_raises(self) -> None:
+        from app.stats_utils import rolling_std
+
+        with pytest.raises(ValueError, match="at least 2"):
+            rolling_std([1.0, 2.0], window=1)
+
+    def test_constant_series_std_zero(self) -> None:
+        from app.stats_utils import rolling_std
+
+        result = rolling_std([5.0] * 10, window=4)
+        assert all(v == pytest.approx(0.0, abs=1e-6) for v in result[3:])
+
+    @pytest.mark.parametrize("window", [2, 3, 5])
+    def test_output_length_matches_input(self, window: int) -> None:
+        from app.stats_utils import rolling_std
+
+        vals = list(range(1, 11))
+        assert len(rolling_std(vals, window=window)) == 10
+
+
+class TestComputeEntropy:
+    def test_uniform_dist(self) -> None:
+        import math
+
+        from app.stats_utils import compute_entropy
+
+        result = compute_entropy([1.0, 1.0, 1.0, 1.0])
+        assert result == pytest.approx(math.log(4), rel=1e-4)
+
+    def test_single_element_zero_entropy(self) -> None:
+        from app.stats_utils import compute_entropy
+
+        assert compute_entropy([1.0]) == pytest.approx(0.0, abs=1e-6)
+
+    def test_empty_raises(self) -> None:
+        from app.stats_utils import compute_entropy
+
+        with pytest.raises(ValueError, match="empty"):
+            compute_entropy([])
+
+    def test_zero_sum_raises(self) -> None:
+        from app.stats_utils import compute_entropy
+
+        with pytest.raises(ValueError, match="positive"):
+            compute_entropy([0.0, 0.0])
+
+    def test_positive_result(self) -> None:
+        from app.stats_utils import compute_entropy
+
+        assert compute_entropy([2.0, 3.0, 5.0]) > 0.0
+
+
+class TestComputeCorrelation:
+    def test_perfect_positive(self) -> None:
+        from app.stats_utils import compute_correlation
+
+        x = [1.0, 2.0, 3.0, 4.0, 5.0]
+        assert compute_correlation(x, x) == pytest.approx(1.0, rel=1e-4)
+
+    def test_perfect_negative(self) -> None:
+        from app.stats_utils import compute_correlation
+
+        x = [1.0, 2.0, 3.0]
+        y = [3.0, 2.0, 1.0]
+        assert compute_correlation(x, y) == pytest.approx(-1.0, rel=1e-4)
+
+    def test_length_mismatch_raises(self) -> None:
+        from app.stats_utils import compute_correlation
+
+        with pytest.raises(ValueError, match="same length"):
+            compute_correlation([1.0, 2.0], [1.0])
+
+    def test_too_short_raises(self) -> None:
+        from app.stats_utils import compute_correlation
+
+        with pytest.raises(ValueError, match="2 observations"):
+            compute_correlation([1.0], [1.0])
+
+    def test_constant_series_returns_zero(self) -> None:
+        from app.stats_utils import compute_correlation
+
+        assert compute_correlation([5.0, 5.0, 5.0], [1.0, 2.0, 3.0]) == pytest.approx(0.0, abs=1e-6)
+
+    @pytest.mark.parametrize("n", [5, 10, 20])
+    def test_result_in_range(self, n: int) -> None:
+        from app.stats_utils import compute_correlation
+
+        x = list(range(n))
+        y = [v + 0.1 * (i % 3) for i, v in enumerate(x)]
+        r = compute_correlation(x, y)
+        assert -1.0 <= r <= 1.0
+
+
+class TestComputeSkewness:
+    def test_symmetric_distribution_near_zero(self) -> None:
+        from app.stats_utils import compute_skewness
+
+        vals = [1.0, 2.0, 3.0, 4.0, 5.0]
+        assert abs(compute_skewness(vals)) < 0.1
+
+    def test_too_few_raises(self) -> None:
+        from app.stats_utils import compute_skewness
+
+        with pytest.raises(ValueError, match="3 observations"):
+            compute_skewness([1.0, 2.0])
+
+    def test_positive_skew_detected(self) -> None:
+        from app.stats_utils import compute_skewness
+
+        vals = [1.0, 1.0, 1.0, 1.0, 10.0]
+        assert compute_skewness(vals) > 0.0
+
+    def test_returns_float(self) -> None:
+        from app.stats_utils import compute_skewness
+
+        result = compute_skewness([1.0, 2.0, 3.0, 4.0, 5.0])
+        assert isinstance(result, float)
+
+
+class TestRollingPercentile:
+    def test_p50_equals_moving_median(self) -> None:
+        from app.stats_utils import rolling_percentile
+
+        vals = [1.0, 2.0, 3.0, 4.0, 5.0]
+        result = rolling_percentile(vals, window=3, pct=50.0)
+        assert len(result) == 5
+
+    def test_empty_raises(self) -> None:
+        from app.stats_utils import rolling_percentile
+
+        with pytest.raises(ValueError, match="empty"):
+            rolling_percentile([], window=3, pct=50.0)
+
+    def test_pct_out_of_range_raises(self) -> None:
+        from app.stats_utils import rolling_percentile
+
+        with pytest.raises(ValueError, match="pct"):
+            rolling_percentile([1.0, 2.0], window=2, pct=101.0)
+
+    def test_window_zero_raises(self) -> None:
+        from app.stats_utils import rolling_percentile
+
+        with pytest.raises(ValueError, match="at least 1"):
+            rolling_percentile([1.0, 2.0], window=0, pct=50.0)
+
+    @pytest.mark.parametrize("pct", [0.0, 25.0, 50.0, 75.0, 100.0])
+    def test_output_length(self, pct: float) -> None:
+        from app.stats_utils import rolling_percentile
+
+        vals = list(range(1, 11, 1))
+        assert len(rolling_percentile(vals, window=3, pct=pct)) == 10
+
+
+class TestRunningMean:
+    def test_basic(self) -> None:
+        from app.stats_utils import running_mean
+
+        result = running_mean([1.0, 2.0, 3.0])
+        assert result[0] == pytest.approx(1.0)
+        assert result[1] == pytest.approx(1.5)
+        assert result[2] == pytest.approx(2.0)
+
+    def test_empty(self) -> None:
+        from app.stats_utils import running_mean
+
+        assert running_mean([]) == []
+
+    def test_length_preserved(self) -> None:
+        from app.stats_utils import running_mean
+
+        vals = [float(i) for i in range(10)]
+        assert len(running_mean(vals)) == 10
+
+    def test_constant_series(self) -> None:
+        from app.stats_utils import running_mean
+
+        result = running_mean([5.0, 5.0, 5.0])
+        assert all(v == pytest.approx(5.0) for v in result)
+
+
+class TestInterquartileRange:
+    def test_basic(self) -> None:
+        from app.stats_utils import interquartile_range
+
+        result = interquartile_range([1.0, 2.0, 3.0, 4.0, 5.0])
+        assert result > 0
+
+    def test_constant_series(self) -> None:
+        from app.stats_utils import interquartile_range
+
+        result = interquartile_range([5.0, 5.0, 5.0, 5.0])
+        assert result == pytest.approx(0.0)
+
+    def test_single_element(self) -> None:
+        from app.stats_utils import interquartile_range
+
+        result = interquartile_range([5.0])
+        assert result == pytest.approx(0.0, abs=1e-6)
+
+    def test_non_negative(self) -> None:
+        from app.stats_utils import interquartile_range
+
+        result = interquartile_range([10.0, 20.0, 30.0, 40.0])
+        assert result >= 0
 
 
 def test_trimmed_mean_basic() -> None:
@@ -458,10 +869,6 @@ def test_mode_count_parametrize(values, expected_mode) -> None:
     assert mode == expected_mode
 
 
-# Tests for median_absolute_deviation and rolling_mean
-from app.stats_utils import median_absolute_deviation, rolling_mean
-
-
 def test_mad_symmetric() -> None:
     values = [1.0, 2.0, 3.0, 4.0, 5.0]
     assert median_absolute_deviation(values) == pytest.approx(1.0)
@@ -504,14 +911,8 @@ def test_rolling_mean_full_window() -> None:
     assert result[4] == pytest.approx((3.0 + 4.0 + 5.0) / 3.0)
 
 
-def test_rolling_mean_empty_raises() -> None:
-    with pytest.raises(ValueError):
-        rolling_mean([], window=3)
 
 
-def test_rolling_mean_invalid_window_raises() -> None:
-    with pytest.raises(ValueError):
-        rolling_mean([1.0, 2.0], window=0)
 
 
 @pytest.mark.parametrize("window", [1, 2, 5])

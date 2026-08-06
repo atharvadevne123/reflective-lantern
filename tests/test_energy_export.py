@@ -9,10 +9,12 @@ import pytest
 from app.energy_export import (
     aggregate_by_hour,
     filter_records,
+    kwh_stats_by_building,
     normalize_kwh,
     pivot_by_hour,
     records_to_csv,
     records_to_json,
+    split_by_day,
     summarize_export,
     top_buildings_by_kwh,
 )
@@ -121,6 +123,267 @@ def test_filter_min_kwh_parametrize(min_kwh, expected_count):
     assert len(result) == expected_count
 
 
+@pytest.mark.parametrize("max_kwh,expected_count", [(100.0, 4), (10.0, 2), (0.0, 0)])
+def test_filter_max_kwh_parametrize(max_kwh, expected_count):
+    result = filter_records(SAMPLE, max_kwh=max_kwh)
+    assert len(result) == expected_count
+
+
+def test_records_to_json_empty():
+    result = records_to_json([])
+    assert result == "[]"
+
+
+def test_aggregate_by_hour_counts():
+    result = aggregate_by_hour(SAMPLE)
+    assert all("count" in r for r in result)
+    hour8 = next(r for r in result if r["hour"] == 8)
+    assert hour8["count"] == 2
+
+
+def test_summarize_export_min_max():
+    s = summarize_export(SAMPLE)
+    assert s["min_kwh"] == pytest.approx(5.0)
+    assert s["max_kwh"] == pytest.approx(20.0)
+
+
+@pytest.mark.parametrize("hour,expected_count", [(8, 2), (14, 2), (0, 0)])
+def test_filter_by_hour_parametrize(hour, expected_count):
+    result = filter_records(SAMPLE, hour=hour)
+    assert len(result) == expected_count
+
+
+class TestRecordsToJsonl:
+    def test_each_line_valid_json(self) -> None:
+        import json
+
+        from app.energy_export import records_to_jsonl
+
+        out = records_to_jsonl(SAMPLE)
+        lines = [ln for ln in out.strip().split("\n") if ln]
+        for line in lines:
+            parsed = json.loads(line)
+            assert isinstance(parsed, dict)
+
+    def test_line_count_matches_records(self) -> None:
+        from app.energy_export import records_to_jsonl
+
+        out = records_to_jsonl(SAMPLE)
+        lines = [ln for ln in out.strip().split("\n") if ln]
+        assert len(lines) == len(SAMPLE)
+
+    def test_empty_records_returns_empty_string(self) -> None:
+        from app.energy_export import records_to_jsonl
+
+        assert records_to_jsonl([]) == ""
+
+    def test_output_ends_with_newline(self) -> None:
+        from app.energy_export import records_to_jsonl
+
+        out = records_to_jsonl(SAMPLE[:1])
+        assert out.endswith("\n")
+
+
+class TestDeduplicateRecords:
+    def test_removes_exact_duplicates(self) -> None:
+        from app.energy_export import deduplicate_records
+
+        records = [
+            {"building_id": "A", "timestamp": "2024-01-01", "kwh": 5.0},
+            {"building_id": "A", "timestamp": "2024-01-01", "kwh": 5.0},
+            {"building_id": "B", "timestamp": "2024-01-01", "kwh": 3.0},
+        ]
+        result = deduplicate_records(records)
+        assert len(result) == 2
+
+    def test_preserves_first_occurrence(self) -> None:
+        from app.energy_export import deduplicate_records
+
+        records = [
+            {"building_id": "A", "timestamp": "T1", "kwh": 1.0},
+            {"building_id": "A", "timestamp": "T1", "kwh": 2.0},
+        ]
+        result = deduplicate_records(records)
+        assert result[0]["kwh"] == 1.0
+
+    def test_custom_key_fields(self) -> None:
+        from app.energy_export import deduplicate_records
+
+        records = [
+            {"meter_id": "M1", "hour": 8, "kwh": 4.0},
+            {"meter_id": "M1", "hour": 8, "kwh": 5.0},
+            {"meter_id": "M2", "hour": 8, "kwh": 3.0},
+        ]
+        result = deduplicate_records(records, key_fields=["meter_id", "hour"])
+        assert len(result) == 2
+
+    def test_no_duplicates_unchanged(self) -> None:
+        from app.energy_export import deduplicate_records
+
+        records = [{"building_id": str(i), "timestamp": "T1"} for i in range(5)]
+        result = deduplicate_records(records)
+        assert len(result) == 5
+
+    @pytest.mark.parametrize("n_dupes", [1, 5, 10])
+    def test_single_unique_key_collapses_all(self, n_dupes: int) -> None:
+        from app.energy_export import deduplicate_records
+
+        records = [{"building_id": "X", "timestamp": "T"} for _ in range(n_dupes)]
+        result = deduplicate_records(records)
+        assert len(result) == 1
+
+
+class TestSortRecords:
+    def test_sorts_ascending(self) -> None:
+        from app.energy_export import sort_records
+
+        records = [{"ts": "2026-08-03"}, {"ts": "2026-08-01"}, {"ts": "2026-08-02"}]
+        result = sort_records(records, key="ts")
+        assert result[0]["ts"] == "2026-08-01"
+
+    def test_sorts_descending(self) -> None:
+        from app.energy_export import sort_records
+
+        records = [{"ts": "2026-08-01"}, {"ts": "2026-08-03"}]
+        result = sort_records(records, key="ts", reverse=True)
+        assert result[0]["ts"] == "2026-08-03"
+
+    def test_does_not_mutate_input(self) -> None:
+        from app.energy_export import sort_records
+
+        records = [{"ts": "b"}, {"ts": "a"}]
+        original = list(records)
+        sort_records(records, key="ts")
+        assert records == original
+
+    def test_empty(self) -> None:
+        from app.energy_export import sort_records
+
+        assert sort_records([], key="ts") == []
+
+
+class TestPartitionRecords:
+    def test_splits_by_value(self) -> None:
+        from app.energy_export import partition_records
+
+        records = [
+            {"type": "A"},
+            {"type": "B"},
+            {"type": "A"},
+        ]
+        matches, non_matches = partition_records(records, "type", "A")
+        assert len(matches) == 2
+        assert len(non_matches) == 1
+
+    def test_no_matches(self) -> None:
+        from app.energy_export import partition_records
+
+        records = [{"type": "X"}]
+        matches, non_matches = partition_records(records, "type", "Y")
+        assert matches == []
+        assert len(non_matches) == 1
+
+    def test_all_match(self) -> None:
+        from app.energy_export import partition_records
+
+        records = [{"k": 1}, {"k": 1}]
+        matches, non_matches = partition_records(records, "k", 1)
+        assert len(matches) == 2
+        assert non_matches == []
+
+
+class TestCountRecordsByField:
+    def test_basic(self) -> None:
+        from app.energy_export import count_records_by_field
+
+        records = [{"type": "A"}, {"type": "B"}, {"type": "A"}]
+        result = count_records_by_field(records, "type")
+        assert result["A"] == 2
+        assert result["B"] == 1
+
+    def test_empty(self) -> None:
+        from app.energy_export import count_records_by_field
+
+        assert count_records_by_field([], "type") == {}
+
+    def test_missing_field(self) -> None:
+        from app.energy_export import count_records_by_field
+
+        result = count_records_by_field([{"x": 1}], "type")
+        assert "" in result
+
+
+class TestRecordsToTsv:
+    def test_basic(self) -> None:
+        from app.energy_export import records_to_tsv
+
+        records = [{"a": 1, "b": 2}]
+        result = records_to_tsv(records, columns=["a", "b"])
+        assert "\t" in result
+        assert "a\tb" in result
+
+    def test_empty(self) -> None:
+        from app.energy_export import records_to_tsv
+
+        assert records_to_tsv([]) == ""
+
+    def test_two_rows(self) -> None:
+        from app.energy_export import records_to_tsv
+
+        records = [{"x": 1}, {"x": 2}]
+        lines = records_to_tsv(records, columns=["x"]).split("\n")
+        assert len(lines) == 3
+
+
+class TestMergeRecords:
+    def test_override_replaces(self) -> None:
+        from app.energy_export import merge_records
+
+        base = [{"id": "1", "v": 10}]
+        override = [{"id": "1", "v": 99}]
+        result = merge_records(base, override, key="id")
+        assert len(result) == 1
+        assert result[0]["v"] == 99
+
+    def test_adds_new(self) -> None:
+        from app.energy_export import merge_records
+
+        base = [{"id": "1", "v": 10}]
+        override = [{"id": "2", "v": 20}]
+        result = merge_records(base, override, key="id")
+        assert len(result) == 2
+
+
+class TestSampleRecords:
+    def test_size(self) -> None:
+        from app.energy_export import sample_records
+
+        records = [{"i": i} for i in range(20)]
+        result = sample_records(records, n=5)
+        assert len(result) == 5
+
+    def test_reproducible(self) -> None:
+        from app.energy_export import sample_records
+
+        records = [{"i": i} for i in range(50)]
+        a = sample_records(records, n=10, seed=7)
+        b = sample_records(records, n=10, seed=7)
+        assert a == b
+
+    def test_negative_n_raises(self) -> None:
+        from app.energy_export import sample_records
+
+        with pytest.raises(ValueError):
+            sample_records([{"x": 1}], n=-1)
+
+    def test_n_larger_than_records(self) -> None:
+        from app.energy_export import sample_records
+
+        records = [{"i": i} for i in range(3)]
+        result = sample_records(records, n=10)
+        assert len(result) == 3
+
+
 def test_top_buildings_by_kwh_order():
     result = top_buildings_by_kwh(SAMPLE, n=2)
     assert result[0]["building_id"] == "A"
@@ -179,10 +442,6 @@ def test_normalize_kwh_empty():
 def test_top_buildings_n_parametrize(n, expected_len):
     result = top_buildings_by_kwh(SAMPLE, n=n)
     assert len(result) == expected_len
-
-
-# Tests for split_by_day and kwh_stats_by_building
-from app.energy_export import kwh_stats_by_building, split_by_day
 
 
 def test_split_by_day_basic() -> None:

@@ -80,19 +80,6 @@ class TTLCache:
         """Total number of LRU evictions since creation or last clear()."""
         return self.evictions
 
-    def stats(self) -> dict[str, Any]:
-        """Return a snapshot of cache statistics."""
-        with self._lock:
-            return {
-                "size": len(self._store),
-                "max_size": self._max,
-                "ttl_seconds": self._ttl,
-                "hits": self.hits,
-                "misses": self.misses,
-                "evictions": self.evictions,
-                "hit_rate": self.hit_rate,
-            }
-
     @property
     def size(self) -> int:
         """Current number of entries (including potentially expired ones)."""
@@ -105,29 +92,25 @@ class TTLCache:
         total = self.hits + self.misses
         return self.hits / total if total > 0 else 0.0
 
+    def get_or_set(self, key: str, default: Any) -> Any:
+        """Return cached value; if absent or expired, store *default* and return it."""
+        value = self.get(key)
+        if value is None:
+            self.set(key, default)
+            return default
+        return value
+
+    def stats(self) -> dict[str, int | float]:
+        """Return a dict snapshot of cache performance counters."""
+        return {
+            "size": self.size,
+            "hits": self.hits,
+            "misses": self.misses,
+            "hit_rate": self.hit_rate,
+        }
+
 
 prediction_cache = TTLCache(ttl_seconds=30, max_size=500)
-
-
-def warm_cache(cache: TTLCache, entries: dict[str, object]) -> int:
-    """Pre-populate *cache* with a dictionary of key-value pairs.
-
-    Useful for loading frequently accessed predictions at startup to avoid
-    cold-start latency on the first few API requests.
-
-    Args:
-        cache: The TTLCache instance to populate.
-        entries: Mapping of cache keys to values to insert.
-
-    Returns:
-        Number of entries successfully inserted.
-    """
-    inserted = 0
-    for key, value in entries.items():
-        cache.set(key, value)
-        inserted += 1
-    return inserted
-
 
 __all__ = [
     "TTLCache",
@@ -137,6 +120,69 @@ __all__ = [
     "prediction_cache",
     "warm_cache",
 ]
+
+
+def build_cache_key(*parts: object) -> str:
+    """Build a string cache key from multiple parts.
+
+    Args:
+        *parts: Objects whose string representations form the key.
+
+    Returns:
+        Colon-delimited string key.
+    """
+    return ":".join(str(p) for p in parts)
+
+
+def evict_expired_keys(cache: "TTLCache") -> int:
+    """Force expiry sweep on a TTLCache and return the number of evicted entries.
+
+    Args:
+        cache: A TTLCache instance.
+
+    Returns:
+        Number of expired keys removed.
+    """
+    before = len(cache._store)
+    cache.evict_expired()
+    after = len(cache._store)
+    return before - after
+
+
+def cache_hit_rate(hits: int, misses: int) -> float:
+    """Compute cache hit rate as a fraction in [0, 1].
+
+    Args:
+        hits: Number of cache hits.
+        misses: Number of cache misses.
+
+    Returns:
+        Hit rate in [0, 1]. Returns 0.0 when hits + misses == 0.
+
+    Raises:
+        ValueError: If hits or misses are negative.
+    """
+    if hits < 0 or misses < 0:
+        raise ValueError("hits and misses must be non-negative")
+    total = hits + misses
+    if total == 0:
+        return 0.0
+    return round(hits / total, 4)
+
+
+def warm_cache(cache: "TTLCache", items: dict) -> int:
+    """Populate a TTLCache with a batch of items.
+
+    Args:
+        cache: Target TTLCache instance.
+        items: Mapping of key -> value to pre-populate.
+
+    Returns:
+        Number of items inserted.
+    """
+    for k, v in items.items():
+        cache.set(k, v)
+    return len(items)
 
 
 def cache_key_from_dict(params: dict[str, object], prefix: str = "") -> str:

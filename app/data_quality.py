@@ -2,7 +2,10 @@
 
 from __future__ import annotations
 
+import logging
 from typing import Any
+
+logger = logging.getLogger(__name__)
 
 _VALID_HOUR_RANGE = (0, 23)
 _VALID_MONTH_RANGE = (1, 12)
@@ -85,15 +88,20 @@ def quality_summary(scored: list[dict[str, Any]]) -> dict[str, Any]:
         Dict with mean_score, min_score, max_score, n_perfect, n_failing (score < 60).
     """
     if not scored:
-        return {"mean_score": 0.0, "min_score": 0, "max_score": 0, "n_perfect": 0, "n_failing": 0}
+        return {"total_records": 0, "mean_score": 0.0, "min_score": 0, "max_score": 0, "n_perfect": 0, "n_failing": 0}
     scores = [r["dq_score"] for r in scored]
-    return {
+    summary = {
+        "total_records": len(scored),
         "mean_score": round(sum(scores) / len(scores), 2),
         "min_score": min(scores),
         "max_score": max(scores),
         "n_perfect": sum(1 for s in scores if s == 100),
         "n_failing": sum(1 for s in scores if s < 60),
     }
+    logger.debug(
+        "quality_summary: n=%d mean=%.1f n_failing=%d", len(scored), summary["mean_score"], summary["n_failing"]
+    )
+    return summary
 
 
 def flag_outliers(
@@ -107,28 +115,10 @@ def flag_outliers(
         return []
     mean = sum(vals) / len(vals)
     variance = sum((v - mean) ** 2 for v in vals) / len(vals)
-    std = variance ** 0.5
+    std = variance**0.5
     if std == 0:
         return []
-    return [
-        r for r in records
-        if field in r and abs((float(r[field]) - mean) / std) > z_threshold
-    ]
-
-__all__ = [
-    "batch_score",
-    "completeness_score",
-    "detect_data_gaps",
-    "detect_duplicates",
-    "field_type_consistency",
-    "fill_missing",
-    "flag_outliers",
-    "quality_summary",
-    "range_violation_count",
-    "records_missing_field",
-    "score_record",
-    "unique_values",
-]
+    return [r for r in records if field in r and abs((float(r[field]) - mean) / std) > z_threshold]
 
 
 def detect_duplicates(
@@ -173,10 +163,7 @@ def completeness_score(records: list[dict[str, Any]], required_fields: list[str]
     """
     if not records:
         return 0.0
-    complete = sum(
-        1 for r in records
-        if all(r.get(f) is not None and r.get(f) != "" for f in required_fields)
-    )
+    complete = sum(1 for r in records if all(r.get(f) is not None and r.get(f) != "" for f in required_fields))
     return round(complete / len(records), 4)
 
 
@@ -204,6 +191,224 @@ def detect_data_gaps(
         if diff > expected_interval:
             gaps.append((timestamps[i - 1], timestamps[i]))
     return gaps
+
+
+def schema_validate(
+    record: dict[str, Any],
+    schema: dict[str, type],
+) -> list[str]:
+    """Validate that *record* fields match their expected Python types.
+
+    Args:
+        record: The record dict to validate.
+        schema: Mapping of field name to expected Python type (e.g. ``{"kwh": float}``).
+
+    Returns:
+        List of validation error strings, empty if all fields conform.
+    """
+    errors: list[str] = []
+    for field, expected_type in schema.items():
+        value = record.get(field)
+        if value is None:
+            errors.append(f"missing:{field}")
+        elif not isinstance(value, expected_type):
+            errors.append(f"type_error:{field} expected {expected_type.__name__}, got {type(value).__name__}")
+    return errors
+
+
+def normalize_record(record: dict[str, Any]) -> dict[str, Any]:
+    """Return a copy of *record* with string fields stripped and lower-cased.
+
+    Numeric fields are left untouched. Useful for standardising building IDs,
+    region names, and building type labels before insertion.
+
+    Args:
+        record: Input record dict.
+
+    Returns:
+        New dict with string values stripped of leading/trailing whitespace
+        and converted to lower-case.
+    """
+    out: dict[str, Any] = {}
+    for k, v in record.items():
+        if isinstance(v, str):
+            out[k] = v.strip().lower()
+        else:
+            out[k] = v
+    return out
+
+
+__all__ = [
+    "batch_score",
+    "completeness_score",
+    "detect_data_gaps",
+    "detect_duplicates",
+    "field_type_consistency",
+    "field_value_counts",
+    "fill_missing",
+    "flag_outliers",
+    "normalize_record",
+    "null_rate",
+    "quality_summary",
+    "range_violation_count",
+    "records_missing_field",
+    "schema_validate",
+    "score_record",
+    "unique_values",
+]
+
+
+def field_value_counts(
+    records: list[dict[str, Any]],
+    field: str,
+) -> dict[str, int]:
+    """Return a frequency table of values for *field* across *records*.
+
+    Args:
+        records: List of record dicts.
+        field: Field name to count distinct values for.
+
+    Returns:
+        Dict mapping each distinct value to its occurrence count, sorted by
+        count descending.
+    """
+    counts: dict[str, int] = {}
+    for rec in records:
+        val = str(rec.get(field, ""))
+        counts[val] = counts.get(val, 0) + 1
+    return dict(sorted(counts.items(), key=lambda x: x[1], reverse=True))
+
+
+def null_rate(records: list[dict[str, Any]], field: str) -> float:
+    """Return the fraction of records where *field* is None or missing.
+
+    Args:
+        records: List of record dicts.
+        field: Field name to check for null values.
+
+    Returns:
+        Null rate in [0.0, 1.0]; 0.0 for an empty list.
+    """
+    if not records:
+        return 0.0
+    null_count = sum(1 for r in records if r.get(field) is None)
+    return round(null_count / len(records), 4)
+
+
+def duplicate_rate(records: list[dict[str, Any]], key_fields: list[str]) -> float:
+    """Compute the fraction of records that are duplicates based on *key_fields*.
+
+    Args:
+        records: List of record dicts.
+        key_fields: Field names that together form a unique key.
+
+    Returns:
+        Fraction in [0, 1] of records that are duplicated (non-first occurrences).
+    """
+    if not records:
+        return 0.0
+    seen: set[tuple[Any, ...]] = set()
+    duplicates = 0
+    for rec in records:
+        key = tuple(rec.get(f) for f in key_fields)
+        if key in seen:
+            duplicates += 1
+        else:
+            seen.add(key)
+    return round(duplicates / len(records), 4)
+
+
+def field_completeness(records: list[dict[str, Any]], required_fields: list[str]) -> dict[str, float]:
+    """Compute completeness rate (1 - null_rate) for each required field.
+
+    Args:
+        records: List of record dicts.
+        required_fields: List of field names to check.
+
+    Returns:
+        Dict mapping field name to its completeness rate in [0, 1].
+    """
+    if not records:
+        return {f: 0.0 for f in required_fields}
+    result = {}
+    for field in required_fields:
+        present = sum(1 for r in records if r.get(field) is not None)
+        result[field] = round(present / len(records), 4)
+    return result
+
+
+def value_range_check(
+    records: list[dict[str, Any]],
+    field: str,
+    min_val: float,
+    max_val: float,
+) -> dict[str, Any]:
+    """Check how many records have *field* values outside [min_val, max_val].
+
+    Args:
+        records: List of record dicts.
+        field: Numeric field name to check.
+        min_val: Minimum acceptable value.
+        max_val: Maximum acceptable value.
+
+    Returns:
+        Dict with total_checked, out_of_range_count, and out_of_range_rate.
+    """
+    total = 0
+    out_of_range = 0
+    for rec in records:
+        val = rec.get(field)
+        if val is not None:
+            try:
+                fval = float(val)
+                total += 1
+                if not (min_val <= fval <= max_val):
+                    out_of_range += 1
+            except (TypeError, ValueError):
+                pass
+    rate = round(out_of_range / total, 4) if total > 0 else 0.0
+    return {
+        "total_checked": total,
+        "out_of_range_count": out_of_range,
+        "out_of_range_rate": rate,
+    }
+
+
+def data_freshness_score(
+    records: list[dict[str, Any]],
+    timestamp_field: str,
+    max_age_seconds: float = 3600.0,
+) -> dict[str, Any]:
+    """Compute a freshness score based on how recent the records' timestamps are.
+
+    Args:
+        records: List of record dicts.
+        timestamp_field: Field name containing ISO 8601 or Unix epoch timestamps.
+        max_age_seconds: Age threshold in seconds; records older than this are stale.
+
+    Returns:
+        Dict with total_records, fresh_count, stale_count, and freshness_rate.
+    """
+    import time
+    now = time.time()
+    fresh = 0
+    stale = 0
+    for rec in records:
+        ts = rec.get(timestamp_field)
+        if ts is None:
+            stale += 1
+            continue
+        try:
+            age = now - float(ts)
+            if age <= max_age_seconds:
+                fresh += 1
+            else:
+                stale += 1
+        except (TypeError, ValueError):
+            stale += 1
+    total = fresh + stale
+    rate = round(fresh / total, 4) if total > 0 else 0.0
+    return {"total_records": total, "fresh_count": fresh, "stale_count": stale, "freshness_rate": rate}
 
 
 def field_type_consistency(

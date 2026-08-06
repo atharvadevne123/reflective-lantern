@@ -214,3 +214,77 @@ __all__ = [
     "upload_model",
     "upload_model_artefacts",
 ]
+
+
+def artefact_exists(key: str, bucket: str = "") -> bool:
+    """Check whether an artefact key exists in the configured bucket.
+
+    Args:
+        key: S3 object key to check.
+        bucket: Override bucket name; uses AWS_MODEL_BUCKET env var if empty.
+
+    Returns:
+        True if key is present in list_model_versions, else False.
+    """
+    versions = list_model_versions(bucket=bucket)
+    return key in versions
+
+
+def upload_dict_as_json(data: dict, key: str, bucket: str = "") -> str:
+    """Serialize a dict to JSON and upload it to S3.
+
+    In offline mode, serializes locally and returns a stub URI.
+
+    Args:
+        data: Dict to serialize.
+        key: Target S3 key.
+        bucket: Override bucket name.
+
+    Returns:
+        Upload URI string.
+    """
+    import json
+    import os
+    import tempfile
+
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as fh:
+        json.dump(data, fh)
+        tmp_path = fh.name
+    try:
+        return upload_model(tmp_path, bucket=bucket, key=key)
+    finally:
+        os.unlink(tmp_path)
+
+
+def artefact_size_bytes(key: str, bucket: str = "") -> int:
+    """Return the content-length (bytes) of an S3 object, or -1 if unavailable.
+
+    Args:
+        key: S3 object key.
+        bucket: Bucket name; uses env var if empty.
+
+    Returns:
+        Size in bytes, or -1 when running in offline/stub mode.
+    """
+    client = _s3_client()
+    if client is None:
+        return -1
+    _bucket = bucket or __import__("os").getenv("AWS_MODEL_BUCKET", "stub-bucket")
+    try:
+        response = client.head_object(Bucket=_bucket, Key=key)
+        return response.get("ContentLength", -1)
+    except Exception:
+        return -1
+
+
+def build_s3_uri(bucket: str, key: str) -> str:
+    """Build an S3 URI string from bucket and key.
+
+    Args:
+        bucket: S3 bucket name.
+        key: Object key path.
+
+    Returns:
+        URI string of the form "s3://<bucket>/<key>".
+    """
+    return f"s3://{bucket}/{key}"

@@ -75,3 +75,64 @@ def test_configure_logging_plain_and_json():
     configure_logging(level="INFO", json_output=False)
     assert root.level == logging.INFO
     assert not isinstance(root.handlers[0].formatter, JsonFormatter)
+
+
+def test_json_formatter_timestamp_is_iso():
+    formatter = JsonFormatter()
+    record = logging.LogRecord(
+        name="test", level=logging.INFO, pathname="x.py", lineno=1,
+        msg="ts check", args=(), exc_info=None,
+    )
+    payload = json.loads(formatter.format(record))
+    ts = payload["ts"]
+    assert "T" in ts and (ts.endswith("Z") or "+" in ts or ts.endswith("+00:00"))
+
+
+def test_json_formatter_level_names():
+    formatter = JsonFormatter()
+    for level_name, level_const in [("DEBUG", logging.DEBUG), ("WARNING", logging.WARNING),
+                                    ("ERROR", logging.ERROR)]:
+        record = logging.LogRecord(
+            name="test", level=level_const, pathname="x.py", lineno=1,
+            msg="msg", args=(), exc_info=None,
+        )
+        payload = json.loads(formatter.format(record))
+        assert payload["level"] == level_name
+
+
+def test_configure_logging_clears_previous_handlers():
+    configure_logging(level="INFO", json_output=False)
+    first_count = len(logging.getLogger().handlers)
+    configure_logging(level="WARNING", json_output=False)
+    second_count = len(logging.getLogger().handlers)
+    assert second_count == first_count  # No duplicate handlers
+
+
+def test_json_formatter_model_version_field():
+    formatter = JsonFormatter()
+    record = logging.LogRecord(
+        name="test", level=logging.INFO, pathname="x.py", lineno=1,
+        msg="model log", args=(), exc_info=None,
+    )
+    record.model_version = "1.1.0"
+    payload = json.loads(formatter.format(record))
+    assert payload.get("model_version") == "1.1.0"
+
+
+def test_configure_logging_json_output_sets_formatter():
+    configure_logging(level="INFO", json_output=True)
+    handler = logging.getLogger().handlers[0]
+    assert isinstance(handler.formatter, JsonFormatter)
+
+
+def test_json_formatter_message_formatting():
+    formatter = JsonFormatter()
+    record = logging.LogRecord(
+        name="test", level=logging.INFO, pathname="x.py", lineno=1,
+        msg="value is %d and %.2f",
+        args=(42, 3.14),
+        exc_info=None,
+    )
+    payload = json.loads(formatter.format(record))
+    assert "42" in payload["message"]
+    assert "3.14" in payload["message"]

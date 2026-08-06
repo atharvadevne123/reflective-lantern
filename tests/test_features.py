@@ -354,6 +354,7 @@ def test_demand_response_potential_threshold_parametrized(threshold_pct):
 
 def test_normalize_consumption_minmax():
     from app.features import normalize_consumption
+
     values = [0.0, 5.0, 10.0]
     result = normalize_consumption(values, method="minmax")
     assert abs(result[0] - 0.0) < 1e-9
@@ -364,6 +365,7 @@ def test_normalize_consumption_zscore():
     import statistics
 
     from app.features import normalize_consumption
+
     values = [1.0, 2.0, 3.0, 4.0, 5.0]
     result = normalize_consumption(values, method="zscore")
     assert abs(statistics.mean(result)) < 1e-6
@@ -371,18 +373,21 @@ def test_normalize_consumption_zscore():
 
 def test_normalize_consumption_invalid_method():
     from app.features import normalize_consumption
+
     with pytest.raises(ValueError, match="method must be"):
         normalize_consumption([1.0, 2.0], method="unknown")
 
 
 def test_normalize_consumption_empty():
     from app.features import normalize_consumption
+
     with pytest.raises(ValueError, match="must not be empty"):
         normalize_consumption([])
 
 
 def test_normalize_consumption_constant_minmax():
     from app.features import normalize_consumption
+
     result = normalize_consumption([5.0] * 10, method="minmax")
     assert all(v == 0.0 for v in result)
 
@@ -390,6 +395,7 @@ def test_normalize_consumption_constant_minmax():
 @pytest.mark.parametrize("method", ["minmax", "zscore"])
 def test_normalize_consumption_same_length(method):
     from app.features import normalize_consumption
+
     values = [1.0, 2.0, 3.0, 4.0, 5.0]
     result = normalize_consumption(values, method=method)
     assert len(result) == len(values)
@@ -397,6 +403,7 @@ def test_normalize_consumption_same_length(method):
 
 def test_demand_response_potential_extended():
     from app.features import demand_response_potential
+
     loads = [5.0, 10.0, 15.0, 20.0, 25.0]
     result = demand_response_potential(loads, peak_threshold_pct=0.8)
     assert "peak_hours_count" in result
@@ -407,12 +414,14 @@ def test_demand_response_potential_extended():
 
 def test_demand_response_potential_empty():
     from app.features import demand_response_potential
+
     with pytest.raises(ValueError, match="must not be empty"):
         demand_response_potential([])
 
 
 def test_demand_response_potential_invalid_threshold():
     from app.features import demand_response_potential
+
     with pytest.raises(ValueError, match="peak_threshold_pct"):
         demand_response_potential([1.0, 2.0], peak_threshold_pct=0.0)
 
@@ -420,6 +429,158 @@ def test_demand_response_potential_invalid_threshold():
 @pytest.mark.parametrize("threshold", [0.5, 0.8, 1.0])
 def test_demand_response_potential_thresholds(threshold):
     from app.features import demand_response_potential
+
     loads = list(range(1, 25))
     result = demand_response_potential(loads, peak_threshold_pct=threshold)
     assert 0.0 <= result["potential_pct"] <= 1.0
+
+
+def test_encode_cyclical_returns_two_floats():
+    from app.features import encode_cyclical
+
+    sin_val, cos_val = encode_cyclical(0.0, 24.0)
+    assert isinstance(sin_val, float)
+    assert isinstance(cos_val, float)
+
+
+def test_encode_cyclical_zero_is_zero_sin():
+    from app.features import encode_cyclical
+
+    sin_val, _cos_val = encode_cyclical(0.0, 24.0)
+    assert abs(sin_val) < 1e-9
+
+
+def test_encode_cyclical_half_period_sine_near_zero():
+    from app.features import encode_cyclical
+
+    sin_val, _cos_val = encode_cyclical(12.0, 24.0)
+    assert abs(sin_val) < 1e-9
+
+
+def test_normalize_consumption_minmax_endpoints():
+    from app.features import normalize_consumption
+
+    result = normalize_consumption([0.0, 5.0, 10.0], method="minmax")
+    assert result[0] == pytest.approx(0.0)
+    assert result[-1] == pytest.approx(1.0)
+
+
+def test_normalize_consumption_zscore_returns_list():
+    from app.features import normalize_consumption
+
+    result = normalize_consumption([10.0, 20.0, 30.0], method="zscore")
+    assert isinstance(result, list)
+    assert len(result) == 3
+
+
+@pytest.mark.parametrize("method", ["minmax", "zscore"])
+def test_normalize_consumption_length_preserved_method(method):
+    from app.features import normalize_consumption
+
+    values = [float(i) for i in range(10)]
+    result = normalize_consumption(values, method=method)
+    assert len(result) == len(values)
+
+
+class TestLagFeatures:
+    def test_single_lag(self) -> None:
+        from app.features import lag_features
+
+        result = lag_features([1.0, 2.0, 3.0, 4.0], lags=[1])
+        assert result["lag_1"] == [None, 1.0, 2.0, 3.0]
+
+    def test_two_lags(self) -> None:
+        from app.features import lag_features
+
+        result = lag_features([10.0, 20.0, 30.0, 40.0], lags=[1, 2])
+        assert "lag_1" in result and "lag_2" in result
+
+    def test_invalid_lag(self) -> None:
+        from app.features import lag_features
+
+        with pytest.raises(ValueError):
+            lag_features([1.0, 2.0], lags=[0])
+
+    def test_length_preserved(self) -> None:
+        from app.features import lag_features
+
+        vals = [float(i) for i in range(10)]
+        result = lag_features(vals, lags=[3])
+        assert len(result["lag_3"]) == 10
+
+
+class TestDifferenceFeature:
+    def test_first_order(self) -> None:
+        from app.features import difference_feature
+
+        result = difference_feature([1.0, 3.0, 6.0, 10.0], order=1)
+        assert result == pytest.approx([2.0, 3.0, 4.0])
+
+    def test_second_order(self) -> None:
+        from app.features import difference_feature
+
+        result = difference_feature([1.0, 2.0, 4.0, 7.0], order=2)
+        assert len(result) == 2
+
+    def test_invalid_order(self) -> None:
+        from app.features import difference_feature
+
+        with pytest.raises(ValueError):
+            difference_feature([1.0, 2.0], order=0)
+
+    def test_constant_series(self) -> None:
+        from app.features import difference_feature
+
+        result = difference_feature([5.0, 5.0, 5.0], order=1)
+        assert all(v == pytest.approx(0.0) for v in result)
+
+
+class TestRatioFeature:
+    def test_basic(self) -> None:
+        from app.features import ratio_feature
+
+        result = ratio_feature([10.0, 20.0], [2.0, 4.0])
+        assert result == pytest.approx([5.0, 5.0])
+
+    def test_zero_denominator(self) -> None:
+        from app.features import ratio_feature
+
+        result = ratio_feature([5.0], [0.0])
+        assert result == [0.0]
+
+    def test_empty_raises(self) -> None:
+        from app.features import ratio_feature
+
+        with pytest.raises(ValueError):
+            ratio_feature([], [])
+
+    def test_length_mismatch_raises(self) -> None:
+        from app.features import ratio_feature
+
+        with pytest.raises(ValueError):
+            ratio_feature([1.0, 2.0], [1.0])
+
+
+class TestClipFeatureValues:
+    def test_clips_below(self) -> None:
+        from app.features import clip_feature_values
+
+        result = clip_feature_values([-5.0, 3.0], low=0.0, high=10.0)
+        assert result[0] == pytest.approx(0.0)
+
+    def test_clips_above(self) -> None:
+        from app.features import clip_feature_values
+
+        result = clip_feature_values([5.0, 20.0], low=0.0, high=10.0)
+        assert result[1] == pytest.approx(10.0)
+
+    def test_invalid_range_raises(self) -> None:
+        from app.features import clip_feature_values
+
+        with pytest.raises(ValueError):
+            clip_feature_values([1.0], low=10.0, high=5.0)
+
+    def test_empty(self) -> None:
+        from app.features import clip_feature_values
+
+        assert clip_feature_values([], low=0.0, high=1.0) == []

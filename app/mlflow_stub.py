@@ -139,6 +139,7 @@ def list_runs() -> list[dict[str, object]]:
                     logger.warning("Skipping malformed run log entry")
     return runs
 
+
 __all__ = [
     "get_best_run",
     "list_runs",
@@ -148,3 +149,57 @@ __all__ = [
     "log_training_run",
     "set_tracking_uri",
 ]
+
+
+def delete_run(run_name: str) -> bool:
+    """Delete a run from the run log by name.
+
+    Args:
+        run_name: The run name to delete.
+
+    Returns:
+        True if a run was deleted, False if not found.
+    """
+    runs = list_runs()
+    filtered = [r for r in runs if r.get("run") != run_name]
+    if len(filtered) == len(runs):
+        return False
+    import json
+
+    with open(_RUN_LOG, "w") as fh:
+        for r in filtered:
+            fh.write(json.dumps(r) + "\n")
+    return True
+
+
+def run_exists(run_name: str) -> bool:
+    """Check whether a run with the given name exists.
+
+    Args:
+        run_name: Run name to look up.
+
+    Returns:
+        True if found, False otherwise.
+    """
+    return any(r.get("run") == run_name for r in list_runs())
+
+
+def clear_runs() -> int:
+    """Clear all runs from the run log file.
+
+    Returns:
+        Number of runs removed.
+    """
+    runs = list_runs()
+    if _RUN_LOG.exists():
+        _RUN_LOG.write_text("")
+    return len(runs)
+
+
+def run_count() -> int:
+    """Return the total number of stored runs.
+
+    Returns:
+        Integer count.
+    """
+    return len(list_runs())

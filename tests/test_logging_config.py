@@ -358,3 +358,55 @@ def test_log_level_int_parametrized(level_name, expected) -> None:
     from app.logging_config import log_level_int
 
     assert log_level_int(level_name) == expected
+
+
+def test_configure_logging_info() -> None:
+    from app.logging_config import configure_logging, get_configured_log_level
+
+    configure_logging(level="INFO")
+    assert get_configured_log_level() == 20
+
+
+def test_configure_logging_warning() -> None:
+    from app.logging_config import configure_logging, get_configured_log_level
+
+    configure_logging(level="WARNING")
+    assert get_configured_log_level() == 30
+
+
+def test_add_trace_id_filter_adds_filter() -> None:
+    import logging
+
+    from app.logging_config import add_trace_id_filter
+
+    test_logger = logging.getLogger("test_trace_id")
+    initial_count = len(test_logger.filters)
+    add_trace_id_filter(test_logger, "trace-abc")
+    assert len(test_logger.filters) > initial_count
+
+
+def test_json_formatter_produces_json() -> None:
+    import json
+    import logging
+
+    from app.logging_config import JsonFormatter
+
+    formatter = JsonFormatter()
+    record = logging.LogRecord(
+        name="test", level=logging.INFO, pathname="", lineno=0, msg="Hello JSON", args=(), exc_info=None
+    )
+    output = formatter.format(record)
+    parsed = json.loads(output)
+    assert "message" in parsed or "msg" in parsed or "Hello JSON" in output
+
+
+@pytest.mark.parametrize("level", ["DEBUG", "INFO", "WARNING", "ERROR"])
+def test_configure_and_check_level(level: str) -> None:
+    import logging
+
+    from app.logging_config import configure_logging, log_level_int
+
+    configure_logging(level=level)
+    expected = log_level_int(level)
+    root_level = logging.getLogger().level
+    assert root_level == expected

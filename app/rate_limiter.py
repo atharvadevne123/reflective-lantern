@@ -2,9 +2,12 @@
 
 from __future__ import annotations
 
+import logging
 import threading
 import time
 from dataclasses import dataclass, field
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -46,6 +49,7 @@ class TokenBucketRateLimiter:
             if bucket.tokens >= 1.0:
                 bucket.tokens -= 1.0
                 return True
+            logger.debug("rate_limit: client=%r throttled tokens=%.2f", client_key, bucket.tokens)
             return False
 
     def remaining_tokens(self, client_key: str) -> float:
@@ -74,9 +78,7 @@ class TokenBucketRateLimiter:
             return len(self._buckets)
 
 
-def make_rate_limiter(
-    capacity: float = 60.0, rate_per_second: float = 1.0
-) -> TokenBucketRateLimiter:
+def make_rate_limiter(capacity: float = 60.0, rate_per_second: float = 1.0) -> TokenBucketRateLimiter:
     """Factory returning a new :class:`TokenBucketRateLimiter` with defaults."""
     return TokenBucketRateLimiter(capacity=capacity, rate_per_second=rate_per_second)
 
@@ -89,25 +91,55 @@ __all__ = [
 ]
 
 
-def make_strict_limiter(requests_per_minute: int) -> TokenBucketRateLimiter:
-    """Create a rate limiter configured to allow *requests_per_minute* requests.
-
-    Sets capacity equal to requests_per_minute and refill rate to the equivalent
-    per-second rate (requests_per_minute / 60).
+def limiter_utilization(limiter: "TokenBucketRateLimiter", client_key: str = "default") -> float:
+    """Return the fraction of token capacity currently consumed for a client.
 
     Args:
-        requests_per_minute: Target request allowance per minute (must be >= 1).
+        limiter: A TokenBucketRateLimiter instance.
+        client_key: The client identifier. Default "default".
 
     Returns:
-        A configured :class:`TokenBucketRateLimiter` instance.
-
-    Raises:
-        ValueError: If *requests_per_minute* is less than 1.
+        Float in [0, 1] where 0 = full capacity available, 1 = fully consumed.
     """
-    if requests_per_minute < 1:
-        raise ValueError(f"requests_per_minute must be >= 1, got {requests_per_minute}")
-    rate = requests_per_minute / 60.0
-    return TokenBucketRateLimiter(capacity=float(requests_per_minute), rate_per_second=rate)
+    remaining = limiter.remaining_tokens(client_key)
+    capacity = limiter._capacity
+    consumed = capacity - remaining
+    return round(max(0.0, min(1.0, consumed / capacity)), 4)
+
+
+def reset_limiter(limiter: "TokenBucketRateLimiter", client_key: str = "default") -> None:
+    """Reset a client's token bucket to full capacity.
+
+    Args:
+        limiter: A TokenBucketRateLimiter instance.
+        client_key: The client identifier. Default "default".
+    """
+    limiter.reset(client_key)
+
+
+def is_rate_limited(limiter: "TokenBucketRateLimiter", client_key: str = "default") -> bool:
+    """Check whether a client's next request would be rate-limited WITHOUT consuming tokens.
+
+    Args:
+        limiter: A TokenBucketRateLimiter instance.
+        client_key: The client identifier. Default "default".
+
+    Returns:
+        True if the next is_allowed call would be denied, else False.
+    """
+    return limiter.remaining_tokens(client_key) < 1.0
+
+
+def make_strict_limiter(max_per_second: float) -> "TokenBucketRateLimiter":
+    """Create a rate limiter with capacity = max_per_second (burst of 1 second).
+
+    Args:
+        max_per_second: Allowed requests per second.
+
+    Returns:
+        TokenBucketRateLimiter configured for the given rate.
+    """
+    return make_rate_limiter(capacity=max_per_second, rate_per_second=max_per_second)
 
 
 def burst_capacity_fraction(limiter: TokenBucketRateLimiter, client_key: str) -> float:
