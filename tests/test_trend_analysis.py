@@ -6,12 +6,16 @@ import pytest
 
 from app.trend_analysis import (
     TrendResult,
+    autocorrelation,
+    cumulative_sum,
     detect_change_points,
+    double_exponential_smoothing,
     linear_trend,
     percentage_change,
     rate_of_change,
     rolling_mean,
     seasonal_decompose_naive,
+    trend_strength,
     year_over_year_growth,
 )
 
@@ -236,3 +240,68 @@ def test_rate_of_change_various_lags(lag: int) -> None:
     values = [float(i * 10) for i in range(1, 8)]
     result = rate_of_change(values, lag=lag)
     assert len(result) == len(values) - lag
+
+
+def test_trend_strength_perfect_line() -> None:
+    values = [float(i) for i in range(10)]
+    assert trend_strength(values) == pytest.approx(1.0, abs=1e-4)
+
+
+def test_trend_strength_constant() -> None:
+    assert trend_strength([5.0] * 10) == pytest.approx(1.0, abs=1e-4)
+
+
+def test_trend_strength_single() -> None:
+    assert trend_strength([42.0]) == pytest.approx(0.0)
+
+
+def test_autocorrelation_lag1_positive() -> None:
+    values = [float(i) for i in range(20)]
+    ac = autocorrelation(values, lag=1)
+    assert ac > 0
+
+
+def test_autocorrelation_insufficient_data() -> None:
+    assert autocorrelation([1.0, 2.0], lag=2) == 0.0
+
+
+def test_autocorrelation_constant_series() -> None:
+    assert autocorrelation([3.0] * 10, lag=1) == 0.0
+
+
+@pytest.mark.parametrize("lag", [1, 2, 3])
+def test_autocorrelation_lag_parametrize(lag: int) -> None:
+    values = [float(i) for i in range(20)]
+    ac = autocorrelation(values, lag=lag)
+    assert -1.0 <= ac <= 1.0
+
+
+def test_cumulative_sum_correctness() -> None:
+    result = cumulative_sum([1.0, 2.0, 3.0])
+    assert result == pytest.approx([1.0, 3.0, 6.0])
+
+
+def test_cumulative_sum_empty() -> None:
+    assert cumulative_sum([]) == []
+
+
+def test_cumulative_sum_length() -> None:
+    values = [1.0, 2.0, 3.0, 4.0]
+    assert len(cumulative_sum(values)) == len(values)
+
+
+def test_double_exponential_smoothing_length() -> None:
+    values = [1.0, 2.0, 3.0, 4.0, 5.0]
+    result = double_exponential_smoothing(values)
+    assert len(result) == len(values)
+
+
+def test_double_exponential_smoothing_single() -> None:
+    result = double_exponential_smoothing([10.0])
+    assert result == [10.0]
+
+
+def test_double_exponential_smoothing_increasing() -> None:
+    values = [float(i) for i in range(1, 11)]
+    result = double_exponential_smoothing(values, alpha=0.5, beta=0.5)
+    assert result[-1] > result[0]
