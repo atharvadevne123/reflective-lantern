@@ -283,5 +283,70 @@ __all__ = [
     "monthly_consumption_summary",
     "peak_demand_by_period",
     "peak_demand_report",
+    "rolling_savings_summary",
     "seasonal_efficiency_score",
+    "top_consumption_hours",
 ]
+
+
+def top_consumption_hours(
+    hourly_kwh: list[float],
+    n: int = 5,
+) -> list[dict[str, Any]]:
+    """Return the *n* hours with the highest consumption in *hourly_kwh*.
+
+    Args:
+        hourly_kwh: List of hourly energy readings (index 0 = hour 0).
+        n: Number of top hours to return (capped at len(hourly_kwh)).
+
+    Returns:
+        List of dicts with 'hour' (index) and 'kwh' keys, sorted by kwh descending.
+        Empty list when *hourly_kwh* is empty.
+    """
+    if not hourly_kwh:
+        return []
+    indexed = [{"hour": i, "kwh": round(v, 4)} for i, v in enumerate(hourly_kwh)]
+    indexed.sort(key=lambda x: x["kwh"], reverse=True)
+    return indexed[: min(n, len(indexed))]
+
+
+def rolling_savings_summary(
+    actual_series: list[float],
+    baseline_series: list[float],
+    window: int = 24,
+) -> list[dict[str, float]]:
+    """Compute rolling *window*-period savings between actual and baseline series.
+
+    Args:
+        actual_series: Measured consumption readings.
+        baseline_series: Reference consumption readings (same length as actual_series).
+        window: Rolling window size in periods.
+
+    Returns:
+        List of dicts with 'window_start', 'saved_kwh', 'savings_pct' for each
+        complete window. Empty when inputs are too short.
+
+    Raises:
+        ValueError: If series lengths differ.
+    """
+    if len(actual_series) != len(baseline_series):
+        raise ValueError(
+            f"Series length mismatch: {len(actual_series)} vs {len(baseline_series)}"
+        )
+    n = len(actual_series)
+    if n < window:
+        return []
+    results = []
+    for start in range(n - window + 1):
+        end = start + window
+        actual_window = actual_series[start:end]
+        baseline_window = baseline_series[start:end]
+        saved = sum(b - a for a, b in zip(actual_window, baseline_window))
+        baseline_total = sum(baseline_window)
+        pct = round(100.0 * saved / baseline_total, 4) if baseline_total > 0 else 0.0
+        results.append({
+            "window_start": float(start),
+            "saved_kwh": round(saved, 4),
+            "savings_pct": pct,
+        })
+    return results
