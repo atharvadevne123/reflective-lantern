@@ -207,3 +207,69 @@ class TestEfficiencyGap:
         from app.benchmarks import efficiency_gap
         result = efficiency_gap(500.0, 200.0)
         assert result == pytest.approx(150.0, rel=1e-4)
+
+
+# Tests for target_eui and eui_percentile_category
+from app.benchmarks import eui_percentile_category, target_eui
+
+
+def test_target_eui_zero_improvement() -> None:
+    from app.benchmarks import ASHRAE_EUI_BENCHMARKS
+    result = target_eui("office", improvement_pct=0.0)
+    assert result == pytest.approx(ASHRAE_EUI_BENCHMARKS["office"])
+
+
+def test_target_eui_20pct_improvement() -> None:
+    from app.benchmarks import ASHRAE_EUI_BENCHMARKS
+    result = target_eui("office", improvement_pct=20.0)
+    assert result == pytest.approx(ASHRAE_EUI_BENCHMARKS["office"] * 0.8)
+
+
+def test_target_eui_100pct_is_zero() -> None:
+    assert target_eui("office", improvement_pct=100.0) == pytest.approx(0.0)
+
+
+def test_target_eui_invalid_pct_raises() -> None:
+    with pytest.raises(ValueError):
+        target_eui("office", improvement_pct=101.0)
+
+
+def test_target_eui_negative_pct_raises() -> None:
+    with pytest.raises(ValueError):
+        target_eui("office", improvement_pct=-1.0)
+
+
+def test_target_eui_unknown_type_uses_default() -> None:
+    from app.benchmarks import ASHRAE_EUI_BENCHMARKS
+    result = target_eui("unknown_type", improvement_pct=10.0)
+    assert result == pytest.approx(ASHRAE_EUI_BENCHMARKS["default"] * 0.9)
+
+
+def test_eui_percentile_top_25() -> None:
+    from app.benchmarks import ASHRAE_EUI_BENCHMARKS
+    low_eui = ASHRAE_EUI_BENCHMARKS["office"] * 0.4
+    assert eui_percentile_category(low_eui, "office") == "top_25"
+
+
+def test_eui_percentile_median() -> None:
+    from app.benchmarks import ASHRAE_EUI_BENCHMARKS
+    mid_eui = ASHRAE_EUI_BENCHMARKS["office"] * 0.7
+    assert eui_percentile_category(mid_eui, "office") == "median"
+
+
+def test_eui_percentile_average() -> None:
+    from app.benchmarks import ASHRAE_EUI_BENCHMARKS
+    avg_eui = ASHRAE_EUI_BENCHMARKS["office"] * 1.0
+    assert eui_percentile_category(avg_eui, "office") == "average"
+
+
+def test_eui_percentile_bottom_25() -> None:
+    from app.benchmarks import ASHRAE_EUI_BENCHMARKS
+    high_eui = ASHRAE_EUI_BENCHMARKS["office"] * 1.5
+    assert eui_percentile_category(high_eui, "office") == "bottom_25"
+
+
+@pytest.mark.parametrize("building_type", ["office", "retail", "school", "hospital"])
+def test_target_eui_known_types(building_type: str) -> None:
+    result = target_eui(building_type, improvement_pct=10.0)
+    assert result > 0
