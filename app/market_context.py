@@ -470,7 +470,6 @@ def price_appreciation_rate(
     Raises:
         ValueError: If any argument is non-positive.
     """
-    import math
 
     if original_price <= 0 or current_price <= 0 or years <= 0:
         raise ValueError("original_price, current_price, and years must all be positive")

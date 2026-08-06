@@ -4,7 +4,12 @@ from __future__ import annotations
 
 import pytest
 
-from app.similarity import BuildingSimilarityIndex
+from app.similarity import (
+    BuildingSimilarityIndex,
+    chebyshev_distance,
+    manhattan_distance,
+    pearson_similarity,
+)
 
 
 def test_empty_index_returns_empty() -> None:

@@ -171,5 +171,5 @@ def cache_stats_summary(cache: TTLCache) -> dict[str, object]:
         "misses": cache.misses,
         "evictions": cache.eviction_count,
         "hit_rate": round(cache.hit_rate, 4),
-        "size": len(cache),
+        "size": cache.size,
     }

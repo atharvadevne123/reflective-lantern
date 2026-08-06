@@ -387,14 +387,17 @@ def rolling_anomaly_flag(
         raise ValueError(f"window must be at least 2, got {window}")
     n = len(values)
     flags: list[bool] = []
-    half = window // 2
     for i in range(n):
-        lo = max(0, i - half)
-        hi = min(n, i + half + 1)
-        win = values[lo:hi]
+        lo = max(0, i - window)
+        win = values[lo:i]
+        if len(win) < 2:
+            flags.append(False)
+            continue
         arr = np.array(win, dtype=float)
         mean = float(arr.mean())
         std = float(arr.std())
-        z = compute_z_score(values[i], mean, std)
-        flags.append(abs(z) > threshold)
+        if std == 0.0:
+            flags.append(values[i] != mean)
+        else:
+            flags.append(abs(compute_z_score(values[i], mean, std)) > threshold)
     return flags

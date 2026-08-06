@@ -254,7 +254,6 @@ def test_format_iso_various_dates(month, day) -> None:
 
 
 # Tests for start_of_month and clamp_to_range
-from datetime import UTC, datetime
 
 import pytest
 

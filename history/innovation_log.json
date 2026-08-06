@@ -511,7 +511,7 @@
   },
   {
     "date": "2026-07-17",
-    "mode": "user-requested",
+    "mode": "INNOVATION",
     "project": "Veritas-Rag",
     "description": "Near-zero-hallucination RAG system for 10M documents: ten-stage pipeline with ingestion/dedup/versioning, hybrid BM25+semantic retrieval, FAISS ANN + reranking, chunk trust scoring, constrained cited generation, insufficient-evidence fallback, adversarial evaluation gate, caching, and full observability.",
     "inspired_by": "Explicit user specification (10-step near-zero-hallucination RAG design)",
