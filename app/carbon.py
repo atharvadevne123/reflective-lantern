@@ -171,6 +171,8 @@ __all__ = [
     "TREES_PER_TONNE_CO2_PER_YEAR",
     "annual_carbon_report",
     "carbon_intensity_by_hour",
+    "carbon_per_sqm",
+    "carbon_reduction_pct",
     "carbon_saved_kwh",
     "carbon_savings",
     "co2_kg_to_tonnes",
@@ -333,3 +335,46 @@ def fleet_emission_factor(
         "total_co2_kg": round(total_co2, 4),
         "mean_co2_kg_per_asset": round(mean_co2, 4),
     }
+
+
+def carbon_per_sqm(
+    annual_kwh: float,
+    floor_area_sqm: float,
+    region: str = "default",
+) -> float:
+    """Compute building carbon intensity in kg CO2e per square metre per year.
+
+    Args:
+        annual_kwh: Total annual energy consumption in kWh.
+        floor_area_sqm: Building floor area in square metres (must be > 0).
+        region: Grid region identifier for the carbon intensity factor.
+
+    Returns:
+        Carbon intensity in kg CO2e/m²/year, rounded to 4 decimal places.
+
+    Raises:
+        ValueError: If *floor_area_sqm* is non-positive.
+    """
+    if floor_area_sqm <= 0:
+        raise ValueError(f"floor_area_sqm must be positive, got {floor_area_sqm}")
+    total_co2 = kwh_to_co2_kg(annual_kwh, region)
+    return round(total_co2 / floor_area_sqm, 4)
+
+
+def carbon_reduction_pct(
+    baseline_co2_kg: float,
+    actual_co2_kg: float,
+) -> float:
+    """Compute the percentage reduction in CO2 emissions vs a baseline.
+
+    Args:
+        baseline_co2_kg: Reference (pre-intervention) CO2 in kg.
+        actual_co2_kg: Post-intervention CO2 in kg.
+
+    Returns:
+        Percentage reduction; positive means emissions went down.
+        Returns 0.0 when *baseline_co2_kg* is zero.
+    """
+    if baseline_co2_kg == 0.0:
+        return 0.0
+    return round((baseline_co2_kg - actual_co2_kg) / baseline_co2_kg * 100.0, 4)
