@@ -4,7 +4,17 @@ import math
 
 import pytest
 
-from app.investment import InvestmentAnalysis, compute_investment_analysis, discounted_cash_flow, margin_of_safety, payback_period
+from app.investment import (
+    InvestmentAnalysis,
+    cash_on_cash_return,
+    compute_investment_analysis,
+    debt_service_coverage_ratio,
+    discounted_cash_flow,
+    equity_multiple,
+    gross_rent_multiplier,
+    margin_of_safety,
+    payback_period,
+)
 
 
 def test_basic_investment_analysis() -> None:
@@ -554,3 +564,75 @@ class TestMarginOfSafety:
     def test_large_values(self) -> None:
         result = margin_of_safety(1_000_000.0, 750_000.0)
         assert result == pytest.approx(25.0, rel=1e-4)
+
+
+class TestGrossRentMultiplier:
+    def test_basic_grm(self) -> None:
+        assert gross_rent_multiplier(300_000.0, 30_000.0) == pytest.approx(10.0)
+
+    def test_zero_rent_returns_zero(self) -> None:
+        assert gross_rent_multiplier(300_000.0, 0.0) == 0.0
+
+    def test_high_yield_low_grm(self) -> None:
+        assert gross_rent_multiplier(100_000.0, 25_000.0) == pytest.approx(4.0)
+
+    @pytest.mark.parametrize("price,rent,expected", [
+        (500_000.0, 50_000.0, 10.0),
+        (200_000.0, 20_000.0, 10.0),
+        (1_000_000.0, 100_000.0, 10.0),
+    ])
+    def test_grm_parametrize(self, price, rent, expected) -> None:
+        assert gross_rent_multiplier(price, rent) == pytest.approx(expected)
+
+
+class TestEquityMultiple:
+    def test_basic_em(self) -> None:
+        assert equity_multiple(200_000.0, 100_000.0) == pytest.approx(2.0)
+
+    def test_zero_invested_returns_zero(self) -> None:
+        assert equity_multiple(100_000.0, 0.0) == 0.0
+
+    def test_loss_scenario(self) -> None:
+        assert equity_multiple(50_000.0, 100_000.0) == pytest.approx(0.5)
+
+    def test_breakeven(self) -> None:
+        assert equity_multiple(100_000.0, 100_000.0) == pytest.approx(1.0)
+
+
+class TestCashOnCashReturn:
+    def test_basic_coc(self) -> None:
+        assert cash_on_cash_return(10_000.0, 100_000.0) == pytest.approx(10.0)
+
+    def test_zero_invested_returns_zero(self) -> None:
+        assert cash_on_cash_return(5_000.0, 0.0) == 0.0
+
+    def test_negative_flow(self) -> None:
+        result = cash_on_cash_return(-5_000.0, 100_000.0)
+        assert result == pytest.approx(-5.0)
+
+    @pytest.mark.parametrize("flow,invested,expected", [
+        (12_000.0, 120_000.0, 10.0),
+        (6_000.0, 120_000.0, 5.0),
+    ])
+    def test_coc_parametrize(self, flow, invested, expected) -> None:
+        assert cash_on_cash_return(flow, invested) == pytest.approx(expected)
+
+
+class TestDebtServiceCoverageRatio:
+    def test_healthy_dscr(self) -> None:
+        assert debt_service_coverage_ratio(120_000.0, 100_000.0) == pytest.approx(1.2)
+
+    def test_zero_debt_service_returns_zero(self) -> None:
+        assert debt_service_coverage_ratio(50_000.0, 0.0) == 0.0
+
+    def test_below_one_dscr(self) -> None:
+        result = debt_service_coverage_ratio(80_000.0, 100_000.0)
+        assert result == pytest.approx(0.8)
+
+    @pytest.mark.parametrize("noi,debt,expected", [
+        (150_000.0, 100_000.0, 1.5),
+        (100_000.0, 100_000.0, 1.0),
+        (50_000.0, 100_000.0, 0.5),
+    ])
+    def test_dscr_parametrize(self, noi, debt, expected) -> None:
+        assert debt_service_coverage_ratio(noi, debt) == pytest.approx(expected)
