@@ -10,13 +10,17 @@ from app.time_series import (
     exponential_moving_average,
     find_changepoints,
     forecast_linear_trend,
+    hampel_filter,
     load_factor,
+    mape,
+    min_max_scale,
     moving_median,
     peak_hours,
     peak_to_valley_ratio,
     rolling_zscore,
     seasonal_baseline,
     simple_moving_average,
+    z_normalize,
 )
 
 
@@ -586,3 +590,94 @@ def test_moving_median_various_windows(window: int) -> None:
     values = [float(i) for i in range(10)]
     result = moving_median(values, window=window)
     assert len(result) == len(values)
+
+
+def test_z_normalize_mean_zero() -> None:
+    values = [1.0, 2.0, 3.0, 4.0, 5.0]
+    result = z_normalize(values)
+    assert abs(sum(result)) < 1e-9
+
+
+def test_z_normalize_std_one() -> None:
+    import math
+    values = [1.0, 2.0, 3.0, 4.0, 5.0]
+    result = z_normalize(values)
+    mean = sum(result) / len(result)
+    variance = sum((v - mean) ** 2 for v in result) / len(result)
+    assert math.sqrt(variance) == pytest.approx(1.0, abs=1e-4)
+
+
+def test_z_normalize_constant_series() -> None:
+    result = z_normalize([5.0] * 10)
+    assert all(v == 0.0 for v in result)
+
+
+def test_z_normalize_empty() -> None:
+    assert z_normalize([]) == []
+
+
+def test_mape_basic() -> None:
+    actual = [100.0, 200.0, 300.0]
+    predicted = [110.0, 190.0, 300.0]
+    result = mape(actual, predicted)
+    assert result == pytest.approx((10.0 + 5.0 + 0.0) / 3, rel=1e-4)
+
+
+def test_mape_zero_actual_skipped() -> None:
+    actual = [0.0, 100.0]
+    predicted = [50.0, 110.0]
+    result = mape(actual, predicted)
+    assert result == pytest.approx(10.0)
+
+
+def test_mape_empty() -> None:
+    assert mape([], []) == 0.0
+
+
+def test_hampel_filter_length_preserved() -> None:
+    values = [1.0, 2.0, 100.0, 2.0, 1.0]
+    result = hampel_filter(values)
+    assert len(result) == len(values)
+
+
+def test_hampel_filter_replaces_outlier() -> None:
+    values = [1.0, 2.0, 1.0, 1.0, 100.0, 1.0, 1.0, 2.0, 1.0]
+    result = hampel_filter(values, window=3, n_sigma=2.0)
+    assert result[4] < 10.0
+
+
+def test_hampel_filter_empty() -> None:
+    assert hampel_filter([]) == []
+
+
+def test_min_max_scale_range() -> None:
+    values = [0.0, 5.0, 10.0]
+    result = min_max_scale(values)
+    assert result[0] == pytest.approx(0.0)
+    assert result[-1] == pytest.approx(1.0)
+
+
+def test_min_max_scale_custom_range() -> None:
+    values = [0.0, 10.0]
+    result = min_max_scale(values, feature_range=(-1.0, 1.0))
+    assert result[0] == pytest.approx(-1.0)
+    assert result[-1] == pytest.approx(1.0)
+
+
+def test_min_max_scale_constant() -> None:
+    result = min_max_scale([5.0] * 5)
+    assert all(v == pytest.approx(0.0) for v in result)
+
+
+def test_min_max_scale_empty() -> None:
+    assert min_max_scale([]) == []
+
+
+@pytest.mark.parametrize("values,expected_min,expected_max", [
+    ([0.0, 10.0, 5.0], 0.0, 1.0),
+    ([3.0, 6.0, 9.0], 0.0, 1.0),
+])
+def test_min_max_scale_parametrize(values, expected_min, expected_max) -> None:
+    result = min_max_scale(values)
+    assert min(result) == pytest.approx(expected_min)
+    assert max(result) == pytest.approx(expected_max)
