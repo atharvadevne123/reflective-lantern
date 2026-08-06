@@ -210,3 +210,65 @@ def test_warm_cache_parametrized_count(n) -> None:
     c = TTLCache(ttl_seconds=60, max_size=100)
     entries = {str(i): i * 10 for i in range(n)}
     assert warm_cache(c, entries) == n
+
+
+# Tests for cache_key_from_dict and cache_stats_summary
+from app.cache import cache_key_from_dict, cache_stats_summary
+
+
+def test_cache_key_from_dict_basic() -> None:
+    key = cache_key_from_dict({"b": 2, "a": 1})
+    assert key == "a=1:b=2"
+
+
+def test_cache_key_from_dict_prefix() -> None:
+    key = cache_key_from_dict({"x": 5}, prefix="predict")
+    assert key.startswith("predict:")
+
+
+def test_cache_key_from_dict_empty() -> None:
+    key = cache_key_from_dict({})
+    assert key == ""
+
+
+def test_cache_key_from_dict_deterministic() -> None:
+    key1 = cache_key_from_dict({"z": 1, "a": 2})
+    key2 = cache_key_from_dict({"a": 2, "z": 1})
+    assert key1 == key2
+
+
+def test_cache_stats_summary_keys() -> None:
+    c = TTLCache(ttl_seconds=10)
+    summary = cache_stats_summary(c)
+    assert "hits" in summary
+    assert "misses" in summary
+    assert "evictions" in summary
+    assert "hit_rate" in summary
+    assert "size" in summary
+
+
+def test_cache_stats_summary_empty_cache() -> None:
+    c = TTLCache(ttl_seconds=10)
+    summary = cache_stats_summary(c)
+    assert summary["hits"] == 0
+    assert summary["misses"] == 0
+    assert summary["size"] == 0
+
+
+def test_cache_stats_summary_after_hits() -> None:
+    c = TTLCache(ttl_seconds=10)
+    c.set("k", "v")
+    c.get("k")
+    c.get("k")
+    summary = cache_stats_summary(c)
+    assert summary["hits"] == 2
+    assert summary["size"] == 1
+
+
+def test_cache_stats_summary_hit_rate() -> None:
+    c = TTLCache(ttl_seconds=10)
+    c.set("k", "v")
+    c.get("k")   # hit
+    c.get("x")   # miss
+    summary = cache_stats_summary(c)
+    assert summary["hit_rate"] == pytest.approx(0.5)
