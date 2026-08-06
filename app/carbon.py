@@ -262,7 +262,8 @@ def carbon_saved_kwh(
         'pct_reduction' is 0.0 when baseline_kwh is zero.
     """
     kwh_saved = baseline_kwh - actual_kwh
-    co2_saved = kwh_to_co2_kg(kwh_saved, region)
+    sign = 1.0 if kwh_saved >= 0 else -1.0
+    co2_saved = sign * kwh_to_co2_kg(abs(kwh_saved), region)
     pct = (kwh_saved / baseline_kwh * 100.0) if baseline_kwh != 0.0 else 0.0
     return {
         "kwh_saved": round(kwh_saved, 4),

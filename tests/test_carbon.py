@@ -299,3 +299,40 @@ def test_monthly_co2_breakdown_co2_proportional() -> None:
     from app.carbon import monthly_co2_breakdown
     result = monthly_co2_breakdown([100.0, 200.0])
     assert result[1]["co2_kg"] == pytest.approx(result[0]["co2_kg"] * 2, rel=1e-4)
+
+
+class TestCarbonSavedKwh:
+    def test_positive_savings(self) -> None:
+        from app.carbon import carbon_saved_kwh
+        result = carbon_saved_kwh(1000.0, 800.0)
+        assert result["kwh_saved"] == pytest.approx(200.0, rel=1e-4)
+        assert result["co2_kg_saved"] > 0
+        assert result["pct_reduction"] == pytest.approx(20.0, rel=1e-4)
+
+    def test_no_savings(self) -> None:
+        from app.carbon import carbon_saved_kwh
+        result = carbon_saved_kwh(500.0, 500.0)
+        assert result["kwh_saved"] == pytest.approx(0.0, abs=1e-6)
+        assert result["pct_reduction"] == pytest.approx(0.0, abs=1e-6)
+
+    def test_negative_savings_overconsumption(self) -> None:
+        from app.carbon import carbon_saved_kwh
+        result = carbon_saved_kwh(100.0, 150.0)
+        assert result["kwh_saved"] < 0
+        assert result["pct_reduction"] < 0
+
+    def test_zero_baseline_returns_zero_pct(self) -> None:
+        from app.carbon import carbon_saved_kwh
+        result = carbon_saved_kwh(0.0, 50.0)
+        assert result["pct_reduction"] == 0.0
+
+    def test_keys_present(self) -> None:
+        from app.carbon import carbon_saved_kwh
+        result = carbon_saved_kwh(200.0, 100.0)
+        assert set(result.keys()) == {"kwh_saved", "co2_kg_saved", "pct_reduction"}
+
+    def test_full_reduction(self) -> None:
+        from app.carbon import carbon_saved_kwh
+        result = carbon_saved_kwh(100.0, 0.0)
+        assert result["pct_reduction"] == pytest.approx(100.0, rel=1e-4)
+        assert result["kwh_saved"] == pytest.approx(100.0, rel=1e-4)
