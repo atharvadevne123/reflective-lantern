@@ -175,7 +175,9 @@ __all__ = [
     "carbon_savings",
     "co2_kg_to_tonnes",
     "daily_carbon_estimate",
+    "fleet_emission_factor",
     "kwh_to_co2_kg",
+    "lifetime_carbon_savings",
     "monthly_co2_breakdown",
     "tree_offset_days",
     "trees_equivalent",
@@ -269,4 +271,65 @@ def carbon_saved_kwh(
         "kwh_saved": round(kwh_saved, 4),
         "co2_kg_saved": round(co2_saved, 4),
         "pct_reduction": round(pct, 4),
+    }
+
+
+def lifetime_carbon_savings(
+    annual_kwh_saved: float,
+    lifetime_years: int,
+    region: str = "default",
+) -> dict[str, float]:
+    """Compute total carbon savings over a system's operating lifetime.
+
+    Args:
+        annual_kwh_saved: kWh saved per year by the efficiency improvement.
+        lifetime_years: Expected operational lifetime in years.
+        region: Grid region identifier for carbon intensity lookup.
+
+    Returns:
+        Dict with 'total_kwh_saved', 'total_co2_kg_saved', 'total_co2_tonnes_saved'.
+    """
+    total_kwh = annual_kwh_saved * lifetime_years
+    total_co2_kg = kwh_to_co2_kg(total_kwh, region)
+    return {
+        "total_kwh_saved": round(total_kwh, 4),
+        "total_co2_kg_saved": round(total_co2_kg, 4),
+        "total_co2_tonnes_saved": co2_kg_to_tonnes(total_co2_kg),
+    }
+
+
+def fleet_emission_factor(
+    vehicles: list[dict],
+    kwh_key: str = "annual_kwh",
+    region_key: str = "region",
+    default_region: str = "default",
+) -> dict[str, float]:
+    """Compute aggregate CO2 emissions for a fleet of energy consumers.
+
+    Each vehicle/device is a dict with optional ``annual_kwh`` and ``region`` keys.
+
+    Args:
+        vehicles: List of dicts representing fleet assets.
+        kwh_key: Key in each dict for annual kWh consumption.
+        region_key: Key in each dict for the grid region.
+        default_region: Fallback region when ``region_key`` is absent.
+
+    Returns:
+        Dict with 'total_kwh', 'total_co2_kg', 'mean_co2_kg_per_asset'.
+    """
+    total_kwh = 0.0
+    total_co2 = 0.0
+    count = 0
+    for v in vehicles:
+        kwh = float(v.get(kwh_key, 0.0))
+        region = str(v.get(region_key, default_region))
+        co2 = kwh_to_co2_kg(kwh, region)
+        total_kwh += kwh
+        total_co2 += co2
+        count += 1
+    mean_co2 = total_co2 / count if count else 0.0
+    return {
+        "total_kwh": round(total_kwh, 4),
+        "total_co2_kg": round(total_co2, 4),
+        "mean_co2_kg_per_asset": round(mean_co2, 4),
     }
