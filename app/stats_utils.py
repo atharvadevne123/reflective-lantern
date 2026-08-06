@@ -144,12 +144,14 @@ __all__ = [
     "interquartile_range",
     "mape",
     "mean_absolute_error",
+    "median_absolute_deviation",
     "mode_count",
     "normalize_series",
     "percentile",
     "percentile_rank",
     "r_squared",
     "root_mean_squared_error",
+    "rolling_mean",
     "trimmed_mean",
     "variance",
     "weighted_average",
@@ -389,3 +391,58 @@ def mode_count(values: list[float]) -> tuple[float, int]:
     max_count = max(freq.values())
     mode = min(k for k, c in freq.items() if c == max_count)
     return mode, max_count
+
+
+def median_absolute_deviation(values: list[float]) -> float:
+    """Compute the Median Absolute Deviation (MAD) of *values*.
+
+    MAD = median(|xi - median(x)|)
+
+    A robust measure of variability less sensitive to outliers than std dev.
+
+    Args:
+        values: Non-empty list of numeric values.
+
+    Returns:
+        MAD rounded to 6 decimal places.
+
+    Raises:
+        ValueError: If *values* is empty.
+    """
+    if not values:
+        raise ValueError("values must not be empty")
+    sorted_vals = sorted(values)
+    n = len(sorted_vals)
+    mid = n // 2
+    med = (sorted_vals[mid - 1] + sorted_vals[mid]) / 2.0 if n % 2 == 0 else float(sorted_vals[mid])
+    deviations = sorted(abs(v - med) for v in values)
+    n2 = len(deviations)
+    mid2 = n2 // 2
+    mad = (deviations[mid2 - 1] + deviations[mid2]) / 2.0 if n2 % 2 == 0 else float(deviations[mid2])
+    return round(mad, 6)
+
+
+def rolling_mean(values: list[float], window: int) -> list[float]:
+    """Compute a simple rolling (moving) average over *values*.
+
+    Args:
+        values: Time-ordered numeric observations.
+        window: Number of periods in the rolling window (must be >= 1).
+
+    Returns:
+        List of rolling means (same length as *values*); early elements use a
+        growing window (equivalent to min_periods=1).
+
+    Raises:
+        ValueError: If *window* < 1 or *values* is empty.
+    """
+    if not values:
+        raise ValueError("values must not be empty")
+    if window < 1:
+        raise ValueError(f"window must be >= 1, got {window}")
+    result = []
+    for i, _ in enumerate(values):
+        lo = max(0, i - window + 1)
+        win = values[lo : i + 1]
+        result.append(round(sum(win) / len(win), 6))
+    return result
