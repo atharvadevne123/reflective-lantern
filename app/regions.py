@@ -85,11 +85,75 @@ def get_peak_load(region_id: str) -> float | None:
     return float(peak) if peak is not None else None
 
 __all__ = [
+    "compare_peak_loads",
     "get_all_region_ids",
     "get_peak_load",
     "get_region",
+    "get_region_name",
     "get_region_timezone",
     "get_regions_by_timezone",
     "list_regions",
+    "region_count",
     "validate_region",
 ]
+
+
+def region_count() -> int:
+    """Return the total number of registered grid regions.
+
+    Returns:
+        Integer count of entries in KNOWN_REGIONS.
+    """
+    return len(KNOWN_REGIONS)
+
+
+def get_region_name(region_id: str) -> str | None:
+    """Return the human-readable name for *region_id*, or None if unknown.
+
+    Args:
+        region_id: Grid region identifier (case-insensitive).
+
+    Returns:
+        Name string such as 'Northeast Grid', or None for unrecognised IDs.
+    """
+    region = get_region(region_id)
+    if region is None:
+        return None
+    name = region.get("name")
+    return str(name) if name is not None else None
+
+
+def compare_peak_loads(region_id1: str, region_id2: str) -> dict[str, object]:
+    """Compare peak load values for two grid regions.
+
+    Args:
+        region_id1: First region identifier.
+        region_id2: Second region identifier.
+
+    Returns:
+        Dict with 'region1', 'region2', 'peak1_mw', 'peak2_mw',
+        'difference_mw', and 'higher' (the ID of the higher-load region,
+        or 'equal' when identical). Unknown regions have None peak values.
+    """
+    peak1 = get_peak_load(region_id1)
+    peak2 = get_peak_load(region_id2)
+    diff: float | None = None
+    if peak1 is not None and peak2 is not None:
+        diff = round(peak1 - peak2, 2)
+    if peak1 is not None and peak2 is not None:
+        if peak1 > peak2:
+            higher: str = region_id1
+        elif peak2 > peak1:
+            higher = region_id2
+        else:
+            higher = "equal"
+    else:
+        higher = "unknown"
+    return {
+        "region1": region_id1,
+        "region2": region_id2,
+        "peak1_mw": peak1,
+        "peak2_mw": peak2,
+        "difference_mw": diff,
+        "higher": higher,
+    }
