@@ -468,3 +468,81 @@ def test_estimate_savings_mismatch_raises(length_mismatch: tuple) -> None:
     n1, n2 = length_mismatch
     with pytest.raises(ValueError):
         estimate_savings([1.0] * n1, [1.0] * n2)
+
+
+# Tests for top_consumption_hours and rolling_savings_summary
+import pytest
+
+from app.reporting import rolling_savings_summary, top_consumption_hours
+
+
+def test_top_consumption_hours_returns_n() -> None:
+    hourly = list(range(24))
+    result = top_consumption_hours(hourly, n=5)
+    assert len(result) == 5
+
+
+def test_top_consumption_hours_sorted_desc() -> None:
+    hourly = [float(i) for i in range(24)]
+    result = top_consumption_hours(hourly, n=3)
+    assert result[0]["kwh"] >= result[1]["kwh"] >= result[2]["kwh"]
+
+
+def test_top_consumption_hours_correct_hour() -> None:
+    hourly = [0.0] * 24
+    hourly[14] = 100.0
+    result = top_consumption_hours(hourly, n=1)
+    assert result[0]["hour"] == 14
+    assert result[0]["kwh"] == pytest.approx(100.0)
+
+
+def test_top_consumption_hours_empty() -> None:
+    assert top_consumption_hours([]) == []
+
+
+def test_top_consumption_hours_n_capped() -> None:
+    hourly = [1.0, 2.0, 3.0]
+    result = top_consumption_hours(hourly, n=10)
+    assert len(result) == 3
+
+
+def test_rolling_savings_summary_length() -> None:
+    actual = [8.0] * 48
+    baseline = [10.0] * 48
+    result = rolling_savings_summary(actual, baseline, window=24)
+    assert len(result) == 48 - 24 + 1
+
+
+def test_rolling_savings_summary_positive_savings() -> None:
+    actual = [8.0] * 48
+    baseline = [10.0] * 48
+    result = rolling_savings_summary(actual, baseline, window=24)
+    assert all(r["saved_kwh"] > 0 for r in result)
+
+
+def test_rolling_savings_summary_keys() -> None:
+    actual = [8.0] * 30
+    baseline = [10.0] * 30
+    result = rolling_savings_summary(actual, baseline, window=10)
+    assert "window_start" in result[0]
+    assert "saved_kwh" in result[0]
+    assert "savings_pct" in result[0]
+
+
+def test_rolling_savings_summary_length_mismatch_raises() -> None:
+    with pytest.raises(ValueError):
+        rolling_savings_summary([1.0, 2.0], [1.0])
+
+
+def test_rolling_savings_summary_too_short_returns_empty() -> None:
+    actual = [8.0] * 10
+    baseline = [10.0] * 10
+    result = rolling_savings_summary(actual, baseline, window=24)
+    assert result == []
+
+
+@pytest.mark.parametrize("n", [1, 3, 5])
+def test_top_consumption_hours_n_parametrize(n: int) -> None:
+    hourly = [float(i) for i in range(24)]
+    result = top_consumption_hours(hourly, n=n)
+    assert len(result) == n
