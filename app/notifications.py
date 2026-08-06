@@ -106,7 +106,72 @@ def make_drift_alert(ks_stat: float, p_value: float) -> Alert:
 __all__ = [
     "Alert",
     "AlertQueue",
+    "deduplicate_alerts",
+    "group_alerts_by_severity",
     "make_anomaly_alert",
     "make_drift_alert",
+    "make_performance_alert",
     "severity_rank",
 ]
+
+
+def make_performance_alert(
+    metric: str,
+    current_value: float,
+    threshold: float,
+    is_critical: bool = False,
+) -> Alert:
+    """Build an alert for a model or system performance threshold breach.
+
+    Args:
+        metric: Name of the metric that breached the threshold.
+        current_value: Observed metric value.
+        threshold: Alert threshold.
+        is_critical: If True, sets severity to 'critical'; otherwise 'warning'.
+
+    Returns:
+        A populated :class:`Alert` instance.
+    """
+    severity = "critical" if is_critical else "warning"
+    return Alert(
+        severity=severity,
+        message=f"Performance alert: {metric}={current_value:.4f} exceeds threshold {threshold:.4f}",
+        source="performance-monitor",
+        tags=["performance", metric],
+        metadata={"metric": metric, "current_value": current_value, "threshold": threshold},
+    )
+
+
+def deduplicate_alerts(alerts: list[Alert]) -> list[Alert]:
+    """Return *alerts* with duplicate messages removed (first occurrence kept).
+
+    Args:
+        alerts: List of Alert objects, possibly containing duplicates.
+
+    Returns:
+        New list with only the first occurrence of each unique message.
+    """
+    seen: set[str] = set()
+    result: list[Alert] = []
+    for alert in alerts:
+        if alert.message not in seen:
+            seen.add(alert.message)
+            result.append(alert)
+    return result
+
+
+def group_alerts_by_severity(alerts: list[Alert]) -> dict[str, list[Alert]]:
+    """Group *alerts* by their severity level.
+
+    Args:
+        alerts: List of Alert objects.
+
+    Returns:
+        Dict mapping severity strings to lists of matching alerts.
+        Always contains keys 'info', 'warning', 'critical'.
+    """
+    groups: dict[str, list[Alert]] = {"info": [], "warning": [], "critical": []}
+    for alert in alerts:
+        key = alert.severity.lower()
+        groups.setdefault(key, []).append(alert)
+    return groups
