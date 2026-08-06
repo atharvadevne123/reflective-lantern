@@ -392,6 +392,100 @@ def peak_to_valley_ratio(values: list[float]) -> float:
     return round(max(values) / valley, 6)
 
 
+def z_normalize(values: list[float]) -> list[float]:
+    """Return a z-score normalised copy of *values*.
+
+    Args:
+        values: Input numeric sequence.
+
+    Returns:
+        List where each element is (v - mean) / std; returns zeros if std is 0.
+    """
+    if not values:
+        return []
+    mean = sum(values) / len(values)
+    variance = sum((v - mean) ** 2 for v in values) / len(values)
+    std = variance ** 0.5
+    if std == 0:
+        return [0.0] * len(values)
+    return [round((v - mean) / std, 6) for v in values]
+
+
+def mape(actual: list[float], predicted: list[float]) -> float:
+    """Compute Mean Absolute Percentage Error (MAPE).
+
+    Args:
+        actual: Ground-truth values.
+        predicted: Model predictions (same length as *actual*).
+
+    Returns:
+        MAPE as a percentage; pairs where actual==0 are skipped.
+        Returns 0.0 if no valid pairs remain.
+    """
+    pairs = [
+        abs(a - p) / abs(a) * 100
+        for a, p in zip(actual, predicted, strict=False)
+        if a != 0
+    ]
+    if not pairs:
+        return 0.0
+    return round(sum(pairs) / len(pairs), 4)
+
+
+def hampel_filter(
+    values: list[float], window: int = 5, n_sigma: float = 3.0
+) -> list[float]:
+    """Replace outliers detected by the Hampel identifier with the local median.
+
+    Args:
+        values: Time-ordered readings.
+        window: Half-window size; the full window is 2*window+1.
+        n_sigma: Number of scaled-MAD sigmas to consider an outlier.
+
+    Returns:
+        Cleaned series the same length as *values*.
+    """
+    if not values:
+        return []
+    k = 1.4826  # consistency constant for Gaussian
+    result = list(values)
+    for i in range(len(values)):
+        lo = max(0, i - window)
+        hi = min(len(values), i + window + 1)
+        chunk = sorted(values[lo:hi])
+        n = len(chunk)
+        mid = n // 2
+        median = chunk[mid] if n % 2 else (chunk[mid - 1] + chunk[mid]) / 2.0
+        mad = k * sum(abs(v - median) for v in chunk) / n
+        if mad > 0 and abs(values[i] - median) > n_sigma * mad:
+            result[i] = median
+    return [round(v, 6) for v in result]
+
+
+def min_max_scale(
+    values: list[float], feature_range: tuple[float, float] = (0.0, 1.0)
+) -> list[float]:
+    """Scale *values* to the given *feature_range* using min-max scaling.
+
+    Args:
+        values: Input numeric sequence.
+        feature_range: Target (min, max) range; default (0, 1).
+
+    Returns:
+        Scaled list of the same length; all zeros if input is constant.
+    """
+    if not values:
+        return []
+    lo, hi = min(values), max(values)
+    span = hi - lo
+    t_min, t_max = feature_range
+    if span == 0:
+        return [t_min] * len(values)
+    return [
+        round(t_min + (v - lo) / span * (t_max - t_min), 6) for v in values
+    ]
+
+
 __all__ = [
     "clip_outliers",
     "consumption_variance",
@@ -402,8 +496,11 @@ __all__ = [
     "find_changepoints",
     "forecast_linear_trend",
     "forecast_trend_with_seasonality",
+    "hampel_filter",
     "load_factor",
     "logger",
+    "mape",
+    "min_max_scale",
     "moving_median",
     "moving_range",
     "peak_hours",
@@ -412,6 +509,7 @@ __all__ = [
     "rolling_zscore",
     "seasonal_baseline",
     "simple_moving_average",
+    "z_normalize",
 ]
 
 
