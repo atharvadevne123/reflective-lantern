@@ -8,8 +8,10 @@ import pytest
 from app.time_series import (
     detect_spikes,
     exponential_moving_average,
+    find_changepoints,
     forecast_linear_trend,
     peak_hours,
+    rolling_zscore,
     seasonal_baseline,
     simple_moving_average,
 )
@@ -468,3 +470,45 @@ def test_peak_hours_returns_correct_count(n_peaks: int) -> None:
     values = [float(i) for i in range(24)]
     peaks = peak_hours(values, top_n=n_peaks)
     assert len(peaks) == min(n_peaks, 24)
+
+
+def test_find_changepoints_stable_series_no_cps() -> None:
+    values = [10.0] * 50
+    assert find_changepoints(values) == []
+
+
+def test_find_changepoints_too_short() -> None:
+    assert find_changepoints([1.0, 2.0]) == []
+
+
+def test_find_changepoints_obvious_shift() -> None:
+    values = [1.0] * 30 + [100.0] * 30
+    cps = find_changepoints(values, min_segment_len=5)
+    assert len(cps) >= 1
+
+
+def test_rolling_zscore_length() -> None:
+    values = [float(i) for i in range(20)]
+    result = rolling_zscore(values, window=5)
+    assert len(result) == len(values)
+
+
+def test_rolling_zscore_first_is_zero() -> None:
+    result = rolling_zscore([10.0, 20.0, 30.0])
+    assert result[0] == 0.0
+
+
+def test_rolling_zscore_empty() -> None:
+    assert rolling_zscore([]) == []
+
+
+def test_rolling_zscore_constant_series() -> None:
+    result = rolling_zscore([5.0] * 10)
+    assert all(v == 0.0 for v in result)
+
+
+@pytest.mark.parametrize("window", [3, 5, 10, 24])
+def test_rolling_zscore_various_windows(window: int) -> None:
+    values = [float(i % 10) for i in range(50)]
+    result = rolling_zscore(values, window=window)
+    assert len(result) == len(values)
