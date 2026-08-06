@@ -9,9 +9,12 @@ import pytest
 from app.energy_export import (
     aggregate_by_hour,
     filter_records,
+    normalize_kwh,
+    pivot_by_hour,
     records_to_csv,
     records_to_json,
     summarize_export,
+    top_buildings_by_kwh,
 )
 
 SAMPLE = [
@@ -116,3 +119,63 @@ def test_summarize_export_empty():
 def test_filter_min_kwh_parametrize(min_kwh, expected_count):
     result = filter_records(SAMPLE, min_kwh=min_kwh)
     assert len(result) == expected_count
+
+
+def test_top_buildings_by_kwh_order():
+    result = top_buildings_by_kwh(SAMPLE, n=2)
+    assert result[0]["building_id"] == "A"
+    assert result[0]["total_kwh"] == pytest.approx(32.0)
+
+
+def test_top_buildings_by_kwh_n_limit():
+    result = top_buildings_by_kwh(SAMPLE, n=1)
+    assert len(result) == 1
+
+
+def test_top_buildings_by_kwh_empty():
+    result = top_buildings_by_kwh([])
+    assert result == []
+
+
+def test_pivot_by_hour_structure():
+    pivot = pivot_by_hour(SAMPLE)
+    assert "A" in pivot
+    assert "B" in pivot
+    assert 8 in pivot["A"]
+    assert pivot["A"][8] == pytest.approx(12.0)
+
+
+def test_pivot_by_hour_accumulates():
+    records = [
+        {"hour": 8, "building_id": "A", "consumption_kwh": 5.0},
+        {"hour": 8, "building_id": "A", "consumption_kwh": 3.0},
+    ]
+    pivot = pivot_by_hour(records)
+    assert pivot["A"][8] == pytest.approx(8.0)
+
+
+def test_pivot_by_hour_empty():
+    assert pivot_by_hour([]) == {}
+
+
+def test_normalize_kwh_range():
+    result = normalize_kwh(SAMPLE)
+    kwh_vals = [r["consumption_kwh"] for r in result]
+    assert min(kwh_vals) == pytest.approx(0.0)
+    assert max(kwh_vals) == pytest.approx(1.0)
+
+
+def test_normalize_kwh_preserves_other_fields():
+    result = normalize_kwh(SAMPLE)
+    assert result[0]["building_id"] == SAMPLE[0]["building_id"]
+
+
+def test_normalize_kwh_empty():
+    result = normalize_kwh([])
+    assert result == []
+
+
+@pytest.mark.parametrize("n,expected_len", [(1, 1), (2, 2), (10, 2)])
+def test_top_buildings_n_parametrize(n, expected_len):
+    result = top_buildings_by_kwh(SAMPLE, n=n)
+    assert len(result) == expected_len
