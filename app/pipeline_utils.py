@@ -84,9 +84,63 @@ def bundle_pipeline_info(bundle: dict[str, Any]) -> dict[str, Any]:
 __all__ = [
     "bundle_pipeline_info",
     "clone_params",
+    "count_fitted_steps",
     "describe_pipeline",
+    "extract_step_classes",
     "get_step",
     "get_step_names",
     "has_step",
+    "pipeline_has_preprocessor",
     "pipeline_param_count",
 ]
+
+
+def count_fitted_steps(pipeline: Any) -> int:
+    """Return the number of steps that have been fitted (have a ``n_features_in_`` attribute).
+
+    Args:
+        pipeline: An sklearn Pipeline (fitted or unfitted).
+
+    Returns:
+        Count of steps where the underlying estimator has been fitted.
+    """
+    try:
+        return sum(
+            1
+            for _, estimator in pipeline.steps
+            if hasattr(estimator, "n_features_in_")
+        )
+    except AttributeError:
+        return 0
+
+
+def pipeline_has_preprocessor(pipeline: Any) -> bool:
+    """Return True if any pipeline step name suggests a preprocessing role.
+
+    Checks step names for common substrings: 'scaler', 'normalizer', 'encoder',
+    'imputer', 'transformer'.
+
+    Args:
+        pipeline: An sklearn Pipeline.
+
+    Returns:
+        True when at least one step name matches a preprocessor keyword.
+    """
+    keywords = {"scaler", "normalizer", "encoder", "imputer", "transformer"}
+    return any(any(kw in name.lower() for kw in keywords) for name in get_step_names(pipeline))
+
+
+def extract_step_classes(pipeline: Any) -> list[str]:
+    """Return a list of estimator class names for each step in *pipeline*.
+
+    Args:
+        pipeline: An sklearn Pipeline.
+
+    Returns:
+        List of class name strings (e.g. ['StandardScaler', 'LinearRegression']),
+        or empty list if *pipeline* has no steps attribute.
+    """
+    try:
+        return [type(estimator).__name__ for _, estimator in pipeline.steps]
+    except AttributeError:
+        return []
