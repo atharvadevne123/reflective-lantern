@@ -175,6 +175,7 @@ __all__ = [
     "co2_kg_to_tonnes",
     "daily_carbon_estimate",
     "kwh_to_co2_kg",
+    "monthly_co2_breakdown",
     "tree_offset_days",
     "trees_equivalent",
 ]
@@ -218,3 +219,26 @@ def tree_offset_days(co2_kg: float, num_trees: int = 1) -> float:
         return 0.0
     kg_per_tree_per_day = 20.0 / 365.0
     return round(co2_kg / (num_trees * kg_per_tree_per_day), 2)
+
+
+def monthly_co2_breakdown(
+    monthly_kwh: list[float],
+    region: str = "default",
+) -> list[dict[str, float]]:
+    """Return a month-by-month CO2 breakdown from a list of monthly kWh values.
+
+    Args:
+        monthly_kwh: List of monthly energy consumption values in kWh (any length).
+        region: Grid region identifier.
+
+    Returns:
+        List of dicts with 'month' (1-indexed), 'kwh', and 'co2_kg' for each entry.
+    """
+    return [
+        {
+            "month": i + 1,
+            "kwh": round(kwh, 4),
+            "co2_kg": kwh_to_co2_kg(kwh, region),
+        }
+        for i, kwh in enumerate(monthly_kwh)
+    ]
