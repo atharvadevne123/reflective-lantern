@@ -101,7 +101,19 @@ def cosine_distance(a: list[float] | np.ndarray, b: list[float] | np.ndarray) ->
     return round(1.0 - sim, 6)
 
 
-__all__ = ["BuildingSimilarityIndex", "cosine_distance", "get_global_index", "search_comparable"]
+__all__ = [
+    "BuildingSimilarityIndex",
+    "batch_add",
+    "chebyshev_distance",
+    "cosine_distance",
+    "euclidean_distance",
+    "get_global_index",
+    "hourly_pattern_distance",
+    "manhattan_distance",
+    "pearson_similarity",
+    "score_distribution",
+    "search_comparable",
+]
 
 
 def euclidean_distance(a: list[float] | np.ndarray, b: list[float] | np.ndarray) -> float:
@@ -186,3 +198,61 @@ def hourly_pattern_distance(profile_a: list[float], profile_b: list[float]) -> f
     if len(profile_a) != len(profile_b):
         raise ValueError(f"profiles must have the same length: {len(profile_a)} != {len(profile_b)}")
     return sum(abs(a - b) for a, b in zip(profile_a, profile_b, strict=False)) / len(profile_a)
+
+
+def manhattan_distance(a: list[float] | np.ndarray, b: list[float] | np.ndarray) -> float:
+    """Compute Manhattan (L1) distance between two vectors.
+
+    Args:
+        a: First feature vector.
+        b: Second feature vector (must be same length as *a*).
+
+    Returns:
+        L1 distance rounded to 6 decimal places.
+    """
+    va = np.array(a, dtype=np.float32)
+    vb = np.array(b, dtype=np.float32)
+    return round(float(np.sum(np.abs(va - vb))), 6)
+
+
+def pearson_similarity(a: list[float], b: list[float]) -> float:
+    """Compute Pearson correlation coefficient between two equal-length profiles.
+
+    Args:
+        a: First numeric sequence.
+        b: Second numeric sequence (must be same length as *a*).
+
+    Returns:
+        Pearson correlation in [-1, 1]; 0.0 if either series has zero variance.
+
+    Raises:
+        ValueError: If sequences are empty or have different lengths.
+    """
+    if not a or not b:
+        raise ValueError("sequences must not be empty")
+    if len(a) != len(b):
+        raise ValueError(f"sequences must have the same length: {len(a)} != {len(b)}")
+    n = len(a)
+    mean_a = sum(a) / n
+    mean_b = sum(b) / n
+    cov = sum((x - mean_a) * (y - mean_b) for x, y in zip(a, b, strict=False))
+    std_a = (sum((x - mean_a) ** 2 for x in a) ** 0.5)
+    std_b = (sum((y - mean_b) ** 2 for y in b) ** 0.5)
+    if std_a == 0 or std_b == 0:
+        return 0.0
+    return round(cov / (std_a * std_b), 6)
+
+
+def chebyshev_distance(a: list[float] | np.ndarray, b: list[float] | np.ndarray) -> float:
+    """Compute Chebyshev (L∞) distance — the maximum element-wise difference.
+
+    Args:
+        a: First feature vector.
+        b: Second feature vector (must be same length as *a*).
+
+    Returns:
+        Chebyshev distance rounded to 6 decimal places.
+    """
+    va = np.array(a, dtype=np.float32)
+    vb = np.array(b, dtype=np.float32)
+    return round(float(np.max(np.abs(va - vb))), 6)
