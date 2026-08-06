@@ -191,11 +191,18 @@ def classify_consumption(
 
 __all__ = [
     "anomaly_rate",
+    "anomaly_summary",
     "batch_compute_severity",
     "classify_consumption",
     "compute_percentile_bounds",
     "compute_severity",
+    "compute_z_score",
+    "consecutive_anomaly_runs",
+    "ewma_smooth",
+    "flag_anomaly_rate",
+    "flag_z_score_outliers",
     "iqr_flag",
+    "rolling_anomaly_flag",
     "top_anomalies",
     "zscore_flag",
 ]
@@ -334,3 +341,60 @@ def ewma_smooth(
     for v in values[1:]:
         result.append(alpha * v + (1 - alpha) * result[-1])
     return [round(x, 6) for x in result]
+
+
+def anomaly_summary(severities: list[dict[str, object]]) -> dict[str, int]:
+    """Return a count of each severity level from a batch severity result list.
+
+    Args:
+        severities: List of severity dicts (each must have a 'severity' key).
+
+    Returns:
+        Dict with 'none', 'warning', 'critical' counts.
+    """
+    counts: dict[str, int] = {"none": 0, "warning": 0, "critical": 0}
+    for entry in severities:
+        key = str(entry.get("severity", "none"))
+        counts[key] = counts.get(key, 0) + 1
+    return counts
+
+
+def rolling_anomaly_flag(
+    values: list[float],
+    window: int = 5,
+    threshold: float = 3.0,
+) -> list[bool]:
+    """Flag each value where the rolling Z-score exceeds *threshold*.
+
+    Uses a centered sliding window of size *window* to compute local mean and
+    standard deviation; the first and last ``window // 2`` elements use the
+    nearest available window.
+
+    Args:
+        values: Time-ordered numeric observations.
+        window: Width of the rolling window (must be >= 2).
+        threshold: Z-score absolute value above which a point is flagged.
+
+    Returns:
+        List of bools (same length as *values*), True where anomalous.
+
+    Raises:
+        ValueError: If *values* is empty or *window* < 2.
+    """
+    if not values:
+        raise ValueError("values must not be empty")
+    if window < 2:
+        raise ValueError(f"window must be at least 2, got {window}")
+    n = len(values)
+    flags: list[bool] = []
+    half = window // 2
+    for i in range(n):
+        lo = max(0, i - half)
+        hi = min(n, i + half + 1)
+        win = values[lo:hi]
+        arr = np.array(win, dtype=float)
+        mean = float(arr.mean())
+        std = float(arr.std())
+        z = compute_z_score(values[i], mean, std)
+        flags.append(abs(z) > threshold)
+    return flags
