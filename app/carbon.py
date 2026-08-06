@@ -138,6 +138,33 @@ def carbon_savings(
         "trees_saved": trees_equivalent(saved_co2_kg),
     }
 
+def daily_carbon_estimate(
+    hourly_kwh: list[float],
+    region: str = "default",
+) -> dict[str, float]:
+    """Estimate carbon footprint for a single day from hourly consumption.
+
+    Args:
+        hourly_kwh: List of up to 24 hourly energy readings in kWh.
+        region: Grid region identifier.
+
+    Returns:
+        Dict with total_kwh, total_co2_kg, and trees_equivalent for the day.
+
+    Raises:
+        ValueError: If *hourly_kwh* contains more than 24 elements.
+    """
+    if len(hourly_kwh) > 24:
+        raise ValueError(f"hourly_kwh must have at most 24 elements, got {len(hourly_kwh)}")
+    total_kwh = sum(hourly_kwh)
+    total_co2_kg = kwh_to_co2_kg(total_kwh, region)
+    return {
+        "total_kwh": round(total_kwh, 4),
+        "total_co2_kg": total_co2_kg,
+        "trees_equivalent": trees_equivalent(total_co2_kg),
+    }
+
+
 __all__ = [
     "GRID_CARBON_INTENSITY",
     "KG_TO_TONNES",
@@ -145,6 +172,7 @@ __all__ = [
     "annual_carbon_report",
     "carbon_savings",
     "co2_kg_to_tonnes",
+    "daily_carbon_estimate",
     "kwh_to_co2_kg",
     "trees_equivalent",
 ]
