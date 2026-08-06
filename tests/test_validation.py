@@ -630,3 +630,60 @@ class TestValidatePrice:
     @pytest.mark.parametrize("price", [0.0, 1.0, 100000.0, 999999999.0])
     def test_valid_prices_parametrized(self, price: float) -> None:
         assert validate_price(price) == []
+
+
+# Tests for validate_percentage and validate_region_id
+import pytest
+
+from app.validation import validate_percentage, validate_region_id
+
+
+class TestValidatePercentage:
+    def test_valid_zero(self) -> None:
+        assert validate_percentage(0.0) == []
+
+    def test_valid_100(self) -> None:
+        assert validate_percentage(100.0) == []
+
+    def test_valid_midpoint(self) -> None:
+        assert validate_percentage(50.0) == []
+
+    def test_below_zero(self) -> None:
+        errors = validate_percentage(-1.0)
+        assert len(errors) == 1
+
+    def test_above_100(self) -> None:
+        errors = validate_percentage(101.0)
+        assert len(errors) == 1
+
+    def test_field_name_in_error(self) -> None:
+        errors = validate_percentage(-5.0, field_name="savings_pct")
+        assert any("savings_pct" in e for e in errors)
+
+    @pytest.mark.parametrize("pct", [0.0, 25.0, 50.0, 75.0, 100.0])
+    def test_valid_percentages(self, pct: float) -> None:
+        assert validate_percentage(pct) == []
+
+
+class TestValidateRegionId:
+    def test_valid_id(self) -> None:
+        assert validate_region_id("northeast") == []
+
+    def test_valid_with_underscore(self) -> None:
+        assert validate_region_id("pacific_nw") == []
+
+    def test_empty_id(self) -> None:
+        errors = validate_region_id("")
+        assert len(errors) > 0
+
+    def test_uppercase_rejected(self) -> None:
+        errors = validate_region_id("Northeast")
+        assert len(errors) > 0
+
+    def test_special_chars_rejected(self) -> None:
+        errors = validate_region_id("north-east")
+        assert len(errors) > 0
+
+    @pytest.mark.parametrize("rid", ["northeast", "midwest", "south", "west", "default"])
+    def test_valid_known_ids(self, rid: str) -> None:
+        assert validate_region_id(rid) == []
