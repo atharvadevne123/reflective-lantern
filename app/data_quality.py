@@ -120,8 +120,11 @@ __all__ = [
     "completeness_score",
     "detect_data_gaps",
     "detect_duplicates",
+    "field_type_consistency",
+    "fill_missing",
     "flag_outliers",
     "quality_summary",
+    "range_violation_count",
     "score_record",
 ]
 
@@ -199,3 +202,81 @@ def detect_data_gaps(
         if diff > expected_interval:
             gaps.append((timestamps[i - 1], timestamps[i]))
     return gaps
+
+
+def field_type_consistency(
+    records: list[dict[str, Any]], field: str, expected_type: type
+) -> float:
+    """Return the fraction of records where *field* has the expected Python type.
+
+    Args:
+        records: List of dicts to inspect.
+        field: Key to check in each record.
+        expected_type: Python type (e.g. ``float``, ``str``, ``int``).
+
+    Returns:
+        Consistency score in [0.0, 1.0]; 1.0 means all present values match.
+        Returns 1.0 if no records have the field.
+    """
+    present = [r for r in records if field in r and r[field] is not None]
+    if not present:
+        return 1.0
+    matches = sum(1 for r in present if isinstance(r[field], expected_type))
+    return round(matches / len(present), 4)
+
+
+def range_violation_count(
+    records: list[dict[str, Any]],
+    field: str,
+    min_val: float | None = None,
+    max_val: float | None = None,
+) -> int:
+    """Count how many records have *field* outside the given range.
+
+    Args:
+        records: List of dicts to check.
+        field: Numeric field name.
+        min_val: Optional inclusive lower bound.
+        max_val: Optional inclusive upper bound.
+
+    Returns:
+        Number of records that violate the bounds.
+    """
+    count = 0
+    for r in records:
+        v = r.get(field)
+        if v is None:
+            continue
+        try:
+            fv = float(v)
+        except (TypeError, ValueError):
+            continue
+        if min_val is not None and fv < min_val:
+            count += 1
+        elif max_val is not None and fv > max_val:
+            count += 1
+    return count
+
+
+def fill_missing(
+    records: list[dict[str, Any]],
+    field: str,
+    fill_value: Any = None,
+) -> list[dict[str, Any]]:
+    """Return a copy of *records* with missing *field* values filled by *fill_value*.
+
+    Args:
+        records: Source list of dicts.
+        field: Key to fill when absent or None.
+        fill_value: Value to substitute; defaults to None.
+
+    Returns:
+        New list of dicts with the field populated where it was missing.
+    """
+    result = []
+    for rec in records:
+        row = dict(rec)
+        if row.get(field) is None:
+            row[field] = fill_value
+        result.append(row)
+    return result
