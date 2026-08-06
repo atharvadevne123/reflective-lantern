@@ -334,9 +334,11 @@ __all__ = [
     "affordability_ratio",
     "comparable_value_adjustment",
     "dom_classification",
+    "effective_gross_income",
     "housing_affordability_index",
     "market_heat_score",
     "market_summary",
+    "price_appreciation_rate",
     "price_per_bedroom",
     "price_per_sqft",
     "price_to_rent_ratio",
@@ -425,3 +427,52 @@ def comparable_value_adjustment(
     """
     diff = subject_sqft - comp_sqft
     return round(comp_price + diff * price_per_sqft_adj, 2)
+
+
+def effective_gross_income(
+    potential_gross_rent: float,
+    vacancy_rate: float = 0.05,
+) -> float:
+    """Compute Effective Gross Income (EGI) after applying a vacancy allowance.
+
+    EGI = potential_gross_rent * (1 - vacancy_rate)
+
+    Args:
+        potential_gross_rent: Gross rental income if fully occupied (USD/year).
+        vacancy_rate: Expected vacancy as a fraction in [0, 1] (default 5%).
+
+    Returns:
+        EGI in USD/year, rounded to 2 decimal places.
+
+    Raises:
+        ValueError: If *vacancy_rate* is not in [0, 1].
+    """
+    if not (0.0 <= vacancy_rate <= 1.0):
+        raise ValueError(f"vacancy_rate must be in [0, 1], got {vacancy_rate}")
+    return round(potential_gross_rent * (1.0 - vacancy_rate), 2)
+
+
+def price_appreciation_rate(
+    original_price: float,
+    current_price: float,
+    years: float,
+) -> float:
+    """Compute the annualised price appreciation rate (CAGR) for a property.
+
+    Args:
+        original_price: Purchase price in USD (must be > 0).
+        current_price: Current market value in USD (must be > 0).
+        years: Number of years between purchase and valuation (must be > 0).
+
+    Returns:
+        Annualised appreciation rate as a percentage, rounded to 4 decimal places.
+
+    Raises:
+        ValueError: If any argument is non-positive.
+    """
+    import math
+
+    if original_price <= 0 or current_price <= 0 or years <= 0:
+        raise ValueError("original_price, current_price, and years must all be positive")
+    cagr = (current_price / original_price) ** (1.0 / years) - 1.0
+    return round(cagr * 100.0, 4)
