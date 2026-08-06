@@ -399,3 +399,54 @@ def test_fleet_emission_factor_mean(n_assets) -> None:
     assert result["mean_co2_kg_per_asset"] == pytest.approx(
         result["total_co2_kg"] / n_assets, rel=1e-4
     )
+
+
+# Tests for carbon_per_sqm and carbon_reduction_pct
+from app.carbon import carbon_per_sqm, carbon_reduction_pct
+
+
+def test_carbon_per_sqm_basic() -> None:
+    from app.carbon import kwh_to_co2_kg
+    result = carbon_per_sqm(10000.0, 100.0)
+    expected = kwh_to_co2_kg(10000.0) / 100.0
+    assert result == pytest.approx(expected, rel=1e-4)
+
+
+def test_carbon_per_sqm_zero_area_raises() -> None:
+    with pytest.raises(ValueError):
+        carbon_per_sqm(1000.0, 0.0)
+
+
+def test_carbon_per_sqm_negative_area_raises() -> None:
+    with pytest.raises(ValueError):
+        carbon_per_sqm(1000.0, -50.0)
+
+
+def test_carbon_per_sqm_larger_area_smaller_result() -> None:
+    small = carbon_per_sqm(1000.0, 100.0)
+    large = carbon_per_sqm(1000.0, 200.0)
+    assert small > large
+
+
+def test_carbon_reduction_pct_positive() -> None:
+    result = carbon_reduction_pct(100.0, 80.0)
+    assert result == pytest.approx(20.0)
+
+
+def test_carbon_reduction_pct_no_reduction() -> None:
+    assert carbon_reduction_pct(100.0, 100.0) == pytest.approx(0.0)
+
+
+def test_carbon_reduction_pct_zero_baseline() -> None:
+    assert carbon_reduction_pct(0.0, 50.0) == pytest.approx(0.0)
+
+
+def test_carbon_reduction_pct_negative_when_increased() -> None:
+    result = carbon_reduction_pct(100.0, 120.0)
+    assert result < 0.0
+
+
+@pytest.mark.parametrize("region", ["northeast", "midwest", "west", "pacific_nw"])
+def test_carbon_per_sqm_known_regions(region: str) -> None:
+    result = carbon_per_sqm(5000.0, 100.0, region=region)
+    assert result > 0.0
