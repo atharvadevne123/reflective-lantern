@@ -229,3 +229,68 @@ def test_hourly_pattern_distance_constant_offset(offset) -> None:
     a = [10.0] * 24
     b = [10.0 + offset] * 24
     assert hourly_pattern_distance(a, b) == pytest.approx(offset)
+
+
+def test_manhattan_distance_basic() -> None:
+    assert manhattan_distance([0.0, 0.0], [3.0, 4.0]) == pytest.approx(7.0)
+
+
+def test_manhattan_distance_identical() -> None:
+    assert manhattan_distance([1.0, 2.0, 3.0], [1.0, 2.0, 3.0]) == pytest.approx(0.0)
+
+
+def test_manhattan_distance_negative() -> None:
+    result = manhattan_distance([-1.0, -2.0], [1.0, 2.0])
+    assert result == pytest.approx(6.0)
+
+
+@pytest.mark.parametrize("a,b,expected", [
+    ([1.0, 0.0], [0.0, 1.0], 2.0),
+    ([0.0, 0.0], [0.0, 0.0], 0.0),
+])
+def test_manhattan_parametrize(a, b, expected) -> None:
+    assert manhattan_distance(a, b) == pytest.approx(expected)
+
+
+def test_pearson_similarity_perfect_positive() -> None:
+    a = [1.0, 2.0, 3.0, 4.0, 5.0]
+    result = pearson_similarity(a, a)
+    assert result == pytest.approx(1.0, abs=1e-4)
+
+
+def test_pearson_similarity_perfect_negative() -> None:
+    a = [1.0, 2.0, 3.0, 4.0, 5.0]
+    b = [5.0, 4.0, 3.0, 2.0, 1.0]
+    result = pearson_similarity(a, b)
+    assert result == pytest.approx(-1.0, abs=1e-4)
+
+
+def test_pearson_similarity_constant_series() -> None:
+    assert pearson_similarity([5.0] * 5, [3.0] * 5) == 0.0
+
+
+def test_pearson_similarity_empty_raises() -> None:
+    with pytest.raises(ValueError):
+        pearson_similarity([], [])
+
+
+def test_pearson_similarity_different_lengths_raises() -> None:
+    with pytest.raises(ValueError):
+        pearson_similarity([1.0, 2.0], [1.0, 2.0, 3.0])
+
+
+def test_chebyshev_distance_basic() -> None:
+    result = chebyshev_distance([1.0, 2.0, 3.0], [4.0, 2.0, 1.0])
+    assert result == pytest.approx(3.0)
+
+
+def test_chebyshev_distance_identical() -> None:
+    assert chebyshev_distance([1.0, 2.0], [1.0, 2.0]) == pytest.approx(0.0)
+
+
+@pytest.mark.parametrize("a,b,expected", [
+    ([0.0, 0.0], [3.0, 4.0], 4.0),
+    ([5.0, 5.0], [0.0, 0.0], 5.0),
+])
+def test_chebyshev_parametrize(a, b, expected) -> None:
+    assert chebyshev_distance(a, b) == pytest.approx(expected)
