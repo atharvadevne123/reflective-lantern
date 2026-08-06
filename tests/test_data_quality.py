@@ -314,3 +314,64 @@ def test_fill_missing_does_not_modify_original() -> None:
 
 def test_fill_missing_empty_records() -> None:
     assert fill_missing([], "x", fill_value=0.0) == []
+
+
+# Tests for unique_values and records_missing_field
+from app.data_quality import records_missing_field, unique_values
+
+
+def test_unique_values_basic() -> None:
+    records = [{"x": 1}, {"x": 2}, {"x": 1}, {"x": 3}]
+    result = unique_values(records, "x")
+    assert result == [1, 2, 3]
+
+
+def test_unique_values_excludes_none() -> None:
+    records = [{"x": 1}, {"x": None}, {"x": 2}]
+    result = unique_values(records, "x")
+    assert None not in result
+
+
+def test_unique_values_missing_field() -> None:
+    records = [{"y": 1}, {"y": 2}]
+    result = unique_values(records, "x")
+    assert result == []
+
+
+def test_unique_values_empty_records() -> None:
+    assert unique_values([], "x") == []
+
+
+def test_unique_values_sorted() -> None:
+    records = [{"v": 3}, {"v": 1}, {"v": 2}]
+    result = unique_values(records, "v")
+    assert result == [1, 2, 3]
+
+
+def test_records_missing_field_all_present() -> None:
+    records = [{"x": 1}, {"x": 2}, {"x": 3}]
+    assert records_missing_field(records, "x") == []
+
+
+def test_records_missing_field_some_missing() -> None:
+    records = [{"x": 1}, {"x": None}, {"x": 3}, {}]
+    result = records_missing_field(records, "x")
+    assert 1 in result
+    assert 3 in result
+
+
+def test_records_missing_field_all_missing() -> None:
+    records = [{}, {}, {}]
+    result = records_missing_field(records, "x")
+    assert result == [0, 1, 2]
+
+
+def test_records_missing_field_empty() -> None:
+    assert records_missing_field([], "x") == []
+
+
+@pytest.mark.parametrize("n", [1, 3, 5])
+def test_records_missing_field_count(n: int) -> None:
+    records = [{"x": None}] * n
+    result = records_missing_field(records, "x")
+    assert len(result) == n
