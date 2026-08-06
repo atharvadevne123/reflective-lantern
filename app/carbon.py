@@ -171,6 +171,7 @@ __all__ = [
     "TREES_PER_TONNE_CO2_PER_YEAR",
     "annual_carbon_report",
     "carbon_intensity_by_hour",
+    "carbon_saved_kwh",
     "carbon_savings",
     "co2_kg_to_tonnes",
     "daily_carbon_estimate",
@@ -242,3 +243,29 @@ def monthly_co2_breakdown(
         }
         for i, kwh in enumerate(monthly_kwh)
     ]
+
+
+def carbon_saved_kwh(
+    baseline_kwh: float,
+    actual_kwh: float,
+    region: str = "default",
+) -> dict[str, float]:
+    """Compute the carbon savings from reducing energy consumption.
+
+    Args:
+        baseline_kwh: Reference energy consumption in kWh (before improvement).
+        actual_kwh: Actual energy consumption in kWh (after improvement).
+        region: Grid region identifier used for carbon intensity lookup.
+
+    Returns:
+        Dict with 'kwh_saved', 'co2_kg_saved', and 'pct_reduction' keys.
+        'pct_reduction' is 0.0 when baseline_kwh is zero.
+    """
+    kwh_saved = baseline_kwh - actual_kwh
+    co2_saved = kwh_to_co2_kg(kwh_saved, region)
+    pct = (kwh_saved / baseline_kwh * 100.0) if baseline_kwh != 0.0 else 0.0
+    return {
+        "kwh_saved": round(kwh_saved, 4),
+        "co2_kg_saved": round(co2_saved, 4),
+        "pct_reduction": round(pct, 4),
+    }
