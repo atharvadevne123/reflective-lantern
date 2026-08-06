@@ -456,3 +456,66 @@ def test_mode_count_empty_raises() -> None:
 def test_mode_count_parametrize(values, expected_mode) -> None:
     mode, _ = mode_count(values)
     assert mode == expected_mode
+
+
+# Tests for median_absolute_deviation and rolling_mean
+from app.stats_utils import median_absolute_deviation, rolling_mean
+
+
+def test_mad_symmetric() -> None:
+    values = [1.0, 2.0, 3.0, 4.0, 5.0]
+    assert median_absolute_deviation(values) == pytest.approx(1.0)
+
+
+def test_mad_constant_series() -> None:
+    values = [5.0] * 10
+    assert median_absolute_deviation(values) == pytest.approx(0.0)
+
+
+def test_mad_empty_raises() -> None:
+    with pytest.raises(ValueError):
+        median_absolute_deviation([])
+
+
+def test_mad_single_value() -> None:
+    assert median_absolute_deviation([42.0]) == pytest.approx(0.0)
+
+
+def test_mad_positive() -> None:
+    values = [1.0, 10.0, 100.0]
+    assert median_absolute_deviation(values) > 0
+
+
+def test_rolling_mean_length() -> None:
+    values = [1.0, 2.0, 3.0, 4.0, 5.0]
+    result = rolling_mean(values, window=3)
+    assert len(result) == len(values)
+
+
+def test_rolling_mean_window1_equals_values() -> None:
+    values = [1.0, 2.0, 3.0, 4.0]
+    result = rolling_mean(values, window=1)
+    assert result == pytest.approx(values)
+
+
+def test_rolling_mean_full_window() -> None:
+    values = [1.0, 2.0, 3.0, 4.0, 5.0]
+    result = rolling_mean(values, window=3)
+    assert result[4] == pytest.approx((3.0 + 4.0 + 5.0) / 3.0)
+
+
+def test_rolling_mean_empty_raises() -> None:
+    with pytest.raises(ValueError):
+        rolling_mean([], window=3)
+
+
+def test_rolling_mean_invalid_window_raises() -> None:
+    with pytest.raises(ValueError):
+        rolling_mean([1.0, 2.0], window=0)
+
+
+@pytest.mark.parametrize("window", [1, 2, 5])
+def test_rolling_mean_length_param(window: int) -> None:
+    values = list(range(1, 11))
+    result = rolling_mean([float(v) for v in values], window=window)
+    assert len(result) == len(values)
