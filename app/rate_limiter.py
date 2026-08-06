@@ -83,5 +83,47 @@ def make_rate_limiter(
 
 __all__ = [
     "TokenBucketRateLimiter",
+    "burst_capacity_fraction",
     "make_rate_limiter",
+    "make_strict_limiter",
 ]
+
+
+def make_strict_limiter(requests_per_minute: int) -> TokenBucketRateLimiter:
+    """Create a rate limiter configured to allow *requests_per_minute* requests.
+
+    Sets capacity equal to requests_per_minute and refill rate to the equivalent
+    per-second rate (requests_per_minute / 60).
+
+    Args:
+        requests_per_minute: Target request allowance per minute (must be >= 1).
+
+    Returns:
+        A configured :class:`TokenBucketRateLimiter` instance.
+
+    Raises:
+        ValueError: If *requests_per_minute* is less than 1.
+    """
+    if requests_per_minute < 1:
+        raise ValueError(f"requests_per_minute must be >= 1, got {requests_per_minute}")
+    rate = requests_per_minute / 60.0
+    return TokenBucketRateLimiter(capacity=float(requests_per_minute), rate_per_second=rate)
+
+
+def burst_capacity_fraction(limiter: TokenBucketRateLimiter, client_key: str) -> float:
+    """Return the current token fill fraction [0.0, 1.0] for *client_key*.
+
+    A value of 1.0 means the bucket is full; 0.0 means it is empty.
+
+    Args:
+        limiter: A :class:`TokenBucketRateLimiter` instance.
+        client_key: The client identifier to query.
+
+    Returns:
+        Float in [0.0, 1.0] representing the fraction of capacity remaining.
+    """
+    remaining = limiter.remaining_tokens(client_key)
+    capacity = limiter._capacity
+    if capacity <= 0:
+        return 0.0
+    return round(min(1.0, remaining / capacity), 6)
