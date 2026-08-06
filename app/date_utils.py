@@ -96,6 +96,7 @@ def week_of_year(dt: datetime) -> int:
     return dt.isocalendar()[1]
 
 __all__ = [
+    "clamp_to_range",
     "days_until",
     "format_iso",
     "generate_hourly_timestamps",
@@ -105,6 +106,7 @@ __all__ = [
     "iso_to_datetime",
     "quarter_of_year",
     "round_to_hour",
+    "start_of_month",
     "utc_now",
     "week_of_year",
 ]
@@ -159,3 +161,38 @@ def format_iso(dt: datetime) -> str:
         String like '2024-06-15T14:30:00'.
     """
     return dt.strftime("%Y-%m-%dT%H:%M:%S")
+
+
+def start_of_month(dt: datetime) -> datetime:
+    """Return a datetime at midnight on the first day of *dt*'s month.
+
+    Args:
+        dt: Any datetime (timezone is preserved).
+
+    Returns:
+        Datetime with day=1, hour=0, minute=0, second=0, microsecond=0.
+    """
+    return dt.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+
+
+def clamp_to_range(dt: datetime, start: datetime, end: datetime) -> datetime:
+    """Clamp *dt* to the closed interval [start, end].
+
+    Args:
+        dt: Datetime to clamp.
+        start: Lower bound (inclusive).
+        end: Upper bound (inclusive).
+
+    Returns:
+        *start* if dt < start, *end* if dt > end, else *dt* unchanged.
+
+    Raises:
+        ValueError: If *start* > *end*.
+    """
+    if start > end:
+        raise ValueError(f"start must not be after end: {start} > {end}")
+    if dt < start:
+        return start
+    if dt > end:
+        return end
+    return dt
