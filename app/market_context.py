@@ -332,12 +332,96 @@ __all__ = [
     "affordability_bucket",
     "affordability_index",
     "affordability_ratio",
+    "comparable_value_adjustment",
     "dom_classification",
     "housing_affordability_index",
+    "market_heat_score",
     "market_summary",
+    "price_per_bedroom",
     "price_per_sqft",
     "price_to_rent_ratio",
     "price_trend_consistency",
     "price_trend_indicator",
     "rent_vs_buy_comparison",
+    "value_gap",
 ]
+
+
+def price_per_bedroom(predicted_value: float, bedrooms: int) -> float:
+    """Return price per bedroom, or 0 if bedrooms is non-positive.
+
+    Args:
+        predicted_value: Estimated property price in USD.
+        bedrooms: Number of bedrooms.
+
+    Returns:
+        Price per bedroom rounded to 2 decimal places; 0.0 if bedrooms <= 0.
+    """
+    if bedrooms <= 0:
+        return 0.0
+    return round(predicted_value / bedrooms, 2)
+
+
+def market_heat_score(
+    days_on_market: int,
+    list_to_sale_ratio: float,
+    inventory_months: float,
+) -> float:
+    """Compute a composite market heat score in [0, 10].
+
+    Higher scores indicate a hotter (seller's) market.
+
+    Args:
+        days_on_market: Median days on market for recent sales.
+        list_to_sale_ratio: Ratio of sale price to list price (e.g. 1.02 = 2% over).
+        inventory_months: Months of housing supply currently available.
+
+    Returns:
+        Heat score in [0, 10], rounded to 2 decimal places.
+    """
+    dom_score = max(0.0, 1.0 - days_on_market / 90.0) * 10.0
+    ratio_score = min(10.0, max(0.0, (list_to_sale_ratio - 0.9) * 100.0))
+    inv_score = max(0.0, 1.0 - inventory_months / 6.0) * 10.0
+    composite = (dom_score + ratio_score + inv_score) / 3.0
+    return round(min(10.0, max(0.0, composite)), 2)
+
+
+def value_gap(estimated_value: float, list_price: float) -> float:
+    """Compute the gap between estimated value and list price as a percentage.
+
+    A positive gap means the property is listed below estimated value (underpriced).
+
+    Args:
+        estimated_value: Model-estimated fair market value in USD.
+        list_price: Actual listing price in USD.
+
+    Returns:
+        Gap percentage rounded to 4 decimal places; 0.0 if list_price is zero.
+    """
+    if list_price == 0.0:
+        return 0.0
+    return round((estimated_value - list_price) / list_price * 100.0, 4)
+
+
+def comparable_value_adjustment(
+    subject_sqft: float,
+    comp_sqft: float,
+    comp_price: float,
+    price_per_sqft_adj: float = 100.0,
+) -> float:
+    """Estimate a value adjustment for a subject property relative to a comparable.
+
+    Adjusts *comp_price* upward or downward by the per-sqft value of the
+    square-footage difference.
+
+    Args:
+        subject_sqft: Square footage of the subject property.
+        comp_sqft: Square footage of the comparable sale.
+        comp_price: Sale price of the comparable property in USD.
+        price_per_sqft_adj: Dollar adjustment per sqft difference.
+
+    Returns:
+        Adjusted value for the subject property, rounded to 2 decimal places.
+    """
+    diff = subject_sqft - comp_sqft
+    return round(comp_price + diff * price_per_sqft_adj, 2)
