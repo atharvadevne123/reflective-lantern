@@ -503,8 +503,10 @@ __all__ = [
     "min_max_scale",
     "moving_median",
     "moving_range",
+    "pair_difference",
     "peak_hours",
     "peak_to_valley_ratio",
+    "percent_change",
     "resample_hourly_to_daily",
     "rolling_zscore",
     "seasonal_baseline",
@@ -539,3 +541,47 @@ def moving_median(values: list[float], window: int) -> list[float]:
         else:
             result.append(round(chunk[mid], 6))
     return result
+
+
+def percent_change(values: list[float]) -> list[float]:
+    """Compute the period-over-period percentage change for a time series.
+
+    percent_change[i] = (values[i] - values[i-1]) / abs(values[i-1]) * 100
+
+    Args:
+        values: Time-ordered numeric observations (at least 2 values).
+
+    Returns:
+        List of length ``len(values) - 1`` with percentage changes.
+        Returns empty list for inputs shorter than 2 elements.
+
+    Raises:
+        ValueError: If any denominator value is zero.
+    """
+    if len(values) < 2:
+        return []
+    result = []
+    for i in range(1, len(values)):
+        prev = values[i - 1]
+        if prev == 0.0:
+            raise ValueError(f"Cannot compute percent change when previous value is zero (index {i - 1})")
+        result.append(round((values[i] - prev) / abs(prev) * 100.0, 6))
+    return result
+
+
+def pair_difference(a: list[float], b: list[float]) -> list[float]:
+    """Return element-wise difference (a[i] - b[i]) for two equal-length series.
+
+    Args:
+        a: First numeric series.
+        b: Second numeric series (must have the same length as *a*).
+
+    Returns:
+        List of differences, rounded to 6 decimal places.
+
+    Raises:
+        ValueError: If series lengths differ.
+    """
+    if len(a) != len(b):
+        raise ValueError(f"Series length mismatch: {len(a)} vs {len(b)}")
+    return [round(x - y, 6) for x, y in zip(a, b)]
