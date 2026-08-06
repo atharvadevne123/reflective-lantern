@@ -163,7 +163,9 @@ __all__ = [
     "exponential_smoothing_forecast",
     "forecast_bias",
     "forecast_summary",
+    "mae_score",
     "naive_forecast",
+    "rmse_score",
     "seasonal_naive_forecast",
     "stepwise_error_growth",
     "weighted_ensemble_forecast",
@@ -249,3 +251,44 @@ def weighted_ensemble_forecast(
         blended = sum(w * f[i] for w, f in zip(weights, forecasts, strict=False)) / total_w
         result.append(round(blended, 4))
     return result
+
+
+def mae_score(actual: list[float], predicted: list[float]) -> float:
+    """Compute Mean Absolute Error (MAE) between actual and predicted values.
+
+    Args:
+        actual: Ground-truth observations.
+        predicted: Forecasted values (same length as actual).
+
+    Returns:
+        MAE as a float, rounded to 6 decimal places.
+
+    Raises:
+        ValueError: If inputs are empty or have different lengths.
+    """
+    if not actual or not predicted:
+        raise ValueError("actual and predicted must not be empty")
+    if len(actual) != len(predicted):
+        raise ValueError(f"Length mismatch: {len(actual)} vs {len(predicted)}")
+    return round(sum(abs(p - a) for p, a in zip(predicted, actual)) / len(actual), 6)
+
+
+def rmse_score(actual: list[float], predicted: list[float]) -> float:
+    """Compute Root Mean Squared Error (RMSE) between actual and predicted values.
+
+    Args:
+        actual: Ground-truth observations.
+        predicted: Forecasted values (same length as actual).
+
+    Returns:
+        RMSE as a float, rounded to 6 decimal places.
+
+    Raises:
+        ValueError: If inputs are empty or have different lengths.
+    """
+    if not actual or not predicted:
+        raise ValueError("actual and predicted must not be empty")
+    if len(actual) != len(predicted):
+        raise ValueError(f"Length mismatch: {len(actual)} vs {len(predicted)}")
+    mse = sum((p - a) ** 2 for p, a in zip(predicted, actual)) / len(actual)
+    return round(mse ** 0.5, 6)
