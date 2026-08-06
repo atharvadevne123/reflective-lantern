@@ -150,6 +150,7 @@ __all__ = [
     "r_squared",
     "root_mean_squared_error",
     "weighted_average",
+    "zscore",
 ]
 
 
@@ -281,3 +282,31 @@ def percentile_rank(values: list[float], target: float) -> float:
         raise ValueError("values must not be empty")
     count = sum(1 for v in values if v <= target)
     return round(count / len(values) * 100.0, 4)
+
+
+def zscore(values: list[float], value: float) -> float:
+    """Compute the Z-score of *value* relative to the population *values*.
+
+    Z-score = (value - mean) / std. Measures how many standard deviations
+    a single observation is from the population mean.
+
+    Args:
+        values: Reference population of numeric observations.
+        value: The observation to score.
+
+    Returns:
+        Z-score as a float, rounded to 6 decimal places.
+        Returns 0.0 if the population standard deviation is near zero.
+
+    Raises:
+        ValueError: If *values* is empty.
+    """
+    if not values:
+        raise ValueError("values must not be empty")
+    n = len(values)
+    mean = sum(values) / n
+    variance = sum((v - mean) ** 2 for v in values) / n
+    std = variance ** 0.5
+    if std < 1e-9:
+        return 0.0
+    return round((value - mean) / std, 6)
