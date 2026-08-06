@@ -5,6 +5,7 @@ from __future__ import annotations
 import pytest
 
 from app.forecasting import (
+    confidence_interval,
     drift_forecast,
     ensemble_forecast,
     exponential_smoothing_forecast,
@@ -12,6 +13,8 @@ from app.forecasting import (
     forecast_summary,
     naive_forecast,
     seasonal_naive_forecast,
+    stepwise_error_growth,
+    weighted_ensemble_forecast,
 )
 
 HISTORY = [10.0, 12.0, 11.0, 13.0, 14.0, 12.0, 15.0]
@@ -235,3 +238,79 @@ def test_forecast_bias_empty_raises() -> None:
 def test_ensemble_forecast_custom_weights(w) -> None:
     result = ensemble_forecast(HISTORY, steps=3, weights=w)
     assert len(result) == 3
+
+
+def test_confidence_interval_length() -> None:
+    fc = [10.0, 11.0, 12.0]
+    result = confidence_interval(fc, std_error=1.0)
+    assert len(result) == 3
+
+
+def test_confidence_interval_keys() -> None:
+    result = confidence_interval([10.0], std_error=2.0)
+    assert "point" in result[0]
+    assert "lower" in result[0]
+    assert "upper" in result[0]
+
+
+def test_confidence_interval_bounds() -> None:
+    fc = [10.0]
+    result = confidence_interval(fc, std_error=2.0, z_score=1.96)
+    assert result[0]["lower"] < result[0]["point"] < result[0]["upper"]
+
+
+def test_confidence_interval_zero_std() -> None:
+    fc = [5.0, 6.0]
+    result = confidence_interval(fc, std_error=0.0)
+    assert all(r["lower"] == r["point"] == r["upper"] for r in result)
+
+
+@pytest.mark.parametrize("z_score", [1.0, 1.645, 1.96, 2.576])
+def test_confidence_interval_z_parametrize(z_score) -> None:
+    fc = [10.0]
+    result = confidence_interval(fc, std_error=1.0, z_score=z_score)
+    assert result[0]["upper"] - result[0]["lower"] == pytest.approx(2 * z_score, rel=1e-4)
+
+
+def test_stepwise_error_growth_length() -> None:
+    result = stepwise_error_growth([1.0, 2.0, 3.0], base_error=1.0)
+    assert len(result) == 3
+
+
+def test_stepwise_error_growth_first_step() -> None:
+    result = stepwise_error_growth([1.0], base_error=2.0, growth_factor=1.1)
+    assert result[0] == pytest.approx(2.0)
+
+
+def test_stepwise_error_growth_increasing() -> None:
+    result = stepwise_error_growth([1.0] * 5, base_error=1.0, growth_factor=1.1)
+    assert all(result[i] <= result[i + 1] for i in range(len(result) - 1))
+
+
+def test_weighted_ensemble_forecast_basic() -> None:
+    f1 = [1.0, 2.0, 3.0]
+    f2 = [3.0, 4.0, 5.0]
+    result = weighted_ensemble_forecast([f1, f2], weights=[1.0, 1.0])
+    assert result == pytest.approx([2.0, 3.0, 4.0])
+
+
+def test_weighted_ensemble_forecast_unequal_weights() -> None:
+    f1 = [10.0]
+    f2 = [0.0]
+    result = weighted_ensemble_forecast([f1, f2], weights=[1.0, 0.0])
+    assert result == pytest.approx([10.0])
+
+
+def test_weighted_ensemble_forecast_empty_raises() -> None:
+    with pytest.raises(ValueError):
+        weighted_ensemble_forecast([], [])
+
+
+def test_weighted_ensemble_forecast_zero_weights_raises() -> None:
+    with pytest.raises(ValueError):
+        weighted_ensemble_forecast([[1.0]], [0.0])
+
+
+def test_weighted_ensemble_forecast_length_mismatch_raises() -> None:
+    with pytest.raises(ValueError):
+        weighted_ensemble_forecast([[1.0, 2.0], [3.0]], [1.0, 1.0])
