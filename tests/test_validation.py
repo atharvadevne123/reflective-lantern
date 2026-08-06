@@ -10,6 +10,7 @@ from app.validation import (
     extract_temporal_from_datetime,
     is_weekend,
     validate_load_series,
+    validate_reading_dict,
     validate_temporal_fields,
     validate_weather_fields,
 )
@@ -521,3 +522,51 @@ def test_batch_validate_readings_mixed() -> None:
     results = batch_validate_readings(readings)
     assert results[0]["valid"] is True
     assert results[1]["valid"] is False
+
+
+class TestValidateReadingDict:
+    VALID_READING = {
+        "hour": 10,
+        "day_of_week": 2,
+        "month": 6,
+        "temperature_c": 22.0,
+        "humidity_pct": 55.0,
+        "consumption_kwh": 15.0,
+        "building_id": "bldg-001",
+    }
+
+    def test_valid_reading_passes(self) -> None:
+        result = validate_reading_dict(self.VALID_READING)
+        assert result["valid"] is True
+        assert result["errors"] == []
+
+    def test_missing_consumption_fails(self) -> None:
+        reading = {k: v for k, v in self.VALID_READING.items() if k != "consumption_kwh"}
+        result = validate_reading_dict(reading)
+        assert result["valid"] is False
+        assert any("consumption_kwh" in e for e in result["errors"])
+
+    def test_invalid_hour_fails(self) -> None:
+        result = validate_reading_dict({**self.VALID_READING, "hour": 99})
+        assert result["valid"] is False
+
+    def test_invalid_temperature_fails(self) -> None:
+        result = validate_reading_dict({**self.VALID_READING, "temperature_c": 200.0})
+        assert result["valid"] is False
+
+    def test_result_has_required_keys(self) -> None:
+        result = validate_reading_dict(self.VALID_READING)
+        assert "valid" in result
+        assert "errors" in result
+        assert "warnings" in result
+
+    @pytest.mark.parametrize("field,value", [
+        ("hour", -1),
+        ("hour", 24),
+        ("month", 0),
+        ("month", 13),
+        ("day_of_week", 7),
+    ])
+    def test_out_of_range_temporal_fails(self, field: str, value: int) -> None:
+        result = validate_reading_dict({**self.VALID_READING, field: value})
+        assert result["valid"] is False
