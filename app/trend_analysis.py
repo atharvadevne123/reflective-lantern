@@ -149,13 +149,94 @@ def rate_of_change(values: list[float], lag: int = 1) -> list[float]:
     ]
 
 
+def trend_strength(values: list[float]) -> float:
+    """Return the R-squared of the linear trend as a 0-1 strength score.
+
+    Args:
+        values: Time-ordered numeric values.
+
+    Returns:
+        R² value in [0, 1]; higher means stronger linear trend.
+    """
+    result = linear_trend(values)
+    return result.r_squared
+
+
+def autocorrelation(values: list[float], lag: int = 1) -> float:
+    """Compute the Pearson autocorrelation at a given *lag*.
+
+    Args:
+        values: Time-ordered numeric values (at least lag+2 elements).
+        lag: Number of periods to shift.
+
+    Returns:
+        Autocorrelation coefficient in [-1, 1]; 0.0 if insufficient data.
+    """
+    n = len(values)
+    if n <= lag + 1:
+        return 0.0
+    mean = sum(values) / n
+    denom = sum((v - mean) ** 2 for v in values)
+    if denom == 0:
+        return 0.0
+    numer = sum((values[i] - mean) * (values[i - lag] - mean) for i in range(lag, n))
+    return round(numer / denom, 6)
+
+
+def cumulative_sum(values: list[float]) -> list[float]:
+    """Return the running cumulative sum of *values*.
+
+    Args:
+        values: Input numeric sequence.
+
+    Returns:
+        List of the same length where element i is sum(values[:i+1]).
+    """
+    total = 0.0
+    result: list[float] = []
+    for v in values:
+        total += v
+        result.append(round(total, 6))
+    return result
+
+
+def double_exponential_smoothing(
+    values: list[float], alpha: float = 0.3, beta: float = 0.1
+) -> list[float]:
+    """Apply Holt's double exponential smoothing (level + trend).
+
+    Args:
+        values: Time-ordered numeric values (at least 2 elements).
+        alpha: Smoothing factor for the level (0 < alpha < 1).
+        beta: Smoothing factor for the trend (0 < beta < 1).
+
+    Returns:
+        Smoothed series of the same length as *values*.
+    """
+    if len(values) < 2:
+        return list(values)
+    level = values[0]
+    trend = values[1] - values[0]
+    result = [round(level + trend, 6)]
+    for v in values[1:]:
+        prev_level = level
+        level = alpha * v + (1 - alpha) * (level + trend)
+        trend = beta * (level - prev_level) + (1 - beta) * trend
+        result.append(round(level + trend, 6))
+    return result
+
+
 __all__ = [
     "TrendResult",
+    "autocorrelation",
+    "cumulative_sum",
     "detect_change_points",
+    "double_exponential_smoothing",
     "linear_trend",
     "percentage_change",
     "rate_of_change",
     "rolling_mean",
     "seasonal_decompose_naive",
+    "trend_strength",
     "year_over_year_growth",
 ]
