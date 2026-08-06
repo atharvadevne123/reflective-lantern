@@ -232,11 +232,61 @@ __all__ = [
     "cumulative_sum",
     "detect_change_points",
     "double_exponential_smoothing",
+    "exponential_growth_rate",
     "linear_trend",
     "percentage_change",
     "rate_of_change",
     "rolling_mean",
     "seasonal_decompose_naive",
+    "trend_reversal_count",
     "trend_strength",
     "year_over_year_growth",
 ]
+
+
+def trend_reversal_count(values: list[float]) -> int:
+    """Count the number of direction changes (reversals) in a time series.
+
+    A reversal occurs when a value increases after a decrease or vice versa.
+    Single-element or empty series have zero reversals.
+
+    Args:
+        values: Time-ordered numeric observations.
+
+    Returns:
+        Non-negative integer count of direction changes.
+    """
+    if len(values) < 3:
+        return 0
+    count = 0
+    for i in range(1, len(values) - 1):
+        prev_diff = values[i] - values[i - 1]
+        next_diff = values[i + 1] - values[i]
+        if prev_diff * next_diff < 0:
+            count += 1
+    return count
+
+
+def exponential_growth_rate(values: list[float]) -> float:
+    """Estimate the average continuous exponential growth rate of a series.
+
+    Computed as (ln(last) - ln(first)) / (n - 1), which approximates the
+    per-period log growth rate.
+
+    Args:
+        values: Non-empty list of strictly positive values.
+
+    Returns:
+        Estimated per-period exponential growth rate, rounded to 6 decimal places.
+
+    Raises:
+        ValueError: If *values* is empty, has fewer than 2 elements, or contains
+            non-positive values.
+    """
+    import math
+
+    if len(values) < 2:
+        raise ValueError("values must have at least 2 elements")
+    if any(v <= 0 for v in values):
+        raise ValueError("All values must be strictly positive for exponential growth rate")
+    return round((math.log(values[-1]) - math.log(values[0])) / (len(values) - 1), 6)
