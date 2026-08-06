@@ -237,6 +237,7 @@ def portfolio_weighted_score(
 
 __all__ = [
     "InvestmentAnalysis",
+    "break_even_occupancy",
     "cash_on_cash_return",
     "compute_investment_analysis",
     "debt_service_coverage_ratio",
@@ -246,6 +247,7 @@ __all__ = [
     "investment_score_label",
     "margin_of_safety",
     "mortgage_payment",
+    "operating_expense_ratio",
     "payback_period",
     "portfolio_weighted_score",
     "price_to_income_ratio",
@@ -411,3 +413,48 @@ def debt_service_coverage_ratio(noi: float, annual_debt_service: float) -> float
     if annual_debt_service == 0.0:
         return 0.0
     return round(noi / annual_debt_service, 4)
+
+
+def break_even_occupancy(
+    operating_expenses: float,
+    debt_service: float,
+    gross_potential_rent: float,
+) -> float:
+    """Compute the break-even occupancy rate for a rental property.
+
+    Break-even occupancy = (operating_expenses + debt_service) / gross_potential_rent
+
+    The result is the minimum occupancy needed to cover all costs.
+
+    Args:
+        operating_expenses: Annual operating expenses in USD.
+        debt_service: Annual debt service payments in USD.
+        gross_potential_rent: Maximum annual rent if fully occupied.
+
+    Returns:
+        Break-even occupancy as a fraction in [0, ∞]; values > 1 indicate the
+        property is unlikely to be viable. Returns 0.0 if gross_potential_rent is zero.
+    """
+    if gross_potential_rent == 0.0:
+        return 0.0
+    return round((operating_expenses + debt_service) / gross_potential_rent, 4)
+
+
+def operating_expense_ratio(
+    operating_expenses: float,
+    effective_gross_income: float,
+) -> float:
+    """Compute the Operating Expense Ratio (OER).
+
+    OER = operating_expenses / effective_gross_income * 100.
+
+    Args:
+        operating_expenses: Annual operating expenses in USD.
+        effective_gross_income: Actual collected income for the year.
+
+    Returns:
+        OER as a percentage; 0.0 if effective_gross_income is zero.
+    """
+    if effective_gross_income == 0.0:
+        return 0.0
+    return round(operating_expenses / effective_gross_income * 100.0, 4)
