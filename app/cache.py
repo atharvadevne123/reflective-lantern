@@ -131,7 +131,45 @@ def warm_cache(cache: TTLCache, entries: dict[str, object]) -> int:
 
 __all__ = [
     "TTLCache",
+    "cache_key_from_dict",
+    "cache_stats_summary",
     "logger",
     "prediction_cache",
     "warm_cache",
 ]
+
+
+def cache_key_from_dict(params: dict[str, object], prefix: str = "") -> str:
+    """Build a deterministic cache key from a parameter dictionary.
+
+    Sorts keys alphabetically and joins them as ``key=value`` pairs separated
+    by colons. A *prefix* is prepended (with a colon separator) when provided.
+
+    Args:
+        params: Dict of parameters to encode into the key.
+        prefix: Optional namespace prefix for the key.
+
+    Returns:
+        A string suitable for use as a cache key.
+    """
+    parts = [f"{k}={params[k]}" for k in sorted(params)]
+    key = ":".join(parts)
+    return f"{prefix}:{key}" if prefix else key
+
+
+def cache_stats_summary(cache: TTLCache) -> dict[str, object]:
+    """Return a summary dict of hit/miss/eviction statistics for *cache*.
+
+    Args:
+        cache: The :class:`TTLCache` instance to inspect.
+
+    Returns:
+        Dict with 'hits', 'misses', 'evictions', 'hit_rate', and 'size'.
+    """
+    return {
+        "hits": cache.hits,
+        "misses": cache.misses,
+        "evictions": cache.eviction_count,
+        "hit_rate": round(cache.hit_rate, 4),
+        "size": len(cache),
+    }
