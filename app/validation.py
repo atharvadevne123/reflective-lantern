@@ -277,6 +277,30 @@ def validate_reading_dict(reading: dict[str, object]) -> dict[str, object]:
     return {"valid": len(errors) == 0, "errors": errors, "warnings": []}
 
 
+MAX_PRICE_USD = 1_000_000_000.0
+
+
+def validate_price(price: float) -> list[str]:
+    """Return validation errors for a price value in USD.
+
+    Args:
+        price: Dollar amount to validate.
+
+    Returns:
+        List of error strings (empty when valid).
+    """
+    import math
+
+    errors: list[str] = []
+    if not math.isfinite(price):
+        errors.append(f"price must be finite, got {price}")
+    elif price < 0:
+        errors.append(f"price must be non-negative, got {price}")
+    elif price > MAX_PRICE_USD:
+        errors.append(f"price {price} exceeds maximum {MAX_PRICE_USD}")
+    return errors
+
+
 def validate_coordinate(lat: float, lon: float) -> list[str]:
     """Return validation errors for a geographic coordinate pair.
 
@@ -308,6 +332,7 @@ __all__ = [
     "validate_feature_vector",
     "validate_forecast_horizon",
     "validate_load_series",
+    "validate_price",
     "validate_reading_dict",
     "validate_temporal_fields",
     "validate_weather_fields",
