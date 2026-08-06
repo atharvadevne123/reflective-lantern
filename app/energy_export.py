@@ -170,10 +170,71 @@ def normalize_kwh(
 __all__ = [
     "aggregate_by_hour",
     "filter_records",
+    "kwh_stats_by_building",
     "normalize_kwh",
     "pivot_by_hour",
     "records_to_csv",
     "records_to_json",
+    "split_by_day",
     "summarize_export",
     "top_buildings_by_kwh",
 ]
+
+
+def split_by_day(
+    records: list[dict[str, object]],
+    date_field: str = "timestamp",
+) -> dict[str, list[dict[str, object]]]:
+    """Group records into buckets by calendar date extracted from *date_field*.
+
+    Extracts the first 10 characters of the date field string (YYYY-MM-DD).
+    Records missing or with malformed date fields go into a '_unknown' bucket.
+
+    Args:
+        records: List of energy record dicts.
+        date_field: Key that contains an ISO-8601 timestamp string.
+
+    Returns:
+        Dict mapping date strings to lists of records.
+    """
+    buckets: dict[str, list[dict[str, object]]] = {}
+    for rec in records:
+        ts = rec.get(date_field, "")
+        day = str(ts)[:10] if ts else "_unknown"
+        if len(day) != 10 or not day[:4].isdigit():
+            day = "_unknown"
+        buckets.setdefault(day, []).append(rec)
+    return buckets
+
+
+def kwh_stats_by_building(
+    records: list[dict[str, object]],
+) -> dict[str, dict[str, float]]:
+    """Return per-building summary statistics for ``consumption_kwh``.
+
+    Args:
+        records: List of energy record dicts; each must have 'building_id'
+            and 'consumption_kwh' keys.
+
+    Returns:
+        Dict mapping building_id to a dict with 'total', 'mean', 'min', 'max',
+        and 'count'. Buildings missing either key are skipped.
+    """
+    aggregates: dict[str, list[float]] = {}
+    for rec in records:
+        bld = rec.get("building_id")
+        kwh = rec.get("consumption_kwh")
+        if bld is None or kwh is None:
+            continue
+        key = str(bld)
+        aggregates.setdefault(key, []).append(float(kwh))
+    result: dict[str, dict[str, float]] = {}
+    for bld, vals in aggregates.items():
+        result[bld] = {
+            "total": round(sum(vals), 4),
+            "mean": round(sum(vals) / len(vals), 4),
+            "min": min(vals),
+            "max": max(vals),
+            "count": float(len(vals)),
+        }
+    return result
