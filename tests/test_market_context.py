@@ -644,3 +644,62 @@ def test_market_heat_score_parametrize(dom, ratio, inv, hot) -> None:
         assert score >= 5.0
     else:
         assert score <= 5.0
+
+
+# Tests for effective_gross_income and price_appreciation_rate
+import pytest
+
+from app.market_context import effective_gross_income, price_appreciation_rate
+
+
+def test_egi_no_vacancy() -> None:
+    assert effective_gross_income(100_000.0, vacancy_rate=0.0) == pytest.approx(100_000.0)
+
+
+def test_egi_with_5pct_vacancy() -> None:
+    assert effective_gross_income(100_000.0, vacancy_rate=0.05) == pytest.approx(95_000.0)
+
+
+def test_egi_full_vacancy() -> None:
+    assert effective_gross_income(100_000.0, vacancy_rate=1.0) == pytest.approx(0.0)
+
+
+def test_egi_invalid_vacancy_raises() -> None:
+    with pytest.raises(ValueError):
+        effective_gross_income(100_000.0, vacancy_rate=1.1)
+
+
+def test_egi_negative_vacancy_raises() -> None:
+    with pytest.raises(ValueError):
+        effective_gross_income(100_000.0, vacancy_rate=-0.1)
+
+
+def test_price_appreciation_rate_flat() -> None:
+    assert price_appreciation_rate(200_000.0, 200_000.0, 5.0) == pytest.approx(0.0)
+
+
+def test_price_appreciation_rate_positive() -> None:
+    rate = price_appreciation_rate(100_000.0, 121_000.0, 2.0)
+    assert rate == pytest.approx(10.0, rel=1e-3)
+
+
+def test_price_appreciation_rate_negative() -> None:
+    rate = price_appreciation_rate(200_000.0, 150_000.0, 5.0)
+    assert rate < 0.0
+
+
+def test_price_appreciation_rate_zero_original_raises() -> None:
+    with pytest.raises(ValueError):
+        price_appreciation_rate(0.0, 200_000.0, 5.0)
+
+
+def test_price_appreciation_rate_zero_years_raises() -> None:
+    with pytest.raises(ValueError):
+        price_appreciation_rate(100_000.0, 200_000.0, 0.0)
+
+
+@pytest.mark.parametrize("vacancy", [0.0, 0.05, 0.10, 0.20])
+def test_egi_parametrize(vacancy: float) -> None:
+    gross = 120_000.0
+    result = effective_gross_income(gross, vacancy_rate=vacancy)
+    assert result == pytest.approx(gross * (1.0 - vacancy))
