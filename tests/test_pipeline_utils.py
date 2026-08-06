@@ -158,3 +158,58 @@ def test_describe_pipeline_has_steps_key() -> None:
 def test_describe_pipeline_non_pipeline_returns_empty() -> None:
     desc = describe_pipeline("not a pipeline")
     assert desc.get("n_steps", 0) == 0 or "steps" not in desc or desc["steps"] == []
+
+
+# Tests for count_fitted_steps, pipeline_has_preprocessor, extract_step_classes
+from app.pipeline_utils import count_fitted_steps, extract_step_classes, pipeline_has_preprocessor
+
+
+def test_count_fitted_steps_unfitted() -> None:
+    pipe = make_test_pipeline()
+    assert count_fitted_steps(pipe) == 0
+
+
+def test_count_fitted_steps_non_pipeline() -> None:
+    assert count_fitted_steps("not a pipeline") == 0
+
+
+def test_pipeline_has_preprocessor_true() -> None:
+    pipe = make_test_pipeline()
+    assert pipeline_has_preprocessor(pipe) is True
+
+
+def test_pipeline_has_preprocessor_false() -> None:
+    from sklearn.linear_model import Ridge
+
+    pipe = Pipeline([("ridge", Ridge())])
+    assert pipeline_has_preprocessor(pipe) is False
+
+
+def test_pipeline_has_preprocessor_non_pipeline() -> None:
+    assert pipeline_has_preprocessor("not a pipeline") is False
+
+
+def test_extract_step_classes_returns_names() -> None:
+    pipe = make_test_pipeline()
+    classes = extract_step_classes(pipe)
+    assert classes == ["StandardScaler", "LinearRegression"]
+
+
+def test_extract_step_classes_non_pipeline() -> None:
+    assert extract_step_classes("not a pipeline") == []
+
+
+def test_extract_step_classes_length_matches_steps() -> None:
+    pipe = make_test_pipeline()
+    assert len(extract_step_classes(pipe)) == len(get_step_names(pipe))
+
+
+@pytest.mark.parametrize("keyword_step", [
+    ("scaler", StandardScaler()),
+    ("normalizer", StandardScaler()),
+    ("encoder", StandardScaler()),
+])
+def test_pipeline_has_preprocessor_keyword_variants(keyword_step) -> None:
+    name, estimator = keyword_step
+    pipe = Pipeline([(name, estimator), ("reg", LinearRegression())])
+    assert pipeline_has_preprocessor(pipe) is True
