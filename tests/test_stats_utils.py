@@ -8,8 +8,11 @@ from app.stats_utils import (
     geometric_mean,
     harmonic_mean,
     interquartile_range,
+    mode_count,
     normalize_series,
     percentile_rank,
+    trimmed_mean,
+    variance,
     weighted_average,
     zscore,
 )
@@ -366,3 +369,90 @@ class TestZscore:
         vals = [-1.0, 0.0, 1.0]
         result = zscore(vals, 0.0)
         assert result == pytest.approx(0.0, abs=1e-4)
+
+
+def test_trimmed_mean_basic() -> None:
+    values = [1.0, 2.0, 3.0, 4.0, 100.0]
+    result = trimmed_mean(values, trim_pct=0.2)
+    assert result == pytest.approx(3.0)
+
+
+def test_trimmed_mean_no_trim() -> None:
+    values = [1.0, 2.0, 3.0, 4.0, 5.0]
+    result = trimmed_mean(values, trim_pct=0.0)
+    assert result == pytest.approx(3.0)
+
+
+def test_trimmed_mean_empty_raises() -> None:
+    with pytest.raises(ValueError):
+        trimmed_mean([])
+
+
+def test_trimmed_mean_invalid_pct_raises() -> None:
+    with pytest.raises(ValueError):
+        trimmed_mean([1.0, 2.0], trim_pct=0.5)
+
+
+@pytest.mark.parametrize("trim_pct", [0.0, 0.1, 0.2, 0.4])
+def test_trimmed_mean_various_pcts(trim_pct) -> None:
+    values = [float(i) for i in range(1, 21)]
+    result = trimmed_mean(values, trim_pct=trim_pct)
+    assert isinstance(result, float)
+
+
+def test_variance_population() -> None:
+    values = [2.0, 4.0, 4.0, 4.0, 5.0, 5.0, 7.0, 9.0]
+    result = variance(values, population=True)
+    assert result == pytest.approx(4.0, rel=1e-4)
+
+
+def test_variance_sample() -> None:
+    values = [2.0, 4.0, 4.0, 4.0, 5.0, 5.0, 7.0, 9.0]
+    result = variance(values, population=False)
+    assert result > 4.0
+
+
+def test_variance_empty_raises() -> None:
+    with pytest.raises(ValueError):
+        variance([])
+
+
+def test_variance_single_sample_raises() -> None:
+    with pytest.raises(ValueError):
+        variance([5.0], population=False)
+
+
+def test_variance_constant_series() -> None:
+    assert variance([5.0] * 10) == pytest.approx(0.0)
+
+
+def test_mode_count_basic() -> None:
+    mode, count = mode_count([1.0, 2.0, 2.0, 3.0])
+    assert mode == 2.0
+    assert count == 2
+
+
+def test_mode_count_all_same() -> None:
+    mode, count = mode_count([5.0, 5.0, 5.0])
+    assert mode == 5.0
+    assert count == 3
+
+
+def test_mode_count_tie_returns_smallest() -> None:
+    mode, count = mode_count([1.0, 2.0, 1.0, 2.0])
+    assert mode == 1.0
+    assert count == 2
+
+
+def test_mode_count_empty_raises() -> None:
+    with pytest.raises(ValueError):
+        mode_count([])
+
+
+@pytest.mark.parametrize("values,expected_mode", [
+    ([3.0, 3.0, 1.0], 3.0),
+    ([1.0, 1.0, 2.0, 2.0, 2.0], 2.0),
+])
+def test_mode_count_parametrize(values, expected_mode) -> None:
+    mode, _ = mode_count(values)
+    assert mode == expected_mode
