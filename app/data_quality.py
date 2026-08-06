@@ -125,7 +125,9 @@ __all__ = [
     "flag_outliers",
     "quality_summary",
     "range_violation_count",
+    "records_missing_field",
     "score_record",
+    "unique_values",
 ]
 
 
@@ -280,3 +282,45 @@ def fill_missing(
             row[field] = fill_value
         result.append(row)
     return result
+
+
+def unique_values(
+    records: list[dict[str, Any]],
+    field: str,
+) -> list[Any]:
+    """Return a sorted list of unique non-None values for *field* across *records*.
+
+    Args:
+        records: List of dicts to inspect.
+        field: Key to collect values from.
+
+    Returns:
+        Sorted list of unique values (excluding None); empty list if field absent.
+    """
+    seen = set()
+    result = []
+    for rec in records:
+        val = rec.get(field)
+        if val is not None and val not in seen:
+            seen.add(val)
+            result.append(val)
+    try:
+        return sorted(result)
+    except TypeError:
+        return result
+
+
+def records_missing_field(
+    records: list[dict[str, Any]],
+    field: str,
+) -> list[int]:
+    """Return the indices of records where *field* is absent or None.
+
+    Args:
+        records: List of dicts to inspect.
+        field: Key to check for presence.
+
+    Returns:
+        Sorted list of integer indices where *field* is missing.
+    """
+    return [i for i, rec in enumerate(records) if rec.get(field) is None]
