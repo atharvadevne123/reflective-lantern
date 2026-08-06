@@ -237,8 +237,12 @@ def portfolio_weighted_score(
 
 __all__ = [
     "InvestmentAnalysis",
+    "cash_on_cash_return",
     "compute_investment_analysis",
+    "debt_service_coverage_ratio",
     "discounted_cash_flow",
+    "equity_multiple",
+    "gross_rent_multiplier",
     "investment_score_label",
     "margin_of_safety",
     "mortgage_payment",
@@ -335,3 +339,75 @@ def margin_of_safety(
     if intrinsic_value == 0.0:
         return 0.0
     return round((intrinsic_value - market_price) / intrinsic_value * 100.0, 4)
+
+
+def gross_rent_multiplier(property_price: float, annual_gross_rent: float) -> float:
+    """Compute the Gross Rent Multiplier (GRM).
+
+    GRM = property_price / annual_gross_rent.  Lower values indicate better
+    value relative to rental income.
+
+    Args:
+        property_price: Purchase price of the property in USD.
+        annual_gross_rent: Total annual gross rental income in USD.
+
+    Returns:
+        GRM rounded to 4 decimal places; 0.0 if annual_gross_rent is zero.
+    """
+    if annual_gross_rent == 0.0:
+        return 0.0
+    return round(property_price / annual_gross_rent, 4)
+
+
+def equity_multiple(total_distributions: float, total_invested: float) -> float:
+    """Compute the equity multiple of an investment.
+
+    Equity multiple = total_distributions / total_invested.  A value > 1
+    means the investor received back more than they put in.
+
+    Args:
+        total_distributions: Sum of all cash distributions (including sale proceeds).
+        total_invested: Total capital invested.
+
+    Returns:
+        Equity multiple rounded to 4 decimal places; 0.0 if total_invested is zero.
+    """
+    if total_invested == 0.0:
+        return 0.0
+    return round(total_distributions / total_invested, 4)
+
+
+def cash_on_cash_return(
+    annual_pre_tax_cash_flow: float, total_cash_invested: float
+) -> float:
+    """Compute the cash-on-cash return for a rental property.
+
+    Cash-on-cash = annual_pre_tax_cash_flow / total_cash_invested * 100.
+
+    Args:
+        annual_pre_tax_cash_flow: Annual pre-tax cash flow in USD.
+        total_cash_invested: Total cash invested (down payment + closing costs, etc.).
+
+    Returns:
+        Cash-on-cash return as a percentage; 0.0 if total_cash_invested is zero.
+    """
+    if total_cash_invested == 0.0:
+        return 0.0
+    return round(annual_pre_tax_cash_flow / total_cash_invested * 100.0, 4)
+
+
+def debt_service_coverage_ratio(noi: float, annual_debt_service: float) -> float:
+    """Compute the Debt Service Coverage Ratio (DSCR).
+
+    DSCR = NOI / annual_debt_service.  Lenders typically require DSCR >= 1.2.
+
+    Args:
+        noi: Net Operating Income for the year.
+        annual_debt_service: Total annual debt payments (principal + interest).
+
+    Returns:
+        DSCR rounded to 4 decimal places; 0.0 if annual_debt_service is zero.
+    """
+    if annual_debt_service == 0.0:
+        return 0.0
+    return round(noi / annual_debt_service, 4)
