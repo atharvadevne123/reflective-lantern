@@ -157,6 +157,7 @@ def forecast_bias(actual: list[float], predicted: list[float]) -> float:
 
 
 __all__ = [
+    "confidence_interval",
     "drift_forecast",
     "ensemble_forecast",
     "exponential_smoothing_forecast",
@@ -164,4 +165,87 @@ __all__ = [
     "forecast_summary",
     "naive_forecast",
     "seasonal_naive_forecast",
+    "stepwise_error_growth",
+    "weighted_ensemble_forecast",
 ]
+
+
+def confidence_interval(
+    forecast: list[float],
+    std_error: float,
+    z_score: float = 1.96,
+) -> list[dict[str, float]]:
+    """Return confidence intervals for a forecast sequence.
+
+    Args:
+        forecast: Point forecasts.
+        std_error: Standard error of the forecast (assumed constant across steps).
+        z_score: Z multiplier for the desired confidence level (1.96 = 95%).
+
+    Returns:
+        List of dicts with 'point', 'lower', 'upper' for each forecast step.
+    """
+    margin = z_score * std_error
+    return [
+        {
+            "point": round(f, 4),
+            "lower": round(f - margin, 4),
+            "upper": round(f + margin, 4),
+        }
+        for f in forecast
+    ]
+
+
+def stepwise_error_growth(
+    forecast: list[float],
+    base_error: float,
+    growth_factor: float = 1.1,
+) -> list[float]:
+    """Estimate growing forecast uncertainty that compounds step by step.
+
+    Uncertainty at step *k* = base_error * growth_factor^k.
+
+    Args:
+        forecast: Point forecasts (length determines the number of steps).
+        base_error: Standard error at the first forecast step.
+        growth_factor: Multiplicative error growth per step (default 1.1 = 10% growth).
+
+    Returns:
+        List of estimated standard errors, one per forecast step.
+    """
+    return [
+        round(base_error * (growth_factor ** k), 6) for k in range(len(forecast))
+    ]
+
+
+def weighted_ensemble_forecast(
+    forecasts: list[list[float]],
+    weights: list[float],
+) -> list[float]:
+    """Blend multiple forecast sequences using per-model weights.
+
+    Args:
+        forecasts: List of forecast sequences; all must have the same length.
+        weights: Non-negative weights (one per forecast sequence).
+
+    Returns:
+        Weighted-average forecast of the same length.
+
+    Raises:
+        ValueError: If inputs are empty, have mismatched lengths, or weights sum to zero.
+    """
+    if not forecasts or not weights:
+        raise ValueError("forecasts and weights must not be empty")
+    if len(forecasts) != len(weights):
+        raise ValueError("forecasts and weights must have the same length")
+    n_steps = len(forecasts[0])
+    if not all(len(f) == n_steps for f in forecasts):
+        raise ValueError("all forecast sequences must have the same length")
+    total_w = sum(weights)
+    if total_w == 0:
+        raise ValueError("weights must sum to a positive value")
+    result = []
+    for i in range(n_steps):
+        blended = sum(w * f[i] for w, f in zip(weights, forecasts, strict=False)) / total_w
+        result.append(round(blended, 4))
+    return result
