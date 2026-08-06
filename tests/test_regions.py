@@ -248,3 +248,65 @@ def test_get_region_has_carbon_intensity() -> None:
     r = get_region("texas")
     assert r is not None
     assert "carbon_intensity" in r or "grid_intensity" in r or "peak_load_mw" in r
+
+
+# Tests for region_count, get_region_name, compare_peak_loads
+import pytest
+
+from app.regions import compare_peak_loads, get_region_name, region_count
+
+
+def test_region_count_positive() -> None:
+    assert region_count() >= 5
+
+
+def test_region_count_includes_default() -> None:
+    from app.regions import KNOWN_REGIONS
+    assert region_count() == len(KNOWN_REGIONS)
+
+
+def test_get_region_name_known() -> None:
+    name = get_region_name("northeast")
+    assert name is not None
+    assert "Northeast" in name
+
+
+def test_get_region_name_unknown() -> None:
+    assert get_region_name("nonexistent") is None
+
+
+def test_get_region_name_case_insensitive() -> None:
+    name_lower = get_region_name("midwest")
+    name_upper = get_region_name("MIDWEST")
+    assert name_lower == name_upper
+
+
+def test_compare_peak_loads_returns_dict() -> None:
+    result = compare_peak_loads("northeast", "midwest")
+    assert "peak1_mw" in result
+    assert "peak2_mw" in result
+    assert "difference_mw" in result
+    assert "higher" in result
+
+
+def test_compare_peak_loads_higher_correct() -> None:
+    result = compare_peak_loads("south", "new_england")
+    assert result["higher"] == "south"
+
+
+def test_compare_peak_loads_unknown_region() -> None:
+    result = compare_peak_loads("northeast", "nonexistent")
+    assert result["peak2_mw"] is None
+    assert result["higher"] == "unknown"
+
+
+def test_compare_peak_loads_equal_regions() -> None:
+    result = compare_peak_loads("northeast", "northeast")
+    assert result["higher"] == "equal"
+
+
+@pytest.mark.parametrize("region_id", ["northeast", "midwest", "south", "west", "texas"])
+def test_get_region_name_known_ids(region_id: str) -> None:
+    name = get_region_name(region_id)
+    assert isinstance(name, str)
+    assert len(name) > 0
