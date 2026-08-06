@@ -8,8 +8,11 @@ from app.data_quality import (
     batch_score,
     completeness_score,
     detect_duplicates,
+    field_type_consistency,
+    fill_missing,
     flag_outliers,
     quality_summary,
+    range_violation_count,
     score_record,
 )
 
@@ -238,3 +241,76 @@ def test_detect_data_gaps_multiple_gaps() -> None:
     ts = [0, 7200, 14400, 21600]  # all gaps are 2h, expected 1h
     gaps = detect_data_gaps(ts, expected_interval=3600)
     assert len(gaps) == 3
+
+
+def test_field_type_consistency_all_match() -> None:
+    records = [{"value": 1.0}, {"value": 2.0}, {"value": 3.0}]
+    assert field_type_consistency(records, "value", float) == pytest.approx(1.0)
+
+
+def test_field_type_consistency_none_match() -> None:
+    records = [{"value": "text"}, {"value": "more"}]
+    assert field_type_consistency(records, "value", float) == pytest.approx(0.0)
+
+
+def test_field_type_consistency_no_field() -> None:
+    records = [{"other": 1}, {"other": 2}]
+    assert field_type_consistency(records, "value", float) == pytest.approx(1.0)
+
+
+def test_field_type_consistency_mixed() -> None:
+    records = [{"x": 1.0}, {"x": "str"}, {"x": 3.0}]
+    result = field_type_consistency(records, "x", float)
+    assert result == pytest.approx(2 / 3, rel=1e-4)
+
+
+@pytest.mark.parametrize("expected_type,score", [
+    (float, 1.0),
+    (str, 0.0),
+])
+def test_field_type_consistency_parametrize(expected_type, score) -> None:
+    records = [{"v": 1.0}, {"v": 2.0}]
+    assert field_type_consistency(records, "v", expected_type) == pytest.approx(score)
+
+
+def test_range_violation_count_min() -> None:
+    records = [{"x": 1.0}, {"x": 5.0}, {"x": 10.0}]
+    assert range_violation_count(records, "x", min_val=3.0) == 1
+
+
+def test_range_violation_count_max() -> None:
+    records = [{"x": 1.0}, {"x": 5.0}, {"x": 10.0}]
+    assert range_violation_count(records, "x", max_val=6.0) == 1
+
+
+def test_range_violation_count_none_violate() -> None:
+    records = [{"x": 3.0}, {"x": 4.0}]
+    assert range_violation_count(records, "x", min_val=1.0, max_val=10.0) == 0
+
+
+def test_range_violation_count_missing_field() -> None:
+    records = [{"y": 1.0}, {"y": 2.0}]
+    assert range_violation_count(records, "x", min_val=0.0) == 0
+
+
+def test_fill_missing_fills_none() -> None:
+    records = [{"x": None}, {"x": 5.0}]
+    result = fill_missing(records, "x", fill_value=0.0)
+    assert result[0]["x"] == 0.0
+    assert result[1]["x"] == 5.0
+
+
+def test_fill_missing_fills_absent_key() -> None:
+    records = [{"y": 1.0}]
+    result = fill_missing(records, "x", fill_value=42.0)
+    assert result[0]["x"] == 42.0
+
+
+def test_fill_missing_does_not_modify_original() -> None:
+    records = [{"x": None}]
+    fill_missing(records, "x", fill_value=99.0)
+    assert records[0]["x"] is None
+
+
+def test_fill_missing_empty_records() -> None:
+    assert fill_missing([], "x", fill_value=0.0) == []
