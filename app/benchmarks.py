@@ -167,6 +167,27 @@ __all__ = [
     "benchmark_eui",
     "compare_buildings",
     "compute_eui",
+    "energy_intensity_ratio",
     "list_building_types",
     "site_eui",
 ]
+
+
+def energy_intensity_ratio(
+    actual_eui: float,
+    reference_eui: float,
+) -> float:
+    """Compute the Energy Intensity Ratio (EIR) = actual EUI / reference EUI.
+
+    A ratio < 1.0 means better than reference; > 1.0 means worse.
+
+    Args:
+        actual_eui: Computed EUI for the building (kWh/m²/year).
+        reference_eui: Reference or target EUI for comparison.
+
+    Returns:
+        EIR rounded to 4 decimal places, or 0.0 if reference_eui is zero.
+    """
+    if reference_eui == 0.0:
+        return 0.0
+    return round(actual_eui / reference_eui, 4)
