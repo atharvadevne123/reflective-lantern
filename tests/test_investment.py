@@ -4,7 +4,7 @@ import math
 
 import pytest
 
-from app.investment import InvestmentAnalysis, compute_investment_analysis, discounted_cash_flow, payback_period
+from app.investment import InvestmentAnalysis, compute_investment_analysis, discounted_cash_flow, margin_of_safety, payback_period
 
 
 def test_basic_investment_analysis() -> None:
@@ -530,3 +530,27 @@ def test_payback_period_negative_investment_raises() -> None:
 def test_payback_period_parametrized(invest: float, flows: list, expected: float) -> None:
     result = payback_period(invest, flows)
     assert result == pytest.approx(expected, rel=1e-4)
+
+
+class TestMarginOfSafety:
+    def test_undervalued(self) -> None:
+        # intrinsic 100, market 80 → 20% margin
+        assert margin_of_safety(100.0, 80.0) == pytest.approx(20.0, rel=1e-4)
+
+    def test_overvalued(self) -> None:
+        # intrinsic 80, market 100 → -25% margin
+        assert margin_of_safety(80.0, 100.0) == pytest.approx(-25.0, rel=1e-4)
+
+    def test_at_fair_value(self) -> None:
+        assert margin_of_safety(200.0, 200.0) == pytest.approx(0.0, abs=1e-9)
+
+    def test_zero_intrinsic_returns_zero(self) -> None:
+        assert margin_of_safety(0.0, 150.0) == 0.0
+
+    def test_rounding_precision(self) -> None:
+        result = margin_of_safety(300.0, 250.0)
+        assert result == pytest.approx(16.6667, rel=1e-3)
+
+    def test_large_values(self) -> None:
+        result = margin_of_safety(1_000_000.0, 750_000.0)
+        assert result == pytest.approx(25.0, rel=1e-4)
