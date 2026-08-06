@@ -314,3 +314,61 @@ def test_weighted_ensemble_forecast_zero_weights_raises() -> None:
 def test_weighted_ensemble_forecast_length_mismatch_raises() -> None:
     with pytest.raises(ValueError):
         weighted_ensemble_forecast([[1.0, 2.0], [3.0]], [1.0, 1.0])
+
+
+# Tests for mae_score and rmse_score
+from app.forecasting import mae_score, rmse_score
+
+
+def test_mae_score_perfect() -> None:
+    assert mae_score([1.0, 2.0, 3.0], [1.0, 2.0, 3.0]) == pytest.approx(0.0)
+
+
+def test_mae_score_constant_error() -> None:
+    assert mae_score([0.0, 0.0, 0.0], [1.0, 1.0, 1.0]) == pytest.approx(1.0)
+
+
+def test_mae_score_empty_raises() -> None:
+    with pytest.raises(ValueError):
+        mae_score([], [])
+
+
+def test_mae_score_length_mismatch_raises() -> None:
+    with pytest.raises(ValueError):
+        mae_score([1.0], [1.0, 2.0])
+
+
+def test_mae_score_positive() -> None:
+    assert mae_score([10.0, 20.0], [12.0, 18.0]) > 0
+
+
+def test_rmse_score_perfect() -> None:
+    assert rmse_score([1.0, 2.0, 3.0], [1.0, 2.0, 3.0]) == pytest.approx(0.0)
+
+
+def test_rmse_score_constant_error() -> None:
+    assert rmse_score([0.0, 0.0, 0.0], [1.0, 1.0, 1.0]) == pytest.approx(1.0)
+
+
+def test_rmse_score_empty_raises() -> None:
+    with pytest.raises(ValueError):
+        rmse_score([], [])
+
+
+def test_rmse_score_length_mismatch_raises() -> None:
+    with pytest.raises(ValueError):
+        rmse_score([1.0], [1.0, 2.0])
+
+
+def test_rmse_score_gte_mae() -> None:
+    actual = [10.0, 20.0, 30.0, 5.0]
+    predicted = [12.0, 18.0, 35.0, 5.0]
+    assert rmse_score(actual, predicted) >= mae_score(actual, predicted)
+
+
+@pytest.mark.parametrize("err", [1.0, 2.0, 5.0])
+def test_mae_score_constant_parametrize(err: float) -> None:
+    n = 5
+    actual = [0.0] * n
+    predicted = [err] * n
+    assert mae_score(actual, predicted) == pytest.approx(err)
