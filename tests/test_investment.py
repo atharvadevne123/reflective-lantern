@@ -459,3 +459,41 @@ def test_high_amenity_raises_score() -> None:
 def test_break_even_infinite_when_zero_cap_rate() -> None:
     result = compute_investment_analysis(500_000, 0.0, 5.0, 5.0, 5.0, 0.5)
     assert math.isinf(result.break_even_years) or result.break_even_years > 100
+
+
+from app.investment import discounted_cash_flow
+
+
+def test_dcf_zero_discount_rate() -> None:
+    flows = [1000.0, 1000.0, 1000.0]
+    result = discounted_cash_flow(flows, discount_rate=0.0)
+    assert result == pytest.approx(3000.0, rel=1e-4)
+
+
+def test_dcf_positive_npv() -> None:
+    flows = [10000.0] * 5
+    result = discounted_cash_flow(flows, discount_rate=0.08)
+    assert result > 0
+
+
+def test_dcf_with_terminal_value() -> None:
+    flows = [5000.0] * 3
+    result_no_tv = discounted_cash_flow(flows, discount_rate=0.1)
+    result_with_tv = discounted_cash_flow(flows, discount_rate=0.1, terminal_value=50000.0)
+    assert result_with_tv > result_no_tv
+
+
+def test_dcf_empty_flows() -> None:
+    assert discounted_cash_flow([], discount_rate=0.08) == 0.0
+
+
+def test_dcf_negative_rate_raises() -> None:
+    with pytest.raises(ValueError, match="discount_rate"):
+        discounted_cash_flow([1000.0], discount_rate=-0.05)
+
+
+@pytest.mark.parametrize("rate", [0.0, 0.05, 0.10, 0.20])
+def test_dcf_various_rates(rate: float) -> None:
+    result = discounted_cash_flow([1000.0, 2000.0, 3000.0], discount_rate=rate)
+    assert isinstance(result, float)
+    assert result > 0
