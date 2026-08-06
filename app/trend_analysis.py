@@ -106,6 +106,27 @@ def seasonal_decompose_naive(
         "residual": [round(x, 4) for x in residual],
     }
 
+def year_over_year_growth(monthly_series: list[float], period: int = 12) -> list[float]:
+    """Compute year-over-year growth rates for a monthly consumption series.
+
+    Args:
+        monthly_series: List of monthly values (at least 2*period elements).
+        period: Number of periods in one year (default 12 for monthly data).
+
+    Returns:
+        List of YoY growth percentages starting from index *period*.
+        Returns an empty list if the series is too short.
+    """
+    if len(monthly_series) < period + 1:
+        return []
+    result: list[float] = []
+    for i in range(period, len(monthly_series)):
+        prev = monthly_series[i - period]
+        curr = monthly_series[i]
+        result.append(percentage_change(prev, curr))
+    return result
+
+
 __all__ = [
     "TrendResult",
     "detect_change_points",
@@ -113,4 +134,5 @@ __all__ = [
     "percentage_change",
     "rolling_mean",
     "seasonal_decompose_naive",
+    "year_over_year_growth",
 ]
