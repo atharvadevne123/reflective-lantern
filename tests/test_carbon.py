@@ -267,3 +267,35 @@ def test_tree_offset_days_parametrized(co2: float, trees: int) -> None:
     from app.carbon import tree_offset_days
     result = tree_offset_days(co2, num_trees=trees)
     assert result > 0
+
+
+def test_monthly_co2_breakdown_length() -> None:
+    from app.carbon import monthly_co2_breakdown
+    result = monthly_co2_breakdown([100.0] * 12)
+    assert len(result) == 12
+
+
+def test_monthly_co2_breakdown_keys() -> None:
+    from app.carbon import monthly_co2_breakdown
+    result = monthly_co2_breakdown([100.0])
+    assert "month" in result[0]
+    assert "kwh" in result[0]
+    assert "co2_kg" in result[0]
+
+
+def test_monthly_co2_breakdown_month_index() -> None:
+    from app.carbon import monthly_co2_breakdown
+    result = monthly_co2_breakdown([10.0] * 3)
+    assert result[0]["month"] == 1
+    assert result[2]["month"] == 3
+
+
+def test_monthly_co2_breakdown_empty() -> None:
+    from app.carbon import monthly_co2_breakdown
+    assert monthly_co2_breakdown([]) == []
+
+
+def test_monthly_co2_breakdown_co2_proportional() -> None:
+    from app.carbon import monthly_co2_breakdown
+    result = monthly_co2_breakdown([100.0, 200.0])
+    assert result[1]["co2_kg"] == pytest.approx(result[0]["co2_kg"] * 2, rel=1e-4)
