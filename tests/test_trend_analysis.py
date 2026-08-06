@@ -9,6 +9,7 @@ from app.trend_analysis import (
     detect_change_points,
     linear_trend,
     percentage_change,
+    rate_of_change,
     rolling_mean,
     seasonal_decompose_naive,
     year_over_year_growth,
@@ -202,3 +203,36 @@ def test_year_over_year_growth_custom_period(period: int) -> None:
     result = year_over_year_growth(series, period=period)
     assert len(result) == period
     assert all(v == pytest.approx(20.0, rel=1e-4) for v in result)
+
+
+def test_rate_of_change_basic() -> None:
+    result = rate_of_change([100.0, 110.0, 121.0])
+    assert result[0] == pytest.approx(10.0, rel=1e-4)
+
+
+def test_rate_of_change_lag_2() -> None:
+    result = rate_of_change([100.0, 120.0, 150.0], lag=2)
+    assert len(result) == 1
+    assert result[0] == pytest.approx(50.0, rel=1e-4)
+
+
+def test_rate_of_change_too_short() -> None:
+    assert rate_of_change([100.0]) == []
+
+
+def test_rate_of_change_constant_series() -> None:
+    result = rate_of_change([5.0, 5.0, 5.0, 5.0])
+    assert all(v == 0.0 for v in result)
+
+
+def test_rate_of_change_length() -> None:
+    values = list(range(1, 11))
+    result = rate_of_change(values, lag=1)
+    assert len(result) == len(values) - 1
+
+
+@pytest.mark.parametrize("lag", [1, 2, 3])
+def test_rate_of_change_various_lags(lag: int) -> None:
+    values = [float(i * 10) for i in range(1, 8)]
+    result = rate_of_change(values, lag=lag)
+    assert len(result) == len(values) - lag
