@@ -947,10 +947,13 @@ class TestSampleVariance:
 
         assert sample_variance([3.0, 3.0, 3.0]) == pytest.approx(0.0)
 
-    @pytest.mark.parametrize("values,expected", [
-        ([0.0, 2.0], 2.0),
-        ([1.0, 3.0, 5.0], 4.0),
-    ])
+    @pytest.mark.parametrize(
+        "values,expected",
+        [
+            ([0.0, 2.0], 2.0),
+            ([1.0, 3.0, 5.0], 4.0),
+        ],
+    )
     def test_parametrize(self, values: list, expected: float) -> None:
         from app.stats_utils import sample_variance
 

@@ -713,9 +713,9 @@ def test_batch_score_returns_all_fields() -> None:
 @pytest.mark.parametrize(
     "consumption,expected_score_at_least",
     [
-        (1.0, 80),   # normal reading
-        (-1.0, 0),   # negative is invalid → heavy penalty
-        (0.0, 50),   # zero might be acceptable
+        (1.0, 80),  # normal reading
+        (-1.0, 0),  # negative is invalid → heavy penalty
+        (0.0, 50),  # zero might be acceptable
     ],
 )
 def test_score_record_consumption_ranges(consumption: float, expected_score_at_least: int) -> None:

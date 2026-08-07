@@ -54,7 +54,9 @@ class Settings:
     db_pool_recycle: int = int(os.getenv("DB_POOL_RECYCLE", "1800"))
 
     # Prediction confidence threshold
-    prediction_confidence_threshold: float = float(os.getenv("PREDICTION_CONFIDENCE_THRESHOLD", "0.5"))
+    prediction_confidence_threshold: float = float(
+        os.getenv("PREDICTION_CONFIDENCE_THRESHOLD", "0.5")
+    )
 
 
 @lru_cache(maxsize=1)

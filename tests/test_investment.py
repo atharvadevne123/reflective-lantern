@@ -920,9 +920,7 @@ class TestMarginOfSafetyAdditional:
         (100_000.0, 0.0, float("inf")),
     ],
 )
-def test_payback_period_new_parametrized(
-    purchase_price: float, annual_cash_flow: float, expected_years: float
-) -> None:
+def test_payback_period_new_parametrized(purchase_price: float, annual_cash_flow: float, expected_years: float) -> None:
     result = payback_period(purchase_price=purchase_price, annual_cash_flow=annual_cash_flow)
     if math.isinf(expected_years):
         assert math.isinf(result)
@@ -941,10 +939,13 @@ class TestPriceToRentRatio:
 
         assert price_to_rent_ratio(300_000.0, 0.0) == pytest.approx(0.0)
 
-    @pytest.mark.parametrize("price,rent,expected", [
-        (200_000.0, 10_000.0, 20.0),
-        (150_000.0, 15_000.0, 10.0),
-    ])
+    @pytest.mark.parametrize(
+        "price,rent,expected",
+        [
+            (200_000.0, 10_000.0, 20.0),
+            (150_000.0, 15_000.0, 10.0),
+        ],
+    )
     def test_parametrize(self, price: float, rent: float, expected: float) -> None:
         from app.investment import price_to_rent_ratio
 

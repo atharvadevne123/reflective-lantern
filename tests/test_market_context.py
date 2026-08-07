@@ -930,13 +930,11 @@ def test_housing_affordability_index_has_required_keys() -> None:
 @pytest.mark.parametrize(
     "price,income,expected_affordable",
     [
-        (200_000.0, 150_000.0, True),   # very affordable
+        (200_000.0, 150_000.0, True),  # very affordable
         (1_000_000.0, 50_000.0, False),  # not affordable
     ],
 )
-def test_housing_affordability_index_parametrized(
-    price: float, income: float, expected_affordable: bool
-) -> None:
+def test_housing_affordability_index_parametrized(price: float, income: float, expected_affordable: bool) -> None:
     from app.market_context import housing_affordability_index
 
     result = housing_affordability_index(median_home_price=price, median_household_income=income)

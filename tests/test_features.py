@@ -616,12 +616,15 @@ class TestBinFeature:
         with pytest.raises(ValueError):
             bin_feature([1.0], bins=[5.0, 2.0])
 
-    @pytest.mark.parametrize("val,expected", [
-        (-1.0, 0),
-        (2.5, 1),
-        (7.5, 2),
-        (15.0, 3),
-    ])
+    @pytest.mark.parametrize(
+        "val,expected",
+        [
+            (-1.0, 0),
+            (2.5, 1),
+            (7.5, 2),
+            (15.0, 3),
+        ],
+    )
     def test_parametrize_bins(self, val: float, expected: int) -> None:
         from app.features import bin_feature
 

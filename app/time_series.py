@@ -913,7 +913,6 @@ def moving_percentile(values: list[float], window: int, percentile: float = 50.0
     if not 0.0 <= percentile <= 100.0:
         raise ValueError("percentile must be in [0, 100]")
 
-
     result: list[float] = []
     for i in range(len(values)):
         start = max(0, i - window + 1)
