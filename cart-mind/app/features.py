@@ -257,3 +257,42 @@ def make_purchase_labels(df: pd.DataFrame, seed: int = 42, noise: float = 0.35) 
     latent = latent + rng.normal(0, noise * latent.std(), len(df))
     prob = 1.0 / (1.0 + np.exp(-latent))
     return pd.Series((rng.random(len(df)) < prob).astype(int), index=df.index, name="purchased")
+
+
+def feature_correlation_matrix(df: pd.DataFrame) -> pd.DataFrame:
+    """Return the Pearson correlation matrix for the numeric columns of *df*.
+
+    Useful during feature selection and debugging to spot highly correlated
+    pairs that may degrade tree-based models via redundancy.
+
+    Args:
+        df: DataFrame with at least one numeric column.
+
+    Returns:
+        Correlation matrix as a DataFrame (NaN entries replaced with 0.0).
+    """
+    numeric = df.select_dtypes(include="number")
+    if numeric.empty:
+        return pd.DataFrame()
+    return numeric.corr().fillna(0.0)
+
+
+def drop_low_variance_features(df: pd.DataFrame, threshold: float = 0.01) -> pd.DataFrame:
+    """Return a copy of *df* with near-zero-variance columns removed.
+
+    A feature whose standard deviation is below *threshold* carries almost no
+    discriminative signal and can destabilise normalisation. This is a quick
+    pre-flight check before fitting the feature pipeline.
+
+    Args:
+        df: Input feature frame.
+        threshold: Columns with std < threshold are dropped.
+
+    Returns:
+        Filtered DataFrame (copy).
+    """
+    numeric = df.select_dtypes(include="number")
+    low_var = [col for col in numeric.columns if numeric[col].std() < threshold]
+    if low_var:
+        logger.debug("drop_low_variance_features: dropping %d columns: %s", len(low_var), low_var)
+    return df.drop(columns=low_var)
