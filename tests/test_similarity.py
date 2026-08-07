@@ -584,3 +584,49 @@ def test_chebyshev_distance_identical() -> None:
 )
 def test_chebyshev_parametrize(a, b, expected) -> None:
     assert chebyshev_distance(a, b) == pytest.approx(expected)
+
+
+class TestBuildingIds:
+    def test_empty_index(self) -> None:
+        idx = BuildingSimilarityIndex()
+        assert idx.building_ids == []
+
+    def test_preserves_insertion_order(self) -> None:
+        idx = BuildingSimilarityIndex()
+        idx.add("b1", [1.0, 0.0])
+        idx.add("b2", [0.0, 1.0])
+        idx.add("b3", [1.0, 1.0])
+        assert idx.building_ids == ["b1", "b2", "b3"]
+
+    def test_after_clear(self) -> None:
+        idx = BuildingSimilarityIndex()
+        idx.add("b1", [1.0, 0.0])
+        idx.clear()
+        assert idx.building_ids == []
+
+
+class TestSimilarityMatrix:
+    def test_diagonal_is_one(self) -> None:
+        from app.similarity import similarity_matrix
+
+        mat = similarity_matrix([[1.0, 0.0], [0.0, 1.0], [1.0, 1.0]])
+        for i in range(3):
+            assert mat[i][i] == pytest.approx(1.0, abs=1e-4)
+
+    def test_symmetric(self) -> None:
+        from app.similarity import similarity_matrix
+
+        mat = similarity_matrix([[1.0, 2.0], [3.0, 4.0]])
+        assert mat[0][1] == pytest.approx(mat[1][0], abs=1e-6)
+
+    def test_orthogonal_vectors_zero_similarity(self) -> None:
+        from app.similarity import similarity_matrix
+
+        mat = similarity_matrix([[1.0, 0.0], [0.0, 1.0]])
+        assert mat[0][1] == pytest.approx(0.0, abs=1e-4)
+
+    def test_empty_raises(self) -> None:
+        from app.similarity import similarity_matrix
+
+        with pytest.raises(ValueError):
+            similarity_matrix([])
