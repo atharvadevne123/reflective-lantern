@@ -126,6 +126,7 @@ __all__ = [
     "bundle_pipeline_info",
     "clone_params",
     "count_fitted_steps",
+    "count_pipeline_steps",
     "describe_pipeline",
     "extract_step_classes",
     "first_step",
@@ -133,10 +134,13 @@ __all__ = [
     "get_step_names",
     "has_step",
     "is_fitted",
+    "last_step",
     "pipeline_has_preprocessor",
+    "pipeline_memory_usage_kb",
     "pipeline_param_count",
     "pipeline_step_types",
     "step_is_fitted",
+    "step_names_to_set",
 ]
 
 
