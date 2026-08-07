@@ -851,3 +851,45 @@ def test_carbon_reduction_pct_negative_when_increased() -> None:
 def test_carbon_per_sqm_known_regions(region: str) -> None:
     result = carbon_per_sqm(5000.0, 100.0, region=region)
     assert result > 0.0
+
+
+def test_co2_kg_to_tonnes_basic() -> None:
+    from app.carbon import co2_kg_to_tonnes
+
+    assert co2_kg_to_tonnes(1000.0) == pytest.approx(1.0)
+
+
+def test_trees_equivalent_positive() -> None:
+    from app.carbon import trees_equivalent
+
+    assert trees_equivalent(21.7) == pytest.approx(1.0, rel=0.1)
+
+
+@pytest.mark.parametrize("kwh,expected_positive", [(0.0, True), (100.0, True), (1000.0, True)])
+def test_kwh_to_co2_kg_always_nonnegative(kwh: float, expected_positive: bool) -> None:
+    from app.carbon import kwh_to_co2_kg
+
+    result = kwh_to_co2_kg(kwh)
+    assert (result >= 0) == expected_positive
+
+
+def test_carbon_savings_positive_when_reduced() -> None:
+    from app.carbon import carbon_savings
+
+    result = carbon_savings(old_kwh=1000.0, new_kwh=800.0)
+    assert result > 0.0
+
+
+def test_compare_regions_all_positive() -> None:
+    from app.carbon import compare_regions
+
+    results = compare_regions(kwh=100.0)
+    assert all(r["co2_kg"] >= 0 for r in results)
+
+
+def test_compare_regions_returns_list() -> None:
+    from app.carbon import compare_regions
+
+    results = compare_regions(kwh=100.0)
+    assert isinstance(results, list)
+    assert len(results) > 0
