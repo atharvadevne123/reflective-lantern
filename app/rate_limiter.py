@@ -86,8 +86,12 @@ def make_rate_limiter(capacity: float = 60.0, rate_per_second: float = 1.0) -> T
 __all__ = [
     "TokenBucketRateLimiter",
     "burst_capacity_fraction",
+    "is_rate_limited",
+    "limiter_utilization",
     "make_rate_limiter",
     "make_strict_limiter",
+    "prune_idle_clients",
+    "reset_limiter",
 ]
 
 
@@ -159,3 +163,29 @@ def burst_capacity_fraction(limiter: TokenBucketRateLimiter, client_key: str) ->
     if capacity <= 0:
         return 0.0
     return round(min(1.0, remaining / capacity), 6)
+
+
+def prune_idle_clients(limiter: TokenBucketRateLimiter, max_idle_seconds: float) -> int:
+    """Remove client buckets that have been idle longer than *max_idle_seconds*.
+
+    A bucket is considered idle when ``time.monotonic() - bucket.last_refill``
+    exceeds *max_idle_seconds*. Pruning keeps memory bounded in long-running
+    processes with many ephemeral client keys.
+
+    Args:
+        limiter: A :class:`TokenBucketRateLimiter` instance.
+        max_idle_seconds: Maximum time (in seconds) since last activity.
+
+    Returns:
+        Number of buckets removed.
+    """
+    now = time.monotonic()
+    removed = 0
+    with limiter._lock:
+        idle_keys = [k for k, b in limiter._buckets.items() if now - b.last_refill > max_idle_seconds]
+        for k in idle_keys:
+            del limiter._buckets[k]
+            removed += 1
+    if removed:
+        logger.debug("prune_idle_clients: removed %d idle buckets", removed)
+    return removed
