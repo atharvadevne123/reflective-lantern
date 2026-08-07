@@ -70,6 +70,11 @@ class BuildingSimilarityIndex:
         """Alias for ``len(self)``."""
         return len(self._profiles)
 
+    @property
+    def building_ids(self) -> list[str]:
+        """Return a list of all indexed building IDs in insertion order."""
+        return [bid for bid, _ in self._profiles]
+
 
 _global_index = BuildingSimilarityIndex()
 
@@ -113,6 +118,7 @@ __all__ = [
     "pearson_similarity",
     "score_distribution",
     "search_comparable",
+    "similarity_matrix",
 ]
 
 
@@ -355,3 +361,26 @@ def chebyshev_distance(a: list[float] | np.ndarray, b: list[float] | np.ndarray)
     va = np.array(a, dtype=np.float32)
     vb = np.array(b, dtype=np.float32)
     return round(float(np.max(np.abs(va - vb))), 6)
+
+
+def similarity_matrix(profiles: list[list[float]]) -> list[list[float]]:
+    """Compute an NxN pairwise cosine similarity matrix.
+
+    Args:
+        profiles: List of N feature vectors of equal length.
+
+    Returns:
+        NxN list-of-lists where entry [i][j] is the cosine similarity
+        between profiles[i] and profiles[j].
+
+    Raises:
+        ValueError: If *profiles* is empty or vectors have different lengths.
+    """
+    if not profiles:
+        raise ValueError("profiles must not be empty")
+    n = len(profiles)
+    arr = np.array(profiles, dtype=np.float32)
+    norms = np.linalg.norm(arr, axis=1, keepdims=True) + 1e-9
+    normed = arr / norms
+    mat = normed @ normed.T
+    return [[round(float(mat[i, j]), 6) for j in range(n)] for i in range(n)]
