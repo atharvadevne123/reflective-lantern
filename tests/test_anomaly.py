@@ -894,3 +894,62 @@ def test_rolling_anomaly_flag_spike_at_end() -> None:
     values = [1.0] * 15 + [999.0]
     flags = rolling_anomaly_flag(values, window=5)
     assert flags[-1] is True
+
+
+class TestAnomalyFreeStreak:
+    def test_all_normal_returns_full_length(self) -> None:
+        from app.anomaly import anomaly_free_streak
+
+        assert anomaly_free_streak([False, False, False]) == 3
+
+    def test_ends_with_anomaly_returns_zero(self) -> None:
+        from app.anomaly import anomaly_free_streak
+
+        assert anomaly_free_streak([False, False, True]) == 0
+
+    def test_mixed_trailing_normal(self) -> None:
+        from app.anomaly import anomaly_free_streak
+
+        assert anomaly_free_streak([True, False, False, False]) == 3
+
+    def test_empty_list_returns_zero(self) -> None:
+        from app.anomaly import anomaly_free_streak
+
+        assert anomaly_free_streak([]) == 0
+
+    def test_single_anomaly(self) -> None:
+        from app.anomaly import anomaly_free_streak
+
+        assert anomaly_free_streak([True]) == 0
+
+    def test_single_normal(self) -> None:
+        from app.anomaly import anomaly_free_streak
+
+        assert anomaly_free_streak([False]) == 1
+
+
+class TestAnomalyTransitionCount:
+    def test_no_transitions_all_normal(self) -> None:
+        from app.anomaly import anomaly_transition_count
+
+        assert anomaly_transition_count([False, False, False]) == 0
+
+    def test_single_transition(self) -> None:
+        from app.anomaly import anomaly_transition_count
+
+        assert anomaly_transition_count([False, True, True]) == 1
+
+    def test_alternating_transitions(self) -> None:
+        from app.anomaly import anomaly_transition_count
+
+        assert anomaly_transition_count([False, True, False, True]) == 3
+
+    def test_empty_returns_zero(self) -> None:
+        from app.anomaly import anomaly_transition_count
+
+        assert anomaly_transition_count([]) == 0
+
+    def test_single_element_returns_zero(self) -> None:
+        from app.anomaly import anomaly_transition_count
+
+        assert anomaly_transition_count([False]) == 0
