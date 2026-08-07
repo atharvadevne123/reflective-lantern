@@ -510,3 +510,36 @@ def test_split_by_day_single_day_count(n: int) -> None:
     records = [{"timestamp": "2024-01-15T00:00:00", "v": i} for i in range(n)]
     buckets = split_by_day(records)
     assert len(buckets["2024-01-15"]) == n
+
+
+def test_flatten_nested_records_basic() -> None:
+    from app.energy_export import flatten_nested_records
+
+    records = [{"a": {"b": 1, "c": 2}, "d": 3}]
+    result = flatten_nested_records(records)
+    assert "d" in result[0]
+    assert result[0]["d"] == 3
+
+
+def test_flatten_nested_records_empty_input() -> None:
+    from app.energy_export import flatten_nested_records
+
+    assert flatten_nested_records([]) == []
+
+
+def test_flatten_nested_records_no_nesting() -> None:
+    from app.energy_export import flatten_nested_records
+
+    records = [{"x": 1, "y": 2}]
+    result = flatten_nested_records(records)
+    assert result[0]["x"] == 1
+    assert result[0]["y"] == 2
+
+
+@pytest.mark.parametrize("n_records", [1, 5, 10])
+def test_flatten_nested_records_preserves_count(n_records: int) -> None:
+    from app.energy_export import flatten_nested_records
+
+    records = [{"v": i} for i in range(n_records)]
+    result = flatten_nested_records(records)
+    assert len(result) == n_records
