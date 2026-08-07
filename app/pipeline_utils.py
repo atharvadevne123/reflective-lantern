@@ -136,6 +136,7 @@ __all__ = [
     "is_fitted",
     "last_step",
     "pipeline_has_preprocessor",
+    "pipeline_input_features",
     "pipeline_memory_usage_kb",
     "pipeline_param_count",
     "pipeline_step_types",
@@ -279,3 +280,24 @@ def extract_step_classes(pipeline: Any) -> list[str]:
         return [type(estimator).__name__ for _, estimator in pipeline.steps]
     except AttributeError:
         return []
+
+
+def pipeline_input_features(pipeline: Any) -> list[str] | None:
+    """Return the feature names seen during fit, if available.
+
+    Tries ``feature_names_in_`` (sklearn ≥ 1.0) on the pipeline itself, then
+    on the first step. Returns None when no feature-name information is stored.
+
+    Args:
+        pipeline: A fitted sklearn Pipeline or compatible estimator.
+
+    Returns:
+        List of feature name strings, or None if not available.
+    """
+    for obj in [pipeline, first_step(pipeline)]:
+        if obj is None:
+            continue
+        names = getattr(obj, "feature_names_in_", None)
+        if names is not None:
+            return list(names)
+    return None
