@@ -885,7 +885,7 @@ class TestOperatingExpenseRatio:
         assert result == pytest.approx(10.0)
 
 
-class TestEquityMultiple:
+class TestEquityMultipleAdditional:
     def test_basic(self) -> None:
         result = equity_multiple(total_profit=150_000.0, equity_invested=100_000.0)
         assert result == pytest.approx(1.5)
@@ -898,7 +898,7 @@ class TestEquityMultiple:
         assert result == pytest.approx(1.0)
 
 
-class TestMarginOfSafety:
+class TestMarginOfSafetyAdditional:
     def test_positive_margin(self) -> None:
         result = margin_of_safety(intrinsic_value=200_000.0, market_price=150_000.0)
         assert result == pytest.approx(25.0)
@@ -920,7 +920,7 @@ class TestMarginOfSafety:
         (100_000.0, 0.0, float("inf")),
     ],
 )
-def test_payback_period_parametrized(
+def test_payback_period_new_parametrized(
     purchase_price: float, annual_cash_flow: float, expected_years: float
 ) -> None:
     result = payback_period(purchase_price=purchase_price, annual_cash_flow=annual_cash_flow)
