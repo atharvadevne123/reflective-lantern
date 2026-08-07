@@ -74,8 +74,32 @@ def update_reference_window(feature_name: str, values: list[float]) -> None:
 
 
 def get_reference_window(feature_name: str) -> list[float]:
+    """Return a copy of the reference window values for *feature_name*.
+
+    Args:
+        feature_name: Feature whose rolling window to retrieve.
+
+    Returns:
+        List of observed values in insertion order (empty if no data yet).
+    """
     with _REFERENCE_LOCK:
         return list(_REFERENCE_WINDOW.get(feature_name, []))
+
+
+def reset_reference_window(feature_name: str | None = None) -> None:
+    """Clear reference window data, for testing or forced rebaseline.
+
+    Args:
+        feature_name: When given, clears only that feature's window;
+            when ``None``, clears all windows.
+    """
+    with _REFERENCE_LOCK:
+        if feature_name is None:
+            _REFERENCE_WINDOW.clear()
+            logger.info("All reference windows cleared")
+        elif feature_name in _REFERENCE_WINDOW:
+            del _REFERENCE_WINDOW[feature_name]
+            logger.info("Reference window cleared for feature: %s", feature_name)
 
 
 def check_all_features(
