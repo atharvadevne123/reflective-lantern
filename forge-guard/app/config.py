@@ -48,6 +48,14 @@ class Settings:
     lag_periods: int = int(os.getenv("LAG_PERIODS", "2"))
     rolling_window: int = int(os.getenv("ROLLING_WINDOW", "5"))
 
+    # Connection pool tuning
+    db_pool_size: int = int(os.getenv("DB_POOL_SIZE", "5"))
+    db_max_overflow: int = int(os.getenv("DB_MAX_OVERFLOW", "10"))
+    db_pool_recycle: int = int(os.getenv("DB_POOL_RECYCLE", "1800"))
+
+    # Prediction confidence threshold
+    prediction_confidence_threshold: float = float(os.getenv("PREDICTION_CONFIDENCE_THRESHOLD", "0.5"))
+
 
 @lru_cache(maxsize=1)
 def get_settings() -> Settings:
