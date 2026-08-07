@@ -168,3 +168,67 @@ class TestMakePurchaseLabels:
 
         y = make_purchase_labels(sample_df, noise=noise)
         assert len(y) == len(sample_df)
+
+
+class TestFeatureCorrelationMatrix:
+    def test_returns_dataframe(self) -> None:
+        from app.features import feature_correlation_matrix, make_sample_dataframe
+
+        df = make_sample_dataframe(n=50)
+        corr = feature_correlation_matrix(df)
+        assert isinstance(corr, pd.DataFrame)
+
+    def test_diagonal_is_one(self) -> None:
+        import pandas as pd
+
+        from app.features import feature_correlation_matrix
+
+        df = pd.DataFrame({"a": [1.0, 2.0, 3.0], "b": [3.0, 2.0, 1.0]})
+        corr = feature_correlation_matrix(df)
+        assert corr.loc["a", "a"] == pytest.approx(1.0)
+
+    def test_empty_numeric_returns_empty(self) -> None:
+        import pandas as pd
+
+        from app.features import feature_correlation_matrix
+
+        df = pd.DataFrame({"cat": ["x", "y", "z"]})
+        corr = feature_correlation_matrix(df)
+        assert corr.empty
+
+    def test_no_nans(self) -> None:
+        from app.features import feature_correlation_matrix, make_sample_dataframe
+
+        df = make_sample_dataframe(n=30)
+        corr = feature_correlation_matrix(df)
+        assert not corr.isnull().any().any()
+
+
+class TestDropLowVarianceFeatures:
+    def test_drops_constant_column(self) -> None:
+        import pandas as pd
+
+        from app.features import drop_low_variance_features
+
+        df = pd.DataFrame({"a": [1.0, 2.0, 3.0], "const": [5.0, 5.0, 5.0]})
+        result = drop_low_variance_features(df, threshold=0.01)
+        assert "const" not in result.columns
+        assert "a" in result.columns
+
+    def test_keeps_high_variance_column(self) -> None:
+        import pandas as pd
+
+        from app.features import drop_low_variance_features
+
+        df = pd.DataFrame({"a": [1.0, 10.0, 100.0]})
+        result = drop_low_variance_features(df, threshold=0.01)
+        assert "a" in result.columns
+
+    def test_returns_copy(self) -> None:
+        import pandas as pd
+
+        from app.features import drop_low_variance_features
+
+        df = pd.DataFrame({"a": [1.0, 2.0, 3.0]})
+        result = drop_low_variance_features(df)
+        assert result is not df
