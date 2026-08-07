@@ -32,10 +32,16 @@ def _utcnow() -> datetime:
 
 DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./cart_mind.db")
 
+_is_sqlite = "sqlite" in DATABASE_URL
 engine = create_engine(
     DATABASE_URL,
-    connect_args={"check_same_thread": False} if "sqlite" in DATABASE_URL else {},
+    connect_args={"check_same_thread": False} if _is_sqlite else {},
     pool_pre_ping=True,
+    # Connection pool tuning for PostgreSQL; ignored by SQLite's StaticPool.
+    pool_size=int(os.getenv("DB_POOL_SIZE", "5")),
+    max_overflow=int(os.getenv("DB_MAX_OVERFLOW", "10")),
+    pool_timeout=int(os.getenv("DB_POOL_TIMEOUT", "30")),
+    pool_recycle=int(os.getenv("DB_POOL_RECYCLE", "1800")),
 )
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
