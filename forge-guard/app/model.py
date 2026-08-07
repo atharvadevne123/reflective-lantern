@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import logging
 import os
+from functools import lru_cache
 from pathlib import Path
 from typing import Any
 
@@ -17,7 +18,21 @@ from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 from xgboost import XGBClassifier
 
-from app.features import generate_synthetic_data
+# sklearn >=1.9 uses get_tags().__sklearn_tags__().estimator_type to validate classifiers.
+# XGBClassifier 2.1.x doesn't set estimator_type in its __sklearn_tags__, causing
+# VotingClassifier to reject it.  Patch at class level so clones inherit the fix.
+_orig_xgb_tags = XGBClassifier.__sklearn_tags__  # type: ignore[attr-defined]
+
+
+def _patched_xgb_tags(self):  # type: ignore[no-untyped-def]
+    tags = _orig_xgb_tags(self)
+    tags.estimator_type = "classifier"
+    return tags
+
+
+XGBClassifier.__sklearn_tags__ = _patched_xgb_tags  # type: ignore[method-assign]
+
+from app.features import generate_synthetic_data  # noqa: E402
 
 logger = logging.getLogger(__name__)
 
@@ -66,7 +81,9 @@ def train_model(
     )
 
     cv = StratifiedKFold(n_splits=cv_folds, shuffle=True, random_state=42)
-    cv_scores = cross_val_score(full_pipeline, X, y, cv=cv, scoring="roc_auc", n_jobs=-1)
+    # n_jobs=1: parallelised cross-val spawns subprocesses that miss the
+    # XGBClassifier._estimator_type patch for sklearn >=1.9 compatibility.
+    cv_scores = cross_val_score(full_pipeline, X, y, cv=cv, scoring="roc_auc", n_jobs=1)
     logger.info("CV AUC: %.4f ± %.4f", cv_scores.mean(), cv_scores.std())
 
     full_pipeline.fit(X, y)
@@ -108,7 +125,11 @@ def train_model(
 
 
 def load_model() -> Pipeline:
-    """Load the trained model pipeline from disk, training if absent."""
+    """Load the trained model pipeline from disk, training if absent.
+
+    Falls back to synthetic-data training when no model file exists.
+    Raises RuntimeError if the file is present but cannot be deserialised.
+    """
     if not MODEL_PATH.exists():
         logger.warning("No model found at %s — training on synthetic data.", MODEL_PATH)
         df = generate_synthetic_data()
@@ -120,7 +141,11 @@ def load_model() -> Pipeline:
         y = df["defect"].values
         train_model(X, y)
 
-    return joblib.load(MODEL_PATH)
+    try:
+        return joblib.load(MODEL_PATH)
+    except Exception as exc:
+        logger.error("Failed to load model from %s: %s", MODEL_PATH, exc)
+        raise RuntimeError(f"Model load failed: {exc}") from exc
 
 
 def predict(
@@ -133,11 +158,18 @@ def predict(
     return label, round(float(prob), 4)
 
 
+@lru_cache(maxsize=1)
+def _read_metrics_cached(path_str: str) -> dict[str, Any]:
+    """Read and cache metrics JSON from disk. Cache is invalidated on path change."""
+    path = Path(path_str)
+    if path.exists():
+        return json.loads(path.read_text())
+    return {}
+
+
 def get_metrics() -> dict[str, Any]:
     """Return persisted training metrics or empty dict if none exist."""
-    if METRICS_PATH.exists():
-        return json.loads(METRICS_PATH.read_text())
-    return {}
+    return _read_metrics_cached(str(METRICS_PATH))
 
 
 def feature_importance(model: Pipeline) -> dict[str, float]:

@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import logging
 from pathlib import Path
+from typing import Any
 
 import numpy as np
 
@@ -58,7 +59,7 @@ def load_index() -> bool:
     return False
 
 
-def is_anomalous(query: np.ndarray, k: int = 5, threshold: float = 50.0) -> dict:
+def is_anomalous(query: np.ndarray, k: int = 5, threshold: float = 50.0) -> dict[str, Any]:
     """Return True if the nearest-neighbour distance exceeds the threshold.
 
     A high L2 distance indicates the query point is far from all healthy

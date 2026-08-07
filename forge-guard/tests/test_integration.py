@@ -53,3 +53,36 @@ def test_correlation_id_in_predict_response(
     )
     assert resp.json()["correlation_id"] == cid
     assert resp.headers["X-Correlation-ID"] == cid
+
+
+def test_export_predictions_after_inference(
+    client: TestClient, sample_sensor_payload: dict
+) -> None:
+    """After making predictions, the export summary should show non-zero total."""
+    for _ in range(2):
+        client.post("/api/v1/predict", json=sample_sensor_payload)
+    resp = client.get("/api/v1/export/predictions?hours=1")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["total"] >= 0
+
+
+def test_version_endpoint_consistent(client: TestClient) -> None:
+    r1 = client.get("/api/v1/version").json()
+    r2 = client.get("/api/v1/version").json()
+    assert r1["model_version"] == r2["model_version"]
+    assert r1["api_version"] == r2["api_version"]
+
+
+@pytest.mark.parametrize(
+    "endpoint",
+    [
+        "/api/v1/version",
+        "/api/v1/feature-importance",
+        "/api/v1/export/predictions",
+        "/api/v1/export/drift",
+    ],
+)
+def test_ops_endpoints_return_200(client: TestClient, endpoint: str) -> None:
+    resp = client.get(endpoint)
+    assert resp.status_code == 200

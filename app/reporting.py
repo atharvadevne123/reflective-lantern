@@ -274,14 +274,245 @@ def daily_average_consumption(hourly_series: list[float]) -> float:
     days = max(len(hourly_series) / 24.0, 1.0)
     return round(sum(hourly_series) / days, 4)
 
+
+def benchmark_vs_portfolio(
+    building_kwh: float,
+    portfolio_kwh: list[float],
+) -> dict[str, object]:
+    """Compare a single building's consumption against a portfolio of peers.
+
+    Args:
+        building_kwh: Target building's daily energy consumption in kWh.
+        portfolio_kwh: Peer buildings' daily consumption values.
+
+    Returns:
+        Dict with 'percentile' (0-100), 'rank' (1-indexed), 'total_peers',
+        'is_above_median', and 'grade' (A if bottom 25%, D if top 25%).
+
+    Raises:
+        ValueError: If *portfolio_kwh* is empty.
+    """
+    if not portfolio_kwh:
+        raise ValueError("portfolio_kwh must not be empty")
+    arr = np.array(portfolio_kwh, dtype=float)
+    n = len(arr)
+    rank = int((arr <= building_kwh).sum())
+    percentile = round(rank / n * 100.0, 2)
+    median = float(np.median(arr))
+    if percentile <= 25:
+        grade = "A"
+    elif percentile <= 50:
+        grade = "B"
+    elif percentile <= 75:
+        grade = "C"
+    else:
+        grade = "D"
+    return {
+        "percentile": percentile,
+        "rank": rank,
+        "total_peers": n,
+        "is_above_median": bool(building_kwh > median),
+        "grade": grade,
+    }
+
+
 __all__ = [
+    "benchmark_vs_portfolio",
     "consumption_efficiency_ratio",
     "consumption_trend",
     "daily_average_consumption",
     "energy_efficiency_grade",
     "estimate_savings",
+    "kwh_to_wh",
     "monthly_consumption_summary",
     "peak_demand_by_period",
     "peak_demand_report",
+    "rolling_savings_summary",
     "seasonal_efficiency_score",
+    "tariff_cost",
+    "top_consumption_hours",
+    "wh_to_kwh",
 ]
+
+
+def kwh_to_wh(kwh: float) -> float:
+    """Convert kilowatt-hours to watt-hours.
+
+    Args:
+        kwh: Energy in kilowatt-hours.
+
+    Returns:
+        Equivalent energy in watt-hours.
+    """
+    return round(kwh * 1000.0, 4)
+
+
+def wh_to_kwh(wh: float) -> float:
+    """Convert watt-hours to kilowatt-hours.
+
+    Args:
+        wh: Energy in watt-hours.
+
+    Returns:
+        Equivalent energy in kilowatt-hours.
+    """
+    return round(wh / 1000.0, 6)
+
+
+def tariff_cost(kwh: float, tariff_per_kwh: float) -> float:
+    """Compute energy cost for a given consumption and tariff rate.
+
+    Args:
+        kwh: Energy consumption in kilowatt-hours.
+        tariff_per_kwh: Electricity tariff in currency per kWh.
+
+    Returns:
+        Total cost rounded to 4 decimal places.
+        Returns 0.0 for non-positive kwh.
+    """
+    if kwh <= 0:
+        return 0.0
+    return round(kwh * tariff_per_kwh, 4)
+
+
+def summarize_energy_period(readings: list[float], label: str = "period") -> dict:
+    """Return a summary dict for an energy readings period.
+
+    Args:
+        readings: List of energy readings in kWh.
+        label: Human-readable period label.
+
+    Returns:
+        Dict with label, count, total, mean, min, max.
+
+    Raises:
+        ValueError: If readings is empty.
+    """
+    if not readings:
+        raise ValueError("readings must be non-empty")
+    total = sum(readings)
+    return {
+        "label": label,
+        "count": len(readings),
+        "total": round(total, 4),
+        "mean": round(total / len(readings), 4),
+        "min": min(readings),
+        "max": max(readings),
+    }
+
+
+def format_report_row(data: dict, fields: list[str], separator: str = ",") -> str:
+    """Format a data dict as a delimited row string.
+
+    Args:
+        data: Dict of field names to values.
+        fields: Ordered list of field names to include.
+        separator: Delimiter character.
+
+    Returns:
+        Delimited string of field values.
+    """
+    return separator.join(str(data.get(f, "")) for f in fields)
+
+
+def aggregate_daily_report(hourly: list[float]) -> list[float]:
+    """Aggregate hourly readings into daily totals.
+
+    Args:
+        hourly: List of hourly energy readings (kWh). Length need not be multiple of 24.
+
+    Returns:
+        List of daily totals (last partial day included if any).
+    """
+    if not hourly:
+        return []
+    days = []
+    for i in range(0, len(hourly), 24):
+        days.append(round(sum(hourly[i : i + 24]), 4))
+    return days
+
+
+def report_anomaly_summary(flags: list[bool]) -> dict:
+    """Summarise a boolean anomaly flag sequence.
+
+    Args:
+        flags: List of booleans where True = anomaly.
+
+    Returns:
+        Dict with total, anomaly_count, normal_count, anomaly_rate.
+
+    Raises:
+        ValueError: If flags is empty.
+    """
+    if not flags:
+        raise ValueError("flags must be non-empty")
+    anomaly_count = sum(flags)
+    return {
+        "total": len(flags),
+        "anomaly_count": anomaly_count,
+        "normal_count": len(flags) - anomaly_count,
+        "anomaly_rate": round(anomaly_count / len(flags), 4),
+    }
+
+
+def top_consumption_hours(
+    hourly_kwh: list[float],
+    n: int = 5,
+) -> list[dict[str, Any]]:
+    """Return the *n* hours with the highest consumption in *hourly_kwh*.
+
+    Args:
+        hourly_kwh: List of hourly energy readings (index 0 = hour 0).
+        n: Number of top hours to return (capped at len(hourly_kwh)).
+
+    Returns:
+        List of dicts with 'hour' (index) and 'kwh' keys, sorted by kwh descending.
+        Empty list when *hourly_kwh* is empty.
+    """
+    if not hourly_kwh:
+        return []
+    indexed = [{"hour": i, "kwh": round(v, 4)} for i, v in enumerate(hourly_kwh)]
+    indexed.sort(key=lambda x: x["kwh"], reverse=True)
+    return indexed[: min(n, len(indexed))]
+
+
+def rolling_savings_summary(
+    actual_series: list[float],
+    baseline_series: list[float],
+    window: int = 24,
+) -> list[dict[str, float]]:
+    """Compute rolling *window*-period savings between actual and baseline series.
+
+    Args:
+        actual_series: Measured consumption readings.
+        baseline_series: Reference consumption readings (same length as actual_series).
+        window: Rolling window size in periods.
+
+    Returns:
+        List of dicts with 'window_start', 'saved_kwh', 'savings_pct' for each
+        complete window. Empty when inputs are too short.
+
+    Raises:
+        ValueError: If series lengths differ.
+    """
+    if len(actual_series) != len(baseline_series):
+        raise ValueError(f"Series length mismatch: {len(actual_series)} vs {len(baseline_series)}")
+    n = len(actual_series)
+    if n < window:
+        return []
+    results = []
+    for start in range(n - window + 1):
+        end = start + window
+        actual_window = actual_series[start:end]
+        baseline_window = baseline_series[start:end]
+        saved = sum(b - a for a, b in zip(actual_window, baseline_window, strict=False))
+        baseline_total = sum(baseline_window)
+        pct = round(100.0 * saved / baseline_total, 4) if baseline_total > 0 else 0.0
+        results.append(
+            {
+                "window_start": float(start),
+                "saved_kwh": round(saved, 4),
+                "savings_pct": pct,
+            }
+        )
+    return results

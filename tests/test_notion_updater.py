@@ -183,3 +183,38 @@ def test_project_names_count_matches_projects() -> None:
     from scripts.notion_portfolio_update import PROJECTS, project_names
 
     assert len(project_names()) == len(PROJECTS)
+
+
+def test_projects_list_all_have_name() -> None:
+    from scripts.notion_portfolio_update import PROJECTS
+
+    for p in PROJECTS:
+        assert isinstance(p.get("name"), str)
+        assert len(p["name"]) > 0
+
+
+def test_generate_description_calls_client(monkeypatch) -> None:
+    from unittest.mock import MagicMock
+
+    from scripts.notion_portfolio_update import generate_description
+
+    mock_client = MagicMock()
+    mock_client.messages.create.return_value.content = [MagicMock(text="  A great project.  ")]
+    project = {"name": "test-project", "tags": ["python", "ml"]}
+    result = generate_description(mock_client, project)
+    assert isinstance(result, str)
+    assert len(result) > 0
+
+
+def test_project_names_are_all_strings() -> None:
+    from scripts.notion_portfolio_update import project_names
+
+    for name in project_names():
+        assert isinstance(name, str)
+
+
+@pytest.mark.parametrize("index", [0, -1])
+def test_projects_first_and_last_have_name(index: int) -> None:
+    from scripts.notion_portfolio_update import PROJECTS
+
+    assert "name" in PROJECTS[index]

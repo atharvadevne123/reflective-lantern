@@ -29,7 +29,7 @@ jobs:
           echo "$RESPONSE" | python3 -c "import json,sys; r=json.load(sys.stdin); print(r.get('html_url', 'NOTE: ' + str(r.get('message',''))))"
 
       - name: Checkout innovation branch
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           ref: innovation/suite-cast
           fetch-depth: 0

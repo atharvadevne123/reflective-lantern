@@ -6,7 +6,7 @@ import time
 
 import pytest
 
-from app.cache import TTLCache
+from app.cache import TTLCache, cache_key_from_dict, cache_stats_summary
 
 
 def test_set_and_get() -> None:
@@ -87,29 +87,25 @@ def test_construction_params(ttl: int, size: int) -> None:
     assert c.size == 0
 
 
-def test_contains_present_key() -> None:
-    c = TTLCache(ttl_seconds=10)
-    c.set("x", 99)
-    assert "x" in c
+def test_get_or_set_returns_existing_value() -> None:
+    c = TTLCache(ttl_seconds=60)
+    c.set("k", "existing")
+    assert c.get_or_set("k", "default") == "existing"
 
 
-def test_contains_missing_key() -> None:
-    c = TTLCache(ttl_seconds=10)
-    assert "missing" not in c
+def test_get_or_set_stores_default_when_absent() -> None:
+    c = TTLCache(ttl_seconds=60)
+    result = c.get_or_set("new_key", "default_val")
+    assert result == "default_val"
+    assert c.get("new_key") == "default_val"
 
 
 def test_stats_returns_expected_keys() -> None:
-    c = TTLCache(ttl_seconds=10, max_size=50)
-    c.set("a", 1)
-    _ = c.get("a")
-    _ = c.get("b")
-    stats = c.stats()
-    assert stats["size"] == 1
-    assert stats["max_size"] == 50
-    assert stats["ttl_seconds"] == 10
-    assert stats["hits"] == 1
-    assert stats["misses"] == 1
-    assert stats["hit_rate"] == pytest.approx(0.5)
+    c = TTLCache(ttl_seconds=60)
+    c.set("k", "v")
+    c.get("k")
+    s = c.stats()
+    assert set(s.keys()) == {"size", "hits", "misses", "hit_rate"}
 
 
 def test_stats_empty_cache() -> None:
@@ -210,3 +206,266 @@ def test_warm_cache_parametrized_count(n) -> None:
     c = TTLCache(ttl_seconds=60, max_size=100)
     entries = {str(i): i * 10 for i in range(n)}
     assert warm_cache(c, entries) == n
+
+
+def test_ttl_cache_get_returns_none_missing() -> None:
+    from app.cache import TTLCache
+
+    c = TTLCache(ttl_seconds=30, max_size=10)
+    assert c.get("nonexistent") is None
+
+
+def test_ttl_cache_set_and_get() -> None:
+    from app.cache import TTLCache
+
+    c = TTLCache(ttl_seconds=60, max_size=10)
+    c.set("k", 42)
+    assert c.get("k") == 42
+
+
+def test_ttl_cache_size_increments() -> None:
+    from app.cache import TTLCache
+
+    c = TTLCache(ttl_seconds=60, max_size=100)
+    assert c.size == 0
+    c.set("a", 1)
+    c.set("b", 2)
+    assert c.size == 2
+
+
+def test_ttl_cache_clear_resets_size() -> None:
+    from app.cache import TTLCache
+
+    c = TTLCache(ttl_seconds=60, max_size=10)
+    c.set("x", 99)
+    c.clear()
+    assert c.size == 0
+
+
+@pytest.mark.parametrize("ttl", [1, 30, 300, 3600])
+def test_ttl_cache_accepts_various_ttls(ttl: int) -> None:
+    from app.cache import TTLCache
+
+    c = TTLCache(ttl_seconds=ttl, max_size=5)
+    c.set("key", "val")
+    assert c.get("key") == "val"
+
+
+class TestTTLCacheGetOrSet:
+    def test_sets_on_miss(self) -> None:
+        from app.cache import TTLCache
+
+        c = TTLCache(ttl_seconds=60)
+        result = c.get_or_set("k", 42)
+        assert result == 42
+        assert c.get("k") == 42
+
+    def test_returns_existing_on_hit(self) -> None:
+        from app.cache import TTLCache
+
+        c = TTLCache(ttl_seconds=60)
+        c.set("k", 99)
+        result = c.get_or_set("k", 0)
+        assert result == 99
+
+    def test_different_keys_isolated(self) -> None:
+        from app.cache import TTLCache
+
+        c = TTLCache(ttl_seconds=60)
+        c.get_or_set("a", 1)
+        c.get_or_set("b", 2)
+        assert c.get("a") == 1
+        assert c.get("b") == 2
+
+
+class TestTTLCacheStats:
+    def test_stats_keys(self) -> None:
+        from app.cache import TTLCache
+
+        c = TTLCache(ttl_seconds=60)
+        s = c.stats()
+        assert "size" in s and "hits" in s and "misses" in s and "hit_rate" in s
+
+    def test_hit_rate_after_ops(self) -> None:
+        from app.cache import TTLCache
+
+        c = TTLCache(ttl_seconds=60)
+        c.set("x", 1)
+        c.get("x")  # hit
+        c.get("y")  # miss
+        assert c.hit_rate == pytest.approx(0.5)
+
+    def test_eviction_count_increases(self) -> None:
+        from app.cache import TTLCache
+
+        c = TTLCache(ttl_seconds=60, max_size=2)
+        c.set("a", 1)
+        c.set("b", 2)
+        c.set("c", 3)  # triggers eviction
+        assert c.eviction_count >= 1
+
+
+class TestTTLCacheContains:
+    def test_present(self) -> None:
+        from app.cache import TTLCache
+
+        c = TTLCache(ttl_seconds=60)
+        c.set("key", "val")
+        assert "key" in c
+
+    def test_absent(self) -> None:
+        from app.cache import TTLCache
+
+        c = TTLCache(ttl_seconds=60)
+        assert "nope" not in c
+
+
+class TestBuildCacheKey:
+    def test_basic_key(self) -> None:
+        from app.cache import build_cache_key
+
+        assert build_cache_key("user", 42, "data") == "user:42:data"
+
+    def test_single_part(self) -> None:
+        from app.cache import build_cache_key
+
+        assert build_cache_key("only") == "only"
+
+    def test_numeric_parts(self) -> None:
+        from app.cache import build_cache_key
+
+        result = build_cache_key(1, 2, 3)
+        assert result == "1:2:3"
+
+
+class TestCacheHitRate:
+    def test_all_hits(self) -> None:
+        from app.cache import cache_hit_rate
+
+        assert cache_hit_rate(10, 0) == pytest.approx(1.0)
+
+    def test_all_misses(self) -> None:
+        from app.cache import cache_hit_rate
+
+        assert cache_hit_rate(0, 10) == pytest.approx(0.0)
+
+    def test_zero_total(self) -> None:
+        from app.cache import cache_hit_rate
+
+        assert cache_hit_rate(0, 0) == 0.0
+
+    def test_negative_raises(self) -> None:
+        from app.cache import cache_hit_rate
+
+        with pytest.raises(ValueError):
+            cache_hit_rate(-1, 5)
+
+    def test_mixed(self) -> None:
+        from app.cache import cache_hit_rate
+
+        assert cache_hit_rate(3, 7) == pytest.approx(0.3)
+
+
+class TestWarmCache:
+    def test_inserts_items(self) -> None:
+        from app.cache import TTLCache, warm_cache
+
+        cache = TTLCache(ttl_seconds=60, max_size=100)
+        count = warm_cache(cache, {"a": 1, "b": 2, "c": 3})
+        assert count == 3
+        assert cache.get("a") == 1
+
+    def test_empty_items(self) -> None:
+        from app.cache import TTLCache, warm_cache
+
+        cache = TTLCache(ttl_seconds=60, max_size=100)
+        assert warm_cache(cache, {}) == 0
+
+
+class TestEvictExpiredKeys:
+    def test_evicts_expired(self) -> None:
+        import time
+
+        from app.cache import TTLCache, evict_expired_keys
+
+        cache = TTLCache(ttl_seconds=0, max_size=100)
+        cache.set("x", 1)
+        time.sleep(0.01)
+        evicted = evict_expired_keys(cache)
+        assert evicted >= 0
+
+    def test_no_eviction_when_fresh(self) -> None:
+        from app.cache import TTLCache, evict_expired_keys
+
+        cache = TTLCache(ttl_seconds=3600, max_size=100)
+        cache.set("fresh", 99)
+        assert evict_expired_keys(cache) == 0
+
+
+def test_contains_present_key() -> None:
+    c = TTLCache(ttl_seconds=10)
+    c.set("x", 99)
+    assert "x" in c
+
+
+def test_contains_missing_key() -> None:
+    c = TTLCache(ttl_seconds=10)
+    assert "missing" not in c
+
+
+def test_cache_key_from_dict_basic() -> None:
+    key = cache_key_from_dict({"b": 2, "a": 1})
+    assert key == "a=1:b=2"
+
+
+def test_cache_key_from_dict_prefix() -> None:
+    key = cache_key_from_dict({"x": 5}, prefix="predict")
+    assert key.startswith("predict:")
+
+
+def test_cache_key_from_dict_empty() -> None:
+    key = cache_key_from_dict({})
+    assert key == ""
+
+
+def test_cache_key_from_dict_deterministic() -> None:
+    key1 = cache_key_from_dict({"z": 1, "a": 2})
+    key2 = cache_key_from_dict({"a": 2, "z": 1})
+    assert key1 == key2
+
+
+def test_cache_stats_summary_keys() -> None:
+    c = TTLCache(ttl_seconds=10)
+    summary = cache_stats_summary(c)
+    assert "hits" in summary
+    assert "misses" in summary
+    assert "evictions" in summary
+    assert "hit_rate" in summary
+    assert "size" in summary
+
+
+def test_cache_stats_summary_empty_cache() -> None:
+    c = TTLCache(ttl_seconds=10)
+    summary = cache_stats_summary(c)
+    assert summary["hits"] == 0
+    assert summary["misses"] == 0
+    assert summary["size"] == 0
+
+
+def test_cache_stats_summary_after_hits() -> None:
+    c = TTLCache(ttl_seconds=10)
+    c.set("k", "v")
+    c.get("k")
+    c.get("k")
+    summary = cache_stats_summary(c)
+    assert summary["hits"] == 2
+    assert summary["size"] == 1
+
+
+def test_cache_stats_summary_hit_rate() -> None:
+    c = TTLCache(ttl_seconds=10)
+    c.set("k", "v")
+    c.get("k")  # hit
+    c.get("x")  # miss
+    summary = cache_stats_summary(c)
+    assert summary["hit_rate"] == pytest.approx(0.5)

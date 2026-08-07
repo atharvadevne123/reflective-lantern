@@ -2,9 +2,12 @@
 
 from __future__ import annotations
 
+import logging
 import threading
 import time
 from dataclasses import dataclass, field
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -46,6 +49,7 @@ class TokenBucketRateLimiter:
             if bucket.tokens >= 1.0:
                 bucket.tokens -= 1.0
                 return True
+            logger.debug("rate_limit: client=%r throttled tokens=%.2f", client_key, bucket.tokens)
             return False
 
     def remaining_tokens(self, client_key: str) -> float:
@@ -74,14 +78,114 @@ class TokenBucketRateLimiter:
             return len(self._buckets)
 
 
-def make_rate_limiter(
-    capacity: float = 60.0, rate_per_second: float = 1.0
-) -> TokenBucketRateLimiter:
+def make_rate_limiter(capacity: float = 60.0, rate_per_second: float = 1.0) -> TokenBucketRateLimiter:
     """Factory returning a new :class:`TokenBucketRateLimiter` with defaults."""
     return TokenBucketRateLimiter(capacity=capacity, rate_per_second=rate_per_second)
 
 
 __all__ = [
     "TokenBucketRateLimiter",
+    "burst_capacity_fraction",
+    "is_rate_limited",
+    "limiter_utilization",
     "make_rate_limiter",
+    "make_strict_limiter",
+    "prune_idle_clients",
+    "reset_limiter",
 ]
+
+
+def limiter_utilization(limiter: TokenBucketRateLimiter, client_key: str = "default") -> float:
+    """Return the fraction of token capacity currently consumed for a client.
+
+    Args:
+        limiter: A TokenBucketRateLimiter instance.
+        client_key: The client identifier. Default "default".
+
+    Returns:
+        Float in [0, 1] where 0 = full capacity available, 1 = fully consumed.
+    """
+    remaining = limiter.remaining_tokens(client_key)
+    capacity = limiter._capacity
+    consumed = capacity - remaining
+    return round(max(0.0, min(1.0, consumed / capacity)), 4)
+
+
+def reset_limiter(limiter: TokenBucketRateLimiter, client_key: str = "default") -> None:
+    """Reset a client's token bucket to full capacity.
+
+    Args:
+        limiter: A TokenBucketRateLimiter instance.
+        client_key: The client identifier. Default "default".
+    """
+    limiter.reset(client_key)
+
+
+def is_rate_limited(limiter: TokenBucketRateLimiter, client_key: str = "default") -> bool:
+    """Check whether a client's next request would be rate-limited WITHOUT consuming tokens.
+
+    Args:
+        limiter: A TokenBucketRateLimiter instance.
+        client_key: The client identifier. Default "default".
+
+    Returns:
+        True if the next is_allowed call would be denied, else False.
+    """
+    return limiter.remaining_tokens(client_key) < 1.0
+
+
+def make_strict_limiter(max_per_second: float) -> TokenBucketRateLimiter:
+    """Create a rate limiter with capacity = max_per_second (burst of 1 second).
+
+    Args:
+        max_per_second: Allowed requests per second.
+
+    Returns:
+        TokenBucketRateLimiter configured for the given rate.
+    """
+    return make_rate_limiter(capacity=max_per_second, rate_per_second=max_per_second)
+
+
+def burst_capacity_fraction(limiter: TokenBucketRateLimiter, client_key: str) -> float:
+    """Return the current token fill fraction [0.0, 1.0] for *client_key*.
+
+    A value of 1.0 means the bucket is full; 0.0 means it is empty.
+
+    Args:
+        limiter: A :class:`TokenBucketRateLimiter` instance.
+        client_key: The client identifier to query.
+
+    Returns:
+        Float in [0.0, 1.0] representing the fraction of capacity remaining.
+    """
+    remaining = limiter.remaining_tokens(client_key)
+    capacity = limiter._capacity
+    if capacity <= 0:
+        return 0.0
+    return round(min(1.0, remaining / capacity), 6)
+
+
+def prune_idle_clients(limiter: TokenBucketRateLimiter, max_idle_seconds: float) -> int:
+    """Remove client buckets that have been idle longer than *max_idle_seconds*.
+
+    A bucket is considered idle when ``time.monotonic() - bucket.last_refill``
+    exceeds *max_idle_seconds*. Pruning keeps memory bounded in long-running
+    processes with many ephemeral client keys.
+
+    Args:
+        limiter: A :class:`TokenBucketRateLimiter` instance.
+        max_idle_seconds: Maximum time (in seconds) since last activity.
+
+    Returns:
+        Number of buckets removed.
+    """
+    now = time.monotonic()
+    removed = 0
+    with limiter._lock:
+        idle_keys = [k for k, b in limiter._buckets.items() if now - b.last_refill > max_idle_seconds]
+        for k in idle_keys:
+            del limiter._buckets[k]
+            removed += 1
+    if removed:
+        logger.debug("prune_idle_clients: removed %d idle buckets", removed)
+    return removed

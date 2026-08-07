@@ -2,7 +2,10 @@
 
 from __future__ import annotations
 
+import logging
 from typing import Any
+
+logger = logging.getLogger(__name__)
 
 
 def get_step_names(pipeline: Any) -> list[str]:
@@ -49,11 +52,13 @@ def describe_pipeline(pipeline: Any) -> dict[str, Any]:
     try:
         steps_info = []
         for name, estimator in pipeline.steps:
-            steps_info.append({
-                "name": name,
-                "class": type(estimator).__name__,
-                "n_params": len(estimator.get_params()) if hasattr(estimator, "get_params") else 0,
-            })
+            steps_info.append(
+                {
+                    "name": name,
+                    "class": type(estimator).__name__,
+                    "n_params": len(estimator.get_params()) if hasattr(estimator, "get_params") else 0,
+                }
+            )
         return {
             "type": type(pipeline).__name__,
             "n_steps": len(pipeline.steps),
@@ -74,19 +79,225 @@ def clone_params(pipeline: Any) -> dict[str, Any]:
 def bundle_pipeline_info(bundle: dict[str, Any]) -> dict[str, Any]:
     """Extract pipeline description from a model bundle dict.
 
-    Expects bundle to have a ``"model"`` key that is a Pipeline.
+    Expects bundle to have a ``"pipeline"`` or ``"model"`` key that is a Pipeline.
+    Falls back gracefully when neither key is present.
     """
-    model = bundle.get("model")
-    if model is None:
-        return {"error": "no model in bundle"}
-    return describe_pipeline(model)
+    pipeline = bundle.get("pipeline") or bundle.get("model")
+    if pipeline is None:
+        logger.warning("bundle_pipeline_info: no 'pipeline' or 'model' key in bundle")
+        return {"error": "no pipeline in bundle"}
+    info = describe_pipeline(pipeline)
+    logger.debug("bundle_pipeline_info: steps=%d", len(info.get("steps", [])))
+    return info
+
+
+def is_fitted(estimator: Any) -> bool:
+    """Return True if *estimator* appears to have been fitted.
+
+    Checks for the presence of attributes ending in ``_`` (sklearn convention).
+
+    Args:
+        estimator: Any sklearn-compatible estimator or pipeline.
+
+    Returns:
+        True when at least one fitted attribute is found.
+    """
+    fitted_attrs = [a for a in dir(estimator) if a.endswith("_") and not a.startswith("__")]
+    return len(fitted_attrs) > 0
+
+
+def step_is_fitted(pipeline: Any, step_name: str) -> bool:
+    """Return True if the named step within *pipeline* has been fitted.
+
+    Args:
+        pipeline: sklearn Pipeline or compatible object.
+        step_name: Name of the pipeline step to check.
+
+    Returns:
+        True when the step exists and appears fitted; False otherwise.
+    """
+    step = get_step(pipeline, step_name)
+    if step is None:
+        return False
+    return is_fitted(step)
+
 
 __all__ = [
     "bundle_pipeline_info",
     "clone_params",
+    "count_fitted_steps",
+    "count_pipeline_steps",
     "describe_pipeline",
+    "extract_step_classes",
+    "first_step",
     "get_step",
     "get_step_names",
     "has_step",
+    "is_fitted",
+    "last_step",
+    "pipeline_has_preprocessor",
+    "pipeline_input_features",
+    "pipeline_memory_usage_kb",
     "pipeline_param_count",
+    "pipeline_step_types",
+    "step_is_fitted",
+    "step_names_to_set",
 ]
+
+
+def pipeline_step_types(pipeline: Any) -> dict[str, str]:
+    """Return a mapping of step name to transformer class name.
+
+    Args:
+        pipeline: sklearn Pipeline or object with a ``steps`` attribute.
+
+    Returns:
+        Dict of step_name → class_name, or empty dict if no steps.
+    """
+    steps = getattr(pipeline, "steps", None)
+    if not steps:
+        return {}
+    return {name: type(step).__name__ for name, step in steps}
+
+
+def first_step(pipeline: Any) -> Any:
+    """Return the first transformer in *pipeline*'s step list.
+
+    Args:
+        pipeline: sklearn Pipeline or object with a ``steps`` attribute.
+
+    Returns:
+        The first step object, or None if the pipeline has no steps.
+    """
+    steps = getattr(pipeline, "steps", None)
+    if not steps:
+        return None
+    return steps[0][1]
+
+
+def count_pipeline_steps(pipeline: Any) -> int:
+    """Return the number of steps in a sklearn-style pipeline.
+
+    Args:
+        pipeline: A pipeline with a ``steps`` attribute.
+
+    Returns:
+        Number of steps, or 0 if no steps attribute.
+    """
+    steps = getattr(pipeline, "steps", None)
+    if steps is None:
+        return 0
+    return len(steps)
+
+
+def last_step(pipeline: Any) -> Any:
+    """Return the last estimator in a sklearn-style pipeline.
+
+    Args:
+        pipeline: A pipeline with a ``steps`` attribute.
+
+    Returns:
+        The last step's estimator, or None if the pipeline has no steps.
+    """
+    steps = getattr(pipeline, "steps", None)
+    if not steps:
+        return None
+    return steps[-1][1]
+
+
+def step_names_to_set(pipeline: Any) -> set[str]:
+    """Return step names as a set for O(1) membership tests.
+
+    Args:
+        pipeline: A pipeline with a ``steps`` attribute.
+
+    Returns:
+        Set of step name strings.
+    """
+    steps = getattr(pipeline, "steps", None)
+    if steps is None:
+        return set()
+    return {name for name, _ in steps}
+
+
+def pipeline_memory_usage_kb(pipeline: Any) -> float:
+    """Estimate pickle-based memory footprint of a pipeline in kibibytes.
+
+    Args:
+        pipeline: Any picklable object (e.g. a sklearn pipeline).
+
+    Returns:
+        Estimated size in KiB.
+    """
+    import pickle
+
+    data = pickle.dumps(pipeline)
+    return round(len(data) / 1024, 4)
+
+
+def count_fitted_steps(pipeline: Any) -> int:
+    """Return the number of steps that have been fitted (have a ``n_features_in_`` attribute).
+
+    Args:
+        pipeline: An sklearn Pipeline (fitted or unfitted).
+
+    Returns:
+        Count of steps where the underlying estimator has been fitted.
+    """
+    try:
+        return sum(1 for _, estimator in pipeline.steps if hasattr(estimator, "n_features_in_"))
+    except AttributeError:
+        return 0
+
+
+def pipeline_has_preprocessor(pipeline: Any) -> bool:
+    """Return True if any pipeline step name suggests a preprocessing role.
+
+    Checks step names for common substrings: 'scaler', 'normalizer', 'encoder',
+    'imputer', 'transformer'.
+
+    Args:
+        pipeline: An sklearn Pipeline.
+
+    Returns:
+        True when at least one step name matches a preprocessor keyword.
+    """
+    keywords = {"scaler", "normalizer", "encoder", "imputer", "transformer"}
+    return any(any(kw in name.lower() for kw in keywords) for name in get_step_names(pipeline))
+
+
+def extract_step_classes(pipeline: Any) -> list[str]:
+    """Return a list of estimator class names for each step in *pipeline*.
+
+    Args:
+        pipeline: An sklearn Pipeline.
+
+    Returns:
+        List of class name strings (e.g. ['StandardScaler', 'LinearRegression']),
+        or empty list if *pipeline* has no steps attribute.
+    """
+    try:
+        return [type(estimator).__name__ for _, estimator in pipeline.steps]
+    except AttributeError:
+        return []
+
+
+def pipeline_input_features(pipeline: Any) -> list[str] | None:
+    """Return the feature names seen during fit, if available.
+
+    Tries ``feature_names_in_`` (sklearn ≥ 1.0) on the pipeline itself, then
+    on the first step. Returns None when no feature-name information is stored.
+
+    Args:
+        pipeline: A fitted sklearn Pipeline or compatible estimator.
+
+    Returns:
+        List of feature name strings, or None if not available.
+    """
+    for obj in [pipeline, first_step(pipeline)]:
+        if obj is None:
+            continue
+        names = getattr(obj, "feature_names_in_", None)
+        if names is not None:
+            return list(names)
+    return None

@@ -173,3 +173,38 @@ def test_build_ontology_run_object_has_required_properties(multi_repo_history_di
         assert "repository" in props
         assert "runDate" in props
         assert "commits" in props
+
+
+def test_rows_to_csv_is_string(history_dir) -> None:
+    from scripts.foundry_export import build_run_rows, rows_to_csv
+
+    rows = build_run_rows(history_dir)
+    csv_str = rows_to_csv(rows)
+    assert isinstance(csv_str, str)
+
+
+def test_rows_to_jsonl_each_line_is_json(history_dir) -> None:
+    import json as _json
+
+    from scripts.foundry_export import build_run_rows, rows_to_jsonl
+
+    rows = build_run_rows(history_dir)
+    jsonl = rows_to_jsonl(rows)
+    for line in jsonl.strip().splitlines():
+        parsed = _json.loads(line)
+        assert isinstance(parsed, dict)
+
+
+def test_build_run_rows_returns_list(history_dir) -> None:
+    from scripts.foundry_export import build_run_rows
+
+    rows = build_run_rows(history_dir)
+    assert isinstance(rows, list)
+
+
+def test_build_ontology_objects_returns_list(history_dir) -> None:
+    from scripts.foundry_export import build_ontology_objects, build_run_rows
+
+    rows = build_run_rows(history_dir)
+    objs = build_ontology_objects(rows)
+    assert isinstance(objs, list)

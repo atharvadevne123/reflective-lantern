@@ -97,3 +97,27 @@
 - pytest suite with 50+ tests and parametrized cases
 - GitHub Actions CI (ruff lint + pytest)
 - Architecture diagram
+
+## [2026-08-03] — Improvement Run
+
+### Added
+- `app/trend_analysis.py`: `momentum_score()` (short vs long MA signal) and `cumulative_sum()` (CUSUM drift detection)
+- `app/date_utils.py`: `datetime_to_iso()`, `start_of_day()`, `days_between()` utilities
+- `app/carbon.py`: `carbon_budget_remaining()` for remaining CO2 allowance tracking
+- `app/notifications.py`: `alert_summary()` and `highest_severity()` for alert aggregation
+- `app/config.py`: `get_settings()`, `is_production()`, `effective_log_level()` config helpers
+- `app/data_quality.py`: `field_value_counts()` and `null_rate()` for data profiling
+- `app/energy_export.py`: `sort_records()` and `partition_records()` for record manipulation
+- `app/pipeline_utils.py`: `pipeline_step_types()` and `first_step()` introspection helpers
+- `energy_seer/app/validators.py`: `validate_forecast_length()`, `validate_tariff()`, `validate_readings_list()`
+- `energy_seer/app/telemetry.py`: `increment_by()`, `all_above()`, `top_n()` counter utilities
+- `energy_seer/app/grid_report.py`: `summarise_alerts()`, `report_status_code()`, `merge_reports()`
+- `energy_seer/app/features.py`: `feature_column_names()`, `validate_dataframe_columns()`, `__all__`
+
+### Fixed
+- `app/anomaly.py`: Added missing `compute_z_score`, `flag_z_score_outliers`, `flag_anomaly_rate`, `consecutive_anomaly_runs`, `ewma_smooth` to `__all__`
+- `app/stats_utils.py`: Removed duplicate `coefficient_of_variation` definition
+
+### Tests
+- Added 35+ new test cases across 15+ test files covering new and previously untested functions
+- New test files: `energy_seer/tests/test_validators.py`, `energy_seer/tests/test_telemetry.py`

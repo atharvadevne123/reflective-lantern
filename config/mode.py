@@ -57,25 +57,45 @@ def days_until_next_innovation(after: date | None = None) -> int:
     return (next_innovation_day(ref) - ref).days
 
 
-__all__ = ["RunMode", "days_until_next_innovation", "determine_mode", "is_innovation_day", "next_innovation_day"]
-
-
 def upcoming_innovation_days(count: int = 5, after: date | None = None) -> list[date]:
     """Return the next *count* innovation days after *after* (defaults to today).
 
     Args:
-        count: Number of future innovation days to compute.
-        after: Starting reference date (defaults to today).
+        count: Number of upcoming innovation days to return.
+        after: Reference date (exclusive lower bound); defaults to today.
 
     Returns:
-        Sorted list of upcoming innovation dates.
+        Sorted list of the next *count* innovation dates.
     """
-    results: list[date] = []
-    current = after or date.today()
+    days: list[date] = []
+    ref = after or date.today()
     for _ in range(count):
-        current = next_innovation_day(current)
-        results.append(current)
-    return results
+        ref = next_innovation_day(ref)
+        days.append(ref)
+    return days
+
+
+def mode_label(mode: RunMode) -> str:
+    """Return a short human-readable label for a RunMode value.
+
+    Args:
+        mode: A RunMode enum value.
+
+    Returns:
+        "Innovation Mode" for INNOVATION, "Improvement Mode" otherwise.
+    """
+    return "Innovation Mode" if mode == RunMode.INNOVATION else "Improvement Mode"
+
+
+__all__ = [
+    "RunMode",
+    "days_until_next_innovation",
+    "determine_mode",
+    "is_innovation_day",
+    "mode_label",
+    "next_innovation_day",
+    "upcoming_innovation_days",
+]
 
 
 def mode_schedule(weeks: int = 4, start: date | None = None) -> list[dict[str, object]]:

@@ -5,13 +5,18 @@ from __future__ import annotations
 import pytest
 
 from app.forecasting import (
+    confidence_interval,
     drift_forecast,
     ensemble_forecast,
     exponential_smoothing_forecast,
     forecast_bias,
     forecast_summary,
+    mae_score,
     naive_forecast,
+    rmse_score,
     seasonal_naive_forecast,
+    stepwise_error_growth,
+    weighted_ensemble_forecast,
 )
 
 HISTORY = [10.0, 12.0, 11.0, 13.0, 14.0, 12.0, 15.0]
@@ -235,3 +240,357 @@ def test_forecast_bias_empty_raises() -> None:
 def test_ensemble_forecast_custom_weights(w) -> None:
     result = ensemble_forecast(HISTORY, steps=3, weights=w)
     assert len(result) == 3
+
+
+@pytest.mark.parametrize("steps", [1, 3, 6, 12, 24])
+def test_naive_forecast_various_steps_value_check(steps: int) -> None:
+    from app.forecasting import naive_forecast
+
+    result = naive_forecast(10.0, steps)
+    assert len(result) == steps
+    assert all(v == pytest.approx(10.0) for v in result)
+
+
+def test_drift_forecast_constant_returns_last() -> None:
+    from app.forecasting import drift_forecast
+
+    values = [5.0, 5.0, 5.0, 5.0]
+    result = drift_forecast(values, steps=3)
+    assert all(v == pytest.approx(5.0) for v in result)
+
+
+def test_seasonal_naive_uses_period() -> None:
+    from app.forecasting import seasonal_naive_forecast
+
+    pattern = [float(i) for i in range(24)]
+    result = seasonal_naive_forecast(pattern * 3, steps=24, period=24)
+    assert len(result) == 24
+
+
+@pytest.mark.parametrize("alpha", [0.1, 0.5, 0.9])
+def test_exponential_smoothing_various_alpha(alpha: float) -> None:
+    from app.forecasting import exponential_smoothing_forecast
+
+    values = [10.0] * 20
+    result = exponential_smoothing_forecast(values, steps=5, alpha=alpha)
+    assert len(result) == 5
+    assert all(v == pytest.approx(10.0, rel=0.01) for v in result)
+
+
+def test_naive_forecast_zero_steps_empty() -> None:
+    from app.forecasting import naive_forecast
+
+    assert naive_forecast(5.0, 0) == []
+
+
+def test_forecast_bias_returns_float() -> None:
+    from app.forecasting import forecast_bias
+
+    result = forecast_bias([10.0, 20.0], [12.0, 18.0])
+    assert isinstance(result, float)
+
+
+def test_forecast_bias_negative_when_under_predicting() -> None:
+    from app.forecasting import forecast_bias
+
+    result = forecast_bias([10.0, 10.0], [8.0, 8.0])
+    assert result < 0
+
+
+def test_ensemble_forecast_returns_correct_length() -> None:
+    from app.forecasting import ensemble_forecast
+
+    values = [float(i) for i in range(72)]
+    result = ensemble_forecast(values, steps=12)
+    assert len(result) == 12
+
+
+def test_ensemble_forecast_constant_input() -> None:
+    from app.forecasting import ensemble_forecast
+
+    values = [5.0] * 48
+    result = ensemble_forecast(values, steps=6)
+    assert len(result) == 6
+
+
+@pytest.mark.parametrize("steps", [1, 6, 12])
+def test_ensemble_forecast_various_steps(steps: int) -> None:
+    from app.forecasting import ensemble_forecast
+
+    values = [float(i % 24) for i in range(72)]
+    result = ensemble_forecast(values, steps=steps)
+    assert len(result) == steps
+
+
+class TestForecastWithUncertainty:
+    def test_returns_dict_with_keys(self) -> None:
+        from app.forecasting import forecast_with_uncertainty
+
+        result = forecast_with_uncertainty([1.0, 2.0, 3.0, 4.0, 5.0], horizon=3)
+        assert set(result.keys()) == {"point", "lower_80", "upper_80"}
+
+    def test_output_length(self) -> None:
+        from app.forecasting import forecast_with_uncertainty
+
+        result = forecast_with_uncertainty([1.0] * 10, horizon=5)
+        assert len(result["point"]) == 5
+        assert len(result["lower_80"]) == 5
+        assert len(result["upper_80"]) == 5
+
+    def test_too_short_raises(self) -> None:
+        from app.forecasting import forecast_with_uncertainty
+
+        with pytest.raises(ValueError, match="2 elements"):
+            forecast_with_uncertainty([1.0], horizon=3)
+
+    def test_horizon_zero_raises(self) -> None:
+        from app.forecasting import forecast_with_uncertainty
+
+        with pytest.raises(ValueError, match="at least 1"):
+            forecast_with_uncertainty([1.0, 2.0, 3.0], horizon=0)
+
+    def test_lower_le_upper(self) -> None:
+        from app.forecasting import forecast_with_uncertainty
+
+        result = forecast_with_uncertainty(list(range(1, 25)), horizon=6, n_boot=50)
+        for lo, hi in zip(result["lower_80"], result["upper_80"], strict=False):
+            assert lo <= hi
+
+
+class TestForecastErrorMetrics:
+    def test_perfect_forecast(self) -> None:
+        from app.forecasting import forecast_error_metrics
+
+        vals = [1.0, 2.0, 3.0, 4.0]
+        result = forecast_error_metrics(vals, vals)
+        assert result["mae"] == pytest.approx(0.0, abs=1e-6)
+        assert result["rmse"] == pytest.approx(0.0, abs=1e-6)
+
+    def test_keys_present(self) -> None:
+        from app.forecasting import forecast_error_metrics
+
+        result = forecast_error_metrics([1.0, 2.0], [1.1, 2.1])
+        assert set(result.keys()) >= {"mae", "rmse", "mape", "bias"}
+
+    def test_empty_raises(self) -> None:
+        from app.forecasting import forecast_error_metrics
+
+        with pytest.raises(ValueError, match="empty"):
+            forecast_error_metrics([], [])
+
+    def test_length_mismatch_raises(self) -> None:
+        from app.forecasting import forecast_error_metrics
+
+        with pytest.raises(ValueError, match="Length mismatch"):
+            forecast_error_metrics([1.0, 2.0], [1.0])
+
+    def test_bias_positive_when_over_predicted(self) -> None:
+        from app.forecasting import forecast_error_metrics
+
+        result = forecast_error_metrics([1.0, 2.0, 3.0], [2.0, 3.0, 4.0])
+        assert result["bias"] == pytest.approx(1.0, rel=1e-4)
+
+
+class TestForecastCoverage:
+    def test_full_coverage(self) -> None:
+        from app.forecasting import forecast_coverage
+
+        actual = [5.0, 5.0, 5.0]
+        result = forecast_coverage(actual, [4.0, 4.0, 4.0], [6.0, 6.0, 6.0])
+        assert result == pytest.approx(1.0, rel=1e-4)
+
+    def test_no_coverage(self) -> None:
+        from app.forecasting import forecast_coverage
+
+        actual = [5.0, 5.0, 5.0]
+        result = forecast_coverage(actual, [6.0, 6.0, 6.0], [7.0, 7.0, 7.0])
+        assert result == pytest.approx(0.0, abs=1e-6)
+
+    def test_empty_raises(self) -> None:
+        from app.forecasting import forecast_coverage
+
+        with pytest.raises(ValueError, match="non-empty"):
+            forecast_coverage([], [], [])
+
+    def test_length_mismatch_raises(self) -> None:
+        from app.forecasting import forecast_coverage
+
+        with pytest.raises(ValueError, match="same length"):
+            forecast_coverage([1.0, 2.0], [0.5, 1.5, 2.5], [1.5, 2.5, 3.5])
+
+    def test_result_in_range(self) -> None:
+        from app.forecasting import forecast_coverage
+
+        actual = [float(i) for i in range(10)]
+        lower = [float(i) - 2 for i in range(10)]
+        upper = [float(i) + 2 for i in range(10)]
+        result = forecast_coverage(actual, lower, upper)
+        assert 0.0 <= result <= 1.0
+
+
+def test_confidence_interval_length() -> None:
+    fc = [10.0, 11.0, 12.0]
+    result = confidence_interval(fc, std_error=1.0)
+    assert len(result) == 3
+
+
+def test_confidence_interval_keys() -> None:
+    result = confidence_interval([10.0], std_error=2.0)
+    assert "point" in result[0]
+    assert "lower" in result[0]
+    assert "upper" in result[0]
+
+
+def test_confidence_interval_bounds() -> None:
+    fc = [10.0]
+    result = confidence_interval(fc, std_error=2.0, z_score=1.96)
+    assert result[0]["lower"] < result[0]["point"] < result[0]["upper"]
+
+
+def test_confidence_interval_zero_std() -> None:
+    fc = [5.0, 6.0]
+    result = confidence_interval(fc, std_error=0.0)
+    assert all(r["lower"] == r["point"] == r["upper"] for r in result)
+
+
+@pytest.mark.parametrize("z_score", [1.0, 1.645, 1.96, 2.576])
+def test_confidence_interval_z_parametrize(z_score) -> None:
+    fc = [10.0]
+    result = confidence_interval(fc, std_error=1.0, z_score=z_score)
+    assert result[0]["upper"] - result[0]["lower"] == pytest.approx(2 * z_score, rel=1e-4)
+
+
+def test_stepwise_error_growth_length() -> None:
+    result = stepwise_error_growth([1.0, 2.0, 3.0], base_error=1.0)
+    assert len(result) == 3
+
+
+def test_stepwise_error_growth_first_step() -> None:
+    result = stepwise_error_growth([1.0], base_error=2.0, growth_factor=1.1)
+    assert result[0] == pytest.approx(2.0)
+
+
+def test_stepwise_error_growth_increasing() -> None:
+    result = stepwise_error_growth([1.0] * 5, base_error=1.0, growth_factor=1.1)
+    assert all(result[i] <= result[i + 1] for i in range(len(result) - 1))
+
+
+def test_weighted_ensemble_forecast_basic() -> None:
+    f1 = [1.0, 2.0, 3.0]
+    f2 = [3.0, 4.0, 5.0]
+    result = weighted_ensemble_forecast([f1, f2], weights=[1.0, 1.0])
+    assert result == pytest.approx([2.0, 3.0, 4.0])
+
+
+def test_weighted_ensemble_forecast_unequal_weights() -> None:
+    f1 = [10.0]
+    f2 = [0.0]
+    result = weighted_ensemble_forecast([f1, f2], weights=[1.0, 0.0])
+    assert result == pytest.approx([10.0])
+
+
+def test_weighted_ensemble_forecast_empty_raises() -> None:
+    with pytest.raises(ValueError):
+        weighted_ensemble_forecast([], [])
+
+
+def test_weighted_ensemble_forecast_zero_weights_raises() -> None:
+    with pytest.raises(ValueError):
+        weighted_ensemble_forecast([[1.0]], [0.0])
+
+
+def test_weighted_ensemble_forecast_length_mismatch_raises() -> None:
+    with pytest.raises(ValueError):
+        weighted_ensemble_forecast([[1.0, 2.0], [3.0]], [1.0, 1.0])
+
+
+def test_mae_score_perfect() -> None:
+    assert mae_score([1.0, 2.0, 3.0], [1.0, 2.0, 3.0]) == pytest.approx(0.0)
+
+
+def test_mae_score_constant_error() -> None:
+    assert mae_score([0.0, 0.0, 0.0], [1.0, 1.0, 1.0]) == pytest.approx(1.0)
+
+
+def test_mae_score_empty_raises() -> None:
+    with pytest.raises(ValueError):
+        mae_score([], [])
+
+
+def test_mae_score_length_mismatch_raises() -> None:
+    with pytest.raises(ValueError):
+        mae_score([1.0], [1.0, 2.0])
+
+
+def test_mae_score_positive() -> None:
+    assert mae_score([10.0, 20.0], [12.0, 18.0]) > 0
+
+
+def test_rmse_score_perfect() -> None:
+    assert rmse_score([1.0, 2.0, 3.0], [1.0, 2.0, 3.0]) == pytest.approx(0.0)
+
+
+def test_rmse_score_constant_error() -> None:
+    assert rmse_score([0.0, 0.0, 0.0], [1.0, 1.0, 1.0]) == pytest.approx(1.0)
+
+
+def test_rmse_score_empty_raises() -> None:
+    with pytest.raises(ValueError):
+        rmse_score([], [])
+
+
+def test_rmse_score_length_mismatch_raises() -> None:
+    with pytest.raises(ValueError):
+        rmse_score([1.0], [1.0, 2.0])
+
+
+def test_rmse_score_gte_mae() -> None:
+    actual = [10.0, 20.0, 30.0, 5.0]
+    predicted = [12.0, 18.0, 35.0, 5.0]
+    assert rmse_score(actual, predicted) >= mae_score(actual, predicted)
+
+
+@pytest.mark.parametrize("err", [1.0, 2.0, 5.0])
+def test_mae_score_constant_parametrize(err: float) -> None:
+    n = 5
+    actual = [0.0] * n
+    predicted = [err] * n
+    assert mae_score(actual, predicted) == pytest.approx(err)
+
+
+class TestForecastIntervalHitRate:
+    def test_perfect_coverage(self) -> None:
+        from app.forecasting import forecast_interval_hit_rate
+
+        actual = [1.0, 2.0, 3.0]
+        lower = [0.5, 1.5, 2.5]
+        upper = [1.5, 2.5, 3.5]
+        assert forecast_interval_hit_rate(actual, lower, upper) == pytest.approx(1.0)
+
+    def test_zero_coverage(self) -> None:
+        from app.forecasting import forecast_interval_hit_rate
+
+        actual = [10.0, 20.0, 30.0]
+        lower = [0.0, 0.0, 0.0]
+        upper = [5.0, 5.0, 5.0]
+        assert forecast_interval_hit_rate(actual, lower, upper) == pytest.approx(0.0)
+
+    def test_partial_coverage(self) -> None:
+        from app.forecasting import forecast_interval_hit_rate
+
+        actual = [1.0, 10.0, 2.0, 10.0]
+        lower = [0.0, 0.0, 0.0, 0.0]
+        upper = [5.0, 5.0, 5.0, 5.0]
+        assert forecast_interval_hit_rate(actual, lower, upper) == pytest.approx(0.5)
+
+    def test_empty_raises(self) -> None:
+        from app.forecasting import forecast_interval_hit_rate
+
+        with pytest.raises(ValueError):
+            forecast_interval_hit_rate([], [], [])
+
+    def test_length_mismatch_raises(self) -> None:
+        from app.forecasting import forecast_interval_hit_rate
+
+        with pytest.raises(ValueError):
+            forecast_interval_hit_rate([1.0, 2.0], [0.0], [5.0])

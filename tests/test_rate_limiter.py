@@ -4,7 +4,13 @@ from __future__ import annotations
 
 import pytest
 
-from app.rate_limiter import TokenBucketRateLimiter, make_rate_limiter
+from app.rate_limiter import (
+    TokenBucketRateLimiter,
+    burst_capacity_fraction,
+    make_rate_limiter,
+    make_strict_limiter,
+    prune_idle_clients,
+)
 
 
 def test_first_request_allowed():
@@ -81,3 +87,168 @@ def test_separate_clients_independent():
     limiter = TokenBucketRateLimiter(capacity=1.0, rate_per_second=0.01)
     limiter.is_allowed("client-a")
     assert limiter.is_allowed("client-b") is True
+
+
+@pytest.mark.parametrize("n_clients", [1, 5, 10])
+def test_clear_resets_all_clients(n_clients):
+    limiter = TokenBucketRateLimiter(capacity=10.0, rate_per_second=1.0)
+    for i in range(n_clients):
+        limiter.is_allowed(f"c-{i}")
+    limiter.clear()
+    assert limiter.client_count == 0
+
+
+def test_is_allowed_returns_bool():
+    limiter = TokenBucketRateLimiter(capacity=5.0, rate_per_second=1.0)
+    result = limiter.is_allowed("test")
+    assert isinstance(result, bool)
+
+
+def test_remaining_tokens_after_clear():
+    limiter = TokenBucketRateLimiter(capacity=5.0, rate_per_second=0.01)
+    limiter.is_allowed("c")
+    limiter.clear()
+    assert limiter.remaining_tokens("c") == 5.0
+
+
+@pytest.mark.parametrize("rate", [0.1, 0.5, 1.0, 5.0])
+def test_make_rate_limiter_various_rates(rate):
+    limiter = make_rate_limiter(capacity=10.0, rate_per_second=rate)
+    assert limiter.is_allowed("test") is True
+
+
+class TestLimiterUtilization:
+    def test_full_capacity_is_zero(self) -> None:
+        from app.rate_limiter import limiter_utilization, make_rate_limiter
+
+        limiter = make_rate_limiter(capacity=10.0, rate_per_second=1.0)
+        assert limiter_utilization(limiter, "c1") == pytest.approx(0.0, abs=0.05)
+
+    def test_after_consume_increases(self) -> None:
+        from app.rate_limiter import limiter_utilization, make_rate_limiter
+
+        limiter = make_rate_limiter(capacity=10.0, rate_per_second=1.0)
+        for _ in range(5):
+            limiter.is_allowed("c2")
+        assert limiter_utilization(limiter, "c2") > 0.0
+
+
+class TestResetLimiter:
+    def test_resets_to_full(self) -> None:
+        from app.rate_limiter import limiter_utilization, make_rate_limiter, reset_limiter
+
+        limiter = make_rate_limiter(capacity=10.0, rate_per_second=1.0)
+        for _ in range(8):
+            limiter.is_allowed("c3")
+        reset_limiter(limiter, "c3")
+        assert limiter_utilization(limiter, "c3") == pytest.approx(0.0, abs=0.05)
+
+
+class TestIsRateLimited:
+    def test_not_limited_when_full(self) -> None:
+        from app.rate_limiter import is_rate_limited, make_rate_limiter
+
+        limiter = make_rate_limiter(capacity=10.0, rate_per_second=1.0)
+        assert is_rate_limited(limiter, "c4") is False
+
+    def test_limited_when_empty(self) -> None:
+        from app.rate_limiter import is_rate_limited, make_rate_limiter
+
+        limiter = make_rate_limiter(capacity=2.0, rate_per_second=0.001)
+        limiter.is_allowed("c5")
+        limiter.is_allowed("c5")
+        assert is_rate_limited(limiter, "c5") is True
+
+
+class TestMakeStrictLimiter:
+    def test_returns_limiter(self) -> None:
+        from app.rate_limiter import TokenBucketRateLimiter, make_strict_limiter
+
+        limiter = make_strict_limiter(10.0)
+        assert isinstance(limiter, TokenBucketRateLimiter)
+
+    def test_allows_within_rate(self) -> None:
+        from app.rate_limiter import make_strict_limiter
+
+        limiter = make_strict_limiter(5.0)
+        for _ in range(5):
+            limiter.is_allowed("strict_client")
+
+
+def test_make_strict_limiter_returns_limiter() -> None:
+    limiter = make_strict_limiter(60)
+    assert limiter is not None
+
+
+def test_make_strict_limiter_capacity() -> None:
+    limiter = make_strict_limiter(30)
+    assert limiter._capacity == pytest.approx(30.0)
+
+
+def test_make_strict_limiter_invalid_raises() -> None:
+    with pytest.raises(ValueError):
+        make_strict_limiter(0)
+
+
+def test_make_strict_limiter_allows_first_request() -> None:
+    limiter = make_strict_limiter(10)
+    assert limiter.is_allowed("client") is True
+
+
+def test_burst_capacity_fraction_full() -> None:
+    limiter = make_rate_limiter(capacity=10.0, rate_per_second=1.0)
+    frac = burst_capacity_fraction(limiter, "new_client")
+    assert frac == pytest.approx(1.0)
+
+
+def test_burst_capacity_fraction_after_use() -> None:
+    limiter = make_rate_limiter(capacity=10.0, rate_per_second=0.01)
+    for _ in range(5):
+        limiter.is_allowed("c")
+    frac = burst_capacity_fraction(limiter, "c")
+    assert frac < 1.0
+    assert frac >= 0.0
+
+
+def test_burst_capacity_fraction_empty_bucket() -> None:
+    limiter = make_rate_limiter(capacity=2.0, rate_per_second=0.001)
+    limiter.is_allowed("c")
+    limiter.is_allowed("c")
+    frac = burst_capacity_fraction(limiter, "c")
+    assert frac == pytest.approx(0.0)
+
+
+class TestPruneIdleClients:
+    def test_removes_idle_buckets(self) -> None:
+        limiter = make_rate_limiter(capacity=5.0, rate_per_second=1.0)
+        limiter.is_allowed("client-a")
+        limiter.is_allowed("client-b")
+        # Set last_refill far in the past to simulate idle
+        with limiter._lock:
+            for bucket in limiter._buckets.values():
+                bucket.last_refill -= 1000.0
+        removed = prune_idle_clients(limiter, max_idle_seconds=1.0)
+        assert removed == 2
+        assert limiter.client_count == 0
+
+    def test_keeps_recent_buckets(self) -> None:
+        limiter = make_rate_limiter(capacity=5.0, rate_per_second=1.0)
+        limiter.is_allowed("recent")
+        removed = prune_idle_clients(limiter, max_idle_seconds=3600.0)
+        assert removed == 0
+        assert limiter.client_count == 1
+
+    def test_mixed_idle_and_recent(self) -> None:
+        limiter = make_rate_limiter(capacity=5.0, rate_per_second=1.0)
+        limiter.is_allowed("active")
+        limiter.is_allowed("idle")
+        with limiter._lock:
+            limiter._buckets["idle"].last_refill -= 9999.0
+        removed = prune_idle_clients(limiter, max_idle_seconds=60.0)
+        assert removed == 1
+        assert "active" in limiter._buckets
+        assert "idle" not in limiter._buckets
+
+    def test_empty_limiter_returns_zero(self) -> None:
+        limiter = make_rate_limiter()
+        assert prune_idle_clients(limiter, max_idle_seconds=1.0) == 0

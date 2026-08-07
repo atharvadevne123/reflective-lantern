@@ -290,3 +290,94 @@ def prediction_confidence(
         "lower_95": round(max(0.0, mean_pred - margin), 4),
         "upper_95": round(mean_pred + margin, 4),
     }
+
+
+def residual_statistics(actual: list[float], predicted: list[float]) -> dict[str, float]:
+    """Compute residual statistics between actual and predicted values.
+
+    Args:
+        actual: Observed values.
+        predicted: Model-predicted values.
+
+    Returns:
+        Dict with mean_residual, std_residual, max_abs_residual.
+
+    Raises:
+        ValueError: If lists are empty or have different lengths.
+    """
+    if not actual or not predicted:
+        raise ValueError("actual and predicted must be non-empty")
+    if len(actual) != len(predicted):
+        raise ValueError("actual and predicted must have the same length")
+    residuals = [a - p for a, p in zip(actual, predicted, strict=False)]
+    n = len(residuals)
+    mean_res = sum(residuals) / n
+    std_res = (sum((r - mean_res) ** 2 for r in residuals) / n) ** 0.5
+    max_abs = max(abs(r) for r in residuals)
+    return {
+        "mean_residual": round(mean_res, 6),
+        "std_residual": round(std_res, 6),
+        "max_abs_residual": round(max_abs, 6),
+    }
+
+
+def clip_predictions(predictions: list[float], low: float = 0.0, high: float | None = None) -> list[float]:
+    """Clip model predictions to a valid range.
+
+    Args:
+        predictions: Raw model outputs.
+        low: Lower bound (inclusive). Default 0.0.
+        high: Upper bound (inclusive). If None, no upper clip.
+
+    Returns:
+        Clipped predictions list.
+    """
+    result = []
+    for p in predictions:
+        p = max(p, low)
+        if high is not None:
+            p = min(p, high)
+        result.append(round(p, 6))
+    return result
+
+
+def model_version_string(name: str, version: int, timestamp: str) -> str:
+    """Build a canonical model version string.
+
+    Args:
+        name: Model name (e.g. "watt_guard").
+        version: Integer version number.
+        timestamp: ISO-8601 timestamp string.
+
+    Returns:
+        String like "watt_guard_v3_2024-01-15T12:00:00".
+    """
+    return f"{name}_v{version}_{timestamp}"
+
+
+def threshold_accuracy(
+    actual: list[float],
+    predicted: list[float],
+    tolerance: float = 0.1,
+) -> float:
+    """Compute the fraction of predictions within a relative tolerance of actual.
+
+    Args:
+        actual: Ground-truth values.
+        predicted: Model predictions.
+        tolerance: Allowed relative error (e.g. 0.1 = 10%).
+
+    Returns:
+        Fraction of predictions within tolerance.
+
+    Raises:
+        ValueError: If lists are empty or of different lengths, or tolerance < 0.
+    """
+    if not actual or not predicted:
+        raise ValueError("actual and predicted must be non-empty")
+    if len(actual) != len(predicted):
+        raise ValueError("Length mismatch")
+    if tolerance < 0:
+        raise ValueError("tolerance must be non-negative")
+    within = sum(1 for a, p in zip(actual, predicted, strict=False) if a == 0 or abs(p - a) / abs(a) <= tolerance)
+    return round(within / len(actual), 4)

@@ -6,9 +6,15 @@ import pytest
 
 from app.market_context import (
     affordability_index,
+    comparable_value_adjustment,
     dom_classification,
+    effective_gross_income,
+    market_heat_score,
+    price_appreciation_rate,
+    price_per_bedroom,
     price_per_sqft,
     price_to_rent_ratio,
+    value_gap,
 )
 
 
@@ -518,27 +524,30 @@ def test_affordability_index_default_income() -> None:
     from app.market_context import affordability_index
 
     result = affordability_index(300_000.0)
-    assert isinstance(result, float)
-    assert result > 0
+    assert isinstance(result, dict)
+    assert result["monthly_payment"] > 0
 
 
 def test_affordability_index_zero_value() -> None:
     from app.market_context import affordability_index
 
     result = affordability_index(0.0)
-    assert result == 0.0
+    assert result["monthly_payment"] == 0.0
 
 
-@pytest.mark.parametrize("value,income,expected_range", [
-    (100_000, 100_000, (0, 20)),  # very affordable
-    (1_000_000, 50_000, (100, 500)),  # very expensive
-])
+@pytest.mark.parametrize(
+    "value,income,expected_range",
+    [
+        (100_000, 100_000, (0, 20)),  # very affordable
+        (1_000_000, 50_000, (100, 500)),  # very expensive
+    ],
+)
 def test_affordability_index_parametrized(value, income, expected_range) -> None:
     from app.market_context import affordability_index
 
     result = affordability_index(value, annual_income=income)
     lo, hi = expected_range
-    assert lo <= result <= hi
+    assert lo <= result["pct_income"] <= hi
 
 
 def test_price_to_rent_ratio_extended() -> None:
@@ -549,7 +558,420 @@ def test_price_to_rent_ratio_extended() -> None:
 
 
 def test_price_to_rent_ratio_zero_rent_v2() -> None:
+    import math
+
     from app.market_context import price_to_rent_ratio
 
     result = price_to_rent_ratio(300_000.0, 0.0)
-    assert result == 0.0
+    assert math.isinf(result)
+
+
+class TestNeighbourhoodScore:
+    def test_returns_composite_and_grade(self) -> None:
+        from app.market_context import neighbourhood_score
+
+        result = neighbourhood_score(8.0, 7.0, 9.0)
+        assert "composite_score" in result
+        assert "grade" in result
+
+    def test_high_scores_give_grade_a(self) -> None:
+        from app.market_context import neighbourhood_score
+
+        result = neighbourhood_score(9.0, 9.0, 9.0, safety_score=9.0)
+        assert result["grade"] == "A"
+
+    def test_low_scores_give_grade_d(self) -> None:
+        from app.market_context import neighbourhood_score
+
+        result = neighbourhood_score(1.0, 1.0, 1.0, safety_score=1.0)
+        assert result["grade"] == "D"
+
+    def test_clamping_above_10(self) -> None:
+        from app.market_context import neighbourhood_score
+
+        result = neighbourhood_score(15.0, 15.0, 15.0, safety_score=15.0)
+        assert result["composite_score"] <= 10.0
+
+    def test_clamping_below_0(self) -> None:
+        from app.market_context import neighbourhood_score
+
+        result = neighbourhood_score(-5.0, -5.0, -5.0, safety_score=-5.0)
+        assert result["composite_score"] >= 0.0
+
+    def test_custom_weights_invalid_raises(self) -> None:
+        import pytest
+
+        from app.market_context import neighbourhood_score
+
+        with pytest.raises(ValueError, match=r"sum to 1\.0"):
+            neighbourhood_score(
+                7.0, 7.0, 7.0, weights={"school": 0.5, "transit": 0.5, "walkability": 0.5, "safety": 0.5}
+            )
+
+    @pytest.mark.parametrize("school,transit,walk", [(5, 5, 5), (8, 3, 6), (10, 10, 10)])
+    def test_score_within_bounds(self, school: float, transit: float, walk: float) -> None:
+        from app.market_context import neighbourhood_score
+
+        result = neighbourhood_score(school, transit, walk)
+        assert 0.0 <= result["composite_score"] <= 10.0
+
+
+class TestPriceGrowthRate:
+    def test_positive_growth(self) -> None:
+        from app.market_context import price_growth_rate
+
+        result = price_growth_rate(100_000.0, 121_000.0, years=2.0)
+        assert result == pytest.approx(10.0, rel=1e-3)
+
+    def test_no_growth(self) -> None:
+        from app.market_context import price_growth_rate
+
+        assert price_growth_rate(100_000.0, 100_000.0) == pytest.approx(0.0, abs=1e-4)
+
+    def test_negative_growth(self) -> None:
+        from app.market_context import price_growth_rate
+
+        result = price_growth_rate(100_000.0, 90_000.0)
+        assert result < 0.0
+
+    def test_zero_old_price_raises(self) -> None:
+        from app.market_context import price_growth_rate
+
+        with pytest.raises(ValueError, match="positive"):
+            price_growth_rate(0.0, 100_000.0)
+
+    def test_zero_years_raises(self) -> None:
+        from app.market_context import price_growth_rate
+
+        with pytest.raises(ValueError, match="positive"):
+            price_growth_rate(100_000.0, 120_000.0, years=0.0)
+
+    @pytest.mark.parametrize("old,new,yrs", [(100.0, 200.0, 10.0), (500.0, 750.0, 5.0)])
+    def test_returns_float(self, old: float, new: float, yrs: float) -> None:
+        from app.market_context import price_growth_rate
+
+        assert isinstance(price_growth_rate(old, new, yrs), float)
+
+
+class TestMarketHeatIndex:
+    def test_hot_market(self) -> None:
+        from app.market_context import market_heat_index
+
+        assert market_heat_index(10, 60.0) == "hot"
+
+    def test_warm_market(self) -> None:
+        from app.market_context import market_heat_index
+
+        assert market_heat_index(20, 30.0) == "warm"
+
+    def test_neutral_market(self) -> None:
+        from app.market_context import market_heat_index
+
+        assert market_heat_index(45, 10.0) == "neutral"
+
+    def test_cool_market(self) -> None:
+        from app.market_context import market_heat_index
+
+        assert market_heat_index(90, 5.0) == "cool"
+
+    @pytest.mark.parametrize(
+        "dom,pct,expected",
+        [
+            (5, 75, "hot"),
+            (25, 40, "warm"),
+            (50, 5, "neutral"),
+            (120, 2, "cool"),
+        ],
+    )
+    def test_parametrized(self, dom: int, pct: float, expected: str) -> None:
+        from app.market_context import market_heat_index
+
+        assert market_heat_index(dom, pct) == expected
+
+
+class TestVacancyAdjustedYield:
+    def test_zero_vacancy(self) -> None:
+        from app.market_context import vacancy_adjusted_yield
+
+        assert vacancy_adjusted_yield(6.0, 0.0) == pytest.approx(6.0, rel=1e-4)
+
+    def test_full_vacancy(self) -> None:
+        from app.market_context import vacancy_adjusted_yield
+
+        assert vacancy_adjusted_yield(6.0, 1.0) == pytest.approx(0.0, abs=1e-6)
+
+    def test_partial_vacancy(self) -> None:
+        from app.market_context import vacancy_adjusted_yield
+
+        assert vacancy_adjusted_yield(10.0, 0.1) == pytest.approx(9.0, rel=1e-4)
+
+    def test_invalid_rate_raises(self) -> None:
+        from app.market_context import vacancy_adjusted_yield
+
+        with pytest.raises(ValueError, match="\\[0, 1\\]"):
+            vacancy_adjusted_yield(5.0, 1.5)
+
+    @pytest.mark.parametrize("yield_pct,vac", [(8.0, 0.05), (6.0, 0.0), (10.0, 0.2)])
+    def test_result_non_negative(self, yield_pct: float, vac: float) -> None:
+        from app.market_context import vacancy_adjusted_yield
+
+        assert vacancy_adjusted_yield(yield_pct, vac) >= 0.0
+
+
+class TestNormalizeMarketFeatures:
+    def test_basic(self) -> None:
+        from app.market_context import normalize_market_features
+
+        result = normalize_market_features({"a": 0.0, "b": 50.0, "c": 100.0})
+        assert result["a"] == pytest.approx(0.0, abs=1e-6)
+        assert result["c"] == pytest.approx(1.0, rel=1e-4)
+
+    def test_empty_raises(self) -> None:
+        from app.market_context import normalize_market_features
+
+        with pytest.raises(ValueError, match="empty"):
+            normalize_market_features({})
+
+    def test_constant_values_return_half(self) -> None:
+        from app.market_context import normalize_market_features
+
+        result = normalize_market_features({"a": 5.0, "b": 5.0, "c": 5.0})
+        assert all(v == 0.5 for v in result.values())
+
+    def test_keys_preserved(self) -> None:
+        from app.market_context import normalize_market_features
+
+        features = {"school": 8.0, "transit": 4.0, "walk": 6.0}
+        result = normalize_market_features(features)
+        assert set(result.keys()) == set(features.keys())
+
+    def test_values_in_range(self) -> None:
+        from app.market_context import normalize_market_features
+
+        result = normalize_market_features({"a": 1.0, "b": 5.0, "c": 3.0})
+        assert all(0.0 <= v <= 1.0 for v in result.values())
+
+
+def test_price_per_bedroom_basic() -> None:
+    assert price_per_bedroom(400_000.0, 4) == pytest.approx(100_000.0)
+
+
+def test_price_per_bedroom_zero_bedrooms() -> None:
+    assert price_per_bedroom(400_000.0, 0) == 0.0
+
+
+def test_price_per_bedroom_negative_bedrooms() -> None:
+    assert price_per_bedroom(400_000.0, -1) == 0.0
+
+
+@pytest.mark.parametrize(
+    "price,beds,expected",
+    [
+        (300_000.0, 3, 100_000.0),
+        (200_000.0, 2, 100_000.0),
+        (500_000.0, 5, 100_000.0),
+    ],
+)
+def test_price_per_bedroom_parametrize(price, beds, expected) -> None:
+    assert price_per_bedroom(price, beds) == pytest.approx(expected)
+
+
+def test_market_heat_score_hot_market() -> None:
+    score = market_heat_score(days_on_market=5, list_to_sale_ratio=1.05, inventory_months=0.5)
+    assert score > 7.0
+
+
+def test_market_heat_score_cold_market() -> None:
+    score = market_heat_score(days_on_market=90, list_to_sale_ratio=0.90, inventory_months=12.0)
+    assert score < 3.0
+
+
+def test_market_heat_score_range() -> None:
+    score = market_heat_score(30, 1.0, 3.0)
+    assert 0.0 <= score <= 10.0
+
+
+def test_value_gap_underpriced() -> None:
+    gap = value_gap(estimated_value=300_000.0, list_price=250_000.0)
+    assert gap > 0
+
+
+def test_value_gap_overpriced() -> None:
+    gap = value_gap(estimated_value=200_000.0, list_price=250_000.0)
+    assert gap < 0
+
+
+def test_value_gap_zero_list_price() -> None:
+    assert value_gap(300_000.0, 0.0) == 0.0
+
+
+def test_value_gap_at_fair_value() -> None:
+    assert value_gap(300_000.0, 300_000.0) == pytest.approx(0.0)
+
+
+def test_comparable_value_adjustment_larger_subject() -> None:
+    result = comparable_value_adjustment(
+        subject_sqft=1500.0, comp_sqft=1000.0, comp_price=200_000.0, price_per_sqft_adj=100.0
+    )
+    assert result == pytest.approx(250_000.0)
+
+
+def test_comparable_value_adjustment_smaller_subject() -> None:
+    result = comparable_value_adjustment(
+        subject_sqft=800.0, comp_sqft=1000.0, comp_price=200_000.0, price_per_sqft_adj=100.0
+    )
+    assert result == pytest.approx(180_000.0)
+
+
+def test_comparable_value_adjustment_equal_sqft() -> None:
+    result = comparable_value_adjustment(subject_sqft=1000.0, comp_sqft=1000.0, comp_price=200_000.0)
+    assert result == pytest.approx(200_000.0)
+
+
+@pytest.mark.parametrize(
+    "dom,ratio,inv,hot",
+    [
+        (5, 1.05, 0.5, True),
+        (90, 0.90, 12.0, False),
+    ],
+)
+def test_market_heat_score_parametrize(dom, ratio, inv, hot) -> None:
+    score = market_heat_score(dom, ratio, inv)
+    if hot:
+        assert score >= 5.0
+    else:
+        assert score <= 5.0
+
+
+def test_egi_no_vacancy() -> None:
+    assert effective_gross_income(100_000.0, vacancy_rate=0.0) == pytest.approx(100_000.0)
+
+
+def test_egi_with_5pct_vacancy() -> None:
+    assert effective_gross_income(100_000.0, vacancy_rate=0.05) == pytest.approx(95_000.0)
+
+
+def test_egi_full_vacancy() -> None:
+    assert effective_gross_income(100_000.0, vacancy_rate=1.0) == pytest.approx(0.0)
+
+
+def test_egi_invalid_vacancy_raises() -> None:
+    with pytest.raises(ValueError):
+        effective_gross_income(100_000.0, vacancy_rate=1.1)
+
+
+def test_egi_negative_vacancy_raises() -> None:
+    with pytest.raises(ValueError):
+        effective_gross_income(100_000.0, vacancy_rate=-0.1)
+
+
+def test_price_appreciation_rate_flat() -> None:
+    assert price_appreciation_rate(200_000.0, 200_000.0, 5.0) == pytest.approx(0.0)
+
+
+def test_price_appreciation_rate_positive() -> None:
+    rate = price_appreciation_rate(100_000.0, 121_000.0, 2.0)
+    assert rate == pytest.approx(10.0, rel=1e-3)
+
+
+def test_price_appreciation_rate_negative() -> None:
+    rate = price_appreciation_rate(200_000.0, 150_000.0, 5.0)
+    assert rate < 0.0
+
+
+def test_price_appreciation_rate_zero_original_raises() -> None:
+    with pytest.raises(ValueError):
+        price_appreciation_rate(0.0, 200_000.0, 5.0)
+
+
+def test_price_appreciation_rate_zero_years_raises() -> None:
+    with pytest.raises(ValueError):
+        price_appreciation_rate(100_000.0, 200_000.0, 0.0)
+
+
+@pytest.mark.parametrize("vacancy", [0.0, 0.05, 0.10, 0.20])
+def test_egi_parametrize(vacancy: float) -> None:
+    gross = 120_000.0
+    result = effective_gross_income(gross, vacancy_rate=vacancy)
+    assert result == pytest.approx(gross * (1.0 - vacancy))
+
+
+def test_housing_affordability_index_above_100_when_affordable() -> None:
+    from app.market_context import housing_affordability_index
+
+    result = housing_affordability_index(
+        median_home_price=200_000.0,
+        median_household_income=100_000.0,
+        mortgage_rate=0.04,
+    )
+    assert result["hai"] > 100.0
+
+
+def test_housing_affordability_index_zero_income_returns_zero() -> None:
+    from app.market_context import housing_affordability_index
+
+    result = housing_affordability_index(
+        median_home_price=200_000.0,
+        median_household_income=0.0,
+    )
+    assert result["hai"] == 0.0
+
+
+def test_housing_affordability_index_has_required_keys() -> None:
+    from app.market_context import housing_affordability_index
+
+    result = housing_affordability_index(
+        median_home_price=300_000.0,
+        median_household_income=80_000.0,
+    )
+    assert set(result.keys()) >= {"loan_amount", "monthly_payment", "qualifying_income", "hai"}
+
+
+@pytest.mark.parametrize(
+    "price,income,expected_affordable",
+    [
+        (200_000.0, 150_000.0, True),  # very affordable
+        (1_000_000.0, 50_000.0, False),  # not affordable
+    ],
+)
+def test_housing_affordability_index_parametrized(price: float, income: float, expected_affordable: bool) -> None:
+    from app.market_context import housing_affordability_index
+
+    result = housing_affordability_index(median_home_price=price, median_household_income=income)
+    assert (result["hai"] >= 100) is expected_affordable
+
+
+class TestListingDaysToMonths:
+    def test_30_days_is_one_month(self) -> None:
+        from app.market_context import listing_days_to_months
+
+        assert listing_days_to_months(30) == pytest.approx(1.0)
+
+    def test_zero_days(self) -> None:
+        from app.market_context import listing_days_to_months
+
+        assert listing_days_to_months(0) == pytest.approx(0.0)
+
+    def test_fractional_months(self) -> None:
+        from app.market_context import listing_days_to_months
+
+        assert listing_days_to_months(15) == pytest.approx(0.5)
+
+
+class TestInventoryMonthsSupply:
+    def test_seller_market(self) -> None:
+        from app.market_context import inventory_months_supply
+
+        result = inventory_months_supply(active_listings=90, monthly_sales=30.0)
+        assert result == pytest.approx(3.0)
+
+    def test_zero_sales_returns_zero(self) -> None:
+        from app.market_context import inventory_months_supply
+
+        assert inventory_months_supply(100, 0.0) == pytest.approx(0.0)
+
+    def test_buyer_market(self) -> None:
+        from app.market_context import inventory_months_supply
+
+        result = inventory_months_supply(active_listings=180, monthly_sales=30.0)
+        assert result == pytest.approx(6.0)

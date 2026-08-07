@@ -127,3 +127,75 @@ def test_energy_reading_invalid_dow(dow) -> None:
             occupancy=0,
             hvac_state=0,
         )
+
+
+def test_predict_response_valid() -> None:
+    from app.schemas import PredictResponse
+
+    r = PredictResponse(
+        building_id="b001",
+        timestamp="2025-06-01T14:00:00",
+        predicted_kwh=15.5,
+        model_version="1.0.0",
+        latency_ms=10.0,
+    )
+    assert r.building_id == "b001"
+    assert r.predicted_kwh == pytest.approx(15.5)
+
+
+@pytest.mark.parametrize("predicted_kwh", [0.0, 5.5, 100.0, 999.9])
+def test_predict_response_kwh_range(predicted_kwh) -> None:
+    from app.schemas import PredictResponse
+
+    r = PredictResponse(
+        building_id="bldg-x",
+        timestamp="2025-06-01T14:00:00",
+        predicted_kwh=predicted_kwh,
+        model_version="1.0.0",
+        latency_ms=1.0,
+    )
+    assert r.predicted_kwh == pytest.approx(predicted_kwh)
+
+
+def test_health_response_valid() -> None:
+    from app.schemas import HealthResponse
+
+    h = HealthResponse(status="ok", version="1.0.0", model_loaded=True, anomaly_model_loaded=True)
+    assert h.status == "ok"
+
+
+def test_drift_request_valid() -> None:
+    r = DriftRequest(current_values=[float(i) for i in range(10)])
+    assert len(r.current_values) == 10
+
+
+def test_anomaly_request_valid_minimal() -> None:
+    r = AnomalyRequest(
+        building_id="b001",
+        timestamp="2025-06-01T10:00:00",
+        consumption_kwh=15.0,
+        hour=10,
+        day_of_week=2,
+        month=4,
+        temperature_c=20.0,
+        humidity_pct=55.0,
+        occupancy=30,
+        hvac_state=0,
+    )
+    assert r.hour == 10
+
+
+@pytest.mark.parametrize("hour", [0, 1, 12, 22, 23])
+def test_energy_reading_valid_hours(hour) -> None:
+    r = EnergyReadingIn(
+        building_id="bldg-001",
+        timestamp="2025-06-01T14:00:00",
+        hour=hour,
+        day_of_week=1,
+        month=6,
+        temperature_c=20.0,
+        humidity_pct=50.0,
+        occupancy=0,
+        hvac_state=0,
+    )
+    assert r.hour == hour

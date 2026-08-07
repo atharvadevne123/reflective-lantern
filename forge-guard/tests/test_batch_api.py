@@ -42,3 +42,35 @@ def test_batch_predict_count_matches(
     resp = client.post("/api/v1/predict/batch", json={"readings": readings})
     assert resp.status_code == 200
     assert resp.json()["count"] == n
+
+
+def test_batch_predict_probabilities_in_range(
+    client: TestClient, sample_sensor_payload: dict
+) -> None:
+    readings = [sample_sensor_payload] * 3
+    resp = client.post("/api/v1/predict/batch", json={"readings": readings})
+    assert resp.status_code == 200
+    for pred in resp.json()["predictions"]:
+        assert 0.0 <= pred["defect_probability"] <= 1.0
+
+
+def test_batch_predict_model_version_returned(
+    client: TestClient, sample_sensor_payload: dict
+) -> None:
+    resp = client.post("/api/v1/predict/batch", json={"readings": [sample_sensor_payload]})
+    assert resp.status_code == 200
+    assert "model_version" in resp.json()
+
+
+def test_batch_predict_mixed_readings(
+    client: TestClient, sample_sensor_payload: dict, high_risk_payload: dict
+) -> None:
+    resp = client.post(
+        "/api/v1/predict/batch",
+        json={"readings": [sample_sensor_payload, high_risk_payload]},
+    )
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["count"] == 2
+    for pred in data["predictions"]:
+        assert pred["prediction"] in (0, 1)

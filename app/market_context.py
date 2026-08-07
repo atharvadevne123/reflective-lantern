@@ -328,16 +328,319 @@ def market_summary(
         "affordability": affordability,
     }
 
+
+def neighbourhood_score(
+    school_score: float,
+    transit_score: float,
+    walkability_score: float,
+    safety_score: float = 7.0,
+    weights: dict[str, float] | None = None,
+) -> dict[str, float]:
+    """Compute a composite neighbourhood quality score (0-10).
+
+    Each component is weighted and combined into a single index.  Scores
+    outside [0, 10] are clamped before aggregation.
+
+    Args:
+        school_score: School quality rating 0-10.
+        transit_score: Public transit quality 0-10.
+        walkability_score: Walk Score equivalent 0-10.
+        safety_score: Neighbourhood safety score 0-10 (default 7.0).
+        weights: Custom weight mapping with keys 'school', 'transit',
+            'walkability', 'safety'.  Must sum to 1.0; defaults to
+            equal weighting (0.25 each).
+
+    Returns:
+        Dict with 'composite_score' (rounded to 2 dp), 'grade' (A-D),
+        and individual component scores.
+
+    Raises:
+        ValueError: If custom *weights* do not sum to approximately 1.0.
+    """
+    default_w = {"school": 0.25, "transit": 0.25, "walkability": 0.25, "safety": 0.25}
+    w = weights if weights is not None else default_w
+    if weights is not None:
+        total_w = sum(w.values())
+        if abs(total_w - 1.0) > 0.01:
+            raise ValueError(f"weights must sum to 1.0, got {total_w:.4f}")
+    components = {
+        "school": max(0.0, min(10.0, school_score)),
+        "transit": max(0.0, min(10.0, transit_score)),
+        "walkability": max(0.0, min(10.0, walkability_score)),
+        "safety": max(0.0, min(10.0, safety_score)),
+    }
+    composite = sum(components[k] * w.get(k, 0.0) for k in components)
+    grade = "A" if composite >= 8.0 else "B" if composite >= 6.0 else "C" if composite >= 4.0 else "D"
+    return {
+        "composite_score": round(composite, 2),
+        "grade": grade,
+        **{f"{k}_score": v for k, v in components.items()},
+    }
+
+
 __all__ = [
     "affordability_bucket",
     "affordability_index",
     "affordability_ratio",
+    "comparable_value_adjustment",
     "dom_classification",
+    "effective_gross_income",
     "housing_affordability_index",
+    "market_heat_score",
     "market_summary",
+    "neighbourhood_score",
+    "price_appreciation_rate",
+    "price_per_bedroom",
     "price_per_sqft",
     "price_to_rent_ratio",
     "price_trend_consistency",
     "price_trend_indicator",
     "rent_vs_buy_comparison",
+    "value_gap",
 ]
+
+
+def price_growth_rate(old_price: float, new_price: float, years: float = 1.0) -> float:
+    """Compute the annualized price growth rate between two values.
+
+    Args:
+        old_price: Starting price in USD.
+        new_price: Ending price in USD.
+        years: Number of years between measurements (> 0).
+
+    Returns:
+        Annualized growth rate as a percentage, rounded to 4 decimal places.
+
+    Raises:
+        ValueError: If *old_price* is not positive or *years* is not positive.
+    """
+    if old_price <= 0:
+        raise ValueError(f"old_price must be positive, got {old_price}")
+    if years <= 0:
+        raise ValueError(f"years must be positive, got {years}")
+    rate = ((new_price / old_price) ** (1.0 / years) - 1.0) * 100.0
+    return round(rate, 4)
+
+
+def market_heat_index(dom: int, pct_over_asking: float) -> str:
+    """Classify market temperature based on days-on-market and over-asking percentage.
+
+    A simple heuristic that classifies the market as 'hot', 'warm', 'neutral',
+    or 'cool' based on two key signals.
+
+    Args:
+        dom: Median days on market for recently sold properties.
+        pct_over_asking: Percentage of homes selling above asking price (0-100).
+
+    Returns:
+        One of 'hot', 'warm', 'neutral', or 'cool'.
+    """
+    if dom < 14 and pct_over_asking >= 50:
+        return "hot"
+    if dom < 30 and pct_over_asking >= 25:
+        return "warm"
+    if dom < 60:
+        return "neutral"
+    return "cool"
+
+
+def vacancy_adjusted_yield(gross_yield: float, vacancy_rate: float) -> float:
+    """Compute the vacancy-adjusted net yield for a rental property.
+
+    Accounts for the proportion of the year the property sits vacant.
+
+    Args:
+        gross_yield: Annual gross rental yield as a percentage (e.g. 6.0 for 6%).
+        vacancy_rate: Expected vacancy rate as a decimal fraction (e.g. 0.05 for 5%).
+
+    Returns:
+        Effective yield after accounting for vacancy, rounded to 4 decimal places.
+
+    Raises:
+        ValueError: If *vacancy_rate* is not in [0, 1].
+    """
+    if not (0.0 <= vacancy_rate <= 1.0):
+        raise ValueError(f"vacancy_rate must be in [0, 1], got {vacancy_rate}")
+    return round(gross_yield * (1.0 - vacancy_rate), 4)
+
+
+def normalize_market_features(features: dict[str, float]) -> dict[str, float]:
+    """Normalize a dict of market feature values to [0, 1] range.
+
+    Uses min-max normalization across all values in the dict.
+
+    Args:
+        features: Dict of feature_name -> numeric value.
+
+    Returns:
+        Dict with the same keys; values normalized to [0, 1].
+        If all values are equal, all normalized values are 0.5.
+
+    Raises:
+        ValueError: If *features* is empty.
+    """
+    if not features:
+        raise ValueError("features must not be empty")
+    min_v = min(features.values())
+    max_v = max(features.values())
+    rng = max_v - min_v
+    if rng < 1e-12:
+        return dict.fromkeys(features, 0.5)
+    return {k: round((v - min_v) / rng, 6) for k, v in features.items()}
+
+
+def price_per_bedroom(predicted_value: float, bedrooms: int) -> float:
+    """Return price per bedroom, or 0 if bedrooms is non-positive.
+
+    Args:
+        predicted_value: Estimated property price in USD.
+        bedrooms: Number of bedrooms.
+
+    Returns:
+        Price per bedroom rounded to 2 decimal places; 0.0 if bedrooms <= 0.
+    """
+    if bedrooms <= 0:
+        return 0.0
+    return round(predicted_value / bedrooms, 2)
+
+
+def market_heat_score(
+    days_on_market: int,
+    list_to_sale_ratio: float,
+    inventory_months: float,
+) -> float:
+    """Compute a composite market heat score in [0, 10].
+
+    Higher scores indicate a hotter (seller's) market.
+
+    Args:
+        days_on_market: Median days on market for recent sales.
+        list_to_sale_ratio: Ratio of sale price to list price (e.g. 1.02 = 2% over).
+        inventory_months: Months of housing supply currently available.
+
+    Returns:
+        Heat score in [0, 10], rounded to 2 decimal places.
+    """
+    dom_score = max(0.0, 1.0 - days_on_market / 90.0) * 10.0
+    ratio_score = min(10.0, max(0.0, (list_to_sale_ratio - 0.9) * 100.0))
+    inv_score = max(0.0, 1.0 - inventory_months / 6.0) * 10.0
+    composite = (dom_score + ratio_score + inv_score) / 3.0
+    return round(min(10.0, max(0.0, composite)), 2)
+
+
+def value_gap(estimated_value: float, list_price: float) -> float:
+    """Compute the gap between estimated value and list price as a percentage.
+
+    A positive gap means the property is listed below estimated value (underpriced).
+
+    Args:
+        estimated_value: Model-estimated fair market value in USD.
+        list_price: Actual listing price in USD.
+
+    Returns:
+        Gap percentage rounded to 4 decimal places; 0.0 if list_price is zero.
+    """
+    if list_price == 0.0:
+        return 0.0
+    return round((estimated_value - list_price) / list_price * 100.0, 4)
+
+
+def comparable_value_adjustment(
+    subject_sqft: float,
+    comp_sqft: float,
+    comp_price: float,
+    price_per_sqft_adj: float = 100.0,
+) -> float:
+    """Estimate a value adjustment for a subject property relative to a comparable.
+
+    Adjusts *comp_price* upward or downward by the per-sqft value of the
+    square-footage difference.
+
+    Args:
+        subject_sqft: Square footage of the subject property.
+        comp_sqft: Square footage of the comparable sale.
+        comp_price: Sale price of the comparable property in USD.
+        price_per_sqft_adj: Dollar adjustment per sqft difference.
+
+    Returns:
+        Adjusted value for the subject property, rounded to 2 decimal places.
+    """
+    diff = subject_sqft - comp_sqft
+    return round(comp_price + diff * price_per_sqft_adj, 2)
+
+
+def effective_gross_income(
+    potential_gross_rent: float,
+    vacancy_rate: float = 0.05,
+) -> float:
+    """Compute Effective Gross Income (EGI) after applying a vacancy allowance.
+
+    EGI = potential_gross_rent * (1 - vacancy_rate)
+
+    Args:
+        potential_gross_rent: Gross rental income if fully occupied (USD/year).
+        vacancy_rate: Expected vacancy as a fraction in [0, 1] (default 5%).
+
+    Returns:
+        EGI in USD/year, rounded to 2 decimal places.
+
+    Raises:
+        ValueError: If *vacancy_rate* is not in [0, 1].
+    """
+    if not (0.0 <= vacancy_rate <= 1.0):
+        raise ValueError(f"vacancy_rate must be in [0, 1], got {vacancy_rate}")
+    return round(potential_gross_rent * (1.0 - vacancy_rate), 2)
+
+
+def price_appreciation_rate(
+    original_price: float,
+    current_price: float,
+    years: float,
+) -> float:
+    """Compute the annualised price appreciation rate (CAGR) for a property.
+
+    Args:
+        original_price: Purchase price in USD (must be > 0).
+        current_price: Current market value in USD (must be > 0).
+        years: Number of years between purchase and valuation (must be > 0).
+
+    Returns:
+        Annualised appreciation rate as a percentage, rounded to 4 decimal places.
+
+    Raises:
+        ValueError: If any argument is non-positive.
+    """
+
+    if original_price <= 0 or current_price <= 0 or years <= 0:
+        raise ValueError("original_price, current_price, and years must all be positive")
+    cagr = (current_price / original_price) ** (1.0 / years) - 1.0
+    return round(cagr * 100.0, 4)
+
+
+def listing_days_to_months(days: int) -> float:
+    """Convert days-on-market to months (30-day months).
+
+    Args:
+        days: Number of days the listing has been active.
+
+    Returns:
+        Days expressed in fractional months, rounded to 2 decimal places.
+    """
+    return round(days / 30.0, 2)
+
+
+def inventory_months_supply(active_listings: int, monthly_sales: float) -> float:
+    """Estimate months of inventory supply.
+
+    A supply of <= 3 months signals a seller's market; >= 6 signals a buyer's market.
+
+    Args:
+        active_listings: Current number of active listings.
+        monthly_sales: Average number of homes sold per month.
+
+    Returns:
+        Months of supply, rounded to 2 decimal places; 0.0 if monthly_sales is zero.
+    """
+    if monthly_sales == 0.0:
+        return 0.0
+    return round(active_listings / monthly_sales, 2)

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import itertools
 import logging
 
 import numpy as np
@@ -191,11 +192,18 @@ def classify_consumption(
 
 __all__ = [
     "anomaly_rate",
+    "anomaly_summary",
     "batch_compute_severity",
     "classify_consumption",
     "compute_percentile_bounds",
     "compute_severity",
+    "compute_z_score",
+    "consecutive_anomaly_runs",
+    "ewma_smooth",
+    "flag_anomaly_rate",
+    "flag_z_score_outliers",
     "iqr_flag",
+    "rolling_anomaly_flag",
     "top_anomalies",
     "zscore_flag",
 ]
@@ -267,9 +275,7 @@ def flag_z_score_outliers(
 
     mean = statistics.mean(values)
     std = statistics.pstdev(values)
-    return sorted(
-        i for i, v in enumerate(values) if abs(compute_z_score(v, mean, std)) > threshold
-    )
+    return sorted(i for i, v in enumerate(values) if abs(compute_z_score(v, mean, std)) > threshold)
 
 
 def flag_anomaly_rate(flags: list[bool]) -> float:
@@ -334,3 +340,215 @@ def ewma_smooth(
     for v in values[1:]:
         result.append(alpha * v + (1 - alpha) * result[-1])
     return [round(x, 6) for x in result]
+
+
+def anomaly_density(flags: list[int], window_size: int = 24) -> list[float]:
+    """Compute the density of anomalies in a sliding window.
+
+    At each position *i* the density is the fraction of the trailing *window_size*
+    observations that are flagged as anomalous.
+
+    Args:
+        flags: Binary anomaly flags (1 = anomaly, 0 = normal).
+        window_size: Sliding window length.
+
+    Returns:
+        Float list of the same length as *flags* with density values in [0, 1].
+
+    Raises:
+        ValueError: If *flags* is empty or *window_size* < 1.
+    """
+    if not flags:
+        raise ValueError("flags must not be empty")
+    if window_size < 1:
+        raise ValueError(f"window_size must be at least 1, got {window_size}")
+    result = []
+    for i in range(len(flags)):
+        start = max(0, i - window_size + 1)
+        chunk = flags[start : i + 1]
+        result.append(round(sum(chunk) / len(chunk), 4))
+    return result
+
+
+def anomaly_burst_score(flags: list[int], burst_window: int = 6) -> float:
+    """Score the burstiness of anomalies in *flags*.
+
+    Counts the maximum number of anomalies observed in any contiguous
+    *burst_window* of the series, normalised by *burst_window*.
+
+    Args:
+        flags: Binary anomaly flags (1 = anomaly, 0 = normal).
+        burst_window: Size of the evaluation window.
+
+    Returns:
+        Burst score in [0, 1]; 1.0 means all window slots are anomalous.
+
+    Raises:
+        ValueError: If *flags* is empty or *burst_window* < 1.
+    """
+    if not flags:
+        raise ValueError("flags must not be empty")
+    if burst_window < 1:
+        raise ValueError(f"burst_window must be at least 1, got {burst_window}")
+    max_in_window = 0
+    for i in range(len(flags)):
+        window = flags[i : i + burst_window]
+        max_in_window = max(max_in_window, sum(window))
+    return round(max_in_window / burst_window, 4)
+
+
+def percentile_anomaly_flag(
+    value: float,
+    reference: list[float],
+    lower_pct: float = 5.0,
+    upper_pct: float = 95.0,
+) -> bool:
+    """Flag *value* as anomalous if it falls outside the *reference* percentile range.
+
+    Args:
+        value: Observation to evaluate.
+        reference: Reference distribution of historical values.
+        lower_pct: Lower percentile bound in [0, 100).
+        upper_pct: Upper percentile bound in (0, 100].
+
+    Returns:
+        True when *value* is outside the [lower_pct, upper_pct] range.
+
+    Raises:
+        ValueError: If *reference* is empty or percentile bounds are invalid.
+    """
+    if not reference:
+        raise ValueError("reference must not be empty")
+    if not (0 <= lower_pct < upper_pct <= 100):
+        raise ValueError(f"Percentiles must satisfy 0 <= lower < upper <= 100, got {lower_pct}, {upper_pct}")
+    sorted_ref = sorted(reference)
+    n = len(sorted_ref)
+    lo_idx = int(lower_pct / 100.0 * (n - 1))
+    hi_idx = int(upper_pct / 100.0 * (n - 1))
+    lo_val = sorted_ref[lo_idx]
+    hi_val = sorted_ref[hi_idx]
+    return value < lo_val or value > hi_val
+
+
+def consecutive_normal_runs(flags: list[int]) -> list[tuple[int, int]]:
+    """Return spans of consecutive normal (0) observations.
+
+    Args:
+        flags: Binary anomaly flags (1 = anomaly, 0 = normal).
+
+    Returns:
+        List of (start, end) index pairs for consecutive normal spans.
+    """
+    if not flags:
+        return []
+    runs = []
+    start = None
+    for i, f in enumerate(flags):
+        if f == 0:
+            if start is None:
+                start = i
+        else:
+            if start is not None:
+                runs.append((start, i - 1))
+                start = None
+    if start is not None:
+        runs.append((start, len(flags) - 1))
+    return runs
+
+
+def anomaly_summary(severities: list[dict[str, object]]) -> dict[str, int]:
+    """Return a count of each severity level from a batch severity result list.
+
+    Args:
+        severities: List of severity dicts (each must have a 'severity' key).
+
+    Returns:
+        Dict with 'none', 'warning', 'critical' counts.
+    """
+    counts: dict[str, int] = {"none": 0, "warning": 0, "critical": 0}
+    for entry in severities:
+        key = str(entry.get("severity", "none"))
+        counts[key] = counts.get(key, 0) + 1
+    return counts
+
+
+def rolling_anomaly_flag(
+    values: list[float],
+    window: int = 5,
+    threshold: float = 3.0,
+) -> list[bool]:
+    """Flag each value where the rolling Z-score exceeds *threshold*.
+
+    Uses a centered sliding window of size *window* to compute local mean and
+    standard deviation; the first and last ``window // 2`` elements use the
+    nearest available window.
+
+    Args:
+        values: Time-ordered numeric observations.
+        window: Width of the rolling window (must be >= 2).
+        threshold: Z-score absolute value above which a point is flagged.
+
+    Returns:
+        List of bools (same length as *values*), True where anomalous.
+
+    Raises:
+        ValueError: If *values* is empty or *window* < 2.
+    """
+    if not values:
+        raise ValueError("values must not be empty")
+    if window < 2:
+        raise ValueError(f"window must be at least 2, got {window}")
+    n = len(values)
+    flags: list[bool] = []
+    for i in range(n):
+        lo = max(0, i - window)
+        win = values[lo:i]
+        if len(win) < 2:
+            flags.append(False)
+            continue
+        arr = np.array(win, dtype=float)
+        mean = float(arr.mean())
+        std = float(arr.std())
+        if std == 0.0:
+            flags.append(values[i] != mean)
+        else:
+            flags.append(abs(compute_z_score(values[i], mean, std)) > threshold)
+    return flags
+
+
+def anomaly_free_streak(flags: list[bool]) -> int:
+    """Return the length of the current (trailing) anomaly-free streak.
+
+    Counts backward from the last element until a True (anomalous) flag is
+    encountered. Useful for dashboard widgets showing "days without anomaly."
+
+    Args:
+        flags: Ordered list of anomaly flags (True = anomalous).
+
+    Returns:
+        Number of consecutive False values at the end of the list.
+        Returns 0 if the list is empty or ends with True.
+    """
+    streak = 0
+    for flag in reversed(flags):
+        if flag:
+            break
+        streak += 1
+    return streak
+
+
+def anomaly_transition_count(flags: list[bool]) -> int:
+    """Count the number of times the anomaly state changes.
+
+    A transition is any adjacent pair (flags[i], flags[i+1]) where the values
+    differ.  Useful for measuring how "bursty" vs "sustained" anomalies are.
+
+    Args:
+        flags: Ordered list of anomaly flags.
+
+    Returns:
+        Number of state transitions (0 if list has fewer than 2 elements).
+    """
+    if len(flags) < 2:
+        return 0
+    return sum(1 for a, b in itertools.pairwise(flags) if a != b)

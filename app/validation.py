@@ -171,7 +171,12 @@ def batch_validate_readings(
             float(row.get("humidity_pct", 0.0)),
         )
         errors += validate_consumption_kwh(float(row.get("consumption_kwh", 0.0)))
+        if errors:
+            logger.debug("Validation failed for reading %d: %s", idx, errors)
         results.append({"index": idx, "errors": errors, "valid": len(errors) == 0})
+    n_invalid = sum(1 for r in results if not r["valid"])
+    if n_invalid:
+        logger.warning("batch_validate_readings: %d/%d readings invalid", n_invalid, len(readings))
     return results
 
 
@@ -239,6 +244,7 @@ def clamp_consumption(value: float) -> float:
         Clamped float within [0.0, 100000.0].
     """
     return max(MIN_CONSUMPTION_KWH, min(value, MAX_CONSUMPTION_KWH))
+
 
 def validate_reading_dict(reading: dict[str, object]) -> dict[str, object]:
     """Run all validators against a single energy reading dict.
@@ -332,8 +338,155 @@ __all__ = [
     "validate_feature_vector",
     "validate_forecast_horizon",
     "validate_load_series",
+    "validate_percentage",
     "validate_price",
     "validate_reading_dict",
+    "validate_region_id",
     "validate_temporal_fields",
     "validate_weather_fields",
 ]
+
+
+def validate_percentage(value: float, field_name: str = "value") -> list[str]:
+    """Validate that *value* is a percentage in [0, 100].
+
+    Args:
+        value: Numeric value to validate.
+        field_name: Name of the field for error message context.
+
+    Returns:
+        List of error strings (empty when valid).
+    """
+    errors: list[str] = []
+    if not (0.0 <= value <= 100.0):
+        errors.append(f"{field_name} must be in [0, 100], got {value}")
+    return errors
+
+
+def validate_positive_float(value: float, field_name: str = "value") -> list[str]:
+    """Validate that *value* is a strictly positive finite float.
+
+    Args:
+        value: Numeric value to validate.
+        field_name: Name of the field for error message context.
+
+    Returns:
+        List of error strings (empty when valid).
+    """
+    import math
+
+    errors: list[str] = []
+    if not math.isfinite(value):
+        errors.append(f"{field_name} must be finite, got {value}")
+    elif value <= 0:
+        errors.append(f"{field_name} must be positive, got {value}")
+    return errors
+
+
+def sanitize_string_input(s: str, max_length: int = 255, field_name: str = "input") -> str:
+    """Strip whitespace and validate that *s* is non-empty and within *max_length*.
+
+    Args:
+        s: String to sanitize.
+        max_length: Maximum allowed length after stripping.
+        field_name: Field name for error messages.
+
+    Returns:
+        Stripped string.
+
+    Raises:
+        ValueError: If *s* is empty after stripping or exceeds *max_length*.
+    """
+    stripped = s.strip()
+    if not stripped:
+        raise ValueError(f"{field_name} must not be empty or whitespace-only")
+    if len(stripped) > max_length:
+        raise ValueError(f"{field_name} exceeds max length {max_length} (got {len(stripped)})")
+    return stripped
+
+
+def validate_non_negative_float(value: float, field_name: str = "value") -> list[str]:
+    """Validate that *value* is a non-negative finite float.
+
+    Args:
+        value: Numeric value to validate.
+        field_name: Name of the field for error message context.
+
+    Returns:
+        List of error strings (empty when valid).
+    """
+    import math
+
+    errors: list[str] = []
+    if not math.isfinite(value):
+        errors.append(f"{field_name} must be finite, got {value}")
+    elif value < 0:
+        errors.append(f"{field_name} must be non-negative, got {value}")
+    return errors
+
+
+def validate_enum_field(value: str, allowed: list[str], field_name: str = "field") -> str:
+    """Validate that a string value belongs to an allowed set.
+
+    Args:
+        value: The value to validate.
+        allowed: List of permitted string values.
+        field_name: Human-readable field name for error messages.
+
+    Returns:
+        The validated value unchanged.
+
+    Raises:
+        ValueError: If value is not in the allowed set.
+    """
+    if value not in allowed:
+        raise ValueError(f"{field_name} must be one of {allowed!r}; got {value!r}")
+    return value
+
+
+def validate_date_range(start: str, end: str) -> tuple[str, str]:
+    """Validate that start <= end for ISO-8601 date strings.
+
+    Args:
+        start: ISO-8601 start date string (e.g., "2024-01-01").
+        end: ISO-8601 end date string.
+
+    Returns:
+        Tuple of (start, end) if valid.
+
+    Raises:
+        ValueError: If start > end or dates are not parseable.
+    """
+    from datetime import date
+
+    try:
+        start_date = date.fromisoformat(start)
+        end_date = date.fromisoformat(end)
+    except (ValueError, TypeError) as exc:
+        raise ValueError(f"Invalid date format: {exc}") from exc
+    if start_date > end_date:
+        raise ValueError(f"start ({start}) must be <= end ({end})")
+    return start, end
+
+
+def validate_region_id(region_id: str) -> list[str]:
+    """Return validation errors for a grid region identifier.
+
+    Checks that *region_id* is a non-empty string consisting only of
+    lowercase alphanumeric characters and underscores.
+
+    Args:
+        region_id: Grid region identifier string to validate.
+
+    Returns:
+        List of error strings (empty when valid).
+    """
+    errors: list[str] = []
+    if not region_id:
+        errors.append("region_id must not be empty")
+        return errors
+    if not region_id.replace("_", "").isalnum():
+        errors.append(f"region_id must be alphanumeric with underscores only, got {region_id!r}")
+    if not region_id.islower():
+        errors.append(f"region_id must be lowercase, got {region_id!r}")
+    return errors

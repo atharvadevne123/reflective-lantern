@@ -70,6 +70,11 @@ class BuildingSimilarityIndex:
         """Alias for ``len(self)``."""
         return len(self._profiles)
 
+    @property
+    def building_ids(self) -> list[str]:
+        """Return a list of all indexed building IDs in insertion order."""
+        return [bid for bid, _ in self._profiles]
+
 
 _global_index = BuildingSimilarityIndex()
 
@@ -101,7 +106,20 @@ def cosine_distance(a: list[float] | np.ndarray, b: list[float] | np.ndarray) ->
     return round(1.0 - sim, 6)
 
 
-__all__ = ["BuildingSimilarityIndex", "cosine_distance", "get_global_index", "search_comparable"]
+__all__ = [
+    "BuildingSimilarityIndex",
+    "batch_add",
+    "chebyshev_distance",
+    "cosine_distance",
+    "euclidean_distance",
+    "get_global_index",
+    "hourly_pattern_distance",
+    "manhattan_distance",
+    "pearson_similarity",
+    "score_distribution",
+    "search_comparable",
+    "similarity_matrix",
+]
 
 
 def euclidean_distance(a: list[float] | np.ndarray, b: list[float] | np.ndarray) -> float:
@@ -186,3 +204,183 @@ def hourly_pattern_distance(profile_a: list[float], profile_b: list[float]) -> f
     if len(profile_a) != len(profile_b):
         raise ValueError(f"profiles must have the same length: {len(profile_a)} != {len(profile_b)}")
     return sum(abs(a - b) for a, b in zip(profile_a, profile_b, strict=False)) / len(profile_a)
+
+
+def jaccard_similarity(set_a: set[str], set_b: set[str]) -> float:
+    """Compute the Jaccard similarity coefficient between two sets.
+
+    Args:
+        set_a: First set of categorical labels or identifiers.
+        set_b: Second set of categorical labels or identifiers.
+
+    Returns:
+        Jaccard similarity in [0, 1]; 1.0 for identical sets, 0.0 for disjoint.
+        Returns 0.0 if both sets are empty.
+    """
+    if not set_a and not set_b:
+        return 0.0
+    intersection = len(set_a & set_b)
+    union = len(set_a | set_b)
+    return round(intersection / union, 6) if union > 0 else 0.0
+
+
+def normalize_distances(distances: list[float]) -> list[float]:
+    """Normalize a list of distances to [0, 1] using min-max scaling.
+
+    Args:
+        distances: List of non-negative distance values.
+
+    Returns:
+        Normalized distances; all 0.5 when all values are equal.
+
+    Raises:
+        ValueError: If *distances* is empty.
+    """
+    if not distances:
+        raise ValueError("distances must not be empty")
+    min_d = min(distances)
+    max_d = max(distances)
+    rng = max_d - min_d
+    if rng < 1e-12:
+        return [0.5] * len(distances)
+    return [round((d - min_d) / rng, 6) for d in distances]
+
+
+def manhattan_distance(a: list[float], b: list[float]) -> float:
+    """Compute the Manhattan (L1) distance between two vectors.
+
+    Args:
+        a: First numeric vector.
+        b: Second numeric vector, same length as *a*.
+
+    Returns:
+        Sum of absolute element-wise differences.
+
+    Raises:
+        ValueError: If vectors have different lengths or are empty.
+    """
+    if not a or not b:
+        raise ValueError("vectors must not be empty")
+    if len(a) != len(b):
+        raise ValueError(f"vectors must have the same length: {len(a)} != {len(b)}")
+    return round(sum(abs(ai - bi) for ai, bi in zip(a, b, strict=False)), 6)
+
+
+def top_k_similar(
+    query: list[float],
+    candidates: list[list[float]],
+    k: int = 5,
+) -> list[tuple[int, float]]:
+    """Return the *k* most similar candidates to *query* by cosine distance.
+
+    Args:
+        query: Query vector.
+        candidates: List of candidate vectors (each must match query length).
+        k: Number of top results to return.
+
+    Returns:
+        List of (index, distance) pairs, sorted ascending by cosine distance.
+
+    Raises:
+        ValueError: If *query* is empty or *k* < 1.
+    """
+    if not query:
+        raise ValueError("query must not be empty")
+    if k < 1:
+        raise ValueError(f"k must be at least 1, got {k}")
+    dists = []
+    for i, cand in enumerate(candidates):
+        if len(cand) == len(query):
+            try:
+                d = cosine_distance(query, cand)
+            except Exception:
+                d = float("inf")
+            dists.append((i, d))
+    dists.sort(key=lambda x: x[1])
+    return dists[:k]
+
+
+def weighted_jaccard_similarity(a: dict[str, float], b: dict[str, float]) -> float:
+    """Compute weighted Jaccard similarity between two feature-weight dicts.
+
+    Args:
+        a: First dict of feature -> weight.
+        b: Second dict of feature -> weight.
+
+    Returns:
+        Weighted Jaccard similarity in [0, 1].
+    """
+    keys = set(a) | set(b)
+    if not keys:
+        return 0.0
+    intersection = sum(min(a.get(k, 0.0), b.get(k, 0.0)) for k in keys)
+    union = sum(max(a.get(k, 0.0), b.get(k, 0.0)) for k in keys)
+    if union == 0:
+        return 0.0
+    return round(intersection / union, 6)
+
+
+def pearson_similarity(a: list[float], b: list[float]) -> float:
+    """Compute Pearson correlation coefficient between two equal-length profiles.
+
+    Args:
+        a: First numeric sequence.
+        b: Second numeric sequence (must be same length as *a*).
+
+    Returns:
+        Pearson correlation in [-1, 1]; 0.0 if either series has zero variance.
+
+    Raises:
+        ValueError: If sequences are empty or have different lengths.
+    """
+    if not a or not b:
+        raise ValueError("sequences must not be empty")
+    if len(a) != len(b):
+        raise ValueError(f"sequences must have the same length: {len(a)} != {len(b)}")
+    n = len(a)
+    mean_a = sum(a) / n
+    mean_b = sum(b) / n
+    cov = sum((x - mean_a) * (y - mean_b) for x, y in zip(a, b, strict=False))
+    std_a = sum((x - mean_a) ** 2 for x in a) ** 0.5
+    std_b = sum((y - mean_b) ** 2 for y in b) ** 0.5
+    if std_a == 0 or std_b == 0:
+        return 0.0
+    return round(cov / (std_a * std_b), 6)
+
+
+def chebyshev_distance(a: list[float] | np.ndarray, b: list[float] | np.ndarray) -> float:
+    """Compute Chebyshev (L∞) distance — the maximum element-wise difference.
+
+    Args:
+        a: First feature vector.
+        b: Second feature vector (must be same length as *a*).
+
+    Returns:
+        Chebyshev distance rounded to 6 decimal places.
+    """
+    va = np.array(a, dtype=np.float32)
+    vb = np.array(b, dtype=np.float32)
+    return round(float(np.max(np.abs(va - vb))), 6)
+
+
+def similarity_matrix(profiles: list[list[float]]) -> list[list[float]]:
+    """Compute an NxN pairwise cosine similarity matrix.
+
+    Args:
+        profiles: List of N feature vectors of equal length.
+
+    Returns:
+        NxN list-of-lists where entry [i][j] is the cosine similarity
+        between profiles[i] and profiles[j].
+
+    Raises:
+        ValueError: If *profiles* is empty or vectors have different lengths.
+    """
+    if not profiles:
+        raise ValueError("profiles must not be empty")
+    n = len(profiles)
+    arr = np.array(profiles, dtype=np.float32)
+    norms = np.linalg.norm(arr, axis=1, keepdims=True) + 1e-9
+    normed = arr / norms
+    mat = normed @ normed.T
+    return [[round(float(mat[i, j]), 6) for j in range(n)] for i in range(n)]

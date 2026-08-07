@@ -184,15 +184,14 @@ def test_is_innovation_day_false_on_first_wednesday_of_month() -> None:
     assert not is_innovation_day(wed_day1)
 
 
-def test_upcoming_innovation_days_returns_count():
+def test_mode_label_innovation() -> None:
+    from config.mode import mode_label
+
+    assert mode_label(RunMode.INNOVATION) == "Innovation Mode"
+
+
+def test_mode_label_improvement() -> None:
     from config.mode import upcoming_innovation_days
-
-    days = upcoming_innovation_days(count=3)
-    assert len(days) == 3
-
-
-def test_upcoming_innovation_days_all_innovation():
-    from config.mode import is_innovation_day, upcoming_innovation_days
 
     days = upcoming_innovation_days(count=5)
     assert all(is_innovation_day(d) for d in days)
@@ -219,3 +218,51 @@ def test_mode_schedule_length():
     schedule = mode_schedule(weeks=1)
     # 1 week = 5 weekdays
     assert len(schedule) == 5
+
+
+@pytest.mark.parametrize("weeks", [1, 2, 4])
+def test_mode_schedule_multi_week_length(weeks: int) -> None:
+    from config.mode import mode_schedule
+
+    schedule = mode_schedule(weeks=weeks)
+    assert len(schedule) == weeks * 5
+
+
+def test_run_mode_improvement_value() -> None:
+    assert RunMode.IMPROVEMENT == "IMPROVEMENT"
+
+
+def test_run_mode_innovation_value() -> None:
+    assert RunMode.INNOVATION == "INNOVATION"
+
+
+def test_upcoming_innovation_days_all_in_future() -> None:
+    from datetime import date
+
+    from config.mode import upcoming_innovation_days
+
+    today = date.today()
+    days = upcoming_innovation_days(count=3, after=today)
+    assert all(d > today for d in days)
+
+
+def test_determine_mode_saturday_is_improvement() -> None:
+    from datetime import date
+
+    saturday = date(2026, 7, 25)  # Saturday
+    result = determine_mode(saturday)
+    assert result == RunMode.IMPROVEMENT
+
+
+def test_upcoming_innovation_days_returns_count():
+    from config.mode import upcoming_innovation_days
+
+    days = upcoming_innovation_days(count=3)
+    assert len(days) == 3
+
+
+def test_upcoming_innovation_days_all_innovation():
+    from config.mode import is_innovation_day, upcoming_innovation_days
+
+    days = upcoming_innovation_days(count=5)
+    assert all(is_innovation_day(d) for d in days)

@@ -13,6 +13,7 @@ from app.validation import (
     validate_load_series,
     validate_price,
     validate_reading_dict,
+    validate_region_id,
     validate_temporal_fields,
     validate_weather_fields,
 )
@@ -465,29 +466,34 @@ def test_is_valid_temporal_input_parametrized(hour, dow, month, expected) -> Non
 
 def test_clamp_consumption_below_min_v2() -> None:
     from app.validation import clamp_consumption
+
     result = clamp_consumption(-10.0)
     assert result == 0.0
 
 
 def test_clamp_consumption_above_max_v2() -> None:
     from app.validation import MAX_CONSUMPTION_KWH, clamp_consumption
+
     result = clamp_consumption(MAX_CONSUMPTION_KWH + 1000)
     assert result == MAX_CONSUMPTION_KWH
 
 
 def test_clamp_consumption_in_range_v2() -> None:
     from app.validation import clamp_consumption
+
     result = clamp_consumption(500.0)
     assert result == 500.0
 
 
 def test_is_valid_temporal_input_valid_v2() -> None:
     from app.validation import is_valid_temporal_input
+
     assert is_valid_temporal_input(12, 3, 6) is True
 
 
 def test_is_valid_temporal_input_invalid_hour() -> None:
     from app.validation import is_valid_temporal_input
+
     assert is_valid_temporal_input(25, 3, 6) is False
 
 
@@ -495,6 +501,7 @@ def test_extract_temporal_from_datetime() -> None:
     from datetime import datetime
 
     from app.validation import extract_temporal_from_datetime
+
     dt = datetime(2026, 6, 15, 14, 30)
     result = extract_temporal_from_datetime(dt)
     assert result["hour"] == 14
@@ -502,24 +509,43 @@ def test_extract_temporal_from_datetime() -> None:
     assert "is_weekend" in result
 
 
-@pytest.mark.parametrize("horizon,expected_valid", [
-    (1, True),
-    (24, True),
-    (8760, True),
-    (0, False),
-    (8761, False),
-])
+@pytest.mark.parametrize(
+    "horizon,expected_valid",
+    [
+        (1, True),
+        (24, True),
+        (8760, True),
+        (0, False),
+        (8761, False),
+    ],
+)
 def test_validate_forecast_horizon_parametrized_v2(horizon, expected_valid) -> None:
     from app.validation import validate_forecast_horizon
+
     errors = validate_forecast_horizon(horizon)
     assert (len(errors) == 0) == expected_valid
 
 
 def test_batch_validate_readings_mixed() -> None:
     from app.validation import batch_validate_readings
+
     readings = [
-        {"hour": 10, "day_of_week": 1, "month": 6, "temperature_c": 22.0, "humidity_pct": 55.0, "consumption_kwh": 12.5},
-        {"hour": 99, "day_of_week": 1, "month": 6, "temperature_c": 22.0, "humidity_pct": 55.0, "consumption_kwh": 12.5},
+        {
+            "hour": 10,
+            "day_of_week": 1,
+            "month": 6,
+            "temperature_c": 22.0,
+            "humidity_pct": 55.0,
+            "consumption_kwh": 12.5,
+        },
+        {
+            "hour": 99,
+            "day_of_week": 1,
+            "month": 6,
+            "temperature_c": 22.0,
+            "humidity_pct": 55.0,
+            "consumption_kwh": 12.5,
+        },
     ]
     results = batch_validate_readings(readings)
     assert results[0]["valid"] is True
@@ -562,13 +588,16 @@ class TestValidateReadingDict:
         assert "errors" in result
         assert "warnings" in result
 
-    @pytest.mark.parametrize("field,value", [
-        ("hour", -1),
-        ("hour", 24),
-        ("month", 0),
-        ("month", 13),
-        ("day_of_week", 7),
-    ])
+    @pytest.mark.parametrize(
+        "field,value",
+        [
+            ("hour", -1),
+            ("hour", 24),
+            ("month", 0),
+            ("month", 13),
+            ("day_of_week", 7),
+        ],
+    )
     def test_out_of_range_temporal_fails(self, field: str, value: int) -> None:
         result = validate_reading_dict({**self.VALID_READING, field: value})
         assert result["valid"] is False
@@ -598,11 +627,14 @@ class TestValidateCoordinate:
         assert validate_coordinate(90.0, 180.0) == []
         assert validate_coordinate(-90.0, -180.0) == []
 
-    @pytest.mark.parametrize("lat,lon", [
-        (0.0, 0.0),
-        (51.5074, -0.1278),
-        (-33.8688, 151.2093),
-    ])
+    @pytest.mark.parametrize(
+        "lat,lon",
+        [
+            (0.0, 0.0),
+            (51.5074, -0.1278),
+            (-33.8688, 151.2093),
+        ],
+    )
     def test_valid_coords_parametrized(self, lat: float, lon: float) -> None:
         assert validate_coordinate(lat, lon) == []
 
@@ -624,9 +656,170 @@ class TestValidatePrice:
 
     def test_nan_price_invalid(self) -> None:
         import math
+
         errors = validate_price(math.nan)
         assert len(errors) > 0
 
     @pytest.mark.parametrize("price", [0.0, 1.0, 100000.0, 999999999.0])
     def test_valid_prices_parametrized(self, price: float) -> None:
         assert validate_price(price) == []
+
+
+class TestValidatePercentage:
+    def test_valid_zero(self) -> None:
+        from app.validation import validate_percentage
+
+        assert validate_percentage(0.0) == []
+
+    def test_valid_100(self) -> None:
+        from app.validation import validate_percentage
+
+        assert validate_percentage(100.0) == []
+
+    def test_below_range(self) -> None:
+        from app.validation import validate_percentage
+
+        errors = validate_percentage(-1.0)
+        assert len(errors) > 0
+
+    def test_above_range(self) -> None:
+        from app.validation import validate_percentage
+
+        errors = validate_percentage(101.0)
+        assert len(errors) > 0
+
+    def test_field_name_in_error(self) -> None:
+        from app.validation import validate_percentage
+
+        errors = validate_percentage(200.0, field_name="occupancy")
+        assert any("occupancy" in e for e in errors)
+
+    @pytest.mark.parametrize("pct", [0.0, 25.0, 50.0, 75.0, 100.0])
+    def test_valid_values_parametrized(self, pct: float) -> None:
+        from app.validation import validate_percentage
+
+        assert validate_percentage(pct) == []
+
+
+class TestValidatePositiveFloat:
+    def test_valid_positive(self) -> None:
+        from app.validation import validate_positive_float
+
+        assert validate_positive_float(5.0) == []
+
+    def test_zero_invalid(self) -> None:
+        from app.validation import validate_positive_float
+
+        errors = validate_positive_float(0.0)
+        assert len(errors) > 0
+
+    def test_negative_invalid(self) -> None:
+        from app.validation import validate_positive_float
+
+        errors = validate_positive_float(-1.0)
+        assert len(errors) > 0
+
+    def test_inf_invalid(self) -> None:
+        from app.validation import validate_positive_float
+
+        errors = validate_positive_float(float("inf"))
+        assert len(errors) > 0
+
+    def test_field_name_in_error(self) -> None:
+        from app.validation import validate_positive_float
+
+        errors = validate_positive_float(0.0, field_name="price")
+        assert any("price" in e for e in errors)
+
+    @pytest.mark.parametrize("val", [0.001, 1.0, 100.0, 1e6])
+    def test_valid_values_parametrized(self, val: float) -> None:
+        from app.validation import validate_positive_float
+
+        assert validate_positive_float(val) == []
+
+
+class TestSanitizeStringInput:
+    def test_strips_whitespace(self) -> None:
+        from app.validation import sanitize_string_input
+
+        assert sanitize_string_input("  hello  ") == "hello"
+
+    def test_empty_raises(self) -> None:
+        from app.validation import sanitize_string_input
+
+        with pytest.raises(ValueError, match="empty"):
+            sanitize_string_input("")
+
+    def test_whitespace_only_raises(self) -> None:
+        from app.validation import sanitize_string_input
+
+        with pytest.raises(ValueError, match="empty"):
+            sanitize_string_input("   ")
+
+    def test_exceeds_max_length_raises(self) -> None:
+        from app.validation import sanitize_string_input
+
+        with pytest.raises(ValueError, match="max length"):
+            sanitize_string_input("a" * 256, max_length=255)
+
+    def test_exact_max_length_ok(self) -> None:
+        from app.validation import sanitize_string_input
+
+        result = sanitize_string_input("a" * 10, max_length=10)
+        assert result == "a" * 10
+
+
+class TestValidateNonNegativeFloat:
+    def test_zero_valid(self) -> None:
+        from app.validation import validate_non_negative_float
+
+        assert validate_non_negative_float(0.0) == []
+
+    def test_positive_valid(self) -> None:
+        from app.validation import validate_non_negative_float
+
+        assert validate_non_negative_float(5.0) == []
+
+    def test_negative_invalid(self) -> None:
+        from app.validation import validate_non_negative_float
+
+        errors = validate_non_negative_float(-0.1)
+        assert len(errors) > 0
+
+    def test_nan_invalid(self) -> None:
+        import math
+
+        from app.validation import validate_non_negative_float
+
+        errors = validate_non_negative_float(math.nan)
+        assert len(errors) > 0
+
+    def test_field_name_in_error(self) -> None:
+        from app.validation import validate_non_negative_float
+
+        errors = validate_non_negative_float(-1.0, field_name="consumption")
+        assert any("consumption" in e for e in errors)
+
+
+class TestValidateRegionId:
+    def test_valid_id(self) -> None:
+        assert validate_region_id("northeast") == []
+
+    def test_valid_with_underscore(self) -> None:
+        assert validate_region_id("pacific_nw") == []
+
+    def test_empty_id(self) -> None:
+        errors = validate_region_id("")
+        assert len(errors) > 0
+
+    def test_uppercase_rejected(self) -> None:
+        errors = validate_region_id("Northeast")
+        assert len(errors) > 0
+
+    def test_special_chars_rejected(self) -> None:
+        errors = validate_region_id("north-east")
+        assert len(errors) > 0
+
+    @pytest.mark.parametrize("rid", ["northeast", "midwest", "south", "west", "default"])
+    def test_valid_known_ids(self, rid: str) -> None:
+        assert validate_region_id(rid) == []

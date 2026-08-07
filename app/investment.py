@@ -235,13 +235,22 @@ def portfolio_weighted_score(
     weighted = sum(s * w for s, w in zip(scores, weights, strict=False))
     return round(weighted / total_weight, 3)
 
+
 __all__ = [
     "InvestmentAnalysis",
+    "break_even_occupancy",
+    "cash_on_cash_return",
     "compute_investment_analysis",
+    "debt_service_coverage_ratio",
     "discounted_cash_flow",
+    "equity_multiple",
+    "gross_rent_multiplier",
     "investment_score_label",
+    "irr_estimate",
+    "loan_to_value_ratio",
     "margin_of_safety",
     "mortgage_payment",
+    "operating_expense_ratio",
     "payback_period",
     "portfolio_weighted_score",
     "price_to_income_ratio",
@@ -335,3 +344,335 @@ def margin_of_safety(
     if intrinsic_value == 0.0:
         return 0.0
     return round((intrinsic_value - market_price) / intrinsic_value * 100.0, 4)
+
+
+def irr_estimate(
+    initial_investment: float,
+    annual_cash_flows: list[float],
+    terminal_value: float = 0.0,
+    iterations: int = 100,
+    tolerance: float = 1e-6,
+) -> float:
+    """Estimate Internal Rate of Return (IRR) using bisection search.
+
+    Finds the discount rate at which NPV = 0 for the given cash-flow stream.
+
+    Args:
+        initial_investment: Upfront cost in USD (positive number).
+        annual_cash_flows: Net cash flows per year (excluding initial investment).
+        terminal_value: Expected sale proceeds at end of holding period.
+        iterations: Maximum bisection iterations (default 100).
+        tolerance: Convergence tolerance for NPV (default 1e-6).
+
+    Returns:
+        IRR as a decimal fraction (e.g. 0.12 for 12%).
+        Returns 0.0 when no positive return is possible.
+
+    Raises:
+        ValueError: If *initial_investment* is non-positive.
+    """
+    if initial_investment <= 0:
+        raise ValueError(f"initial_investment must be positive, got {initial_investment}")
+    all_flows = [-initial_investment, *list(annual_cash_flows)]
+    if terminal_value:
+        all_flows[-1] += terminal_value
+
+    def _npv(rate: float) -> float:
+        return sum(cf / (1 + rate) ** i for i, cf in enumerate(all_flows))
+
+    lo, hi = -0.999, 10.0
+    if _npv(lo) * _npv(hi) > 0:
+        return 0.0
+    for _ in range(iterations):
+        mid = (lo + hi) / 2
+        npv_mid = _npv(mid)
+        if abs(npv_mid) < tolerance:
+            return round(mid, 6)
+        if _npv(lo) * npv_mid < 0:
+            hi = mid
+        else:
+            lo = mid
+    return round((lo + hi) / 2, 6)
+
+
+def loan_to_value_ratio(
+    loan_amount: float,
+    property_value: float,
+) -> float:
+    """Compute the Loan-to-Value (LTV) ratio.
+
+    LTV = loan_amount / property_value * 100.
+    A ratio > 80% typically requires private mortgage insurance (PMI).
+
+    Args:
+        loan_amount: Principal loan amount in USD.
+        property_value: Current market value of the property in USD.
+
+    Returns:
+        LTV ratio as a percentage, rounded to 2 decimal places.
+        Returns 0.0 if property_value is zero.
+    """
+    if property_value <= 0:
+        return 0.0
+    return round(loan_amount / property_value * 100.0, 2)
+
+
+def gross_rent_multiplier(
+    property_price: float,
+    annual_gross_rent: float,
+) -> float:
+    """Compute the Gross Rent Multiplier (GRM) for a rental property.
+
+    GRM = property_price / annual_gross_rent.
+    A lower GRM indicates better cash-flow relative to price.
+
+    Args:
+        property_price: Market price of the property in USD.
+        annual_gross_rent: Annual gross rental income in USD.
+
+    Returns:
+        GRM (unit-less ratio), rounded to 2 decimal places.
+        Returns float('inf') when annual_gross_rent is zero.
+    """
+    if annual_gross_rent <= 0:
+        return float("inf")
+    return round(property_price / annual_gross_rent, 2)
+
+
+def annualized_return(total_return: float, years: float) -> float:
+    """Compute the compound annualized return from a total return over *years*.
+
+    Uses the formula: (1 + total_return) ** (1 / years) - 1.
+
+    Args:
+        total_return: Total return as a decimal fraction (e.g. 0.50 for 50%).
+        years: Investment holding period in years (> 0).
+
+    Returns:
+        Annualized return as a decimal fraction, rounded to 6 decimal places.
+
+    Raises:
+        ValueError: If *years* is not positive or *total_return* <= -1.
+    """
+    if years <= 0:
+        raise ValueError(f"years must be positive, got {years}")
+    if total_return <= -1:
+        raise ValueError(f"total_return must be > -1, got {total_return}")
+    return round((1 + total_return) ** (1.0 / years) - 1, 6)
+
+
+def net_present_value(cash_flows: list[float], discount_rate: float) -> float:
+    """Compute the Net Present Value (NPV) of a series of cash flows.
+
+    The first element is treated as the initial investment (typically negative).
+    Subsequent elements are future cash flows discounted at *discount_rate* per period.
+
+    Args:
+        cash_flows: Ordered list of cash flows (period 0, 1, 2, …).
+        discount_rate: Discount rate per period as a decimal fraction.
+
+    Returns:
+        NPV rounded to 2 decimal places.
+
+    Raises:
+        ValueError: If *cash_flows* is empty or *discount_rate* <= -1.
+    """
+    if not cash_flows:
+        raise ValueError("cash_flows must not be empty")
+    if discount_rate <= -1:
+        raise ValueError(f"discount_rate must be > -1, got {discount_rate}")
+    npv = sum(cf / (1 + discount_rate) ** t for t, cf in enumerate(cash_flows))
+    return round(npv, 2)
+
+
+def property_yield_analysis(
+    market_value: float,
+    annual_rent: float,
+    annual_expenses: float = 0.0,
+) -> dict[str, float]:
+    """Compute a basic yield analysis for an investment property.
+
+    Args:
+        market_value: Current market value of the property in USD.
+        annual_rent: Annual gross rental income in USD.
+        annual_expenses: Annual operating expenses (maintenance, taxes, etc.) in USD.
+
+    Returns:
+        Dict with gross_yield_pct, net_yield_pct, net_operating_income, and
+        expense_ratio_pct.
+
+    Raises:
+        ValueError: If *market_value* is not positive.
+    """
+    if market_value <= 0:
+        raise ValueError(f"market_value must be positive, got {market_value}")
+    gross_yield = round(annual_rent / market_value * 100.0, 4)
+    noi = annual_rent - annual_expenses
+    net_yield = round(noi / market_value * 100.0, 4)
+    expense_ratio = round(annual_expenses / annual_rent * 100.0, 4) if annual_rent > 0 else 0.0
+    return {
+        "gross_yield_pct": gross_yield,
+        "net_yield_pct": net_yield,
+        "net_operating_income": round(noi, 2),
+        "expense_ratio_pct": expense_ratio,
+    }
+
+
+def equity_ratio(market_value: float, outstanding_loan: float) -> float:
+    """Compute the equity ratio (owner's equity as a fraction of market value).
+
+    Args:
+        market_value: Current market value of the property in USD.
+        outstanding_loan: Remaining loan principal in USD.
+
+    Returns:
+        Equity ratio in [0, 1], rounded to 4 decimal places.
+        Returns 0.0 if market_value is zero.
+
+    Raises:
+        ValueError: If *outstanding_loan* is negative or *market_value* < 0.
+    """
+    if market_value < 0:
+        raise ValueError(f"market_value must be non-negative, got {market_value}")
+    if outstanding_loan < 0:
+        raise ValueError(f"outstanding_loan must be non-negative, got {outstanding_loan}")
+    if market_value == 0.0:
+        return 0.0
+    equity = max(0.0, market_value - outstanding_loan)
+    return round(equity / market_value, 4)
+
+
+def equity_multiple(total_distributions: float, total_invested: float) -> float:
+    """Compute the equity multiple of an investment.
+
+    Equity multiple = total_distributions / total_invested.  A value > 1
+    means the investor received back more than they put in.
+
+    Args:
+        total_distributions: Sum of all cash distributions (including sale proceeds).
+        total_invested: Total capital invested.
+
+    Returns:
+        Equity multiple rounded to 4 decimal places; 0.0 if total_invested is zero.
+    """
+    if total_invested == 0.0:
+        return 0.0
+    return round(total_distributions / total_invested, 4)
+
+
+def cash_on_cash_return(annual_pre_tax_cash_flow: float, total_cash_invested: float) -> float:
+    """Compute the cash-on-cash return for a rental property.
+
+    Cash-on-cash = annual_pre_tax_cash_flow / total_cash_invested * 100.
+
+    Args:
+        annual_pre_tax_cash_flow: Annual pre-tax cash flow in USD.
+        total_cash_invested: Total cash invested (down payment + closing costs, etc.).
+
+    Returns:
+        Cash-on-cash return as a percentage; 0.0 if total_cash_invested is zero.
+    """
+    if total_cash_invested == 0.0:
+        return 0.0
+    return round(annual_pre_tax_cash_flow / total_cash_invested * 100.0, 4)
+
+
+def debt_service_coverage_ratio(noi: float, annual_debt_service: float) -> float:
+    """Compute the Debt Service Coverage Ratio (DSCR).
+
+    DSCR = NOI / annual_debt_service.  Lenders typically require DSCR >= 1.2.
+
+    Args:
+        noi: Net Operating Income for the year.
+        annual_debt_service: Total annual debt payments (principal + interest).
+
+    Returns:
+        DSCR rounded to 4 decimal places; 0.0 if annual_debt_service is zero.
+    """
+    if annual_debt_service == 0.0:
+        return 0.0
+    return round(noi / annual_debt_service, 4)
+
+
+def break_even_occupancy(
+    operating_expenses: float,
+    debt_service: float,
+    gross_potential_rent: float,
+) -> float:
+    """Compute the break-even occupancy rate for a rental property.
+
+    Break-even occupancy = (operating_expenses + debt_service) / gross_potential_rent
+
+    The result is the minimum occupancy needed to cover all costs.
+
+    Args:
+        operating_expenses: Annual operating expenses in USD.
+        debt_service: Annual debt service payments in USD.
+        gross_potential_rent: Maximum annual rent if fully occupied.
+
+    Returns:
+        Break-even occupancy as a fraction in [0, ∞]; values > 1 indicate the
+        property is unlikely to be viable. Returns 0.0 if gross_potential_rent is zero.
+    """
+    if gross_potential_rent == 0.0:
+        return 0.0
+    return round((operating_expenses + debt_service) / gross_potential_rent, 4)
+
+
+def operating_expense_ratio(
+    operating_expenses: float,
+    effective_gross_income: float,
+) -> float:
+    """Compute the Operating Expense Ratio (OER).
+
+    OER = operating_expenses / effective_gross_income * 100.
+
+    Args:
+        operating_expenses: Annual operating expenses in USD.
+        effective_gross_income: Actual collected income for the year.
+
+    Returns:
+        OER as a percentage; 0.0 if effective_gross_income is zero.
+    """
+    if effective_gross_income == 0.0:
+        return 0.0
+    return round(operating_expenses / effective_gross_income * 100.0, 4)
+
+
+def price_to_rent_ratio(property_price: float, annual_rent: float) -> float:
+    """Compute the Price-to-Rent Ratio (PRR) for a property.
+
+    PRR = property_price / annual_rent.  Values above ~20 typically favour
+    renting over buying; below ~15 typically favour buying.
+
+    Args:
+        property_price: Current market price of the property.
+        annual_rent: Annual rent for a comparable property.
+
+    Returns:
+        Price-to-rent ratio, rounded to 4 decimal places; 0.0 if annual_rent is zero.
+    """
+    if annual_rent == 0.0:
+        return 0.0
+    return round(property_price / annual_rent, 4)
+
+
+def holding_period_return(purchase_price: float, sale_price: float, total_income: float = 0.0) -> float:
+    """Compute the total Holding Period Return (HPR) as a percentage.
+
+    HPR = (sale_price - purchase_price + total_income) / purchase_price * 100.
+
+    Args:
+        purchase_price: Original acquisition cost.
+        sale_price: Proceeds from disposition.
+        total_income: Cumulative net income received during the holding period.
+
+    Returns:
+        HPR as a percentage, rounded to 4 decimal places.
+
+    Raises:
+        ValueError: If purchase_price is zero.
+    """
+    if purchase_price == 0.0:
+        raise ValueError("purchase_price must not be zero")
+    return round((sale_price - purchase_price + total_income) / purchase_price * 100.0, 4)

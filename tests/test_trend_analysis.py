@@ -4,14 +4,19 @@ from __future__ import annotations
 
 import pytest
 
+from app.time_series import autocorrelation, cumulative_sum
 from app.trend_analysis import (
     TrendResult,
     detect_change_points,
+    double_exponential_smoothing,
+    exponential_growth_rate,
     linear_trend,
     percentage_change,
     rate_of_change,
     rolling_mean,
     seasonal_decompose_naive,
+    trend_reversal_count,
+    trend_strength,
     year_over_year_growth,
 )
 
@@ -127,22 +132,28 @@ def test_linear_trend_direction_parametrize(n, expected_dir) -> None:
     assert result.direction == expected_dir
 
 
-@pytest.mark.parametrize("values,expected_direction", [
-    ([1.0, 2.0, 3.0, 4.0, 5.0], "rising"),
-    ([5.0, 4.0, 3.0, 2.0, 1.0], "falling"),
-    ([10.0, 10.0, 10.0, 10.0], "stable"),
-])
+@pytest.mark.parametrize(
+    "values,expected_direction",
+    [
+        ([1.0, 2.0, 3.0, 4.0, 5.0], "rising"),
+        ([5.0, 4.0, 3.0, 2.0, 1.0], "falling"),
+        ([10.0, 10.0, 10.0, 10.0], "stable"),
+    ],
+)
 def test_linear_trend_direction_parametrized(values: list, expected_direction: str) -> None:
     result = linear_trend(values)
     assert result.direction == expected_direction
 
 
-@pytest.mark.parametrize("old,new,expected_pct", [
-    (100.0, 110.0, 10.0),
-    (100.0, 90.0, -10.0),
-    (50.0, 100.0, 100.0),
-    (200.0, 100.0, -50.0),
-])
+@pytest.mark.parametrize(
+    "old,new,expected_pct",
+    [
+        (100.0, 110.0, 10.0),
+        (100.0, 90.0, -10.0),
+        (50.0, 100.0, 100.0),
+        (200.0, 100.0, -50.0),
+    ],
+)
 def test_percentage_change_parametrized(old: float, new: float, expected_pct: float) -> None:
     assert percentage_change(old, new) == pytest.approx(expected_pct, rel=1e-4)
 
@@ -236,3 +247,397 @@ def test_rate_of_change_various_lags(lag: int) -> None:
     values = [float(i * 10) for i in range(1, 8)]
     result = rate_of_change(values, lag=lag)
     assert len(result) == len(values) - lag
+
+
+def test_linear_trend_result_has_slope() -> None:
+    result = linear_trend([1.0, 2.0, 3.0, 4.0, 5.0])
+    assert hasattr(result, "slope")
+    assert result.slope > 0
+
+
+def test_linear_trend_result_has_direction() -> None:
+    result = linear_trend([5.0, 4.0, 3.0, 2.0, 1.0])
+    assert result.direction == "falling"
+
+
+@pytest.mark.parametrize("n", [5, 10, 20])
+def test_rolling_mean_output_length(n: int) -> None:
+    values = [float(i) for i in range(n)]
+    result = rolling_mean(values, window=3)
+    assert len(result) == n
+
+
+def test_seasonal_decompose_residual_near_zero_for_pure_seasonal() -> None:
+    import math
+
+    pattern = [math.sin(2 * math.pi * i / 12) * 10 + 20 for i in range(24)]
+    decomp = seasonal_decompose_naive(pattern, period=12)
+    assert "residual" in decomp
+
+
+def test_year_over_year_growth_positive() -> None:
+    monthly = [10.0] * 12 + [12.0] * 12
+    growth = year_over_year_growth(monthly, period=12)
+    assert all(g > 0 for g in growth)
+
+
+@pytest.mark.parametrize("window", [2, 5, 10])
+def test_rolling_mean_window_smaller_than_length(window: int) -> None:
+    values = list(range(20))
+    result = rolling_mean([float(v) for v in values], window=window)
+    assert len(result) == 20
+
+
+class TestMomentumScore:
+    """Tests for momentum_score."""
+
+    def test_increasing_signal(self) -> None:
+        from app.trend_analysis import momentum_score
+
+        values = [1.0] * 23 + [5.0] * 7
+        result = momentum_score(values, short_window=7, long_window=30)
+        assert result["signal"] == "increasing"
+        assert result["momentum"] > 0
+
+    def test_decreasing_signal(self) -> None:
+        from app.trend_analysis import momentum_score
+
+        values = [5.0] * 23 + [1.0] * 7
+        result = momentum_score(values, short_window=7, long_window=30)
+        assert result["signal"] == "decreasing"
+        assert result["momentum"] < 0
+
+    def test_neutral_signal(self) -> None:
+        from app.trend_analysis import momentum_score
+
+        values = [3.0] * 30
+        result = momentum_score(values, short_window=7, long_window=30)
+        assert result["signal"] == "neutral"
+        assert result["momentum"] == 0.0
+
+    def test_keys_present(self) -> None:
+        from app.trend_analysis import momentum_score
+
+        values = list(range(1, 31))
+        result = momentum_score(values)
+        for key in ("short_ma", "long_ma", "momentum", "signal"):
+            assert key in result
+
+    def test_raises_on_short_window_zero(self) -> None:
+        import pytest
+
+        from app.trend_analysis import momentum_score
+
+        with pytest.raises(ValueError):
+            momentum_score([1.0] * 30, short_window=0)
+
+    def test_raises_short_ge_long(self) -> None:
+        import pytest
+
+        from app.trend_analysis import momentum_score
+
+        with pytest.raises(ValueError):
+            momentum_score([1.0] * 30, short_window=10, long_window=10)
+
+    def test_raises_insufficient_values(self) -> None:
+        import pytest
+
+        from app.trend_analysis import momentum_score
+
+        with pytest.raises(ValueError):
+            momentum_score([1.0] * 5, short_window=3, long_window=10)
+
+
+class TestCumulativeSum:
+    """Tests for cumulative_sum."""
+
+    def test_basic(self) -> None:
+        from app.trend_analysis import cumulative_sum
+
+        assert cumulative_sum([1.0, 2.0, 3.0]) == [1.0, 3.0, 6.0]
+
+    def test_empty(self) -> None:
+        from app.trend_analysis import cumulative_sum
+
+        assert cumulative_sum([]) == []
+
+    def test_single(self) -> None:
+        from app.trend_analysis import cumulative_sum
+
+        assert cumulative_sum([7.5]) == [7.5]
+
+    def test_negatives(self) -> None:
+        from app.trend_analysis import cumulative_sum
+
+        result = cumulative_sum([-1.0, -2.0, 3.0])
+        assert result == [-1.0, -3.0, 0.0]
+
+    def test_length_preserved(self) -> None:
+        from app.trend_analysis import cumulative_sum
+
+        values = list(range(1, 11))
+        assert len(cumulative_sum([float(v) for v in values])) == 10
+
+
+class TestExponentialWeightedMean:
+    def test_length_preserved(self) -> None:
+        from app.trend_analysis import exponential_weighted_mean
+
+        result = exponential_weighted_mean([1.0, 2.0, 3.0, 4.0])
+        assert len(result) == 4
+
+    def test_first_value_unchanged(self) -> None:
+        from app.trend_analysis import exponential_weighted_mean
+
+        result = exponential_weighted_mean([5.0, 6.0, 7.0])
+        assert result[0] == pytest.approx(5.0)
+
+    def test_empty(self) -> None:
+        from app.trend_analysis import exponential_weighted_mean
+
+        assert exponential_weighted_mean([]) == []
+
+    def test_invalid_alpha(self) -> None:
+        from app.trend_analysis import exponential_weighted_mean
+
+        with pytest.raises(ValueError):
+            exponential_weighted_mean([1.0, 2.0], alpha=0.0)
+
+    def test_alpha_1_returns_values(self) -> None:
+        from app.trend_analysis import exponential_weighted_mean
+
+        vals = [1.0, 2.0, 3.0]
+        result = exponential_weighted_mean(vals, alpha=1.0)
+        assert result == pytest.approx(vals)
+
+
+class TestTrendStrength:
+    def test_perfect_linear(self) -> None:
+        from app.trend_analysis import trend_strength
+
+        assert trend_strength([1.0, 2.0, 3.0, 4.0, 5.0]) == pytest.approx(1.0, rel=1e-3)
+
+    def test_constant_series(self) -> None:
+        from app.trend_analysis import trend_strength
+
+        assert trend_strength([3.0, 3.0, 3.0]) == pytest.approx(1.0)
+
+    def test_too_short_raises(self) -> None:
+        from app.trend_analysis import trend_strength
+
+        with pytest.raises(ValueError):
+            trend_strength([5.0])
+
+    def test_result_in_range(self) -> None:
+        from app.trend_analysis import trend_strength
+
+        result = trend_strength([1.0, 3.0, 2.0, 5.0, 4.0])
+        assert 0.0 <= result <= 1.0
+
+
+class TestPeakValleyCount:
+    def test_no_peaks_short(self) -> None:
+        from app.trend_analysis import peak_valley_count
+
+        result = peak_valley_count([1.0, 2.0])
+        assert result == {"peaks": 0, "valleys": 0}
+
+    def test_one_peak(self) -> None:
+        from app.trend_analysis import peak_valley_count
+
+        result = peak_valley_count([1.0, 3.0, 1.0])
+        assert result["peaks"] == 1
+        assert result["valleys"] == 0
+
+    def test_one_valley(self) -> None:
+        from app.trend_analysis import peak_valley_count
+
+        result = peak_valley_count([3.0, 1.0, 3.0])
+        assert result["valleys"] == 1
+
+    def test_multiple_peaks(self) -> None:
+        from app.trend_analysis import peak_valley_count
+
+        result = peak_valley_count([1.0, 3.0, 1.0, 4.0, 1.0])
+        assert result["peaks"] == 2
+
+
+class TestNormalisedRange:
+    def test_basic(self) -> None:
+        from app.trend_analysis import normalised_range
+
+        result = normalised_range([2.0, 4.0, 6.0])
+        assert result > 0
+
+    def test_constant_range_is_zero(self) -> None:
+        from app.trend_analysis import normalised_range
+
+        assert normalised_range([5.0, 5.0, 5.0]) == pytest.approx(0.0)
+
+    def test_empty_raises(self) -> None:
+        from app.trend_analysis import normalised_range
+
+        with pytest.raises(ValueError):
+            normalised_range([])
+
+    def test_zero_mean_raises(self) -> None:
+        from app.trend_analysis import normalised_range
+
+        with pytest.raises(ValueError):
+            normalised_range([0.0, 0.0, 0.0])
+
+
+def test_trend_strength_perfect_line() -> None:
+    values = [float(i) for i in range(10)]
+    assert trend_strength(values) == pytest.approx(1.0, abs=1e-4)
+
+
+def test_trend_strength_constant() -> None:
+    assert trend_strength([5.0] * 10) == pytest.approx(1.0, abs=1e-4)
+
+
+def test_autocorrelation_lag1_positive() -> None:
+    values = [float(i) for i in range(20)]
+    ac = autocorrelation(values, lag=1)
+    assert ac > 0
+
+
+def test_autocorrelation_insufficient_data() -> None:
+    assert autocorrelation([1.0, 2.0], lag=2) == 0.0
+
+
+def test_autocorrelation_constant_series() -> None:
+    assert autocorrelation([3.0] * 10, lag=1) == 0.0
+
+
+@pytest.mark.parametrize("lag", [1, 2, 3])
+def test_autocorrelation_lag_parametrize(lag: int) -> None:
+    values = [float(i) for i in range(20)]
+    ac = autocorrelation(values, lag=lag)
+    assert -1.0 <= ac <= 1.0
+
+
+def test_cumulative_sum_correctness() -> None:
+    result = cumulative_sum([1.0, 2.0, 3.0])
+    assert result == pytest.approx([1.0, 3.0, 6.0])
+
+
+def test_cumulative_sum_empty() -> None:
+    assert cumulative_sum([]) == []
+
+
+def test_cumulative_sum_length() -> None:
+    values = [1.0, 2.0, 3.0, 4.0]
+    assert len(cumulative_sum(values)) == len(values)
+
+
+def test_double_exponential_smoothing_length() -> None:
+    values = [1.0, 2.0, 3.0, 4.0, 5.0]
+    result = double_exponential_smoothing(values)
+    assert len(result) == len(values)
+
+
+def test_double_exponential_smoothing_single() -> None:
+    result = double_exponential_smoothing([10.0])
+    assert result == [10.0]
+
+
+def test_double_exponential_smoothing_increasing() -> None:
+    values = [float(i) for i in range(1, 11)]
+    result = double_exponential_smoothing(values, alpha=0.5, beta=0.5)
+    assert result[-1] > result[0]
+
+
+def test_trend_reversal_count_monotone() -> None:
+    assert trend_reversal_count([1.0, 2.0, 3.0, 4.0]) == 0
+
+
+def test_trend_reversal_count_alternating() -> None:
+    values = [1.0, 3.0, 1.0, 3.0, 1.0]
+    count = trend_reversal_count(values)
+    assert count == 3
+
+
+def test_trend_reversal_count_empty() -> None:
+    assert trend_reversal_count([]) == 0
+
+
+def test_trend_reversal_count_single() -> None:
+    assert trend_reversal_count([5.0]) == 0
+
+
+def test_trend_reversal_count_two() -> None:
+    assert trend_reversal_count([1.0, 2.0]) == 0
+
+
+def test_trend_reversal_count_one_reversal() -> None:
+    assert trend_reversal_count([1.0, 3.0, 2.0]) == 1
+
+
+def test_exponential_growth_rate_doubling() -> None:
+    import math
+
+    values = [1.0, 2.0]
+    rate = exponential_growth_rate(values)
+    assert rate == pytest.approx(math.log(2.0), rel=1e-4)
+
+
+def test_exponential_growth_rate_flat() -> None:
+    values = [5.0, 5.0, 5.0]
+    assert exponential_growth_rate(values) == pytest.approx(0.0)
+
+
+def test_exponential_growth_rate_empty_raises() -> None:
+    with pytest.raises(ValueError):
+        exponential_growth_rate([5.0])
+
+
+def test_exponential_growth_rate_non_positive_raises() -> None:
+    with pytest.raises(ValueError):
+        exponential_growth_rate([1.0, 0.0, 2.0])
+
+
+@pytest.mark.parametrize("n", [3, 5, 8])
+def test_trend_reversal_count_nonzero_param(n: int) -> None:
+    values = [float(i % 2) for i in range(n)]
+    count = trend_reversal_count(values)
+    assert count >= 0
+
+
+class TestPeriodComparison:
+    def test_same_series_zero_change(self) -> None:
+        from app.trend_analysis import period_comparison
+
+        result = period_comparison([1.0, 2.0, 3.0], [1.0, 2.0, 3.0])
+        assert result["pct_change"] == pytest.approx(0.0)
+
+    def test_increase_positive_pct_change(self) -> None:
+        from app.trend_analysis import period_comparison
+
+        result = period_comparison([100.0, 100.0], [120.0, 120.0])
+        assert result["pct_change"] == pytest.approx(20.0)
+
+    def test_decrease_negative_pct_change(self) -> None:
+        from app.trend_analysis import period_comparison
+
+        result = period_comparison([200.0, 200.0], [100.0, 100.0])
+        assert result["pct_change"] == pytest.approx(-50.0)
+
+    def test_totals_correct(self) -> None:
+        from app.trend_analysis import period_comparison
+
+        result = period_comparison([1.0, 2.0, 3.0], [4.0, 5.0, 6.0])
+        assert result["total_a"] == pytest.approx(6.0)
+        assert result["total_b"] == pytest.approx(15.0)
+
+    def test_empty_raises(self) -> None:
+        from app.trend_analysis import period_comparison
+
+        with pytest.raises(ValueError):
+            period_comparison([], [1.0])
+
+    def test_length_mismatch_raises(self) -> None:
+        from app.trend_analysis import period_comparison
+
+        with pytest.raises(ValueError):
+            period_comparison([1.0, 2.0], [1.0])

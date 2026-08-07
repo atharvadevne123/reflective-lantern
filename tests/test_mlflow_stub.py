@@ -357,3 +357,66 @@ def test_delete_artefact_success_returns_true() -> None:
         result = s.delete_artefact("some/key")
     assert result is True
     mock_client.delete_object.assert_called_once_with(Bucket="bucket", Key="some/key")
+
+
+class TestDeleteRun:
+    def test_deletes_existing(self) -> None:
+        from app.mlflow_stub import clear_runs, delete_run, log_metrics
+
+        clear_runs()
+        log_metrics("run_del", {"r2": 0.9})
+        assert delete_run("run_del") is True
+
+    def test_returns_false_when_not_found(self) -> None:
+        from app.mlflow_stub import clear_runs, delete_run
+
+        clear_runs()
+        assert delete_run("nonexistent") is False
+
+
+class TestRunExists:
+    def test_existing_run(self) -> None:
+        from app.mlflow_stub import clear_runs, log_metrics, run_exists
+
+        clear_runs()
+        log_metrics("exists_run", {"loss": 0.1})
+        assert run_exists("exists_run") is True
+
+    def test_missing_run(self) -> None:
+        from app.mlflow_stub import clear_runs, run_exists
+
+        clear_runs()
+        assert run_exists("ghost") is False
+
+
+class TestClearRuns:
+    def test_clears_all(self) -> None:
+        from app.mlflow_stub import clear_runs, log_metrics, run_count
+
+        log_metrics("r1", {"m": 1.0})
+        log_metrics("r2", {"m": 2.0})
+        count = clear_runs()
+        assert count >= 0
+        assert run_count() == 0
+
+    def test_empty_store(self) -> None:
+        from app.mlflow_stub import clear_runs
+
+        clear_runs()
+        assert clear_runs() == 0
+
+
+class TestRunCount:
+    def test_count_increments(self) -> None:
+        from app.mlflow_stub import clear_runs, log_metrics, run_count
+
+        clear_runs()
+        log_metrics("rc1", {"v": 1.0})
+        log_metrics("rc2", {"v": 2.0})
+        assert run_count() == 2
+
+    def test_empty_after_clear(self) -> None:
+        from app.mlflow_stub import clear_runs, run_count
+
+        clear_runs()
+        assert run_count() == 0
