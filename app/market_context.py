@@ -615,3 +615,32 @@ def price_appreciation_rate(
         raise ValueError("original_price, current_price, and years must all be positive")
     cagr = (current_price / original_price) ** (1.0 / years) - 1.0
     return round(cagr * 100.0, 4)
+
+
+def listing_days_to_months(days: int) -> float:
+    """Convert days-on-market to months (30-day months).
+
+    Args:
+        days: Number of days the listing has been active.
+
+    Returns:
+        Days expressed in fractional months, rounded to 2 decimal places.
+    """
+    return round(days / 30.0, 2)
+
+
+def inventory_months_supply(active_listings: int, monthly_sales: float) -> float:
+    """Estimate months of inventory supply.
+
+    A supply of <= 3 months signals a seller's market; >= 6 signals a buyer's market.
+
+    Args:
+        active_listings: Current number of active listings.
+        monthly_sales: Average number of homes sold per month.
+
+    Returns:
+        Months of supply, rounded to 2 decimal places; 0.0 if monthly_sales is zero.
+    """
+    if monthly_sales == 0.0:
+        return 0.0
+    return round(active_listings / monthly_sales, 2)
