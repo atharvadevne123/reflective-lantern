@@ -256,3 +256,51 @@ def group_alerts_by_severity(alerts: list[Alert]) -> dict[str, list[Alert]]:
         key = alert.severity.lower()
         groups.setdefault(key, []).append(alert)
     return groups
+
+
+def deduplicate_alerts(alerts: list[Alert], window_seconds: float = 300.0) -> list[Alert]:
+    """Remove consecutive duplicate alerts within a time window.
+
+    An alert is a duplicate if it has the same source and message as the
+    previous alert from that source and arrived within *window_seconds*.
+
+    Args:
+        alerts: Time-ordered list of Alert objects.
+        window_seconds: Maximum gap (in seconds) within which a repeat is
+            suppressed.
+
+    Returns:
+        Filtered list with consecutive duplicates removed.
+    """
+    import time as _time
+
+    seen: dict[str, tuple[str, float]] = {}  # source -> (message, timestamp)
+    result: list[Alert] = []
+    now = _time.time()
+    for alert in alerts:
+        key = alert.source
+        prev_msg, prev_ts = seen.get(key, ("", 0.0))
+        age = now - prev_ts
+        if alert.message == prev_msg and age < window_seconds:
+            continue
+        seen[key] = (alert.message, now)
+        result.append(alert)
+    return result
+
+
+def top_alerts(alerts: list[Alert], n: int = 5) -> list[Alert]:
+    """Return the *n* most severe alerts, breaking ties by recency.
+
+    Args:
+        alerts: List of Alert objects.
+        n: Maximum number to return.
+
+    Returns:
+        Up to *n* alerts sorted by severity (highest first), then recency.
+    """
+    severity_order = {"critical": 0, "warning": 1, "info": 2}
+    sorted_alerts = sorted(
+        alerts,
+        key=lambda a: (severity_order.get(a.severity.lower(), 99), -a.created_at),
+    )
+    return sorted_alerts[:n]
