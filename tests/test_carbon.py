@@ -893,3 +893,52 @@ def test_compare_regions_returns_list() -> None:
     results = compare_regions(kwh=100.0)
     assert isinstance(results, list)
     assert len(results) > 0
+
+
+class TestCumulativeCo2:
+    def test_empty_returns_empty(self) -> None:
+        from app.carbon import cumulative_co2
+
+        assert cumulative_co2([]) == []
+
+    def test_single_value(self) -> None:
+        from app.carbon import cumulative_co2
+
+        assert cumulative_co2([5.0]) == [pytest.approx(5.0)]
+
+    def test_running_total(self) -> None:
+        from app.carbon import cumulative_co2
+
+        result = cumulative_co2([1.0, 2.0, 3.0])
+        assert result == [pytest.approx(1.0), pytest.approx(3.0), pytest.approx(6.0)]
+
+    def test_length_preserved(self) -> None:
+        from app.carbon import cumulative_co2
+
+        values = [0.5, 0.3, 1.2, 0.8]
+        assert len(cumulative_co2(values)) == len(values)
+
+
+class TestCarbonPerOccupant:
+    def test_single_occupant(self) -> None:
+        from app.carbon import carbon_per_occupant
+
+        assert carbon_per_occupant(100.0, 1) == pytest.approx(100.0)
+
+    def test_split_equally(self) -> None:
+        from app.carbon import carbon_per_occupant
+
+        assert carbon_per_occupant(300.0, 3) == pytest.approx(100.0)
+
+    def test_zero_occupants_raises(self) -> None:
+        from app.carbon import carbon_per_occupant
+
+        with pytest.raises(ValueError):
+            carbon_per_occupant(100.0, 0)
+
+    @pytest.mark.parametrize("n", [1, 2, 4, 10])
+    def test_parametrize_occupants(self, n: int) -> None:
+        from app.carbon import carbon_per_occupant
+
+        result = carbon_per_occupant(float(n * 10), n)
+        assert result == pytest.approx(10.0)
