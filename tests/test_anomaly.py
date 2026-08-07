@@ -858,3 +858,39 @@ def test_rolling_anomaly_flag_length_param(n: int) -> None:
     values = list(range(n))
     flags = rolling_anomaly_flag(values, window=3)
     assert len(flags) == n
+
+
+def test_zscore_flag_zero_std_no_flag() -> None:
+    """Zero std should never flag (constant distribution)."""
+    assert not zscore_flag(5.0, 5.0, 0.0, threshold=3.0)
+
+
+def test_zscore_flag_negative_value_below_mean() -> None:
+    assert zscore_flag(-10.0, 0.0, 2.0, threshold=3.0)
+
+
+@pytest.mark.parametrize(
+    "value,mean,std,threshold,expected",
+    [
+        (0.0, 0.0, 1.0, 3.0, False),
+        (3.1, 0.0, 1.0, 3.0, True),
+        (2.9, 0.0, 1.0, 3.0, False),
+        (100.0, 0.0, 1.0, 2.0, True),
+    ],
+)
+def test_zscore_flag_parametrized(
+    value: float, mean: float, std: float, threshold: float, expected: bool
+) -> None:
+    assert zscore_flag(value, mean, std, threshold) is expected
+
+
+def test_rolling_anomaly_flag_all_same_window() -> None:
+    values = [3.0] * 15
+    flags = rolling_anomaly_flag(values, window=5)
+    assert all(f is False for f in flags)
+
+
+def test_rolling_anomaly_flag_spike_at_end() -> None:
+    values = [1.0] * 15 + [999.0]
+    flags = rolling_anomaly_flag(values, window=5)
+    assert flags[-1] is True
