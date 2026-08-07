@@ -257,7 +257,11 @@ class TestResetReferenceWindow:
     """Tests for the reset_reference_window helper added in improvement run."""
 
     def test_reset_specific_feature(self):
-        from app.monitoring import get_reference_window, reset_reference_window, update_reference_window
+        from app.monitoring import (
+            get_reference_window,
+            reset_reference_window,
+            update_reference_window,
+        )
 
         update_reference_window("feat_a", [1.0, 2.0, 3.0])
         update_reference_window("feat_b", [4.0, 5.0, 6.0])
@@ -266,7 +270,11 @@ class TestResetReferenceWindow:
         assert len(get_reference_window("feat_b")) == 3
 
     def test_reset_all_features(self):
-        from app.monitoring import get_reference_window, reset_reference_window, update_reference_window
+        from app.monitoring import (
+            get_reference_window,
+            reset_reference_window,
+            update_reference_window,
+        )
 
         update_reference_window("x", [1.0])
         update_reference_window("y", [2.0])
@@ -280,7 +288,11 @@ class TestResetReferenceWindow:
         reset_reference_window("does_not_exist")  # must not raise
 
     def test_reset_then_repopulate(self):
-        from app.monitoring import get_reference_window, reset_reference_window, update_reference_window
+        from app.monitoring import (
+            get_reference_window,
+            reset_reference_window,
+            update_reference_window,
+        )
 
         update_reference_window("fresh", [1.0, 2.0])
         reset_reference_window("fresh")
