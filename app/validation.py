@@ -374,6 +374,7 @@ def validate_positive_float(value: float, field_name: str = "value") -> list[str
         List of error strings (empty when valid).
     """
     import math
+
     errors: list[str] = []
     if not math.isfinite(value):
         errors.append(f"{field_name} must be finite, got {value}")
@@ -415,6 +416,7 @@ def validate_non_negative_float(value: float, field_name: str = "value") -> list
         List of error strings (empty when valid).
     """
     import math
+
     errors: list[str] = []
     if not math.isfinite(value):
         errors.append(f"{field_name} must be finite, got {value}")
@@ -438,9 +440,7 @@ def validate_enum_field(value: str, allowed: list[str], field_name: str = "field
         ValueError: If value is not in the allowed set.
     """
     if value not in allowed:
-        raise ValueError(
-            f"{field_name} must be one of {allowed!r}; got {value!r}"
-        )
+        raise ValueError(f"{field_name} must be one of {allowed!r}; got {value!r}")
     return value
 
 

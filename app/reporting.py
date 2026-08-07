@@ -496,9 +496,7 @@ def rolling_savings_summary(
         ValueError: If series lengths differ.
     """
     if len(actual_series) != len(baseline_series):
-        raise ValueError(
-            f"Series length mismatch: {len(actual_series)} vs {len(baseline_series)}"
-        )
+        raise ValueError(f"Series length mismatch: {len(actual_series)} vs {len(baseline_series)}")
     n = len(actual_series)
     if n < window:
         return []
@@ -507,12 +505,14 @@ def rolling_savings_summary(
         end = start + window
         actual_window = actual_series[start:end]
         baseline_window = baseline_series[start:end]
-        saved = sum(b - a for a, b in zip(actual_window, baseline_window))
+        saved = sum(b - a for a, b in zip(actual_window, baseline_window, strict=False))
         baseline_total = sum(baseline_window)
         pct = round(100.0 * saved / baseline_total, 4) if baseline_total > 0 else 0.0
-        results.append({
-            "window_start": float(start),
-            "saved_kwh": round(saved, 4),
-            "savings_pct": pct,
-        })
+        results.append(
+            {
+                "window_start": float(start),
+                "saved_kwh": round(saved, 4),
+                "savings_pct": pct,
+            }
+        )
     return results

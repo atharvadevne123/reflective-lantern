@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import pytest
 from fastapi.testclient import TestClient
 
 
@@ -48,10 +47,13 @@ def test_x_frame_options_deny(client: TestClient) -> None:
     assert resp.headers.get("x-frame-options") == "DENY"
 
 
-def test_correlation_id_echoed_in_response_body(client: TestClient, sample_sensor_payload: dict) -> None:
+def test_correlation_id_echoed_in_response_body(
+    client: TestClient, sample_sensor_payload: dict
+) -> None:
     cid = "test-echo-123"
-    resp = client.post("/api/v1/predict", json=sample_sensor_payload,
-                       headers={"X-Correlation-ID": cid})
+    resp = client.post(
+        "/api/v1/predict", json=sample_sensor_payload, headers={"X-Correlation-ID": cid}
+    )
     assert resp.json()["correlation_id"] == cid
 
 

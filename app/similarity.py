@@ -257,7 +257,7 @@ def manhattan_distance(a: list[float], b: list[float]) -> float:
         raise ValueError("vectors must not be empty")
     if len(a) != len(b):
         raise ValueError(f"vectors must have the same length: {len(a)} != {len(b)}")
-    return round(sum(abs(ai - bi) for ai, bi in zip(a, b)), 6)
+    return round(sum(abs(ai - bi) for ai, bi in zip(a, b, strict=False)), 6)
 
 
 def top_k_similar(
@@ -294,9 +294,7 @@ def top_k_similar(
     return dists[:k]
 
 
-def weighted_jaccard_similarity(
-    a: dict[str, float], b: dict[str, float]
-) -> float:
+def weighted_jaccard_similarity(a: dict[str, float], b: dict[str, float]) -> float:
     """Compute weighted Jaccard similarity between two feature-weight dicts.
 
     Args:
@@ -337,8 +335,8 @@ def pearson_similarity(a: list[float], b: list[float]) -> float:
     mean_a = sum(a) / n
     mean_b = sum(b) / n
     cov = sum((x - mean_a) * (y - mean_b) for x, y in zip(a, b, strict=False))
-    std_a = (sum((x - mean_a) ** 2 for x in a) ** 0.5)
-    std_b = (sum((y - mean_b) ** 2 for y in b) ** 0.5)
+    std_a = sum((x - mean_a) ** 2 for x in a) ** 0.5
+    std_b = sum((y - mean_b) ** 2 for y in b) ** 0.5
     if std_a == 0 or std_b == 0:
         return 0.0
     return round(cov / (std_a * std_b), 6)

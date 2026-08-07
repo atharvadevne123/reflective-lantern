@@ -154,7 +154,7 @@ def highest_severity(alerts: list[Alert]) -> str:
     return max(alerts, key=lambda a: severity_rank(a.severity)).severity
 
 
-def filter_alerts_by_severity(alerts: list["Alert"], min_severity: str) -> list["Alert"]:
+def filter_alerts_by_severity(alerts: list[Alert], min_severity: str) -> list[Alert]:
     """Return only alerts at or above the minimum severity level.
 
     Args:
@@ -168,7 +168,7 @@ def filter_alerts_by_severity(alerts: list["Alert"], min_severity: str) -> list[
     return [a for a in alerts if severity_rank(a.severity) >= min_rank]
 
 
-def deduplicate_alerts(alerts: list["Alert"]) -> list["Alert"]:
+def deduplicate_alerts(alerts: list[Alert]) -> list[Alert]:
     """Remove duplicate alerts that share the same message.
 
     Args:
@@ -186,7 +186,7 @@ def deduplicate_alerts(alerts: list["Alert"]) -> list["Alert"]:
     return result
 
 
-def format_alert_text(alert: "Alert") -> str:
+def format_alert_text(alert: Alert) -> str:
     """Format an Alert as a human-readable text line.
 
     Args:
@@ -199,7 +199,7 @@ def format_alert_text(alert: "Alert") -> str:
     return f"[{alert.severity.upper()}] {alert.message} - {ts}"
 
 
-def batch_alerts_by_severity(alerts: list["Alert"]) -> dict[str, list["Alert"]]:
+def batch_alerts_by_severity(alerts: list[Alert]) -> dict[str, list[Alert]]:
     """Group alerts into batches by severity level.
 
     Args:
@@ -208,7 +208,7 @@ def batch_alerts_by_severity(alerts: list["Alert"]) -> dict[str, list["Alert"]]:
     Returns:
         Dict mapping severity -> list of matching alerts.
     """
-    batches: dict[str, list["Alert"]] = {}
+    batches: dict[str, list[Alert]] = {}
     for alert in alerts:
         batches.setdefault(alert.severity, []).append(alert)
     return batches

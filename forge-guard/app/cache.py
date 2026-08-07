@@ -89,4 +89,4 @@ class TTLCache:
 
 
 # Module-level singleton used by the prediction endpoints.
-prediction_cache = TTLCache(ttl_seconds=int(30), max_size=2048)
+prediction_cache = TTLCache(ttl_seconds=30, max_size=2048)

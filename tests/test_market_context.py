@@ -674,12 +674,15 @@ class TestMarketHeatIndex:
 
         assert market_heat_index(90, 5.0) == "cool"
 
-    @pytest.mark.parametrize("dom,pct,expected", [
-        (5, 75, "hot"),
-        (25, 40, "warm"),
-        (50, 5, "neutral"),
-        (120, 2, "cool"),
-    ])
+    @pytest.mark.parametrize(
+        "dom,pct,expected",
+        [
+            (5, 75, "hot"),
+            (25, 40, "warm"),
+            (50, 5, "neutral"),
+            (120, 2, "cool"),
+        ],
+    )
     def test_parametrized(self, dom: int, pct: float, expected: str) -> None:
         from app.market_context import market_heat_index
 
@@ -761,11 +764,14 @@ def test_price_per_bedroom_negative_bedrooms() -> None:
     assert price_per_bedroom(400_000.0, -1) == 0.0
 
 
-@pytest.mark.parametrize("price,beds,expected", [
-    (300_000.0, 3, 100_000.0),
-    (200_000.0, 2, 100_000.0),
-    (500_000.0, 5, 100_000.0),
-])
+@pytest.mark.parametrize(
+    "price,beds,expected",
+    [
+        (300_000.0, 3, 100_000.0),
+        (200_000.0, 2, 100_000.0),
+        (500_000.0, 5, 100_000.0),
+    ],
+)
 def test_price_per_bedroom_parametrize(price, beds, expected) -> None:
     assert price_per_bedroom(price, beds) == pytest.approx(expected)
 
@@ -818,16 +824,17 @@ def test_comparable_value_adjustment_smaller_subject() -> None:
 
 
 def test_comparable_value_adjustment_equal_sqft() -> None:
-    result = comparable_value_adjustment(
-        subject_sqft=1000.0, comp_sqft=1000.0, comp_price=200_000.0
-    )
+    result = comparable_value_adjustment(subject_sqft=1000.0, comp_sqft=1000.0, comp_price=200_000.0)
     assert result == pytest.approx(200_000.0)
 
 
-@pytest.mark.parametrize("dom,ratio,inv,hot", [
-    (5, 1.05, 0.5, True),
-    (90, 0.90, 12.0, False),
-])
+@pytest.mark.parametrize(
+    "dom,ratio,inv,hot",
+    [
+        (5, 1.05, 0.5, True),
+        (90, 0.90, 12.0, False),
+    ],
+)
 def test_market_heat_score_parametrize(dom, ratio, inv, hot) -> None:
     score = market_heat_score(dom, ratio, inv)
     if hot:

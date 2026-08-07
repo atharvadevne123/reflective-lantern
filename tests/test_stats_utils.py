@@ -860,10 +860,13 @@ def test_mode_count_empty_raises() -> None:
         mode_count([])
 
 
-@pytest.mark.parametrize("values,expected_mode", [
-    ([3.0, 3.0, 1.0], 3.0),
-    ([1.0, 1.0, 2.0, 2.0, 2.0], 2.0),
-])
+@pytest.mark.parametrize(
+    "values,expected_mode",
+    [
+        ([3.0, 3.0, 1.0], 3.0),
+        ([1.0, 1.0, 2.0, 2.0, 2.0], 2.0),
+    ],
+)
 def test_mode_count_parametrize(values, expected_mode) -> None:
     mode, _ = mode_count(values)
     assert mode == expected_mode
@@ -909,10 +912,6 @@ def test_rolling_mean_full_window() -> None:
     values = [1.0, 2.0, 3.0, 4.0, 5.0]
     result = rolling_mean(values, window=3)
     assert result[4] == pytest.approx((3.0 + 4.0 + 5.0) / 3.0)
-
-
-
-
 
 
 @pytest.mark.parametrize("window", [1, 2, 5])

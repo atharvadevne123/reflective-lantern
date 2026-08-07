@@ -808,10 +808,13 @@ class TestCashOnCashReturn:
         result = cash_on_cash_return(-5_000.0, 100_000.0)
         assert result == pytest.approx(-5.0)
 
-    @pytest.mark.parametrize("flow,invested,expected", [
-        (12_000.0, 120_000.0, 10.0),
-        (6_000.0, 120_000.0, 5.0),
-    ])
+    @pytest.mark.parametrize(
+        "flow,invested,expected",
+        [
+            (12_000.0, 120_000.0, 10.0),
+            (6_000.0, 120_000.0, 5.0),
+        ],
+    )
     def test_coc_parametrize(self, flow, invested, expected) -> None:
         assert cash_on_cash_return(flow, invested) == pytest.approx(expected)
 
@@ -827,11 +830,14 @@ class TestDebtServiceCoverageRatio:
         result = debt_service_coverage_ratio(80_000.0, 100_000.0)
         assert result == pytest.approx(0.8)
 
-    @pytest.mark.parametrize("noi,debt,expected", [
-        (150_000.0, 100_000.0, 1.5),
-        (100_000.0, 100_000.0, 1.0),
-        (50_000.0, 100_000.0, 0.5),
-    ])
+    @pytest.mark.parametrize(
+        "noi,debt,expected",
+        [
+            (150_000.0, 100_000.0, 1.5),
+            (100_000.0, 100_000.0, 1.0),
+            (50_000.0, 100_000.0, 0.5),
+        ],
+    )
     def test_dscr_parametrize(self, noi, debt, expected) -> None:
         assert debt_service_coverage_ratio(noi, debt) == pytest.approx(expected)
 
@@ -852,10 +858,13 @@ class TestBreakEvenOccupancy:
         result = break_even_occupancy(50_000.0, 50_000.0, 100_000.0)
         assert result == pytest.approx(1.0)
 
-    @pytest.mark.parametrize("opex,debt,gross", [
-        (20_000.0, 10_000.0, 100_000.0),
-        (40_000.0, 20_000.0, 200_000.0),
-    ])
+    @pytest.mark.parametrize(
+        "opex,debt,gross",
+        [
+            (20_000.0, 10_000.0, 100_000.0),
+            (40_000.0, 20_000.0, 200_000.0),
+        ],
+    )
     def test_parametrize(self, opex: float, debt: float, gross: float) -> None:
         result = break_even_occupancy(opex, debt, gross)
         assert result == pytest.approx((opex + debt) / gross)

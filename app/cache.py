@@ -134,7 +134,7 @@ def build_cache_key(*parts: object) -> str:
     return ":".join(str(p) for p in parts)
 
 
-def evict_expired_keys(cache: "TTLCache") -> int:
+def evict_expired_keys(cache: TTLCache) -> int:
     """Force expiry sweep on a TTLCache and return the number of evicted entries.
 
     Args:
@@ -170,7 +170,7 @@ def cache_hit_rate(hits: int, misses: int) -> float:
     return round(hits / total, 4)
 
 
-def warm_cache(cache: "TTLCache", items: dict) -> int:
+def warm_cache(cache: TTLCache, items: dict) -> int:
     """Populate a TTLCache with a batch of items.
 
     Args:

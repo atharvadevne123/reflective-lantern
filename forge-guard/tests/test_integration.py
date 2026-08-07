@@ -74,12 +74,15 @@ def test_version_endpoint_consistent(client: TestClient) -> None:
     assert r1["api_version"] == r2["api_version"]
 
 
-@pytest.mark.parametrize("endpoint", [
-    "/api/v1/version",
-    "/api/v1/feature-importance",
-    "/api/v1/export/predictions",
-    "/api/v1/export/drift",
-])
+@pytest.mark.parametrize(
+    "endpoint",
+    [
+        "/api/v1/version",
+        "/api/v1/feature-importance",
+        "/api/v1/export/predictions",
+        "/api/v1/export/drift",
+    ],
+)
 def test_ops_endpoints_return_200(client: TestClient, endpoint: str) -> None:
     resp = client.get(endpoint)
     assert resp.status_code == 200

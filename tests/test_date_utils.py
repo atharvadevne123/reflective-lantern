@@ -473,48 +473,54 @@ class TestNextBusinessDay:
 
 def test_quarter_of_year_q1() -> None:
     from app.date_utils import quarter_of_year
+
     assert quarter_of_year(datetime(2026, 1, 15)) == 1
     assert quarter_of_year(datetime(2026, 3, 31)) == 1
 
 
 def test_quarter_of_year_q2() -> None:
     from app.date_utils import quarter_of_year
+
     assert quarter_of_year(datetime(2026, 4, 1)) == 2
 
 
 def test_quarter_of_year_q4() -> None:
     from app.date_utils import quarter_of_year
+
     assert quarter_of_year(datetime(2026, 12, 31)) == 4
 
 
-@pytest.mark.parametrize("month,expected_q", [
-    (1, 1), (3, 1), (4, 2), (6, 2), (7, 3), (9, 3), (10, 4), (12, 4)
-])
+@pytest.mark.parametrize("month,expected_q", [(1, 1), (3, 1), (4, 2), (6, 2), (7, 3), (9, 3), (10, 4), (12, 4)])
 def test_quarter_parametrize(month, expected_q) -> None:
     from app.date_utils import quarter_of_year
+
     assert quarter_of_year(datetime(2026, month, 1)) == expected_q
 
 
 def test_is_weekend_saturday() -> None:
     from app.date_utils import is_weekend
+
     sat = datetime(2026, 8, 1)  # Saturday
     assert is_weekend(sat) is True
 
 
 def test_is_weekend_sunday() -> None:
     from app.date_utils import is_weekend
+
     sun = datetime(2026, 8, 2)  # Sunday
     assert is_weekend(sun) is True
 
 
 def test_is_weekend_monday() -> None:
     from app.date_utils import is_weekend
+
     mon = datetime(2026, 8, 3)  # Monday
     assert is_weekend(mon) is False
 
 
 def test_days_until_future() -> None:
     from app.date_utils import days_until
+
     dt = datetime(2026, 1, 1)
     target = datetime(2026, 1, 11)
     assert days_until(dt, target) == 10
@@ -522,6 +528,7 @@ def test_days_until_future() -> None:
 
 def test_days_until_past() -> None:
     from app.date_utils import days_until
+
     dt = datetime(2026, 1, 11)
     target = datetime(2026, 1, 1)
     assert days_until(dt, target) == -10
@@ -529,18 +536,21 @@ def test_days_until_past() -> None:
 
 def test_days_until_same_day() -> None:
     from app.date_utils import days_until
+
     dt = datetime(2026, 6, 15)
     assert days_until(dt, dt) == 0
 
 
 def test_format_iso_basic() -> None:
     from app.date_utils import format_iso
+
     dt = datetime(2026, 8, 6, 10, 30, 0)
     assert format_iso(dt) == "2026-08-06T10:30:00"
 
 
 def test_format_iso_midnight() -> None:
     from app.date_utils import format_iso
+
     dt = datetime(2026, 1, 1, 0, 0, 0)
     assert format_iso(dt) == "2026-01-01T00:00:00"
 
@@ -548,6 +558,7 @@ def test_format_iso_midnight() -> None:
 @pytest.mark.parametrize("month,day", [(1, 1), (6, 15), (12, 31)])
 def test_format_iso_various_dates(month, day) -> None:
     from app.date_utils import format_iso
+
     dt = datetime(2026, month, day, 12, 0, 0)
     iso = format_iso(dt)
     assert "T" in iso

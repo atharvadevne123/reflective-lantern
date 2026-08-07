@@ -202,6 +202,7 @@ def forecast_with_uncertainty(
         ValueError: If *values* has fewer than 2 elements, or *horizon* < 1.
     """
     import random
+
     if len(values) < 2:
         raise ValueError("values must have at least 2 elements")
     if horizon < 1:
@@ -234,21 +235,22 @@ def forecast_error_metrics(actual: list[float], forecast: list[float]) -> dict[s
         ValueError: If inputs are empty or have different lengths.
     """
     import math
+
     if not actual or not forecast:
         raise ValueError("actual and forecast must not be empty")
     if len(actual) != len(forecast):
         raise ValueError(f"Length mismatch: {len(actual)} vs {len(forecast)}")
     n = len(actual)
-    mae = sum(abs(a - f) for a, f in zip(actual, forecast)) / n
-    rmse = math.sqrt(sum((a - f) ** 2 for a, f in zip(actual, forecast)) / n)
+    mae = sum(abs(a - f) for a, f in zip(actual, forecast, strict=False)) / n
+    rmse = math.sqrt(sum((a - f) ** 2 for a, f in zip(actual, forecast, strict=False)) / n)
     mape_vals = []
-    for a, f in zip(actual, forecast):
+    for a, f in zip(actual, forecast, strict=False):
         if abs(a) > 1e-9:
             mape_vals.append(abs(a - f) / abs(a) * 100.0)
         else:
             mape_vals.append(999.0)
     mape = sum(mape_vals) / len(mape_vals)
-    bias = sum(f - a for a, f in zip(actual, forecast)) / n
+    bias = sum(f - a for a, f in zip(actual, forecast, strict=False)) / n
     return {
         "mae": round(mae, 4),
         "rmse": round(rmse, 4),
@@ -281,7 +283,7 @@ def forecast_coverage(
         raise ValueError("All inputs must be non-empty")
     if len(actual) != len(lower) or len(actual) != len(upper):
         raise ValueError("actual, lower, and upper must have the same length")
-    covered = sum(1 for a, lo, hi in zip(actual, lower, upper) if lo <= a <= hi)
+    covered = sum(1 for a, lo, hi in zip(actual, lower, upper, strict=False) if lo <= a <= hi)
     return round(covered / len(actual), 4)
 
 
@@ -328,9 +330,7 @@ def stepwise_error_growth(
     Returns:
         List of estimated standard errors, one per forecast step.
     """
-    return [
-        round(base_error * (growth_factor ** k), 6) for k in range(len(forecast))
-    ]
+    return [round(base_error * (growth_factor**k), 6) for k in range(len(forecast))]
 
 
 def weighted_ensemble_forecast(
@@ -383,7 +383,7 @@ def mae_score(actual: list[float], predicted: list[float]) -> float:
         raise ValueError("actual and predicted must not be empty")
     if len(actual) != len(predicted):
         raise ValueError(f"Length mismatch: {len(actual)} vs {len(predicted)}")
-    return round(sum(abs(p - a) for p, a in zip(predicted, actual)) / len(actual), 6)
+    return round(sum(abs(p - a) for p, a in zip(predicted, actual, strict=False)) / len(actual), 6)
 
 
 def rmse_score(actual: list[float], predicted: list[float]) -> float:
@@ -403,5 +403,5 @@ def rmse_score(actual: list[float], predicted: list[float]) -> float:
         raise ValueError("actual and predicted must not be empty")
     if len(actual) != len(predicted):
         raise ValueError(f"Length mismatch: {len(actual)} vs {len(predicted)}")
-    mse = sum((p - a) ** 2 for p, a in zip(predicted, actual)) / len(actual)
-    return round(mse ** 0.5, 6)
+    mse = sum((p - a) ** 2 for p, a in zip(predicted, actual, strict=False)) / len(actual)
+    return round(mse**0.5, 6)

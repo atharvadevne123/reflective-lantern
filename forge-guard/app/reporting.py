@@ -8,7 +8,6 @@ from __future__ import annotations
 
 import csv
 import io
-import json
 import logging
 from datetime import datetime, timedelta
 from typing import Any
@@ -45,18 +44,41 @@ def export_predictions_csv(
     )
     buf = io.StringIO()
     writer = csv.writer(buf)
-    writer.writerow([
-        "id", "timestamp", "temperature", "pressure", "vibration",
-        "cycle_time", "tool_wear", "power_consumption", "humidity",
-        "prediction", "defect_probability", "model_version", "correlation_id",
-    ])
+    writer.writerow(
+        [
+            "id",
+            "timestamp",
+            "temperature",
+            "pressure",
+            "vibration",
+            "cycle_time",
+            "tool_wear",
+            "power_consumption",
+            "humidity",
+            "prediction",
+            "defect_probability",
+            "model_version",
+            "correlation_id",
+        ]
+    )
     for row in logs:
-        writer.writerow([
-            row.id, row.timestamp.isoformat(), row.temperature, row.pressure,
-            row.vibration, row.cycle_time, row.tool_wear, row.power_consumption,
-            row.humidity, row.prediction, row.defect_probability,
-            row.model_version, row.correlation_id,
-        ])
+        writer.writerow(
+            [
+                row.id,
+                row.timestamp.isoformat(),
+                row.temperature,
+                row.pressure,
+                row.vibration,
+                row.cycle_time,
+                row.tool_wear,
+                row.power_consumption,
+                row.humidity,
+                row.prediction,
+                row.defect_probability,
+                row.model_version,
+                row.correlation_id,
+            ]
+        )
     return buf.getvalue()
 
 

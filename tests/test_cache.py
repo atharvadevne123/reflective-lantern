@@ -465,7 +465,7 @@ def test_cache_stats_summary_after_hits() -> None:
 def test_cache_stats_summary_hit_rate() -> None:
     c = TTLCache(ttl_seconds=10)
     c.set("k", "v")
-    c.get("k")   # hit
-    c.get("x")   # miss
+    c.get("k")  # hit
+    c.get("x")  # miss
     summary = cache_stats_summary(c)
     assert summary["hit_rate"] == pytest.approx(0.5)

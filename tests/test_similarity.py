@@ -528,10 +528,13 @@ def test_manhattan_distance_negative() -> None:
     assert result == pytest.approx(6.0)
 
 
-@pytest.mark.parametrize("a,b,expected", [
-    ([1.0, 0.0], [0.0, 1.0], 2.0),
-    ([0.0, 0.0], [0.0, 0.0], 0.0),
-])
+@pytest.mark.parametrize(
+    "a,b,expected",
+    [
+        ([1.0, 0.0], [0.0, 1.0], 2.0),
+        ([0.0, 0.0], [0.0, 0.0], 0.0),
+    ],
+)
 def test_manhattan_parametrize(a, b, expected) -> None:
     assert manhattan_distance(a, b) == pytest.approx(expected)
 
@@ -572,9 +575,12 @@ def test_chebyshev_distance_identical() -> None:
     assert chebyshev_distance([1.0, 2.0], [1.0, 2.0]) == pytest.approx(0.0)
 
 
-@pytest.mark.parametrize("a,b,expected", [
-    ([0.0, 0.0], [3.0, 4.0], 4.0),
-    ([5.0, 5.0], [0.0, 0.0], 5.0),
-])
+@pytest.mark.parametrize(
+    "a,b,expected",
+    [
+        ([0.0, 0.0], [3.0, 4.0], 4.0),
+        ([5.0, 5.0], [0.0, 0.0], 5.0),
+    ],
+)
 def test_chebyshev_parametrize(a, b, expected) -> None:
     assert chebyshev_distance(a, b) == pytest.approx(expected)

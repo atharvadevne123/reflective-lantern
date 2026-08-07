@@ -435,11 +435,14 @@ def test_extract_step_classes_length_matches_steps() -> None:
     assert len(extract_step_classes(pipe)) == len(get_step_names(pipe))
 
 
-@pytest.mark.parametrize("keyword_step", [
-    ("scaler", StandardScaler()),
-    ("normalizer", StandardScaler()),
-    ("encoder", StandardScaler()),
-])
+@pytest.mark.parametrize(
+    "keyword_step",
+    [
+        ("scaler", StandardScaler()),
+        ("normalizer", StandardScaler()),
+        ("encoder", StandardScaler()),
+    ],
+)
 def test_pipeline_has_preprocessor_keyword_variants(keyword_step) -> None:
     name, estimator = keyword_step
     pipe = Pipeline([(name, estimator), ("reg", LinearRegression())])

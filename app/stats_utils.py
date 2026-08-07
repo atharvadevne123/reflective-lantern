@@ -409,6 +409,7 @@ def rolling_std(values: list[float], window: int) -> list[float]:
     if window < 2:
         raise ValueError(f"window must be at least 2, got {window}")
     import statistics
+
     result = []
     for i in range(len(values)):
         start = max(0, i - window + 1)
@@ -432,6 +433,7 @@ def compute_entropy(values: list[float]) -> float:
         ValueError: If *values* is empty or all values are zero.
     """
     import math
+
     if not values:
         raise ValueError("values must not be empty")
     total = sum(values)
@@ -456,6 +458,7 @@ def compute_correlation(x: list[float], y: list[float]) -> float:
         ValueError: If series are not equal in length or have fewer than 2 elements.
     """
     import math
+
     if len(x) != len(y):
         raise ValueError(f"x and y must have the same length, got {len(x)} vs {len(y)}")
     if len(x) < 2:
@@ -463,7 +466,7 @@ def compute_correlation(x: list[float], y: list[float]) -> float:
     n = len(x)
     mx = sum(x) / n
     my = sum(y) / n
-    num = sum((xi - mx) * (yi - my) for xi, yi in zip(x, y))
+    num = sum((xi - mx) * (yi - my) for xi, yi in zip(x, y, strict=False))
     denom_x = math.sqrt(sum((xi - mx) ** 2 for xi in x))
     denom_y = math.sqrt(sum((yi - my) ** 2 for yi in y))
     if denom_x < 1e-12 or denom_y < 1e-12:
@@ -486,6 +489,7 @@ def compute_skewness(values: list[float]) -> float:
         ValueError: If fewer than 3 observations are provided.
     """
     import math
+
     if len(values) < 3:
         raise ValueError("at least 3 observations required for skewness")
     n = len(values)
@@ -494,7 +498,7 @@ def compute_skewness(values: list[float]) -> float:
     m3 = sum((v - mean) ** 3 for v in values) / n
     if m2 < 1e-12:
         return 0.0
-    skew = m3 / (m2 ** 1.5)
+    skew = m3 / (m2**1.5)
     adj = math.sqrt(n * (n - 1)) / (n - 2) * skew
     return round(adj, 6)
 
@@ -556,7 +560,7 @@ def trimmed_mean(values: list[float], trim_pct: float = 0.1) -> float:
 
     Args:
         values: Non-empty list of numeric values.
-        trim_pct: Fraction to remove from each tail (0.0–0.5 exclusive).
+        trim_pct: Fraction to remove from each tail (0.0-0.5 exclusive).
 
     Returns:
         Trimmed mean rounded to 6 decimal places.
@@ -571,7 +575,7 @@ def trimmed_mean(values: list[float], trim_pct: float = 0.1) -> float:
     n = len(values)
     k = int(n * trim_pct)
     sorted_vals = sorted(values)
-    trimmed = sorted_vals[k: n - k] if k > 0 else sorted_vals
+    trimmed = sorted_vals[k : n - k] if k > 0 else sorted_vals
     if not trimmed:
         return round(sum(sorted_vals) / n, 6)
     return round(sum(trimmed) / len(trimmed), 6)

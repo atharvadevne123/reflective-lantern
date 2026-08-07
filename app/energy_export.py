@@ -269,9 +269,7 @@ def sample_records(records: list[dict], n: int, seed: int = 42) -> list[dict]:
     return pool[:n]
 
 
-def top_buildings_by_kwh(
-    records: list[dict[str, Any]], n: int = 5
-) -> list[dict[str, Any]]:
+def top_buildings_by_kwh(records: list[dict[str, Any]], n: int = 5) -> list[dict[str, Any]]:
     """Return the top *n* buildings ranked by total consumption_kwh.
 
     Args:
@@ -338,9 +336,7 @@ def normalize_kwh(
         row = dict(rec)
         if "consumption_kwh" in row:
             scaled = (float(row["consumption_kwh"]) - lo) / span
-            row["consumption_kwh"] = round(
-                target_min + scaled * (target_max - target_min), 6
-            )
+            row["consumption_kwh"] = round(target_min + scaled * (target_max - target_min), 6)
         out.append(row)
     return out
 

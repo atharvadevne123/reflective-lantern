@@ -80,8 +80,13 @@ def test_configure_logging_plain_and_json():
 def test_json_formatter_timestamp_is_iso():
     formatter = JsonFormatter()
     record = logging.LogRecord(
-        name="test", level=logging.INFO, pathname="x.py", lineno=1,
-        msg="ts check", args=(), exc_info=None,
+        name="test",
+        level=logging.INFO,
+        pathname="x.py",
+        lineno=1,
+        msg="ts check",
+        args=(),
+        exc_info=None,
     )
     payload = json.loads(formatter.format(record))
     ts = payload["ts"]
@@ -90,11 +95,19 @@ def test_json_formatter_timestamp_is_iso():
 
 def test_json_formatter_level_names():
     formatter = JsonFormatter()
-    for level_name, level_const in [("DEBUG", logging.DEBUG), ("WARNING", logging.WARNING),
-                                    ("ERROR", logging.ERROR)]:
+    for level_name, level_const in [
+        ("DEBUG", logging.DEBUG),
+        ("WARNING", logging.WARNING),
+        ("ERROR", logging.ERROR),
+    ]:
         record = logging.LogRecord(
-            name="test", level=level_const, pathname="x.py", lineno=1,
-            msg="msg", args=(), exc_info=None,
+            name="test",
+            level=level_const,
+            pathname="x.py",
+            lineno=1,
+            msg="msg",
+            args=(),
+            exc_info=None,
         )
         payload = json.loads(formatter.format(record))
         assert payload["level"] == level_name
@@ -111,8 +124,13 @@ def test_configure_logging_clears_previous_handlers():
 def test_json_formatter_model_version_field():
     formatter = JsonFormatter()
     record = logging.LogRecord(
-        name="test", level=logging.INFO, pathname="x.py", lineno=1,
-        msg="model log", args=(), exc_info=None,
+        name="test",
+        level=logging.INFO,
+        pathname="x.py",
+        lineno=1,
+        msg="model log",
+        args=(),
+        exc_info=None,
     )
     record.model_version = "1.1.0"
     payload = json.loads(formatter.format(record))
@@ -128,7 +146,10 @@ def test_configure_logging_json_output_sets_formatter():
 def test_json_formatter_message_formatting():
     formatter = JsonFormatter()
     record = logging.LogRecord(
-        name="test", level=logging.INFO, pathname="x.py", lineno=1,
+        name="test",
+        level=logging.INFO,
+        pathname="x.py",
+        lineno=1,
         msg="value is %d and %.2f",
         args=(42, 3.14),
         exc_info=None,

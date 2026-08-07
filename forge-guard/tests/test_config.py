@@ -2,10 +2,6 @@
 
 from __future__ import annotations
 
-import os
-
-import pytest
-
 
 def test_get_settings_returns_singleton():
     from app.config import get_settings

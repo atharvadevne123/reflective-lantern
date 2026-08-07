@@ -431,9 +431,7 @@ def carbon_score(co2_kg: float, max_kg: float) -> float:
     return round(score, 4)
 
 
-def annual_emission_estimate(
-    monthly_kwh: list[float], emission_factor: float
-) -> float:
+def annual_emission_estimate(monthly_kwh: list[float], emission_factor: float) -> float:
     """Estimate total annual CO2 emissions from monthly consumption data.
 
     Args:

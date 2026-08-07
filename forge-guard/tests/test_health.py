@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-import pytest
-
 
 def test_check_model_loaded_returns_false_when_missing(tmp_path, monkeypatch):
     monkeypatch.setenv("MODEL_PATH", str(tmp_path / "nonexistent.joblib"))

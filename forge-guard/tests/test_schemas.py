@@ -67,7 +67,9 @@ def test_batch_response_accepts_various_version_strings(version):
 def test_drift_check_result_schema():
     from app.schemas import DriftCheckResult
 
-    r = DriftCheckResult(feature="temperature", ks_statistic=0.42, p_value=0.001, drift_detected=True)
+    r = DriftCheckResult(
+        feature="temperature", ks_statistic=0.42, p_value=0.001, drift_detected=True
+    )
     assert r.feature == "temperature"
     assert r.drift_detected is True
 
@@ -85,8 +87,11 @@ def test_model_summary_response_with_data():
     from app.schemas import ModelSummaryResponse
 
     r = ModelSummaryResponse(
-        model_version="1.0.0", total=100, defects=10,
-        defect_rate=0.1, avg_defect_probability=0.12,
+        model_version="1.0.0",
+        total=100,
+        defects=10,
+        defect_rate=0.1,
+        avg_defect_probability=0.12,
     )
     assert r.total == 100
     assert r.defect_rate == 0.1

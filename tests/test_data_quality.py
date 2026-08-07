@@ -590,10 +590,13 @@ def test_field_type_consistency_mixed() -> None:
     assert result == pytest.approx(2 / 3, rel=1e-4)
 
 
-@pytest.mark.parametrize("expected_type,score", [
-    (float, 1.0),
-    (str, 0.0),
-])
+@pytest.mark.parametrize(
+    "expected_type,score",
+    [
+        (float, 1.0),
+        (str, 0.0),
+    ],
+)
 def test_field_type_consistency_parametrize(expected_type, score) -> None:
     records = [{"v": 1.0}, {"v": 2.0}]
     assert field_type_consistency(records, "v", expected_type) == pytest.approx(score)

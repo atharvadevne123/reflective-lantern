@@ -367,7 +367,7 @@ def zscore_alert(values: list[float], threshold: float = 3.0) -> list[int]:
         raise ValueError("Need at least 2 values to compute z-scores")
     mean = sum(values) / len(values)
     variance = sum((v - mean) ** 2 for v in values) / len(values)
-    std = variance ** 0.5
+    std = variance**0.5
     if std == 0:
         return []
     return [i for i, v in enumerate(values) if abs((v - mean) / std) > threshold]

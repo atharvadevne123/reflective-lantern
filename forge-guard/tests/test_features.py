@@ -169,9 +169,7 @@ def test_engineer_single_all_sensors_present():
     assert result.shape[1] >= 7
 
 
-@pytest.mark.parametrize(
-    "n_samples", [50, 200, 500]
-)
+@pytest.mark.parametrize("n_samples", [50, 200, 500])
 def test_synthetic_data_various_sizes(n_samples):
     df = generate_synthetic_data(n_samples=n_samples, seed=7)
     assert len(df) == n_samples

@@ -378,6 +378,7 @@ def test_region_count_positive() -> None:
 
 def test_region_count_includes_default() -> None:
     from app.regions import KNOWN_REGIONS
+
     assert region_count() == len(KNOWN_REGIONS)
 
 

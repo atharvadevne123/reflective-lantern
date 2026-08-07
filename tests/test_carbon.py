@@ -738,6 +738,7 @@ class TestCarbonReductionPotential:
 
 def test_lifetime_carbon_savings_basic() -> None:
     from app.carbon import lifetime_carbon_savings
+
     result = lifetime_carbon_savings(annual_kwh_saved=1000.0, lifetime_years=10)
     assert result["total_kwh_saved"] == pytest.approx(10_000.0)
     assert result["total_co2_kg_saved"] > 0
@@ -745,6 +746,7 @@ def test_lifetime_carbon_savings_basic() -> None:
 
 def test_lifetime_carbon_savings_keys() -> None:
     from app.carbon import lifetime_carbon_savings
+
     result = lifetime_carbon_savings(1000.0, 5)
     assert "total_kwh_saved" in result
     assert "total_co2_kg_saved" in result
@@ -753,6 +755,7 @@ def test_lifetime_carbon_savings_keys() -> None:
 
 def test_lifetime_carbon_savings_zero_years() -> None:
     from app.carbon import lifetime_carbon_savings
+
     result = lifetime_carbon_savings(1000.0, 0)
     assert result["total_kwh_saved"] == pytest.approx(0.0)
     assert result["total_co2_kg_saved"] == pytest.approx(0.0)
@@ -761,6 +764,7 @@ def test_lifetime_carbon_savings_zero_years() -> None:
 @pytest.mark.parametrize("years", [1, 5, 10, 25])
 def test_lifetime_carbon_savings_scales_linearly(years) -> None:
     from app.carbon import lifetime_carbon_savings
+
     base = lifetime_carbon_savings(1000.0, 1)
     result = lifetime_carbon_savings(1000.0, years)
     assert result["total_kwh_saved"] == pytest.approx(base["total_kwh_saved"] * years)
@@ -768,6 +772,7 @@ def test_lifetime_carbon_savings_scales_linearly(years) -> None:
 
 def test_fleet_emission_factor_basic() -> None:
     from app.carbon import fleet_emission_factor
+
     fleet = [{"annual_kwh": 1000.0}, {"annual_kwh": 2000.0}]
     result = fleet_emission_factor(fleet)
     assert result["total_kwh"] == pytest.approx(3000.0)
@@ -776,6 +781,7 @@ def test_fleet_emission_factor_basic() -> None:
 
 def test_fleet_emission_factor_empty_fleet() -> None:
     from app.carbon import fleet_emission_factor
+
     result = fleet_emission_factor([])
     assert result["total_kwh"] == pytest.approx(0.0)
     assert result["mean_co2_kg_per_asset"] == pytest.approx(0.0)
@@ -783,6 +789,7 @@ def test_fleet_emission_factor_empty_fleet() -> None:
 
 def test_fleet_emission_factor_custom_region() -> None:
     from app.carbon import fleet_emission_factor
+
     fleet = [{"annual_kwh": 1000.0, "region": "pacific_nw"}]
     result = fleet_emission_factor(fleet)
     assert result["total_kwh"] == pytest.approx(1000.0)
@@ -792,15 +799,15 @@ def test_fleet_emission_factor_custom_region() -> None:
 @pytest.mark.parametrize("n_assets", [1, 3, 5])
 def test_fleet_emission_factor_mean(n_assets) -> None:
     from app.carbon import fleet_emission_factor
+
     fleet = [{"annual_kwh": 1000.0} for _ in range(n_assets)]
     result = fleet_emission_factor(fleet)
-    assert result["mean_co2_kg_per_asset"] == pytest.approx(
-        result["total_co2_kg"] / n_assets, rel=1e-4
-    )
+    assert result["mean_co2_kg_per_asset"] == pytest.approx(result["total_co2_kg"] / n_assets, rel=1e-4)
 
 
 def test_carbon_per_sqm_basic() -> None:
     from app.carbon import kwh_to_co2_kg
+
     result = carbon_per_sqm(10000.0, 100.0)
     expected = kwh_to_co2_kg(10000.0) / 100.0
     assert result == pytest.approx(expected, rel=1e-4)

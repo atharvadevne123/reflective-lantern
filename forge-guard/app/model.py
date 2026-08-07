@@ -32,7 +32,7 @@ def _patched_xgb_tags(self):  # type: ignore[no-untyped-def]
 
 XGBClassifier.__sklearn_tags__ = _patched_xgb_tags  # type: ignore[method-assign]
 
-from app.features import generate_synthetic_data
+from app.features import generate_synthetic_data  # noqa: E402
 
 logger = logging.getLogger(__name__)
 

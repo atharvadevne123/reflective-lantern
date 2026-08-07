@@ -655,9 +655,7 @@ def monthly_totals(daily_values: list[float], days_per_month: list[int] | None =
         days_per_month = [30] * 12
     total = sum(days_per_month)
     if total > len(daily_values):
-        raise ValueError(
-            f"days_per_month total ({total}) exceeds available daily values ({len(daily_values)})"
-        )
+        raise ValueError(f"days_per_month total ({total}) exceeds available daily values ({len(daily_values)})")
     result = []
     idx = 0
     for n_days in days_per_month:
@@ -688,6 +686,7 @@ def seasonal_variance(values: list[float], period: int = 24) -> float:
     if period < 1:
         raise ValueError(f"period must be at least 1, got {period}")
     import statistics
+
     buckets: list[list[float]] = [[] for _ in range(period)]
     for i, v in enumerate(values):
         buckets[i % period].append(v)
@@ -775,7 +774,7 @@ def z_normalize(values: list[float]) -> list[float]:
         return []
     mean = sum(values) / len(values)
     variance = sum((v - mean) ** 2 for v in values) / len(values)
-    std = variance ** 0.5
+    std = variance**0.5
     if std == 0:
         return [0.0] * len(values)
     return [round((v - mean) / std, 6) for v in values]
@@ -792,19 +791,13 @@ def mape(actual: list[float], predicted: list[float]) -> float:
         MAPE as a percentage; pairs where actual==0 are skipped.
         Returns 0.0 if no valid pairs remain.
     """
-    pairs = [
-        abs(a - p) / abs(a) * 100
-        for a, p in zip(actual, predicted, strict=False)
-        if a != 0
-    ]
+    pairs = [abs(a - p) / abs(a) * 100 for a, p in zip(actual, predicted, strict=False) if a != 0]
     if not pairs:
         return 0.0
     return round(sum(pairs) / len(pairs), 4)
 
 
-def hampel_filter(
-    values: list[float], window: int = 5, n_sigma: float = 3.0
-) -> list[float]:
+def hampel_filter(values: list[float], window: int = 5, n_sigma: float = 3.0) -> list[float]:
     """Replace outliers detected by the Hampel identifier with the local median.
 
     Args:
@@ -832,9 +825,7 @@ def hampel_filter(
     return [round(v, 6) for v in result]
 
 
-def min_max_scale(
-    values: list[float], feature_range: tuple[float, float] = (0.0, 1.0)
-) -> list[float]:
+def min_max_scale(values: list[float], feature_range: tuple[float, float] = (0.0, 1.0)) -> list[float]:
     """Scale *values* to the given *feature_range* using min-max scaling.
 
     Args:
@@ -851,9 +842,7 @@ def min_max_scale(
     t_min, t_max = feature_range
     if span == 0:
         return [t_min] * len(values)
-    return [
-        round(t_min + (v - lo) / span * (t_max - t_min), 6) for v in values
-    ]
+    return [round(t_min + (v - lo) / span * (t_max - t_min), 6) for v in values]
 
 
 def percent_change(values: list[float]) -> list[float]:
@@ -897,4 +886,4 @@ def pair_difference(a: list[float], b: list[float]) -> list[float]:
     """
     if len(a) != len(b):
         raise ValueError(f"Series length mismatch: {len(a)} vs {len(b)}")
-    return [round(x - y, 6) for x, y in zip(a, b)]
+    return [round(x - y, 6) for x, y in zip(a, b, strict=False)]

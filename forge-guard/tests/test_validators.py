@@ -6,7 +6,6 @@ import math
 
 import pytest
 
-
 VALID = {
     "temperature": 75.0,
     "pressure": 50.0,
@@ -109,7 +108,7 @@ def test_validate_returns_empty_list_for_boundary_low():
 def test_validate_returns_errors_for_all_bad_fields():
     from app.validators import validate_sensor_reading
 
-    bad = {k: -9999.0 for k in VALID}
+    bad = dict.fromkeys(VALID, -9999.0)
     errors = validate_sensor_reading(bad)
     assert len(errors) >= len(VALID)
 

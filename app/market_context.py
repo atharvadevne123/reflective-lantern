@@ -485,7 +485,7 @@ def normalize_market_features(features: dict[str, float]) -> dict[str, float]:
     max_v = max(features.values())
     rng = max_v - min_v
     if rng < 1e-12:
-        return {k: 0.5 for k in features}
+        return dict.fromkeys(features, 0.5)
     return {k: round((v - min_v) / rng, 6) for k, v in features.items()}
 
 

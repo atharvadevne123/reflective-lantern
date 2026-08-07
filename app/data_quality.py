@@ -329,7 +329,7 @@ def field_completeness(records: list[dict[str, Any]], required_fields: list[str]
         Dict mapping field name to its completeness rate in [0, 1].
     """
     if not records:
-        return {f: 0.0 for f in required_fields}
+        return dict.fromkeys(required_fields, 0.0)
     result = {}
     for field in required_fields:
         present = sum(1 for r in records if r.get(field) is not None)
@@ -390,6 +390,7 @@ def data_freshness_score(
         Dict with total_records, fresh_count, stale_count, and freshness_rate.
     """
     import time
+
     now = time.time()
     fresh = 0
     stale = 0
@@ -411,9 +412,7 @@ def data_freshness_score(
     return {"total_records": total, "fresh_count": fresh, "stale_count": stale, "freshness_rate": rate}
 
 
-def field_type_consistency(
-    records: list[dict[str, Any]], field: str, expected_type: type
-) -> float:
+def field_type_consistency(records: list[dict[str, Any]], field: str, expected_type: type) -> float:
     """Return the fraction of records where *field* has the expected Python type.
 
     Args:
@@ -458,9 +457,7 @@ def range_violation_count(
             fv = float(v)
         except (TypeError, ValueError):
             continue
-        if min_val is not None and fv < min_val:
-            count += 1
-        elif max_val is not None and fv > max_val:
+        if (min_val is not None and fv < min_val) or (max_val is not None and fv > max_val):
             count += 1
     return count
 

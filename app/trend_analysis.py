@@ -283,11 +283,8 @@ def trend_strength(values: list[float]) -> float:
     x_dev = [i - x_mean for i in range(n)]
     y_dev = [v - y_mean for v in values]
     ss_xx = sum(d * d for d in x_dev)
-    slope = sum(xd * yd for xd, yd in zip(x_dev, y_dev)) / ss_xx if ss_xx else 0.0
-    ss_res = sum(
-        (values[i] - (y_mean + slope * x_dev[i])) ** 2
-        for i in range(n)
-    )
+    slope = sum(xd * yd for xd, yd in zip(x_dev, y_dev, strict=False)) / ss_xx if ss_xx else 0.0
+    ss_res = sum((values[i] - (y_mean + slope * x_dev[i])) ** 2 for i in range(n))
     return round(max(0.0, 1.0 - ss_res / ss_tot), 6)
 
 
@@ -352,9 +349,7 @@ def autocorrelation(values: list[float], lag: int = 1) -> float:
     return round(numer / denom, 6)
 
 
-def double_exponential_smoothing(
-    values: list[float], alpha: float = 0.3, beta: float = 0.1
-) -> list[float]:
+def double_exponential_smoothing(values: list[float], alpha: float = 0.3, beta: float = 0.1) -> list[float]:
     """Apply Holt's double exponential smoothing (level + trend).
 
     Args:

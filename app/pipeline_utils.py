@@ -240,11 +240,7 @@ def count_fitted_steps(pipeline: Any) -> int:
         Count of steps where the underlying estimator has been fitted.
     """
     try:
-        return sum(
-            1
-            for _, estimator in pipeline.steps
-            if hasattr(estimator, "n_features_in_")
-        )
+        return sum(1 for _, estimator in pipeline.steps if hasattr(estimator, "n_features_in_"))
     except AttributeError:
         return 0
 

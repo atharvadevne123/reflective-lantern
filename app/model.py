@@ -309,7 +309,7 @@ def residual_statistics(actual: list[float], predicted: list[float]) -> dict[str
         raise ValueError("actual and predicted must be non-empty")
     if len(actual) != len(predicted):
         raise ValueError("actual and predicted must have the same length")
-    residuals = [a - p for a, p in zip(actual, predicted)]
+    residuals = [a - p for a, p in zip(actual, predicted, strict=False)]
     n = len(residuals)
     mean_res = sum(residuals) / n
     std_res = (sum((r - mean_res) ** 2 for r in residuals) / n) ** 0.5
@@ -379,9 +379,5 @@ def threshold_accuracy(
         raise ValueError("Length mismatch")
     if tolerance < 0:
         raise ValueError("tolerance must be non-negative")
-    within = sum(
-        1
-        for a, p in zip(actual, predicted)
-        if a == 0 or abs(p - a) / abs(a) <= tolerance
-    )
+    within = sum(1 for a, p in zip(actual, predicted, strict=False) if a == 0 or abs(p - a) / abs(a) <= tolerance)
     return round(within / len(actual), 4)

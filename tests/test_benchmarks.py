@@ -431,12 +431,14 @@ class TestEnergyStarScore:
 
 def test_target_eui_zero_improvement() -> None:
     from app.benchmarks import ASHRAE_EUI_BENCHMARKS
+
     result = target_eui("office", improvement_pct=0.0)
     assert result == pytest.approx(ASHRAE_EUI_BENCHMARKS["office"])
 
 
 def test_target_eui_20pct_improvement() -> None:
     from app.benchmarks import ASHRAE_EUI_BENCHMARKS
+
     result = target_eui("office", improvement_pct=20.0)
     assert result == pytest.approx(ASHRAE_EUI_BENCHMARKS["office"] * 0.8)
 
@@ -457,30 +459,35 @@ def test_target_eui_negative_pct_raises() -> None:
 
 def test_target_eui_unknown_type_uses_default() -> None:
     from app.benchmarks import ASHRAE_EUI_BENCHMARKS
+
     result = target_eui("unknown_type", improvement_pct=10.0)
     assert result == pytest.approx(ASHRAE_EUI_BENCHMARKS["default"] * 0.9)
 
 
 def test_eui_percentile_top_25() -> None:
     from app.benchmarks import ASHRAE_EUI_BENCHMARKS
+
     low_eui = ASHRAE_EUI_BENCHMARKS["office"] * 0.4
     assert eui_percentile_category(low_eui, "office") == "top_25"
 
 
 def test_eui_percentile_median() -> None:
     from app.benchmarks import ASHRAE_EUI_BENCHMARKS
+
     mid_eui = ASHRAE_EUI_BENCHMARKS["office"] * 0.7
     assert eui_percentile_category(mid_eui, "office") == "median"
 
 
 def test_eui_percentile_average() -> None:
     from app.benchmarks import ASHRAE_EUI_BENCHMARKS
+
     avg_eui = ASHRAE_EUI_BENCHMARKS["office"] * 1.0
     assert eui_percentile_category(avg_eui, "office") == "average"
 
 
 def test_eui_percentile_bottom_25() -> None:
     from app.benchmarks import ASHRAE_EUI_BENCHMARKS
+
     high_eui = ASHRAE_EUI_BENCHMARKS["office"] * 1.5
     assert eui_percentile_category(high_eui, "office") == "bottom_25"
 

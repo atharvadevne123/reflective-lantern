@@ -91,7 +91,7 @@ __all__ = [
 ]
 
 
-def limiter_utilization(limiter: "TokenBucketRateLimiter", client_key: str = "default") -> float:
+def limiter_utilization(limiter: TokenBucketRateLimiter, client_key: str = "default") -> float:
     """Return the fraction of token capacity currently consumed for a client.
 
     Args:
@@ -107,7 +107,7 @@ def limiter_utilization(limiter: "TokenBucketRateLimiter", client_key: str = "de
     return round(max(0.0, min(1.0, consumed / capacity)), 4)
 
 
-def reset_limiter(limiter: "TokenBucketRateLimiter", client_key: str = "default") -> None:
+def reset_limiter(limiter: TokenBucketRateLimiter, client_key: str = "default") -> None:
     """Reset a client's token bucket to full capacity.
 
     Args:
@@ -117,7 +117,7 @@ def reset_limiter(limiter: "TokenBucketRateLimiter", client_key: str = "default"
     limiter.reset(client_key)
 
 
-def is_rate_limited(limiter: "TokenBucketRateLimiter", client_key: str = "default") -> bool:
+def is_rate_limited(limiter: TokenBucketRateLimiter, client_key: str = "default") -> bool:
     """Check whether a client's next request would be rate-limited WITHOUT consuming tokens.
 
     Args:
@@ -130,7 +130,7 @@ def is_rate_limited(limiter: "TokenBucketRateLimiter", client_key: str = "defaul
     return limiter.remaining_tokens(client_key) < 1.0
 
 
-def make_strict_limiter(max_per_second: float) -> "TokenBucketRateLimiter":
+def make_strict_limiter(max_per_second: float) -> TokenBucketRateLimiter:
     """Create a rate limiter with capacity = max_per_second (burst of 1 second).
 
     Args:

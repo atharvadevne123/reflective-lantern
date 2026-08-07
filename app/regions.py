@@ -145,9 +145,7 @@ def region_ids_for_timezones(timezones: list[str]) -> list[str]:
         Sorted list of matching region IDs.
     """
     tz_set = set(timezones)
-    return sorted(
-        r["id"] for r in list_regions() if r.get("timezone") in tz_set
-    )
+    return sorted(r["id"] for r in list_regions() if r.get("timezone") in tz_set)
 
 
 def get_region_name(region_id: str) -> str | None:

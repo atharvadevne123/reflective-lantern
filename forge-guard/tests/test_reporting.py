@@ -7,10 +7,14 @@ import io
 
 import pytest
 
-
 SENSOR = {
-    "temperature": 75.0, "pressure": 50.0, "vibration": 2.0,
-    "cycle_time": 30.0, "tool_wear": 10.0, "power_consumption": 100.0, "humidity": 45.0,
+    "temperature": 75.0,
+    "pressure": 50.0,
+    "vibration": 2.0,
+    "cycle_time": 30.0,
+    "tool_wear": 10.0,
+    "power_consumption": 100.0,
+    "humidity": 45.0,
 }
 
 
@@ -19,8 +23,10 @@ def _add_predictions(db_session, count: int = 3) -> None:
 
     for i in range(count):
         log_prediction(
-            db=db_session, sensor_data=SENSOR,
-            prediction=i % 2, defect_probability=0.1 * (i + 1),
+            db=db_session,
+            sensor_data=SENSOR,
+            prediction=i % 2,
+            defect_probability=0.1 * (i + 1),
         )
 
 
@@ -110,10 +116,16 @@ def test_export_drift_with_data(db_session):
     from app.database import DriftReport
     from app.reporting import export_drift_reports_json
 
-    db_session.add(DriftReport(
-        feature="pressure", ks_statistic=0.35, p_value=0.02,
-        drift_detected=True, window_size=300, model_version="1.0.0",
-    ))
+    db_session.add(
+        DriftReport(
+            feature="pressure",
+            ks_statistic=0.35,
+            p_value=0.02,
+            drift_detected=True,
+            window_size=300,
+            model_version="1.0.0",
+        )
+    )
     db_session.commit()
     result = export_drift_reports_json(db_session)
     assert len(result) >= 1

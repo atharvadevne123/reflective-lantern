@@ -560,9 +560,7 @@ def equity_multiple(total_distributions: float, total_invested: float) -> float:
     return round(total_distributions / total_invested, 4)
 
 
-def cash_on_cash_return(
-    annual_pre_tax_cash_flow: float, total_cash_invested: float
-) -> float:
+def cash_on_cash_return(annual_pre_tax_cash_flow: float, total_cash_invested: float) -> float:
     """Compute the cash-on-cash return for a rental property.
 
     Cash-on-cash = annual_pre_tax_cash_flow / total_cash_invested * 100.

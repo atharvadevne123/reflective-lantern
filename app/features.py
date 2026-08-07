@@ -512,15 +512,10 @@ def ratio_feature(numerator: list[float], denominator: list[float]) -> list[floa
         raise ValueError("Series must be non-empty")
     if len(numerator) != len(denominator):
         raise ValueError("Series must have the same length")
-    return [
-        round(n / d, 6) if d != 0 else 0.0
-        for n, d in zip(numerator, denominator)
-    ]
+    return [round(n / d, 6) if d != 0 else 0.0 for n, d in zip(numerator, denominator, strict=False)]
 
 
-def clip_feature_values(
-    values: list[float], low: float, high: float
-) -> list[float]:
+def clip_feature_values(values: list[float], low: float, high: float) -> list[float]:
     """Clip feature values to [low, high] range.
 
     Args:

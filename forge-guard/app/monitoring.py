@@ -191,11 +191,7 @@ def model_prediction_summary(db: Session, model_version: str) -> dict[str, Any]:
 
     Useful for comparing behaviour across model versions after a rollout.
     """
-    logs = (
-        db.query(PredictionLog)
-        .filter(PredictionLog.model_version == model_version)
-        .all()
-    )
+    logs = db.query(PredictionLog).filter(PredictionLog.model_version == model_version).all()
     if not logs:
         return {"model_version": model_version, "total": 0}
 

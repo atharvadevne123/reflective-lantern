@@ -46,11 +46,8 @@ def validate_sensor_reading(data: dict[str, float]) -> list[str]:
             errors.append(f"{field} out of range [{lo}, {hi}] (got {val})")
 
     # Cross-field: high vibration with very low cycle time is physically improbable
-    if not errors:
-        if data.get("vibration", 0) > 40 and data.get("cycle_time", 600) < 1.0:
-            errors.append(
-                "Implausible combination: vibration > 40 mm/s with cycle_time < 1 s"
-            )
+    if not errors and data.get("vibration", 0) > 40 and data.get("cycle_time", 600) < 1.0:
+        errors.append("Implausible combination: vibration > 40 mm/s with cycle_time < 1 s")
 
     return errors
 

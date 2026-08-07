@@ -217,6 +217,7 @@ def days_in_month(year: int, month: int) -> int:
     if month < 1 or month > 12:
         raise ValueError(f"month must be 1-12, got {month}")
     import calendar
+
     return calendar.monthrange(year, month)[1]
 
 
@@ -234,6 +235,7 @@ def next_business_day(dt: datetime) -> datetime:
         Datetime at midnight of the next business day, same tzinfo as *dt*.
     """
     import datetime as _dt
+
     d = dt.date() + _dt.timedelta(days=1)
     while d.weekday() >= 5:
         d += _dt.timedelta(days=1)

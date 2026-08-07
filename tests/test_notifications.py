@@ -323,10 +323,13 @@ def test_make_performance_alert_metadata() -> None:
     assert alert.metadata["current_value"] == pytest.approx(0.70)
 
 
-@pytest.mark.parametrize("metric,value,threshold", [
-    ("accuracy", 0.85, 0.90),
-    ("latency_ms", 250.0, 200.0),
-])
+@pytest.mark.parametrize(
+    "metric,value,threshold",
+    [
+        ("accuracy", 0.85, 0.90),
+        ("latency_ms", 250.0, 200.0),
+    ],
+)
 def test_make_performance_alert_parametrize(metric, value, threshold) -> None:
     alert = make_performance_alert(metric, value, threshold)
     assert metric in alert.tags

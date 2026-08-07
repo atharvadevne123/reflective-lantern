@@ -496,8 +496,6 @@ def test_trend_strength_constant() -> None:
     assert trend_strength([5.0] * 10) == pytest.approx(1.0, abs=1e-4)
 
 
-
-
 def test_autocorrelation_lag1_positive() -> None:
     values = [float(i) for i in range(20)]
     ac = autocorrelation(values, lag=1)
@@ -578,6 +576,7 @@ def test_trend_reversal_count_one_reversal() -> None:
 
 def test_exponential_growth_rate_doubling() -> None:
     import math
+
     values = [1.0, 2.0]
     rate = exponential_growth_rate(values)
     assert rate == pytest.approx(math.log(2.0), rel=1e-4)

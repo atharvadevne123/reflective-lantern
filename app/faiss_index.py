@@ -124,8 +124,8 @@ MAX_TOP_K: int = 100
 __all__ = [
     "DEFAULT_TOP_K",
     "DIM",
-    "LoadPatternIndex",
     "MAX_TOP_K",
+    "LoadPatternIndex",
     "add_property",
     "get_pattern_index",
     "index_size",
@@ -200,9 +200,7 @@ def index_is_empty() -> bool:
     return index_size() == 0
 
 
-def batch_add_properties(
-    vectors: list[list[float]], metadata_list: list[dict | None] | None = None
-) -> int:
+def batch_add_properties(vectors: list[list[float]], metadata_list: list[dict | None] | None = None) -> int:
     """Add multiple property vectors to the index in one call.
 
     Args:
@@ -215,7 +213,7 @@ def batch_add_properties(
     if metadata_list is None:
         metadata_list = [None] * len(vectors)
     added = 0
-    for vec, meta in zip(vectors, metadata_list):
+    for vec, meta in zip(vectors, metadata_list, strict=False):
         try:
             add_property(vec, meta)
             added += 1

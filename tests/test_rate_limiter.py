@@ -179,8 +179,6 @@ def test_make_strict_limiter_capacity() -> None:
     assert limiter._capacity == pytest.approx(30.0)
 
 
-
-
 def test_make_strict_limiter_invalid_raises() -> None:
     with pytest.raises(ValueError):
         make_strict_limiter(0)
@@ -212,5 +210,3 @@ def test_burst_capacity_fraction_empty_bucket() -> None:
     limiter.is_allowed("c")
     frac = burst_capacity_fraction(limiter, "c")
     assert frac == pytest.approx(0.0)
-
-

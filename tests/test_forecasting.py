@@ -353,7 +353,7 @@ class TestForecastWithUncertainty:
         from app.forecasting import forecast_with_uncertainty
 
         result = forecast_with_uncertainty(list(range(1, 25)), horizon=6, n_boot=50)
-        for lo, hi in zip(result["lower_80"], result["upper_80"]):
+        for lo, hi in zip(result["lower_80"], result["upper_80"], strict=False):
             assert lo <= hi
 
 

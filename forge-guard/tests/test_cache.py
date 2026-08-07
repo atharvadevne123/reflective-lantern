@@ -14,9 +14,15 @@ def cache():
     return TTLCache(ttl_seconds=1, max_size=5)
 
 
-SAMPLE = {"temperature": 75.0, "pressure": 50.0, "vibration": 2.1,
-          "cycle_time": 28.0, "tool_wear": 15.0, "power_consumption": 98.0,
-          "humidity": 45.0}
+SAMPLE = {
+    "temperature": 75.0,
+    "pressure": 50.0,
+    "vibration": 2.1,
+    "cycle_time": 28.0,
+    "tool_wear": 15.0,
+    "power_consumption": 98.0,
+    "humidity": 45.0,
+}
 
 
 def test_cache_miss_returns_none(cache):

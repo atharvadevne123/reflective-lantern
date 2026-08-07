@@ -237,9 +237,7 @@ def carbon_intensity_benchmark(kwh: float, emission_factor: float, floor_area_sq
     return round(kwh * emission_factor / floor_area_sqm, 4)
 
 
-def percentage_below_benchmark(
-    actual_eui: float, benchmark_eui: float
-) -> float:
+def percentage_below_benchmark(actual_eui: float, benchmark_eui: float) -> float:
     """Return percentage difference of actual EUI below benchmark (negative = over benchmark).
 
     Args:
@@ -257,9 +255,7 @@ def percentage_below_benchmark(
     return round((benchmark_eui - actual_eui) / benchmark_eui * 100.0, 4)
 
 
-def weighted_average_eui(
-    euis: list[float], weights: list[float]
-) -> float:
+def weighted_average_eui(euis: list[float], weights: list[float]) -> float:
     """Compute weighted average EUI across multiple buildings.
 
     Args:
@@ -279,7 +275,7 @@ def weighted_average_eui(
     total_weight = sum(weights)
     if total_weight == 0:
         raise ValueError("Total weight cannot be zero")
-    return round(sum(e * w for e, w in zip(euis, weights)) / total_weight, 4)
+    return round(sum(e * w for e, w in zip(euis, weights, strict=False)) / total_weight, 4)
 
 
 def energy_star_score(eui: float, median_eui: float, best_eui: float) -> float:
