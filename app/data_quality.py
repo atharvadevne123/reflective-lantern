@@ -12,6 +12,57 @@ _VALID_MONTH_RANGE = (1, 12)
 _VALID_DOW_RANGE = (0, 6)
 
 
+def _check_hour(record: dict[str, Any], issues: list[str]) -> int:
+    """Validate the hour field; return the score penalty."""
+    hour = record.get("hour")
+    if hour is None:
+        issues.append("missing:hour")
+        return 20
+    if not (_VALID_HOUR_RANGE[0] <= int(hour) <= _VALID_HOUR_RANGE[1]):
+        issues.append(f"invalid:hour={hour}")
+        return 15
+    return 0
+
+
+def _check_month(record: dict[str, Any], issues: list[str]) -> int:
+    """Validate the month field; return the score penalty."""
+    month = record.get("month")
+    if month is None:
+        issues.append("missing:month")
+        return 10
+    if not (_VALID_MONTH_RANGE[0] <= int(month) <= _VALID_MONTH_RANGE[1]):
+        issues.append(f"invalid:month={month}")
+        return 10
+    return 0
+
+
+def _check_day_of_week(record: dict[str, Any], issues: list[str]) -> int:
+    """Validate the day_of_week field; return the score penalty."""
+    dow = record.get("day_of_week")
+    if dow is None:
+        issues.append("missing:day_of_week")
+        return 10
+    if not (_VALID_DOW_RANGE[0] <= int(dow) <= _VALID_DOW_RANGE[1]):
+        issues.append(f"invalid:day_of_week={dow}")
+        return 10
+    return 0
+
+
+def _check_consumption(record: dict[str, Any], issues: list[str]) -> int:
+    """Validate the consumption_kwh field; return the score penalty."""
+    kwh = record.get("consumption_kwh")
+    if kwh is None:
+        issues.append("missing:consumption_kwh")
+        return 20
+    if float(kwh) < 0:
+        issues.append(f"negative:consumption_kwh={kwh}")
+        return 15
+    if float(kwh) > 1_000:
+        issues.append(f"extreme:consumption_kwh={kwh}")
+        return 5
+    return 0
+
+
 def score_record(record: dict[str, Any]) -> dict[str, Any]:
     """Compute a data-quality score (0-100) for a single energy record.
 
@@ -19,56 +70,25 @@ def score_record(record: dict[str, Any]) -> dict[str, Any]:
     Returns the original record augmented with ``dq_score`` and ``dq_issues``.
     """
     issues: list[str] = []
-    score = 100
-
-    hour = record.get("hour")
-    if hour is None:
-        issues.append("missing:hour")
-        score -= 20
-    elif not (_VALID_HOUR_RANGE[0] <= int(hour) <= _VALID_HOUR_RANGE[1]):
-        issues.append(f"invalid:hour={hour}")
-        score -= 15
-
-    month = record.get("month")
-    if month is None:
-        issues.append("missing:month")
-        score -= 10
-    elif not (_VALID_MONTH_RANGE[0] <= int(month) <= _VALID_MONTH_RANGE[1]):
-        issues.append(f"invalid:month={month}")
-        score -= 10
-
-    dow = record.get("day_of_week")
-    if dow is None:
-        issues.append("missing:day_of_week")
-        score -= 10
-    elif not (_VALID_DOW_RANGE[0] <= int(dow) <= _VALID_DOW_RANGE[1]):
-        issues.append(f"invalid:day_of_week={dow}")
-        score -= 10
-
-    kwh = record.get("consumption_kwh")
-    if kwh is None:
-        issues.append("missing:consumption_kwh")
-        score -= 20
-    elif float(kwh) < 0:
-        issues.append(f"negative:consumption_kwh={kwh}")
-        score -= 15
-    elif float(kwh) > 1_000:
-        issues.append(f"extreme:consumption_kwh={kwh}")
-        score -= 5
+    penalty = 0
+    penalty += _check_hour(record, issues)
+    penalty += _check_month(record, issues)
+    penalty += _check_day_of_week(record, issues)
+    penalty += _check_consumption(record, issues)
 
     temp = record.get("temperature_c")
     if temp is not None and not (-60 <= float(temp) <= 60):
         issues.append(f"extreme:temperature_c={temp}")
-        score -= 5
+        penalty += 5
 
     hum = record.get("humidity_pct")
     if hum is not None and not (0 <= float(hum) <= 100):
         issues.append(f"invalid:humidity_pct={hum}")
-        score -= 5
+        penalty += 5
 
     return {
         **record,
-        "dq_score": max(0, score),
+        "dq_score": max(0, 100 - penalty),
         "dq_issues": issues,
     }
 
