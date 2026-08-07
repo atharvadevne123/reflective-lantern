@@ -637,3 +637,42 @@ def operating_expense_ratio(
     if effective_gross_income == 0.0:
         return 0.0
     return round(operating_expenses / effective_gross_income * 100.0, 4)
+
+
+def price_to_rent_ratio(property_price: float, annual_rent: float) -> float:
+    """Compute the Price-to-Rent Ratio (PRR) for a property.
+
+    PRR = property_price / annual_rent.  Values above ~20 typically favour
+    renting over buying; below ~15 typically favour buying.
+
+    Args:
+        property_price: Current market price of the property.
+        annual_rent: Annual rent for a comparable property.
+
+    Returns:
+        Price-to-rent ratio, rounded to 4 decimal places; 0.0 if annual_rent is zero.
+    """
+    if annual_rent == 0.0:
+        return 0.0
+    return round(property_price / annual_rent, 4)
+
+
+def holding_period_return(purchase_price: float, sale_price: float, total_income: float = 0.0) -> float:
+    """Compute the total Holding Period Return (HPR) as a percentage.
+
+    HPR = (sale_price - purchase_price + total_income) / purchase_price * 100.
+
+    Args:
+        purchase_price: Original acquisition cost.
+        sale_price: Proceeds from disposition.
+        total_income: Cumulative net income received during the holding period.
+
+    Returns:
+        HPR as a percentage, rounded to 4 decimal places.
+
+    Raises:
+        ValueError: If purchase_price is zero.
+    """
+    if purchase_price == 0.0:
+        raise ValueError("purchase_price must not be zero")
+    return round((sale_price - purchase_price + total_income) / purchase_price * 100.0, 4)
