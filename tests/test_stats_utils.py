@@ -919,3 +919,39 @@ def test_rolling_mean_length_param(window: int) -> None:
     values = list(range(1, 11))
     result = rolling_mean([float(v) for v in values], window=window)
     assert len(result) == len(values)
+
+
+class TestSampleVariance:
+    def test_two_values(self) -> None:
+        from app.stats_utils import sample_variance
+
+        assert sample_variance([2.0, 4.0]) == pytest.approx(2.0)
+
+    def test_matches_population_scaled(self) -> None:
+        from app.stats_utils import sample_variance, variance
+
+        values = [1.0, 2.0, 3.0, 4.0, 5.0]
+        n = len(values)
+        pop_var = variance(values, population=True)
+        sam_var = sample_variance(values)
+        assert sam_var == pytest.approx(pop_var * n / (n - 1))
+
+    def test_single_value_raises(self) -> None:
+        from app.stats_utils import sample_variance
+
+        with pytest.raises(ValueError):
+            sample_variance([5.0])
+
+    def test_identical_values_zero_variance(self) -> None:
+        from app.stats_utils import sample_variance
+
+        assert sample_variance([3.0, 3.0, 3.0]) == pytest.approx(0.0)
+
+    @pytest.mark.parametrize("values,expected", [
+        ([0.0, 2.0], 2.0),
+        ([1.0, 3.0, 5.0], 4.0),
+    ])
+    def test_parametrize(self, values: list, expected: float) -> None:
+        from app.stats_utils import sample_variance
+
+        assert sample_variance(values) == pytest.approx(expected)
