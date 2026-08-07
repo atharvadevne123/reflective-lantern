@@ -85,3 +85,40 @@ def test_settings_rate_limit_positive():
 
     s = get_settings()
     assert s.rate_limit_rpm > 0
+
+
+class TestNewForgeGuardSettings:
+    def test_db_pool_size_positive(self) -> None:
+        from app.config import get_settings
+
+        get_settings.cache_clear()
+        s = get_settings()
+        assert s.db_pool_size > 0
+
+    def test_db_max_overflow_non_negative(self) -> None:
+        from app.config import get_settings
+
+        get_settings.cache_clear()
+        s = get_settings()
+        assert s.db_max_overflow >= 0
+
+    def test_db_pool_recycle_positive(self) -> None:
+        from app.config import get_settings
+
+        get_settings.cache_clear()
+        s = get_settings()
+        assert s.db_pool_recycle > 0
+
+    def test_prediction_confidence_threshold_in_range(self) -> None:
+        from app.config import get_settings
+
+        get_settings.cache_clear()
+        s = get_settings()
+        assert 0.0 <= s.prediction_confidence_threshold <= 1.0
+
+    def test_default_db_pool_size(self) -> None:
+        from app.config import get_settings
+
+        get_settings.cache_clear()
+        s = get_settings()
+        assert s.db_pool_size == 5
