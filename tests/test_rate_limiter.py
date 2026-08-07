@@ -4,7 +4,13 @@ from __future__ import annotations
 
 import pytest
 
-from app.rate_limiter import TokenBucketRateLimiter, burst_capacity_fraction, make_rate_limiter, make_strict_limiter
+from app.rate_limiter import (
+    TokenBucketRateLimiter,
+    burst_capacity_fraction,
+    make_rate_limiter,
+    make_strict_limiter,
+    prune_idle_clients,
+)
 
 
 def test_first_request_allowed():
@@ -210,3 +216,39 @@ def test_burst_capacity_fraction_empty_bucket() -> None:
     limiter.is_allowed("c")
     frac = burst_capacity_fraction(limiter, "c")
     assert frac == pytest.approx(0.0)
+
+
+class TestPruneIdleClients:
+    def test_removes_idle_buckets(self) -> None:
+        limiter = make_rate_limiter(capacity=5.0, rate_per_second=1.0)
+        limiter.is_allowed("client-a")
+        limiter.is_allowed("client-b")
+        # Set last_refill far in the past to simulate idle
+        with limiter._lock:
+            for bucket in limiter._buckets.values():
+                bucket.last_refill -= 1000.0
+        removed = prune_idle_clients(limiter, max_idle_seconds=1.0)
+        assert removed == 2
+        assert limiter.client_count == 0
+
+    def test_keeps_recent_buckets(self) -> None:
+        limiter = make_rate_limiter(capacity=5.0, rate_per_second=1.0)
+        limiter.is_allowed("recent")
+        removed = prune_idle_clients(limiter, max_idle_seconds=3600.0)
+        assert removed == 0
+        assert limiter.client_count == 1
+
+    def test_mixed_idle_and_recent(self) -> None:
+        limiter = make_rate_limiter(capacity=5.0, rate_per_second=1.0)
+        limiter.is_allowed("active")
+        limiter.is_allowed("idle")
+        with limiter._lock:
+            limiter._buckets["idle"].last_refill -= 9999.0
+        removed = prune_idle_clients(limiter, max_idle_seconds=60.0)
+        assert removed == 1
+        assert "active" in limiter._buckets
+        assert "idle" not in limiter._buckets
+
+    def test_empty_limiter_returns_zero(self) -> None:
+        limiter = make_rate_limiter()
+        assert prune_idle_clients(limiter, max_idle_seconds=1.0) == 0
