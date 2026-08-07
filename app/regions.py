@@ -25,6 +25,7 @@ KNOWN_REGIONS: dict[str, RegionDict] = {
 
 
 @lru_cache(maxsize=64)
+@lru_cache(maxsize=64)
 def get_region(region_id: str) -> RegionDict | None:
     """Return the region metadata dict for *region_id*, or None if unknown."""
     return KNOWN_REGIONS.get(region_id.lower())
@@ -35,11 +36,13 @@ def list_regions() -> list[RegionDict]:
     return [{"id": k, **v} for k, v in KNOWN_REGIONS.items()]
 
 
+@lru_cache(maxsize=64)
 def validate_region(region_id: str) -> bool:
     """Return True if *region_id* is a recognised grid region."""
     return region_id.lower() in KNOWN_REGIONS
 
 
+@lru_cache(maxsize=1)
 def get_all_region_ids() -> list[str]:
     """Return sorted list of all registered grid region identifiers."""
     return sorted(KNOWN_REGIONS.keys())
