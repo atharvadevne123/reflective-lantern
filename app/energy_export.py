@@ -453,7 +453,7 @@ def flatten_nested_records(
             if prefix:
                 key = f"{prefix}{separator}{key}" if parent else f"{prefix}{separator}{k}"
             if isinstance(v, dict):
-                items.update(_flatten(v, parent=key if not prefix else key))
+                items.update(_flatten(v, parent=key))
             else:
                 items[key] = v
         return items
