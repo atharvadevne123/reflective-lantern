@@ -887,3 +887,40 @@ def pair_difference(a: list[float], b: list[float]) -> list[float]:
     if len(a) != len(b):
         raise ValueError(f"Series length mismatch: {len(a)} vs {len(b)}")
     return [round(x - y, 6) for x, y in zip(a, b, strict=False)]
+
+
+def moving_percentile(values: list[float], window: int, percentile: float = 50.0) -> list[float]:
+    """Compute a rolling percentile over *values* with the given *window* size.
+
+    The output length equals the input length. The first ``window - 1`` positions
+    use an expanding window (values[0:i+1]) so no leading NaN positions appear.
+
+    Args:
+        values: Input time series.
+        window: Number of periods in each rolling window.
+        percentile: Percentile to compute (0.0-100.0).
+
+    Returns:
+        Rolling percentile series of the same length as *values*.
+
+    Raises:
+        ValueError: If *values* is empty, *window* < 1, or *percentile* is out of range.
+    """
+    if not values:
+        raise ValueError("values must not be empty")
+    if window < 1:
+        raise ValueError("window must be at least 1")
+    if not 0.0 <= percentile <= 100.0:
+        raise ValueError("percentile must be in [0, 100]")
+
+
+    result: list[float] = []
+    for i in range(len(values)):
+        start = max(0, i - window + 1)
+        chunk = sorted(values[start : i + 1])
+        n = len(chunk)
+        rank = percentile / 100.0 * (n - 1)
+        lo, hi = int(rank), min(int(rank) + 1, n - 1)
+        frac = rank - lo
+        result.append(round(chunk[lo] * (1 - frac) + chunk[hi] * frac, 6))
+    return result
