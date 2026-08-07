@@ -121,3 +121,23 @@ def validate_payload(payload: dict[str, Any]) -> list[str]:
     if warnings:
         logger.warning("Payload coherence warnings: %s", "; ".join(warnings))
     return warnings
+
+
+def validate_batch(payloads: list[dict[str, Any]]) -> dict[str, list[str]]:
+    """Run coherence checks on a batch of payloads.
+
+    Args:
+        payloads: List of raw request payloads.
+
+    Returns:
+        Mapping from payload index (as string) to its warning list; only
+        payloads with at least one warning are included.
+    """
+    results: dict[str, list[str]] = {}
+    for i, payload in enumerate(payloads):
+        warnings = validate_payload(payload)
+        if warnings:
+            results[str(i)] = warnings
+    if results:
+        logger.info("Batch validation: %d/%d payloads have warnings", len(results), len(payloads))
+    return results
