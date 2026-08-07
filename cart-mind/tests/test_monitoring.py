@@ -251,3 +251,38 @@ class TestCheckAllFeaturesReportsPSI:
         before = db_session.query(DriftLog).count()
         check_all_features({"persist_feat": rng.normal(0, 1, 300).tolist()}, db_session)
         assert db_session.query(DriftLog).count() > before
+
+
+class TestResetReferenceWindow:
+    """Tests for the reset_reference_window helper added in improvement run."""
+
+    def test_reset_specific_feature(self):
+        from app.monitoring import get_reference_window, reset_reference_window, update_reference_window
+
+        update_reference_window("feat_a", [1.0, 2.0, 3.0])
+        update_reference_window("feat_b", [4.0, 5.0, 6.0])
+        reset_reference_window("feat_a")
+        assert get_reference_window("feat_a") == []
+        assert len(get_reference_window("feat_b")) == 3
+
+    def test_reset_all_features(self):
+        from app.monitoring import get_reference_window, reset_reference_window, update_reference_window
+
+        update_reference_window("x", [1.0])
+        update_reference_window("y", [2.0])
+        reset_reference_window()
+        assert get_reference_window("x") == []
+        assert get_reference_window("y") == []
+
+    def test_reset_absent_feature_is_noop(self):
+        from app.monitoring import reset_reference_window
+
+        reset_reference_window("does_not_exist")  # must not raise
+
+    def test_reset_then_repopulate(self):
+        from app.monitoring import get_reference_window, reset_reference_window, update_reference_window
+
+        update_reference_window("fresh", [1.0, 2.0])
+        reset_reference_window("fresh")
+        update_reference_window("fresh", [9.0, 8.0])
+        assert get_reference_window("fresh") == [9.0, 8.0]
