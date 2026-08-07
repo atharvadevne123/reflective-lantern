@@ -258,7 +258,7 @@ def group_alerts_by_severity(alerts: list[Alert]) -> dict[str, list[Alert]]:
     return groups
 
 
-def deduplicate_alerts(alerts: list[Alert], window_seconds: float = 300.0) -> list[Alert]:
+def deduplicate_alerts_by_window(alerts: list[Alert], window_seconds: float = 300.0) -> list[Alert]:
     """Remove consecutive duplicate alerts within a time window.
 
     An alert is a duplicate if it has the same source and message as the
