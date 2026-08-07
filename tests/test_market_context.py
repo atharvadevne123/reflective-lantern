@@ -941,3 +941,39 @@ def test_housing_affordability_index_parametrized(
 
     result = housing_affordability_index(median_home_price=price, median_household_income=income)
     assert (result["hai"] >= 100) is expected_affordable
+
+
+class TestListingDaysToMonths:
+    def test_30_days_is_one_month(self) -> None:
+        from app.market_context import listing_days_to_months
+
+        assert listing_days_to_months(30) == pytest.approx(1.0)
+
+    def test_zero_days(self) -> None:
+        from app.market_context import listing_days_to_months
+
+        assert listing_days_to_months(0) == pytest.approx(0.0)
+
+    def test_fractional_months(self) -> None:
+        from app.market_context import listing_days_to_months
+
+        assert listing_days_to_months(15) == pytest.approx(0.5)
+
+
+class TestInventoryMonthsSupply:
+    def test_seller_market(self) -> None:
+        from app.market_context import inventory_months_supply
+
+        result = inventory_months_supply(active_listings=90, monthly_sales=30.0)
+        assert result == pytest.approx(3.0)
+
+    def test_zero_sales_returns_zero(self) -> None:
+        from app.market_context import inventory_months_supply
+
+        assert inventory_months_supply(100, 0.0) == pytest.approx(0.0)
+
+    def test_buyer_market(self) -> None:
+        from app.market_context import inventory_months_supply
+
+        result = inventory_months_supply(active_listings=180, monthly_sales=30.0)
+        assert result == pytest.approx(6.0)
