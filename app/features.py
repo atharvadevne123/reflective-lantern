@@ -532,3 +532,33 @@ def clip_feature_values(values: list[float], low: float, high: float) -> list[fl
     if low > high:
         raise ValueError("low must be <= high")
     return [round(max(low, min(high, v)), 6) for v in values]
+
+
+def bin_feature(values: list[float], bins: list[float]) -> list[int]:
+    """Assign each value to a bin index based on sorted bin edges.
+
+    Equivalent to numpy digitize with ``right=False``: bin index 0 means the
+    value is below bins[0], index len(bins) means above all edges.
+
+    Args:
+        values: Input numeric series.
+        bins: Monotonically increasing bin edges.
+
+    Returns:
+        List of integer bin indices (0 to len(bins)).
+
+    Raises:
+        ValueError: If *bins* is not monotonically increasing.
+    """
+    if any(bins[i] >= bins[i + 1] for i in range(len(bins) - 1)):
+        raise ValueError("bins must be monotonically increasing")
+    result: list[int] = []
+    for v in values:
+        idx = 0
+        for edge in bins:
+            if v >= edge:
+                idx += 1
+            else:
+                break
+        result.append(idx)
+    return result
