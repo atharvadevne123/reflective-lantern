@@ -116,3 +116,48 @@ class TestCacheStats:
         for i in range(n):
             cache.set(f"k{i}", i)
         assert cache.stats()["entries"] == n
+
+
+class TestTTLCacheDeleteAndSize:
+    """Tests for the delete() and size() methods added in the 2026-08-07 improvement run."""
+
+    def test_delete_existing_key(self):
+        cache = TTLCache()
+        cache.set("key", "value")
+        assert cache.delete("key") is True
+        assert cache.get("key") is None
+
+    def test_delete_absent_key_returns_false(self):
+        cache = TTLCache()
+        assert cache.delete("nonexistent") is False
+
+    def test_size_empty_cache(self):
+        assert TTLCache().size() == 0
+
+    def test_size_after_inserts(self):
+        cache = TTLCache()
+        cache.set("a", 1)
+        cache.set("b", 2)
+        assert cache.size() == 2
+
+    def test_size_decrements_after_delete(self):
+        cache = TTLCache()
+        cache.set("x", 10)
+        cache.delete("x")
+        assert cache.size() == 0
+
+    def test_delete_then_reinsert(self):
+        cache = TTLCache()
+        cache.set("k", "v1")
+        cache.delete("k")
+        cache.set("k", "v2")
+        assert cache.get("k") == "v2"
+
+    @pytest.mark.parametrize("n_delete", [0, 1, 5])
+    def test_size_after_partial_delete(self, n_delete):
+        cache = TTLCache(max_entries=100)
+        for i in range(10):
+            cache.set(f"k{i}", i)
+        for i in range(n_delete):
+            cache.delete(f"k{i}")
+        assert cache.size() == 10 - n_delete
