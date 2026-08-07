@@ -482,5 +482,33 @@
     "tests_passed": true,
     "commits": 63,
     "email_status": "smtp_blocked_remote_env"
+  },
+  {
+    "repo": "reflective-lantern",
+    "date": "2026-08-07",
+    "mode": "IMPROVEMENT",
+    "commits": 128,
+    "pushed_to": "origin/main",
+    "improvements": [
+      "fix(notifications.py): rename duplicate deduplicate_alerts to deduplicate_alerts_by_window",
+      "feat(rate_limiter.py): add prune_idle_clients",
+      "feat(pipeline_utils.py): add pipeline_input_features",
+      "feat(similarity.py): add building_ids property and similarity_matrix",
+      "feat(forecasting.py): add forecast_interval_hit_rate",
+      "feat(trend_analysis.py): add period_comparison",
+      "feat(time_series.py): add moving_percentile",
+      "feat(forge-guard/config.py): add db pool settings and prediction_confidence_threshold",
+      "feat(cart-mind/features.py): add feature_correlation_matrix and drop_low_variance_features",
+      "feat(logging_config.py): add suppress_noisy_loggers",
+      "feat(carbon.py): add cumulative_co2 and carbon_per_occupant",
+      "feat(anomaly.py): add anomaly_free_streak and anomaly_transition_count",
+      "feat(investment.py): add price_to_rent_ratio and holding_period_return",
+      "feat(market_context.py): add listing_days_to_months and inventory_months_supply",
+      "feat(features.py): add bin_feature",
+      "feat(stats_utils.py): add sample_variance",
+      "plus 30+ test commits covering all new functions"
+    ],
+    "ruff_clean": true,
+    "push_status": "pushed_to_main"
   }
 ]
