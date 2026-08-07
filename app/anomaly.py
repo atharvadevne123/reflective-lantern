@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import itertools
 import logging
 
 import numpy as np
@@ -513,3 +514,41 @@ def rolling_anomaly_flag(
         else:
             flags.append(abs(compute_z_score(values[i], mean, std)) > threshold)
     return flags
+
+
+def anomaly_free_streak(flags: list[bool]) -> int:
+    """Return the length of the current (trailing) anomaly-free streak.
+
+    Counts backward from the last element until a True (anomalous) flag is
+    encountered. Useful for dashboard widgets showing "days without anomaly."
+
+    Args:
+        flags: Ordered list of anomaly flags (True = anomalous).
+
+    Returns:
+        Number of consecutive False values at the end of the list.
+        Returns 0 if the list is empty or ends with True.
+    """
+    streak = 0
+    for flag in reversed(flags):
+        if flag:
+            break
+        streak += 1
+    return streak
+
+
+def anomaly_transition_count(flags: list[bool]) -> int:
+    """Count the number of times the anomaly state changes.
+
+    A transition is any adjacent pair (flags[i], flags[i+1]) where the values
+    differ.  Useful for measuring how "bursty" vs "sustained" anomalies are.
+
+    Args:
+        flags: Ordered list of anomaly flags.
+
+    Returns:
+        Number of state transitions (0 if list has fewer than 2 elements).
+    """
+    if len(flags) < 2:
+        return 0
+    return sum(1 for a, b in itertools.pairwise(flags) if a != b)
