@@ -1,0 +1,39 @@
+version: "3.9"
+
+services:
+  api:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      DATABASE_URL: postgresql://cartmind:secret@db:5432/cartmind
+      MODEL_PATH: /app/model.joblib
+      METRICS_PATH: /app/metrics.json
+      FAISS_INDEX_PATH: /app/faiss_index.idx
+      ITEM_IDS_PATH: /app/item_ids.json
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - model_artifacts:/app/artifacts
+    restart: unless-stopped
+
+  db:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: cartmind
+      POSTGRES_PASSWORD: secret
+      POSTGRES_DB: cartmind
+    ports:
+      - "5432:5432"
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U cartmind"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  pg_data:
+  model_artifacts:

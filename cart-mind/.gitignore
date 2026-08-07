@@ -1,0 +1,17 @@
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+.venv/
+venv/
+.env
+*.db
+*.joblib
+*.idx
+metrics.json
+item_ids.json
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/

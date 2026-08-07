@@ -1,0 +1,64 @@
+name: Publish Cart-Mind Repo
+
+# One-click publisher: this session's GitHub access is bound to reflective-lantern,
+# so the standalone Cart-Mind repository could not be created from the build
+# environment. Run this workflow from the Actions tab with a repo-scope PAT to
+# create atharvadevne123/Cart-Mind, push the project as its main branch via
+# subtree split, tag v1.0.0, and create the release.
+
+on:
+  workflow_dispatch:
+    inputs:
+      pat:
+        description: "GitHub PAT with repo scope (used once, not stored)"
+        required: true
+        type: string
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: innovation/cart-mind
+          fetch-depth: 0
+
+      - name: Create the Cart-Mind repository
+        run: |
+          curl -sf -X POST \
+            -H "Authorization: Bearer ${{ inputs.pat }}" \
+            -H "Content-Type: application/json" \
+            https://api.github.com/user/repos \
+            -d '{"name":"Cart-Mind","description":"Real-time product recommendation and purchase intent prediction API using LightGBM ensemble, FAISS item-similarity search, KS-test and PSI drift monitoring, and champion/challenger automated retraining.","private":false,"auto_init":false}' \
+            || echo "Repo may already exist — continuing."
+
+      - name: Push cart-mind subtree as main
+        run: |
+          git config user.email "devneatharva@gmail.com"
+          git config user.name "Reflective Lantern"
+          git subtree split --prefix=cart-mind -b cart-mind-main
+          git push "https://x-access-token:${{ inputs.pat }}@github.com/atharvadevne123/Cart-Mind" cart-mind-main:main
+
+      - name: Tag and release v1.0.0
+        run: |
+          SHA=$(git rev-parse cart-mind-main)
+          curl -sf -X POST \
+            -H "Authorization: Bearer ${{ inputs.pat }}" \
+            -H "Content-Type: application/json" \
+            "https://api.github.com/repos/atharvadevne123/Cart-Mind/releases" \
+            -d "{\"tag_name\":\"v1.0.0\",\"target_commitish\":\"main\",\"name\":\"v1.0.0 — Initial Release\",\"body\":\"Built by Reflective Lantern on 2026-08-05. LightGBM/XGBoost/RandomForest soft-voting ensemble, FAISS item similarity, KS+PSI drift monitoring, champion/challenger retraining. 186 tests. See README for setup.\",\"draft\":false,\"prerelease\":false}"
+
+      - name: Build and upload wheel asset
+        run: |
+          git checkout cart-mind-main
+          pip install build -q
+          python -m build --wheel 2>&1 | tail -3
+          WHL=$(ls dist/*.whl | head -1)
+          RELEASE_ID=$(curl -sf -H "Authorization: Bearer ${{ inputs.pat }}" \
+            "https://api.github.com/repos/atharvadevne123/Cart-Mind/releases/tags/v1.0.0" \
+            | python3 -c "import json,sys; print(json.load(sys.stdin)['id'])")
+          curl -sf -X POST \
+            -H "Authorization: Bearer ${{ inputs.pat }}" \
+            -H "Content-Type: application/octet-stream" \
+            --data-binary @"$WHL" \
+            "https://uploads.github.com/repos/atharvadevne123/Cart-Mind/releases/$RELEASE_ID/assets?name=$(basename "$WHL")"
