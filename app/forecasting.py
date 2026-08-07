@@ -405,3 +405,34 @@ def rmse_score(actual: list[float], predicted: list[float]) -> float:
         raise ValueError(f"Length mismatch: {len(actual)} vs {len(predicted)}")
     mse = sum((p - a) ** 2 for p, a in zip(predicted, actual, strict=False)) / len(actual)
     return round(mse**0.5, 6)
+
+
+def forecast_interval_hit_rate(
+    actual: list[float],
+    lower: list[float],
+    upper: list[float],
+) -> float:
+    """Compute the empirical coverage rate of a prediction interval.
+
+    The hit rate is the fraction of actual observations that fall within
+    [lower, upper].  A 95% interval should yield a hit rate near 0.95 on
+    well-calibrated forecasts.
+
+    Args:
+        actual: Ground-truth observations.
+        lower: Lower bound of the prediction interval (same length as actual).
+        upper: Upper bound of the prediction interval (same length as actual).
+
+    Returns:
+        Hit rate in [0.0, 1.0], rounded to 4 decimal places.
+
+    Raises:
+        ValueError: If inputs are empty or have mismatched lengths.
+    """
+    if not actual:
+        raise ValueError("actual must not be empty")
+    n = len(actual)
+    if len(lower) != n or len(upper) != n:
+        raise ValueError("actual, lower, and upper must have the same length")
+    hits = sum(1 for a, lo, hi in zip(actual, lower, upper, strict=False) if lo <= a <= hi)
+    return round(hits / n, 4)
