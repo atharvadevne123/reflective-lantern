@@ -928,3 +928,47 @@ def test_payback_period_new_parametrized(
         assert math.isinf(result)
     else:
         assert result == pytest.approx(expected_years)
+
+
+class TestPriceToRentRatio:
+    def test_basic(self) -> None:
+        from app.investment import price_to_rent_ratio
+
+        assert price_to_rent_ratio(300_000.0, 15_000.0) == pytest.approx(20.0)
+
+    def test_zero_rent_returns_zero(self) -> None:
+        from app.investment import price_to_rent_ratio
+
+        assert price_to_rent_ratio(300_000.0, 0.0) == pytest.approx(0.0)
+
+    @pytest.mark.parametrize("price,rent,expected", [
+        (200_000.0, 10_000.0, 20.0),
+        (150_000.0, 15_000.0, 10.0),
+    ])
+    def test_parametrize(self, price: float, rent: float, expected: float) -> None:
+        from app.investment import price_to_rent_ratio
+
+        assert price_to_rent_ratio(price, rent) == pytest.approx(expected)
+
+
+class TestHoldingPeriodReturn:
+    def test_no_income(self) -> None:
+        from app.investment import holding_period_return
+
+        assert holding_period_return(100_000.0, 120_000.0) == pytest.approx(20.0)
+
+    def test_with_income(self) -> None:
+        from app.investment import holding_period_return
+
+        assert holding_period_return(100_000.0, 100_000.0, total_income=10_000.0) == pytest.approx(10.0)
+
+    def test_loss(self) -> None:
+        from app.investment import holding_period_return
+
+        assert holding_period_return(100_000.0, 80_000.0) == pytest.approx(-20.0)
+
+    def test_zero_purchase_raises(self) -> None:
+        from app.investment import holding_period_return
+
+        with pytest.raises(ValueError):
+            holding_period_return(0.0, 100_000.0)
