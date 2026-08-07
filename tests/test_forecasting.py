@@ -556,3 +556,41 @@ def test_mae_score_constant_parametrize(err: float) -> None:
     actual = [0.0] * n
     predicted = [err] * n
     assert mae_score(actual, predicted) == pytest.approx(err)
+
+
+class TestForecastIntervalHitRate:
+    def test_perfect_coverage(self) -> None:
+        from app.forecasting import forecast_interval_hit_rate
+
+        actual = [1.0, 2.0, 3.0]
+        lower = [0.5, 1.5, 2.5]
+        upper = [1.5, 2.5, 3.5]
+        assert forecast_interval_hit_rate(actual, lower, upper) == pytest.approx(1.0)
+
+    def test_zero_coverage(self) -> None:
+        from app.forecasting import forecast_interval_hit_rate
+
+        actual = [10.0, 20.0, 30.0]
+        lower = [0.0, 0.0, 0.0]
+        upper = [5.0, 5.0, 5.0]
+        assert forecast_interval_hit_rate(actual, lower, upper) == pytest.approx(0.0)
+
+    def test_partial_coverage(self) -> None:
+        from app.forecasting import forecast_interval_hit_rate
+
+        actual = [1.0, 10.0, 2.0, 10.0]
+        lower = [0.0, 0.0, 0.0, 0.0]
+        upper = [5.0, 5.0, 5.0, 5.0]
+        assert forecast_interval_hit_rate(actual, lower, upper) == pytest.approx(0.5)
+
+    def test_empty_raises(self) -> None:
+        from app.forecasting import forecast_interval_hit_rate
+
+        with pytest.raises(ValueError):
+            forecast_interval_hit_rate([], [], [])
+
+    def test_length_mismatch_raises(self) -> None:
+        from app.forecasting import forecast_interval_hit_rate
+
+        with pytest.raises(ValueError):
+            forecast_interval_hit_rate([1.0, 2.0], [0.0], [5.0])
