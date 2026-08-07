@@ -410,3 +410,33 @@ def test_configure_and_check_level(level: str) -> None:
     expected = log_level_int(level)
     root_level = logging.getLogger().level
     assert root_level == expected
+
+
+class TestSuppressNoisyLoggers:
+    def test_sets_warning_level(self) -> None:
+        import logging
+
+        from app.logging_config import suppress_noisy_loggers
+
+        suppress_noisy_loggers("test.noisy.logger", level="WARNING")
+        assert logging.getLogger("test.noisy.logger").level == logging.WARNING
+
+    def test_multiple_loggers(self) -> None:
+        import logging
+
+        from app.logging_config import suppress_noisy_loggers
+
+        suppress_noisy_loggers("test.lib_a", "test.lib_b", level="ERROR")
+        assert logging.getLogger("test.lib_a").level == logging.ERROR
+        assert logging.getLogger("test.lib_b").level == logging.ERROR
+
+    def test_invalid_level_raises(self) -> None:
+        from app.logging_config import suppress_noisy_loggers
+
+        with pytest.raises(ValueError):
+            suppress_noisy_loggers("test.logger", level="NOTEXIST")
+
+    def test_no_loggers_is_noop(self) -> None:
+        from app.logging_config import suppress_noisy_loggers
+
+        suppress_noisy_loggers(level="WARNING")
