@@ -1117,3 +1117,50 @@ def test_pair_difference_length_param(n: int) -> None:
     b = [0.0] * n
     result = pair_difference(a, b)
     assert len(result) == n
+
+
+class TestMovingPercentile:
+    def test_median_constant_series(self) -> None:
+        from app.time_series import moving_percentile
+
+        result = moving_percentile([5.0, 5.0, 5.0, 5.0], window=3, percentile=50.0)
+        assert all(v == pytest.approx(5.0) for v in result)
+
+    def test_same_length_as_input(self) -> None:
+        from app.time_series import moving_percentile
+
+        values = [1.0, 2.0, 3.0, 4.0, 5.0]
+        result = moving_percentile(values, window=3)
+        assert len(result) == len(values)
+
+    def test_100th_percentile_is_max(self) -> None:
+        from app.time_series import moving_percentile
+
+        values = [3.0, 1.0, 4.0, 1.0, 5.0]
+        result = moving_percentile(values, window=3, percentile=100.0)
+        assert result[2] == pytest.approx(4.0)
+
+    def test_0th_percentile_is_min(self) -> None:
+        from app.time_series import moving_percentile
+
+        values = [3.0, 1.0, 4.0, 1.0, 5.0]
+        result = moving_percentile(values, window=3, percentile=0.0)
+        assert result[2] == pytest.approx(1.0)
+
+    def test_empty_raises(self) -> None:
+        from app.time_series import moving_percentile
+
+        with pytest.raises(ValueError):
+            moving_percentile([], window=3)
+
+    def test_invalid_window_raises(self) -> None:
+        from app.time_series import moving_percentile
+
+        with pytest.raises(ValueError):
+            moving_percentile([1.0, 2.0], window=0)
+
+    def test_invalid_percentile_raises(self) -> None:
+        from app.time_series import moving_percentile
+
+        with pytest.raises(ValueError):
+            moving_percentile([1.0, 2.0], window=2, percentile=101.0)
