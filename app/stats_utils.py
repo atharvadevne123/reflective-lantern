@@ -682,3 +682,25 @@ def rolling_mean(values: list[float], window: int) -> list[float]:
         win = values[lo : i + 1]
         result.append(round(sum(win) / len(win), 6))
     return result
+
+
+def sample_variance(values: list[float]) -> float:
+    """Compute the unbiased sample variance (Bessel-corrected) of *values*.
+
+    Uses n-1 in the denominator, making it unbiased for the population variance.
+    Prefer this over ``variance(values, population=False)`` when the intended
+    semantics of "sample" need to be explicit at the call site.
+
+    Args:
+        values: Non-empty list with at least 2 elements.
+
+    Returns:
+        Sample variance, rounded to 6 decimal places.
+
+    Raises:
+        ValueError: If *values* has fewer than 2 elements.
+    """
+    if len(values) < 2:
+        raise ValueError("sample_variance requires at least 2 values")
+    mean = sum(values) / len(values)
+    return round(sum((v - mean) ** 2 for v in values) / (len(values) - 1), 6)
