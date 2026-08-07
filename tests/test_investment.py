@@ -883,3 +883,48 @@ class TestOperatingExpenseRatio:
     def test_low_expense(self) -> None:
         result = operating_expense_ratio(10_000.0, 100_000.0)
         assert result == pytest.approx(10.0)
+
+
+class TestEquityMultiple:
+    def test_basic(self) -> None:
+        result = equity_multiple(total_profit=150_000.0, equity_invested=100_000.0)
+        assert result == pytest.approx(1.5)
+
+    def test_zero_equity_returns_zero(self) -> None:
+        assert equity_multiple(total_profit=50_000.0, equity_invested=0.0) == pytest.approx(0.0)
+
+    def test_no_profit_returns_one(self) -> None:
+        result = equity_multiple(total_profit=100_000.0, equity_invested=100_000.0)
+        assert result == pytest.approx(1.0)
+
+
+class TestMarginOfSafety:
+    def test_positive_margin(self) -> None:
+        result = margin_of_safety(intrinsic_value=200_000.0, market_price=150_000.0)
+        assert result == pytest.approx(25.0)
+
+    def test_no_margin(self) -> None:
+        result = margin_of_safety(intrinsic_value=100_000.0, market_price=100_000.0)
+        assert result == pytest.approx(0.0)
+
+    def test_negative_margin_when_overpriced(self) -> None:
+        result = margin_of_safety(intrinsic_value=100_000.0, market_price=120_000.0)
+        assert result < 0.0
+
+
+@pytest.mark.parametrize(
+    "purchase_price,annual_cash_flow,expected_years",
+    [
+        (100_000.0, 10_000.0, 10.0),
+        (50_000.0, 25_000.0, 2.0),
+        (100_000.0, 0.0, float("inf")),
+    ],
+)
+def test_payback_period_parametrized(
+    purchase_price: float, annual_cash_flow: float, expected_years: float
+) -> None:
+    result = payback_period(purchase_price=purchase_price, annual_cash_flow=annual_cash_flow)
+    if math.isinf(expected_years):
+        assert math.isinf(result)
+    else:
+        assert result == pytest.approx(expected_years)
