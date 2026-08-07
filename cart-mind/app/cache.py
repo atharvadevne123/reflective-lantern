@@ -82,6 +82,27 @@ class TTLCache:
                 evicted, _ = self._store.popitem(last=False)
                 logger.debug("Cache eviction (size cap): %s", evicted)
 
+    def delete(self, key: str) -> bool:
+        """Remove a specific entry from the cache.
+
+        Args:
+            key: Cache key to remove.
+
+        Returns:
+            True if the key existed and was removed, False if it was absent.
+        """
+        with self._lock:
+            if key in self._store:
+                del self._store[key]
+                logger.debug("Cache entry deleted: %s", key)
+                return True
+            return False
+
+    def size(self) -> int:
+        """Return the current number of entries in the cache."""
+        with self._lock:
+            return len(self._store)
+
     def clear(self) -> None:
         """Drop every entry and reset hit/miss counters."""
         with self._lock:
