@@ -584,3 +584,46 @@ class TestClipFeatureValues:
         from app.features import clip_feature_values
 
         assert clip_feature_values([], low=0.0, high=1.0) == []
+
+
+class TestBinFeature:
+    def test_basic_binning(self) -> None:
+        from app.features import bin_feature
+
+        result = bin_feature([0.0, 5.0, 10.0, 15.0], bins=[5.0, 10.0])
+        assert result == [0, 1, 2, 2]
+
+    def test_below_all_bins(self) -> None:
+        from app.features import bin_feature
+
+        result = bin_feature([-1.0], bins=[0.0, 5.0])
+        assert result == [0]
+
+    def test_above_all_bins(self) -> None:
+        from app.features import bin_feature
+
+        result = bin_feature([100.0], bins=[0.0, 5.0, 10.0])
+        assert result == [3]
+
+    def test_empty_values_returns_empty(self) -> None:
+        from app.features import bin_feature
+
+        assert bin_feature([], bins=[1.0, 2.0]) == []
+
+    def test_non_monotonic_bins_raises(self) -> None:
+        from app.features import bin_feature
+
+        with pytest.raises(ValueError):
+            bin_feature([1.0], bins=[5.0, 2.0])
+
+    @pytest.mark.parametrize("val,expected", [
+        (-1.0, 0),
+        (2.5, 1),
+        (7.5, 2),
+        (15.0, 3),
+    ])
+    def test_parametrize_bins(self, val: float, expected: int) -> None:
+        from app.features import bin_feature
+
+        result = bin_feature([val], bins=[0.0, 5.0, 10.0])
+        assert result == [expected]
