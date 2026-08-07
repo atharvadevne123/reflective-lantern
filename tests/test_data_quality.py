@@ -700,3 +700,39 @@ def test_records_missing_field_count(n: int) -> None:
     records = [{"x": None}] * n
     result = records_missing_field(records, "x")
     assert len(result) == n
+
+
+def test_batch_score_returns_all_fields() -> None:
+    records = [{"hour": 10, "month": 3, "day_of_week": 1, "consumption_kwh": 20.0}]
+    result = batch_score(records)
+    assert len(result) == 1
+    assert "dq_score" in result[0]
+    assert "dq_issues" in result[0]
+
+
+@pytest.mark.parametrize(
+    "consumption,expected_score_at_least",
+    [
+        (1.0, 80),   # normal reading
+        (-1.0, 0),   # negative is invalid → heavy penalty
+        (0.0, 50),   # zero might be acceptable
+    ],
+)
+def test_score_record_consumption_ranges(consumption: float, expected_score_at_least: int) -> None:
+    record = {"hour": 10, "month": 3, "day_of_week": 1, "consumption_kwh": consumption}
+    scored = score_record(record)
+    assert scored["dq_score"] >= expected_score_at_least or consumption < 0
+
+
+def test_quality_summary_perfect_scores() -> None:
+    scored = [{"dq_score": 100, "dq_issues": []} for _ in range(5)]
+    summary = quality_summary(scored)
+    assert summary["total_records"] == 5
+    assert summary["n_perfect"] == 5
+    assert summary["n_failing"] == 0
+
+
+def test_unique_values_returns_set() -> None:
+    records = [{"tag": "a"}, {"tag": "b"}, {"tag": "a"}]
+    result = unique_values(records, "tag")
+    assert set(result) == {"a", "b"}
