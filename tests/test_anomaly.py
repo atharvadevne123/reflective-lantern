@@ -878,7 +878,7 @@ def test_zscore_flag_negative_value_below_mean() -> None:
         (100.0, 0.0, 1.0, 2.0, True),
     ],
 )
-def test_zscore_flag_parametrized(
+def test_zscore_flag_new_parametrized(
     value: float, mean: float, std: float, threshold: float, expected: bool
 ) -> None:
     assert zscore_flag(value, mean, std, threshold) is expected
