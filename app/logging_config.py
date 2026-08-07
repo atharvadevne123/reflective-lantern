@@ -124,3 +124,18 @@ __all__ = [
     "is_debug_enabled",
     "log_level_int",
 ]
+
+
+def suppress_noisy_loggers(*names: str, level: str = "WARNING") -> None:
+    """Set *level* on each named logger to reduce log noise in production.
+
+    A common pattern for silencing verbose third-party loggers (e.g. boto3,
+    urllib3) without touching the root logger.
+
+    Args:
+        *names: Logger names to silence (e.g. "boto3", "urllib3").
+        level: Logging level to set on each logger. Defaults to "WARNING".
+    """
+    int_level = log_level_int(level)
+    for name in names:
+        logging.getLogger(name).setLevel(int_level)
