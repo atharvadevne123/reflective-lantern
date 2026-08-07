@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import logging
 from datetime import UTC, datetime, timedelta
+from functools import lru_cache
 
 logger = logging.getLogger(__name__)
 
@@ -184,6 +185,7 @@ def format_duration(seconds: float) -> str:
     return f"{secs}s"
 
 
+@lru_cache(maxsize=256)
 def is_leap_year(year: int) -> bool:
     """Return True if *year* is a leap year.
 
@@ -201,6 +203,7 @@ def is_leap_year(year: int) -> bool:
     return (year % 4 == 0 and year % 100 != 0) or (year % 400 == 0)
 
 
+@lru_cache(maxsize=256)
 def days_in_month(year: int, month: int) -> int:
     """Return the number of days in *month* of *year*.
 
