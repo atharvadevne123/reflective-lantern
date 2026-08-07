@@ -142,3 +142,56 @@ class TestValidationIntegration:
         data = client.post("/api/v1/predict", json=intent_payload).json()
         assert data["warnings"] == []
         assert data["confidence"] in ("high", "medium")
+
+
+class TestValidateBatch:
+    """Tests for the validate_batch helper added in the improvement run."""
+
+    def test_empty_batch_returns_empty(self):
+        from app.validation import validate_batch
+
+        assert validate_batch([]) == {}
+
+    def test_all_valid_returns_empty(self):
+        from app.validation import validate_batch
+
+        payloads = [
+            {"days_since_registration": 100, "days_since_last_purchase": 50},
+            {"view_count": 10, "click_count": 5},
+        ]
+        assert validate_batch(payloads) == {}
+
+    def test_one_invalid_returns_index(self):
+        from app.validation import validate_batch
+
+        payloads = [
+            {"days_since_registration": 10, "days_since_last_purchase": 200},
+        ]
+        result = validate_batch(payloads)
+        assert "0" in result
+        assert len(result["0"]) >= 1
+
+    def test_mixed_batch_reports_only_invalid(self):
+        from app.validation import validate_batch
+
+        payloads = [
+            {"view_count": 5, "click_count": 1},  # valid
+            {"view_count": 1, "click_count": 50},  # invalid
+            {"days_since_registration": 30, "days_since_last_purchase": 10},  # valid
+        ]
+        result = validate_batch(payloads)
+        assert set(result.keys()) == {"1"}
+
+    @pytest.mark.parametrize(
+        "payloads,expected_invalid_count",
+        [
+            ([], 0),
+            ([{"view_count": 0, "click_count": 5}], 1),
+            ([{"view_count": 5, "click_count": 1}] * 5, 0),
+        ],
+    )
+    def test_batch_parametrized(self, payloads, expected_invalid_count):
+        from app.validation import validate_batch
+
+        result = validate_batch(payloads)
+        assert len(result) == expected_invalid_count
