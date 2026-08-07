@@ -602,3 +602,42 @@ def test_trend_reversal_count_nonzero_param(n: int) -> None:
     values = [float(i % 2) for i in range(n)]
     count = trend_reversal_count(values)
     assert count >= 0
+
+
+class TestPeriodComparison:
+    def test_same_series_zero_change(self) -> None:
+        from app.trend_analysis import period_comparison
+
+        result = period_comparison([1.0, 2.0, 3.0], [1.0, 2.0, 3.0])
+        assert result["pct_change"] == pytest.approx(0.0)
+
+    def test_increase_positive_pct_change(self) -> None:
+        from app.trend_analysis import period_comparison
+
+        result = period_comparison([100.0, 100.0], [120.0, 120.0])
+        assert result["pct_change"] == pytest.approx(20.0)
+
+    def test_decrease_negative_pct_change(self) -> None:
+        from app.trend_analysis import period_comparison
+
+        result = period_comparison([200.0, 200.0], [100.0, 100.0])
+        assert result["pct_change"] == pytest.approx(-50.0)
+
+    def test_totals_correct(self) -> None:
+        from app.trend_analysis import period_comparison
+
+        result = period_comparison([1.0, 2.0, 3.0], [4.0, 5.0, 6.0])
+        assert result["total_a"] == pytest.approx(6.0)
+        assert result["total_b"] == pytest.approx(15.0)
+
+    def test_empty_raises(self) -> None:
+        from app.trend_analysis import period_comparison
+
+        with pytest.raises(ValueError):
+            period_comparison([], [1.0])
+
+    def test_length_mismatch_raises(self) -> None:
+        from app.trend_analysis import period_comparison
+
+        with pytest.raises(ValueError):
+            period_comparison([1.0, 2.0], [1.0])
