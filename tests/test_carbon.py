@@ -853,13 +853,13 @@ def test_carbon_per_sqm_known_regions(region: str) -> None:
     assert result > 0.0
 
 
-def test_co2_kg_to_tonnes_basic() -> None:
+def test_co2_kg_to_tonnes_exact() -> None:
     from app.carbon import co2_kg_to_tonnes
 
     assert co2_kg_to_tonnes(1000.0) == pytest.approx(1.0)
 
 
-def test_trees_equivalent_positive() -> None:
+def test_trees_equivalent_one_tree() -> None:
     from app.carbon import trees_equivalent
 
     assert trees_equivalent(21.7) == pytest.approx(1.0, rel=0.1)
