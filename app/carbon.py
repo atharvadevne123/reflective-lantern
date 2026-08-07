@@ -579,3 +579,38 @@ def carbon_reduction_pct(
     if baseline_co2_kg == 0.0:
         return 0.0
     return round((baseline_co2_kg - actual_co2_kg) / baseline_co2_kg * 100.0, 4)
+
+
+def cumulative_co2(daily_kg: list[float]) -> list[float]:
+    """Return the running cumulative CO2 total from a series of daily values.
+
+    Args:
+        daily_kg: Daily CO2 emissions in kilograms.
+
+    Returns:
+        Cumulative CO2 list of the same length; entry i = sum(daily_kg[0:i+1]).
+    """
+    total = 0.0
+    result: list[float] = []
+    for v in daily_kg:
+        total += v
+        result.append(round(total, 6))
+    return result
+
+
+def carbon_per_occupant(co2_kg: float, occupants: int) -> float:
+    """Return per-occupant CO2 footprint.
+
+    Args:
+        co2_kg: Total CO2 in kilograms for the period.
+        occupants: Number of occupants (must be > 0).
+
+    Returns:
+        Per-occupant share in kg, rounded to 4 decimal places.
+
+    Raises:
+        ValueError: If *occupants* is not positive.
+    """
+    if occupants <= 0:
+        raise ValueError(f"occupants must be positive, got {occupants}")
+    return round(co2_kg / occupants, 4)
