@@ -894,3 +894,50 @@ def test_egi_parametrize(vacancy: float) -> None:
     gross = 120_000.0
     result = effective_gross_income(gross, vacancy_rate=vacancy)
     assert result == pytest.approx(gross * (1.0 - vacancy))
+
+
+def test_housing_affordability_index_above_100_when_affordable() -> None:
+    from app.market_context import housing_affordability_index
+
+    result = housing_affordability_index(
+        median_home_price=200_000.0,
+        median_household_income=100_000.0,
+        mortgage_rate=0.04,
+    )
+    assert result["hai"] > 100.0
+
+
+def test_housing_affordability_index_zero_income_returns_zero() -> None:
+    from app.market_context import housing_affordability_index
+
+    result = housing_affordability_index(
+        median_home_price=200_000.0,
+        median_household_income=0.0,
+    )
+    assert result["hai"] == 0.0
+
+
+def test_housing_affordability_index_has_required_keys() -> None:
+    from app.market_context import housing_affordability_index
+
+    result = housing_affordability_index(
+        median_home_price=300_000.0,
+        median_household_income=80_000.0,
+    )
+    assert set(result.keys()) >= {"loan_amount", "monthly_payment", "qualifying_income", "hai"}
+
+
+@pytest.mark.parametrize(
+    "price,income,expected_affordable",
+    [
+        (200_000.0, 150_000.0, True),   # very affordable
+        (1_000_000.0, 50_000.0, False),  # not affordable
+    ],
+)
+def test_housing_affordability_index_parametrized(
+    price: float, income: float, expected_affordable: bool
+) -> None:
+    from app.market_context import housing_affordability_index
+
+    result = housing_affordability_index(median_home_price=price, median_household_income=income)
+    assert (result["hai"] >= 100) is expected_affordable
