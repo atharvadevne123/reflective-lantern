@@ -109,18 +109,28 @@ def train_model(X: pd.DataFrame, y: pd.Series) -> tuple[Pipeline, dict[str, Any]
     scores = cross_val_score(full_pipeline, X, y, cv=cv, scoring="roc_auc", n_jobs=-1)
     full_pipeline.fit(X, y)
 
+    model_version = os.getenv("MODEL_VERSION", "1.0.0")
     metrics: dict[str, Any] = {
         "auc_mean": round(float(scores.mean()), 4),
         "auc_std": round(float(scores.std()), 4),
+        "auc_min": round(float(scores.min()), 4),
+        "auc_max": round(float(scores.max()), 4),
         "n_features": X.shape[1],
         "n_samples": int(len(y)),
         "positive_rate": round(float(y.mean()), 4),
-        "model_version": "1.0.0",
+        "model_version": model_version,
     }
 
     joblib.dump(full_pipeline, MODEL_PATH)
     METRICS_PATH.write_text(json.dumps(metrics, indent=2))
-    logger.info("Model trained: AUC=%.4f±%.4f", metrics["auc_mean"], metrics["auc_std"])
+    logger.info(
+        "Model trained: AUC=%.4f±%.4f (min=%.4f max=%.4f) n=%d",
+        metrics["auc_mean"],
+        metrics["auc_std"],
+        metrics["auc_min"],
+        metrics["auc_max"],
+        metrics["n_samples"],
+    )
     return full_pipeline, metrics
 
 
