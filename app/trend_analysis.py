@@ -419,3 +419,41 @@ def exponential_growth_rate(values: list[float]) -> float:
     if any(v <= 0 for v in values):
         raise ValueError("All values must be strictly positive for exponential growth rate")
     return round((math.log(values[-1]) - math.log(values[0])) / (len(values) - 1), 6)
+
+
+def period_comparison(
+    series_a: list[float],
+    series_b: list[float],
+) -> dict[str, float]:
+    """Compare two equal-length time periods and return summary statistics.
+
+    Computes the mean, total, and percentage change between two periods.
+    Useful for month-over-month or year-over-year comparisons.
+
+    Args:
+        series_a: Reference period values (e.g. previous month).
+        series_b: Comparison period values (e.g. current month).
+
+    Returns:
+        Dict with keys: mean_a, mean_b, total_a, total_b, pct_change.
+        pct_change is positive when series_b > series_a.
+
+    Raises:
+        ValueError: If either series is empty or they have different lengths.
+    """
+    if not series_a or not series_b:
+        raise ValueError("Both series must be non-empty")
+    if len(series_a) != len(series_b):
+        raise ValueError(f"Series lengths must match: {len(series_a)} vs {len(series_b)}")
+    mean_a = sum(series_a) / len(series_a)
+    mean_b = sum(series_b) / len(series_b)
+    total_a = sum(series_a)
+    total_b = sum(series_b)
+    pct_change = round(100.0 * (mean_b - mean_a) / mean_a, 4) if mean_a != 0 else 0.0
+    return {
+        "mean_a": round(mean_a, 4),
+        "mean_b": round(mean_b, 4),
+        "total_a": round(total_a, 4),
+        "total_b": round(total_b, 4),
+        "pct_change": pct_change,
+    }
