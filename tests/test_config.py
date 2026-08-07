@@ -512,3 +512,33 @@ class TestIsProduction:
         from app.config import get_settings, settings
 
         assert get_settings() is settings
+
+
+class TestNewSettings:
+    """Tests for the new Settings fields added in the 2026-08-07 improvement run."""
+
+    def test_db_pool_size_default(self) -> None:
+        from app.config import settings
+
+        assert settings.db_pool_size == 5
+
+    def test_db_max_overflow_default(self) -> None:
+        from app.config import settings
+
+        assert settings.db_max_overflow == 10
+
+    def test_db_pool_recycle_default(self) -> None:
+        from app.config import settings
+
+        assert settings.db_pool_recycle == 1800
+
+    def test_cors_origins_default(self) -> None:
+        from app.config import settings
+
+        assert settings.cors_origins == "*"
+
+    def test_settings_has_all_fields(self) -> None:
+        from app.config import settings
+
+        for field_name in ("db_pool_size", "db_max_overflow", "db_pool_recycle", "cors_origins"):
+            assert hasattr(settings, field_name)
