@@ -398,3 +398,64 @@ def kwh_stats_by_building(
             "count": float(len(vals)),
         }
     return result
+
+
+def records_to_parquet_bytes(
+    records: list[dict[str, Any]],
+) -> bytes:
+    """Serialize records to Parquet format bytes using pandas.
+
+    Returns a bytes object containing the Parquet-encoded data. Requires
+    ``pandas`` and ``pyarrow`` (or ``fastparquet``) to be installed.
+
+    Args:
+        records: List of energy record dicts to serialize.
+
+    Returns:
+        Raw Parquet file bytes.
+
+    Raises:
+        ImportError: If pandas or a Parquet engine is not installed.
+        ValueError: If records is empty.
+    """
+    import io as _io
+
+    import pandas as pd
+
+    if not records:
+        raise ValueError("records must not be empty")
+    df = pd.DataFrame(records)
+    buf = _io.BytesIO()
+    df.to_parquet(buf, index=False, engine="auto")
+    return buf.getvalue()
+
+
+def flatten_nested_records(
+    records: list[dict[str, Any]],
+    prefix: str = "",
+    separator: str = "_",
+) -> list[dict[str, Any]]:
+    """Flatten nested dict records into a single level.
+
+    Args:
+        records: Records potentially containing nested dicts.
+        prefix: Optional key prefix applied to all flattened keys.
+        separator: Character used to join nested key segments.
+
+    Returns:
+        List of flat dicts suitable for CSV or tabular export.
+    """
+
+    def _flatten(d: dict[str, Any], parent: str = "") -> dict[str, Any]:
+        items: dict[str, Any] = {}
+        for k, v in d.items():
+            key = f"{parent}{separator}{k}" if parent else k
+            if prefix:
+                key = f"{prefix}{separator}{key}" if parent else f"{prefix}{separator}{k}"
+            if isinstance(v, dict):
+                items.update(_flatten(v, parent=key if not prefix else key))
+            else:
+                items[key] = v
+        return items
+
+    return [_flatten(r) for r in records]
