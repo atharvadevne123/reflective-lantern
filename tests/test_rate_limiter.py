@@ -252,3 +252,67 @@ class TestPruneIdleClients:
     def test_empty_limiter_returns_zero(self) -> None:
         limiter = make_rate_limiter()
         assert prune_idle_clients(limiter, max_idle_seconds=1.0) == 0
+
+
+class TestActiveClientCount:
+    def test_empty_limiter_returns_zero(self) -> None:
+        from app.rate_limiter import active_client_count, make_rate_limiter
+
+        limiter = make_rate_limiter()
+        assert active_client_count(limiter) == 0
+
+    def test_one_client(self) -> None:
+        from app.rate_limiter import active_client_count, make_rate_limiter
+
+        limiter = make_rate_limiter()
+        limiter.is_allowed("client_a")
+        assert active_client_count(limiter) == 1
+
+    def test_multiple_unique_clients(self) -> None:
+        from app.rate_limiter import active_client_count, make_rate_limiter
+
+        limiter = make_rate_limiter()
+        for i in range(5):
+            limiter.is_allowed(f"client_{i}")
+        assert active_client_count(limiter) == 5
+
+
+class TestTotalConsumedTokens:
+    def test_no_requests_consumed_at_capacity(self) -> None:
+        from app.rate_limiter import make_rate_limiter, total_consumed_tokens
+
+        limiter = make_rate_limiter(capacity=10.0)
+        consumed = total_consumed_tokens(limiter)
+        assert consumed >= 0.0
+
+    def test_after_request_consumed_increases(self) -> None:
+        from app.rate_limiter import make_rate_limiter, total_consumed_tokens
+
+        limiter = make_rate_limiter(capacity=10.0, rate_per_second=0.001)
+        limiter.is_allowed("test")
+        consumed = total_consumed_tokens(limiter, "test")
+        assert consumed >= 0.0
+
+
+class TestClientExists:
+    def test_new_client_does_not_exist(self) -> None:
+        from app.rate_limiter import client_exists, make_rate_limiter
+
+        limiter = make_rate_limiter()
+        assert client_exists(limiter, "unknown") is False
+
+    def test_client_exists_after_request(self) -> None:
+        from app.rate_limiter import client_exists, make_rate_limiter
+
+        limiter = make_rate_limiter()
+        limiter.is_allowed("present")
+        assert client_exists(limiter, "present") is True
+
+    @pytest.mark.parametrize("key", ["a", "b", "c"])
+    def test_parametrized_clients(self, key: str) -> None:
+        from app.rate_limiter import client_exists, make_rate_limiter
+
+        limiter = make_rate_limiter()
+        assert client_exists(limiter, key) is False
+        limiter.is_allowed(key)
+        assert client_exists(limiter, key) is True
