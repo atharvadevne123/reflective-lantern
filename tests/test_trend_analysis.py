@@ -666,9 +666,9 @@ class TestHurstExponent:
             hurst_exponent([1.0, 2.0, 3.0], max_lag=20)
 
     def test_random_walk_near_half(self) -> None:
-        from app.trend_analysis import hurst_exponent
-
         import random
+
+        from app.trend_analysis import hurst_exponent
         random.seed(42)
         walk = [0.0]
         for _ in range(100):
@@ -677,40 +677,40 @@ class TestHurstExponent:
         assert 0.0 <= result <= 1.0
 
 
-class TestTrendStrength:
+class TestWindowedTrendStrength:
     def test_perfect_linear_trend(self) -> None:
-        from app.trend_analysis import trend_strength
+        from app.trend_analysis import windowed_trend_strength
 
         values = [float(i) for i in range(20)]
-        result = trend_strength(values)
+        result = windowed_trend_strength(values)
         assert result == pytest.approx(1.0, abs=1e-3)
 
     def test_flat_series_zero(self) -> None:
-        from app.trend_analysis import trend_strength
+        from app.trend_analysis import windowed_trend_strength
 
         values = [5.0] * 20
-        assert trend_strength(values) == 0.0
+        assert windowed_trend_strength(values) == 0.0
 
     def test_in_range(self) -> None:
-        from app.trend_analysis import trend_strength
-
         import random
+
+        from app.trend_analysis import windowed_trend_strength
         random.seed(0)
         values = [random.gauss(0, 1) for _ in range(50)]
-        assert 0.0 <= trend_strength(values) <= 1.0
+        assert 0.0 <= windowed_trend_strength(values) <= 1.0
 
     def test_too_few_raises(self) -> None:
-        from app.trend_analysis import trend_strength
+        from app.trend_analysis import windowed_trend_strength
 
         with pytest.raises(ValueError):
-            trend_strength([1.0])
+            windowed_trend_strength([1.0])
 
     @pytest.mark.parametrize("window", [5, 10, 20])
     def test_window_parameter(self, window: int) -> None:
-        from app.trend_analysis import trend_strength
+        from app.trend_analysis import windowed_trend_strength
 
         values = [float(i) for i in range(50)]
-        result = trend_strength(values, window=window)
+        result = windowed_trend_strength(values, window=window)
         assert 0.0 <= result <= 1.0
 
 

@@ -383,7 +383,6 @@ def test_group_alerts_by_severity_multiple_warnings() -> None:
 
 class TestAlertAgeSeconds:
     def test_recent_alert_small_age(self) -> None:
-        import time
 
         from app.notifications import alert_age_seconds
 

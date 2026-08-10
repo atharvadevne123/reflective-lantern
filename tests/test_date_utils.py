@@ -681,7 +681,7 @@ class TestFiscalQuarter:
             fiscal_quarter(datetime(2024, 1, 1), fiscal_year_start_month=13)
 
 
-class TestDaysInMonth:
+class TestDaysInMonthExtended:
     def test_february_non_leap(self) -> None:
         from app.date_utils import days_in_month
 
@@ -709,7 +709,7 @@ class TestDaysInMonth:
             days_in_month(2024, 0)
 
 
-class TestIsLeapYear:
+class TestIsLeapYearExtended:
     @pytest.mark.parametrize("year,expected", [(2024, True), (2023, False), (1900, False), (2000, True)])
     def test_parametrized(self, year: int, expected: bool) -> None:
         from app.date_utils import is_leap_year

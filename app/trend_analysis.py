@@ -508,8 +508,8 @@ def hurst_exponent(values: list[float], max_lag: int = 20) -> float:
     return round(max(0.0, min(1.0, slope)), 4)
 
 
-def trend_strength(values: list[float], window: int = 10) -> float:
-    """Measure trend strength as the R² of a linear fit over the series.
+def windowed_trend_strength(values: list[float], window: int = 10) -> float:
+    """Measure trend strength as the R² of a linear fit over a rolling window.
 
     A value near 1.0 indicates a strong linear trend; near 0.0 indicates noise.
 

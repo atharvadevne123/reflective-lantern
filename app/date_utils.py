@@ -363,38 +363,6 @@ def fiscal_quarter(dt: "datetime", fiscal_year_start_month: int = 1) -> int:
     return offset // 3 + 1
 
 
-def days_in_month(year: int, month: int) -> int:
-    """Return the number of days in the given *month* of *year*.
-
-    Args:
-        year: Four-digit year.
-        month: Month number (1-12).
-
-    Returns:
-        Number of days (28, 29, 30, or 31).
-
-    Raises:
-        ValueError: If *month* is not in 1-12.
-    """
-    import calendar
-
-    if not 1 <= month <= 12:
-        raise ValueError(f"month must be 1-12, got {month}")
-    return calendar.monthrange(year, month)[1]
-
-
-def is_leap_year(year: int) -> bool:
-    """Return True if *year* is a leap year.
-
-    Args:
-        year: Four-digit year.
-
-    Returns:
-        True if *year* is divisible by 4 (and by 400 if divisible by 100).
-    """
-    return (year % 4 == 0 and year % 100 != 0) or (year % 400 == 0)
-
-
 def date_range_overlap_days(
     start_a: "datetime",
     end_a: "datetime",

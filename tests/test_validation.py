@@ -825,7 +825,7 @@ class TestValidateRegionId:
         assert validate_region_id(rid) == []
 
 
-class TestValidatePercentage:
+class TestValidatePercentageAdditional:
     def test_valid(self) -> None:
         from app.validation import validate_percentage
 

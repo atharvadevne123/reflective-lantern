@@ -944,39 +944,39 @@ class TestCarbonPerOccupant:
         assert result == pytest.approx(10.0)
 
 
-class TestCarbonBudgetRemaining:
+class TestCarbonBudgetStatus:
     def test_within_budget(self) -> None:
-        from app.carbon import carbon_budget_remaining
+        from app.carbon import carbon_budget_status
 
-        result = carbon_budget_remaining(budget_kg=1000.0, consumed_kg=600.0)
+        result = carbon_budget_status(budget_kg=1000.0, consumed_kg=600.0)
         assert result["remaining_kg"] == pytest.approx(400.0)
         assert result["consumed_pct"] == pytest.approx(60.0)
         assert result["overage_kg"] == 0.0
 
     def test_over_budget(self) -> None:
-        from app.carbon import carbon_budget_remaining
+        from app.carbon import carbon_budget_status
 
-        result = carbon_budget_remaining(budget_kg=1000.0, consumed_kg=1200.0)
+        result = carbon_budget_status(budget_kg=1000.0, consumed_kg=1200.0)
         assert result["remaining_kg"] == pytest.approx(-200.0)
         assert result["overage_kg"] == pytest.approx(200.0)
 
     def test_zero_consumed(self) -> None:
-        from app.carbon import carbon_budget_remaining
+        from app.carbon import carbon_budget_status
 
-        result = carbon_budget_remaining(budget_kg=500.0, consumed_kg=0.0)
+        result = carbon_budget_status(budget_kg=500.0, consumed_kg=0.0)
         assert result["consumed_pct"] == 0.0
 
     def test_invalid_budget_raises(self) -> None:
-        from app.carbon import carbon_budget_remaining
+        from app.carbon import carbon_budget_status
 
         with pytest.raises(ValueError, match="budget_kg"):
-            carbon_budget_remaining(budget_kg=0.0, consumed_kg=100.0)
+            carbon_budget_status(budget_kg=0.0, consumed_kg=100.0)
 
     def test_negative_consumed_raises(self) -> None:
-        from app.carbon import carbon_budget_remaining
+        from app.carbon import carbon_budget_status
 
         with pytest.raises(ValueError, match="consumed_kg"):
-            carbon_budget_remaining(budget_kg=1000.0, consumed_kg=-1.0)
+            carbon_budget_status(budget_kg=1000.0, consumed_kg=-1.0)
 
 
 class TestWeightedCarbonFactor:

@@ -616,7 +616,7 @@ def carbon_per_occupant(co2_kg: float, occupants: int) -> float:
     return round(co2_kg / occupants, 4)
 
 
-def carbon_budget_remaining(
+def carbon_budget_status(
     budget_kg: float,
     consumed_kg: float,
 ) -> dict[str, float]:

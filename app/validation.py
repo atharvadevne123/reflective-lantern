@@ -492,11 +492,13 @@ def validate_region_id(region_id: str) -> list[str]:
     return errors
 
 
-def validate_percentage(value: float, field_name: str = "value") -> list[str]:
+def validate_percentage_typed(value: object, field_name: str = "value") -> list[str]:
     """Return validation errors if *value* is not a valid percentage in [0, 100].
 
+    Unlike :func:`validate_percentage`, this also validates the type of *value*.
+
     Args:
-        value: Numeric value to validate as a percentage.
+        value: Value to validate as a percentage.
         field_name: Name shown in error messages. Defaults to ``"value"``.
 
     Returns:
