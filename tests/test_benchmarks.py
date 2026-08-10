@@ -496,3 +496,76 @@ def test_eui_percentile_bottom_25() -> None:
 def test_target_eui_known_types(building_type: str) -> None:
     result = target_eui(building_type, improvement_pct=10.0)
     assert result > 0
+
+
+class TestEuiImprovementNeeded:
+    def test_already_at_target_returns_zero(self) -> None:
+        from app.benchmarks import ASHRAE_EUI_BENCHMARKS, eui_improvement_needed
+
+        benchmark = ASHRAE_EUI_BENCHMARKS["office"]
+        target = benchmark * 0.5
+        assert eui_improvement_needed(target, "office", target_percentile=50.0) == pytest.approx(0.0)
+
+    def test_above_target_returns_positive(self) -> None:
+        from app.benchmarks import ASHRAE_EUI_BENCHMARKS, eui_improvement_needed
+
+        benchmark = ASHRAE_EUI_BENCHMARKS["office"]
+        result = eui_improvement_needed(benchmark, "office", target_percentile=50.0)
+        assert result > 0.0
+
+    def test_invalid_percentile_raises(self) -> None:
+        from app.benchmarks import eui_improvement_needed
+
+        with pytest.raises(ValueError):
+            eui_improvement_needed(100.0, "office", target_percentile=0.0)
+
+    @pytest.mark.parametrize("tp", [25.0, 50.0, 80.0, 100.0])
+    def test_parametrized_percentile(self, tp) -> None:
+        from app.benchmarks import eui_improvement_needed
+
+        result = eui_improvement_needed(200.0, "office", target_percentile=tp)
+        assert result >= 0.0
+
+
+class TestNormaliseEui:
+    def test_at_benchmark_is_one(self) -> None:
+        from app.benchmarks import ASHRAE_EUI_BENCHMARKS, normalise_eui
+
+        benchmark = ASHRAE_EUI_BENCHMARKS["office"]
+        assert normalise_eui(benchmark, "office") == pytest.approx(1.0)
+
+    def test_half_benchmark_is_half(self) -> None:
+        from app.benchmarks import ASHRAE_EUI_BENCHMARKS, normalise_eui
+
+        benchmark = ASHRAE_EUI_BENCHMARKS["office"]
+        assert normalise_eui(benchmark / 2.0, "office") == pytest.approx(0.5)
+
+    def test_unknown_type_uses_default(self) -> None:
+        from app.benchmarks import normalise_eui
+
+        result = normalise_eui(100.0, "nonexistent_type")
+        assert result > 0.0
+
+
+class TestEuiSavingsPotential:
+    def test_returns_expected_keys(self) -> None:
+        from app.benchmarks import eui_savings_potential
+
+        result = eui_savings_potential(200.0, 1000.0)
+        assert "saved_kwh_per_year" in result
+        assert "saved_cost_per_year" in result
+        assert "new_eui" in result
+
+    def test_20_pct_improvement(self) -> None:
+        from app.benchmarks import eui_savings_potential
+
+        result = eui_savings_potential(100.0, 1000.0, improvement_pct=20.0)
+        assert result["saved_kwh_per_year"] == pytest.approx(20_000.0)
+        assert result["new_eui"] == pytest.approx(80.0)
+
+    @pytest.mark.parametrize("pct", [10.0, 20.0, 50.0])
+    def test_savings_positive_for_positive_inputs(self, pct) -> None:
+        from app.benchmarks import eui_savings_potential
+
+        result = eui_savings_potential(200.0, 500.0, improvement_pct=pct)
+        assert result["saved_cost_per_year"] > 0.0
