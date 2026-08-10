@@ -469,3 +469,94 @@ def test_cache_stats_summary_hit_rate() -> None:
     c.get("x")  # miss
     summary = cache_stats_summary(c)
     assert summary["hit_rate"] == pytest.approx(0.5)
+
+
+class TestCacheFillRate:
+    def test_empty_cache_fill_zero(self) -> None:
+        from app.cache import cache_fill_rate
+
+        c = TTLCache(ttl_seconds=10, max_size=10)
+        assert cache_fill_rate(c) == pytest.approx(0.0)
+
+    def test_half_full(self) -> None:
+        from app.cache import cache_fill_rate
+
+        c = TTLCache(ttl_seconds=60, max_size=10)
+        for i in range(5):
+            c.set(str(i), i)
+        assert cache_fill_rate(c) == pytest.approx(0.5)
+
+    def test_full_cache(self) -> None:
+        from app.cache import cache_fill_rate
+
+        c = TTLCache(ttl_seconds=60, max_size=3)
+        for i in range(3):
+            c.set(str(i), i)
+        assert cache_fill_rate(c) == pytest.approx(1.0)
+
+    def test_zero_max_size_returns_zero(self) -> None:
+        from app.cache import cache_fill_rate
+
+        c = TTLCache(ttl_seconds=10, max_size=0)
+        assert cache_fill_rate(c) == pytest.approx(0.0)
+
+
+class TestPeek:
+    def test_existing_key_returns_value(self) -> None:
+        from app.cache import peek
+
+        c = TTLCache(ttl_seconds=60)
+        c.set("x", 42)
+        assert peek(c, "x") == 42
+
+    def test_missing_key_returns_none(self) -> None:
+        from app.cache import peek
+
+        c = TTLCache(ttl_seconds=60)
+        assert peek(c, "missing") is None
+
+    def test_peek_does_not_change_hit_count(self) -> None:
+        from app.cache import peek
+
+        c = TTLCache(ttl_seconds=60)
+        c.set("k", "v")
+        peek(c, "k")
+        assert c.hits == 0
+
+
+class TestBatchDelete:
+    def test_removes_existing_keys(self) -> None:
+        from app.cache import batch_delete
+
+        c = TTLCache(ttl_seconds=60)
+        c.set("a", 1)
+        c.set("b", 2)
+        removed = batch_delete(c, ["a", "b"])
+        assert removed == 2
+        assert c.get("a") is None
+
+    def test_nonexistent_keys_not_counted(self) -> None:
+        from app.cache import batch_delete
+
+        c = TTLCache(ttl_seconds=60)
+        removed = batch_delete(c, ["x", "y"])
+        assert removed == 0
+
+    def test_partial_removal(self) -> None:
+        from app.cache import batch_delete
+
+        c = TTLCache(ttl_seconds=60)
+        c.set("keep", 1)
+        batch_delete(c, ["keep"])
+        assert c.get("keep") is None
+
+    @pytest.mark.parametrize("n", [1, 5, 10])
+    def test_parametrized_batch_delete(self, n) -> None:
+        from app.cache import batch_delete
+
+        c = TTLCache(ttl_seconds=60)
+        keys = [str(i) for i in range(n)]
+        for k in keys:
+            c.set(k, k)
+        removed = batch_delete(c, keys)
+        assert removed == n
