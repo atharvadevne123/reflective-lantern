@@ -1164,3 +1164,118 @@ class TestMovingPercentile:
 
         with pytest.raises(ValueError):
             moving_percentile([1.0, 2.0], window=2, percentile=101.0)
+
+
+class TestDoubleExponentialSmoothing:
+    def test_output_length(self) -> None:
+        from app.time_series import double_exponential_smoothing
+
+        values = [1.0, 2.0, 3.0, 4.0, 5.0]
+        result = double_exponential_smoothing(values)
+        assert len(result) == len(values)
+
+    def test_too_few_raises(self) -> None:
+        from app.time_series import double_exponential_smoothing
+
+        with pytest.raises(ValueError, match="at least 2"):
+            double_exponential_smoothing([1.0])
+
+    def test_invalid_alpha_raises(self) -> None:
+        from app.time_series import double_exponential_smoothing
+
+        with pytest.raises(ValueError, match="alpha"):
+            double_exponential_smoothing([1.0, 2.0, 3.0], alpha=1.5)
+
+    def test_invalid_beta_raises(self) -> None:
+        from app.time_series import double_exponential_smoothing
+
+        with pytest.raises(ValueError, match="beta"):
+            double_exponential_smoothing([1.0, 2.0, 3.0], beta=0.0)
+
+    def test_upward_trend_tracked(self) -> None:
+        from app.time_series import double_exponential_smoothing
+
+        values = [10.0, 20.0, 30.0, 40.0, 50.0]
+        result = double_exponential_smoothing(values, alpha=0.9, beta=0.9)
+        assert result[-1] > result[0]
+
+    @pytest.mark.parametrize("alpha,beta", [(0.1, 0.1), (0.5, 0.5), (0.9, 0.9)])
+    def test_returns_float_list(self, alpha: float, beta: float) -> None:
+        from app.time_series import double_exponential_smoothing
+
+        result = double_exponential_smoothing([1.0, 2.0, 3.0, 4.0], alpha=alpha, beta=beta)
+        assert all(isinstance(v, float) for v in result)
+
+
+class TestLinearInterpolation:
+    def test_no_gaps(self) -> None:
+        from app.time_series import linear_interpolation
+
+        values: list[float | None] = [1.0, 2.0, 3.0]
+        assert linear_interpolation(values) == [1.0, 2.0, 3.0]
+
+    def test_interior_gap(self) -> None:
+        from app.time_series import linear_interpolation
+
+        values: list[float | None] = [0.0, None, 2.0]
+        result = linear_interpolation(values)
+        assert len(result) == 3
+        assert result[1] == pytest.approx(1.0, abs=1e-5)
+
+    def test_leading_gap_filled(self) -> None:
+        from app.time_series import linear_interpolation
+
+        values: list[float | None] = [None, None, 5.0]
+        result = linear_interpolation(values)
+        assert result[0] == result[1] == 5.0
+
+    def test_all_none_raises(self) -> None:
+        from app.time_series import linear_interpolation
+
+        with pytest.raises(ValueError, match="non-None"):
+            linear_interpolation([None, None, None])
+
+    def test_empty_raises(self) -> None:
+        from app.time_series import linear_interpolation
+
+        with pytest.raises(ValueError):
+            linear_interpolation([])
+
+
+class TestForwardFill:
+    def test_no_gaps(self) -> None:
+        from app.time_series import forward_fill
+
+        values: list[float | None] = [1.0, 2.0, 3.0]
+        assert forward_fill(values) == [1.0, 2.0, 3.0]
+
+    def test_trailing_gap(self) -> None:
+        from app.time_series import forward_fill
+
+        values: list[float | None] = [1.0, 2.0, None, None]
+        result = forward_fill(values)
+        assert result == [1.0, 2.0, 2.0, 2.0]
+
+    def test_leading_none_raises(self) -> None:
+        from app.time_series import forward_fill
+
+        with pytest.raises(ValueError, match="None"):
+            forward_fill([None, 1.0, 2.0])
+
+    def test_empty_raises(self) -> None:
+        from app.time_series import forward_fill
+
+        with pytest.raises(ValueError):
+            forward_fill([])
+
+    @pytest.mark.parametrize(
+        "values,expected",
+        [
+            ([5.0, None, None], [5.0, 5.0, 5.0]),
+            ([1.0, None, 3.0], [1.0, 1.0, 3.0]),
+        ],
+    )
+    def test_parametrized(self, values: list, expected: list) -> None:
+        from app.time_series import forward_fill
+
+        assert forward_fill(values) == expected
