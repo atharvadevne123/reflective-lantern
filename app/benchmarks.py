@@ -342,3 +342,67 @@ def eui_percentile_category(eui: float, building_type: str = "default") -> str:
     if ratio <= 1.1:
         return "average"
     return "bottom_25"
+
+
+def eui_improvement_needed(actual_eui: float, building_type: str, target_percentile: float = 50.0) -> float:
+    """Compute the kWh/m²/year reduction needed to reach a percentile target.
+
+    Args:
+        actual_eui: Current EUI in kWh/m²/year.
+        building_type: Building type for benchmark lookup.
+        target_percentile: Target as a percentage of the benchmark (e.g. 80 means
+            target is 80% of the benchmark).
+
+    Returns:
+        Required EUI reduction in kWh/m²/year; 0.0 if already at or below target.
+
+    Raises:
+        ValueError: If *target_percentile* is not in (0, 100].
+    """
+    if not (0.0 < target_percentile <= 100.0):
+        raise ValueError(f"target_percentile must be in (0, 100], got {target_percentile}")
+    benchmark = ASHRAE_EUI_BENCHMARKS.get(building_type.lower(), ASHRAE_EUI_BENCHMARKS["default"])
+    target = benchmark * (target_percentile / 100.0)
+    return round(max(0.0, actual_eui - target), 4)
+
+
+def normalise_eui(eui: float, building_type: str = "default") -> float:
+    """Return *eui* normalised by the ASHRAE benchmark for *building_type*.
+
+    Args:
+        eui: Observed EUI in kWh/m²/year.
+        building_type: Building type for benchmark lookup.
+
+    Returns:
+        Normalised EUI (dimensionless ratio); 0.0 if benchmark is 0.
+    """
+    benchmark = ASHRAE_EUI_BENCHMARKS.get(building_type.lower(), ASHRAE_EUI_BENCHMARKS["default"])
+    if benchmark == 0:
+        return 0.0
+    return round(eui / benchmark, 6)
+
+
+def eui_savings_potential(
+    current_eui: float,
+    floor_area_sqm: float,
+    energy_price_per_kwh: float = 0.15,
+    improvement_pct: float = 20.0,
+) -> dict[str, float]:
+    """Estimate annual cost savings from improving EUI by *improvement_pct*.
+
+    Args:
+        current_eui: Current EUI in kWh/m²/year.
+        floor_area_sqm: Gross floor area in square metres.
+        energy_price_per_kwh: Unit energy price in currency per kWh.
+        improvement_pct: Desired EUI reduction percentage.
+
+    Returns:
+        Dict with 'saved_kwh_per_year', 'saved_cost_per_year', and 'new_eui'.
+    """
+    saved_eui = current_eui * (improvement_pct / 100.0)
+    saved_kwh = saved_eui * floor_area_sqm
+    return {
+        "saved_kwh_per_year": round(saved_kwh, 4),
+        "saved_cost_per_year": round(saved_kwh * energy_price_per_kwh, 4),
+        "new_eui": round(current_eui - saved_eui, 4),
+    }
