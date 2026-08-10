@@ -459,3 +459,64 @@ def flatten_nested_records(
         return items
 
     return [_flatten(r) for r in records]
+
+
+def records_missing_fields(records: list[dict[str, Any]], required: list[str]) -> list[int]:
+    """Return indices of records that are missing at least one required field.
+
+    Args:
+        records: List of record dicts.
+        required: Field names that every record must have.
+
+    Returns:
+        Sorted list of zero-based indices of incomplete records.
+    """
+    return sorted(
+        i for i, r in enumerate(records)
+        if any(field not in r or r[field] is None for field in required)
+    )
+
+
+def records_to_lookup(records: list[dict[str, Any]], key: str) -> dict[str, dict[str, Any]]:
+    """Build a lookup dict keyed by a record field.
+
+    When duplicate keys exist the last record wins.
+
+    Args:
+        records: List of record dicts.
+        key: Field name to use as the lookup key.
+
+    Returns:
+        Dict mapping key-values to full record dicts.
+
+    Raises:
+        KeyError: If *key* is not present in any record.
+    """
+    if records and key not in records[0]:
+        raise KeyError(f"Field {key!r} not found in records")
+    return {str(r[key]): r for r in records}
+
+
+def rename_record_fields(
+    records: list[dict[str, Any]],
+    mapping: dict[str, str],
+) -> list[dict[str, Any]]:
+    """Return copies of *records* with fields renamed according to *mapping*.
+
+    Fields not in *mapping* are kept unchanged. Fields in *mapping* that don't
+    exist in a record are silently skipped.
+
+    Args:
+        records: List of record dicts.
+        mapping: Dict from old field name to new field name.
+
+    Returns:
+        New list of dicts with renamed keys.
+    """
+    result = []
+    for record in records:
+        new_rec = {}
+        for k, v in record.items():
+            new_rec[mapping.get(k, k)] = v
+        result.append(new_rec)
+    return result
