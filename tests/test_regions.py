@@ -427,3 +427,73 @@ def test_get_region_name_known_ids(region_id: str) -> None:
     name = get_region_name(region_id)
     assert isinstance(name, str)
     assert len(name) > 0
+
+
+class TestTotalPeakLoadMw:
+    def test_returns_positive(self) -> None:
+        from app.regions import total_peak_load_mw
+
+        assert total_peak_load_mw() > 0.0
+
+    def test_greater_than_any_single_region(self) -> None:
+        from app.regions import get_peak_load, total_peak_load_mw
+
+        south_peak = get_peak_load("south") or 0.0
+        assert total_peak_load_mw() > south_peak
+
+    def test_returns_float(self) -> None:
+        from app.regions import total_peak_load_mw
+
+        assert isinstance(total_peak_load_mw(), float)
+
+
+class TestRegionsAbovePeak:
+    def test_high_threshold_returns_empty(self) -> None:
+        from app.regions import regions_above_peak
+
+        result = regions_above_peak(1_000_000.0)
+        assert result == []
+
+    def test_zero_threshold_returns_all_known(self) -> None:
+        from app.regions import list_regions, regions_above_peak
+
+        result = regions_above_peak(0.0)
+        known_count = len(list_regions())
+        assert len(result) == known_count
+
+    def test_specific_threshold(self) -> None:
+        from app.regions import regions_above_peak
+
+        result = regions_above_peak(10_000.0)
+        assert "south" in result
+
+    def test_result_is_sorted(self) -> None:
+        from app.regions import regions_above_peak
+
+        result = regions_above_peak(5_000.0)
+        assert result == sorted(result)
+
+
+class TestRegionShareOfTotal:
+    def test_unknown_region_returns_zero(self) -> None:
+        from app.regions import region_share_of_total
+
+        assert region_share_of_total("nonexistent") == 0.0
+
+    def test_share_in_range(self) -> None:
+        from app.regions import region_share_of_total
+
+        share = region_share_of_total("northeast")
+        assert 0.0 < share < 1.0
+
+    def test_all_shares_sum_to_one(self) -> None:
+        from app.regions import KNOWN_REGIONS, region_share_of_total
+
+        total = sum(region_share_of_total(rid) for rid in KNOWN_REGIONS)
+        assert total == pytest.approx(1.0, abs=0.001)
+
+    @pytest.mark.parametrize("region_id", ["northeast", "south", "west"])
+    def test_returns_float(self, region_id: str) -> None:
+        from app.regions import region_share_of_total
+
+        assert isinstance(region_share_of_total(region_id), float)
