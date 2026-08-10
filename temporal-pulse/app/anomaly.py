@@ -109,3 +109,63 @@ def explain_anomaly(
     ]
     similar = find_similar_anomalies(query_vector, k=3)
     return {"top_contributors": contributors, "similar_historical_anomalies": similar}
+
+
+def anomaly_score_summary(scores: list[float]) -> dict[str, float]:
+    """Return descriptive statistics for a list of anomaly scores.
+
+    Args:
+        scores: Anomaly scores (typically non-negative reals).
+
+    Returns:
+        Dict with keys: ``mean``, ``max``, ``min``, ``p90`` (90th percentile).
+        All values are 0.0 when *scores* is empty.
+    """
+    if not scores:
+        return {"mean": 0.0, "max": 0.0, "min": 0.0, "p90": 0.0}
+    arr = np.array(scores, dtype=float)
+    return {
+        "mean": float(arr.mean()),
+        "max": float(arr.max()),
+        "min": float(arr.min()),
+        "p90": float(np.percentile(arr, 90)),
+    }
+
+
+def flag_recurring_anomalies(
+    labels: list[str],
+    min_occurrences: int = 2,
+) -> list[str]:
+    """Return labels that appear at least *min_occurrences* times.
+
+    Useful for identifying systematic/recurring fault patterns in the anomaly
+    history rather than one-off outliers.
+
+    Args:
+        labels: Sequence of anomaly category labels.
+        min_occurrences: Minimum count for a label to be considered recurring.
+
+    Returns:
+        Sorted list of recurring labels.
+    """
+    counts: dict[str, int] = {}
+    for lbl in labels:
+        counts[lbl] = counts.get(lbl, 0) + 1
+    return sorted(k for k, v in counts.items() if v >= min_occurrences)
+
+
+def normalise_scores(scores: list[float]) -> list[float]:
+    """Return *scores* min-max normalised to [0, 1].
+
+    Args:
+        scores: Raw anomaly scores.
+
+    Returns:
+        Normalised list; all zeros when all values are equal.
+    """
+    if not scores:
+        return []
+    lo, hi = min(scores), max(scores)
+    if hi == lo:
+        return [0.0] * len(scores)
+    return [(s - lo) / (hi - lo) for s in scores]
