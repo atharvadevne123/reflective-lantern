@@ -429,3 +429,70 @@ def alert_count_by_level(alerts: list[dict]) -> dict[str, int]:
         level = str(alert.get("level", "unknown"))
         counts[level] = counts.get(level, 0) + 1
     return counts
+
+
+def p_value_to_confidence(p_value: float) -> float:
+    """Convert a statistical p-value to a confidence percentage.
+
+    confidence = (1 - p_value) * 100, clamped to [0, 100].
+
+    Args:
+        p_value: P-value in [0, 1].
+
+    Returns:
+        Confidence as a percentage in [0, 100].
+    """
+    return round(max(0.0, min(100.0, (1.0 - p_value) * 100.0)), 4)
+
+
+def alert_suppression_window(
+    last_alert_ts: float,
+    now_ts: float,
+    cooldown_seconds: float = 300.0,
+) -> bool:
+    """Return True if an alert is within the suppression cooldown window.
+
+    Prevents alert storms by suppressing repeated alerts for the same event
+    within *cooldown_seconds* of the last alert.
+
+    Args:
+        last_alert_ts: Unix timestamp of the most recent alert.
+        now_ts: Current Unix timestamp.
+        cooldown_seconds: Suppression window in seconds.
+
+    Returns:
+        True if the alert should be suppressed (within cooldown).
+
+    Raises:
+        ValueError: If cooldown_seconds is not positive.
+    """
+    if cooldown_seconds <= 0:
+        raise ValueError(f"cooldown_seconds must be positive, got {cooldown_seconds}")
+    return (now_ts - last_alert_ts) < cooldown_seconds
+
+
+def drift_trend(p_values: list[float]) -> str:
+    """Classify the overall drift trend from a series of p-values.
+
+    Looks at the last 5 p-values relative to the first 5 to determine if
+    drift is worsening, improving, or stable.
+
+    Args:
+        p_values: Ordered series of p-values (oldest first).
+
+    Returns:
+        ``worsening`` — mean of recent half is lower than early half (more drift).
+        ``improving`` — mean of recent half is higher than early half.
+        ``stable``    — when fewer than 4 values or negligible change.
+    """
+    if len(p_values) < 4:
+        return "stable"
+    mid = len(p_values) // 2
+    early_mean = sum(p_values[:mid]) / mid
+    recent_mean = sum(p_values[mid:]) / (len(p_values) - mid)
+    delta = recent_mean - early_mean
+    if delta < -0.05:
+        return "worsening"
+    if delta > 0.05:
+        return "improving"
+    return "stable"
