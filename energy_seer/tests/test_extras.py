@@ -141,3 +141,82 @@ class TestForecaster:
 
         preds = moving_average_forecast([5.0] * 24, steps=3)
         assert all(p > 0 for p in preds)
+
+
+class TestSpikeRatio:
+    @pytest.mark.parametrize(
+        "values,z_thresh,expected_ge",
+        [
+            ([], 2.5, 0.0),
+            ([1.0], 2.5, 0.0),
+            ([1.0] * 50, 2.5, 0.0),
+        ],
+    )
+    def test_no_spikes(self, values, z_thresh, expected_ge):
+        from app.demand_spike import spike_ratio
+
+        assert spike_ratio(values, z_threshold=z_thresh) == expected_ge
+
+    def test_spike_ratio_in_range(self):
+        from app.demand_spike import spike_ratio
+
+        values = [1.0] * 20 + [1000.0]
+        ratio = spike_ratio(values)
+        assert 0.0 <= ratio <= 1.0
+
+    def test_spike_ratio_nonzero_for_outlier(self):
+        from app.demand_spike import spike_ratio
+
+        values = [1.0] * 30 + [9999.0]
+        assert spike_ratio(values) > 0.0
+
+
+class TestConsecutiveSpikeRun:
+    def test_empty_returns_zero(self):
+        from app.demand_spike import consecutive_spike_run
+
+        assert consecutive_spike_run([]) == 0
+
+    def test_no_spikes_returns_zero(self):
+        from app.demand_spike import consecutive_spike_run
+
+        assert consecutive_spike_run([1.0] * 30) == 0
+
+    def test_returns_non_negative(self):
+        from app.demand_spike import consecutive_spike_run
+
+        values = [1.0] * 20 + [9999.0, 9999.0]
+        assert consecutive_spike_run(values) >= 0
+
+
+class TestNormaliseDemand:
+    def test_empty_returns_empty(self):
+        from app.demand_spike import normalise_demand
+
+        assert normalise_demand([]) == []
+
+    def test_constant_series_returns_zeros(self):
+        from app.demand_spike import normalise_demand
+
+        assert normalise_demand([5.0] * 5) == [0.0] * 5
+
+    def test_normalised_bounds(self):
+        from app.demand_spike import normalise_demand
+
+        result = normalise_demand([0.0, 5.0, 10.0])
+        assert result[0] == pytest.approx(0.0)
+        assert result[-1] == pytest.approx(1.0)
+
+    @pytest.mark.parametrize(
+        "values,expected_min,expected_max",
+        [
+            ([2.0, 4.0, 6.0, 8.0, 10.0], 0.0, 1.0),
+            ([100.0, 200.0], 0.0, 1.0),
+        ],
+    )
+    def test_parametrized_normalise(self, values, expected_min, expected_max):
+        from app.demand_spike import normalise_demand
+
+        result = normalise_demand(values)
+        assert min(result) == pytest.approx(expected_min)
+        assert max(result) == pytest.approx(expected_max)
