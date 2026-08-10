@@ -975,3 +975,81 @@ class TestInventoryMonthsSupply:
 
         result = inventory_months_supply(active_listings=180, monthly_sales=30.0)
         assert result == pytest.approx(6.0)
+
+
+class TestSellerToBuyerRatio:
+    def test_equal_gives_one(self) -> None:
+        from app.market_context import seller_to_buyer_ratio
+
+        assert seller_to_buyer_ratio(100, 100) == pytest.approx(1.0)
+
+    def test_more_buyers_greater_than_one(self) -> None:
+        from app.market_context import seller_to_buyer_ratio
+
+        assert seller_to_buyer_ratio(50, 150) == pytest.approx(3.0)
+
+    def test_zero_listings_returns_zero(self) -> None:
+        from app.market_context import seller_to_buyer_ratio
+
+        assert seller_to_buyer_ratio(0, 50) == pytest.approx(0.0)
+
+    def test_negative_listings_raises(self) -> None:
+        from app.market_context import seller_to_buyer_ratio
+
+        with pytest.raises(ValueError):
+            seller_to_buyer_ratio(-1, 10)
+
+    @pytest.mark.parametrize(
+        "listings,buyers,expected",
+        [
+            (100, 200, 2.0),
+            (200, 100, 0.5),
+            (100, 0, 0.0),
+        ],
+    )
+    def test_parametrized(self, listings, buyers, expected) -> None:
+        from app.market_context import seller_to_buyer_ratio
+
+        assert seller_to_buyer_ratio(listings, buyers) == pytest.approx(expected)
+
+
+class TestAbsorptionRate:
+    def test_basic(self) -> None:
+        from app.market_context import absorption_rate
+
+        assert absorption_rate(30, 30) == pytest.approx(1.0)
+
+    def test_default_days(self) -> None:
+        from app.market_context import absorption_rate
+
+        assert absorption_rate(90) == pytest.approx(3.0)
+
+    def test_zero_days_raises(self) -> None:
+        from app.market_context import absorption_rate
+
+        with pytest.raises(ValueError):
+            absorption_rate(10, 0)
+
+    def test_negative_units_raises(self) -> None:
+        from app.market_context import absorption_rate
+
+        with pytest.raises(ValueError):
+            absorption_rate(-1, 30)
+
+
+class TestMarketCyclePhase:
+    @pytest.mark.parametrize(
+        "months,expected",
+        [
+            (1.0, "seller"),
+            (2.9, "seller"),
+            (3.0, "balanced"),
+            (6.0, "balanced"),
+            (6.1, "buyer"),
+            (12.0, "buyer"),
+        ],
+    )
+    def test_phase_boundaries(self, months, expected) -> None:
+        from app.market_context import market_cycle_phase
+
+        assert market_cycle_phase(months) == expected
