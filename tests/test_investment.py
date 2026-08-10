@@ -973,3 +973,100 @@ class TestHoldingPeriodReturn:
 
         with pytest.raises(ValueError):
             holding_period_return(0.0, 100_000.0)
+
+
+class TestRentToValueRatio:
+    def test_basic_ratio(self) -> None:
+        from app.investment import rent_to_value_ratio
+
+        assert rent_to_value_ratio(12_000.0, 200_000.0) == pytest.approx(6.0)
+
+    def test_zero_property_value_returns_zero(self) -> None:
+        from app.investment import rent_to_value_ratio
+
+        assert rent_to_value_ratio(10_000.0, 0.0) == pytest.approx(0.0)
+
+    def test_negative_rent_raises(self) -> None:
+        from app.investment import rent_to_value_ratio
+
+        with pytest.raises(ValueError):
+            rent_to_value_ratio(-1.0, 100_000.0)
+
+    def test_negative_value_raises(self) -> None:
+        from app.investment import rent_to_value_ratio
+
+        with pytest.raises(ValueError):
+            rent_to_value_ratio(10_000.0, -1.0)
+
+    @pytest.mark.parametrize(
+        "rent,value,expected",
+        [
+            (24_000.0, 200_000.0, 12.0),
+            (10_000.0, 100_000.0, 10.0),
+            (0.0, 100_000.0, 0.0),
+        ],
+    )
+    def test_parametrized(self, rent, value, expected) -> None:
+        from app.investment import rent_to_value_ratio
+
+        assert rent_to_value_ratio(rent, value) == pytest.approx(expected)
+
+
+class TestEffectiveGrossIncome:
+    def test_no_vacancy(self) -> None:
+        from app.investment import effective_gross_income
+
+        assert effective_gross_income(100_000.0, vacancy_rate=0.0) == pytest.approx(100_000.0)
+
+    def test_five_percent_vacancy(self) -> None:
+        from app.investment import effective_gross_income
+
+        assert effective_gross_income(100_000.0, vacancy_rate=0.05) == pytest.approx(95_000.0)
+
+    def test_other_income_added(self) -> None:
+        from app.investment import effective_gross_income
+
+        result = effective_gross_income(100_000.0, vacancy_rate=0.0, other_income=5_000.0)
+        assert result == pytest.approx(105_000.0)
+
+    def test_invalid_vacancy_raises(self) -> None:
+        from app.investment import effective_gross_income
+
+        with pytest.raises(ValueError):
+            effective_gross_income(100_000.0, vacancy_rate=1.5)
+
+    def test_negative_income_raises(self) -> None:
+        from app.investment import effective_gross_income
+
+        with pytest.raises(ValueError):
+            effective_gross_income(-1.0)
+
+
+class TestCapitalisationRate:
+    def test_basic_cap_rate(self) -> None:
+        from app.investment import capitalisation_rate
+
+        assert capitalisation_rate(10_000.0, 200_000.0) == pytest.approx(5.0)
+
+    def test_zero_value_returns_zero(self) -> None:
+        from app.investment import capitalisation_rate
+
+        assert capitalisation_rate(10_000.0, 0.0) == pytest.approx(0.0)
+
+    def test_negative_value_raises(self) -> None:
+        from app.investment import capitalisation_rate
+
+        with pytest.raises(ValueError):
+            capitalisation_rate(1_000.0, -50_000.0)
+
+    @pytest.mark.parametrize(
+        "noi,value,expected",
+        [
+            (20_000.0, 200_000.0, 10.0),
+            (5_000.0, 100_000.0, 5.0),
+        ],
+    )
+    def test_parametrized(self, noi, value, expected) -> None:
+        from app.investment import capitalisation_rate
+
+        assert capitalisation_rate(noi, value) == pytest.approx(expected)
