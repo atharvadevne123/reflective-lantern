@@ -189,3 +189,48 @@ def prune_idle_clients(limiter: TokenBucketRateLimiter, max_idle_seconds: float)
     if removed:
         logger.debug("prune_idle_clients: removed %d idle buckets", removed)
     return removed
+
+
+def active_client_count(limiter: TokenBucketRateLimiter) -> int:
+    """Return the number of currently tracked client buckets.
+
+    Args:
+        limiter: A :class:`TokenBucketRateLimiter` instance.
+
+    Returns:
+        Integer count of clients with active buckets.
+    """
+    with limiter._lock:
+        return len(limiter._buckets)
+
+
+def total_consumed_tokens(limiter: TokenBucketRateLimiter, client_key: str = "default") -> float:
+    """Estimate the cumulative tokens consumed by *client_key*.
+
+    Tokens consumed = capacity - remaining tokens. This is a snapshot
+    measure — it reflects only the current deficit, not the all-time total.
+
+    Args:
+        limiter: A :class:`TokenBucketRateLimiter` instance.
+        client_key: Client identifier.
+
+    Returns:
+        Non-negative float representing approximate consumed token count.
+    """
+    remaining = limiter.remaining_tokens(client_key)
+    capacity = limiter._capacity
+    return round(max(0.0, capacity - remaining), 6)
+
+
+def client_exists(limiter: TokenBucketRateLimiter, client_key: str) -> bool:
+    """Return True if *client_key* has a bucket allocated in *limiter*.
+
+    Args:
+        limiter: A :class:`TokenBucketRateLimiter` instance.
+        client_key: Client identifier to check.
+
+    Returns:
+        True if the client has an existing bucket, False otherwise.
+    """
+    with limiter._lock:
+        return client_key in limiter._buckets
