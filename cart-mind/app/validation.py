@@ -141,3 +141,73 @@ def validate_batch(payloads: list[dict[str, Any]]) -> dict[str, list[str]]:
     if results:
         logger.info("Batch validation: %d/%d payloads have warnings", len(results), len(payloads))
     return results
+
+
+def check_price_coherence(payload: dict[str, Any]) -> list[str]:
+    """Check that pricing fields are internally consistent.
+
+    Args:
+        payload: Raw request payload as a mapping.
+
+    Returns:
+        List of human-readable warnings; empty when coherent.
+    """
+    warnings: list[str] = []
+    discount_pct = payload.get("item_discount_pct")
+    if discount_pct is not None:
+        if discount_pct < 0:
+            warnings.append(f"item_discount_pct is negative ({discount_pct})")
+        if discount_pct > 100:
+            warnings.append(f"item_discount_pct exceeds 100 ({discount_pct})")
+    price = payload.get("item_price")
+    avg_order = payload.get("avg_order_value")
+    if price is not None and price < 0:
+        warnings.append(f"item_price is negative ({price})")
+    if avg_order is not None and avg_order < 0:
+        warnings.append(f"avg_order_value is negative ({avg_order})")
+    return warnings
+
+
+def sanitise_payload(payload: dict[str, Any]) -> dict[str, Any]:
+    """Return a copy of *payload* with invalid numeric values clamped to valid ranges.
+
+    Args:
+        payload: Raw request payload.
+
+    Returns:
+        New dict with out-of-range values replaced by their boundary values.
+    """
+    out = dict(payload)
+    if "item_discount_pct" in out and out["item_discount_pct"] is not None:
+        out["item_discount_pct"] = max(0.0, min(100.0, float(out["item_discount_pct"])))
+    if "item_price" in out and out["item_price"] is not None:
+        out["item_price"] = max(0.0, float(out["item_price"]))
+    if "avg_order_value" in out and out["avg_order_value"] is not None:
+        out["avg_order_value"] = max(0.0, float(out["avg_order_value"]))
+    if "cart_abandon_rate" in out and out["cart_abandon_rate"] is not None:
+        out["cart_abandon_rate"] = max(0.0, min(1.0, float(out["cart_abandon_rate"])))
+    return out
+
+
+def validation_summary(results: dict[str, list[str]]) -> dict[str, Any]:
+    """Summarise validate_batch output into aggregate statistics.
+
+    Args:
+        results: Mapping of index → warnings, as returned by ``validate_batch``.
+
+    Returns:
+        Dict with ``total_warnings``, ``affected_payloads``, and
+        ``most_common_warning`` (or ``None`` if no warnings).
+    """
+    all_warnings = [w for warnings in results.values() for w in warnings]
+    if not all_warnings:
+        return {"total_warnings": 0, "affected_payloads": 0, "most_common_warning": None}
+    freq: dict[str, int] = {}
+    for w in all_warnings:
+        freq[w] = freq.get(w, 0) + 1
+    most_common = max(freq, key=lambda k: freq[k])
+    return {
+        "total_warnings": len(all_warnings),
+        "affected_payloads": len(results),
+        "most_common_warning": most_common,
+    }
