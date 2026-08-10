@@ -546,3 +546,103 @@ def records_missing_field(
         Sorted list of integer indices where *field* is missing.
     """
     return [i for i, rec in enumerate(records) if rec.get(field) is None]
+
+
+def cross_field_consistency(
+    records: list[dict[str, Any]],
+    field_a: str,
+    field_b: str,
+    relation: str = "a_lte_b",
+) -> list[int]:
+    """Return indices of records where *field_a* and *field_b* violate *relation*.
+
+    Args:
+        records: List of dicts to inspect.
+        field_a: Name of the first numeric field.
+        field_b: Name of the second numeric field.
+        relation: One of ``"a_lte_b"`` (a ≤ b) or ``"a_gte_b"`` (a ≥ b).
+
+    Returns:
+        Sorted list of record indices that violate the relation.
+
+    Raises:
+        ValueError: If *relation* is not one of the supported values.
+    """
+    if relation not in ("a_lte_b", "a_gte_b"):
+        raise ValueError(f"relation must be 'a_lte_b' or 'a_gte_b', got {relation!r}")
+    violations = []
+    for i, rec in enumerate(records):
+        a = rec.get(field_a)
+        b = rec.get(field_b)
+        if a is None or b is None:
+            continue
+        if relation == "a_lte_b" and a > b:
+            violations.append(i)
+        elif relation == "a_gte_b" and a < b:
+            violations.append(i)
+    return violations
+
+
+def outlier_count_iqr(
+    records: list[dict[str, Any]],
+    field: str,
+    multiplier: float = 1.5,
+) -> int:
+    """Count records where *field* is an outlier by IQR method.
+
+    A value is an outlier if it falls below Q1 - multiplier * IQR or above
+    Q3 + multiplier * IQR.
+
+    Args:
+        records: List of dicts to inspect.
+        field: Numeric field to test.
+        multiplier: IQR multiplier (default 1.5, use 3.0 for extreme outliers).
+
+    Returns:
+        Count of outlier records.
+
+    Raises:
+        ValueError: If *multiplier* <= 0.
+    """
+    if multiplier <= 0:
+        raise ValueError(f"multiplier must be positive, got {multiplier}")
+    values = sorted(rec[field] for rec in records if rec.get(field) is not None)
+    if len(values) < 4:
+        return 0
+    n = len(values)
+    q1 = values[n // 4]
+    q3 = values[(3 * n) // 4]
+    iqr = q3 - q1
+    low = q1 - multiplier * iqr
+    high = q3 + multiplier * iqr
+    return sum(1 for v in values if v < low or v > high)
+
+
+def schema_conformance_rate(
+    records: list[dict[str, Any]],
+    schema: dict[str, type],
+) -> float:
+    """Compute the fraction of records that conform to a type schema.
+
+    A record conforms if all keys in *schema* are present and their values are
+    instances of the required type (None values count as non-conforming).
+
+    Args:
+        records: List of dicts to inspect.
+        schema: Mapping of field name → expected Python type.
+
+    Returns:
+        Conformance rate in [0.0, 1.0], rounded to 4 decimal places.
+        Returns 1.0 for an empty record list.
+    """
+    if not records:
+        return 1.0
+    conforming = 0
+    for rec in records:
+        ok = all(
+            field in rec and rec[field] is not None and isinstance(rec[field], expected_type)
+            for field, expected_type in schema.items()
+        )
+        if ok:
+            conforming += 1
+    return round(conforming / len(records), 4)
