@@ -641,3 +641,109 @@ class TestPeriodComparison:
 
         with pytest.raises(ValueError):
             period_comparison([1.0, 2.0], [1.0])
+
+
+class TestHurstExponent:
+    def _trending_series(self, n: int = 50) -> list[float]:
+        return [float(i) + 0.01 * i * i for i in range(n)]
+
+    def test_returns_float(self) -> None:
+        from app.trend_analysis import hurst_exponent
+
+        result = hurst_exponent(self._trending_series())
+        assert isinstance(result, float)
+
+    def test_range_zero_to_one(self) -> None:
+        from app.trend_analysis import hurst_exponent
+
+        result = hurst_exponent(self._trending_series())
+        assert 0.0 <= result <= 1.0
+
+    def test_too_few_values_raises(self) -> None:
+        from app.trend_analysis import hurst_exponent
+
+        with pytest.raises(ValueError, match="requires at least"):
+            hurst_exponent([1.0, 2.0, 3.0], max_lag=20)
+
+    def test_random_walk_near_half(self) -> None:
+        from app.trend_analysis import hurst_exponent
+
+        import random
+        random.seed(42)
+        walk = [0.0]
+        for _ in range(100):
+            walk.append(walk[-1] + random.gauss(0, 1))
+        result = hurst_exponent(walk, max_lag=20)
+        assert 0.0 <= result <= 1.0
+
+
+class TestTrendStrength:
+    def test_perfect_linear_trend(self) -> None:
+        from app.trend_analysis import trend_strength
+
+        values = [float(i) for i in range(20)]
+        result = trend_strength(values)
+        assert result == pytest.approx(1.0, abs=1e-3)
+
+    def test_flat_series_zero(self) -> None:
+        from app.trend_analysis import trend_strength
+
+        values = [5.0] * 20
+        assert trend_strength(values) == 0.0
+
+    def test_in_range(self) -> None:
+        from app.trend_analysis import trend_strength
+
+        import random
+        random.seed(0)
+        values = [random.gauss(0, 1) for _ in range(50)]
+        assert 0.0 <= trend_strength(values) <= 1.0
+
+    def test_too_few_raises(self) -> None:
+        from app.trend_analysis import trend_strength
+
+        with pytest.raises(ValueError):
+            trend_strength([1.0])
+
+    @pytest.mark.parametrize("window", [5, 10, 20])
+    def test_window_parameter(self, window: int) -> None:
+        from app.trend_analysis import trend_strength
+
+        values = [float(i) for i in range(50)]
+        result = trend_strength(values, window=window)
+        assert 0.0 <= result <= 1.0
+
+
+class TestPolyfitTrend:
+    def test_linear_fit_perfect(self) -> None:
+        from app.trend_analysis import polyfit_trend
+
+        values = [2.0, 4.0, 6.0, 8.0, 10.0]
+        result = polyfit_trend(values)
+        assert len(result) == len(values)
+        for actual, fitted in zip(values, result, strict=False):
+            assert actual == pytest.approx(fitted, abs=1e-4)
+
+    def test_output_length(self) -> None:
+        from app.trend_analysis import polyfit_trend
+
+        values = [1.0, 3.0, 2.0, 5.0, 4.0]
+        assert len(polyfit_trend(values)) == len(values)
+
+    def test_invalid_degree_raises(self) -> None:
+        from app.trend_analysis import polyfit_trend
+
+        with pytest.raises(ValueError, match="degree must be at least 1"):
+            polyfit_trend([1.0, 2.0, 3.0], degree=0)
+
+    def test_too_few_values_raises(self) -> None:
+        from app.trend_analysis import polyfit_trend
+
+        with pytest.raises(ValueError):
+            polyfit_trend([1.0], degree=1)
+
+    def test_unsupported_degree_raises(self) -> None:
+        from app.trend_analysis import polyfit_trend
+
+        with pytest.raises(NotImplementedError):
+            polyfit_trend([1.0, 2.0, 3.0, 4.0, 5.0], degree=2)
