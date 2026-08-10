@@ -630,3 +630,93 @@ class TestSimilarityMatrix:
 
         with pytest.raises(ValueError):
             similarity_matrix([])
+
+
+class TestMinkowskiDistance:
+    def test_p2_equals_euclidean(self) -> None:
+        from app.similarity import euclidean_distance, minkowski_distance
+
+        a, b = [1.0, 2.0, 3.0], [4.0, 5.0, 6.0]
+        assert minkowski_distance(a, b, p=2.0) == pytest.approx(euclidean_distance(a, b), abs=1e-5)
+
+    def test_p1_equals_manhattan(self) -> None:
+        from app.similarity import manhattan_distance, minkowski_distance
+
+        a, b = [1.0, 2.0, 3.0], [4.0, 6.0, 9.0]
+        assert minkowski_distance(a, b, p=1.0) == pytest.approx(manhattan_distance(a, b), abs=1e-5)
+
+    def test_p_less_than_one_raises(self) -> None:
+        from app.similarity import minkowski_distance
+
+        with pytest.raises(ValueError):
+            minkowski_distance([1.0], [2.0], p=0.5)
+
+    def test_different_lengths_raises(self) -> None:
+        from app.similarity import minkowski_distance
+
+        with pytest.raises(ValueError):
+            minkowski_distance([1.0, 2.0], [3.0])
+
+    @pytest.mark.parametrize(
+        "a,b,p,expected",
+        [
+            ([0.0, 0.0], [3.0, 4.0], 2.0, 5.0),
+            ([0.0, 0.0], [3.0, 4.0], 1.0, 7.0),
+        ],
+    )
+    def test_parametrized(self, a, b, p, expected) -> None:
+        from app.similarity import minkowski_distance
+
+        assert minkowski_distance(a, b, p) == pytest.approx(expected, abs=1e-4)
+
+
+class TestDiceSimilarity:
+    def test_identical_sets(self) -> None:
+        from app.similarity import dice_similarity
+
+        assert dice_similarity({"a", "b"}, {"a", "b"}) == pytest.approx(1.0)
+
+    def test_disjoint_sets(self) -> None:
+        from app.similarity import dice_similarity
+
+        assert dice_similarity({"a"}, {"b"}) == pytest.approx(0.0)
+
+    def test_empty_sets(self) -> None:
+        from app.similarity import dice_similarity
+
+        assert dice_similarity(set(), set()) == pytest.approx(0.0)
+
+    def test_partial_overlap(self) -> None:
+        from app.similarity import dice_similarity
+
+        result = dice_similarity({"a", "b"}, {"b", "c"})
+        assert 0.0 < result < 1.0
+
+
+class TestOverlapCoefficient:
+    def test_one_empty_returns_zero(self) -> None:
+        from app.similarity import overlap_coefficient
+
+        assert overlap_coefficient(set(), {"a"}) == pytest.approx(0.0)
+
+    def test_subset_returns_one(self) -> None:
+        from app.similarity import overlap_coefficient
+
+        assert overlap_coefficient({"a"}, {"a", "b", "c"}) == pytest.approx(1.0)
+
+    def test_disjoint_returns_zero(self) -> None:
+        from app.similarity import overlap_coefficient
+
+        assert overlap_coefficient({"a", "b"}, {"c", "d"}) == pytest.approx(0.0)
+
+    @pytest.mark.parametrize(
+        "a,b,expected",
+        [
+            ({"x"}, {"x"}, 1.0),
+            ({"x", "y"}, {"y", "z"}, 0.5),
+        ],
+    )
+    def test_parametrized(self, a, b, expected) -> None:
+        from app.similarity import overlap_coefficient
+
+        assert overlap_coefficient(a, b) == pytest.approx(expected)
