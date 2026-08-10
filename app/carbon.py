@@ -614,3 +614,84 @@ def carbon_per_occupant(co2_kg: float, occupants: int) -> float:
     if occupants <= 0:
         raise ValueError(f"occupants must be positive, got {occupants}")
     return round(co2_kg / occupants, 4)
+
+
+def carbon_budget_remaining(
+    budget_kg: float,
+    consumed_kg: float,
+) -> dict[str, float]:
+    """Compute remaining carbon budget and percentage used.
+
+    Args:
+        budget_kg: Total carbon budget in kg CO₂.
+        consumed_kg: Carbon already consumed in kg CO₂ (must be >= 0).
+
+    Returns:
+        Dict with ``remaining_kg``, ``consumed_pct``, and ``overage_kg`` keys.
+        ``overage_kg`` is positive when budget is exceeded, else 0.
+
+    Raises:
+        ValueError: If *budget_kg* <= 0 or *consumed_kg* < 0.
+    """
+    if budget_kg <= 0:
+        raise ValueError(f"budget_kg must be > 0, got {budget_kg}")
+    if consumed_kg < 0:
+        raise ValueError(f"consumed_kg must be >= 0, got {consumed_kg}")
+    remaining = budget_kg - consumed_kg
+    overage = max(0.0, -remaining)
+    return {
+        "remaining_kg": round(remaining, 4),
+        "consumed_pct": round(100.0 * consumed_kg / budget_kg, 4),
+        "overage_kg": round(overage, 4),
+    }
+
+
+def weighted_carbon_factor(
+    sources: list[dict],
+) -> float:
+    """Compute a weighted average carbon emission factor for a mixed energy source.
+
+    Args:
+        sources: List of dicts, each with ``"fraction"`` (share of total, 0-1)
+            and ``"factor_kg_per_kwh"`` (emission intensity).
+
+    Returns:
+        Weighted emission factor rounded to 6 decimal places.
+
+    Raises:
+        ValueError: If *sources* is empty, fractions don't sum to approximately 1.0,
+            or any fraction is negative.
+    """
+    if not sources:
+        raise ValueError("sources must not be empty")
+    total_fraction = sum(s["fraction"] for s in sources)
+    if abs(total_fraction - 1.0) > 0.01:
+        raise ValueError(f"fractions must sum to 1.0, got {total_fraction:.4f}")
+    if any(s["fraction"] < 0 for s in sources):
+        raise ValueError("all fractions must be non-negative")
+    weighted = sum(s["fraction"] * s["factor_kg_per_kwh"] for s in sources)
+    return round(weighted, 6)
+
+
+def carbon_intensity_category(factor_kg_per_kwh: float) -> str:
+    """Classify a carbon intensity factor into a descriptive category.
+
+    Args:
+        factor_kg_per_kwh: Carbon emission factor in kg CO₂ per kWh.
+
+    Returns:
+        One of ``"very_low"`` (< 0.1), ``"low"`` (< 0.3), ``"medium"`` (< 0.5),
+        or ``"high"`` (>= 0.5).
+
+    Raises:
+        ValueError: If *factor_kg_per_kwh* is negative.
+    """
+    if factor_kg_per_kwh < 0:
+        raise ValueError(f"factor_kg_per_kwh must be >= 0, got {factor_kg_per_kwh}")
+    if factor_kg_per_kwh < 0.1:
+        return "very_low"
+    if factor_kg_per_kwh < 0.3:
+        return "low"
+    if factor_kg_per_kwh < 0.5:
+        return "medium"
+    return "high"
