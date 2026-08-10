@@ -516,3 +516,98 @@ def rolling_savings_summary(
             }
         )
     return results
+
+
+def energy_cost_estimate(
+    kwh: float,
+    tariff_per_kwh: float,
+    vat_rate: float = 0.0,
+) -> dict[str, float]:
+    """Estimate the energy cost for a given consumption and tariff.
+
+    Args:
+        kwh: Energy consumed in kilowatt-hours (must be >= 0).
+        tariff_per_kwh: Cost per kWh in the user's currency (must be >= 0).
+        vat_rate: VAT/tax rate as a decimal fraction (e.g. 0.2 for 20 %).
+            Defaults to 0.0.
+
+    Returns:
+        Dict with ``net_cost``, ``vat_amount``, and ``total_cost`` keys.
+
+    Raises:
+        ValueError: If *kwh* or *tariff_per_kwh* is negative, or *vat_rate* < 0.
+    """
+    if kwh < 0:
+        raise ValueError(f"kwh must be >= 0, got {kwh}")
+    if tariff_per_kwh < 0:
+        raise ValueError(f"tariff_per_kwh must be >= 0, got {tariff_per_kwh}")
+    if vat_rate < 0:
+        raise ValueError(f"vat_rate must be >= 0, got {vat_rate}")
+    net = round(kwh * tariff_per_kwh, 4)
+    vat = round(net * vat_rate, 4)
+    return {
+        "net_cost": net,
+        "vat_amount": vat,
+        "total_cost": round(net + vat, 4),
+    }
+
+
+def carbon_report_section(
+    kwh: float,
+    emission_factor_kg_per_kwh: float,
+    label: str = "period",
+) -> dict[str, Any]:
+    """Generate a carbon emissions report section for a given energy reading.
+
+    Args:
+        kwh: Energy consumed in kWh (must be >= 0).
+        emission_factor_kg_per_kwh: Carbon emission intensity in kg CO₂/kWh.
+        label: Human-readable label for the reporting period. Default ``"period"``.
+
+    Returns:
+        Dict with ``label``, ``kwh``, ``kg_co2``, ``tonnes_co2``, and
+        ``emission_factor`` keys.
+
+    Raises:
+        ValueError: If *kwh* < 0 or *emission_factor_kg_per_kwh* < 0.
+    """
+    if kwh < 0:
+        raise ValueError(f"kwh must be >= 0, got {kwh}")
+    if emission_factor_kg_per_kwh < 0:
+        raise ValueError(f"emission_factor_kg_per_kwh must be >= 0, got {emission_factor_kg_per_kwh}")
+    kg_co2 = round(kwh * emission_factor_kg_per_kwh, 4)
+    return {
+        "label": label,
+        "kwh": round(kwh, 4),
+        "kg_co2": kg_co2,
+        "tonnes_co2": round(kg_co2 / 1000.0, 6),
+        "emission_factor": emission_factor_kg_per_kwh,
+    }
+
+
+def consumption_budget_variance(
+    actual_kwh: float,
+    budget_kwh: float,
+) -> dict[str, float]:
+    """Compute variance between actual and budgeted energy consumption.
+
+    Args:
+        actual_kwh: Measured energy consumption (kWh).
+        budget_kwh: Planned/budgeted energy consumption (kWh, must be > 0).
+
+    Returns:
+        Dict with ``delta_kwh`` (actual - budget), ``variance_pct``,
+        and ``on_budget`` (bool as 1/0).
+
+    Raises:
+        ValueError: If *budget_kwh* <= 0.
+    """
+    if budget_kwh <= 0:
+        raise ValueError(f"budget_kwh must be > 0, got {budget_kwh}")
+    delta = round(actual_kwh - budget_kwh, 4)
+    variance_pct = round(100.0 * delta / budget_kwh, 4)
+    return {
+        "delta_kwh": delta,
+        "variance_pct": variance_pct,
+        "on_budget": 1 if abs(variance_pct) <= 5.0 else 0,
+    }
