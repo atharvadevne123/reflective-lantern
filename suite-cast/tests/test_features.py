@@ -160,3 +160,83 @@ class TestBuildFeaturePipeline:
         result = pipe.fit_transform(X)
         assert result.shape[0] == 50
         assert result.shape[1] == len(FEATURE_COLS)
+
+
+class TestLeadTimeBucket:
+    @pytest.mark.parametrize(
+        "lead_days,expected",
+        [
+            (0, 0),
+            (3, 0),
+            (4, 1),
+            (14, 1),
+            (15, 2),
+            (60, 2),
+            (61, 3),
+            (365, 3),
+            (-5, 0),
+            (400, 3),
+        ],
+    )
+    def test_bucket_boundaries(self, lead_days, expected):
+        from app.features import lead_time_bucket
+
+        assert lead_time_bucket(lead_days) == expected
+
+
+class TestCompetitorRateRatio:
+    def test_ratio_equal_rates(self):
+        from app.features import competitor_rate_ratio
+
+        assert competitor_rate_ratio(100.0, 100.0) == pytest.approx(1.0)
+
+    def test_zero_competitor_uses_fallback(self):
+        from app.features import competitor_rate_ratio
+
+        result = competitor_rate_ratio(150.0, 0.0)
+        assert result == pytest.approx(1.0)
+
+    def test_clamped_above(self):
+        from app.features import competitor_rate_ratio
+
+        assert competitor_rate_ratio(9999.0, 1.0) == pytest.approx(3.0)
+
+    def test_clamped_below(self):
+        from app.features import competitor_rate_ratio
+
+        assert competitor_rate_ratio(1.0, 9999.0) == pytest.approx(0.5)
+
+    @pytest.mark.parametrize(
+        "room,comp,expected",
+        [
+            (200.0, 200.0, 1.0),
+            (300.0, 200.0, 1.5),
+            (100.0, 200.0, 0.5),
+        ],
+    )
+    def test_parametrized(self, room, comp, expected):
+        from app.features import competitor_rate_ratio
+
+        assert competitor_rate_ratio(room, comp) == pytest.approx(expected)
+
+
+class TestOccupancyYoyDelta:
+    def test_no_change(self):
+        from app.features import occupancy_yoy_delta
+
+        assert occupancy_yoy_delta(0.8, 0.8) == pytest.approx(0.0)
+
+    def test_positive_delta(self):
+        from app.features import occupancy_yoy_delta
+
+        assert occupancy_yoy_delta(0.9, 0.7) == pytest.approx(0.2)
+
+    def test_clamped_to_minus_one(self):
+        from app.features import occupancy_yoy_delta
+
+        assert occupancy_yoy_delta(0.0, 1.0) == pytest.approx(-1.0)
+
+    def test_clamped_to_one(self):
+        from app.features import occupancy_yoy_delta
+
+        assert occupancy_yoy_delta(1.0, 0.0) == pytest.approx(1.0)
