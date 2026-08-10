@@ -169,3 +169,51 @@ def generate_synthetic_data(n_samples: int = 2000, seed: int = 42) -> pd.DataFra
     )
     df["defect"] = (defect_score > 0.4).astype(int)
     return df
+
+
+def sensor_range_feature(row: dict[str, float]) -> dict[str, float]:
+    """Compute min, max, and range across all sensor readings for a single row.
+
+    Args:
+        row: Dict mapping sensor name → float value.
+
+    Returns:
+        Dict with 'sensor_min', 'sensor_max', and 'sensor_range'.
+    """
+    if not row:
+        return {"sensor_min": 0.0, "sensor_max": 0.0, "sensor_range": 0.0}
+    values = list(row.values())
+    lo, hi = min(values), max(values)
+    return {
+        "sensor_min": round(lo, 6),
+        "sensor_max": round(hi, 6),
+        "sensor_range": round(hi - lo, 6),
+    }
+
+
+def defect_risk_index(
+    temperature: float,
+    vibration: float,
+    tool_wear: float,
+    pressure: float,
+) -> float:
+    """Compute a composite defect-risk index from key sensor readings.
+
+    Mirrors the defect_score formula used in :func:`generate_synthetic_data`.
+
+    Args:
+        temperature: Sensor reading in degrees C.
+        vibration: Vibration amplitude in mm/s.
+        tool_wear: Tool wear index.
+        pressure: Pressure reading in bar.
+
+    Returns:
+        Risk index in [0, 1]; higher means greater defect risk.
+    """
+    score = (
+        0.30 * float(temperature > 85)
+        + 0.25 * float(vibration > 5)
+        + 0.25 * float(tool_wear > 40)
+        + 0.15 * float(pressure > 58)
+    )
+    return round(min(1.0, score), 6)
