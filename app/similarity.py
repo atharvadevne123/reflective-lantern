@@ -384,3 +384,63 @@ def similarity_matrix(profiles: list[list[float]]) -> list[list[float]]:
     normed = arr / norms
     mat = normed @ normed.T
     return [[round(float(mat[i, j]), 6) for j in range(n)] for i in range(n)]
+
+
+def minkowski_distance(a: list[float], b: list[float], p: float = 2.0) -> float:
+    """Compute the Minkowski distance of order *p* between two vectors.
+
+    Special cases: p=1 is Manhattan distance, p=2 is Euclidean distance.
+
+    Args:
+        a: First vector.
+        b: Second vector (must be same length as *a*).
+        p: Order of the norm (must be >= 1).
+
+    Returns:
+        Minkowski distance rounded to 6 decimal places.
+
+    Raises:
+        ValueError: If *p* < 1 or vectors differ in length.
+    """
+    if p < 1.0:
+        raise ValueError(f"p must be >= 1, got {p}")
+    if len(a) != len(b):
+        raise ValueError(f"Vectors must be same length: {len(a)} != {len(b)}")
+    return round(sum(abs(x - y) ** p for x, y in zip(a, b)) ** (1.0 / p), 6)
+
+
+def dice_similarity(set_a: set[str], set_b: set[str]) -> float:
+    """Compute Dice similarity coefficient between two sets.
+
+    Dice = 2 * |A ∩ B| / (|A| + |B|).
+
+    Args:
+        set_a: First set.
+        set_b: Second set.
+
+    Returns:
+        Dice similarity in [0, 1]; 0.0 if both sets are empty.
+    """
+    if not set_a and not set_b:
+        return 0.0
+    intersection = len(set_a & set_b)
+    return round(2.0 * intersection / (len(set_a) + len(set_b)), 6)
+
+
+def overlap_coefficient(set_a: set[str], set_b: set[str]) -> float:
+    """Compute the Overlap (Szymkiewicz–Simpson) coefficient.
+
+    Overlap = |A ∩ B| / min(|A|, |B|).
+
+    Returns 0.0 when either set is empty.
+
+    Args:
+        set_a: First set.
+        set_b: Second set.
+
+    Returns:
+        Overlap coefficient in [0, 1].
+    """
+    if not set_a or not set_b:
+        return 0.0
+    return round(len(set_a & set_b) / min(len(set_a), len(set_b)), 6)
