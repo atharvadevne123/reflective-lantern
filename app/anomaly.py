@@ -552,3 +552,80 @@ def anomaly_transition_count(flags: list[bool]) -> int:
     if len(flags) < 2:
         return 0
     return sum(1 for a, b in itertools.pairwise(flags) if a != b)
+
+
+def anomaly_rate_by_hour(
+    readings: list[tuple[int, bool]],
+) -> dict[int, float]:
+    """Compute the anomaly rate for each hour-of-day slot.
+
+    Args:
+        readings: List of ``(hour, is_anomaly)`` tuples where *hour* is 0-23
+            and *is_anomaly* is True/False.
+
+    Returns:
+        Dict mapping hour → fraction of readings in that hour that are anomalies.
+        Hours with no readings are omitted.
+
+    Raises:
+        ValueError: If any hour is outside 0-23.
+    """
+    if any(not (0 <= h <= 23) for h, _ in readings):
+        raise ValueError("All hour values must be in 0-23")
+    bucket_total: dict[int, int] = {}
+    bucket_anomaly: dict[int, int] = {}
+    for hour, flag in readings:
+        bucket_total[hour] = bucket_total.get(hour, 0) + 1
+        bucket_anomaly[hour] = bucket_anomaly.get(hour, 0) + (1 if flag else 0)
+    return {h: round(bucket_anomaly[h] / bucket_total[h], 4) for h in bucket_total}
+
+
+def severity_weighted_score(
+    anomalies: list[dict],
+    severity_weights: dict[str, float] | None = None,
+) -> float:
+    """Compute a weighted severity score from a list of anomaly records.
+
+    Args:
+        anomalies: List of dicts, each with a ``"severity"`` key (``"critical"``,
+            ``"warning"``, or ``"normal"``).
+        severity_weights: Custom weights per severity level. Defaults to
+            ``{"critical": 3.0, "warning": 1.5, "normal": 0.0}``.
+
+    Returns:
+        Total weighted score, rounded to 4 decimal places.
+    """
+    if severity_weights is None:
+        severity_weights = {"critical": 3.0, "warning": 1.5, "normal": 0.0}
+    total = 0.0
+    for a in anomalies:
+        level = str(a.get("severity", "normal"))
+        total += severity_weights.get(level, 0.0)
+    return round(total, 4)
+
+
+def batch_anomaly_flag(
+    values: list[float],
+    mean: float,
+    std: float,
+    threshold: float = 3.0,
+) -> list[bool]:
+    """Flag values that deviate more than *threshold* standard deviations from *mean*.
+
+    Args:
+        values: Numeric readings to evaluate.
+        mean: Reference mean of the distribution.
+        std: Reference standard deviation (must be > 0).
+        threshold: Number of standard deviations to flag. Default 3.0.
+
+    Returns:
+        Boolean list of the same length as *values*; True indicates an anomaly.
+
+    Raises:
+        ValueError: If *std* <= 0 or *threshold* <= 0.
+    """
+    if std <= 0:
+        raise ValueError(f"std must be > 0, got {std}")
+    if threshold <= 0:
+        raise ValueError(f"threshold must be > 0, got {threshold}")
+    return [abs(v - mean) > threshold * std for v in values]
