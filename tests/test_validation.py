@@ -823,3 +823,121 @@ class TestValidateRegionId:
     @pytest.mark.parametrize("rid", ["northeast", "midwest", "south", "west", "default"])
     def test_valid_known_ids(self, rid: str) -> None:
         assert validate_region_id(rid) == []
+
+
+class TestValidatePercentage:
+    def test_valid(self) -> None:
+        from app.validation import validate_percentage
+
+        assert validate_percentage(50.0) == []
+
+    def test_zero(self) -> None:
+        from app.validation import validate_percentage
+
+        assert validate_percentage(0.0) == []
+
+    def test_one_hundred(self) -> None:
+        from app.validation import validate_percentage
+
+        assert validate_percentage(100.0) == []
+
+    def test_negative_invalid(self) -> None:
+        from app.validation import validate_percentage
+
+        assert len(validate_percentage(-1.0)) == 1
+
+    def test_over_hundred_invalid(self) -> None:
+        from app.validation import validate_percentage
+
+        assert len(validate_percentage(101.0)) == 1
+
+    @pytest.mark.parametrize("pct", [0.0, 25.0, 50.0, 75.0, 100.0])
+    def test_valid_values(self, pct: float) -> None:
+        from app.validation import validate_percentage
+
+        assert validate_percentage(pct) == []
+
+
+class TestValidatePositive:
+    def test_positive_ok(self) -> None:
+        from app.validation import validate_positive
+
+        assert validate_positive(1.0) == []
+
+    def test_zero_fails(self) -> None:
+        from app.validation import validate_positive
+
+        assert len(validate_positive(0.0)) == 1
+
+    def test_negative_fails(self) -> None:
+        from app.validation import validate_positive
+
+        assert len(validate_positive(-0.001)) == 1
+
+    def test_custom_field_name_in_error(self) -> None:
+        from app.validation import validate_positive
+
+        errors = validate_positive(-1.0, field_name="power_kw")
+        assert "power_kw" in errors[0]
+
+
+class TestValidateListLength:
+    def test_valid(self) -> None:
+        from app.validation import validate_list_length
+
+        assert validate_list_length([1, 2, 3]) == []
+
+    def test_empty_fails(self) -> None:
+        from app.validation import validate_list_length
+
+        assert len(validate_list_length([])) == 1
+
+    def test_too_long_fails(self) -> None:
+        from app.validation import validate_list_length
+
+        assert len(validate_list_length([1, 2, 3], max_len=2)) == 1
+
+    def test_within_bounds(self) -> None:
+        from app.validation import validate_list_length
+
+        assert validate_list_length([1, 2], min_len=2, max_len=5) == []
+
+    @pytest.mark.parametrize("length,min_len,max_len,expect_errors", [
+        (3, 1, 5, False),
+        (0, 1, 5, True),
+        (6, 1, 5, True),
+    ])
+    def test_parametrized(self, length: int, min_len: int, max_len: int, expect_errors: bool) -> None:
+        from app.validation import validate_list_length
+
+        errors = validate_list_length(list(range(length)), min_len=min_len, max_len=max_len)
+        assert bool(errors) == expect_errors
+
+
+class TestValidateEnum:
+    def test_valid(self) -> None:
+        from app.validation import validate_enum
+
+        assert validate_enum("up", ["up", "down", "flat"]) == []
+
+    def test_invalid(self) -> None:
+        from app.validation import validate_enum
+
+        errors = validate_enum("sideways", ["up", "down", "flat"])
+        assert len(errors) == 1
+        assert "sideways" in errors[0]
+
+    def test_custom_field_name(self) -> None:
+        from app.validation import validate_enum
+
+        errors = validate_enum("bad", ["good"], field_name="status")
+        assert "status" in errors[0]
+
+    @pytest.mark.parametrize("value,allowed", [
+        ("a", ["a", "b", "c"]),
+        ("low", ["low", "medium", "high"]),
+    ])
+    def test_parametrized_valid(self, value: str, allowed: list) -> None:
+        from app.validation import validate_enum
+
+        assert validate_enum(value, allowed) == []
