@@ -76,3 +76,101 @@ class TestExplainAnomaly:
         query = np.arange(8, dtype=np.float32)
         explanation = built_index.explain_anomaly(query, top_k=top_k)
         assert len(explanation["top_contributors"]) == top_k
+
+
+class TestAnomalyScoreSummary:
+    def test_empty_returns_zeros(self):
+        from app.anomaly import anomaly_score_summary
+
+        result = anomaly_score_summary([])
+        assert result == {"mean": 0.0, "max": 0.0, "min": 0.0, "p90": 0.0}
+
+    def test_single_value(self):
+        from app.anomaly import anomaly_score_summary
+
+        result = anomaly_score_summary([5.0])
+        assert result["mean"] == pytest.approx(5.0)
+        assert result["max"] == pytest.approx(5.0)
+        assert result["min"] == pytest.approx(5.0)
+
+    def test_p90_ordering(self):
+        from app.anomaly import anomaly_score_summary
+
+        result = anomaly_score_summary([1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0])
+        assert result["p90"] >= result["mean"]
+
+    @pytest.mark.parametrize(
+        "scores,expected_max",
+        [
+            ([1.0, 2.0, 3.0], 3.0),
+            ([10.0, 20.0, 30.0], 30.0),
+        ],
+    )
+    def test_parametrized_max(self, scores, expected_max):
+        from app.anomaly import anomaly_score_summary
+
+        assert anomaly_score_summary(scores)["max"] == pytest.approx(expected_max)
+
+
+class TestFlagRecurringAnomalies:
+    def test_empty_returns_empty(self):
+        from app.anomaly import flag_recurring_anomalies
+
+        assert flag_recurring_anomalies([]) == []
+
+    def test_all_unique_returns_empty(self):
+        from app.anomaly import flag_recurring_anomalies
+
+        assert flag_recurring_anomalies(["a", "b", "c"]) == []
+
+    def test_recurring_detected(self):
+        from app.anomaly import flag_recurring_anomalies
+
+        result = flag_recurring_anomalies(["a", "a", "b"])
+        assert "a" in result
+        assert "b" not in result
+
+    def test_min_occurrences_respected(self):
+        from app.anomaly import flag_recurring_anomalies
+
+        result = flag_recurring_anomalies(["a", "a", "a", "b", "b"], min_occurrences=3)
+        assert result == ["a"]
+
+    def test_result_is_sorted(self):
+        from app.anomaly import flag_recurring_anomalies
+
+        result = flag_recurring_anomalies(["z", "z", "a", "a", "m", "m"])
+        assert result == sorted(result)
+
+
+class TestNormaliseScores:
+    def test_empty_returns_empty(self):
+        from app.anomaly import normalise_scores
+
+        assert normalise_scores([]) == []
+
+    def test_constant_returns_zeros(self):
+        from app.anomaly import normalise_scores
+
+        assert normalise_scores([5.0] * 5) == [0.0] * 5
+
+    def test_min_is_zero_max_is_one(self):
+        from app.anomaly import normalise_scores
+
+        result = normalise_scores([0.0, 5.0, 10.0])
+        assert result[0] == pytest.approx(0.0)
+        assert result[-1] == pytest.approx(1.0)
+
+    @pytest.mark.parametrize(
+        "scores,expected",
+        [
+            ([1.0, 2.0, 3.0], [0.0, 0.5, 1.0]),
+            ([0.0, 1.0], [0.0, 1.0]),
+        ],
+    )
+    def test_parametrized_normalise(self, scores, expected):
+        from app.anomaly import normalise_scores
+
+        result = normalise_scores(scores)
+        for r, e in zip(result, expected):
+            assert r == pytest.approx(e)
