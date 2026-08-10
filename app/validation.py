@@ -490,3 +490,83 @@ def validate_region_id(region_id: str) -> list[str]:
     if not region_id.islower():
         errors.append(f"region_id must be lowercase, got {region_id!r}")
     return errors
+
+
+def validate_percentage(value: float, field_name: str = "value") -> list[str]:
+    """Return validation errors if *value* is not a valid percentage in [0, 100].
+
+    Args:
+        value: Numeric value to validate as a percentage.
+        field_name: Name shown in error messages. Defaults to ``"value"``.
+
+    Returns:
+        List of error strings (empty when valid).
+    """
+    errors: list[str] = []
+    if not isinstance(value, (int, float)):
+        errors.append(f"{field_name} must be a number, got {type(value).__name__}")
+        return errors
+    if value < 0 or value > 100:
+        errors.append(f"{field_name} must be in [0, 100], got {value}")
+    return errors
+
+
+def validate_positive(value: float, field_name: str = "value") -> list[str]:
+    """Return validation errors if *value* is not strictly positive.
+
+    Args:
+        value: Numeric value to validate.
+        field_name: Name shown in error messages. Defaults to ``"value"``.
+
+    Returns:
+        List of error strings (empty when valid).
+    """
+    errors: list[str] = []
+    if not isinstance(value, (int, float)):
+        errors.append(f"{field_name} must be a number, got {type(value).__name__}")
+        return errors
+    if value <= 0:
+        errors.append(f"{field_name} must be > 0, got {value}")
+    return errors
+
+
+def validate_list_length(
+    values: list,
+    field_name: str = "values",
+    min_len: int = 1,
+    max_len: int | None = None,
+) -> list[str]:
+    """Return validation errors if a list's length is outside allowed bounds.
+
+    Args:
+        values: List to validate.
+        field_name: Name shown in error messages.
+        min_len: Minimum allowed length (inclusive). Defaults to 1.
+        max_len: Maximum allowed length (inclusive). None means no upper bound.
+
+    Returns:
+        List of error strings (empty when valid).
+    """
+    errors: list[str] = []
+    if len(values) < min_len:
+        errors.append(f"{field_name} must have at least {min_len} element(s), got {len(values)}")
+    if max_len is not None and len(values) > max_len:
+        errors.append(f"{field_name} must have at most {max_len} element(s), got {len(values)}")
+    return errors
+
+
+def validate_enum(value: str, allowed: list[str], field_name: str = "value") -> list[str]:
+    """Return validation errors if *value* is not in *allowed*.
+
+    Args:
+        value: String value to validate.
+        allowed: Accepted values.
+        field_name: Name shown in error messages.
+
+    Returns:
+        List of error strings (empty when valid).
+    """
+    errors: list[str] = []
+    if value not in allowed:
+        errors.append(f"{field_name} must be one of {allowed!r}, got {value!r}")
+    return errors
