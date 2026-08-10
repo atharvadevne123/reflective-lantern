@@ -109,3 +109,63 @@ def answer_confidence(chunks: list[ScoredChunk]) -> float:
     if not chunks:
         return 0.0
     return round(sum(c.trust for c in chunks) / len(chunks), 6)
+
+
+def trust_tier(score: float) -> str:
+    """Classify a trust score into a named tier.
+
+    Tiers:
+        ``high``    — score >= 0.75
+        ``medium``  — score >= 0.50
+        ``low``     — score >= 0.25
+        ``minimal`` — score < 0.25
+
+    Args:
+        score: Trust score in [0, 1].
+
+    Returns:
+        String tier label.
+    """
+    if score >= 0.75:
+        return "high"
+    if score >= 0.50:
+        return "medium"
+    if score >= 0.25:
+        return "low"
+    return "minimal"
+
+
+def weighted_answer_confidence(
+    chunks: list[ScoredChunk],
+    rerank_weight: float = 0.5,
+) -> float:
+    """Return answer confidence weighted by rerank scores.
+
+    Unlike :func:`answer_confidence` (which weights equally), this function
+    gives higher-reranked chunks more influence.
+
+    Args:
+        chunks: Scored chunks with ``trust`` and ``rerank_score`` attributes.
+        rerank_weight: How much the rerank score shifts the effective weight.
+
+    Returns:
+        Weighted mean trust in [0, 1]; 0.0 for empty input.
+    """
+    if not chunks:
+        return 0.0
+    weights = [max(0.0, c.rerank_score) * rerank_weight + (1.0 - rerank_weight) for c in chunks]
+    total_w = sum(weights) or 1.0
+    return round(sum(c.trust * w for c, w in zip(chunks, weights)) / total_w, 6)
+
+
+def min_trust_gate(chunks: list[ScoredChunk], threshold: float = 0.40) -> list[ScoredChunk]:
+    """Filter out chunks whose trust falls below *threshold*.
+
+    Args:
+        chunks: Candidates from the retrieval pipeline.
+        threshold: Minimum acceptable trust score.
+
+    Returns:
+        Subset of *chunks* with trust >= threshold, preserving order.
+    """
+    return [c for c in chunks if c.trust >= threshold]
