@@ -704,3 +704,81 @@ def sample_variance(values: list[float]) -> float:
         raise ValueError("sample_variance requires at least 2 values")
     mean = sum(values) / len(values)
     return round(sum((v - mean) ** 2 for v in values) / (len(values) - 1), 6)
+
+
+def kurtosis(values: list[float], excess: bool = True) -> float:
+    """Compute the kurtosis of a distribution.
+
+    Args:
+        values: Non-empty list with at least 4 elements.
+        excess: If True (default), return excess kurtosis (kurtosis - 3),
+            which is 0 for a normal distribution.
+
+    Returns:
+        Kurtosis value rounded to 6 decimal places.
+
+    Raises:
+        ValueError: If *values* has fewer than 4 elements or has zero variance.
+    """
+    if len(values) < 4:
+        raise ValueError("kurtosis requires at least 4 values")
+    n = len(values)
+    mean = sum(values) / n
+    variance_val = sum((v - mean) ** 2 for v in values) / n
+    if variance_val < 1e-12:
+        raise ValueError("kurtosis is undefined for a constant series (zero variance)")
+    std_dev = variance_val**0.5
+    fourth_moment = sum(((v - mean) / std_dev) ** 4 for v in values) / n
+    return round(fourth_moment - 3.0 if excess else fourth_moment, 6)
+
+
+def gini_coefficient(values: list[float]) -> float:
+    """Compute the Gini coefficient measuring inequality in a distribution.
+
+    A value of 0 means perfect equality; 1 means maximal inequality.
+
+    Args:
+        values: Non-negative numeric values (at least 2 elements).
+
+    Returns:
+        Gini coefficient in [0, 1], rounded to 6 decimal places.
+
+    Raises:
+        ValueError: If *values* has fewer than 2 elements, contains negatives,
+            or sums to zero.
+    """
+    if len(values) < 2:
+        raise ValueError("gini_coefficient requires at least 2 values")
+    if any(v < 0 for v in values):
+        raise ValueError("gini_coefficient requires non-negative values")
+    total = sum(values)
+    if total == 0:
+        raise ValueError("gini_coefficient is undefined when all values are zero")
+    n = len(values)
+    sorted_vals = sorted(values)
+    cumulative = sum((2 * (i + 1) - n - 1) * v for i, v in enumerate(sorted_vals))
+    return round(cumulative / (n * total), 6)
+
+
+def log_return(prices: list[float]) -> list[float]:
+    """Compute log returns from a price series.
+
+    Log returns are additive over time and more suitable for statistical
+    analysis than simple percentage returns.
+
+    Args:
+        prices: Ordered list of prices (at least 2 positive values).
+
+    Returns:
+        List of log returns of length ``len(prices) - 1``.
+
+    Raises:
+        ValueError: If *prices* has fewer than 2 elements or contains non-positive values.
+    """
+    import math
+
+    if len(prices) < 2:
+        raise ValueError("log_return requires at least 2 prices")
+    if any(p <= 0 for p in prices):
+        raise ValueError("log_return requires strictly positive prices")
+    return [round(math.log(prices[i] / prices[i - 1]), 6) for i in range(1, len(prices))]
