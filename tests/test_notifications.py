@@ -379,3 +379,87 @@ def test_group_alerts_by_severity_multiple_warnings() -> None:
     ]
     grouped = group_alerts_by_severity(alerts)
     assert len(grouped["warning"]) == 2
+
+
+class TestAlertAgeSeconds:
+    def test_recent_alert_small_age(self) -> None:
+        import time
+
+        from app.notifications import alert_age_seconds
+
+        alert = Alert(severity="info", message="test")
+        age = alert_age_seconds(alert)
+        assert age >= 0.0
+        assert age < 5.0
+
+    def test_old_alert_has_positive_age(self) -> None:
+        from app.notifications import alert_age_seconds
+
+        alert = Alert(severity="info", message="old", created_at=0.0)
+        age = alert_age_seconds(alert)
+        assert age > 0.0
+
+
+class TestEscalateAlert:
+    @pytest.mark.parametrize(
+        "initial,expected",
+        [
+            ("info", "warning"),
+            ("warning", "critical"),
+            ("critical", "critical"),
+        ],
+    )
+    def test_escalation_ladder(self, initial, expected) -> None:
+        from app.notifications import escalate_alert
+
+        alert = Alert(severity=initial, message="x")
+        result = escalate_alert(alert)
+        assert result.severity == expected
+
+    def test_original_not_mutated(self) -> None:
+        from app.notifications import escalate_alert
+
+        alert = Alert(severity="info", message="unchanged")
+        escalate_alert(alert)
+        assert alert.severity == "info"
+
+    def test_message_preserved(self) -> None:
+        from app.notifications import escalate_alert
+
+        alert = Alert(severity="info", message="keep_me")
+        result = escalate_alert(alert)
+        assert result.message == "keep_me"
+
+
+class TestAlertsWithinWindow:
+    def test_empty_returns_empty(self) -> None:
+        from app.notifications import alerts_within_window
+
+        assert alerts_within_window([]) == []
+
+    def test_all_recent_returned(self) -> None:
+        import time
+
+        from app.notifications import alerts_within_window
+
+        now = time.time()
+        alerts = [
+            Alert(severity="info", message="a", created_at=now - 10),
+            Alert(severity="info", message="b", created_at=now),
+        ]
+        result = alerts_within_window(alerts, window_seconds=60.0)
+        assert len(result) == 2
+
+    def test_old_alert_excluded(self) -> None:
+        import time
+
+        from app.notifications import alerts_within_window
+
+        now = time.time()
+        alerts = [
+            Alert(severity="info", message="old", created_at=now - 7200),
+            Alert(severity="info", message="new", created_at=now),
+        ]
+        result = alerts_within_window(alerts, window_seconds=3600.0)
+        assert len(result) == 1
+        assert result[0].message == "new"
