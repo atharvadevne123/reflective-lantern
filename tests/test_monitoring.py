@@ -400,3 +400,77 @@ class TestAlertCountByLevel:
 
         result = alert_count_by_level([{}])
         assert "unknown" in result
+
+
+class TestPValueToConfidence:
+    @pytest.mark.parametrize(
+        "p_value,expected",
+        [
+            (0.0, 100.0),
+            (1.0, 0.0),
+            (0.05, 95.0),
+            (0.5, 50.0),
+        ],
+    )
+    def test_conversion(self, p_value: float, expected: float) -> None:
+        from app.monitoring import p_value_to_confidence
+
+        assert p_value_to_confidence(p_value) == pytest.approx(expected)
+
+    def test_clamp_above_one(self) -> None:
+        from app.monitoring import p_value_to_confidence
+
+        assert p_value_to_confidence(1.5) == pytest.approx(0.0)
+
+    def test_clamp_below_zero(self) -> None:
+        from app.monitoring import p_value_to_confidence
+
+        assert p_value_to_confidence(-0.1) == pytest.approx(100.0)
+
+
+class TestAlertSuppressionWindow:
+    def test_within_cooldown_suppressed(self) -> None:
+        from app.monitoring import alert_suppression_window
+
+        assert alert_suppression_window(1000.0, 1100.0, cooldown_seconds=300.0) is True
+
+    def test_outside_cooldown_not_suppressed(self) -> None:
+        from app.monitoring import alert_suppression_window
+
+        assert alert_suppression_window(1000.0, 1400.0, cooldown_seconds=300.0) is False
+
+    def test_exactly_at_boundary_not_suppressed(self) -> None:
+        from app.monitoring import alert_suppression_window
+
+        assert alert_suppression_window(1000.0, 1300.0, cooldown_seconds=300.0) is False
+
+    def test_zero_cooldown_raises(self) -> None:
+        from app.monitoring import alert_suppression_window
+
+        with pytest.raises(ValueError):
+            alert_suppression_window(1000.0, 1100.0, cooldown_seconds=0)
+
+
+class TestDriftTrend:
+    def test_stable_with_few_values(self) -> None:
+        from app.monitoring import drift_trend
+
+        assert drift_trend([0.1, 0.2]) == "stable"
+
+    def test_worsening(self) -> None:
+        from app.monitoring import drift_trend
+
+        p_values = [0.8, 0.7, 0.6, 0.5, 0.2, 0.1]
+        assert drift_trend(p_values) == "worsening"
+
+    def test_improving(self) -> None:
+        from app.monitoring import drift_trend
+
+        p_values = [0.1, 0.2, 0.5, 0.7, 0.8, 0.9]
+        assert drift_trend(p_values) == "improving"
+
+    def test_stable_consistent(self) -> None:
+        from app.monitoring import drift_trend
+
+        p_values = [0.4, 0.4, 0.4, 0.4, 0.4, 0.4]
+        assert drift_trend(p_values) == "stable"
