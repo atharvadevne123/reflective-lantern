@@ -447,3 +447,75 @@ def test_pipeline_has_preprocessor_keyword_variants(keyword_step) -> None:
     name, estimator = keyword_step
     pipe = Pipeline([(name, estimator), ("reg", LinearRegression())])
     assert pipeline_has_preprocessor(pipe) is True
+
+
+class TestPipelineStepIndex:
+    def test_first_step_index(self) -> None:
+        from app.pipeline_utils import pipeline_step_index
+
+        pipe = make_test_pipeline()
+        assert pipeline_step_index(pipe, "scaler") == 0
+
+    def test_last_step_index(self) -> None:
+        from app.pipeline_utils import pipeline_step_index
+
+        pipe = make_test_pipeline()
+        assert pipeline_step_index(pipe, "regressor") == 1
+
+    def test_unknown_step_raises(self) -> None:
+        from app.pipeline_utils import pipeline_step_index
+
+        pipe = make_test_pipeline()
+        with pytest.raises(KeyError):
+            pipeline_step_index(pipe, "nonexistent")
+
+    @pytest.mark.parametrize("step_name,expected", [("scaler", 0), ("regressor", 1)])
+    def test_parametrized(self, step_name, expected) -> None:
+        from app.pipeline_utils import pipeline_step_index
+
+        assert pipeline_step_index(make_test_pipeline(), step_name) == expected
+
+
+class TestPipelineStepBefore:
+    def test_first_step_has_no_predecessors(self) -> None:
+        from app.pipeline_utils import pipeline_step_before
+
+        assert pipeline_step_before(make_test_pipeline(), "scaler") == []
+
+    def test_last_step_predecessors(self) -> None:
+        from app.pipeline_utils import pipeline_step_before
+
+        assert pipeline_step_before(make_test_pipeline(), "regressor") == ["scaler"]
+
+    def test_unknown_step_raises(self) -> None:
+        from app.pipeline_utils import pipeline_step_before
+
+        with pytest.raises(KeyError):
+            pipeline_step_before(make_test_pipeline(), "missing")
+
+
+class TestPipelineStepAfter:
+    def test_last_step_has_no_successors(self) -> None:
+        from app.pipeline_utils import pipeline_step_after
+
+        assert pipeline_step_after(make_test_pipeline(), "regressor") == []
+
+    def test_first_step_successors(self) -> None:
+        from app.pipeline_utils import pipeline_step_after
+
+        assert pipeline_step_after(make_test_pipeline(), "scaler") == ["regressor"]
+
+    def test_unknown_step_raises(self) -> None:
+        from app.pipeline_utils import pipeline_step_after
+
+        with pytest.raises(KeyError):
+            pipeline_step_after(make_test_pipeline(), "missing")
+
+    @pytest.mark.parametrize(
+        "step_name,expected",
+        [("scaler", ["regressor"]), ("regressor", [])],
+    )
+    def test_parametrized(self, step_name, expected) -> None:
+        from app.pipeline_utils import pipeline_step_after
+
+        assert pipeline_step_after(make_test_pipeline(), step_name) == expected
