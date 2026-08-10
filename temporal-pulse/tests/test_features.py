@@ -167,3 +167,77 @@ class TestBuildFeatureMatrix:
         pipeline = build_sklearn_pipeline()
         X_transformed = pipeline.fit_transform(X)
         assert X_transformed.shape == X.shape
+
+
+class TestSensorZscoreRow:
+    def test_empty_row_returns_empty(self) -> None:
+        from app.features import sensor_zscore_row
+
+        assert sensor_zscore_row({}) == {}
+
+    def test_constant_values_returns_zeros(self) -> None:
+        from app.features import sensor_zscore_row
+
+        result = sensor_zscore_row({"a": 5.0, "b": 5.0, "c": 5.0})
+        assert all(v == pytest.approx(0.0) for v in result.values())
+
+    def test_output_has_zscore_suffix(self) -> None:
+        from app.features import sensor_zscore_row
+
+        result = sensor_zscore_row({"x": 1.0, "y": 3.0})
+        assert "x_zscore" in result
+        assert "y_zscore" in result
+
+    def test_opposite_values_opposite_zscores(self) -> None:
+        from app.features import sensor_zscore_row
+
+        result = sensor_zscore_row({"a": 0.0, "b": 10.0})
+        assert result["a_zscore"] == pytest.approx(-result["b_zscore"])
+
+    @pytest.mark.parametrize("n_sensors", [1, 2, 5])
+    def test_output_length_matches_input(self, n_sensors) -> None:
+        from app.features import sensor_zscore_row
+
+        row = {f"s{i}": float(i) for i in range(n_sensors)}
+        result = sensor_zscore_row(row)
+        assert len(result) == n_sensors
+
+
+class TestThresholdExceedanceVector:
+    def test_no_thresholds_returns_empty(self) -> None:
+        from app.features import threshold_exceedance_vector
+
+        result = threshold_exceedance_vector({"a": 1.0}, {})
+        assert result == {}
+
+    def test_exceeded_returns_one(self) -> None:
+        from app.features import threshold_exceedance_vector
+
+        result = threshold_exceedance_vector({"temp": 100.0}, {"temp": 90.0})
+        assert result["temp_exceeded"] == 1
+
+    def test_not_exceeded_returns_zero(self) -> None:
+        from app.features import threshold_exceedance_vector
+
+        result = threshold_exceedance_vector({"temp": 80.0}, {"temp": 90.0})
+        assert result["temp_exceeded"] == 0
+
+    def test_sensor_absent_from_thresholds_skipped(self) -> None:
+        from app.features import threshold_exceedance_vector
+
+        result = threshold_exceedance_vector({"a": 5.0, "b": 5.0}, {"a": 3.0})
+        assert "b_exceeded" not in result
+        assert "a_exceeded" in result
+
+    @pytest.mark.parametrize(
+        "reading,threshold,expected",
+        [
+            ({"x": 10.0}, {"x": 5.0}, {"x_exceeded": 1}),
+            ({"x": 5.0}, {"x": 5.0}, {"x_exceeded": 0}),
+            ({"x": 4.0}, {"x": 5.0}, {"x_exceeded": 0}),
+        ],
+    )
+    def test_parametrized(self, reading, threshold, expected) -> None:
+        from app.features import threshold_exceedance_vector
+
+        assert threshold_exceedance_vector(reading, threshold) == expected
