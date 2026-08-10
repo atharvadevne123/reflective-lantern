@@ -219,3 +219,61 @@ def cache_stats_summary(cache: TTLCache) -> dict[str, object]:
         "hit_rate": round(cache.hit_rate, 4),
         "size": cache.size,
     }
+
+
+def cache_fill_rate(cache: TTLCache) -> float:
+    """Return the fraction of cache capacity currently in use.
+
+    Args:
+        cache: The :class:`TTLCache` instance to inspect.
+
+    Returns:
+        Fill rate in [0, 1]; 0.0 if max_size is 0.
+    """
+    if cache.max_size == 0:
+        return 0.0
+    return round(cache.size / cache.max_size, 6)
+
+
+def peek(cache: TTLCache, key: str) -> object | None:
+    """Return the stored value for *key* without updating hit/miss counters.
+
+    Useful for admin/diagnostics where you want to inspect the cache without
+    affecting the hit-rate metrics.
+
+    Args:
+        cache: The :class:`TTLCache` instance.
+        key: Cache key to inspect.
+
+    Returns:
+        The raw value if the key exists and is unexpired; None otherwise.
+    """
+    import time as _time
+
+    with cache._lock:
+        entry = cache._store.get(key)
+        if entry is None:
+            return None
+        value, expire_at = entry
+        if expire_at is not None and _time.monotonic() > expire_at:
+            return None
+        return value
+
+
+def batch_delete(cache: TTLCache, keys: list[str]) -> int:
+    """Delete multiple keys from *cache* in a single call.
+
+    Args:
+        cache: The :class:`TTLCache` instance.
+        keys: List of keys to remove.
+
+    Returns:
+        Number of keys that were actually present and removed.
+    """
+    removed = 0
+    for key in keys:
+        with cache._lock:
+            if key in cache._store:
+                del cache._store[key]
+                removed += 1
+    return removed
