@@ -923,3 +923,117 @@ def moving_percentile(values: list[float], window: int, percentile: float = 50.0
         frac = rank - lo
         result.append(round(chunk[lo] * (1 - frac) + chunk[hi] * frac, 6))
     return result
+
+
+def double_exponential_smoothing(
+    values: list[float],
+    alpha: float = 0.3,
+    beta: float = 0.1,
+) -> list[float]:
+    """Apply double (Holt's) exponential smoothing to capture level and trend.
+
+    Args:
+        values: Time-ordered numeric observations (at least 2).
+        alpha: Smoothing factor for the level (0 < alpha < 1).
+        beta: Smoothing factor for the trend (0 < beta < 1).
+
+    Returns:
+        Smoothed series of the same length as *values*.
+
+    Raises:
+        ValueError: If *values* has fewer than 2 elements, or *alpha*/*beta* are
+            not in (0, 1).
+    """
+    if len(values) < 2:
+        raise ValueError("double_exponential_smoothing requires at least 2 values")
+    if not (0 < alpha < 1):
+        raise ValueError(f"alpha must be in (0, 1), got {alpha}")
+    if not (0 < beta < 1):
+        raise ValueError(f"beta must be in (0, 1), got {beta}")
+    level = values[0]
+    trend = values[1] - values[0]
+    result = [round(level + trend, 6)]
+    for v in values[1:]:
+        prev_level = level
+        level = alpha * v + (1 - alpha) * (level + trend)
+        trend = beta * (level - prev_level) + (1 - beta) * trend
+        result.append(round(level + trend, 6))
+    return result[: len(values)]
+
+
+def linear_interpolation(values: list[float | None]) -> list[float]:
+    """Fill None gaps using linear interpolation between surrounding known values.
+
+    Leading/trailing Nones are edge-filled from the nearest valid observation.
+
+    Args:
+        values: Series that may contain None placeholders for missing values.
+
+    Returns:
+        Fully populated list of floats of the same length as *values*.
+
+    Raises:
+        ValueError: If *values* is empty or contains only None values.
+    """
+    import math
+
+    if not values:
+        raise ValueError("values must not be empty")
+    if all(v is None for v in values):
+        raise ValueError("values must contain at least one non-None element")
+
+    result: list[float] = [float("nan")] * len(values)
+    for i, v in enumerate(values):
+        if v is not None:
+            result[i] = float(v)
+
+    first_valid = next(i for i, v in enumerate(values) if v is not None)
+    last_valid = len(values) - 1 - next(i for i, v in enumerate(reversed(values)) if v is not None)
+    for i in range(first_valid):
+        result[i] = result[first_valid]
+    for i in range(last_valid + 1, len(values)):
+        result[i] = result[last_valid]
+
+    i = 0
+    while i < len(result):
+        if math.isnan(result[i]):
+            start = i - 1
+            end = i
+            while end < len(result) and math.isnan(result[end]):
+                end += 1
+            lo_val = result[start]
+            hi_val = result[end] if end < len(result) else result[start]
+            span = end - start
+            for j in range(start + 1, end):
+                frac = (j - start) / span
+                result[j] = round(lo_val + frac * (hi_val - lo_val), 6)
+            i = end
+        else:
+            i += 1
+
+    return [round(v, 6) for v in result]
+
+
+def forward_fill(values: list[float | None]) -> list[float]:
+    """Carry the last observed value forward to fill None gaps.
+
+    Args:
+        values: Series with optional None placeholders.
+
+    Returns:
+        Series with Nones replaced by the most recent non-None value.
+
+    Raises:
+        ValueError: If *values* is empty or begins with None.
+    """
+    if not values:
+        raise ValueError("values must not be empty")
+    if values[0] is None:
+        raise ValueError("forward_fill cannot start with None — no value to carry forward")
+    result: list[float] = []
+    last: float = float(values[0])  # type: ignore[arg-type]
+    for v in values:
+        if v is not None:
+            last = float(v)
+        result.append(round(last, 6))
+    return result
