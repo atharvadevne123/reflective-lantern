@@ -112,8 +112,72 @@ def rolling_spike_count(
     return counts
 
 
+def spike_ratio(values: list[float], z_threshold: float = 2.5) -> float:
+    """Return the fraction of values classified as spikes.
+
+    Args:
+        values: Time-series readings.
+        z_threshold: Z-score threshold for spike detection.
+
+    Returns:
+        Ratio in [0, 1]; 0.0 when *values* is empty or has zero variance.
+    """
+    if len(values) < 2:
+        return 0.0
+    result = detect_spike(values, z_threshold=z_threshold)
+    spike_indices = result.get("spike_indices", [])
+    return len(spike_indices) / len(values)
+
+
+def consecutive_spike_run(values: list[float], z_threshold: float = 2.5) -> int:
+    """Return the length of the longest unbroken run of spike positions.
+
+    A spike run is a contiguous sequence of consecutive indices all flagged
+    as spikes by :func:`detect_spike`.
+
+    Args:
+        values: Time-series readings.
+        z_threshold: Z-score threshold forwarded to :func:`detect_spike`.
+
+    Returns:
+        Length of the longest run; 0 if no spikes.
+    """
+    if not values:
+        return 0
+    result = detect_spike(values, z_threshold=z_threshold)
+    spike_set = set(result.get("spike_indices", []))
+    max_run = current_run = 0
+    for i in range(len(values)):
+        if i in spike_set:
+            current_run += 1
+            max_run = max(max_run, current_run)
+        else:
+            current_run = 0
+    return max_run
+
+
+def normalise_demand(values: list[float]) -> list[float]:
+    """Return *values* min-max normalised to [0, 1].
+
+    Args:
+        values: Raw demand readings.
+
+    Returns:
+        Normalised list; all zeros when min == max.
+    """
+    if not values:
+        return []
+    lo, hi = min(values), max(values)
+    if hi == lo:
+        return [0.0] * len(values)
+    return [(v - lo) / (hi - lo) for v in values]
+
+
 __all__ = [
     "detect_spike",
     "rolling_spike_count",
     "spike_severity",
+    "spike_ratio",
+    "consecutive_spike_run",
+    "normalise_demand",
 ]
