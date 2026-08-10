@@ -87,3 +87,69 @@ def sanitize_sensor_reading(data: dict[str, Any]) -> dict[str, float]:
                 result[field] = medians[field]
                 logger.warning("Could not coerce %s=%r to float; using median.", field, raw)
     return result
+
+
+def sensor_z_score(value: float, mean: float, std: float) -> float:
+    """Return the Z-score of *value* relative to a population.
+
+    Args:
+        value: Observed sensor reading.
+        mean: Population mean.
+        std: Population standard deviation; must be positive.
+
+    Returns:
+        Signed Z-score.
+
+    Raises:
+        ValueError: If *std* is not positive.
+    """
+    if std <= 0:
+        raise ValueError(f"std must be positive, got {std}")
+    return (value - mean) / std
+
+
+def clamp_to_range(field: str, value: float) -> float:
+    """Clamp *value* to the valid sensor range for *field*.
+
+    Args:
+        field: Sensor field name (must be in SENSOR_RANGES).
+        value: Raw reading to clamp.
+
+    Returns:
+        Value clamped to [lo, hi].
+
+    Raises:
+        KeyError: If *field* is not a recognised sensor.
+    """
+    if field not in SENSOR_RANGES:
+        raise KeyError(f"Unknown sensor field: {field!r}")
+    lo, hi = SENSOR_RANGES[field]
+    return max(lo, min(hi, value))
+
+
+def sensor_drift_detected(
+    baseline: list[float],
+    current: list[float],
+    threshold: float = 0.15,
+) -> bool:
+    """Return True if the mean of *current* has drifted beyond *threshold* from *baseline*.
+
+    Drift is defined as abs(mean(current) - mean(baseline)) / (mean(baseline) + 1e-9).
+
+    Args:
+        baseline: Historical sensor readings.
+        current: Recent sensor readings.
+        threshold: Relative drift threshold in (0, 1].
+
+    Returns:
+        True when relative drift exceeds the threshold.
+
+    Raises:
+        ValueError: If either list is empty.
+    """
+    if not baseline or not current:
+        raise ValueError("baseline and current must be non-empty")
+    mean_base = sum(baseline) / len(baseline)
+    mean_curr = sum(current) / len(current)
+    relative_drift = abs(mean_curr - mean_base) / (abs(mean_base) + 1e-9)
+    return relative_drift > threshold
