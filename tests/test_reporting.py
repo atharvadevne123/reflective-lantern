@@ -824,3 +824,100 @@ def test_top_consumption_hours_n_parametrize(n: int) -> None:
     hourly = [float(i) for i in range(24)]
     result = top_consumption_hours(hourly, n=n)
     assert len(result) == n
+
+
+class TestEnergyCostEstimate:
+    def test_basic(self) -> None:
+        from app.reporting import energy_cost_estimate
+
+        result = energy_cost_estimate(kwh=100.0, tariff_per_kwh=0.30)
+        assert result["net_cost"] == pytest.approx(30.0)
+        assert result["vat_amount"] == 0.0
+        assert result["total_cost"] == pytest.approx(30.0)
+
+    def test_with_vat(self) -> None:
+        from app.reporting import energy_cost_estimate
+
+        result = energy_cost_estimate(kwh=100.0, tariff_per_kwh=0.30, vat_rate=0.20)
+        assert result["total_cost"] == pytest.approx(36.0)
+
+    def test_zero_kwh(self) -> None:
+        from app.reporting import energy_cost_estimate
+
+        result = energy_cost_estimate(kwh=0.0, tariff_per_kwh=0.30)
+        assert result["net_cost"] == 0.0
+
+    def test_negative_kwh_raises(self) -> None:
+        from app.reporting import energy_cost_estimate
+
+        with pytest.raises(ValueError, match="kwh"):
+            energy_cost_estimate(kwh=-1.0, tariff_per_kwh=0.30)
+
+    def test_negative_tariff_raises(self) -> None:
+        from app.reporting import energy_cost_estimate
+
+        with pytest.raises(ValueError, match="tariff"):
+            energy_cost_estimate(kwh=100.0, tariff_per_kwh=-0.10)
+
+    @pytest.mark.parametrize("vat_rate", [0.0, 0.05, 0.20])
+    def test_vat_rates(self, vat_rate: float) -> None:
+        from app.reporting import energy_cost_estimate
+
+        result = energy_cost_estimate(100.0, 0.30, vat_rate=vat_rate)
+        assert result["total_cost"] == pytest.approx(30.0 * (1 + vat_rate), abs=1e-3)
+
+
+class TestCarbonReportSection:
+    def test_basic(self) -> None:
+        from app.reporting import carbon_report_section
+
+        result = carbon_report_section(kwh=1000.0, emission_factor_kg_per_kwh=0.233, label="Jan")
+        assert result["label"] == "Jan"
+        assert result["kg_co2"] == pytest.approx(233.0)
+        assert result["tonnes_co2"] == pytest.approx(0.233, abs=1e-4)
+
+    def test_zero_emission_factor(self) -> None:
+        from app.reporting import carbon_report_section
+
+        result = carbon_report_section(kwh=500.0, emission_factor_kg_per_kwh=0.0)
+        assert result["kg_co2"] == 0.0
+
+    def test_negative_kwh_raises(self) -> None:
+        from app.reporting import carbon_report_section
+
+        with pytest.raises(ValueError, match="kwh"):
+            carbon_report_section(kwh=-100.0, emission_factor_kg_per_kwh=0.2)
+
+    def test_keys_present(self) -> None:
+        from app.reporting import carbon_report_section
+
+        result = carbon_report_section(100.0, 0.2)
+        assert {"label", "kwh", "kg_co2", "tonnes_co2", "emission_factor"} == set(result.keys())
+
+
+class TestConsumptionBudgetVariance:
+    def test_on_budget(self) -> None:
+        from app.reporting import consumption_budget_variance
+
+        result = consumption_budget_variance(actual_kwh=100.0, budget_kwh=100.0)
+        assert result["delta_kwh"] == 0.0
+        assert result["on_budget"] == 1
+
+    def test_over_budget(self) -> None:
+        from app.reporting import consumption_budget_variance
+
+        result = consumption_budget_variance(actual_kwh=120.0, budget_kwh=100.0)
+        assert result["variance_pct"] == pytest.approx(20.0)
+        assert result["on_budget"] == 0
+
+    def test_under_budget(self) -> None:
+        from app.reporting import consumption_budget_variance
+
+        result = consumption_budget_variance(actual_kwh=80.0, budget_kwh=100.0)
+        assert result["delta_kwh"] == pytest.approx(-20.0)
+
+    def test_zero_budget_raises(self) -> None:
+        from app.reporting import consumption_budget_variance
+
+        with pytest.raises(ValueError, match="budget_kwh"):
+            consumption_budget_variance(100.0, 0.0)
