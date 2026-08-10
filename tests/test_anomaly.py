@@ -951,3 +951,101 @@ class TestAnomalyTransitionCount:
         from app.anomaly import anomaly_transition_count
 
         assert anomaly_transition_count([False]) == 0
+
+
+class TestAnomalyRateByHour:
+    def test_basic(self) -> None:
+        from app.anomaly import anomaly_rate_by_hour
+
+        readings = [(0, True), (0, False), (1, True), (1, True)]
+        result = anomaly_rate_by_hour(readings)
+        assert result[0] == pytest.approx(0.5)
+        assert result[1] == pytest.approx(1.0)
+
+    def test_no_anomalies(self) -> None:
+        from app.anomaly import anomaly_rate_by_hour
+
+        readings = [(12, False), (12, False)]
+        assert anomaly_rate_by_hour(readings) == {12: 0.0}
+
+    def test_invalid_hour_raises(self) -> None:
+        from app.anomaly import anomaly_rate_by_hour
+
+        with pytest.raises(ValueError, match="0-23"):
+            anomaly_rate_by_hour([(24, True)])
+
+    @pytest.mark.parametrize("hour", [0, 11, 23])
+    def test_boundary_hours(self, hour: int) -> None:
+        from app.anomaly import anomaly_rate_by_hour
+
+        result = anomaly_rate_by_hour([(hour, True)])
+        assert hour in result
+
+
+class TestSeverityWeightedScore:
+    def test_default_weights(self) -> None:
+        from app.anomaly import severity_weighted_score
+
+        anomalies = [{"severity": "critical"}, {"severity": "warning"}]
+        result = severity_weighted_score(anomalies)
+        assert result == pytest.approx(4.5)
+
+    def test_empty_list(self) -> None:
+        from app.anomaly import severity_weighted_score
+
+        assert severity_weighted_score([]) == 0.0
+
+    def test_custom_weights(self) -> None:
+        from app.anomaly import severity_weighted_score
+
+        anomalies = [{"severity": "critical"}]
+        result = severity_weighted_score(anomalies, severity_weights={"critical": 10.0})
+        assert result == pytest.approx(10.0)
+
+    def test_unknown_severity_zero(self) -> None:
+        from app.anomaly import severity_weighted_score
+
+        anomalies = [{"severity": "unknown"}]
+        assert severity_weighted_score(anomalies) == 0.0
+
+
+class TestBatchAnomalyFlag:
+    def test_no_anomalies(self) -> None:
+        from app.anomaly import batch_anomaly_flag
+
+        result = batch_anomaly_flag([0.0, 1.0, -1.0], mean=0.0, std=1.0, threshold=3.0)
+        assert result == [False, False, False]
+
+    def test_anomaly_detected(self) -> None:
+        from app.anomaly import batch_anomaly_flag
+
+        result = batch_anomaly_flag([0.0, 100.0], mean=0.0, std=1.0, threshold=3.0)
+        assert result == [False, True]
+
+    def test_zero_std_raises(self) -> None:
+        from app.anomaly import batch_anomaly_flag
+
+        with pytest.raises(ValueError, match="std"):
+            batch_anomaly_flag([1.0, 2.0], mean=0.0, std=0.0)
+
+    def test_zero_threshold_raises(self) -> None:
+        from app.anomaly import batch_anomaly_flag
+
+        with pytest.raises(ValueError, match="threshold"):
+            batch_anomaly_flag([1.0], mean=0.0, std=1.0, threshold=0.0)
+
+    def test_output_length(self) -> None:
+        from app.anomaly import batch_anomaly_flag
+
+        values = [float(i) for i in range(10)]
+        result = batch_anomaly_flag(values, mean=4.5, std=3.0)
+        assert len(result) == 10
+
+    @pytest.mark.parametrize("threshold", [1.0, 2.0, 3.0])
+    def test_threshold_sensitivity(self, threshold: float) -> None:
+        from app.anomaly import batch_anomaly_flag
+
+        values = [0.0, 5.0, -5.0, 0.5]
+        result = batch_anomaly_flag(values, mean=0.0, std=1.0, threshold=threshold)
+        assert isinstance(result, list)
+        assert len(result) == len(values)
