@@ -562,3 +562,72 @@ def bin_feature(values: list[float], bins: list[float]) -> list[int]:
                 break
         result.append(idx)
     return result
+
+
+def cumulative_sum_feature(values: list[float]) -> list[float]:
+    """Return the cumulative sum of *values* as a feature series.
+
+    Args:
+        values: Input numeric series.
+
+    Returns:
+        List where each element is the sum of all previous elements including
+        the current one.
+    """
+    result: list[float] = []
+    total = 0.0
+    for v in values:
+        total += v
+        result.append(round(total, 6))
+    return result
+
+
+def rolling_max_feature(values: list[float], window: int = 7) -> list[float]:
+    """Compute rolling maximum over *window* consecutive values.
+
+    Args:
+        values: Input numeric series.
+        window: Number of values to include in each rolling window.
+
+    Returns:
+        List of rolling maximum values (same length as *values*; earlier
+        positions use the available history).
+
+    Raises:
+        ValueError: If *window* < 1.
+    """
+    if window < 1:
+        raise ValueError("window must be at least 1")
+    result = []
+    for i in range(len(values)):
+        start = max(0, i - window + 1)
+        result.append(max(values[start : i + 1]))
+    return result
+
+
+def percentile_feature(
+    values: list[float],
+    reference: list[float],
+    percentile: float = 50.0,
+) -> list[float]:
+    """Encode each value as its percentile rank within *reference*.
+
+    Args:
+        values: Values to encode.
+        reference: Reference distribution used to compute the threshold.
+        percentile: Target percentile (0-100).
+
+    Returns:
+        List of 1.0 (value is at or above the reference percentile) or 0.0.
+
+    Raises:
+        ValueError: If *percentile* is outside [0, 100] or *reference* is empty.
+    """
+    if not reference:
+        raise ValueError("reference must not be empty")
+    if not 0.0 <= percentile <= 100.0:
+        raise ValueError(f"percentile must be in [0, 100], got {percentile}")
+    sorted_ref = sorted(reference)
+    idx = int(len(sorted_ref) * percentile / 100.0)
+    threshold = sorted_ref[min(idx, len(sorted_ref) - 1)]
+    return [1.0 if v >= threshold else 0.0 for v in values]
