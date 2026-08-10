@@ -183,3 +183,80 @@ class TestPipelineEndToEnd:
         answer = pipeline.query("How much is the rooftop solar rebate per kilowatt?")
         assert answer.answered
         assert 0.0 < answer.confidence <= 1.0
+
+
+class TestTrustTier:
+    @pytest.mark.parametrize(
+        "score,expected",
+        [
+            (0.80, "high"),
+            (0.75, "high"),
+            (0.74, "medium"),
+            (0.50, "medium"),
+            (0.49, "low"),
+            (0.25, "low"),
+            (0.24, "minimal"),
+            (0.0, "minimal"),
+        ],
+    )
+    def test_tier_boundaries(self, score, expected):
+        from app.scoring.trust import trust_tier
+
+        assert trust_tier(score) == expected
+
+
+class TestWeightedAnswerConfidence:
+    def test_empty_returns_zero(self):
+        from app.scoring.trust import weighted_answer_confidence
+
+        assert weighted_answer_confidence([]) == pytest.approx(0.0)
+
+    def test_single_chunk(self):
+        from app.scoring.trust import weighted_answer_confidence
+
+        chunk = make_scored(trust=0.8, rerank_score=1.0)
+        result = weighted_answer_confidence([chunk])
+        assert 0.0 <= result <= 1.0
+
+    def test_higher_rerank_weighs_more(self):
+        from app.scoring.trust import weighted_answer_confidence
+
+        low_rerank = make_scored(trust=0.5, rerank_score=0.1)
+        high_rerank = make_scored(trust=0.9, rerank_score=0.9)
+        result = weighted_answer_confidence([low_rerank, high_rerank])
+        assert result > 0.5
+
+
+class TestMinTrustGate:
+    def test_empty_returns_empty(self):
+        from app.scoring.trust import min_trust_gate
+
+        assert min_trust_gate([]) == []
+
+    def test_all_above_threshold_pass(self):
+        from app.scoring.trust import min_trust_gate
+
+        chunks = [make_scored(trust=0.8), make_scored(trust=0.9)]
+        assert len(min_trust_gate(chunks, threshold=0.5)) == 2
+
+    def test_below_threshold_filtered(self):
+        from app.scoring.trust import min_trust_gate
+
+        chunks = [make_scored(trust=0.2), make_scored(trust=0.8)]
+        result = min_trust_gate(chunks, threshold=0.4)
+        assert len(result) == 1
+        assert result[0].trust == pytest.approx(0.8)
+
+    @pytest.mark.parametrize(
+        "trusts,threshold,expected_count",
+        [
+            ([0.1, 0.5, 0.9], 0.4, 2),
+            ([0.1, 0.2, 0.3], 0.4, 0),
+            ([0.7, 0.8, 0.9], 0.4, 3),
+        ],
+    )
+    def test_parametrized_gate(self, trusts, threshold, expected_count):
+        from app.scoring.trust import min_trust_gate
+
+        chunks = [make_scored(trust=t) for t in trusts]
+        assert len(min_trust_gate(chunks, threshold=threshold)) == expected_count
