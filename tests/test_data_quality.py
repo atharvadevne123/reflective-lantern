@@ -736,3 +736,97 @@ def test_unique_values_returns_set() -> None:
     records = [{"tag": "a"}, {"tag": "b"}, {"tag": "a"}]
     result = unique_values(records, "tag")
     assert set(result) == {"a", "b"}
+
+
+class TestCrossFieldConsistency:
+    def test_no_violations(self) -> None:
+        from app.data_quality import cross_field_consistency
+
+        records = [{"low": 1, "high": 5}, {"low": 2, "high": 3}]
+        assert cross_field_consistency(records, "low", "high", "a_lte_b") == []
+
+    def test_violation_detected(self) -> None:
+        from app.data_quality import cross_field_consistency
+
+        records = [{"low": 10, "high": 5}, {"low": 1, "high": 3}]
+        result = cross_field_consistency(records, "low", "high", "a_lte_b")
+        assert 0 in result
+
+    def test_invalid_relation_raises(self) -> None:
+        from app.data_quality import cross_field_consistency
+
+        with pytest.raises(ValueError, match="relation"):
+            cross_field_consistency([{"a": 1, "b": 2}], "a", "b", "equal")
+
+    def test_none_fields_skipped(self) -> None:
+        from app.data_quality import cross_field_consistency
+
+        records = [{"low": None, "high": 5}, {"low": 1, "high": 3}]
+        assert cross_field_consistency(records, "low", "high", "a_lte_b") == []
+
+    @pytest.mark.parametrize(
+        "records,expected_count",
+        [
+            ([{"a": 1, "b": 2}, {"a": 3, "b": 4}], 0),
+            ([{"a": 5, "b": 2}, {"a": 1, "b": 4}], 1),
+        ],
+    )
+    def test_parametrized(self, records: list, expected_count: int) -> None:
+        from app.data_quality import cross_field_consistency
+
+        result = cross_field_consistency(records, "a", "b", "a_lte_b")
+        assert len(result) == expected_count
+
+
+class TestOutlierCountIqr:
+    def test_no_outliers(self) -> None:
+        from app.data_quality import outlier_count_iqr
+
+        records = [{"v": float(i)} for i in range(1, 11)]
+        assert outlier_count_iqr(records, "v") == 0
+
+    def test_extreme_outlier_detected(self) -> None:
+        from app.data_quality import outlier_count_iqr
+
+        records = [{"v": float(i)} for i in range(1, 10)] + [{"v": 1000.0}]
+        assert outlier_count_iqr(records, "v") > 0
+
+    def test_negative_multiplier_raises(self) -> None:
+        from app.data_quality import outlier_count_iqr
+
+        with pytest.raises(ValueError, match="positive"):
+            outlier_count_iqr([{"v": 1.0}], "v", multiplier=-1.0)
+
+    def test_too_few_values(self) -> None:
+        from app.data_quality import outlier_count_iqr
+
+        records = [{"v": 1.0}, {"v": 2.0}]
+        assert outlier_count_iqr(records, "v") == 0
+
+
+class TestSchemaConformanceRate:
+    def test_all_conforming(self) -> None:
+        from app.data_quality import schema_conformance_rate
+
+        records = [{"x": 1, "y": "hello"}, {"x": 2, "y": "world"}]
+        schema = {"x": int, "y": str}
+        assert schema_conformance_rate(records, schema) == 1.0
+
+    def test_none_value_fails(self) -> None:
+        from app.data_quality import schema_conformance_rate
+
+        records = [{"x": None, "y": "hello"}]
+        schema = {"x": int, "y": str}
+        assert schema_conformance_rate(records, schema) == 0.0
+
+    def test_partial_conformance(self) -> None:
+        from app.data_quality import schema_conformance_rate
+
+        records = [{"x": 1, "y": "ok"}, {"x": "bad", "y": "ok"}]
+        schema = {"x": int, "y": str}
+        assert schema_conformance_rate(records, schema) == pytest.approx(0.5)
+
+    def test_empty_records(self) -> None:
+        from app.data_quality import schema_conformance_rate
+
+        assert schema_conformance_rate([], {"x": int}) == 1.0
