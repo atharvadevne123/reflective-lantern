@@ -201,3 +201,50 @@ def compare_peak_loads(region_id1: str, region_id2: str) -> dict[str, object]:
         "difference_mw": diff,
         "higher": higher,
     }
+
+
+def total_peak_load_mw() -> float:
+    """Return the sum of peak loads (in MW) across all known regions.
+
+    Returns:
+        Total peak load in MW.
+    """
+    return sum(
+        float(r["peak_load_mw"])
+        for r in KNOWN_REGIONS.values()
+        if r.get("peak_load_mw") is not None
+    )
+
+
+def regions_above_peak(threshold_mw: float) -> list[str]:
+    """Return IDs of regions whose peak load exceeds *threshold_mw*.
+
+    Args:
+        threshold_mw: Minimum peak load in MW (exclusive).
+
+    Returns:
+        Sorted list of region IDs with peak load > threshold.
+    """
+    return sorted(
+        region_id
+        for region_id, r in KNOWN_REGIONS.items()
+        if r.get("peak_load_mw") is not None and float(r["peak_load_mw"]) > threshold_mw
+    )
+
+
+def region_share_of_total(region_id: str) -> float:
+    """Return this region's peak load as a fraction of total peak load.
+
+    Args:
+        region_id: Region identifier.
+
+    Returns:
+        Fraction in [0, 1]; 0.0 if region is unknown or total is zero.
+    """
+    region = get_region(region_id)
+    if region is None or region.get("peak_load_mw") is None:
+        return 0.0
+    total = total_peak_load_mw()
+    if total == 0.0:
+        return 0.0
+    return round(float(region["peak_load_mw"]) / total, 6)
