@@ -121,3 +121,55 @@ def build_feature_pipeline() -> Pipeline:
             ("scaler", StandardScaler()),
         ]
     )
+
+
+def lead_time_bucket(lead_days: int) -> int:
+    """Return an ordinal bucket for booking lead time.
+
+    Buckets:
+        0 — same-day or next 3 days  (0–3)
+        1 — early (4–14 days)
+        2 — planned (15–60 days)
+        3 — advance (>60 days)
+
+    Args:
+        lead_days: Number of days between booking and check-in; clamped to [0, 365].
+
+    Returns:
+        Integer bucket label 0–3.
+    """
+    clamped = max(0, min(365, lead_days))
+    if clamped <= 3:
+        return 0
+    if clamped <= 14:
+        return 1
+    if clamped <= 60:
+        return 2
+    return 3
+
+
+def competitor_rate_ratio(room_rate: float, competitor_avg: float) -> float:
+    """Return the ratio of *room_rate* to *competitor_avg*, clamped to [0.5, 3.0].
+
+    Args:
+        room_rate: Proposed room rate.
+        competitor_avg: Competitor average rate; replaced with 150.0 if zero.
+
+    Returns:
+        Ratio clamped to [0.5, 3.0].
+    """
+    denom = competitor_avg if competitor_avg != 0.0 else 150.0
+    return max(0.5, min(3.0, room_rate / denom))
+
+
+def occupancy_yoy_delta(current: float, prev_year: float) -> float:
+    """Return year-over-year occupancy rate difference, clamped to [-1, 1].
+
+    Args:
+        current: Current period occupancy rate.
+        prev_year: Previous year's occupancy rate for the same period.
+
+    Returns:
+        Delta clamped to [-1, 1].
+    """
+    return max(-1.0, min(1.0, current - prev_year))
