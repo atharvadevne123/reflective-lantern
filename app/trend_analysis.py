@@ -457,3 +457,116 @@ def period_comparison(
         "total_b": round(total_b, 4),
         "pct_change": pct_change,
     }
+
+
+def hurst_exponent(values: list[float], max_lag: int = 20) -> float:
+    """Estimate the Hurst exponent of a time series using R/S analysis.
+
+    The Hurst exponent H characterises long-range dependence:
+    - H ≈ 0.5 → random walk (no memory)
+    - H > 0.5 → persistent (trending) behaviour
+    - H < 0.5 → mean-reverting behaviour
+
+    Args:
+        values: Time-ordered numeric series (at least 20 elements).
+        max_lag: Maximum lag for R/S calculation. Defaults to 20.
+
+    Returns:
+        Estimated Hurst exponent, rounded to 4 decimal places.
+
+    Raises:
+        ValueError: If *values* has fewer than ``max_lag + 1`` elements.
+    """
+    import math
+
+    n = len(values)
+    if n <= max_lag:
+        raise ValueError(f"hurst_exponent requires at least {max_lag + 1} values, got {n}")
+    lags = range(2, max_lag + 1)
+    rs_values = []
+    for lag in lags:
+        chunk = values[:lag]
+        mean = sum(chunk) / lag
+        deviation = [chunk[i] - mean for i in range(lag)]
+        cumdev = [sum(deviation[: i + 1]) for i in range(lag)]
+        r = max(cumdev) - min(cumdev)
+        std = (sum((v - mean) ** 2 for v in chunk) / lag) ** 0.5
+        if std > 0:
+            rs_values.append((lag, r / std))
+
+    if len(rs_values) < 2:
+        return 0.5
+
+    log_lags = [math.log(ls) for ls, _ in rs_values]
+    log_rs = [math.log(rs) for _, rs in rs_values]
+    n_pts = len(log_lags)
+    mean_x = sum(log_lags) / n_pts
+    mean_y = sum(log_rs) / n_pts
+    num = sum((log_lags[i] - mean_x) * (log_rs[i] - mean_y) for i in range(n_pts))
+    den = sum((log_lags[i] - mean_x) ** 2 for i in range(n_pts))
+    slope = num / den if den != 0 else 0.5
+    return round(max(0.0, min(1.0, slope)), 4)
+
+
+def trend_strength(values: list[float], window: int = 10) -> float:
+    """Measure trend strength as the R² of a linear fit over the series.
+
+    A value near 1.0 indicates a strong linear trend; near 0.0 indicates noise.
+
+    Args:
+        values: Numeric series (at least 2 elements).
+        window: If positive, uses only the last *window* values. Defaults to 10
+            (the full series when len(values) <= 10).
+
+    Returns:
+        R² value in [0, 1], rounded to 4 decimal places.
+
+    Raises:
+        ValueError: If the usable slice has fewer than 2 elements.
+    """
+    subset = values[-window:] if window > 0 and len(values) > window else values
+    if len(subset) < 2:
+        raise ValueError("trend_strength requires at least 2 values in the window")
+    n = len(subset)
+    x = list(range(n))
+    mean_x = sum(x) / n
+    mean_y = sum(subset) / n
+    ssxy = sum((x[i] - mean_x) * (subset[i] - mean_y) for i in range(n))
+    ssxx = sum((x[i] - mean_x) ** 2 for i in range(n))
+    ssyy = sum((subset[i] - mean_y) ** 2 for i in range(n))
+    if ssxx == 0 or ssyy == 0:
+        return 0.0
+    r_sq = (ssxy ** 2) / (ssxx * ssyy)
+    return round(min(1.0, max(0.0, r_sq)), 4)
+
+
+def polyfit_trend(values: list[float], degree: int = 1) -> list[float]:
+    """Fit a polynomial of given *degree* to *values* and return fitted values.
+
+    Degree 1 gives the least-squares linear fit; degree 2 gives a quadratic.
+
+    Args:
+        values: Numeric series (must have at least ``degree + 1`` elements).
+        degree: Polynomial degree. Default 1 (linear).
+
+    Returns:
+        Fitted polynomial values of the same length as *values*.
+
+    Raises:
+        ValueError: If *values* is too short or *degree* < 1.
+    """
+    if degree < 1:
+        raise ValueError("degree must be at least 1")
+    n = len(values)
+    if n <= degree:
+        raise ValueError(f"polyfit_trend requires at least {degree + 1} values for degree {degree}")
+    x = list(range(n))
+    if degree == 1:
+        mean_x = sum(x) / n
+        mean_y = sum(values) / n
+        ssxy = sum((x[i] - mean_x) * (values[i] - mean_y) for i in range(n))
+        ssxx = sum((x[i] - mean_x) ** 2 for i in range(n))
+        slope = ssxy / ssxx if ssxx != 0 else 0.0
+        intercept = mean_y - slope * mean_x
+        return [round(intercept + slope * xi, 6) for xi in x]
+    raise NotImplementedError(f"polyfit_trend currently supports degree 1 only, got degree={degree}")
