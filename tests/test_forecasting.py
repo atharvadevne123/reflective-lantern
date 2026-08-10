@@ -594,3 +594,122 @@ class TestForecastIntervalHitRate:
 
         with pytest.raises(ValueError):
             forecast_interval_hit_rate([1.0, 2.0], [0.0], [5.0])
+
+
+class TestQuantileForecast:
+    def test_default_quantiles(self) -> None:
+        from app.forecasting import quantile_forecast
+
+        result = quantile_forecast([1.0, 2.0, 3.0, 4.0, 5.0], steps=3)
+        assert set(result.keys()) == {"q10", "q50", "q90"}
+
+    def test_step_count(self) -> None:
+        from app.forecasting import quantile_forecast
+
+        result = quantile_forecast([1.0, 2.0, 3.0, 4.0, 5.0], steps=5)
+        for values in result.values():
+            assert len(values) == 5
+
+    def test_too_few_history_raises(self) -> None:
+        from app.forecasting import quantile_forecast
+
+        with pytest.raises(ValueError, match="at least 2"):
+            quantile_forecast([1.0], steps=3)
+
+    def test_invalid_quantile_raises(self) -> None:
+        from app.forecasting import quantile_forecast
+
+        with pytest.raises(ValueError, match="quantiles"):
+            quantile_forecast([1.0, 2.0, 3.0], steps=2, quantiles=[0.0, 0.5])
+
+    def test_zero_steps_raises(self) -> None:
+        from app.forecasting import quantile_forecast
+
+        with pytest.raises(ValueError, match="steps"):
+            quantile_forecast([1.0, 2.0, 3.0], steps=0)
+
+    @pytest.mark.parametrize("steps", [1, 5, 10])
+    def test_various_step_counts(self, steps: int) -> None:
+        from app.forecasting import quantile_forecast
+
+        result = quantile_forecast(list(range(1, 11)), steps=steps)
+        for vals in result.values():
+            assert len(vals) == steps
+
+
+class TestForecastDirection:
+    def test_up(self) -> None:
+        from app.forecasting import forecast_direction
+
+        assert forecast_direction([110.0, 120.0, 130.0], baseline=100.0) == "up"
+
+    def test_down(self) -> None:
+        from app.forecasting import forecast_direction
+
+        assert forecast_direction([90.0, 85.0, 80.0], baseline=100.0) == "down"
+
+    def test_flat(self) -> None:
+        from app.forecasting import forecast_direction
+
+        assert forecast_direction([100.5, 99.5, 100.0], baseline=100.0) == "flat"
+
+    def test_empty_raises(self) -> None:
+        from app.forecasting import forecast_direction
+
+        with pytest.raises(ValueError):
+            forecast_direction([], baseline=100.0)
+
+    def test_zero_baseline(self) -> None:
+        from app.forecasting import forecast_direction
+
+        assert forecast_direction([0.0, 0.0], baseline=0.0) == "flat"
+
+    @pytest.mark.parametrize(
+        "forecast,baseline,expected",
+        [
+            ([200.0], 100.0, "up"),
+            ([50.0], 100.0, "down"),
+            ([100.0], 100.0, "flat"),
+        ],
+    )
+    def test_parametrized(self, forecast: list, baseline: float, expected: str) -> None:
+        from app.forecasting import forecast_direction
+
+        assert forecast_direction(forecast, baseline) == expected
+
+
+class TestConsecutiveMissCount:
+    def test_no_misses(self) -> None:
+        from app.forecasting import consecutive_miss_count
+
+        assert consecutive_miss_count([1.0, 2.0, 3.0], [1.0, 2.0, 3.0], threshold=0.1) == 0
+
+    def test_all_misses(self) -> None:
+        from app.forecasting import consecutive_miss_count
+
+        assert consecutive_miss_count([1.0, 2.0, 3.0], [5.0, 6.0, 7.0], threshold=0.1) == 3
+
+    def test_run_detection(self) -> None:
+        from app.forecasting import consecutive_miss_count
+
+        actual = [1.0, 1.0, 1.0, 1.0, 1.0]
+        predicted = [5.0, 5.0, 1.0, 5.0, 1.0]
+        assert consecutive_miss_count(actual, predicted, threshold=0.5) == 2
+
+    def test_empty_raises(self) -> None:
+        from app.forecasting import consecutive_miss_count
+
+        with pytest.raises(ValueError):
+            consecutive_miss_count([], [], threshold=1.0)
+
+    def test_length_mismatch_raises(self) -> None:
+        from app.forecasting import consecutive_miss_count
+
+        with pytest.raises(ValueError):
+            consecutive_miss_count([1.0, 2.0], [1.0], threshold=1.0)
+
+    def test_negative_threshold_raises(self) -> None:
+        from app.forecasting import consecutive_miss_count
+
+        with pytest.raises(ValueError, match="non-negative"):
+            consecutive_miss_count([1.0], [1.0], threshold=-1.0)
