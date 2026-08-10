@@ -234,3 +234,60 @@ def test_pipeline_transform_without_refit_raises_or_works(small_df):
     pipe.fit(small_df)
     out = pipe.transform(small_df)
     assert isinstance(out, np.ndarray)
+
+
+class TestSensorRangeFeature:
+    def test_empty_row_returns_zeros(self) -> None:
+        from app.features import sensor_range_feature
+
+        result = sensor_range_feature({})
+        assert result == {"sensor_min": 0.0, "sensor_max": 0.0, "sensor_range": 0.0}
+
+    def test_single_sensor(self) -> None:
+        from app.features import sensor_range_feature
+
+        result = sensor_range_feature({"temperature": 75.0})
+        assert result["sensor_min"] == pytest.approx(75.0)
+        assert result["sensor_max"] == pytest.approx(75.0)
+        assert result["sensor_range"] == pytest.approx(0.0)
+
+    def test_range_computed_correctly(self) -> None:
+        from app.features import sensor_range_feature
+
+        result = sensor_range_feature({"a": 10.0, "b": 30.0, "c": 20.0})
+        assert result["sensor_min"] == pytest.approx(10.0)
+        assert result["sensor_max"] == pytest.approx(30.0)
+        assert result["sensor_range"] == pytest.approx(20.0)
+
+
+class TestDefectRiskIndex:
+    def test_normal_readings_low_risk(self) -> None:
+        from app.features import defect_risk_index
+
+        risk = defect_risk_index(70.0, 2.0, 10.0, 45.0)
+        assert risk == pytest.approx(0.0)
+
+    def test_all_thresholds_exceeded(self) -> None:
+        from app.features import defect_risk_index
+
+        risk = defect_risk_index(90.0, 6.0, 50.0, 60.0)
+        assert risk == pytest.approx(0.95)
+
+    def test_result_in_range(self) -> None:
+        from app.features import defect_risk_index
+
+        risk = defect_risk_index(100.0, 10.0, 100.0, 100.0)
+        assert 0.0 <= risk <= 1.0
+
+    @pytest.mark.parametrize(
+        "temp,vib,wear,pres,expected",
+        [
+            (70.0, 2.0, 10.0, 45.0, 0.0),
+            (90.0, 2.0, 10.0, 45.0, 0.30),
+            (70.0, 6.0, 10.0, 45.0, 0.25),
+        ],
+    )
+    def test_parametrized(self, temp, vib, wear, pres, expected) -> None:
+        from app.features import defect_risk_index
+
+        assert defect_risk_index(temp, vib, wear, pres) == pytest.approx(expected)
