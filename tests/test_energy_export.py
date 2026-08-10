@@ -543,3 +543,89 @@ def test_flatten_nested_records_preserves_count(n_records: int) -> None:
     records = [{"v": i} for i in range(n_records)]
     result = flatten_nested_records(records)
     assert len(result) == n_records
+
+
+class TestRecordsMissingFields:
+    def test_all_complete_returns_empty(self) -> None:
+        from app.energy_export import records_missing_fields
+
+        records = [{"a": 1, "b": 2}, {"a": 3, "b": 4}]
+        assert records_missing_fields(records, ["a", "b"]) == []
+
+    def test_missing_field_detected(self) -> None:
+        from app.energy_export import records_missing_fields
+
+        records = [{"a": 1}, {"a": 2, "b": 3}]
+        assert records_missing_fields(records, ["a", "b"]) == [0]
+
+    def test_none_value_treated_as_missing(self) -> None:
+        from app.energy_export import records_missing_fields
+
+        records = [{"a": None, "b": 2}]
+        assert records_missing_fields(records, ["a"]) == [0]
+
+    @pytest.mark.parametrize(
+        "records,required,expected",
+        [
+            ([{"x": 1}], ["x"], []),
+            ([{"x": 1}, {}], ["x"], [1]),
+        ],
+    )
+    def test_parametrized(self, records, required, expected) -> None:
+        from app.energy_export import records_missing_fields
+
+        assert records_missing_fields(records, required) == expected
+
+
+class TestRecordsToLookup:
+    def test_basic_lookup(self) -> None:
+        from app.energy_export import records_to_lookup
+
+        records = [{"id": "a", "val": 1}, {"id": "b", "val": 2}]
+        lookup = records_to_lookup(records, "id")
+        assert lookup["a"]["val"] == 1
+        assert lookup["b"]["val"] == 2
+
+    def test_last_wins_on_duplicate(self) -> None:
+        from app.energy_export import records_to_lookup
+
+        records = [{"id": "a", "val": 1}, {"id": "a", "val": 2}]
+        lookup = records_to_lookup(records, "id")
+        assert lookup["a"]["val"] == 2
+
+    def test_missing_key_raises(self) -> None:
+        from app.energy_export import records_to_lookup
+
+        with pytest.raises(KeyError):
+            records_to_lookup([{"x": 1}], "id")
+
+
+class TestRenameRecordFields:
+    def test_field_renamed(self) -> None:
+        from app.energy_export import rename_record_fields
+
+        records = [{"old_name": 1}]
+        result = rename_record_fields(records, {"old_name": "new_name"})
+        assert "new_name" in result[0]
+        assert "old_name" not in result[0]
+
+    def test_unmapped_fields_unchanged(self) -> None:
+        from app.energy_export import rename_record_fields
+
+        records = [{"a": 1, "b": 2}]
+        result = rename_record_fields(records, {"a": "x"})
+        assert "b" in result[0]
+
+    def test_empty_mapping_returns_copy(self) -> None:
+        from app.energy_export import rename_record_fields
+
+        records = [{"k": "v"}]
+        result = rename_record_fields(records, {})
+        assert result[0] == {"k": "v"}
+
+    def test_original_not_mutated(self) -> None:
+        from app.energy_export import rename_record_fields
+
+        records = [{"old": 1}]
+        rename_record_fields(records, {"old": "new"})
+        assert "old" in records[0]
