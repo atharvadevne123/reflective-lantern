@@ -304,3 +304,62 @@ def top_alerts(alerts: list[Alert], n: int = 5) -> list[Alert]:
         key=lambda a: (severity_order.get(a.severity.lower(), 99), -a.created_at),
     )
     return sorted_alerts[:n]
+
+
+def alert_age_seconds(alert: Alert) -> float:
+    """Return the age of *alert* in seconds relative to the current time.
+
+    Args:
+        alert: Alert to measure age for.
+
+    Returns:
+        Non-negative float representing seconds elapsed since alert.created_at.
+    """
+    import time as _time
+
+    return max(0.0, _time.time() - alert.created_at)
+
+
+def escalate_alert(alert: Alert) -> Alert:
+    """Return a copy of *alert* with its severity escalated one level.
+
+    Escalation ladder: info → warning → critical.
+    Critical alerts are returned unchanged.
+
+    Args:
+        alert: Original alert.
+
+    Returns:
+        New Alert with escalated severity (same message and metadata).
+    """
+    ladder = {"info": "warning", "warning": "critical", "critical": "critical"}
+    new_severity = ladder.get(alert.severity.lower(), alert.severity)
+    return Alert(
+        source=alert.source,
+        severity=new_severity,
+        message=alert.message,
+        metadata=dict(alert.metadata),
+    )
+
+
+def alerts_within_window(
+    alerts: list[Alert],
+    window_seconds: float = 3600.0,
+) -> list[Alert]:
+    """Return alerts created within *window_seconds* of the most recent alert.
+
+    Useful for correlating burst patterns — only alerts fired inside the
+    rolling window are returned.
+
+    Args:
+        alerts: List of Alert objects (any order).
+        window_seconds: Look-back window in seconds.
+
+    Returns:
+        Sub-list of alerts within the window; empty if *alerts* is empty.
+    """
+    if not alerts:
+        return []
+    latest_ts = max(a.created_at for a in alerts)
+    cutoff = latest_ts - window_seconds
+    return [a for a in alerts if a.created_at >= cutoff]
