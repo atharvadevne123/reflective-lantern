@@ -676,3 +676,78 @@ def holding_period_return(purchase_price: float, sale_price: float, total_income
     if purchase_price == 0.0:
         raise ValueError("purchase_price must not be zero")
     return round((sale_price - purchase_price + total_income) / purchase_price * 100.0, 4)
+
+
+def rent_to_value_ratio(annual_rent: float, property_value: float) -> float:
+    """Return the rent-to-value (RTV) ratio as a percentage.
+
+    RTV = (annual_rent / property_value) * 100.
+
+    A higher ratio indicates stronger cash-flow potential relative to asset
+    value; a common threshold for cash-flow neutrality is 1 % per month
+    (12 % annually).
+
+    Args:
+        annual_rent: Total gross annual rent.
+        property_value: Current market value of the property.
+
+    Returns:
+        RTV as a percentage, rounded to 4 decimal places; 0.0 if property_value is 0.
+
+    Raises:
+        ValueError: If either argument is negative.
+    """
+    if annual_rent < 0 or property_value < 0:
+        raise ValueError("annual_rent and property_value must be non-negative")
+    if property_value == 0.0:
+        return 0.0
+    return round(annual_rent / property_value * 100.0, 4)
+
+
+def effective_gross_income(
+    gross_rental_income: float,
+    vacancy_rate: float = 0.05,
+    other_income: float = 0.0,
+) -> float:
+    """Estimate Effective Gross Income (EGI) for a rental property.
+
+    EGI = gross_rental_income * (1 - vacancy_rate) + other_income.
+
+    Args:
+        gross_rental_income: Potential gross annual rental income at full occupancy.
+        vacancy_rate: Expected vacancy as a fraction in [0, 1].
+        other_income: Non-rental income (laundry, parking, etc.).
+
+    Returns:
+        EGI in the same currency unit as the inputs, rounded to 4 decimal places.
+
+    Raises:
+        ValueError: If vacancy_rate is outside [0, 1] or any argument is negative.
+    """
+    if not 0.0 <= vacancy_rate <= 1.0:
+        raise ValueError(f"vacancy_rate must be in [0, 1], got {vacancy_rate}")
+    if gross_rental_income < 0 or other_income < 0:
+        raise ValueError("Income values must be non-negative")
+    return round(gross_rental_income * (1.0 - vacancy_rate) + other_income, 4)
+
+
+def capitalisation_rate(noi: float, property_value: float) -> float:
+    """Return the capitalisation rate (cap rate) as a percentage.
+
+    Cap Rate = (NOI / property_value) * 100.
+
+    Args:
+        noi: Net Operating Income — gross income less operating expenses.
+        property_value: Current market value.
+
+    Returns:
+        Cap rate as a percentage, rounded to 4 decimal places; 0.0 if property_value is 0.
+
+    Raises:
+        ValueError: If property_value is negative.
+    """
+    if property_value < 0:
+        raise ValueError("property_value must be non-negative")
+    if property_value == 0.0:
+        return 0.0
+    return round(noi / property_value * 100.0, 4)
