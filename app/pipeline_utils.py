@@ -301,3 +301,57 @@ def pipeline_input_features(pipeline: Any) -> list[str] | None:
         if names is not None:
             return list(names)
     return None
+
+
+def pipeline_step_index(pipeline: Any, step_name: str) -> int:
+    """Return the zero-based index of *step_name* in *pipeline*.
+
+    Args:
+        pipeline: An sklearn Pipeline.
+        step_name: Name of the step to locate.
+
+    Returns:
+        Integer index of the step.
+
+    Raises:
+        KeyError: If *step_name* is not in the pipeline.
+    """
+    names = get_step_names(pipeline)
+    try:
+        return names.index(step_name)
+    except ValueError:
+        raise KeyError(f"Step {step_name!r} not found in pipeline") from None
+
+
+def pipeline_step_before(pipeline: Any, step_name: str) -> list[str]:
+    """Return the names of all steps that precede *step_name*.
+
+    Args:
+        pipeline: An sklearn Pipeline.
+        step_name: Reference step name.
+
+    Returns:
+        Ordered list of step names before *step_name*; empty if it is the first step.
+
+    Raises:
+        KeyError: If *step_name* is not in the pipeline.
+    """
+    idx = pipeline_step_index(pipeline, step_name)
+    return get_step_names(pipeline)[:idx]
+
+
+def pipeline_step_after(pipeline: Any, step_name: str) -> list[str]:
+    """Return the names of all steps that follow *step_name*.
+
+    Args:
+        pipeline: An sklearn Pipeline.
+        step_name: Reference step name.
+
+    Returns:
+        Ordered list of step names after *step_name*; empty if it is the last step.
+
+    Raises:
+        KeyError: If *step_name* is not in the pipeline.
+    """
+    idx = pipeline_step_index(pipeline, step_name)
+    return get_step_names(pipeline)[idx + 1 :]
