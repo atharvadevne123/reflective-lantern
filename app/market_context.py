@@ -644,3 +644,67 @@ def inventory_months_supply(active_listings: int, monthly_sales: float) -> float
     if monthly_sales == 0.0:
         return 0.0
     return round(active_listings / monthly_sales, 2)
+
+
+def seller_to_buyer_ratio(active_listings: int, active_buyers: int) -> float:
+    """Return the ratio of active buyers to active listings.
+
+    A ratio > 1 indicates more buyers than listings (seller's market);
+    < 1 indicates more listings than buyers (buyer's market).
+
+    Args:
+        active_listings: Number of properties currently listed.
+        active_buyers: Estimated number of active buyers in the market.
+
+    Returns:
+        Ratio rounded to 4 decimal places; 0.0 when active_listings is 0.
+
+    Raises:
+        ValueError: If either argument is negative.
+    """
+    if active_listings < 0 or active_buyers < 0:
+        raise ValueError("active_listings and active_buyers must be non-negative")
+    if active_listings == 0:
+        return 0.0
+    return round(active_buyers / active_listings, 4)
+
+
+def absorption_rate(units_sold: int, days: int = 30) -> float:
+    """Return the number of units absorbed per day.
+
+    Args:
+        units_sold: Number of units sold over the measurement period.
+        days: Length of the measurement period in days (must be positive).
+
+    Returns:
+        Units sold per day, rounded to 4 decimal places.
+
+    Raises:
+        ValueError: If *days* is not positive or *units_sold* is negative.
+    """
+    if days <= 0:
+        raise ValueError(f"days must be positive, got {days}")
+    if units_sold < 0:
+        raise ValueError("units_sold must be non-negative")
+    return round(units_sold / days, 4)
+
+
+def market_cycle_phase(months_supply: float) -> str:
+    """Classify the current market phase based on months of inventory supply.
+
+    Phases:
+        ``seller``    — months_supply < 3
+        ``balanced``  — 3 <= months_supply <= 6
+        ``buyer``     — months_supply > 6
+
+    Args:
+        months_supply: Months of housing inventory (from :func:`inventory_months_supply`).
+
+    Returns:
+        Market phase label.
+    """
+    if months_supply < 3.0:
+        return "seller"
+    if months_supply <= 6.0:
+        return "balanced"
+    return "buyer"
