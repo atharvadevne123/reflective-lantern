@@ -958,3 +958,114 @@ class TestSampleVariance:
         from app.stats_utils import sample_variance
 
         assert sample_variance(values) == pytest.approx(expected)
+
+
+class TestKurtosis:
+    def test_normal_like_near_zero(self) -> None:
+        from app.stats_utils import kurtosis
+
+        values = [1.0, 2.0, 3.0, 4.0, 5.0, 3.0, 3.0, 3.0]
+        result = kurtosis(values)
+        assert isinstance(result, float)
+
+    def test_excess_false_is_larger(self) -> None:
+        from app.stats_utils import kurtosis
+
+        values = [1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0]
+        assert kurtosis(values, excess=False) == pytest.approx(kurtosis(values, excess=True) + 3.0, abs=1e-4)
+
+    def test_too_few_values_raises(self) -> None:
+        from app.stats_utils import kurtosis
+
+        with pytest.raises(ValueError, match="at least 4"):
+            kurtosis([1.0, 2.0, 3.0])
+
+    def test_constant_series_raises(self) -> None:
+        from app.stats_utils import kurtosis
+
+        with pytest.raises(ValueError, match="zero variance"):
+            kurtosis([5.0, 5.0, 5.0, 5.0])
+
+    @pytest.mark.parametrize("n", [4, 8, 16])
+    def test_returns_float_for_various_sizes(self, n: int) -> None:
+        from app.stats_utils import kurtosis
+
+        values = list(range(1, n + 1))
+        assert isinstance(kurtosis([float(v) for v in values]), float)
+
+
+class TestGiniCoefficient:
+    def test_perfect_equality(self) -> None:
+        from app.stats_utils import gini_coefficient
+
+        assert gini_coefficient([1.0, 1.0, 1.0, 1.0]) == pytest.approx(0.0, abs=1e-6)
+
+    def test_maximal_inequality(self) -> None:
+        from app.stats_utils import gini_coefficient
+
+        result = gini_coefficient([0.0, 0.0, 0.0, 100.0])
+        assert result > 0.5
+
+    def test_in_range(self) -> None:
+        from app.stats_utils import gini_coefficient
+
+        assert 0.0 <= gini_coefficient([1.0, 2.0, 3.0, 4.0, 5.0]) <= 1.0
+
+    def test_negative_raises(self) -> None:
+        from app.stats_utils import gini_coefficient
+
+        with pytest.raises(ValueError, match="non-negative"):
+            gini_coefficient([-1.0, 2.0])
+
+    def test_all_zero_raises(self) -> None:
+        from app.stats_utils import gini_coefficient
+
+        with pytest.raises(ValueError, match="undefined"):
+            gini_coefficient([0.0, 0.0])
+
+    def test_too_few_raises(self) -> None:
+        from app.stats_utils import gini_coefficient
+
+        with pytest.raises(ValueError, match="at least 2"):
+            gini_coefficient([1.0])
+
+
+class TestLogReturn:
+    def test_basic(self) -> None:
+        from app.stats_utils import log_return
+
+        import math
+
+        prices = [100.0, 110.0]
+        result = log_return(prices)
+        assert len(result) == 1
+        assert result[0] == pytest.approx(math.log(1.1), abs=1e-5)
+
+    def test_length(self) -> None:
+        from app.stats_utils import log_return
+
+        prices = [1.0, 2.0, 4.0, 8.0]
+        assert len(log_return(prices)) == 3
+
+    def test_non_positive_raises(self) -> None:
+        from app.stats_utils import log_return
+
+        with pytest.raises(ValueError, match="positive"):
+            log_return([100.0, 0.0, 50.0])
+
+    def test_too_few_raises(self) -> None:
+        from app.stats_utils import log_return
+
+        with pytest.raises(ValueError, match="at least 2"):
+            log_return([100.0])
+
+    @pytest.mark.parametrize("factor", [1.1, 1.5, 2.0])
+    def test_constant_growth(self, factor: float) -> None:
+        from app.stats_utils import log_return
+        import math
+
+        prices = [100.0 * (factor**i) for i in range(5)]
+        returns = log_return(prices)
+        expected = math.log(factor)
+        for r in returns:
+            assert r == pytest.approx(expected, abs=1e-4)
