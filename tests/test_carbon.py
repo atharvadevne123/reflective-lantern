@@ -942,3 +942,90 @@ class TestCarbonPerOccupant:
 
         result = carbon_per_occupant(float(n * 10), n)
         assert result == pytest.approx(10.0)
+
+
+class TestCarbonBudgetRemaining:
+    def test_within_budget(self) -> None:
+        from app.carbon import carbon_budget_remaining
+
+        result = carbon_budget_remaining(budget_kg=1000.0, consumed_kg=600.0)
+        assert result["remaining_kg"] == pytest.approx(400.0)
+        assert result["consumed_pct"] == pytest.approx(60.0)
+        assert result["overage_kg"] == 0.0
+
+    def test_over_budget(self) -> None:
+        from app.carbon import carbon_budget_remaining
+
+        result = carbon_budget_remaining(budget_kg=1000.0, consumed_kg=1200.0)
+        assert result["remaining_kg"] == pytest.approx(-200.0)
+        assert result["overage_kg"] == pytest.approx(200.0)
+
+    def test_zero_consumed(self) -> None:
+        from app.carbon import carbon_budget_remaining
+
+        result = carbon_budget_remaining(budget_kg=500.0, consumed_kg=0.0)
+        assert result["consumed_pct"] == 0.0
+
+    def test_invalid_budget_raises(self) -> None:
+        from app.carbon import carbon_budget_remaining
+
+        with pytest.raises(ValueError, match="budget_kg"):
+            carbon_budget_remaining(budget_kg=0.0, consumed_kg=100.0)
+
+    def test_negative_consumed_raises(self) -> None:
+        from app.carbon import carbon_budget_remaining
+
+        with pytest.raises(ValueError, match="consumed_kg"):
+            carbon_budget_remaining(budget_kg=1000.0, consumed_kg=-1.0)
+
+
+class TestWeightedCarbonFactor:
+    def test_basic(self) -> None:
+        from app.carbon import weighted_carbon_factor
+
+        sources = [
+            {"fraction": 0.6, "factor_kg_per_kwh": 0.0},
+            {"fraction": 0.4, "factor_kg_per_kwh": 0.5},
+        ]
+        result = weighted_carbon_factor(sources)
+        assert result == pytest.approx(0.2)
+
+    def test_single_source(self) -> None:
+        from app.carbon import weighted_carbon_factor
+
+        sources = [{"fraction": 1.0, "factor_kg_per_kwh": 0.233}]
+        assert weighted_carbon_factor(sources) == pytest.approx(0.233)
+
+    def test_fractions_not_summing_raises(self) -> None:
+        from app.carbon import weighted_carbon_factor
+
+        with pytest.raises(ValueError, match="sum"):
+            weighted_carbon_factor([{"fraction": 0.5, "factor_kg_per_kwh": 0.2}])
+
+    def test_empty_raises(self) -> None:
+        from app.carbon import weighted_carbon_factor
+
+        with pytest.raises(ValueError, match="empty"):
+            weighted_carbon_factor([])
+
+
+class TestCarbonIntensityCategory:
+    @pytest.mark.parametrize(
+        "factor,expected",
+        [(0.05, "very_low"), (0.2, "low"), (0.4, "medium"), (0.6, "high")],
+    )
+    def test_categories(self, factor: float, expected: str) -> None:
+        from app.carbon import carbon_intensity_category
+
+        assert carbon_intensity_category(factor) == expected
+
+    def test_negative_raises(self) -> None:
+        from app.carbon import carbon_intensity_category
+
+        with pytest.raises(ValueError):
+            carbon_intensity_category(-0.1)
+
+    def test_zero_is_very_low(self) -> None:
+        from app.carbon import carbon_intensity_category
+
+        assert carbon_intensity_category(0.0) == "very_low"
