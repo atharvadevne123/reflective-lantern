@@ -627,3 +627,123 @@ def test_clamp_to_range_invalid_range_raises() -> None:
 def test_clamp_to_range_equal_bounds() -> None:
     bound = datetime(2024, 6, 15)
     assert clamp_to_range(bound, bound, bound) == bound
+
+
+# --- Tests for new date_utils functions ---
+
+
+class TestWeekNumber:
+    def test_first_week(self) -> None:
+        from app.date_utils import week_number
+
+        assert week_number(datetime(2024, 1, 1)) >= 1
+
+    def test_returns_int(self) -> None:
+        from app.date_utils import week_number
+
+        assert isinstance(week_number(datetime(2024, 6, 15)), int)
+
+    @pytest.mark.parametrize(
+        "dt,expected_min,expected_max",
+        [
+            (datetime(2024, 1, 1), 1, 53),
+            (datetime(2024, 12, 31), 1, 53),
+        ],
+    )
+    def test_range(self, dt: datetime, expected_min: int, expected_max: int) -> None:
+        from app.date_utils import week_number
+
+        assert expected_min <= week_number(dt) <= expected_max
+
+
+class TestFiscalQuarter:
+    def test_calendar_q1(self) -> None:
+        from app.date_utils import fiscal_quarter
+
+        assert fiscal_quarter(datetime(2024, 2, 15)) == 1
+
+    def test_calendar_q4(self) -> None:
+        from app.date_utils import fiscal_quarter
+
+        assert fiscal_quarter(datetime(2024, 12, 1)) == 4
+
+    def test_fiscal_year_offset(self) -> None:
+        from app.date_utils import fiscal_quarter
+
+        # Fiscal year starts in April (UK-style)
+        assert fiscal_quarter(datetime(2024, 4, 1), fiscal_year_start_month=4) == 1
+        assert fiscal_quarter(datetime(2024, 7, 1), fiscal_year_start_month=4) == 2
+
+    def test_invalid_month_raises(self) -> None:
+        from app.date_utils import fiscal_quarter
+
+        with pytest.raises(ValueError):
+            fiscal_quarter(datetime(2024, 1, 1), fiscal_year_start_month=13)
+
+
+class TestDaysInMonth:
+    def test_february_non_leap(self) -> None:
+        from app.date_utils import days_in_month
+
+        assert days_in_month(2023, 2) == 28
+
+    def test_february_leap(self) -> None:
+        from app.date_utils import days_in_month
+
+        assert days_in_month(2024, 2) == 29
+
+    def test_thirty_one_day_month(self) -> None:
+        from app.date_utils import days_in_month
+
+        assert days_in_month(2024, 1) == 31
+
+    def test_thirty_day_month(self) -> None:
+        from app.date_utils import days_in_month
+
+        assert days_in_month(2024, 4) == 30
+
+    def test_invalid_month_raises(self) -> None:
+        from app.date_utils import days_in_month
+
+        with pytest.raises(ValueError):
+            days_in_month(2024, 0)
+
+
+class TestIsLeapYear:
+    @pytest.mark.parametrize("year,expected", [(2024, True), (2023, False), (1900, False), (2000, True)])
+    def test_parametrized(self, year: int, expected: bool) -> None:
+        from app.date_utils import is_leap_year
+
+        assert is_leap_year(year) == expected
+
+
+class TestDateRangeOverlapDays:
+    def test_no_overlap(self) -> None:
+        from app.date_utils import date_range_overlap_days
+
+        a_start, a_end = datetime(2024, 1, 1), datetime(2024, 1, 10)
+        b_start, b_end = datetime(2024, 2, 1), datetime(2024, 2, 28)
+        assert date_range_overlap_days(a_start, a_end, b_start, b_end) == 0
+
+    def test_full_overlap(self) -> None:
+        from app.date_utils import date_range_overlap_days
+
+        d = datetime(2024, 6, 1)
+        assert date_range_overlap_days(d, d, d, d) == 1
+
+    def test_partial_overlap(self) -> None:
+        from app.date_utils import date_range_overlap_days
+
+        assert date_range_overlap_days(
+            datetime(2024, 1, 1), datetime(2024, 1, 15),
+            datetime(2024, 1, 10), datetime(2024, 1, 20),
+        ) == 6
+
+    def test_invalid_range_a_raises(self) -> None:
+        from app.date_utils import date_range_overlap_days
+
+        with pytest.raises(ValueError, match="Range A"):
+            date_range_overlap_days(
+                datetime(2024, 6, 30), datetime(2024, 6, 1),
+                datetime(2024, 6, 1), datetime(2024, 6, 30),
+            )
