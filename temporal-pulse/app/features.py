@@ -95,3 +95,41 @@ def build_feature_matrix(
 def build_sklearn_pipeline() -> Pipeline:
     """Return a reusable sklearn preprocessing pipeline."""
     return Pipeline([("scaler", RobustScaler())])
+
+
+def sensor_zscore_row(row: dict[str, float]) -> dict[str, float]:
+    """Compute z-scores for each sensor value in a single reading row.
+
+    Args:
+        row: Dict mapping sensor name → float value.
+
+    Returns:
+        Dict mapping ``<sensor>_zscore`` → standardised value;
+        all zeros when all values are equal.
+    """
+    if not row:
+        return {}
+    values = list(row.values())
+    mean = sum(values) / len(values)
+    variance = sum((v - mean) ** 2 for v in values) / len(values)
+    std = variance ** 0.5
+    if std == 0.0:
+        return {f"{k}_zscore": 0.0 for k in row}
+    return {f"{k}_zscore": round((v - mean) / std, 6) for k, v in row.items()}
+
+
+def threshold_exceedance_vector(
+    row: dict[str, float],
+    thresholds: dict[str, float],
+) -> dict[str, int]:
+    """Return binary flags indicating which sensors exceed their thresholds.
+
+    Args:
+        row: Current sensor readings.
+        thresholds: Per-sensor upper limits.
+
+    Returns:
+        Dict mapping ``<sensor>_exceeded`` → 1 if exceeded, 0 otherwise.
+        Sensors absent from *thresholds* are skipped.
+    """
+    return {f"{k}_exceeded": int(row[k] > thresholds[k]) for k in row if k in thresholds}
