@@ -630,3 +630,80 @@ class TestBinFeature:
 
         result = bin_feature([val], bins=[0.0, 5.0, 10.0])
         assert result == [expected]
+
+
+class TestCumulativeSumFeature:
+    def test_empty_returns_empty(self) -> None:
+        from app.features import cumulative_sum_feature
+
+        assert cumulative_sum_feature([]) == []
+
+    def test_ascending_cumsum(self) -> None:
+        from app.features import cumulative_sum_feature
+
+        result = cumulative_sum_feature([1.0, 2.0, 3.0])
+        assert result == pytest.approx([1.0, 3.0, 6.0])
+
+    def test_all_zeros(self) -> None:
+        from app.features import cumulative_sum_feature
+
+        assert cumulative_sum_feature([0.0, 0.0, 0.0]) == pytest.approx([0.0, 0.0, 0.0])
+
+    def test_length_preserved(self) -> None:
+        from app.features import cumulative_sum_feature
+
+        values = [1.0, 2.0, 3.0, 4.0, 5.0]
+        assert len(cumulative_sum_feature(values)) == len(values)
+
+
+class TestRollingMaxFeature:
+    def test_single_value(self) -> None:
+        from app.features import rolling_max_feature
+
+        assert rolling_max_feature([5.0]) == pytest.approx([5.0])
+
+    def test_full_window_max(self) -> None:
+        from app.features import rolling_max_feature
+
+        result = rolling_max_feature([1.0, 3.0, 2.0, 4.0], window=3)
+        assert result == pytest.approx([1.0, 3.0, 3.0, 4.0])
+
+    def test_window_zero_raises(self) -> None:
+        from app.features import rolling_max_feature
+
+        with pytest.raises(ValueError):
+            rolling_max_feature([1.0, 2.0], window=0)
+
+    @pytest.mark.parametrize("window", [1, 2, 5])
+    def test_length_preserved(self, window) -> None:
+        from app.features import rolling_max_feature
+
+        values = [float(i) for i in range(10)]
+        assert len(rolling_max_feature(values, window=window)) == 10
+
+
+class TestPercentileFeature:
+    def test_empty_reference_raises(self) -> None:
+        from app.features import percentile_feature
+
+        with pytest.raises(ValueError):
+            percentile_feature([1.0], reference=[])
+
+    def test_invalid_percentile_raises(self) -> None:
+        from app.features import percentile_feature
+
+        with pytest.raises(ValueError):
+            percentile_feature([1.0], reference=[1.0, 2.0], percentile=101.0)
+
+    def test_all_above_median(self) -> None:
+        from app.features import percentile_feature
+
+        ref = [1.0, 2.0, 3.0, 4.0, 5.0]
+        result = percentile_feature([3.0, 4.0, 5.0], ref, percentile=50.0)
+        assert all(v == 1.0 for v in result)
+
+    def test_returns_correct_length(self) -> None:
+        from app.features import percentile_feature
+
+        result = percentile_feature([1.0, 2.0, 3.0], reference=[1.0, 2.0, 3.0])
+        assert len(result) == 3
