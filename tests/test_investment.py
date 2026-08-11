@@ -1102,7 +1102,7 @@ class TestGrossYield:
         assert gross_yield(0.0, 200000.0) == 0.0
 
 
-class TestPriceToRentRatio:
+class TestPriceToRentRatioNew:
     def test_standard_case(self) -> None:
         from app.investment import price_to_rent_ratio
 
@@ -1123,7 +1123,7 @@ class TestPriceToRentRatio:
             price_to_rent_ratio(-100.0, 1000.0)
 
 
-class TestEquityMultiple:
+class TestEquityMultipleNew:
     def test_double_money(self) -> None:
         from app.investment import equity_multiple
 
