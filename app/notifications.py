@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import time as _time
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -18,14 +19,17 @@ class Alert:
     source: str = "system"
     tags: list[str] = field(default_factory=list)
     metadata: dict[str, Any] = field(default_factory=dict)
+    created_at: float = field(default_factory=_time.time)
 
     def to_dict(self) -> dict[str, Any]:
+        """Serialise this alert to a plain dictionary."""
         return {
             "severity": self.severity,
             "message": self.message,
             "source": self.source,
             "tags": self.tags,
             "metadata": self.metadata,
+            "created_at": self.created_at,
         }
 
 
@@ -75,10 +79,12 @@ class AlertQueue:
         return counts
 
     def __len__(self) -> int:
+        """Return the current number of queued alerts."""
         return len(self._alerts)
 
     @property
     def alerts(self) -> list[Alert]:
+        """Return a shallow copy of the current alert list."""
         return list(self._alerts)
 
 
@@ -272,8 +278,6 @@ def deduplicate_alerts_by_window(alerts: list[Alert], window_seconds: float = 30
     Returns:
         Filtered list with consecutive duplicates removed.
     """
-    import time as _time
-
     seen: dict[str, tuple[str, float]] = {}  # source -> (message, timestamp)
     result: list[Alert] = []
     now = _time.time()
@@ -315,8 +319,6 @@ def alert_age_seconds(alert: Alert) -> float:
     Returns:
         Non-negative float representing seconds elapsed since alert.created_at.
     """
-    import time as _time
-
     return max(0.0, _time.time() - alert.created_at)
 
 
