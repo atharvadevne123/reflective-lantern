@@ -629,3 +629,75 @@ def batch_anomaly_flag(
     if threshold <= 0:
         raise ValueError(f"threshold must be > 0, got {threshold}")
     return [abs(v - mean) > threshold * std for v in values]
+
+
+def anomaly_score_ema(
+    flags: list[bool],
+    alpha: float = 0.3,
+) -> list[float]:
+    """Compute exponential moving average of anomaly flags.
+
+    Produces a smoothed score in [0, 1] that decays toward zero when
+    anomalies cease, useful for building burst-momentum dashboards.
+
+    Args:
+        flags: Boolean anomaly indicators (True = anomaly).
+        alpha: EMA smoothing factor in (0, 1]. Higher values give more weight
+            to recent observations. Default 0.3.
+
+    Returns:
+        List of smoothed scores the same length as *flags*.
+
+    Raises:
+        ValueError: If *alpha* is outside (0, 1].
+    """
+    if not (0.0 < alpha <= 1.0):
+        raise ValueError(f"alpha must be in (0, 1], got {alpha}")
+    result: list[float] = []
+    ema = 0.0
+    for f in flags:
+        ema = alpha * float(f) + (1.0 - alpha) * ema
+        result.append(round(ema, 6))
+    return result
+
+
+def mean_time_between_anomalies(flags: list[bool]) -> float:
+    """Compute the mean number of steps between anomaly events.
+
+    Args:
+        flags: Boolean sequence of anomaly indicators.
+
+    Returns:
+        Average gap (in steps) between consecutive True values, or
+        ``float('inf')`` if fewer than two anomalies are present.
+    """
+    indices = [i for i, f in enumerate(flags) if f]
+    if len(indices) < 2:
+        return float("inf")
+    gaps = [indices[i + 1] - indices[i] for i in range(len(indices) - 1)]
+    return round(sum(gaps) / len(gaps), 4)
+
+
+def anomaly_peak_ratio(values: list[float], flags: list[bool]) -> float:
+    """Ratio of the mean anomalous value to the mean normal value.
+
+    Quantifies how much larger (or smaller) anomalous readings are compared
+    to the baseline. Returns 0.0 when either group is empty.
+
+    Args:
+        values: Numeric observation series.
+        flags: Boolean anomaly indicators of the same length.
+
+    Returns:
+        Ratio (anomaly mean / normal mean), rounded to 4 decimal places.
+
+    Raises:
+        ValueError: If *values* and *flags* differ in length.
+    """
+    if len(values) != len(flags):
+        raise ValueError("values and flags must be the same length")
+    anomalous = [v for v, f in zip(values, flags, strict=False) if f]
+    normal = [v for v, f in zip(values, flags, strict=False) if not f]
+    if not anomalous or not normal:
+        return 0.0
+    return round(sum(anomalous) / len(anomalous) / (sum(normal) / len(normal)), 4)
