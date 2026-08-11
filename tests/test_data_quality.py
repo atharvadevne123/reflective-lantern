@@ -830,3 +830,98 @@ class TestSchemaConformanceRate:
         from app.data_quality import schema_conformance_rate
 
         assert schema_conformance_rate([], {"x": int}) == 1.0
+
+
+# ---------------------------------------------------------------------------
+# Tests for find_duplicate_rows, value_range_check, field_entropy
+# ---------------------------------------------------------------------------
+
+
+class TestFindDuplicateRows:
+    def test_no_duplicates(self) -> None:
+        from app.data_quality import find_duplicate_rows
+
+        records = [{"id": 1}, {"id": 2}, {"id": 3}]
+        assert find_duplicate_rows(records, ["id"]) == []
+
+    def test_one_duplicate(self) -> None:
+        from app.data_quality import find_duplicate_rows
+
+        records = [{"id": 1}, {"id": 2}, {"id": 1}]
+        dupes = find_duplicate_rows(records, ["id"])
+        assert len(dupes) == 1
+        assert dupes[0]["id"] == 1
+
+    def test_composite_key(self) -> None:
+        from app.data_quality import find_duplicate_rows
+
+        records = [
+            {"a": 1, "b": 2},
+            {"a": 1, "b": 3},
+            {"a": 1, "b": 2},
+        ]
+        dupes = find_duplicate_rows(records, ["a", "b"])
+        assert len(dupes) == 1
+
+    def test_empty_records(self) -> None:
+        from app.data_quality import find_duplicate_rows
+
+        assert find_duplicate_rows([], ["id"]) == []
+
+
+class TestValueRangeCheck:
+    def test_all_in_range(self) -> None:
+        from app.data_quality import value_range_check
+
+        result = value_range_check([1.0, 2.0, 3.0], 0.0, 5.0)
+        assert result["out_of_range"] == 0
+        assert result["in_range"] == 3
+
+    def test_some_out_of_range(self) -> None:
+        from app.data_quality import value_range_check
+
+        result = value_range_check([0.0, 5.0, 10.0], 1.0, 9.0)
+        assert result["out_of_range"] == 2
+
+    def test_empty_raises(self) -> None:
+        import pytest
+
+        from app.data_quality import value_range_check
+
+        with pytest.raises(ValueError):
+            value_range_check([], 0.0, 1.0)
+
+    def test_low_gt_high_raises(self) -> None:
+        import pytest
+
+        from app.data_quality import value_range_check
+
+        with pytest.raises(ValueError):
+            value_range_check([1.0], 5.0, 3.0)
+
+
+class TestFieldEntropy:
+    def test_uniform_distribution(self) -> None:
+        from app.data_quality import field_entropy
+
+        records = [{"x": i} for i in range(4)]
+        result = field_entropy(records, "x")
+        assert result == pytest.approx(2.0, abs=0.01)
+
+    def test_all_same_value(self) -> None:
+        from app.data_quality import field_entropy
+
+        records = [{"x": "a"}] * 5
+        assert field_entropy(records, "x") == 0.0
+
+    def test_empty_records(self) -> None:
+        from app.data_quality import field_entropy
+
+        assert field_entropy([], "x") == 0.0
+
+    def test_missing_field_treated_as_none(self) -> None:
+        from app.data_quality import field_entropy
+
+        records = [{"x": 1}, {}, {}]
+        result = field_entropy(records, "x")
+        assert result > 0.0
