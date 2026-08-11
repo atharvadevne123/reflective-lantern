@@ -720,3 +720,98 @@ class TestOverlapCoefficient:
         from app.similarity import overlap_coefficient
 
         assert overlap_coefficient(a, b) == pytest.approx(expected)
+
+
+# ---------------------------------------------------------------------------
+# Tests for euclidean_distance, pearson_correlation, top_k_similar
+# ---------------------------------------------------------------------------
+
+
+class TestEuclideanDistance:
+    def test_zero_distance(self) -> None:
+        from app.similarity import euclidean_distance
+
+        assert euclidean_distance([1.0, 2.0], [1.0, 2.0]) == 0.0
+
+    def test_known_distance(self) -> None:
+        from app.similarity import euclidean_distance
+
+        assert euclidean_distance([0.0, 0.0], [3.0, 4.0]) == pytest.approx(5.0, abs=0.001)
+
+    def test_empty_raises(self) -> None:
+        import pytest
+
+        from app.similarity import euclidean_distance
+
+        with pytest.raises(ValueError):
+            euclidean_distance([], [])
+
+    def test_length_mismatch_raises(self) -> None:
+        import pytest
+
+        from app.similarity import euclidean_distance
+
+        with pytest.raises(ValueError):
+            euclidean_distance([1.0], [1.0, 2.0])
+
+
+class TestPearsonCorrelation:
+    def test_perfect_positive(self) -> None:
+        from app.similarity import pearson_correlation
+
+        x = [1.0, 2.0, 3.0, 4.0]
+        assert pearson_correlation(x, x) == pytest.approx(1.0, abs=0.001)
+
+    def test_perfect_negative(self) -> None:
+        from app.similarity import pearson_correlation
+
+        x = [1.0, 2.0, 3.0]
+        y = [3.0, 2.0, 1.0]
+        assert pearson_correlation(x, y) == pytest.approx(-1.0, abs=0.001)
+
+    def test_zero_variance_returns_zero(self) -> None:
+        from app.similarity import pearson_correlation
+
+        assert pearson_correlation([5.0, 5.0, 5.0], [1.0, 2.0, 3.0]) == 0.0
+
+    def test_too_short_raises(self) -> None:
+        import pytest
+
+        from app.similarity import pearson_correlation
+
+        with pytest.raises(ValueError):
+            pearson_correlation([1.0], [1.0])
+
+
+class TestTopKSimilar:
+    def test_returns_k_results(self) -> None:
+        from app.similarity import top_k_similar
+
+        query = [1.0, 0.0]
+        candidates = [[1.0, 0.0], [0.0, 1.0], [0.5, 0.5]]
+        result = top_k_similar(query, candidates, k=2)
+        assert len(result) == 2
+
+    def test_most_similar_first(self) -> None:
+        from app.similarity import top_k_similar
+
+        query = [1.0, 0.0]
+        candidates = [[1.0, 0.0], [0.0, 1.0]]
+        result = top_k_similar(query, candidates, k=2)
+        assert result[0][0] == 0  # first candidate is most similar
+
+    def test_empty_candidates_raises(self) -> None:
+        import pytest
+
+        from app.similarity import top_k_similar
+
+        with pytest.raises(ValueError):
+            top_k_similar([1.0], [], k=1)
+
+    def test_invalid_k_raises(self) -> None:
+        import pytest
+
+        from app.similarity import top_k_similar
+
+        with pytest.raises(ValueError):
+            top_k_similar([1.0], [[1.0]], k=0)
