@@ -316,3 +316,53 @@ class TestClientExists:
         assert client_exists(limiter, key) is False
         limiter.is_allowed(key)
         assert client_exists(limiter, key) is True
+
+
+class TestBucketFillPercentage:
+    def test_no_requests_full(self) -> None:
+        from app.rate_limiter import bucket_fill_percentage, make_rate_limiter
+
+        limiter = make_rate_limiter(capacity=10.0)
+        assert bucket_fill_percentage(limiter, "new_client") == pytest.approx(100.0)
+
+    def test_after_requests_lower(self) -> None:
+        from app.rate_limiter import bucket_fill_percentage, make_rate_limiter
+
+        limiter = make_rate_limiter(capacity=10.0, refill_rate=0.0)
+        for _ in range(5):
+            limiter.is_allowed("c")
+        pct = bucket_fill_percentage(limiter, "c")
+        assert pct < 100.0
+
+
+class TestIsRateLimitedHelper:
+    def test_fresh_client_not_limited(self) -> None:
+        from app.rate_limiter import is_rate_limited, make_rate_limiter
+
+        limiter = make_rate_limiter(capacity=10.0)
+        assert is_rate_limited(limiter, "x", cost=1.0) is False
+
+    def test_exhausted_client_limited(self) -> None:
+        from app.rate_limiter import is_rate_limited, make_rate_limiter
+
+        limiter = make_rate_limiter(capacity=3.0, refill_rate=0.0)
+        for _ in range(3):
+            limiter.is_allowed("y")
+        assert is_rate_limited(limiter, "y", cost=1.0) is True
+
+
+class TestResetClient:
+    def test_reset_removes_bucket(self) -> None:
+        from app.rate_limiter import client_exists, make_rate_limiter, reset_client
+
+        limiter = make_rate_limiter()
+        limiter.is_allowed("z")
+        assert client_exists(limiter, "z") is True
+        reset_client(limiter, "z")
+        assert client_exists(limiter, "z") is False
+
+    def test_reset_nonexistent_returns_false(self) -> None:
+        from app.rate_limiter import make_rate_limiter, reset_client
+
+        limiter = make_rate_limiter()
+        assert reset_client(limiter, "nobody") is False
