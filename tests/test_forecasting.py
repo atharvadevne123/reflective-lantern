@@ -713,3 +713,92 @@ class TestConsecutiveMissCount:
 
         with pytest.raises(ValueError, match="non-negative"):
             consecutive_miss_count([1.0], [1.0], threshold=-1.0)
+
+
+# ---------------------------------------------------------------------------
+# Tests for forecast_confidence_interval, weighted_ensemble_forecast, horizon_degradation
+# ---------------------------------------------------------------------------
+
+
+class TestForecastConfidenceInterval:
+    def test_basic_symmetry(self) -> None:
+        from app.forecasting import forecast_confidence_interval
+
+        result = forecast_confidence_interval([100.0], residual_std=10.0, z=1.0)
+        assert result[0][0] == pytest.approx(90.0, abs=0.01)
+        assert result[0][1] == pytest.approx(110.0, abs=0.01)
+
+    def test_zero_std_is_point_forecast(self) -> None:
+        from app.forecasting import forecast_confidence_interval
+
+        result = forecast_confidence_interval([50.0, 60.0], residual_std=0.0)
+        assert all(lo == hi for lo, hi in result)
+
+    def test_negative_std_raises(self) -> None:
+        import pytest
+
+        from app.forecasting import forecast_confidence_interval
+
+        with pytest.raises(ValueError):
+            forecast_confidence_interval([1.0], residual_std=-1.0)
+
+    def test_invalid_z_raises(self) -> None:
+        import pytest
+
+        from app.forecasting import forecast_confidence_interval
+
+        with pytest.raises(ValueError):
+            forecast_confidence_interval([1.0], residual_std=1.0, z=0.0)
+
+
+class TestWeightedEnsembleForecastNew:
+    def test_equal_weights(self) -> None:
+        from app.forecasting import weighted_ensemble_forecast
+
+        f1 = [10.0, 20.0]
+        f2 = [20.0, 40.0]
+        result = weighted_ensemble_forecast([f1, f2])
+        assert result == [pytest.approx(15.0), pytest.approx(30.0)]
+
+    def test_custom_weights(self) -> None:
+        from app.forecasting import weighted_ensemble_forecast
+
+        result = weighted_ensemble_forecast([[100.0], [200.0]], weights=[0.8, 0.2])
+        assert result[0] == pytest.approx(120.0, abs=0.01)
+
+    def test_empty_forecasts_raises(self) -> None:
+        import pytest
+
+        from app.forecasting import weighted_ensemble_forecast
+
+        with pytest.raises(ValueError):
+            weighted_ensemble_forecast([])
+
+    def test_weights_not_summing_to_one_raises(self) -> None:
+        import pytest
+
+        from app.forecasting import weighted_ensemble_forecast
+
+        with pytest.raises(ValueError):
+            weighted_ensemble_forecast([[1.0, 2.0]], weights=[0.5])
+
+
+class TestHorizonDegradation:
+    def test_positive_slope_for_growing_errors(self) -> None:
+        from app.forecasting import horizon_degradation
+
+        errors = [1.0, 2.0, 3.0, 4.0]
+        assert horizon_degradation(errors) > 0.0
+
+    def test_flat_errors_zero_slope(self) -> None:
+        from app.forecasting import horizon_degradation
+
+        assert horizon_degradation([2.0, 2.0, 2.0, 2.0]) == pytest.approx(0.0, abs=1e-6)
+
+    def test_too_short_raises(self) -> None:
+        import pytest
+
+        from app.forecasting import horizon_degradation
+
+        with pytest.raises(ValueError):
+            horizon_degradation([1.0])
