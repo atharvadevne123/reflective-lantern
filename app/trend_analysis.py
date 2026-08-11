@@ -570,3 +570,92 @@ def polyfit_trend(values: list[float], degree: int = 1) -> list[float]:
         intercept = mean_y - slope * mean_x
         return [round(intercept + slope * xi, 6) for xi in x]
     raise NotImplementedError(f"polyfit_trend currently supports degree 1 only, got degree={degree}")
+
+
+def trend_strength(values: list[float]) -> float:
+    """Measure the strength of a linear trend as R-squared.
+
+    Fits a linear regression and returns the coefficient of determination
+    (R²). Values close to 1.0 indicate a strong trend; close to 0.0 indicate
+    no consistent trend.
+
+    Args:
+        values: Numeric series (at least 2 elements).
+
+    Returns:
+        R-squared value in [0.0, 1.0], rounded to 4 decimal places.
+
+    Raises:
+        ValueError: If *values* has fewer than 2 elements.
+    """
+    if len(values) < 2:
+        raise ValueError("At least 2 values required to compute trend strength")
+    n = len(values)
+    x = list(range(n))
+    mean_x = sum(x) / n
+    mean_y = sum(values) / n
+    ss_tot = sum((v - mean_y) ** 2 for v in values)
+    if ss_tot < 1e-12:
+        return 1.0
+    ssxy = sum((x[i] - mean_x) * (values[i] - mean_y) for i in range(n))
+    ssxx = sum((xi - mean_x) ** 2 for xi in x)
+    slope = ssxy / ssxx if ssxx > 0 else 0.0
+    intercept = mean_y - slope * mean_x
+    ss_res = sum((values[i] - (intercept + slope * x[i])) ** 2 for i in range(n))
+    return round(max(0.0, 1.0 - ss_res / ss_tot), 4)
+
+
+def rolling_trend_direction(
+    values: list[float],
+    window: int = 5,
+) -> list[str]:
+    """Classify the local trend direction in a rolling window.
+
+    Args:
+        values: Numeric series.
+        window: Rolling window size. Default 5.
+
+    Returns:
+        List of direction labels (``"up"``, ``"down"``, ``"flat"``) the same
+        length as *values*. The first ``window - 1`` entries are ``"flat"``
+        (insufficient history).
+
+    Raises:
+        ValueError: If *window* < 2.
+    """
+    if window < 2:
+        raise ValueError("window must be at least 2")
+    result = ["flat"] * len(values)
+    for i in range(window - 1, len(values)):
+        chunk = values[i - window + 1 : i + 1]
+        # Simple: compare first and last
+        diff = chunk[-1] - chunk[0]
+        if diff > 1e-9:
+            result[i] = "up"
+        elif diff < -1e-9:
+            result[i] = "down"
+        else:
+            result[i] = "flat"
+    return result
+
+
+def cumulative_return(values: list[float]) -> float:
+    """Compute the cumulative return of a value series from first to last element.
+
+    Args:
+        values: Numeric series with at least 2 elements; values[0] is the base.
+
+    Returns:
+        Fractional cumulative return rounded to 4 decimal places.
+        Returns 0.0 if the first value is 0.
+
+    Raises:
+        ValueError: If *values* has fewer than 2 elements or the base is negative.
+    """
+    if len(values) < 2:
+        raise ValueError("At least 2 values are required")
+    if values[0] < 0:
+        raise ValueError("Base value (values[0]) must be non-negative")
+    if values[0] == 0.0:
+        return 0.0
+    return round((values[-1] - values[0]) / values[0], 4)
