@@ -941,3 +941,67 @@ class TestValidateEnum:
         from app.validation import validate_enum
 
         assert validate_enum(value, allowed) == []
+
+
+class TestValidateDateString:
+    def test_valid_date(self) -> None:
+        from app.validation import validate_date_string
+
+        assert validate_date_string("2024-01-15") == []
+
+    def test_invalid_format(self) -> None:
+        from app.validation import validate_date_string
+
+        errors = validate_date_string("15/01/2024")
+        assert len(errors) == 1
+
+    def test_invalid_month(self) -> None:
+        from app.validation import validate_date_string
+
+        errors = validate_date_string("2024-13-01")
+        assert len(errors) == 1
+
+    def test_custom_field_name_in_error(self) -> None:
+        from app.validation import validate_date_string
+
+        errors = validate_date_string("bad", field_name="start_date")
+        assert "start_date" in errors[0]
+
+
+class TestValidateNonNegative:
+    def test_positive_ok(self) -> None:
+        from app.validation import validate_non_negative
+
+        assert validate_non_negative(5.0) == []
+
+    def test_zero_ok(self) -> None:
+        from app.validation import validate_non_negative
+
+        assert validate_non_negative(0.0) == []
+
+    def test_negative_errors(self) -> None:
+        from app.validation import validate_non_negative
+
+        errors = validate_non_negative(-1.0)
+        assert len(errors) == 1
+
+
+class TestValidateUniqueIds:
+    def test_all_unique(self) -> None:
+        from app.validation import validate_unique_ids
+
+        records = [{"id": "a"}, {"id": "b"}]
+        assert validate_unique_ids(records) == []
+
+    def test_duplicate_detected(self) -> None:
+        from app.validation import validate_unique_ids
+
+        records = [{"id": "x"}, {"id": "x"}]
+        errors = validate_unique_ids(records)
+        assert len(errors) == 1
+        assert "x" in errors[0]
+
+    def test_empty_returns_empty(self) -> None:
+        from app.validation import validate_unique_ids
+
+        assert validate_unique_ids([]) == []
