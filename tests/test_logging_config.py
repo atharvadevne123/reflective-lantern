@@ -440,3 +440,56 @@ class TestSuppressNoisyLoggers:
         from app.logging_config import suppress_noisy_loggers
 
         suppress_noisy_loggers(level="WARNING")
+
+
+class TestLogHandlerCount:
+    def test_returns_non_negative(self) -> None:
+        from app.logging_config import log_handler_count
+
+        count = log_handler_count("root")
+        assert count >= 0
+
+    def test_new_logger_has_zero_handlers(self) -> None:
+        import logging
+
+        from app.logging_config import log_handler_count
+
+        fresh_name = "test.fresh_logger_xyz_99"
+        logging.getLogger(fresh_name).handlers.clear()
+        assert log_handler_count(fresh_name) == 0
+
+
+class TestHasConsoleHandler:
+    def test_returns_bool(self) -> None:
+        from app.logging_config import has_console_handler
+
+        result = has_console_handler("root")
+        assert isinstance(result, bool)
+
+    def test_logger_with_stream_handler(self) -> None:
+        import logging
+
+        from app.logging_config import has_console_handler
+
+        name = "test.console_check_xyz"
+        log = logging.getLogger(name)
+        log.handlers.clear()
+        log.addHandler(logging.StreamHandler())
+        assert has_console_handler(name) is True
+        log.handlers.clear()
+
+
+class TestLogLevelName:
+    def test_known_levels(self) -> None:
+        from app.logging_config import log_level_name
+
+        assert log_level_name(10) == "DEBUG"
+        assert log_level_name(20) == "INFO"
+        assert log_level_name(30) == "WARNING"
+        assert log_level_name(40) == "ERROR"
+        assert log_level_name(50) == "CRITICAL"
+
+    def test_unknown_level(self) -> None:
+        from app.logging_config import log_level_name
+
+        assert log_level_name(99) == "UNKNOWN"
