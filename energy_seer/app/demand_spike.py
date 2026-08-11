@@ -181,3 +181,82 @@ __all__ = [
     "consecutive_spike_run",
     "normalise_demand",
 ]
+
+
+def spike_windows(
+    values: list[float],
+    threshold: float,
+    window: int = 3,
+) -> list[tuple[int, int]]:
+    """Return (start, end) index pairs for contiguous spike windows.
+
+    Args:
+        values: Input demand series.
+        threshold: Spike threshold value.
+        window: Minimum length of a spike window.
+
+    Returns:
+        List of (start, end) tuples (inclusive) for runs of spikes >= window long.
+    """
+    in_spike = [v > threshold for v in values]
+    windows: list[tuple[int, int]] = []
+    i = 0
+    while i < len(in_spike):
+        if in_spike[i]:
+            j = i
+            while j < len(in_spike) and in_spike[j]:
+                j += 1
+            if j - i >= window:
+                windows.append((i, j - 1))
+            i = j
+        else:
+            i += 1
+    return windows
+
+
+def demand_percentile(values: list[float], percentile: float = 95.0) -> float:
+    """Return the *percentile*-th value of *values* using linear interpolation.
+
+    Args:
+        values: Demand readings.
+        percentile: Target percentile in (0, 100].
+
+    Returns:
+        Interpolated percentile value.
+
+    Raises:
+        ValueError: If *values* is empty or *percentile* is out of range.
+    """
+    if not values:
+        raise ValueError("values must not be empty")
+    if not (0 < percentile <= 100):
+        raise ValueError(f"percentile must be in (0, 100], got {percentile}")
+    sorted_vals = sorted(values)
+    n = len(sorted_vals)
+    idx = (percentile / 100.0) * (n - 1)
+    lo, hi = int(idx), min(int(idx) + 1, n - 1)
+    frac = idx - lo
+    return sorted_vals[lo] + frac * (sorted_vals[hi] - sorted_vals[lo])
+
+
+def smooth_demand(values: list[float], alpha: float = 0.3) -> list[float]:
+    """Apply exponential smoothing (EMA) to a demand series.
+
+    Args:
+        values: Input demand readings.
+        alpha: Smoothing factor in (0, 1]; higher = less smoothing.
+
+    Returns:
+        EMA-smoothed series the same length as *values*.
+
+    Raises:
+        ValueError: If *alpha* is out of range or *values* is empty.
+    """
+    if not values:
+        raise ValueError("values must not be empty")
+    if not (0 < alpha <= 1.0):
+        raise ValueError(f"alpha must be in (0, 1], got {alpha}")
+    result = [values[0]]
+    for v in values[1:]:
+        result.append(round(alpha * v + (1 - alpha) * result[-1], 6))
+    return result
