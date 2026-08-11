@@ -173,3 +173,49 @@ def occupancy_yoy_delta(current: float, prev_year: float) -> float:
         Delta clamped to [-1, 1].
     """
     return max(-1.0, min(1.0, current - prev_year))
+
+
+def adr_from_revenue(total_revenue: float, rooms_sold: int) -> float:
+    """Return Average Daily Rate (ADR) from revenue and rooms sold.
+
+    Args:
+        total_revenue: Total room revenue for the period.
+        rooms_sold: Number of rooms sold; must be positive.
+
+    Returns:
+        ADR as float; 0.0 if rooms_sold is zero.
+    """
+    if rooms_sold <= 0:
+        return 0.0
+    return round(total_revenue / rooms_sold, 4)
+
+
+def revpar(total_revenue: float, available_rooms: int) -> float:
+    """Return Revenue Per Available Room (RevPAR).
+
+    Args:
+        total_revenue: Total room revenue for the period.
+        available_rooms: Total available room-nights; must be positive.
+
+    Returns:
+        RevPAR as float; 0.0 if available_rooms is zero.
+    """
+    if available_rooms <= 0:
+        return 0.0
+    return round(total_revenue / available_rooms, 4)
+
+
+def length_of_stay_bucket(nights: int) -> str:
+    """Categorise a booking by length of stay.
+
+    Args:
+        nights: Number of nights in the booking.
+
+    Returns:
+        'short' (1-2), 'medium' (3-6), or 'long' (7+).
+    """
+    if nights <= 2:
+        return "short"
+    if nights <= 6:
+        return "medium"
+    return "long"
