@@ -520,3 +520,73 @@ def rename_record_fields(
             new_rec[mapping.get(k, k)] = v
         result.append(new_rec)
     return result
+
+
+def pivot_by_hour(
+    records: list[dict[str, Any]],
+    hour_field: str,
+    value_field: str,
+    label_field: str,
+) -> dict[str, dict[int, float]]:
+    """Pivot records into a label → hour → value mapping.
+
+    Args:
+        records: List of dicts containing label, hour, and value fields.
+        hour_field: Key for the hour integer (0-23).
+        value_field: Key for the numeric value to aggregate.
+        label_field: Key for the row label (e.g. building ID).
+
+    Returns:
+        Nested dict: {label: {hour: value}}.
+    """
+    result: dict[str, dict[int, float]] = {}
+    for r in records:
+        label = str(r[label_field])
+        hour = int(r[hour_field])
+        value = float(r[value_field])
+        result.setdefault(label, {})[hour] = value
+    return result
+
+
+def flat_to_wide(
+    records: list[dict[str, Any]],
+    id_field: str,
+    key_field: str,
+    value_field: str,
+) -> dict[str, dict[str, Any]]:
+    """Convert long-format records to wide-format by key pivot.
+
+    Args:
+        records: Long-format list where each row holds an id, key, value triple.
+        id_field: Field identifying the entity (e.g. sensor ID).
+        key_field: Field holding the attribute name.
+        value_field: Field holding the attribute value.
+
+    Returns:
+        Dict keyed by entity ID, each containing a dict of {key: value}.
+    """
+    result: dict[str, dict[str, Any]] = {}
+    for r in records:
+        eid = str(r[id_field])
+        result.setdefault(eid, {})[r[key_field]] = r[value_field]
+    return result
+
+
+def filter_records_by_value(
+    records: list[dict[str, Any]],
+    field: str,
+    min_value: float,
+    max_value: float,
+) -> list[dict[str, Any]]:
+    """Return records where *field* value is within [min_value, max_value].
+
+    Args:
+        records: List of dicts to filter.
+        field: Numeric field name.
+        min_value: Inclusive lower bound.
+        max_value: Inclusive upper bound.
+
+    Returns:
+        Filtered list preserving order.
+    """
+    return [r for r in records if min_value <= float(r.get(field, float("nan"))) <= max_value]
