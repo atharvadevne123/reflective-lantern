@@ -319,19 +319,19 @@ class TestBatchAdd:
 
 class TestSearchRadius:
     def test_within_radius_returned(self) -> None:
-        from app.faiss_index import DIM, add_vector, reset_index, search_radius
+        from app.faiss_index import DIM, add_property, reset_index, search_radius
 
         reset_index()
         v = [1.0] * DIM
-        add_vector(v)
+        add_property(v)
         results = search_radius([1.0] * DIM, radius=0.1, top_k=5)
         assert len(results) >= 1
 
     def test_outside_radius_excluded(self) -> None:
-        from app.faiss_index import DIM, add_vector, reset_index, search_radius
+        from app.faiss_index import DIM, add_property, reset_index, search_radius
 
         reset_index()
-        add_vector([1.0] * DIM)
+        add_property([1.0] * DIM)
         results = search_radius([0.0] * DIM, radius=0.0001, top_k=5)
         assert results == []
 
@@ -344,11 +344,11 @@ class TestNearestDistance:
         assert nearest_distance([0.0] * DIM) is None
 
     def test_zero_for_exact_match(self) -> None:
-        from app.faiss_index import DIM, add_vector, nearest_distance, reset_index
+        from app.faiss_index import DIM, add_property, nearest_distance, reset_index
 
         reset_index()
         v = [1.0] * DIM
-        add_vector(v)
+        add_property(v)
         dist = nearest_distance(v)
         assert dist is not None
         assert dist == pytest.approx(0.0, abs=1e-5)

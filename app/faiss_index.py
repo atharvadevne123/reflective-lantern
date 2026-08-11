@@ -261,7 +261,7 @@ def batch_add(vectors: list[list[float]]) -> int:
     """
     added = 0
     for v in vectors:
-        add_vector(v)
+        add_property(v)
         added += 1
     return added
 
