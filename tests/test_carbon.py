@@ -1029,3 +1029,109 @@ class TestCarbonIntensityCategory:
         from app.carbon import carbon_intensity_category
 
         assert carbon_intensity_category(0.0) == "very_low"
+
+
+# ---------------------------------------------------------------------------
+# Tests for carbon_offset_cost, annual_carbon_trajectory, carbon_savings_vs_baseline
+# ---------------------------------------------------------------------------
+
+
+class TestCarbonOffsetCost:
+    def test_zero_emissions(self) -> None:
+        from app.carbon import carbon_offset_cost
+
+        assert carbon_offset_cost(0.0) == 0.0
+
+    def test_one_tonne(self) -> None:
+        from app.carbon import carbon_offset_cost
+
+        assert carbon_offset_cost(1000.0, cost_per_tonne=20.0) == 20.0
+
+    def test_negative_emissions_raises(self) -> None:
+        import pytest
+
+        from app.carbon import carbon_offset_cost
+
+        with pytest.raises(ValueError):
+            carbon_offset_cost(-1.0)
+
+    def test_negative_cost_raises(self) -> None:
+        import pytest
+
+        from app.carbon import carbon_offset_cost
+
+        with pytest.raises(ValueError):
+            carbon_offset_cost(100.0, cost_per_tonne=-5.0)
+
+    def test_partial_tonne(self) -> None:
+        from app.carbon import carbon_offset_cost
+
+        result = carbon_offset_cost(500.0, cost_per_tonne=10.0)
+        assert result == pytest.approx(5.0, abs=0.001)
+
+
+class TestAnnualCarbonTrajectory:
+    def test_basic_structure(self) -> None:
+        from app.carbon import annual_carbon_trajectory
+
+        monthly = [100.0] * 12
+        result = annual_carbon_trajectory(monthly)
+        assert set(result.keys()) == {"total_kg", "monthly_avg_kg", "peak_month_kg", "trend_slope"}
+
+    def test_flat_series_zero_slope(self) -> None:
+        from app.carbon import annual_carbon_trajectory
+
+        result = annual_carbon_trajectory([50.0] * 12)
+        assert result["trend_slope"] == pytest.approx(0.0, abs=1e-6)
+
+    def test_empty_raises(self) -> None:
+        import pytest
+
+        from app.carbon import annual_carbon_trajectory
+
+        with pytest.raises(ValueError):
+            annual_carbon_trajectory([])
+
+    def test_negative_raises(self) -> None:
+        import pytest
+
+        from app.carbon import annual_carbon_trajectory
+
+        with pytest.raises(ValueError):
+            annual_carbon_trajectory([100.0, -1.0])
+
+    def test_rising_series_positive_slope(self) -> None:
+        from app.carbon import annual_carbon_trajectory
+
+        result = annual_carbon_trajectory([float(i) for i in range(1, 13)])
+        assert result["trend_slope"] > 0
+
+
+class TestCarbonSavingsVsBaseline:
+    def test_no_change(self) -> None:
+        from app.carbon import carbon_savings_vs_baseline
+
+        result = carbon_savings_vs_baseline(100.0, 100.0)
+        assert result["savings_kg"] == 0.0
+        assert result["savings_pct"] == 0.0
+
+    def test_improvement(self) -> None:
+        from app.carbon import carbon_savings_vs_baseline
+
+        result = carbon_savings_vs_baseline(80.0, 100.0)
+        assert result["savings_kg"] == 20.0
+        assert result["savings_pct"] == pytest.approx(20.0, abs=0.01)
+
+    def test_negative_raises(self) -> None:
+        import pytest
+
+        from app.carbon import carbon_savings_vs_baseline
+
+        with pytest.raises(ValueError):
+            carbon_savings_vs_baseline(-10.0, 100.0)
+
+    def test_zero_baseline(self) -> None:
+        from app.carbon import carbon_savings_vs_baseline
+
+        result = carbon_savings_vs_baseline(0.0, 0.0)
+        assert result["savings_pct"] == 0.0
