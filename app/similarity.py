@@ -444,3 +444,91 @@ def overlap_coefficient(set_a: set[str], set_b: set[str]) -> float:
     if not set_a or not set_b:
         return 0.0
     return round(len(set_a & set_b) / min(len(set_a), len(set_b)), 6)
+
+
+def euclidean_distance(vec_a: list[float], vec_b: list[float]) -> float:
+    """Compute the Euclidean distance between two vectors.
+
+    Args:
+        vec_a: First numeric vector.
+        vec_b: Second numeric vector.
+
+    Returns:
+        Euclidean distance rounded to 6 decimal places.
+
+    Raises:
+        ValueError: If vectors have different lengths or are empty.
+    """
+    if not vec_a or not vec_b:
+        raise ValueError("Vectors must not be empty")
+    if len(vec_a) != len(vec_b):
+        raise ValueError("Vectors must have the same length")
+    return round(sum((a - b) ** 2 for a, b in zip(vec_a, vec_b, strict=False)) ** 0.5, 6)
+
+
+def pearson_correlation(
+    x: list[float],
+    y: list[float],
+) -> float:
+    """Compute the Pearson correlation coefficient between *x* and *y*.
+
+    Args:
+        x: First numeric series.
+        y: Second numeric series.
+
+    Returns:
+        Pearson r in [-1, 1] rounded to 6 decimal places, or 0.0 if either
+        series has zero variance.
+
+    Raises:
+        ValueError: If series have different lengths or fewer than 2 elements.
+    """
+    if len(x) < 2 or len(y) < 2:
+        raise ValueError("At least 2 elements required")
+    if len(x) != len(y):
+        raise ValueError("Series must have the same length")
+    n = len(x)
+    mean_x = sum(x) / n
+    mean_y = sum(y) / n
+    num = sum((xi - mean_x) * (yi - mean_y) for xi, yi in zip(x, y, strict=False))
+    den_x = sum((xi - mean_x) ** 2 for xi in x) ** 0.5
+    den_y = sum((yi - mean_y) ** 2 for yi in y) ** 0.5
+    if den_x < 1e-12 or den_y < 1e-12:
+        return 0.0
+    return round(num / (den_x * den_y), 6)
+
+
+def top_k_similar(
+    query: list[float],
+    candidates: list[list[float]],
+    k: int = 5,
+) -> list[tuple[int, float]]:
+    """Find the *k* most similar candidates to a query vector by cosine similarity.
+
+    Args:
+        query: Query feature vector.
+        candidates: List of candidate vectors (same dimension as *query*).
+        k: Number of top results to return. Default 5.
+
+    Returns:
+        List of (index, similarity_score) tuples, sorted by score descending.
+
+    Raises:
+        ValueError: If *k* < 1 or *candidates* is empty.
+    """
+    if not candidates:
+        raise ValueError("candidates must not be empty")
+    if k < 1:
+        raise ValueError("k must be at least 1")
+
+    def _cosine(a: list[float], b: list[float]) -> float:
+        dot = sum(ai * bi for ai, bi in zip(a, b, strict=False))
+        mag_a = sum(ai**2 for ai in a) ** 0.5
+        mag_b = sum(bi**2 for bi in b) ** 0.5
+        if mag_a < 1e-12 or mag_b < 1e-12:
+            return 0.0
+        return dot / (mag_a * mag_b)
+
+    scored = [(i, round(_cosine(query, c), 6)) for i, c in enumerate(candidates)]
+    scored.sort(key=lambda x: x[1], reverse=True)
+    return scored[:k]
