@@ -611,3 +611,91 @@ def consumption_budget_variance(
         "variance_pct": variance_pct,
         "on_budget": 1 if abs(variance_pct) <= 5.0 else 0,
     }
+
+
+def top_n_consumers(
+    readings: list[dict[str, object]],
+    n: int = 5,
+    value_field: str = "consumption_kwh",
+    label_field: str = "building_id",
+) -> list[dict[str, object]]:
+    """Return the top *n* consumers from a list of meter readings.
+
+    Args:
+        readings: List of dicts containing at least *value_field* and *label_field*.
+        n: Number of top consumers to return. Default 5.
+        value_field: Key holding the consumption value. Default ``"consumption_kwh"``.
+        label_field: Key holding the entity identifier. Default ``"building_id"``.
+
+    Returns:
+        Up to *n* records sorted by *value_field* descending.
+
+    Raises:
+        ValueError: If *n* < 1.
+    """
+    if n < 1:
+        raise ValueError(f"n must be at least 1, got {n}")
+    valid = [r for r in readings if value_field in r and r[value_field] is not None]
+    sorted_records = sorted(valid, key=lambda r: float(r[value_field]), reverse=True)  # type: ignore[arg-type]
+    return sorted_records[:n]
+
+
+def consumption_heatmap_data(
+    readings: list[dict[str, object]],
+    hour_field: str = "hour",
+    dow_field: str = "day_of_week",
+    value_field: str = "consumption_kwh",
+) -> dict[str, dict[str, float]]:
+    """Aggregate consumption into a day-of-week × hour-of-day heatmap.
+
+    Args:
+        readings: List of dicts containing hour, day_of_week, and consumption.
+        hour_field: Key for hour column. Default ``"hour"``.
+        dow_field: Key for day-of-week column (0=Monday). Default ``"day_of_week"``.
+        value_field: Key for the consumption value. Default ``"consumption_kwh"``.
+
+    Returns:
+        Nested dict ``{day_of_week_str: {hour_str: avg_consumption}}``.
+    """
+    totals: dict[str, dict[str, list[float]]] = {}
+    for r in readings:
+        dow = str(r.get(dow_field, "?"))
+        hour = str(r.get(hour_field, "?"))
+        val = r.get(value_field)
+        if val is None:
+            continue
+        totals.setdefault(dow, {}).setdefault(hour, []).append(float(val))
+    return {
+        dow: {h: round(sum(vals) / len(vals), 4) for h, vals in hours.items()}
+        for dow, hours in totals.items()
+    }
+
+
+def savings_summary(
+    before_kwh: float,
+    after_kwh: float,
+    unit_cost: float = 0.15,
+) -> dict[str, float]:
+    """Summarise energy and cost savings between two periods.
+
+    Args:
+        before_kwh: Energy consumed before an intervention (kWh).
+        after_kwh: Energy consumed after the intervention (kWh).
+        unit_cost: Cost per kWh in the user's currency. Default 0.15.
+
+    Returns:
+        Dict with ``saved_kwh``, ``saved_cost``, and ``reduction_pct``.
+
+    Raises:
+        ValueError: If any argument is negative or *before_kwh* is 0.
+    """
+    if before_kwh < 0 or after_kwh < 0 or unit_cost < 0:
+        raise ValueError("All arguments must be non-negative")
+    if before_kwh == 0.0:
+        return {"saved_kwh": 0.0, "saved_cost": 0.0, "reduction_pct": 0.0}
+    saved = before_kwh - after_kwh
+    return {
+        "saved_kwh": round(saved, 4),
+        "saved_cost": round(saved * unit_cost, 4),
+        "reduction_pct": round(saved / before_kwh * 100, 4),
+    }
