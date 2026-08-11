@@ -241,3 +241,83 @@ class TestThresholdExceedanceVector:
         from app.features import threshold_exceedance_vector
 
         assert threshold_exceedance_vector(reading, threshold) == expected
+
+
+class TestRateOfChangeSeries:
+    def test_window_1_basic(self) -> None:
+        from app.features import rate_of_change
+
+        result = rate_of_change([1.0, 3.0, 6.0], window=1)
+        assert result[0] == 0.0
+        assert result[1] == pytest.approx(2.0, abs=1e-5)
+        assert result[2] == pytest.approx(3.0, abs=1e-5)
+
+    def test_window_2(self) -> None:
+        from app.features import rate_of_change
+
+        result = rate_of_change([0.0, 1.0, 3.0, 6.0], window=2)
+        assert result[:2] == [0.0, 0.0]
+        assert result[2] == pytest.approx(3.0, abs=1e-5)
+
+    def test_invalid_window_raises(self) -> None:
+        from app.features import rate_of_change
+
+        with pytest.raises(ValueError):
+            rate_of_change([1.0, 2.0], window=0)
+
+    def test_empty_series(self) -> None:
+        from app.features import rate_of_change
+
+        assert rate_of_change([], window=1) == []
+
+
+class TestExponentialDecayFeature:
+    def test_same_length_output(self) -> None:
+        from app.features import exponential_decay_feature
+
+        values = [1.0, 2.0, 3.0, 4.0]
+        result = exponential_decay_feature(values)
+        assert len(result) == len(values)
+
+    def test_normalised_to_one(self) -> None:
+        from app.features import exponential_decay_feature
+
+        result = exponential_decay_feature([1.0, 2.0, 3.0], decay=0.5)
+        assert sum(abs(v) for v in result) == pytest.approx(1.0, abs=1e-4)
+
+    def test_invalid_decay_raises(self) -> None:
+        from app.features import exponential_decay_feature
+
+        with pytest.raises(ValueError):
+            exponential_decay_feature([1.0, 2.0], decay=0.0)
+
+    def test_all_zeros_returns_zeros(self) -> None:
+        from app.features import exponential_decay_feature
+
+        result = exponential_decay_feature([0.0, 0.0, 0.0])
+        assert result == [0.0, 0.0, 0.0]
+
+
+class TestPairwiseRatioFeatures:
+    def test_basic_ratio(self) -> None:
+        from app.features import pairwise_ratio_features
+
+        result = pairwise_ratio_features({"a": 10.0, "b": 2.0}, [("a", "b")])
+        assert result["a_div_b"] == pytest.approx(5.0, abs=1e-5)
+
+    def test_zero_denominator_returns_zero(self) -> None:
+        from app.features import pairwise_ratio_features
+
+        result = pairwise_ratio_features({"x": 5.0, "y": 0.0}, [("x", "y")])
+        assert result["x_div_y"] == 0.0
+
+    def test_missing_key_defaults_to_zero(self) -> None:
+        from app.features import pairwise_ratio_features
+
+        result = pairwise_ratio_features({"a": 4.0}, [("a", "missing")])
+        assert result["a_div_missing"] == 0.0
+
+    def test_empty_pairs(self) -> None:
+        from app.features import pairwise_ratio_features
+
+        assert pairwise_ratio_features({"a": 1.0}, []) == {}
