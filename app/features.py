@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 class TemporalFeatureExtractor(BaseEstimator, TransformerMixin):
     """Extract hour-of-day, day-of-week, month, and cyclic encodings."""
 
-    def fit(self, X: pd.DataFrame, y=None) -> TemporalFeatureExtractor:
+    def fit(self, X: pd.DataFrame, y: object = None) -> TemporalFeatureExtractor:
         """No-op fit (stateless transformer)."""
         return self
 
@@ -46,7 +46,7 @@ class LagFeatureExtractor(BaseEstimator, TransformerMixin):
 
     LAG_COLS = [1, 2, 3, 6, 12, 24, 168]
 
-    def fit(self, X: pd.DataFrame, y=None) -> LagFeatureExtractor:
+    def fit(self, X: pd.DataFrame, y: object = None) -> LagFeatureExtractor:
         """No-op fit (stateless transformer)."""
         return self
 
@@ -66,7 +66,7 @@ class RollingStatsExtractor(BaseEstimator, TransformerMixin):
 
     WINDOWS = [3, 6, 24]
 
-    def fit(self, X: pd.DataFrame, y=None) -> RollingStatsExtractor:
+    def fit(self, X: pd.DataFrame, y: object = None) -> RollingStatsExtractor:
         """No-op fit (stateless transformer)."""
         return self
 
@@ -86,7 +86,7 @@ class RollingStatsExtractor(BaseEstimator, TransformerMixin):
 class WeatherFeatureExtractor(BaseEstimator, TransformerMixin):
     """Derive composite weather features: heat index, cooling degree hours."""
 
-    def fit(self, X: pd.DataFrame, y=None) -> WeatherFeatureExtractor:
+    def fit(self, X: pd.DataFrame, y: object = None) -> WeatherFeatureExtractor:
         """No-op fit (stateless transformer)."""
         return self
 
@@ -108,7 +108,7 @@ class WeatherFeatureExtractor(BaseEstimator, TransformerMixin):
 class OccupancyFeatureExtractor(BaseEstimator, TransformerMixin):
     """Encode occupancy and HVAC state into energy-load proxies."""
 
-    def fit(self, X: pd.DataFrame, y=None) -> OccupancyFeatureExtractor:
+    def fit(self, X: pd.DataFrame, y: object = None) -> OccupancyFeatureExtractor:
         """No-op fit (stateless transformer)."""
         return self
 
@@ -127,7 +127,7 @@ class OccupancyFeatureExtractor(BaseEstimator, TransformerMixin):
 class DropNonNumeric(BaseEstimator, TransformerMixin):
     """Drop string/datetime columns before scaling."""
 
-    def fit(self, X: pd.DataFrame, y=None) -> DropNonNumeric:
+    def fit(self, X: pd.DataFrame, y: object = None) -> DropNonNumeric:
         """Record which columns are numeric at fit time."""
         self.numeric_cols_ = X.select_dtypes(include=[np.number]).columns.tolist()
         return self
@@ -136,14 +136,14 @@ class DropNonNumeric(BaseEstimator, TransformerMixin):
         """Return only the numeric columns as a DataFrame."""
         return X[self.numeric_cols_]
 
-    def get_feature_names_out(self, input_features=None) -> np.ndarray:
+    def get_feature_names_out(self, input_features: list[str] | None = None) -> np.ndarray:
         return np.array(self.numeric_cols_)
 
 
 class DataFrameWrapper(BaseEstimator, TransformerMixin):
     """Wrap numpy/array output back to a DataFrame, preserving column names."""
 
-    def fit(self, X: pd.DataFrame, y=None) -> DataFrameWrapper:
+    def fit(self, X: pd.DataFrame, y: object = None) -> DataFrameWrapper:
         if hasattr(X, "columns"):
             self.columns_: list[str] = list(X.columns)
         else:
@@ -162,7 +162,7 @@ class DropColumnsTransformer(BaseEstimator, TransformerMixin):
 
     DROP_COLS = ["historical_loads", "region", "timestamp"]
 
-    def fit(self, X: pd.DataFrame, y=None) -> DropColumnsTransformer:
+    def fit(self, X: pd.DataFrame, y: object = None) -> DropColumnsTransformer:
         self.cols_to_drop_ = [c for c in self.DROP_COLS if c in X.columns]
         return self
 
@@ -195,7 +195,7 @@ _AMENITY_SCALE: float = 10.0
 class RatioFeatureTransformer(BaseEstimator, TransformerMixin):
     """Compute ratio features such as beds-per-bath."""
 
-    def fit(self, X: pd.DataFrame, y=None) -> RatioFeatureTransformer:
+    def fit(self, X: pd.DataFrame, y: object = None) -> RatioFeatureTransformer:
         """No fitting required; returns self."""
         return self
 
@@ -215,7 +215,7 @@ class PropertyAgeTransformer(BaseEstimator, TransformerMixin):
     def __init__(self, reference_year: int = 2026) -> None:
         self.reference_year = reference_year
 
-    def fit(self, X: pd.DataFrame, y=None) -> PropertyAgeTransformer:
+    def fit(self, X: pd.DataFrame, y: object = None) -> PropertyAgeTransformer:
         """No fitting required; returns self."""
         return self
 
@@ -229,7 +229,7 @@ class PropertyAgeTransformer(BaseEstimator, TransformerMixin):
 class AmenityCompositeTransformer(BaseEstimator, TransformerMixin):
     """Compute a composite amenity score from school, transit, walkability and crime."""
 
-    def fit(self, X: pd.DataFrame, y=None) -> AmenityCompositeTransformer:
+    def fit(self, X: pd.DataFrame, y: object = None) -> AmenityCompositeTransformer:
         """No fitting required; returns self."""
         return self
 
@@ -304,7 +304,7 @@ class InteractionFeatureExtractor(BaseEstimator, TransformerMixin):
         ("hour", "occupancy"),
     ]
 
-    def fit(self, X: pd.DataFrame, y=None) -> InteractionFeatureExtractor:
+    def fit(self, X: pd.DataFrame, y: object = None) -> InteractionFeatureExtractor:
         self.available_pairs_ = [(a, b) for a, b in self.PAIRS if a in X.columns and b in X.columns]
         return self
 
