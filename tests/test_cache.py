@@ -560,3 +560,56 @@ class TestBatchDelete:
             c.set(k, k)
         removed = batch_delete(c, keys)
         assert removed == n
+
+
+class TestCacheKeyCount:
+    def test_empty_cache(self) -> None:
+        from app.cache import cache_key_count
+
+        c = TTLCache(ttl_seconds=60)
+        assert cache_key_count(c) == 0
+
+    def test_after_inserts(self) -> None:
+        from app.cache import cache_key_count
+
+        c = TTLCache(ttl_seconds=60)
+        c.set("a", 1)
+        c.set("b", 2)
+        assert cache_key_count(c) == 2
+
+
+class TestWarmCache:
+    def test_loads_all_keys(self) -> None:
+        from app.cache import warm_cache
+
+        c = TTLCache(ttl_seconds=60)
+        loaded = warm_cache(c, {"x": 1, "y": 2, "z": 3})
+        assert loaded == 3
+        assert c.get("x") == 1
+
+    def test_empty_data(self) -> None:
+        from app.cache import warm_cache
+
+        c = TTLCache(ttl_seconds=60)
+        assert warm_cache(c, {}) == 0
+
+
+class TestGetOrDefault:
+    def test_returns_cached_value(self) -> None:
+        from app.cache import get_or_default
+
+        c = TTLCache(ttl_seconds=60)
+        c.set("k", "v")
+        assert get_or_default(c, "k") == "v"
+
+    def test_missing_key_returns_default(self) -> None:
+        from app.cache import get_or_default
+
+        c = TTLCache(ttl_seconds=60)
+        assert get_or_default(c, "missing", default="fallback") == "fallback"
+
+    def test_default_is_none_when_not_set(self) -> None:
+        from app.cache import get_or_default
+
+        c = TTLCache(ttl_seconds=60)
+        assert get_or_default(c, "nope") is None
