@@ -1049,3 +1049,94 @@ class TestBatchAnomalyFlag:
         result = batch_anomaly_flag(values, mean=0.0, std=1.0, threshold=threshold)
         assert isinstance(result, list)
         assert len(result) == len(values)
+
+
+# ---------------------------------------------------------------------------
+# Tests for anomaly_score_ema, mean_time_between_anomalies, anomaly_peak_ratio
+# ---------------------------------------------------------------------------
+
+
+class TestAnomalyScoreEma:
+    def test_all_false_returns_zeros(self) -> None:
+        from app.anomaly import anomaly_score_ema
+
+        result = anomaly_score_ema([False, False, False], alpha=0.3)
+        assert result == [0.0, 0.0, 0.0]
+
+    def test_all_true_converges(self) -> None:
+        from app.anomaly import anomaly_score_ema
+
+        result = anomaly_score_ema([True] * 10, alpha=0.5)
+        assert result[-1] > 0.9
+
+    def test_length_matches_input(self) -> None:
+        from app.anomaly import anomaly_score_ema
+
+        flags = [True, False, True, False, True]
+        assert len(anomaly_score_ema(flags)) == len(flags)
+
+    def test_invalid_alpha_raises(self) -> None:
+        import pytest
+
+        from app.anomaly import anomaly_score_ema
+
+        with pytest.raises(ValueError):
+            anomaly_score_ema([True], alpha=0.0)
+
+    def test_alpha_one_is_identity(self) -> None:
+        from app.anomaly import anomaly_score_ema
+
+        flags = [True, False, True]
+        result = anomaly_score_ema(flags, alpha=1.0)
+        assert result == [1.0, 0.0, 1.0]
+
+
+class TestMeanTimeBetweenAnomalies:
+    def test_no_anomalies(self) -> None:
+        from app.anomaly import mean_time_between_anomalies
+
+        assert mean_time_between_anomalies([False, False, False]) == float("inf")
+
+    def test_one_anomaly(self) -> None:
+        from app.anomaly import mean_time_between_anomalies
+
+        assert mean_time_between_anomalies([False, True, False]) == float("inf")
+
+    def test_two_anomalies(self) -> None:
+        from app.anomaly import mean_time_between_anomalies
+
+        flags = [True, False, False, True]
+        assert mean_time_between_anomalies(flags) == 3.0
+
+    def test_regular_spacing(self) -> None:
+        from app.anomaly import mean_time_between_anomalies
+
+        flags = [True, False, True, False, True]
+        assert mean_time_between_anomalies(flags) == 2.0
+
+
+class TestAnomalyPeakRatio:
+    def test_empty_groups_return_zero(self) -> None:
+        from app.anomaly import anomaly_peak_ratio
+
+        assert anomaly_peak_ratio([1.0, 2.0], [False, False]) == 0.0
+
+    def test_all_anomalous_returns_zero(self) -> None:
+        from app.anomaly import anomaly_peak_ratio
+
+        assert anomaly_peak_ratio([1.0, 2.0], [True, True]) == 0.0
+
+    def test_length_mismatch_raises(self) -> None:
+        import pytest
+
+        from app.anomaly import anomaly_peak_ratio
+
+        with pytest.raises(ValueError):
+            anomaly_peak_ratio([1.0, 2.0], [True])
+
+    def test_ratio_greater_one_for_high_anomalies(self) -> None:
+        from app.anomaly import anomaly_peak_ratio
+
+        values = [1.0, 1.0, 100.0]
+        flags = [False, False, True]
+        assert anomaly_peak_ratio(values, flags) > 1.0
