@@ -133,3 +133,80 @@ def threshold_exceedance_vector(
         Sensors absent from *thresholds* are skipped.
     """
     return {f"{k}_exceeded": int(row[k] > thresholds[k]) for k in row if k in thresholds}
+
+
+def rate_of_change(
+    values: list[float],
+    window: int = 1,
+) -> list[float]:
+    """Compute the rate of change over *window* time steps.
+
+    Args:
+        values: Input numeric series.
+        window: Number of steps over which to compute the change. Default 1.
+
+    Returns:
+        List of changes (same length as *values*); the first *window* entries
+        are 0.0 (no prior history).
+
+    Raises:
+        ValueError: If *window* < 1.
+    """
+    if window < 1:
+        raise ValueError("window must be at least 1")
+    result = [0.0] * window
+    for i in range(window, len(values)):
+        result.append(round(values[i] - values[i - window], 6))
+    return result
+
+
+def exponential_decay_feature(
+    values: list[float],
+    decay: float = 0.9,
+) -> list[float]:
+    """Apply exponential decay weighting to a series.
+
+    Each value is weighted by *decay^(n-1-i)* relative to the most recent
+    observation, then the series is normalised to sum to 1 if non-zero.
+
+    Args:
+        values: Input numeric series.
+        decay: Decay factor in (0, 1]. Lower values weight recent obs more heavily.
+
+    Returns:
+        Decay-weighted series the same length as *values*.
+
+    Raises:
+        ValueError: If *decay* is outside (0, 1].
+    """
+    if not (0.0 < decay <= 1.0):
+        raise ValueError(f"decay must be in (0, 1], got {decay}")
+    n = len(values)
+    weights = [decay ** (n - 1 - i) for i in range(n)]
+    weighted = [v * w for v, w in zip(values, weights, strict=False)]
+    total = sum(abs(w) for w in weighted)
+    if total < 1e-12:
+        return [0.0] * n
+    return [round(w / total, 6) for w in weighted]
+
+
+def pairwise_ratio_features(
+    row: dict[str, float],
+    pairs: list[tuple[str, str]],
+) -> dict[str, float]:
+    """Compute ratio features for specified sensor pairs.
+
+    Args:
+        row: Current sensor readings.
+        pairs: List of (numerator_key, denominator_key) tuples.
+
+    Returns:
+        Dict mapping ``<a>_div_<b>`` → ratio value.
+        Pairs where the denominator is 0 return 0.0.
+    """
+    result: dict[str, float] = {}
+    for a, b in pairs:
+        val_a = row.get(a, 0.0)
+        val_b = row.get(b, 0.0)
+        result[f"{a}_div_{b}"] = round(val_a / val_b, 6) if val_b != 0.0 else 0.0
+    return result
