@@ -391,3 +391,67 @@ def date_range_overlap_days(
     overlap_end = min(end_a, end_b)
     delta = (overlap_end - overlap_start).days + 1
     return max(0, delta)
+
+
+def week_of_month(dt: object) -> int:
+    """Return the week-of-month number (1-indexed) for a date.
+
+    Uses the ISO convention: week 1 contains the first day of the month.
+
+    Args:
+        dt: A ``datetime.date`` or ``datetime.datetime`` object.
+
+    Returns:
+        Week number within the month (1 to 5).
+    """
+    import datetime
+
+    d = dt.date() if isinstance(dt, datetime.datetime) else dt  # type: ignore[union-attr]
+    first_day = d.replace(day=1)
+    adjusted = d.day + first_day.weekday()
+    return (adjusted - 1) // 7 + 1
+
+
+def fiscal_quarter(dt: object, fiscal_year_start_month: int = 1) -> int:
+    """Return the fiscal quarter (1–4) for a date.
+
+    Args:
+        dt: A ``datetime.date`` or ``datetime.datetime``.
+        fiscal_year_start_month: Month number (1–12) at which the fiscal year
+            starts. Default 1 (calendar year).
+
+    Returns:
+        Fiscal quarter number 1 through 4.
+
+    Raises:
+        ValueError: If *fiscal_year_start_month* is outside [1, 12].
+    """
+    import datetime
+
+    if not (1 <= fiscal_year_start_month <= 12):
+        raise ValueError(f"fiscal_year_start_month must be in [1, 12], got {fiscal_year_start_month}")
+    month = dt.month if isinstance(dt, (datetime.date, datetime.datetime)) else int(dt)  # type: ignore[union-attr]
+    adjusted = (month - fiscal_year_start_month) % 12
+    return adjusted // 3 + 1
+
+
+def next_weekday(dt: object, weekday: int) -> object:
+    """Return the next occurrence of *weekday* on or after *dt*.
+
+    Args:
+        dt: A ``datetime.date`` or ``datetime.datetime``.
+        weekday: Target weekday as an ISO integer (1=Monday, 7=Sunday).
+
+    Returns:
+        A ``datetime.date`` on or after *dt* with the given weekday.
+
+    Raises:
+        ValueError: If *weekday* is outside [1, 7].
+    """
+    import datetime
+
+    if not (1 <= weekday <= 7):
+        raise ValueError(f"weekday must be in [1, 7], got {weekday}")
+    d = dt.date() if isinstance(dt, datetime.datetime) else dt  # type: ignore[union-attr]
+    days_ahead = (weekday - d.isoweekday()) % 7
+    return d + datetime.timedelta(days=days_ahead)
