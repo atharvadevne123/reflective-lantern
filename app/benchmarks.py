@@ -406,3 +406,60 @@ def eui_savings_potential(
         "saved_cost_per_year": round(saved_kwh * energy_price_per_kwh, 4),
         "new_eui": round(current_eui - saved_eui, 4),
     }
+
+
+def energy_use_intensity_delta(
+    eui_a: float,
+    eui_b: float,
+) -> dict[str, float]:
+    """Return absolute and percentage change between two EUI values.
+
+    Args:
+        eui_a: Baseline EUI (kWh/m²/year).
+        eui_b: Comparison EUI (kWh/m²/year).
+
+    Returns:
+        Dict with 'absolute_delta' and 'pct_change' (positive = improvement if eui_b < eui_a).
+    """
+    delta = eui_a - eui_b
+    pct = (delta / eui_a * 100.0) if eui_a != 0.0 else 0.0
+    return {"absolute_delta": round(delta, 4), "pct_change": round(pct, 4)}
+
+
+def star_rating_from_score(score: float) -> int:
+    """Map a normalised benchmark score to a 1-5 star rating.
+
+    Args:
+        score: Normalised performance score in [0.0, 1.0].
+
+    Returns:
+        Integer star rating 1-5.
+    """
+    if score >= 0.9:
+        return 5
+    if score >= 0.75:
+        return 4
+    if score >= 0.55:
+        return 3
+    if score >= 0.35:
+        return 2
+    return 1
+
+
+def portfolio_eui_summary(buildings: list[dict]) -> dict[str, float]:
+    """Summarise EUI statistics across a portfolio of buildings.
+
+    Args:
+        buildings: List of dicts each containing an 'eui' key.
+
+    Returns:
+        Dict with 'mean_eui', 'min_eui', 'max_eui'. Returns zeros for empty input.
+    """
+    if not buildings:
+        return {"mean_eui": 0.0, "min_eui": 0.0, "max_eui": 0.0}
+    euis = [float(b["eui"]) for b in buildings]
+    return {
+        "mean_eui": round(sum(euis) / len(euis), 4),
+        "min_eui": round(min(euis), 4),
+        "max_eui": round(max(euis), 4),
+    }
