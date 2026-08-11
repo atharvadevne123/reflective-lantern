@@ -921,3 +921,97 @@ class TestConsumptionBudgetVariance:
 
         with pytest.raises(ValueError, match="budget_kwh"):
             consumption_budget_variance(100.0, 0.0)
+
+
+# ---------------------------------------------------------------------------
+# Tests for top_n_consumers, consumption_heatmap_data, savings_summary
+# ---------------------------------------------------------------------------
+
+
+class TestTopNConsumers:
+    def test_basic_ordering(self) -> None:
+        from app.reporting import top_n_consumers
+
+        readings = [
+            {"building_id": "A", "consumption_kwh": 100.0},
+            {"building_id": "B", "consumption_kwh": 300.0},
+            {"building_id": "C", "consumption_kwh": 200.0},
+        ]
+        result = top_n_consumers(readings, n=2)
+        assert result[0]["building_id"] == "B"
+        assert len(result) == 2
+
+    def test_n_exceeds_count(self) -> None:
+        from app.reporting import top_n_consumers
+
+        readings = [{"building_id": "A", "consumption_kwh": 50.0}]
+        assert len(top_n_consumers(readings, n=10)) == 1
+
+    def test_invalid_n_raises(self) -> None:
+        import pytest
+
+        from app.reporting import top_n_consumers
+
+        with pytest.raises(ValueError):
+            top_n_consumers([], n=0)
+
+    def test_missing_value_field_excluded(self) -> None:
+        from app.reporting import top_n_consumers
+
+        readings = [{"building_id": "A"}, {"building_id": "B", "consumption_kwh": 100.0}]
+        result = top_n_consumers(readings, n=5)
+        assert len(result) == 1
+
+
+class TestConsumptionHeatmapData:
+    def test_basic_structure(self) -> None:
+        from app.reporting import consumption_heatmap_data
+
+        readings = [
+            {"day_of_week": 0, "hour": 8, "consumption_kwh": 10.0},
+            {"day_of_week": 0, "hour": 8, "consumption_kwh": 20.0},
+        ]
+        result = consumption_heatmap_data(readings)
+        assert result["0"]["8"] == pytest.approx(15.0, abs=0.01)
+
+    def test_missing_value_excluded(self) -> None:
+        from app.reporting import consumption_heatmap_data
+
+        readings = [{"day_of_week": 1, "hour": 9}]
+        assert consumption_heatmap_data(readings) == {}
+
+    def test_empty_returns_empty(self) -> None:
+        from app.reporting import consumption_heatmap_data
+
+        assert consumption_heatmap_data([]) == {}
+
+
+class TestSavingsSummary:
+    def test_positive_savings(self) -> None:
+        from app.reporting import savings_summary
+
+        result = savings_summary(1000.0, 800.0, unit_cost=0.10)
+        assert result["saved_kwh"] == pytest.approx(200.0, abs=0.01)
+        assert result["saved_cost"] == pytest.approx(20.0, abs=0.01)
+        assert result["reduction_pct"] == pytest.approx(20.0, abs=0.01)
+
+    def test_zero_before_returns_zeros(self) -> None:
+        from app.reporting import savings_summary
+
+        result = savings_summary(0.0, 100.0)
+        assert result["saved_kwh"] == 0.0
+
+    def test_negative_raises(self) -> None:
+        import pytest
+
+        from app.reporting import savings_summary
+
+        with pytest.raises(ValueError):
+            savings_summary(-100.0, 50.0)
+
+    def test_no_change(self) -> None:
+        from app.reporting import savings_summary
+
+        result = savings_summary(500.0, 500.0)
+        assert result["saved_kwh"] == 0.0
+        assert result["reduction_pct"] == 0.0
