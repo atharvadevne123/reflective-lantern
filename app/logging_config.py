@@ -139,3 +139,44 @@ def suppress_noisy_loggers(*names: str, level: str = "WARNING") -> None:
     int_level = log_level_int(level)
     for name in names:
         logging.getLogger(name).setLevel(int_level)
+
+
+def log_handler_count(logger_name: str = "root") -> int:
+    """Return the number of handlers attached to the named logger.
+
+    Args:
+        logger_name: Logger name; 'root' returns the root logger's handler count.
+
+    Returns:
+        Handler count as a non-negative integer.
+    """
+    log = logging.getLogger() if logger_name == "root" else logging.getLogger(logger_name)
+    return len(log.handlers)
+
+
+def has_console_handler(logger_name: str = "root") -> bool:
+    """Return True if the named logger has a StreamHandler (console) attached.
+
+    Args:
+        logger_name: Logger name; 'root' checks the root logger.
+
+    Returns:
+        True if at least one :class:`logging.StreamHandler` is present.
+    """
+    log = logging.getLogger() if logger_name == "root" else logging.getLogger(logger_name)
+    return any(isinstance(h, logging.StreamHandler) for h in log.handlers)
+
+
+def log_level_name(level_int: int) -> str:
+    """Return the human-readable name for a numeric logging level.
+
+    Args:
+        level_int: Numeric level (e.g. 10 for DEBUG, 20 for INFO).
+
+    Returns:
+        Level name string (e.g. 'DEBUG'); 'UNKNOWN' for unregistered levels.
+    """
+    name = logging.getLevelName(level_int)
+    if isinstance(name, str) and not name.startswith("Level "):
+        return name
+    return "UNKNOWN"
