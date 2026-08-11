@@ -1070,3 +1070,80 @@ class TestCapitalisationRate:
         from app.investment import capitalisation_rate
 
         assert capitalisation_rate(noi, value) == pytest.approx(expected)
+
+
+# ---------------------------------------------------------------------------
+# Tests for gross_yield, price_to_rent_ratio, equity_multiple
+# ---------------------------------------------------------------------------
+
+
+class TestGrossYield:
+    def test_basic(self) -> None:
+        from app.investment import gross_yield
+
+        assert gross_yield(12000.0, 200000.0) == pytest.approx(6.0, abs=0.01)
+
+    def test_zero_property_value(self) -> None:
+        from app.investment import gross_yield
+
+        assert gross_yield(12000.0, 0.0) == 0.0
+
+    def test_negative_raises(self) -> None:
+        import pytest
+
+        from app.investment import gross_yield
+
+        with pytest.raises(ValueError):
+            gross_yield(-1.0, 200000.0)
+
+    def test_zero_rent(self) -> None:
+        from app.investment import gross_yield
+
+        assert gross_yield(0.0, 200000.0) == 0.0
+
+
+class TestPriceToRentRatio:
+    def test_standard_case(self) -> None:
+        from app.investment import price_to_rent_ratio
+
+        result = price_to_rent_ratio(300000.0, 1250.0)
+        assert result == pytest.approx(20.0, abs=0.1)
+
+    def test_zero_rent(self) -> None:
+        from app.investment import price_to_rent_ratio
+
+        assert price_to_rent_ratio(300000.0, 0.0) == 0.0
+
+    def test_negative_raises(self) -> None:
+        import pytest
+
+        from app.investment import price_to_rent_ratio
+
+        with pytest.raises(ValueError):
+            price_to_rent_ratio(-100.0, 1000.0)
+
+
+class TestEquityMultiple:
+    def test_double_money(self) -> None:
+        from app.investment import equity_multiple
+
+        assert equity_multiple(200000.0, 100000.0) == 2.0
+
+    def test_zero_invested(self) -> None:
+        from app.investment import equity_multiple
+
+        assert equity_multiple(1000.0, 0.0) == 0.0
+
+    def test_negative_raises(self) -> None:
+        import pytest
+
+        from app.investment import equity_multiple
+
+        with pytest.raises(ValueError):
+            equity_multiple(-1.0, 100000.0)
+
+    def test_loss_scenario(self) -> None:
+        from app.investment import equity_multiple
+
+        result = equity_multiple(50000.0, 100000.0)
+        assert result < 1.0
