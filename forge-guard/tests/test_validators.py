@@ -227,3 +227,76 @@ class TestSensorDriftDetected:
         from app.validators import sensor_drift_detected
 
         assert sensor_drift_detected(baseline, current, threshold=threshold) == expected
+
+
+class TestZscoreOutlier:
+    def test_no_outliers(self) -> None:
+        from app.validators import zscore_outlier
+
+        result = zscore_outlier([1.0, 2.0, 3.0, 4.0, 5.0], threshold=3.0)
+        assert not any(result)
+
+    def test_detects_outlier(self) -> None:
+        from app.validators import zscore_outlier
+
+        result = zscore_outlier([1.0, 1.0, 1.0, 1.0, 100.0], threshold=2.0)
+        assert result[-1] is True
+
+    def test_constant_series_no_outliers(self) -> None:
+        from app.validators import zscore_outlier
+
+        assert zscore_outlier([5.0, 5.0, 5.0]) == [False, False, False]
+
+    def test_empty_raises(self) -> None:
+        from app.validators import zscore_outlier
+
+        with pytest.raises(ValueError):
+            zscore_outlier([])
+
+
+class TestMissingRate:
+    def test_no_missing(self) -> None:
+        from app.validators import missing_rate
+
+        records = [{"a": 1}, {"a": 2}]
+        assert missing_rate(records, "a") == 0.0
+
+    def test_all_missing(self) -> None:
+        from app.validators import missing_rate
+
+        records = [{"a": None}, {"b": 1}]
+        assert missing_rate(records, "a") == pytest.approx(1.0, abs=0.01)
+
+    def test_half_missing(self) -> None:
+        from app.validators import missing_rate
+
+        records = [{"x": 1}, {"x": None}]
+        assert missing_rate(records, "x") == pytest.approx(0.5, abs=0.01)
+
+    def test_empty_records_returns_zero(self) -> None:
+        from app.validators import missing_rate
+
+        assert missing_rate([], "x") == 0.0
+
+
+class TestClampReading:
+    def test_within_range(self) -> None:
+        from app.validators import clamp_reading
+
+        assert clamp_reading(5.0, 0.0, 10.0) == 5.0
+
+    def test_below_lo(self) -> None:
+        from app.validators import clamp_reading
+
+        assert clamp_reading(-5.0, 0.0, 10.0) == 0.0
+
+    def test_above_hi(self) -> None:
+        from app.validators import clamp_reading
+
+        assert clamp_reading(15.0, 0.0, 10.0) == 10.0
+
+    def test_lo_gt_hi_raises(self) -> None:
+        from app.validators import clamp_reading
+
+        with pytest.raises(ValueError):
+            clamp_reading(5.0, 10.0, 0.0)
