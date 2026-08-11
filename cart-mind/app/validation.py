@@ -211,3 +211,50 @@ def validation_summary(results: dict[str, list[str]]) -> dict[str, Any]:
         "affected_payloads": len(results),
         "most_common_warning": most_common,
     }
+
+
+def price_discount_pct(original_price: float, discounted_price: float) -> float:
+    """Return percentage discount from original to discounted price.
+
+    Args:
+        original_price: Original item price.
+        discounted_price: Discounted price.
+
+    Returns:
+        Discount percentage in [0, 100]. Returns 0.0 if original_price is zero.
+    """
+    if original_price <= 0.0:
+        return 0.0
+    discount = (original_price - discounted_price) / original_price * 100.0
+    return round(max(0.0, min(100.0, discount)), 4)
+
+
+def cart_value_tier(cart_value: float) -> str:
+    """Categorise cart value into a spend tier.
+
+    Args:
+        cart_value: Total cart value.
+
+    Returns:
+        'low' (< 25), 'medium' (25-99), 'high' (100-499), or 'premium' (500+).
+    """
+    if cart_value < 25.0:
+        return "low"
+    if cart_value < 100.0:
+        return "medium"
+    if cart_value < 500.0:
+        return "high"
+    return "premium"
+
+
+def item_count_flag(item_count: int, bulk_threshold: int = 10) -> bool:
+    """Return True if the item count meets or exceeds the bulk threshold.
+
+    Args:
+        item_count: Number of items in the cart.
+        bulk_threshold: Minimum count to be considered bulk.
+
+    Returns:
+        True if item_count >= bulk_threshold.
+    """
+    return item_count >= bulk_threshold
