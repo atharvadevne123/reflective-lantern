@@ -1053,3 +1053,93 @@ class TestMarketCyclePhase:
         from app.market_context import market_cycle_phase
 
         assert market_cycle_phase(months) == expected
+
+
+# ---------------------------------------------------------------------------
+# Tests for affordability_index, price_per_sqft, dom_category
+# ---------------------------------------------------------------------------
+
+
+class TestAffordabilityIndex:
+    def test_basic_returns_float(self) -> None:
+        from app.market_context import affordability_index
+
+        result = affordability_index(400000.0, 80000.0)
+        assert isinstance(result, float)
+        assert result > 0
+
+    def test_zero_rate_is_handled(self) -> None:
+        from app.market_context import affordability_index
+
+        result = affordability_index(200000.0, 100000.0, interest_rate_pct=0.0)
+        assert result > 0
+
+    def test_non_positive_price_raises(self) -> None:
+        import pytest
+
+        from app.market_context import affordability_index
+
+        with pytest.raises(ValueError):
+            affordability_index(0.0, 80000.0)
+
+    def test_invalid_down_payment_raises(self) -> None:
+        import pytest
+
+        from app.market_context import affordability_index
+
+        with pytest.raises(ValueError):
+            affordability_index(300000.0, 80000.0, down_payment_pct=100.0)
+
+
+class TestPricePerSqftNew:
+    def test_basic(self) -> None:
+        from app.market_context import price_per_sqft
+
+        assert price_per_sqft(300000.0, 1500.0) == pytest.approx(200.0, abs=0.01)
+
+    def test_zero_sqft_raises(self) -> None:
+        import pytest
+
+        from app.market_context import price_per_sqft
+
+        with pytest.raises(ValueError):
+            price_per_sqft(300000.0, 0.0)
+
+    def test_zero_price_raises(self) -> None:
+        import pytest
+
+        from app.market_context import price_per_sqft
+
+        with pytest.raises(ValueError):
+            price_per_sqft(0.0, 1000.0)
+
+
+class TestDomCategory:
+    def test_fast(self) -> None:
+        from app.market_context import dom_category
+
+        assert dom_category(7) == "fast"
+
+    def test_normal(self) -> None:
+        from app.market_context import dom_category
+
+        assert dom_category(30) == "normal"
+
+    def test_slow(self) -> None:
+        from app.market_context import dom_category
+
+        assert dom_category(90) == "slow"
+
+    def test_negative_raises(self) -> None:
+        import pytest
+
+        from app.market_context import dom_category
+
+        with pytest.raises(ValueError):
+            dom_category(-1)
+
+    def test_boundary_fast_normal(self) -> None:
+        from app.market_context import dom_category
+
+        assert dom_category(13) == "fast"
+        assert dom_category(14) == "normal"
