@@ -496,3 +496,55 @@ def drift_trend(p_values: list[float]) -> str:
     if delta > 0.05:
         return "improving"
     return "stable"
+
+
+def alert_rate(alert_counts: list[int], window: int = 7) -> float:
+    """Return the average alert count over the last *window* periods.
+
+    Args:
+        alert_counts: Time-ordered list of per-period alert counts.
+        window: Number of trailing periods to average.
+
+    Returns:
+        Mean alert rate; 0.0 for empty input.
+    """
+    if not alert_counts:
+        return 0.0
+    tail = alert_counts[-window:]
+    return round(sum(tail) / len(tail), 4)
+
+
+def error_budget_remaining(
+    target_slo: float,
+    actual_availability: float,
+    period_minutes: int = 10080,
+) -> float:
+    """Return remaining error budget in minutes for a given SLO.
+
+    Args:
+        target_slo: Target availability as a fraction in [0, 1].
+        actual_availability: Measured availability fraction in [0, 1].
+        period_minutes: Length of the SLO measurement window in minutes.
+
+    Returns:
+        Remaining budget in minutes (negative if SLO already breached).
+    """
+    allowed_downtime = (1 - target_slo) * period_minutes
+    actual_downtime = (1 - actual_availability) * period_minutes
+    return round(allowed_downtime - actual_downtime, 4)
+
+
+def degradation_severity(error_rate: float) -> str:
+    """Classify a service error rate into a degradation severity level.
+
+    Args:
+        error_rate: Fraction of requests that errored in [0, 1].
+
+    Returns:
+        'healthy' (< 1%), 'degraded' (1-5%), 'critical' (> 5%).
+    """
+    if error_rate < 0.01:
+        return "healthy"
+    if error_rate <= 0.05:
+        return "degraded"
+    return "critical"
