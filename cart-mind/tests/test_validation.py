@@ -334,3 +334,70 @@ class TestValidationSummary:
         summary = validation_summary(results)
         assert summary["total_warnings"] == total
         assert summary["affected_payloads"] == affected
+
+
+class TestPriceDiscountPct:
+    def test_50_percent_off(self) -> None:
+        from app.validation import price_discount_pct
+
+        assert price_discount_pct(100.0, 50.0) == pytest.approx(50.0, abs=0.01)
+
+    def test_no_discount(self) -> None:
+        from app.validation import price_discount_pct
+
+        assert price_discount_pct(100.0, 100.0) == pytest.approx(0.0, abs=0.01)
+
+    def test_zero_original_returns_zero(self) -> None:
+        from app.validation import price_discount_pct
+
+        assert price_discount_pct(0.0, 50.0) == 0.0
+
+    def test_clamped_to_100(self) -> None:
+        from app.validation import price_discount_pct
+
+        assert price_discount_pct(10.0, -5.0) == pytest.approx(100.0, abs=0.01)
+
+
+class TestCartValueTier:
+    def test_low(self) -> None:
+        from app.validation import cart_value_tier
+
+        assert cart_value_tier(10.0) == "low"
+
+    def test_medium(self) -> None:
+        from app.validation import cart_value_tier
+
+        assert cart_value_tier(50.0) == "medium"
+
+    def test_high(self) -> None:
+        from app.validation import cart_value_tier
+
+        assert cart_value_tier(200.0) == "high"
+
+    def test_premium(self) -> None:
+        from app.validation import cart_value_tier
+
+        assert cart_value_tier(1000.0) == "premium"
+
+
+class TestItemCountFlag:
+    def test_below_threshold(self) -> None:
+        from app.validation import item_count_flag
+
+        assert item_count_flag(5) is False
+
+    def test_at_threshold(self) -> None:
+        from app.validation import item_count_flag
+
+        assert item_count_flag(10) is True
+
+    def test_above_threshold(self) -> None:
+        from app.validation import item_count_flag
+
+        assert item_count_flag(20) is True
+
+    def test_custom_threshold(self) -> None:
+        from app.validation import item_count_flag
+
+        assert item_count_flag(3, bulk_threshold=5) is False
+        assert item_count_flag(5, bulk_threshold=5) is True
