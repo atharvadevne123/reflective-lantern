@@ -497,3 +497,49 @@ class TestRegionShareOfTotal:
         from app.regions import region_share_of_total
 
         assert isinstance(region_share_of_total(region_id), float)
+
+
+class TestRegionsByGridType:
+    def test_returns_list(self) -> None:
+        from app.regions import regions_by_grid_type
+
+        result = regions_by_grid_type("synchronous")
+        assert isinstance(result, list)
+
+    def test_unknown_type_empty(self) -> None:
+        from app.regions import regions_by_grid_type
+
+        assert regions_by_grid_type("nonexistent_type_xyz") == []
+
+
+class TestRegionNames:
+    def test_returns_sorted_list(self) -> None:
+        from app.regions import region_names
+
+        names = region_names()
+        assert isinstance(names, list)
+        assert names == sorted(names)
+
+    def test_non_empty(self) -> None:
+        from app.regions import region_names
+
+        assert len(region_names()) > 0
+
+
+class TestRegionLoadFactor:
+    def test_zero_for_unknown_region(self) -> None:
+        from app.regions import region_load_factor
+
+        assert region_load_factor("nonexistent_xyz", 100.0) == 0.0
+
+    def test_valid_region_in_range(self) -> None:
+        from app.regions import region_load_factor
+
+        factor = region_load_factor("northeast", 50000.0)
+        assert 0.0 <= factor <= 1.0
+
+    def test_full_load_clamps_to_one(self) -> None:
+        from app.regions import region_load_factor
+
+        factor = region_load_factor("northeast", 1_000_000_000.0)
+        assert factor == pytest.approx(1.0)
