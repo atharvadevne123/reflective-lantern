@@ -260,3 +260,73 @@ class TestMinTrustGate:
 
         chunks = [make_scored(trust=t) for t in trusts]
         assert len(min_trust_gate(chunks, threshold=threshold)) == expected_count
+
+
+class TestTrustVariance:
+    def test_zero_variance_single_chunk(self) -> None:
+        from app.scoring.trust import trust_variance
+
+        assert trust_variance([make_scored(trust=0.8)]) == 0.0
+
+    def test_zero_variance_identical(self) -> None:
+        from app.scoring.trust import trust_variance
+
+        chunks = [make_scored(trust=0.5), make_scored(trust=0.5)]
+        assert trust_variance(chunks) == pytest.approx(0.0, abs=1e-6)
+
+    def test_known_variance(self) -> None:
+        from app.scoring.trust import trust_variance
+
+        chunks = [make_scored(trust=0.0), make_scored(trust=1.0)]
+        assert trust_variance(chunks) == pytest.approx(0.25, abs=1e-4)
+
+    def test_empty_returns_zero(self) -> None:
+        from app.scoring.trust import trust_variance
+
+        assert trust_variance([]) == 0.0
+
+
+class TestAboveThresholdRatio:
+    def test_all_above(self) -> None:
+        from app.scoring.trust import above_threshold_ratio
+
+        chunks = [make_scored(trust=0.8), make_scored(trust=0.9)]
+        assert above_threshold_ratio(chunks, threshold=0.5) == pytest.approx(1.0)
+
+    def test_none_above(self) -> None:
+        from app.scoring.trust import above_threshold_ratio
+
+        chunks = [make_scored(trust=0.2), make_scored(trust=0.3)]
+        assert above_threshold_ratio(chunks, threshold=0.5) == pytest.approx(0.0)
+
+    def test_half_above(self) -> None:
+        from app.scoring.trust import above_threshold_ratio
+
+        chunks = [make_scored(trust=0.4), make_scored(trust=0.6)]
+        assert above_threshold_ratio(chunks, threshold=0.5) == pytest.approx(0.5)
+
+    def test_empty_returns_zero(self) -> None:
+        from app.scoring.trust import above_threshold_ratio
+
+        assert above_threshold_ratio([]) == 0.0
+
+
+class TestTopKTrust:
+    def test_returns_top_k(self) -> None:
+        from app.scoring.trust import top_k_trust
+
+        chunks = [make_scored(trust=0.3), make_scored(trust=0.9), make_scored(trust=0.6)]
+        result = top_k_trust(chunks, k=2)
+        assert len(result) == 2
+        assert result[0].trust == pytest.approx(0.9)
+
+    def test_fewer_than_k_returns_all(self) -> None:
+        from app.scoring.trust import top_k_trust
+
+        chunks = [make_scored(trust=0.5)]
+        assert len(top_k_trust(chunks, k=3)) == 1
+
+    def test_empty_returns_empty(self) -> None:
+        from app.scoring.trust import top_k_trust
+
+        assert top_k_trust([], k=5) == []
