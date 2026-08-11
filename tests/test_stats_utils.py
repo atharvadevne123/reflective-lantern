@@ -1032,9 +1032,9 @@ class TestGiniCoefficient:
 
 class TestLogReturn:
     def test_basic(self) -> None:
-        from app.stats_utils import log_return
-
         import math
+
+        from app.stats_utils import log_return
 
         prices = [100.0, 110.0]
         result = log_return(prices)
@@ -1061,11 +1061,108 @@ class TestLogReturn:
 
     @pytest.mark.parametrize("factor", [1.1, 1.5, 2.0])
     def test_constant_growth(self, factor: float) -> None:
-        from app.stats_utils import log_return
         import math
+
+        from app.stats_utils import log_return
 
         prices = [100.0 * (factor**i) for i in range(5)]
         returns = log_return(prices)
         expected = math.log(factor)
         for r in returns:
             assert r == pytest.approx(expected, abs=1e-4)
+
+
+# ---------------------------------------------------------------------------
+# Tests for gini_coefficient, trimmed_mean, coefficient_of_variation
+# ---------------------------------------------------------------------------
+
+
+class TestGiniCoefficient:
+    def test_perfect_equality(self) -> None:
+        from app.stats_utils import gini_coefficient
+
+        assert gini_coefficient([1.0] * 10) == 0.0
+
+    def test_all_zeros_returns_zero(self) -> None:
+        from app.stats_utils import gini_coefficient
+
+        assert gini_coefficient([0.0] * 5) == 0.0
+
+    def test_empty_raises(self) -> None:
+        import pytest
+
+        from app.stats_utils import gini_coefficient
+
+        with pytest.raises(ValueError):
+            gini_coefficient([])
+
+    def test_negative_raises(self) -> None:
+        import pytest
+
+        from app.stats_utils import gini_coefficient
+
+        with pytest.raises(ValueError):
+            gini_coefficient([-1.0, 2.0])
+
+    def test_inequality_gt_zero(self) -> None:
+        from app.stats_utils import gini_coefficient
+
+        result = gini_coefficient([0.0, 0.0, 0.0, 100.0])
+        assert result > 0.0
+
+
+class TestTrimmedMean:
+    def test_no_trim(self) -> None:
+        from app.stats_utils import trimmed_mean
+
+        assert trimmed_mean([1.0, 2.0, 3.0], trim_pct=0.0) == pytest.approx(2.0, abs=0.001)
+
+    def test_removes_outliers(self) -> None:
+        from app.stats_utils import trimmed_mean
+
+        values = [1.0, 2.0, 3.0, 4.0, 1000.0]
+        no_trim = sum(values) / len(values)
+        trimmed = trimmed_mean(values, trim_pct=0.2)
+        assert abs(trimmed - no_trim) > 1.0
+
+    def test_empty_raises(self) -> None:
+        import pytest
+
+        from app.stats_utils import trimmed_mean
+
+        with pytest.raises(ValueError):
+            trimmed_mean([])
+
+    def test_invalid_trim_pct_raises(self) -> None:
+        import pytest
+
+        from app.stats_utils import trimmed_mean
+
+        with pytest.raises(ValueError):
+            trimmed_mean([1.0, 2.0], trim_pct=0.5)
+
+
+class TestCoefficientOfVariation:
+    def test_zero_cv_for_constant(self) -> None:
+        from app.stats_utils import coefficient_of_variation
+
+        assert coefficient_of_variation([5.0, 5.0, 5.0]) == 0.0
+
+    def test_positive_cv_for_variable(self) -> None:
+        from app.stats_utils import coefficient_of_variation
+
+        result = coefficient_of_variation([1.0, 2.0, 3.0, 4.0])
+        assert result > 0.0
+
+    def test_too_short_raises(self) -> None:
+        import pytest
+
+        from app.stats_utils import coefficient_of_variation
+
+        with pytest.raises(ValueError):
+            coefficient_of_variation([1.0])
+
+    def test_zero_mean_returns_zero(self) -> None:
+        from app.stats_utils import coefficient_of_variation
+
+        assert coefficient_of_variation([0.0, 0.0, 0.0, 0.0]) == 0.0
