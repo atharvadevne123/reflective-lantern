@@ -186,3 +186,57 @@ def test_summarize_drift_history_single_entry():
     assert summary["total_checks"] == 1
     assert summary["drift_count"] == 0
     assert summary["drift_rate"] == 0.0
+
+
+class TestAlertRate:
+    def test_basic_window(self) -> None:
+        from app.monitoring import alert_rate
+
+        assert alert_rate([1, 2, 3, 4, 5], window=3) == pytest.approx(4.0, abs=0.01)
+
+    def test_empty_returns_zero(self) -> None:
+        from app.monitoring import alert_rate
+
+        assert alert_rate([]) == 0.0
+
+    def test_window_larger_than_list(self) -> None:
+        from app.monitoring import alert_rate
+
+        assert alert_rate([10, 20], window=10) == pytest.approx(15.0, abs=0.01)
+
+
+class TestErrorBudgetRemaining:
+    def test_budget_intact(self) -> None:
+        from app.monitoring import error_budget_remaining
+
+        result = error_budget_remaining(0.999, 1.0, period_minutes=10080)
+        assert result > 0
+
+    def test_budget_breached(self) -> None:
+        from app.monitoring import error_budget_remaining
+
+        result = error_budget_remaining(0.999, 0.98, period_minutes=10080)
+        assert result < 0
+
+    def test_exact_slo_met(self) -> None:
+        from app.monitoring import error_budget_remaining
+
+        result = error_budget_remaining(0.99, 0.99, period_minutes=10000)
+        assert result == pytest.approx(0.0, abs=0.01)
+
+
+class TestDegradationSeverity:
+    def test_healthy(self) -> None:
+        from app.monitoring import degradation_severity
+
+        assert degradation_severity(0.005) == "healthy"
+
+    def test_degraded(self) -> None:
+        from app.monitoring import degradation_severity
+
+        assert degradation_severity(0.03) == "degraded"
+
+    def test_critical(self) -> None:
+        from app.monitoring import degradation_severity
+
+        assert degradation_severity(0.1) == "critical"
