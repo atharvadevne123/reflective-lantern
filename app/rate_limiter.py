@@ -234,3 +234,52 @@ def client_exists(limiter: TokenBucketRateLimiter, client_key: str) -> bool:
     """
     with limiter._lock:
         return client_key in limiter._buckets
+
+
+def bucket_fill_percentage(limiter: "TokenBucketRateLimiter", client_key: str) -> float:
+    """Return the fill percentage of the client's bucket as a value in [0.0, 100.0].
+
+    Args:
+        limiter: A :class:`TokenBucketRateLimiter` instance.
+        client_key: Client identifier.
+
+    Returns:
+        Percentage fill; 100.0 if client has no bucket (treated as full).
+    """
+    if not client_exists(limiter, client_key):
+        return 100.0
+    remaining = limiter.remaining_tokens(client_key)
+    return round(min(100.0, remaining / limiter._capacity * 100.0), 4)
+
+
+def is_rate_limited(limiter: "TokenBucketRateLimiter", client_key: str, cost: float = 1.0) -> bool:
+    """Return True if *client_key* would be rate-limited for a request costing *cost* tokens.
+
+    This is a non-consuming check — it does not deduct tokens.
+
+    Args:
+        limiter: A :class:`TokenBucketRateLimiter` instance.
+        client_key: Client identifier.
+        cost: Hypothetical token cost of the request.
+
+    Returns:
+        True if the client has insufficient tokens for *cost*.
+    """
+    return limiter.remaining_tokens(client_key) < cost
+
+
+def reset_client(limiter: "TokenBucketRateLimiter", client_key: str) -> bool:
+    """Remove the bucket for *client_key*, effectively resetting their rate limit.
+
+    Args:
+        limiter: A :class:`TokenBucketRateLimiter` instance.
+        client_key: Client identifier to reset.
+
+    Returns:
+        True if the bucket was removed; False if it did not exist.
+    """
+    with limiter._lock:
+        if client_key in limiter._buckets:
+            del limiter._buckets[client_key]
+            return True
+        return False
