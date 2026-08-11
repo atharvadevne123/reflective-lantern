@@ -646,3 +646,96 @@ def schema_conformance_rate(
         if ok:
             conforming += 1
     return round(conforming / len(records), 4)
+
+
+def find_duplicate_rows(
+    records: list[dict[str, object]],
+    key_fields: list[str],
+) -> list[dict[str, object]]:
+    """Identify duplicate records based on a composite key.
+
+    Args:
+        records: List of record dicts.
+        key_fields: List of field names that form the composite key.
+
+    Returns:
+        List of records where the composite key appeared more than once
+        (only duplicates — not the first occurrence — are returned).
+    """
+    seen: set[tuple[object, ...]] = set()
+    duplicates: list[dict[str, object]] = []
+    for rec in records:
+        key = tuple(rec.get(f) for f in key_fields)
+        if key in seen:
+            duplicates.append(rec)
+        else:
+            seen.add(key)
+    return duplicates
+
+
+def value_range_check(
+    values: list[float],
+    low: float,
+    high: float,
+) -> dict[str, object]:
+    """Report statistics on how many values fall outside [low, high].
+
+    Args:
+        values: Numeric series to validate.
+        low: Minimum acceptable value (inclusive).
+        high: Maximum acceptable value (inclusive).
+
+    Returns:
+        Dict with ``total``, ``in_range``, ``out_of_range``, and
+        ``out_of_range_pct`` keys.
+
+    Raises:
+        ValueError: If *low* > *high* or *values* is empty.
+    """
+    if not values:
+        raise ValueError("values must not be empty")
+    if low > high:
+        raise ValueError(f"low ({low}) must be <= high ({high})")
+    total = len(values)
+    out_of_range = sum(1 for v in values if v < low or v > high)
+    in_range = total - out_of_range
+    return {
+        "total": total,
+        "in_range": in_range,
+        "out_of_range": out_of_range,
+        "out_of_range_pct": round(out_of_range / total * 100, 4),
+    }
+
+
+def field_entropy(
+    records: list[dict[str, object]],
+    field: str,
+) -> float:
+    """Compute the Shannon entropy of value distribution for *field*.
+
+    Higher entropy means more diverse values; zero entropy means all records
+    share the same value.
+
+    Args:
+        records: List of record dicts.
+        field: Field name to compute entropy for.
+
+    Returns:
+        Shannon entropy in bits, rounded to 4 decimal places.
+        Returns 0.0 if *records* is empty or all values are identical.
+    """
+    import math
+
+    if not records:
+        return 0.0
+    counts: dict[object, int] = {}
+    for rec in records:
+        val = rec.get(field)
+        counts[val] = counts.get(val, 0) + 1
+    n = len(records)
+    entropy = 0.0
+    for count in counts.values():
+        p = count / n
+        if p > 0:
+            entropy -= p * math.log2(p)
+    return round(entropy, 4)
