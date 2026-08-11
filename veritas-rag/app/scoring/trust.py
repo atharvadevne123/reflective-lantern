@@ -169,3 +169,50 @@ def min_trust_gate(chunks: list[ScoredChunk], threshold: float = 0.40) -> list[S
         Subset of *chunks* with trust >= threshold, preserving order.
     """
     return [c for c in chunks if c.trust >= threshold]
+
+
+def trust_variance(chunks: list[ScoredChunk]) -> float:
+    """Return the variance of trust scores across *chunks*.
+
+    High variance indicates inconsistent retrieval quality.
+
+    Args:
+        chunks: Scored chunks to analyse.
+
+    Returns:
+        Variance in [0, 1]; 0.0 for fewer than 2 chunks.
+    """
+    if len(chunks) < 2:
+        return 0.0
+    scores = [c.trust for c in chunks]
+    mean = sum(scores) / len(scores)
+    return round(sum((s - mean) ** 2 for s in scores) / len(scores), 6)
+
+
+def above_threshold_ratio(chunks: list[ScoredChunk], threshold: float = 0.5) -> float:
+    """Return the fraction of chunks with trust >= *threshold*.
+
+    Args:
+        chunks: Candidates from the retrieval pipeline.
+        threshold: Trust threshold in [0, 1].
+
+    Returns:
+        Fraction in [0.0, 1.0]; 0.0 for empty input.
+    """
+    if not chunks:
+        return 0.0
+    count = sum(1 for c in chunks if c.trust >= threshold)
+    return round(count / len(chunks), 6)
+
+
+def top_k_trust(chunks: list[ScoredChunk], k: int = 3) -> list[ScoredChunk]:
+    """Return the *k* chunks with the highest trust scores.
+
+    Args:
+        chunks: Candidates from the retrieval pipeline.
+        k: Maximum number to return.
+
+    Returns:
+        Up to *k* chunks sorted by trust descending.
+    """
+    return sorted(chunks, key=lambda c: c.trust, reverse=True)[:k]
