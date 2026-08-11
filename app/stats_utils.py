@@ -782,3 +782,82 @@ def log_return(prices: list[float]) -> list[float]:
     if any(p <= 0 for p in prices):
         raise ValueError("log_return requires strictly positive prices")
     return [round(math.log(prices[i] / prices[i - 1]), 6) for i in range(1, len(prices))]
+
+
+def gini_coefficient(values: list[float]) -> float:
+    """Compute the Gini coefficient of a distribution.
+
+    A value of 0 represents perfect equality; 1 represents maximum inequality.
+
+    Args:
+        values: Non-negative numeric values (e.g. incomes, consumptions).
+
+    Returns:
+        Gini coefficient in [0, 1], rounded to 4 decimal places.
+
+    Raises:
+        ValueError: If *values* is empty or contains negative numbers.
+    """
+    if not values:
+        raise ValueError("values must not be empty")
+    if any(v < 0 for v in values):
+        raise ValueError("All values must be non-negative")
+    n = len(values)
+    sorted_vals = sorted(values)
+    cumulative = sum((2 * (i + 1) - n - 1) * v for i, v in enumerate(sorted_vals))
+    total = sum(sorted_vals)
+    if total == 0.0:
+        return 0.0
+    return round(cumulative / (n * total), 4)
+
+
+def trimmed_mean(values: list[float], trim_pct: float = 0.1) -> float:
+    """Compute the trimmed mean by discarding the highest and lowest fraction.
+
+    Args:
+        values: Numeric series.
+        trim_pct: Fraction of values to trim from each end. Default 0.1 (10%).
+
+    Returns:
+        Trimmed mean of the remaining values, rounded to 6 decimal places.
+
+    Raises:
+        ValueError: If *values* is empty, *trim_pct* outside [0, 0.5), or too few
+            values remain after trimming.
+    """
+    if not values:
+        raise ValueError("values must not be empty")
+    if not (0.0 <= trim_pct < 0.5):
+        raise ValueError(f"trim_pct must be in [0, 0.5), got {trim_pct}")
+    n = len(values)
+    k = int(n * trim_pct)
+    sorted_vals = sorted(values)
+    trimmed = sorted_vals[k : n - k] if k > 0 else sorted_vals
+    if not trimmed:
+        raise ValueError("No values remain after trimming — reduce trim_pct")
+    return round(sum(trimmed) / len(trimmed), 6)
+
+
+def coefficient_of_variation(values: list[float]) -> float:
+    """Return the coefficient of variation (std / mean) as a percentage.
+
+    CV measures relative variability. It is undefined when the mean is 0.
+
+    Args:
+        values: Numeric series.
+
+    Returns:
+        CV as a percentage, rounded to 4 decimal places, or 0.0 if mean is 0.
+
+    Raises:
+        ValueError: If *values* has fewer than 2 elements.
+    """
+    if len(values) < 2:
+        raise ValueError("At least 2 values required")
+    n = len(values)
+    mean = sum(values) / n
+    if mean == 0.0:
+        return 0.0
+    variance = sum((v - mean) ** 2 for v in values) / (n - 1)
+    std = variance ** 0.5
+    return round(std / abs(mean) * 100.0, 4)
