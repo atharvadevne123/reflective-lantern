@@ -248,3 +248,49 @@ def index_summary() -> dict[str, object]:
         "is_empty": size == 0,
         "dim": DIM,
     }
+
+
+def batch_add(vectors: list[list[float]]) -> int:
+    """Add multiple vectors to the index in one call.
+
+    Args:
+        vectors: List of float vectors, each of length :data:`DIM`.
+
+    Returns:
+        Number of vectors successfully added.
+    """
+    added = 0
+    for v in vectors:
+        add_vector(v)
+        added += 1
+    return added
+
+
+def search_radius(query: list[float], radius: float, top_k: int = 50) -> list[dict]:
+    """Return neighbours whose distance is within *radius* of *query*.
+
+    Args:
+        query: Query vector of length :data:`DIM`.
+        radius: Maximum allowed distance (inclusive).
+        top_k: Maximum candidates to consider.
+
+    Returns:
+        Subset of :func:`search_comparable` results with distance <= radius.
+    """
+    candidates = search_comparable(query, top_k=top_k)
+    return [r for r in candidates if r["distance"] <= radius]
+
+
+def nearest_distance(query: list[float]) -> float | None:
+    """Return the distance to the single nearest neighbour.
+
+    Args:
+        query: Query vector of length :data:`DIM`.
+
+    Returns:
+        Nearest distance as float, or None if the index is empty.
+    """
+    results = search_comparable(query, top_k=1)
+    if not results:
+        return None
+    return results[0]["distance"]
