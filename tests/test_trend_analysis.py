@@ -669,6 +669,7 @@ class TestHurstExponent:
         import random
 
         from app.trend_analysis import hurst_exponent
+
         random.seed(42)
         walk = [0.0]
         for _ in range(100):
@@ -695,6 +696,7 @@ class TestWindowedTrendStrength:
         import random
 
         from app.trend_analysis import windowed_trend_strength
+
         random.seed(0)
         values = [random.gauss(0, 1) for _ in range(50)]
         assert 0.0 <= windowed_trend_strength(values) <= 1.0
@@ -747,3 +749,101 @@ class TestPolyfitTrend:
 
         with pytest.raises(NotImplementedError):
             polyfit_trend([1.0, 2.0, 3.0, 4.0, 5.0], degree=2)
+
+
+# ---------------------------------------------------------------------------
+# Tests for trend_strength, rolling_trend_direction, cumulative_return
+# ---------------------------------------------------------------------------
+
+
+class TestTrendStrengthNew:
+    def test_perfect_trend(self) -> None:
+        from app.trend_analysis import trend_strength
+
+        values = [float(i) for i in range(10)]
+        assert trend_strength(values) == pytest.approx(1.0, abs=0.001)
+
+    def test_flat_series(self) -> None:
+        from app.trend_analysis import trend_strength
+
+        assert trend_strength([5.0] * 5) == pytest.approx(1.0, abs=0.001)
+
+    def test_too_short_raises(self) -> None:
+        import pytest
+
+        from app.trend_analysis import trend_strength
+
+        with pytest.raises(ValueError):
+            trend_strength([1.0])
+
+    def test_noise_gives_low_r2(self) -> None:
+        import random
+
+        from app.trend_analysis import trend_strength
+
+        random.seed(42)
+        noise = [random.gauss(0, 10) for _ in range(50)]
+        assert trend_strength(noise) < 0.5
+
+
+class TestRollingTrendDirection:
+    def test_all_up(self) -> None:
+        from app.trend_analysis import rolling_trend_direction
+
+        result = rolling_trend_direction([1.0, 2.0, 3.0, 4.0, 5.0], window=3)
+        assert all(d in ("up", "flat") for d in result)
+        assert result[-1] == "up"
+
+    def test_all_down(self) -> None:
+        from app.trend_analysis import rolling_trend_direction
+
+        result = rolling_trend_direction([5.0, 4.0, 3.0, 2.0, 1.0], window=3)
+        assert result[-1] == "down"
+
+    def test_early_entries_flat(self) -> None:
+        from app.trend_analysis import rolling_trend_direction
+
+        result = rolling_trend_direction([1.0, 2.0, 3.0, 4.0], window=3)
+        assert result[0] == "flat"
+        assert result[1] == "flat"
+
+    def test_window_less_than_two_raises(self) -> None:
+        import pytest
+
+        from app.trend_analysis import rolling_trend_direction
+
+        with pytest.raises(ValueError):
+            rolling_trend_direction([1.0, 2.0], window=1)
+
+
+class TestCumulativeReturnNew:
+    def test_double(self) -> None:
+        from app.trend_analysis import cumulative_return
+
+        assert cumulative_return([100.0, 200.0]) == pytest.approx(1.0, abs=0.001)
+
+    def test_no_change(self) -> None:
+        from app.trend_analysis import cumulative_return
+
+        assert cumulative_return([100.0, 100.0]) == pytest.approx(0.0, abs=0.001)
+
+    def test_too_short_raises(self) -> None:
+        import pytest
+
+        from app.trend_analysis import cumulative_return
+
+        with pytest.raises(ValueError):
+            cumulative_return([100.0])
+
+    def test_zero_base_returns_zero(self) -> None:
+        from app.trend_analysis import cumulative_return
+
+        assert cumulative_return([0.0, 100.0]) == 0.0
+
+    def test_negative_base_raises(self) -> None:
+        import pytest
+
+        from app.trend_analysis import cumulative_return
+
+        with pytest.raises(ValueError):
+            cumulative_return([-10.0, 100.0])
