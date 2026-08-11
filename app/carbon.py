@@ -695,3 +695,88 @@ def carbon_intensity_category(factor_kg_per_kwh: float) -> str:
     if factor_kg_per_kwh < 0.5:
         return "medium"
     return "high"
+
+
+def carbon_offset_cost(
+    emissions_kg: float,
+    cost_per_tonne: float = 15.0,
+) -> float:
+    """Estimate the monetary cost to offset *emissions_kg* of CO₂.
+
+    Args:
+        emissions_kg: Total CO₂ emissions in kilograms.
+        cost_per_tonne: Market cost per metric tonne of CO₂ offsets.
+            Default 15.0 USD/t.
+
+    Returns:
+        Estimated offset cost in the same currency as *cost_per_tonne*.
+
+    Raises:
+        ValueError: If either argument is negative.
+    """
+    if emissions_kg < 0:
+        raise ValueError(f"emissions_kg must be >= 0, got {emissions_kg}")
+    if cost_per_tonne < 0:
+        raise ValueError(f"cost_per_tonne must be >= 0, got {cost_per_tonne}")
+    return round(emissions_kg / 1000.0 * cost_per_tonne, 4)
+
+
+def annual_carbon_trajectory(
+    monthly_emissions_kg: list[float],
+) -> dict[str, float]:
+    """Summarise a 12-month emission trajectory.
+
+    Args:
+        monthly_emissions_kg: List of monthly CO₂ emissions in kg.
+            Fewer than 12 values are accepted (partial year).
+
+    Returns:
+        Dict with keys ``total_kg``, ``monthly_avg_kg``, ``peak_month_kg``,
+        and ``trend_slope`` (linear regression slope in kg/month).
+
+    Raises:
+        ValueError: If *monthly_emissions_kg* is empty or contains negatives.
+    """
+    if not monthly_emissions_kg:
+        raise ValueError("monthly_emissions_kg must not be empty")
+    if any(v < 0 for v in monthly_emissions_kg):
+        raise ValueError("All monthly emissions must be >= 0")
+    n = len(monthly_emissions_kg)
+    total = sum(monthly_emissions_kg)
+    avg = total / n
+    peak = max(monthly_emissions_kg)
+    # Simple OLS slope
+    x_mean = (n - 1) / 2.0
+    slope_num = sum((i - x_mean) * (v - avg) for i, v in enumerate(monthly_emissions_kg))
+    slope_den = sum((i - x_mean) ** 2 for i in range(n))
+    slope = slope_num / slope_den if slope_den > 0 else 0.0
+    return {
+        "total_kg": round(total, 4),
+        "monthly_avg_kg": round(avg, 4),
+        "peak_month_kg": round(peak, 4),
+        "trend_slope": round(slope, 6),
+    }
+
+
+def carbon_savings_vs_baseline(
+    actual_kg: float,
+    baseline_kg: float,
+) -> dict[str, float]:
+    """Calculate CO₂ savings relative to a baseline.
+
+    Args:
+        actual_kg: Actual observed emissions in kg.
+        baseline_kg: Reference/baseline emissions in kg.
+
+    Returns:
+        Dict with ``savings_kg`` (positive = savings, negative = excess) and
+        ``savings_pct`` relative to baseline.
+
+    Raises:
+        ValueError: If either value is negative.
+    """
+    if actual_kg < 0 or baseline_kg < 0:
+        raise ValueError("Emissions values must be >= 0")
+    savings = baseline_kg - actual_kg
+    pct = savings / baseline_kg * 100 if baseline_kg > 0 else 0.0
+    return {"savings_kg": round(savings, 4), "savings_pct": round(pct, 4)}
