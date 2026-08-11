@@ -708,3 +708,85 @@ def market_cycle_phase(months_supply: float) -> str:
     if months_supply <= 6.0:
         return "balanced"
     return "buyer"
+
+
+def affordability_index(
+    median_home_price: float,
+    median_household_income: float,
+    interest_rate_pct: float = 7.0,
+    down_payment_pct: float = 20.0,
+    loan_term_years: int = 30,
+) -> float:
+    """Compute a simplified housing affordability index.
+
+    An index of 100 means the median household can exactly afford the median
+    home at the given rate. Values above 100 indicate greater affordability.
+
+    Args:
+        median_home_price: Median property value.
+        median_household_income: Annual household income.
+        interest_rate_pct: Annual mortgage interest rate (percent). Default 7.0.
+        down_payment_pct: Down payment as a percent of purchase price. Default 20.
+        loan_term_years: Loan amortisation term in years. Default 30.
+
+    Returns:
+        Affordability index rounded to 2 decimal places.
+
+    Raises:
+        ValueError: If any argument is non-positive or down_payment_pct >= 100.
+    """
+    if median_home_price <= 0:
+        raise ValueError("median_home_price must be positive")
+    if median_household_income <= 0:
+        raise ValueError("median_household_income must be positive")
+    if not (0.0 <= down_payment_pct < 100.0):
+        raise ValueError("down_payment_pct must be in [0, 100)")
+    loan = median_home_price * (1.0 - down_payment_pct / 100.0)
+    monthly_rate = interest_rate_pct / 100.0 / 12.0
+    n = loan_term_years * 12
+    if monthly_rate == 0.0:
+        monthly_payment = loan / n
+    else:
+        monthly_payment = loan * monthly_rate * (1 + monthly_rate) ** n / ((1 + monthly_rate) ** n - 1)
+    qualifying_income = monthly_payment * 12 / 0.28  # standard 28% rule
+    return round(median_household_income / qualifying_income * 100, 2)
+
+
+def price_per_sqft(sale_price: float, square_footage: float) -> float:
+    """Return the price per square foot for a property.
+
+    Args:
+        sale_price: Total sale price.
+        square_footage: Total liveable area in square feet.
+
+    Returns:
+        Price per square foot rounded to 2 decimal places.
+
+    Raises:
+        ValueError: If either argument is non-positive.
+    """
+    if sale_price <= 0 or square_footage <= 0:
+        raise ValueError("sale_price and square_footage must be positive")
+    return round(sale_price / square_footage, 2)
+
+
+def dom_category(days_on_market: int) -> str:
+    """Classify a property by its days-on-market bucket.
+
+    Args:
+        days_on_market: Number of days the listing has been active.
+
+    Returns:
+        Category string: ``"fast"`` (< 14 days), ``"normal"`` (14–60 days),
+        or ``"slow"`` (> 60 days).
+
+    Raises:
+        ValueError: If *days_on_market* is negative.
+    """
+    if days_on_market < 0:
+        raise ValueError("days_on_market must be non-negative")
+    if days_on_market < 14:
+        return "fast"
+    if days_on_market <= 60:
+        return "normal"
+    return "slow"
