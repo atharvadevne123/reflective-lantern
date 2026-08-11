@@ -1279,3 +1279,96 @@ class TestForwardFill:
         from app.time_series import forward_fill
 
         assert forward_fill(values) == expected
+
+
+# ---------------------------------------------------------------------------
+# Tests for peak_valley_count, crossings_count, series_range_by_window
+# ---------------------------------------------------------------------------
+
+
+class TestPeakValleyCount:
+    def test_single_peak(self) -> None:
+        from app.time_series import peak_valley_count
+
+        result = peak_valley_count([1.0, 5.0, 2.0])
+        assert result["peaks"] == 1
+        assert result["valleys"] == 0
+
+    def test_single_valley(self) -> None:
+        from app.time_series import peak_valley_count
+
+        result = peak_valley_count([5.0, 1.0, 5.0])
+        assert result["valleys"] == 1
+        assert result["peaks"] == 0
+
+    def test_monotonic_series(self) -> None:
+        from app.time_series import peak_valley_count
+
+        result = peak_valley_count([1.0, 2.0, 3.0, 4.0])
+        assert result["peaks"] == 0 and result["valleys"] == 0
+
+    def test_too_short_raises(self) -> None:
+        import pytest
+
+        from app.time_series import peak_valley_count
+
+        with pytest.raises(ValueError):
+            peak_valley_count([1.0, 2.0])
+
+    def test_multiple_peaks_and_valleys(self) -> None:
+        from app.time_series import peak_valley_count
+
+        result = peak_valley_count([1.0, 3.0, 1.0, 4.0, 2.0])
+        assert result["peaks"] >= 2
+        assert result["valleys"] >= 1
+
+
+class TestCrossingsCount:
+    def test_no_crossings(self) -> None:
+        from app.time_series import crossings_count
+
+        assert crossings_count([1.0, 2.0, 3.0]) == 0
+
+    def test_one_crossing(self) -> None:
+        from app.time_series import crossings_count
+
+        assert crossings_count([1.0, -1.0]) == 1
+
+    def test_multiple_crossings(self) -> None:
+        from app.time_series import crossings_count
+
+        values = [1.0, -1.0, 1.0, -1.0]
+        assert crossings_count(values) == 3
+
+    def test_custom_threshold(self) -> None:
+        from app.time_series import crossings_count
+
+        assert crossings_count([0.5, 1.5, 0.5], threshold=1.0) == 2
+
+
+class TestSeriesRangeByWindow:
+    def test_window_one_is_zeros(self) -> None:
+        from app.time_series import series_range_by_window
+
+        result = series_range_by_window([3.0, 5.0, 2.0], window=1)
+        assert result == [0.0, 0.0, 0.0]
+
+    def test_full_window(self) -> None:
+        from app.time_series import series_range_by_window
+
+        result = series_range_by_window([1.0, 3.0, 2.0, 5.0], window=4)
+        assert result[-1] == pytest.approx(4.0, abs=0.01)
+
+    def test_window_less_than_one_raises(self) -> None:
+        import pytest
+
+        from app.time_series import series_range_by_window
+
+        with pytest.raises(ValueError):
+            series_range_by_window([1.0, 2.0], window=0)
+
+    def test_length_preserved(self) -> None:
+        from app.time_series import series_range_by_window
+
+        values = [float(i) for i in range(10)]
+        assert len(series_range_by_window(values, window=3)) == 10
