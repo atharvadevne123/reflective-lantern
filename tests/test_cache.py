@@ -578,7 +578,7 @@ class TestCacheKeyCount:
         assert cache_key_count(c) == 2
 
 
-class TestWarmCache:
+class TestWarmCacheNew:
     def test_loads_all_keys(self) -> None:
         from app.cache import warm_cache
 
