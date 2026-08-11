@@ -297,3 +297,58 @@ class TestIndexSummary:
         result = index_summary()
         assert result["is_empty"] is True
         assert result["size"] == 0
+
+
+class TestBatchAdd:
+    def test_adds_multiple(self) -> None:
+        from app.faiss_index import DIM, batch_add, index_size, reset_index
+
+        reset_index()
+        vectors = [[float(i)] * DIM for i in range(3)]
+        count = batch_add(vectors)
+        assert count == 3
+        assert index_size() == 3
+
+    def test_empty_list(self) -> None:
+        from app.faiss_index import batch_add, index_size, reset_index
+
+        reset_index()
+        assert batch_add([]) == 0
+        assert index_size() == 0
+
+
+class TestSearchRadius:
+    def test_within_radius_returned(self) -> None:
+        from app.faiss_index import DIM, add_vector, reset_index, search_radius
+
+        reset_index()
+        v = [1.0] * DIM
+        add_vector(v)
+        results = search_radius([1.0] * DIM, radius=0.1, top_k=5)
+        assert len(results) >= 1
+
+    def test_outside_radius_excluded(self) -> None:
+        from app.faiss_index import DIM, add_vector, reset_index, search_radius
+
+        reset_index()
+        add_vector([1.0] * DIM)
+        results = search_radius([0.0] * DIM, radius=0.0001, top_k=5)
+        assert results == []
+
+
+class TestNearestDistance:
+    def test_none_when_empty(self) -> None:
+        from app.faiss_index import DIM, nearest_distance, reset_index
+
+        reset_index()
+        assert nearest_distance([0.0] * DIM) is None
+
+    def test_zero_for_exact_match(self) -> None:
+        from app.faiss_index import DIM, add_vector, nearest_distance, reset_index
+
+        reset_index()
+        v = [1.0] * DIM
+        add_vector(v)
+        dist = nearest_distance(v)
+        assert dist is not None
+        assert dist == pytest.approx(0.0, abs=1e-5)
