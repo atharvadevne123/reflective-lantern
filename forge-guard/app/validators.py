@@ -153,3 +153,61 @@ def sensor_drift_detected(
     mean_curr = sum(current) / len(current)
     relative_drift = abs(mean_curr - mean_base) / (abs(mean_base) + 1e-9)
     return relative_drift > threshold
+
+
+def zscore_outlier(values: list[float], threshold: float = 3.0) -> list[bool]:
+    """Return a boolean mask of z-score outliers.
+
+    Args:
+        values: Numeric sequence to test.
+        threshold: Z-score magnitude threshold; default 3.0.
+
+    Returns:
+        List of bool, True where abs(z) > threshold. All False if std is zero.
+
+    Raises:
+        ValueError: If *values* is empty.
+    """
+    if not values:
+        raise ValueError("values must not be empty")
+    mean = sum(values) / len(values)
+    variance = sum((v - mean) ** 2 for v in values) / len(values)
+    std = variance ** 0.5
+    if std == 0.0:
+        return [False] * len(values)
+    return [abs((v - mean) / std) > threshold for v in values]
+
+
+def missing_rate(records: list[dict], field: str) -> float:
+    """Return the fraction of records where *field* is missing or None.
+
+    Args:
+        records: List of dicts representing data rows.
+        field: Field name to check.
+
+    Returns:
+        Fraction in [0.0, 1.0]. Returns 0.0 for empty records.
+    """
+    if not records:
+        return 0.0
+    missing = sum(1 for r in records if r.get(field) is None)
+    return round(missing / len(records), 6)
+
+
+def clamp_reading(value: float, lo: float, hi: float) -> float:
+    """Clamp *value* to the inclusive range [lo, hi].
+
+    Args:
+        value: Input value.
+        lo: Lower bound.
+        hi: Upper bound.
+
+    Returns:
+        Value clamped to [lo, hi].
+
+    Raises:
+        ValueError: If lo > hi.
+    """
+    if lo > hi:
+        raise ValueError(f"lo ({lo}) must be <= hi ({hi})")
+    return max(lo, min(hi, value))
