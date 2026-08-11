@@ -569,3 +569,60 @@ class TestEuiSavingsPotential:
 
         result = eui_savings_potential(200.0, 500.0, improvement_pct=pct)
         assert result["saved_cost_per_year"] > 0.0
+
+
+class TestEnergyUseIntensityDelta:
+    def test_improvement(self) -> None:
+        from app.benchmarks import energy_use_intensity_delta
+
+        result = energy_use_intensity_delta(200.0, 150.0)
+        assert result["absolute_delta"] == pytest.approx(50.0, abs=0.01)
+        assert result["pct_change"] == pytest.approx(25.0, abs=0.01)
+
+    def test_no_change(self) -> None:
+        from app.benchmarks import energy_use_intensity_delta
+
+        result = energy_use_intensity_delta(100.0, 100.0)
+        assert result["absolute_delta"] == pytest.approx(0.0)
+        assert result["pct_change"] == pytest.approx(0.0)
+
+    def test_zero_baseline_returns_zero_pct(self) -> None:
+        from app.benchmarks import energy_use_intensity_delta
+
+        result = energy_use_intensity_delta(0.0, 10.0)
+        assert result["pct_change"] == 0.0
+
+
+class TestStarRatingFromScore:
+    def test_five_stars(self) -> None:
+        from app.benchmarks import star_rating_from_score
+
+        assert star_rating_from_score(0.95) == 5
+
+    def test_one_star(self) -> None:
+        from app.benchmarks import star_rating_from_score
+
+        assert star_rating_from_score(0.1) == 1
+
+    def test_boundary_values(self) -> None:
+        from app.benchmarks import star_rating_from_score
+
+        assert star_rating_from_score(0.9) == 5
+        assert star_rating_from_score(0.75) == 4
+        assert star_rating_from_score(0.55) == 3
+
+
+class TestPortfolioEuiSummary:
+    def test_basic(self) -> None:
+        from app.benchmarks import portfolio_eui_summary
+
+        result = portfolio_eui_summary([{"eui": 100.0}, {"eui": 200.0}])
+        assert result["mean_eui"] == pytest.approx(150.0)
+        assert result["min_eui"] == pytest.approx(100.0)
+        assert result["max_eui"] == pytest.approx(200.0)
+
+    def test_empty_returns_zeros(self) -> None:
+        from app.benchmarks import portfolio_eui_summary
+
+        result = portfolio_eui_summary([])
+        assert result == {"mean_eui": 0.0, "min_eui": 0.0, "max_eui": 0.0}
