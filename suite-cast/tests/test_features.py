@@ -240,3 +240,58 @@ class TestOccupancyYoyDelta:
         from app.features import occupancy_yoy_delta
 
         assert occupancy_yoy_delta(1.0, 0.0) == pytest.approx(1.0)
+
+
+class TestAdrFromRevenue:
+    def test_basic(self) -> None:
+        from app.features import adr_from_revenue
+
+        assert adr_from_revenue(1000.0, 10) == pytest.approx(100.0, abs=0.01)
+
+    def test_zero_rooms_returns_zero(self) -> None:
+        from app.features import adr_from_revenue
+
+        assert adr_from_revenue(5000.0, 0) == 0.0
+
+    def test_negative_rooms_returns_zero(self) -> None:
+        from app.features import adr_from_revenue
+
+        assert adr_from_revenue(5000.0, -5) == 0.0
+
+
+class TestRevpar:
+    def test_basic(self) -> None:
+        from app.features import revpar
+
+        assert revpar(800.0, 10) == pytest.approx(80.0, abs=0.01)
+
+    def test_zero_available_returns_zero(self) -> None:
+        from app.features import revpar
+
+        assert revpar(1000.0, 0) == 0.0
+
+    def test_full_occupancy_equals_adr(self) -> None:
+        from app.features import revpar, adr_from_revenue
+
+        rev, rooms = 500.0, 5
+        assert revpar(rev, rooms) == pytest.approx(adr_from_revenue(rev, rooms), abs=0.01)
+
+
+class TestLengthOfStayBucket:
+    def test_short(self) -> None:
+        from app.features import length_of_stay_bucket
+
+        assert length_of_stay_bucket(1) == "short"
+        assert length_of_stay_bucket(2) == "short"
+
+    def test_medium(self) -> None:
+        from app.features import length_of_stay_bucket
+
+        assert length_of_stay_bucket(3) == "medium"
+        assert length_of_stay_bucket(6) == "medium"
+
+    def test_long(self) -> None:
+        from app.features import length_of_stay_bucket
+
+        assert length_of_stay_bucket(7) == "long"
+        assert length_of_stay_bucket(30) == "long"
