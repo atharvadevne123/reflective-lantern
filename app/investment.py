@@ -751,3 +751,73 @@ def capitalisation_rate(noi: float, property_value: float) -> float:
     if property_value == 0.0:
         return 0.0
     return round(noi / property_value * 100.0, 4)
+
+
+def gross_yield(annual_rent: float, property_value: float) -> float:
+    """Compute the gross rental yield as a percentage.
+
+    Args:
+        annual_rent: Total annual rental income before expenses.
+        property_value: Purchase or current market value of the property.
+
+    Returns:
+        Gross yield as a percentage rounded to 4 decimal places.
+        Returns 0.0 if *property_value* is 0.
+
+    Raises:
+        ValueError: If either argument is negative.
+    """
+    if annual_rent < 0 or property_value < 0:
+        raise ValueError("annual_rent and property_value must be non-negative")
+    if property_value == 0.0:
+        return 0.0
+    return round(annual_rent / property_value * 100.0, 4)
+
+
+def price_to_rent_ratio(property_value: float, monthly_rent: float) -> float:
+    """Calculate the price-to-rent ratio for a property.
+
+    A ratio above 20 typically favours renting; below 15 often favours buying.
+
+    Args:
+        property_value: Market value of the property.
+        monthly_rent: Monthly rental income or equivalent.
+
+    Returns:
+        Price-to-rent ratio (property_value / annual_rent), rounded to 2 decimal
+        places. Returns 0.0 if monthly_rent is 0.
+
+    Raises:
+        ValueError: If either argument is negative.
+    """
+    if property_value < 0 or monthly_rent < 0:
+        raise ValueError("All arguments must be non-negative")
+    if monthly_rent == 0.0:
+        return 0.0
+    return round(property_value / (monthly_rent * 12), 2)
+
+
+def equity_multiple(
+    total_distributions: float,
+    total_invested: float,
+) -> float:
+    """Calculate the equity multiple for an investment.
+
+    Equity multiple = total distributions received / total capital invested.
+    A value of 2.0 means the investor doubled their money.
+
+    Args:
+        total_distributions: Total cash returned to the investor.
+        total_invested: Total capital invested.
+
+    Returns:
+        Equity multiple rounded to 4 decimal places, or 0.0 if nothing invested.
+
+    Raises:
+        ValueError: If either argument is negative.
+    """
+    if total_distributions < 0 or total_invested < 0:
+        raise ValueError("Both arguments must be non-negative")
+    if total_invested == 0.0:
+        return 0.0
+    return round(total_distributions / total_invested, 4)
