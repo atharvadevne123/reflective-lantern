@@ -277,3 +277,47 @@ def batch_delete(cache: TTLCache, keys: list[str]) -> int:
                 del cache._store[key]
                 removed += 1
     return removed
+
+
+def cache_key_count(cache: "TTLCache") -> int:
+    """Return the number of non-expired keys currently in *cache*.
+
+    Args:
+        cache: The :class:`TTLCache` instance.
+
+    Returns:
+        Count of live keys.
+    """
+    return len(cache)
+
+
+def warm_cache(cache: "TTLCache", data: dict) -> int:
+    """Populate *cache* with all key-value pairs from *data*.
+
+    Args:
+        cache: The :class:`TTLCache` instance.
+        data: Mapping of keys to values to pre-load.
+
+    Returns:
+        Number of entries successfully loaded.
+    """
+    loaded = 0
+    for k, v in data.items():
+        cache.set(str(k), v)
+        loaded += 1
+    return loaded
+
+
+def get_or_default(cache: "TTLCache", key: str, default: object = None) -> object:
+    """Return the cached value for *key*, or *default* if absent or expired.
+
+    Args:
+        cache: The :class:`TTLCache` instance.
+        key: Cache key to look up.
+        default: Fallback value returned when the key is missing.
+
+    Returns:
+        Cached value or *default*.
+    """
+    value = cache.get(key)
+    return value if value is not None else default
