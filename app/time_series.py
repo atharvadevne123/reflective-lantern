@@ -1037,3 +1037,73 @@ def forward_fill(values: list[float | None]) -> list[float]:
             last = float(v)
         result.append(round(last, 6))
     return result
+
+
+def peak_valley_count(values: list[float]) -> dict[str, int]:
+    """Count local peaks and valleys in a time series.
+
+    A peak is a value strictly greater than both its neighbours; a valley is
+    strictly less than both its neighbours.
+
+    Args:
+        values: Numeric time series (at least 3 elements required).
+
+    Returns:
+        Dict with ``peaks`` and ``valleys`` counts.
+
+    Raises:
+        ValueError: If *values* has fewer than 3 elements.
+    """
+    if len(values) < 3:
+        raise ValueError("Need at least 3 values to detect peaks and valleys")
+    peaks = 0
+    valleys = 0
+    for i in range(1, len(values) - 1):
+        if values[i] > values[i - 1] and values[i] > values[i + 1]:
+            peaks += 1
+        elif values[i] < values[i - 1] and values[i] < values[i + 1]:
+            valleys += 1
+    return {"peaks": peaks, "valleys": valleys}
+
+
+def crossings_count(values: list[float], threshold: float = 0.0) -> int:
+    """Count the number of times a series crosses a threshold value.
+
+    Args:
+        values: Numeric time series.
+        threshold: The level to count crossings against. Default 0.0.
+
+    Returns:
+        Number of sign-change transitions across *threshold*.
+    """
+    count = 0
+    for i in range(1, len(values)):
+        if (values[i - 1] < threshold) != (values[i] < threshold):
+            count += 1
+    return count
+
+
+def series_range_by_window(
+    values: list[float],
+    window: int = 7,
+) -> list[float]:
+    """Compute rolling range (max - min) within each window.
+
+    Args:
+        values: Input numeric series.
+        window: Rolling window size. Default 7.
+
+    Returns:
+        List of range values (same length as *values*).
+
+    Raises:
+        ValueError: If *window* < 1.
+    """
+    if window < 1:
+        raise ValueError("window must be >= 1")
+    result = []
+    for i in range(len(values)):
+        start = max(0, i - window + 1)
+        chunk = values[start : i + 1]
+        result.append(round(max(chunk) - min(chunk), 6))
+    return result
