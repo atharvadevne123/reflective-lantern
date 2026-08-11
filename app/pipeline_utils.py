@@ -355,3 +355,61 @@ def pipeline_step_after(pipeline: Any, step_name: str) -> list[str]:
     """
     idx = pipeline_step_index(pipeline, step_name)
     return get_step_names(pipeline)[idx + 1 :]
+
+
+def count_pipeline_params(pipeline: Any) -> int:
+    """Count the total number of named parameters across all pipeline steps.
+
+    Args:
+        pipeline: A fitted or unfitted sklearn Pipeline.
+
+    Returns:
+        Total number of hyperparameter names (from ``get_params(deep=True)``).
+    """
+    try:
+        params = pipeline.get_params(deep=True)
+        return len(params)
+    except AttributeError:
+        return 0
+
+
+def pipeline_feature_count(pipeline: Any) -> int:
+    """Return the number of output features from the pipeline, or 0 if unknown.
+
+    Works with pipelines whose final step exposes ``n_features_in_`` or whose
+    penultimate step exposes ``get_feature_names_out``.
+
+    Args:
+        pipeline: A fitted sklearn Pipeline.
+
+    Returns:
+        Integer feature count, or 0 if it cannot be determined.
+    """
+    try:
+        return int(pipeline.n_features_in_)
+    except AttributeError:
+        pass
+    try:
+        return len(pipeline[:-1].get_feature_names_out())
+    except Exception:
+        return 0
+
+
+def is_pipeline_fitted(pipeline: Any) -> bool:
+    """Check whether a sklearn Pipeline has been fitted.
+
+    Returns True if at least one step exposes a fitted attribute (e.g.
+    ``classes_``, ``n_features_in_``, ``feature_importances_``).
+
+    Args:
+        pipeline: Any sklearn estimator or Pipeline.
+
+    Returns:
+        True if fitted, False otherwise.
+    """
+    fitted_attrs = ("classes_", "n_features_in_", "feature_importances_", "coef_", "numeric_cols_")
+    try:
+        steps = list(pipeline.named_steps.values()) if hasattr(pipeline, "named_steps") else [pipeline]
+    except Exception:
+        steps = [pipeline]
+    return any(hasattr(step, attr) for step in steps for attr in fitted_attrs)
