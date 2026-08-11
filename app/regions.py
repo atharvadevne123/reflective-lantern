@@ -248,3 +248,47 @@ def region_share_of_total(region_id: str) -> float:
     if total == 0.0:
         return 0.0
     return round(float(region["peak_load_mw"]) / total, 6)
+
+
+def regions_by_grid_type(grid_type: str) -> list[dict]:
+    """Return all regions matching *grid_type*.
+
+    Args:
+        grid_type: Grid type string to filter by (e.g. 'synchronous', 'island').
+
+    Returns:
+        List of matching region dicts; empty if none match.
+    """
+    return [
+        {"id": k, **v}
+        for k, v in KNOWN_REGIONS.items()
+        if str(v.get("grid_type", "")).lower() == grid_type.lower()
+    ]
+
+
+def region_names() -> list[str]:
+    """Return a sorted list of all region IDs.
+
+    Returns:
+        Alphabetically sorted list of region identifiers.
+    """
+    return sorted(KNOWN_REGIONS.keys())
+
+
+def region_load_factor(region_id: str, average_load_mw: float) -> float:
+    """Return the load factor (average / peak) for a region.
+
+    Args:
+        region_id: Region identifier.
+        average_load_mw: Average demand in MW.
+
+    Returns:
+        Load factor in [0, 1]; 0.0 if peak is zero or region unknown.
+    """
+    region = get_region(region_id)
+    if region is None:
+        return 0.0
+    peak = float(region.get("peak_load_mw") or 0.0)
+    if peak == 0.0:
+        return 0.0
+    return round(min(1.0, average_load_mw / peak), 6)
