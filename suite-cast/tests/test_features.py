@@ -271,7 +271,7 @@ class TestRevpar:
         assert revpar(1000.0, 0) == 0.0
 
     def test_full_occupancy_equals_adr(self) -> None:
-        from app.features import revpar, adr_from_revenue
+        from app.features import adr_from_revenue, revpar
 
         rev, rooms = 500.0, 5
         assert revpar(rev, rooms) == pytest.approx(adr_from_revenue(rev, rooms), abs=0.01)
