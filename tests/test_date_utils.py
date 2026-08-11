@@ -734,16 +734,121 @@ class TestDateRangeOverlapDays:
     def test_partial_overlap(self) -> None:
         from app.date_utils import date_range_overlap_days
 
-        assert date_range_overlap_days(
-            datetime(2024, 1, 1), datetime(2024, 1, 15),
-            datetime(2024, 1, 10), datetime(2024, 1, 20),
-        ) == 6
+        assert (
+            date_range_overlap_days(
+                datetime(2024, 1, 1),
+                datetime(2024, 1, 15),
+                datetime(2024, 1, 10),
+                datetime(2024, 1, 20),
+            )
+            == 6
+        )
 
     def test_invalid_range_a_raises(self) -> None:
         from app.date_utils import date_range_overlap_days
 
         with pytest.raises(ValueError, match="Range A"):
             date_range_overlap_days(
-                datetime(2024, 6, 30), datetime(2024, 6, 1),
-                datetime(2024, 6, 1), datetime(2024, 6, 30),
+                datetime(2024, 6, 30),
+                datetime(2024, 6, 1),
+                datetime(2024, 6, 1),
+                datetime(2024, 6, 30),
             )
+
+
+# ---------------------------------------------------------------------------
+# Tests for week_of_month, fiscal_quarter, next_weekday
+# ---------------------------------------------------------------------------
+
+
+class TestWeekOfMonth:
+    def test_first_day_is_week_one(self) -> None:
+        import datetime
+
+        from app.date_utils import week_of_month
+
+        d = datetime.date(2026, 1, 1)
+        assert week_of_month(d) == 1
+
+    def test_eighth_day_week(self) -> None:
+        import datetime
+
+        from app.date_utils import week_of_month
+
+        d = datetime.date(2026, 1, 8)
+        assert week_of_month(d) >= 1
+
+    def test_last_day_of_month(self) -> None:
+        import datetime
+
+        from app.date_utils import week_of_month
+
+        d = datetime.date(2026, 1, 31)
+        assert week_of_month(d) <= 5
+
+
+class TestFiscalQuarter:
+    def test_calendar_q1(self) -> None:
+        import datetime
+
+        from app.date_utils import fiscal_quarter
+
+        d = datetime.date(2026, 3, 15)
+        assert fiscal_quarter(d) == 1
+
+    def test_calendar_q4(self) -> None:
+        import datetime
+
+        from app.date_utils import fiscal_quarter
+
+        d = datetime.date(2026, 12, 1)
+        assert fiscal_quarter(d) == 4
+
+    def test_custom_fiscal_start(self) -> None:
+        import datetime
+
+        from app.date_utils import fiscal_quarter
+
+        d = datetime.date(2026, 4, 1)
+        assert fiscal_quarter(d, fiscal_year_start_month=4) == 1
+
+    def test_invalid_start_raises(self) -> None:
+        import datetime
+
+        import pytest
+
+        from app.date_utils import fiscal_quarter
+
+        with pytest.raises(ValueError):
+            fiscal_quarter(datetime.date(2026, 1, 1), fiscal_year_start_month=13)
+
+
+class TestNextWeekday:
+    def test_same_weekday_is_today(self) -> None:
+        import datetime
+
+        from app.date_utils import next_weekday
+
+        d = datetime.date(2026, 8, 11)  # Tuesday
+        result = next_weekday(d, weekday=2)
+        assert result == d
+
+    def test_next_monday_from_tuesday(self) -> None:
+        import datetime
+
+        from app.date_utils import next_weekday
+
+        d = datetime.date(2026, 8, 11)  # Tuesday
+        result = next_weekday(d, weekday=1)
+        assert isinstance(result, datetime.date)
+        assert result > d
+
+    def test_invalid_weekday_raises(self) -> None:
+        import datetime
+
+        import pytest
+
+        from app.date_utils import next_weekday
+
+        with pytest.raises(ValueError):
+            next_weekday(datetime.date(2026, 8, 11), weekday=8)
