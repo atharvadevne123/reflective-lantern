@@ -544,3 +544,91 @@ def consecutive_miss_count(
         else:
             current_run = 0
     return max_run
+
+
+def forecast_confidence_interval(
+    predictions: list[float],
+    residual_std: float,
+    z: float = 1.96,
+) -> list[tuple[float, float]]:
+    """Return (lower, upper) confidence bounds for each prediction.
+
+    Args:
+        predictions: Point forecast values.
+        residual_std: Standard deviation of forecast residuals (from training).
+        z: Z-score for the desired confidence level (1.96 ≈ 95%). Default 1.96.
+
+    Returns:
+        List of (lower, upper) tuples aligned with *predictions*.
+
+    Raises:
+        ValueError: If *residual_std* < 0 or *z* <= 0.
+    """
+    if residual_std < 0:
+        raise ValueError(f"residual_std must be >= 0, got {residual_std}")
+    if z <= 0:
+        raise ValueError(f"z must be > 0, got {z}")
+    margin = z * residual_std
+    return [(round(p - margin, 4), round(p + margin, 4)) for p in predictions]
+
+
+def weighted_ensemble_forecast(
+    forecasts: list[list[float]],
+    weights: list[float] | None = None,
+) -> list[float]:
+    """Blend multiple forecast series into a single ensemble prediction.
+
+    Args:
+        forecasts: List of equal-length forecast series.
+        weights: Optional per-series weights. If None, uses equal weights.
+
+    Returns:
+        Weighted mean forecast series.
+
+    Raises:
+        ValueError: If *forecasts* is empty, series differ in length, or weights
+            don't sum to approximately 1.0.
+    """
+    if not forecasts:
+        raise ValueError("forecasts must not be empty")
+    n = len(forecasts[0])
+    if any(len(f) != n for f in forecasts):
+        raise ValueError("All forecast series must have the same length")
+    if weights is None:
+        k = len(forecasts)
+        weights = [1.0 / k] * k
+    if abs(sum(weights) - 1.0) > 1e-6:
+        raise ValueError(f"weights must sum to 1.0, got {sum(weights)}")
+    result = []
+    for i in range(n):
+        value = sum(w * f[i] for w, f in zip(weights, forecasts, strict=False))
+        result.append(round(value, 4))
+    return result
+
+
+def horizon_degradation(
+    errors: list[float],
+) -> float:
+    """Compute the rate at which forecast error grows with horizon.
+
+    Fits a linear regression of error vs horizon index and returns the slope
+    (error increase per step). A positive slope means accuracy declines as
+    the forecast extends further into the future.
+
+    Args:
+        errors: Forecast errors ordered by horizon (1-step, 2-step, …).
+
+    Returns:
+        Slope of error vs horizon, rounded to 6 decimal places.
+
+    Raises:
+        ValueError: If *errors* has fewer than 2 elements.
+    """
+    if len(errors) < 2:
+        raise ValueError("At least 2 error values are required")
+    n = len(errors)
+    x_mean = (n - 1) / 2.0
+    y_mean = sum(errors) / n
+    numer = sum((i - x_mean) * (errors[i] - y_mean) for i in range(n))
+    denom = sum((i - x_mean) ** 2 for i in range(n))
+    return round(numer / denom if denom > 0 else 0.0, 6)
