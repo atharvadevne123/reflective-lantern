@@ -79,7 +79,8 @@
       ]
     },
     "email_sent": false,
-    "email_recipient": "devneatharva@gmail.com"
+    "email_recipient": "devneatharva@gmail.com",
+    "email_error": "SMTP outbound blocked in remote execution environment"
   },
   {
     "repo": "reflective-lantern",
