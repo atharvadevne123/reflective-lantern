@@ -519,3 +519,57 @@ class TestPipelineStepAfter:
         from app.pipeline_utils import pipeline_step_after
 
         assert pipeline_step_after(make_test_pipeline(), step_name) == expected
+
+
+# ---------------------------------------------------------------------------
+# Tests for count_pipeline_params, pipeline_feature_count, is_pipeline_fitted
+# ---------------------------------------------------------------------------
+
+
+class TestCountPipelineParams:
+    def test_unfitted_pipeline(self) -> None:
+        from app.features import build_feature_pipeline
+        from app.pipeline_utils import count_pipeline_params
+
+        pipeline = build_feature_pipeline()
+        result = count_pipeline_params(pipeline)
+        assert isinstance(result, int)
+        assert result > 0
+
+    def test_non_pipeline_object(self) -> None:
+        from app.pipeline_utils import count_pipeline_params
+
+        assert count_pipeline_params(object()) == 0
+
+
+class TestPipelineFeatureCount:
+    def test_unfitted_returns_zero(self) -> None:
+        from app.features import build_feature_pipeline
+        from app.pipeline_utils import pipeline_feature_count
+
+        pipeline = build_feature_pipeline()
+        assert pipeline_feature_count(pipeline) == 0
+
+    def test_non_pipeline_returns_zero(self) -> None:
+        from app.pipeline_utils import pipeline_feature_count
+
+        assert pipeline_feature_count(object()) == 0
+
+
+class TestIsPipelineFitted:
+    def test_unfitted_pipeline_returns_false(self) -> None:
+        from app.features import build_feature_pipeline
+        from app.pipeline_utils import is_pipeline_fitted
+
+        pipeline = build_feature_pipeline()
+        assert not is_pipeline_fitted(pipeline)
+
+    def test_fitted_step_returns_true(self) -> None:
+        import pandas as pd
+
+        from app.features import DropNonNumeric
+        from app.pipeline_utils import is_pipeline_fitted
+
+        step = DropNonNumeric()
+        step.fit(pd.DataFrame({"a": [1.0], "b": [2.0]}))
+        assert is_pipeline_fitted(step)
