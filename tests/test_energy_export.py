@@ -629,3 +629,62 @@ class TestRenameRecordFields:
         records = [{"old": 1}]
         rename_record_fields(records, {"old": "new"})
         assert "old" in records[0]
+
+
+class TestPivotByHour:
+    def test_basic_pivot(self) -> None:
+        from app.energy_export import pivot_by_hour
+
+        records = [
+            {"label": "A", "hour": 9, "value": 100.0},
+            {"label": "A", "hour": 10, "value": 120.0},
+            {"label": "B", "hour": 9, "value": 80.0},
+        ]
+        result = pivot_by_hour(records, "hour", "value", "label")
+        assert result["A"][9] == 100.0
+        assert result["B"][9] == 80.0
+
+    def test_empty_returns_empty(self) -> None:
+        from app.energy_export import pivot_by_hour
+
+        assert pivot_by_hour([], "hour", "value", "label") == {}
+
+
+class TestFlatToWide:
+    def test_basic_pivot(self) -> None:
+        from app.energy_export import flat_to_wide
+
+        records = [
+            {"id": "S1", "key": "temp", "value": 21.0},
+            {"id": "S1", "key": "humidity", "value": 55.0},
+        ]
+        result = flat_to_wide(records, "id", "key", "value")
+        assert result["S1"]["temp"] == 21.0
+        assert result["S1"]["humidity"] == 55.0
+
+    def test_empty_returns_empty(self) -> None:
+        from app.energy_export import flat_to_wide
+
+        assert flat_to_wide([], "id", "key", "value") == {}
+
+
+class TestFilterRecordsByValue:
+    def test_basic_filter(self) -> None:
+        from app.energy_export import filter_records_by_value
+
+        records = [{"v": 5.0}, {"v": 15.0}, {"v": 25.0}]
+        result = filter_records_by_value(records, "v", 10.0, 20.0)
+        assert len(result) == 1
+        assert result[0]["v"] == 15.0
+
+    def test_inclusive_bounds(self) -> None:
+        from app.energy_export import filter_records_by_value
+
+        records = [{"v": 0.0}, {"v": 10.0}]
+        result = filter_records_by_value(records, "v", 0.0, 10.0)
+        assert len(result) == 2
+
+    def test_empty_input(self) -> None:
+        from app.energy_export import filter_records_by_value
+
+        assert filter_records_by_value([], "v", 0.0, 10.0) == []
