@@ -572,3 +572,56 @@ def validate_enum(value: str, allowed: list[str], field_name: str = "value") -> 
     if value not in allowed:
         errors.append(f"{field_name} must be one of {allowed!r}, got {value!r}")
     return errors
+
+
+def validate_date_string(value: str, field_name: str = "date") -> list[str]:
+    """Validate that *value* is an ISO 8601 date string (YYYY-MM-DD).
+
+    Args:
+        value: String to validate.
+        field_name: Name shown in error messages.
+
+    Returns:
+        List of error strings (empty when valid).
+    """
+    import re
+
+    errors: list[str] = []
+    if not re.fullmatch(r"\d{4}-(?:0[1-9]|1[0-2])-(?:0[1-9]|[12]\d|3[01])", value):
+        errors.append(f"{field_name} must be a valid ISO 8601 date (YYYY-MM-DD), got {value!r}")
+    return errors
+
+
+def validate_non_negative(value: float, field_name: str = "value") -> list[str]:
+    """Return validation errors if *value* is negative.
+
+    Args:
+        value: Numeric value to check.
+        field_name: Name shown in error messages.
+
+    Returns:
+        List of error strings (empty when valid).
+    """
+    if value < 0:
+        return [f"{field_name} must be non-negative, got {value}"]
+    return []
+
+
+def validate_unique_ids(records: list[dict], id_field: str = "id") -> list[str]:
+    """Return validation errors for duplicate IDs in *records*.
+
+    Args:
+        records: List of dicts with an identifier field.
+        id_field: Name of the ID field to check.
+
+    Returns:
+        List of error strings naming each duplicate ID.
+    """
+    seen: set = set()
+    dupes: list[str] = []
+    for r in records:
+        rid = r.get(id_field)
+        if rid in seen:
+            dupes.append(f"Duplicate {id_field}: {rid!r}")
+        seen.add(rid)
+    return dupes
