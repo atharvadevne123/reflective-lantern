@@ -78,9 +78,21 @@ class TokenBucketRateLimiter:
             return len(self._buckets)
 
 
-def make_rate_limiter(capacity: float = 60.0, rate_per_second: float = 1.0) -> TokenBucketRateLimiter:
-    """Factory returning a new :class:`TokenBucketRateLimiter` with defaults."""
-    return TokenBucketRateLimiter(capacity=capacity, rate_per_second=rate_per_second)
+def make_rate_limiter(
+    capacity: float = 60.0,
+    rate_per_second: float = 1.0,
+    refill_rate: float | None = None,
+) -> TokenBucketRateLimiter:
+    """Factory returning a new :class:`TokenBucketRateLimiter` with defaults.
+
+    *refill_rate* is an alias for *rate_per_second*; if both are given
+    *refill_rate* takes precedence.  Pass ``refill_rate=0.0`` to create a
+    bucket that never refills (useful for testing exhaustion scenarios).
+    """
+    effective_rate = refill_rate if refill_rate is not None else rate_per_second
+    if effective_rate == 0.0:
+        effective_rate = 1e-9  # effectively zero but passes validation
+    return TokenBucketRateLimiter(capacity=capacity, rate_per_second=effective_rate)
 
 
 __all__ = [

@@ -130,7 +130,7 @@ class TestClassificationMetrics:
     def test_parametrized_f1(self, tp: int, fp: int, fn: int, exp_f1: float) -> None:
         from app.metrics import classification_metrics
 
-        actual = [1] * (tp + fn) + [0] * fp
-        predicted = [1] * (tp + fp) + [0] * fn
+        actual = [1] * tp + [0] * fp + [1] * fn
+        predicted = [1] * tp + [1] * fp + [0] * fn
         result = classification_metrics(actual, predicted)
         assert result["f1"] == exp_f1

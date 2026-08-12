@@ -313,21 +313,23 @@ def coefficient_of_variation(values: list[float]) -> float:
     dispersion across series with different scales.
 
     Args:
-        values: Non-empty list of numeric observations (mean must be non-zero).
+        values: List of at least 2 numeric observations.
 
     Returns:
         CV as a percentage (std / mean * 100), rounded to 4 decimal places.
-        Returns 0.0 when all values are identical.
+        Returns 0.0 when all values are identical or the mean is zero.
 
     Raises:
-        ValueError: If *values* is empty or the mean is zero.
+        ValueError: If *values* is empty.
     """
     if not values:
         raise ValueError("values must not be empty")
+    if len(values) < 2:
+        raise ValueError("At least 2 values required")
     n = len(values)
     mean = sum(values) / n
-    if abs(mean) < 1e-12:
-        raise ValueError(f"Mean is near zero ({mean:.6e}); CV is undefined")
+    if mean == 0.0:
+        return 0.0
     variance = sum((v - mean) ** 2 for v in values) / n
     std = variance**0.5
     if std < 1e-12:
@@ -384,8 +386,8 @@ def winsorize(values: list[float], lower_pct: float = 5.0, upper_pct: float = 95
         raise ValueError(f"Percentiles must satisfy 0 <= lower_pct < upper_pct <= 100, got {lower_pct}, {upper_pct}")
     sorted_vals = sorted(values)
     n = len(sorted_vals)
-    lo_idx = int(lower_pct / 100.0 * (n - 1))
-    hi_idx = int(upper_pct / 100.0 * (n - 1))
+    lo_idx = min(n - 1, int(lower_pct / 100.0 * n))
+    hi_idx = max(0, min(n - 1, int(upper_pct / 100.0 * n) - 1))
     lo_val = sorted_vals[lo_idx]
     hi_val = sorted_vals[hi_idx]
     return [max(lo_val, min(hi_val, v)) for v in values]
@@ -838,26 +840,3 @@ def trimmed_mean(values: list[float], trim_pct: float = 0.1) -> float:
     return round(sum(trimmed) / len(trimmed), 6)
 
 
-def coefficient_of_variation(values: list[float]) -> float:
-    """Return the coefficient of variation (std / mean) as a percentage.
-
-    CV measures relative variability. It is undefined when the mean is 0.
-
-    Args:
-        values: Numeric series.
-
-    Returns:
-        CV as a percentage, rounded to 4 decimal places, or 0.0 if mean is 0.
-
-    Raises:
-        ValueError: If *values* has fewer than 2 elements.
-    """
-    if len(values) < 2:
-        raise ValueError("At least 2 values required")
-    n = len(values)
-    mean = sum(values) / n
-    if mean == 0.0:
-        return 0.0
-    variance = sum((v - mean) ** 2 for v in values) / (n - 1)
-    std = variance ** 0.5
-    return round(std / abs(mean) * 100.0, 4)

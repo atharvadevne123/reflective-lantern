@@ -133,9 +133,11 @@ def moving_max(values: list[float], window: int = 3) -> list[float]:
         return []
     result: list[float] = []
     for i in range(len(values)):
-        start = max(0, i - window + 1)
-        result.append(max(values[start : i + 1]))
-    return [round(x, 6) for x in result]
+        if i < window - 1:
+            result.append(float("nan"))
+        else:
+            result.append(max(values[i - window + 1 : i + 1]))
+    return [float("nan") if x != x else round(x, 6) for x in result]
 
 
 def resample_hourly_to_daily(hourly: list[float]) -> list[float]:
