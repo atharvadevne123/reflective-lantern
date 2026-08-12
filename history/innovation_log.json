@@ -666,5 +666,46 @@
     "publish_blocked_reason": "Standalone repo creation returned 403 \u2014 this session's GitHub access is bound to the reflective-lantern repository. Shipped on branch innovation/cart-mind with a draft PR.",
     "email_status": "network_blocked \u2014 raw TCP to smtp.gmail.com:465 and :587 both time out; the egress proxy passes HTTPS only. Report committed to history/reports/ instead.",
     "report_pdf": "history/reports/Cart-Mind_innovation_2026-08-05.pdf"
+  },
+  {
+    "date": "2026-08-12",
+    "mode": "innovation",
+    "project": "Price-Prophet",
+    "description": "ML-powered dynamic pricing optimisation for e-commerce. FastAPI REST service with a complete ML pipeline: LinearRegression, XGBoost GradientBoost, and weighted Ensemble models; four pricing strategies (Penetration, Premium, Competitive, Dynamic); PriceOptimizer via grid-search revenue maximisation; demand elasticity estimation (log-log OLS); walk-forward Backtester; TTL cache; and full data pipeline (loader, preprocessor, feature engineer, validator, augmentor).",
+    "inspired_by": "Portfolio gap analysis \u2014 dynamic pricing with elasticity modelling was the largest untouched ML application domain given the existing recommendation, churn, fraud, and anomaly-detection projects.",
+    "chosen_keywords": "dynamic pricing revenue optimisation elasticity e-commerce ML",
+    "repo_branch": "main",
+    "repo_url": "https://github.com/atharvadevne123/reflective-lantern/tree/main/price-prophet",
+    "subdirectory": "price-prophet/",
+    "file_count": 34,
+    "test_count": 25,
+    "test_files": 25,
+    "commits": 60,
+    "ci_workflow": "price-prophet-ci.yml",
+    "archetype": "Pricing API + ML Ensemble + Elasticity Optimisation + Walk-forward Backtesting",
+    "stack": [
+      "Python 3.11",
+      "FastAPI (health + price endpoints)",
+      "Pydantic v2 schemas",
+      "LinearRegression (sklearn)",
+      "XGBoost GradientBoost",
+      "Weighted Ensemble",
+      "PriceOptimizer (grid-search, 20 candidates)",
+      "Log-log OLS elasticity estimation",
+      "Walk-forward Backtester",
+      "PricingConstraints (floor/ceiling/max-change)",
+      "PricingStrategy enum (Penetration/Premium/Competitive/Dynamic)",
+      "TTLCache (in-process)",
+      "MetricsCollector (counters + timing)",
+      "joblib serialization",
+      "pytest (25 test files)",
+      "GitHub Actions CI (ruff lint + pytest + coverage)"
+    ],
+    "pre_flight_fixes": {
+      "ci_failures_fixed": 30,
+      "branches_merged": 16,
+      "release_status": "v1.0.0 already existed; v2.0.0 creation blocked by session type"
+    },
+    "email_status": "network_blocked \u2014 raw TCP to smtp.gmail.com:465/:587 times out in remote env"
   }
 ]
