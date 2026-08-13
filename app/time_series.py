@@ -415,6 +415,7 @@ __all__ = [
     "min_max_scale",
     "moving_max",
     "moving_median",
+    "moving_min",
     "moving_range",
     "normalize_series",
     "pair_difference",
@@ -440,7 +441,7 @@ def moving_median(values: list[float], window: int) -> list[float]:
         window: Rolling window size (must be >= 1).
 
     Returns:
-        List of rolling max values, NaN-padded at the start.
+        List of rolling median values, partial windows used near the start.
     """
     if not values:
         return []
@@ -453,6 +454,32 @@ def moving_median(values: list[float], window: int) -> list[float]:
             result.append(round((chunk[mid - 1] + chunk[mid]) / 2.0, 6))
         else:
             result.append(round(chunk[mid], 6))
+    return result
+
+
+def moving_min(values: list[float], window: int = 3) -> list[float]:
+    """Return the rolling minimum over *window* periods.
+
+    Positions with fewer than *window* preceding values are NaN (strict window).
+
+    Args:
+        values: Time-ordered consumption readings.
+        window: Number of periods to include in each rolling window.
+
+    Returns:
+        Rolling minimum series of the same length as *values*.
+    """
+    import math
+
+    if not values:
+        return []
+    result: list[float] = []
+    for i in range(len(values)):
+        if i + 1 < window:
+            result.append(math.nan)
+        else:
+            start = i - window + 1
+            result.append(round(min(values[start : i + 1]), 6))
     return result
 
 
