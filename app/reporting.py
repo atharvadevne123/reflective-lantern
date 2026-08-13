@@ -516,3 +516,61 @@ def rolling_savings_summary(
             }
         )
     return results
+
+
+def carbon_cost_report(
+    kwh_series: list[float],
+    rate_per_kwh: float,
+    co2_per_kwh_kg: float = 0.233,
+) -> dict[str, float]:
+    """Compute total energy cost and carbon impact from a kWh series.
+
+    Args:
+        kwh_series: List of energy consumption readings (kWh).
+        rate_per_kwh: Tariff rate in currency per kWh.
+        co2_per_kwh_kg: Grid emission factor (kg CO2 per kWh).
+
+    Returns:
+        Dict with total_kwh, total_cost, total_co2_kg, avg_kwh.
+    """
+    total = sum(kwh_series)
+    n = len(kwh_series)
+    return {
+        "total_kwh": round(total, 4),
+        "total_cost": round(total * rate_per_kwh, 4),
+        "total_co2_kg": round(total * co2_per_kwh_kg, 4),
+        "avg_kwh": round(total / n, 4) if n > 0 else 0.0,
+    }
+
+
+def demand_variance_report(readings: list[float]) -> dict[str, float]:
+    """Summarise demand variability from a series of consumption readings.
+
+    Args:
+        readings: List of energy consumption readings.
+
+    Returns:
+        Dict with mean, std_dev, cv_pct (coefficient of variation as %),
+        peak, valley, and peak_to_valley_ratio.
+
+    Raises:
+        ValueError: If *readings* is empty.
+    """
+    if not readings:
+        raise ValueError("readings must not be empty")
+    n = len(readings)
+    mean = sum(readings) / n
+    variance = sum((r - mean) ** 2 for r in readings) / n
+    std_dev = variance ** 0.5
+    peak = max(readings)
+    valley = min(readings)
+    cv_pct = round(std_dev / mean * 100.0, 4) if mean > 0 else 0.0
+    ptv = round(peak / valley, 4) if valley > 0 else float("inf")
+    return {
+        "mean": round(mean, 4),
+        "std_dev": round(std_dev, 4),
+        "cv_pct": cv_pct,
+        "peak": peak,
+        "valley": valley,
+        "peak_to_valley_ratio": ptv,
+    }
