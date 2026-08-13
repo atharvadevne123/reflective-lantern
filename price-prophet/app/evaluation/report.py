@@ -134,6 +134,54 @@ def compare_models(results: dict[str, dict]) -> dict[str, int]:
     return {name: rank + 1 for rank, name in enumerate(sorted_names)}
 
 
+def compare_models_by_metric(results: dict[str, dict], metric: str = "mae") -> list[tuple[str, float]]:
+    """Rank models by a given metric and return sorted (name, value) pairs.
+
+    Parameters
+    ----------
+    results:
+        Mapping of model name → metrics dict.
+    metric:
+        Key to rank by (default ``"mae"``).  Lower is better for error
+        metrics; models lacking the key are placed last.
+
+    Returns
+    -------
+    list[tuple[str, float]]
+        Pairs ``(model_name, metric_value)`` sorted ascending by value.
+    """
+    ranked = sorted(
+        results.items(),
+        key=lambda item: item[1].get(metric, float("inf")),
+    )
+    return [(name, metrics.get(metric, float("nan"))) for name, metrics in ranked]
+
+
+def metrics_diff(metrics_a: dict, metrics_b: dict) -> dict[str, float]:
+    """Compute the numeric difference (A - B) for shared numeric keys.
+
+    Parameters
+    ----------
+    metrics_a:
+        Baseline metrics dict.
+    metrics_b:
+        Comparison metrics dict.
+
+    Returns
+    -------
+    dict
+        Mapping of shared key → ``value_a - value_b`` for all keys
+        present in both dicts with numeric values.
+    """
+    result: dict[str, float] = {}
+    for key in metrics_a:
+        if key in metrics_b:
+            a, b = metrics_a[key], metrics_b[key]
+            if isinstance(a, (int, float)) and isinstance(b, (int, float)):
+                result[key] = round(float(a) - float(b), 6)
+    return result
+
+
 def export_metrics(metrics: dict, path: str) -> None:
     """Write *metrics* to *path* as a formatted JSON file.
 
