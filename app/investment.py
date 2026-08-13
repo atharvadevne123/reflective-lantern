@@ -254,7 +254,9 @@ __all__ = [
     "payback_period",
     "portfolio_weighted_score",
     "price_to_income_ratio",
+    "projected_value",
     "roi_percentage",
+    "total_return_on_investment",
 ]
 
 
@@ -812,3 +814,60 @@ def equity_multiple(
     if inv == 0.0:
         return 0.0
     return round(dist / inv, 4)
+
+
+def projected_value(
+    current_value: float,
+    annual_growth_rate: float,
+    years: int,
+) -> float:
+    """Project a property's future value using compound appreciation.
+
+    Args:
+        current_value: Current market value of the property.
+        annual_growth_rate: Expected annual appreciation rate as a fraction
+            (e.g. 0.03 for 3%).
+        years: Number of years to project.
+
+    Returns:
+        Projected future value rounded to 2 decimal places.
+
+    Raises:
+        ValueError: If *years* is negative or *current_value* is negative.
+    """
+    if current_value < 0:
+        raise ValueError("current_value must be non-negative")
+    if years < 0:
+        raise ValueError("years must be non-negative")
+    return round(current_value * (1 + annual_growth_rate) ** years, 2)
+
+
+def total_return_on_investment(
+    purchase_price: float,
+    sale_price: float,
+    total_rental_income: float,
+    total_expenses: float,
+) -> float:
+    """Compute total return on investment as a percentage.
+
+    Total ROI = (net gain / purchase_price) * 100, where
+    net gain = (sale_price - purchase_price) + (rental_income - expenses).
+
+    Args:
+        purchase_price: Original acquisition cost.
+        sale_price: Expected or realised sale proceeds.
+        total_rental_income: Cumulative rental income over the holding period.
+        total_expenses: Cumulative operating expenses (maintenance, taxes, etc.).
+
+    Returns:
+        Total ROI as a percentage, rounded to 4 decimal places.
+
+    Raises:
+        ValueError: If *purchase_price* is zero or negative.
+    """
+    if purchase_price <= 0:
+        raise ValueError("purchase_price must be positive")
+    capital_gain = sale_price - purchase_price
+    net_income = total_rental_income - total_expenses
+    net_gain = capital_gain + net_income
+    return round(net_gain / purchase_price * 100.0, 4)
