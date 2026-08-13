@@ -436,3 +436,167 @@ def forecast_interval_hit_rate(
         raise ValueError("actual, lower, and upper must have the same length")
     hits = sum(1 for a, lo, hi in zip(actual, lower, upper, strict=False) if lo <= a <= hi)
     return round(hits / n, 4)
+
+
+def quantile_forecast(
+    history: list[float],
+    steps: int,
+    quantiles: list[float] | None = None,
+) -> dict[str, list[float]]:
+    """Generate quantile forecasts by bootstrapping historical residuals.
+
+    Produces a median forecast plus uncertainty bands at each requested quantile
+    by adding empirical residuals (history minus its mean) to the last observed
+    value, then taking percentiles of the resulting sample.
+
+    Args:
+        history: Historical observations (at least 2 values).
+        steps: Number of future steps to forecast.
+        quantiles: Quantile levels in (0, 1). Defaults to [0.1, 0.5, 0.9].
+
+    Returns:
+        Dict mapping ``"q{int(q*100)}"`` → list of forecasted values per step.
+
+    Raises:
+        ValueError: If *history* has fewer than 2 values, *steps* < 1, or any
+            quantile is not in (0, 1).
+    """
+    if len(history) < 2:
+        raise ValueError("quantile_forecast requires at least 2 historical values")
+    if steps < 1:
+        raise ValueError(f"steps must be >= 1, got {steps}")
+    if quantiles is None:
+        quantiles = [0.1, 0.5, 0.9]
+    if any(not (0 < q < 1) for q in quantiles):
+        raise ValueError("all quantiles must be in (0, 1)")
+    mean_h = sum(history) / len(history)
+    residuals = sorted(v - mean_h for v in history)
+    base = history[-1]
+    result: dict[str, list[float]] = {}
+    for q in quantiles:
+        idx = min(int(q * len(residuals)), len(residuals) - 1)
+        offset = residuals[idx]
+        key = f"q{int(q * 100)}"
+        result[key] = [round(base + offset * (s + 1) / steps, 6) for s in range(steps)]
+    return result
+
+
+def forecast_direction(
+    forecast: list[float],
+    baseline: float,
+) -> str:
+    """Classify the overall direction of a forecast relative to a baseline.
+
+    Args:
+        forecast: Forecasted values (at least 1 element).
+        baseline: Reference value (e.g. the last observed reading).
+
+    Returns:
+        One of ``"up"``, ``"down"``, or ``"flat"`` based on whether the mean
+        forecast is more than 1 % above, 1 % below, or within 1 % of the baseline.
+
+    Raises:
+        ValueError: If *forecast* is empty.
+    """
+    if not forecast:
+        raise ValueError("forecast must not be empty")
+    mean_f = sum(forecast) / len(forecast)
+    if baseline == 0.0:
+        return "flat"
+    pct = (mean_f - baseline) / abs(baseline)
+    if pct > 0.01:
+        return "up"
+    if pct < -0.01:
+        return "down"
+    return "flat"
+
+
+def consecutive_miss_count(
+    actual: list[float],
+    predicted: list[float],
+    threshold: float,
+) -> int:
+    """Count the longest run of consecutive forecast errors exceeding *threshold*.
+
+    Args:
+        actual: Ground-truth observations.
+        predicted: Forecasted values (same length as actual).
+        threshold: Absolute error threshold to define a "miss".
+
+    Returns:
+        Length of the longest consecutive miss streak.
+
+    Raises:
+        ValueError: If inputs are empty or have mismatched lengths, or threshold < 0.
+    """
+    if not actual:
+        raise ValueError("actual must not be empty")
+    if len(actual) != len(predicted):
+        raise ValueError("actual and predicted must have the same length")
+    if threshold < 0:
+        raise ValueError("threshold must be non-negative")
+    max_run = 0
+    current_run = 0
+    for a, p in zip(actual, predicted, strict=False):
+        if abs(a - p) > threshold:
+            current_run += 1
+            max_run = max(max_run, current_run)
+        else:
+            current_run = 0
+    return max_run
+
+
+def forecast_confidence_interval(
+    predictions: list[float],
+    residual_std: float,
+    z: float = 1.96,
+) -> list[tuple[float, float]]:
+    """Return (lower, upper) confidence bounds for each prediction.
+
+    Args:
+        predictions: Point forecast values.
+        residual_std: Standard deviation of forecast residuals (from training).
+        z: Z-score for the desired confidence level (1.96 ≈ 95%). Default 1.96.
+
+    Returns:
+        List of (lower, upper) tuples aligned with *predictions*.
+
+    Raises:
+        ValueError: If *residual_std* < 0 or *z* <= 0.
+    """
+    if residual_std < 0:
+        raise ValueError(f"residual_std must be >= 0, got {residual_std}")
+    if z <= 0:
+        raise ValueError(f"z must be > 0, got {z}")
+    margin = z * residual_std
+    return [(round(p - margin, 4), round(p + margin, 4)) for p in predictions]
+
+
+
+
+def horizon_degradation(
+    errors: list[float],
+) -> float:
+    """Compute the rate at which forecast error grows with horizon.
+
+    Fits a linear regression of error vs horizon index and returns the slope
+    (error increase per step). A positive slope means accuracy declines as
+    the forecast extends further into the future.
+
+    Args:
+        errors: Forecast errors ordered by horizon (1-step, 2-step, …).
+
+    Returns:
+        Slope of error vs horizon, rounded to 6 decimal places.
+
+    Raises:
+        ValueError: If *errors* has fewer than 2 elements.
+    """
+    if len(errors) < 2:
+        raise ValueError("At least 2 error values are required")
+    n = len(errors)
+    x_mean = (n - 1) / 2.0
+    y_mean = sum(errors) / n
+    numer = sum((i - x_mean) * (errors[i] - y_mean) for i in range(n))
+    denom = sum((i - x_mean) ** 2 for i in range(n))
+    return round(numer / denom if denom > 0 else 0.0, 6)
