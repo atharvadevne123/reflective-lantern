@@ -153,6 +153,8 @@ __all__ = [
     "summarize_export",
     "top_buildings_by_kwh",
     "validate_export_schema",
+    "export_to_json",
+    "filter_records_by_field",
 ]
 
 
@@ -627,3 +629,30 @@ def validate_export_schema(
         "invalid_count": len(invalid),
         "invalid_indices": invalid,
     }
+
+def export_to_json(records: list[dict], indent: int = 2) -> str:
+    """Serialize *records* to a JSON string.
+
+    Args:
+        records: List of export record dicts.
+        indent: JSON indentation level (default 2).
+
+    Returns:
+        JSON-encoded string of the records list.
+    """
+    import json
+    return json.dumps(records, indent=indent, default=str)
+
+
+def filter_records_by_field(records: list[dict], field: str, value: object) -> list[dict]:
+    """Return records where *field* equals *value*.
+
+    Args:
+        records: List of record dicts to filter.
+        field: Dict key to match on.
+        value: Required value for *field*.
+
+    Returns:
+        Filtered list preserving original order.
+    """
+    return [r for r in records if r.get(field) == value]
