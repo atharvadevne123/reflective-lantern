@@ -101,6 +101,8 @@ __all__ = [
     "get_regions_by_timezone",
     "list_regions",
     "region_count",
+    "regions_by_peak_load",
+    "regions_summary",
     "validate_region",
 ]
 
@@ -199,4 +201,24 @@ def compare_peak_loads(region_id1: str, region_id2: str) -> dict[str, object]:
         "peak2_mw": peak2,
         "difference_mw": diff,
         "higher": higher,
+    }
+
+
+def regions_summary() -> dict[str, object]:
+    """Return an aggregate summary of all registered regions.
+
+    Returns:
+        Dict with 'total_regions', 'timezones' (unique set), 'total_peak_load_mw',
+        and 'max_peak_region' (region_id with highest peak load).
+    """
+    all_regions = list_regions()
+    timezones = sorted({str(r.get("timezone", "UTC")) for r in all_regions})
+    peaks = {r["id"]: float(r.get("peak_load_mw", 0)) for r in all_regions}
+    total_peak = round(sum(peaks.values()), 2)
+    max_region = max(peaks, key=lambda k: peaks[k]) if peaks else None
+    return {
+        "total_regions": len(all_regions),
+        "timezones": timezones,
+        "total_peak_load_mw": total_peak,
+        "max_peak_region": max_region,
     }
