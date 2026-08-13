@@ -115,21 +115,28 @@ def annual_carbon_report(
 
 
 def carbon_savings(
-    actual_kwh: float,
-    baseline_kwh: float,
+    actual_kwh: float | None = None,
+    baseline_kwh: float | None = None,
     region: str = "default",
+    *,
+    old_kwh: float | None = None,
+    new_kwh: float | None = None,
 ) -> dict[str, float]:
     """Estimate CO2 savings from reduced energy consumption.
 
     Args:
-        actual_kwh: Measured energy consumption in kWh.
-        baseline_kwh: Reference baseline consumption in kWh.
+        actual_kwh: Measured energy consumption in kWh (or use new_kwh).
+        baseline_kwh: Reference baseline consumption in kWh (or use old_kwh).
         region: Grid region identifier.
+        old_kwh: Alias for baseline_kwh.
+        new_kwh: Alias for actual_kwh.
 
     Returns:
         Dict with saved_kwh, saved_co2_kg, saved_co2_tonnes, and trees_saved.
     """
-    saved_kwh = max(0.0, baseline_kwh - actual_kwh)
+    _actual = new_kwh if new_kwh is not None else (actual_kwh or 0.0)
+    _baseline = old_kwh if old_kwh is not None else (baseline_kwh or 0.0)
+    saved_kwh = max(0.0, _baseline - _actual)
     saved_co2_kg = kwh_to_co2_kg(saved_kwh, region)
     return {
         "saved_kwh": round(saved_kwh, 3),
