@@ -261,6 +261,7 @@ def normalize_record(record: dict[str, Any]) -> dict[str, Any]:
 __all__ = [
     "batch_score",
     "completeness_score",
+    "cross_field_validation",
     "detect_data_gaps",
     "detect_duplicates",
     "field_type_consistency",
@@ -271,6 +272,7 @@ __all__ = [
     "null_rate",
     "quality_summary",
     "range_violation_count",
+    "record_completeness",
     "records_missing_field",
     "schema_validate",
     "score_record",
@@ -546,3 +548,66 @@ def records_missing_field(
         Sorted list of integer indices where *field* is missing.
     """
     return [i for i, rec in enumerate(records) if rec.get(field) is None]
+
+
+def cross_field_validation(
+    record: dict[str, Any],
+    rules: list[tuple[str, str, str]],
+) -> list[str]:
+    """Validate relationships between pairs of fields in a record.
+
+    Each rule is a 3-tuple: (field_a, operator, field_b) where operator is
+    one of '<', '<=', '>', '>=', '==', '!='.
+
+    Args:
+        record: A single record dict to validate.
+        rules: List of (field_a, operator, field_b) tuples.
+
+    Returns:
+        List of violation strings (empty when all rules pass).
+
+    Example:
+        cross_field_validation(rec, [("start_hour", "<", "end_hour")])
+    """
+    _ops = {
+        "<": lambda a, b: a < b,
+        "<=": lambda a, b: a <= b,
+        ">": lambda a, b: a > b,
+        ">=": lambda a, b: a >= b,
+        "==": lambda a, b: a == b,
+        "!=": lambda a, b: a != b,
+    }
+    violations: list[str] = []
+    for field_a, op, field_b in rules:
+        va = record.get(field_a)
+        vb = record.get(field_b)
+        if va is None or vb is None:
+            violations.append(f"cross_field: '{field_a}' or '{field_b}' missing")
+            continue
+        check = _ops.get(op)
+        if check is None:
+            violations.append(f"cross_field: unknown operator '{op}'")
+            continue
+        try:
+            if not check(float(va), float(vb)):
+                violations.append(f"cross_field: {field_a}({va}) {op} {field_b}({vb}) violated")
+        except (TypeError, ValueError):
+            violations.append(f"cross_field: cannot compare '{field_a}' and '{field_b}' (non-numeric)")
+    return violations
+
+
+def record_completeness(record: dict[str, Any], required_fields: list[str]) -> float:
+    """Return the fraction of *required_fields* that are present (non-None) in *record*.
+
+    Args:
+        record: A single record dict.
+        required_fields: List of field names to check.
+
+    Returns:
+        Completeness score in [0, 1]; 1.0 if all required fields are present.
+        Returns 1.0 if *required_fields* is empty.
+    """
+    if not required_fields:
+        return 1.0
+    present = sum(1 for f in required_fields if record.get(f) is not None)
+    return round(present / len(required_fields), 4)
