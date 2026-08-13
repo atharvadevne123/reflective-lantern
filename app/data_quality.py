@@ -277,6 +277,8 @@ __all__ = [
     "schema_validate",
     "score_record",
     "unique_values",
+    "validate_date_range",
+    "validate_enum_field",
 ]
 
 
@@ -611,3 +613,52 @@ def record_completeness(record: dict[str, Any], required_fields: list[str]) -> f
         return 1.0
     present = sum(1 for f in required_fields if record.get(f) is not None)
     return round(present / len(required_fields), 4)
+
+
+def validate_date_range(record: dict[str, Any], start_field: str, end_field: str) -> list[str]:
+    """Validate that a date range in *record* is chronologically valid.
+
+    Both fields must be present and the start value must not exceed the end
+    value (as comparable objects — datetime, date, or ISO string).
+
+    Args:
+        record: Record dict containing the date fields.
+        start_field: Key for the range start.
+        end_field: Key for the range end.
+
+    Returns:
+        List of error strings; empty when the range is valid.
+    """
+    errors: list[str] = []
+    start = record.get(start_field)
+    end = record.get(end_field)
+    if start is None:
+        errors.append(f"'{start_field}' is required")
+    if end is None:
+        errors.append(f"'{end_field}' is required")
+    if start is not None and end is not None:
+        try:
+            if start > end:  # type: ignore[operator]
+                errors.append(f"'{start_field}' must not be after '{end_field}'")
+        except TypeError:
+            errors.append(f"Cannot compare '{start_field}' and '{end_field}'")
+    return errors
+
+
+def validate_enum_field(record: dict[str, Any], field: str, allowed: list[object]) -> list[str]:
+    """Check that *field* in *record* is one of the *allowed* values.
+
+    Args:
+        record: Record dict to validate.
+        field: Field name to check.
+        allowed: Sequence of permitted values.
+
+    Returns:
+        List of error strings; empty when the value is valid or the field
+        is absent (presence check is not performed here).
+    """
+    errors: list[str] = []
+    value = record.get(field)
+    if value is not None and value not in allowed:
+        errors.append(f"'{field}' value {value!r} is not in allowed set {allowed!r}")
+    return errors
