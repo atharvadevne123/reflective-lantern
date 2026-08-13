@@ -193,6 +193,8 @@ __all__ = [
     "monthly_co2_breakdown",
     "tree_offset_days",
     "trees_equivalent",
+    "annual_carbon_budget",
+    "carbon_intensity_label",
 ]
 
 
@@ -664,4 +666,58 @@ def net_zero_timeline(
         "years_to_net_zero": years_to_net_zero,
         "trajectory": trajectory,
         "achieved": achieved,
+    }
+
+
+def carbon_intensity_label(intensity_kg_per_kwh: float) -> str:
+    """Return a descriptive label for a carbon intensity value.
+
+    Args:
+        intensity_kg_per_kwh: Grid carbon intensity in kg CO2e per kWh.
+
+    Returns:
+        One of 'very_low', 'low', 'moderate', 'high', 'very_high'.
+    """
+    if intensity_kg_per_kwh < 0.15:
+        return "very_low"
+    if intensity_kg_per_kwh < 0.25:
+        return "low"
+    if intensity_kg_per_kwh < 0.40:
+        return "moderate"
+    if intensity_kg_per_kwh < 0.55:
+        return "high"
+    return "very_high"
+
+
+def annual_carbon_budget(
+    target_co2_tonnes: float,
+    current_co2_kg: float,
+    year_fraction_elapsed: float = 0.0,
+) -> dict[str, float]:
+    """Compute carbon budget remaining for the year given a tonne target.
+
+    Args:
+        target_co2_tonnes: Annual CO2 budget in tonnes.
+        current_co2_kg: CO2 already emitted this year in kilograms.
+        year_fraction_elapsed: Fraction of the year elapsed (0.0 to 1.0).
+
+    Returns:
+        Dict with 'budget_kg', 'spent_kg', 'remaining_kg',
+        'on_track' (bool), and 'projected_annual_kg'.
+
+    Raises:
+        ValueError: If *year_fraction_elapsed* is outside [0, 1].
+    """
+    if not (0.0 <= year_fraction_elapsed <= 1.0):
+        raise ValueError("year_fraction_elapsed must be between 0 and 1")
+    budget_kg = target_co2_tonnes * 1000.0
+    remaining_kg = max(0.0, budget_kg - current_co2_kg)
+    projected = (current_co2_kg / year_fraction_elapsed) if year_fraction_elapsed > 0 else current_co2_kg
+    on_track = projected <= budget_kg
+    return {
+        "budget_kg": round(budget_kg, 2),
+        "spent_kg": round(current_co2_kg, 2),
+        "remaining_kg": round(remaining_kg, 2),
+        "on_track": on_track,
+        "projected_annual_kg": round(projected, 2),
     }
