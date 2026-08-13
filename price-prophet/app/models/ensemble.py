@@ -106,6 +106,53 @@ class EnsemblePricingModel(BasePricingModel):
 
         return combined
 
+    def member_count(self) -> int:
+        """Return the number of member models in the ensemble."""
+        return len(self.models)
+
+    def add_model(self, model: BasePricingModel, weight: float = 1.0) -> None:
+        """Append a new member model to the ensemble.
+
+        Parameters
+        ----------
+        model:
+            New pricing model to add.
+        weight:
+            Importance weight for the new model.  If *weights* were not
+            originally set, equal weights are first materialised before adding.
+        """
+        if self.weights is None:
+            self.weights = [1.0] * len(self.models)
+        self.models.append(model)
+        self.weights.append(weight)
+
+    def remove_model(self, index: int) -> BasePricingModel:
+        """Remove and return the member model at *index*.
+
+        Parameters
+        ----------
+        index:
+            Zero-based position of the model to remove.
+
+        Returns
+        -------
+        BasePricingModel
+            The removed model.
+
+        Raises
+        ------
+        IndexError
+            If *index* is out of range or would leave the ensemble empty.
+        """
+        if index < 0 or index >= len(self.models):
+            raise IndexError(f"index {index} out of range for ensemble with {len(self.models)} members")
+        if len(self.models) == 1:
+            raise IndexError("cannot remove the last model from the ensemble")
+        removed = self.models.pop(index)
+        if self.weights is not None:
+            self.weights.pop(index)
+        return removed
+
     def __repr__(self) -> str:
         fitted_str = "fitted" if self._fitted else "not fitted"
         member_names = ", ".join(type(m).__name__ for m in self.models)
