@@ -28,7 +28,6 @@ def test_parser_serve_subcommand():
 
 def test_parser_no_subcommand_fails():
     from app.cli import build_parser
-    import sys
     parser = build_parser()
     with pytest.raises(SystemExit):
         parser.parse_args([])

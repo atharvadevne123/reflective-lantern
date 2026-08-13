@@ -1,7 +1,6 @@
 """Tests for app/models/base.py."""
 from __future__ import annotations
 
-import pytest
 
 
 class ConcreteModel:

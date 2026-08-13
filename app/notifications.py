@@ -114,14 +114,14 @@ __all__ = [
     "AlertQueue",
     "alert_summary",
     "deduplicate_alerts",
+    "filter_alerts_by_severity",
     "group_alerts_by_severity",
     "highest_severity",
     "make_anomaly_alert",
     "make_drift_alert",
     "make_performance_alert",
-    "severity_rank",
-    "filter_alerts_by_severity",
     "mute_alert",
+    "severity_rank",
 ]
 
 
@@ -310,20 +310,6 @@ def top_alerts(alerts: list[Alert], n: int = 5) -> list[Alert]:
     return [a for _, a in sorted_alerts[:n]]
 
 
-def filter_alerts_by_severity(alerts: list[Alert], severity: str) -> list[Alert]:
-    """Return only alerts whose severity matches *severity* (case-insensitive).
-
-    Args:
-        alerts: List of Alert instances to filter.
-        severity: Severity level to keep ('info', 'warning', 'critical').
-
-    Returns:
-        Filtered list of Alert instances.
-    """
-    target = severity.lower()
-    return [a for a in alerts if a.severity.lower() == target]
-
-
 def mute_alert(alert: Alert, reason: str = "") -> Alert:
     """Return a copy of *alert* tagged as muted.
 
@@ -337,7 +323,7 @@ def mute_alert(alert: Alert, reason: str = "") -> Alert:
     Returns:
         A new Alert with updated tags and metadata.
     """
-    new_tags = list(alert.tags) + ["muted"]
+    new_tags = [*list(alert.tags), "muted"]
     new_meta = dict(alert.metadata)
     if reason:
         new_meta["mute_reason"] = reason

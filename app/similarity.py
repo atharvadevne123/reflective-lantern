@@ -109,19 +109,19 @@ def cosine_distance(a: list[float] | np.ndarray, b: list[float] | np.ndarray) ->
 __all__ = [
     "BuildingSimilarityIndex",
     "batch_add",
+    "batch_similarity_matrix",
     "chebyshev_distance",
     "cosine_distance",
     "euclidean_distance",
     "get_global_index",
     "hourly_pattern_distance",
     "manhattan_distance",
+    "normalize_profile",
     "pearson_similarity",
     "score_distribution",
     "search_comparable",
     "similarity_matrix",
     "top_k_similar",
-    "batch_similarity_matrix",
-    "normalize_profile",
 ]
 
 
@@ -389,43 +389,6 @@ def similarity_matrix(profiles: list[list[float]]) -> list[list[float]]:
     return [[round(float(mat[i, j]), 6) for j in range(n)] for i in range(n)]
 
 
-def top_k_similar(
-    query: list[float],
-    profiles: list[list[float]],
-    k: int = 5,
-) -> list[tuple[int, float]]:
-    """Find the k most similar profiles to *query* by cosine similarity.
-
-    Args:
-        query: Query feature vector.
-        profiles: List of candidate feature vectors (all same length as query).
-        k: Number of nearest neighbours to return.
-
-    Returns:
-        Sorted list of (index, similarity) pairs, highest similarity first.
-        Length may be less than k if fewer candidates are available.
-
-    Raises:
-        ValueError: If *query* is empty or *k* < 1.
-    """
-    if not query:
-        raise ValueError("query must not be empty")
-    if k < 1:
-        raise ValueError(f"k must be at least 1, got {k}")
-    q = np.array(query, dtype=np.float32)
-    q_norm = q / (np.linalg.norm(q) + 1e-9)
-    scores: list[tuple[int, float]] = []
-    for idx, prof in enumerate(profiles):
-        if len(prof) != len(query):
-            continue
-        v = np.array(prof, dtype=np.float32)
-        v_norm = v / (np.linalg.norm(v) + 1e-9)
-        sim = float(np.dot(q_norm, v_norm))
-        scores.append((idx, round(sim, 6)))
-    scores.sort(key=lambda x: x[1], reverse=True)
-    return scores[:k]
-
-
 def normalize_profile(profile: list[float]) -> list[float]:
     """Return L2-normalized version of *profile*.
 
@@ -444,13 +407,13 @@ def normalize_profile(profile: list[float]) -> list[float]:
 
 
 def batch_similarity_matrix(profiles: list[list[float]]) -> list[list[float]]:
-    """Compute an N×N pairwise cosine similarity matrix for *profiles*.
+    """Compute an NxN pairwise cosine similarity matrix for *profiles*.
 
     Args:
         profiles: List of feature vectors (all must have the same length).
 
     Returns:
-        N×N list-of-lists where entry [i][j] is the cosine similarity
+        NxN list-of-lists where entry [i][j] is the cosine similarity
         between profile i and profile j.  Values are rounded to 6 decimals.
         Returns an empty list for empty input.
 

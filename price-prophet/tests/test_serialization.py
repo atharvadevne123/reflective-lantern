@@ -26,7 +26,7 @@ def test_load_model_missing_file():
 
 
 def test_save_model_creates_dirs():
-    from app.utils.serialization import save_model, load_model
+    from app.utils.serialization import save_model
     import tempfile
     with tempfile.TemporaryDirectory() as tmpdir:
         path = os.path.join(tmpdir, "subdir", "model.joblib")

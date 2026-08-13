@@ -412,6 +412,7 @@ __all__ = [
     "housing_affordability_index",
     "market_heat_score",
     "market_summary",
+    "market_velocity",
     "neighbourhood_score",
     "price_appreciation_rate",
     "price_per_bedroom",
@@ -422,8 +423,6 @@ __all__ = [
     "price_trend_indicator",
     "rent_vs_buy_comparison",
     "value_gap",
-    "affordability_ratio",
-    "market_velocity",
 ]
 
 
@@ -830,24 +829,3 @@ def market_velocity(listings_sold: int, active_listings: int) -> float:
     return round(active_listings / listings_sold, 4)
 
 
-def affordability_ratio(median_home_price: float, median_annual_income: float) -> float:
-    """Compute the price-to-income affordability ratio.
-
-    A ratio above 5 is generally considered unaffordable; below 3 is affordable.
-
-    Args:
-        median_home_price: Median home price in the market.
-        median_annual_income: Median household annual gross income.
-
-    Returns:
-        Ratio of home price to annual income, rounded to 4 decimal places.
-        Returns 0.0 when *median_annual_income* is 0.
-
-    Raises:
-        ValueError: If either argument is negative.
-    """
-    if median_home_price < 0 or median_annual_income < 0:
-        raise ValueError("Both arguments must be non-negative")
-    if median_annual_income == 0.0:
-        return 0.0
-    return round(median_home_price / median_annual_income, 4)
