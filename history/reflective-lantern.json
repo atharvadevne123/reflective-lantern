@@ -715,5 +715,50 @@
     "commits": 61,
     "push_status": "pushed_as_branch_improvement/2026-08-06-wattguard",
     "email_status": "smtp_blocked_remote_env"
+  },
+  {
+    "date": "2026-08-13",
+    "mode": "improvement",
+    "commits": 60,
+    "branch": "improvements-2026-08-13",
+    "improvements": [
+      "feat(1-20): Fixed CI action versions, bug fixes in stats_utils, EnsemblePricingModel, Backtester, carbon, rate_limiter, retrain_dag, time_series",
+      "style(20): Ruff lint/format fixes across price-prophet and app modules",
+      "feat(21-23): Added carbon_cost_report, demand_variance_report, net_zero_timeline",
+      "fix(24): Fixed top_alerts AttributeError and duplicate lru_cache on get_region",
+      "feat(25-40): Added 32+ new functions across date_utils, benchmarks, validation, rate_limiter, similarity, trend_analysis, forecasting, reporting, data_quality, energy_export, stats_utils, mlflow_stub, cache, investment, market_context, regions",
+      "feat(41-46): suite-cast: feature_names, lead_time_bucket_label, drift_severity; price-prophet: member_count/add_model/remove_model in Ensemble, min_timing/merge in MetricsCollector, per_window_metrics/best_window in Backtester, compare_models_by_metric/metrics_diff in report",
+      "feat(47-60): Added carbon_intensity_label, annual_carbon_budget, filter_alerts_by_severity, mute_alert, weighted_forecast, bias_score, export_to_json, filter_records_by_field, business_days_between, is_business_day, validate_date_range, validate_enum_field, normalize_profile, batch_similarity_matrix, detect_outliers, linear_regression_trend, peak_usage_window, emission_report, sample_std, correlation_coefficient, percentile_rank, benchmark_score_label, validate_range, validate_email, reset_client, bulk_allow, market_velocity, affordability_ratio",
+      "chore: Integrated price-prophet full API/models/pricing/tests modules from parallel run"
+    ],
+    "files_modified": [
+      "app/carbon.py",
+      "app/notifications.py",
+      "app/regions.py",
+      "app/date_utils.py",
+      "app/benchmarks.py",
+      "app/validation.py",
+      "app/rate_limiter.py",
+      "app/similarity.py",
+      "app/trend_analysis.py",
+      "app/forecasting.py",
+      "app/reporting.py",
+      "app/data_quality.py",
+      "app/energy_export.py",
+      "app/stats_utils.py",
+      "app/mlflow_stub.py",
+      "app/cache.py",
+      "app/investment.py",
+      "app/market_context.py",
+      "suite-cast/app/features.py",
+      "suite-cast/app/monitoring.py",
+      "price-prophet/app/models/ensemble.py",
+      "price-prophet/app/utils/metrics_collector.py",
+      "price-prophet/app/evaluation/backtester.py",
+      "price-prophet/app/evaluation/report.py"
+    ],
+    "bugs_fixed": 2,
+    "functions_added": 60,
+    "push_status": "branch improvements-2026-08-13 pushed; PR to main pending"
   }
 ]
