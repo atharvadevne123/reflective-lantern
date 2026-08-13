@@ -135,12 +135,16 @@ __all__ = [
     "normalize_series",
     "percentile",
     "percentile_rank",
+    "population_variance",
     "r_squared",
     "rolling_mean",
+    "rolling_sharpe",
     "root_mean_squared_error",
+    "sharpe_ratio",
     "trimmed_mean",
     "variance",
     "weighted_average",
+    "weighted_median",
     "zscore",
 ]
 
@@ -844,3 +848,55 @@ def rolling_sharpe(returns: list[float], window: int, risk_free_rate: float = 0.
             chunk = returns[i - window + 1 : i + 1]
             result.append(sharpe_ratio(chunk, risk_free_rate))
     return result
+
+
+def weighted_median(values: list[float], weights: list[float]) -> float:
+    """Compute the weighted median of *values*.
+
+    The weighted median is the value v where the cumulative weight below v is
+    at most 0.5 and the cumulative weight above v is at most 0.5.
+
+    Args:
+        values: Numeric observations.
+        weights: Non-negative weight for each observation (same length).
+
+    Returns:
+        Weighted median as a float.
+
+    Raises:
+        ValueError: If *values* is empty, lengths differ, or any weight is negative.
+    """
+    if not values:
+        raise ValueError("values must not be empty")
+    if len(values) != len(weights):
+        raise ValueError("values and weights must have the same length")
+    if any(w < 0 for w in weights):
+        raise ValueError("All weights must be non-negative")
+    total_w = sum(weights)
+    if total_w == 0:
+        return values[len(values) // 2]
+    paired = sorted(zip(values, weights, strict=False), key=lambda x: x[0])
+    cumulative = 0.0
+    for val, w in paired:
+        cumulative += w
+        if cumulative >= total_w / 2.0:
+            return float(val)
+    return float(paired[-1][0])
+
+
+def population_variance(values: list[float]) -> float:
+    """Compute the population variance (denominator N) of *values*.
+
+    Args:
+        values: Numeric sample values.
+
+    Returns:
+        Population variance as a float, rounded to 6 decimal places.
+
+    Raises:
+        ValueError: If *values* is empty.
+    """
+    if not values:
+        raise ValueError("values must not be empty")
+    mean = sum(values) / len(values)
+    return round(sum((v - mean) ** 2 for v in values) / len(values), 6)
