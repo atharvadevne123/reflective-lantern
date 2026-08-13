@@ -23,14 +23,13 @@ DEFAULT_ANNUAL_INCOME = 100_000.0
 
 
 def price_per_sqft(predicted_value: float, sqft: float) -> float:
-    """Return price per square foot.
-
-    Raises ValueError when sqft or predicted_value is non-positive.
-    """
+    """Return price per square foot, or 0.0 when sqft is zero."""
     if predicted_value < 0:
         raise ValueError("predicted_value must be non-negative")
-    if sqft <= 0:
-        raise ValueError("sqft must be positive")
+    if sqft == 0:
+        return 0.0
+    if sqft < 0:
+        raise ValueError("sqft must be non-negative")
     if predicted_value == 0:
         return 0.0
     return round(predicted_value / sqft, 2)

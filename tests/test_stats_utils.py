@@ -219,9 +219,12 @@ def test_percentile_parametrized(p: float, expected_percentile: float) -> None:
 
 
 def test_coefficient_of_variation_zero_mean() -> None:
+    import pytest as _pytest
+
     from app.stats_utils import coefficient_of_variation
 
-    assert coefficient_of_variation([0.0, 0.0, 0.0]) == 0.0
+    with _pytest.raises(ValueError, match="near zero"):
+        coefficient_of_variation([0.0, 0.0, 0.0])
 
 
 def test_r_squared_perfect_fit() -> None:

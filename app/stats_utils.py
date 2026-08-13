@@ -328,8 +328,8 @@ def coefficient_of_variation(values: list[float]) -> float:
         return 0.0
     n = len(values)
     mean = sum(values) / n
-    if mean == 0.0:
-        return 0.0
+    if abs(mean) < 1e-12:
+        raise ValueError("coefficient_of_variation is undefined when mean is near zero")
     variance = sum((v - mean) ** 2 for v in values) / n
     std = variance**0.5
     if std < 1e-12:
