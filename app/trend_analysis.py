@@ -228,11 +228,14 @@ __all__ = [
     "linear_trend",
     "momentum_score",
     "percentage_change",
+    "period_comparison",
     "rate_of_change",
     "rolling_mean",
     "seasonal_decompose_naive",
+    "smoothed_trend",
     "trend_reversal_count",
     "trend_strength",
+    "trend_summary",
     "year_over_year_growth",
 ]
 
@@ -456,4 +459,65 @@ def period_comparison(
         "total_a": round(total_a, 4),
         "total_b": round(total_b, 4),
         "pct_change": pct_change,
+    }
+
+
+def smoothed_trend(
+    values: list[float],
+    window: int = 7,
+) -> dict[str, list[float]]:
+    """Apply rolling mean smoothing and return both the smoothed series and residuals.
+
+    Residuals are the difference between raw values and their smoothed counterparts,
+    useful for isolating noise from the underlying trend.
+
+    Args:
+        values: Input time series.
+        window: Rolling window size (must be >= 2 and <= len(values)).
+
+    Returns:
+        Dict with 'smoothed' (rolling mean series) and 'residuals' (values - smoothed).
+        Both have the same length as *values*.
+
+    Raises:
+        ValueError: If *values* has fewer than 2 elements or *window* < 2.
+    """
+    if len(values) < 2:
+        raise ValueError("values must have at least 2 elements")
+    if window < 2:
+        raise ValueError(f"window must be at least 2, got {window}")
+    smoothed = rolling_mean(values, window)
+    residuals = [round(v - s, 6) for v, s in zip(values, smoothed, strict=False)]
+    return {"smoothed": smoothed, "residuals": residuals}
+
+
+def trend_summary(values: list[float]) -> dict[str, object]:
+    """Compute a concise trend summary combining direction, strength, and change points.
+
+    Args:
+        values: Input time series (at least 4 elements recommended).
+
+    Returns:
+        Dict with 'direction' ('up'|'down'|'flat'), 'strength' (float 0-1),
+        'change_points' (list[int]), and 'pct_change_overall' (float).
+
+    Raises:
+        ValueError: If *values* has fewer than 2 elements.
+    """
+    if len(values) < 2:
+        raise ValueError("values must have at least 2 elements")
+    slope = linear_trend(values).slope
+    direction = "flat" if abs(slope) < 1e-9 else ("up" if slope > 0 else "down")
+    strength = trend_strength(values) if len(values) >= 4 else 0.0
+    change_pts = detect_change_points(values) if len(values) >= 4 else []
+    first, last = values[0], values[-1]
+    if first == 0.0:
+        pct_change = 0.0
+    else:
+        pct_change = round((last - first) / abs(first) * 100.0, 4)
+    return {
+        "direction": direction,
+        "strength": round(strength, 4),
+        "change_points": change_pts,
+        "pct_change_overall": pct_change,
     }
