@@ -237,6 +237,8 @@ __all__ = [
     "trend_strength",
     "trend_summary",
     "year_over_year_growth",
+    "detect_outliers",
+    "linear_regression_trend",
 ]
 
 
@@ -521,3 +523,53 @@ def trend_summary(values: list[float]) -> dict[str, object]:
         "change_points": change_pts,
         "pct_change_overall": pct_change,
     }
+
+
+def detect_outliers(values: list[float], z_threshold: float = 2.5) -> list[int]:
+    """Return indices of values more than *z_threshold* standard deviations from the mean.
+
+    Args:
+        values: Input time series.
+        z_threshold: Number of standard deviations to use as the cutoff.
+
+    Returns:
+        Sorted list of 0-based indices where the z-score exceeds *z_threshold*.
+        Returns an empty list for series with fewer than 2 elements or zero variance.
+    """
+    n = len(values)
+    if n < 2:
+        return []
+    mean = sum(values) / n
+    variance = sum((v - mean) ** 2 for v in values) / n
+    if variance == 0.0:
+        return []
+    std = variance ** 0.5
+    return [i for i, v in enumerate(values) if abs(v - mean) / std > z_threshold]
+
+
+def linear_regression_trend(values: list[float]) -> dict[str, float]:
+    """Fit a simple linear regression to *values* and return coefficients.
+
+    The independent variable is the integer index (0, 1, 2, …).
+
+    Args:
+        values: Time series of at least 2 observations.
+
+    Returns:
+        Dict with 'slope', 'intercept', and 'r_squared'.
+        Returns zeros for series with fewer than 2 points.
+    """
+    n = len(values)
+    if n < 2:
+        return {"slope": 0.0, "intercept": float(values[0]) if values else 0.0, "r_squared": 0.0}
+    x_mean = (n - 1) / 2.0
+    y_mean = sum(values) / n
+    ss_xy = sum((i - x_mean) * (v - y_mean) for i, v in enumerate(values))
+    ss_xx = sum((i - x_mean) ** 2 for i in range(n))
+    slope = ss_xy / ss_xx if ss_xx != 0 else 0.0
+    intercept = y_mean - slope * x_mean
+    y_pred = [slope * i + intercept for i in range(n)]
+    ss_tot = sum((v - y_mean) ** 2 for v in values)
+    ss_res = sum((v - p) ** 2 for v, p in zip(values, y_pred, strict=False))
+    r_squared = 1.0 - ss_res / ss_tot if ss_tot != 0 else 0.0
+    return {"slope": round(slope, 6), "intercept": round(intercept, 6), "r_squared": round(r_squared, 6)}
