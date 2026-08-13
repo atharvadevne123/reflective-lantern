@@ -120,6 +120,8 @@ __all__ = [
     "search_comparable",
     "similarity_matrix",
     "top_k_similar",
+    "batch_similarity_matrix",
+    "normalize_profile",
 ]
 
 
@@ -422,3 +424,48 @@ def top_k_similar(
         scores.append((idx, round(sim, 6)))
     scores.sort(key=lambda x: x[1], reverse=True)
     return scores[:k]
+
+
+def normalize_profile(profile: list[float]) -> list[float]:
+    """Return L2-normalized version of *profile*.
+
+    Args:
+        profile: Raw feature vector as a list of floats.
+
+    Returns:
+        Unit-length vector (L2 norm = 1.0) as a list of floats.
+        Returns the zero vector unchanged if the norm is zero.
+    """
+    arr = np.array(profile, dtype=np.float64)
+    norm = float(np.linalg.norm(arr))
+    if norm == 0.0:
+        return list(arr)
+    return [round(float(x), 8) for x in arr / norm]
+
+
+def batch_similarity_matrix(profiles: list[list[float]]) -> list[list[float]]:
+    """Compute an N×N pairwise cosine similarity matrix for *profiles*.
+
+    Args:
+        profiles: List of feature vectors (all must have the same length).
+
+    Returns:
+        N×N list-of-lists where entry [i][j] is the cosine similarity
+        between profile i and profile j.  Values are rounded to 6 decimals.
+        Returns an empty list for empty input.
+
+    Raises:
+        ValueError: If profiles have inconsistent lengths.
+    """
+    if not profiles:
+        return []
+    dim = len(profiles[0])
+    if any(len(p) != dim for p in profiles):
+        raise ValueError("All profiles must have the same length")
+    arr = np.array(profiles, dtype=np.float64)
+    norms = np.linalg.norm(arr, axis=1, keepdims=True)
+    norms[norms == 0] = 1e-9
+    normed = arr / norms
+    matrix = normed @ normed.T
+    n = len(profiles)
+    return [[round(float(matrix[i, j]), 6) for j in range(n)] for i in range(n)]
