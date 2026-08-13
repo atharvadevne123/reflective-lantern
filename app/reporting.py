@@ -334,6 +334,8 @@ __all__ = [
     "tariff_cost",
     "top_consumption_hours",
     "wh_to_kwh",
+    "emission_report",
+    "peak_usage_window",
 ]
 
 
@@ -636,4 +638,70 @@ def savings_report(
         "saved_cost": saved_cost,
         "pct_saved": pct_saved,
         "efficiency_ratio": efficiency_ratio,
+    }
+
+
+def peak_usage_window(hourly_kwh: list[float], window_size: int = 3) -> dict[str, object]:
+    """Find the consecutive window of *window_size* hours with the highest total usage.
+
+    Args:
+        hourly_kwh: List of 24 (or more) hourly kWh values.
+        window_size: Number of consecutive hours in the window (default 3).
+
+    Returns:
+        Dict with 'start_hour', 'end_hour', 'total_kwh', and 'avg_kwh'.
+        Returns zeros if *hourly_kwh* is shorter than *window_size*.
+
+    Raises:
+        ValueError: If *window_size* < 1.
+    """
+    if window_size < 1:
+        raise ValueError("window_size must be at least 1")
+    n = len(hourly_kwh)
+    if n < window_size:
+        return {"start_hour": 0, "end_hour": 0, "total_kwh": 0.0, "avg_kwh": 0.0}
+    best_start = 0
+    best_total = sum(hourly_kwh[:window_size])
+    current = best_total
+    for i in range(1, n - window_size + 1):
+        current = current - hourly_kwh[i - 1] + hourly_kwh[i + window_size - 1]
+        if current > best_total:
+            best_total = current
+            best_start = i
+    total = round(best_total, 4)
+    return {
+        "start_hour": best_start,
+        "end_hour": best_start + window_size - 1,
+        "total_kwh": total,
+        "avg_kwh": round(total / window_size, 4),
+    }
+
+
+def emission_report(kwh_values: list[float], carbon_intensity_kg_per_kwh: float = 0.35) -> dict[str, float]:
+    """Compute CO2 emission totals from a list of kWh readings.
+
+    Args:
+        kwh_values: List of energy consumption values in kWh.
+        carbon_intensity_kg_per_kwh: Grid emission factor in kg CO2 per kWh.
+
+    Returns:
+        Dict with 'total_kwh', 'total_co2_kg', 'avg_co2_kg_per_period',
+        and 'max_co2_kg' (emission for the highest single-period consumption).
+
+    Raises:
+        ValueError: If *carbon_intensity_kg_per_kwh* is negative.
+    """
+    if carbon_intensity_kg_per_kwh < 0:
+        raise ValueError("carbon_intensity_kg_per_kwh must be non-negative")
+    if not kwh_values:
+        return {"total_kwh": 0.0, "total_co2_kg": 0.0, "avg_co2_kg_per_period": 0.0, "max_co2_kg": 0.0}
+    total_kwh = sum(kwh_values)
+    total_co2 = total_kwh * carbon_intensity_kg_per_kwh
+    avg_co2 = total_co2 / len(kwh_values)
+    max_co2 = max(kwh_values) * carbon_intensity_kg_per_kwh
+    return {
+        "total_kwh": round(total_kwh, 4),
+        "total_co2_kg": round(total_co2, 4),
+        "avg_co2_kg_per_period": round(avg_co2, 4),
+        "max_co2_kg": round(max_co2, 4),
     }
