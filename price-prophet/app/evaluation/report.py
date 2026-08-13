@@ -177,7 +177,7 @@ def metrics_diff(metrics_a: dict, metrics_b: dict) -> dict[str, float]:
     for key in metrics_a:
         if key in metrics_b:
             a, b = metrics_a[key], metrics_b[key]
-            if isinstance(a, (int, float)) and isinstance(b, (int, float)):
+            if isinstance(a, int | float) and isinstance(b, int | float):
                 result[key] = round(float(a) - float(b), 6)
     return result
 
