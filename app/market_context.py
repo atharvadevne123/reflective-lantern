@@ -23,8 +23,15 @@ DEFAULT_ANNUAL_INCOME = 100_000.0
 
 
 def price_per_sqft(predicted_value: float, sqft: float) -> float:
-    """Return price per square foot, or 0 if sqft is non-positive."""
+    """Return price per square foot.
+
+    Raises ValueError when sqft or predicted_value is non-positive.
+    """
+    if predicted_value < 0:
+        raise ValueError("predicted_value must be non-negative")
     if sqft <= 0:
+        raise ValueError("sqft must be positive")
+    if predicted_value == 0:
         return 0.0
     return round(predicted_value / sqft, 2)
 
@@ -47,23 +54,40 @@ def dom_classification(listing_days: int) -> str:
 
 def affordability_index(
     predicted_value: float,
-    annual_income: float = DEFAULT_ANNUAL_INCOME,
+    median_household_income: float | None = None,
+    interest_rate_pct: float = 7.0,
     down_payment_pct: float = DEFAULT_DOWN_PAYMENT,
+    loan_term_years: int = DEFAULT_TERM_YEARS,
+    *,
+    annual_income: float = DEFAULT_ANNUAL_INCOME,
     mortgage_rate: float = DEFAULT_MORTGAGE_RATE,
     term_years: int = DEFAULT_TERM_YEARS,
-) -> dict[str, Any]:
+) -> dict[str, Any] | float:
     """Compute a mortgage affordability index.
 
-    Args:
-        predicted_value: Property price in USD.
-        annual_income: Annual household income.
-        down_payment_pct: Down payment as a fraction of purchase price.
-        mortgage_rate: Annual mortgage interest rate.
-        term_years: Loan term in years.
+    When called with only *predicted_value* (and optionally keyword-only
+    *annual_income*, *mortgage_rate*, *term_years*) returns a dict with keys
+    ``loan_amount``, ``monthly_payment``, ``pct_income``, ``is_affordable``.
 
-    Returns:
-        Dict with loan_amount, monthly_payment, pct_income, is_affordable.
+    When called with a second positional *median_household_income* returns a
+    numeric affordability index (100 = threshold, >100 = affordable).
     """
+    if median_household_income is not None:
+        if predicted_value <= 0:
+            raise ValueError("median_home_price must be positive")
+        if median_household_income <= 0:
+            raise ValueError("median_household_income must be positive")
+        if not (0.0 <= down_payment_pct < 100.0):
+            raise ValueError("down_payment_pct must be in [0, 100)")
+        loan = predicted_value * (1.0 - down_payment_pct / 100.0)
+        monthly_rate = interest_rate_pct / 100.0 / 12.0
+        n = loan_term_years * 12
+        if monthly_rate == 0.0:
+            monthly_payment = loan / n
+        else:
+            monthly_payment = loan * monthly_rate * (1 + monthly_rate) ** n / ((1 + monthly_rate) ** n - 1)
+        qualifying_income = monthly_payment * 12 / 0.28
+        return round(median_household_income / qualifying_income * 100, 2)
     loan = predicted_value * (1 - down_payment_pct)
     r = mortgage_rate / 12
     n = term_years * 12
@@ -644,3 +668,89 @@ def inventory_months_supply(active_listings: int, monthly_sales: float) -> float
     if monthly_sales == 0.0:
         return 0.0
     return round(active_listings / monthly_sales, 2)
+
+
+def seller_to_buyer_ratio(active_listings: int, active_buyers: int) -> float:
+    """Return the ratio of active buyers to active listings.
+
+    A ratio > 1 indicates more buyers than listings (seller's market);
+    < 1 indicates more listings than buyers (buyer's market).
+
+    Args:
+        active_listings: Number of properties currently listed.
+        active_buyers: Estimated number of active buyers in the market.
+
+    Returns:
+        Ratio rounded to 4 decimal places; 0.0 when active_listings is 0.
+
+    Raises:
+        ValueError: If either argument is negative.
+    """
+    if active_listings < 0 or active_buyers < 0:
+        raise ValueError("active_listings and active_buyers must be non-negative")
+    if active_listings == 0:
+        return 0.0
+    return round(active_buyers / active_listings, 4)
+
+
+def absorption_rate(units_sold: int, days: int = 30) -> float:
+    """Return the number of units absorbed per day.
+
+    Args:
+        units_sold: Number of units sold over the measurement period.
+        days: Length of the measurement period in days (must be positive).
+
+    Returns:
+        Units sold per day, rounded to 4 decimal places.
+
+    Raises:
+        ValueError: If *days* is not positive or *units_sold* is negative.
+    """
+    if days <= 0:
+        raise ValueError(f"days must be positive, got {days}")
+    if units_sold < 0:
+        raise ValueError("units_sold must be non-negative")
+    return round(units_sold / days, 4)
+
+
+def market_cycle_phase(months_supply: float) -> str:
+    """Classify the current market phase based on months of inventory supply.
+
+    Phases:
+        ``seller``    — months_supply < 3
+        ``balanced``  — 3 <= months_supply <= 6
+        ``buyer``     — months_supply > 6
+
+    Args:
+        months_supply: Months of housing inventory (from :func:`inventory_months_supply`).
+
+    Returns:
+        Market phase label.
+    """
+    if months_supply < 3.0:
+        return "seller"
+    if months_supply <= 6.0:
+        return "balanced"
+    return "buyer"
+
+
+def dom_category(days_on_market: int) -> str:
+    """Classify a property by its days-on-market bucket.
+
+    Args:
+        days_on_market: Number of days the listing has been active.
+
+    Returns:
+        Category string: ``"fast"`` (< 14 days), ``"normal"`` (14–60 days),
+        or ``"slow"`` (> 60 days).
+
+    Raises:
+        ValueError: If *days_on_market* is negative.
+    """
+    if days_on_market < 0:
+        raise ValueError("days_on_market must be non-negative")
+    if days_on_market < 14:
+        return "fast"
+    if days_on_market <= 60:
+        return "normal"
+    return "slow"
