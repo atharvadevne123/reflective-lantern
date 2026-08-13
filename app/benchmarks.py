@@ -170,7 +170,9 @@ __all__ = [
     "efficiency_gap",
     "energy_intensity_ratio",
     "eui_percentile_category",
+    "floor_area_normalized_savings",
     "list_building_types",
+    "multi_building_benchmark",
     "site_eui",
     "target_eui",
 ]
@@ -342,3 +344,63 @@ def eui_percentile_category(eui: float, building_type: str = "default") -> str:
     if ratio <= 1.1:
         return "average"
     return "bottom_25"
+
+
+def floor_area_normalized_savings(
+    baseline_kwh: float,
+    actual_kwh: float,
+    floor_area_sqm: float,
+) -> float:
+    """Return energy savings per unit floor area (kWh/m²).
+
+    Useful for comparing efficiency improvements across buildings of
+    different sizes.
+
+    Args:
+        baseline_kwh: Pre-improvement annual consumption in kWh.
+        actual_kwh: Post-improvement annual consumption in kWh.
+        floor_area_sqm: Building floor area in square metres.
+
+    Returns:
+        Savings per square metre (kWh/m²), rounded to 4 decimal places.
+        Negative value means consumption increased.
+
+    Raises:
+        ValueError: If *floor_area_sqm* is not positive.
+    """
+    if floor_area_sqm <= 0:
+        raise ValueError(f"floor_area_sqm must be positive, got {floor_area_sqm}")
+    return round((baseline_kwh - actual_kwh) / floor_area_sqm, 4)
+
+
+def multi_building_benchmark(
+    buildings: list[dict],
+    building_type_key: str = "type",
+    kwh_key: str = "annual_kwh",
+    area_key: str = "floor_area_sqm",
+) -> list[dict]:
+    """Benchmark multiple buildings and return enriched records with EUI and rating.
+
+    Args:
+        buildings: List of building dicts, each with at least type, annual_kwh, and
+            floor_area_sqm keys.
+        building_type_key: Dict key for building type string.
+        kwh_key: Dict key for annual kWh.
+        area_key: Dict key for floor area in m².
+
+    Returns:
+        List of dicts, each copy of the input enriched with 'eui', 'rating',
+        and 'benchmark_eui'.
+    """
+    results = []
+    for bldg in buildings:
+        btype = str(bldg.get(building_type_key, "default"))
+        kwh = float(bldg.get(kwh_key, 0.0))
+        area = float(bldg.get(area_key, 1.0))
+        try:
+            eui = compute_eui(kwh, area)
+        except ValueError:
+            eui = 0.0
+        bench = benchmark_eui(eui, btype)
+        results.append({**bldg, "eui": eui, "rating": bench["rating"], "benchmark_eui": bench["benchmark_eui"]})
+    return results
