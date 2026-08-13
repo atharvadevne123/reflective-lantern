@@ -323,11 +323,13 @@ __all__ = [
     "daily_average_consumption",
     "energy_efficiency_grade",
     "estimate_savings",
+    "hourly_cost_breakdown",
     "kwh_to_wh",
     "monthly_consumption_summary",
     "peak_demand_by_period",
     "peak_demand_report",
     "rolling_savings_summary",
+    "savings_report",
     "seasonal_efficiency_score",
     "tariff_cost",
     "top_consumption_hours",
@@ -573,4 +575,65 @@ def demand_variance_report(readings: list[float]) -> dict[str, float]:
         "peak": peak,
         "valley": valley,
         "peak_to_valley_ratio": ptv,
+    }
+
+
+def hourly_cost_breakdown(
+    hourly_kwh: list[float],
+    tariff_per_kwh: float,
+) -> list[dict[str, float]]:
+    """Compute per-hour energy cost from an hourly consumption series.
+
+    Args:
+        hourly_kwh: Hourly energy readings in kWh (typically 24 or 168 values).
+        tariff_per_kwh: Cost per kWh.
+
+    Returns:
+        List of dicts with 'hour' (0-based index), 'kwh', and 'cost' keys.
+
+    Raises:
+        ValueError: If *hourly_kwh* is empty or *tariff_per_kwh* is negative.
+    """
+    if not hourly_kwh:
+        raise ValueError("hourly_kwh must not be empty")
+    if tariff_per_kwh < 0:
+        raise ValueError("tariff_per_kwh must be non-negative")
+    return [
+        {"hour": i, "kwh": round(kwh, 4), "cost": round(kwh * tariff_per_kwh, 4)}
+        for i, kwh in enumerate(hourly_kwh)
+    ]
+
+
+def savings_report(
+    baseline_kwh: float,
+    actual_kwh: float,
+    tariff_per_kwh: float = 0.15,
+) -> dict[str, float]:
+    """Summarise energy savings against a baseline in kWh and monetary terms.
+
+    Args:
+        baseline_kwh: Reference (pre-improvement) energy consumption in kWh.
+        actual_kwh: Measured consumption in kWh.
+        tariff_per_kwh: Energy unit cost for monetary calculation.
+
+    Returns:
+        Dict with 'saved_kwh', 'saved_cost', 'pct_saved', and 'efficiency_ratio'.
+        Positive 'saved_kwh' means actual < baseline (improvement).
+
+    Raises:
+        ValueError: If *tariff_per_kwh* is negative or *baseline_kwh* is negative.
+    """
+    if baseline_kwh < 0:
+        raise ValueError("baseline_kwh must be non-negative")
+    if tariff_per_kwh < 0:
+        raise ValueError("tariff_per_kwh must be non-negative")
+    saved_kwh = round(baseline_kwh - actual_kwh, 4)
+    saved_cost = round(saved_kwh * tariff_per_kwh, 4)
+    pct_saved = round(saved_kwh / baseline_kwh * 100.0, 4) if baseline_kwh > 0 else 0.0
+    efficiency_ratio = round(actual_kwh / baseline_kwh, 4) if baseline_kwh > 0 else 1.0
+    return {
+        "saved_kwh": saved_kwh,
+        "saved_cost": saved_cost,
+        "pct_saved": pct_saved,
+        "efficiency_ratio": efficiency_ratio,
     }
