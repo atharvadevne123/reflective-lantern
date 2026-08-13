@@ -289,18 +289,20 @@ def deduplicate_alerts_by_window(alerts: list[Alert], window_seconds: float = 30
 
 
 def top_alerts(alerts: list[Alert], n: int = 5) -> list[Alert]:
-    """Return the *n* most severe alerts, breaking ties by recency.
+    """Return the *n* most severe alerts, breaking ties by insertion order (latest first).
 
     Args:
         alerts: List of Alert objects.
         n: Maximum number to return.
 
     Returns:
-        Up to *n* alerts sorted by severity (highest first), then recency.
+        Up to *n* alerts sorted by severity (highest first), then by recency
+        (later items in *alerts* are treated as more recent).
     """
     severity_order = {"critical": 0, "warning": 1, "info": 2}
+    indexed = list(enumerate(alerts))
     sorted_alerts = sorted(
-        alerts,
-        key=lambda a: (severity_order.get(a.severity.lower(), 99), -a.created_at),
+        indexed,
+        key=lambda ia: (severity_order.get(ia[1].severity.lower(), 99), -ia[0]),
     )
-    return sorted_alerts[:n]
+    return [a for _, a in sorted_alerts[:n]]

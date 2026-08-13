@@ -25,7 +25,6 @@ KNOWN_REGIONS: dict[str, RegionDict] = {
 
 
 @lru_cache(maxsize=64)
-@lru_cache(maxsize=64)
 def get_region(region_id: str) -> RegionDict | None:
     """Return the region metadata dict for *region_id*, or None if unknown."""
     return KNOWN_REGIONS.get(region_id.lower())
