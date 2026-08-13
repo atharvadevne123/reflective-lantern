@@ -94,6 +94,8 @@ __all__ = [
     "make_strict_limiter",
     "prune_idle_clients",
     "reset_limiter",
+    "bulk_allow",
+    "reset_client",
 ]
 
 
@@ -238,3 +240,33 @@ def allow_burst(limiter: TokenBucketRateLimiter, client_key: str, n: int) -> boo
             bucket.tokens -= n
             return True
         return False
+
+
+def reset_client(limiter: TokenBucketRateLimiter, client_key: str) -> bool:
+    """Reset a specific client's token bucket to full capacity.
+
+    Args:
+        limiter: A :class:`TokenBucketRateLimiter` instance.
+        client_key: Identifier of the client to reset.
+
+    Returns:
+        True if the client existed and was reset; False if not found.
+    """
+    with limiter._lock:
+        if client_key not in limiter._buckets:
+            return False
+        limiter._buckets[client_key] = _Bucket(tokens=limiter._capacity)
+        return True
+
+
+def bulk_allow(limiter: TokenBucketRateLimiter, client_keys: list[str]) -> dict[str, bool]:
+    """Check rate-limit allowance for multiple clients in one call.
+
+    Args:
+        limiter: A :class:`TokenBucketRateLimiter` instance.
+        client_keys: List of client identifiers to check.
+
+    Returns:
+        Dict mapping each client key to its allow/deny boolean.
+    """
+    return {key: limiter.is_allowed(key) for key in client_keys}
