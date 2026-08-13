@@ -175,6 +175,8 @@ __all__ = [
     "multi_building_benchmark",
     "site_eui",
     "target_eui",
+    "benchmark_score_label",
+    "percentile_rank",
 ]
 
 
@@ -404,3 +406,42 @@ def multi_building_benchmark(
         bench = benchmark_eui(eui, btype)
         results.append({**bldg, "eui": eui, "rating": bench["rating"], "benchmark_eui": bench["benchmark_eui"]})
     return results
+
+
+def percentile_rank(value: float, population: list[float]) -> float:
+    """Return the percentile rank of *value* within *population* (0-100).
+
+    Percentile rank is the percentage of values in *population* that are
+    less than or equal to *value*.
+
+    Args:
+        value: The value to rank.
+        population: Reference dataset to rank against.
+
+    Returns:
+        Percentile rank as a float in [0.0, 100.0]; 0.0 for empty population.
+    """
+    if not population:
+        return 0.0
+    count_leq = sum(1 for v in population if v <= value)
+    return round(count_leq / len(population) * 100.0, 2)
+
+
+def benchmark_score_label(score: float) -> str:
+    """Return a human-readable label for an ENERGY STAR-style benchmark score.
+
+    Args:
+        score: Benchmark score on a 0-100 scale (higher is better).
+
+    Returns:
+        One of 'poor', 'below_average', 'average', 'good', 'excellent'.
+    """
+    if score < 25:
+        return "poor"
+    if score < 50:
+        return "below_average"
+    if score < 75:
+        return "average"
+    if score < 90:
+        return "good"
+    return "excellent"
