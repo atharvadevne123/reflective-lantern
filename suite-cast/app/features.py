@@ -121,3 +121,43 @@ def build_feature_pipeline() -> Pipeline:
             ("scaler", StandardScaler()),
         ]
     )
+
+
+def feature_names() -> list[str]:
+    """Return the ordered list of feature column names output by the pipeline.
+
+    Returns:
+        List of feature column name strings as produced by HotelFeatureEngineer.
+    """
+    return list(FEATURE_COLS)
+
+
+def lead_time_bucket_label(lead_time_days: int) -> str:
+    """Return a human-readable label for a given lead time in days.
+
+    Args:
+        lead_time_days: Number of days between booking and check-in.
+
+    Returns:
+        One of 'last_minute', 'short', 'medium', 'advance'.
+    """
+    if lead_time_days <= 3:
+        return "last_minute"
+    if lead_time_days <= 14:
+        return "short"
+    if lead_time_days <= 60:
+        return "medium"
+    return "advance"
+
+
+def seasonality_score_for_month(month: int) -> float:
+    """Return the seasonal demand multiplier for a calendar month (1-12).
+
+    Args:
+        month: Calendar month as integer 1-12.
+
+    Returns:
+        Demand multiplier float from _SEASON_INDEX.
+    """
+    season = _MONTH_TO_SEASON.get(month, "spring")
+    return _SEASON_INDEX[season]
