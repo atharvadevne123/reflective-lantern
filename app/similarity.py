@@ -119,6 +119,7 @@ __all__ = [
     "score_distribution",
     "search_comparable",
     "similarity_matrix",
+    "top_k_similar",
 ]
 
 
@@ -384,3 +385,40 @@ def similarity_matrix(profiles: list[list[float]]) -> list[list[float]]:
     normed = arr / norms
     mat = normed @ normed.T
     return [[round(float(mat[i, j]), 6) for j in range(n)] for i in range(n)]
+
+
+def top_k_similar(
+    query: list[float],
+    profiles: list[list[float]],
+    k: int = 5,
+) -> list[tuple[int, float]]:
+    """Find the k most similar profiles to *query* by cosine similarity.
+
+    Args:
+        query: Query feature vector.
+        profiles: List of candidate feature vectors (all same length as query).
+        k: Number of nearest neighbours to return.
+
+    Returns:
+        Sorted list of (index, similarity) pairs, highest similarity first.
+        Length may be less than k if fewer candidates are available.
+
+    Raises:
+        ValueError: If *query* is empty or *k* < 1.
+    """
+    if not query:
+        raise ValueError("query must not be empty")
+    if k < 1:
+        raise ValueError(f"k must be at least 1, got {k}")
+    q = np.array(query, dtype=np.float32)
+    q_norm = q / (np.linalg.norm(q) + 1e-9)
+    scores: list[tuple[int, float]] = []
+    for idx, prof in enumerate(profiles):
+        if len(prof) != len(query):
+            continue
+        v = np.array(prof, dtype=np.float32)
+        v_norm = v / (np.linalg.norm(v) + 1e-9)
+        sim = float(np.dot(q_norm, v_norm))
+        scores.append((idx, round(sim, 6)))
+    scores.sort(key=lambda x: x[1], reverse=True)
+    return scores[:k]
