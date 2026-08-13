@@ -103,15 +103,18 @@ def week_of_year(dt: datetime) -> int:
 
 __all__ = [
     "clamp_to_range",
+    "date_range",
     "datetime_to_iso",
     "days_between",
     "days_until",
+    "elapsed_seconds",
     "format_iso",
     "generate_hourly_timestamps",
     "hours_between",
     "is_business_hour",
     "is_weekend",
     "iso_to_datetime",
+    "next_midnight",
     "quarter_of_year",
     "round_to_hour",
     "start_of_day",
@@ -329,3 +332,56 @@ def clamp_to_range(dt: datetime, start: datetime, end: datetime) -> datetime:
     if dt > end:
         return end
     return dt
+
+
+def date_range(start: datetime, end: datetime, step_hours: int = 24) -> list[datetime]:
+    """Generate a list of datetimes from *start* to *end* (exclusive) at *step_hours* intervals.
+
+    Args:
+        start: Range start (inclusive).
+        end: Range end (exclusive).
+        step_hours: Interval between successive datetimes in hours (default 24).
+
+    Returns:
+        List of datetimes beginning at *start* and stepping by *step_hours* until *end*.
+
+    Raises:
+        ValueError: If *step_hours* < 1 or *start* >= *end*.
+    """
+    if step_hours < 1:
+        raise ValueError(f"step_hours must be at least 1, got {step_hours}")
+    if start >= end:
+        raise ValueError("start must be before end")
+    result: list[datetime] = []
+    current = start
+    delta = timedelta(hours=step_hours)
+    while current < end:
+        result.append(current)
+        current += delta
+    return result
+
+
+def elapsed_seconds(start: datetime, end: datetime) -> float:
+    """Return the number of seconds between *start* and *end*.
+
+    Args:
+        start: Earlier datetime.
+        end: Later datetime.
+
+    Returns:
+        Total seconds as a float; negative when *end* precedes *start*.
+    """
+    return (end - start).total_seconds()
+
+
+def next_midnight(dt: datetime) -> datetime:
+    """Return the next midnight after *dt* (start of the following day).
+
+    Args:
+        dt: Reference datetime (timezone is preserved).
+
+    Returns:
+        Datetime set to midnight at the start of the next calendar day.
+    """
+    next_day = (dt + timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0)
+    return next_day
