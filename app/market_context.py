@@ -422,6 +422,8 @@ __all__ = [
     "price_trend_indicator",
     "rent_vs_buy_comparison",
     "value_gap",
+    "affordability_ratio",
+    "market_velocity",
 ]
 
 
@@ -803,3 +805,49 @@ def price_reduction_pct(original_price: float, current_price: float) -> float:
     if original_price == 0.0:
         return 0.0
     return round((original_price - current_price) / original_price * 100.0, 4)
+
+
+def market_velocity(listings_sold: int, active_listings: int) -> float:
+    """Compute market velocity as months of supply.
+
+    Months of supply = active listings / monthly sales rate.  A lower value
+    indicates a faster (seller's) market.
+
+    Args:
+        listings_sold: Number of listings sold in the reference period (e.g. one month).
+        active_listings: Current number of active listings on market.
+
+    Returns:
+        Months of supply as a float; 0.0 when *listings_sold* is 0.
+
+    Raises:
+        ValueError: If either argument is negative.
+    """
+    if listings_sold < 0 or active_listings < 0:
+        raise ValueError("listings_sold and active_listings must be non-negative")
+    if listings_sold == 0:
+        return 0.0
+    return round(active_listings / listings_sold, 4)
+
+
+def affordability_ratio(median_home_price: float, median_annual_income: float) -> float:
+    """Compute the price-to-income affordability ratio.
+
+    A ratio above 5 is generally considered unaffordable; below 3 is affordable.
+
+    Args:
+        median_home_price: Median home price in the market.
+        median_annual_income: Median household annual gross income.
+
+    Returns:
+        Ratio of home price to annual income, rounded to 4 decimal places.
+        Returns 0.0 when *median_annual_income* is 0.
+
+    Raises:
+        ValueError: If either argument is negative.
+    """
+    if median_home_price < 0 or median_annual_income < 0:
+        raise ValueError("Both arguments must be non-negative")
+    if median_annual_income == 0.0:
+        return 0.0
+    return round(median_home_price / median_annual_income, 4)
