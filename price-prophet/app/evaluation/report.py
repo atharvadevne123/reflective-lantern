@@ -134,7 +134,9 @@ def compare_models(results: dict[str, dict]) -> dict[str, int]:
     return {name: rank + 1 for rank, name in enumerate(sorted_names)}
 
 
-def compare_models_by_metric(results: dict[str, dict], metric: str = "mae") -> list[tuple[str, float]]:
+def compare_models_by_metric(
+    results: dict[str, dict], metric: str = "mae"
+) -> list[tuple[str, float]]:
     """Rank models by a given metric and return sorted (name, value) pairs.
 
     Parameters

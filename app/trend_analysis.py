@@ -543,7 +543,7 @@ def detect_outliers(values: list[float], z_threshold: float = 2.5) -> list[int]:
     variance = sum((v - mean) ** 2 for v in values) / n
     if variance == 0.0:
         return []
-    std = variance ** 0.5
+    std = variance**0.5
     return [i for i, v in enumerate(values) if abs(v - mean) / std > z_threshold]
 
 

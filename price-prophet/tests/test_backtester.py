@@ -1,4 +1,5 @@
 """Tests for app/evaluation/backtester.py."""
+
 from __future__ import annotations
 
 
@@ -9,6 +10,7 @@ class _FlatModel:
 
 def _make_backtester(baseline=None):
     from app.evaluation.backtester import Backtester
+
     if baseline is None:
         baseline = [100.0, 100.0, 100.0]
     return Backtester(_FlatModel(), baseline)

@@ -630,6 +630,7 @@ def validate_export_schema(
         "invalid_indices": invalid,
     }
 
+
 def export_to_json(records: list[dict], indent: int = 2) -> str:
     """Serialize *records* to a JSON string.
 
@@ -641,6 +642,7 @@ def export_to_json(records: list[dict], indent: int = 2) -> str:
         JSON-encoded string of the records list.
     """
     import json
+
     return json.dumps(records, indent=indent, default=str)
 
 

@@ -79,6 +79,4 @@ class LinearPricingModel(BasePricingModel):
 
     def __repr__(self) -> str:
         fitted_str = "fitted" if self._fitted else "not fitted"
-        return (
-            f"LinearPricingModel(fit_intercept={self.fit_intercept}, {fitted_str})"
-        )
+        return f"LinearPricingModel(fit_intercept={self.fit_intercept}, {fitted_str})"

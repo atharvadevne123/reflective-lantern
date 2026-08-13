@@ -1,9 +1,11 @@
 """Tests for app/models/base.py."""
+
 from __future__ import annotations
 
 
 class ConcreteModel:
     """Minimal concrete subclass for testing BasePricingModel."""
+
     _fitted: bool = False
 
     def fit(self, X, y):

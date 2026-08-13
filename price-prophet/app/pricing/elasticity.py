@@ -96,7 +96,7 @@ def apply_elasticity(
     if base_price <= 0.0 or new_price <= 0.0:
         return base_demand
     ratio = new_price / base_price
-    return base_demand * (ratio ** elasticity)
+    return base_demand * (ratio**elasticity)
 
 
 def is_elastic(elasticity: float) -> bool:

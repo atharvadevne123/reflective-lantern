@@ -127,9 +127,7 @@ def generate_synthetic_data(
         base_price = round(base_price, 2)
 
         # Competition price is correlated with base price
-        competition_price = round(
-            base_price * rng.uniform(0.8, 1.2), 2
-        )
+        competition_price = round(base_price * rng.uniform(0.8, 1.2), 2)
 
         day_of_week = rng.randint(0, 6)
         is_weekend = day_of_week >= 5

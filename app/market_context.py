@@ -827,5 +827,3 @@ def market_velocity(listings_sold: int, active_listings: int) -> float:
     if listings_sold == 0:
         return 0.0
     return round(active_listings / listings_sold, 4)
-
-

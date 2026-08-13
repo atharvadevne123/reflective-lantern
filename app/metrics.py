@@ -45,7 +45,7 @@ def root_mean_squared_error(actual: list[float], predicted: list[float]) -> floa
     if len(actual) != len(predicted):
         raise ValueError("actual and predicted must have the same length")
     mse = sum((a - p) ** 2 for a, p in zip(actual, predicted, strict=False)) / len(actual)
-    return round(mse ** 0.5, 6)
+    return round(mse**0.5, 6)
 
 
 def mean_absolute_percentage_error(

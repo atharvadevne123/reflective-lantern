@@ -565,7 +565,7 @@ def demand_variance_report(readings: list[float]) -> dict[str, float]:
     n = len(readings)
     mean = sum(readings) / n
     variance = sum((r - mean) ** 2 for r in readings) / n
-    std_dev = variance ** 0.5
+    std_dev = variance**0.5
     peak = max(readings)
     valley = min(readings)
     cv_pct = round(std_dev / mean * 100.0, 4) if mean > 0 else 0.0
@@ -601,8 +601,7 @@ def hourly_cost_breakdown(
     if tariff_per_kwh < 0:
         raise ValueError("tariff_per_kwh must be non-negative")
     return [
-        {"hour": i, "kwh": round(kwh, 4), "cost": round(kwh * tariff_per_kwh, 4)}
-        for i, kwh in enumerate(hourly_kwh)
+        {"hour": i, "kwh": round(kwh, 4), "cost": round(kwh * tariff_per_kwh, 4)} for i, kwh in enumerate(hourly_kwh)
     ]
 
 

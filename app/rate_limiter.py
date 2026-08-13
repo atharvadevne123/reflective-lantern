@@ -205,10 +205,7 @@ def client_stats(limiter: TokenBucketRateLimiter) -> dict[str, object]:
         Dict with 'client_count' and 'clients' (list of dicts with key, tokens).
     """
     with limiter._lock:
-        snapshot = [
-            {"key": k, "tokens": round(b.tokens, 4)}
-            for k, b in limiter._buckets.items()
-        ]
+        snapshot = [{"key": k, "tokens": round(b.tokens, 4)} for k, b in limiter._buckets.items()]
     return {"client_count": len(snapshot), "clients": snapshot}
 
 

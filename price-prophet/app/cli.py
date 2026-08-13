@@ -49,7 +49,10 @@ def build_parser() -> argparse.ArgumentParser:
     train_parser = subparsers.add_parser("train", help="Train a pricing model.")
     train_parser.add_argument("--data", required=True, metavar="PATH")
     train_parser.add_argument(
-        "--model-type", dest="model_type", default="linear", choices=["linear", "gradient_boost", "ensemble"]
+        "--model-type",
+        dest="model_type",
+        default="linear",
+        choices=["linear", "gradient_boost", "ensemble"],
     )
 
     evaluate_parser = subparsers.add_parser("evaluate", help="Evaluate a trained model.")

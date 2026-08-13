@@ -89,8 +89,7 @@ def validate_record(record: dict[str, Any]) -> ValidationResult:
         base_price = float(record["base_price"])
         if base_price <= 0.0:
             errors.append(
-                f"base_price must be > 0, got {base_price} "
-                f"(product_id={record['product_id']!r})"
+                f"base_price must be > 0, got {base_price} (product_id={record['product_id']!r})"
             )
     except (TypeError, ValueError):
         errors.append(
@@ -104,8 +103,7 @@ def validate_record(record: dict[str, Any]) -> ValidationResult:
         demand = float(record["demand"])
         if demand < 0.0:
             errors.append(
-                f"demand must be >= 0, got {demand} "
-                f"(product_id={record['product_id']!r})"
+                f"demand must be >= 0, got {demand} (product_id={record['product_id']!r})"
             )
     except (TypeError, ValueError):
         errors.append(

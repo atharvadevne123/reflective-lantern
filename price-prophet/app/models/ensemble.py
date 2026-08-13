@@ -45,7 +45,9 @@ class EnsemblePricingModel(BasePricingModel):
     def _validate_weights(self) -> None:
         """Ensure *weights* length matches *models* length if provided."""
         if self.weights is not None and len(self.weights) != len(self.models):
-            raise ValueError(f"weights length ({len(self.weights)}) must match models length ({len(self.models)}).")
+            raise ValueError(
+                f"weights length ({len(self.weights)}) must match models length ({len(self.models)})."
+            )
 
     def _normalised_weights(self) -> list[float]:
         """Return a normalised weight vector (sums to 1.0)."""
@@ -90,7 +92,8 @@ class EnsemblePricingModel(BasePricingModel):
             If called before :meth:`fit`.
         """
         all_members_fitted = all(
-            getattr(m, "_fitted", False) or (hasattr(m, "is_fitted") and m.is_fitted()) for m in self.models
+            getattr(m, "_fitted", False) or (hasattr(m, "is_fitted") and m.is_fitted())
+            for m in self.models
         )
         if not self._fitted and not all_members_fitted:
             raise RuntimeError("EnsemblePricingModel is not fitted yet. Call fit() first.")
@@ -145,7 +148,9 @@ class EnsemblePricingModel(BasePricingModel):
             If *index* is out of range or would leave the ensemble empty.
         """
         if index < 0 or index >= len(self.models):
-            raise IndexError(f"index {index} out of range for ensemble with {len(self.models)} members")
+            raise IndexError(
+                f"index {index} out of range for ensemble with {len(self.models)} members"
+            )
         if len(self.models) == 1:
             raise IndexError("cannot remove the last model from the ensemble")
         removed = self.models.pop(index)

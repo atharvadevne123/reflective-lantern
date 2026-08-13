@@ -15,9 +15,7 @@ def _check_lengths(actual: list[float], predicted: list[float]) -> None:
     if not actual or not predicted:
         raise ValueError("actual and predicted must not be empty.")
     if len(actual) != len(predicted):
-        raise ValueError(
-            f"Length mismatch: actual={len(actual)}, predicted={len(predicted)}."
-        )
+        raise ValueError(f"Length mismatch: actual={len(actual)}, predicted={len(predicted)}.")
 
 
 def mae(actual: list[float], predicted: list[float]) -> float:

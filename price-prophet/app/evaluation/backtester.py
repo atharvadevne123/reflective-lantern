@@ -55,12 +55,16 @@ class Backtester:
             return self._run_simple(X, y_actual, y_model)
         return self._run_walk_forward(X, price_col, demand_col)
 
-    def _run_simple(self, X: list[Any], y_actual: list[float], y_model: list[float] | None = None) -> dict[str, Any]:
+    def _run_simple(
+        self, X: list[Any], y_actual: list[float], y_model: list[float] | None = None
+    ) -> dict[str, Any]:
         n = len(X)
         if n == 0:
             return {"n_periods": 0, "baseline_revenue": 0.0, "model_revenue": 0.0, "mae": 0.0}
         baseline = self._baseline
-        baseline_revenue = sum(b * a for b, a in zip(baseline, y_actual, strict=False)) if baseline else 0.0
+        baseline_revenue = (
+            sum(b * a for b, a in zip(baseline, y_actual, strict=False)) if baseline else 0.0
+        )
         preds = self.model.predict(X) if X else []
         model_revenue = sum(p * a for p, a in zip(preds, y_actual, strict=False)) if preds else 0.0
         mae = sum(abs(a - p) for a, p in zip(y_actual, preds, strict=False)) / n if preds else 0.0
@@ -153,7 +157,12 @@ class Backtester:
         n = len(records)
         if n < self.window * 2:
             # Not enough data for even one train+eval split; return NaNs
-            return {"mae": float("nan"), "rmse": float("nan"), "r_squared": float("nan"), "n_windows": 0}
+            return {
+                "mae": float("nan"),
+                "rmse": float("nan"),
+                "r_squared": float("nan"),
+                "n_windows": 0,
+            }
 
         window_maes: list[float] = []
         window_rmses: list[float] = []
@@ -181,7 +190,12 @@ class Backtester:
             eval_start += self.window
 
         if n_windows == 0:
-            return {"mae": float("nan"), "rmse": float("nan"), "r_squared": float("nan"), "n_windows": 0}
+            return {
+                "mae": float("nan"),
+                "rmse": float("nan"),
+                "r_squared": float("nan"),
+                "n_windows": 0,
+            }
 
         self._window_maes = window_maes
         self._window_rmses = window_rmses
