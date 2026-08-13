@@ -139,6 +139,7 @@ def deduplicate_records(
 __all__ = [
     "aggregate_by_hour",
     "deduplicate_records",
+    "export_summary_csv",
     "filter_records",
     "kwh_stats_by_building",
     "normalize_kwh",
@@ -151,6 +152,7 @@ __all__ = [
     "split_by_day",
     "summarize_export",
     "top_buildings_by_kwh",
+    "validate_export_schema",
 ]
 
 
@@ -567,3 +569,61 @@ def filter_records_by_value(
         Filtered list preserving order.
     """
     return [r for r in records if min_value <= float(r.get(field, float("nan"))) <= max_value]
+
+
+def export_summary_csv(records: list[dict[str, Any]], group_field: str = "building_id") -> str:
+    """Export a grouped summary as CSV.
+
+    Groups records by *group_field* and emits one row per group with
+    total_kwh, record_count, and avg_kwh columns.
+
+    Args:
+        records: List of energy record dicts (each must have *group_field* and
+            ``consumption_kwh`` keys).
+        group_field: Field to group by (default ``building_id``).
+
+    Returns:
+        CSV string with header row.
+    """
+    from collections import defaultdict
+
+    groups: dict[str, list[float]] = defaultdict(list)
+    for r in records:
+        key = str(r.get(group_field, "unknown"))
+        try:
+            groups[key].append(float(r.get("consumption_kwh", 0.0)))
+        except (TypeError, ValueError):
+            groups[key].append(0.0)
+    lines = [f"{group_field},total_kwh,record_count,avg_kwh"]
+    for grp, vals in sorted(groups.items()):
+        total = round(sum(vals), 4)
+        count = len(vals)
+        avg = round(total / count, 4) if count else 0.0
+        lines.append(f"{grp},{total},{count},{avg}")
+    return "\n".join(lines)
+
+
+def validate_export_schema(
+    records: list[dict[str, Any]],
+    required_fields: list[str],
+) -> dict[str, Any]:
+    """Check that all records have the required fields and return a validation report.
+
+    Args:
+        records: List of export records to validate.
+        required_fields: Field names that must be present (non-None) in every record.
+
+    Returns:
+        Dict with 'valid' (bool), 'total_records', 'invalid_count', and
+        'invalid_indices' (list of 0-based indices with missing fields).
+    """
+    invalid: list[int] = []
+    for i, rec in enumerate(records):
+        if any(rec.get(f) is None for f in required_fields):
+            invalid.append(i)
+    return {
+        "valid": len(invalid) == 0,
+        "total_records": len(records),
+        "invalid_count": len(invalid),
+        "invalid_indices": invalid,
+    }
