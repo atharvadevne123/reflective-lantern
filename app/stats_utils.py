@@ -146,6 +146,8 @@ __all__ = [
     "weighted_average",
     "weighted_median",
     "zscore",
+    "correlation_coefficient",
+    "sample_std",
 ]
 
 
@@ -900,3 +902,51 @@ def population_variance(values: list[float]) -> float:
         raise ValueError("values must not be empty")
     mean = sum(values) / len(values)
     return round(sum((v - mean) ** 2 for v in values) / len(values), 6)
+
+
+def sample_std(values: list[float]) -> float:
+    """Compute the sample standard deviation (Bessel-corrected, denominator N-1).
+
+    Args:
+        values: Numeric sample values.
+
+    Returns:
+        Sample standard deviation as a float.
+
+    Raises:
+        ValueError: If fewer than 2 values are provided.
+    """
+    n = len(values)
+    if n < 2:
+        raise ValueError("Need at least 2 values for sample standard deviation")
+    mean = sum(values) / n
+    return round((sum((v - mean) ** 2 for v in values) / (n - 1)) ** 0.5, 6)
+
+
+def correlation_coefficient(x: list[float], y: list[float]) -> float:
+    """Compute the Pearson correlation coefficient between two series.
+
+    Args:
+        x: First numeric series.
+        y: Second numeric series (must be same length as *x*).
+
+    Returns:
+        Pearson r in [-1, 1]; 0.0 when variance in either series is zero.
+
+    Raises:
+        ValueError: If *x* and *y* have different lengths or fewer than 2 points.
+    """
+    n = len(x)
+    if n != len(y):
+        raise ValueError("x and y must have the same length")
+    if n < 2:
+        raise ValueError("Need at least 2 data points")
+    mean_x = sum(x) / n
+    mean_y = sum(y) / n
+    cov = sum((xi - mean_x) * (yi - mean_y) for xi, yi in zip(x, y, strict=False))
+    var_x = sum((xi - mean_x) ** 2 for xi in x)
+    var_y = sum((yi - mean_y) ** 2 for yi in y)
+    denom = (var_x * var_y) ** 0.5
+    if denom == 0.0:
+        return 0.0
+    return round(cov / denom, 6)
