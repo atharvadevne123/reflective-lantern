@@ -121,6 +121,8 @@ __all__ = [
     "start_of_month",
     "utc_now",
     "week_of_year",
+    "business_days_between",
+    "is_business_day",
 ]
 
 
@@ -385,3 +387,39 @@ def next_midnight(dt: datetime) -> datetime:
     """
     next_day = (dt + timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0)
     return next_day
+
+
+def business_days_between(start: datetime, end: datetime) -> int:
+    """Count the number of business days (Mon-Fri) between *start* and *end*.
+
+    Args:
+        start: Start datetime (inclusive).
+        end: End datetime (exclusive).
+
+    Returns:
+        Number of weekdays in [start.date(), end.date()).
+    """
+    if end <= start:
+        return 0
+    from datetime import date
+    s = start.date()
+    e = end.date()
+    total = 0
+    current = s
+    while current < e:
+        if current.weekday() < 5:
+            total += 1
+        current += timedelta(days=1)
+    return total
+
+
+def is_business_day(dt: datetime) -> bool:
+    """Return True if *dt* falls on a Monday through Friday.
+
+    Args:
+        dt: Datetime to check.
+
+    Returns:
+        True for weekdays, False for Saturday and Sunday.
+    """
+    return dt.weekday() < 5
