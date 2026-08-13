@@ -8,7 +8,7 @@ metrics use an external system like Prometheus.
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 
 class MetricsCollector:
@@ -20,9 +20,9 @@ class MetricsCollector:
     """
 
     def __init__(self) -> None:
-        self._records: List[Dict[str, Any]] = []
-        self._counters: Dict[str, float] = {}
-        self._timings: Dict[str, List[float]] = {}
+        self._records: list[dict[str, Any]] = []
+        self._counters: dict[str, float] = {}
+        self._timings: dict[str, list[float]] = {}
 
     def increment(self, name: str, by: float = 1.0) -> None:
         """Increment a named counter by *by* (default 1)."""
@@ -41,7 +41,7 @@ class MetricsCollector:
         vals = self._timings.get(name, [])
         return sum(vals) / len(vals) if vals else 0.0
 
-    def snapshot(self) -> Dict[str, Any]:
+    def snapshot(self) -> dict[str, Any]:
         """Return a snapshot of all counters and average timings."""
         return {
             "counters": dict(self._counters),
@@ -58,7 +58,7 @@ class MetricsCollector:
         self,
         name: str,
         value: float,
-        tags: Optional[Dict[str, Any]] = None,
+        tags: dict[str, Any] | None = None,
     ) -> None:
         """Append a metric observation.
 
@@ -71,12 +71,12 @@ class MetricsCollector:
         tags:
             Optional dict of key/value metadata (e.g. ``{"model": "linear"}``).
         """
-        entry: Dict[str, Any] = {"name": name, "value": float(value)}
+        entry: dict[str, Any] = {"name": name, "value": float(value)}
         if tags is not None:
             entry["tags"] = dict(tags)
         self._records.append(entry)
 
-    def get_all(self) -> List[Dict[str, Any]]:
+    def get_all(self) -> list[dict[str, Any]]:
         """Return all recorded metric observations.
 
         Returns
@@ -86,7 +86,7 @@ class MetricsCollector:
         """
         return list(self._records)
 
-    def get_by_name(self, name: str) -> List[Dict[str, Any]]:
+    def get_by_name(self, name: str) -> list[dict[str, Any]]:
         """Return all observations whose ``name`` matches *name*.
 
         Parameters
@@ -100,7 +100,7 @@ class MetricsCollector:
         """
         return [r for r in self._records if r["name"] == name]
 
-    def summary(self, name: str) -> Dict[str, Any]:
+    def summary(self, name: str) -> dict[str, Any]:
         """Compute basic statistics over all observations for *name*.
 
         Parameters
@@ -130,5 +130,5 @@ class MetricsCollector:
         self._records.clear()
 
 
-# Module-level singleton – import and use this throughout the application.
+# Module-level singleton - import and use this throughout the application.
 collector = MetricsCollector()

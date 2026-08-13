@@ -9,7 +9,6 @@ from __future__ import annotations
 
 import json
 import os
-from typing import Any, Dict
 
 
 def format_metrics_report(metrics: dict, title: str = "Metrics Report") -> str:
@@ -87,7 +86,7 @@ def generate_summary(metrics: dict) -> str:
     lines = ["=" * 40, "Evaluation Summary", "=" * 40]
 
     # Well-known keys get pretty labels; everything else uses the raw key.
-    _LABELS: Dict[str, str] = {
+    _LABELS: dict[str, str] = {
         "mae": "MAE (Mean Absolute Error)",
         "rmse": "RMSE",
         "mape": "MAPE (%)",
@@ -108,7 +107,7 @@ def generate_summary(metrics: dict) -> str:
     return "\n".join(lines)
 
 
-def compare_models(results: Dict[str, dict]) -> Dict[str, int]:
+def compare_models(results: dict[str, dict]) -> dict[str, int]:
     """Rank models by MAE (lower is better).
 
     Parameters

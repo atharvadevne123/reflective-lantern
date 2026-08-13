@@ -21,12 +21,11 @@ from __future__ import annotations
 
 import argparse
 import sys
-from typing import List, Optional
-
 
 # ---------------------------------------------------------------------------
 # Argument parsing
 # ---------------------------------------------------------------------------
+
 
 def build_parser() -> argparse.ArgumentParser:
     """Return the configured argument parser (without parsing).
@@ -49,8 +48,9 @@ def build_parser() -> argparse.ArgumentParser:
 
     train_parser = subparsers.add_parser("train", help="Train a pricing model.")
     train_parser.add_argument("--data", required=True, metavar="PATH")
-    train_parser.add_argument("--model-type", dest="model_type", default="linear",
-                              choices=["linear", "gradient_boost", "ensemble"])
+    train_parser.add_argument(
+        "--model-type", dest="model_type", default="linear", choices=["linear", "gradient_boost", "ensemble"]
+    )
 
     evaluate_parser = subparsers.add_parser("evaluate", help="Evaluate a trained model.")
     evaluate_parser.add_argument("--model", required=True, metavar="NAME")
@@ -59,7 +59,7 @@ def build_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def parse_args(argv: Optional[List[str]] = None) -> argparse.Namespace:
+def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     """Build and parse the CLI argument parser.
 
     Parameters
@@ -142,6 +142,7 @@ def parse_args(argv: Optional[List[str]] = None) -> argparse.Namespace:
 # Subcommand handlers
 # ---------------------------------------------------------------------------
 
+
 def _handle_serve(args: argparse.Namespace) -> int:
     """Start the FastAPI application with uvicorn."""
     print(f"Starting server on {args.host}:{args.port}")
@@ -179,7 +180,8 @@ def _handle_evaluate(args: argparse.Namespace) -> int:
 # Entry point
 # ---------------------------------------------------------------------------
 
-def main(argv: Optional[List[str]] = None) -> int:
+
+def main(argv: list[str] | None = None) -> int:
     """Parse arguments and dispatch to the appropriate subcommand handler.
 
     Parameters

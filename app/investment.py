@@ -559,8 +559,6 @@ def equity_ratio(market_value: float, outstanding_loan: float) -> float:
     return round(equity / market_value, 4)
 
 
-
-
 def cash_on_cash_return(annual_pre_tax_cash_flow: float, total_cash_invested: float) -> float:
     """Compute the cash-on-cash return for a rental property.
 
@@ -781,8 +779,6 @@ def gross_yield(annual_rent: float, property_value: float) -> float:
     if property_value == 0.0:
         return 0.0
     return round(annual_rent / property_value * 100.0, 4)
-
-
 
 
 def equity_multiple(

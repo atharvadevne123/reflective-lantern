@@ -477,10 +477,7 @@ def records_missing_fields(records: list[dict[str, Any]], required: list[str]) -
     Returns:
         Sorted list of zero-based indices of incomplete records.
     """
-    return sorted(
-        i for i, r in enumerate(records)
-        if any(field not in r or r[field] is None for field in required)
-    )
+    return sorted(i for i, r in enumerate(records) if any(field not in r or r[field] is None for field in required))
 
 
 def records_to_lookup(records: list[dict[str, Any]], key: str) -> dict[str, dict[str, Any]]:
@@ -526,8 +523,6 @@ def rename_record_fields(
             new_rec[mapping.get(k, k)] = v
         result.append(new_rec)
     return result
-
-
 
 
 def flat_to_wide(

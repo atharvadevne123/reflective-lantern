@@ -740,7 +740,7 @@ def dom_category(days_on_market: int) -> str:
         days_on_market: Number of days the listing has been active.
 
     Returns:
-        Category string: ``"fast"`` (< 14 days), ``"normal"`` (14–60 days),
+        Category string: ``"fast"`` (< 14 days), ``"normal"`` (14-60 days),
         or ``"slow"`` (> 60 days).
 
     Raises:

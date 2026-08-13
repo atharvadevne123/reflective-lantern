@@ -784,7 +784,3 @@ def log_return(prices: list[float]) -> list[float]:
     if any(p <= 0 for p in prices):
         raise ValueError("log_return requires strictly positive prices")
     return [round(math.log(prices[i] / prices[i - 1]), 6) for i in range(1, len(prices))]
-
-
-
-

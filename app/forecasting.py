@@ -572,8 +572,6 @@ def forecast_confidence_interval(
     return [(round(p - margin, 4), round(p + margin, 4)) for p in predictions]
 
 
-
-
 def horizon_degradation(
     errors: list[float],
 ) -> float:
