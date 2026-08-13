@@ -338,10 +338,13 @@ __all__ = [
     "validate_feature_vector",
     "validate_forecast_horizon",
     "validate_load_series",
+    "validate_non_negative",
     "validate_percentage",
+    "validate_positive",
     "validate_price",
     "validate_reading_dict",
     "validate_region_id",
+    "validate_string_length",
     "validate_temporal_fields",
     "validate_weather_fields",
 ]
@@ -489,4 +492,59 @@ def validate_region_id(region_id: str) -> list[str]:
         errors.append(f"region_id must be alphanumeric with underscores only, got {region_id!r}")
     if not region_id.islower():
         errors.append(f"region_id must be lowercase, got {region_id!r}")
+    return errors
+
+
+def validate_non_negative(value: float, field_name: str = "value") -> list[str]:
+    """Validate that *value* is non-negative (>= 0).
+
+    Args:
+        value: Numeric value to validate.
+        field_name: Name of the field for error message context.
+
+    Returns:
+        List of error strings (empty when valid).
+    """
+    if value < 0:
+        return [f"{field_name} must be non-negative, got {value}"]
+    return []
+
+
+def validate_positive(value: float, field_name: str = "value") -> list[str]:
+    """Validate that *value* is strictly positive (> 0).
+
+    Args:
+        value: Numeric value to validate.
+        field_name: Name of the field for error message context.
+
+    Returns:
+        List of error strings (empty when valid).
+    """
+    if value <= 0:
+        return [f"{field_name} must be positive, got {value}"]
+    return []
+
+
+def validate_string_length(
+    value: str,
+    field_name: str = "value",
+    min_length: int = 1,
+    max_length: int = 255,
+) -> list[str]:
+    """Validate that a string's length is within [min_length, max_length].
+
+    Args:
+        value: String to validate.
+        field_name: Human-readable field name for error messages.
+        min_length: Minimum acceptable length (inclusive).
+        max_length: Maximum acceptable length (inclusive).
+
+    Returns:
+        List of error strings (empty when valid).
+    """
+    errors: list[str] = []
+    if len(value) < min_length:
+        errors.append(f"{field_name} must be at least {min_length} characters, got {len(value)}")
+    if len(value) > max_length:
+        errors.append(f"{field_name} must be at most {max_length} characters, got {len(value)}")
     return errors
