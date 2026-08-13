@@ -129,6 +129,53 @@ class MetricsCollector:
         """Remove all recorded observations."""
         self._records.clear()
 
+    def min_timing(self, name: str) -> float:
+        """Return minimum timing for *name*; 0.0 if no observations recorded.
+
+        Parameters
+        ----------
+        name:
+            Timing name to query.
+        """
+        vals = self._timings.get(name, [])
+        return min(vals) if vals else 0.0
+
+    def max_timing(self, name: str) -> float:
+        """Return maximum timing for *name*; 0.0 if no observations recorded.
+
+        Parameters
+        ----------
+        name:
+            Timing name to query.
+        """
+        vals = self._timings.get(name, [])
+        return max(vals) if vals else 0.0
+
+    def total_count(self) -> int:
+        """Return total number of recorded metric observations.
+
+        Returns
+        -------
+        int
+        """
+        return len(self._records)
+
+    def merge(self, other: MetricsCollector) -> None:
+        """Merge all records, counters, and timings from *other* into self.
+
+        Counters are summed; timing lists are concatenated; records are appended.
+
+        Parameters
+        ----------
+        other:
+            Another MetricsCollector whose data should be absorbed.
+        """
+        self._records.extend(other._records)
+        for name, value in other._counters.items():
+            self._counters[name] = self._counters.get(name, 0.0) + value
+        for name, vals in other._timings.items():
+            self._timings.setdefault(name, []).extend(vals)
+
 
 # Module-level singleton - import and use this throughout the application.
 collector = MetricsCollector()
