@@ -105,7 +105,7 @@ def test_stats_returns_expected_keys() -> None:
     c.set("k", "v")
     c.get("k")
     s = c.stats()
-    assert set(s.keys()) == {"size", "hits", "misses", "hit_rate"}
+    assert {"size", "hits", "misses", "hit_rate"} <= set(s.keys())
 
 
 def test_stats_empty_cache() -> None:

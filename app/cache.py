@@ -107,6 +107,7 @@ class TTLCache:
             "hits": self.hits,
             "misses": self.misses,
             "hit_rate": self.hit_rate,
+            "evictions": self.eviction_count,
         }
 
 
