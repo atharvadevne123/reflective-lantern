@@ -122,6 +122,8 @@ def cumulative_sum(values: list[float]) -> list[float]:
 def moving_max(values: list[float], window: int = 3) -> list[float]:
     """Return the rolling maximum over *window* periods.
 
+    Positions with fewer than *window* preceding values are NaN (strict window).
+
     Args:
         values: Time-ordered consumption readings.
         window: Number of periods to include in each rolling window.
@@ -129,13 +131,18 @@ def moving_max(values: list[float], window: int = 3) -> list[float]:
     Returns:
         Rolling maximum series of the same length as *values*.
     """
+    import math
+
     if not values:
         return []
     result: list[float] = []
     for i in range(len(values)):
-        start = max(0, i - window + 1)
-        result.append(max(values[start : i + 1]))
-    return [round(x, 6) for x in result]
+        if i + 1 < window:
+            result.append(math.nan)
+        else:
+            start = i - window + 1
+            result.append(round(max(values[start : i + 1]), 6))
+    return result
 
 
 def resample_hourly_to_daily(hourly: list[float]) -> list[float]:
