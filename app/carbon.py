@@ -177,9 +177,11 @@ __all__ = [
     "GRID_CARBON_INTENSITY",
     "KG_TO_TONNES",
     "TREES_PER_TONNE_CO2_PER_YEAR",
+    "annual_carbon_budget",
     "annual_carbon_report",
     "carbon_budget_remaining",
     "carbon_intensity_by_hour",
+    "carbon_intensity_label",
     "carbon_per_sqm",
     "carbon_reduction_pct",
     "carbon_saved_kwh",
@@ -193,8 +195,6 @@ __all__ = [
     "monthly_co2_breakdown",
     "tree_offset_days",
     "trees_equivalent",
-    "annual_carbon_budget",
-    "carbon_intensity_label",
 ]
 
 

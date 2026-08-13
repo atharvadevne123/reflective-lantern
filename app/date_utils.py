@@ -102,6 +102,7 @@ def week_of_year(dt: datetime) -> int:
 
 
 __all__ = [
+    "business_days_between",
     "clamp_to_range",
     "date_range",
     "datetime_to_iso",
@@ -111,6 +112,7 @@ __all__ = [
     "format_iso",
     "generate_hourly_timestamps",
     "hours_between",
+    "is_business_day",
     "is_business_hour",
     "is_weekend",
     "iso_to_datetime",
@@ -121,8 +123,6 @@ __all__ = [
     "start_of_month",
     "utc_now",
     "week_of_year",
-    "business_days_between",
-    "is_business_day",
 ]
 
 
@@ -401,7 +401,6 @@ def business_days_between(start: datetime, end: datetime) -> int:
     """
     if end <= start:
         return 0
-    from datetime import date
     s = start.date()
     e = end.date()
     total = 0

@@ -163,6 +163,7 @@ def forecast_bias(actual: list[float], predicted: list[float]) -> float:
 
 
 __all__ = [
+    "bias_score",
     "confidence_interval",
     "drift_forecast",
     "ensemble_forecast",
@@ -177,7 +178,6 @@ __all__ = [
     "seasonal_naive_forecast",
     "stepwise_error_growth",
     "weighted_ensemble_forecast",
-    "bias_score",
     "weighted_forecast",
 ]
 

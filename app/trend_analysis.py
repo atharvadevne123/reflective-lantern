@@ -223,8 +223,10 @@ __all__ = [
     "autocorrelation",
     "cumulative_sum",
     "detect_change_points",
+    "detect_outliers",
     "double_exponential_smoothing",
     "exponential_growth_rate",
+    "linear_regression_trend",
     "linear_trend",
     "momentum_score",
     "percentage_change",
@@ -237,8 +239,6 @@ __all__ = [
     "trend_strength",
     "trend_summary",
     "year_over_year_growth",
-    "detect_outliers",
-    "linear_regression_trend",
 ]
 
 

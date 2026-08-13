@@ -321,6 +321,7 @@ __all__ = [
     "consumption_efficiency_ratio",
     "consumption_trend",
     "daily_average_consumption",
+    "emission_report",
     "energy_efficiency_grade",
     "estimate_savings",
     "hourly_cost_breakdown",
@@ -328,14 +329,13 @@ __all__ = [
     "monthly_consumption_summary",
     "peak_demand_by_period",
     "peak_demand_report",
+    "peak_usage_window",
     "rolling_savings_summary",
     "savings_report",
     "seasonal_efficiency_score",
     "tariff_cost",
     "top_consumption_hours",
     "wh_to_kwh",
-    "emission_report",
-    "peak_usage_window",
 ]
 
 

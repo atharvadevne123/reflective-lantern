@@ -125,6 +125,7 @@ def percentile(values: list[float], p: float) -> float:
 
 __all__ = [
     "coefficient_of_variation",
+    "correlation_coefficient",
     "geometric_mean",
     "harmonic_mean",
     "interquartile_range",
@@ -140,14 +141,13 @@ __all__ = [
     "rolling_mean",
     "rolling_sharpe",
     "root_mean_squared_error",
+    "sample_std",
     "sharpe_ratio",
     "trimmed_mean",
     "variance",
     "weighted_average",
     "weighted_median",
     "zscore",
-    "correlation_coefficient",
-    "sample_std",
 ]
 
 

@@ -335,6 +335,7 @@ __all__ = [
     "validate_building_id",
     "validate_consumption_kwh",
     "validate_coordinate",
+    "validate_email",
     "validate_feature_vector",
     "validate_forecast_horizon",
     "validate_load_series",
@@ -342,13 +343,12 @@ __all__ = [
     "validate_percentage",
     "validate_positive",
     "validate_price",
+    "validate_range",
     "validate_reading_dict",
     "validate_region_id",
     "validate_string_length",
     "validate_temporal_fields",
     "validate_weather_fields",
-    "validate_email",
-    "validate_range",
 ]
 
 

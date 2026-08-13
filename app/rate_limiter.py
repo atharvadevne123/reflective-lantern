@@ -86,6 +86,7 @@ def make_rate_limiter(capacity: float = 60.0, rate_per_second: float = 1.0) -> T
 __all__ = [
     "TokenBucketRateLimiter",
     "allow_burst",
+    "bulk_allow",
     "burst_capacity_fraction",
     "client_stats",
     "is_rate_limited",
@@ -93,9 +94,8 @@ __all__ = [
     "make_rate_limiter",
     "make_strict_limiter",
     "prune_idle_clients",
-    "reset_limiter",
-    "bulk_allow",
     "reset_client",
+    "reset_limiter",
 ]
 
 

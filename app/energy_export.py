@@ -140,7 +140,9 @@ __all__ = [
     "aggregate_by_hour",
     "deduplicate_records",
     "export_summary_csv",
+    "export_to_json",
     "filter_records",
+    "filter_records_by_field",
     "kwh_stats_by_building",
     "normalize_kwh",
     "partition_records",
@@ -153,8 +155,6 @@ __all__ = [
     "summarize_export",
     "top_buildings_by_kwh",
     "validate_export_schema",
-    "export_to_json",
-    "filter_records_by_field",
 ]
 
 

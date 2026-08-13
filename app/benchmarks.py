@@ -165,6 +165,7 @@ def compare_buildings(
 __all__ = [
     "annual_to_monthly_estimate",
     "benchmark_eui",
+    "benchmark_score_label",
     "compare_buildings",
     "compute_eui",
     "efficiency_gap",
@@ -173,10 +174,9 @@ __all__ = [
     "floor_area_normalized_savings",
     "list_building_types",
     "multi_building_benchmark",
+    "percentile_rank",
     "site_eui",
     "target_eui",
-    "benchmark_score_label",
-    "percentile_rank",
 ]
 
 
