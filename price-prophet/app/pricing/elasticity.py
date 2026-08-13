@@ -9,17 +9,16 @@ sharply with price); |elasticity| < 1 → inelastic.
 from __future__ import annotations
 
 import math
-from typing import List
 
 
 def estimate_elasticity(
-    prices: List[float],
-    demands: List[float],
+    prices: list[float],
+    demands: list[float],
 ) -> float:
     """Estimate the price elasticity of demand via log-log linear regression.
 
-    Fits ``log(demand) = α + β * log(price)`` using ordinary least squares
-    and returns the slope β, which is the constant-elasticity estimate.
+    Fits ``log(demand) = a + b * log(price)`` using ordinary least squares
+    and returns the slope b, which is the constant-elasticity estimate.
 
     Pairs where price or demand are non-positive are excluded because
     the logarithm is undefined there.
@@ -42,7 +41,7 @@ def estimate_elasticity(
 
     # Keep only valid (positive) pairs
     log_pairs = []
-    for p, d in zip(prices, demands):
+    for p, d in zip(prices, demands, strict=False):
         if p > 0.0 and d > 0.0:
             log_pairs.append((math.log(p), math.log(d)))
 
@@ -57,7 +56,7 @@ def estimate_elasticity(
     mean_d = sum(log_d) / n
 
     ss_pp = sum((lp - mean_p) ** 2 for lp in log_p)
-    ss_pd = sum((lp - mean_p) * (ld - mean_d) for lp, ld in zip(log_p, log_d))
+    ss_pd = sum((lp - mean_p) * (ld - mean_d) for lp, ld in zip(log_p, log_d, strict=False))
 
     if ss_pp == 0.0:
         return 0.0

@@ -31,14 +31,16 @@ def test_generate_synthetic_data_prices_positive():
 
 
 def test_load_csv_missing_file():
-    from app.data.loader import load_csv
     import pytest
+
+    from app.data.loader import load_csv
     with pytest.raises(FileNotFoundError):
         load_csv("/nonexistent/path/data.csv")
 
 
 def test_load_json_missing_file():
-    from app.data.loader import load_json
     import pytest
+
+    from app.data.loader import load_json
     with pytest.raises(FileNotFoundError):
         load_json("/nonexistent/path/data.json")

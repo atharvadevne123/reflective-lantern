@@ -9,8 +9,8 @@ without needing access to server-side logs.
 
 from __future__ import annotations
 
-import time
 import logging
+import time
 
 from fastapi import FastAPI
 from starlette.middleware.base import BaseHTTPMiddleware

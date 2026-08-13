@@ -11,7 +11,7 @@ from __future__ import annotations
 import functools
 import logging
 import sys
-from typing import Callable, Optional
+from collections.abc import Callable
 
 _DEFAULT_FMT = "%(asctime)s %(levelname)-8s %(name)s  %(message)s"
 _DEFAULT_DATE_FMT = "%Y-%m-%dT%H:%M:%S"
@@ -19,7 +19,7 @@ _DEFAULT_DATE_FMT = "%Y-%m-%dT%H:%M:%S"
 
 def setup_logging(
     level: str = "INFO",
-    fmt: Optional[str] = None,
+    fmt: str | None = None,
 ) -> None:
     """Configure the root logger with a :class:`~logging.StreamHandler`.
 

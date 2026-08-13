@@ -10,7 +10,6 @@ an :meth:`is_fitted` helper used by serialisation and evaluation code.
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import List
 
 
 class BasePricingModel(ABC):
@@ -24,7 +23,7 @@ class BasePricingModel(ABC):
     _fitted: bool = False
 
     @abstractmethod
-    def fit(self, X: List[List[float]], y: List[float]) -> None:
+    def fit(self, X: list[list[float]], y: list[float]) -> None:
         """Train the model on feature matrix *X* and target vector *y*.
 
         Parameters
@@ -37,7 +36,7 @@ class BasePricingModel(ABC):
         """
 
     @abstractmethod
-    def predict(self, X: List[List[float]]) -> List[float]:
+    def predict(self, X: list[list[float]]) -> list[float]:
         """Generate predictions for feature matrix *X*.
 
         Parameters
@@ -61,7 +60,7 @@ class BasePricingModel(ABC):
         """
         return bool(self._fitted)
 
-    def __repr__(self) -> str:  # noqa: D401
+    def __repr__(self) -> str:
         """Compact string representation for logging and debugging."""
         fitted_str = "fitted" if self._fitted else "not fitted"
         return f"{self.__class__.__name__}({fitted_str})"

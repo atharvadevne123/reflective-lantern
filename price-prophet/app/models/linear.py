@@ -9,8 +9,6 @@ test environments that mock the dependency.
 
 from __future__ import annotations
 
-from typing import List
-
 from app.models.base import BasePricingModel
 
 
@@ -28,7 +26,7 @@ class LinearPricingModel(BasePricingModel):
         self._model = None
         self._fitted: bool = False
 
-    def fit(self, X: List[List[float]], y: List[float]) -> None:
+    def fit(self, X: list[list[float]], y: list[float]) -> None:
         """Train a linear regression model.
 
         Parameters
@@ -44,7 +42,7 @@ class LinearPricingModel(BasePricingModel):
         self._model.fit(X, y)
         self._fitted = True
 
-    def predict(self, X: List[List[float]]) -> List[float]:
+    def predict(self, X: list[list[float]]) -> list[float]:
         """Predict target values for *X*.
 
         Parameters
@@ -56,7 +54,9 @@ class LinearPricingModel(BasePricingModel):
         -------
         list[float]
         """
-        from sklearn.linear_model import LinearRegression  # noqa: F401 – ensure import path consistent
+        from sklearn.linear_model import (
+            LinearRegression,  # noqa: F401 - ensure import path consistent
+        )
 
         if self._model is None:
             raise RuntimeError("Model is not fitted yet. Call fit() first.")
@@ -64,7 +64,7 @@ class LinearPricingModel(BasePricingModel):
         return self._model.predict(X).tolist()
 
     @property
-    def coef_(self) -> List[float]:
+    def coef_(self) -> list[float]:
         """Fitted regression coefficients.
 
         Returns

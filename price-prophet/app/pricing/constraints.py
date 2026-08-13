@@ -18,9 +18,9 @@ class PricingConstraints:
     Attributes
     ----------
     min_price:
-        Absolute floor – no price may go below this value (default 0.01).
+        Absolute floor - no price may go below this value (default 0.01).
     max_price:
-        Absolute ceiling – no price may exceed this value (default 99999.0).
+        Absolute ceiling - no price may exceed this value (default 99999.0).
     max_change_pct:
         Maximum allowed percentage change from the *base_price*, in
         either direction (default 50.0 → ±50 %).

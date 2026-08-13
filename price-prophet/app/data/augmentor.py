@@ -8,14 +8,14 @@ perturbed copies.  All functions use only the Python standard library.
 from __future__ import annotations
 
 import random
-from typing import Any, Dict, List
+from typing import Any
 
 
 def add_noise(
-    values: List[float],
+    values: list[float],
     noise_fraction: float = 0.05,
     seed: int = 0,
-) -> List[float]:
+) -> list[float]:
     """Add Gaussian-like noise to a list of floats.
 
     Noise magnitude is proportional to each value:
@@ -44,7 +44,7 @@ def add_noise(
     import math
 
     rng = random.Random(seed)
-    noisy: List[float] = []
+    noisy: list[float] = []
 
     for v in values:
         sigma = noise_fraction * abs(v) if v != 0.0 else noise_fraction
@@ -58,10 +58,10 @@ def add_noise(
 
 
 def bootstrap_sample(
-    records: List[Dict[str, Any]],
+    records: list[dict[str, Any]],
     n: int,
     seed: int = 0,
-) -> List[Dict[str, Any]]:
+) -> list[dict[str, Any]]:
     """Draw *n* records with replacement from *records*.
 
     Parameters
@@ -90,11 +90,11 @@ _NUMERIC_FIELDS = ("base_price", "demand", "competition_price", "revenue")
 
 
 def augment_dataset(
-    records: List[Dict[str, Any]],
+    records: list[dict[str, Any]],
     multiplier: int = 2,
     noise_fraction: float = 0.05,
     seed: int = 42,
-) -> List[Dict[str, Any]]:
+) -> list[dict[str, Any]]:
     """Expand a dataset by adding noisy copies of each record.
 
     The returned list contains the *original* records followed by

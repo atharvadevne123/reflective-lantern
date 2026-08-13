@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 
-
 class ConcreteModel:
     """Minimal concrete subclass for testing BasePricingModel."""
     _fitted: bool = False

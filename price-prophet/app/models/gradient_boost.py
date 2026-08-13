@@ -9,8 +9,6 @@ unavailable (e.g. lightweight test containers).
 
 from __future__ import annotations
 
-from typing import List
-
 from app.models.base import BasePricingModel
 
 
@@ -39,7 +37,7 @@ class GradientBoostPricingModel(BasePricingModel):
         self._model = None
         self._fitted: bool = False
 
-    def fit(self, X: List[List[float]], y: List[float]) -> None:
+    def fit(self, X: list[list[float]], y: list[float]) -> None:
         """Train the XGBoost model.
 
         Parameters
@@ -60,7 +58,7 @@ class GradientBoostPricingModel(BasePricingModel):
         self._model.fit(X, y)
         self._fitted = True
 
-    def predict(self, X: List[List[float]]) -> List[float]:
+    def predict(self, X: list[list[float]]) -> list[float]:
         """Generate predictions for *X*.
 
         Parameters
@@ -83,7 +81,7 @@ class GradientBoostPricingModel(BasePricingModel):
         return self._model.predict(X).tolist()
 
     @property
-    def feature_importances_(self) -> List[float]:
+    def feature_importances_(self) -> list[float]:
         """Feature importance scores from the fitted model.
 
         Returns

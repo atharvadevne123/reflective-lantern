@@ -4,6 +4,7 @@ from __future__ import annotations
 
 def test_health_endpoint():
     from fastapi.testclient import TestClient
+
     from app.api.main import app
     client = TestClient(app)
     response = client.get("/api/v1/health")
@@ -14,6 +15,7 @@ def test_health_endpoint():
 
 def test_price_endpoint_valid():
     from fastapi.testclient import TestClient
+
     from app.api.main import app
     client = TestClient(app)
     payload = {

@@ -7,7 +7,7 @@ environment variables (upper-cased field name, e.g. ``DEBUG=true``).
 
 try:
     from pydantic_settings import BaseSettings
-except ImportError:  # pragma: no cover – pydantic v1 fallback
+except ImportError:  # pragma: no cover - pydantic v1 fallback
     from pydantic import BaseSettings  # type: ignore[no-redef]
 
 
@@ -39,6 +39,6 @@ class Settings(BaseSettings):
         case_sensitive = False
 
 
-# Module-level singleton – import this everywhere instead of
+# Module-level singleton - import this everywhere instead of
 # instantiating Settings directly.
 settings = Settings()

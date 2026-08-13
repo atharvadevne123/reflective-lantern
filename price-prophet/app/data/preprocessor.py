@@ -9,10 +9,10 @@ preprocessing pipeline before feature engineering.
 from __future__ import annotations
 
 import math
-from typing import Any, List, Optional
+from typing import Any
 
 
-def normalize(values: List[float]) -> List[float]:
+def normalize(values: list[float]) -> list[float]:
     """Min-max normalise a list of floats to the [0, 1] range.
 
     Parameters
@@ -39,7 +39,7 @@ def normalize(values: List[float]) -> List[float]:
     return [(v - lo) / span for v in values]
 
 
-def standardize(values: List[float]) -> List[float]:
+def standardize(values: list[float]) -> list[float]:
     """Z-score standardise a list of floats (mean=0, std=1).
 
     Parameters
@@ -67,7 +67,7 @@ def standardize(values: List[float]) -> List[float]:
     return [(v - mean) / std for v in values]
 
 
-def encode_category(values: List[str]) -> List[int]:
+def encode_category(values: list[str]) -> list[int]:
     """Label-encode a list of category strings to integer indices.
 
     The mapping is determined by the sorted set of unique values so
@@ -92,9 +92,9 @@ def encode_category(values: List[str]) -> List[int]:
 
 
 def fill_missing(
-    values: List[Optional[Any]],
+    values: list[Any | None],
     fill_value: Any = 0.0,
-) -> List[Any]:
+) -> list[Any]:
     """Replace ``None`` entries with *fill_value*.
 
     Parameters
@@ -113,9 +113,9 @@ def fill_missing(
 
 
 def clip_outliers(
-    values: List[float],
+    values: list[float],
     z_threshold: float = 3.0,
-) -> List[float]:
+) -> list[float]:
     """Clip values that are more than *z_threshold* standard deviations
     from the mean.
 

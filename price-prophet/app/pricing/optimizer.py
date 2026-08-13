@@ -2,13 +2,11 @@
 Price optimisation for Price-Prophet.
 
 The optimiser performs a grid search over candidate price points and
-selects the one that maximises estimated revenue (price × predicted
+selects the one that maximises estimated revenue (price x predicted
 demand) according to the supplied model.
 """
 
 from __future__ import annotations
-
-from typing import List
 
 
 class PriceOptimizer:
@@ -26,10 +24,10 @@ class PriceOptimizer:
         returning a list of floats.
     min_multiplier:
         Lowest price expressed as a fraction of *base_price*
-        (default 0.5 → 50 % of base).
+        (default 0.5 -> 50 % of base).
     max_multiplier:
         Highest price expressed as a multiple of *base_price*
-        (default 3.0 → 300 % of base).
+        (default 3.0 -> 300 % of base).
     """
 
     def __init__(
@@ -42,11 +40,11 @@ class PriceOptimizer:
         self.min_multiplier = min_multiplier
         self.max_multiplier = max_multiplier
 
-    def revenue_at_price(self, price: float, features: List[float]) -> float:
+    def revenue_at_price(self, price: float, features: list[float]) -> float:
         """Estimate revenue at a specific *price* using *features*.
 
         The model is expected to predict demand (or a revenue proxy) for
-        the given feature vector.  Revenue is then ``price × prediction``.
+        the given feature vector.  Revenue is then ``price x prediction``.
 
         Parameters
         ----------
@@ -66,7 +64,7 @@ class PriceOptimizer:
     def optimize(
         self,
         base_price: float,
-        features: List[float],
+        features: list[float],
         n_candidates: int = 20,
     ) -> float:
         """Find the price that maximises estimated revenue.
