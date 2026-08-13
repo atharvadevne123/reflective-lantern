@@ -168,8 +168,10 @@ __all__ = [
     "ensemble_forecast",
     "exponential_smoothing_forecast",
     "forecast_bias",
+    "forecast_residuals",
     "forecast_summary",
     "mae_score",
+    "mape_score",
     "naive_forecast",
     "rmse_score",
     "seasonal_naive_forecast",
@@ -598,3 +600,45 @@ def horizon_degradation(
     numer = sum((i - x_mean) * (errors[i] - y_mean) for i in range(n))
     denom = sum((i - x_mean) ** 2 for i in range(n))
     return round(numer / denom if denom > 0 else 0.0, 6)
+
+
+def mape_score(actual: list[float], predicted: list[float]) -> float:
+    """Compute Mean Absolute Percentage Error (MAPE).
+
+    MAPE is expressed as a percentage and measures the average magnitude of
+    forecast errors relative to actuals. Observations with actual == 0 are skipped.
+
+    Args:
+        actual: Observed values.
+        predicted: Forecasted values (same length as *actual*).
+
+    Returns:
+        MAPE as a percentage (e.g. 5.0 = 5%). Returns 0.0 for empty inputs.
+
+    Raises:
+        ValueError: If *actual* and *predicted* differ in length.
+    """
+    if len(actual) != len(predicted):
+        raise ValueError(f"Length mismatch: actual={len(actual)}, predicted={len(predicted)}")
+    pairs = [(a, p) for a, p in zip(actual, predicted, strict=False) if a != 0.0]
+    if not pairs:
+        return 0.0
+    return round(sum(abs((a - p) / a) for a, p in pairs) / len(pairs) * 100.0, 6)
+
+
+def forecast_residuals(actual: list[float], predicted: list[float]) -> list[float]:
+    """Compute element-wise residuals (actual - predicted).
+
+    Args:
+        actual: Observed target values.
+        predicted: Model predictions (must be same length as *actual*).
+
+    Returns:
+        List of residuals (actual[i] - predicted[i]) rounded to 6 decimal places.
+
+    Raises:
+        ValueError: If lengths differ.
+    """
+    if len(actual) != len(predicted):
+        raise ValueError(f"Length mismatch: actual={len(actual)}, predicted={len(predicted)}")
+    return [round(a - p, 6) for a, p in zip(actual, predicted, strict=False)]
