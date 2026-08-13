@@ -347,6 +347,8 @@ __all__ = [
     "validate_string_length",
     "validate_temporal_fields",
     "validate_weather_fields",
+    "validate_email",
+    "validate_range",
 ]
 
 
@@ -547,4 +549,55 @@ def validate_string_length(
         errors.append(f"{field_name} must be at least {min_length} characters, got {len(value)}")
     if len(value) > max_length:
         errors.append(f"{field_name} must be at most {max_length} characters, got {len(value)}")
+    return errors
+
+
+def validate_range(
+    value: float,
+    field_name: str,
+    min_value: float = float("-inf"),
+    max_value: float = float("inf"),
+) -> list[str]:
+    """Validate that *value* is within [min_value, max_value].
+
+    Args:
+        value: Numeric value to validate.
+        field_name: Human-readable field name for error messages.
+        min_value: Inclusive lower bound (default -inf).
+        max_value: Inclusive upper bound (default +inf).
+
+    Returns:
+        List of error strings (empty when valid).
+    """
+    errors: list[str] = []
+    if value < min_value:
+        errors.append(f"{field_name} must be >= {min_value}, got {value}")
+    if value > max_value:
+        errors.append(f"{field_name} must be <= {max_value}, got {value}")
+    return errors
+
+
+def validate_email(value: str, field_name: str = "email") -> list[str]:
+    """Basic validation that *value* looks like an email address.
+
+    Checks for a single '@' character with non-empty local and domain parts,
+    and at least one '.' in the domain.  Not RFC 5322 complete.
+
+    Args:
+        value: String to validate.
+        field_name: Human-readable field name for error messages.
+
+    Returns:
+        List of error strings (empty when valid).
+    """
+    errors: list[str] = []
+    if not value or "@" not in value:
+        errors.append(f"{field_name} must contain '@'")
+        return errors
+    parts = value.split("@")
+    if len(parts) != 2 or not parts[0] or not parts[1]:
+        errors.append(f"{field_name} must have non-empty local and domain parts")
+        return errors
+    if "." not in parts[1]:
+        errors.append(f"{field_name} domain must contain at least one '.'")
     return errors
