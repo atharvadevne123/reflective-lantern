@@ -183,9 +183,43 @@ class Backtester:
         if n_windows == 0:
             return {"mae": float("nan"), "rmse": float("nan"), "r_squared": float("nan"), "n_windows": 0}
 
+        self._window_maes = window_maes
+        self._window_rmses = window_rmses
+        self._window_r2s = window_r2s
+
         return {
             "mae": sum(window_maes) / n_windows,
             "rmse": sum(window_rmses) / n_windows,
             "r_squared": sum(window_r2s) / n_windows,
             "n_windows": n_windows,
         }
+
+    def per_window_metrics(self) -> list[dict[str, float]]:
+        """Return per-window metrics from the last walk-forward run.
+
+        Returns
+        -------
+        list[dict]
+            One dict per evaluation window with keys 'mae', 'rmse',
+            'r_squared'.  Empty list if no walk-forward run has been completed.
+        """
+        maes = getattr(self, "_window_maes", [])
+        rmses = getattr(self, "_window_rmses", [])
+        r2s = getattr(self, "_window_r2s", [])
+        return [
+            {"mae": mae, "rmse": rmse, "r_squared": r2}
+            for mae, rmse, r2 in zip(maes, rmses, r2s, strict=False)
+        ]
+
+    def best_window(self) -> dict[str, float] | None:
+        """Return the evaluation window with the lowest MAE from the last run.
+
+        Returns
+        -------
+        dict or None
+            Window metrics dict with the minimum MAE, or None if no run yet.
+        """
+        windows = self.per_window_metrics()
+        if not windows:
+            return None
+        return min(windows, key=lambda w: w["mae"])
