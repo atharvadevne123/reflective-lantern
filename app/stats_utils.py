@@ -784,3 +784,63 @@ def log_return(prices: list[float]) -> list[float]:
     if any(p <= 0 for p in prices):
         raise ValueError("log_return requires strictly positive prices")
     return [round(math.log(prices[i] / prices[i - 1]), 6) for i in range(1, len(prices))]
+
+
+def sharpe_ratio(returns: list[float], risk_free_rate: float = 0.0) -> float:
+    """Compute the Sharpe ratio for a return series.
+
+    Sharpe ratio = (mean_return - risk_free_rate) / std_return.
+
+    Args:
+        returns: List of periodic returns (e.g. daily log returns).
+        risk_free_rate: Annualised risk-free rate expressed in the same
+            units as *returns* (default 0.0).
+
+    Returns:
+        Sharpe ratio rounded to 4 decimal places, or 0.0 when std is
+        effectively zero.
+
+    Raises:
+        ValueError: If *returns* has fewer than 2 observations.
+    """
+    import math
+
+    if len(returns) < 2:
+        raise ValueError("sharpe_ratio requires at least 2 return observations")
+    n = len(returns)
+    mean = sum(returns) / n
+    variance = sum((r - mean) ** 2 for r in returns) / (n - 1)
+    std = math.sqrt(variance)
+    if std < 1e-12:
+        return 0.0
+    return round((mean - risk_free_rate) / std, 4)
+
+
+def rolling_sharpe(returns: list[float], window: int, risk_free_rate: float = 0.0) -> list[float]:
+    """Compute rolling Sharpe ratio over *window* periods.
+
+    Positions before a full window is available are NaN.
+
+    Args:
+        returns: Ordered list of periodic returns.
+        window: Rolling window size (must be >= 2).
+        risk_free_rate: Risk-free rate in same units as returns.
+
+    Returns:
+        Rolling Sharpe ratio list of the same length as *returns*.
+
+    Raises:
+        ValueError: If *window* < 2.
+    """
+    import math
+
+    if window < 2:
+        raise ValueError("rolling_sharpe window must be >= 2")
+    result: list[float] = []
+    for i in range(len(returns)):
+        if i + 1 < window:
+            result.append(math.nan)
+        else:
+            chunk = returns[i - window + 1 : i + 1]
+            result.append(sharpe_ratio(chunk, risk_free_rate))
+    return result
