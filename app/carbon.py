@@ -621,3 +621,47 @@ def carbon_per_occupant(co2_kg: float, occupants: int) -> float:
     if occupants <= 0:
         raise ValueError(f"occupants must be positive, got {occupants}")
     return round(co2_kg / occupants, 4)
+
+
+def net_zero_timeline(
+    annual_co2_kg: float,
+    annual_reduction_pct: float,
+    offset_co2_kg_per_year: float = 0.0,
+    max_years: int = 100,
+) -> dict[str, object]:
+    """Estimate years to reach net-zero given a yearly reduction rate and offsets.
+
+    Args:
+        annual_co2_kg: Starting annual CO2 emissions in kg.
+        annual_reduction_pct: Percentage reduction applied each year (0-100).
+        offset_co2_kg_per_year: CO2 offset added each year (e.g. renewable credits).
+        max_years: Maximum number of years to simulate before giving up.
+
+    Returns:
+        Dict with ``years_to_net_zero`` (int or None if not reached),
+        ``trajectory`` (list of annual totals), and ``achieved`` (bool).
+
+    Raises:
+        ValueError: If *annual_reduction_pct* is outside [0, 100).
+    """
+    if not (0.0 <= annual_reduction_pct < 100.0):
+        raise ValueError("annual_reduction_pct must be in [0, 100)")
+
+    rate = annual_reduction_pct / 100.0
+    current = float(annual_co2_kg)
+    trajectory: list[float] = []
+    years_to_net_zero: int | None = None
+
+    for year in range(1, max_years + 1):
+        current = max(0.0, current * (1.0 - rate) - offset_co2_kg_per_year)
+        trajectory.append(round(current, 2))
+        if current <= 0.0 and years_to_net_zero is None:
+            years_to_net_zero = year
+            break
+
+    achieved = years_to_net_zero is not None
+    return {
+        "years_to_net_zero": years_to_net_zero,
+        "trajectory": trajectory,
+        "achieved": achieved,
+    }
