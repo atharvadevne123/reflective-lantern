@@ -406,6 +406,7 @@ __all__ = [
     "affordability_index",
     "affordability_ratio",
     "comparable_value_adjustment",
+    "days_on_market_risk",
     "dom_classification",
     "effective_gross_income",
     "housing_affordability_index",
@@ -415,6 +416,7 @@ __all__ = [
     "price_appreciation_rate",
     "price_per_bedroom",
     "price_per_sqft",
+    "price_reduction_pct",
     "price_to_rent_ratio",
     "price_trend_consistency",
     "price_trend_indicator",
@@ -753,3 +755,51 @@ def dom_category(days_on_market: int) -> str:
     if days_on_market <= 60:
         return "normal"
     return "slow"
+
+
+def days_on_market_risk(dom: int) -> str:
+    """Classify the negotiation risk level based on days on market.
+
+    Longer DOM often indicates seller motivation or property issues,
+    giving buyers more negotiating power.
+
+    Args:
+        dom: Days on market (non-negative).
+
+    Returns:
+        Risk label: 'low' (< 14 days, competitive), 'moderate' (14-45 days),
+        'elevated' (45-90 days), or 'high' (> 90 days).
+
+    Raises:
+        ValueError: If *dom* is negative.
+    """
+    if dom < 0:
+        raise ValueError("dom must be non-negative")
+    if dom < 14:
+        return "low"
+    if dom < 45:
+        return "moderate"
+    if dom <= 90:
+        return "elevated"
+    return "high"
+
+
+def price_reduction_pct(original_price: float, current_price: float) -> float:
+    """Compute the percentage reduction from the original list price.
+
+    Args:
+        original_price: Original listing price.
+        current_price: Current (reduced) listing price.
+
+    Returns:
+        Percentage reduction (positive means price dropped), rounded to 4 decimal places.
+        Returns 0.0 if *original_price* is 0.
+
+    Raises:
+        ValueError: If either argument is negative.
+    """
+    if original_price < 0 or current_price < 0:
+        raise ValueError("Prices must be non-negative")
+    if original_price == 0.0:
+        return 0.0
+    return round((original_price - current_price) / original_price * 100.0, 4)
