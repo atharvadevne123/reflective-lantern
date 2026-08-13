@@ -115,9 +115,13 @@ prediction_cache = TTLCache(ttl_seconds=30, max_size=500)
 
 __all__ = [
     "TTLCache",
+    "batch_get",
+    "batch_set",
+    "build_cache_key",
+    "cache_hit_rate",
     "cache_key_from_dict",
     "cache_stats_summary",
-    "logger",
+    "evict_expired_keys",
     "prediction_cache",
     "warm_cache",
 ]
@@ -220,3 +224,33 @@ def cache_stats_summary(cache: TTLCache) -> dict[str, object]:
         "hit_rate": round(cache.hit_rate, 4),
         "size": cache.size,
     }
+
+
+def batch_get(cache: TTLCache, keys: list[str]) -> dict[str, object]:
+    """Retrieve multiple keys from *cache* in one call.
+
+    Args:
+        cache: The :class:`TTLCache` instance to query.
+        keys: List of cache key strings.
+
+    Returns:
+        Dict mapping each key to its cached value; missing/expired keys
+        are absent from the result.
+    """
+    result: dict[str, object] = {}
+    for key in keys:
+        val = cache.get(key)
+        if val is not None:
+            result[key] = val
+    return result
+
+
+def batch_set(cache: TTLCache, items: dict[str, object]) -> None:
+    """Store multiple key-value pairs in *cache* at once.
+
+    Args:
+        cache: The :class:`TTLCache` instance to populate.
+        items: Dict of key → value pairs to cache.
+    """
+    for key, value in items.items():
+        cache.set(key, value)
