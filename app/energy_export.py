@@ -292,24 +292,30 @@ def top_buildings_by_kwh(records: list[dict[str, Any]], n: int = 5) -> list[dict
 
 def pivot_by_hour(
     records: list[dict[str, Any]],
+    hour_field: str = "hour",
+    value_field: str = "consumption_kwh",
+    label_field: str = "building_id",
 ) -> dict[str, dict[int, float]]:
-    """Pivot records into a dict of building_id -> {hour: total_kwh}.
+    """Pivot records into a label -> {hour: total_value} mapping.
 
     Args:
-        records: List of row dicts with ``building_id``, ``hour``, and ``consumption_kwh``.
+        records: List of row dicts.
+        hour_field: Key for the hour integer (default ``"hour"``).
+        value_field: Key for the numeric value to aggregate (default ``"consumption_kwh"``).
+        label_field: Key for the label (default ``"building_id"``).
 
     Returns:
-        Nested dict keyed by building_id then hour.
+        Nested dict keyed by label then hour, with values summed.
     """
     pivot: dict[str, dict[int, float]] = {}
     for rec in records:
-        bid = rec.get("building_id")
-        hour = rec.get("hour")
-        kwh = rec.get("consumption_kwh")
-        if bid is None or hour is None or kwh is None:
+        label = rec.get(label_field)
+        hour = rec.get(hour_field)
+        value = rec.get(value_field)
+        if label is None or hour is None or value is None:
             continue
-        pivot.setdefault(str(bid), {})
-        pivot[str(bid)][int(hour)] = pivot[str(bid)].get(int(hour), 0.0) + float(kwh)
+        pivot.setdefault(str(label), {})
+        pivot[str(label)][int(hour)] = pivot[str(label)].get(int(hour), 0.0) + float(value)
     return pivot
 
 
@@ -459,3 +465,110 @@ def flatten_nested_records(
         return items
 
     return [_flatten(r) for r in records]
+
+
+def records_missing_fields(records: list[dict[str, Any]], required: list[str]) -> list[int]:
+    """Return indices of records that are missing at least one required field.
+
+    Args:
+        records: List of record dicts.
+        required: Field names that every record must have.
+
+    Returns:
+        Sorted list of zero-based indices of incomplete records.
+    """
+    return sorted(
+        i for i, r in enumerate(records)
+        if any(field not in r or r[field] is None for field in required)
+    )
+
+
+def records_to_lookup(records: list[dict[str, Any]], key: str) -> dict[str, dict[str, Any]]:
+    """Build a lookup dict keyed by a record field.
+
+    When duplicate keys exist the last record wins.
+
+    Args:
+        records: List of record dicts.
+        key: Field name to use as the lookup key.
+
+    Returns:
+        Dict mapping key-values to full record dicts.
+
+    Raises:
+        KeyError: If *key* is not present in any record.
+    """
+    if records and key not in records[0]:
+        raise KeyError(f"Field {key!r} not found in records")
+    return {str(r[key]): r for r in records}
+
+
+def rename_record_fields(
+    records: list[dict[str, Any]],
+    mapping: dict[str, str],
+) -> list[dict[str, Any]]:
+    """Return copies of *records* with fields renamed according to *mapping*.
+
+    Fields not in *mapping* are kept unchanged. Fields in *mapping* that don't
+    exist in a record are silently skipped.
+
+    Args:
+        records: List of record dicts.
+        mapping: Dict from old field name to new field name.
+
+    Returns:
+        New list of dicts with renamed keys.
+    """
+    result = []
+    for record in records:
+        new_rec = {}
+        for k, v in record.items():
+            new_rec[mapping.get(k, k)] = v
+        result.append(new_rec)
+    return result
+
+
+
+
+def flat_to_wide(
+    records: list[dict[str, Any]],
+    id_field: str,
+    key_field: str,
+    value_field: str,
+) -> dict[str, dict[str, Any]]:
+    """Convert long-format records to wide-format by key pivot.
+
+    Args:
+        records: Long-format list where each row holds an id, key, value triple.
+        id_field: Field identifying the entity (e.g. sensor ID).
+        key_field: Field holding the attribute name.
+        value_field: Field holding the attribute value.
+
+    Returns:
+        Dict keyed by entity ID, each containing a dict of {key: value}.
+    """
+    result: dict[str, dict[str, Any]] = {}
+    for r in records:
+        eid = str(r[id_field])
+        result.setdefault(eid, {})[r[key_field]] = r[value_field]
+    return result
+
+
+def filter_records_by_value(
+    records: list[dict[str, Any]],
+    field: str,
+    min_value: float,
+    max_value: float,
+) -> list[dict[str, Any]]:
+    """Return records where *field* value is within [min_value, max_value].
+
+    Args:
+        records: List of dicts to filter.
+        field: Numeric field name.
+        min_value: Inclusive lower bound.
+        max_value: Inclusive upper bound.
+
+    Returns:
+        Filtered list preserving order.
+    """
+    return [r for r in records if min_value <= float(r.get(field, float("nan"))) <= max_value]
