@@ -177,6 +177,8 @@ __all__ = [
     "seasonal_naive_forecast",
     "stepwise_error_growth",
     "weighted_ensemble_forecast",
+    "bias_score",
+    "weighted_forecast",
 ]
 
 
@@ -642,3 +644,46 @@ def forecast_residuals(actual: list[float], predicted: list[float]) -> list[floa
     if len(actual) != len(predicted):
         raise ValueError(f"Length mismatch: actual={len(actual)}, predicted={len(predicted)}")
     return [round(a - p, 6) for a, p in zip(actual, predicted, strict=False)]
+
+
+def weighted_forecast(forecasts: list[float], weights: list[float]) -> float:
+    """Return a weighted average of multiple forecast values.
+
+    Args:
+        forecasts: List of forecast values.
+        weights: Corresponding weights (need not sum to 1).
+
+    Returns:
+        Weighted average as a float.
+
+    Raises:
+        ValueError: If lists have different lengths or all weights are zero.
+    """
+    if len(forecasts) != len(weights):
+        raise ValueError("forecasts and weights must have the same length")
+    total_weight = sum(weights)
+    if total_weight == 0.0:
+        raise ValueError("Sum of weights must be non-zero")
+    return round(sum(f * w for f, w in zip(forecasts, weights, strict=False)) / total_weight, 6)
+
+
+def bias_score(actual: list[float], predicted: list[float]) -> float:
+    """Compute mean forecast bias (mean of actual - predicted).
+
+    A positive bias means the model under-predicts on average.
+
+    Args:
+        actual: Observed values.
+        predicted: Model predictions (same length as *actual*).
+
+    Returns:
+        Mean bias rounded to 6 decimal places; 0.0 for empty input.
+
+    Raises:
+        ValueError: If lengths differ.
+    """
+    if len(actual) != len(predicted):
+        raise ValueError(f"Length mismatch: actual={len(actual)}, predicted={len(predicted)}")
+    if not actual:
+        return 0.0
+    return round(sum(a - p for a, p in zip(actual, predicted, strict=False)) / len(actual), 6)
