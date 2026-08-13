@@ -85,7 +85,9 @@ def make_rate_limiter(capacity: float = 60.0, rate_per_second: float = 1.0) -> T
 
 __all__ = [
     "TokenBucketRateLimiter",
+    "allow_burst",
     "burst_capacity_fraction",
+    "client_stats",
     "is_rate_limited",
     "limiter_utilization",
     "make_rate_limiter",
@@ -189,3 +191,50 @@ def prune_idle_clients(limiter: TokenBucketRateLimiter, max_idle_seconds: float)
     if removed:
         logger.debug("prune_idle_clients: removed %d idle buckets", removed)
     return removed
+
+
+def client_stats(limiter: TokenBucketRateLimiter) -> dict[str, object]:
+    """Return a snapshot of all tracked client keys and their token levels.
+
+    Args:
+        limiter: A :class:`TokenBucketRateLimiter` instance.
+
+    Returns:
+        Dict with 'client_count' and 'clients' (list of dicts with key, tokens).
+    """
+    with limiter._lock:
+        snapshot = [
+            {"key": k, "tokens": round(b.tokens, 4)}
+            for k, b in limiter._buckets.items()
+        ]
+    return {"client_count": len(snapshot), "clients": snapshot}
+
+
+def allow_burst(limiter: TokenBucketRateLimiter, client_key: str, n: int) -> bool:
+    """Attempt to consume *n* tokens at once (burst request).
+
+    Returns True and deducts *n* tokens if the client has sufficient capacity;
+    returns False without modifying the bucket otherwise.
+
+    Args:
+        limiter: A :class:`TokenBucketRateLimiter` instance.
+        client_key: Unique client identifier.
+        n: Number of tokens to consume in a single burst.
+
+    Returns:
+        True when the burst is permitted; False when insufficient tokens remain.
+
+    Raises:
+        ValueError: If *n* < 1.
+    """
+    if n < 1:
+        raise ValueError(f"n must be at least 1, got {n}")
+    with limiter._lock:
+        if client_key not in limiter._buckets:
+            limiter._buckets[client_key] = _Bucket(tokens=limiter._capacity)
+        bucket = limiter._buckets[client_key]
+        limiter._refill(bucket)
+        if bucket.tokens >= n:
+            bucket.tokens -= n
+            return True
+        return False
