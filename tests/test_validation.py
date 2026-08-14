@@ -1076,3 +1076,51 @@ def test_validate_building_id_parametrized(building_id: str, expect_valid: bool)
 
     errors = validate_building_id(building_id)
     assert (len(errors) == 0) == expect_valid
+
+
+@_pytest.mark.parametrize("price", [0.01, 1.0, 999.99])
+def test_validate_price_positive_no_errors(price: float) -> None:
+    from app.validation import validate_price
+
+    errors = validate_price(price)
+    assert len(errors) == 0
+
+
+@_pytest.mark.parametrize("price", [0.0, -1.0, -100.0])
+def test_validate_price_non_positive_has_errors(price: float) -> None:
+    from app.validation import validate_price
+
+    errors = validate_price(price)
+    assert len(errors) > 0
+
+
+@_pytest.mark.parametrize(
+    "lat,lon,expect_valid",
+    [
+        (0.0, 0.0, True),
+        (90.0, 180.0, True),
+        (91.0, 0.0, False),
+        (0.0, 181.0, False),
+    ],
+)
+def test_validate_coordinate_parametrized(lat: float, lon: float, expect_valid: bool) -> None:
+    from app.validation import validate_coordinate
+
+    errors = validate_coordinate(lat, lon)
+    assert (len(errors) == 0) == expect_valid
+
+
+@_pytest.mark.parametrize("pct", [0.0, 50.0, 100.0])
+def test_validate_percentage_valid_range(pct: float) -> None:
+    from app.validation import validate_percentage
+
+    errors = validate_percentage(pct)
+    assert len(errors) == 0
+
+
+@_pytest.mark.parametrize("pct", [-1.0, 101.0, 200.0])
+def test_validate_percentage_out_of_range(pct: float) -> None:
+    from app.validation import validate_percentage
+
+    errors = validate_percentage(pct)
+    assert len(errors) > 0
