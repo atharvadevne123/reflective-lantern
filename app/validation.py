@@ -335,13 +335,18 @@ __all__ = [
     "validate_building_id",
     "validate_consumption_kwh",
     "validate_coordinate",
+    "validate_email",
     "validate_feature_vector",
     "validate_forecast_horizon",
     "validate_load_series",
+    "validate_non_negative",
     "validate_percentage",
+    "validate_positive",
     "validate_price",
+    "validate_range",
     "validate_reading_dict",
     "validate_region_id",
+    "validate_string_length",
     "validate_temporal_fields",
     "validate_weather_fields",
 ]
@@ -492,112 +497,12 @@ def validate_region_id(region_id: str) -> list[str]:
     return errors
 
 
-def validate_percentage_typed(value: object, field_name: str = "value") -> list[str]:
-    """Return validation errors if *value* is not a valid percentage in [0, 100].
-
-    Unlike :func:`validate_percentage`, this also validates the type of *value*.
-
-    Args:
-        value: Value to validate as a percentage.
-        field_name: Name shown in error messages. Defaults to ``"value"``.
-
-    Returns:
-        List of error strings (empty when valid).
-    """
-    errors: list[str] = []
-    if not isinstance(value, (int, float)):
-        errors.append(f"{field_name} must be a number, got {type(value).__name__}")
-        return errors
-    if value < 0 or value > 100:
-        errors.append(f"{field_name} must be in [0, 100], got {value}")
-    return errors
-
-
-def validate_positive(value: float, field_name: str = "value") -> list[str]:
-    """Return validation errors if *value* is not strictly positive.
+def validate_non_negative(value: float, field_name: str = "value") -> list[str]:
+    """Validate that *value* is non-negative (>= 0).
 
     Args:
         value: Numeric value to validate.
-        field_name: Name shown in error messages. Defaults to ``"value"``.
-
-    Returns:
-        List of error strings (empty when valid).
-    """
-    errors: list[str] = []
-    if not isinstance(value, (int, float)):
-        errors.append(f"{field_name} must be a number, got {type(value).__name__}")
-        return errors
-    if value <= 0:
-        errors.append(f"{field_name} must be > 0, got {value}")
-    return errors
-
-
-def validate_list_length(
-    values: list,
-    field_name: str = "values",
-    min_len: int = 1,
-    max_len: int | None = None,
-) -> list[str]:
-    """Return validation errors if a list's length is outside allowed bounds.
-
-    Args:
-        values: List to validate.
-        field_name: Name shown in error messages.
-        min_len: Minimum allowed length (inclusive). Defaults to 1.
-        max_len: Maximum allowed length (inclusive). None means no upper bound.
-
-    Returns:
-        List of error strings (empty when valid).
-    """
-    errors: list[str] = []
-    if len(values) < min_len:
-        errors.append(f"{field_name} must have at least {min_len} element(s), got {len(values)}")
-    if max_len is not None and len(values) > max_len:
-        errors.append(f"{field_name} must have at most {max_len} element(s), got {len(values)}")
-    return errors
-
-
-def validate_enum(value: str, allowed: list[str], field_name: str = "value") -> list[str]:
-    """Return validation errors if *value* is not in *allowed*.
-
-    Args:
-        value: String value to validate.
-        allowed: Accepted values.
-        field_name: Name shown in error messages.
-
-    Returns:
-        List of error strings (empty when valid).
-    """
-    errors: list[str] = []
-    if value not in allowed:
-        errors.append(f"{field_name} must be one of {allowed!r}, got {value!r}")
-    return errors
-
-
-def validate_date_string(value: str, field_name: str = "date") -> list[str]:
-    """Validate that *value* is an ISO 8601 date string (YYYY-MM-DD).
-
-    Args:
-        value: String to validate.
-        field_name: Name shown in error messages.
-
-    Returns:
-        List of error strings (empty when valid).
-    """
-    import re
-
-    errors: list[str] = []
-    if not re.fullmatch(r"\d{4}-(?:0[1-9]|1[0-2])-(?:0[1-9]|[12]\d|3[01])", value):
-        errors.append(f"{field_name} must be a valid ISO 8601 date (YYYY-MM-DD), got {value!r}")
-    return errors
-
-
-def validate_non_negative(value: float, field_name: str = "value") -> list[str]:
-    """Return validation errors if *value* is negative.
-
-    Args:
-        value: Numeric value to check.
-        field_name: Name shown in error messages.
+        field_name: Name of the field for error message context.
 
     Returns:
         List of error strings (empty when valid).
@@ -607,21 +512,92 @@ def validate_non_negative(value: float, field_name: str = "value") -> list[str]:
     return []
 
 
-def validate_unique_ids(records: list[dict], id_field: str = "id") -> list[str]:
-    """Return validation errors for duplicate IDs in *records*.
+def validate_positive(value: float, field_name: str = "value") -> list[str]:
+    """Validate that *value* is strictly positive (> 0).
 
     Args:
-        records: List of dicts with an identifier field.
-        id_field: Name of the ID field to check.
+        value: Numeric value to validate.
+        field_name: Name of the field for error message context.
 
     Returns:
-        List of error strings naming each duplicate ID.
+        List of error strings (empty when valid).
     """
-    seen: set = set()
-    dupes: list[str] = []
-    for r in records:
-        rid = r.get(id_field)
-        if rid in seen:
-            dupes.append(f"Duplicate {id_field}: {rid!r}")
-        seen.add(rid)
-    return dupes
+    if value <= 0:
+        return [f"{field_name} must be positive, got {value}"]
+    return []
+
+
+def validate_string_length(
+    value: str,
+    field_name: str = "value",
+    min_length: int = 1,
+    max_length: int = 255,
+) -> list[str]:
+    """Validate that a string's length is within [min_length, max_length].
+
+    Args:
+        value: String to validate.
+        field_name: Human-readable field name for error messages.
+        min_length: Minimum acceptable length (inclusive).
+        max_length: Maximum acceptable length (inclusive).
+
+    Returns:
+        List of error strings (empty when valid).
+    """
+    errors: list[str] = []
+    if len(value) < min_length:
+        errors.append(f"{field_name} must be at least {min_length} characters, got {len(value)}")
+    if len(value) > max_length:
+        errors.append(f"{field_name} must be at most {max_length} characters, got {len(value)}")
+    return errors
+
+
+def validate_range(
+    value: float,
+    field_name: str,
+    min_value: float = float("-inf"),
+    max_value: float = float("inf"),
+) -> list[str]:
+    """Validate that *value* is within [min_value, max_value].
+
+    Args:
+        value: Numeric value to validate.
+        field_name: Human-readable field name for error messages.
+        min_value: Inclusive lower bound (default -inf).
+        max_value: Inclusive upper bound (default +inf).
+
+    Returns:
+        List of error strings (empty when valid).
+    """
+    errors: list[str] = []
+    if value < min_value:
+        errors.append(f"{field_name} must be >= {min_value}, got {value}")
+    if value > max_value:
+        errors.append(f"{field_name} must be <= {max_value}, got {value}")
+    return errors
+
+
+def validate_email(value: str, field_name: str = "email") -> list[str]:
+    """Basic validation that *value* looks like an email address.
+
+    Checks for a single '@' character with non-empty local and domain parts,
+    and at least one '.' in the domain.  Not RFC 5322 complete.
+
+    Args:
+        value: String to validate.
+        field_name: Human-readable field name for error messages.
+
+    Returns:
+        List of error strings (empty when valid).
+    """
+    errors: list[str] = []
+    if not value or "@" not in value:
+        errors.append(f"{field_name} must contain '@'")
+        return errors
+    parts = value.split("@")
+    if len(parts) != 2 or not parts[0] or not parts[1]:
+        errors.append(f"{field_name} must have non-empty local and domain parts")
+        return errors
+    if "." not in parts[1]:
+        errors.append(f"{field_name} domain must contain at least one '.'")
+    return errors

@@ -862,7 +862,7 @@ def test_co2_kg_to_tonnes_exact() -> None:
 def test_trees_equivalent_one_tree() -> None:
     from app.carbon import trees_equivalent
 
-    assert trees_equivalent(21.7) == pytest.approx(1.0, rel=0.1)
+    assert trees_equivalent(20.0) == pytest.approx(1.0, abs=0.05)
 
 
 @pytest.mark.parametrize("kwh,expected_positive", [(0.0, True), (100.0, True), (1000.0, True)])
@@ -877,7 +877,7 @@ def test_carbon_savings_positive_when_reduced() -> None:
     from app.carbon import carbon_savings
 
     result = carbon_savings(old_kwh=1000.0, new_kwh=800.0)
-    assert result > 0.0
+    assert result["saved_kwh"] > 0.0
 
 
 def test_compare_regions_all_positive() -> None:

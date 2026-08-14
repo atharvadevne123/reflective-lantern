@@ -120,11 +120,13 @@ __all__ = [
     "AlertQueue",
     "alert_summary",
     "deduplicate_alerts",
+    "filter_alerts_by_severity",
     "group_alerts_by_severity",
     "highest_severity",
     "make_anomaly_alert",
     "make_drift_alert",
     "make_performance_alert",
+    "mute_alert",
     "severity_rank",
 ]
 
@@ -293,75 +295,46 @@ def deduplicate_alerts_by_window(alerts: list[Alert], window_seconds: float = 30
 
 
 def top_alerts(alerts: list[Alert], n: int = 5) -> list[Alert]:
-    """Return the *n* most severe alerts, breaking ties by recency.
+    """Return the *n* most severe alerts, breaking ties by insertion order (latest first).
 
     Args:
         alerts: List of Alert objects.
         n: Maximum number to return.
 
     Returns:
-        Up to *n* alerts sorted by severity (highest first), then recency.
+        Up to *n* alerts sorted by severity (highest first), then by recency
+        (later items in *alerts* are treated as more recent).
     """
     severity_order = {"critical": 0, "warning": 1, "info": 2}
+    indexed = list(enumerate(alerts))
     sorted_alerts = sorted(
-        alerts,
-        key=lambda a: (severity_order.get(a.severity.lower(), 99), -a.created_at),
+        indexed,
+        key=lambda ia: (severity_order.get(ia[1].severity.lower(), 99), -ia[0]),
     )
-    return sorted_alerts[:n]
+    return [a for _, a in sorted_alerts[:n]]
 
 
-def alert_age_seconds(alert: Alert) -> float:
-    """Return the age of *alert* in seconds relative to the current time.
+def mute_alert(alert: Alert, reason: str = "") -> Alert:
+    """Return a copy of *alert* tagged as muted.
 
-    Args:
-        alert: Alert to measure age for.
-
-    Returns:
-        Non-negative float representing seconds elapsed since alert.created_at.
-    """
-    return max(0.0, _time.time() - alert.created_at)
-
-
-def escalate_alert(alert: Alert) -> Alert:
-    """Return a copy of *alert* with its severity escalated one level.
-
-    Escalation ladder: info → warning → critical.
-    Critical alerts are returned unchanged.
+    The returned alert has 'muted' added to its tags list and, if *reason*
+    is provided, a 'mute_reason' key in its metadata.
 
     Args:
-        alert: Original alert.
+        alert: The Alert instance to mute.
+        reason: Optional human-readable reason for muting.
 
     Returns:
-        New Alert with escalated severity (same message and metadata).
+        A new Alert with updated tags and metadata.
     """
-    ladder = {"info": "warning", "warning": "critical", "critical": "critical"}
-    new_severity = ladder.get(alert.severity.lower(), alert.severity)
+    new_tags = [*list(alert.tags), "muted"]
+    new_meta = dict(alert.metadata)
+    if reason:
+        new_meta["mute_reason"] = reason
     return Alert(
-        source=alert.source,
-        severity=new_severity,
+        severity=alert.severity,
         message=alert.message,
-        metadata=dict(alert.metadata),
+        source=alert.source,
+        tags=new_tags,
+        metadata=new_meta,
     )
-
-
-def alerts_within_window(
-    alerts: list[Alert],
-    window_seconds: float = 3600.0,
-) -> list[Alert]:
-    """Return alerts created within *window_seconds* of the most recent alert.
-
-    Useful for correlating burst patterns — only alerts fired inside the
-    rolling window are returned.
-
-    Args:
-        alerts: List of Alert objects (any order).
-        window_seconds: Look-back window in seconds.
-
-    Returns:
-        Sub-list of alerts within the window; empty if *alerts* is empty.
-    """
-    if not alerts:
-        return []
-    latest_ts = max(a.created_at for a in alerts)
-    cutoff = latest_ts - window_seconds
-    return [a for a in alerts if a.created_at >= cutoff]

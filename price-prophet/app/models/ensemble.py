@@ -8,8 +8,6 @@ instances via a weighted average.  Supports heterogeneous member models
 
 from __future__ import annotations
 
-from typing import List, Optional
-
 from app.models.base import BasePricingModel
 
 
@@ -34,13 +32,11 @@ class EnsemblePricingModel(BasePricingModel):
 
     def __init__(
         self,
-        models: List[BasePricingModel],
-        weights: Optional[List[float]] = None,
+        models: list[BasePricingModel],
+        weights: list[float] | None = None,
     ) -> None:
         if not models:
-            raise ValueError(
-                "EnsemblePricingModel requires at least one member model."
-            )
+            raise ValueError("EnsemblePricingModel requires at least one member model.")
         self.models = list(models)
         self.weights = list(weights) if weights is not None else None
         self._fitted: bool = False
@@ -50,11 +46,10 @@ class EnsemblePricingModel(BasePricingModel):
         """Ensure *weights* length matches *models* length if provided."""
         if self.weights is not None and len(self.weights) != len(self.models):
             raise ValueError(
-                f"weights length ({len(self.weights)}) must match "
-                f"models length ({len(self.models)})."
+                f"weights length ({len(self.weights)}) must match models length ({len(self.models)})."
             )
 
-    def _normalised_weights(self) -> List[float]:
+    def _normalised_weights(self) -> list[float]:
         """Return a normalised weight vector (sums to 1.0)."""
         n = len(self.models)
         if self.weights is None:
@@ -64,7 +59,7 @@ class EnsemblePricingModel(BasePricingModel):
             return [1.0 / n] * n
         return [w / total for w in self.weights]
 
-    def fit(self, X: List[List[float]], y: List[float]) -> None:
+    def fit(self, X: list[list[float]], y: list[float]) -> None:
         """Fit every member model on the same training data.
 
         Parameters
@@ -78,7 +73,7 @@ class EnsemblePricingModel(BasePricingModel):
             model.fit(X, y)
         self._fitted = True
 
-    def predict(self, X: List[List[float]]) -> List[float]:
+    def predict(self, X: list[list[float]]) -> list[float]:
         """Return a weighted-average prediction across all member models.
 
         Parameters
@@ -96,21 +91,72 @@ class EnsemblePricingModel(BasePricingModel):
         RuntimeError
             If called before :meth:`fit`.
         """
-        if not self._fitted:
-            raise RuntimeError(
-                "EnsemblePricingModel is not fitted yet. Call fit() first."
-            )
+        all_members_fitted = all(
+            getattr(m, "_fitted", False) or (hasattr(m, "is_fitted") and m.is_fitted())
+            for m in self.models
+        )
+        if not self._fitted and not all_members_fitted:
+            raise RuntimeError("EnsemblePricingModel is not fitted yet. Call fit() first.")
 
         w = self._normalised_weights()
         n_samples = len(X)
         combined = [0.0] * n_samples
 
-        for model, weight in zip(self.models, w):
+        for model, weight in zip(self.models, w, strict=True):
             preds = model.predict(X)
             for i, pred in enumerate(preds):
                 combined[i] += weight * pred
 
         return combined
+
+    def member_count(self) -> int:
+        """Return the number of member models in the ensemble."""
+        return len(self.models)
+
+    def add_model(self, model: BasePricingModel, weight: float = 1.0) -> None:
+        """Append a new member model to the ensemble.
+
+        Parameters
+        ----------
+        model:
+            New pricing model to add.
+        weight:
+            Importance weight for the new model.  If *weights* were not
+            originally set, equal weights are first materialised before adding.
+        """
+        if self.weights is None:
+            self.weights = [1.0] * len(self.models)
+        self.models.append(model)
+        self.weights.append(weight)
+
+    def remove_model(self, index: int) -> BasePricingModel:
+        """Remove and return the member model at *index*.
+
+        Parameters
+        ----------
+        index:
+            Zero-based position of the model to remove.
+
+        Returns
+        -------
+        BasePricingModel
+            The removed model.
+
+        Raises
+        ------
+        IndexError
+            If *index* is out of range or would leave the ensemble empty.
+        """
+        if index < 0 or index >= len(self.models):
+            raise IndexError(
+                f"index {index} out of range for ensemble with {len(self.models)} members"
+            )
+        if len(self.models) == 1:
+            raise IndexError("cannot remove the last model from the ensemble")
+        removed = self.models.pop(index)
+        if self.weights is not None:
+            self.weights.pop(index)
+        return removed
 
     def __repr__(self) -> str:
         fitted_str = "fitted" if self._fitted else "not fitted"

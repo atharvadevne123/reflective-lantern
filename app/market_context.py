@@ -23,14 +23,14 @@ DEFAULT_ANNUAL_INCOME = 100_000.0
 
 
 def price_per_sqft(predicted_value: float, sqft: float) -> float:
-    """Return price per square foot.
-
-    Returns 0.0 when sqft is non-positive (undefined).
-    Raises ValueError when predicted_value is non-positive.
-    """
-    if predicted_value <= 0 and sqft > 0:
-        raise ValueError("predicted_value must be positive")
-    if sqft <= 0:
+    """Return price per square foot, or 0.0 when sqft is zero."""
+    if predicted_value < 0:
+        raise ValueError("predicted_value must be non-negative")
+    if sqft == 0:
+        return 0.0
+    if sqft < 0:
+        raise ValueError("sqft must be non-negative")
+    if predicted_value == 0:
         return 0.0
     return round(predicted_value / sqft, 2)
 
@@ -406,15 +406,18 @@ __all__ = [
     "affordability_index",
     "affordability_ratio",
     "comparable_value_adjustment",
+    "days_on_market_risk",
     "dom_classification",
     "effective_gross_income",
     "housing_affordability_index",
     "market_heat_score",
     "market_summary",
+    "market_velocity",
     "neighbourhood_score",
     "price_appreciation_rate",
     "price_per_bedroom",
     "price_per_sqft",
+    "price_reduction_pct",
     "price_to_rent_ratio",
     "price_trend_consistency",
     "price_trend_indicator",
@@ -740,7 +743,7 @@ def dom_category(days_on_market: int) -> str:
         days_on_market: Number of days the listing has been active.
 
     Returns:
-        Category string: ``"fast"`` (< 14 days), ``"normal"`` (14–60 days),
+        Category string: ``"fast"`` (< 14 days), ``"normal"`` (14-60 days),
         or ``"slow"`` (> 60 days).
 
     Raises:
@@ -753,3 +756,74 @@ def dom_category(days_on_market: int) -> str:
     if days_on_market <= 60:
         return "normal"
     return "slow"
+
+
+def days_on_market_risk(dom: int) -> str:
+    """Classify the negotiation risk level based on days on market.
+
+    Longer DOM often indicates seller motivation or property issues,
+    giving buyers more negotiating power.
+
+    Args:
+        dom: Days on market (non-negative).
+
+    Returns:
+        Risk label: 'low' (< 14 days, competitive), 'moderate' (14-45 days),
+        'elevated' (45-90 days), or 'high' (> 90 days).
+
+    Raises:
+        ValueError: If *dom* is negative.
+    """
+    if dom < 0:
+        raise ValueError("dom must be non-negative")
+    if dom < 14:
+        return "low"
+    if dom < 45:
+        return "moderate"
+    if dom <= 90:
+        return "elevated"
+    return "high"
+
+
+def price_reduction_pct(original_price: float, current_price: float) -> float:
+    """Compute the percentage reduction from the original list price.
+
+    Args:
+        original_price: Original listing price.
+        current_price: Current (reduced) listing price.
+
+    Returns:
+        Percentage reduction (positive means price dropped), rounded to 4 decimal places.
+        Returns 0.0 if *original_price* is 0.
+
+    Raises:
+        ValueError: If either argument is negative.
+    """
+    if original_price < 0 or current_price < 0:
+        raise ValueError("Prices must be non-negative")
+    if original_price == 0.0:
+        return 0.0
+    return round((original_price - current_price) / original_price * 100.0, 4)
+
+
+def market_velocity(listings_sold: int, active_listings: int) -> float:
+    """Compute market velocity as months of supply.
+
+    Months of supply = active listings / monthly sales rate.  A lower value
+    indicates a faster (seller's) market.
+
+    Args:
+        listings_sold: Number of listings sold in the reference period (e.g. one month).
+        active_listings: Current number of active listings on market.
+
+    Returns:
+        Months of supply as a float; 0.0 when *listings_sold* is 0.
+
+    Raises:
+        ValueError: If either argument is negative.
+    """
+    if listings_sold < 0 or active_listings < 0:
+        raise ValueError("listings_sold and active_listings must be non-negative")
+    if listings_sold == 0:
+        return 0.0
+    return round(active_listings / listings_sold, 4)

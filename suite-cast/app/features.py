@@ -123,99 +123,41 @@ def build_feature_pipeline() -> Pipeline:
     )
 
 
-def lead_time_bucket(lead_days: int) -> int:
-    """Return an ordinal bucket for booking lead time.
-
-    Buckets:
-        0 — same-day or next 3 days  (0–3)
-        1 — early (4–14 days)
-        2 — planned (15–60 days)
-        3 — advance (>60 days)
-
-    Args:
-        lead_days: Number of days between booking and check-in; clamped to [0, 365].
+def feature_names() -> list[str]:
+    """Return the ordered list of feature column names output by the pipeline.
 
     Returns:
-        Integer bucket label 0–3.
+        List of feature column name strings as produced by HotelFeatureEngineer.
     """
-    clamped = max(0, min(365, lead_days))
-    if clamped <= 3:
-        return 0
-    if clamped <= 14:
-        return 1
-    if clamped <= 60:
-        return 2
-    return 3
+    return list(FEATURE_COLS)
 
 
-def competitor_rate_ratio(room_rate: float, competitor_avg: float) -> float:
-    """Return the ratio of *room_rate* to *competitor_avg*, clamped to [0.5, 3.0].
+def lead_time_bucket_label(lead_time_days: int) -> str:
+    """Return a human-readable label for a given lead time in days.
 
     Args:
-        room_rate: Proposed room rate.
-        competitor_avg: Competitor average rate; replaced with 150.0 if zero.
+        lead_time_days: Number of days between booking and check-in.
 
     Returns:
-        Ratio clamped to [0.5, 3.0].
+        One of 'last_minute', 'short', 'medium', 'advance'.
     """
-    denom = competitor_avg if competitor_avg != 0.0 else 150.0
-    return max(0.5, min(3.0, room_rate / denom))
-
-
-def occupancy_yoy_delta(current: float, prev_year: float) -> float:
-    """Return year-over-year occupancy rate difference, clamped to [-1, 1].
-
-    Args:
-        current: Current period occupancy rate.
-        prev_year: Previous year's occupancy rate for the same period.
-
-    Returns:
-        Delta clamped to [-1, 1].
-    """
-    return max(-1.0, min(1.0, current - prev_year))
-
-
-def adr_from_revenue(total_revenue: float, rooms_sold: int) -> float:
-    """Return Average Daily Rate (ADR) from revenue and rooms sold.
-
-    Args:
-        total_revenue: Total room revenue for the period.
-        rooms_sold: Number of rooms sold; must be positive.
-
-    Returns:
-        ADR as float; 0.0 if rooms_sold is zero.
-    """
-    if rooms_sold <= 0:
-        return 0.0
-    return round(total_revenue / rooms_sold, 4)
-
-
-def revpar(total_revenue: float, available_rooms: int) -> float:
-    """Return Revenue Per Available Room (RevPAR).
-
-    Args:
-        total_revenue: Total room revenue for the period.
-        available_rooms: Total available room-nights; must be positive.
-
-    Returns:
-        RevPAR as float; 0.0 if available_rooms is zero.
-    """
-    if available_rooms <= 0:
-        return 0.0
-    return round(total_revenue / available_rooms, 4)
-
-
-def length_of_stay_bucket(nights: int) -> str:
-    """Categorise a booking by length of stay.
-
-    Args:
-        nights: Number of nights in the booking.
-
-    Returns:
-        'short' (1-2), 'medium' (3-6), or 'long' (7+).
-    """
-    if nights <= 2:
+    if lead_time_days <= 3:
+        return "last_minute"
+    if lead_time_days <= 14:
         return "short"
-    if nights <= 6:
+    if lead_time_days <= 60:
         return "medium"
-    return "long"
+    return "advance"
+
+
+def seasonality_score_for_month(month: int) -> float:
+    """Return the seasonal demand multiplier for a calendar month (1-12).
+
+    Args:
+        month: Calendar month as integer 1-12.
+
+    Returns:
+        Demand multiplier float from _SEASON_INDEX.
+    """
+    season = _MONTH_TO_SEASON.get(month, "spring")
+    return _SEASON_INDEX[season]

@@ -13,10 +13,10 @@ import json
 import math
 import os
 import random
-from typing import List, Dict, Any
+from typing import Any
 
 
-def load_csv(path: str) -> List[Dict[str, Any]]:
+def load_csv(path: str) -> list[dict[str, Any]]:
     """Read a CSV file and return its rows as a list of dicts.
 
     Parameters
@@ -42,7 +42,7 @@ def load_csv(path: str) -> List[Dict[str, Any]]:
         return [dict(row) for row in reader]
 
 
-def load_json(path: str) -> List[Dict[str, Any]]:
+def load_json(path: str) -> list[dict[str, Any]]:
     """Read a JSON file and return its contents as a list of dicts.
 
     The file must contain either a JSON array of objects, or a single
@@ -85,7 +85,7 @@ _CATEGORIES = ["electronics", "clothing", "grocery", "home", "sports", "toys"]
 def generate_synthetic_data(
     n_samples: int = 500,
     seed: int = 42,
-) -> List[Dict[str, Any]]:
+) -> list[dict[str, Any]]:
     """Generate a synthetic e-commerce pricing dataset using only stdlib.
 
     Each record represents a single product observation and contains the
@@ -105,7 +105,7 @@ def generate_synthetic_data(
         competition_price, day_of_week, is_weekend, category, revenue.
     """
     rng = random.Random(seed)
-    records: List[Dict[str, Any]] = []
+    records: list[dict[str, Any]] = []
 
     for i in range(n_samples):
         category = rng.choice(_CATEGORIES)
@@ -127,9 +127,7 @@ def generate_synthetic_data(
         base_price = round(base_price, 2)
 
         # Competition price is correlated with base price
-        competition_price = round(
-            base_price * rng.uniform(0.8, 1.2), 2
-        )
+        competition_price = round(base_price * rng.uniform(0.8, 1.2), 2)
 
         day_of_week = rng.randint(0, 6)
         is_weekend = day_of_week >= 5

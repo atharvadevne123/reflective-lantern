@@ -109,16 +109,19 @@ def cosine_distance(a: list[float] | np.ndarray, b: list[float] | np.ndarray) ->
 __all__ = [
     "BuildingSimilarityIndex",
     "batch_add",
+    "batch_similarity_matrix",
     "chebyshev_distance",
     "cosine_distance",
     "euclidean_distance",
     "get_global_index",
     "hourly_pattern_distance",
     "manhattan_distance",
+    "normalize_profile",
     "pearson_similarity",
     "score_distribution",
     "search_comparable",
     "similarity_matrix",
+    "top_k_similar",
 ]
 
 
@@ -386,149 +389,46 @@ def similarity_matrix(profiles: list[list[float]]) -> list[list[float]]:
     return [[round(float(mat[i, j]), 6) for j in range(n)] for i in range(n)]
 
 
-def minkowski_distance(a: list[float], b: list[float], p: float = 2.0) -> float:
-    """Compute the Minkowski distance of order *p* between two vectors.
-
-    Special cases: p=1 is Manhattan distance, p=2 is Euclidean distance.
+def normalize_profile(profile: list[float]) -> list[float]:
+    """Return L2-normalized version of *profile*.
 
     Args:
-        a: First vector.
-        b: Second vector (must be same length as *a*).
-        p: Order of the norm (must be >= 1).
+        profile: Raw feature vector as a list of floats.
 
     Returns:
-        Minkowski distance rounded to 6 decimal places.
+        Unit-length vector (L2 norm = 1.0) as a list of floats.
+        Returns the zero vector unchanged if the norm is zero.
+    """
+    arr = np.array(profile, dtype=np.float64)
+    norm = float(np.linalg.norm(arr))
+    if norm == 0.0:
+        return list(arr)
+    return [round(float(x), 8) for x in arr / norm]
+
+
+def batch_similarity_matrix(profiles: list[list[float]]) -> list[list[float]]:
+    """Compute an NxN pairwise cosine similarity matrix for *profiles*.
+
+    Args:
+        profiles: List of feature vectors (all must have the same length).
+
+    Returns:
+        NxN list-of-lists where entry [i][j] is the cosine similarity
+        between profile i and profile j.  Values are rounded to 6 decimals.
+        Returns an empty list for empty input.
 
     Raises:
-        ValueError: If *p* < 1 or vectors differ in length.
+        ValueError: If profiles have inconsistent lengths.
     """
-    if p < 1.0:
-        raise ValueError(f"p must be >= 1, got {p}")
-    if len(a) != len(b):
-        raise ValueError(f"Vectors must be same length: {len(a)} != {len(b)}")
-    return round(sum(abs(x - y) ** p for x, y in zip(a, b)) ** (1.0 / p), 6)
-
-
-def dice_similarity(set_a: set[str], set_b: set[str]) -> float:
-    """Compute Dice similarity coefficient between two sets.
-
-    Dice = 2 * |A ∩ B| / (|A| + |B|).
-
-    Args:
-        set_a: First set.
-        set_b: Second set.
-
-    Returns:
-        Dice similarity in [0, 1]; 0.0 if both sets are empty.
-    """
-    if not set_a and not set_b:
-        return 0.0
-    intersection = len(set_a & set_b)
-    return round(2.0 * intersection / (len(set_a) + len(set_b)), 6)
-
-
-def overlap_coefficient(set_a: set[str], set_b: set[str]) -> float:
-    """Compute the Overlap (Szymkiewicz–Simpson) coefficient.
-
-    Overlap = |A ∩ B| / min(|A|, |B|).
-
-    Returns 0.0 when either set is empty.
-
-    Args:
-        set_a: First set.
-        set_b: Second set.
-
-    Returns:
-        Overlap coefficient in [0, 1].
-    """
-    if not set_a or not set_b:
-        return 0.0
-    return round(len(set_a & set_b) / min(len(set_a), len(set_b)), 6)
-
-
-def euclidean_distance(vec_a: list[float], vec_b: list[float]) -> float:
-    """Compute the Euclidean distance between two vectors.
-
-    Args:
-        vec_a: First numeric vector.
-        vec_b: Second numeric vector.
-
-    Returns:
-        Euclidean distance rounded to 6 decimal places.
-
-    Raises:
-        ValueError: If vectors have different lengths or are empty.
-    """
-    if not vec_a or not vec_b:
-        raise ValueError("Vectors must not be empty")
-    if len(vec_a) != len(vec_b):
-        raise ValueError("Vectors must have the same length")
-    return round(sum((a - b) ** 2 for a, b in zip(vec_a, vec_b, strict=False)) ** 0.5, 6)
-
-
-def pearson_correlation(
-    x: list[float],
-    y: list[float],
-) -> float:
-    """Compute the Pearson correlation coefficient between *x* and *y*.
-
-    Args:
-        x: First numeric series.
-        y: Second numeric series.
-
-    Returns:
-        Pearson r in [-1, 1] rounded to 6 decimal places, or 0.0 if either
-        series has zero variance.
-
-    Raises:
-        ValueError: If series have different lengths or fewer than 2 elements.
-    """
-    if len(x) < 2 or len(y) < 2:
-        raise ValueError("At least 2 elements required")
-    if len(x) != len(y):
-        raise ValueError("Series must have the same length")
-    n = len(x)
-    mean_x = sum(x) / n
-    mean_y = sum(y) / n
-    num = sum((xi - mean_x) * (yi - mean_y) for xi, yi in zip(x, y, strict=False))
-    den_x = sum((xi - mean_x) ** 2 for xi in x) ** 0.5
-    den_y = sum((yi - mean_y) ** 2 for yi in y) ** 0.5
-    if den_x < 1e-12 or den_y < 1e-12:
-        return 0.0
-    return round(num / (den_x * den_y), 6)
-
-
-def top_k_similar(
-    query: list[float],
-    candidates: list[list[float]],
-    k: int = 5,
-) -> list[tuple[int, float]]:
-    """Find the *k* most similar candidates to a query vector by cosine similarity.
-
-    Args:
-        query: Query feature vector.
-        candidates: List of candidate vectors (same dimension as *query*).
-        k: Number of top results to return. Default 5.
-
-    Returns:
-        List of (index, similarity_score) tuples, sorted by score descending.
-
-    Raises:
-        ValueError: If *k* < 1 or *candidates* is empty.
-    """
-    if not candidates:
-        raise ValueError("candidates must not be empty")
-    if k < 1:
-        raise ValueError("k must be at least 1")
-
-    def _cosine(a: list[float], b: list[float]) -> float:
-        dot = sum(ai * bi for ai, bi in zip(a, b, strict=False))
-        mag_a = sum(ai**2 for ai in a) ** 0.5
-        mag_b = sum(bi**2 for bi in b) ** 0.5
-        if mag_a < 1e-12 or mag_b < 1e-12:
-            return 0.0
-        return dot / (mag_a * mag_b)
-
-    scored = [(i, round(_cosine(query, c), 6)) for i, c in enumerate(candidates)]
-    scored.sort(key=lambda x: x[1], reverse=True)
-    return scored[:k]
+    if not profiles:
+        return []
+    dim = len(profiles[0])
+    if any(len(p) != dim for p in profiles):
+        raise ValueError("All profiles must have the same length")
+    arr = np.array(profiles, dtype=np.float64)
+    norms = np.linalg.norm(arr, axis=1, keepdims=True)
+    norms[norms == 0] = 1e-9
+    normed = arr / norms
+    matrix = normed @ normed.T
+    n = len(profiles)
+    return [[round(float(matrix[i, j]), 6) for j in range(n)] for i in range(n)]

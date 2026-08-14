@@ -8,20 +8,17 @@ library so they can be tested without scikit-learn installed.
 from __future__ import annotations
 
 import math
-from typing import List
 
 
-def _check_lengths(actual: List[float], predicted: List[float]) -> None:
+def _check_lengths(actual: list[float], predicted: list[float]) -> None:
     """Raise ValueError if lists are empty or have different lengths."""
     if not actual or not predicted:
         raise ValueError("actual and predicted must not be empty.")
     if len(actual) != len(predicted):
-        raise ValueError(
-            f"Length mismatch: actual={len(actual)}, predicted={len(predicted)}."
-        )
+        raise ValueError(f"Length mismatch: actual={len(actual)}, predicted={len(predicted)}.")
 
 
-def mae(actual: List[float], predicted: List[float]) -> float:
+def mae(actual: list[float], predicted: list[float]) -> float:
     """Mean Absolute Error.
 
     Parameters
@@ -41,10 +38,10 @@ def mae(actual: List[float], predicted: List[float]) -> float:
         If lists have different lengths or are empty.
     """
     _check_lengths(actual, predicted)
-    return sum(abs(a - p) for a, p in zip(actual, predicted)) / len(actual)
+    return sum(abs(a - p) for a, p in zip(actual, predicted, strict=False)) / len(actual)
 
 
-def rmse(actual: List[float], predicted: List[float]) -> float:
+def rmse(actual: list[float], predicted: list[float]) -> float:
     """Root Mean Squared Error.
 
     Parameters
@@ -64,11 +61,11 @@ def rmse(actual: List[float], predicted: List[float]) -> float:
         If lists have different lengths or are empty.
     """
     _check_lengths(actual, predicted)
-    mse = sum((a - p) ** 2 for a, p in zip(actual, predicted)) / len(actual)
+    mse = sum((a - p) ** 2 for a, p in zip(actual, predicted, strict=False)) / len(actual)
     return math.sqrt(mse)
 
 
-def mape(actual: List[float], predicted: List[float]) -> float:
+def mape(actual: list[float], predicted: list[float]) -> float:
     """Mean Absolute Percentage Error.
 
     Zero-valued actuals are skipped to avoid division-by-zero.
@@ -83,7 +80,7 @@ def mape(actual: List[float], predicted: List[float]) -> float:
     Returns
     -------
     float
-        MAPE as a percentage (0–100+).  Returns ``0.0`` if all actuals
+        MAPE as a percentage (0-100+).  Returns ``0.0`` if all actuals
         are zero.
 
     Raises
@@ -93,7 +90,7 @@ def mape(actual: List[float], predicted: List[float]) -> float:
     """
     _check_lengths(actual, predicted)
     errors = []
-    for a, p in zip(actual, predicted):
+    for a, p in zip(actual, predicted, strict=False):
         if a != 0.0:
             errors.append(abs((a - p) / a) * 100.0)
     if not errors:
@@ -101,10 +98,10 @@ def mape(actual: List[float], predicted: List[float]) -> float:
     return sum(errors) / len(errors)
 
 
-def r_squared(actual: List[float], predicted: List[float]) -> float:
+def r_squared(actual: list[float], predicted: list[float]) -> float:
     """Coefficient of determination (R²).
 
-    R² = 1 − SS_res / SS_tot.  Returns ``0.0`` when the total variance
+    R^2 = 1 - SS_res / SS_tot.  Returns ``0.0`` when the total variance
     is zero (constant series).
 
     Parameters
@@ -127,7 +124,7 @@ def r_squared(actual: List[float], predicted: List[float]) -> float:
     """
     _check_lengths(actual, predicted)
     mean_actual = sum(actual) / len(actual)
-    ss_res = sum((a - p) ** 2 for a, p in zip(actual, predicted))
+    ss_res = sum((a - p) ** 2 for a, p in zip(actual, predicted, strict=False))
     ss_tot = sum((a - mean_actual) ** 2 for a in actual)
     if ss_tot == 0.0:
         return 0.0

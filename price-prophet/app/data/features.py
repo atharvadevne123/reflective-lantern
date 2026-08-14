@@ -8,7 +8,7 @@ framework is required at the feature-construction stage.
 
 from __future__ import annotations
 
-from typing import Dict, List, Any
+from typing import Any
 
 
 def price_ratio(price: float, reference: float) -> float:
@@ -97,7 +97,7 @@ def competitive_gap(own_price: float, competitor_price: float) -> float:
     return (own_price - competitor_price) / competitor_price
 
 
-def build_feature_matrix(records: List[Dict[str, Any]]) -> List[List[float]]:
+def build_feature_matrix(records: list[dict[str, Any]]) -> list[list[float]]:
     """Convert a list of record dicts into a numeric feature matrix.
 
     Each row in the returned matrix corresponds to one record and
@@ -121,7 +121,7 @@ def build_feature_matrix(records: List[Dict[str, Any]]) -> List[List[float]]:
     list[list[float]]
         2-D feature matrix; one inner list per record.
     """
-    matrix: List[List[float]] = []
+    matrix: list[list[float]] = []
 
     for rec in records:
         base_price = float(rec.get("base_price", 0.0))

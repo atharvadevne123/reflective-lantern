@@ -97,12 +97,16 @@ def make_rate_limiter(
 
 __all__ = [
     "TokenBucketRateLimiter",
+    "allow_burst",
+    "bulk_allow",
     "burst_capacity_fraction",
+    "client_stats",
     "is_rate_limited",
     "limiter_utilization",
     "make_rate_limiter",
     "make_strict_limiter",
     "prune_idle_clients",
+    "reset_client",
     "reset_limiter",
 ]
 
@@ -203,95 +207,75 @@ def prune_idle_clients(limiter: TokenBucketRateLimiter, max_idle_seconds: float)
     return removed
 
 
-def active_client_count(limiter: TokenBucketRateLimiter) -> int:
-    """Return the number of currently tracked client buckets.
+def client_stats(limiter: TokenBucketRateLimiter) -> dict[str, object]:
+    """Return a snapshot of all tracked client keys and their token levels.
 
     Args:
         limiter: A :class:`TokenBucketRateLimiter` instance.
 
     Returns:
-        Integer count of clients with active buckets.
+        Dict with 'client_count' and 'clients' (list of dicts with key, tokens).
     """
     with limiter._lock:
-        return len(limiter._buckets)
+        snapshot = [{"key": k, "tokens": round(b.tokens, 4)} for k, b in limiter._buckets.items()]
+    return {"client_count": len(snapshot), "clients": snapshot}
 
 
-def total_consumed_tokens(limiter: TokenBucketRateLimiter, client_key: str = "default") -> float:
-    """Estimate the cumulative tokens consumed by *client_key*.
+def allow_burst(limiter: TokenBucketRateLimiter, client_key: str, n: int) -> bool:
+    """Attempt to consume *n* tokens at once (burst request).
 
-    Tokens consumed = capacity - remaining tokens. This is a snapshot
-    measure — it reflects only the current deficit, not the all-time total.
-
-    Args:
-        limiter: A :class:`TokenBucketRateLimiter` instance.
-        client_key: Client identifier.
-
-    Returns:
-        Non-negative float representing approximate consumed token count.
-    """
-    remaining = limiter.remaining_tokens(client_key)
-    capacity = limiter._capacity
-    return round(max(0.0, capacity - remaining), 6)
-
-
-def client_exists(limiter: TokenBucketRateLimiter, client_key: str) -> bool:
-    """Return True if *client_key* has a bucket allocated in *limiter*.
+    Returns True and deducts *n* tokens if the client has sufficient capacity;
+    returns False without modifying the bucket otherwise.
 
     Args:
         limiter: A :class:`TokenBucketRateLimiter` instance.
-        client_key: Client identifier to check.
+        client_key: Unique client identifier.
+        n: Number of tokens to consume in a single burst.
 
     Returns:
-        True if the client has an existing bucket, False otherwise.
+        True when the burst is permitted; False when insufficient tokens remain.
+
+    Raises:
+        ValueError: If *n* < 1.
     """
+    if n < 1:
+        raise ValueError(f"n must be at least 1, got {n}")
     with limiter._lock:
-        return client_key in limiter._buckets
-
-
-def bucket_fill_percentage(limiter: "TokenBucketRateLimiter", client_key: str) -> float:
-    """Return the fill percentage of the client's bucket as a value in [0.0, 100.0].
-
-    Args:
-        limiter: A :class:`TokenBucketRateLimiter` instance.
-        client_key: Client identifier.
-
-    Returns:
-        Percentage fill; 100.0 if client has no bucket (treated as full).
-    """
-    if not client_exists(limiter, client_key):
-        return 100.0
-    remaining = limiter.remaining_tokens(client_key)
-    return round(min(100.0, remaining / limiter._capacity * 100.0), 4)
-
-
-def is_rate_limited(limiter: "TokenBucketRateLimiter", client_key: str, cost: float = 1.0) -> bool:
-    """Return True if *client_key* would be rate-limited for a request costing *cost* tokens.
-
-    This is a non-consuming check — it does not deduct tokens.
-
-    Args:
-        limiter: A :class:`TokenBucketRateLimiter` instance.
-        client_key: Client identifier.
-        cost: Hypothetical token cost of the request.
-
-    Returns:
-        True if the client has insufficient tokens for *cost*.
-    """
-    return limiter.remaining_tokens(client_key) < cost
-
-
-def reset_client(limiter: "TokenBucketRateLimiter", client_key: str) -> bool:
-    """Remove the bucket for *client_key*, effectively resetting their rate limit.
-
-    Args:
-        limiter: A :class:`TokenBucketRateLimiter` instance.
-        client_key: Client identifier to reset.
-
-    Returns:
-        True if the bucket was removed; False if it did not exist.
-    """
-    with limiter._lock:
-        if client_key in limiter._buckets:
-            del limiter._buckets[client_key]
+        if client_key not in limiter._buckets:
+            limiter._buckets[client_key] = _Bucket(tokens=limiter._capacity)
+        bucket = limiter._buckets[client_key]
+        limiter._refill(bucket)
+        if bucket.tokens >= n:
+            bucket.tokens -= n
             return True
         return False
+
+
+def reset_client(limiter: TokenBucketRateLimiter, client_key: str) -> bool:
+    """Reset a specific client's token bucket to full capacity.
+
+    Args:
+        limiter: A :class:`TokenBucketRateLimiter` instance.
+        client_key: Identifier of the client to reset.
+
+    Returns:
+        True if the client existed and was reset; False if not found.
+    """
+    with limiter._lock:
+        if client_key not in limiter._buckets:
+            return False
+        limiter._buckets[client_key] = _Bucket(tokens=limiter._capacity)
+        return True
+
+
+def bulk_allow(limiter: TokenBucketRateLimiter, client_keys: list[str]) -> dict[str, bool]:
+    """Check rate-limit allowance for multiple clients in one call.
+
+    Args:
+        limiter: A :class:`TokenBucketRateLimiter` instance.
+        client_keys: List of client identifiers to check.
+
+    Returns:
+        Dict mapping each client key to its allow/deny boolean.
+    """
+    return {key: limiter.is_allowed(key) for key in client_keys}

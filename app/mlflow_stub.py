@@ -141,12 +141,16 @@ def list_runs() -> list[dict[str, object]]:
 
 
 __all__ = [
+    "clear_runs",
     "get_best_run",
+    "latest_run",
     "list_runs",
     "log_artifact",
     "log_metrics",
     "log_params",
     "log_training_run",
+    "run_count",
+    "runs_with_metric_above",
     "set_tracking_uri",
 ]
 
@@ -203,3 +207,32 @@ def run_count() -> int:
         Integer count.
     """
     return len(list_runs())
+
+
+def runs_with_metric_above(metric: str, threshold: float) -> list[dict]:
+    """Return all runs where *metric* value exceeds *threshold*.
+
+    Args:
+        metric: Metric name to filter on.
+        threshold: Minimum acceptable metric value (exclusive lower bound).
+
+    Returns:
+        Filtered list of run dicts, preserving original order.
+    """
+    result = []
+    for run in list_runs():
+        metrics = run.get("metrics", {})
+        val = metrics.get(metric)
+        if val is not None and float(val) > threshold:
+            result.append(run)
+    return result
+
+
+def latest_run() -> dict | None:
+    """Return the most recently logged run, or None if no runs exist.
+
+    Returns:
+        Last run dict or None.
+    """
+    runs = list_runs()
+    return runs[-1] if runs else None

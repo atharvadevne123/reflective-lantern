@@ -24,7 +24,7 @@ class PriceRequest(BaseModel):
     competition_price:
         Best competing offer price (0.0 if unknown).
     day_of_week:
-        Day index 0 (Monday) – 6 (Sunday).
+        Day index 0 (Monday) - 6 (Sunday).
     is_weekend:
         Whether the observation falls on a weekend.
     category:

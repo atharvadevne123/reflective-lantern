@@ -107,6 +107,7 @@ class TTLCache:
             "hits": self.hits,
             "misses": self.misses,
             "hit_rate": self.hit_rate,
+            "evictions": self.eviction_count,
         }
 
 
@@ -114,9 +115,13 @@ prediction_cache = TTLCache(ttl_seconds=30, max_size=500)
 
 __all__ = [
     "TTLCache",
+    "batch_get",
+    "batch_set",
+    "build_cache_key",
+    "cache_hit_rate",
     "cache_key_from_dict",
     "cache_stats_summary",
-    "logger",
+    "evict_expired_keys",
     "prediction_cache",
     "warm_cache",
 ]
@@ -221,103 +226,31 @@ def cache_stats_summary(cache: TTLCache) -> dict[str, object]:
     }
 
 
-def cache_fill_rate(cache: TTLCache) -> float:
-    """Return the fraction of cache capacity currently in use.
+def batch_get(cache: TTLCache, keys: list[str]) -> dict[str, object]:
+    """Retrieve multiple keys from *cache* in one call.
 
     Args:
-        cache: The :class:`TTLCache` instance to inspect.
+        cache: The :class:`TTLCache` instance to query.
+        keys: List of cache key strings.
 
     Returns:
-        Fill rate in [0, 1]; 0.0 if max_size is 0.
+        Dict mapping each key to its cached value; missing/expired keys
+        are absent from the result.
     """
-    if cache.max_size == 0:
-        return 0.0
-    return round(cache.size / cache.max_size, 6)
-
-
-def peek(cache: TTLCache, key: str) -> object | None:
-    """Return the stored value for *key* without updating hit/miss counters.
-
-    Useful for admin/diagnostics where you want to inspect the cache without
-    affecting the hit-rate metrics.
-
-    Args:
-        cache: The :class:`TTLCache` instance.
-        key: Cache key to inspect.
-
-    Returns:
-        The raw value if the key exists and is unexpired; None otherwise.
-    """
-    import time as _time
-
-    with cache._lock:
-        entry = cache._store.get(key)
-        if entry is None:
-            return None
-        value, expire_at = entry
-        if expire_at is not None and _time.monotonic() > expire_at:
-            return None
-        return value
-
-
-def batch_delete(cache: TTLCache, keys: list[str]) -> int:
-    """Delete multiple keys from *cache* in a single call.
-
-    Args:
-        cache: The :class:`TTLCache` instance.
-        keys: List of keys to remove.
-
-    Returns:
-        Number of keys that were actually present and removed.
-    """
-    removed = 0
+    result: dict[str, object] = {}
     for key in keys:
-        with cache._lock:
-            if key in cache._store:
-                del cache._store[key]
-                removed += 1
-    return removed
+        val = cache.get(key)
+        if val is not None:
+            result[key] = val
+    return result
 
 
-def cache_key_count(cache: "TTLCache") -> int:
-    """Return the number of non-expired keys currently in *cache*.
-
-    Args:
-        cache: The :class:`TTLCache` instance.
-
-    Returns:
-        Count of live keys.
-    """
-    return len(cache)
-
-
-def warm_cache(cache: "TTLCache", data: dict) -> int:
-    """Populate *cache* with all key-value pairs from *data*.
+def batch_set(cache: TTLCache, items: dict[str, object]) -> None:
+    """Store multiple key-value pairs in *cache* at once.
 
     Args:
-        cache: The :class:`TTLCache` instance.
-        data: Mapping of keys to values to pre-load.
-
-    Returns:
-        Number of entries successfully loaded.
+        cache: The :class:`TTLCache` instance to populate.
+        items: Dict of key → value pairs to cache.
     """
-    loaded = 0
-    for k, v in data.items():
-        cache.set(str(k), v)
-        loaded += 1
-    return loaded
-
-
-def get_or_default(cache: "TTLCache", key: str, default: object = None) -> object:
-    """Return the cached value for *key*, or *default* if absent or expired.
-
-    Args:
-        cache: The :class:`TTLCache` instance.
-        key: Cache key to look up.
-        default: Fallback value returned when the key is missing.
-
-    Returns:
-        Cached value or *default*.
-    """
-    value = cache.get(key)
-    return value if value is not None else default
+    for key, value in items.items():
+        cache.set(key, value)

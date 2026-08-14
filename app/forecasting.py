@@ -163,18 +163,22 @@ def forecast_bias(actual: list[float], predicted: list[float]) -> float:
 
 
 __all__ = [
+    "bias_score",
     "confidence_interval",
     "drift_forecast",
     "ensemble_forecast",
     "exponential_smoothing_forecast",
     "forecast_bias",
+    "forecast_residuals",
     "forecast_summary",
     "mae_score",
+    "mape_score",
     "naive_forecast",
     "rmse_score",
     "seasonal_naive_forecast",
     "stepwise_error_growth",
     "weighted_ensemble_forecast",
+    "weighted_forecast",
 ]
 
 
@@ -572,40 +576,6 @@ def forecast_confidence_interval(
     return [(round(p - margin, 4), round(p + margin, 4)) for p in predictions]
 
 
-def weighted_ensemble_forecast(
-    forecasts: list[list[float]],
-    weights: list[float] | None = None,
-) -> list[float]:
-    """Blend multiple forecast series into a single ensemble prediction.
-
-    Args:
-        forecasts: List of equal-length forecast series.
-        weights: Optional per-series weights. If None, uses equal weights.
-
-    Returns:
-        Weighted mean forecast series.
-
-    Raises:
-        ValueError: If *forecasts* is empty, series differ in length, or weights
-            don't sum to approximately 1.0.
-    """
-    if not forecasts:
-        raise ValueError("forecasts must not be empty")
-    n = len(forecasts[0])
-    if any(len(f) != n for f in forecasts):
-        raise ValueError("All forecast series must have the same length")
-    if weights is None:
-        k = len(forecasts)
-        weights = [1.0 / k] * k
-    if abs(sum(weights) - 1.0) > 1e-6:
-        raise ValueError(f"weights must sum to 1.0, got {sum(weights)}")
-    result = []
-    for i in range(n):
-        value = sum(w * f[i] for w, f in zip(weights, forecasts, strict=False))
-        result.append(round(value, 4))
-    return result
-
-
 def horizon_degradation(
     errors: list[float],
 ) -> float:
@@ -632,3 +602,88 @@ def horizon_degradation(
     numer = sum((i - x_mean) * (errors[i] - y_mean) for i in range(n))
     denom = sum((i - x_mean) ** 2 for i in range(n))
     return round(numer / denom if denom > 0 else 0.0, 6)
+
+
+def mape_score(actual: list[float], predicted: list[float]) -> float:
+    """Compute Mean Absolute Percentage Error (MAPE).
+
+    MAPE is expressed as a percentage and measures the average magnitude of
+    forecast errors relative to actuals. Observations with actual == 0 are skipped.
+
+    Args:
+        actual: Observed values.
+        predicted: Forecasted values (same length as *actual*).
+
+    Returns:
+        MAPE as a percentage (e.g. 5.0 = 5%). Returns 0.0 for empty inputs.
+
+    Raises:
+        ValueError: If *actual* and *predicted* differ in length.
+    """
+    if len(actual) != len(predicted):
+        raise ValueError(f"Length mismatch: actual={len(actual)}, predicted={len(predicted)}")
+    pairs = [(a, p) for a, p in zip(actual, predicted, strict=False) if a != 0.0]
+    if not pairs:
+        return 0.0
+    return round(sum(abs((a - p) / a) for a, p in pairs) / len(pairs) * 100.0, 6)
+
+
+def forecast_residuals(actual: list[float], predicted: list[float]) -> list[float]:
+    """Compute element-wise residuals (actual - predicted).
+
+    Args:
+        actual: Observed target values.
+        predicted: Model predictions (must be same length as *actual*).
+
+    Returns:
+        List of residuals (actual[i] - predicted[i]) rounded to 6 decimal places.
+
+    Raises:
+        ValueError: If lengths differ.
+    """
+    if len(actual) != len(predicted):
+        raise ValueError(f"Length mismatch: actual={len(actual)}, predicted={len(predicted)}")
+    return [round(a - p, 6) for a, p in zip(actual, predicted, strict=False)]
+
+
+def weighted_forecast(forecasts: list[float], weights: list[float]) -> float:
+    """Return a weighted average of multiple forecast values.
+
+    Args:
+        forecasts: List of forecast values.
+        weights: Corresponding weights (need not sum to 1).
+
+    Returns:
+        Weighted average as a float.
+
+    Raises:
+        ValueError: If lists have different lengths or all weights are zero.
+    """
+    if len(forecasts) != len(weights):
+        raise ValueError("forecasts and weights must have the same length")
+    total_weight = sum(weights)
+    if total_weight == 0.0:
+        raise ValueError("Sum of weights must be non-zero")
+    return round(sum(f * w for f, w in zip(forecasts, weights, strict=False)) / total_weight, 6)
+
+
+def bias_score(actual: list[float], predicted: list[float]) -> float:
+    """Compute mean forecast bias (mean of actual - predicted).
+
+    A positive bias means the model under-predicts on average.
+
+    Args:
+        actual: Observed values.
+        predicted: Model predictions (same length as *actual*).
+
+    Returns:
+        Mean bias rounded to 6 decimal places; 0.0 for empty input.
+
+    Raises:
+        ValueError: If lengths differ.
+    """
+    if len(actual) != len(predicted):
+        raise ValueError(f"Length mismatch: actual={len(actual)}, predicted={len(predicted)}")
+    if not actual:
+        return 0.0
+    return round(sum(a - p for a, p in zip(actual, predicted, strict=False)) / len(actual), 6)

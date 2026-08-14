@@ -9,7 +9,7 @@ unconditionally.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any, Dict, List
+from typing import Any
 
 
 @dataclass
@@ -25,7 +25,7 @@ class ValidationResult:
     """
 
     valid: bool
-    errors: List[str] = field(default_factory=list)
+    errors: list[str] = field(default_factory=list)
 
 
 # Required keys that every pricing record must have
@@ -44,7 +44,7 @@ def validate_price(price: float) -> ValidationResult:
     -------
     ValidationResult
     """
-    errors: List[str] = []
+    errors: list[str] = []
 
     try:
         price = float(price)
@@ -58,7 +58,7 @@ def validate_price(price: float) -> ValidationResult:
     return ValidationResult(valid=len(errors) == 0, errors=errors)
 
 
-def validate_record(record: Dict[str, Any]) -> ValidationResult:
+def validate_record(record: dict[str, Any]) -> ValidationResult:
     """Validate a single pricing record dict.
 
     Checks
@@ -77,7 +77,7 @@ def validate_record(record: Dict[str, Any]) -> ValidationResult:
     -------
     ValidationResult
     """
-    errors: List[str] = []
+    errors: list[str] = []
 
     missing = _REQUIRED_RECORD_KEYS - set(record.keys())
     if missing:
@@ -89,8 +89,7 @@ def validate_record(record: Dict[str, Any]) -> ValidationResult:
         base_price = float(record["base_price"])
         if base_price <= 0.0:
             errors.append(
-                f"base_price must be > 0, got {base_price} "
-                f"(product_id={record['product_id']!r})"
+                f"base_price must be > 0, got {base_price} (product_id={record['product_id']!r})"
             )
     except (TypeError, ValueError):
         errors.append(
@@ -104,8 +103,7 @@ def validate_record(record: Dict[str, Any]) -> ValidationResult:
         demand = float(record["demand"])
         if demand < 0.0:
             errors.append(
-                f"demand must be >= 0, got {demand} "
-                f"(product_id={record['product_id']!r})"
+                f"demand must be >= 0, got {demand} (product_id={record['product_id']!r})"
             )
     except (TypeError, ValueError):
         errors.append(
@@ -117,7 +115,7 @@ def validate_record(record: Dict[str, Any]) -> ValidationResult:
     return ValidationResult(valid=len(errors) == 0, errors=errors)
 
 
-def validate_dataset(records: List[Dict[str, Any]]) -> ValidationResult:
+def validate_dataset(records: list[dict[str, Any]]) -> ValidationResult:
     """Validate an entire dataset of pricing records.
 
     The dataset is considered invalid if it is empty, or if any
@@ -134,7 +132,7 @@ def validate_dataset(records: List[Dict[str, Any]]) -> ValidationResult:
         Aggregated result; ``errors`` contains one entry per failing
         record (prefixed with its position in the list).
     """
-    all_errors: List[str] = []
+    all_errors: list[str] = []
 
     if not records:
         return ValidationResult(valid=False, errors=["dataset is empty"])

@@ -7,7 +7,7 @@ and CLI can look up models by name without importing them directly.
 
 from __future__ import annotations
 
-from typing import Any, List
+from typing import Any
 
 
 class ModelRegistry:
@@ -57,7 +57,7 @@ class ModelRegistry:
             raise KeyError(f"No model registered under name {name!r}.")
         return self._store[name]
 
-    def list_models(self) -> List[str]:
+    def list_models(self) -> list[str]:
         """Return a sorted list of all registered model names.
 
         Returns
@@ -93,5 +93,5 @@ class ModelRegistry:
         return f"ModelRegistry({names})"
 
 
-# Module-level singleton – import and use this throughout the application.
+# Module-level singleton - import and use this throughout the application.
 registry = ModelRegistry()

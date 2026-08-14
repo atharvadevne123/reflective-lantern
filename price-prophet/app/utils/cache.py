@@ -9,7 +9,7 @@ from multiple threads.
 from __future__ import annotations
 
 import time
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
 
 class TTLCache:
@@ -31,7 +31,7 @@ class TTLCache:
         self.ttl_seconds = ttl_seconds
         self.max_size = max_size
         # Each entry: (value, stored_at_monotonic)
-        self._store: Dict[str, Tuple[Any, float]] = {}
+        self._store: dict[str, tuple[Any, float]] = {}
 
     # ------------------------------------------------------------------
     # Internal helpers
@@ -51,7 +51,7 @@ class TTLCache:
     # Public API
     # ------------------------------------------------------------------
 
-    def get(self, key: str) -> Optional[Any]:
+    def get(self, key: str) -> Any | None:
         """Return the cached value for *key*, or ``None`` if absent/expired.
 
         Parameters

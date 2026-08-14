@@ -9,7 +9,6 @@ playbooks as simple, auditable rules.
 from __future__ import annotations
 
 import enum
-from typing import Optional
 
 
 class PricingStrategy(enum.Enum):
@@ -36,7 +35,7 @@ class PricingStrategy(enum.Enum):
 def apply_strategy(
     base_price: float,
     strategy: PricingStrategy,
-    competitor_price: Optional[float] = None,
+    competitor_price: float | None = None,
     elasticity: float = -1.5,
 ) -> float:
     """Return a price adjusted according to the chosen *strategy*.
@@ -61,11 +60,11 @@ def apply_strategy(
 
     Notes
     -----
-    * ``PENETRATION``  → ``base_price × 0.85``
-    * ``PREMIUM``      → ``base_price × 1.25``
-    * ``COMPETITIVE``  → ``competitor_price × 0.99``
+    * ``PENETRATION``  -> ``base_price x 0.85``
+    * ``PREMIUM``      -> ``base_price x 1.25``
+    * ``COMPETITIVE``  -> ``competitor_price x 0.99``
                          (falls back to *base_price* if competitor unknown)
-    * ``DYNAMIC``      → price reduced 5 % when |elasticity| > 1 (elastic);
+    * ``DYNAMIC``      -> price reduced 5 % when |elasticity| > 1 (elastic);
                          price raised 5 % when demand is inelastic.
     """
     if strategy is PricingStrategy.PENETRATION:
@@ -87,5 +86,5 @@ def apply_strategy(
             # Inelastic market: raising price grows revenue
             return round(base_price * 1.05, 2)
 
-    # Fallback – return base unchanged
+    # Fallback - return base unchanged
     return round(base_price, 2)
