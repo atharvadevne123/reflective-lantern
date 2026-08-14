@@ -59,3 +59,39 @@ def test_revenue_uplift_zero_baseline():
     from app.evaluation.metrics import revenue_uplift
 
     assert revenue_uplift(0.0, 100.0) == 0.0
+
+
+@pytest.mark.parametrize(
+    "actual,predicted,expected_mae",
+    [
+        ([1.0], [1.0], 0.0),
+        ([0.0, 10.0, 20.0], [0.0, 10.0, 20.0], 0.0),
+        ([0.0, 0.0], [5.0, 5.0], 5.0),
+        ([10.0], [0.0], 10.0),
+    ],
+)
+def test_mae_parametrized(actual: list[float], predicted: list[float], expected_mae: float) -> None:
+    from app.evaluation.metrics import mae
+
+    assert abs(mae(actual, predicted) - expected_mae) < 1e-6
+
+
+@pytest.mark.parametrize(
+    "actual,predicted",
+    [
+        ([1.0, 2.0, 3.0], [1.0, 2.0, 3.0]),
+        ([5.0, 5.0], [5.0, 5.0]),
+    ],
+)
+def test_r_squared_perfect_fit_parametrized(actual: list[float], predicted: list[float]) -> None:
+    from app.evaluation.metrics import r_squared
+
+    assert r_squared(actual, predicted) == pytest.approx(1.0, abs=1e-6)
+
+
+@pytest.mark.parametrize("baseline,optimized", [(100.0, 110.0), (50.0, 75.0), (200.0, 200.0)])
+def test_revenue_uplift_non_negative_when_optimized_ge_baseline(baseline: float, optimized: float) -> None:
+    from app.evaluation.metrics import revenue_uplift
+
+    result = revenue_uplift(baseline, optimized)
+    assert result >= 0.0
