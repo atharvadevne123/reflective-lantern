@@ -1064,3 +1064,32 @@ def test_report_anomaly_summary_all_anomalous() -> None:
     result = report_anomaly_summary([True] * 5)
     assert result["anomaly_count"] == 5
     assert result["anomaly_rate"] == _pytest.approx(1.0)
+
+
+@_pytest.mark.parametrize("n", [24, 48, 96])
+def test_peak_usage_window_output_keys(n: int) -> None:
+    from app.reporting import peak_usage_window
+
+    hourly_kwh = [float(i % 24) for i in range(n)][:24]
+    result = peak_usage_window(hourly_kwh)
+    assert "peak_start" in result
+    assert "total_kwh" in result
+
+
+@_pytest.mark.parametrize("kwh,intensity", [(100.0, 0.3), (500.0, 0.4), (1000.0, 0.5)])
+def test_emission_report_positive_total(kwh: float, intensity: float) -> None:
+    from app.reporting import emission_report
+
+    values = [kwh / 24] * 24
+    result = emission_report(values, intensity)
+    assert result["total_co2_kg"] > 0.0
+
+
+@_pytest.mark.parametrize("n_hours", [24, 48])
+def test_demand_variance_report_has_keys(n_hours: int) -> None:
+    from app.reporting import demand_variance_report
+
+    readings = [float(i % 10 + 1) for i in range(n_hours)]
+    result = demand_variance_report(readings)
+    assert "mean" in result
+    assert "variance" in result
