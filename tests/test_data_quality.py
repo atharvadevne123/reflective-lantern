@@ -925,3 +925,45 @@ class TestFieldEntropy:
         records = [{"x": 1}, {}, {}]
         result = field_entropy(records, "x")
         assert result > 0.0
+
+
+import pytest as _pytest
+
+
+@_pytest.mark.parametrize(
+    "records,required,expected_score",
+    [
+        ([{"a": 1, "b": 2}], ["a", "b"], 1.0),
+        ([{"a": 1}], ["a", "b"], 0.5),
+        ([], ["a"], 0.0),
+    ],
+)
+def test_completeness_score_parametrized(
+    records: list, required: list, expected_score: float
+) -> None:
+    from app.data_quality import completeness_score
+
+    assert completeness_score(records, required) == _pytest.approx(expected_score, abs=0.001)
+
+
+@_pytest.mark.parametrize(
+    "records,field,expected_null_rate",
+    [
+        ([{"v": 1}, {"v": 2}], "v", 0.0),
+        ([{"v": None}, {"v": None}], "v", 1.0),
+        ([{"v": 1}, {"v": None}], "v", 0.5),
+    ],
+)
+def test_null_rate_parametrized(records: list, field: str, expected_null_rate: float) -> None:
+    from app.data_quality import null_rate
+
+    assert null_rate(records, field) == _pytest.approx(expected_null_rate, abs=0.001)
+
+
+@_pytest.mark.parametrize("n", [0, 1, 5, 100])
+def test_batch_score_length_matches_input(n: int) -> None:
+    from app.data_quality import batch_score
+
+    records = [{"consumption_kwh": 10.0, "hour": 12, "month": 6, "day_of_week": 2}] * n
+    result = batch_score(records)
+    assert len(result) == n
