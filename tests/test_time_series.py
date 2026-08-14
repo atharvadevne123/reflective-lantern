@@ -1372,3 +1372,57 @@ class TestSeriesRangeByWindow:
 
         values = [float(i) for i in range(10)]
         assert len(series_range_by_window(values, window=3)) == 10
+
+
+@pytest.mark.parametrize("window", [2, 5, 10])
+def test_simple_moving_average_length(window: int) -> None:
+    from app.time_series import simple_moving_average
+
+    values = list(range(20))
+    result = simple_moving_average(values, window=window)
+    assert len(result) == 20 - window + 1
+
+
+@pytest.mark.parametrize("horizon", [6, 12, 24])
+def test_forecast_linear_trend_length(horizon: int) -> None:
+    from app.time_series import forecast_linear_trend
+
+    values = [float(i) for i in range(30)]
+    result = forecast_linear_trend(values, horizon=horizon)
+    assert len(result) == horizon
+
+
+@pytest.mark.parametrize(
+    "values,expected_load_factor",
+    [
+        ([1.0, 1.0, 1.0], 1.0),
+        ([0.0, 0.0, 10.0], pytest.approx(1 / 3, abs=0.01)),
+    ],
+)
+def test_load_factor_parametrized(values: list, expected_load_factor) -> None:
+    from app.time_series import load_factor
+
+    assert load_factor(values) == expected_load_factor
+
+
+@pytest.mark.parametrize("n", [24, 48, 96])
+def test_cumulative_sum_length(n: int) -> None:
+    from app.time_series import cumulative_sum
+
+    values = [1.0] * n
+    result = cumulative_sum(values)
+    assert len(result) == n
+
+
+@pytest.mark.parametrize(
+    "values,alpha",
+    [
+        ([1.0, 2.0, 3.0, 4.0, 5.0], 0.1),
+        ([10.0, 8.0, 6.0, 4.0], 0.5),
+    ],
+)
+def test_exponential_moving_average_length(values: list, alpha: float) -> None:
+    from app.time_series import exponential_moving_average
+
+    result = exponential_moving_average(values, alpha=alpha)
+    assert len(result) == len(values)
