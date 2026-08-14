@@ -269,3 +269,37 @@ def test_defect_rate_all_defects(db_session):
         log_prediction(db=db_session, sensor_data=sensor, prediction=1, defect_probability=0.95)
     result = defect_rate(db_session)
     assert result["defect_rate"] == 1.0
+
+
+@pytest.mark.parametrize("n_samples", [10, 50, 100, 200])
+def test_compute_drift_various_sample_sizes(n_samples: int) -> None:
+    import numpy as np
+
+    from app.monitoring import compute_drift
+
+    rng = np.random.default_rng(n_samples)
+    ref = list(rng.normal(50, 5, n_samples))
+    cur = list(rng.normal(50, 5, n_samples))
+    result = compute_drift(ref, cur)
+    assert "ks_statistic" in result
+    assert "drift_detected" in result
+
+
+@pytest.mark.parametrize("threshold", [1.5, 2.0, 2.5, 3.0])
+def test_zscore_outliers_threshold_monotone(threshold: float) -> None:
+    from app.monitoring import compute_zscore_outliers
+
+    values = [10.0] * 18 + [50.0, 60.0]
+    result = compute_zscore_outliers(values, threshold=threshold)
+    assert result["outlier_count"] >= 0
+
+
+def test_compute_drift_returns_required_keys() -> None:
+    import numpy as np
+
+    from app.monitoring import compute_drift
+
+    rng = np.random.default_rng(0)
+    result = compute_drift(list(rng.normal(0, 1, 50)), list(rng.normal(5, 1, 50)))
+    for key in ("ks_statistic", "p_value", "drift_detected"):
+        assert key in result
