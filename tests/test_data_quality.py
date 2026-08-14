@@ -869,7 +869,7 @@ class TestFindDuplicateRows:
         assert find_duplicate_rows([], ["id"]) == []
 
 
-class TestValueRangeCheck:
+class TestValueRangeCheckExtended:
     def test_all_in_range(self) -> None:
         from app.data_quality import value_range_check
 
