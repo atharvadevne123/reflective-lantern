@@ -105,3 +105,33 @@ def test_exception_hierarchy_catches_all_as_base() -> None:
     for exc in exceptions:
         with pytest.raises(WattGuardError):
             raise exc
+
+
+@pytest.mark.parametrize(
+    "exc_class,args",
+    [
+        (ModelNotLoadedError, ("model path",)),
+        (DriftDetectionError, ("feature drift detected",)),
+        (DatabaseError, ("connection failed",)),
+        (ConfigurationError, ("missing key",)),
+        (PredictionError, ("prediction failed",)),
+    ],
+)
+def test_exception_message_preserved(exc_class, args: tuple) -> None:
+    exc = exc_class(*args)
+    assert str(exc) != ""
+
+
+@pytest.mark.parametrize("field,reason", [("temperature", "out of range"), ("pressure", "negative"), ("vibration", "nan")])
+def test_feature_validation_error_contains_field(field: str, reason: str) -> None:
+    exc = FeatureValidationError(field, reason)
+    assert field in str(exc)
+
+
+@pytest.mark.parametrize(
+    "exc_class",
+    [ModelNotLoadedError, DriftDetectionError, DatabaseError, ConfigurationError, PredictionError],
+)
+def test_exceptions_are_exception(exc_class) -> None:
+    exc = exc_class("test")
+    assert isinstance(exc, Exception)
