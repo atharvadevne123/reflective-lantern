@@ -7,11 +7,16 @@ import pytest
 from app.time_series import autocorrelation, cumulative_sum
 from app.trend_analysis import (
     TrendResult,
+    autocorrelation,
     detect_change_points,
     double_exponential_smoothing,
     exponential_growth_rate,
     linear_trend,
+    momentum_score,
+    normalised_range,
+    peak_valley_count,
     percentage_change,
+    period_comparison,
     rate_of_change,
     rolling_mean,
     seasonal_decompose_naive,
@@ -847,3 +852,42 @@ class TestCumulativeReturnNew:
 
         with pytest.raises(ValueError):
             cumulative_return([-10.0, 100.0])
+
+
+@pytest.mark.parametrize(
+    "values,expected_direction",
+    [
+        ([1.0, 2.0, 3.0, 4.0, 5.0], "rising"),
+        ([5.0, 4.0, 3.0, 2.0, 1.0], "falling"),
+    ],
+)
+def test_linear_trend_direction_parametrized(values: list[float], expected_direction: str) -> None:
+    result = linear_trend(values)
+    assert result.direction == expected_direction
+
+
+@pytest.mark.parametrize("window", [1, 2, 3])
+def test_rolling_mean_output_length(window: int) -> None:
+    values = [1.0, 2.0, 3.0, 4.0, 5.0]
+    result = rolling_mean(values, window=window)
+    assert len(result) == len(values)
+
+
+def test_normalised_range_zero_for_constant() -> None:
+    assert normalised_range([5.0, 5.0, 5.0]) == pytest.approx(0.0)
+
+
+def test_normalised_range_one_for_zero_to_one() -> None:
+    assert normalised_range([0.0, 0.5, 1.0]) == pytest.approx(1.0, abs=1e-6)
+
+
+def test_peak_valley_count_monotonic_rising() -> None:
+    result = peak_valley_count([1.0, 2.0, 3.0, 4.0, 5.0])
+    assert result["peaks"] == 0
+    assert result["valleys"] == 0
+
+
+def test_momentum_score_positive_for_rising() -> None:
+    rising = [1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0]
+    score = momentum_score(rising)
+    assert score > 0
