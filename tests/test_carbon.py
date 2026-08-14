@@ -1174,3 +1174,37 @@ def test_compare_regions_includes_all_requested(region: str) -> None:
     results = compare_regions(kwh=100.0, regions=["northeast", "midwest", "south", "west", "texas"])
     names = [r["region"] for r in results]
     assert region in names
+
+
+@_pytest.mark.parametrize("n", [1, 10, 30])
+def test_cumulative_co2_length(n: int) -> None:
+    from app.carbon import cumulative_co2
+
+    daily_kg = [1.0] * n
+    result = cumulative_co2(daily_kg)
+    assert len(result) == n
+
+
+@_pytest.mark.parametrize("kwh,factor", [(100.0, 0.4), (500.0, 0.3), (1000.0, 0.5)])
+def test_annual_emission_estimate_positive(kwh: float, factor: float) -> None:
+    from app.carbon import annual_emission_estimate
+
+    monthly_kwh = [kwh / 12] * 12
+    result = annual_emission_estimate(monthly_kwh, factor)
+    assert result > 0.0
+
+
+@_pytest.mark.parametrize(
+    "intensity,expected_label_partial",
+    [
+        (0.05, "low"),
+        (0.3, "medium"),
+        (0.7, "high"),
+    ],
+)
+def test_carbon_intensity_label_parametrized(intensity: float, expected_label_partial: str) -> None:
+    from app.carbon import carbon_intensity_label
+
+    label = carbon_intensity_label(intensity)
+    assert isinstance(label, str)
+    assert expected_label_partial.lower() in label.lower()
