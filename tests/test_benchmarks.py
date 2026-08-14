@@ -626,3 +626,60 @@ class TestPortfolioEuiSummary:
 
         result = portfolio_eui_summary([])
         assert result == {"mean_eui": 0.0, "min_eui": 0.0, "max_eui": 0.0}
+
+
+@pytest.mark.parametrize(
+    "annual_kwh,floor_area,expected_eui",
+    [
+        (10000.0, 100.0, 100.0),
+        (50000.0, 500.0, 100.0),
+        (20000.0, 200.0, 100.0),
+    ],
+)
+def test_compute_eui_parametrized(annual_kwh: float, floor_area: float, expected_eui: float) -> None:
+    from app.benchmarks import compute_eui
+
+    assert compute_eui(annual_kwh, floor_area) == pytest.approx(expected_eui, abs=0.1)
+
+
+@pytest.mark.parametrize(
+    "actual_eui,benchmark,expected_sign",
+    [
+        (80.0, 100.0, "positive"),
+        (120.0, 100.0, "negative"),
+        (100.0, 100.0, "zero"),
+    ],
+)
+def test_percentage_below_benchmark_sign(actual_eui: float, benchmark: float, expected_sign: str) -> None:
+    from app.benchmarks import percentage_below_benchmark
+
+    result = percentage_below_benchmark(actual_eui, benchmark)
+    if expected_sign == "positive":
+        assert result > 0.0
+    elif expected_sign == "negative":
+        assert result < 0.0
+    else:
+        assert result == pytest.approx(0.0, abs=0.01)
+
+
+@pytest.mark.parametrize("score", [0.0, 50.0, 75.0, 100.0])
+def test_benchmark_score_label_returns_string(score: float) -> None:
+    from app.benchmarks import benchmark_score_label
+
+    label = benchmark_score_label(score)
+    assert isinstance(label, str)
+    assert len(label) > 0
+
+
+@pytest.mark.parametrize(
+    "euis,weights",
+    [
+        ([100.0, 200.0], [0.5, 0.5]),
+        ([100.0, 200.0, 300.0], [1.0, 2.0, 1.0]),
+    ],
+)
+def test_weighted_average_eui_in_range(euis: list, weights: list) -> None:
+    from app.benchmarks import weighted_average_eui
+
+    result = weighted_average_eui(euis, weights)
+    assert min(euis) <= result <= max(euis)
