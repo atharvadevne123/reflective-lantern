@@ -295,3 +295,42 @@ class TestLengthOfStayBucket:
 
         assert length_of_stay_bucket(7) == "long"
         assert length_of_stay_bucket(30) == "long"
+
+
+@pytest.mark.parametrize(
+    "month,expected_season",
+    [
+        (1, "winter"),
+        (4, "spring"),
+        (7, "summer"),
+        (10, "fall"),
+        (12, "winter"),
+    ],
+)
+def test_seasonality_score_by_month(month: int, expected_season: str) -> None:
+    from app.features import _MONTH_TO_SEASON
+
+    assert _MONTH_TO_SEASON[month] == expected_season
+
+
+@pytest.mark.parametrize("lead_time", [0, 1, 3, 7, 14, 30, 90])
+def test_feature_engineer_handles_various_lead_times(lead_time: int) -> None:
+    eng = HotelFeatureEngineer()
+    df = _minimal_df(lead_time=lead_time)
+    result = eng.transform(df)
+    assert result.shape[0] == 1
+    assert not result.isnull().any().any()
+
+
+@pytest.mark.parametrize("room_type", ["standard", "deluxe", "suite"])
+def test_feature_engineer_all_room_types(room_type: str) -> None:
+    eng = HotelFeatureEngineer()
+    result = eng.transform(_minimal_df(room_type=room_type))
+    assert result.shape == (1, len(FEATURE_COLS))
+
+
+@pytest.mark.parametrize("guests_count", [1, 2, 4, 8])
+def test_feature_engineer_various_guest_counts(guests_count: int) -> None:
+    eng = HotelFeatureEngineer()
+    result = eng.transform(_minimal_df(guests_count=guests_count))
+    assert not result.isnull().any().any()
