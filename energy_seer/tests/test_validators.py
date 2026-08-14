@@ -120,3 +120,49 @@ class TestValidateReadingsList:
 
         with pytest.raises(ValueError):
             validate_readings_list([1.0, float("nan")])
+
+
+@pytest.mark.parametrize("n", [5, 10, 100, 8760])
+def test_validate_forecast_length_valid(n: int) -> None:
+    from energy_seer.app.validators import validate_forecast_length
+
+    assert validate_forecast_length(n) == n
+
+
+@pytest.mark.parametrize("n", [0, -1, 8761])
+def test_validate_forecast_length_invalid_raises(n: int) -> None:
+    import pytest
+
+    from energy_seer.app.validators import validate_forecast_length
+
+    with pytest.raises(ValueError):
+        validate_forecast_length(n)
+
+
+@pytest.mark.parametrize("tariff", [0.01, 0.10, 0.50, 1.00])
+def test_validate_tariff_positive_returns_value(tariff: float) -> None:
+    from energy_seer.app.validators import validate_tariff
+
+    assert validate_tariff(tariff) == pytest.approx(tariff)
+
+
+@pytest.mark.parametrize("tariff", [0.0, -0.1, -10.0])
+def test_validate_tariff_non_positive_raises(tariff: float) -> None:
+    import pytest
+
+    from energy_seer.app.validators import validate_tariff
+
+    with pytest.raises(ValueError):
+        validate_tariff(tariff)
+
+
+@pytest.mark.parametrize(
+    "meter_id",
+    ["MTR-001", "MTR-999", "BLDG-42-A"],
+)
+def test_validate_meter_id_valid_returns_string(meter_id: str) -> None:
+    from energy_seer.app.validators import validate_meter_id
+
+    result = validate_meter_id(meter_id)
+    assert isinstance(result, str)
+    assert result == meter_id
