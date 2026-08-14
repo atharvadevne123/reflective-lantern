@@ -97,5 +97,19 @@
     "smtp_587": "failed - Address family not supported by protocol",
     "smtp_465": "attempted",
     "status": "attempted"
+  },
+  {
+    "date": "2026-08-14",
+    "repo": "reflective-lantern",
+    "email_to": "devneatharva@gmail.com",
+    "subject": "[Reflective Lantern] IMPROVEMENT Report — 2026-08-14",
+    "smtp_587": "failed - OSError: [Errno 97] Address family not supported by protocol",
+    "smtp_465": "failed - OSError: [Errno 97] Address family not supported by protocol",
+    "status": "SMTP_BLOCKED",
+    "reason": "SMTP outbound blocked in CCR remote execution environment (no raw socket egress - errno 97 EAFNOSUPPORT)",
+    "pdf_generated": "history/reports/reflective-lantern_2026-08-14.pdf",
+    "commits": 61,
+    "push_status": "SUCCESS",
+    "note": "61 commits pushed to main. 100+ new parametrized tests across 30 files. PDF saved to history/reports/."
   }
 ]
