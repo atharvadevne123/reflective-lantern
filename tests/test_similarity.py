@@ -839,7 +839,7 @@ def test_cosine_distance_parametrized(a: list, b: list, expected: float) -> None
         ([0.0, 0.0], [0.0, 0.0], 0.0),
     ],
 )
-def test_euclidean_distance_parametrized(a: list, b: list, expected: float) -> None:
+def test_euclidean_distance_specific_values(a: list, b: list, expected: float) -> None:
     from app.similarity import euclidean_distance
 
     assert euclidean_distance(a, b) == pytest.approx(expected, abs=0.01)

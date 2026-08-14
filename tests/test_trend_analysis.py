@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from app.time_series import autocorrelation, cumulative_sum
+from app.time_series import cumulative_sum
 from app.trend_analysis import (
     TrendResult,
     autocorrelation,
@@ -611,39 +611,27 @@ def test_trend_reversal_count_nonzero_param(n: int) -> None:
 
 class TestPeriodComparison:
     def test_same_series_zero_change(self) -> None:
-        from app.trend_analysis import period_comparison
-
         result = period_comparison([1.0, 2.0, 3.0], [1.0, 2.0, 3.0])
         assert result["pct_change"] == pytest.approx(0.0)
 
     def test_increase_positive_pct_change(self) -> None:
-        from app.trend_analysis import period_comparison
-
         result = period_comparison([100.0, 100.0], [120.0, 120.0])
         assert result["pct_change"] == pytest.approx(20.0)
 
     def test_decrease_negative_pct_change(self) -> None:
-        from app.trend_analysis import period_comparison
-
         result = period_comparison([200.0, 200.0], [100.0, 100.0])
         assert result["pct_change"] == pytest.approx(-50.0)
 
     def test_totals_correct(self) -> None:
-        from app.trend_analysis import period_comparison
-
         result = period_comparison([1.0, 2.0, 3.0], [4.0, 5.0, 6.0])
         assert result["total_a"] == pytest.approx(6.0)
         assert result["total_b"] == pytest.approx(15.0)
 
     def test_empty_raises(self) -> None:
-        from app.trend_analysis import period_comparison
-
         with pytest.raises(ValueError):
             period_comparison([], [1.0])
 
     def test_length_mismatch_raises(self) -> None:
-        from app.trend_analysis import period_comparison
-
         with pytest.raises(ValueError):
             period_comparison([1.0, 2.0], [1.0])
 
@@ -861,13 +849,13 @@ class TestCumulativeReturnNew:
         ([5.0, 4.0, 3.0, 2.0, 1.0], "falling"),
     ],
 )
-def test_linear_trend_direction_parametrized(values: list[float], expected_direction: str) -> None:
+def test_linear_trend_direction_boundary(values: list[float], expected_direction: str) -> None:
     result = linear_trend(values)
     assert result.direction == expected_direction
 
 
 @pytest.mark.parametrize("window", [1, 2, 3])
-def test_rolling_mean_output_length(window: int) -> None:
+def test_rolling_mean_output_size(window: int) -> None:
     values = [1.0, 2.0, 3.0, 4.0, 5.0]
     result = rolling_mean(values, window=window)
     assert len(result) == len(values)
@@ -894,7 +882,7 @@ def test_momentum_score_positive_for_rising() -> None:
 
 
 @pytest.mark.parametrize("n", [5, 10, 24])
-def test_rate_of_change_length(n: int) -> None:
+def test_rate_of_change_output_length(n: int) -> None:
     values = [float(i) for i in range(n)]
     result = rate_of_change(values, lag=1)
     assert len(result) == n - 1

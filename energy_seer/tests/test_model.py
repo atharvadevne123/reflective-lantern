@@ -128,9 +128,6 @@ class TestBuildEnsemble:
         assert set(names) == {"xgb", "lgbm", "rf"}
 
 
-import pytest
-
-
 @pytest.mark.parametrize("n_samples", [50, 100, 200])
 def test_train_model_various_sample_sizes(n_samples: int) -> None:
     import numpy as np

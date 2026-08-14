@@ -44,7 +44,7 @@ def test_backtester_baseline_revenue():
 
 
 @pytest.mark.parametrize("n_periods", [1, 3, 5, 10])
-def test_backtester_n_periods(n_periods: int) -> None:
+def test_backtester_n_periods_parametrized(n_periods: int) -> None:
     bt = _make_backtester([100.0] * n_periods)
     features = [[1.0]] * n_periods
     demands = [10.0] * n_periods

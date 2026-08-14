@@ -1151,7 +1151,7 @@ class TestAnomalyPeakRatio:
         (10.5, 10.0, 1.0, 3.0, False),
     ],
 )
-def test_zscore_flag_parametrized(value: float, mean: float, std: float, threshold: float, expected: bool) -> None:
+def test_zscore_flag_various_cases(value: float, mean: float, std: float, threshold: float, expected: bool) -> None:
     from app.anomaly import zscore_flag
 
     assert zscore_flag(value, mean, std, threshold) == expected

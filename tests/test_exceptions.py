@@ -75,8 +75,10 @@ class TestDatabaseError:
 
     def test_can_wrap_original_exception(self) -> None:
         original = ValueError("connection refused")
-        err = DatabaseError("DB failed") from original
-        assert err.__cause__ is original
+        try:
+            raise DatabaseError("DB failed") from original
+        except DatabaseError as err:
+            assert err.__cause__ is original
 
 
 class TestConfigurationError:

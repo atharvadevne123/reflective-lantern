@@ -160,7 +160,7 @@ def test_prediction_summary_json_count(db_session, n_preds: int) -> None:
     assert result["total_predictions"] == n_preds
 
 
-def test_export_predictions_csv_has_header(db_session) -> None:
+def test_csv_export_includes_field_names(db_session) -> None:
     from app.reporting import export_predictions_csv
 
     _add_predictions(db_session, 1)

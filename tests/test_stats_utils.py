@@ -1179,7 +1179,7 @@ class TestCoefficientOfVariationExtended:
         ([1.0, 2.0, 3.0, 4.0, 5.0], 100.0, 5.0),
     ],
 )
-def test_percentile_parametrized(values: list, p: float, expected: float) -> None:
+def test_percentile_boundary_values(values: list, p: float, expected: float) -> None:
     from app.stats_utils import percentile
 
     assert percentile(values, p) == pytest.approx(expected, abs=0.5)

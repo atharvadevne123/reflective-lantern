@@ -1191,7 +1191,7 @@ def test_net_present_value_positive_for_positive_flows(rate: float) -> None:
 
 
 @_pytest.mark.parametrize("score,expected_label", [(90.0, "Excellent"), (70.0, "Good"), (50.0, "Fair"), (30.0, "Poor")])
-def test_investment_score_label_parametrized(score: float, expected_label: str) -> None:
+def test_investment_label_thresholds(score: float, expected_label: str) -> None:
     from app.investment import investment_score_label
 
     assert investment_score_label(score) == expected_label

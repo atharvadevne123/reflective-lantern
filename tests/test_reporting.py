@@ -1028,7 +1028,7 @@ import pytest as _pytest
         (100.0, 100.0, "D"),
     ],
 )
-def test_energy_efficiency_grade_parametrized(before: float, after: float, expected_grade: str) -> None:
+def test_energy_efficiency_grade_boundary_values(before: float, after: float, expected_grade: str) -> None:
     from app.reporting import energy_efficiency_grade
 
     assert energy_efficiency_grade(after, before) == expected_grade

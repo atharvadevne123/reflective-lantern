@@ -636,7 +636,7 @@ class TestPortfolioEuiSummary:
         (20000.0, 200.0, 100.0),
     ],
 )
-def test_compute_eui_parametrized(annual_kwh: float, floor_area: float, expected_eui: float) -> None:
+def test_compute_eui_scales_linearly(annual_kwh: float, floor_area: float, expected_eui: float) -> None:
     from app.benchmarks import compute_eui
 
     assert compute_eui(annual_kwh, floor_area) == pytest.approx(expected_eui, abs=0.1)

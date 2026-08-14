@@ -1399,7 +1399,7 @@ def test_forecast_linear_trend_length(horizon: int) -> None:
         ([0.0, 0.0, 10.0], pytest.approx(1 / 3, abs=0.01)),
     ],
 )
-def test_load_factor_parametrized(values: list, expected_load_factor) -> None:
+def test_load_factor_specific_inputs(values: list, expected_load_factor) -> None:
     from app.time_series import load_factor
 
     assert load_factor(values) == expected_load_factor

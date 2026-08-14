@@ -132,7 +132,6 @@ def test_validate_forecast_length_valid(n: int) -> None:
 @pytest.mark.parametrize("n", [0, -1, 8761])
 def test_validate_forecast_length_invalid_raises(n: int) -> None:
     import pytest
-
     from energy_seer.app.validators import validate_forecast_length
 
     with pytest.raises(ValueError):
@@ -149,7 +148,6 @@ def test_validate_tariff_positive_returns_value(tariff: float) -> None:
 @pytest.mark.parametrize("tariff", [0.0, -0.1, -10.0])
 def test_validate_tariff_non_positive_raises(tariff: float) -> None:
     import pytest
-
     from energy_seer.app.validators import validate_tariff
 
     with pytest.raises(ValueError):

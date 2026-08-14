@@ -970,7 +970,7 @@ def test_batch_score_length_matches_input(n: int) -> None:
 
 
 @_pytest.mark.parametrize("null_count,total", [(0, 10), (5, 10), (10, 10)])
-def test_null_rate_parametrized(null_count: int, total: int) -> None:
+def test_null_rate_with_mixed_records(null_count: int, total: int) -> None:
     from app.data_quality import null_rate
 
     field = "consumption_kwh"
