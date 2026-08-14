@@ -174,3 +174,34 @@ class TestNormaliseScores:
         result = normalise_scores(scores)
         for r, e in zip(result, expected):
             assert r == pytest.approx(e)
+
+
+@pytest.mark.parametrize("n_scores", [0, 1, 5, 10])
+def test_anomaly_score_summary_various_lengths(n_scores: int) -> None:
+    from app.anomaly import anomaly_score_summary
+
+    if n_scores == 0:
+        result = anomaly_score_summary([])
+        assert result == {}
+    else:
+        scores = [float(i) for i in range(n_scores)]
+        result = anomaly_score_summary(scores)
+        assert "mean" in result
+        assert "max" in result
+
+
+@pytest.mark.parametrize(
+    "scores,expected_min,expected_max",
+    [
+        ([0.0, 1.0], 0.0, 1.0),
+        ([5.0, 5.0, 5.0], 0.0, 0.0),
+        ([0.0, 0.5, 1.0], 0.0, 1.0),
+    ],
+)
+def test_normalise_scores_range(scores: list[float], expected_min: float, expected_max: float) -> None:
+    from app.anomaly import normalise_scores
+
+    result = normalise_scores(scores)
+    if result:
+        assert min(result) == pytest.approx(expected_min, abs=1e-6)
+        assert max(result) == pytest.approx(expected_max, abs=1e-6)
