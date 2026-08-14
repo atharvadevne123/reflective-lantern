@@ -1195,3 +1195,42 @@ def test_investment_score_label_parametrized(score: float, expected_label: str) 
     from app.investment import investment_score_label
 
     assert investment_score_label(score) == expected_label
+
+
+@_pytest.mark.parametrize(
+    "property_price,rent,expected_range",
+    [
+        (100000.0, 1000.0, (5.0, 200.0)),
+        (500000.0, 2000.0, (5.0, 500.0)),
+    ],
+)
+def test_price_to_rent_ratio_in_range(property_price: float, rent: float, expected_range: tuple) -> None:
+    from app.investment import price_to_rent_ratio
+
+    result = price_to_rent_ratio(property_price, rent)
+    assert expected_range[0] <= result <= expected_range[1]
+
+
+@_pytest.mark.parametrize(
+    "purchase_price,sale_price,income,expected_positive",
+    [
+        (100.0, 150.0, 10.0, True),
+        (100.0, 80.0, 0.0, False),
+    ],
+)
+def test_holding_period_return_sign(purchase_price: float, sale_price: float, income: float, expected_positive: bool) -> None:
+    from app.investment import holding_period_return
+
+    result = holding_period_return(purchase_price, sale_price, income)
+    if expected_positive:
+        assert result > 0.0
+    else:
+        assert result < 0.0
+
+
+@_pytest.mark.parametrize("annual_rent,property_value", [(12000.0, 200000.0), (24000.0, 400000.0)])
+def test_gross_yield_in_range(annual_rent: float, property_value: float) -> None:
+    from app.investment import gross_yield
+
+    result = gross_yield(annual_rent, property_value)
+    assert 0.0 < result < 1.0
