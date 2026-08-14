@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import pytest
+
 
 def test_generate_synthetic_data_default():
     from app.data.loader import generate_synthetic_data
@@ -59,3 +61,29 @@ def test_load_json_missing_file():
 
     with pytest.raises(FileNotFoundError):
         load_json("/nonexistent/path/data.json")
+
+
+@pytest.mark.parametrize("n_samples", [10, 50, 100])
+def test_generate_synthetic_data_count(n_samples: int) -> None:
+    from app.data.loader import generate_synthetic_data
+
+    records = generate_synthetic_data(n_samples=n_samples)
+    assert len(records) == n_samples
+
+
+@pytest.mark.parametrize("n_samples", [5, 20])
+def test_generate_synthetic_data_has_required_keys(n_samples: int) -> None:
+    from app.data.loader import generate_synthetic_data
+
+    records = generate_synthetic_data(n_samples=n_samples)
+    required_keys = {"product_id", "base_price", "demand"}
+    for record in records:
+        assert required_keys.issubset(set(record.keys()))
+
+
+def test_generate_synthetic_data_reproducible() -> None:
+    from app.data.loader import generate_synthetic_data
+
+    records_a = generate_synthetic_data(n_samples=10, seed=99)
+    records_b = generate_synthetic_data(n_samples=10, seed=99)
+    assert records_a[0]["base_price"] == records_b[0]["base_price"]
