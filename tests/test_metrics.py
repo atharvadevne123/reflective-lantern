@@ -177,3 +177,36 @@ def test_r2_sign(actual: list[float], predicted: list[float], expect_r2_positive
 
     result = r_squared(actual, predicted)
     assert (result >= 0) == expect_r2_positive
+
+
+@pytest.mark.parametrize(
+    "actual,predicted,expected_f1",
+    [
+        ([1, 1, 1], [1, 1, 1], 1.0),
+        ([1, 1, 0], [0, 0, 0], 0.0),
+    ],
+)
+def test_classification_metrics_f1(actual: list, predicted: list, expected_f1: float) -> None:
+    from app.metrics import classification_metrics
+
+    result = classification_metrics(actual, predicted)
+    assert result["f1"] == pytest.approx(expected_f1, abs=0.01)
+
+
+@pytest.mark.parametrize("n", [5, 10, 20])
+def test_mape_zero_for_perfect(n: int) -> None:
+    from app.metrics import mean_absolute_percentage_error
+
+    actual = [float(i + 1) for i in range(n)]
+    result = mean_absolute_percentage_error(actual, actual)
+    assert result == pytest.approx(0.0, abs=1e-6)
+
+
+@pytest.mark.parametrize("n", [5, 10, 20])
+def test_rmse_non_negative_for_imperfect(n: int) -> None:
+    from app.metrics import root_mean_squared_error
+
+    actual = [float(i) for i in range(n)]
+    predicted = [float(i) + 1.0 for i in range(n)]
+    result = root_mean_squared_error(actual, predicted)
+    assert result >= 0.0
