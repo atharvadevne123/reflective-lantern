@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import pytest
+
 
 def test_normalize_basic():
     from app.data.preprocessor import normalize
@@ -61,3 +63,35 @@ def test_clip_outliers():
     values = [1.0] * 9 + [1000.0]
     result = clip_outliers(values, z_threshold=2.0)
     assert result[-1] < 1000.0
+
+
+@pytest.mark.parametrize("n", [5, 10, 50])
+def test_normalize_length_preserved(n: int) -> None:
+    from app.data.preprocessor import normalize
+
+    values = [float(i) for i in range(n)]
+    result = normalize(values)
+    assert len(result) == n
+
+
+@pytest.mark.parametrize("n", [5, 10, 50])
+def test_standardize_length_preserved(n: int) -> None:
+    from app.data.preprocessor import standardize
+
+    values = [float(i) for i in range(n)]
+    result = standardize(values)
+    assert len(result) == n
+
+
+@pytest.mark.parametrize(
+    "categories,expected_count",
+    [
+        (["A", "B", "C"], 3),
+        (["X", "X", "Y"], 3),
+    ],
+)
+def test_encode_category_length(categories: list, expected_count: int) -> None:
+    from app.data.preprocessor import encode_category
+
+    result = encode_category(categories)
+    assert len(result) == expected_count
