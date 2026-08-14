@@ -1147,3 +1147,51 @@ class TestEquityMultipleNew:
 
         result = equity_multiple(50000.0, 100000.0)
         assert result < 1.0
+
+
+import pytest as _pytest
+
+
+@_pytest.mark.parametrize(
+    "noi,debt_service,expect_healthy",
+    [
+        (100000.0, 80000.0, True),
+        (80000.0, 100000.0, False),
+        (100000.0, 100000.0, False),
+    ],
+)
+def test_debt_service_coverage_ratio_parametrized(noi: float, debt_service: float, expect_healthy: bool) -> None:
+    from app.investment import debt_service_coverage_ratio
+
+    result = debt_service_coverage_ratio(noi, debt_service)
+    assert (result >= 1.0) == expect_healthy
+
+
+@_pytest.mark.parametrize(
+    "market_value,loan,expected",
+    [
+        (500000.0, 400000.0, _pytest.approx(0.8, abs=0.001)),
+        (500000.0, 0.0, _pytest.approx(0.0, abs=0.001)),
+        (500000.0, 500000.0, _pytest.approx(1.0, abs=0.001)),
+    ],
+)
+def test_loan_to_value_ratio_parametrized(market_value: float, loan: float, expected: float) -> None:
+    from app.investment import loan_to_value_ratio
+
+    assert loan_to_value_ratio(market_value, loan) == expected
+
+
+@_pytest.mark.parametrize("rate", [0.05, 0.10, 0.15])
+def test_net_present_value_positive_for_positive_flows(rate: float) -> None:
+    from app.investment import net_present_value
+
+    cash_flows = [-1000.0] + [300.0] * 5
+    npv = net_present_value(cash_flows, rate)
+    assert isinstance(npv, float)
+
+
+@_pytest.mark.parametrize("score,expected_label", [(90.0, "Excellent"), (70.0, "Good"), (50.0, "Fair"), (30.0, "Poor")])
+def test_investment_score_label_parametrized(score: float, expected_label: str) -> None:
+    from app.investment import investment_score_label
+
+    assert investment_score_label(score) == expected_label
