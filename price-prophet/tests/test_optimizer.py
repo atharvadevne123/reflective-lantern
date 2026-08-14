@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import pytest
+
 
 class _ConstantModel:
     def predict(self, X):
@@ -44,3 +46,21 @@ def test_optimizer_revenue_at_price():
     opt = PriceOptimizer(_ConstantModel())
     rev = opt.revenue_at_price(50.0, [50.0])
     assert rev == 50.0 * 100.0
+
+
+@pytest.mark.parametrize("price", [10.0, 50.0, 100.0, 500.0])
+def test_revenue_at_price_scales_with_price(price: float) -> None:
+    from app.pricing.optimizer import PriceOptimizer
+
+    opt = PriceOptimizer(_ConstantModel())
+    rev = opt.revenue_at_price(price, [price])
+    assert rev == pytest.approx(price * 100.0, abs=0.01)
+
+
+@pytest.mark.parametrize("features", [[10.0], [10.0, 20.0], [10.0, 20.0, 30.0]])
+def test_optimize_returns_float(features: list) -> None:
+    from app.pricing.optimizer import PriceOptimizer
+
+    opt = PriceOptimizer(_ConstantModel())
+    result = opt.optimize(50.0, features)
+    assert isinstance(result, float)
