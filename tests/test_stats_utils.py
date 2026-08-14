@@ -1080,7 +1080,7 @@ class TestLogReturn:
 # ---------------------------------------------------------------------------
 
 
-class TestGiniCoefficient:
+class TestGiniCoefficientExtended:
     def test_perfect_equality(self) -> None:
         from app.stats_utils import gini_coefficient
 
@@ -1145,7 +1145,7 @@ class TestTrimmedMean:
             trimmed_mean([1.0, 2.0], trim_pct=0.5)
 
 
-class TestCoefficientOfVariation:
+class TestCoefficientOfVariationExtended:
     def test_zero_cv_for_constant(self) -> None:
         from app.stats_utils import coefficient_of_variation
 
