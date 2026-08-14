@@ -891,3 +891,40 @@ def test_momentum_score_positive_for_rising() -> None:
     rising = [1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0]
     score = momentum_score(rising)
     assert score > 0
+
+
+@pytest.mark.parametrize("n", [5, 10, 24])
+def test_rate_of_change_length(n: int) -> None:
+    values = [float(i) for i in range(n)]
+    result = rate_of_change(values, lag=1)
+    assert len(result) == n - 1
+
+
+@pytest.mark.parametrize("n", [12, 24, 36])
+def test_year_over_year_growth_length(n: int) -> None:
+    monthly = [float(i + 1) for i in range(n)]
+    result = year_over_year_growth(monthly, period=12)
+    assert len(result) == n - 12
+
+
+@pytest.mark.parametrize(
+    "values,expected_sign",
+    [
+        ([1.0, 2.0, 3.0, 4.0, 5.0], "positive"),
+        ([5.0, 4.0, 3.0, 2.0, 1.0], "negative"),
+    ],
+)
+def test_trend_strength_sign(values: list, expected_sign: str) -> None:
+    result = trend_strength(values)
+    if expected_sign == "positive":
+        assert result >= 0.0
+    else:
+        assert result <= 0.0
+
+
+@pytest.mark.parametrize("n", [5, 10, 20])
+def test_cumulative_sum_monotone_for_positive(n: int) -> None:
+    values = [1.0] * n
+    result = cumulative_sum(values)
+    for i in range(1, len(result)):
+        assert result[i] >= result[i - 1]
