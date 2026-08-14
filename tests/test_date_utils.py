@@ -900,3 +900,39 @@ def test_generate_hourly_timestamps_count(n_hours: int) -> None:
     start = datetime.datetime(2026, 1, 1, 0, 0)
     result = generate_hourly_timestamps(start, n_hours)
     assert len(result) == n_hours
+
+
+@_pytest.mark.parametrize(
+    "dt,expected_is_weekend",
+    [
+        (datetime.datetime(2026, 8, 15), True),   # Saturday
+        (datetime.datetime(2026, 8, 16), True),   # Sunday
+        (datetime.datetime(2026, 8, 14), False),  # Friday
+    ],
+)
+def test_is_weekend_parametrized(dt, expected_is_weekend: bool) -> None:
+    from app.date_utils import is_weekend
+
+    assert is_weekend(dt) == expected_is_weekend
+
+
+@_pytest.mark.parametrize("seconds,expected_contains", [(60.0, "1m"), (3600.0, "1h"), (90.0, "1m")])
+def test_format_duration_parametrized(seconds: float, expected_contains: str) -> None:
+    from app.date_utils import format_duration
+
+    result = format_duration(seconds)
+    assert isinstance(result, str)
+    assert len(result) > 0
+
+
+@_pytest.mark.parametrize(
+    "start,end,expected",
+    [
+        (datetime.datetime(2026, 1, 1), datetime.datetime(2026, 1, 11), 10),
+        (datetime.datetime(2026, 6, 1), datetime.datetime(2026, 6, 1), 0),
+    ],
+)
+def test_days_between_parametrized(start, end, expected: int) -> None:
+    from app.date_utils import days_between
+
+    assert days_between(start, end) == expected
