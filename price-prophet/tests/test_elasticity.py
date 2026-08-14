@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import pytest
+
 
 def test_estimate_elasticity_negative():
     from app.pricing.elasticity import estimate_elasticity
@@ -48,3 +50,28 @@ def test_is_elastic_false():
     from app.pricing.elasticity import is_elastic
 
     assert is_elastic(-0.5) is False
+
+
+@pytest.mark.parametrize("elasticity,expected", [(-2.0, True), (-1.0, False), (-0.5, False), (-1.001, True)])
+def test_is_elastic_parametrized(elasticity: float, expected: bool) -> None:
+    from app.pricing.elasticity import is_elastic
+
+    assert is_elastic(elasticity) is expected
+
+
+@pytest.mark.parametrize(
+    "base_demand,base_price,new_price,elasticity",
+    [
+        (100.0, 10.0, 12.0, -1.5),
+        (200.0, 20.0, 22.0, -2.0),
+        (50.0, 5.0, 4.0, -0.8),
+    ],
+)
+def test_apply_elasticity_finite_result(
+    base_demand: float, base_price: float, new_price: float, elasticity: float
+) -> None:
+    from app.pricing.elasticity import apply_elasticity
+
+    result = apply_elasticity(base_demand, base_price, new_price, elasticity)
+    assert result >= 0.0
+    assert result != float("inf")
