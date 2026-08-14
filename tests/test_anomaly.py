@@ -1140,3 +1140,56 @@ class TestAnomalyPeakRatio:
         values = [1.0, 1.0, 100.0]
         flags = [False, False, True]
         assert anomaly_peak_ratio(values, flags) > 1.0
+
+
+@pytest.mark.parametrize(
+    "value,mean,std,threshold,expected",
+    [
+        (10.0, 10.0, 1.0, 3.0, False),
+        (100.0, 10.0, 1.0, 3.0, True),
+        (12.0, 10.0, 1.0, 1.5, True),
+        (10.5, 10.0, 1.0, 3.0, False),
+    ],
+)
+def test_zscore_flag_parametrized(value: float, mean: float, std: float, threshold: float, expected: bool) -> None:
+    from app.anomaly import zscore_flag
+
+    assert zscore_flag(value, mean, std, threshold) == expected
+
+
+@pytest.mark.parametrize(
+    "flags,expected_rate",
+    [
+        ([False, False, False, False], 0.0),
+        ([True, True, True, True], 1.0),
+        ([True, False, True, False], 0.5),
+    ],
+)
+def test_flag_anomaly_rate_parametrized(flags: list, expected_rate: float) -> None:
+    from app.anomaly import flag_anomaly_rate
+
+    assert flag_anomaly_rate(flags) == pytest.approx(expected_rate, abs=0.01)
+
+
+@pytest.mark.parametrize("n_anomalies", [0, 1, 5, 10])
+def test_anomaly_free_streak_all_normal(n_anomalies: int) -> None:
+    from app.anomaly import anomaly_free_streak
+
+    flags = [False] * 10
+    result = anomaly_free_streak(flags)
+    assert result == 10
+
+
+@pytest.mark.parametrize(
+    "severities,expected_total",
+    [
+        ([], 0),
+        ([{"level": "high"}, {"level": "low"}], 2),
+    ],
+)
+def test_anomaly_summary_total_count(severities: list, expected_total: int) -> None:
+    from app.anomaly import anomaly_summary
+
+    result = anomaly_summary(severities)
+    total = sum(result.values())
+    assert total == expected_total
