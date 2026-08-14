@@ -163,3 +163,31 @@ class TestPSIIntegration:
         cur = [100.0] * 100
         result = compute_psi(ref, cur)
         assert result["drift_level"] == "significant"
+
+
+@pytest.mark.parametrize(
+    "ref,cur,expect_drift",
+    [
+        ([5.0] * 50, [5.0] * 50, False),
+        ([1.0] * 100, [100.0] * 100, True),
+    ],
+)
+def test_compute_drift_parametrized(ref: list, cur: list, expect_drift: bool) -> None:
+    from app.monitoring import compute_drift
+
+    result = compute_drift(ref, cur)
+    assert result["drift_detected"] == expect_drift
+
+
+@pytest.mark.parametrize("n", [10, 50, 100])
+def test_compute_drift_returns_required_keys(n: int) -> None:
+    import numpy as np
+
+    from app.monitoring import compute_drift
+
+    rng = np.random.default_rng(n)
+    ref = list(rng.normal(10, 1, n))
+    cur = list(rng.normal(10, 1, n))
+    result = compute_drift(ref, cur)
+    for key in ("ks_statistic", "p_value", "drift_detected"):
+        assert key in result
