@@ -94,3 +94,38 @@ class TestEfficiencyGradeThresholds:
 
 def test_rate_limit_positive() -> None:
     assert DEFAULT_RATE_LIMIT_PER_MINUTE > 0
+
+
+@pytest.mark.parametrize(
+    "constant,expected_min",
+    [
+        (ZSCORE_THRESHOLD, 0.0),
+        (IQR_MULTIPLIER, 0.0),
+        (DRIFT_P_THRESHOLD, 0.0),
+        (REFERENCE_WINDOW_SIZE, 1),
+        (MIN_REFERENCE_SIZE, 1),
+    ],
+)
+def test_numeric_constants_positive(constant, expected_min: float) -> None:
+    assert constant > expected_min
+
+
+@pytest.mark.parametrize(
+    "region",
+    ["northeast", "midwest", "south", "west", "texas"],
+)
+def test_grid_intensity_has_expected_regions(region: str) -> None:
+    assert region in GRID_INTENSITY_KG_PER_KWH
+    assert GRID_INTENSITY_KG_PER_KWH[region] > 0.0
+
+
+@pytest.mark.parametrize(
+    "lo,hi",
+    [
+        (MIN_TEMPERATURE_C, MAX_TEMPERATURE_C),
+        (MIN_HUMIDITY_PCT, MAX_HUMIDITY_PCT),
+        (MIN_CONSUMPTION_KWH, MAX_CONSUMPTION_KWH),
+    ],
+)
+def test_range_constants_lo_less_than_hi(lo: float, hi: float) -> None:
+    assert lo < hi
