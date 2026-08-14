@@ -1169,3 +1169,50 @@ class TestCoefficientOfVariationExtended:
         from app.stats_utils import coefficient_of_variation
 
         assert coefficient_of_variation([0.0, 0.0, 0.0, 0.0]) == 0.0
+
+
+@pytest.mark.parametrize(
+    "values,p,expected",
+    [
+        ([1.0, 2.0, 3.0, 4.0, 5.0], 50.0, 3.0),
+        ([1.0, 2.0, 3.0, 4.0, 5.0], 0.0, 1.0),
+        ([1.0, 2.0, 3.0, 4.0, 5.0], 100.0, 5.0),
+    ],
+)
+def test_percentile_parametrized(values: list, p: float, expected: float) -> None:
+    from app.stats_utils import percentile
+
+    assert percentile(values, p) == pytest.approx(expected, abs=0.5)
+
+
+@pytest.mark.parametrize("n", [5, 10, 20])
+def test_geometric_mean_positive_for_positive_input(n: int) -> None:
+    from app.stats_utils import geometric_mean
+
+    values = [float(i) for i in range(1, n + 1)]
+    result = geometric_mean(values)
+    assert result > 0.0
+
+
+@pytest.mark.parametrize("n", [5, 10, 20])
+def test_harmonic_mean_less_than_arithmetic(n: int) -> None:
+    from app.stats_utils import harmonic_mean
+
+    values = [float(i) for i in range(1, n + 1)]
+    arith = sum(values) / len(values)
+    result = harmonic_mean(values)
+    assert result <= arith
+
+
+@pytest.mark.parametrize(
+    "values,value",
+    [
+        ([1.0, 2.0, 3.0, 4.0, 5.0], 3.0),
+        ([10.0, 20.0, 30.0], 20.0),
+    ],
+)
+def test_zscore_of_mean_is_near_zero(values: list, value: float) -> None:
+    from app.stats_utils import zscore
+
+    result = zscore(values, value)
+    assert abs(result) < 0.1
