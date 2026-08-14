@@ -967,3 +967,40 @@ def test_batch_score_length_matches_input(n: int) -> None:
     records = [{"consumption_kwh": 10.0, "hour": 12, "month": 6, "day_of_week": 2}] * n
     result = batch_score(records)
     assert len(result) == n
+
+
+@_pytest.mark.parametrize("null_count,total", [(0, 10), (5, 10), (10, 10)])
+def test_null_rate_parametrized(null_count: int, total: int) -> None:
+    from app.data_quality import null_rate
+
+    field = "consumption_kwh"
+    records = [{field: None}] * null_count + [{field: 10.0}] * (total - null_count)
+    result = null_rate(records, field)
+    assert result == _pytest.approx(null_count / total if total > 0 else 0.0, abs=0.001)
+
+
+@_pytest.mark.parametrize(
+    "values,lo,hi,expected_violations",
+    [
+        ([1.0, 5.0, 10.0], 0.0, 15.0, 0),
+        ([1.0, 5.0, 100.0], 0.0, 10.0, 1),
+        ([-1.0, 5.0, 10.0], 0.0, 10.0, 1),
+    ],
+)
+def test_range_violation_count_parametrized(values: list, lo: float, hi: float, expected_violations: int) -> None:
+    from app.data_quality import range_violation_count
+
+    field = "x"
+    records = [{field: v} for v in values]
+    count = range_violation_count(records, field, lo, hi)
+    assert count == expected_violations
+
+
+@_pytest.mark.parametrize("n_unique", [1, 5, 10])
+def test_unique_values_count(n_unique: int) -> None:
+    from app.data_quality import unique_values
+
+    field = "val"
+    records = [{field: float(i)} for i in range(n_unique)]
+    result = unique_values(records, field)
+    assert len(result) == n_unique
