@@ -10,13 +10,18 @@ from app.forecasting import (
     ensemble_forecast,
     exponential_smoothing_forecast,
     forecast_bias,
+    forecast_error_metrics,
+    forecast_residuals,
     forecast_summary,
+    horizon_degradation,
     mae_score,
+    mape_score,
     naive_forecast,
     rmse_score,
     seasonal_naive_forecast,
     stepwise_error_growth,
     weighted_ensemble_forecast,
+    weighted_forecast,
 )
 
 HISTORY = [10.0, 12.0, 11.0, 13.0, 14.0, 12.0, 15.0]
@@ -802,3 +807,57 @@ class TestHorizonDegradation:
 
         with pytest.raises(ValueError):
             horizon_degradation([1.0])
+
+
+@pytest.mark.parametrize("steps", [1, 3, 5, 10])
+def test_naive_forecast_step_count(steps: int) -> None:
+    result = naive_forecast(7.5, steps=steps)
+    assert len(result) == steps
+    assert all(v == 7.5 for v in result)
+
+
+@pytest.mark.parametrize(
+    "actual,predicted,expected_bias_sign",
+    [
+        ([10.0, 10.0, 10.0], [11.0, 11.0, 11.0], 1),
+        ([10.0, 10.0, 10.0], [9.0, 9.0, 9.0], -1),
+        ([10.0, 10.0], [10.0, 10.0], 0),
+    ],
+)
+def test_forecast_bias_sign(actual: list[float], predicted: list[float], expected_bias_sign: int) -> None:
+    bias = forecast_bias(actual, predicted)
+    if expected_bias_sign > 0:
+        assert bias > 0
+    elif expected_bias_sign < 0:
+        assert bias < 0
+    else:
+        assert bias == pytest.approx(0.0, abs=1e-9)
+
+
+def test_forecast_residuals_zero_for_perfect_prediction() -> None:
+    actual = [1.0, 2.0, 3.0, 4.0]
+    residuals = forecast_residuals(actual, actual)
+    assert all(r == pytest.approx(0.0) for r in residuals)
+
+
+def test_forecast_error_metrics_perfect_prediction() -> None:
+    actual = [5.0, 10.0, 15.0]
+    metrics = forecast_error_metrics(actual, actual)
+    assert metrics["mae"] == pytest.approx(0.0)
+    assert metrics["rmse"] == pytest.approx(0.0)
+
+
+@pytest.mark.parametrize("alpha", [0.1, 0.3, 0.5, 0.9])
+def test_exponential_smoothing_length(alpha: float) -> None:
+    result = exponential_smoothing_forecast(HISTORY, steps=4, alpha=alpha)
+    assert len(result) == 4
+
+
+def test_mape_score_perfect_prediction() -> None:
+    actual = [10.0, 20.0, 30.0]
+    assert mape_score(actual, actual) == pytest.approx(0.0, abs=1e-6)
+
+
+def test_weighted_forecast_equal_weights() -> None:
+    result = weighted_forecast([10.0, 20.0, 30.0], [1 / 3, 1 / 3, 1 / 3])
+    assert result == pytest.approx(20.0, abs=1e-4)
