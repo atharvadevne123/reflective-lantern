@@ -116,3 +116,40 @@ class TestGetPredictionStats:
             log_prediction(db_session, {}, 0.5, 150.0, "1.0.0")
         stats = get_prediction_stats(db_session, limit=5)
         assert stats["count"] <= 5
+
+
+@pytest.mark.parametrize("n_preds", [1, 5, 10])
+def test_prediction_stats_count_matches(db_session, n_preds: int) -> None:
+    for i in range(n_preds):
+        log_prediction(db_session, {}, 0.5, 120.0 + i, "1.0.0")
+    stats = get_prediction_stats(db_session, limit=n_preds)
+    assert stats["count"] == n_preds
+
+
+@pytest.mark.parametrize(
+    "scores,expected_avg",
+    [
+        ([0.5], 0.5),
+        ([0.2, 0.8], 0.5),
+        ([0.1, 0.3, 0.5], pytest.approx(0.3, abs=0.01)),
+    ],
+)
+def test_prediction_stats_average(db_session, scores: list, expected_avg) -> None:
+    for score in scores:
+        log_prediction(db_session, {}, score, 100.0, "1.0.0")
+    stats = get_prediction_stats(db_session, limit=len(scores))
+    assert stats["avg_demand_score"] == expected_avg
+
+
+@pytest.mark.parametrize(
+    "ref_mean,cur_mean,expect_drift",
+    [
+        (0.5, 0.5, False),
+        (0.5, 0.99, True),
+    ],
+)
+def test_drift_detection_parametrized(ref_mean: float, cur_mean: float, expect_drift: bool) -> None:
+    ref = [ref_mean] * 100
+    cur = [cur_mean] * 100
+    result = compute_drift(ref, cur)
+    assert result["drift_detected"] == expect_drift
