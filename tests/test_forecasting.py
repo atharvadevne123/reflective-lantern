@@ -861,3 +861,36 @@ def test_mape_score_perfect_prediction() -> None:
 def test_weighted_forecast_equal_weights() -> None:
     result = weighted_forecast([10.0, 20.0, 30.0], [1 / 3, 1 / 3, 1 / 3])
     assert result == pytest.approx(20.0, abs=1e-4)
+
+
+@pytest.mark.parametrize("n", [5, 10, 20])
+def test_mae_score_zero_for_perfect_prediction(n: int) -> None:
+    actual = [float(i) for i in range(n)]
+    assert mae_score(actual, actual) == pytest.approx(0.0, abs=1e-9)
+
+
+@pytest.mark.parametrize("n", [5, 10, 20])
+def test_rmse_score_zero_for_perfect_prediction(n: int) -> None:
+    actual = [float(i) for i in range(n)]
+    assert rmse_score(actual, actual) == pytest.approx(0.0, abs=1e-9)
+
+
+@pytest.mark.parametrize(
+    "actual,predicted",
+    [
+        ([1.0, 2.0, 3.0], [2.0, 3.0, 4.0]),
+        ([10.0, 10.0, 10.0], [12.0, 12.0, 12.0]),
+    ],
+)
+def test_forecast_bias_positive_when_over_predicted(actual: list, predicted: list) -> None:
+    from app.forecasting import bias_score
+
+    result = bias_score(actual, predicted)
+    assert result > 0.0
+
+
+@pytest.mark.parametrize("horizon", [3, 6, 12])
+def test_horizon_degradation_length(horizon: int) -> None:
+    values = [float(i + 1) for i in range(30)]
+    result = horizon_degradation(values, horizon=horizon)
+    assert len(result) == horizon
