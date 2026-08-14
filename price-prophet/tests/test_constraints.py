@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import pytest
+
 
 def test_apply_constraints_within_bounds():
     from app.pricing.constraints import PricingConstraints, apply_constraints
@@ -46,3 +48,30 @@ def test_violates_constraints_below_min_price():
 
     c = PricingConstraints(min_price=50.0)
     assert violates_constraints(10.0, 100.0, c) is True
+
+
+@pytest.mark.parametrize(
+    "new_price,base_price,max_change_pct,should_violate",
+    [
+        (105.0, 100.0, 10.0, False),
+        (115.0, 100.0, 10.0, True),
+        (90.0, 100.0, 15.0, False),
+        (80.0, 100.0, 15.0, True),
+    ],
+)
+def test_max_change_pct_parametrized(
+    new_price: float, base_price: float, max_change_pct: float, should_violate: bool
+) -> None:
+    from app.pricing.constraints import PricingConstraints, violates_constraints
+
+    c = PricingConstraints(max_change_pct=max_change_pct)
+    assert violates_constraints(new_price, base_price, c) == should_violate
+
+
+@pytest.mark.parametrize("min_price,max_price", [(0.0, 1000.0), (10.0, 500.0), (1.0, 9999.0)])
+def test_apply_constraints_within_min_max(min_price: float, max_price: float) -> None:
+    from app.pricing.constraints import PricingConstraints, apply_constraints
+
+    c = PricingConstraints(min_price=min_price, max_price=max_price)
+    result = apply_constraints(max_price / 2, max_price / 2, c)
+    assert min_price <= result <= max_price
