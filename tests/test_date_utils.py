@@ -787,7 +787,7 @@ class TestWeekOfMonth:
         assert week_of_month(d) <= 5
 
 
-class TestFiscalQuarter:
+class TestFiscalQuarterExtended:
     def test_calendar_q1(self) -> None:
         import datetime
 
