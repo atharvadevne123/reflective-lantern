@@ -1135,3 +1135,42 @@ class TestCarbonSavingsVsBaseline:
 
         result = carbon_savings_vs_baseline(0.0, 0.0)
         assert result["savings_pct"] == 0.0
+
+
+import pytest as _pytest
+
+
+@_pytest.mark.parametrize(
+    "kwh,region,expect_positive",
+    [
+        (10.0, "northeast", True),
+        (10.0, "midwest", True),
+        (10.0, "west", True),
+        (0.0, "default", False),
+    ],
+)
+def test_kwh_to_co2_kg_parametrized(kwh: float, region: str, expect_positive: bool) -> None:
+    from app.carbon import kwh_to_co2_kg
+
+    result = kwh_to_co2_kg(kwh, region)
+    if expect_positive:
+        assert result > 0.0
+    else:
+        assert result == _pytest.approx(0.0)
+
+
+@_pytest.mark.parametrize("trees,days", [(1, 365), (10, 36), (365, 1)])
+def test_tree_offset_days_scales_with_trees(trees: int, days: float) -> None:
+    from app.carbon import tree_offset_days
+
+    result = tree_offset_days(co2_kg=36.5, num_trees=trees)
+    assert result > 0.0
+
+
+@_pytest.mark.parametrize("region", ["northeast", "midwest", "south", "west", "texas"])
+def test_compare_regions_includes_all_requested(region: str) -> None:
+    from app.carbon import compare_regions
+
+    results = compare_regions(kwh=100.0, regions=["northeast", "midwest", "south", "west", "texas"])
+    names = [r["region"] for r in results]
+    assert region in names
