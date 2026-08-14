@@ -1005,3 +1005,74 @@ class TestValidateUniqueIds:
         from app.validation import validate_unique_ids
 
         assert validate_unique_ids([]) == []
+
+
+import pytest as _pytest
+
+
+@_pytest.mark.parametrize(
+    "hour,dow,month,expect_valid",
+    [
+        (0, 0, 1, True),
+        (23, 6, 12, True),
+        (-1, 0, 1, False),
+        (24, 0, 1, False),
+        (0, 7, 1, False),
+        (0, 0, 0, False),
+        (0, 0, 13, False),
+    ],
+)
+def test_validate_temporal_fields_parametrized(
+    hour: int, dow: int, month: int, expect_valid: bool
+) -> None:
+    from app.validation import validate_temporal_fields
+
+    errors = validate_temporal_fields(hour, dow, month)
+    assert (len(errors) == 0) == expect_valid
+
+
+@_pytest.mark.parametrize(
+    "temp,humidity,expect_valid",
+    [
+        (20.0, 50.0, True),
+        (-50.0, 50.0, True),
+        (60.0, 100.0, True),
+        (20.0, -1.0, False),
+        (20.0, 101.0, False),
+    ],
+)
+def test_validate_weather_fields_parametrized(temp: float, humidity: float, expect_valid: bool) -> None:
+    from app.validation import validate_weather_fields
+
+    errors = validate_weather_fields(temp, humidity)
+    assert (len(errors) == 0) == expect_valid
+
+
+@_pytest.mark.parametrize("consumption", [0.0, 1.0, 100.0, 9999.0])
+def test_validate_consumption_valid_values(consumption: float) -> None:
+    from app.validation import validate_consumption_kwh
+
+    assert validate_consumption_kwh(consumption) == []
+
+
+@_pytest.mark.parametrize("consumption", [-1.0, -0.001])
+def test_validate_consumption_negative_invalid(consumption: float) -> None:
+    from app.validation import validate_consumption_kwh
+
+    assert len(validate_consumption_kwh(consumption)) > 0
+
+
+@_pytest.mark.parametrize(
+    "building_id,expect_valid",
+    [
+        ("building_001", True),
+        ("B1", True),
+        ("", False),
+        ("a" * 65, False),
+    ],
+)
+def test_validate_building_id_parametrized(building_id: str, expect_valid: bool) -> None:
+    from app.validation import validate_building_id
+
+    errors = validate_building_id(building_id)
+    assert (len(errors) == 0) == expect_valid
