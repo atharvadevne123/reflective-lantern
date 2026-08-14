@@ -1216,3 +1216,46 @@ def test_zscore_of_mean_is_near_zero(values: list, value: float) -> None:
 
     result = zscore(values, value)
     assert abs(result) < 0.1
+
+
+@pytest.mark.parametrize("n", [5, 10, 20])
+def test_log_return_length(n: int) -> None:
+    from app.stats_utils import log_return
+
+    prices = [float(i + 1) for i in range(n)]
+    result = log_return(prices)
+    assert len(result) == n - 1
+
+
+@pytest.mark.parametrize("n", [5, 10, 20])
+def test_sample_std_positive_for_variable(n: int) -> None:
+    from app.stats_utils import sample_std
+
+    values = [float(i) for i in range(n)]
+    assert sample_std(values) > 0.0
+
+
+@pytest.mark.parametrize(
+    "x,y,expected_sign",
+    [
+        ([1.0, 2.0, 3.0], [1.0, 2.0, 3.0], "positive"),
+        ([1.0, 2.0, 3.0], [3.0, 2.0, 1.0], "negative"),
+    ],
+)
+def test_correlation_coefficient_sign(x: list, y: list, expected_sign: str) -> None:
+    from app.stats_utils import correlation_coefficient
+
+    result = correlation_coefficient(x, y)
+    if expected_sign == "positive":
+        assert result > 0.0
+    else:
+        assert result < 0.0
+
+
+@pytest.mark.parametrize("n", [5, 10, 100])
+def test_population_variance_non_negative(n: int) -> None:
+    from app.stats_utils import population_variance
+
+    values = [float(i) for i in range(n)]
+    result = population_variance(values)
+    assert result >= 0.0
