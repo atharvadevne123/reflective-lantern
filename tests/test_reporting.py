@@ -1015,3 +1015,52 @@ class TestSavingsSummary:
         result = savings_summary(500.0, 500.0)
         assert result["saved_kwh"] == 0.0
         assert result["reduction_pct"] == 0.0
+
+
+import pytest as _pytest
+
+
+@_pytest.mark.parametrize(
+    "before,after,expected_grade",
+    [
+        (100.0, 50.0, "A"),
+        (100.0, 99.0, "D"),
+        (100.0, 100.0, "D"),
+    ],
+)
+def test_energy_efficiency_grade_parametrized(before: float, after: float, expected_grade: str) -> None:
+    from app.reporting import energy_efficiency_grade
+
+    assert energy_efficiency_grade(after, before) == expected_grade
+
+
+@_pytest.mark.parametrize("hourly_count", [24, 48, 168])
+def test_aggregate_daily_report_length(hourly_count: int) -> None:
+    from app.reporting import aggregate_daily_report
+
+    hourly = [1.0] * hourly_count
+    result = aggregate_daily_report(hourly)
+    assert len(result) == hourly_count // 24
+
+
+@_pytest.mark.parametrize("tariff", [0.05, 0.10, 0.15, 0.20])
+def test_tariff_cost_scales_linearly(tariff: float) -> None:
+    from app.reporting import tariff_cost
+
+    assert tariff_cost(100.0, tariff) == _pytest.approx(100.0 * tariff, abs=1e-6)
+
+
+def test_report_anomaly_summary_all_normal() -> None:
+    from app.reporting import report_anomaly_summary
+
+    result = report_anomaly_summary([False] * 10)
+    assert result["anomaly_count"] == 0
+    assert result["anomaly_rate"] == _pytest.approx(0.0)
+
+
+def test_report_anomaly_summary_all_anomalous() -> None:
+    from app.reporting import report_anomaly_summary
+
+    result = report_anomaly_summary([True] * 5)
+    assert result["anomaly_count"] == 5
+    assert result["anomaly_rate"] == _pytest.approx(1.0)
