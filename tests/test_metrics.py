@@ -134,3 +134,46 @@ class TestClassificationMetrics:
         predicted = [1] * tp + [1] * fp + [0] * fn
         result = classification_metrics(actual, predicted)
         assert result["f1"] == exp_f1
+
+
+@pytest.mark.parametrize(
+    "actual,predicted,expected_mae",
+    [
+        ([0.0], [0.0], 0.0),
+        ([1.0, 2.0, 3.0], [1.0, 2.0, 3.0], 0.0),
+        ([0.0, 0.0, 0.0], [1.0, 1.0, 1.0], 1.0),
+        ([10.0, 20.0], [12.0, 18.0], 2.0),
+    ],
+)
+def test_mae_parametrized(actual: list[float], predicted: list[float], expected_mae: float) -> None:
+    from app.metrics import mean_absolute_error
+
+    assert mean_absolute_error(actual, predicted) == pytest.approx(expected_mae, abs=1e-5)
+
+
+@pytest.mark.parametrize(
+    "actual,predicted",
+    [
+        ([1.0, 2.0], [2.0, 1.0]),
+        ([5.0, 5.0, 5.0], [5.0, 5.0, 5.0]),
+        ([0.0, 1.0, 2.0, 3.0], [3.0, 2.0, 1.0, 0.0]),
+    ],
+)
+def test_rmse_non_negative(actual: list[float], predicted: list[float]) -> None:
+    from app.metrics import root_mean_squared_error
+
+    assert root_mean_squared_error(actual, predicted) >= 0.0
+
+
+@pytest.mark.parametrize(
+    "actual,predicted,expect_r2_positive",
+    [
+        ([1.0, 2.0, 3.0, 4.0], [1.0, 2.0, 3.0, 4.0], True),
+        ([1.0, 2.0, 3.0, 4.0], [4.0, 3.0, 2.0, 1.0], False),
+    ],
+)
+def test_r2_sign(actual: list[float], predicted: list[float], expect_r2_positive: bool) -> None:
+    from app.metrics import r_squared
+
+    result = r_squared(actual, predicted)
+    assert (result >= 0) == expect_r2_positive
