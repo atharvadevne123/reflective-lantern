@@ -852,3 +852,51 @@ class TestNextWeekday:
 
         with pytest.raises(ValueError):
             next_weekday(datetime.date(2026, 8, 11), weekday=8)
+
+
+import pytest as _pytest
+
+
+@_pytest.mark.parametrize(
+    "year,expected_leap",
+    [(2000, True), (1900, False), (2024, True), (2026, False), (2100, False)],
+)
+def test_is_leap_year_parametrized(year: int, expected_leap: bool) -> None:
+    from app.date_utils import is_leap_year
+
+    assert is_leap_year(year) == expected_leap
+
+
+@_pytest.mark.parametrize(
+    "year,month,expected_days",
+    [
+        (2024, 2, 29),
+        (2026, 2, 28),
+        (2026, 1, 31),
+        (2026, 4, 30),
+    ],
+)
+def test_days_in_month_parametrized(year: int, month: int, expected_days: int) -> None:
+    from app.date_utils import days_in_month
+
+    assert days_in_month(year, month) == expected_days
+
+
+@_pytest.mark.parametrize(
+    "month,expected_quarter",
+    [(1, 1), (3, 1), (4, 2), (6, 2), (7, 3), (9, 3), (10, 4), (12, 4)],
+)
+def test_quarter_of_year_parametrized(month: int, expected_quarter: int) -> None:
+    from app.date_utils import quarter_of_year
+
+    dt = datetime.datetime(2026, month, 1)
+    assert quarter_of_year(dt) == expected_quarter
+
+
+@_pytest.mark.parametrize("n_hours", [1, 24, 48, 168])
+def test_generate_hourly_timestamps_count(n_hours: int) -> None:
+    from app.date_utils import generate_hourly_timestamps
+
+    start = datetime.datetime(2026, 1, 1, 0, 0)
+    result = generate_hourly_timestamps(start, n_hours)
+    assert len(result) == n_hours
