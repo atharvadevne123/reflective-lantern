@@ -707,3 +707,50 @@ class TestPercentileFeature:
 
         result = percentile_feature([1.0, 2.0, 3.0], reference=[1.0, 2.0, 3.0])
         assert len(result) == 3
+
+
+@pytest.mark.parametrize("n", [5, 10, 24])
+def test_cumulative_sum_feature_length(n: int) -> None:
+    from app.features import cumulative_sum_feature
+
+    values = [1.0] * n
+    result = cumulative_sum_feature(values)
+    assert len(result) == n
+
+
+@pytest.mark.parametrize(
+    "values,low,high",
+    [
+        ([1.0, 5.0, 10.0], 2.0, 8.0),
+        ([-5.0, 0.0, 15.0], 0.0, 10.0),
+    ],
+)
+def test_clip_feature_values_within_bounds(values: list, low: float, high: float) -> None:
+    from app.features import clip_feature_values
+
+    result = clip_feature_values(values, low, high)
+    assert all(low <= v <= high for v in result)
+
+
+@pytest.mark.parametrize("order", [1, 2, 3])
+def test_difference_feature_length_reduces(order: int) -> None:
+    from app.features import difference_feature
+
+    values = list(range(10))
+    result = difference_feature(values, order=order)
+    assert len(result) == 10 - order
+
+
+@pytest.mark.parametrize(
+    "value,max_value",
+    [
+        (0.0, 24.0),
+        (6.0, 24.0),
+        (12.0, 24.0),
+    ],
+)
+def test_encode_cyclical_unit_circle(value: float, max_value: float) -> None:
+    from app.features import encode_cyclical
+
+    sin_val, cos_val = encode_cyclical(value, max_value)
+    assert sin_val**2 + cos_val**2 == pytest.approx(1.0, abs=1e-6)
