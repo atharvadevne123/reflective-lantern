@@ -783,7 +783,7 @@ class TestPearsonCorrelation:
             pearson_correlation([1.0], [1.0])
 
 
-class TestTopKSimilar:
+class TestTopKSimilarExtended:
     def test_returns_k_results(self) -> None:
         from app.similarity import top_k_similar
 
