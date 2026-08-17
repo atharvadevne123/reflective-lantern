@@ -54,8 +54,8 @@ class TestEnergyConstants:
         assert MIN_TEMPERATURE_C < MAX_TEMPERATURE_C
 
     def test_humidity_range_0_to_100(self) -> None:
-        assert MIN_HUMIDITY_PCT == pytest.approx(0.0)
-        assert MAX_HUMIDITY_PCT == pytest.approx(100.0)
+        assert pytest.approx(0.0) == MIN_HUMIDITY_PCT
+        assert pytest.approx(100.0) == MAX_HUMIDITY_PCT
 
     def test_forecast_horizon_one_week(self) -> None:
         assert MAX_FORECAST_HORIZON == 168

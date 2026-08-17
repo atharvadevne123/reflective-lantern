@@ -1,7 +1,6 @@
 """Send Reflective Lantern daily report email with PDF attachment."""
 from __future__ import annotations
 
-import base64
 import smtplib
 import ssl
 import sys
@@ -57,7 +56,7 @@ def send_email() -> str:
             smtp.login(SENDER, APP_PASS)
             smtp.sendmail(SENDER, [RECIPIENT], msg.as_string())
         return "sent_587"
-    except Exception as e587:
+    except Exception:
         pass
 
     # Try port 465 with SSL
