@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import logging
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, date, datetime, timedelta
 from functools import lru_cache
 
 logger = logging.getLogger(__name__)
@@ -422,3 +422,111 @@ def is_business_day(dt: datetime) -> bool:
         True for weekdays, False for Saturday and Sunday.
     """
     return dt.weekday() < 5
+
+
+def week_number(dt: datetime) -> int:
+    """Return the ISO week number (1-53) for *dt*.
+
+    Args:
+        dt: Datetime to inspect.
+
+    Returns:
+        ISO week number in the range 1–53.
+    """
+    return dt.isocalendar()[1]
+
+
+def fiscal_quarter(dt: date | datetime, fiscal_year_start_month: int = 1) -> int:
+    """Return the fiscal quarter (1-4) for a date given the fiscal year start month.
+
+    Args:
+        dt: Date or datetime to inspect.
+        fiscal_year_start_month: Month (1-12) the fiscal year begins. Defaults to 1 (January).
+
+    Returns:
+        Fiscal quarter number 1-4.
+
+    Raises:
+        ValueError: If fiscal_year_start_month is not in 1-12.
+    """
+    if not 1 <= fiscal_year_start_month <= 12:
+        raise ValueError(f"fiscal_year_start_month must be 1-12, got {fiscal_year_start_month}")
+    month = dt.month
+    offset = (month - fiscal_year_start_month) % 12
+    return offset // 3 + 1
+
+
+def date_range_overlap_days(
+    start_a: date | datetime,
+    end_a: date | datetime,
+    start_b: date | datetime,
+    end_b: date | datetime,
+) -> int:
+    """Return the number of overlapping days between two inclusive date ranges [start, end].
+
+    Args:
+        start_a: Start of range A (inclusive).
+        end_a: End of range A (inclusive).
+        start_b: Start of range B (inclusive).
+        end_b: End of range B (inclusive).
+
+    Returns:
+        Number of overlapping days; 0 if no overlap.
+
+    Raises:
+        ValueError: If either range has start strictly after end.
+    """
+
+    def _to_date(d: date | datetime) -> date:
+        return d.date() if isinstance(d, datetime) else d
+
+    sa, ea = _to_date(start_a), _to_date(end_a)
+    sb, eb = _to_date(start_b), _to_date(end_b)
+    if sa > ea:
+        raise ValueError(f"Range A is invalid: start {sa} > end {ea}")
+    if sb > eb:
+        raise ValueError(f"Range B is invalid: start {sb} > end {eb}")
+    overlap_start = max(sa, sb)
+    overlap_end = min(ea, eb)
+    delta = (overlap_end - overlap_start).days + 1
+    return max(delta, 0)
+
+
+def week_of_month(dt: date | datetime) -> int:
+    """Return the week-of-month number (1-5) for a date.
+
+    Week 1 starts on the first day of the month; each Monday begins a new week.
+
+    Args:
+        dt: Date or datetime to inspect.
+
+    Returns:
+        Week number within the month, starting at 1.
+    """
+    d = dt.date() if isinstance(dt, datetime) else dt
+    first_day = date(d.year, d.month, 1)
+    first_weekday = first_day.weekday()
+    day_of_month = d.day
+    return (day_of_month + first_weekday - 1) // 7 + 1
+
+
+def next_weekday(dt: date | datetime, weekday: int) -> date:
+    """Return the next occurrence of *weekday* on or after *dt*.
+
+    Args:
+        dt: Starting date or datetime.
+        weekday: Target weekday as an integer (1=Monday … 7=Sunday, ISO convention).
+
+    Returns:
+        The next (or same) date matching the target weekday.
+
+    Raises:
+        ValueError: If weekday is not in 1-7.
+    """
+    if not 1 <= weekday <= 7:
+        raise ValueError(f"weekday must be 1-7 (ISO), got {weekday}")
+    d = dt.date() if isinstance(dt, datetime) else dt
+    iso_wd = weekday  # 1=Mon … 7=Sun
+    current_iso = d.isoweekday()
+    days_ahead = (iso_wd - current_iso) % 7
+    return d + timedelta(days=days_ahead)
