@@ -531,3 +531,48 @@ def pearson_correlation(a: list[float], b: list[float]) -> float:
         return 0.0
     denom = (var_a * var_b) ** 0.5
     return round(num / denom, 6)
+
+
+def hamming_distance(a: str, b: str) -> int:
+    """Return the Hamming distance between two equal-length strings.
+
+    Args:
+        a: First string.
+        b: Second string (must have the same length as *a*).
+
+    Returns:
+        Number of positions at which the strings differ.
+
+    Raises:
+        ValueError: If the strings have different lengths.
+    """
+    if len(a) != len(b):
+        raise ValueError(f"strings must have the same length, got {len(a)} and {len(b)}")
+    return sum(1 for ca, cb in zip(a, b, strict=False) if ca != cb)
+
+
+def tanimoto_similarity(a: list[float], b: list[float]) -> float:
+    """Return the Tanimoto similarity between two numeric vectors.
+
+    Also known as the Extended Jaccard coefficient. Ranges from -1/3 to 1
+    for arbitrary vectors, and from 0 to 1 for non-negative vectors.
+
+    Args:
+        a: First numeric vector.
+        b: Second numeric vector (same length as *a*).
+
+    Returns:
+        Tanimoto coefficient in [-1/3, 1]; 0.0 when both vectors are all-zero.
+
+    Raises:
+        ValueError: If the vectors have different lengths.
+    """
+    if len(a) != len(b):
+        raise ValueError(f"vectors must have same length, got {len(a)} and {len(b)}")
+    dot = sum(x * y for x, y in zip(a, b, strict=False))
+    norm_a = sum(x * x for x in a)
+    norm_b = sum(y * y for y in b)
+    denom = norm_a + norm_b - dot
+    if denom == 0:
+        return 0.0
+    return round(dot / denom, 6)
