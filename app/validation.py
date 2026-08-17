@@ -704,3 +704,53 @@ def validate_unique_ids(
         f"{id_field} {rid!r} appears more than once ({count + 1} times)"
         for rid, count in duplicates.items()
     ]
+
+
+def validate_url(value: str, field_name: str = "url", allowed_schemes: tuple[str, ...] = ("http", "https")) -> list[str]:
+    """Return validation errors when *value* is not a well-formed URL.
+
+    Args:
+        value: Candidate URL string.
+        field_name: Field name for the error message.
+        allowed_schemes: Permitted URL schemes; default is HTTP/HTTPS only.
+
+    Returns:
+        List of error strings (empty when valid).
+    """
+    errors: list[str] = []
+    if not value:
+        return [f"{field_name} must not be empty"]
+    try:
+        from urllib.parse import urlparse
+
+        parsed = urlparse(value)
+    except (TypeError, ValueError):
+        return [f"{field_name} could not be parsed as a URL: {value!r}"]
+    if not parsed.scheme:
+        errors.append(f"{field_name} is missing a scheme")
+    elif parsed.scheme not in allowed_schemes:
+        errors.append(
+            f"{field_name} scheme {parsed.scheme!r} is not in allowed {list(allowed_schemes)}",
+        )
+    if not parsed.netloc:
+        errors.append(f"{field_name} is missing a host")
+    return errors
+
+
+def validate_iso_timestamp(value: str, field_name: str = "timestamp") -> list[str]:
+    """Return validation errors when *value* is not an ISO-8601 timestamp.
+
+    Args:
+        value: Candidate timestamp string.
+        field_name: Field name for the error message.
+
+    Returns:
+        List of error strings (empty when valid).
+    """
+    if not value:
+        return [f"{field_name} must not be empty"]
+    try:
+        datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except (TypeError, ValueError):
+        return [f"{field_name} is not a valid ISO-8601 timestamp: {value!r}"]
+    return []
