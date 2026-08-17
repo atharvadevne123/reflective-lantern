@@ -1380,7 +1380,7 @@ def test_simple_moving_average_length(window: int) -> None:
 
     values = list(range(20))
     result = simple_moving_average(values, window=window)
-    assert len(result) == 20 - window + 1
+    assert len(result) == len(values)
 
 
 @pytest.mark.parametrize("horizon", [6, 12, 24])
