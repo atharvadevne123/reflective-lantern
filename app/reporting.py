@@ -318,10 +318,15 @@ def benchmark_vs_portfolio(
 
 __all__ = [
     "benchmark_vs_portfolio",
+    "carbon_report_section",
+    "consumption_budget_variance",
     "consumption_efficiency_ratio",
+    "consumption_heatmap_data",
     "consumption_trend",
     "daily_average_consumption",
+    "demand_variance_report",
     "emission_report",
+    "energy_cost_estimate",
     "energy_efficiency_grade",
     "estimate_savings",
     "hourly_cost_breakdown",
@@ -332,9 +337,11 @@ __all__ = [
     "peak_usage_window",
     "rolling_savings_summary",
     "savings_report",
+    "savings_summary",
     "seasonal_efficiency_score",
     "tariff_cost",
     "top_consumption_hours",
+    "top_n_consumers",
     "wh_to_kwh",
 ]
 
