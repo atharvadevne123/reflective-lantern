@@ -989,6 +989,6 @@
       "Expanded __all__ lists across 15+ modules to publicly expose new helpers",
       "All ruff checks pass; push to main successful"
     ],
-    "email_status": "pending"
+    "email_status": "smtp_blocked_remote_env"
   }
 ]
