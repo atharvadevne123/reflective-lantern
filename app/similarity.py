@@ -134,7 +134,14 @@ def euclidean_distance(a: list[float] | np.ndarray, b: list[float] | np.ndarray)
 
     Returns:
         L2 distance rounded to 6 decimal places.
+
+    Raises:
+        ValueError: If either vector is empty or their lengths differ.
     """
+    if len(a) == 0 or len(b) == 0:
+        raise ValueError("vectors must be non-empty")
+    if len(a) != len(b):
+        raise ValueError(f"vector length mismatch: {len(a)} vs {len(b)}")
     va = np.array(a, dtype=np.float32)
     vb = np.array(b, dtype=np.float32)
     return round(float(np.linalg.norm(va - vb)), 6)
@@ -245,7 +252,7 @@ def normalize_distances(distances: list[float]) -> list[float]:
     max_d = max(distances)
     rng = max_d - min_d
     if rng < 1e-12:
-        return [0.5] * len(distances)
+        return [0.0] * len(distances)
     return [round((d - min_d) / rng, 6) for d in distances]
 
 
@@ -289,6 +296,8 @@ def top_k_similar(
     """
     if not query:
         raise ValueError("query must not be empty")
+    if not candidates:
+        raise ValueError("candidates must not be empty")
     if k < 1:
         raise ValueError(f"k must be at least 1, got {k}")
     dists = []
@@ -432,3 +441,86 @@ def batch_similarity_matrix(profiles: list[list[float]]) -> list[list[float]]:
     matrix = normed @ normed.T
     n = len(profiles)
     return [[round(float(matrix[i, j]), 6) for j in range(n)] for i in range(n)]
+
+
+def minkowski_distance(a: list[float], b: list[float], p: float = 2.0) -> float:
+    """Return the Minkowski distance of order *p* between two vectors.
+
+    Args:
+        a: First vector.
+        b: Second vector (same length as *a*).
+        p: Order of the norm (must be ≥ 1). ``p=1`` is Manhattan, ``p=2`` is Euclidean.
+
+    Returns:
+        Non-negative distance.
+
+    Raises:
+        ValueError: If lengths differ or *p* < 1.
+    """
+    if len(a) != len(b):
+        raise ValueError(f"vectors must be same length, got {len(a)} and {len(b)}")
+    if p < 1:
+        raise ValueError(f"p must be >= 1, got {p}")
+    total = sum(abs(x - y) ** p for x, y in zip(a, b, strict=False))
+    return round(total ** (1.0 / p), 6)
+
+
+def dice_similarity(a: set, b: set) -> float:
+    """Return the Sørensen-Dice coefficient between two sets.
+
+    Args:
+        a: First set.
+        b: Second set.
+
+    Returns:
+        ``2 * |a ∩ b| / (|a| + |b|)``, or 0.0 when both sets are empty.
+    """
+    if not a and not b:
+        return 0.0
+    inter = len(a & b)
+    return round(2 * inter / (len(a) + len(b)), 6)
+
+
+def overlap_coefficient(a: set, b: set) -> float:
+    """Return the Szymkiewicz-Simpson overlap coefficient between two sets.
+
+    Args:
+        a: First set.
+        b: Second set.
+
+    Returns:
+        ``|a ∩ b| / min(|a|, |b|)``, or 0.0 when either set is empty.
+    """
+    if not a or not b:
+        return 0.0
+    inter = len(a & b)
+    return round(inter / min(len(a), len(b)), 6)
+
+
+def pearson_correlation(a: list[float], b: list[float]) -> float:
+    """Return the Pearson correlation coefficient between two series.
+
+    Args:
+        a: First series (length ≥ 2).
+        b: Second series (same length as *a*).
+
+    Returns:
+        Coefficient in [-1, 1]; 0.0 when either series has zero variance.
+
+    Raises:
+        ValueError: If lengths differ or either series has fewer than 2 points.
+    """
+    if len(a) != len(b):
+        raise ValueError(f"series must be same length, got {len(a)} and {len(b)}")
+    if len(a) < 2:
+        raise ValueError(f"series must have at least 2 points, got {len(a)}")
+    n = len(a)
+    mean_a = sum(a) / n
+    mean_b = sum(b) / n
+    num = sum((x - mean_a) * (y - mean_b) for x, y in zip(a, b, strict=False))
+    var_a = sum((x - mean_a) ** 2 for x in a)
+    var_b = sum((y - mean_b) ** 2 for y in b)
+    if var_a == 0 or var_b == 0:
+        return 0.0
+    denom = (var_a * var_b) ** 0.5
+    return round(num / denom, 6)
