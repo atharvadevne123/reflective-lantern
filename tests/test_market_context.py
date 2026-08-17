@@ -1097,21 +1097,15 @@ class TestPricePerSqftNew:
 
         assert price_per_sqft(300000.0, 1500.0) == pytest.approx(200.0, abs=0.01)
 
-    def test_zero_sqft_raises(self) -> None:
-        import pytest
-
+    def test_zero_sqft_returns_zero(self) -> None:
         from app.market_context import price_per_sqft
 
-        with pytest.raises(ValueError):
-            price_per_sqft(300000.0, 0.0)
+        assert price_per_sqft(300000.0, 0.0) == 0.0
 
-    def test_zero_price_raises(self) -> None:
-        import pytest
-
+    def test_zero_price_returns_zero(self) -> None:
         from app.market_context import price_per_sqft
 
-        with pytest.raises(ValueError):
-            price_per_sqft(0.0, 1000.0)
+        assert price_per_sqft(0.0, 1000.0) == 0.0
 
 
 class TestDomCategory:

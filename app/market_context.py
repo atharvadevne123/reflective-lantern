@@ -23,14 +23,24 @@ DEFAULT_ANNUAL_INCOME = 100_000.0
 
 
 def price_per_sqft(predicted_value: float, sqft: float) -> float:
-    """Return price per square foot, or 0.0 when sqft is zero."""
+    """Return price per square foot; 0.0 when either input is 0.
+
+    Args:
+        predicted_value: Total property value in USD; must be non-negative.
+        sqft: Floor area in square feet; must be non-negative.
+
+    Returns:
+        Price per square foot rounded to 2 decimal places, or 0.0 when
+        either input is exactly 0.
+
+    Raises:
+        ValueError: If either argument is negative.
+    """
     if predicted_value < 0:
-        raise ValueError("predicted_value must be non-negative")
-    if sqft == 0:
-        return 0.0
+        raise ValueError(f"predicted_value must be non-negative, got {predicted_value}")
     if sqft < 0:
-        raise ValueError("sqft must be non-negative")
-    if predicted_value == 0:
+        raise ValueError(f"sqft must be non-negative, got {sqft}")
+    if predicted_value == 0 or sqft == 0:
         return 0.0
     return round(predicted_value / sqft, 2)
 
