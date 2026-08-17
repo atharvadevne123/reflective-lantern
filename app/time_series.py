@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import logging
+import math
+import statistics
 
 import numpy as np
 
@@ -131,8 +133,6 @@ def moving_max(values: list[float], window: int = 3) -> list[float]:
     Returns:
         Rolling maximum series of the same length as *values*.
     """
-    import math
-
     if not values:
         return []
     result: list[float] = []
@@ -469,8 +469,6 @@ def moving_min(values: list[float], window: int = 3) -> list[float]:
     Returns:
         Rolling minimum series of the same length as *values*.
     """
-    import math
-
     if not values:
         return []
     result: list[float] = []
@@ -719,8 +717,6 @@ def seasonal_variance(values: list[float], period: int = 24) -> float:
         raise ValueError("values must not be empty")
     if period < 1:
         raise ValueError(f"period must be at least 1, got {period}")
-    import statistics
-
     buckets: list[list[float]] = [[] for _ in range(period)]
     for i, v in enumerate(values):
         buckets[i % period].append(v)
@@ -1009,8 +1005,6 @@ def linear_interpolation(values: list[float | None]) -> list[float]:
     Raises:
         ValueError: If *values* is empty or contains only None values.
     """
-    import math
-
     if not values:
         raise ValueError("values must not be empty")
     if all(v is None for v in values):
