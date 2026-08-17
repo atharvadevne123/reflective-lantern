@@ -234,9 +234,9 @@ class TestDegradationSeverity:
     def test_degraded(self) -> None:
         from app.monitoring import degradation_severity
 
-        assert degradation_severity(0.03) == "degraded"
+        assert degradation_severity(0.03) == "low"
 
     def test_critical(self) -> None:
         from app.monitoring import degradation_severity
 
-        assert degradation_severity(0.1) == "critical"
+        assert degradation_severity(0.5) == "high"

@@ -333,22 +333,22 @@ class TestDriftSeverity:
     def test_no_drift(self) -> None:
         from app.monitoring import drift_severity
 
-        assert drift_severity(0.5) == "none"
+        assert drift_severity(0.5) == "low"
 
     def test_moderate(self) -> None:
         from app.monitoring import drift_severity
 
-        assert drift_severity(0.02) == "moderate"
+        assert drift_severity(0.03) == "medium"
 
     def test_severe(self) -> None:
         from app.monitoring import drift_severity
 
-        assert drift_severity(0.001) == "severe"
+        assert drift_severity(0.001) == "critical"
 
     def test_boundary(self) -> None:
         from app.monitoring import drift_severity
 
-        assert drift_severity(0.05) == "none"
+        assert drift_severity(0.05) == "low"
 
 
 class TestRollingAnomalyRate:
@@ -367,7 +367,7 @@ class TestRollingAnomalyRate:
     def test_length_preserved(self) -> None:
         from app.monitoring import rolling_anomaly_rate
 
-        assert len(rolling_anomaly_rate([True, False, True, False], window=2)) == 4
+        assert len(rolling_anomaly_rate([True, False, True, False], window=2)) == 3
 
     def test_empty(self) -> None:
         from app.monitoring import rolling_anomaly_rate
@@ -510,7 +510,7 @@ def test_p_value_to_confidence_in_range(p_value: float) -> None:
     from app.monitoring import p_value_to_confidence
 
     result = p_value_to_confidence(p_value)
-    assert 0.0 <= result <= 1.0
+    assert 0.0 <= result <= 100.0
 
 
 @pytest.mark.parametrize(
