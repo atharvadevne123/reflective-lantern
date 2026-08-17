@@ -442,13 +442,23 @@ __all__ = [
     "RollingStatsExtractor",
     "TemporalFeatureExtractor",
     "WeatherFeatureExtractor",
+    "bin_feature",
     "build_feature_pipeline",
+    "clip_feature_values",
+    "cumulative_sum_feature",
     "demand_response_potential",
+    "difference_feature",
     "encode_cyclical",
     "extract_feature_array",
     "feature_names_for_bundle",
+    "lag_features",
     "make_feature_row",
+    "minmax_normalize",
     "normalize_consumption",
+    "percentile_feature",
+    "ratio_feature",
+    "rolling_max_feature",
+    "zscore_feature",
 ]
 
 
