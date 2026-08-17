@@ -701,3 +701,53 @@ def anomaly_peak_ratio(values: list[float], flags: list[bool]) -> float:
     if not anomalous or not normal:
         return 0.0
     return round(sum(anomalous) / len(anomalous) / (sum(normal) / len(normal)), 4)
+
+
+def mad_score(values: list[float]) -> float:
+    """Return the median absolute deviation (MAD) of *values*.
+
+    Robust to outliers because it uses medians rather than means.
+
+    Args:
+        values: Numeric series (must be non-empty).
+
+    Returns:
+        MAD as a float.
+
+    Raises:
+        ValueError: If *values* is empty.
+    """
+    if not values:
+        raise ValueError("values must not be empty")
+    sorted_vals = sorted(values)
+    n = len(sorted_vals)
+    median = sorted_vals[n // 2] if n % 2 else (sorted_vals[n // 2 - 1] + sorted_vals[n // 2]) / 2.0
+    deviations = sorted(abs(v - median) for v in values)
+    return round(
+        deviations[n // 2] if n % 2 else (deviations[n // 2 - 1] + deviations[n // 2]) / 2.0,
+        6,
+    )
+
+
+def modified_zscore(value: float, values: list[float]) -> float:
+    """Return the Iglewicz-Hoaglin modified z-score of *value* against *values*.
+
+    Uses the median and MAD rather than mean/std, so it is robust to outliers.
+    Absolute scores > 3.5 typically indicate an anomaly.
+
+    Args:
+        value: Observation to score.
+        values: Reference distribution (must be non-empty).
+
+    Returns:
+        Modified z-score as a float; 0.0 when MAD is zero.
+    """
+    if not values:
+        raise ValueError("values must not be empty")
+    sorted_vals = sorted(values)
+    n = len(sorted_vals)
+    median = sorted_vals[n // 2] if n % 2 else (sorted_vals[n // 2 - 1] + sorted_vals[n // 2]) / 2.0
+    mad = mad_score(values)
+    if mad == 0:
+        return 0.0
+    return round(0.6745 * (value - median) / mad, 6)
