@@ -118,8 +118,11 @@ def make_drift_alert(ks_stat: float, p_value: float) -> Alert:
 __all__ = [
     "Alert",
     "AlertQueue",
+    "alert_age_seconds",
     "alert_summary",
+    "alerts_within_window",
     "deduplicate_alerts",
+    "escalate_alert",
     "filter_alerts_by_severity",
     "group_alerts_by_severity",
     "highest_severity",
