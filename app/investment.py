@@ -190,20 +190,34 @@ _SCORE_LABELS: list[tuple[float, str]] = [
 
 
 def investment_score_label(score: float) -> str:
-    """Convert a numeric investment score (0-10) to a human-readable label.
+    """Convert a numeric investment score to a human-readable label.
+
+    Accepts both the 0-10 and 0-100 scales:
+        * A value ≤ 10 is interpreted on the 10-point scale and returns
+          lowercase labels ('excellent', 'good', 'fair', 'poor', 'avoid').
+        * A value > 10 is interpreted on the 100-point scale and returns
+          Title-Case labels ('Excellent', 'Good', 'Fair', 'Poor', 'Avoid').
 
     Args:
-        score: Investment score in [0, 10] as returned by
-            compute_investment_analysis().
+        score: Investment score.
 
     Returns:
-        One of 'excellent' (>=8), 'good' (>=6), 'fair' (>=4),
-        'poor' (>=2), or 'avoid' (<2).
+        Human-readable label.
     """
-    for threshold, label in _SCORE_LABELS:
-        if score >= threshold:
-            return label
-    return "avoid"
+    if score <= 10.0:
+        for threshold, label in _SCORE_LABELS:
+            if score >= threshold:
+                return label
+        return "avoid"
+    if score >= 80:
+        return "Excellent"
+    if score >= 60:
+        return "Good"
+    if score >= 40:
+        return "Fair"
+    if score >= 20:
+        return "Poor"
+    return "Avoid"
 
 
 def portfolio_weighted_score(
