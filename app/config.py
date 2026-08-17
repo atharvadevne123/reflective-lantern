@@ -41,6 +41,7 @@ settings = Settings()
 
 __all__ = [
     "Settings",
+    "cors_origins_list",
     "effective_log_level",
     "get_settings",
     "is_production",
@@ -76,3 +77,17 @@ def effective_log_level() -> str:
         Log level string such as 'INFO', 'DEBUG', 'WARNING'.
     """
     return settings.log_level.upper()
+
+
+def cors_origins_list() -> list[str]:
+    """Return the CORS origins config as a list of stripped strings.
+
+    Splits :attr:`Settings.cors_origins` on commas and drops empty entries.
+
+    Returns:
+        List of origin strings; ``["*"]`` when the config is exactly ``"*"``.
+    """
+    raw = settings.cors_origins.strip()
+    if raw == "*":
+        return ["*"]
+    return [origin.strip() for origin in raw.split(",") if origin.strip()]
