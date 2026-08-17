@@ -101,8 +101,14 @@ __all__ = [
     "get_regions_by_timezone",
     "list_regions",
     "region_count",
+    "region_load_factor",
+    "region_names",
+    "region_share_of_total",
+    "regions_above_peak",
+    "regions_by_grid_type",
     "regions_by_peak_load",
     "regions_summary",
+    "total_peak_load_mw",
     "validate_region",
 ]
 
