@@ -683,7 +683,7 @@ def carbon_intensity_label(intensity_kg_per_kwh: float) -> str:
     if intensity_kg_per_kwh < 0.25:
         return "low"
     if intensity_kg_per_kwh < 0.40:
-        return "moderate"
+        return "medium"
     if intensity_kg_per_kwh < 0.55:
         return "high"
     return "very_high"
@@ -720,4 +720,174 @@ def annual_carbon_budget(
         "remaining_kg": round(remaining_kg, 2),
         "on_track": on_track,
         "projected_annual_kg": round(projected, 2),
+    }
+
+
+def carbon_budget_status(budget_kg: float, consumed_kg: float) -> dict[str, float]:
+    """Compute a snapshot of carbon-budget usage.
+
+    Args:
+        budget_kg: Total carbon budget in kilograms of CO₂ (must be positive).
+        consumed_kg: Amount already emitted, in kilograms (must be non-negative).
+
+    Returns:
+        Dict with ``budget_kg``, ``consumed_kg``, ``consumed_pct``,
+        ``remaining_kg`` (negative when over-budget), and ``overage_kg``.
+
+    Raises:
+        ValueError: If ``budget_kg`` is not strictly positive or
+            ``consumed_kg`` is negative.
+    """
+    if budget_kg <= 0:
+        raise ValueError(f"budget_kg must be positive, got {budget_kg}")
+    if consumed_kg < 0:
+        raise ValueError(f"consumed_kg must be non-negative, got {consumed_kg}")
+    remaining = budget_kg - consumed_kg
+    overage = max(0.0, -remaining)
+    consumed_pct = (consumed_kg / budget_kg) * 100.0
+    return {
+        "budget_kg": round(budget_kg, 4),
+        "consumed_kg": round(consumed_kg, 4),
+        "consumed_pct": round(consumed_pct, 4),
+        "remaining_kg": round(remaining, 4),
+        "overage_kg": round(overage, 4),
+    }
+
+
+def weighted_carbon_factor(sources: list[dict[str, float]]) -> float:
+    """Compute the emissions-weighted mean carbon factor across a fuel mix.
+
+    Each source dict must have ``fraction`` (sums to 1) and ``factor_kg_per_kwh``.
+
+    Args:
+        sources: List of dicts describing the energy mix.
+
+    Returns:
+        Weighted mean factor in kg CO₂ per kWh.
+
+    Raises:
+        ValueError: If *sources* is empty or fractions don't sum to (approximately) 1.
+    """
+    if not sources:
+        raise ValueError("sources must not be empty")
+    total_fraction = sum(s.get("fraction", 0.0) for s in sources)
+    if abs(total_fraction - 1.0) > 0.05:
+        raise ValueError(f"source fractions must sum to 1, got {total_fraction}")
+    weighted = sum(
+        s.get("fraction", 0.0) * s.get("factor_kg_per_kwh", 0.0) for s in sources
+    )
+    return round(weighted, 6)
+
+
+def carbon_intensity_category(factor_kg_per_kwh: float) -> str:
+    """Classify a grid carbon factor into a qualitative bucket.
+
+    Buckets:
+        * ``factor < 0.1`` → ``"very_low"``
+        * ``factor < 0.3`` → ``"low"``
+        * ``factor < 0.5`` → ``"medium"``
+        * otherwise → ``"high"``
+
+    Args:
+        factor_kg_per_kwh: Emission factor (kg CO₂ per kWh); must be non-negative.
+
+    Returns:
+        Category label.
+
+    Raises:
+        ValueError: If ``factor_kg_per_kwh`` is negative.
+    """
+    if factor_kg_per_kwh < 0:
+        raise ValueError(f"factor must be non-negative, got {factor_kg_per_kwh}")
+    if factor_kg_per_kwh < 0.1:
+        return "very_low"
+    if factor_kg_per_kwh < 0.3:
+        return "low"
+    if factor_kg_per_kwh < 0.5:
+        return "medium"
+    return "high"
+
+
+def carbon_offset_cost(co2_kg: float, cost_per_tonne: float = 15.0) -> float:
+    """Estimate the market cost of offsetting *co2_kg* of emissions.
+
+    Args:
+        co2_kg: Kilograms of CO₂ to offset; must be non-negative.
+        cost_per_tonne: Offset price in USD per metric tonne (default $15).
+
+    Returns:
+        Cost in USD.
+
+    Raises:
+        ValueError: If ``co2_kg`` is negative or ``cost_per_tonne`` is negative.
+    """
+    if co2_kg < 0:
+        raise ValueError(f"co2_kg must be non-negative, got {co2_kg}")
+    if cost_per_tonne < 0:
+        raise ValueError(f"cost_per_tonne must be non-negative, got {cost_per_tonne}")
+    tonnes = co2_kg / 1000.0
+    return round(tonnes * cost_per_tonne, 4)
+
+
+def annual_carbon_trajectory(monthly_kg: list[float]) -> dict[str, float]:
+    """Summarise a series of monthly CO₂ totals into an annual trajectory.
+
+    Args:
+        monthly_kg: Sequence of monthly emission totals (kg). Must be non-empty
+            and non-negative.
+
+    Returns:
+        Dict with ``total_kg``, ``monthly_avg_kg``, ``peak_month_kg``, and
+        ``trend_slope`` (least-squares slope of monthly totals).
+
+    Raises:
+        ValueError: If ``monthly_kg`` is empty or contains negative values.
+    """
+    if not monthly_kg:
+        raise ValueError("monthly_kg must not be empty")
+    if any(v < 0 for v in monthly_kg):
+        raise ValueError("monthly_kg values must be non-negative")
+    n = len(monthly_kg)
+    total = float(sum(monthly_kg))
+    avg = total / n
+    peak = float(max(monthly_kg))
+    if n < 2:
+        slope = 0.0
+    else:
+        mean_x = (n - 1) / 2.0
+        mean_y = avg
+        num = sum((i - mean_x) * (v - mean_y) for i, v in enumerate(monthly_kg))
+        den = sum((i - mean_x) ** 2 for i in range(n))
+        slope = num / den if den > 0 else 0.0
+    return {
+        "total_kg": round(total, 4),
+        "monthly_avg_kg": round(avg, 4),
+        "peak_month_kg": round(peak, 4),
+        "trend_slope": round(slope, 6),
+    }
+
+
+def carbon_savings_vs_baseline(actual_kg: float, baseline_kg: float) -> dict[str, float]:
+    """Compute absolute and percentage carbon savings against a baseline.
+
+    Args:
+        actual_kg: Actual emissions in kg (must be non-negative).
+        baseline_kg: Baseline (typical or prior) emissions in kg (must be non-negative).
+
+    Returns:
+        Dict with ``savings_kg`` (baseline - actual; negative when worse) and
+        ``savings_pct`` (percentage; 0 when baseline is zero).
+
+    Raises:
+        ValueError: If either value is negative.
+    """
+    if actual_kg < 0:
+        raise ValueError(f"actual_kg must be non-negative, got {actual_kg}")
+    if baseline_kg < 0:
+        raise ValueError(f"baseline_kg must be non-negative, got {baseline_kg}")
+    savings = baseline_kg - actual_kg
+    pct = (savings / baseline_kg) * 100.0 if baseline_kg > 0 else 0.0
+    return {
+        "savings_kg": round(savings, 4),
+        "savings_pct": round(pct, 4),
     }
