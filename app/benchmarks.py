@@ -445,3 +445,156 @@ def benchmark_score_label(score: float) -> str:
     if score < 90:
         return "good"
     return "excellent"
+
+
+def energy_use_intensity_delta(
+    baseline_eui: float,
+    current_eui: float,
+) -> dict[str, float]:
+    """Return the absolute and percentage change from baseline to current EUI.
+
+    Args:
+        baseline_eui: Prior-period EUI (must be non-negative).
+        current_eui: Latest-period EUI (must be non-negative).
+
+    Returns:
+        Dict with ``absolute_delta`` (baseline - current; positive means an
+        improvement) and ``pct_change`` (percentage change; 0 when baseline is 0).
+
+    Raises:
+        ValueError: If either input is negative.
+    """
+    if baseline_eui < 0 or current_eui < 0:
+        raise ValueError("EUI inputs must be non-negative")
+    absolute = baseline_eui - current_eui
+    pct = (absolute / baseline_eui) * 100.0 if baseline_eui > 0 else 0.0
+    return {
+        "absolute_delta": round(absolute, 4),
+        "pct_change": round(pct, 4),
+    }
+
+
+def eui_improvement_needed(
+    current_eui: float,
+    building_type: str = "default",
+    target_percentile: float = 50.0,
+) -> float:
+    """Return the EUI reduction needed to hit *target_percentile* of the benchmark.
+
+    Args:
+        current_eui: Current building EUI.
+        building_type: Key into :data:`ASHRAE_EUI_BENCHMARKS`.
+        target_percentile: Target percentile in (0, 100); lower means stricter.
+
+    Returns:
+        Non-negative EUI reduction required (0 when already at or below target).
+
+    Raises:
+        ValueError: If ``target_percentile`` is outside (0, 100).
+    """
+    if not 0 < target_percentile <= 100:
+        raise ValueError(f"target_percentile must be in (0, 100], got {target_percentile}")
+    benchmark = ASHRAE_EUI_BENCHMARKS.get(building_type, ASHRAE_EUI_BENCHMARKS["default"])
+    target = benchmark * (target_percentile / 100.0)
+    return round(max(0.0, current_eui - target), 4)
+
+
+def normalise_eui(eui: float, building_type: str = "default") -> float:
+    """Return an EUI expressed as a fraction of the type's benchmark.
+
+    Args:
+        eui: Building EUI (non-negative).
+        building_type: Key into :data:`ASHRAE_EUI_BENCHMARKS`.
+
+    Returns:
+        Fraction ``eui / benchmark``; 0.0 when the benchmark is 0.
+    """
+    benchmark = ASHRAE_EUI_BENCHMARKS.get(building_type, ASHRAE_EUI_BENCHMARKS["default"])
+    if benchmark <= 0:
+        return 0.0
+    return round(eui / benchmark, 6)
+
+
+def eui_savings_potential(
+    current_eui: float,
+    floor_area_sqm: float,
+    improvement_pct: float = 10.0,
+    tariff_per_kwh: float = 0.15,
+) -> dict[str, float]:
+    """Estimate annual energy and cost savings from an EUI improvement.
+
+    Args:
+        current_eui: Current energy use intensity (kWh/m²/year).
+        floor_area_sqm: Conditioned floor area in square metres.
+        improvement_pct: Target reduction percentage in [0, 100].
+        tariff_per_kwh: Retail tariff for the cost estimate.
+
+    Returns:
+        Dict with ``saved_kwh_per_year``, ``saved_cost_per_year``, and
+        ``new_eui``.
+
+    Raises:
+        ValueError: If any argument is negative or ``improvement_pct`` > 100.
+    """
+    if current_eui < 0 or floor_area_sqm < 0:
+        raise ValueError("current_eui and floor_area_sqm must be non-negative")
+    if not 0 <= improvement_pct <= 100:
+        raise ValueError(f"improvement_pct must be in [0, 100], got {improvement_pct}")
+    if tariff_per_kwh < 0:
+        raise ValueError("tariff_per_kwh must be non-negative")
+    new_eui = current_eui * (1 - improvement_pct / 100.0)
+    saved_kwh = (current_eui - new_eui) * floor_area_sqm
+    return {
+        "saved_kwh_per_year": round(saved_kwh, 4),
+        "saved_cost_per_year": round(saved_kwh * tariff_per_kwh, 4),
+        "new_eui": round(new_eui, 4),
+    }
+
+
+def portfolio_eui_summary(records: list[dict[str, float]]) -> dict[str, float]:
+    """Summarise EUI across a portfolio of buildings.
+
+    Args:
+        records: List of dicts each containing an ``eui`` key. Records
+            missing the key are skipped.
+
+    Returns:
+        Dict with ``mean_eui``, ``min_eui``, and ``max_eui``. All three keys
+        are 0.0 when *records* contains no usable EUI values.
+    """
+    euis = [float(r["eui"]) for r in records if r.get("eui") is not None]
+    if not euis:
+        return {"mean_eui": 0.0, "min_eui": 0.0, "max_eui": 0.0}
+    return {
+        "mean_eui": round(sum(euis) / len(euis), 4),
+        "min_eui": round(min(euis), 4),
+        "max_eui": round(max(euis), 4),
+    }
+
+
+def star_rating_from_score(score: float) -> int:
+    """Convert an efficiency score in [0, 1] to a 1-5 star rating.
+
+    Buckets:
+        * score ≥ 0.90 → 5 stars
+        * score ≥ 0.75 → 4 stars
+        * score ≥ 0.55 → 3 stars
+        * score ≥ 0.30 → 2 stars
+        * otherwise → 1 star
+
+    Args:
+        score: Efficiency score, clamped to [0, 1].
+
+    Returns:
+        Integer star count in [1, 5].
+    """
+    s = max(0.0, min(1.0, score))
+    if s >= 0.90:
+        return 5
+    if s >= 0.75:
+        return 4
+    if s >= 0.55:
+        return 3
+    if s >= 0.30:
+        return 2
+    return 1
