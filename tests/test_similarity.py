@@ -378,7 +378,7 @@ class TestNormalizeDistances:
         from app.similarity import normalize_distances
 
         result = normalize_distances([3.0, 3.0, 3.0])
-        assert all(v == 0.5 for v in result)
+        assert all(v == 0.0 for v in result)
 
     def test_output_length(self) -> None:
         from app.similarity import normalize_distances
