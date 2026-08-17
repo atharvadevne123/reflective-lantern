@@ -604,3 +604,43 @@ def star_rating_from_score(score: float) -> int:
     if s >= 0.30:
         return 2
     return 1
+
+
+def relative_performance(actual_eui: float, benchmark_eui: float) -> float:
+    """Return actual EUI as a percentage of the benchmark (100% = at benchmark).
+
+    Values below 100 indicate better-than-benchmark performance; above 100
+    indicates worse.
+
+    Args:
+        actual_eui: Actual energy use intensity.
+        benchmark_eui: Benchmark energy use intensity (must be strictly positive).
+
+    Returns:
+        Percentage rounded to 2 decimal places.
+
+    Raises:
+        ValueError: If ``benchmark_eui`` is non-positive.
+    """
+    if benchmark_eui <= 0:
+        raise ValueError(f"benchmark_eui must be positive, got {benchmark_eui}")
+    return round(actual_eui / benchmark_eui * 100.0, 2)
+
+
+def eui_rank(eui: float, cohort: list[float]) -> int:
+    """Return the 1-based rank of *eui* within *cohort* (1 = best/lowest EUI).
+
+    Args:
+        eui: EUI value to rank.
+        cohort: List of comparison EUI values (must be non-empty).
+
+    Returns:
+        Integer rank in ``[1, len(cohort) + 1]``.
+
+    Raises:
+        ValueError: If *cohort* is empty.
+    """
+    if not cohort:
+        raise ValueError("cohort must not be empty")
+    lower_count = sum(1 for c in cohort if c < eui)
+    return lower_count + 1
