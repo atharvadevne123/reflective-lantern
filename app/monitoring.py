@@ -561,3 +561,27 @@ def degradation_severity(error_rate: float) -> str:
     if error_rate < 0.20:
         return "medium"
     return "high"
+
+
+def latency_slo_breached(latencies_ms: list[float], slo_ms: float, threshold_pct: float = 0.05) -> bool:
+    """Return True when more than *threshold_pct* of latencies exceed *slo_ms*.
+
+    Args:
+        latencies_ms: Observed request latencies in milliseconds.
+        slo_ms: Service level objective threshold in milliseconds.
+        threshold_pct: Fraction of samples above the SLO that constitutes a breach.
+
+    Returns:
+        True when the SLO is breached over the sample.
+
+    Raises:
+        ValueError: If *slo_ms* is not positive or *threshold_pct* is out of [0, 1].
+    """
+    if slo_ms <= 0:
+        raise ValueError(f"slo_ms must be positive, got {slo_ms}")
+    if not 0 <= threshold_pct <= 1:
+        raise ValueError(f"threshold_pct must be in [0, 1], got {threshold_pct}")
+    if not latencies_ms:
+        return False
+    over = sum(1 for latency in latencies_ms if latency > slo_ms)
+    return (over / len(latencies_ms)) > threshold_pct
