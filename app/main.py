@@ -425,6 +425,12 @@ def readiness_probe() -> dict[str, str]:
     return {"status": "ready"}
 
 
+@app.get("/api/v1/live", tags=["System"])
+def liveness_probe() -> dict[str, str]:
+    """Liveness probe: always returns 200 while the process is up."""
+    return {"status": "alive"}
+
+
 @app.post("/api/v1/validate-batch", tags=["Validation"])
 def validate_batch_readings(body: dict) -> dict:
     """Validate a batch of energy readings and return per-row error reports."""
