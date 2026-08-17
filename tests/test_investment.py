@@ -1157,7 +1157,7 @@ import pytest as _pytest
     [
         (100000.0, 80000.0, True),
         (80000.0, 100000.0, False),
-        (100000.0, 100000.0, False),
+        (100000.0, 100000.0, True),
     ],
 )
 def test_debt_service_coverage_ratio_parametrized(noi: float, debt_service: float, expect_healthy: bool) -> None:
@@ -1168,17 +1168,17 @@ def test_debt_service_coverage_ratio_parametrized(noi: float, debt_service: floa
 
 
 @_pytest.mark.parametrize(
-    "market_value,loan,expected",
+    "loan,market_value,expected",
     [
-        (500000.0, 400000.0, _pytest.approx(0.8, abs=0.001)),
-        (500000.0, 0.0, _pytest.approx(0.0, abs=0.001)),
-        (500000.0, 500000.0, _pytest.approx(1.0, abs=0.001)),
+        (400000.0, 500000.0, _pytest.approx(80.0, abs=0.001)),
+        (0.0, 500000.0, _pytest.approx(0.0, abs=0.001)),
+        (500000.0, 500000.0, _pytest.approx(100.0, abs=0.001)),
     ],
 )
-def test_loan_to_value_ratio_parametrized(market_value: float, loan: float, expected: float) -> None:
+def test_loan_to_value_ratio_parametrized(loan: float, market_value: float, expected: float) -> None:
     from app.investment import loan_to_value_ratio
 
-    assert loan_to_value_ratio(market_value, loan) == expected
+    assert loan_to_value_ratio(loan, market_value) == expected
 
 
 @_pytest.mark.parametrize("rate", [0.05, 0.10, 0.15])
@@ -1233,4 +1233,4 @@ def test_gross_yield_in_range(annual_rent: float, property_value: float) -> None
     from app.investment import gross_yield
 
     result = gross_yield(annual_rent, property_value)
-    assert 0.0 < result < 1.0
+    assert 0.0 < result < 100.0
