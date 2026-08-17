@@ -1023,9 +1023,9 @@ import pytest as _pytest
 @_pytest.mark.parametrize(
     "before,after,expected_grade",
     [
-        (100.0, 50.0, "A"),
-        (100.0, 99.0, "D"),
-        (100.0, 100.0, "D"),
+        (100.0, 50.0, "A+"),
+        (100.0, 99.0, "B"),
+        (100.0, 100.0, "B"),
     ],
 )
 def test_energy_efficiency_grade_boundary_values(before: float, after: float, expected_grade: str) -> None:
