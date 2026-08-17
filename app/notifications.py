@@ -338,3 +338,64 @@ def mute_alert(alert: Alert, reason: str = "") -> Alert:
         tags=new_tags,
         metadata=new_meta,
     )
+
+
+def alert_age_seconds(alert: Alert, now: float | None = None) -> float:
+    """Return the age of *alert* in seconds relative to *now*.
+
+    Args:
+        alert: Alert to inspect.
+        now: Reference wall-clock time (seconds since epoch). Defaults to
+            ``time.time()``.
+
+    Returns:
+        Non-negative age in seconds; 0.0 for alerts newer than *now*.
+    """
+    reference = now if now is not None else _time.time()
+    return max(0.0, reference - alert.created_at)
+
+
+def escalate_alert(alert: Alert) -> Alert:
+    """Return a copy of *alert* with severity raised one step (max: 'critical').
+
+    Args:
+        alert: Alert to escalate.
+
+    Returns:
+        New :class:`Alert` with severity bumped:
+        info → warning → critical → critical.
+    """
+    ladder = {"info": "warning", "warning": "critical", "critical": "critical"}
+    new_severity = ladder.get(alert.severity.lower(), "warning")
+    return Alert(
+        severity=new_severity,
+        message=alert.message,
+        source=alert.source,
+        tags=list(alert.tags),
+        metadata=dict(alert.metadata),
+        created_at=alert.created_at,
+    )
+
+
+def alerts_within_window(
+    alerts: list[Alert],
+    window_seconds: float = 3600.0,
+    now: float | None = None,
+) -> list[Alert]:
+    """Return alerts whose age is <= *window_seconds* relative to *now*.
+
+    Args:
+        alerts: Sequence of Alert objects to filter.
+        window_seconds: Maximum age in seconds (must be non-negative).
+        now: Reference time; defaults to ``time.time()``.
+
+    Returns:
+        List of alerts within the window, order preserved.
+
+    Raises:
+        ValueError: If ``window_seconds`` is negative.
+    """
+    if window_seconds < 0:
+        raise ValueError(f"window_seconds must be non-negative, got {window_seconds}")
+    reference = now if now is not None else _time.time()
+    return [a for a in alerts if (reference - a.created_at) <= window_seconds]
