@@ -331,11 +331,11 @@ def coefficient_of_variation(values: list[float]) -> float:
     if not values:
         raise ValueError("values must not be empty")
     if len(values) < 2:
-        return 0.0
+        raise ValueError(f"values must have at least 2 elements, got {len(values)}")
     n = len(values)
     mean = sum(values) / n
     if abs(mean) < 1e-12:
-        raise ValueError("coefficient_of_variation is undefined when mean is near zero")
+        return 0.0
     variance = sum((v - mean) ** 2 for v in values) / n
     std = variance**0.5
     if std < 1e-12:
@@ -761,7 +761,7 @@ def gini_coefficient(values: list[float]) -> float:
         raise ValueError("gini_coefficient requires non-negative values")
     total = sum(values)
     if total == 0:
-        raise ValueError("gini_coefficient is undefined when all values are zero")
+        return 0.0
     n = len(values)
     sorted_vals = sorted(values)
     cumulative = sum((2 * (i + 1) - n - 1) * v for i, v in enumerate(sorted_vals))
