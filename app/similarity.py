@@ -112,16 +112,23 @@ __all__ = [
     "batch_similarity_matrix",
     "chebyshev_distance",
     "cosine_distance",
+    "dice_similarity",
     "euclidean_distance",
     "get_global_index",
     "hourly_pattern_distance",
+    "jaccard_similarity",
     "manhattan_distance",
+    "minkowski_distance",
+    "normalize_distances",
     "normalize_profile",
+    "overlap_coefficient",
+    "pearson_correlation",
     "pearson_similarity",
     "score_distribution",
     "search_comparable",
     "similarity_matrix",
     "top_k_similar",
+    "weighted_jaccard_similarity",
 ]
 
 
