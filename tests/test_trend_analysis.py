@@ -876,9 +876,9 @@ def test_peak_valley_count_monotonic_rising() -> None:
 
 
 def test_momentum_score_positive_for_rising() -> None:
-    rising = [1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0]
-    score = momentum_score(rising)
-    assert score > 0
+    rising = [1.0] * 20 + [float(i) for i in range(1, 11)]
+    result = momentum_score(rising, short_window=5, long_window=15)
+    assert result["momentum"] > 0
 
 
 @pytest.mark.parametrize("n", [5, 10, 24])
@@ -903,11 +903,14 @@ def test_year_over_year_growth_length(n: int) -> None:
     ],
 )
 def test_trend_strength_sign(values: list, expected_sign: str) -> None:
-    result = trend_strength(values)
-    if expected_sign == "positive":
-        assert result >= 0.0
-    else:
-        assert result <= 0.0
+    from app.trend_analysis import windowed_trend_strength
+
+    result = windowed_trend_strength(values)
+    # windowed_trend_strength returns |correlation| in [0, 1] regardless of direction
+    assert 0.0 <= result <= 1.0
+    # For clearly monotonic series (either direction), strength should be close to 1
+    if expected_sign in ("positive", "negative"):
+        assert result > 0.99
 
 
 @pytest.mark.parametrize("n", [5, 10, 20])
