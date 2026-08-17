@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import datetime as _dt
 from datetime import datetime
 
 import pytest
@@ -889,7 +890,7 @@ def test_days_in_month_parametrized(year: int, month: int, expected_days: int) -
 def test_quarter_of_year_parametrized(month: int, expected_quarter: int) -> None:
     from app.date_utils import quarter_of_year
 
-    dt = datetime.datetime(2026, month, 1)
+    dt = _dt.datetime(2026, month, 1)
     assert quarter_of_year(dt) == expected_quarter
 
 
@@ -897,7 +898,7 @@ def test_quarter_of_year_parametrized(month: int, expected_quarter: int) -> None
 def test_generate_hourly_timestamps_count(n_hours: int) -> None:
     from app.date_utils import generate_hourly_timestamps
 
-    start = datetime.datetime(2026, 1, 1, 0, 0)
+    start = _dt.datetime(2026, 1, 1, 0, 0)
     result = generate_hourly_timestamps(start, n_hours)
     assert len(result) == n_hours
 
@@ -905,9 +906,9 @@ def test_generate_hourly_timestamps_count(n_hours: int) -> None:
 @_pytest.mark.parametrize(
     "dt,expected_is_weekend",
     [
-        (datetime.datetime(2026, 8, 15), True),   # Saturday
-        (datetime.datetime(2026, 8, 16), True),   # Sunday
-        (datetime.datetime(2026, 8, 14), False),  # Friday
+        (_dt.datetime(2026, 8, 15), True),   # Saturday
+        (_dt.datetime(2026, 8, 16), True),   # Sunday
+        (_dt.datetime(2026, 8, 14), False),  # Friday
     ],
 )
 def test_is_weekend_parametrized(dt, expected_is_weekend: bool) -> None:
@@ -928,8 +929,8 @@ def test_format_duration_parametrized(seconds: float, expected_contains: str) ->
 @_pytest.mark.parametrize(
     "start,end,expected",
     [
-        (datetime.datetime(2026, 1, 1), datetime.datetime(2026, 1, 11), 10),
-        (datetime.datetime(2026, 6, 1), datetime.datetime(2026, 6, 1), 0),
+        (_dt.datetime(2026, 1, 1), _dt.datetime(2026, 1, 11), 10),
+        (_dt.datetime(2026, 6, 1), _dt.datetime(2026, 6, 1), 0),
     ],
 )
 def test_days_between_parametrized(start, end, expected: int) -> None:
