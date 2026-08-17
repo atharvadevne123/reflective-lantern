@@ -170,12 +170,18 @@ __all__ = [
     "compute_eui",
     "efficiency_gap",
     "energy_intensity_ratio",
+    "energy_use_intensity_delta",
+    "eui_improvement_needed",
     "eui_percentile_category",
+    "eui_savings_potential",
     "floor_area_normalized_savings",
     "list_building_types",
     "multi_building_benchmark",
+    "normalise_eui",
     "percentile_rank",
+    "portfolio_eui_summary",
     "site_eui",
+    "star_rating_from_score",
     "target_eui",
 ]
 
