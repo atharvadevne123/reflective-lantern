@@ -585,3 +585,65 @@ def latency_slo_breached(latencies_ms: list[float], slo_ms: float, threshold_pct
         return False
     over = sum(1 for latency in latencies_ms if latency > slo_ms)
     return (over / len(latencies_ms)) > threshold_pct
+
+
+def error_budget_fraction_remaining(
+    total_requests: int,
+    error_count: int,
+    slo_target: float = 0.999,
+) -> float:
+    """Return the fraction of the error budget still available.
+
+    A common SRE calculation: budget = (1 - slo_target) * total_requests,
+    remaining = budget - error_count, returned as a fraction of the budget.
+
+    Args:
+        total_requests: Total observed requests (must be > 0).
+        error_count: Number of failed requests (must be non-negative).
+        slo_target: Target availability as a fraction in (0, 1) (default 99.9%).
+
+    Returns:
+        Fraction in [0, 1]; 0.0 when the budget is fully consumed or exceeded.
+
+    Raises:
+        ValueError: If arguments are outside expected ranges.
+    """
+    if total_requests <= 0:
+        raise ValueError(f"total_requests must be positive, got {total_requests}")
+    if error_count < 0:
+        raise ValueError(f"error_count must be non-negative, got {error_count}")
+    if not 0 < slo_target < 1:
+        raise ValueError(f"slo_target must be in (0, 1), got {slo_target}")
+    budget = (1.0 - slo_target) * total_requests
+    if budget <= 0:
+        return 0.0
+    remaining = max(0.0, budget - error_count)
+    return round(remaining / budget, 6)
+
+
+def burn_rate(
+    error_rate: float,
+    slo_target: float = 0.999,
+) -> float:
+    """Return the SLO burn rate — how many times faster than the target the errors accrue.
+
+    Values > 1.0 indicate the error budget is being consumed faster than allowed.
+
+    Args:
+        error_rate: Observed error rate in [0, 1].
+        slo_target: Target availability as a fraction in (0, 1).
+
+    Returns:
+        Ratio ``error_rate / (1 - slo_target)``.
+
+    Raises:
+        ValueError: If arguments are outside expected ranges.
+    """
+    if not 0 <= error_rate <= 1:
+        raise ValueError(f"error_rate must be in [0, 1], got {error_rate}")
+    if not 0 < slo_target < 1:
+        raise ValueError(f"slo_target must be in (0, 1), got {slo_target}")
+    allowed = 1.0 - slo_target
+    if allowed == 0:
+        return float("inf")
+    return round(error_rate / allowed, 4)
