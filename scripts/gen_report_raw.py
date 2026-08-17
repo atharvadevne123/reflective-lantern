@@ -2,8 +2,6 @@
 from __future__ import annotations
 
 import io
-import struct
-import zlib
 
 DATE = "2026-08-14"
 MODE = "IMPROVEMENT"
@@ -19,8 +17,8 @@ LINES = [
     ("h",       "Summary"),
     ("body",    f"  Commits pushed:  {COMMITS} ({NUMBERED} improvement + 1 ruff cleanup)"),
     ("body",    f"  Ruff status:     {RUFF}"),
-    ("body",    f"  Pushed to:       main"),
-    ("body",    f"  Sub-projects:    energy_seer, temporal-pulse, price-prophet, suite-cast, forge-guard"),
+    ("body",    "  Pushed to:       main"),
+    ("body",    "  Sub-projects:    energy_seer, temporal-pulse, price-prophet, suite-cast, forge-guard"),
     ("",        ""),
     ("h",       "Improvement Focus"),
     ("body",    "  Test parametrization and coverage expansion across 30 test files."),
@@ -102,7 +100,6 @@ def generate_pdf() -> bytes:
     stream_parts.append("BT\n")
 
     y = 780.0
-    page_height = 841.0
     margin_bottom = 40.0
     x = 50.0
 
