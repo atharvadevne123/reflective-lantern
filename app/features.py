@@ -631,3 +631,47 @@ def percentile_feature(
     idx = int(len(sorted_ref) * percentile / 100.0)
     threshold = sorted_ref[min(idx, len(sorted_ref) - 1)]
     return [1.0 if v >= threshold else 0.0 for v in values]
+
+
+def zscore_feature(values: list[float]) -> list[float]:
+    """Convert *values* to per-element z-scores using the series mean and std.
+
+    Args:
+        values: Numeric series with at least 2 elements.
+
+    Returns:
+        Z-scores of the same length; all zeros when standard deviation is 0.
+
+    Raises:
+        ValueError: If *values* has fewer than 2 elements.
+    """
+    if len(values) < 2:
+        raise ValueError(f"values must have at least 2 elements, got {len(values)}")
+    mean = sum(values) / len(values)
+    variance = sum((v - mean) ** 2 for v in values) / len(values)
+    std = variance ** 0.5
+    if std == 0:
+        return [0.0] * len(values)
+    return [round((v - mean) / std, 6) for v in values]
+
+
+def minmax_normalize(values: list[float]) -> list[float]:
+    """Min-max normalise *values* to the closed range [0, 1].
+
+    Args:
+        values: Numeric series with at least 1 element.
+
+    Returns:
+        List of normalised values; ``0.5`` for every position when all
+        values are identical (degenerate range).
+
+    Raises:
+        ValueError: If *values* is empty.
+    """
+    if not values:
+        raise ValueError("values must not be empty")
+    lo, hi = min(values), max(values)
+    rng = hi - lo
+    if rng == 0:
+        return [0.5] * len(values)
+    return [round((v - lo) / rng, 6) for v in values]
