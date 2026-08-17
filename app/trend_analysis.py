@@ -740,3 +740,55 @@ def windowed_trend_strength(values: list[float], window: int | None = None) -> f
     if var_x == 0 or var_y == 0:
         return 0.0
     return round(abs(num / ((var_x * var_y) ** 0.5)), 6)
+
+
+def compound_annual_growth_rate(begin_value: float, end_value: float, years: float) -> float:
+    """Return the compound annual growth rate (CAGR) as a fraction.
+
+    Args:
+        begin_value: Value at the start of the period (must be strictly positive).
+        end_value: Value at the end of the period (must be non-negative).
+        years: Time span in years (must be strictly positive).
+
+    Returns:
+        Growth rate as a decimal (e.g. 0.10 for 10% CAGR); negative for decline.
+
+    Raises:
+        ValueError: If arguments are outside valid ranges.
+    """
+    if begin_value <= 0:
+        raise ValueError(f"begin_value must be positive, got {begin_value}")
+    if end_value < 0:
+        raise ValueError(f"end_value must be non-negative, got {end_value}")
+    if years <= 0:
+        raise ValueError(f"years must be positive, got {years}")
+    return round((end_value / begin_value) ** (1.0 / years) - 1.0, 6)
+
+
+def rolling_percent_change(values: list[float], window: int = 7) -> list[float | None]:
+    """Return the percent change over a rolling window.
+
+    Args:
+        values: Numeric series.
+        window: Comparison distance (must be >= 1).
+
+    Returns:
+        List of the same length as *values*; the first *window* positions
+        are ``None`` (insufficient history).
+
+    Raises:
+        ValueError: If *window* < 1.
+    """
+    if window < 1:
+        raise ValueError(f"window must be >= 1, got {window}")
+    result: list[float | None] = []
+    for i, current in enumerate(values):
+        if i < window:
+            result.append(None)
+            continue
+        prior = values[i - window]
+        if prior == 0:
+            result.append(None)
+        else:
+            result.append(round((current - prior) / prior * 100.0, 4))
+    return result
