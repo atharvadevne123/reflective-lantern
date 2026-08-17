@@ -897,3 +897,56 @@ def carbon_savings_vs_baseline(actual_kg: float, baseline_kg: float) -> dict[str
         "savings_kg": round(savings, 4),
         "savings_pct": round(pct, 4),
     }
+
+
+def carbon_per_capita(total_kg: float, population: int) -> float:
+    """Return per-capita carbon emissions (kg CO₂ per person).
+
+    Args:
+        total_kg: Total emissions in kilograms (must be non-negative).
+        population: Number of people (must be strictly positive).
+
+    Returns:
+        Emissions per person in kg.
+
+    Raises:
+        ValueError: If ``total_kg`` is negative or ``population`` is non-positive.
+    """
+    if total_kg < 0:
+        raise ValueError(f"total_kg must be non-negative, got {total_kg}")
+    if population <= 0:
+        raise ValueError(f"population must be positive, got {population}")
+    return round(total_kg / population, 4)
+
+
+def carbon_reduction_years(annual_kg: float, reduction_pct: float, target_kg: float) -> float:
+    """Estimate the number of years to hit *target_kg* by cutting *reduction_pct* each year.
+
+    Args:
+        annual_kg: Current annual emissions (must be strictly positive).
+        reduction_pct: Annual reduction as a percentage in (0, 100].
+        target_kg: Target annual emissions (must be non-negative).
+
+    Returns:
+        Number of years (float). Returns 0.0 when already at or below target,
+        or ``inf`` when the reduction never gets there.
+
+    Raises:
+        ValueError: If arguments are outside expected ranges.
+    """
+    if annual_kg <= 0:
+        raise ValueError(f"annual_kg must be positive, got {annual_kg}")
+    if not 0 < reduction_pct <= 100:
+        raise ValueError(f"reduction_pct must be in (0, 100], got {reduction_pct}")
+    if target_kg < 0:
+        raise ValueError(f"target_kg must be non-negative, got {target_kg}")
+    if annual_kg <= target_kg:
+        return 0.0
+    if target_kg == 0:
+        return float("inf")
+    import math as _math
+
+    factor = 1.0 - reduction_pct / 100.0
+    if factor <= 0:
+        return 1.0
+    return round(_math.log(target_kg / annual_kg) / _math.log(factor), 4)
