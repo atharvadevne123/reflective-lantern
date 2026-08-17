@@ -885,3 +885,51 @@ def total_return_on_investment(
     net_income = total_rental_income - total_expenses
     net_gain = capital_gain + net_income
     return round(net_gain / purchase_price * 100.0, 4)
+
+
+def annual_rent_growth(current_rent: float, prior_rent: float) -> float:
+    """Return year-over-year rent growth as a percentage.
+
+    Args:
+        current_rent: Latest annual rent (must be non-negative).
+        prior_rent: Prior-period annual rent (must be strictly positive).
+
+    Returns:
+        Growth percentage.
+
+    Raises:
+        ValueError: If *current_rent* is negative or *prior_rent* is non-positive.
+    """
+    if current_rent < 0:
+        raise ValueError(f"current_rent must be non-negative, got {current_rent}")
+    if prior_rent <= 0:
+        raise ValueError(f"prior_rent must be positive, got {prior_rent}")
+    return round((current_rent - prior_rent) / prior_rent * 100.0, 4)
+
+
+def rental_yield_after_tax(
+    annual_rent: float,
+    property_value: float,
+    tax_rate_pct: float,
+) -> float:
+    """Return the after-tax gross rental yield as a percentage.
+
+    Args:
+        annual_rent: Gross annual rent in USD (must be non-negative).
+        property_value: Property value in USD (must be strictly positive).
+        tax_rate_pct: Effective tax rate on rental income as a percentage in [0, 100].
+
+    Returns:
+        After-tax yield in percent.
+
+    Raises:
+        ValueError: If arguments are outside expected ranges.
+    """
+    if annual_rent < 0:
+        raise ValueError(f"annual_rent must be non-negative, got {annual_rent}")
+    if property_value <= 0:
+        raise ValueError(f"property_value must be positive, got {property_value}")
+    if not 0 <= tax_rate_pct <= 100:
+        raise ValueError(f"tax_rate_pct must be in [0, 100], got {tax_rate_pct}")
+    after_tax_rent = annual_rent * (1.0 - tax_rate_pct / 100.0)
+    return round(after_tax_rent / property_value * 100.0, 4)
