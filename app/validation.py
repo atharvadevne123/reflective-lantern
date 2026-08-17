@@ -10,7 +10,7 @@ logger = logging.getLogger(__name__)
 VALID_HOURS = frozenset(range(24))
 VALID_MONTHS = frozenset(range(1, 13))
 VALID_DOW = frozenset(range(7))
-MIN_TEMP_C = -40.0
+MIN_TEMP_C = -50.0
 MAX_TEMP_C = 60.0
 MIN_HUMIDITY = 0.0
 MAX_HUMIDITY = 100.0
@@ -290,7 +290,7 @@ def validate_price(price: float) -> list[str]:
     """Return validation errors for a price value in USD.
 
     Args:
-        price: Dollar amount to validate.
+        price: Dollar amount to validate; must be finite and non-negative.
 
     Returns:
         List of error strings (empty when valid).
@@ -601,3 +601,102 @@ def validate_email(value: str, field_name: str = "email") -> list[str]:
     if "." not in parts[1]:
         errors.append(f"{field_name} domain must contain at least one '.'")
     return errors
+
+
+def validate_list_length(
+    values: list[object],
+    min_len: int = 1,
+    max_len: int = 1000,
+    field_name: str = "list",
+) -> list[str]:
+    """Return validation errors when *values* has length outside ``[min_len, max_len]``.
+
+    Args:
+        values: Sequence to validate.
+        min_len: Minimum acceptable length (default 1).
+        max_len: Maximum acceptable length (default 1000).
+        field_name: Field name used in the error message.
+
+    Returns:
+        List of error strings (empty when valid).
+    """
+    errors: list[str] = []
+    n = len(values)
+    if n < min_len:
+        errors.append(f"{field_name} must have at least {min_len} item(s), got {n}")
+    if n > max_len:
+        errors.append(f"{field_name} must have at most {max_len} item(s), got {n}")
+    return errors
+
+
+def validate_enum(
+    value: object,
+    allowed: list[object],
+    field_name: str = "value",
+) -> list[str]:
+    """Return validation errors when *value* is not one of *allowed*.
+
+    Args:
+        value: The value to test.
+        allowed: Permitted values.
+        field_name: Field name used in the error message.
+
+    Returns:
+        List of error strings (empty when valid).
+    """
+    if value in allowed:
+        return []
+    return [f"{field_name} {value!r} is not one of {list(allowed)}"]
+
+
+def validate_date_string(
+    value: str,
+    field_name: str = "date",
+    fmt: str = "%Y-%m-%d",
+) -> list[str]:
+    """Return validation errors when *value* does not parse as an ISO date.
+
+    Args:
+        value: Candidate date string.
+        field_name: Field name used in the error message.
+        fmt: ``strptime`` format string (default ``%Y-%m-%d``).
+
+    Returns:
+        List of error strings (empty when valid).
+    """
+    try:
+        datetime.strptime(value, fmt)
+    except (TypeError, ValueError):
+        return [f"{field_name} {value!r} is not a valid date in format {fmt!r}"]
+    return []
+
+
+def validate_unique_ids(
+    records: list[dict[str, object]],
+    id_field: str = "id",
+) -> list[str]:
+    """Return validation errors listing duplicate id values found across *records*.
+
+    Args:
+        records: Sequence of record dicts.
+        id_field: Field name whose values must be unique.
+
+    Returns:
+        List of error strings; empty when all ids are unique or *records* is empty.
+    """
+    if not records:
+        return []
+    seen: dict[object, int] = {}
+    duplicates: dict[object, int] = {}
+    for rec in records:
+        rid = rec.get(id_field)
+        if rid is None:
+            continue
+        if rid in seen:
+            duplicates[rid] = duplicates.get(rid, 1) + 1
+        else:
+            seen[rid] = 1
+    return [
+        f"{id_field} {rid!r} appears more than once ({count + 1} times)"
+        for rid, count in duplicates.items()
+    ]
