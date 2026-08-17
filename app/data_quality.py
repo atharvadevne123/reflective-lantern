@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import time
 from typing import Any
 
 logger = logging.getLogger(__name__)
@@ -172,19 +173,28 @@ def detect_duplicates(
 
 
 def completeness_score(records: list[dict[str, Any]], required_fields: list[str]) -> float:
-    """Compute the fraction of records that have all *required_fields* populated.
+    """Compute the fraction of populated (field, record) cells for *required_fields*.
+
+    Averages presence across every required field in every record so that a
+    record missing half its fields contributes 0.5 to the score.
 
     Args:
         records: List of dicts to check.
         required_fields: Field names that must be non-None and non-empty.
 
     Returns:
-        Float in [0.0, 1.0]; 1.0 means every record is complete.
+        Float in [0.0, 1.0]; 1.0 means every required cell is populated.
     """
-    if not records:
+    if not records or not required_fields:
         return 0.0
-    complete = sum(1 for r in records if all(r.get(f) is not None and r.get(f) != "" for f in required_fields))
-    return round(complete / len(records), 4)
+    total_cells = len(records) * len(required_fields)
+    filled = sum(
+        1
+        for r in records
+        for f in required_fields
+        if r.get(f) is not None and r.get(f) != ""
+    )
+    return round(filled / total_cells, 4)
 
 
 def detect_data_gaps(
@@ -362,37 +372,74 @@ def field_completeness(records: list[dict[str, Any]], required_fields: list[str]
 
 
 def value_range_check(
-    records: list[dict[str, Any]],
-    field: str,
-    min_val: float,
-    max_val: float,
+    values_or_records: list[float] | list[dict[str, Any]],
+    *args: Any,
 ) -> dict[str, Any]:
-    """Check how many records have *field* values outside [min_val, max_val].
+    """Check how many numeric values fall inside a closed [min, max] range.
+
+    Two calling conventions are supported:
+
+    * ``value_range_check([1.0, 2.0], min_val, max_val)`` — plain sequence.
+    * ``value_range_check(records, field, min_val, max_val)`` — extract
+      *field* from each dict record.
 
     Args:
-        records: List of record dicts.
-        field: Numeric field name to check.
-        min_val: Minimum acceptable value.
-        max_val: Maximum acceptable value.
+        values_or_records: A list of floats OR a list of record dicts.
+        *args: Either ``(min_val, max_val)`` or ``(field, min_val, max_val)``.
 
     Returns:
-        Dict with total_checked, out_of_range_count, and out_of_range_rate.
+        Dict with ``total_checked``, ``in_range``, ``out_of_range``,
+        ``out_of_range_count``, and ``out_of_range_rate``.
+
+    Raises:
+        ValueError: If the input sequence is empty or ``min_val > max_val``.
     """
+    if len(args) == 2:
+        min_val, max_val = args
+        field = None
+        source: list[Any] = list(values_or_records)
+        strict_empty = True
+    elif len(args) == 3:
+        field, min_val, max_val = args
+        source = list(values_or_records)
+        strict_empty = False
+    else:
+        raise ValueError(
+            f"value_range_check expects (values, min, max) or (records, field, min, max), got {len(args) + 1} args",
+        )
+    min_val = float(min_val)
+    max_val = float(max_val)
+    if min_val > max_val:
+        raise ValueError(f"min_val {min_val} must be <= max_val {max_val}")
+    if not source and strict_empty:
+        raise ValueError("value_range_check requires at least one value")
+
     total = 0
+    in_range = 0
     out_of_range = 0
-    for rec in records:
-        val = rec.get(field)
-        if val is not None:
-            try:
-                fval = float(val)
-                total += 1
-                if not (min_val <= fval <= max_val):
-                    out_of_range += 1
-            except (TypeError, ValueError):
-                pass
+    for item in source:
+        if field is not None:
+            if not isinstance(item, dict):
+                continue
+            val = item.get(field)
+        else:
+            val = item
+        if val is None:
+            continue
+        try:
+            fval = float(val)
+        except (TypeError, ValueError):
+            continue
+        total += 1
+        if min_val <= fval <= max_val:
+            in_range += 1
+        else:
+            out_of_range += 1
     rate = round(out_of_range / total, 4) if total > 0 else 0.0
     return {
         "total_checked": total,
+        "in_range": in_range,
+        "out_of_range": out_of_range,
         "out_of_range_count": out_of_range,
         "out_of_range_rate": rate,
     }
@@ -413,8 +460,6 @@ def data_freshness_score(
     Returns:
         Dict with total_records, fresh_count, stale_count, and freshness_rate.
     """
-    import time
-
     now = time.time()
     fresh = 0
     stale = 0
@@ -662,3 +707,182 @@ def validate_enum_field(record: dict[str, Any], field: str, allowed: list[object
     if value is not None and value not in allowed:
         errors.append(f"'{field}' value {value!r} is not in allowed set {allowed!r}")
     return errors
+
+
+_ALLOWED_RELATIONS: frozenset[str] = frozenset({"a_lte_b", "a_lt_b", "a_eq_b", "a_gte_b", "a_gt_b"})
+
+
+def cross_field_consistency(
+    records: list[dict[str, Any]],
+    field_a: str,
+    field_b: str,
+    relation: str,
+) -> list[int]:
+    """Return indices of records that violate a two-field relational rule.
+
+    Args:
+        records: List of record dicts to check.
+        field_a: First field name.
+        field_b: Second field name.
+        relation: Rule identifier, one of
+            ``a_lte_b``, ``a_lt_b``, ``a_eq_b``, ``a_gte_b``, ``a_gt_b``.
+
+    Returns:
+        Sorted list of record indices that violate the rule; records missing
+        either field are skipped.
+
+    Raises:
+        ValueError: If *relation* is not one of the supported identifiers.
+    """
+    if relation not in _ALLOWED_RELATIONS:
+        raise ValueError(
+            f"Unsupported relation {relation!r}; expected one of {sorted(_ALLOWED_RELATIONS)}",
+        )
+    checks = {
+        "a_lte_b": lambda a, b: a <= b,
+        "a_lt_b": lambda a, b: a < b,
+        "a_eq_b": lambda a, b: a == b,
+        "a_gte_b": lambda a, b: a >= b,
+        "a_gt_b": lambda a, b: a > b,
+    }
+    predicate = checks[relation]
+    violations: list[int] = []
+    for i, rec in enumerate(records):
+        a = rec.get(field_a)
+        b = rec.get(field_b)
+        if a is None or b is None:
+            continue
+        try:
+            if not predicate(a, b):
+                violations.append(i)
+        except TypeError:
+            violations.append(i)
+    return violations
+
+
+def outlier_count_iqr(
+    records: list[dict[str, Any]],
+    field: str,
+    multiplier: float = 1.5,
+) -> int:
+    """Count records whose *field* value lies outside the Tukey IQR fence.
+
+    Args:
+        records: List of record dicts to inspect.
+        field: Numeric field name to test.
+        multiplier: IQR fence multiplier (default 1.5).
+
+    Returns:
+        Number of records considered outliers; 0 if *records* has fewer than
+        four numeric values (IQR is undefined on very small samples).
+
+    Raises:
+        ValueError: If *multiplier* is not positive.
+    """
+    if multiplier <= 0:
+        raise ValueError(f"multiplier must be positive, got {multiplier}")
+    values: list[float] = []
+    for rec in records:
+        val = rec.get(field)
+        if val is None:
+            continue
+        try:
+            values.append(float(val))
+        except (TypeError, ValueError):
+            continue
+    if len(values) < 4:
+        return 0
+    values_sorted = sorted(values)
+    n = len(values_sorted)
+    q1 = values_sorted[n // 4]
+    q3 = values_sorted[(3 * n) // 4]
+    iqr = q3 - q1
+    lower = q1 - multiplier * iqr
+    upper = q3 + multiplier * iqr
+    return sum(1 for v in values if v < lower or v > upper)
+
+
+def schema_conformance_rate(
+    records: list[dict[str, Any]],
+    schema: dict[str, type],
+) -> float:
+    """Return the fraction of records matching a simple ``{field: type}`` schema.
+
+    A record is conforming when every schema field is present, non-None, and
+    an instance of the declared type. An empty input returns ``1.0`` — the
+    trivially-satisfied case.
+
+    Args:
+        records: List of record dicts to check.
+        schema: Mapping from field name to expected Python type.
+
+    Returns:
+        Float in [0.0, 1.0].
+    """
+    if not records:
+        return 1.0
+    conforming = 0
+    for rec in records:
+        ok = True
+        for field, expected_type in schema.items():
+            value = rec.get(field)
+            if value is None or not isinstance(value, expected_type):
+                ok = False
+                break
+        if ok:
+            conforming += 1
+    return round(conforming / len(records), 4)
+
+
+def find_duplicate_rows(
+    records: list[dict[str, Any]],
+    key_fields: list[str],
+) -> list[dict[str, Any]]:
+    """Return records whose composite key (from *key_fields*) appears more than once.
+
+    Args:
+        records: List of record dicts.
+        key_fields: Fields whose combined values form the deduplication key.
+
+    Returns:
+        List of duplicate records (subsequent occurrences beyond the first).
+    """
+    seen: set[tuple[Any, ...]] = set()
+    duplicates: list[dict[str, Any]] = []
+    for rec in records:
+        key = tuple(rec.get(f) for f in key_fields)
+        if key in seen:
+            duplicates.append(rec)
+        else:
+            seen.add(key)
+    return duplicates
+
+
+def field_entropy(records: list[dict[str, Any]], field: str) -> float:
+    """Return the Shannon entropy (base-2, bits) of *field* values across records.
+
+    Args:
+        records: List of record dicts.
+        field: Field name whose value distribution is measured.
+
+    Returns:
+        Entropy in bits (float ≥ 0.0); 0.0 for an empty input or a constant
+        distribution.
+    """
+    if not records:
+        return 0.0
+    from collections import Counter
+
+    counts = Counter(rec.get(field) for rec in records)
+    total = sum(counts.values())
+    if total == 0:
+        return 0.0
+    import math as _math
+
+    entropy = 0.0
+    for count in counts.values():
+        if count == 0:
+            continue
+        p = count / total
+        entropy -= p * _math.log2(p)
+    return round(entropy, 4)
