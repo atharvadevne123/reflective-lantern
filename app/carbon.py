@@ -179,13 +179,18 @@ __all__ = [
     "TREES_PER_TONNE_CO2_PER_YEAR",
     "annual_carbon_budget",
     "annual_carbon_report",
+    "annual_carbon_trajectory",
     "carbon_budget_remaining",
+    "carbon_budget_status",
     "carbon_intensity_by_hour",
+    "carbon_intensity_category",
     "carbon_intensity_label",
+    "carbon_offset_cost",
     "carbon_per_sqm",
     "carbon_reduction_pct",
     "carbon_saved_kwh",
     "carbon_savings",
+    "carbon_savings_vs_baseline",
     "co2_kg_to_tonnes",
     "compare_regions",
     "daily_carbon_estimate",
@@ -195,6 +200,7 @@ __all__ = [
     "monthly_co2_breakdown",
     "tree_offset_days",
     "trees_equivalent",
+    "weighted_carbon_factor",
 ]
 
 
