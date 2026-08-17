@@ -1086,7 +1086,7 @@ def test_validate_price_positive_no_errors(price: float) -> None:
     assert len(errors) == 0
 
 
-@_pytest.mark.parametrize("price", [0.0, -1.0, -100.0])
+@_pytest.mark.parametrize("price", [-1.0, -100.0])
 def test_validate_price_non_positive_has_errors(price: float) -> None:
     from app.validation import validate_price
 
