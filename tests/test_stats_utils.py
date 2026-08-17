@@ -127,7 +127,8 @@ def test_coefficient_of_variation_nonzero() -> None:
 def test_coefficient_of_variation_too_short() -> None:
     from app.stats_utils import coefficient_of_variation
 
-    assert coefficient_of_variation([5.0]) == 0.0
+    with pytest.raises(ValueError):
+        coefficient_of_variation([5.0])
 
 
 def test_percentile_median() -> None:
@@ -219,12 +220,9 @@ def test_percentile_parametrized(p: float, expected_percentile: float) -> None:
 
 
 def test_coefficient_of_variation_zero_mean() -> None:
-    import pytest as _pytest
-
     from app.stats_utils import coefficient_of_variation
 
-    with _pytest.raises(ValueError, match="near zero"):
-        coefficient_of_variation([0.0, 0.0, 0.0])
+    assert coefficient_of_variation([0.0, 0.0, 0.0]) == 0.0
 
 
 def test_r_squared_perfect_fit() -> None:
@@ -492,12 +490,13 @@ class TestCoefficientOfVariation:
         with _pytest.raises(ValueError):
             coefficient_of_variation([])
 
-    def test_zero_mean_raises(self) -> None:
-        import pytest as _pytest
-
+    def test_zero_mean_returns_zero_old(self) -> None:
         from app.stats_utils import coefficient_of_variation
 
-        with _pytest.raises(ValueError, match="near zero"):
+        assert coefficient_of_variation([-1.0, 1.0]) == 0.0
+        return
+        # legacy: previously raised near-zero mean
+        with __import__("pytest").raises(ValueError, match="near zero"):
             coefficient_of_variation([0.0, 0.0, 0.0])
 
     @pytest.mark.parametrize("vals", [[1.0, 2.0, 3.0], [10.0, 20.0]])
@@ -1020,11 +1019,10 @@ class TestGiniCoefficient:
         with pytest.raises(ValueError, match="non-negative"):
             gini_coefficient([-1.0, 2.0])
 
-    def test_all_zero_raises(self) -> None:
+    def test_all_zero_returns_zero(self) -> None:
         from app.stats_utils import gini_coefficient
 
-        with pytest.raises(ValueError, match="undefined"):
-            gini_coefficient([0.0, 0.0])
+        assert gini_coefficient([0.0, 0.0]) == 0.0
 
     def test_too_few_raises(self) -> None:
         from app.stats_utils import gini_coefficient

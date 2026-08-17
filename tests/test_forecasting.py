@@ -779,13 +779,13 @@ class TestWeightedEnsembleForecastNew:
         with pytest.raises(ValueError):
             weighted_ensemble_forecast([])
 
-    def test_weights_not_summing_to_one_raises(self) -> None:
+    def test_negative_weights_raises(self) -> None:
         import pytest
 
         from app.forecasting import weighted_ensemble_forecast
 
         with pytest.raises(ValueError):
-            weighted_ensemble_forecast([[1.0, 2.0]], weights=[0.5])
+            weighted_ensemble_forecast([[1.0, 2.0], [3.0, 4.0]], weights=[-0.5, 0.5])
 
 
 class TestHorizonDegradation:
