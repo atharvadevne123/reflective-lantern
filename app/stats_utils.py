@@ -125,8 +125,10 @@ def percentile(values: list[float], p: float) -> float:
 
 __all__ = [
     "coefficient_of_variation",
+    "compute_correlation",
     "correlation_coefficient",
     "geometric_mean",
+    "gini_coefficient",
     "harmonic_mean",
     "interquartile_range",
     "mape",
