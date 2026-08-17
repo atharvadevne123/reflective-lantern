@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import itertools
 import logging
+import statistics
 
 import numpy as np
 
@@ -271,7 +272,6 @@ def flag_z_score_outliers(
         raise ValueError("values must not be empty")
     if threshold <= 0:
         raise ValueError(f"threshold must be positive, got {threshold}")
-    import statistics
 
     mean = statistics.mean(values)
     std = statistics.pstdev(values)
