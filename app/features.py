@@ -422,7 +422,7 @@ def feature_names_for_bundle(bundle: dict) -> list[str]:
     try:
         return list(model.feature_names_in_)
     except AttributeError:
-        pass
+        pass  # fall through to pipeline alternative
     try:
         return list(model[:-1].get_feature_names_out())
     except Exception:

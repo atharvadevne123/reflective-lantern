@@ -388,7 +388,7 @@ def pipeline_feature_count(pipeline: Any) -> int:
     try:
         return int(pipeline.n_features_in_)
     except AttributeError:
-        pass
+        pass  # fall through to alternative lookup
     try:
         return len(pipeline[:-1].get_feature_names_out())
     except Exception:
