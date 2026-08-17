@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import statistics
 import time
 from datetime import datetime
 from typing import Any
@@ -212,8 +213,6 @@ def get_anomaly_stats(db: Session) -> dict[str, Any]:
         Dict with total_anomalies, critical_count, warning_count, anomaly_rate,
         and mean_anomaly_score.
     """
-    import statistics
-
     all_anomalies = db.query(AnomalyLog).all()
     total = len(all_anomalies)
     if total == 0:
@@ -376,42 +375,47 @@ def zscore_alert(values: list[float], threshold: float = 3.0) -> list[int]:
 def drift_severity(p_value: float, alpha: float = 0.05) -> str:
     """Classify drift severity based on a statistical test p-value.
 
+    Buckets: p >= 0.05 → "low", p >= 0.02 → "medium", p >= 0.005 → "high",
+    otherwise "critical".
+
     Args:
         p_value: p-value from a drift test (KS, chi-squared, etc.).
-        alpha: Significance level. Default 0.05.
+        alpha: Legacy significance level, retained for backwards compatibility.
 
     Returns:
-        One of "none", "moderate", or "severe".
+        One of "low", "medium", "high", or "critical".
     """
-    if p_value >= alpha:
-        return "none"
-    if p_value >= alpha / 5:
-        return "moderate"
-    return "severe"
+    del alpha  # retained for API compatibility; thresholds are absolute
+    if p_value >= 0.05:
+        return "low"
+    if p_value >= 0.02:
+        return "medium"
+    if p_value >= 0.005:
+        return "high"
+    return "critical"
 
 
 def rolling_anomaly_rate(flags: list[bool], window: int = 10) -> list[float]:
-    """Compute rolling anomaly rate over a boolean flag series.
+    """Compute rolling anomaly rate using strict valid-window convolution.
 
     Args:
         flags: Boolean anomaly indicators.
         window: Rolling window size. Default 10.
 
     Returns:
-        List of anomaly rates, one per window position (length = len(flags)).
+        List of anomaly rates of length ``max(0, len(flags) - window + 1)``.
 
     Raises:
         ValueError: If window < 1.
     """
     if window < 1:
         raise ValueError("window must be at least 1")
-    if not flags:
+    if not flags or len(flags) < window:
         return []
-    result = []
-    for i in range(len(flags)):
-        start = max(0, i - window + 1)
-        chunk = flags[start : i + 1]
-        result.append(round(sum(chunk) / len(chunk), 4))
+    result: list[float] = []
+    for i in range(len(flags) - window + 1):
+        chunk = flags[i : i + window]
+        result.append(round(sum(chunk) / window, 4))
     return result
 
 
@@ -437,12 +441,13 @@ def p_value_to_confidence(p_value: float) -> float:
     confidence = (1 - p_value) * 100, clamped to [0, 100].
 
     Args:
-        p_value: P-value in [0, 1].
+        p_value: P-value (clamped to [0, 1] before conversion).
 
     Returns:
-        Confidence as a percentage in [0, 100].
+        Confidence as a percentage in [0.0, 100.0].
     """
-    return round(max(0.0, min(100.0, (1.0 - p_value) * 100.0)), 4)
+    clamped = max(0.0, min(1.0, p_value))
+    return round((1.0 - clamped) * 100.0, 4)
 
 
 def alert_suppression_window(
@@ -537,14 +542,22 @@ def error_budget_remaining(
 def degradation_severity(error_rate: float) -> str:
     """Classify a service error rate into a degradation severity level.
 
+    Buckets:
+        * error_rate < 0.01 → "healthy"
+        * 0.01 <= error_rate < 0.05 → "low"
+        * 0.05 <= error_rate < 0.20 → "medium"
+        * error_rate >= 0.20 → "high"
+
     Args:
         error_rate: Fraction of requests that errored in [0, 1].
 
     Returns:
-        'healthy' (< 1%), 'degraded' (1-5%), 'critical' (> 5%).
+        Severity label ('healthy', 'low', 'medium', or 'high').
     """
     if error_rate < 0.01:
         return "healthy"
-    if error_rate <= 0.05:
-        return "degraded"
-    return "critical"
+    if error_rate < 0.05:
+        return "low"
+    if error_rate < 0.20:
+        return "medium"
+    return "high"
