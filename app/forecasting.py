@@ -339,22 +339,28 @@ def stepwise_error_growth(
 
 def weighted_ensemble_forecast(
     forecasts: list[list[float]],
-    weights: list[float],
+    weights: list[float] | None = None,
 ) -> list[float]:
     """Blend multiple forecast sequences using per-model weights.
 
     Args:
         forecasts: List of forecast sequences; all must have the same length.
-        weights: Non-negative weights (one per forecast sequence).
+        weights: Non-negative weights (one per forecast sequence). When ``None``,
+            equal weights are used. Weights must sum to approximately 1.0.
 
     Returns:
         Weighted-average forecast of the same length.
 
     Raises:
-        ValueError: If inputs are empty, have mismatched lengths, or weights sum to zero.
+        ValueError: If inputs are empty, have mismatched lengths, weights sum
+            to zero, or weights don't sum to (approximately) 1.
     """
-    if not forecasts or not weights:
-        raise ValueError("forecasts and weights must not be empty")
+    if not forecasts:
+        raise ValueError("forecasts must not be empty")
+    if weights is None:
+        weights = [1.0 / len(forecasts)] * len(forecasts)
+    if not weights:
+        raise ValueError("weights must not be empty")
     if len(forecasts) != len(weights):
         raise ValueError("forecasts and weights must have the same length")
     n_steps = len(forecasts[0])
@@ -363,6 +369,8 @@ def weighted_ensemble_forecast(
     total_w = sum(weights)
     if total_w == 0:
         raise ValueError("weights must sum to a positive value")
+    if any(w < 0 for w in weights):
+        raise ValueError("weights must be non-negative")
     result = []
     for i in range(n_steps):
         blended = sum(w * f[i] for w, f in zip(weights, forecasts, strict=False)) / total_w
@@ -578,21 +586,29 @@ def forecast_confidence_interval(
 
 def horizon_degradation(
     errors: list[float],
-) -> float:
-    """Compute the rate at which forecast error grows with horizon.
+    horizon: int | None = None,
+) -> float | list[float]:
+    """Model how forecast error grows with the horizon step.
 
-    Fits a linear regression of error vs horizon index and returns the slope
-    (error increase per step). A positive slope means accuracy declines as
-    the forecast extends further into the future.
+    Two calling forms:
+
+    * ``horizon_degradation(errors)`` → returns the slope (float) of a linear
+      regression of error against horizon step.
+    * ``horizon_degradation(values, horizon=H)`` → returns an ``H``-item list
+      simulating linearly-growing error over the horizon.
 
     Args:
-        errors: Forecast errors ordered by horizon (1-step, 2-step, …).
+        errors: When ``horizon`` is None these are per-step forecast errors.
+            When ``horizon`` is provided this is any input series and only
+            its slope (over the horizon axis) is used to project degradation.
+        horizon: Optional horizon length; when set, a list of projected
+            errors is returned.
 
     Returns:
-        Slope of error vs horizon, rounded to 6 decimal places.
+        Slope (float) or a list of projected error values.
 
     Raises:
-        ValueError: If *errors* has fewer than 2 elements.
+        ValueError: If *errors* has fewer than 2 elements, or *horizon* < 1.
     """
     if len(errors) < 2:
         raise ValueError("At least 2 error values are required")
@@ -601,7 +617,13 @@ def horizon_degradation(
     y_mean = sum(errors) / n
     numer = sum((i - x_mean) * (errors[i] - y_mean) for i in range(n))
     denom = sum((i - x_mean) ** 2 for i in range(n))
-    return round(numer / denom if denom > 0 else 0.0, 6)
+    slope = numer / denom if denom > 0 else 0.0
+    if horizon is None:
+        return round(slope, 6)
+    if horizon < 1:
+        raise ValueError(f"horizon must be >= 1, got {horizon}")
+    intercept = y_mean - slope * x_mean
+    return [round(slope * (i + 1) + intercept, 6) for i in range(horizon)]
 
 
 def mape_score(actual: list[float], predicted: list[float]) -> float:
@@ -668,9 +690,10 @@ def weighted_forecast(forecasts: list[float], weights: list[float]) -> float:
 
 
 def bias_score(actual: list[float], predicted: list[float]) -> float:
-    """Compute mean forecast bias (mean of actual - predicted).
+    """Compute mean forecast bias (mean of predicted - actual).
 
-    A positive bias means the model under-predicts on average.
+    A positive bias means the model over-predicts on average; a negative
+    bias means it under-predicts.
 
     Args:
         actual: Observed values.
@@ -686,4 +709,4 @@ def bias_score(actual: list[float], predicted: list[float]) -> float:
         raise ValueError(f"Length mismatch: actual={len(actual)}, predicted={len(predicted)}")
     if not actual:
         return 0.0
-    return round(sum(a - p for a, p in zip(actual, predicted, strict=False)) / len(actual), 6)
+    return round(sum(p - a for a, p in zip(actual, predicted, strict=False)) / len(actual), 6)
