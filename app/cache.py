@@ -254,3 +254,83 @@ def batch_set(cache: TTLCache, items: dict[str, object]) -> None:
     """
     for key, value in items.items():
         cache.set(key, value)
+
+
+def peek(cache: TTLCache, key: str) -> object | None:
+    """Return the cached value for *key* WITHOUT counting a hit/miss.
+
+    Args:
+        cache: The :class:`TTLCache` instance to inspect.
+        key: Cache key.
+
+    Returns:
+        The stored value, or ``None`` when the key is absent or expired.
+    """
+    with cache._lock:
+        entry = cache._store.get(key)
+    if entry is None:
+        return None
+    value, expires_at = entry
+    if time.monotonic() > expires_at:
+        return None
+    return value
+
+
+def batch_delete(cache: TTLCache, keys: list[str]) -> int:
+    """Remove several *keys* from *cache* in one call.
+
+    Args:
+        cache: The :class:`TTLCache` instance to modify.
+        keys: List of cache keys to invalidate.
+
+    Returns:
+        Number of keys that were actually present and removed.
+    """
+    removed = 0
+    for key in keys:
+        with cache._lock:
+            if key in cache._store:
+                del cache._store[key]
+                removed += 1
+    return removed
+
+
+def cache_key_count(cache: TTLCache) -> int:
+    """Return the current number of entries in *cache* (including expired).
+
+    Args:
+        cache: A :class:`TTLCache` instance.
+
+    Returns:
+        Non-negative integer count of stored entries.
+    """
+    return cache.size
+
+
+def cache_fill_rate(cache: TTLCache) -> float:
+    """Return the fraction of the cache's capacity currently in use.
+
+    Args:
+        cache: A :class:`TTLCache` instance.
+
+    Returns:
+        Fraction in [0, 1].
+    """
+    if cache._max <= 0:
+        return 0.0
+    return round(cache.size / cache._max, 6)
+
+
+def get_or_default(cache: TTLCache, key: str, default: object | None = None) -> object | None:
+    """Return the cached value for *key*, or *default* when absent/expired.
+
+    Args:
+        cache: The :class:`TTLCache` instance to query.
+        key: Cache key.
+        default: Value returned when the key is missing.
+
+    Returns:
+        Cached value or *default*.
+    """
+    value = cache.get(key)
+    return value if value is not None else default
