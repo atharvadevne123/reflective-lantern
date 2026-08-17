@@ -115,13 +115,18 @@ prediction_cache = TTLCache(ttl_seconds=30, max_size=500)
 
 __all__ = [
     "TTLCache",
+    "batch_delete",
     "batch_get",
     "batch_set",
     "build_cache_key",
+    "cache_fill_rate",
     "cache_hit_rate",
+    "cache_key_count",
     "cache_key_from_dict",
     "cache_stats_summary",
     "evict_expired_keys",
+    "get_or_default",
+    "peek",
     "prediction_cache",
     "warm_cache",
 ]
