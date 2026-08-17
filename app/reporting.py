@@ -903,3 +903,66 @@ def savings_summary(
         "saved_cost": round(saved_kwh * unit_cost, 4),
         "reduction_pct": round(reduction_pct, 4),
     }
+
+
+def peak_to_offpeak_ratio(readings: list[float], peak_hours: tuple[int, int] = (9, 17)) -> float:
+    """Return the ratio of average peak-hour to off-peak consumption.
+
+    Peak hours are 09:00-17:00 by default. Assumes *readings* are hourly and
+    begin at hour 0 (midnight).
+
+    Args:
+        readings: Hourly kWh readings; length ≥ 24 recommended.
+        peak_hours: (start_hour, end_hour) inclusive range for peak hours.
+
+    Returns:
+        Ratio; 0.0 when off-peak average is zero or readings is empty.
+
+    Raises:
+        ValueError: If peak_hours is not a valid tuple in [0, 23].
+    """
+    start, end = peak_hours
+    if not (0 <= start <= 23 and 0 <= end <= 23 and start <= end):
+        raise ValueError(f"peak_hours must be an ordered pair in [0, 23], got {peak_hours}")
+    if not readings:
+        return 0.0
+    peaks: list[float] = []
+    off_peaks: list[float] = []
+    for i, reading in enumerate(readings):
+        hour = i % 24
+        if start <= hour <= end:
+            peaks.append(reading)
+        else:
+            off_peaks.append(reading)
+    if not peaks or not off_peaks:
+        return 0.0
+    off_avg = sum(off_peaks) / len(off_peaks)
+    if off_avg == 0:
+        return 0.0
+    peak_avg = sum(peaks) / len(peaks)
+    return round(peak_avg / off_avg, 4)
+
+
+def format_kwh(value: float) -> str:
+    """Format a kWh value with a compact unit suffix.
+
+    - Values < 1 kWh render in Wh.
+    - Values >= 1000 kWh render in MWh.
+    - Otherwise the raw kWh is used.
+
+    Args:
+        value: Energy amount in kWh (must be non-negative).
+
+    Returns:
+        Human-readable string (e.g. ``"1.23 MWh"``).
+
+    Raises:
+        ValueError: If ``value`` is negative.
+    """
+    if value < 0:
+        raise ValueError(f"value must be non-negative, got {value}")
+    if value < 1.0:
+        return f"{value * 1000:.1f} Wh"
+    if value >= 1000.0:
+        return f"{value / 1000.0:.2f} MWh"
+    return f"{value:.2f} kWh"
