@@ -1426,3 +1426,59 @@ def test_exponential_moving_average_length(values: list, alpha: float) -> None:
 
     result = exponential_moving_average(values, alpha=alpha)
     assert len(result) == len(values)
+
+
+class TestSeriesAutocorrelation:
+    def test_perfectly_correlated_series(self) -> None:
+        from app.time_series import series_autocorrelation
+
+        values = [1.0, 2.0, 3.0, 4.0, 5.0]
+        result = series_autocorrelation(values, lag=1)
+        assert result > 0.9
+
+    def test_too_short_returns_zero(self) -> None:
+        from app.time_series import series_autocorrelation
+
+        assert series_autocorrelation([1.0], lag=1) == 0.0
+
+    def test_invalid_lag_raises(self) -> None:
+        from app.time_series import series_autocorrelation
+
+        with pytest.raises(ValueError):
+            series_autocorrelation([1.0, 2.0], lag=0)
+
+    def test_result_in_unit_interval(self) -> None:
+        import math
+
+        from app.time_series import series_autocorrelation
+
+        values = [float(i) + (i % 3) for i in range(20)]
+        result = series_autocorrelation(values, lag=1)
+        assert not math.isnan(result)
+        assert -1.0 <= result <= 1.0
+
+
+class TestSeriesEntropy:
+    def test_constant_series_zero_entropy(self) -> None:
+        from app.time_series import series_entropy
+
+        assert series_entropy([5.0] * 10) == 0.0
+
+    def test_empty_returns_zero(self) -> None:
+        from app.time_series import series_entropy
+
+        assert series_entropy([]) == 0.0
+
+    def test_high_entropy_uniform_distribution(self) -> None:
+        from app.time_series import series_entropy
+
+        values = list(range(1, 101))
+        result = series_entropy(values, bins=10)
+        assert result > 2.0
+
+    @pytest.mark.parametrize("bins", [5, 10, 20])
+    def test_non_negative_for_various_bins(self, bins: int) -> None:
+        from app.time_series import series_entropy
+
+        values = [float(i) for i in range(50)]
+        assert series_entropy(values, bins=bins) >= 0.0
