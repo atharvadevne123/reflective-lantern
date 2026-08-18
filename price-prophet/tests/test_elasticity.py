@@ -75,3 +75,52 @@ def test_apply_elasticity_finite_result(
     result = apply_elasticity(base_demand, base_price, new_price, elasticity)
     assert result >= 0.0
     assert result != float("inf")
+
+
+class TestRevenueAtPrice:
+    def test_base_price_equals_base_revenue(self) -> None:
+        from app.pricing.elasticity import revenue_at_price
+
+        result = revenue_at_price(10.0, 100.0, 10.0, -1.0)
+        assert result == pytest.approx(1000.0, rel=1e-3)
+
+    def test_zero_price_returns_zero(self) -> None:
+        from app.pricing.elasticity import revenue_at_price
+
+        assert revenue_at_price(0.0, 100.0, 10.0, -1.0) == 0.0
+
+    def test_higher_price_lower_demand_elastic(self) -> None:
+        from app.pricing.elasticity import revenue_at_price
+
+        rev_base = revenue_at_price(10.0, 100.0, 10.0, -2.0)
+        rev_high = revenue_at_price(15.0, 100.0, 10.0, -2.0)
+        assert rev_high < rev_base
+
+    def test_returns_float(self) -> None:
+        from app.pricing.elasticity import revenue_at_price
+
+        result = revenue_at_price(10.0, 100.0, 10.0, -1.0)
+        assert isinstance(result, float)
+
+
+class TestOptimalPriceDirection:
+    def test_elastic_demand_lower(self) -> None:
+        from app.pricing.elasticity import optimal_price_direction
+
+        assert optimal_price_direction(10.0, -2.0) == "lower"
+
+    def test_inelastic_demand_raise(self) -> None:
+        from app.pricing.elasticity import optimal_price_direction
+
+        assert optimal_price_direction(10.0, -0.5) == "raise"
+
+    def test_unit_elastic_hold(self) -> None:
+        from app.pricing.elasticity import optimal_price_direction
+
+        assert optimal_price_direction(10.0, -1.0) == "hold"
+
+    @pytest.mark.parametrize("e,expected", [(-3.0, "lower"), (-0.2, "raise"), (-1.0, "hold")])
+    def test_parametrized(self, e: float, expected: str) -> None:
+        from app.pricing.elasticity import optimal_price_direction
+
+        assert optimal_price_direction(5.0, e) == expected
