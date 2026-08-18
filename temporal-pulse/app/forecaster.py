@@ -110,3 +110,57 @@ def multi_channel_forecast(
             logger.error("Failed to forecast channel '%s': %s", channel, e)
             results[channel] = {"error": str(e)}
     return results
+
+
+def forecast_accuracy_summary(
+    actual: list[float],
+    predicted: list[float],
+) -> dict[str, float]:
+    """Compute MAE, RMSE, and MAPE for paired actual/predicted sequences.
+
+    Args:
+        actual: Ground-truth values.
+        predicted: Model-predicted values (must match length of *actual*).
+
+    Returns:
+        Dict with 'mae', 'rmse', and 'mape'. MAPE is capped at 100% to
+        avoid infinity when actual values are zero.
+
+    Raises:
+        ValueError: If the lists have different lengths or are empty.
+    """
+    if len(actual) != len(predicted):
+        raise ValueError("actual and predicted must have the same length")
+    if not actual:
+        raise ValueError("sequences must not be empty")
+    arr_a = np.array(actual, dtype=float)
+    arr_p = np.array(predicted, dtype=float)
+    mae = float(np.mean(np.abs(arr_a - arr_p)))
+    rmse = float(np.sqrt(np.mean((arr_a - arr_p) ** 2)))
+    with np.errstate(divide="ignore", invalid="ignore"):
+        ape = np.where(arr_a != 0, np.abs((arr_a - arr_p) / arr_a) * 100.0, 100.0)
+    mape = float(np.mean(np.clip(ape, 0.0, 100.0)))
+    return {"mae": round(mae, 4), "rmse": round(rmse, 4), "mape": round(mape, 4)}
+
+
+def interval_coverage(
+    actual: list[float],
+    lower: list[float],
+    upper: list[float],
+) -> float:
+    """Compute the fraction of actual values within the forecast interval.
+
+    Args:
+        actual: Ground-truth values.
+        lower: Lower bound of the forecast interval.
+        upper: Upper bound of the forecast interval.
+
+    Returns:
+        Coverage rate in [0, 1].
+    """
+    if not actual:
+        return 0.0
+    covered = sum(
+        1 for a, lo, hi in zip(actual, lower, upper) if lo <= a <= hi
+    )
+    return round(covered / len(actual), 4)
