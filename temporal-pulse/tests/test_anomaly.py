@@ -205,3 +205,49 @@ def test_normalise_scores_range(scores: list[float], expected_min: float, expect
     if result:
         assert min(result) == pytest.approx(expected_min, abs=1e-6)
         assert max(result) == pytest.approx(expected_max, abs=1e-6)
+
+
+class TestAnomalyBurstCount:
+    def test_single_burst_detected(self) -> None:
+        from app.anomaly import anomaly_burst_count
+
+        scores = [0.1, 0.9, 0.9, 0.9, 0.1]
+        assert anomaly_burst_count(scores, threshold=0.5, min_burst=3) == 1
+
+    def test_burst_too_short_not_counted(self) -> None:
+        from app.anomaly import anomaly_burst_count
+
+        scores = [0.9, 0.9, 0.1, 0.1]
+        assert anomaly_burst_count(scores, threshold=0.5, min_burst=3) == 0
+
+    def test_empty_series(self) -> None:
+        from app.anomaly import anomaly_burst_count
+
+        assert anomaly_burst_count([], threshold=0.5) == 0
+
+    @pytest.mark.parametrize("min_burst,expected", [(1, 1), (2, 1), (4, 0)])
+    def test_min_burst_boundary(self, min_burst: int, expected: int) -> None:
+        from app.anomaly import anomaly_burst_count
+
+        scores = [0.1, 0.9, 0.9, 0.9, 0.1]
+        assert anomaly_burst_count(scores, threshold=0.5, min_burst=min_burst) == expected
+
+
+class TestScorePercentileThreshold:
+    def test_empty_returns_zero(self) -> None:
+        from app.anomaly import score_percentile_threshold
+
+        assert score_percentile_threshold([]) == 0.0
+
+    def test_95th_percentile_of_range(self) -> None:
+        from app.anomaly import score_percentile_threshold
+
+        scores = list(range(1, 101))
+        result = score_percentile_threshold(scores, percentile=95.0)
+        assert result == pytest.approx(95.05, abs=0.5)
+
+    def test_100th_equals_max(self) -> None:
+        from app.anomaly import score_percentile_threshold
+
+        scores = [1.0, 2.0, 3.0, 10.0]
+        assert score_percentile_threshold(scores, percentile=100.0) == pytest.approx(10.0)
