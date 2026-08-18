@@ -754,3 +754,56 @@ def test_encode_cyclical_unit_circle(value: float, max_value: float) -> None:
 
     sin_val, cos_val = encode_cyclical(value, max_value)
     assert sin_val**2 + cos_val**2 == pytest.approx(1.0, abs=1e-6)
+
+
+class TestRankFeatures:
+    def test_sorted_descending(self) -> None:
+        from app.features import rank_features
+
+        imp = {"a": 0.1, "b": 0.5, "c": 0.3}
+        result = rank_features(imp)
+        scores = [s for _, s in result]
+        assert scores == sorted(scores, reverse=True)
+
+    def test_empty_dict_returns_empty(self) -> None:
+        from app.features import rank_features
+
+        assert rank_features({}) == []
+
+    def test_all_names_present(self) -> None:
+        from app.features import rank_features
+
+        imp = {"x": 1.0, "y": 2.0}
+        names = [n for n, _ in rank_features(imp)]
+        assert set(names) == {"x", "y"}
+
+
+class TestTopKFeatures:
+    def test_returns_k_names(self) -> None:
+        from app.features import top_k_features
+
+        imp = {"a": 1.0, "b": 2.0, "c": 0.5, "d": 0.1}
+        result = top_k_features(imp, k=2)
+        assert len(result) == 2
+
+    def test_highest_first(self) -> None:
+        from app.features import top_k_features
+
+        imp = {"a": 0.1, "b": 0.9, "c": 0.5}
+        result = top_k_features(imp, k=1)
+        assert result == ["b"]
+
+    def test_k_larger_than_features(self) -> None:
+        from app.features import top_k_features
+
+        imp = {"a": 1.0, "b": 2.0}
+        result = top_k_features(imp, k=10)
+        assert len(result) == 2
+
+    @pytest.mark.parametrize("k", [1, 2, 3])
+    def test_returns_list_of_strings(self, k: int) -> None:
+        from app.features import top_k_features
+
+        imp = {"a": 1.0, "b": 2.0, "c": 3.0}
+        result = top_k_features(imp, k=k)
+        assert all(isinstance(n, str) for n in result)
