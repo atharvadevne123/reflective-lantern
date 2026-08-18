@@ -112,9 +112,57 @@ def psi_report(
     return results
 
 
+def psi_series_trend(psi_values: list[float]) -> dict[str, object]:
+    """Analyse a time-ordered sequence of PSI values for drift escalation.
+
+    Args:
+        psi_values: Ordered PSI measurements over time.
+
+    Returns:
+        Dict with 'mean_psi', 'max_psi', 'escalating' (bool — True when the
+        last value exceeds the mean by more than PSI_STABLE_THRESHOLD),
+        and 'drift_level' for the latest measurement.
+    """
+    if not psi_values:
+        return {"mean_psi": 0.0, "max_psi": 0.0, "escalating": False, "drift_level": "stable"}
+    mean_psi = sum(psi_values) / len(psi_values)
+    max_psi = max(psi_values)
+    latest = psi_values[-1]
+    escalating = latest > mean_psi + PSI_STABLE_THRESHOLD
+    return {
+        "mean_psi": round(mean_psi, 6),
+        "max_psi": round(max_psi, 6),
+        "escalating": escalating,
+        "drift_level": _drift_level(latest),
+    }
+
+
+def psi_feature_rank(
+    feature_distributions: dict[str, tuple[list[float], list[float]]],
+    bins: int = 10,
+) -> list[dict[str, object]]:
+    """Rank features by PSI value descending to prioritise retraining focus.
+
+    Args:
+        feature_distributions: Mapping of feature name to (reference, current) tuples.
+        bins: Histogram bins passed to :func:`compute_psi`.
+
+    Returns:
+        List of dicts with 'feature', 'psi', and 'drift_level', sorted by PSI descending.
+    """
+    ranked = []
+    for feature, (ref, cur) in feature_distributions.items():
+        result = compute_psi(ref, cur, bins=bins)
+        ranked.append({"feature": feature, "psi": result["psi"], "drift_level": result["drift_level"]})
+    ranked.sort(key=lambda x: float(x["psi"]), reverse=True)
+    return ranked
+
+
 __all__ = [
     "PSI_MODERATE_THRESHOLD",
     "PSI_STABLE_THRESHOLD",
     "compute_psi",
     "psi_report",
+    "psi_series_trend",
+    "psi_feature_rank",
 ]
