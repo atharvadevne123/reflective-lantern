@@ -401,3 +401,56 @@ class TestItemCountFlag:
 
         assert item_count_flag(3, bulk_threshold=5) is False
         assert item_count_flag(5, bulk_threshold=5) is True
+
+
+class TestCrossFieldPenaltyScore:
+    def test_no_warnings_zero_penalty(self) -> None:
+        from app.validation import cross_field_penalty_score
+
+        assert cross_field_penalty_score([]) == 0.0
+
+    def test_one_warning_is_01(self) -> None:
+        from app.validation import cross_field_penalty_score
+
+        assert cross_field_penalty_score(["w1"]) == pytest.approx(0.1)
+
+    def test_capped_at_one(self) -> None:
+        from app.validation import cross_field_penalty_score
+
+        result = cross_field_penalty_score(["w"] * 20)
+        assert result == 1.0
+
+    @pytest.mark.parametrize("n,expected", [(0, 0.0), (1, 0.1), (5, 0.5)])
+    def test_parametrized_counts(self, n: int, expected: float) -> None:
+        from app.validation import cross_field_penalty_score
+
+        assert cross_field_penalty_score(["x"] * n) == pytest.approx(expected)
+
+
+class TestNormalisePayload:
+    def test_fills_missing_key(self) -> None:
+        from app.validation import normalise_payload
+
+        result = normalise_payload({}, defaults={"item_price": 10.0})
+        assert result["item_price"] == 10.0
+
+    def test_payload_overrides_default(self) -> None:
+        from app.validation import normalise_payload
+
+        result = normalise_payload({"item_price": 99.0}, defaults={"item_price": 10.0})
+        assert result["item_price"] == 99.0
+
+    def test_none_defaults_returns_copy(self) -> None:
+        from app.validation import normalise_payload
+
+        payload = {"a": 1}
+        result = normalise_payload(payload)
+        assert result == {"a": 1}
+        assert result is not payload
+
+    def test_extra_payload_keys_preserved(self) -> None:
+        from app.validation import normalise_payload
+
+        result = normalise_payload({"extra": 42}, defaults={"base": 0})
+        assert result["extra"] == 42
+        assert result["base"] == 0
