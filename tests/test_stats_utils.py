@@ -1257,3 +1257,94 @@ def test_population_variance_non_negative(n: int) -> None:
     values = [float(i) for i in range(n)]
     result = population_variance(values)
     assert result >= 0.0
+
+
+class TestGeometricMean:
+    def test_simple_values(self) -> None:
+        from app.stats_utils import geometric_mean
+
+        result = geometric_mean([1.0, 4.0, 16.0])
+        assert result == pytest.approx(4.0, rel=1e-4)
+
+    def test_single_value(self) -> None:
+        from app.stats_utils import geometric_mean
+
+        assert geometric_mean([5.0]) == pytest.approx(5.0)
+
+    def test_empty_raises(self) -> None:
+        from app.stats_utils import geometric_mean
+
+        with pytest.raises(ValueError):
+            geometric_mean([])
+
+    def test_non_positive_raises(self) -> None:
+        from app.stats_utils import geometric_mean
+
+        with pytest.raises(ValueError):
+            geometric_mean([1.0, -2.0, 3.0])
+
+    @pytest.mark.parametrize("n", [2, 5, 10])
+    def test_uniform_values_equal_value(self, n: int) -> None:
+        from app.stats_utils import geometric_mean
+
+        result = geometric_mean([3.0] * n)
+        assert result == pytest.approx(3.0, rel=1e-6)
+
+
+class TestHarmonicMean:
+    def test_simple_values(self) -> None:
+        from app.stats_utils import harmonic_mean
+
+        result = harmonic_mean([1.0, 2.0, 4.0])
+        assert result == pytest.approx(12.0 / 7.0, rel=1e-4)
+
+    def test_single_value(self) -> None:
+        from app.stats_utils import harmonic_mean
+
+        assert harmonic_mean([7.0]) == pytest.approx(7.0)
+
+    def test_empty_raises(self) -> None:
+        from app.stats_utils import harmonic_mean
+
+        with pytest.raises(ValueError):
+            harmonic_mean([])
+
+    def test_zero_raises(self) -> None:
+        from app.stats_utils import harmonic_mean
+
+        with pytest.raises(ValueError):
+            harmonic_mean([1.0, 0.0, 2.0])
+
+    @pytest.mark.parametrize("n", [3, 6, 12])
+    def test_uniform_equals_value(self, n: int) -> None:
+        from app.stats_utils import harmonic_mean
+
+        result = harmonic_mean([4.0] * n)
+        assert result == pytest.approx(4.0, rel=1e-6)
+
+
+class TestTrimmedMean:
+    def test_symmetric_trim(self) -> None:
+        from app.stats_utils import trimmed_mean
+
+        result = trimmed_mean([1.0, 2.0, 3.0, 4.0, 100.0], trim_pct=0.2)
+        assert result == pytest.approx(3.0, rel=0.1)
+
+    def test_no_trim_equals_mean(self) -> None:
+        from app.stats_utils import trimmed_mean
+
+        values = [1.0, 2.0, 3.0, 4.0, 5.0]
+        result = trimmed_mean(values, trim_pct=0.0)
+        assert result == pytest.approx(sum(values) / len(values), rel=1e-6)
+
+    def test_empty_raises(self) -> None:
+        from app.stats_utils import trimmed_mean
+
+        with pytest.raises(ValueError):
+            trimmed_mean([])
+
+    def test_returns_float(self) -> None:
+        from app.stats_utils import trimmed_mean
+
+        result = trimmed_mean([5.0, 10.0, 15.0], trim_pct=0.1)
+        assert isinstance(result, float)
