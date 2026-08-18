@@ -334,3 +334,56 @@ def test_feature_engineer_various_guest_counts(guests_count: int) -> None:
     eng = HotelFeatureEngineer()
     result = eng.transform(_minimal_df(guests_count=guests_count))
     assert not result.isnull().any().any()
+
+
+class TestRevenuePerAvailableRoom:
+    def test_basic_revpar(self) -> None:
+        from app.features import revenue_per_available_room
+
+        assert revenue_per_available_room(1000.0, 10) == pytest.approx(100.0)
+
+    def test_zero_rooms_returns_zero(self) -> None:
+        from app.features import revenue_per_available_room
+
+        assert revenue_per_available_room(500.0, 0) == 0.0
+
+    @pytest.mark.parametrize("rooms,expected", [(1, 100.0), (10, 10.0), (100, 1.0)])
+    def test_revpar_scales_with_rooms(self, rooms: int, expected: float) -> None:
+        from app.features import revenue_per_available_room
+
+        assert revenue_per_available_room(100.0, rooms) == pytest.approx(expected)
+
+
+class TestBookingConversionRate:
+    def test_full_conversion(self) -> None:
+        from app.features import booking_conversion_rate
+
+        assert booking_conversion_rate(10, 10) == pytest.approx(1.0)
+
+    def test_zero_enquiries_returns_zero(self) -> None:
+        from app.features import booking_conversion_rate
+
+        assert booking_conversion_rate(0, 0) == 0.0
+
+    def test_capped_at_one(self) -> None:
+        from app.features import booking_conversion_rate
+
+        assert booking_conversion_rate(5, 10) == pytest.approx(1.0)
+
+    @pytest.mark.parametrize("enquiries,confirmed,expected", [(10, 5, 0.5), (100, 25, 0.25)])
+    def test_partial_conversion(self, enquiries: int, confirmed: int, expected: float) -> None:
+        from app.features import booking_conversion_rate
+
+        assert booking_conversion_rate(enquiries, confirmed) == pytest.approx(expected)
+
+
+class TestAverageDailyRate:
+    def test_basic_adr(self) -> None:
+        from app.features import average_daily_rate
+
+        assert average_daily_rate(1000.0, 10) == pytest.approx(100.0)
+
+    def test_zero_occupied_returns_zero(self) -> None:
+        from app.features import average_daily_rate
+
+        assert average_daily_rate(500.0, 0) == 0.0
