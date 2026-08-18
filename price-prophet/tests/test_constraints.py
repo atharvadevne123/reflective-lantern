@@ -75,3 +75,58 @@ def test_apply_constraints_within_min_max(min_price: float, max_price: float) ->
     c = PricingConstraints(min_price=min_price, max_price=max_price)
     result = apply_constraints(max_price / 2, max_price / 2, c)
     assert min_price <= result <= max_price
+
+
+class TestConstraintHeadroom:
+    def test_room_within_bounds(self) -> None:
+        from app.pricing.constraints import PricingConstraints, constraint_headroom
+
+        c = PricingConstraints(min_price=5.0, max_price=20.0, max_change_pct=50.0)
+        result = constraint_headroom(10.0, c)
+        assert result["room_to_min"] == pytest.approx(5.0)
+        assert result["room_to_max"] == pytest.approx(10.0)
+
+    def test_at_minimum_room_to_min_zero(self) -> None:
+        from app.pricing.constraints import PricingConstraints, constraint_headroom
+
+        c = PricingConstraints(min_price=5.0, max_price=20.0, max_change_pct=50.0)
+        result = constraint_headroom(5.0, c)
+        assert result["room_to_min"] == 0.0
+
+    def test_at_maximum_room_to_max_zero(self) -> None:
+        from app.pricing.constraints import PricingConstraints, constraint_headroom
+
+        c = PricingConstraints(min_price=5.0, max_price=20.0, max_change_pct=50.0)
+        result = constraint_headroom(20.0, c)
+        assert result["room_to_max"] == 0.0
+
+    def test_below_min_room_to_min_floored(self) -> None:
+        from app.pricing.constraints import PricingConstraints, constraint_headroom
+
+        c = PricingConstraints(min_price=10.0, max_price=50.0, max_change_pct=50.0)
+        result = constraint_headroom(5.0, c)
+        assert result["room_to_min"] == 0.0
+
+
+class TestBatchApplyConstraints:
+    def test_clips_low_prices(self) -> None:
+        from app.pricing.constraints import PricingConstraints, batch_apply_constraints
+
+        c = PricingConstraints(min_price=10.0, max_price=50.0, max_change_pct=100.0)
+        result = batch_apply_constraints([1.0, 5.0, 15.0], c)
+        assert result[0] == pytest.approx(10.0)
+        assert result[1] == pytest.approx(10.0)
+
+    def test_clips_high_prices(self) -> None:
+        from app.pricing.constraints import PricingConstraints, batch_apply_constraints
+
+        c = PricingConstraints(min_price=1.0, max_price=20.0, max_change_pct=100.0)
+        result = batch_apply_constraints([25.0, 30.0], c)
+        assert all(p <= 20.0 for p in result)
+
+    def test_same_length_output(self) -> None:
+        from app.pricing.constraints import PricingConstraints, batch_apply_constraints
+
+        c = PricingConstraints(min_price=1.0, max_price=100.0, max_change_pct=50.0)
+        prices = [10.0, 20.0, 30.0, 40.0]
+        assert len(batch_apply_constraints(prices, c)) == len(prices)
