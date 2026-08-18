@@ -751,3 +751,44 @@ def modified_zscore(value: float, values: list[float]) -> float:
     if mad == 0:
         return 0.0
     return round(0.6745 * (value - median) / mad, 6)
+
+
+def anomaly_rate(scores: list[float], threshold: float = 3.5) -> float:
+    """Return the fraction of scores that exceed *threshold*.
+
+    Args:
+        scores: Sequence of anomaly scores (e.g. modified Z-scores).
+        threshold: Absolute value above which a point is anomalous.
+
+    Returns:
+        Fraction in [0.0, 1.0]; 0.0 for empty input.
+    """
+    if not scores:
+        return 0.0
+    anomalies = sum(1 for s in scores if abs(s) > threshold)
+    return round(anomalies / len(scores), 6)
+
+
+def rolling_anomaly_flag(
+    values: list[float],
+    window: int = 10,
+    threshold: float = 3.5,
+) -> list[bool]:
+    """Flag each position as anomalous relative to the preceding rolling window.
+
+    The first *window* positions are always False (insufficient history).
+
+    Args:
+        values: Input time series.
+        window: Number of prior observations to use as the reference.
+        threshold: Modified Z-score threshold for anomaly flagging.
+
+    Returns:
+        Boolean list the same length as *values*.
+    """
+    flags = [False] * len(values)
+    for i in range(window, len(values)):
+        ref = values[i - window: i]
+        score = modified_zscore(values[i], ref)
+        flags[i] = abs(score) > threshold
+    return flags
