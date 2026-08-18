@@ -919,3 +919,59 @@ def test_cumulative_sum_monotone_for_positive(n: int) -> None:
     result = cumulative_sum(values)
     for i in range(1, len(result)):
         assert result[i] >= result[i - 1]
+
+
+class TestCumulativeGrowth:
+    def test_flat_series_all_zero(self) -> None:
+        from app.trend_analysis import cumulative_growth
+
+        result = cumulative_growth([10.0, 10.0, 10.0])
+        assert all(v == 0.0 for v in result)
+
+    def test_first_element_is_zero(self) -> None:
+        from app.trend_analysis import cumulative_growth
+
+        result = cumulative_growth([5.0, 10.0, 15.0])
+        assert result[0] == 0.0
+
+    def test_doubling_is_one(self) -> None:
+        from app.trend_analysis import cumulative_growth
+
+        result = cumulative_growth([100.0, 200.0])
+        assert result[-1] == pytest.approx(1.0)
+
+    def test_empty_raises(self) -> None:
+        from app.trend_analysis import cumulative_growth
+
+        with pytest.raises(ValueError):
+            cumulative_growth([])
+
+    def test_zero_base_all_zero(self) -> None:
+        from app.trend_analysis import cumulative_growth
+
+        result = cumulative_growth([0.0, 10.0, 20.0])
+        assert all(v == 0.0 for v in result)
+
+
+class TestTrendReversalCount:
+    def test_no_reversals_monotone(self) -> None:
+        from app.trend_analysis import trend_reversal_count
+
+        assert trend_reversal_count([1.0, 2.0, 3.0, 4.0]) == 0
+
+    def test_alternating_series(self) -> None:
+        from app.trend_analysis import trend_reversal_count
+
+        result = trend_reversal_count([1.0, 3.0, 2.0, 4.0, 3.0])
+        assert result >= 2
+
+    def test_too_short_returns_zero(self) -> None:
+        from app.trend_analysis import trend_reversal_count
+
+        assert trend_reversal_count([1.0, 2.0]) == 0
+
+    def test_returns_int(self) -> None:
+        from app.trend_analysis import trend_reversal_count
+
+        result = trend_reversal_count([1.0, 2.0, 1.0])
+        assert isinstance(result, int)
