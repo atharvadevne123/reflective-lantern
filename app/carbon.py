@@ -979,3 +979,42 @@ def carbon_intensity_trend(
         "trend": trend,
         "latest_label": carbon_intensity_label(intensities[-1]),
     }
+
+
+def carbon_budget_remaining(
+    annual_budget_kg: float,
+    used_kg: float,
+) -> dict[str, float]:
+    """Compute remaining carbon budget and fraction used.
+
+    Args:
+        annual_budget_kg: Total annual carbon budget in kg CO2e.
+        used_kg: Carbon already consumed in kg CO2e.
+
+    Returns:
+        Dict with 'remaining_kg', 'used_pct', and 'on_track' (True when
+        used_pct <= fraction of year elapsed, approximated as 0.5 for
+        mid-year; the caller can pass a dynamic fraction if needed).
+    """
+    remaining = max(0.0, annual_budget_kg - used_kg)
+    used_pct = round(min(1.0, used_kg / annual_budget_kg), 4) if annual_budget_kg > 0 else 0.0
+    return {
+        "remaining_kg": round(remaining, 4),
+        "used_pct": used_pct,
+    }
+
+
+def emissions_reduction_pct(baseline_kg: float, current_kg: float) -> float:
+    """Compute the percentage reduction in emissions relative to a baseline.
+
+    Args:
+        baseline_kg: Reference emissions in kg CO2e.
+        current_kg: Current-period emissions in kg CO2e.
+
+    Returns:
+        Percentage reduction (positive = improved, negative = worsened);
+        0.0 when baseline is zero or negative.
+    """
+    if baseline_kg <= 0.0:
+        return 0.0
+    return round((baseline_kg - current_kg) / baseline_kg * 100.0, 4)
