@@ -82,3 +82,55 @@ class TestSmoothDemand:
 
         with pytest.raises(ValueError):
             smooth_demand([1.0, 2.0], alpha=0.0)
+
+
+class TestSustainedDemandViolation:
+    def test_single_violation_detected(self) -> None:
+        from app.demand_spike import sustained_demand_violation
+
+        values = [1.0, 5.0, 5.0, 5.0, 1.0]
+        result = sustained_demand_violation(values, threshold=3.0, min_duration=3)
+        assert len(result) == 1
+        assert result[0]["start"] == 1
+        assert result[0]["duration"] == 3
+
+    def test_too_short_not_reported(self) -> None:
+        from app.demand_spike import sustained_demand_violation
+
+        values = [5.0, 5.0, 1.0, 1.0]
+        result = sustained_demand_violation(values, threshold=3.0, min_duration=3)
+        assert result == []
+
+    def test_empty_input(self) -> None:
+        from app.demand_spike import sustained_demand_violation
+
+        assert sustained_demand_violation([], threshold=2.0) == []
+
+    @pytest.mark.parametrize("min_dur,expected", [(1, 1), (2, 1), (4, 0)])
+    def test_min_duration_boundary(self, min_dur: int, expected: int) -> None:
+        from app.demand_spike import sustained_demand_violation
+
+        values = [0.0, 6.0, 6.0, 6.0, 0.0]
+        result = sustained_demand_violation(values, threshold=5.0, min_duration=min_dur)
+        assert len(result) == expected
+
+
+class TestDemandVariability:
+    def test_uniform_series_zero_std(self) -> None:
+        from app.demand_spike import demand_variability
+
+        result = demand_variability([5.0, 5.0, 5.0])
+        assert result["std"] == pytest.approx(0.0, abs=1e-9)
+        assert result["range"] == pytest.approx(0.0)
+
+    def test_returns_all_keys(self) -> None:
+        from app.demand_spike import demand_variability
+
+        result = demand_variability([1.0, 2.0, 3.0, 4.0])
+        assert {"cv", "range", "iqr", "std"} <= result.keys()
+
+    def test_insufficient_data(self) -> None:
+        from app.demand_spike import demand_variability
+
+        result = demand_variability([1.0])
+        assert result == {"cv": 0.0, "range": 0.0, "iqr": 0.0, "std": 0.0}
