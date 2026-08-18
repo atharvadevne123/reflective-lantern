@@ -933,3 +933,45 @@ def rental_yield_after_tax(
         raise ValueError(f"tax_rate_pct must be in [0, 100], got {tax_rate_pct}")
     after_tax_rent = annual_rent * (1.0 - tax_rate_pct / 100.0)
     return round(after_tax_rent / property_value * 100.0, 4)
+
+
+def break_even_occupancy(
+    monthly_costs: float,
+    nightly_rate: float,
+    nights_in_month: int = 30,
+) -> float:
+    """Compute the occupancy rate needed to cover monthly costs.
+
+    Args:
+        monthly_costs: Total fixed monthly costs (mortgage, utilities, etc.).
+        nightly_rate: Revenue per occupied night.
+        nights_in_month: Total nights in the month (default 30).
+
+    Returns:
+        Required occupancy rate in [0.0, 1.0]. Returns 1.0 when nightly_rate
+        is zero or negative to signal the cost cannot be covered.
+    """
+    if nightly_rate <= 0.0 or nights_in_month <= 0:
+        return 1.0
+    max_revenue = nightly_rate * nights_in_month
+    if max_revenue <= 0:
+        return 1.0
+    return round(min(1.0, monthly_costs / max_revenue), 4)
+
+
+def equity_multiple(
+    total_distributions: float,
+    total_invested: float,
+) -> float:
+    """Compute the equity multiple (total return relative to invested capital).
+
+    Args:
+        total_distributions: Sum of all cash distributions received.
+        total_invested: Total capital invested (must be positive).
+
+    Returns:
+        Equity multiple; 0.0 when total_invested is non-positive.
+    """
+    if total_invested <= 0.0:
+        return 0.0
+    return round(total_distributions / total_invested, 4)
