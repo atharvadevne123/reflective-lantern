@@ -1004,3 +1004,56 @@ def test_unique_values_count(n_unique: int) -> None:
     records = [{field: float(i)} for i in range(n_unique)]
     result = unique_values(records, field)
     assert len(result) == n_unique
+
+
+class TestDuplicateRate:
+    def test_no_duplicates(self) -> None:
+        from app.data_quality import duplicate_rate
+
+        records = [{"id": 1}, {"id": 2}, {"id": 3}]
+        assert duplicate_rate(records, ["id"]) == 0.0
+
+    def test_all_duplicates(self) -> None:
+        from app.data_quality import duplicate_rate
+
+        records = [{"id": 1}, {"id": 1}, {"id": 1}]
+        result = duplicate_rate(records, ["id"])
+        assert result == pytest.approx(2 / 3, rel=1e-4)
+
+    def test_empty_returns_zero(self) -> None:
+        from app.data_quality import duplicate_rate
+
+        assert duplicate_rate([], ["id"]) == 0.0
+
+    def test_partial_duplicates(self) -> None:
+        from app.data_quality import duplicate_rate
+
+        records = [{"a": 1}, {"a": 1}, {"a": 2}]
+        result = duplicate_rate(records, ["a"])
+        assert result == pytest.approx(1 / 3, rel=1e-4)
+
+
+class TestConstantColumns:
+    def test_constant_field_detected(self) -> None:
+        from app.data_quality import constant_columns
+
+        records = [{"a": 1, "b": 2}, {"a": 1, "b": 3}]
+        assert constant_columns(records) == ["a"]
+
+    def test_no_constant_columns(self) -> None:
+        from app.data_quality import constant_columns
+
+        records = [{"a": 1, "b": 2}, {"a": 3, "b": 4}]
+        assert constant_columns(records) == []
+
+    def test_empty_returns_empty(self) -> None:
+        from app.data_quality import constant_columns
+
+        assert constant_columns([]) == []
+
+    def test_all_constant(self) -> None:
+        from app.data_quality import constant_columns
+
+        records = [{"x": 0, "y": 0}] * 3
+        result = constant_columns(records)
+        assert set(result) == {"x", "y"}
