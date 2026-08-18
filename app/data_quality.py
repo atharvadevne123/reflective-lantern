@@ -892,3 +892,43 @@ def field_entropy(records: list[dict[str, Any]], field: str) -> float:
         p = count / total
         entropy -= p * _math.log2(p)
     return round(entropy, 4)
+
+
+def duplicate_rate(records: list[dict], key_fields: list[str]) -> float:
+    """Return the fraction of records that share a key with at least one other record.
+
+    Args:
+        records: List of dicts representing data rows.
+        key_fields: Fields to combine as the deduplication key.
+
+    Returns:
+        Fraction of duplicate rows in [0.0, 1.0]; 0.0 for empty input.
+    """
+    if not records:
+        return 0.0
+    from collections import Counter
+
+    keys = [tuple(r.get(f) for f in key_fields) for r in records]
+    counts = Counter(keys)
+    duplicates = sum(c - 1 for c in counts.values() if c > 1)
+    return round(duplicates / len(records), 6)
+
+
+def constant_columns(records: list[dict]) -> list[str]:
+    """Return the names of fields that have the same value across every record.
+
+    Args:
+        records: List of dicts; all keys from the first record are inspected.
+
+    Returns:
+        List of field names where the value never varies.
+    """
+    if not records:
+        return []
+    fields = list(records[0].keys())
+    result = []
+    for field in fields:
+        values = {r.get(field) for r in records}
+        if len(values) == 1:
+            result.append(field)
+    return result
