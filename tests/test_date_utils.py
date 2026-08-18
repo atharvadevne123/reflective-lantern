@@ -937,3 +937,78 @@ def test_days_between_parametrized(start, end, expected: int) -> None:
     from app.date_utils import days_between
 
     assert days_between(start, end) == expected
+
+
+class TestDaysBetween:
+    def test_same_day_is_zero(self) -> None:
+        from datetime import date
+
+        from app.date_utils import days_between
+
+        d = date(2025, 6, 15)
+        assert days_between(d, d) == 0
+
+    def test_forward_direction(self) -> None:
+        from datetime import date
+
+        from app.date_utils import days_between
+
+        assert days_between(date(2025, 1, 1), date(2025, 1, 10)) == 9
+
+    def test_reverse_direction_absolute(self) -> None:
+        from datetime import date
+
+        from app.date_utils import days_between
+
+        assert days_between(date(2025, 1, 10), date(2025, 1, 1)) == 9
+
+    def test_datetime_inputs_accepted(self) -> None:
+        from datetime import datetime
+
+        from app.date_utils import days_between
+
+        a = datetime(2025, 3, 1, 8, 0)
+        b = datetime(2025, 3, 8, 12, 0)
+        assert days_between(a, b) == 7
+
+    @pytest.mark.parametrize("delta,expected", [(0, 0), (1, 1), (365, 365)])
+    def test_parametrized_deltas(self, delta: int, expected: int) -> None:
+        from datetime import date, timedelta
+
+        from app.date_utils import days_between
+
+        base = date(2025, 1, 1)
+        assert days_between(base, base + timedelta(days=delta)) == expected
+
+
+class TestIsWeekend:
+    def test_saturday_is_weekend(self) -> None:
+        from datetime import date
+
+        from app.date_utils import is_weekend
+
+        assert is_weekend(date(2025, 1, 4)) is True
+
+    def test_sunday_is_weekend(self) -> None:
+        from datetime import date
+
+        from app.date_utils import is_weekend
+
+        assert is_weekend(date(2025, 1, 5)) is True
+
+    def test_monday_is_not_weekend(self) -> None:
+        from datetime import date
+
+        from app.date_utils import is_weekend
+
+        assert is_weekend(date(2025, 1, 6)) is False
+
+    @pytest.mark.parametrize("isoday,expected", [(1, False), (5, False), (6, True), (7, True)])
+    def test_parametrized_weekdays(self, isoday: int, expected: bool) -> None:
+        from datetime import date
+
+        from app.date_utils import is_weekend
+
+        from_monday = date(2025, 1, 6)
+        target = from_monday + __import__("datetime").timedelta(days=isoday - 1)
+        assert is_weekend(target) is expected
