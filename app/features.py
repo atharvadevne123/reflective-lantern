@@ -685,3 +685,29 @@ def minmax_normalize(values: list[float]) -> list[float]:
     if rng == 0:
         return [0.5] * len(values)
     return [round((v - lo) / rng, 6) for v in values]
+
+
+def rank_features(importances: dict[str, float]) -> list[tuple[str, float]]:
+    """Sort feature importances from highest to lowest.
+
+    Args:
+        importances: Mapping of feature name to importance score.
+
+    Returns:
+        List of (feature_name, score) tuples sorted descending by score.
+    """
+    return sorted(importances.items(), key=lambda kv: kv[1], reverse=True)
+
+
+def top_k_features(importances: dict[str, float], k: int = 5) -> list[str]:
+    """Return the names of the *k* most important features.
+
+    Args:
+        importances: Mapping of feature name to importance score.
+        k: Number of top features to return.
+
+    Returns:
+        List of feature names, most important first, up to *k* entries.
+    """
+    ranked = rank_features(importances)
+    return [name for name, _ in ranked[:k]]
