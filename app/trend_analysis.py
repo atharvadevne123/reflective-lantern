@@ -792,3 +792,48 @@ def rolling_percent_change(values: list[float], window: int = 7) -> list[float |
         else:
             result.append(round((current - prior) / prior * 100.0, 4))
     return result
+
+
+def cumulative_growth(values: list[float]) -> list[float]:
+    """Compute cumulative growth as a fraction of the first value.
+
+    Args:
+        values: Numeric series; the first element is the reference (growth = 0.0).
+
+    Returns:
+        List of cumulative growth fractions. Empty list for empty input.
+        The first element is always 0.0; returns 0.0 for all positions when
+        the first value is zero.
+
+    Raises:
+        ValueError: If *values* is empty.
+    """
+    if not values:
+        raise ValueError("values must not be empty")
+    base = values[0]
+    if base == 0:
+        return [0.0] * len(values)
+    return [round((v - base) / base, 6) for v in values]
+
+
+def trend_reversal_count(values: list[float]) -> int:
+    """Count the number of sign changes in consecutive differences.
+
+    A reversal is when the series changes from rising to falling or vice versa.
+
+    Args:
+        values: Numeric series with at least two elements.
+
+    Returns:
+        Number of reversals. Returns 0 for series shorter than 3.
+    """
+    if len(values) < 3:
+        return 0
+    diffs = [values[i + 1] - values[i] for i in range(len(values) - 1)]
+    reversals = 0
+    for i in range(1, len(diffs)):
+        if diffs[i - 1] > 0 and diffs[i] < 0:
+            reversals += 1
+        elif diffs[i - 1] < 0 and diffs[i] > 0:
+            reversals += 1
+    return reversals
