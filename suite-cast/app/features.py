@@ -212,3 +212,46 @@ def average_daily_rate(total_revenue: float, occupied_rooms: int) -> float:
     if occupied_rooms <= 0:
         return 0.0
     return round(total_revenue / occupied_rooms, 4)
+
+
+def gross_operating_profit_per_available_room(
+    total_revenue: float,
+    total_costs: float,
+    total_rooms: int,
+) -> float:
+    """Compute GOPPAR (Gross Operating Profit Per Available Room).
+
+    Args:
+        total_revenue: Total hotel revenue for the period.
+        total_costs: Total operating costs for the period.
+        total_rooms: Number of available rooms.
+
+    Returns:
+        GOPPAR value; 0.0 when *total_rooms* is 0.
+    """
+    if total_rooms <= 0:
+        return 0.0
+    return round((total_revenue - total_costs) / total_rooms, 4)
+
+
+def length_of_stay_mix(stays: list[int]) -> dict[str, float]:
+    """Compute the distribution of stays by length category.
+
+    Args:
+        stays: List of stay lengths in nights.
+
+    Returns:
+        Dict with fractions for 'one_night', 'two_three_nights', and 'four_plus_nights'.
+        Returns zero fractions for empty input.
+    """
+    if not stays:
+        return {"one_night": 0.0, "two_three_nights": 0.0, "four_plus_nights": 0.0}
+    n = len(stays)
+    one = sum(1 for s in stays if s == 1)
+    two_three = sum(1 for s in stays if 2 <= s <= 3)
+    four_plus = sum(1 for s in stays if s >= 4)
+    return {
+        "one_night": round(one / n, 4),
+        "two_three_nights": round(two_three / n, 4),
+        "four_plus_nights": round(four_plus / n, 4),
+    }
