@@ -84,3 +84,42 @@ class TraceStore:
 
     def __len__(self) -> int:
         return len(self._traces)
+
+
+def average_latency_ms(store: TraceStore, stage: str | None = None) -> float:
+    """Compute mean latency in milliseconds across recent traces.
+
+    Args:
+        store: A TraceStore instance to aggregate.
+        stage: If given, average the latency of that specific pipeline stage;
+            otherwise average the total request latency.
+
+    Returns:
+        Mean latency in ms; 0.0 when no traces exist.
+    """
+    traces = store.recent(limit=store.max_size)
+    if not traces:
+        return 0.0
+    if stage is not None:
+        values = [t.stage_timings_ms.get(stage, 0.0) for t in traces if stage in t.stage_timings_ms]
+    else:
+        values = [t.outcome.get("total_ms", 0.0) for t in traces if t.outcome]
+    if not values:
+        return 0.0
+    return round(sum(values) / len(values), 3)
+
+
+def trace_error_rate(store: TraceStore) -> float:
+    """Return the fraction of recent traces that completed with an error.
+
+    Args:
+        store: A TraceStore instance.
+
+    Returns:
+        Error rate in [0.0, 1.0]; 0.0 when no completed traces exist.
+    """
+    traces = [t for t in store.recent(limit=store.max_size) if t.outcome]
+    if not traces:
+        return 0.0
+    errors = sum(1 for t in traces if t.outcome.get("error"))
+    return round(errors / len(traces), 4)
