@@ -112,3 +112,41 @@ def is_elastic(elasticity: float) -> bool:
     bool
     """
     return abs(elasticity) > 1.0
+
+
+def revenue_at_price(price: float, base_demand: float, base_price: float, elasticity: float) -> float:
+    """Compute expected revenue at a given price using the elasticity model.
+
+    Args:
+        price: New price to evaluate.
+        base_demand: Demand at the base price.
+        base_price: Reference price point.
+        elasticity: Price elasticity of demand (typically negative).
+
+    Returns:
+        Estimated revenue (price × demand); 0.0 when price or base_price is non-positive.
+    """
+    if price <= 0.0 or base_price <= 0.0:
+        return 0.0
+    demand = apply_elasticity(base_demand, base_price, price, elasticity)
+    return round(price * demand, 4)
+
+
+def optimal_price_direction(current_price: float, elasticity: float) -> str:
+    """Suggest whether to raise or lower price to increase revenue.
+
+    For elastic demand (|elasticity| > 1) lowering price grows revenue;
+    for inelastic demand raising price does.
+
+    Args:
+        current_price: Current selling price.
+        elasticity: Price elasticity of demand.
+
+    Returns:
+        'lower' when demand is elastic, 'raise' when inelastic, 'hold' when unit-elastic.
+    """
+    if abs(elasticity) > 1.0:
+        return "lower"
+    if abs(elasticity) < 1.0:
+        return "raise"
+    return "hold"
