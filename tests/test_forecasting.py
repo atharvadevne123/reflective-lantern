@@ -894,3 +894,52 @@ def test_horizon_degradation_length(horizon: int) -> None:
     values = [float(i + 1) for i in range(30)]
     result = horizon_degradation(values, horizon=horizon)
     assert len(result) == horizon
+
+
+class TestDirectionalAccuracy:
+    def test_perfect_directional_accuracy(self) -> None:
+        from app.forecasting import directional_accuracy
+
+        result = directional_accuracy([1.0, 2.0, 3.0], [1.0, 2.0, 3.0])
+        assert result == pytest.approx(1.0)
+
+    def test_short_series_returns_zero(self) -> None:
+        from app.forecasting import directional_accuracy
+
+        assert directional_accuracy([1.0], [1.0]) == 0.0
+
+    def test_opposite_directions_zero(self) -> None:
+        from app.forecasting import directional_accuracy
+
+        result = directional_accuracy([1.0, 2.0, 3.0], [3.0, 2.0, 1.0])
+        assert result == pytest.approx(0.0)
+
+    def test_raises_on_length_mismatch(self) -> None:
+        from app.forecasting import directional_accuracy
+
+        with pytest.raises(ValueError):
+            directional_accuracy([1.0, 2.0], [1.0])
+
+
+class TestForecastBiasRatio:
+    def test_unbiased_returns_one(self) -> None:
+        from app.forecasting import forecast_bias_ratio
+
+        assert forecast_bias_ratio([2.0, 4.0], [2.0, 4.0]) == pytest.approx(1.0)
+
+    def test_zero_actual_returns_zero(self) -> None:
+        from app.forecasting import forecast_bias_ratio
+
+        assert forecast_bias_ratio([0.0, 0.0], [1.0, 1.0]) == 0.0
+
+    def test_overprediction_ratio_gt_one(self) -> None:
+        from app.forecasting import forecast_bias_ratio
+
+        result = forecast_bias_ratio([1.0, 2.0], [2.0, 4.0])
+        assert result > 1.0
+
+    def test_raises_on_length_mismatch(self) -> None:
+        from app.forecasting import forecast_bias_ratio
+
+        with pytest.raises(ValueError):
+            forecast_bias_ratio([1.0, 2.0], [1.0])
