@@ -144,3 +144,53 @@ def prediction_summary_json(
         "defect_rate": round(defects / total, 4) if total else 0.0,
         "exported_at": datetime.utcnow().isoformat(),
     }
+
+
+def prediction_trend(
+    db: Session,
+    windows: int = 6,
+    window_hours: int = 4,
+) -> list[dict[str, Any]]:
+    """Compute defect rate across consecutive time windows for trend analysis.
+
+    Args:
+        db: Active SQLAlchemy session.
+        windows: Number of windows to compute (newest first).
+        window_hours: Duration of each window in hours.
+
+    Returns:
+        List of dicts with 'window_start', 'window_end', 'total',
+        'defect_count', and 'defect_rate' for each window.
+    """
+    now = datetime.utcnow()
+    results: list[dict[str, Any]] = []
+    for i in range(windows):
+        end = now - timedelta(hours=i * window_hours)
+        start = end - timedelta(hours=window_hours)
+        logs = (
+            db.query(PredictionLog)
+            .filter(PredictionLog.timestamp >= start, PredictionLog.timestamp < end)
+            .all()
+        )
+        total = len(logs)
+        defects = sum(1 for r in logs if r.prediction == 1)
+        results.append({
+            "window_start": start.isoformat(),
+            "window_end": end.isoformat(),
+            "total": total,
+            "defect_count": defects,
+            "defect_rate": round(defects / total, 4) if total else 0.0,
+        })
+    return results
+
+
+def format_defect_rate_pct(rate: float) -> str:
+    """Format a defect rate fraction as a percentage string.
+
+    Args:
+        rate: Defect rate in [0, 1].
+
+    Returns:
+        Formatted string like '12.34%'.
+    """
+    return f"{rate * 100:.2f}%"
