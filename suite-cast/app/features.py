@@ -161,3 +161,54 @@ def seasonality_score_for_month(month: int) -> float:
     """
     season = _MONTH_TO_SEASON.get(month, "spring")
     return _SEASON_INDEX[season]
+
+
+def revenue_per_available_room(
+    total_revenue: float,
+    total_rooms: int,
+) -> float:
+    """Compute RevPAR (Revenue Per Available Room).
+
+    Args:
+        total_revenue: Total room revenue for the period.
+        total_rooms: Total number of available room-nights.
+
+    Returns:
+        RevPAR value; 0.0 when *total_rooms* is 0.
+    """
+    if total_rooms <= 0:
+        return 0.0
+    return round(total_revenue / total_rooms, 4)
+
+
+def booking_conversion_rate(
+    enquiries: int,
+    confirmed: int,
+) -> float:
+    """Compute the conversion rate from enquiries to confirmed bookings.
+
+    Args:
+        enquiries: Total number of enquiries.
+        confirmed: Number of confirmed bookings.
+
+    Returns:
+        Conversion rate in [0.0, 1.0]; 0.0 when *enquiries* is 0.
+    """
+    if enquiries <= 0:
+        return 0.0
+    return round(min(confirmed / enquiries, 1.0), 4)
+
+
+def average_daily_rate(total_revenue: float, occupied_rooms: int) -> float:
+    """Compute ADR (Average Daily Rate) — room revenue per occupied room.
+
+    Args:
+        total_revenue: Room revenue for the period.
+        occupied_rooms: Number of occupied room-nights.
+
+    Returns:
+        ADR value; 0.0 when *occupied_rooms* is 0.
+    """
+    if occupied_rooms <= 0:
+        return 0.0
+    return round(total_revenue / occupied_rooms, 4)
