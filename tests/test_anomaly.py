@@ -1193,3 +1193,50 @@ def test_anomaly_summary_total_count(severities: list, expected_total: int) -> N
     result = anomaly_summary(severities)
     total = sum(result.values())
     assert total == expected_total
+
+
+class TestAnomalyRate:
+    def test_no_anomalies_returns_zero(self) -> None:
+        from app.anomaly import anomaly_rate
+
+        assert anomaly_rate([0.0, 1.0, 2.0]) == 0.0
+
+    def test_all_anomalies_returns_one(self) -> None:
+        from app.anomaly import anomaly_rate
+
+        assert anomaly_rate([5.0, 6.0, 7.0], threshold=3.5) == 1.0
+
+    def test_empty_returns_zero(self) -> None:
+        from app.anomaly import anomaly_rate
+
+        assert anomaly_rate([]) == 0.0
+
+    @pytest.mark.parametrize("scores,expected", [
+        ([0.0, 0.0, 5.0], pytest.approx(1 / 3, rel=1e-4)),
+        ([5.0, 5.0, 0.0], pytest.approx(2 / 3, rel=1e-4)),
+    ])
+    def test_partial_anomaly_rate(self, scores: list, expected: object) -> None:
+        from app.anomaly import anomaly_rate
+
+        assert anomaly_rate(scores) == expected
+
+
+class TestRollingAnomalyFlag:
+    def test_output_same_length(self) -> None:
+        from app.anomaly import rolling_anomaly_flag
+
+        values = [1.0] * 20
+        result = rolling_anomaly_flag(values, window=5)
+        assert len(result) == 20
+
+    def test_first_window_all_false(self) -> None:
+        from app.anomaly import rolling_anomaly_flag
+
+        result = rolling_anomaly_flag([1.0] * 15, window=10)
+        assert all(not f for f in result[:10])
+
+    def test_returns_list_of_bool(self) -> None:
+        from app.anomaly import rolling_anomaly_flag
+
+        result = rolling_anomaly_flag([1.0, 2.0, 3.0, 4.0, 5.0])
+        assert all(isinstance(f, bool) for f in result)
