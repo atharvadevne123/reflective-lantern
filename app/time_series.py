@@ -1135,3 +1135,62 @@ def series_range_by_window(
         chunk = values[start : i + 1]
         result.append(round(max(chunk) - min(chunk), 6))
     return result
+
+
+def series_autocorrelation(values: list[float], lag: int = 1) -> float:
+    """Compute the Pearson autocorrelation of *values* at the given lag.
+
+    Args:
+        values: Numeric time series.
+        lag: Number of steps to lag (default 1).
+
+    Returns:
+        Autocorrelation coefficient in [-1, 1]; 0.0 when insufficient data
+        or zero variance.
+
+    Raises:
+        ValueError: If *lag* is not positive.
+    """
+    if lag < 1:
+        raise ValueError(f"lag must be >= 1, got {lag}")
+    n = len(values)
+    if n <= lag:
+        return 0.0
+    x = values[: n - lag]
+    y = values[lag:]
+    mx, my = sum(x) / len(x), sum(y) / len(y)
+    num = sum((a - mx) * (b - my) for a, b in zip(x, y))
+    denom_x = sum((a - mx) ** 2 for a in x) ** 0.5
+    denom_y = sum((b - my) ** 2 for b in y) ** 0.5
+    denom = denom_x * denom_y
+    return round(num / denom, 6) if denom > 1e-12 else 0.0
+
+
+def series_entropy(values: list[float], bins: int = 10) -> float:
+    """Estimate the Shannon entropy of a time series distribution.
+
+    Discretises the series into *bins* equal-width histogram bins and
+    computes the Shannon entropy of the resulting probability distribution.
+
+    Args:
+        values: Numeric time series.
+        bins: Number of histogram bins.
+
+    Returns:
+        Entropy value >= 0; 0.0 for empty or constant series.
+    """
+    import math
+
+    if len(values) < 2:
+        return 0.0
+    lo, hi = min(values), max(values)
+    if hi == lo:
+        return 0.0
+    width = (hi - lo) / bins
+    counts: dict[int, int] = {}
+    for v in values:
+        bucket = min(int((v - lo) / width), bins - 1)
+        counts[bucket] = counts.get(bucket, 0) + 1
+    n = len(values)
+    entropy = -sum((c / n) * math.log2(c / n) for c in counts.values() if c > 0)
+    return round(entropy, 6)
