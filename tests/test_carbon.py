@@ -1208,3 +1208,36 @@ def test_carbon_intensity_label_parametrized(intensity: float, expected_label_pa
     label = carbon_intensity_label(intensity)
     assert isinstance(label, str)
     assert expected_label_partial.lower() in label.lower()
+
+
+class TestCarbonIntensityTrend:
+    def test_empty_returns_stable(self) -> None:
+        from app.carbon import carbon_intensity_trend
+
+        result = carbon_intensity_trend([])
+        assert result["trend"] == "stable"
+
+    def test_improving_trend(self) -> None:
+        from app.carbon import carbon_intensity_trend
+
+        result = carbon_intensity_trend([0.5, 0.4, 0.3, 0.2])
+        assert result["trend"] == "improving"
+
+    def test_worsening_trend(self) -> None:
+        from app.carbon import carbon_intensity_trend
+
+        result = carbon_intensity_trend([0.2, 0.3, 0.4, 0.5])
+        assert result["trend"] == "worsening"
+
+    def test_returns_all_keys(self) -> None:
+        from app.carbon import carbon_intensity_trend
+
+        result = carbon_intensity_trend([0.3, 0.32])
+        assert {"mean", "min", "max", "trend", "latest_label"} <= result.keys()
+
+    @pytest.mark.parametrize("intensity,label", [(0.05, "very_low"), (0.2, "low"), (0.45, "high")])
+    def test_latest_label_matches_last_value(self, intensity: float, label: str) -> None:
+        from app.carbon import carbon_intensity_label, carbon_intensity_trend
+
+        result = carbon_intensity_trend([intensity])
+        assert result["latest_label"] == carbon_intensity_label(intensity)
