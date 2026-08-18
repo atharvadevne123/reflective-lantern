@@ -539,3 +539,31 @@ def next_weekday(dt: date | datetime, weekday: int) -> date:
     current_iso = d.isoweekday()
     days_ahead = (iso_wd - current_iso) % 7
     return d + timedelta(days=days_ahead)
+
+
+def days_between(start: date | datetime, end: date | datetime) -> int:
+    """Return the number of days between *start* and *end*.
+
+    Args:
+        start: Earlier date or datetime.
+        end: Later date or datetime.
+
+    Returns:
+        Absolute number of days between the two dates.
+    """
+    d_start = start.date() if isinstance(start, datetime) else start
+    d_end = end.date() if isinstance(end, datetime) else end
+    return abs((d_end - d_start).days)
+
+
+def is_weekend(dt: date | datetime) -> bool:
+    """Return True if *dt* falls on a Saturday or Sunday.
+
+    Args:
+        dt: Date or datetime to check.
+
+    Returns:
+        True for Saturday (isoweekday 6) and Sunday (isoweekday 7).
+    """
+    d = dt.date() if isinstance(dt, datetime) else dt
+    return d.isoweekday() >= 6
