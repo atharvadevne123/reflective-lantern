@@ -300,3 +300,62 @@ class TestClampReading:
 
         with pytest.raises(ValueError):
             clamp_reading(5.0, 10.0, 0.0)
+
+
+class TestValidateBatch:
+    def test_all_valid(self) -> None:
+        from app.validators import validate_batch
+
+        records = [dict(VALID), dict(VALID)]
+        result = validate_batch(records)
+        assert result["total"] == 2
+        assert result["valid_count"] == 2
+        assert result["invalid_count"] == 0
+        assert result["errors"] == []
+
+    def test_one_invalid(self) -> None:
+        from app.validators import validate_batch
+
+        bad = dict(VALID)
+        bad["temperature"] = 99999.0
+        result = validate_batch([dict(VALID), bad])
+        assert result["invalid_count"] == 1
+        assert result["errors"][0]["index"] == 1
+
+    def test_empty_batch(self) -> None:
+        from app.validators import validate_batch
+
+        result = validate_batch([])
+        assert result["total"] == 0
+        assert result["valid_count"] == 0
+
+    @pytest.mark.parametrize("n", [1, 3, 5])
+    def test_valid_count_equals_n_for_all_valid(self, n: int) -> None:
+        from app.validators import validate_batch
+
+        result = validate_batch([dict(VALID)] * n)
+        assert result["valid_count"] == n
+
+
+class TestFieldStatistics:
+    def test_uniform_values(self) -> None:
+        from app.validators import field_statistics
+
+        records = [{"temperature": 75.0}] * 5
+        result = field_statistics(records, "temperature")
+        assert result["mean"] == pytest.approx(75.0)
+        assert result["std"] == pytest.approx(0.0, abs=1e-9)
+
+    def test_missing_field_returns_zeros(self) -> None:
+        from app.validators import field_statistics
+
+        result = field_statistics([{"x": 1.0}], "temperature")
+        assert result == {"mean": 0.0, "min": 0.0, "max": 0.0, "std": 0.0}
+
+    def test_known_statistics(self) -> None:
+        from app.validators import field_statistics
+
+        records = [{"v": float(x)} for x in range(1, 5)]
+        result = field_statistics(records, "v")
+        assert result["min"] == pytest.approx(1.0)
+        assert result["max"] == pytest.approx(4.0)
