@@ -176,3 +176,50 @@ def log_model_metrics(db: Session, model_version: str, metrics: dict[str, Any]) 
         model_version,
         metrics.get("auc_mean", 0.0),
     )
+
+
+def demand_score_trend(db: Session, limit: int = 100) -> dict[str, object]:
+    """Summarise the trend in recent demand scores.
+
+    Args:
+        db: Active SQLAlchemy session.
+        limit: Number of most-recent predictions to inspect.
+
+    Returns:
+        Dict with 'mean', 'min', 'max', 'trend' ('rising'|'falling'|'stable'),
+        and 'count'. Returns zeros dict when no predictions exist.
+    """
+    preds = db.query(Prediction).order_by(Prediction.timestamp.asc()).limit(limit).all()
+    if not preds:
+        return {"mean": 0.0, "min": 0.0, "max": 0.0, "trend": "stable", "count": 0}
+    scores = [float(p.demand_score) for p in preds]
+    mean_score = sum(scores) / len(scores)
+    if len(scores) >= 2:
+        delta = scores[-1] - scores[0]
+        trend = "rising" if delta > 0.05 else ("falling" if delta < -0.05 else "stable")
+    else:
+        trend = "stable"
+    return {
+        "mean": round(mean_score, 4),
+        "min": round(min(scores), 4),
+        "max": round(max(scores), 4),
+        "trend": trend,
+        "count": len(scores),
+    }
+
+
+def rate_spread(db: Session, limit: int = 100) -> float:
+    """Return the difference between the max and min suggested rates in recent predictions.
+
+    Args:
+        db: Active SQLAlchemy session.
+        limit: Number of most-recent predictions to inspect.
+
+    Returns:
+        Spread value (max - min); 0.0 when fewer than 2 predictions exist.
+    """
+    preds = db.query(Prediction).order_by(Prediction.timestamp.desc()).limit(limit).all()
+    if len(preds) < 2:
+        return 0.0
+    rates = [float(p.suggested_rate) for p in preds]
+    return round(max(rates) - min(rates), 4)
