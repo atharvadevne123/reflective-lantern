@@ -100,3 +100,38 @@ def violates_constraints(
             return True
 
     return False
+
+
+def constraint_headroom(price: float, constraints: PricingConstraints) -> dict[str, float]:
+    """Compute how much room the price has before hitting constraint boundaries.
+
+    Args:
+        price: Current price to evaluate.
+        constraints: Active constraint bounds.
+
+    Returns:
+        Dict with 'room_to_min' (price - min_price, floored at 0) and
+        'room_to_max' (max_price - price, floored at 0).
+    """
+    return {
+        "room_to_min": round(max(0.0, price - constraints.min_price), 4),
+        "room_to_max": round(max(0.0, constraints.max_price - price), 4),
+    }
+
+
+def batch_apply_constraints(
+    prices: list[float],
+    constraints: PricingConstraints,
+    base_price: float = 0.0,
+) -> list[float]:
+    """Apply constraints to a list of candidate prices.
+
+    Args:
+        prices: Candidate prices to constrain.
+        constraints: Constraint bounds.
+        base_price: Reference price for max-change-pct guard.
+
+    Returns:
+        List of constrained prices in the same order.
+    """
+    return [apply_constraints(p, base_price, constraints) for p in prices]
