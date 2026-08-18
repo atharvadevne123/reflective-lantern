@@ -94,3 +94,57 @@ class TestMultiChannelForecast:
 
         results = multi_channel_forecast({"tiny": np.array([1.0, 2.0], dtype=np.float32)})
         assert "error" in results["tiny"]
+
+
+class TestForecastAccuracySummary:
+    def test_perfect_forecast_zero_error(self) -> None:
+        from app.forecaster import forecast_accuracy_summary
+
+        actual = [1.0, 2.0, 3.0]
+        result = forecast_accuracy_summary(actual, actual)
+        assert result["mae"] == pytest.approx(0.0, abs=1e-6)
+        assert result["rmse"] == pytest.approx(0.0, abs=1e-6)
+
+    def test_length_mismatch_raises(self) -> None:
+        from app.forecaster import forecast_accuracy_summary
+
+        with pytest.raises(ValueError):
+            forecast_accuracy_summary([1.0, 2.0], [1.0])
+
+    def test_empty_raises(self) -> None:
+        from app.forecaster import forecast_accuracy_summary
+
+        with pytest.raises(ValueError):
+            forecast_accuracy_summary([], [])
+
+    def test_returns_required_keys(self) -> None:
+        from app.forecaster import forecast_accuracy_summary
+
+        result = forecast_accuracy_summary([1.0, 2.0, 3.0], [1.1, 1.9, 3.1])
+        assert {"mae", "rmse", "mape"} <= result.keys()
+
+    @pytest.mark.parametrize("offset", [0.0, 0.5, 1.0])
+    def test_mae_equals_offset(self, offset: float) -> None:
+        from app.forecaster import forecast_accuracy_summary
+
+        actual = [10.0, 10.0, 10.0]
+        predicted = [10.0 + offset] * 3
+        result = forecast_accuracy_summary(actual, predicted)
+        assert result["mae"] == pytest.approx(offset, abs=1e-4)
+
+
+class TestIntervalCoverage:
+    def test_full_coverage(self) -> None:
+        from app.forecaster import interval_coverage
+
+        assert interval_coverage([5.0, 6.0], [4.0, 5.0], [6.0, 7.0]) == pytest.approx(1.0)
+
+    def test_no_coverage(self) -> None:
+        from app.forecaster import interval_coverage
+
+        assert interval_coverage([10.0, 20.0], [0.0, 0.0], [1.0, 1.0]) == pytest.approx(0.0)
+
+    def test_empty_returns_zero(self) -> None:
+        from app.forecaster import interval_coverage
+
+        assert interval_coverage([], [], []) == 0.0
