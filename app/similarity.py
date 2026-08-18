@@ -576,3 +576,44 @@ def tanimoto_similarity(a: list[float], b: list[float]) -> float:
     if denom == 0:
         return 0.0
     return round(dot / denom, 6)
+
+
+def vector_magnitude(a: list[float]) -> float:
+    """Compute the L2 (Euclidean) norm (magnitude) of vector *a*.
+
+    Args:
+        a: Input vector.
+
+    Returns:
+        Non-negative magnitude; 0.0 for an empty or all-zero vector.
+    """
+    return round(sum(x * x for x in a) ** 0.5, 6)
+
+
+def angular_distance(a: list[float], b: list[float]) -> float:
+    """Compute angular distance (in radians) between two vectors.
+
+    Angular distance is the arccosine of the cosine similarity, clipped to
+    [0, pi] to handle floating-point rounding at the boundaries.
+
+    Args:
+        a: First vector.
+        b: Second vector; must have the same length as *a*.
+
+    Returns:
+        Angular distance in [0.0, pi]; pi/2 when vectors are orthogonal.
+
+    Raises:
+        ValueError: If the vectors have different lengths.
+    """
+    import math
+
+    if len(a) != len(b):
+        raise ValueError(f"vectors must have same length, got {len(a)} and {len(b)}")
+    mag_a = vector_magnitude(a)
+    mag_b = vector_magnitude(b)
+    if mag_a == 0.0 or mag_b == 0.0:
+        return math.pi / 2.0
+    dot = sum(x * y for x, y in zip(a, b))
+    cos_sim = max(-1.0, min(1.0, dot / (mag_a * mag_b)))
+    return round(math.acos(cos_sim), 6)
