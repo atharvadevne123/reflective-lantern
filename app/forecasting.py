@@ -710,3 +710,60 @@ def bias_score(actual: list[float], predicted: list[float]) -> float:
     if not actual:
         return 0.0
     return round(sum(p - a for a, p in zip(actual, predicted, strict=False)) / len(actual), 6)
+
+
+def directional_accuracy(actual: list[float], predicted: list[float]) -> float:
+    """Compute the fraction of steps where the predicted direction matches the actual.
+
+    Direction is the sign of the change from one step to the next.
+
+    Args:
+        actual: Observed values.
+        predicted: Predicted values; must have the same length as *actual*.
+
+    Returns:
+        Directional accuracy in [0.0, 1.0]; 0.0 for series shorter than 2 steps.
+
+    Raises:
+        ValueError: If lengths differ.
+    """
+    if len(actual) != len(predicted):
+        raise ValueError(f"Length mismatch: actual={len(actual)}, predicted={len(predicted)}")
+    if len(actual) < 2:
+        return 0.0
+    correct = 0
+    total = 0
+    for i in range(1, len(actual)):
+        actual_dir = actual[i] - actual[i - 1]
+        pred_dir = predicted[i] - predicted[i - 1]
+        if (actual_dir >= 0) == (pred_dir >= 0):
+            correct += 1
+        total += 1
+    return round(correct / total, 4)
+
+
+def forecast_bias_ratio(actual: list[float], predicted: list[float]) -> float:
+    """Compute the ratio of mean prediction to mean actual (bias ratio).
+
+    A ratio of 1.0 means the forecaster is unbiased on average.
+    Values > 1 indicate systematic over-prediction; < 1 indicates under-prediction.
+
+    Args:
+        actual: Observed values.
+        predicted: Predicted values; must have the same length.
+
+    Returns:
+        Bias ratio; 0.0 when mean actual is zero.
+
+    Raises:
+        ValueError: If lengths differ.
+    """
+    if len(actual) != len(predicted):
+        raise ValueError(f"Length mismatch: actual={len(actual)}, predicted={len(predicted)}")
+    if not actual:
+        return 0.0
+    mean_actual = sum(actual) / len(actual)
+    if mean_actual == 0:
+        return 0.0
+    mean_pred = sum(predicted) / len(predicted)
+    return round(mean_pred / mean_actual, 6)
