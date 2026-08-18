@@ -387,3 +387,49 @@ class TestAverageDailyRate:
         from app.features import average_daily_rate
 
         assert average_daily_rate(500.0, 0) == 0.0
+
+
+class TestGrossOperatingProfitPerAvailableRoom:
+    def test_standard_case(self) -> None:
+        from app.features import gross_operating_profit_per_available_room
+
+        result = gross_operating_profit_per_available_room(50000.0, 30000.0, 100)
+        assert result == pytest.approx(200.0)
+
+    def test_zero_rooms_returns_zero(self) -> None:
+        from app.features import gross_operating_profit_per_available_room
+
+        assert gross_operating_profit_per_available_room(50000.0, 30000.0, 0) == 0.0
+
+    def test_loss_is_negative(self) -> None:
+        from app.features import gross_operating_profit_per_available_room
+
+        result = gross_operating_profit_per_available_room(10000.0, 30000.0, 100)
+        assert result < 0.0
+
+
+class TestLengthOfStayMix:
+    def test_empty_returns_zeros(self) -> None:
+        from app.features import length_of_stay_mix
+
+        result = length_of_stay_mix([])
+        assert all(v == 0.0 for v in result.values())
+
+    def test_fractions_sum_to_one(self) -> None:
+        from app.features import length_of_stay_mix
+
+        result = length_of_stay_mix([1, 2, 3, 5])
+        assert sum(result.values()) == pytest.approx(1.0, abs=1e-4)
+
+    def test_only_one_night_stays(self) -> None:
+        from app.features import length_of_stay_mix
+
+        result = length_of_stay_mix([1, 1, 1])
+        assert result["one_night"] == 1.0
+        assert result["two_three_nights"] == 0.0
+
+    def test_keys_present(self) -> None:
+        from app.features import length_of_stay_mix
+
+        result = length_of_stay_mix([2])
+        assert {"one_night", "two_three_nights", "four_plus_nights"} <= result.keys()
