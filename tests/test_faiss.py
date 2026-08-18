@@ -223,8 +223,6 @@ class TestVectorMagnitude:
 
 class TestAngularDistance:
     def test_same_vector_zero(self) -> None:
-        import math
-
         from app.similarity import angular_distance
 
         result = angular_distance([1.0, 0.0], [1.0, 0.0])

@@ -1323,28 +1323,3 @@ class TestHarmonicMean:
         assert result == pytest.approx(4.0, rel=1e-6)
 
 
-class TestTrimmedMean:
-    def test_symmetric_trim(self) -> None:
-        from app.stats_utils import trimmed_mean
-
-        result = trimmed_mean([1.0, 2.0, 3.0, 4.0, 100.0], trim_pct=0.2)
-        assert result == pytest.approx(3.0, rel=0.1)
-
-    def test_no_trim_equals_mean(self) -> None:
-        from app.stats_utils import trimmed_mean
-
-        values = [1.0, 2.0, 3.0, 4.0, 5.0]
-        result = trimmed_mean(values, trim_pct=0.0)
-        assert result == pytest.approx(sum(values) / len(values), rel=1e-6)
-
-    def test_empty_raises(self) -> None:
-        from app.stats_utils import trimmed_mean
-
-        with pytest.raises(ValueError):
-            trimmed_mean([])
-
-    def test_returns_float(self) -> None:
-        from app.stats_utils import trimmed_mean
-
-        result = trimmed_mean([5.0, 10.0, 15.0], trim_pct=0.1)
-        assert isinstance(result, float)

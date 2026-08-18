@@ -137,17 +137,18 @@ def reset_limiter(limiter: TokenBucketRateLimiter, client_key: str = "default") 
     limiter.reset(client_key)
 
 
-def is_rate_limited(limiter: TokenBucketRateLimiter, client_key: str = "default") -> bool:
+def is_rate_limited(limiter: TokenBucketRateLimiter, client_key: str = "default", cost: float = 1.0) -> bool:
     """Check whether a client's next request would be rate-limited WITHOUT consuming tokens.
 
     Args:
         limiter: A TokenBucketRateLimiter instance.
         client_key: The client identifier. Default "default".
+        cost: Token cost of the hypothetical request. Default 1.0.
 
     Returns:
         True if the next is_allowed call would be denied, else False.
     """
-    return limiter.remaining_tokens(client_key) < 1.0
+    return limiter.remaining_tokens(client_key) < cost
 
 
 def make_strict_limiter(max_per_second: float) -> TokenBucketRateLimiter:
@@ -266,6 +267,73 @@ def reset_client(limiter: TokenBucketRateLimiter, client_key: str) -> bool:
             return False
         limiter._buckets[client_key] = _Bucket(tokens=limiter._capacity)
         return True
+
+
+def active_client_count(limiter: TokenBucketRateLimiter) -> int:
+    """Return the number of tracked client keys in the limiter.
+
+    Args:
+        limiter: A TokenBucketRateLimiter instance.
+
+    Returns:
+        Integer count of clients that have made at least one request.
+    """
+    return limiter.client_count
+
+
+def total_consumed_tokens(limiter: TokenBucketRateLimiter, client_key: str | None = None) -> float:
+    """Return total tokens consumed across all clients (or for one client).
+
+    Args:
+        limiter: A TokenBucketRateLimiter instance.
+        client_key: If given, return consumed tokens for this client only.
+
+    Returns:
+        Non-negative float representing consumed token count.
+    """
+    capacity = limiter._capacity
+    with limiter._lock:
+        if client_key is not None:
+            if client_key not in limiter._buckets:
+                return 0.0
+            bucket = limiter._buckets[client_key]
+            limiter._refill(bucket)
+            return round(max(0.0, capacity - bucket.tokens), 4)
+        total = 0.0
+        for bucket in limiter._buckets.values():
+            limiter._refill(bucket)
+            total += max(0.0, capacity - bucket.tokens)
+        return round(total, 4)
+
+
+def client_exists(limiter: TokenBucketRateLimiter, client_key: str) -> bool:
+    """Return True if *client_key* has a tracked bucket in the limiter.
+
+    Args:
+        limiter: A TokenBucketRateLimiter instance.
+        client_key: Client identifier to look up.
+
+    Returns:
+        True when the client has made at least one request, False otherwise.
+    """
+    with limiter._lock:
+        return client_key in limiter._buckets
+
+
+def bucket_fill_percentage(limiter: TokenBucketRateLimiter, client_key: str) -> float:
+    """Return the fill percentage (0-100) of *client_key*'s token bucket.
+
+    A new (unseen) client is considered full (100.0).
+
+    Args:
+        limiter: A TokenBucketRateLimiter instance.
+        client_key: Client identifier.
+
+    Returns:
+        Float in [0.0, 100.0].
+    """
+    remaining = limiter.remaining_tokens(client_key)
+    return round(min(100.0, remaining / limiter._capacity * 100.0), 4)
 
 
 def bulk_allow(limiter: TokenBucketRateLimiter, client_keys: list[str]) -> dict[str, bool]:

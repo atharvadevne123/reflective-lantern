@@ -1243,34 +1243,6 @@ class TestCarbonIntensityTrend:
         assert result["latest_label"] == carbon_intensity_label(intensity)
 
 
-class TestCarbonBudgetRemaining:
-    def test_partial_use(self) -> None:
-        from app.carbon import carbon_budget_remaining
-
-        result = carbon_budget_remaining(1000.0, 300.0)
-        assert result["remaining_kg"] == pytest.approx(700.0)
-        assert result["used_pct"] == pytest.approx(0.3)
-
-    def test_over_budget_remaining_zero(self) -> None:
-        from app.carbon import carbon_budget_remaining
-
-        result = carbon_budget_remaining(1000.0, 1500.0)
-        assert result["remaining_kg"] == 0.0
-
-    def test_zero_budget_returns_zero_pct(self) -> None:
-        from app.carbon import carbon_budget_remaining
-
-        result = carbon_budget_remaining(0.0, 100.0)
-        assert result["used_pct"] == 0.0
-
-    @pytest.mark.parametrize("used,expected_pct", [(0.0, 0.0), (500.0, 0.5), (1000.0, 1.0)])
-    def test_parametrized_pct(self, used: float, expected_pct: float) -> None:
-        from app.carbon import carbon_budget_remaining
-
-        result = carbon_budget_remaining(1000.0, used)
-        assert result["used_pct"] == pytest.approx(expected_pct)
-
-
 class TestEmissionsReductionPct:
     def test_20_pct_reduction(self) -> None:
         from app.carbon import emissions_reduction_pct

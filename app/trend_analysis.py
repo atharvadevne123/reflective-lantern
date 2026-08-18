@@ -814,26 +814,3 @@ def cumulative_growth(values: list[float]) -> list[float]:
     if base == 0:
         return [0.0] * len(values)
     return [round((v - base) / base, 6) for v in values]
-
-
-def trend_reversal_count(values: list[float]) -> int:
-    """Count the number of sign changes in consecutive differences.
-
-    A reversal is when the series changes from rising to falling or vice versa.
-
-    Args:
-        values: Numeric series with at least two elements.
-
-    Returns:
-        Number of reversals. Returns 0 for series shorter than 3.
-    """
-    if len(values) < 3:
-        return 0
-    diffs = [values[i + 1] - values[i] for i in range(len(values) - 1)]
-    reversals = 0
-    for i in range(1, len(diffs)):
-        if diffs[i - 1] > 0 and diffs[i] < 0:
-            reversals += 1
-        elif diffs[i - 1] < 0 and diffs[i] > 0:
-            reversals += 1
-    return reversals

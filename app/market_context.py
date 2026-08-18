@@ -852,39 +852,3 @@ def price_to_income_ratio(median_home_price: float, median_annual_income: float)
     if median_annual_income <= 0.0:
         return 0.0
     return round(median_home_price / median_annual_income, 4)
-
-
-def affordability_index(
-    median_home_price: float,
-    median_annual_income: float,
-    mortgage_rate_pct: float = 7.0,
-    down_payment_pct: float = 20.0,
-    years: int = 30,
-) -> float:
-    """Estimate housing affordability (higher is more affordable).
-
-    A value of 100 means a household earning the median income can exactly
-    afford the qualifying mortgage payment at the given rate. Values above
-    100 indicate the market is affordable; below 100 is unaffordable.
-
-    Args:
-        median_home_price: Median home price.
-        median_annual_income: Median household annual income.
-        mortgage_rate_pct: Annual mortgage interest rate in percent.
-        down_payment_pct: Down payment percentage.
-        years: Mortgage term in years.
-
-    Returns:
-        Affordability index value; 0.0 on invalid inputs.
-    """
-    if median_home_price <= 0 or median_annual_income <= 0 or years <= 0:
-        return 0.0
-    loan = median_home_price * (1 - down_payment_pct / 100.0)
-    r = (mortgage_rate_pct / 100.0) / 12.0
-    n = years * 12
-    if r == 0:
-        monthly_payment = loan / n
-    else:
-        monthly_payment = loan * r * (1 + r) ** n / ((1 + r) ** n - 1)
-    qualifying_income = monthly_payment * 12 / 0.28
-    return round(median_annual_income / qualifying_income * 100.0, 2)

@@ -1166,27 +1166,3 @@ class TestPriceToIncomeRatio:
         assert price_to_income_ratio(price, income) == pytest.approx(expected)
 
 
-class TestAffordabilityIndex:
-    def test_returns_positive_value(self) -> None:
-        from app.market_context import affordability_index
-
-        result = affordability_index(400000.0, 80000.0)
-        assert result > 0.0
-
-    def test_zero_price_returns_zero(self) -> None:
-        from app.market_context import affordability_index
-
-        assert affordability_index(0.0, 80000.0) == 0.0
-
-    def test_higher_income_more_affordable(self) -> None:
-        from app.market_context import affordability_index
-
-        low = affordability_index(400000.0, 60000.0)
-        high = affordability_index(400000.0, 100000.0)
-        assert high > low
-
-    def test_returns_float(self) -> None:
-        from app.market_context import affordability_index
-
-        result = affordability_index(500000.0, 90000.0)
-        assert isinstance(result, float)

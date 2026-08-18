@@ -352,14 +352,15 @@ class TestIsRateLimitedHelper:
 
 
 class TestResetClient:
-    def test_reset_removes_bucket(self) -> None:
-        from app.rate_limiter import client_exists, make_rate_limiter, reset_client
+    def test_reset_restores_bucket(self) -> None:
+        from app.rate_limiter import bucket_fill_percentage, make_rate_limiter, reset_client
 
-        limiter = make_rate_limiter()
-        limiter.is_allowed("z")
-        assert client_exists(limiter, "z") is True
+        limiter = make_rate_limiter(capacity=5.0, refill_rate=0.0)
+        for _ in range(5):
+            limiter.is_allowed("z")
+        assert bucket_fill_percentage(limiter, "z") == pytest.approx(0.0, abs=1.0)
         reset_client(limiter, "z")
-        assert client_exists(limiter, "z") is False
+        assert bucket_fill_percentage(limiter, "z") == pytest.approx(100.0, abs=1.0)
 
     def test_reset_nonexistent_returns_false(self) -> None:
         from app.rate_limiter import make_rate_limiter, reset_client
