@@ -189,3 +189,50 @@ class TestNormalisedEfficiencyIndex:
 
         result = normalised_efficiency_index(5.0, btype, 200.0, 10.0)
         assert isinstance(result, float)
+
+
+class TestForecastHorizonAccuracy:
+    def test_perfect_forecast_zero_error(self) -> None:
+        from app.forecaster import forecast_horizon_accuracy
+
+        result = forecast_horizon_accuracy([1.0, 2.0, 3.0], [1.0, 2.0, 3.0])
+        assert result["mae"] == pytest.approx(0.0)
+        assert result["rmse"] == pytest.approx(0.0)
+
+    def test_empty_inputs_return_zeros(self) -> None:
+        from app.forecaster import forecast_horizon_accuracy
+
+        result = forecast_horizon_accuracy([], [], horizon=24)
+        assert result["n_evaluated"] == 0
+
+    def test_n_evaluated_capped_by_horizon(self) -> None:
+        from app.forecaster import forecast_horizon_accuracy
+
+        result = forecast_horizon_accuracy([1.0] * 100, [1.0] * 100, horizon=10)
+        assert result["n_evaluated"] == 10
+
+
+class TestExponentialSmoothing:
+    def test_constant_series_returns_value(self) -> None:
+        from app.forecaster import exponential_smoothing
+
+        result = exponential_smoothing([5.0] * 10, alpha=0.5, steps=3)
+        assert all(abs(v - 5.0) < 0.01 for v in result)
+
+    def test_steps_controls_output_length(self) -> None:
+        from app.forecaster import exponential_smoothing
+
+        result = exponential_smoothing([1.0, 2.0, 3.0], steps=5)
+        assert len(result) == 5
+
+    def test_empty_raises(self) -> None:
+        from app.forecaster import exponential_smoothing
+
+        with pytest.raises(ValueError):
+            exponential_smoothing([])
+
+    def test_invalid_alpha_raises(self) -> None:
+        from app.forecaster import exponential_smoothing
+
+        with pytest.raises(ValueError):
+            exponential_smoothing([1.0, 2.0], alpha=0.0)
