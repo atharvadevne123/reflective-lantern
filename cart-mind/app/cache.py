@@ -156,7 +156,7 @@ def evict_expired(cache: TTLCache) -> int:
     """
     evicted = 0
     with cache._lock:
-        now = time.time()
+        now = time.monotonic()
         expired_keys = [k for k, (ts, _) in cache._store.items() if now - ts > cache._ttl]
         for k in expired_keys:
             del cache._store[k]

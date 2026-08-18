@@ -161,3 +161,57 @@ class TestTTLCacheDeleteAndSize:
         for i in range(n_delete):
             cache.delete(f"k{i}")
         assert cache.size() == 10 - n_delete
+
+
+class TestCacheHitRate:
+    def test_empty_cache_returns_zero(self) -> None:
+        from app.cache import TTLCache, cache_hit_rate
+
+        c = TTLCache()
+        assert cache_hit_rate(c) == 0.0
+
+    def test_all_hits_returns_one(self) -> None:
+        from app.cache import TTLCache, cache_hit_rate
+
+        c = TTLCache()
+        c.set("k", 1)
+        c.get("k")
+        assert cache_hit_rate(c) == 1.0
+
+    def test_half_hit_rate(self) -> None:
+        from app.cache import TTLCache, cache_hit_rate
+
+        c = TTLCache()
+        c.set("k", 1)
+        c.get("k")
+        c.get("miss")
+        result = cache_hit_rate(c)
+        assert result == pytest.approx(0.5)
+
+
+class TestEvictExpired:
+    def test_non_expired_not_evicted(self) -> None:
+        from app.cache import TTLCache, evict_expired
+
+        c = TTLCache(ttl_seconds=300)
+        c.set("k", 1)
+        evicted = evict_expired(c)
+        assert evicted == 0
+        assert c.get("k") == 1
+
+    def test_expired_entry_evicted(self) -> None:
+        from app.cache import TTLCache, evict_expired
+
+        c = TTLCache(ttl_seconds=0.001)
+        c.set("k", "v")
+        import time
+        time.sleep(0.01)
+        evicted = evict_expired(c)
+        assert evicted == 1
+
+    def test_returns_int(self) -> None:
+        from app.cache import TTLCache, evict_expired
+
+        c = TTLCache()
+        result = evict_expired(c)
+        assert isinstance(result, int)
