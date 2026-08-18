@@ -1234,3 +1234,54 @@ def test_gross_yield_in_range(annual_rent: float, property_value: float) -> None
 
     result = gross_yield(annual_rent, property_value)
     assert 0.0 < result < 100.0
+
+
+class TestBreakEvenOccupancy:
+    def test_50_pct_occupancy_needed(self) -> None:
+        from app.investment import break_even_occupancy
+
+        result = break_even_occupancy(1500.0, 100.0, nights_in_month=30)
+        assert result == pytest.approx(0.5)
+
+    def test_zero_nightly_rate_returns_one(self) -> None:
+        from app.investment import break_even_occupancy
+
+        assert break_even_occupancy(1000.0, 0.0) == 1.0
+
+    def test_capped_at_one(self) -> None:
+        from app.investment import break_even_occupancy
+
+        result = break_even_occupancy(9999.0, 10.0, nights_in_month=30)
+        assert result == 1.0
+
+    def test_returns_float_in_unit_interval(self) -> None:
+        from app.investment import break_even_occupancy
+
+        result = break_even_occupancy(900.0, 50.0, nights_in_month=30)
+        assert 0.0 <= result <= 1.0
+
+
+class TestEquityMultiple:
+    def test_double_investment_is_two(self) -> None:
+        from app.investment import equity_multiple
+
+        assert equity_multiple(20000.0, 10000.0) == pytest.approx(2.0)
+
+    def test_zero_invested_returns_zero(self) -> None:
+        from app.investment import equity_multiple
+
+        assert equity_multiple(10000.0, 0.0) == 0.0
+
+    def test_negative_invested_returns_zero(self) -> None:
+        from app.investment import equity_multiple
+
+        assert equity_multiple(10000.0, -5000.0) == 0.0
+
+    @pytest.mark.parametrize("dist,inv,expected", [
+        (10000.0, 10000.0, 1.0),
+        (15000.0, 10000.0, 1.5),
+    ])
+    def test_parametrized(self, dist: float, inv: float, expected: float) -> None:
+        from app.investment import equity_multiple
+
+        assert equity_multiple(dist, inv) == pytest.approx(expected)
