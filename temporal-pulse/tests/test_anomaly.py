@@ -251,3 +251,54 @@ class TestScorePercentileThreshold:
 
         scores = [1.0, 2.0, 3.0, 10.0]
         assert score_percentile_threshold(scores, percentile=100.0) == pytest.approx(10.0)
+
+
+class TestConsecutiveAnomalyLengths:
+    def test_no_anomalies_empty(self) -> None:
+        from app.anomaly import consecutive_anomaly_lengths
+
+        assert consecutive_anomaly_lengths([False, False, False]) == []
+
+    def test_single_run_detected(self) -> None:
+        from app.anomaly import consecutive_anomaly_lengths
+
+        result = consecutive_anomaly_lengths([False, True, True, False])
+        assert result == [2]
+
+    def test_multiple_runs(self) -> None:
+        from app.anomaly import consecutive_anomaly_lengths
+
+        result = consecutive_anomaly_lengths([True, False, True, True, False])
+        assert result == [1, 2]
+
+    def test_all_anomalous(self) -> None:
+        from app.anomaly import consecutive_anomaly_lengths
+
+        result = consecutive_anomaly_lengths([True, True, True])
+        assert result == [3]
+
+    def test_empty_input(self) -> None:
+        from app.anomaly import consecutive_anomaly_lengths
+
+        assert consecutive_anomaly_lengths([]) == []
+
+
+class TestAnomalyDensity:
+    def test_same_length_output(self) -> None:
+        from app.anomaly import anomaly_density
+
+        scores = [0.0, 5.0, 5.0, 0.0]
+        result = anomaly_density(scores, threshold=3.0)
+        assert len(result) == 4
+
+    def test_no_anomalies_all_zero(self) -> None:
+        from app.anomaly import anomaly_density
+
+        result = anomaly_density([0.0, 1.0, 0.0], threshold=5.0)
+        assert all(d == 0.0 for d in result)
+
+    def test_all_anomalies_all_one(self) -> None:
+        from app.anomaly import anomaly_density
+
+        result = anomaly_density([10.0, 10.0, 10.0], threshold=5.0, window=1)
+        assert all(d == 1.0 for d in result)
