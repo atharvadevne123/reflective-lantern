@@ -950,3 +950,32 @@ def carbon_reduction_years(annual_kg: float, reduction_pct: float, target_kg: fl
     if factor <= 0:
         return 1.0
     return round(_math.log(target_kg / annual_kg) / _math.log(factor), 4)
+
+
+def carbon_intensity_trend(
+    intensities: list[float],
+) -> dict[str, object]:
+    """Analyse a sequence of carbon intensity readings for trend direction.
+
+    Args:
+        intensities: Ordered carbon intensity values (kg CO2/kWh).
+
+    Returns:
+        Dict with 'mean', 'min', 'max', 'trend' ('improving'|'worsening'|'stable'),
+        and 'latest_label'. Returns a zeros dict when *intensities* is empty.
+    """
+    if not intensities:
+        return {"mean": 0.0, "min": 0.0, "max": 0.0, "trend": "stable", "latest_label": "very_low"}
+    mean_val = sum(intensities) / len(intensities)
+    if len(intensities) >= 2:
+        delta = intensities[-1] - intensities[0]
+        trend = "worsening" if delta > 0.01 else ("improving" if delta < -0.01 else "stable")
+    else:
+        trend = "stable"
+    return {
+        "mean": round(mean_val, 6),
+        "min": round(min(intensities), 6),
+        "max": round(max(intensities), 6),
+        "trend": trend,
+        "latest_label": carbon_intensity_label(intensities[-1]),
+    }
