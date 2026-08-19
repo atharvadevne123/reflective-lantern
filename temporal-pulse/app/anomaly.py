@@ -259,7 +259,7 @@ def anomaly_density(scores: list[float], threshold: float, window: int = 10) -> 
     densities = []
     for i in range(len(scores)):
         start = max(0, i - window + 1)
-        chunk = scores[start: i + 1]
+        chunk = scores[start : i + 1]
         anomalies = sum(1 for s in chunk if abs(s) >= threshold)
         densities.append(round(anomalies / len(chunk), 4))
     return densities
