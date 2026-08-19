@@ -10,7 +10,7 @@ from app.aws_stub import download_model_artefacts, upload_model_artefacts
 from app.mlflow_stub import get_best_run, log_metrics, log_training_run
 
 
-def test_log_and_retrieve(tmp_path, monkeypatch):
+def test_log_and_retrieve(tmp_path, monkeypatch) -> None:
     import app.mlflow_stub as ms
 
     monkeypatch.setattr(ms, "_RUN_LOG", tmp_path / "runs.jsonl")
@@ -20,18 +20,18 @@ def test_log_and_retrieve(tmp_path, monkeypatch):
     assert best is not None
     assert best["metrics"]["r2_mean"] == pytest.approx(0.92)
 
-    def test_log_metrics_returns_run_id(self):
+    def test_log_metrics_returns_run_id(self) -> None:
         run_id = log_metrics({"r2_mean": 0.85, "rmse_mean": 250.0})
         assert run_id.startswith("run_")
 
 
-def test_best_run_no_log(tmp_path, monkeypatch):
+def test_best_run_no_log(tmp_path, monkeypatch) -> None:
     import app.mlflow_stub as ms
 
     monkeypatch.setattr(ms, "_RUN_LOG", tmp_path / "missing.jsonl")
     assert get_best_run() is None
 
-    def test_get_best_run_by_metric(self):
+    def test_get_best_run_by_metric(self) -> None:
         log_metrics({"r2_mean": 0.80}, run_name="run_a")
         log_metrics({"r2_mean": 0.90}, run_name="run_b")
         log_metrics({"r2_mean": 0.75}, run_name="run_c")
@@ -41,7 +41,7 @@ def test_best_run_no_log(tmp_path, monkeypatch):
         assert best["run_name"] == "run_b"
 
 
-def test_log_returns_run_name(tmp_path, monkeypatch):
+def test_log_returns_run_name(tmp_path, monkeypatch) -> None:
     pass
 
 
@@ -251,7 +251,7 @@ def test_artefact_filename_in_constant(filename: str) -> None:
     assert filename in ARTEFACT_FILENAMES
 
 
-def test_set_tracking_uri_configures():
+def test_set_tracking_uri_configures() -> None:
     import app.mlflow_stub as stub
     from app.mlflow_stub import set_tracking_uri
 
@@ -260,7 +260,7 @@ def test_set_tracking_uri_configures():
     set_tracking_uri("")  # cleanup
 
 
-def test_log_params_appends_to_log(tmp_path, monkeypatch):
+def test_log_params_appends_to_log(tmp_path, monkeypatch) -> None:
     import app.mlflow_stub as stub
 
     monkeypatch.setattr(stub, "_RUN_LOG", tmp_path / "runs.jsonl")
@@ -268,7 +268,7 @@ def test_log_params_appends_to_log(tmp_path, monkeypatch):
     assert (tmp_path / "runs.jsonl").exists()
 
 
-def test_log_artifact_appends_to_log(tmp_path, monkeypatch):
+def test_log_artifact_appends_to_log(tmp_path, monkeypatch) -> None:
     import app.mlflow_stub as stub
 
     monkeypatch.setattr(stub, "_RUN_LOG", tmp_path / "runs.jsonl")
@@ -277,7 +277,7 @@ def test_log_artifact_appends_to_log(tmp_path, monkeypatch):
     assert "model.joblib" in content
 
 
-def test_list_runs_empty_when_no_log():
+def test_list_runs_empty_when_no_log() -> None:
     import pathlib
 
     import app.mlflow_stub as stub
@@ -291,7 +291,7 @@ def test_list_runs_empty_when_no_log():
         stub._RUN_LOG = orig
 
 
-def test_list_runs_returns_entries(tmp_path, monkeypatch):
+def test_list_runs_returns_entries(tmp_path, monkeypatch) -> None:
     import json
 
     import app.mlflow_stub as stub
