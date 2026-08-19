@@ -902,11 +902,14 @@ class TestValidateListLength:
 
         assert validate_list_length([1, 2], min_len=2, max_len=5) == []
 
-    @pytest.mark.parametrize("length,min_len,max_len,expect_errors", [
-        (3, 1, 5, False),
-        (0, 1, 5, True),
-        (6, 1, 5, True),
-    ])
+    @pytest.mark.parametrize(
+        "length,min_len,max_len,expect_errors",
+        [
+            (3, 1, 5, False),
+            (0, 1, 5, True),
+            (6, 1, 5, True),
+        ],
+    )
     def test_parametrized(self, length: int, min_len: int, max_len: int, expect_errors: bool) -> None:
         from app.validation import validate_list_length
 
@@ -933,10 +936,13 @@ class TestValidateEnum:
         errors = validate_enum("bad", ["good"], field_name="status")
         assert "status" in errors[0]
 
-    @pytest.mark.parametrize("value,allowed", [
-        ("a", ["a", "b", "c"]),
-        ("low", ["low", "medium", "high"]),
-    ])
+    @pytest.mark.parametrize(
+        "value,allowed",
+        [
+            ("a", ["a", "b", "c"]),
+            ("low", ["low", "medium", "high"]),
+        ],
+    )
     def test_parametrized_valid(self, value: str, allowed: list) -> None:
         from app.validation import validate_enum
 
@@ -1022,9 +1028,7 @@ import pytest as _pytest
         (0, 0, 13, False),
     ],
 )
-def test_validate_temporal_fields_parametrized(
-    hour: int, dow: int, month: int, expect_valid: bool
-) -> None:
+def test_validate_temporal_fields_parametrized(hour: int, dow: int, month: int, expect_valid: bool) -> None:
     from app.validation import validate_temporal_fields
 
     errors = validate_temporal_fields(hour, dow, month)
