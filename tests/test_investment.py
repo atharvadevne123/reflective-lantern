@@ -1218,7 +1218,9 @@ def test_price_to_rent_ratio_in_range(property_price: float, rent: float, expect
         (100.0, 80.0, 0.0, False),
     ],
 )
-def test_holding_period_return_sign(purchase_price: float, sale_price: float, income: float, expected_positive: bool) -> None:
+def test_holding_period_return_sign(
+    purchase_price: float, sale_price: float, income: float, expected_positive: bool
+) -> None:
     from app.investment import holding_period_return
 
     result = holding_period_return(purchase_price, sale_price, income)
@@ -1234,5 +1236,3 @@ def test_gross_yield_in_range(annual_rent: float, property_value: float) -> None
 
     result = gross_yield(annual_rent, property_value)
     assert 0.0 < result < 100.0
-
-
