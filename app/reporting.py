@@ -843,7 +843,7 @@ def top_n_consumers(readings: list[dict[str, Any]], n: int = 10) -> list[dict[st
 def consumption_heatmap_data(
     readings: list[dict[str, Any]],
 ) -> dict[str, dict[str, float]]:
-    """Aggregate readings into a day_of_week × hour heatmap.
+    """Aggregate readings into a day_of_week x hour heatmap.
 
     Each cell contains the mean ``consumption_kwh`` for that (day, hour) pair.
     Records lacking any of ``day_of_week``, ``hour``, or ``consumption_kwh``
@@ -866,10 +866,7 @@ def consumption_heatmap_data(
         dkey = str(dow)
         hkey = str(hour)
         buckets.setdefault(dkey, {}).setdefault(hkey, []).append(float(kwh))
-    return {
-        d: {h: round(sum(v) / len(v), 4) for h, v in hours.items()}
-        for d, hours in buckets.items()
-    }
+    return {d: {h: round(sum(v) / len(v), 4) for h, v in hours.items()} for d, hours in buckets.items()}
 
 
 def savings_summary(
