@@ -23,7 +23,7 @@ def _make_df(n: int = 200, seed: int = 11) -> pd.DataFrame:
     )
 
 
-def test_train_predict_end_to_end():
+def test_train_predict_end_to_end() -> None:
     from app.features import make_feature_row
     from app.model import predict, train_model
 
@@ -37,7 +37,7 @@ def test_train_predict_end_to_end():
     assert isinstance(float(preds[0]), float)
 
 
-def test_train_anomaly_end_to_end():
+def test_train_anomaly_end_to_end() -> None:
     from app.features import make_feature_row
     from app.model import score_anomaly, train_anomaly_model
 
@@ -50,7 +50,7 @@ def test_train_anomaly_end_to_end():
     assert result["severity"] in ("none", "warning", "critical")
 
 
-def test_pipeline_stable_across_calls():
+def test_pipeline_stable_across_calls() -> None:
     from app.features import make_feature_row
     from app.model import predict, train_model
 
@@ -64,7 +64,7 @@ def test_pipeline_stable_across_calls():
 
 
 @pytest.mark.parametrize("hvac", [0, 1])
-def test_hvac_effect_on_prediction(hvac):
+def test_hvac_effect_on_prediction(hvac) -> None:
     """HVAC=1 should yield higher consumption than HVAC=0 on average."""
     from app.features import make_feature_row
     from app.model import predict, train_model
@@ -79,7 +79,7 @@ def test_hvac_effect_on_prediction(hvac):
 
 
 @pytest.mark.parametrize("n_samples", [100, 200, 500])
-def test_train_various_sizes(n_samples):
+def test_train_various_sizes(n_samples) -> None:
     from app.model import train_model
 
     df = _make_df(n_samples)
@@ -88,7 +88,7 @@ def test_train_various_sizes(n_samples):
     assert bundle is not None
 
 
-def test_prediction_is_non_negative_for_typical_input():
+def test_prediction_is_non_negative_for_typical_input() -> None:
     from app.features import make_feature_row
     from app.model import predict, train_model
 
@@ -100,7 +100,7 @@ def test_prediction_is_non_negative_for_typical_input():
     assert isinstance(float(preds[0]), float)
 
 
-def test_anomaly_score_is_between_zero_and_one():
+def test_anomaly_score_is_between_zero_and_one() -> None:
     from app.features import make_feature_row
     from app.model import score_anomaly, train_anomaly_model
 
@@ -111,7 +111,7 @@ def test_anomaly_score_is_between_zero_and_one():
     assert isinstance(result["anomaly_score"], float)
 
 
-def test_train_model_returns_metrics_keys():
+def test_train_model_returns_metrics_keys() -> None:
     from app.model import train_model
 
     df = _make_df(150)
