@@ -1065,5 +1065,20 @@
       "All 4820 tests pass; ruff clean"
     ],
     "email_status": "smtp_blocked_remote_env"
+  },
+  {
+    "date": "2026-08-19",
+    "mode": "improvement",
+    "improvements": [
+      "ci(1-7/60): fixed 7 ruff lint errors (B905, RUF002, RUF022) in app/similarity.py, app/time_series.py, app/validation.py, app/date_utils.py, app/reporting.py, price-prophet/app/pricing/elasticity.py, veritas-rag/app/scoring/trust.py",
+      "style(8-37/60): applied ruff format to 30 files across app/, energy_seer/, forge-guard/, cart-mind/, temporal-pulse/, price-prophet/, tests/, scripts/",
+      "refactor(38-50/60): added -> None return type annotations to test functions in 13 files in tests/",
+      "refactor(51/60): added -> None annotation to reset_window fixture",
+      "refactor(52-59/60): added -> None return type annotations to 8 cart-mind/tests/ files",
+      "docs(60/60): updated CHANGELOG.md with 2026-08-19 improvement run details"
+    ],
+    "tests_passed": true,
+    "commits": 60,
+    "email_status": "pending"
   }
 ]
