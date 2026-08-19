@@ -1321,5 +1321,3 @@ class TestHarmonicMean:
 
         result = harmonic_mean([4.0] * n)
         assert result == pytest.approx(4.0, rel=1e-6)
-
-
