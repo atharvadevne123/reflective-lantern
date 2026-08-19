@@ -172,7 +172,7 @@ def zscore_outlier(values: list[float], threshold: float = 3.0) -> list[bool]:
         raise ValueError("values must not be empty")
     mean = sum(values) / len(values)
     variance = sum((v - mean) ** 2 for v in values) / len(values)
-    std = variance ** 0.5
+    std = variance**0.5
     if std == 0.0:
         return [False] * len(values)
     return [abs((v - mean) / std) > threshold for v in values]
@@ -260,5 +260,5 @@ def field_statistics(records: list[dict[str, float]], field: str) -> dict[str, f
         "mean": round(mean, 4),
         "min": round(min(values), 4),
         "max": round(max(values), 4),
-        "std": round(variance ** 0.5, 4),
+        "std": round(variance**0.5, 4),
     }
