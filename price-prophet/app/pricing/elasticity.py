@@ -114,7 +114,9 @@ def is_elastic(elasticity: float) -> bool:
     return abs(elasticity) > 1.0
 
 
-def revenue_at_price(price: float, base_demand: float, base_price: float, elasticity: float) -> float:
+def revenue_at_price(
+    price: float, base_demand: float, base_price: float, elasticity: float
+) -> float:
     """Compute expected revenue at a given price using the elasticity model.
 
     Args:
@@ -124,7 +126,7 @@ def revenue_at_price(price: float, base_demand: float, base_price: float, elasti
         elasticity: Price elasticity of demand (typically negative).
 
     Returns:
-        Estimated revenue (price × demand); 0.0 when price or base_price is non-positive.
+        Estimated revenue (price x demand); 0.0 when price or base_price is non-positive.
     """
     if price <= 0.0 or base_price <= 0.0:
         return 0.0
