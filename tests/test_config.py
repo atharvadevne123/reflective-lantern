@@ -413,7 +413,7 @@ def test_string_constants_are_non_empty(const_name: str) -> None:
     assert len(val) > 0
 
 
-def test_settings_to_dict_masks_sensitive(settings_env):
+def test_settings_to_dict_masks_sensitive(settings_env) -> None:
     from config.settings import get_settings
 
     s = get_settings()
@@ -422,7 +422,7 @@ def test_settings_to_dict_masks_sensitive(settings_env):
     assert d.get("gmail_app_pass") == "***"
 
 
-def test_settings_to_dict_includes_sensitive_when_requested(settings_env):
+def test_settings_to_dict_includes_sensitive_when_requested(settings_env) -> None:
     from config.settings import get_settings
 
     s = get_settings()
@@ -430,7 +430,7 @@ def test_settings_to_dict_includes_sensitive_when_requested(settings_env):
     assert d.get("gh_pat") == "ghp_test"
 
 
-def test_settings_missing_optional_returns_list(settings_env):
+def test_settings_missing_optional_returns_list(settings_env) -> None:
     from config.settings import get_settings
 
     s = get_settings()
@@ -438,7 +438,7 @@ def test_settings_missing_optional_returns_list(settings_env):
     assert isinstance(missing, list)
 
 
-def test_settings_to_dict_has_all_slots(settings_env):
+def test_settings_to_dict_has_all_slots(settings_env) -> None:
     from config.settings import get_settings
 
     s = get_settings()
@@ -447,28 +447,28 @@ def test_settings_to_dict_has_all_slots(settings_env):
         assert slot in d
 
 
-def test_settings_is_valid_true(settings_env):
+def test_settings_is_valid_true(settings_env) -> None:
     from config.settings import get_settings
 
     s = get_settings()
     assert s.is_valid() is True
 
 
-def test_settings_commit_target_positive(settings_env):
+def test_settings_commit_target_positive(settings_env) -> None:
     from config.settings import get_settings
 
     s = get_settings()
     assert s.commit_target > 0
 
 
-def test_settings_log_level_is_string(settings_env):
+def test_settings_log_level_is_string(settings_env) -> None:
     from config.settings import get_settings
 
     s = get_settings()
     assert isinstance(s.log_level, str)
 
 
-def test_settings_github_owner_is_string(settings_env):
+def test_settings_github_owner_is_string(settings_env) -> None:
     from config.settings import get_settings
 
     s = get_settings()
@@ -476,7 +476,7 @@ def test_settings_github_owner_is_string(settings_env):
 
 
 @pytest.mark.parametrize("field", ["gh_pat", "gmail_app_pass"])
-def test_settings_sensitive_fields_masked(settings_env, field):
+def test_settings_sensitive_fields_masked(settings_env, field) -> None:
     from config.settings import get_settings
 
     s = get_settings()
