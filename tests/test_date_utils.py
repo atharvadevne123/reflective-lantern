@@ -906,8 +906,8 @@ def test_generate_hourly_timestamps_count(n_hours: int) -> None:
 @_pytest.mark.parametrize(
     "dt,expected_is_weekend",
     [
-        (_dt.datetime(2026, 8, 15), True),   # Saturday
-        (_dt.datetime(2026, 8, 16), True),   # Sunday
+        (_dt.datetime(2026, 8, 15), True),  # Saturday
+        (_dt.datetime(2026, 8, 16), True),  # Sunday
         (_dt.datetime(2026, 8, 14), False),  # Friday
     ],
 )
