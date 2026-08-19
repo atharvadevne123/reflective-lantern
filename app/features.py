@@ -659,7 +659,7 @@ def zscore_feature(values: list[float]) -> list[float]:
         raise ValueError(f"values must have at least 2 elements, got {len(values)}")
     mean = sum(values) / len(values)
     variance = sum((v - mean) ** 2 for v in values) / len(values)
-    std = variance ** 0.5
+    std = variance**0.5
     if std == 0:
         return [0.0] * len(values)
     return [round((v - mean) / std, 6) for v in values]
