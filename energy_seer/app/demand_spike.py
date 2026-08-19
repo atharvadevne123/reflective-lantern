@@ -198,7 +198,9 @@ def sustained_demand_violation(
             duration = j - i
             if duration >= min_duration:
                 peak = max(values[i:j])
-                violations.append({"start": i, "end": j - 1, "duration": duration, "peak": round(peak, 4)})
+                violations.append(
+                    {"start": i, "end": j - 1, "duration": duration, "peak": round(peak, 4)}
+                )
             i = j
         else:
             i += 1
