@@ -174,13 +174,15 @@ def prediction_trend(
         )
         total = len(logs)
         defects = sum(1 for r in logs if r.prediction == 1)
-        results.append({
-            "window_start": start.isoformat(),
-            "window_end": end.isoformat(),
-            "total": total,
-            "defect_count": defects,
-            "defect_rate": round(defects / total, 4) if total else 0.0,
-        })
+        results.append(
+            {
+                "window_start": start.isoformat(),
+                "window_end": end.isoformat(),
+                "total": total,
+                "defect_count": defects,
+                "defect_rate": round(defects / total, 4) if total else 0.0,
+            }
+        )
     return results
 
 
