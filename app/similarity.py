@@ -614,6 +614,6 @@ def angular_distance(a: list[float], b: list[float]) -> float:
     mag_b = vector_magnitude(b)
     if mag_a == 0.0 or mag_b == 0.0:
         return math.pi / 2.0
-    dot = sum(x * y for x, y in zip(a, b))
+    dot = sum(x * y for x, y in zip(a, b, strict=False))
     cos_sim = max(-1.0, min(1.0, dot / (mag_a * mag_b)))
     return round(math.acos(cos_sim), 6)
