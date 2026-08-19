@@ -153,7 +153,9 @@ def psi_feature_rank(
     ranked = []
     for feature, (ref, cur) in feature_distributions.items():
         result = compute_psi(ref, cur, bins=bins)
-        ranked.append({"feature": feature, "psi": result["psi"], "drift_level": result["drift_level"]})
+        ranked.append(
+            {"feature": feature, "psi": result["psi"], "drift_level": result["drift_level"]}
+        )
     ranked.sort(key=lambda x: float(x["psi"]), reverse=True)
     return ranked
 
