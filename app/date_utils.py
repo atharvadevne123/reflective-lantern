@@ -440,7 +440,7 @@ def week_number(dt: datetime) -> int:
         dt: Datetime to inspect.
 
     Returns:
-        ISO week number in the range 1–53.
+        ISO week number in the range 1-53.
     """
     return dt.isocalendar()[1]
 
