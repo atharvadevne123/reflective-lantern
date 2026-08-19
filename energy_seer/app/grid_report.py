@@ -124,7 +124,12 @@ def report_trend(reports: list[dict]) -> dict:
         and 'latest_status'.
     """
     if not reports:
-        return {"status_counts": {}, "anomaly_total": 0, "escalating": False, "latest_status": "healthy"}
+        return {
+            "status_counts": {},
+            "anomaly_total": 0,
+            "escalating": False,
+            "latest_status": "healthy",
+        }
     status_counts: dict[str, int] = {}
     anomaly_total = 0
     for r in reports:
