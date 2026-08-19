@@ -74,7 +74,7 @@ def forecast_horizon_accuracy(
         return {"mae": 0.0, "rmse": 0.0, "n_evaluated": 0}
     errors = [actual[i] - predicted[i] for i in range(n)]
     mae = sum(abs(e) for e in errors) / n
-    rmse = (sum(e ** 2 for e in errors) / n) ** 0.5
+    rmse = (sum(e**2 for e in errors) / n) ** 0.5
     return {"mae": round(mae, 4), "rmse": round(rmse, 4), "n_evaluated": n}
 
 
