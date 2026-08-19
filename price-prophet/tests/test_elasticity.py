@@ -52,7 +52,9 @@ def test_is_elastic_false():
     assert is_elastic(-0.5) is False
 
 
-@pytest.mark.parametrize("elasticity,expected", [(-2.0, True), (-1.0, False), (-0.5, False), (-1.001, True)])
+@pytest.mark.parametrize(
+    "elasticity,expected", [(-2.0, True), (-1.0, False), (-0.5, False), (-1.001, True)]
+)
 def test_is_elastic_parametrized(elasticity: float, expected: bool) -> None:
     from app.pricing.elasticity import is_elastic
 
