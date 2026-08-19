@@ -779,9 +779,7 @@ def weighted_carbon_factor(sources: list[dict[str, float]]) -> float:
     total_fraction = sum(s.get("fraction", 0.0) for s in sources)
     if abs(total_fraction - 1.0) > 0.05:
         raise ValueError(f"source fractions must sum to 1, got {total_fraction}")
-    weighted = sum(
-        s.get("fraction", 0.0) * s.get("factor_kg_per_kwh", 0.0) for s in sources
-    )
+    weighted = sum(s.get("fraction", 0.0) * s.get("factor_kg_per_kwh", 0.0) for s in sources)
     return round(weighted, 6)
 
 
