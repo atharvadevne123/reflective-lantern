@@ -631,7 +631,7 @@ def hurst_exponent(values: list[float], max_lag: int = 20) -> float:
         cumulative.append(running)
     r = max(cumulative) - min(cumulative)
     var = sum(d * d for d in deviations) / n
-    s = var ** 0.5
+    s = var**0.5
     if s <= 0 or r <= 0:
         return 0.5
     rs = r / s
