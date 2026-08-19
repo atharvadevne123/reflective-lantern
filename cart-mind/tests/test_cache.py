@@ -205,6 +205,7 @@ class TestEvictExpired:
         c = TTLCache(ttl_seconds=0.001)
         c.set("k", "v")
         import time
+
         time.sleep(0.01)
         evicted = evict_expired(c)
         assert evicted == 1
