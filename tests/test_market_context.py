@@ -1156,13 +1156,14 @@ class TestPriceToIncomeRatio:
 
         assert price_to_income_ratio(400000.0, -1.0) == 0.0
 
-    @pytest.mark.parametrize("price,income,expected", [
-        (100000.0, 50000.0, 2.0),
-        (300000.0, 100000.0, 3.0),
-    ])
+    @pytest.mark.parametrize(
+        "price,income,expected",
+        [
+            (100000.0, 50000.0, 2.0),
+            (300000.0, 100000.0, 3.0),
+        ],
+    )
     def test_parametrized(self, price: float, income: float, expected: float) -> None:
         from app.market_context import price_to_income_ratio
 
         assert price_to_income_ratio(price, income) == pytest.approx(expected)
-
-
