@@ -236,13 +236,7 @@ def total_peak_load_mw() -> float:
     Returns:
         Total peak load in MW.
     """
-    return float(
-        sum(
-            r.get("peak_load_mw", 0.0)
-            for name, r in KNOWN_REGIONS.items()
-            if name != "default"
-        )
-    )
+    return float(sum(r.get("peak_load_mw", 0.0) for name, r in KNOWN_REGIONS.items() if name != "default"))
 
 
 def regions_above_peak(threshold_mw: float) -> list[str]:
@@ -254,11 +248,7 @@ def regions_above_peak(threshold_mw: float) -> list[str]:
     Returns:
         Sorted list of region ids (includes every entry in :data:`KNOWN_REGIONS`).
     """
-    return sorted(
-        name
-        for name, r in KNOWN_REGIONS.items()
-        if r.get("peak_load_mw", 0.0) > threshold_mw
-    )
+    return sorted(name for name, r in KNOWN_REGIONS.items() if r.get("peak_load_mw", 0.0) > threshold_mw)
 
 
 def region_share_of_total(region_id: str) -> float:
