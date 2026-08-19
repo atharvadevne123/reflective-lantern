@@ -16,7 +16,7 @@ from app.monitoring import (
 
 
 @pytest.fixture(autouse=True)
-def reset_window():
+def reset_window() -> None:
     """Reset the reference window before and after each test."""
     reset_reference_window()
     yield
