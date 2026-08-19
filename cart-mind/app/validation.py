@@ -274,7 +274,9 @@ def cross_field_penalty_score(warnings: list[str]) -> float:
     return min(1.0, round(len(warnings) * 0.1, 4))
 
 
-def normalise_payload(payload: dict[str, Any], defaults: dict[str, Any] | None = None) -> dict[str, Any]:
+def normalise_payload(
+    payload: dict[str, Any], defaults: dict[str, Any] | None = None
+) -> dict[str, Any]:
     """Fill missing keys from *defaults* and return a complete payload copy.
 
     Args:
