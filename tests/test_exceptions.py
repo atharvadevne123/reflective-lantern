@@ -124,7 +124,9 @@ def test_exception_message_preserved(exc_class, args: tuple) -> None:
     assert str(exc) != ""
 
 
-@pytest.mark.parametrize("field,reason", [("temperature", "out of range"), ("pressure", "negative"), ("vibration", "nan")])
+@pytest.mark.parametrize(
+    "field,reason", [("temperature", "out of range"), ("pressure", "negative"), ("vibration", "nan")]
+)
 def test_feature_validation_error_contains_field(field: str, reason: str) -> None:
     exc = FeatureValidationError(field, reason)
     assert field in str(exc)
