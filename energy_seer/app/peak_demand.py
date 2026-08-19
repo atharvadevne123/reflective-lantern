@@ -124,7 +124,9 @@ def peak_demand_window(
     if n < window_hours:
         return {"window_start": 0, "window_end": 0, "total_kwh": 0.0, "avg_kwh": 0.0}
     arr = np.array(hourly_forecasts, dtype=float)
-    best_start = int(np.argmax([arr[i : i + window_hours].sum() for i in range(n - window_hours + 1)]))
+    best_start = int(
+        np.argmax([arr[i : i + window_hours].sum() for i in range(n - window_hours + 1)])
+    )
     window_vals = arr[best_start : best_start + window_hours]
     total = float(window_vals.sum())
     return {
