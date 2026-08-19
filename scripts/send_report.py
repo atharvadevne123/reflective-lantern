@@ -1,4 +1,5 @@
 """Send Reflective Lantern daily report email with PDF attachment."""
+
 from __future__ import annotations
 
 import smtplib
@@ -33,6 +34,7 @@ See the attached PDF for the full commit breakdown.
 
 -- Reflective Lantern Bot
 """
+
 
 def send_email() -> str:
     msg = MIMEMultipart()
