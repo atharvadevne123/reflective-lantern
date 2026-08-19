@@ -1213,10 +1213,13 @@ class TestAnomalyRate:
 
         assert anomaly_rate([]) == 0.0
 
-    @pytest.mark.parametrize("sevs,expected", [
-        ([{"severity": "none"}, {"severity": "none"}, {"severity": "critical"}], pytest.approx(1 / 3, rel=1e-4)),
-        ([{"severity": "warning"}, {"severity": "critical"}, {"severity": "none"}], pytest.approx(2 / 3, rel=1e-4)),
-    ])
+    @pytest.mark.parametrize(
+        "sevs,expected",
+        [
+            ([{"severity": "none"}, {"severity": "none"}, {"severity": "critical"}], pytest.approx(1 / 3, rel=1e-4)),
+            ([{"severity": "warning"}, {"severity": "critical"}, {"severity": "none"}], pytest.approx(2 / 3, rel=1e-4)),
+        ],
+    )
     def test_partial_anomaly_rate(self, sevs: list, expected: object) -> None:
         from app.anomaly import anomaly_rate
 
