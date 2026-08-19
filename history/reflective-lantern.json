@@ -1079,6 +1079,6 @@
     ],
     "tests_passed": true,
     "commits": 60,
-    "email_status": "pending"
+    "email_status": "failed: SMTP blocked by network (ERRNO 97)"
   }
 ]
