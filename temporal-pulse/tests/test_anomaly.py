@@ -198,7 +198,9 @@ def test_anomaly_score_summary_various_lengths(n_scores: int) -> None:
         ([0.0, 0.5, 1.0], 0.0, 1.0),
     ],
 )
-def test_normalise_scores_range(scores: list[float], expected_min: float, expected_max: float) -> None:
+def test_normalise_scores_range(
+    scores: list[float], expected_min: float, expected_max: float
+) -> None:
     from app.anomaly import normalise_scores
 
     result = normalise_scores(scores)
