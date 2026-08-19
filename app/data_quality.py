@@ -188,12 +188,7 @@ def completeness_score(records: list[dict[str, Any]], required_fields: list[str]
     if not records or not required_fields:
         return 0.0
     total_cells = len(records) * len(required_fields)
-    filled = sum(
-        1
-        for r in records
-        for f in required_fields
-        if r.get(f) is not None and r.get(f) != ""
-    )
+    filled = sum(1 for r in records for f in required_fields if r.get(f) is not None and r.get(f) != "")
     return round(filled / total_cells, 4)
 
 
