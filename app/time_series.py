@@ -1159,7 +1159,7 @@ def series_autocorrelation(values: list[float], lag: int = 1) -> float:
     x = values[: n - lag]
     y = values[lag:]
     mx, my = sum(x) / len(x), sum(y) / len(y)
-    num = sum((a - mx) * (b - my) for a, b in zip(x, y))
+    num = sum((a - mx) * (b - my) for a, b in zip(x, y, strict=False))
     denom_x = sum((a - mx) ** 2 for a in x) ** 0.5
     denom_y = sum((b - my) ** 2 for b in y) ** 0.5
     denom = denom_x * denom_y
