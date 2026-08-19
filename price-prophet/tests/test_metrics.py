@@ -90,7 +90,9 @@ def test_r_squared_perfect_fit_parametrized(actual: list[float], predicted: list
 
 
 @pytest.mark.parametrize("baseline,optimized", [(100.0, 110.0), (50.0, 75.0), (200.0, 200.0)])
-def test_revenue_uplift_non_negative_when_optimized_ge_baseline(baseline: float, optimized: float) -> None:
+def test_revenue_uplift_non_negative_when_optimized_ge_baseline(
+    baseline: float, optimized: float
+) -> None:
     from app.evaluation.metrics import revenue_uplift
 
     result = revenue_uplift(baseline, optimized)
