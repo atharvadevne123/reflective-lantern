@@ -335,15 +335,15 @@ __all__ = [
     "validate_building_id",
     "validate_consumption_kwh",
     "validate_coordinate",
+    "validate_date_string",
     "validate_email",
+    "validate_enum",
     "validate_feature_vector",
     "validate_forecast_horizon",
+    "validate_list_length",
     "validate_load_series",
     "validate_non_negative",
     "validate_percentage",
-    "validate_date_string",
-    "validate_enum",
-    "validate_list_length",
     "validate_positive",
     "validate_price",
     "validate_range",
@@ -700,13 +700,12 @@ def validate_unique_ids(
             duplicates[rid] = duplicates.get(rid, 1) + 1
         else:
             seen[rid] = 1
-    return [
-        f"{id_field} {rid!r} appears more than once ({count + 1} times)"
-        for rid, count in duplicates.items()
-    ]
+    return [f"{id_field} {rid!r} appears more than once ({count + 1} times)" for rid, count in duplicates.items()]
 
 
-def validate_url(value: str, field_name: str = "url", allowed_schemes: tuple[str, ...] = ("http", "https")) -> list[str]:
+def validate_url(
+    value: str, field_name: str = "url", allowed_schemes: tuple[str, ...] = ("http", "https")
+) -> list[str]:
     """Return validation errors when *value* is not a well-formed URL.
 
     Args:
