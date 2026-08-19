@@ -8,17 +8,17 @@ from app.faiss_index import LoadPatternIndex, get_pattern_index
 
 
 class TestLoadPatternIndex:
-    def test_add_and_size(self):
+    def test_add_and_size(self) -> None:
         idx = LoadPatternIndex(dim=6)
         idx.add([1.0, 2.0, 3.0, 4.0, 5.0, 6.0], {"period": "morning"})
         assert idx.size == 1
 
-    def test_add_wrong_dim_raises(self):
+    def test_add_wrong_dim_raises(self) -> None:
         idx = LoadPatternIndex(dim=6)
         with pytest.raises(ValueError):
             idx.add([1.0, 2.0, 3.0])
 
-    def test_search_returns_results(self):
+    def test_search_returns_results(self) -> None:
         idx = LoadPatternIndex(dim=4)
         idx.add([1.0, 0.0, 0.0, 0.0], {"label": "a"})
         idx.add([0.0, 1.0, 0.0, 0.0], {"label": "b"})
@@ -27,19 +27,19 @@ class TestLoadPatternIndex:
         assert len(results) <= 2
         assert results[0]["rank"] == 1
 
-    def test_search_most_similar_first(self):
+    def test_search_most_similar_first(self) -> None:
         idx = LoadPatternIndex(dim=4)
         idx.add([100.0, 0.0, 0.0, 0.0], {"label": "match"})
         idx.add([0.0, 100.0, 0.0, 0.0], {"label": "no_match"})
         results = idx.search([99.0, 1.0, 0.0, 0.0], k=2)
         assert results[0]["metadata"]["label"] == "match"
 
-    def test_search_empty_index(self):
+    def test_search_empty_index(self) -> None:
         idx = LoadPatternIndex(dim=4)
         results = idx.search([1.0, 0.0, 0.0, 0.0], k=3)
         assert results == []
 
-    def test_metadata_returned(self):
+    def test_metadata_returned(self) -> None:
         idx = LoadPatternIndex(dim=3)
         idx.add([1.0, 2.0, 3.0], {"date": "2026-01-01", "region": "northeast"})
         results = idx.search([1.0, 2.0, 3.0], k=1)
@@ -47,14 +47,14 @@ class TestLoadPatternIndex:
             assert results[0]["metadata"]["region"] == "northeast"
 
     @pytest.mark.parametrize("k", [1, 3, 5])
-    def test_k_results_at_most(self, k):
+    def test_k_results_at_most(self, k) -> None:
         idx = LoadPatternIndex(dim=3)
         for i in range(4):
             idx.add([float(i), float(i + 1), float(i + 2)])
         results = idx.search([1.0, 2.0, 3.0], k=k)
         assert len(results) <= k
 
-    def test_build_does_not_crash(self):
+    def test_build_does_not_crash(self) -> None:
         idx = LoadPatternIndex(dim=3)
         for i in range(10):
             idx.add([float(i), float(i + 1), float(i + 2)])
@@ -62,20 +62,20 @@ class TestLoadPatternIndex:
         results = idx.search([5.0, 6.0, 7.0], k=3)
         assert isinstance(results, list)
 
-    def test_clear_resets_size(self):
+    def test_clear_resets_size(self) -> None:
         idx = LoadPatternIndex(dim=3)
         idx.add([1.0, 2.0, 3.0])
         idx.add([4.0, 5.0, 6.0])
         idx.clear()
         assert idx.size == 0
 
-    def test_clear_search_returns_empty(self):
+    def test_clear_search_returns_empty(self) -> None:
         idx = LoadPatternIndex(dim=3)
         idx.add([1.0, 2.0, 3.0])
         idx.clear()
         assert idx.search([1.0, 2.0, 3.0]) == []
 
-    def test_similarity_score_in_range(self):
+    def test_similarity_score_in_range(self) -> None:
         idx = LoadPatternIndex(dim=3)
         idx.add([1.0, 0.0, 0.0])
         idx.add([-1.0, 0.0, 0.0])
@@ -84,7 +84,7 @@ class TestLoadPatternIndex:
 
 
 class TestGetPatternIndex:
-    def test_returns_same_instance(self):
+    def test_returns_same_instance(self) -> None:
         a = get_pattern_index(dim=24)
         b = get_pattern_index(dim=24)
         assert a is b
@@ -145,7 +145,7 @@ def test_save_vectors_does_not_mutate_index() -> None:
     assert idx._vectors[0][0] == pytest.approx(3.0)
 
 
-def test_search_comparable_returns_distance():
+def test_search_comparable_returns_distance() -> None:
     from app.faiss_index import add_property, reset_index, search_comparable
 
     reset_index()
@@ -157,7 +157,7 @@ def test_search_comparable_returns_distance():
     reset_index()
 
 
-def test_search_comparable_caps_top_k():
+def test_search_comparable_caps_top_k() -> None:
     from app.faiss_index import MAX_TOP_K, add_property, reset_index, search_comparable
 
     reset_index()
@@ -168,7 +168,7 @@ def test_search_comparable_caps_top_k():
     reset_index()
 
 
-def test_index_size_updates():
+def test_index_size_updates() -> None:
     from app.faiss_index import add_property, index_size, reset_index
 
     reset_index()
@@ -179,7 +179,7 @@ def test_index_size_updates():
 
 
 @pytest.mark.parametrize("n", [1, 3, 5])
-def test_search_comparable_returns_n_or_less(n):
+def test_search_comparable_returns_n_or_less(n) -> None:
     from app.faiss_index import add_property, reset_index, search_comparable
 
     reset_index()
@@ -190,7 +190,7 @@ def test_search_comparable_returns_n_or_less(n):
     reset_index()
 
 
-def test_add_property_increments_index():
+def test_add_property_increments_index() -> None:
     from app.faiss_index import add_property, index_size, reset_index
 
     reset_index()
@@ -201,7 +201,7 @@ def test_add_property_increments_index():
     reset_index()
 
 
-def test_reset_index_empties_store():
+def test_reset_index_empties_store() -> None:
     from app.faiss_index import add_property, index_size, reset_index
 
     reset_index()
@@ -210,7 +210,7 @@ def test_reset_index_empties_store():
     assert index_size() == 0
 
 
-def test_search_comparable_returns_list():
+def test_search_comparable_returns_list() -> None:
     from app.faiss_index import add_property, reset_index, search_comparable
 
     reset_index()
