@@ -160,7 +160,5 @@ def interval_coverage(
     """
     if not actual:
         return 0.0
-    covered = sum(
-        1 for a, lo, hi in zip(actual, lower, upper) if lo <= a <= hi
-    )
+    covered = sum(1 for a, lo, hi in zip(actual, lower, upper) if lo <= a <= hi)
     return round(covered / len(actual), 4)
