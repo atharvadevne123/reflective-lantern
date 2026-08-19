@@ -938,9 +938,7 @@ import pytest as _pytest
         ([], ["a"], 0.0),
     ],
 )
-def test_completeness_score_parametrized(
-    records: list, required: list, expected_score: float
-) -> None:
+def test_completeness_score_parametrized(records: list, required: list, expected_score: float) -> None:
     from app.data_quality import completeness_score
 
     assert completeness_score(records, required) == _pytest.approx(expected_score, abs=0.001)
