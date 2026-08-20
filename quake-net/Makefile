@@ -1,4 +1,4 @@
-.PHONY: install test lint format run docker-up docker-down train clean
+.PHONY: install test test-fast lint format run docker-up docker-down train reference diagram migrate clean
 
 install:
 	pip install -r requirements.txt
@@ -6,6 +6,9 @@ install:
 
 test:
 	pytest tests/ -v --tb=short --cov=app --cov-report=term-missing 2>&1 | tail -60
+
+test-fast:
+	pytest tests/ -q -m "not slow" --tb=short 2>&1 | tail -30
 
 lint:
 	ruff check .
@@ -19,6 +22,15 @@ run:
 
 train:
 	python3 -c "from app.model import train_model; _, m = train_model(); print('Metrics:', m)"
+
+reference:
+	python3 scripts/bootstrap_reference.py
+
+diagram:
+	python3 scripts/generate_diagram.py
+
+migrate:
+	alembic upgrade head
 
 docker-up:
 	docker compose up --build -d
