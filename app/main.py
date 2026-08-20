@@ -17,7 +17,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field, field_validator
 from sqlalchemy.orm import Session
 
+from app.config import get_settings
 from app.database import get_db, init_db
+from app.exceptions import register_exception_handlers
 from app.features import (
     CARRIERS,
     ROUTE_TYPES,
@@ -25,6 +27,7 @@ from app.features import (
     generate_synthetic_data,
     prepare_X,
 )
+from app.middleware import RateLimitMiddleware
 from app.model import load_model, train_model
 from app.monitoring import log_prediction, run_drift_check, seed_reference_buffer
 
@@ -73,6 +76,11 @@ app = FastAPI(
     version=MODEL_VERSION,
     lifespan=lifespan,
 )
+
+settings = get_settings()
+
+register_exception_handlers(app)
+app.add_middleware(RateLimitMiddleware, limit=settings.rate_limit_per_minute)
 
 app.add_middleware(
     CORSMiddleware,
