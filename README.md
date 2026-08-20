@@ -126,3 +126,64 @@ flagged when `p < 0.05`.
 Every response carries `X-Request-ID` and `X-Response-Time-Ms` headers.
 
 ---
+
+## Architecture
+
+```
+Client → FastAPI → Pydantic validation → Feature pipeline
+                                              ↓
+                        Ensemble (XGBoost + LightGBM + RandomForest)
+                                              ↓
+                        SQLAlchemy persistence → KS drift monitor
+                                              ↓
+                              Airflow weekly retrain DAG
+```
+
+### Feature engineering
+
+Thirteen features are derived from six raw inputs:
+
+- **Cyclical time** — `hour_sin`, `hour_cos`, `dow_sin`, `dow_cos` so that
+  hour 23 sits adjacent to hour 0 rather than 23 units away
+- **Flags** — `is_weekend`, `is_peak` (07–09 and 16–19)
+- **Route** — `distance_bucket` (local/regional/long-haul/extreme),
+  `weight_per_km`, `carrier_risk`, `route_code`
+- **Encoding** — `carrier_enc` via label encoding
+
+### Model
+
+A `VotingRegressor` over XGBoost (200 trees, depth 5), LightGBM (200 trees),
+and RandomForest (150 trees, depth 8), wrapped in a `StandardScaler` pipeline.
+Confidence is derived from the standard deviation across sub-estimator
+predictions — tight agreement yields high confidence.
+
+### Monitoring
+
+Every prediction is written to the `predictions` table. A rolling 500-sample
+reference buffer feeds the KS test; detected drift is recorded in `drift_logs`
+and surfaced through `/api/v1/drift`.
+
+---
+
+## Testing
+
+```bash
+pytest tests/ -v
+```
+
+The suite covers API contracts (including all carriers and route types via
+parametrization), feature-pipeline invariants, model training and CV metrics,
+and drift detection under known distribution shifts.
+
+## Development
+
+```bash
+make install    # install dependencies
+make test       # run pytest
+make lint       # ruff check
+make run        # start dev server
+```
+
+## License
+
+MIT
