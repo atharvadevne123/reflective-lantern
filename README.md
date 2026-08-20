@@ -108,6 +108,18 @@ Predict delivery time for a single shipment.
 
 Invalid carriers, route types, or out-of-range numerics return `422`.
 
+### `POST /api/v1/predict/batch`
+
+Scores between 1 and 100 shipments in a single request:
+
+```json
+{ "shipments": [ { "carrier": "DHL", "distance_km": 42.5, "weight_kg": 3.2,
+                   "route_type": "urban", "hour_of_day": 14, "day_of_week": 2 } ] }
+```
+
+Responds with `{ "predictions": [...], "count": n }`. One invalid member
+rejects the whole batch with `422`.
+
 ### `GET /api/v1/health`
 
 Liveness probe. Returns `healthy` when the model is loaded, `degraded` otherwise.

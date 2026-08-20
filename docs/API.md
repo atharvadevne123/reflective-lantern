@@ -54,6 +54,19 @@ mean XGBoost, LightGBM, and RandomForest closely agree.
 | `429` | Rate limit exceeded; see `Retry-After` |
 | `503` | Model not loaded yet |
 
+## POST /api/v1/predict/batch
+
+Scores 1-100 shipments in one round trip.
+
+```json
+{ "shipments": [ { "carrier": "DHL", "distance_km": 42.5, "weight_kg": 3.2,
+                   "route_type": "urban", "hour_of_day": 14, "day_of_week": 2 } ] }
+```
+
+Returns `{ "predictions": [...], "count": 1 }`. Each element has the same
+shape as a single `/predict` response. An invalid member rejects the whole
+batch with `422`.
+
 ## GET /api/v1/health
 
 ```json
