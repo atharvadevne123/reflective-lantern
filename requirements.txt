@@ -5,7 +5,7 @@ pydantic>=2.7.0
 
 # --- Database ---
 sqlalchemy>=2.0.30
-alembic>=1.13.1
+alembic>=1.19.1
 
 # --- ML / Data Science ---
 scipy>=1.13.0
