@@ -209,3 +209,41 @@ class TestOpenAPISchema:
             if not (spec.get("summary") or spec.get("description"))
         ]
         assert undocumented == [], f"Undocumented: {undocumented}"
+
+
+class TestForecastEndpoint:
+    def test_forecast_returns_daily_entries(self, app_client: TestClient) -> None:
+        resp = app_client.post(
+            "/api/v1/forecast/aftershocks",
+            json={"mainshock_magnitude": 6.5, "horizon_days": 7},
+        )
+        assert resp.status_code == 200
+        assert len(resp.json()["daily_forecast"]) == 7
+
+    def test_forecast_includes_half_life(self, app_client: TestClient) -> None:
+        resp = app_client.post("/api/v1/forecast/aftershocks", json={"mainshock_magnitude": 7.0})
+        assert resp.status_code == 200
+        assert "decay_half_life_days" in resp.json()
+
+    def test_forecast_fits_observed_sequence(self, app_client: TestClient) -> None:
+        resp = app_client.post(
+            "/api/v1/forecast/aftershocks",
+            json={
+                "mainshock_magnitude": 6.0,
+                "horizon_days": 5,
+                "observed_times_days": [0.1, 0.4, 1.0, 2.2, 4.5],
+            },
+        )
+        assert resp.status_code == 200
+        assert resp.json()["omori_parameters"]["fitted"] is True
+
+    def test_forecast_rejects_zero_horizon(self, app_client: TestClient) -> None:
+        resp = app_client.post(
+            "/api/v1/forecast/aftershocks",
+            json={"mainshock_magnitude": 6.0, "horizon_days": 0},
+        )
+        assert resp.status_code == 422
+
+    def test_forecast_rejects_out_of_range_magnitude(self, app_client: TestClient) -> None:
+        resp = app_client.post("/api/v1/forecast/aftershocks", json={"mainshock_magnitude": 42.0})
+        assert resp.status_code == 422

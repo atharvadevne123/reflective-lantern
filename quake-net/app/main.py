@@ -383,6 +383,45 @@ async def anomalies(limit: int = 100, db: Session = Depends(get_db)) -> dict:
     return {"anomalies": flagged, "count": len(flagged), "events_scored": len(frame)}
 
 
+class ForecastRequest(BaseModel):
+    mainshock_magnitude: float = Field(
+        ...,
+        ge=0.1,
+        le=9.9,
+        description="Magnitude of the mainshock to forecast aftershocks for",
+    )
+    horizon_days: int = Field(
+        7, ge=1, le=90, description="Forecast horizon in days after the mainshock"
+    )
+    observed_times_days: list[float] | None = Field(
+        None,
+        max_length=5000,
+        description="Optional observed aftershock times in days since the mainshock; "
+        "when supplied, Omori parameters are fitted to this sequence",
+    )
+
+
+@app.post("/api/v1/forecast/aftershocks", tags=["prediction"])
+async def forecast_aftershocks(body: ForecastRequest) -> dict:
+    """Forecast the aftershock sequence using the modified Omori law."""
+    from app.forecasting import decay_half_life, forecast_sequence
+
+    try:
+        result = forecast_sequence(
+            body.mainshock_magnitude,
+            horizon_days=body.horizon_days,
+            observed_times=body.observed_times_days,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+    params = result["omori_parameters"]
+    result["decay_half_life_days"] = round(
+        decay_half_life(k=params["k"], p=params["p"], c=params["c"]), 4
+    )
+    return result
+
+
 @app.get("/api/v1/cache/stats", tags=["operations"])
 async def cache_stats() -> dict:
     """Report TTL cache utilisation and hit rate."""
