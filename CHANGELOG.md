@@ -28,3 +28,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - pytest suite covering API, features, model, and monitoring
 - GitHub Actions CI running ruff lint, format check, and tests
 - Architecture diagram generator
+- Bulk scoring endpoint `POST /api/v1/predict/batch` (1-100 shipments)
+- Sliding-window rate limiting with `X-RateLimit-*` and `Retry-After` headers
+- Environment-driven settings module and typed domain exceptions
+- Alembic migration environment with the initial schema revision
+- Deployment guide, API reference, smoke test, and latency benchmark
+
+### Fixed
+
+- Feature pipeline reported itself unfitted because the encoder stored its
+  `LabelEncoder` as `_le`; sklearn's `check_is_fitted` only recognises
+  attributes *ending* in an underscore. Renamed to `le_`.
+- Prediction confidence was hardcoded to 1.0 by an expression that always
+  evaluated to zero. It is now derived from ensemble sub-estimator spread.
+- Unseen carriers raised at transform time instead of falling back gracefully.
