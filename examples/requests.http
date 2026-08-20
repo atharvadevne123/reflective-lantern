@@ -1,0 +1,47 @@
+### Health check
+GET http://localhost:8000/api/v1/health
+
+### Model metrics
+GET http://localhost:8000/api/v1/metrics
+
+### Short urban delivery
+POST http://localhost:8000/api/v1/predict
+Content-Type: application/json
+
+{
+  "carrier": "Amazon",
+  "distance_km": 8.0,
+  "weight_kg": 0.8,
+  "route_type": "urban",
+  "hour_of_day": 13,
+  "day_of_week": 3
+}
+
+### Long rural haul
+POST http://localhost:8000/api/v1/predict
+Content-Type: application/json
+
+{
+  "carrier": "USPS",
+  "distance_km": 420.0,
+  "weight_kg": 12.5,
+  "route_type": "rural",
+  "hour_of_day": 8,
+  "day_of_week": 1
+}
+
+### Rejected: unknown carrier (422)
+POST http://localhost:8000/api/v1/predict
+Content-Type: application/json
+
+{
+  "carrier": "PonyExpress",
+  "distance_km": 50.0,
+  "weight_kg": 2.0,
+  "route_type": "urban",
+  "hour_of_day": 10,
+  "day_of_week": 2
+}
+
+### Drift check
+GET http://localhost:8000/api/v1/drift
