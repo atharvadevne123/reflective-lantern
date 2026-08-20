@@ -30,3 +30,36 @@ a weekly Airflow schedule.
 - Retrains automatically when 30 days of fresh data accumulate
 
 ---
+
+## Setup
+
+### Local
+
+```bash
+git clone https://github.com/atharvadevne123/Logistics-Flow
+cd Logistics-Flow
+
+python -m venv .venv && source .venv/bin/activate
+pip install -r requirements.txt
+
+cp .env.example .env
+
+uvicorn app.main:app --reload
+```
+
+The API is then available at `http://localhost:8000`, with interactive
+OpenAPI docs at `http://localhost:8000/docs`.
+
+On first start the service trains a model on synthetic data and writes
+`model.joblib`, `feature_pipeline.joblib`, and `metrics.json`.
+
+### Docker
+
+```bash
+docker compose up --build
+```
+
+This starts the API on port 8000 alongside a PostgreSQL 15 instance, with the
+model baked into the image at build time.
+
+---
