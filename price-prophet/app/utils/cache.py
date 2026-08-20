@@ -122,5 +122,28 @@ class TTLCache:
         """
         return len(self._store)
 
+    def items(self) -> list[tuple[str, object]]:
+        """Return all non-expired (key, value) pairs.
+
+        Returns
+        -------
+        list[tuple[str, object]]
+        """
+        now = time.monotonic()
+        return [
+            (k, v)
+            for k, (v, stored_at) in self._store.items()
+            if (now - stored_at) <= self.ttl_seconds
+        ]
+
+    def estimated_valid_count(self) -> int:
+        """Return the number of non-expired entries without deleting them.
+
+        Returns
+        -------
+        int
+        """
+        return len(self.items())
+
     def __len__(self) -> int:
         return self.size()

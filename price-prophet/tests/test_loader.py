@@ -87,3 +87,31 @@ def test_generate_synthetic_data_reproducible() -> None:
     records_a = generate_synthetic_data(n_samples=10, seed=99)
     records_b = generate_synthetic_data(n_samples=10, seed=99)
     assert records_a[0]["base_price"] == records_b[0]["base_price"]
+
+
+def test_generate_synthetic_data_base_price_positive() -> None:
+    from app.data.loader import generate_synthetic_data
+
+    records = generate_synthetic_data(n_samples=50)
+    assert all(r["base_price"] > 0.0 for r in records)
+
+
+def test_generate_synthetic_data_demand_non_negative() -> None:
+    from app.data.loader import generate_synthetic_data
+
+    records = generate_synthetic_data(n_samples=50)
+    assert all(r["demand"] >= 0.0 for r in records)
+
+
+def test_load_csv_file_not_found_raises() -> None:
+    from app.data.loader import load_csv
+
+    with pytest.raises(FileNotFoundError):
+        load_csv("/nonexistent/path/data.csv")
+
+
+def test_load_json_file_not_found_raises() -> None:
+    from app.data.loader import load_json
+
+    with pytest.raises(FileNotFoundError):
+        load_json("/nonexistent/path/data.json")

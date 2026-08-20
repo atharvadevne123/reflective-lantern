@@ -130,3 +130,65 @@ class TestBatchApplyConstraints:
         c = PricingConstraints(min_price=1.0, max_price=100.0, max_change_pct=50.0)
         prices = [10.0, 20.0, 30.0, 40.0]
         assert len(batch_apply_constraints(prices, c)) == len(prices)
+
+
+def test_apply_constraints_clamps_to_min_price() -> None:
+    from app.pricing.constraints import PricingConstraints, apply_constraints
+
+    c = PricingConstraints(min_price=10.0, max_price=99999.0, max_change_pct=50.0)
+    result = apply_constraints(0.001, 100.0, c)
+    assert result >= 10.0
+
+
+def test_violates_constraints_false_when_within_bounds() -> None:
+    from app.pricing.constraints import PricingConstraints, violates_constraints
+
+    c = PricingConstraints(min_price=1.0, max_price=10000.0, max_change_pct=50.0)
+    assert violates_constraints(100.0, 100.0, c) is False
+
+
+def test_violates_constraints_true_when_above_ceiling() -> None:
+    from app.pricing.constraints import PricingConstraints, violates_constraints
+
+    c = PricingConstraints(min_price=0.01, max_price=50.0, max_change_pct=50.0)
+    assert violates_constraints(100.0, 20.0, c) is True
+
+
+@pytest.mark.parametrize("price,base,pct", [(150.0, 100.0, 40.0), (40.0, 100.0, 55.0)])
+def test_apply_constraints_respects_max_change_pct(price: float, base: float, pct: float) -> None:
+    from app.pricing.constraints import PricingConstraints, apply_constraints
+
+    c = PricingConstraints(max_change_pct=pct)
+    result = apply_constraints(price, base, c)
+    change = abs(result - base) / base * 100
+    assert change <= pct + 1e-6
+
+
+def test_apply_constraints_returns_float() -> None:
+    from app.pricing.constraints import PricingConstraints, apply_constraints
+
+    c = PricingConstraints()
+    result = apply_constraints(100.0, 100.0, c)
+    assert isinstance(result, float)
+
+
+def test_constraints_default_max_price_generous() -> None:
+    from app.pricing.constraints import PricingConstraints
+
+    c = PricingConstraints()
+    assert c.max_price > 1000.0
+
+
+def test_violates_constraints_equal_prices() -> None:
+    from app.pricing.constraints import PricingConstraints, violates_constraints
+
+    c = PricingConstraints(max_change_pct=5.0)
+    assert violates_constraints(100.0, 100.0, c) is False
+
+
+def test_apply_constraints_exact_boundary() -> None:
+    from app.pricing.constraints import PricingConstraints, apply_constraints
+
+    c = PricingConstraints(min_price=90.0, max_price=110.0, max_change_pct=20.0)
+    result = apply_constraints(110.0, 100.0, c)
+    assert result == pytest.approx(110.0, abs=1e-6)

@@ -9,7 +9,11 @@ unavailable (e.g. lightweight test containers).
 
 from __future__ import annotations
 
+import logging
+
 from app.models.base import BasePricingModel
+
+logger = logging.getLogger(__name__)
 
 
 class GradientBoostPricingModel(BasePricingModel):
@@ -57,6 +61,7 @@ class GradientBoostPricingModel(BasePricingModel):
         )
         self._model.fit(X, y)
         self._fitted = True
+        logger.info("GradientBoostPricingModel fitted on %d samples", len(y))
 
     def predict(self, X: list[list[float]]) -> list[float]:
         """Generate predictions for *X*.

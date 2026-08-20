@@ -8,8 +8,11 @@ preprocessing pipeline before feature engineering.
 
 from __future__ import annotations
 
+import logging
 import math
 from typing import Any
+
+logger = logging.getLogger(__name__)
 
 
 def normalize(values: list[float]) -> list[float]:
@@ -145,4 +148,10 @@ def clip_outliers(
 
     lower = mean - z_threshold * std
     upper = mean + z_threshold * std
-    return [max(lower, min(upper, v)) for v in values]
+    clipped = [max(lower, min(upper, v)) for v in values]
+    logger.debug(
+        "clip_outliers: %d/%d values clipped",
+        sum(1 for a, b in zip(values, clipped, strict=False) if a != b),
+        n,
+    )
+    return clipped

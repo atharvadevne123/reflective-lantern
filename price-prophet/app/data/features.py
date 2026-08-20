@@ -97,6 +97,15 @@ def competitive_gap(own_price: float, competitor_price: float) -> float:
     return (own_price - competitor_price) / competitor_price
 
 
+FEATURE_NAMES: list[str] = [
+    "base_price",
+    "demand",
+    "competition_price",
+    "day_of_week",
+    "is_weekend",
+]
+
+
 def build_feature_matrix(records: list[dict[str, Any]]) -> list[list[float]]:
     """Convert a list of record dicts into a numeric feature matrix.
 
@@ -133,3 +142,29 @@ def build_feature_matrix(records: list[dict[str, Any]]) -> list[list[float]]:
         matrix.append([base_price, demand, competition_price, day_of_week, is_weekend])
 
     return matrix
+
+
+def price_momentum(prices: list[float], window: int = 3) -> list[float]:
+    """Compute a simple rolling price momentum over *window* periods.
+
+    Parameters
+    ----------
+    prices:
+        Time-ordered list of prices.
+    window:
+        Look-back window size (default 3).
+
+    Returns
+    -------
+    list[float]
+        Momentum values; first ``window - 1`` entries are ``0.0``.
+    """
+    if not prices or window < 1:
+        return []
+    result: list[float] = []
+    for i, price in enumerate(prices):
+        if i < window:
+            result.append(0.0)
+        else:
+            result.append(price - prices[i - window])
+    return result

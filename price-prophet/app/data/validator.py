@@ -8,8 +8,11 @@ unconditionally.
 
 from __future__ import annotations
 
+import logging
 from dataclasses import dataclass, field
 from typing import Any
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -135,6 +138,7 @@ def validate_dataset(records: list[dict[str, Any]]) -> ValidationResult:
     all_errors: list[str] = []
 
     if not records:
+        logger.debug("validate_dataset: empty dataset")
         return ValidationResult(valid=False, errors=["dataset is empty"])
 
     for idx, record in enumerate(records):
@@ -143,4 +147,7 @@ def validate_dataset(records: list[dict[str, Any]]) -> ValidationResult:
             for err in result.errors:
                 all_errors.append(f"record[{idx}]: {err}")
 
-    return ValidationResult(valid=len(all_errors) == 0, errors=all_errors)
+    result = ValidationResult(valid=len(all_errors) == 0, errors=all_errors)
+    if not result.valid:
+        logger.debug("validate_dataset: %d error(s) in %d records", len(all_errors), len(records))
+    return result

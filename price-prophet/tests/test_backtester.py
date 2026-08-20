@@ -60,3 +60,42 @@ def test_backtester_baseline_revenue_scales_with_price(baseline_price: float) ->
     demands = [5.0] * n
     result = bt.run([[1.0]] * n, demands, [baseline_price * 1.1] * n)
     assert result["baseline_revenue"] == pytest.approx(baseline_price * 5.0 * n, abs=0.01)
+
+
+def test_backtester_optimized_revenue_non_negative() -> None:
+    bt = _make_backtester([50.0, 60.0, 70.0])
+    result = bt.run([[1.0]] * 3, [10.0] * 3, [55.0, 65.0, 75.0])
+    assert result.get("optimized_revenue", 0.0) >= 0.0
+
+
+def test_backtester_result_has_n_periods_key() -> None:
+    bt = _make_backtester([100.0, 100.0])
+    result = bt.run([[1.0]] * 2, [5.0] * 2, [110.0] * 2)
+    assert "n_periods" in result
+
+
+def test_backtester_baseline_revenue_non_negative() -> None:
+    bt = _make_backtester([50.0, 50.0, 50.0])
+    result = bt.run([[1.0]] * 3, [10.0] * 3, [55.0] * 3)
+    assert result.get("baseline_revenue", 0.0) >= 0.0
+
+
+def test_backtester_per_window_metrics_empty_before_run() -> None:
+    from app.evaluation.backtester import Backtester
+
+    bt = Backtester(_FlatModel())
+    assert bt.per_window_metrics() == []
+
+
+def test_backtester_best_window_none_before_run() -> None:
+    from app.evaluation.backtester import Backtester
+
+    bt = Backtester(_FlatModel())
+    assert bt.best_window() is None
+
+
+def test_backtester_mae_in_result() -> None:
+    bt = _make_backtester([50.0] * 4)
+    result = bt.run([[1.0]] * 4, [5.0] * 4, [55.0] * 4)
+    assert "mae" in result
+    assert result["mae"] >= 0.0

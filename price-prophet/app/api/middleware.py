@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import logging
 import time
+import uuid
 
 from fastapi import FastAPI
 from starlette.middleware.base import BaseHTTPMiddleware
@@ -45,17 +46,20 @@ class TimingMiddleware(BaseHTTPMiddleware):
         Response
             Original response with the ``X-Response-Time`` header added.
         """
+        correlation_id = request.headers.get("X-Correlation-ID", str(uuid.uuid4()))
         start = time.monotonic()
         response: Response = await call_next(request)
         elapsed_ms = (time.monotonic() - start) * 1_000.0
         logger.debug(
-            "method=%s path=%s status=%s duration_ms=%.2f",
+            "method=%s path=%s status=%s duration_ms=%.2f correlation_id=%s",
             request.method,
             request.url.path,
             response.status_code,
             elapsed_ms,
+            correlation_id,
         )
         response.headers["X-Response-Time"] = f"{elapsed_ms:.2f}"
+        response.headers["X-Correlation-ID"] = correlation_id
         return response
 
 

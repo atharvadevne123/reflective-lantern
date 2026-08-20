@@ -8,7 +8,10 @@ compare multiple models, and persist results to disk as JSON.
 from __future__ import annotations
 
 import json
+import logging
 import os
+
+logger = logging.getLogger(__name__)
 
 
 def format_metrics_report(metrics: dict, title: str = "Metrics Report") -> str:
@@ -202,3 +205,4 @@ def export_metrics(metrics: dict, path: str) -> None:
 
     with open(path, "w", encoding="utf-8") as fh:
         json.dump(metrics, fh, indent=2, default=str)
+    logger.info("export_metrics wrote %d keys to %s", len(metrics), path)

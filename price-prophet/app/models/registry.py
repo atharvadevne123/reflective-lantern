@@ -7,7 +7,10 @@ and CLI can look up models by name without importing them directly.
 
 from __future__ import annotations
 
+import logging
 from typing import Any
+
+logger = logging.getLogger(__name__)
 
 
 class ModelRegistry:
@@ -34,6 +37,7 @@ class ModelRegistry:
             Any trained or untrained model object.
         """
         self._store[name] = model
+        logger.debug("registered model %r (type=%s)", name, type(model).__name__)
 
     def get(self, name: str) -> Any:
         """Return the model registered under *name*.
@@ -84,6 +88,10 @@ class ModelRegistry:
             del self._store[name]
             return True
         return False
+
+    def __contains__(self, name: str) -> bool:
+        """Return ``True`` if *name* is registered."""
+        return name in self._store
 
     def __len__(self) -> int:
         return len(self._store)

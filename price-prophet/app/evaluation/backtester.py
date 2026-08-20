@@ -8,8 +8,11 @@ mimicking the constraints of real time-series forecasting.
 
 from __future__ import annotations
 
+import logging
 import math
 from typing import Any
+
+logger = logging.getLogger(__name__)
 
 
 class Backtester:
@@ -186,6 +189,7 @@ class Backtester:
             window_rmses.append(m["rmse"])
             window_r2s.append(m["r_squared"])
             n_windows += 1
+            logger.debug("backtest window %d: mae=%.4f", n_windows, m["mae"])
 
             eval_start += self.window
 
