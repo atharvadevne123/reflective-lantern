@@ -12,14 +12,18 @@ from typing import Annotated
 
 import joblib
 import numpy as np
-from fastapi import Depends, FastAPI, HTTPException, Request, status
+from fastapi import Depends, FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field, field_validator
 from sqlalchemy.orm import Session
 
 from app.config import get_settings
 from app.database import get_db, init_db
-from app.exceptions import register_exception_handlers
+from app.exceptions import (
+    FeatureExtractionError,
+    ModelNotLoadedError,
+    register_exception_handlers,
+)
 from app.features import (
     CARRIERS,
     ROUTE_TYPES,
@@ -139,6 +143,17 @@ class PredictResponse(BaseModel):
     request_id: str
 
 
+class BatchPredictRequest(BaseModel):
+    """Up to 100 shipments scored in a single call."""
+
+    shipments: list[PredictRequest] = Field(..., min_length=1, max_length=100)
+
+
+class BatchPredictResponse(BaseModel):
+    predictions: list[PredictResponse]
+    count: int
+
+
 class HealthResponse(BaseModel):
     status: str
     model_version: str
@@ -194,10 +209,7 @@ async def predict(
     db: Annotated[Session, Depends(get_db)],
 ):
     if _model is None or _feat_pipe is None:
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Model not loaded",
-        )
+        raise ModelNotLoadedError
 
     import pandas as pd
 
@@ -206,7 +218,7 @@ async def predict(
         X = prepare_X(row, _feat_pipe, fit=False)
     except Exception as exc:
         logger.exception("Feature extraction failed")
-        raise HTTPException(status_code=500, detail=f"Feature error: {exc}") from exc
+        raise FeatureExtractionError(str(exc)) from exc
 
     predicted = float(_model.predict(X)[0])
     confidence = _ensemble_confidence(X, predicted)
@@ -270,3 +282,58 @@ async def metrics():
 )
 async def drift(db: Annotated[Session, Depends(get_db)]):
     return run_drift_check(db)
+
+
+@app.post(
+    "/api/v1/predict/batch",
+    response_model=BatchPredictResponse,
+    summary="Predict delivery times in bulk",
+    description="Scores up to 100 shipments in one request.",
+)
+async def predict_batch(
+    payload: BatchPredictRequest,
+    request: Request,
+    db: Annotated[Session, Depends(get_db)],
+):
+    if _model is None or _feat_pipe is None:
+        raise ModelNotLoadedError
+
+    import pandas as pd
+
+    rows = pd.DataFrame([s.model_dump() for s in payload.shipments])
+    try:
+        X = prepare_X(rows, _feat_pipe, fit=False)
+    except Exception as exc:
+        logger.exception("Batch feature extraction failed")
+        raise FeatureExtractionError(str(exc)) from exc
+
+    raw = _model.predict(X)
+    request_id = getattr(request.state, "request_id", "n/a")
+
+    results: list[PredictResponse] = []
+    for shipment, predicted in zip(payload.shipments, raw, strict=True):
+        predicted = float(predicted)
+        confidence = _ensemble_confidence(X, predicted)
+        log_prediction(
+            db,
+            carrier=shipment.carrier,
+            distance_km=shipment.distance_km,
+            weight_kg=shipment.weight_kg,
+            route_type=shipment.route_type,
+            hour_of_day=shipment.hour_of_day,
+            day_of_week=shipment.day_of_week,
+            predicted_minutes=predicted,
+            confidence=confidence,
+            model_version=MODEL_VERSION,
+        )
+        results.append(
+            PredictResponse(
+                predicted_minutes=round(predicted, 2),
+                predicted_hours=round(predicted / 60, 3),
+                confidence=round(confidence, 4),
+                model_version=MODEL_VERSION,
+                request_id=request_id,
+            )
+        )
+
+    return BatchPredictResponse(predictions=results, count=len(results))
