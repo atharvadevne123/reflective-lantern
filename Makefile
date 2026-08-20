@@ -24,3 +24,12 @@ diagram:
 clean:
 	rm -rf __pycache__ .pytest_cache *.joblib metrics.json *.db dist build
 	find . -type d -name __pycache__ -exec rm -rf {} + 2>/dev/null || true
+
+smoke:
+	python scripts/smoke_test.py --base-url $${BASE_URL:-http://localhost:8000}
+
+benchmark:
+	python scripts/benchmark.py
+
+migrate:
+	alembic upgrade head
