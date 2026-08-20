@@ -82,3 +82,66 @@ def test_validate_record_various_demands(demand: int) -> None:
     record = {"product_id": "P1", "base_price": 50.0, "demand": float(demand)}
     result = validate_record(record)
     assert result.valid is True
+
+
+def test_validate_record_missing_product_id_fails() -> None:
+    from app.data.validator import validate_record
+
+    record = {"base_price": 50.0, "demand": 10.0}
+    result = validate_record(record)
+    assert result.valid is False
+
+
+def test_validate_record_negative_price_fails() -> None:
+    from app.data.validator import validate_record
+
+    record = {"product_id": "P1", "base_price": -10.0, "demand": 10.0}
+    result = validate_record(record)
+    assert result.valid is False
+
+
+def test_validate_record_returns_errors_list_on_failure() -> None:
+    from app.data.validator import validate_record
+
+    record = {"product_id": "P1", "base_price": 0.0, "demand": 10.0}
+    result = validate_record(record)
+    if not result.valid:
+        assert len(result.errors) > 0
+
+
+def test_validate_dataset_single_invalid_record() -> None:
+    from app.data.validator import validate_dataset
+
+    records = [
+        {"product_id": "P1", "base_price": 50.0, "demand": 10.0},
+        {"product_id": "P2", "base_price": -1.0, "demand": 5.0},
+    ]
+    result = validate_dataset(records)
+    assert result.valid is False
+    assert len(result.errors) > 0
+
+
+def test_validate_dataset_all_valid() -> None:
+    from app.data.validator import validate_dataset
+
+    records = [
+        {"product_id": "A", "base_price": 10.0, "demand": 5.0},
+        {"product_id": "B", "base_price": 20.0, "demand": 8.0},
+    ]
+    result = validate_dataset(records)
+    assert result.valid is True
+    assert result.errors == []
+
+
+def test_validate_price_string_number() -> None:
+    from app.data.validator import validate_price
+
+    result = validate_price("99.5")
+    assert result.valid is True
+
+
+def test_validate_price_non_numeric() -> None:
+    from app.data.validator import validate_price
+
+    result = validate_price("abc")
+    assert result.valid is False

@@ -48,3 +48,48 @@ def test_repr_fitted():
     m = ConcreteModel()
     m.fit([], [])
     assert "fitted" in repr(m)
+
+
+def test_base_model_repr_shows_fitted_state() -> None:
+    from app.models.base import BasePricingModel
+
+    class _Impl(BasePricingModel):
+        def fit(self, X, y):
+            self._fitted = True
+
+        def predict(self, X):
+            return [1.0] * len(X)
+
+    m = _Impl()
+    assert "not fitted" in repr(m)
+    m.fit([[1.0]], [1.0])
+    assert "fitted" in repr(m)
+
+
+def test_base_model_is_fitted_false_before_fit() -> None:
+    from app.models.base import BasePricingModel
+
+    class _Impl(BasePricingModel):
+        def fit(self, X, y):
+            self._fitted = True
+
+        def predict(self, X):
+            return [1.0] * len(X)
+
+    m = _Impl()
+    assert m.is_fitted() is False
+
+
+def test_base_model_is_fitted_true_after_fit() -> None:
+    from app.models.base import BasePricingModel
+
+    class _Impl(BasePricingModel):
+        def fit(self, X, y):
+            self._fitted = True
+
+        def predict(self, X):
+            return [1.0] * len(X)
+
+    m = _Impl()
+    m.fit([[1.0]], [1.0])
+    assert m.is_fitted() is True

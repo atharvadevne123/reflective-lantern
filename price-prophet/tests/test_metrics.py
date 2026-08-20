@@ -97,3 +97,40 @@ def test_revenue_uplift_non_negative_when_optimized_ge_baseline(
 
     result = revenue_uplift(baseline, optimized)
     assert result >= 0.0
+
+
+def test_mae_empty_raises() -> None:
+    import pytest
+
+    from app.evaluation.metrics import mae
+
+    with pytest.raises(ValueError):
+        mae([], [])
+
+
+def test_mape_all_zero_actuals_returns_zero() -> None:
+    from app.evaluation.metrics import mape
+
+    assert mape([0.0, 0.0], [5.0, 10.0]) == 0.0
+
+
+def test_revenue_uplift_zero_baseline_returns_zero() -> None:
+    from app.evaluation.metrics import revenue_uplift
+
+    assert revenue_uplift(0.0, 100.0) == 0.0
+
+
+def test_rmse_single_element() -> None:
+    from app.evaluation.metrics import rmse
+
+    assert rmse([3.0], [1.0]) == pytest.approx(2.0, abs=1e-6)
+
+
+@pytest.mark.parametrize("v", [10.0, 100.0, 1000.0])
+def test_r_squared_worst_fit_negative(v: float) -> None:
+    from app.evaluation.metrics import r_squared
+
+    # Predicting the opposite direction should give negative R2
+    actual = [0.0, v]
+    predicted = [v, 0.0]
+    assert r_squared(actual, predicted) < 0.0

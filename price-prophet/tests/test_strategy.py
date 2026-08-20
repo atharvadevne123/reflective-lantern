@@ -78,3 +78,69 @@ def test_strategy_result_is_float() -> None:
 
     price = apply_strategy(100.0, PricingStrategy.PENETRATION)
     assert isinstance(price, float)
+
+
+def test_unknown_strategy_returns_base() -> None:
+    from app.pricing.strategy import PricingStrategy, apply_strategy
+
+    # DYNAMIC with elasticity=0 (inelastic) raises price 5%
+    price = apply_strategy(100.0, PricingStrategy.DYNAMIC, elasticity=0.0)
+    assert price == pytest.approx(105.0, abs=0.01)
+
+
+def test_competitive_zero_competitor_price_falls_back() -> None:
+    from app.pricing.strategy import PricingStrategy, apply_strategy
+
+    price = apply_strategy(100.0, PricingStrategy.COMPETITIVE, competitor_price=0.0)
+    assert price == 100.0
+
+
+@pytest.mark.parametrize("base_price", [10.0, 50.0, 200.0])
+def test_skimming_always_above_base(base_price: float) -> None:
+    from app.pricing.strategy import PricingStrategy, apply_strategy
+
+    price = apply_strategy(base_price, PricingStrategy.SKIMMING)
+    assert price > base_price
+
+
+@pytest.mark.parametrize("base_price", [10.0, 50.0, 200.0])
+def test_penetration_always_below_base(base_price: float) -> None:
+    from app.pricing.strategy import PricingStrategy, apply_strategy
+
+    price = apply_strategy(base_price, PricingStrategy.PENETRATION)
+    assert price < base_price
+
+
+def test_premium_above_base() -> None:
+    from app.pricing.strategy import PricingStrategy, apply_strategy
+
+    price = apply_strategy(100.0, PricingStrategy.PREMIUM)
+    assert price > 100.0
+
+
+def test_premium_strategy_parametrized() -> None:
+    from app.pricing.strategy import PricingStrategy, apply_strategy
+
+    for base in [50.0, 100.0, 200.0]:
+        price = apply_strategy(base, PricingStrategy.PREMIUM)
+        assert price > base
+
+
+def test_strategy_returns_positive() -> None:
+    from app.pricing.strategy import PricingStrategy, apply_strategy
+
+    for strategy in [
+        PricingStrategy.PENETRATION,
+        PricingStrategy.PREMIUM,
+        PricingStrategy.SKIMMING,
+        PricingStrategy.COST_PLUS,
+    ]:
+        price = apply_strategy(100.0, strategy)
+        assert price > 0.0
+
+
+def test_competitive_strategy_undercuts_by_one_percent() -> None:
+    from app.pricing.strategy import PricingStrategy, apply_strategy
+
+    price = apply_strategy(100.0, PricingStrategy.COMPETITIVE, competitor_price=100.0)
+    assert price < 100.0

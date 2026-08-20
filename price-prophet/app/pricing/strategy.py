@@ -24,12 +24,18 @@ class PricingStrategy(enum.Enum):
         Track the nearest competitor slightly below their price.
     DYNAMIC:
         ML/elasticity-driven adjustment based on demand sensitivity.
+    SKIMMING:
+        Start high to capture early-adopter surplus; price is raised 30%.
+    COST_PLUS:
+        Apply a fixed 30% markup over the base/cost price.
     """
 
     PENETRATION = "penetration"
     PREMIUM = "premium"
     COMPETITIVE = "competitive"
     DYNAMIC = "dynamic"
+    SKIMMING = "skimming"
+    COST_PLUS = "cost_plus"
 
 
 def apply_strategy(
@@ -85,6 +91,12 @@ def apply_strategy(
         else:
             # Inelastic market: raising price grows revenue
             return round(base_price * 1.05, 2)
+
+    if strategy is PricingStrategy.SKIMMING:
+        return round(base_price * 1.30, 2)
+
+    if strategy is PricingStrategy.COST_PLUS:
+        return round(base_price * 1.30, 2)
 
     # Fallback - return base unchanged
     return round(base_price, 2)

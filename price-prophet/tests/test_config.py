@@ -43,3 +43,56 @@ def test_settings_default_elasticity_negative():
     from app.config import settings
 
     assert settings.default_elasticity < 0
+
+
+def test_settings_version_is_string() -> None:
+    from app.config import settings
+
+    assert isinstance(settings.version, str)
+    assert len(settings.version) > 0
+
+
+def test_settings_max_multiplier_greater_than_min() -> None:
+    from app.config import settings
+
+    assert settings.max_price_multiplier > settings.min_price_multiplier
+
+
+def test_settings_cache_ttl_positive() -> None:
+    from app.config import settings
+
+    assert settings.cache_ttl_seconds > 0
+
+
+def test_settings_app_name_is_string() -> None:
+    from app.config import settings
+
+    assert isinstance(settings.app_name, str)
+    assert len(settings.app_name) > 0
+
+
+def test_settings_version_format() -> None:
+    from app.config import settings
+
+    parts = settings.version.split(".")
+    assert len(parts) >= 1
+    assert all(p.isdigit() for p in parts)
+
+
+def test_settings_multipliers_sane_range() -> None:
+    from app.config import settings
+
+    assert settings.min_price_multiplier > 0.0
+    assert settings.max_price_multiplier < 10.0
+
+
+def test_settings_model_dir_is_string() -> None:
+    from app.config import settings
+
+    assert isinstance(settings.model_dir, str)
+
+
+def test_settings_debug_is_bool() -> None:
+    from app.config import settings
+
+    assert isinstance(settings.debug, bool)

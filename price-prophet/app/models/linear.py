@@ -9,7 +9,11 @@ test environments that mock the dependency.
 
 from __future__ import annotations
 
+import logging
+
 from app.models.base import BasePricingModel
+
+logger = logging.getLogger(__name__)
 
 
 class LinearPricingModel(BasePricingModel):
@@ -41,6 +45,7 @@ class LinearPricingModel(BasePricingModel):
         self._model = LinearRegression(fit_intercept=self.fit_intercept)
         self._model.fit(X, y)
         self._fitted = True
+        logger.info("LinearPricingModel fitted on %d samples", len(y))
 
     def predict(self, X: list[list[float]]) -> list[float]:
         """Predict target values for *X*.

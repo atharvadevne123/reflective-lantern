@@ -7,7 +7,7 @@ v1 field validators via the shared ``validator`` decorator shim.
 
 from __future__ import annotations
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class PriceRequest(BaseModel):
@@ -94,11 +94,40 @@ class HealthResponse(BaseModel):
         Human-readable service status (e.g. ``"ok"``).
     version:
         API version string.
-    model_loaded:
+    is_model_loaded:
         Whether a pricing model is currently loaded and ready for
         inference.
     """
 
+    model_config = ConfigDict(protected_namespaces=())
+
     status: str
     version: str
-    model_loaded: bool
+    is_model_loaded: bool = False
+
+
+class BatchPriceRequest(BaseModel):
+    """Batch pricing request for multiple products.
+
+    Attributes
+    ----------
+    items:
+        List of individual pricing requests; maximum 100 per call.
+    """
+
+    items: list[PriceRequest] = Field(..., min_length=1, max_length=100)
+
+
+class BatchPriceResponse(BaseModel):
+    """Batch pricing response with one result per request item.
+
+    Attributes
+    ----------
+    results:
+        Ordered list of pricing responses matching *items* in the request.
+    count:
+        Total number of products priced in this batch.
+    """
+
+    results: list[PriceResponse]
+    count: int = Field(..., ge=0)

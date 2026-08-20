@@ -10,10 +10,13 @@ from __future__ import annotations
 
 import csv
 import json
+import logging
 import math
 import os
 import random
 from typing import Any
+
+logger = logging.getLogger(__name__)
 
 
 def load_csv(path: str) -> list[dict[str, Any]]:
@@ -39,7 +42,9 @@ def load_csv(path: str) -> list[dict[str, Any]]:
 
     with open(path, newline="", encoding="utf-8") as fh:
         reader = csv.DictReader(fh)
-        return [dict(row) for row in reader]
+        rows = [dict(row) for row in reader]
+    logger.debug("load_csv loaded %d rows from %s", len(rows), path)
+    return rows
 
 
 def load_json(path: str) -> list[dict[str, Any]]:
@@ -70,9 +75,9 @@ def load_json(path: str) -> list[dict[str, Any]]:
     with open(path, encoding="utf-8") as fh:
         data = json.load(fh)
 
-    if isinstance(data, dict):
-        return [data]
-    return list(data)
+    result = [data] if isinstance(data, dict) else list(data)
+    logger.debug("load_json loaded %d records from %s", len(result), path)
+    return result
 
 
 # ---------------------------------------------------------------------------

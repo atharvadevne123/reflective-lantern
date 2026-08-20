@@ -64,3 +64,52 @@ def test_optimize_returns_float(features: list) -> None:
     opt = PriceOptimizer(_ConstantModel())
     result = opt.optimize(50.0, features)
     assert isinstance(result, float)
+
+
+def test_optimize_with_zero_base_price_returns_zero() -> None:
+    from app.pricing.optimizer import PriceOptimizer
+
+    opt = PriceOptimizer(_ConstantModel())
+    result = opt.optimize(0.0, [0.0])
+    assert result == pytest.approx(0.0, abs=0.01)
+
+
+def test_optimize_with_single_candidate() -> None:
+    from app.pricing.optimizer import PriceOptimizer
+
+    opt = PriceOptimizer(_ConstantModel())
+    result = opt.optimize(100.0, [100.0], n_candidates=1)
+    assert isinstance(result, float)
+
+
+@pytest.mark.parametrize("n_candidates", [2, 5, 10, 50])
+def test_optimize_result_within_bounds(n_candidates: int) -> None:
+    from app.pricing.optimizer import PriceOptimizer
+
+    opt = PriceOptimizer(_ConstantModel(), min_multiplier=0.5, max_multiplier=2.0)
+    result = opt.optimize(100.0, [100.0], n_candidates=n_candidates)
+    assert 50.0 <= result <= 200.0
+
+
+def test_revenue_at_price_zero_price_is_zero() -> None:
+    from app.pricing.optimizer import PriceOptimizer
+
+    opt = PriceOptimizer(_ConstantModel())
+    rev = opt.revenue_at_price(0.0, [0.0])
+    assert rev == pytest.approx(0.0, abs=0.01)
+
+
+def test_optimizer_price_aware_model_selects_best() -> None:
+    from app.pricing.optimizer import PriceOptimizer
+
+    opt = PriceOptimizer(_PriceAwareModel(), min_multiplier=0.5, max_multiplier=1.5)
+    result = opt.optimize(100.0, [100.0], n_candidates=20)
+    assert 50.0 <= result <= 150.0
+
+
+def test_optimizer_multiplier_defaults_to_1() -> None:
+    from app.pricing.optimizer import PriceOptimizer
+
+    opt = PriceOptimizer(_ConstantModel(), min_multiplier=1.0, max_multiplier=1.0)
+    result = opt.optimize(77.0, [77.0])
+    assert result == pytest.approx(77.0, rel=1e-3)

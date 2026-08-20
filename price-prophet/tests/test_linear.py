@@ -37,3 +37,40 @@ def test_linear_model_repr():
 
     m = LinearPricingModel()
     assert "LinearPricingModel" in repr(m)
+
+
+def test_linear_model_coef_empty_before_fit() -> None:
+    from app.models.linear import LinearPricingModel
+
+    m = LinearPricingModel()
+    assert m.coef_ == []
+
+
+def test_linear_model_predict_raises_before_fit() -> None:
+    import pytest
+
+    from app.models.linear import LinearPricingModel
+
+    m = LinearPricingModel()
+    with pytest.raises(RuntimeError):
+        m.predict([[1.0, 2.0]])
+
+
+def test_linear_model_no_intercept_fit() -> None:
+    from app.models.linear import LinearPricingModel
+
+    m = LinearPricingModel(fit_intercept=False)
+    X = [[1.0], [2.0], [3.0]]
+    y = [2.0, 4.0, 6.0]
+    m.fit(X, y)
+    preds = m.predict(X)
+    assert all(abs(p - e) < 0.5 for p, e in zip(preds, y, strict=False))
+
+
+def test_linear_model_repr_contains_fitted_state() -> None:
+    from app.models.linear import LinearPricingModel
+
+    m = LinearPricingModel()
+    assert "not fitted" in repr(m)
+    m.fit([[1.0]], [1.0])
+    assert "fitted" in repr(m)

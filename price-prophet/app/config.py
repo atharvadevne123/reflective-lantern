@@ -10,13 +10,24 @@ try:
 except ImportError:  # pragma: no cover - pydantic v1 fallback
     from pydantic import BaseSettings  # type: ignore[no-redef]
 
+try:
+    from pydantic import ConfigDict
+
+    _HAS_CONFIG_DICT = True
+except ImportError:
+    _HAS_CONFIG_DICT = False
+
 
 class Settings(BaseSettings):
     """Central settings object.  All values are readable from the
     environment, which makes twelve-factor configuration trivial."""
 
+    if _HAS_CONFIG_DICT:
+        model_config = ConfigDict(env_prefix="", case_sensitive=False, protected_namespaces=())
+
     app_name: str = "Price-Prophet"
     debug: bool = False
+    version: str = "1.0.0"
 
     # Model persistence
     model_dir: str = "models"
@@ -34,9 +45,11 @@ class Settings(BaseSettings):
     # Logging
     log_level: str = "INFO"
 
-    class Config:
-        env_prefix = ""
-        case_sensitive = False
+    if not _HAS_CONFIG_DICT:
+
+        class Config:
+            env_prefix = ""
+            case_sensitive = False
 
 
 # Module-level singleton - import this everywhere instead of

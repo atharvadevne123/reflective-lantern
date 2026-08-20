@@ -8,6 +8,17 @@ demand) according to the supplied model.
 
 from __future__ import annotations
 
+import logging
+from typing import Protocol
+
+logger = logging.getLogger(__name__)
+
+
+class _PredictableModel(Protocol):
+    """Structural protocol for models accepted by :class:`PriceOptimizer`."""
+
+    def predict(self, X: list[list[float]]) -> list[float]: ...
+
 
 class PriceOptimizer:
     """Grid-search price optimiser.
@@ -32,7 +43,7 @@ class PriceOptimizer:
 
     def __init__(
         self,
-        model,
+        model: _PredictableModel,
         min_multiplier: float = 0.5,
         max_multiplier: float = 3.0,
     ) -> None:
@@ -116,4 +127,11 @@ class PriceOptimizer:
                 best_revenue = rev
                 best_price = candidate
 
+        logger.debug(
+            "optimize base_price=%.2f optimal=%.2f best_revenue=%.2f n_candidates=%d",
+            base_price,
+            best_price,
+            best_revenue,
+            n_candidates,
+        )
         return round(best_price, 2)

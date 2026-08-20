@@ -7,8 +7,11 @@ perturbed copies.  All functions use only the Python standard library.
 
 from __future__ import annotations
 
+import logging
 import random
 from typing import Any
+
+logger = logging.getLogger(__name__)
 
 
 def add_noise(
@@ -123,6 +126,7 @@ def augment_dataset(
         return list(records)
 
     augmented = list(records)  # originals first
+    logger.debug("augment_dataset: %d records x multiplier %d", len(records), multiplier)
 
     for pass_idx in range(1, multiplier):
         pass_seed = seed + pass_idx

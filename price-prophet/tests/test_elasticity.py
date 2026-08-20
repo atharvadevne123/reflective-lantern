@@ -126,3 +126,32 @@ class TestOptimalPriceDirection:
         from app.pricing.elasticity import optimal_price_direction
 
         assert optimal_price_direction(5.0, e) == expected
+
+
+def test_estimate_elasticity_identical_prices_returns_zero() -> None:
+    from app.pricing.elasticity import estimate_elasticity
+
+    result = estimate_elasticity([10.0, 10.0, 10.0], [100.0, 200.0, 150.0])
+    assert result == 0.0
+
+
+def test_estimate_elasticity_fewer_than_two_valid_returns_zero() -> None:
+    from app.pricing.elasticity import estimate_elasticity
+
+    result = estimate_elasticity([0.0], [100.0])
+    assert result == 0.0
+
+
+def test_apply_elasticity_same_price_returns_base_demand() -> None:
+    from app.pricing.elasticity import apply_elasticity
+
+    result = apply_elasticity(200.0, 50.0, 50.0, -1.5)
+    assert result == pytest.approx(200.0, abs=1e-6)
+
+
+@pytest.mark.parametrize("elasticity", [-0.5, -1.0, -2.0, -3.0])
+def test_is_elastic_threshold_boundary(elasticity: float) -> None:
+    from app.pricing.elasticity import is_elastic
+
+    expected = abs(elasticity) > 1.0
+    assert is_elastic(elasticity) is expected

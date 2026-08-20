@@ -127,7 +127,7 @@ def r_squared(actual: list[float], predicted: list[float]) -> float:
     ss_res = sum((a - p) ** 2 for a, p in zip(actual, predicted, strict=False))
     ss_tot = sum((a - mean_actual) ** 2 for a in actual)
     if ss_tot == 0.0:
-        return 0.0
+        return 1.0 if ss_res == 0.0 else 0.0
     return 1.0 - ss_res / ss_tot
 
 

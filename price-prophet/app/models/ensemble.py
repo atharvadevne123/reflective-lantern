@@ -8,7 +8,11 @@ instances via a weighted average.  Supports heterogeneous member models
 
 from __future__ import annotations
 
+import logging
+
 from app.models.base import BasePricingModel
+
+logger = logging.getLogger(__name__)
 
 
 class EnsemblePricingModel(BasePricingModel):
@@ -72,6 +76,9 @@ class EnsemblePricingModel(BasePricingModel):
         for model in self.models:
             model.fit(X, y)
         self._fitted = True
+        logger.info(
+            "EnsemblePricingModel fitted %d members on %d samples", len(self.models), len(y)
+        )
 
     def predict(self, X: list[list[float]]) -> list[float]:
         """Return a weighted-average prediction across all member models.
