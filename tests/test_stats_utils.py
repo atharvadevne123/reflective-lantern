@@ -1443,3 +1443,55 @@ def test_rolling_rmse_output_length(window: int, input_len: int) -> None:
     predicted = [v + 0.1 for v in actual]
     result = rolling_rmse(actual, predicted, window)
     assert len(result) == input_len
+
+
+class TestGeometricMean:
+    def test_known_values(self) -> None:
+        from app.stats_utils import geometric_mean
+        assert geometric_mean([1.0, 2.0, 4.0]) == pytest.approx(2.0)
+
+    def test_single_value(self) -> None:
+        from app.stats_utils import geometric_mean
+        assert geometric_mean([5.0]) == pytest.approx(5.0)
+
+    def test_empty_raises(self) -> None:
+        from app.stats_utils import geometric_mean
+        with pytest.raises(ValueError):
+            geometric_mean([])
+
+    def test_non_positive_raises(self) -> None:
+        from app.stats_utils import geometric_mean
+        with pytest.raises(ValueError):
+            geometric_mean([1.0, 0.0, 2.0])
+
+
+class TestHarmonicMean:
+    def test_known_values(self) -> None:
+        from app.stats_utils import harmonic_mean
+        result = harmonic_mean([1.0, 2.0, 4.0])
+        assert result == pytest.approx(12 / 7, rel=1e-4)
+
+    def test_all_equal(self) -> None:
+        from app.stats_utils import harmonic_mean
+        assert harmonic_mean([3.0, 3.0, 3.0]) == pytest.approx(3.0)
+
+    def test_empty_raises(self) -> None:
+        from app.stats_utils import harmonic_mean
+        with pytest.raises(ValueError):
+            harmonic_mean([])
+
+
+class TestCoefficientOfVariation:
+    def test_uniform_series(self) -> None:
+        from app.stats_utils import coefficient_of_variation
+        assert coefficient_of_variation([5.0, 5.0, 5.0]) == pytest.approx(0.0)
+
+    def test_positive_cv(self) -> None:
+        from app.stats_utils import coefficient_of_variation
+        result = coefficient_of_variation([2.0, 4.0, 6.0])
+        assert result > 0.0
+
+    def test_empty_raises(self) -> None:
+        from app.stats_utils import coefficient_of_variation
+        with pytest.raises(ValueError):
+            coefficient_of_variation([])
