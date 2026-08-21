@@ -1293,3 +1293,50 @@ class TestRiskAdjustedReturn:
         from app.investment import risk_adjusted_return
         with pytest.raises(ValueError):
             risk_adjusted_return(10.0, -1.0)
+
+
+class TestNetOperatingIncome:
+    def test_basic(self) -> None:
+        from app.investment import net_operating_income
+        result = net_operating_income(100000.0, 5.0, 30000.0)
+        assert result == pytest.approx(65000.0)
+
+    def test_zero_vacancy(self) -> None:
+        from app.investment import net_operating_income
+        result = net_operating_income(100000.0, 0.0, 20000.0)
+        assert result == pytest.approx(80000.0)
+
+    def test_invalid_vacancy_raises(self) -> None:
+        from app.investment import net_operating_income
+        with pytest.raises(ValueError):
+            net_operating_income(100000.0, 110.0, 20000.0)
+
+
+class TestDebtServiceCoverageRatio:
+    def test_above_one(self) -> None:
+        from app.investment import debt_service_coverage_ratio
+        assert debt_service_coverage_ratio(70000.0, 50000.0) == pytest.approx(1.4)
+
+    def test_exactly_one(self) -> None:
+        from app.investment import debt_service_coverage_ratio
+        assert debt_service_coverage_ratio(50000.0, 50000.0) == pytest.approx(1.0)
+
+    def test_zero_debt_raises(self) -> None:
+        from app.investment import debt_service_coverage_ratio
+        with pytest.raises(ValueError):
+            debt_service_coverage_ratio(50000.0, 0.0)
+
+
+class TestEquityMultiple:
+    def test_two_and_half_x(self) -> None:
+        from app.investment import equity_multiple
+        assert equity_multiple(250000.0, 100000.0) == pytest.approx(2.5)
+
+    def test_zero_distributions(self) -> None:
+        from app.investment import equity_multiple
+        assert equity_multiple(0.0, 100000.0) == pytest.approx(0.0)
+
+    def test_zero_invested_raises(self) -> None:
+        from app.investment import equity_multiple
+        with pytest.raises(ValueError):
+            equity_multiple(100000.0, 0.0)
