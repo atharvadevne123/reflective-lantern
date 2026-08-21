@@ -27,6 +27,7 @@ AFTERSHOCK_MAGNITUDE_THRESHOLD = 5.0
 
 
 def build_ensemble() -> VotingRegressor:
+    """Build the weighted XGBoost + RandomForest voting regressor."""
     return VotingRegressor(
         estimators=[
             (
@@ -61,7 +62,22 @@ def train_model(
     df: pd.DataFrame | None = None,
     n_samples: int = 2000,
     cv_folds: int = 5,
+    persist_metrics: bool = False,
+    notes: str | None = None,
 ) -> tuple[Any, dict[str, float]]:
+    """Train the ensemble and report cross-validated and held-out metrics.
+
+    Args:
+        df: Training frame with a ``magnitude`` target; synthesised when omitted.
+        n_samples: Rows to synthesise when ``df`` is None.
+        cv_folds: Cross-validation fold count.
+        persist_metrics: Append the run to the ``model_metrics`` table. Off by
+            default so unit tests and ad-hoc fits do not touch the database.
+        notes: Optional annotation stored alongside a persisted run.
+
+    Returns:
+        The fitted pipeline and its metrics dict.
+    """
     if df is None:
         df = make_synthetic_dataset(n_samples=n_samples)
 
@@ -116,10 +132,56 @@ def train_model(
         cv_scores.mean(),
         cv_scores.std(),
     )
+
+    if persist_metrics:
+        record_training_run(metrics, notes=notes)
+
     return full_pipeline, metrics
 
 
+def record_training_run(metrics: dict[str, Any], notes: str | None = None) -> bool:
+    """Append a training run to the ``model_metrics`` table.
+
+    `metrics.json` only ever holds the current champion, so without this the
+    history of what was trained and how it scored is lost on every retrain.
+
+    Args:
+        metrics: The metrics dict returned by :func:`train_model`.
+        notes: Optional free-text annotation for the run.
+
+    Returns:
+        ``True`` if the row was written, ``False`` if persistence failed. A
+        metrics-logging failure must never abort a successful training run.
+    """
+    from app.database import ModelMetrics, SessionLocal
+
+    session = SessionLocal()
+    try:
+        session.add(
+            ModelMetrics(
+                model_version=str(metrics.get("model_version", "unknown")),
+                rmse=float(metrics["rmse"]),
+                mae=float(metrics["mae"]),
+                r2=float(metrics["r2"]),
+                cv_r2_mean=float(metrics["cv_r2_mean"]),
+                cv_r2_std=float(metrics["cv_r2_std"]),
+                n_features=int(metrics["n_features"]),
+                n_samples=int(metrics["n_samples"]),
+                notes=notes,
+            )
+        )
+        session.commit()
+        return True
+    except Exception:
+        session.rollback()
+        logger.exception("Failed to persist training metrics — model itself is unaffected")
+        return False
+    finally:
+        session.close()
+
+
 def load_model() -> Any:
+    """Load the serialised pipeline, training a fresh one if none exists."""
     if not MODEL_PATH.exists():
         logger.warning("No model found at %s — training from scratch", MODEL_PATH)
         pipeline, _ = train_model()
@@ -128,6 +190,12 @@ def load_model() -> Any:
 
 
 def predict_magnitude(pipeline: Any, features: dict[str, Any]) -> dict[str, float]:
+    """Score one event, returning magnitude, aftershock probability and class.
+
+    The magnitude is clipped to a physically meaningful 0.1-9.9 range: the
+    regressor is unbounded and would otherwise emit values no seismograph
+    could produce.
+    """
     df = pd.DataFrame([features])
     magnitude = float(pipeline.predict(df)[0])
     magnitude = round(max(0.1, min(9.9, magnitude)), 2)
@@ -144,6 +212,7 @@ def predict_magnitude(pipeline: Any, features: dict[str, Any]) -> dict[str, floa
 
 
 def classify_magnitude(magnitude: float) -> str:
+    """Map a magnitude to its USGS-style descriptive band."""
     if magnitude < 2.0:
         return "micro"
     if magnitude < 4.0:
@@ -160,6 +229,7 @@ def classify_magnitude(magnitude: float) -> str:
 
 
 def read_champion_metrics() -> dict[str, float]:
+    """Read the incumbent model's metrics, or an empty dict if never trained."""
     if not METRICS_PATH.exists():
         return {}
     return json.loads(METRICS_PATH.read_text())

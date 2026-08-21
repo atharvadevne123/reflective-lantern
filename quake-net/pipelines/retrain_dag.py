@@ -67,7 +67,12 @@ def _train_challenger(**context) -> dict:
     from app.model import train_model
 
     df = pickle.loads(Path("/tmp/retrain_df.pkl").read_bytes())
-    _, metrics = train_model(df=df, n_samples=len(df))
+    _, metrics = train_model(
+        df=df,
+        n_samples=len(df),
+        persist_metrics=True,
+        notes="scheduled challenger run",
+    )
     logger.info("Challenger trained: %s", metrics)
     context["ti"].xcom_push(key="challenger_metrics", value=metrics)
     return metrics

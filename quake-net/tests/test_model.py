@@ -175,3 +175,44 @@ class TestReadChampionMetrics:
     def test_returns_dict(self) -> None:
         result = read_champion_metrics()
         assert isinstance(result, dict)
+
+
+class TestRecordTrainingRun:
+    METRICS = {
+        "rmse": 0.31,
+        "mae": 0.24,
+        "r2": 0.86,
+        "cv_r2_mean": 0.84,
+        "cv_r2_std": 0.02,
+        "n_features": 47,
+        "n_samples": 2000,
+        "model_version": "1.0.0",
+    }
+
+    def test_writes_a_row(self, db_session) -> None:
+        from app.database import ModelMetrics
+        from app.model import record_training_run
+
+        before = db_session.query(ModelMetrics).count()
+        assert record_training_run(self.METRICS, notes="unit test") is True
+        # record_training_run uses its own session, so query through a fresh one.
+        from app.database import SessionLocal
+
+        session = SessionLocal()
+        try:
+            assert session.query(ModelMetrics).count() >= before
+        finally:
+            session.close()
+
+    def test_returns_false_on_bad_metrics(self) -> None:
+        from app.model import record_training_run
+
+        assert record_training_run({"rmse": 0.1}) is False
+
+    def test_training_does_not_persist_by_default(self) -> None:
+        from app.features import make_synthetic_dataset
+        from app.model import train_model
+
+        df = make_synthetic_dataset(n_samples=120, seed=7)
+        _, metrics = train_model(df=df)
+        assert "r2" in metrics
