@@ -196,10 +196,12 @@ class LatencyTimer:
     """Context manager to measure request latency in milliseconds."""
 
     def __enter__(self) -> LatencyTimer:
+        """Start the latency timer and return self for use in a with-statement."""
         self._start = time.perf_counter()
         return self
 
     def __exit__(self, *_: Any) -> None:
+        """Stop the timer and store elapsed milliseconds in self.ms."""
         self.ms = round((time.perf_counter() - self._start) * 1000, 2)
 
 
