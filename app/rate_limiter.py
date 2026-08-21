@@ -24,6 +24,12 @@ class TokenBucketRateLimiter:
     """
 
     def __init__(self, capacity: float = 10.0, rate_per_second: float = 1.0) -> None:
+        """Initialise the rate limiter with given capacity and refill rate.
+
+        Args:
+            capacity: Maximum number of tokens each bucket can hold.
+            rate_per_second: Tokens added per second to each bucket.
+        """
         if capacity <= 0:
             raise ValueError("capacity must be positive")
         if rate_per_second <= 0:
@@ -34,6 +40,7 @@ class TokenBucketRateLimiter:
         self._lock = threading.RLock()
 
     def _refill(self, bucket: _Bucket) -> None:
+        """Refill *bucket* tokens based on elapsed time since last refill."""
         now = time.monotonic()
         elapsed = now - bucket.last_refill
         bucket.tokens = min(self._capacity, bucket.tokens + elapsed * self._rate)
