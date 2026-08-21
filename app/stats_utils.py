@@ -1069,3 +1069,67 @@ def outlier_fraction(values: list[float], z_threshold: float = 3.0) -> float:
         return 0.0
     count = sum(1 for v in values if abs(v - mean_v) / std_v > z_threshold)
     return round(count / len(values), 6)
+
+
+def geometric_mean(values: list[float]) -> float:
+    """Compute the geometric mean of *values*.
+
+    Args:
+        values: Non-empty list of positive floats.
+
+    Returns:
+        Geometric mean as a float.
+
+    Raises:
+        ValueError: If *values* is empty or contains non-positive numbers.
+    """
+    if not values:
+        raise ValueError("values must not be empty")
+    if any(v <= 0 for v in values):
+        raise ValueError("all values must be positive for geometric mean")
+    log_sum = sum(v ** (1.0 / len(values)) for v in values)
+    product = 1.0
+    for v in values:
+        product *= v
+    return round(product ** (1.0 / len(values)), 6)
+
+
+def harmonic_mean(values: list[float]) -> float:
+    """Compute the harmonic mean of *values*.
+
+    Args:
+        values: Non-empty list of positive floats.
+
+    Returns:
+        Harmonic mean as a float.
+
+    Raises:
+        ValueError: If *values* is empty or contains non-positive numbers.
+    """
+    if not values:
+        raise ValueError("values must not be empty")
+    if any(v <= 0 for v in values):
+        raise ValueError("all values must be positive for harmonic mean")
+    return round(len(values) / sum(1.0 / v for v in values), 6)
+
+
+def coefficient_of_variation(values: list[float]) -> float:
+    """Compute the Coefficient of Variation (CV = std/mean) of *values*.
+
+    Args:
+        values: Non-empty list of floats.
+
+    Returns:
+        CV as a fraction; 0.0 when mean is zero.
+
+    Raises:
+        ValueError: If *values* is empty.
+    """
+    if not values:
+        raise ValueError("values must not be empty")
+    n = len(values)
+    mean = sum(values) / n
+    if mean == 0.0:
+        return 0.0
+    variance = sum((v - mean) ** 2 for v in values) / n
+    return round(variance ** 0.5 / abs(mean), 6)
