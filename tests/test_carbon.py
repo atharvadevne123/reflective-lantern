@@ -1421,3 +1421,37 @@ class TestCumulativeBudgetUsage:
         from app.carbon import cumulative_budget_usage
         with pytest.raises(ValueError):
             cumulative_budget_usage(-5.0, 100.0)
+
+
+class TestGridEmissionFactor:
+    def test_known_region(self) -> None:
+        from app.carbon import grid_emission_factor
+        assert grid_emission_factor("midwest") == pytest.approx(0.00045)
+
+    def test_default_for_unknown(self) -> None:
+        from app.carbon import grid_emission_factor
+        assert grid_emission_factor("unknown_region") == pytest.approx(0.0001)
+
+    def test_case_insensitive(self) -> None:
+        from app.carbon import grid_emission_factor
+        assert grid_emission_factor("MIDWEST") == pytest.approx(0.00045)
+
+
+class TestAnnualCo2Savings:
+    def test_basic_savings(self) -> None:
+        from app.carbon import annual_co2_savings
+        result = annual_co2_savings(10000.0, 8000.0, "midwest")
+        assert result > 0.0
+
+    def test_no_improvement(self) -> None:
+        from app.carbon import annual_co2_savings
+        assert annual_co2_savings(5000.0, 5000.0) == pytest.approx(0.0)
+
+    def test_negative_baseline_raises(self) -> None:
+        from app.carbon import annual_co2_savings
+        with pytest.raises(ValueError):
+            annual_co2_savings(-100.0, 5000.0)
+
+    def test_worse_than_baseline_returns_zero(self) -> None:
+        from app.carbon import annual_co2_savings
+        assert annual_co2_savings(5000.0, 7000.0) == pytest.approx(0.0)
