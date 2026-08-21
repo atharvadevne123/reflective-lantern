@@ -767,3 +767,64 @@ def forecast_bias_ratio(actual: list[float], predicted: list[float]) -> float:
         return 0.0
     mean_pred = sum(predicted) / len(predicted)
     return round(mean_pred / mean_actual, 6)
+
+
+def mean_percentage_error(actual: list[float], predicted: list[float]) -> float:
+    """Compute the Mean Percentage Error (MPE) between *actual* and *predicted*.
+
+    Args:
+        actual: List of observed values (no zeros allowed).
+        predicted: List of forecast values (same length as *actual*).
+
+    Returns:
+        MPE as a percentage float (can be negative, indicating over-forecasting).
+
+    Raises:
+        ValueError: If lists are empty, have different lengths, or *actual* contains a zero.
+    """
+    if not actual or not predicted:
+        raise ValueError("actual and predicted must be non-empty")
+    if len(actual) != len(predicted):
+        raise ValueError("actual and predicted must have the same length")
+    if any(a == 0.0 for a in actual):
+        raise ValueError("actual must not contain zeros (division by zero)")
+    return round(sum((p - a) / a * 100.0 for a, p in zip(actual, predicted)) / len(actual), 6)
+
+
+def peak_forecast_hour(forecasts: list[float]) -> int:
+    """Return the index of the peak forecasted value.
+
+    Args:
+        forecasts: Non-empty list of forecast values (e.g. hourly load).
+
+    Returns:
+        Zero-based index of the maximum forecasted value.
+
+    Raises:
+        ValueError: If *forecasts* is empty.
+    """
+    if not forecasts:
+        raise ValueError("forecasts must not be empty")
+    return forecasts.index(max(forecasts))
+
+
+def forecast_volatility(forecasts: list[float]) -> float:
+    """Return the coefficient of variation (std/mean) of *forecasts* as a measure of volatility.
+
+    Args:
+        forecasts: Non-empty list of forecast values.
+
+    Returns:
+        Coefficient of variation; 0.0 when mean is zero.
+
+    Raises:
+        ValueError: If *forecasts* is empty.
+    """
+    if not forecasts:
+        raise ValueError("forecasts must not be empty")
+    n = len(forecasts)
+    mean = sum(forecasts) / n
+    if mean == 0.0:
+        return 0.0
+    variance = sum((v - mean) ** 2 for v in forecasts) / n
+    return round(variance ** 0.5 / abs(mean), 6)
