@@ -952,3 +952,115 @@ def correlation_coefficient(x: list[float], y: list[float]) -> float:
     if denom == 0.0:
         return 0.0
     return round(cov / denom, 6)
+
+
+def rolling_rmse(actual: list[float], predicted: list[float], window: int) -> list[float]:
+    """Compute rolling RMSE between actual and predicted over a sliding window.
+
+    Args:
+        actual: Ground-truth series.
+        predicted: Predicted series (same length as actual).
+        window: Number of data points per rolling window.
+
+    Returns:
+        List of RMSE values; first (window - 1) entries are NaN-padded as 0.0.
+
+    Raises:
+        ValueError: If window < 1 or lists have mismatched lengths.
+    """
+    if window < 1:
+        raise ValueError(f"window must be >= 1, got {window}")
+    if len(actual) != len(predicted):
+        raise ValueError("actual and predicted must have the same length")
+    result: list[float] = []
+    for i in range(len(actual)):
+        if i < window - 1:
+            result.append(0.0)
+        else:
+            a_w = actual[i - window + 1 : i + 1]
+            p_w = predicted[i - window + 1 : i + 1]
+            mse = sum((a - p) ** 2 for a, p in zip(a_w, p_w)) / window
+            result.append(round(mse ** 0.5, 6))
+    return result
+
+
+def confidence_interval(values: list[float], confidence: float = 0.95) -> tuple[float, float]:
+    """Compute a parametric confidence interval for the mean of *values*.
+
+    Uses a t-distribution approximation via the standard error.
+
+    Args:
+        values: Sample data (must have at least 2 elements).
+        confidence: Confidence level in (0, 1).
+
+    Returns:
+        (lower, upper) bounds as a tuple of floats.
+
+    Raises:
+        ValueError: If values has fewer than 2 elements or confidence is out of range.
+    """
+    if len(values) < 2:
+        raise ValueError("confidence_interval requires at least 2 values")
+    if not (0.0 < confidence < 1.0):
+        raise ValueError(f"confidence must be in (0, 1), got {confidence}")
+    import math
+
+    n = len(values)
+    mean_v = sum(values) / n
+    std_v = (sum((v - mean_v) ** 2 for v in values) / (n - 1)) ** 0.5
+    se = std_v / math.sqrt(n)
+    # Approximate z-score for common confidence levels
+    z_map = {0.90: 1.645, 0.95: 1.96, 0.99: 2.576}
+    z = z_map.get(round(confidence, 2), 1.96)
+    margin = z * se
+    return (round(mean_v - margin, 6), round(mean_v + margin, 6))
+
+
+def signal_to_noise_ratio(values: list[float]) -> float:
+    """Compute the signal-to-noise ratio (mean / std) of *values*.
+
+    Args:
+        values: Numeric series with at least 2 elements.
+
+    Returns:
+        SNR as a float; returns 0.0 when std is zero.
+
+    Raises:
+        ValueError: If values is empty.
+    """
+    if not values:
+        raise ValueError("values must not be empty")
+    if len(values) < 2:
+        return 0.0
+    mean_v = sum(values) / len(values)
+    variance = sum((v - mean_v) ** 2 for v in values) / (len(values) - 1)
+    std_v = variance ** 0.5
+    if std_v == 0.0:
+        return 0.0
+    return round(abs(mean_v) / std_v, 6)
+
+
+def outlier_fraction(values: list[float], z_threshold: float = 3.0) -> float:
+    """Return the fraction of *values* that are beyond *z_threshold* standard deviations.
+
+    Args:
+        values: Numeric series with at least 2 elements.
+        z_threshold: Number of standard deviations defining an outlier.
+
+    Returns:
+        Fraction in [0.0, 1.0]; 0.0 if std is zero.
+
+    Raises:
+        ValueError: If values is empty.
+    """
+    if not values:
+        raise ValueError("values must not be empty")
+    if len(values) < 2:
+        return 0.0
+    mean_v = sum(values) / len(values)
+    variance = sum((v - mean_v) ** 2 for v in values) / len(values)
+    std_v = variance ** 0.5
+    if std_v == 0.0:
+        return 0.0
+    count = sum(1 for v in values if abs(v - mean_v) / std_v > z_threshold)
+    return round(count / len(values), 6)
