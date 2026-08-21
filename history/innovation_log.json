@@ -666,5 +666,75 @@
     "publish_blocked_reason": "Standalone repo creation returned 403 \u2014 this session's GitHub access is bound to the reflective-lantern repository. Shipped on branch innovation/cart-mind with a draft PR.",
     "email_status": "network_blocked \u2014 raw TCP to smtp.gmail.com:465 and :587 both time out; the egress proxy passes HTTPS only. Report committed to history/reports/ instead.",
     "report_pdf": "history/reports/Cart-Mind_innovation_2026-08-05.pdf"
+  },
+  {
+    "date": "2026-08-21",
+    "mode": "innovation",
+    "project": "Quake-Net",
+    "description": "Seismic event magnitude prediction and aftershock forecasting API using an XGBoost + RandomForest voting ensemble, modified Omori law decay modelling, KS-test and PSI drift monitoring, IsolationForest anomaly detection, FAISS similarity search and champion/challenger automated retraining.",
+    "inspired_by": "Portfolio gap analysis \u2014 seismology was the largest untouched ML domain across 21 prior projects. HN API and GitHub trending were unreachable (egress proxy returns 403 on non-proxied HTTP), so the topic was chosen by duplicate-gate elimination.",
+    "chosen_keywords": "seismic earthquake quake geological magnitude aftershock waveform",
+    "repo_branch": "innovation/quake-net",
+    "repo_url": "https://github.com/atharvadevne123/reflective-lantern/tree/innovation/quake-net",
+    "pr_url": "https://github.com/atharvadevne123/reflective-lantern/pull/51",
+    "file_count": 39,
+    "test_count": 285,
+    "tests_passed": true,
+    "commits": 61,
+    "coverage_pct": 100,
+    "optional_enhancements_count": 7,
+    "archetype": "Prediction API + Time-series Forecasting + Anomaly Detection + Drift Detection + Automated Retraining",
+    "cv_r2_mean": 0.8216,
+    "cv_r2_std": 0.0211,
+    "holdout_r2": 0.8029,
+    "rmse": 0.2642,
+    "mae": 0.208,
+    "stack": [
+      "Python 3.11",
+      "FastAPI (11 versioned endpoints under /api/v1)",
+      "XGBoost + RandomForest VotingRegressor (0.6/0.4)",
+      "sklearn Pipeline (6 stages, 47 features from 8 raw columns)",
+      "Modified Omori law aftershock forecasting with MLE parameter fitting",
+      "KS-test + PSI drift monitoring",
+      "IsolationForest + z-score + IQR anomaly detection",
+      "FAISS IndexFlatL2 with exact brute-force fallback",
+      "SQLAlchemy ORM (SeismicEvent, DriftLog, ModelMetrics)",
+      "Alembic migrations",
+      "PostgreSQL + Docker (non-root, healthcheck) + docker-compose",
+      "Airflow champion/challenger retraining DAG with R2 gate",
+      "pytest (285 tests across 11 modules, transactional DB isolation)",
+      "GitHub Actions CI (ruff lint + format + pytest 3.11/3.12 + wheel)",
+      "5-fold cross-validation",
+      "Rate limiting (200 req/min), correlation IDs, GZip, structured JSON logging",
+      "Thread-safe TTL/LRU cache"
+    ],
+    "bugs_found_and_fixed": [
+      {
+        "title": "DropCategoricalColumns silently missed string columns",
+        "detail": "Selection was by `dtype == object`, but pandas reports string columns as the dedicated `str` dtype under the PyArrow-backed default, so non-numeric data would have reached StandardScaler. Caught by a failing test; now selects by 'not numeric dtype'."
+      },
+      {
+        "title": "Champion/challenger gate compared the challenger against itself",
+        "detail": "train_model writes metrics.json as a side effect, and the gate read the champion's R2 from that same file after training. The comparison was always true, so every challenger promoted including regressions. Champion is now read before training; a rejected run restores its metrics."
+      },
+      {
+        "title": "Ad-hoc similarity index builds clobbered the serving index",
+        "detail": "build() wrote to the shared FAISS_INDEX_PATH unconditionally. Persistence is now opt-in via build(..., persist=True)."
+      },
+      {
+        "title": "n_features understated the feature space",
+        "detail": "Reported the raw input width (8) rather than the post-pipeline width the model actually sees (47). Both are now reported."
+      },
+      {
+        "title": "model_metrics table was defined but never written to",
+        "detail": "Training history was lost on every retrain. record_training_run now appends each run and the retraining DAG opts in; a persistence failure is logged without aborting training."
+      }
+    ],
+    "data_note": "No proprietary seismic catalogue ships with the repo. make_synthetic_dataset generates events from a Richter-like relationship (log amplitudes, depth attenuation, fault seismicity, station count) with Gaussian noise keeping the problem non-separable. CV R2 0.822 reflects recovery of a known physical relationship, not accuracy on real catalogue data. This is stated plainly in the README.",
+    "publish_blocked_reason": "Standalone repo creation returned 403 \u2014 this session's GitHub access is bound to the reflective-lantern repository. Shipped on branch innovation/quake-net with draft PR #51.",
+    "publish_route": "Run the 'Publish Quake-Net Repo' workflow from the Actions tab with a repo-scoped PAT. It creates the repo, pushes the 60 project commits as main via subtree split, tags v1.0.0, creates the release, and uploads the wheel.",
+    "email_status": "network_blocked \u2014 raw TCP to smtp.gmail.com:465 and :587 both fail with OSError errno 97 (address family not supported); the egress proxy passes HTTPS only. Report committed to history/reports/ instead.",
+    "report_pdf": "history/reports/Quake-Net_innovation_2026-08-21.pdf",
+    "environment_note": "System cryptography 41.0.7 panics on import of hazmat bindings (pyo3 'Python API call failed'), which breaks fpdf2. Worked around by installing cryptography into /tmp/pylibs and setting PYTHONPATH."
   }
 ]
