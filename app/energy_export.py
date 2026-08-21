@@ -658,3 +658,54 @@ def filter_records_by_field(records: list[dict], field: str, value: object) -> l
         Filtered list preserving original order.
     """
     return [r for r in records if r.get(field) == value]
+
+
+def kwh_to_mwh(kwh: float) -> float:
+    """Convert kilowatt-hours to megawatt-hours.
+
+    Args:
+        kwh: Energy in kWh (must be non-negative).
+
+    Returns:
+        Equivalent MWh value.
+
+    Raises:
+        ValueError: If *kwh* is negative.
+    """
+    if kwh < 0:
+        raise ValueError(f"kwh must be non-negative, got {kwh}")
+    return round(kwh / 1000.0, 6)
+
+
+def mwh_to_kwh(mwh: float) -> float:
+    """Convert megawatt-hours to kilowatt-hours.
+
+    Args:
+        mwh: Energy in MWh (must be non-negative).
+
+    Returns:
+        Equivalent kWh value.
+
+    Raises:
+        ValueError: If *mwh* is negative.
+    """
+    if mwh < 0:
+        raise ValueError(f"mwh must be non-negative, got {mwh}")
+    return round(mwh * 1000.0, 6)
+
+
+def daily_peak_consumption(hourly_kwh: list[float]) -> float:
+    """Return the maximum hourly energy consumption from a daily profile.
+
+    Args:
+        hourly_kwh: List of 24 hourly kWh values.
+
+    Returns:
+        Maximum kWh value in the profile.
+
+    Raises:
+        ValueError: If the list does not have exactly 24 entries.
+    """
+    if len(hourly_kwh) != 24:
+        raise ValueError(f"hourly_kwh must have exactly 24 entries, got {len(hourly_kwh)}")
+    return max(hourly_kwh)
