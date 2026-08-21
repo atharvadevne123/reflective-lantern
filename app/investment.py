@@ -1004,3 +1004,63 @@ def risk_adjusted_return(
         return 0.0
     excess = annual_return_pct - risk_free_rate_pct
     return round(excess / volatility_pct, 4)
+
+
+def net_operating_income(gross_rent: float, vacancy_rate_pct: float, operating_expenses: float) -> float:
+    """Compute Net Operating Income (NOI) for a rental property.
+
+    Args:
+        gross_rent: Annual gross rental income.
+        vacancy_rate_pct: Expected vacancy rate as a percentage (0-100).
+        operating_expenses: Annual operating expenses.
+
+    Returns:
+        NOI as a float; can be negative if expenses exceed effective rent.
+
+    Raises:
+        ValueError: If *vacancy_rate_pct* is not in [0, 100] or *operating_expenses* is negative.
+    """
+    if not (0.0 <= vacancy_rate_pct <= 100.0):
+        raise ValueError(f"vacancy_rate_pct must be in [0, 100], got {vacancy_rate_pct}")
+    if operating_expenses < 0:
+        raise ValueError(f"operating_expenses must be non-negative, got {operating_expenses}")
+    effective_rent = gross_rent * (1.0 - vacancy_rate_pct / 100.0)
+    return round(effective_rent - operating_expenses, 4)
+
+
+def debt_service_coverage_ratio(noi: float, annual_debt_service: float) -> float:
+    """Compute the Debt Service Coverage Ratio (DSCR) for a property.
+
+    Args:
+        noi: Net Operating Income.
+        annual_debt_service: Total annual debt service (must be positive).
+
+    Returns:
+        DSCR as a float; values >= 1.0 indicate the property covers its debt.
+
+    Raises:
+        ValueError: If *annual_debt_service* is not positive.
+    """
+    if annual_debt_service <= 0:
+        raise ValueError(f"annual_debt_service must be positive, got {annual_debt_service}")
+    return round(noi / annual_debt_service, 4)
+
+
+def equity_multiple(total_distributions: float, total_invested: float) -> float:
+    """Compute the equity multiple for an investment.
+
+    Args:
+        total_distributions: Sum of all cash distributions returned to the investor.
+        total_invested: Total capital invested (must be positive).
+
+    Returns:
+        Equity multiple (e.g., 2.5x means 2.5 times the invested capital returned).
+
+    Raises:
+        ValueError: If *total_invested* is not positive or *total_distributions* is negative.
+    """
+    if total_invested <= 0:
+        raise ValueError(f"total_invested must be positive, got {total_invested}")
+    if total_distributions < 0:
+        raise ValueError(f"total_distributions must be non-negative, got {total_distributions}")
+    return round(total_distributions / total_invested, 4)
