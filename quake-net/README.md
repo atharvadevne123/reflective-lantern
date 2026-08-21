@@ -98,9 +98,10 @@ All routes are versioned under `/api/v1`.
 
 | Method | Endpoint | Purpose |
 | --- | --- | --- |
-| `GET` | `/api/v1/health` | Liveness, model-loaded flag, predictions served |
+| `GET` | `/api/v1/health` | Liveness, model and database status, uptime |
 | `POST` | `/api/v1/predict` | Score a single seismic event |
 | `POST` | `/api/v1/predict/batch` | Score up to 100 events in one call |
+| `POST` | `/api/v1/forecast/aftershocks` | Omori-law aftershock sequence forecast |
 | `GET` | `/api/v1/metrics` | Service counters and champion model metrics |
 | `GET` | `/api/v1/drift` | Per-feature KS-test drift report |
 | `GET` | `/api/v1/drift/psi` | Population Stability Index per feature |
@@ -127,6 +128,26 @@ All routes are versioned under `/api/v1`.
 The S-wave cross-field check catches transposed or mis-parsed amplitude pairs: S-waves
 carry more energy than P-waves at the same source, so an S amplitude below half the P
 amplitude almost always signals a data error rather than a real event.
+
+### Aftershock forecasting
+
+`POST /api/v1/forecast/aftershocks` projects the aftershock sequence following a mainshock
+using the modified Omori law, `n(t) = K / (t + c)^p`:
+
+```bash
+curl -X POST http://localhost:8000/api/v1/forecast/aftershocks \
+  -H 'Content-Type: application/json' \
+  -d '{"mainshock_magnitude": 6.8, "horizon_days": 7}'
+```
+
+Each day in the horizon comes back with an expected event count and the probability of at
+least one aftershock, alongside the fitted Omori parameters, the rate half-life, and the
+largest expected aftershock magnitude from Bath's law (mainshock − 1.2).
+
+Supplying `observed_times_days` — the times in days of aftershocks already recorded — fits
+`K` and `p` to that sequence by maximum likelihood over a grid of decay exponents instead
+of deriving them from magnitude alone, which sharpens the forecast considerably once a
+sequence is underway.
 
 ### Response headers
 
@@ -208,6 +229,10 @@ over the five-column signature, a z-score rule, and a Tukey IQR fence. An event 
 any of the three is returned with all three verdicts, so a reviewer can see whether the
 signal is multivariate or driven by one extreme value.
 
+`GET /api/v1/health` reports `status: degraded` rather than failing when the model or
+database is unavailable — the process is alive and can still serve cached reads, so a load
+balancer should keep it in rotation while the alert fires.
+
 **Retraining.** `pipelines/retrain_dag.py` runs weekly (Mondays 02:00 UTC under Airflow, or
 via `run_retraining_pipeline()` standalone): check drift, load fresh data, train a
 challenger, then gate it. The challenger is promoted only if it beats the incumbent's R²
@@ -224,9 +249,10 @@ pytest tests/ -m "not slow"     # skip the end-to-end retraining test
 pytest tests/test_model.py -v   # a single module
 ```
 
-201 tests across nine modules cover feature transforms, model training and prediction
-bounds, drift and PSI maths, the similarity index, anomaly rules, cache eviction and TTL
-expiry, database round-trips, the retraining gate, and every API route. Database tests run
+282 tests across eleven modules cover feature transforms, model training and prediction
+bounds, drift and PSI maths, the similarity index, anomaly rules, Omori forecasting,
+input validation, cache eviction and TTL expiry, database round-trips, the retraining
+gate, and every API route. Database tests run
 in a transaction that is rolled back per test, so they neither leak state nor require a
 live PostgreSQL.
 
