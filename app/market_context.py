@@ -852,3 +852,60 @@ def price_to_income_ratio(median_home_price: float, median_annual_income: float)
     if median_annual_income <= 0.0:
         return 0.0
     return round(median_home_price / median_annual_income, 4)
+
+
+def demand_pressure_index(active_buyers: int, active_listings: int) -> float:
+    """Return a demand-pressure index as the buyer-to-listing ratio.
+
+    Args:
+        active_buyers: Number of active buyers in the market.
+        active_listings: Number of active listings.
+
+    Returns:
+        Ratio of buyers to listings; 0.0 when *active_listings* is 0.
+
+    Raises:
+        ValueError: If either argument is negative.
+    """
+    if active_buyers < 0 or active_listings < 0:
+        raise ValueError("active_buyers and active_listings must be non-negative")
+    if active_listings == 0:
+        return 0.0
+    return round(active_buyers / active_listings, 4)
+
+
+def price_deviation_from_median(price: float, median_price: float) -> float:
+    """Compute percentage deviation of *price* from *median_price*.
+
+    Args:
+        price: Subject property price.
+        median_price: Market median price (must be positive).
+
+    Returns:
+        Signed percentage deviation; positive means above median.
+
+    Raises:
+        ValueError: If *median_price* is not positive.
+    """
+    if median_price <= 0.0:
+        raise ValueError(f"median_price must be positive, got {median_price}")
+    return round((price - median_price) / median_price * 100.0, 4)
+
+
+def effective_days_on_market(original_dom: int, relisted: bool = False, relist_penalty: int = 30) -> int:
+    """Return effective days-on-market, optionally adding a relist penalty.
+
+    Args:
+        original_dom: Recorded days on market.
+        relisted: True if the listing was relisted after expiry/withdrawal.
+        relist_penalty: Extra days to add for relisted properties (default 30).
+
+    Returns:
+        Effective DOM as an integer.
+
+    Raises:
+        ValueError: If *original_dom* is negative.
+    """
+    if original_dom < 0:
+        raise ValueError(f"original_dom must be non-negative, got {original_dom}")
+    return original_dom + (relist_penalty if relisted else 0)
