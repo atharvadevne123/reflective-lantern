@@ -175,6 +175,9 @@ def daily_carbon_estimate(
 
 __all__ = [
     "GRID_CARBON_INTENSITY",
+    "carbon_intensity_rank",
+    "hourly_carbon_profile",
+    "renewable_offset_factor",
     "KG_TO_TONNES",
     "TREES_PER_TONNE_CO2_PER_YEAR",
     "annual_carbon_budget",
