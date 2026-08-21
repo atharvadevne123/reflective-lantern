@@ -980,3 +980,48 @@ def outlier_summary(
         "max_outlier": max(outlier_vals),
         "indices": [i for i, _ in outliers],
     }
+
+
+def null_rate(values: list[object]) -> float:
+    """Compute the fraction of None values in *values*.
+
+    Args:
+        values: List of objects, potentially containing None.
+
+    Returns:
+        Null rate as a fraction in [0.0, 1.0]; 0.0 for an empty list.
+    """
+    if not values:
+        return 0.0
+    return round(sum(1 for v in values if v is None) / len(values), 6)
+
+
+def unique_value_count(values: list[object]) -> int:
+    """Count the number of distinct non-None values in *values*.
+
+    Args:
+        values: List of objects.
+
+    Returns:
+        Count of unique non-None entries.
+    """
+    return len({v for v in values if v is not None})
+
+
+def completeness_score(records: list[dict[str, object]], required_fields: list[str]) -> float:
+    """Compute the average completeness across *records* for *required_fields*.
+
+    Args:
+        records: List of record dicts.
+        required_fields: Field names that must be non-None.
+
+    Returns:
+        Fraction of (record, field) pairs with a non-None value; 1.0 if no records or fields.
+    """
+    if not records or not required_fields:
+        return 1.0
+    total = len(records) * len(required_fields)
+    filled = sum(
+        1 for rec in records for field in required_fields if rec.get(field) is not None
+    )
+    return round(filled / total, 6)
