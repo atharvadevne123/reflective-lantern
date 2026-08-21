@@ -411,6 +411,7 @@ def irr_estimate(
         all_flows[-1] += terminal_value
 
     def _npv(rate: float) -> float:
+        """Net present value of all_flows discounted at *rate*."""
         return sum(cf / (1 + rate) ** i for i, cf in enumerate(all_flows))
 
     lo, hi = -0.999, 10.0

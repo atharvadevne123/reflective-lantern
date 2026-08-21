@@ -487,6 +487,7 @@ def date_range_overlap_days(
     """
 
     def _to_date(d: date | datetime) -> date:
+        """Coerce a datetime to a plain date, leaving date objects unchanged."""
         return d.date() if isinstance(d, datetime) else d
 
     sa, ea = _to_date(start_a), _to_date(end_a)
