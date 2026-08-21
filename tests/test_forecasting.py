@@ -943,3 +943,58 @@ class TestForecastBiasRatio:
 
         with pytest.raises(ValueError):
             forecast_bias_ratio([1.0, 2.0], [1.0])
+
+
+class TestMeanPercentageError:
+    def test_over_forecast(self) -> None:
+        from app.forecasting import mean_percentage_error
+        assert mean_percentage_error([10.0, 20.0], [11.0, 22.0]) == pytest.approx(10.0)
+
+    def test_under_forecast(self) -> None:
+        from app.forecasting import mean_percentage_error
+        assert mean_percentage_error([10.0, 20.0], [9.0, 18.0]) == pytest.approx(-10.0)
+
+    def test_perfect_forecast(self) -> None:
+        from app.forecasting import mean_percentage_error
+        assert mean_percentage_error([5.0, 10.0], [5.0, 10.0]) == pytest.approx(0.0)
+
+    def test_zero_in_actual_raises(self) -> None:
+        from app.forecasting import mean_percentage_error
+        with pytest.raises(ValueError, match="zeros"):
+            mean_percentage_error([0.0, 10.0], [1.0, 10.0])
+
+    def test_length_mismatch_raises(self) -> None:
+        from app.forecasting import mean_percentage_error
+        with pytest.raises(ValueError):
+            mean_percentage_error([1.0, 2.0], [1.0])
+
+
+class TestPeakForecastHour:
+    def test_peak_at_end(self) -> None:
+        from app.forecasting import peak_forecast_hour
+        assert peak_forecast_hour([1.0, 2.0, 3.0]) == 2
+
+    def test_peak_in_middle(self) -> None:
+        from app.forecasting import peak_forecast_hour
+        assert peak_forecast_hour([1.0, 5.0, 2.0]) == 1
+
+    def test_empty_raises(self) -> None:
+        from app.forecasting import peak_forecast_hour
+        with pytest.raises(ValueError):
+            peak_forecast_hour([])
+
+
+class TestForecastVolatility:
+    def test_constant_series(self) -> None:
+        from app.forecasting import forecast_volatility
+        assert forecast_volatility([5.0, 5.0, 5.0]) == pytest.approx(0.0)
+
+    def test_positive_volatility(self) -> None:
+        from app.forecasting import forecast_volatility
+        result = forecast_volatility([1.0, 2.0, 3.0, 4.0, 5.0])
+        assert result > 0.0
+
+    def test_empty_raises(self) -> None:
+        from app.forecasting import forecast_volatility
+        with pytest.raises(ValueError):
+            forecast_volatility([])
