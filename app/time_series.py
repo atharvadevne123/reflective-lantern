@@ -1194,3 +1194,108 @@ def series_entropy(values: list[float], bins: int = 10) -> float:
     n = len(values)
     entropy = -sum((c / n) * math.log2(c / n) for c in counts.values() if c > 0)
     return round(entropy, 6)
+
+
+def energy_intensity_score(values: list[float], sqft: float) -> float:
+    """Compute energy intensity (kWh per square foot) from a consumption series.
+
+    Args:
+        values: Energy consumption readings (kWh).
+        sqft: Floor area in square feet (must be positive).
+
+    Returns:
+        Mean energy intensity rounded to 4 decimal places.
+
+    Raises:
+        ValueError: If values is empty or sqft is not positive.
+    """
+    if not values:
+        raise ValueError("values must not be empty")
+    if sqft <= 0:
+        raise ValueError(f"sqft must be positive, got {sqft}")
+    total = sum(values)
+    return round(total / sqft, 4)
+
+
+def baseline_deviation(values: list[float], baseline_days: int = 7) -> list[float]:
+    """Compute deviation of each value from a rolling baseline mean.
+
+    Args:
+        values: Time-series of readings (daily granularity assumed).
+        baseline_days: Number of preceding days used as the baseline window.
+
+    Returns:
+        List of deviations; first baseline_days entries are 0.0.
+
+    Raises:
+        ValueError: If baseline_days < 1.
+    """
+    if baseline_days < 1:
+        raise ValueError(f"baseline_days must be >= 1, got {baseline_days}")
+    result: list[float] = []
+    for i, v in enumerate(values):
+        if i < baseline_days:
+            result.append(0.0)
+        else:
+            window = values[i - baseline_days : i]
+            mean_baseline = sum(window) / len(window)
+            result.append(round(v - mean_baseline, 6))
+    return result
+
+
+def weekend_weekday_ratio(values: list[float], start_weekday: int = 0) -> float:
+    """Compute ratio of mean weekend consumption to mean weekday consumption.
+
+    Assumes *values* is a daily series starting on *start_weekday* (0=Monday, 6=Sunday).
+
+    Args:
+        values: Daily energy readings.
+        start_weekday: Weekday index of the first element (0=Monday … 6=Sunday).
+
+    Returns:
+        Ratio as a float; 1.0 if either group is empty or mean is zero.
+
+    Raises:
+        ValueError: If values is empty or start_weekday is outside [0, 6].
+    """
+    if not values:
+        raise ValueError("values must not be empty")
+    if not (0 <= start_weekday <= 6):
+        raise ValueError(f"start_weekday must be in [0, 6], got {start_weekday}")
+    weekday_vals: list[float] = []
+    weekend_vals: list[float] = []
+    for i, v in enumerate(values):
+        wd = (start_weekday + i) % 7
+        if wd >= 5:
+            weekend_vals.append(v)
+        else:
+            weekday_vals.append(v)
+    if not weekday_vals or not weekend_vals:
+        return 1.0
+    mean_wd = sum(weekday_vals) / len(weekday_vals)
+    mean_we = sum(weekend_vals) / len(weekend_vals)
+    if mean_wd == 0.0:
+        return 1.0
+    return round(mean_we / mean_wd, 6)
+
+
+def hourly_variability(values: list[float]) -> float:
+    """Compute the coefficient of variation (std / mean) for an hourly series.
+
+    Args:
+        values: Hourly energy readings (at least 2 values required).
+
+    Returns:
+        Coefficient of variation in [0, ∞); 0.0 when mean is zero.
+
+    Raises:
+        ValueError: If values has fewer than 2 elements.
+    """
+    if len(values) < 2:
+        raise ValueError("hourly_variability requires at least 2 values")
+    mean_v = sum(values) / len(values)
+    if mean_v == 0.0:
+        return 0.0
+    variance = sum((v - mean_v) ** 2 for v in values) / (len(values) - 1)
+    std_v = variance ** 0.5
+    return round(std_v / mean_v, 6)
