@@ -814,3 +814,66 @@ def cumulative_growth(values: list[float]) -> list[float]:
     if base == 0:
         return [0.0] * len(values)
     return [round((v - base) / base, 6) for v in values]
+
+
+def resistance_level(values: list[float]) -> float:
+    """Return the resistance level (90th percentile) of *values*.
+
+    Args:
+        values: Non-empty list of numeric values.
+
+    Returns:
+        The 90th-percentile value representing a common resistance ceiling.
+
+    Raises:
+        ValueError: If *values* is empty.
+    """
+    if not values:
+        raise ValueError("values must not be empty")
+    sorted_vals = sorted(values)
+    idx = int(0.9 * (len(sorted_vals) - 1))
+    return sorted_vals[idx]
+
+
+def support_level(values: list[float]) -> float:
+    """Return the support level (10th percentile) of *values*.
+
+    Args:
+        values: Non-empty list of numeric values.
+
+    Returns:
+        The 10th-percentile value representing a common support floor.
+
+    Raises:
+        ValueError: If *values* is empty.
+    """
+    if not values:
+        raise ValueError("values must not be empty")
+    sorted_vals = sorted(values)
+    idx = int(0.1 * (len(sorted_vals) - 1))
+    return sorted_vals[idx]
+
+
+def median_absolute_deviation(values: list[float]) -> float:
+    """Compute the Median Absolute Deviation (MAD) of *values*.
+
+    Args:
+        values: Non-empty list of numeric values.
+
+    Returns:
+        MAD as a float; 0.0 for single-element lists.
+
+    Raises:
+        ValueError: If *values* is empty.
+    """
+    if not values:
+        raise ValueError("values must not be empty")
+    n = len(values)
+    sorted_vals = sorted(values)
+    mid = n // 2
+    median = (sorted_vals[mid - 1] + sorted_vals[mid]) / 2.0 if n % 2 == 0 else sorted_vals[mid]
+    deviations = sorted([abs(v - median) for v in values])
+    mid2 = len(deviations) // 2
+    if len(deviations) % 2 == 0:
+        return (deviations[mid2 - 1] + deviations[mid2]) / 2.0
+    return deviations[mid2]
