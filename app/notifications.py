@@ -402,3 +402,46 @@ def alerts_within_window(
         raise ValueError(f"window_seconds must be non-negative, got {window_seconds}")
     reference = now if now is not None else _time.time()
     return [a for a in alerts if (reference - a.created_at) <= window_seconds]
+
+
+def count_alerts_by_source(alerts: list[Alert]) -> dict[str, int]:
+    """Count alerts grouped by their *source* field.
+
+    Args:
+        alerts: Sequence of Alert objects.
+
+    Returns:
+        Dict mapping source name to count.
+    """
+    result: dict[str, int] = {}
+    for alert in alerts:
+        result[alert.source] = result.get(alert.source, 0) + 1
+    return result
+
+
+def most_recent_alert(alerts: list[Alert]) -> Alert | None:
+    """Return the most recently created alert, or None if *alerts* is empty.
+
+    Args:
+        alerts: Sequence of Alert objects (with *created_at* timestamps).
+
+    Returns:
+        Alert with the highest *created_at* value, or None.
+    """
+    if not alerts:
+        return None
+    return max(alerts, key=lambda a: a.created_at)
+
+
+def alerts_contain_severity(alerts: list[Alert], severity: str) -> bool:
+    """Return True if any alert in *alerts* matches *severity*.
+
+    Args:
+        alerts: Sequence of Alert objects.
+        severity: Severity string to search for (case-insensitive).
+
+    Returns:
+        True when at least one alert has the given severity.
+    """
+    target = severity.lower()
+    return any(a.severity.lower() == target for a in alerts)
