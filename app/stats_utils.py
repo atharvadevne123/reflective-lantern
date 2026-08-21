@@ -150,6 +150,11 @@ __all__ = [
     "weighted_average",
     "weighted_median",
     "zscore",
+
+    "confidence_interval",
+    "outlier_fraction",
+    "rolling_rmse",
+    "signal_to_noise_ratio",
 ]
 
 
