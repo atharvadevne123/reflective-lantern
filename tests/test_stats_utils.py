@@ -1410,3 +1410,36 @@ class TestOutlierFraction:
         from app.stats_utils import outlier_fraction
         with pytest.raises(ValueError):
             outlier_fraction([])
+
+
+@pytest.mark.parametrize("actual,predicted,expected_mae", [
+    ([1.0, 2.0, 3.0], [1.0, 2.0, 3.0], 0.0),
+    ([1.0, 2.0], [2.0, 3.0], 1.0),
+    ([0.0, 0.0, 0.0], [1.0, 1.0, 1.0], 1.0),
+])
+def test_mae_parametrized(actual: list, predicted: list, expected_mae: float) -> None:
+    from app.stats_utils import mean_absolute_error
+    assert mean_absolute_error(actual, predicted) == pytest.approx(expected_mae, abs=1e-6)
+
+
+@pytest.mark.parametrize("values,expected_iqr", [
+    ([1.0, 2.0, 3.0, 4.0, 5.0], 2.0),
+    ([0.0, 0.0, 0.0, 0.0], 0.0),
+])
+def test_iqr_parametrized(values: list, expected_iqr: float) -> None:
+    from app.stats_utils import interquartile_range
+    result = interquartile_range(values)
+    assert result == pytest.approx(expected_iqr, abs=0.5)
+
+
+@pytest.mark.parametrize("window,input_len", [
+    (1, 5),
+    (3, 10),
+    (5, 5),
+])
+def test_rolling_rmse_output_length(window: int, input_len: int) -> None:
+    from app.stats_utils import rolling_rmse
+    actual = list(range(input_len))
+    predicted = [v + 0.1 for v in actual]
+    result = rolling_rmse(actual, predicted, window)
+    assert len(result) == input_len
