@@ -427,6 +427,11 @@ __all__ = [
     "seasonal_baseline",
     "simple_moving_average",
     "z_normalize",
+
+    "baseline_deviation",
+    "energy_intensity_score",
+    "hourly_variability",
+    "weekend_weekday_ratio",
 ]
 
 

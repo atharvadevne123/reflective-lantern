@@ -290,6 +290,10 @@ __all__ = [
     "validate_date_range",
     "validate_enum_field",
     "value_range_check",
+
+    "column_cardinality",
+    "consecutive_missing_count",
+    "outlier_summary",
 ]
 
 

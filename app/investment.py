@@ -271,6 +271,10 @@ __all__ = [
     "projected_value",
     "roi_percentage",
     "total_return_on_investment",
+
+    "holding_period_return",
+    "leverage_ratio",
+    "risk_adjusted_return",
 ]
 
 
