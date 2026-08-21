@@ -1236,3 +1236,60 @@ def test_gross_yield_in_range(annual_rent: float, property_value: float) -> None
 
     result = gross_yield(annual_rent, property_value)
     assert 0.0 < result < 100.0
+
+
+class TestHoldingPeriodReturn:
+    def test_basic_gain(self) -> None:
+        from app.investment import holding_period_return
+        result = holding_period_return(200000.0, 250000.0, 20000.0)
+        assert abs(result - 35.0) < 0.01
+
+    def test_no_income(self) -> None:
+        from app.investment import holding_period_return
+        result = holding_period_return(100.0, 110.0)
+        assert abs(result - 10.0) < 0.01
+
+    def test_zero_purchase_price_raises(self) -> None:
+        import pytest
+        from app.investment import holding_period_return
+        with pytest.raises(ValueError):
+            holding_period_return(0.0, 100.0)
+
+    def test_loss(self) -> None:
+        from app.investment import holding_period_return
+        result = holding_period_return(200.0, 150.0)
+        assert result < 0.0
+
+
+class TestLeverageRatio:
+    def test_basic(self) -> None:
+        from app.investment import leverage_ratio
+        result = leverage_ratio(500000.0, 150000.0)
+        assert result > 0.0
+
+    def test_zero_equity_returns_zero(self) -> None:
+        from app.investment import leverage_ratio
+        assert leverage_ratio(100000.0, 0.0) == 0.0
+
+    def test_negative_assets_raises(self) -> None:
+        import pytest
+        from app.investment import leverage_ratio
+        with pytest.raises(ValueError):
+            leverage_ratio(-1000.0, 500.0)
+
+
+class TestRiskAdjustedReturn:
+    def test_positive_return(self) -> None:
+        from app.investment import risk_adjusted_return
+        result = risk_adjusted_return(10.0, 5.0, 2.0)
+        assert abs(result - 1.6) < 0.01
+
+    def test_zero_volatility(self) -> None:
+        from app.investment import risk_adjusted_return
+        assert risk_adjusted_return(10.0, 0.0) == 0.0
+
+    def test_negative_volatility_raises(self) -> None:
+        import pytest
+        from app.investment import risk_adjusted_return
+        with pytest.raises(ValueError):
+            risk_adjusted_return(10.0, -1.0)
