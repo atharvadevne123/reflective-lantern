@@ -1558,3 +1558,55 @@ class TestHourlyVariability:
         from app.time_series import hourly_variability
         with pytest.raises(ValueError):
             hourly_variability([5.0])
+
+
+class TestZeroCrossingRate:
+    def test_alternating_signs(self) -> None:
+        import pytest
+        from app.time_series import zero_crossing_rate
+        assert zero_crossing_rate([-1.0, 1.0, -1.0, 1.0]) == pytest.approx(1.0)
+
+    def test_no_crossings(self) -> None:
+        import pytest
+        from app.time_series import zero_crossing_rate
+        assert zero_crossing_rate([1.0, 2.0, 3.0]) == pytest.approx(0.0)
+
+    def test_too_short_raises(self) -> None:
+        from app.time_series import zero_crossing_rate
+        with __import__("pytest").raises(ValueError):
+            zero_crossing_rate([1.0])
+
+
+class TestPeakToTroughRatio:
+    def test_basic(self) -> None:
+        import pytest
+        from app.time_series import peak_to_trough_ratio
+        assert peak_to_trough_ratio([1.0, 5.0, 2.0, 8.0]) == pytest.approx(8.0)
+
+    def test_zero_trough(self) -> None:
+        import pytest
+        from app.time_series import peak_to_trough_ratio
+        assert peak_to_trough_ratio([0.0, 5.0]) == pytest.approx(0.0)
+
+    def test_empty_raises(self) -> None:
+        from app.time_series import peak_to_trough_ratio
+        with __import__("pytest").raises(ValueError):
+            peak_to_trough_ratio([])
+
+
+class TestLoadFactor:
+    def test_basic(self) -> None:
+        import pytest
+        from app.time_series import load_factor
+        result = load_factor(50000.0, 20.0, 8760)
+        assert 0.0 < result < 1.0
+
+    def test_zero_peak_raises(self) -> None:
+        from app.time_series import load_factor
+        with __import__("pytest").raises(ValueError):
+            load_factor(50000.0, 0.0)
+
+    def test_zero_hours_raises(self) -> None:
+        from app.time_series import load_factor
+        with __import__("pytest").raises(ValueError):
+            load_factor(50000.0, 20.0, 0)
