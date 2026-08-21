@@ -540,3 +540,42 @@ def next_weekday(dt: date | datetime, weekday: int) -> date:
     current_iso = d.isoweekday()
     days_ahead = (iso_wd - current_iso) % 7
     return d + timedelta(days=days_ahead)
+
+
+def minutes_between(start: datetime, end: datetime) -> int:
+    """Return the number of whole minutes between *start* and *end*.
+
+    Args:
+        start: Earlier datetime.
+        end: Later datetime.
+
+    Returns:
+        Integer count of whole minutes; negative if end < start.
+    """
+    delta = end - start
+    return int(delta.total_seconds() // 60)
+
+
+def is_same_day(a: datetime, b: datetime) -> bool:
+    """Return True if *a* and *b* fall on the same calendar day.
+
+    Args:
+        a: First datetime.
+        b: Second datetime.
+
+    Returns:
+        True when year, month, and day are all equal.
+    """
+    return a.year == b.year and a.month == b.month and a.day == b.day
+
+
+def end_of_day(dt: datetime) -> datetime:
+    """Return 23:59:59.999999 of the same day as *dt*.
+
+    Args:
+        dt: Any datetime (timezone is preserved).
+
+    Returns:
+        Datetime at the very end of *dt*'s calendar day.
+    """
+    return dt.replace(hour=23, minute=59, second=59, microsecond=999999)
