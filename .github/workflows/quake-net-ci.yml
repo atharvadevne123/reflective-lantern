@@ -7,6 +7,10 @@ on:
   pull_request:
     branches: ["main"]
     paths: ["quake-net/**", ".github/workflows/quake-net-ci.yml"]
+  # Allow an on-demand run: the path filters above (correctly) skip this
+  # workflow when a push touches nothing under quake-net/, such as a merge
+  # from main, which leaves the PR head without a Quake-Net CI result.
+  workflow_dispatch:
 
 concurrency:
   group: quake-net-${{ github.ref }}
