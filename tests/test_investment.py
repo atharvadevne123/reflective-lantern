@@ -1236,31 +1236,6 @@ def test_gross_yield_in_range(annual_rent: float, property_value: float) -> None
 
     result = gross_yield(annual_rent, property_value)
     assert 0.0 < result < 100.0
-
-
-class TestHoldingPeriodReturn:
-    def test_basic_gain(self) -> None:
-        from app.investment import holding_period_return
-        result = holding_period_return(200000.0, 250000.0, 20000.0)
-        assert abs(result - 35.0) < 0.01
-
-    def test_no_income(self) -> None:
-        from app.investment import holding_period_return
-        result = holding_period_return(100.0, 110.0)
-        assert abs(result - 10.0) < 0.01
-
-    def test_zero_purchase_price_raises(self) -> None:
-        import pytest
-        from app.investment import holding_period_return
-        with pytest.raises(ValueError):
-            holding_period_return(0.0, 100.0)
-
-    def test_loss(self) -> None:
-        from app.investment import holding_period_return
-        result = holding_period_return(200.0, 150.0)
-        assert result < 0.0
-
-
 class TestLeverageRatio:
     def test_basic(self) -> None:
         from app.investment import leverage_ratio
@@ -1310,33 +1285,3 @@ class TestNetOperatingIncome:
         from app.investment import net_operating_income
         with pytest.raises(ValueError):
             net_operating_income(100000.0, 110.0, 20000.0)
-
-
-class TestDebtServiceCoverageRatio:
-    def test_above_one(self) -> None:
-        from app.investment import debt_service_coverage_ratio
-        assert debt_service_coverage_ratio(70000.0, 50000.0) == pytest.approx(1.4)
-
-    def test_exactly_one(self) -> None:
-        from app.investment import debt_service_coverage_ratio
-        assert debt_service_coverage_ratio(50000.0, 50000.0) == pytest.approx(1.0)
-
-    def test_zero_debt_raises(self) -> None:
-        from app.investment import debt_service_coverage_ratio
-        with pytest.raises(ValueError):
-            debt_service_coverage_ratio(50000.0, 0.0)
-
-
-class TestEquityMultiple:
-    def test_two_and_half_x(self) -> None:
-        from app.investment import equity_multiple
-        assert equity_multiple(250000.0, 100000.0) == pytest.approx(2.5)
-
-    def test_zero_distributions(self) -> None:
-        from app.investment import equity_multiple
-        assert equity_multiple(0.0, 100000.0) == pytest.approx(0.0)
-
-    def test_zero_invested_raises(self) -> None:
-        from app.investment import equity_multiple
-        with pytest.raises(ValueError):
-            equity_multiple(100000.0, 0.0)

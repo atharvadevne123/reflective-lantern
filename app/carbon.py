@@ -1057,44 +1057,18 @@ def carbon_intensity_rank(region: str) -> int:
     return len(sorted_regions)
 
 
-def carbon_per_occupant(
-    total_co2_kg: float,
-    num_occupants: int,
-) -> float:
-    """Compute CO2 emissions per building occupant.
-
-    Args:
-        total_co2_kg: Total CO2 emissions for the building in kilograms.
-        num_occupants: Number of occupants (must be positive).
-
-    Returns:
-        CO2 per occupant in kg, rounded to 4 decimal places.
-
-    Raises:
-        ValueError: If total_co2_kg is negative or num_occupants is not positive.
-    """
-    if total_co2_kg < 0:
-        raise ValueError(f"total_co2_kg must be non-negative, got {total_co2_kg}")
-    if num_occupants <= 0:
-        raise ValueError(f"num_occupants must be positive, got {num_occupants}")
-    return round(total_co2_kg / num_occupants, 4)
-
-
-def cumulative_budget_usage(
-    consumed_co2_kg: float,
-    budget_co2_kg: float,
-) -> dict[str, float]:
+def cumulative_budget_usage(consumed_co2_kg: float, budget_co2_kg: float) -> dict[str, float]:
     """Compute cumulative carbon budget usage statistics.
 
     Args:
-        consumed_co2_kg: CO2 already consumed in kilograms.
-        budget_co2_kg: Total allowed CO2 budget in kilograms (must be positive).
+        consumed_co2_kg: CO2 consumed so far (must be non-negative).
+        budget_co2_kg: Total CO2 budget (must be positive).
 
     Returns:
-        Dict with 'used_pct', 'remaining_kg', and 'remaining_pct'.
+        Dict with 'used_pct', 'remaining_kg', and 'remaining_pct' keys.
 
     Raises:
-        ValueError: If budget_co2_kg is not positive or consumed_co2_kg is negative.
+        ValueError: If *budget_co2_kg* is not positive or *consumed_co2_kg* is negative.
     """
     if budget_co2_kg <= 0:
         raise ValueError(f"budget_co2_kg must be positive, got {budget_co2_kg}")

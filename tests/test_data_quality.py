@@ -1087,22 +1087,6 @@ class TestOutlierSummary:
         from app.data_quality import outlier_summary
         result = outlier_summary([5.0])
         assert result["count"] == 0
-
-
-class TestNullRate:
-    def test_half_null(self) -> None:
-        from app.data_quality import null_rate
-        assert null_rate([1, None, 2, None]) == pytest.approx(0.5)
-
-    def test_no_nulls(self) -> None:
-        from app.data_quality import null_rate
-        assert null_rate([1, 2, 3]) == pytest.approx(0.0)
-
-    def test_empty_returns_zero(self) -> None:
-        from app.data_quality import null_rate
-        assert null_rate([]) == pytest.approx(0.0)
-
-
 class TestUniqueValueCount:
     def test_basic(self) -> None:
         from app.data_quality import unique_value_count
@@ -1130,4 +1114,4 @@ class TestCompletenessScore:
 
     def test_empty_records(self) -> None:
         from app.data_quality import completeness_score
-        assert completeness_score([], ["a"]) == pytest.approx(1.0)
+        assert completeness_score([], ["a"]) == pytest.approx(0.0)

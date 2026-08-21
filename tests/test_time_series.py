@@ -1596,17 +1596,16 @@ class TestPeakToTroughRatio:
 
 class TestLoadFactor:
     def test_basic(self) -> None:
-        import pytest
         from app.time_series import load_factor
-        result = load_factor(50000.0, 20.0, 8760)
+        result = load_factor([10.0, 20.0, 15.0, 25.0])
         assert 0.0 < result < 1.0
 
-    def test_zero_peak_raises(self) -> None:
+    def test_all_peak(self) -> None:
+        import pytest
         from app.time_series import load_factor
-        with __import__("pytest").raises(ValueError):
-            load_factor(50000.0, 0.0)
+        assert load_factor([5.0, 5.0, 5.0]) == pytest.approx(1.0)
 
-    def test_zero_hours_raises(self) -> None:
+    def test_empty_returns_zero(self) -> None:
+        import pytest
         from app.time_series import load_factor
-        with __import__("pytest").raises(ValueError):
-            load_factor(50000.0, 20.0, 0)
+        assert load_factor([]) == pytest.approx(0.0)

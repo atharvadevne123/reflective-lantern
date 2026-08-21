@@ -1366,32 +1366,6 @@ def test_renewable_offset_factor_parametrized(renewable_pct: float, expected_fac
     from app.carbon import renewable_offset_factor
     result = renewable_offset_factor(renewable_pct)
     assert result == pytest.approx(expected_factor, abs=1e-6)
-
-
-class TestCarbonPerOccupant:
-    def test_basic(self) -> None:
-        from app.carbon import carbon_per_occupant
-        assert carbon_per_occupant(100.0, 4) == pytest.approx(25.0)
-
-    def test_single_occupant(self) -> None:
-        from app.carbon import carbon_per_occupant
-        assert carbon_per_occupant(50.5, 1) == pytest.approx(50.5)
-
-    def test_zero_co2(self) -> None:
-        from app.carbon import carbon_per_occupant
-        assert carbon_per_occupant(0.0, 10) == pytest.approx(0.0)
-
-    def test_negative_co2_raises(self) -> None:
-        from app.carbon import carbon_per_occupant
-        with pytest.raises(ValueError, match="non-negative"):
-            carbon_per_occupant(-1.0, 5)
-
-    def test_zero_occupants_raises(self) -> None:
-        from app.carbon import carbon_per_occupant
-        with pytest.raises(ValueError, match="positive"):
-            carbon_per_occupant(10.0, 0)
-
-
 class TestCumulativeBudgetUsage:
     def test_half_used(self) -> None:
         from app.carbon import cumulative_budget_usage

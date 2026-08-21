@@ -1345,24 +1345,3 @@ def peak_to_trough_ratio(values: list[float]) -> float:
     if trough == 0.0:
         return 0.0
     return round(peak / trough, 6)
-
-
-def load_factor(actual_kwh: float, peak_kw: float, hours: int = 8760) -> float:
-    """Compute the load factor (average load / peak load).
-
-    Args:
-        actual_kwh: Total energy consumed in kWh over the period.
-        peak_kw: Peak demand in kW (must be positive).
-        hours: Number of hours in the period (default 8760 = one year).
-
-    Returns:
-        Load factor as a fraction in [0, 1].
-
-    Raises:
-        ValueError: If *peak_kw* or *hours* is not positive.
-    """
-    if peak_kw <= 0:
-        raise ValueError(f"peak_kw must be positive, got {peak_kw}")
-    if hours <= 0:
-        raise ValueError(f"hours must be positive, got {hours}")
-    return round(actual_kwh / (peak_kw * hours), 6)
