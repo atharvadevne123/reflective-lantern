@@ -751,3 +751,57 @@ def modified_zscore(value: float, values: list[float]) -> float:
     if mad == 0:
         return 0.0
     return round(0.6745 * (value - median) / mad, 6)
+
+
+def anomaly_persistence_score(flags: list[bool]) -> float:
+    """Return the fraction of True flags in *flags* as a persistence score.
+
+    Args:
+        flags: Non-empty list of boolean anomaly flags.
+
+    Returns:
+        Float in [0.0, 1.0]; 1.0 means all timesteps are anomalous.
+
+    Raises:
+        ValueError: If *flags* is empty.
+    """
+    if not flags:
+        raise ValueError("flags must not be empty")
+    return round(sum(flags) / len(flags), 6)
+
+
+def first_anomaly_index(flags: list[bool]) -> int:
+    """Return the index of the first True flag, or -1 if none found.
+
+    Args:
+        flags: List of boolean anomaly flags.
+
+    Returns:
+        Zero-based index of the first anomaly, or -1 if no anomaly exists.
+    """
+    for i, f in enumerate(flags):
+        if f:
+            return i
+    return -1
+
+
+def inter_anomaly_gap(flags: list[bool]) -> float:
+    """Compute the mean gap (in steps) between successive anomalies.
+
+    Args:
+        flags: Non-empty list of boolean anomaly flags.
+
+    Returns:
+        Mean number of steps between consecutive anomalous events.
+        Returns float('inf') when fewer than two anomalies exist.
+
+    Raises:
+        ValueError: If *flags* is empty.
+    """
+    if not flags:
+        raise ValueError("flags must not be empty")
+    indices = [i for i, f in enumerate(flags) if f]
+    if len(indices) < 2:
+        return float("inf")
+    gaps = [indices[i + 1] - indices[i] for i in range(len(indices) - 1)]
+    return round(sum(gaps) / len(gaps), 4)
