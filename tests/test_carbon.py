@@ -1328,3 +1328,41 @@ class TestCarbonIntensityRank:
     def test_returns_integer(self) -> None:
         from app.carbon import carbon_intensity_rank
         assert isinstance(carbon_intensity_rank("south"), int)
+
+
+@pytest.mark.parametrize("region,expected_intensity", [
+    ("northeast", 0.25),
+    ("midwest", 0.45),
+    ("south", 0.38),
+    ("west", 0.22),
+    ("texas", 0.40),
+    ("pacific_nw", 0.10),
+])
+def test_kwh_to_co2_kg_parametrized_regions(region: str, expected_intensity: float) -> None:
+    from app.carbon import kwh_to_co2_kg
+    result = kwh_to_co2_kg(1000.0, region=region)
+    assert result == pytest.approx(expected_intensity * 1000.0, rel=0.01)
+
+
+@pytest.mark.parametrize("kwh,region,expected_co2", [
+    (0.0, "default", 0.0),
+    (10.0, "pacific_nw", 1.0),
+    (100.0, "midwest", 45.0),
+])
+def test_kwh_to_co2_kg_known_values(kwh: float, region: str, expected_co2: float) -> None:
+    from app.carbon import kwh_to_co2_kg
+    result = kwh_to_co2_kg(kwh, region=region)
+    assert result == pytest.approx(expected_co2, rel=0.01)
+
+
+@pytest.mark.parametrize("renewable_pct,expected_factor", [
+    (0.0, 1.0),
+    (25.0, 0.75),
+    (50.0, 0.5),
+    (75.0, 0.25),
+    (100.0, 0.0),
+])
+def test_renewable_offset_factor_parametrized(renewable_pct: float, expected_factor: float) -> None:
+    from app.carbon import renewable_offset_factor
+    result = renewable_offset_factor(renewable_pct)
+    assert result == pytest.approx(expected_factor, abs=1e-6)
