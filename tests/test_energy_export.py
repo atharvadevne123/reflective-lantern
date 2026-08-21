@@ -688,3 +688,45 @@ class TestFilterRecordsByValue:
         from app.energy_export import filter_records_by_value
 
         assert filter_records_by_value([], "v", 0.0, 10.0) == []
+
+
+class TestKwhToMwh:
+    def test_basic(self) -> None:
+        from app.energy_export import kwh_to_mwh
+        assert kwh_to_mwh(5000.0) == pytest.approx(5.0)
+
+    def test_zero(self) -> None:
+        from app.energy_export import kwh_to_mwh
+        assert kwh_to_mwh(0.0) == pytest.approx(0.0)
+
+    def test_negative_raises(self) -> None:
+        from app.energy_export import kwh_to_mwh
+        with pytest.raises(ValueError):
+            kwh_to_mwh(-1.0)
+
+
+class TestMwhToKwh:
+    def test_basic(self) -> None:
+        from app.energy_export import mwh_to_kwh
+        assert mwh_to_kwh(5.0) == pytest.approx(5000.0)
+
+    def test_zero(self) -> None:
+        from app.energy_export import mwh_to_kwh
+        assert mwh_to_kwh(0.0) == pytest.approx(0.0)
+
+    def test_negative_raises(self) -> None:
+        from app.energy_export import mwh_to_kwh
+        with pytest.raises(ValueError):
+            mwh_to_kwh(-1.0)
+
+
+class TestDailyPeakConsumption:
+    def test_finds_max(self) -> None:
+        from app.energy_export import daily_peak_consumption
+        profile = [float(i) for i in range(24)]
+        assert daily_peak_consumption(profile) == pytest.approx(23.0)
+
+    def test_wrong_length_raises(self) -> None:
+        from app.energy_export import daily_peak_consumption
+        with pytest.raises(ValueError):
+            daily_peak_consumption([1.0, 2.0])
