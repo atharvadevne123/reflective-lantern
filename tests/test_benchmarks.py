@@ -683,3 +683,55 @@ def test_weighted_average_eui_in_range(euis: list, weights: list) -> None:
 
     result = weighted_average_eui(euis, weights)
     assert min(euis) <= result <= max(euis)
+
+
+class TestEuiImprovementRate:
+    def test_improvement(self) -> None:
+        from app.benchmarks import eui_improvement_rate
+        assert eui_improvement_rate(100.0, 80.0) == pytest.approx(20.0)
+
+    def test_no_change(self) -> None:
+        from app.benchmarks import eui_improvement_rate
+        assert eui_improvement_rate(100.0, 100.0) == pytest.approx(0.0)
+
+    def test_regression(self) -> None:
+        from app.benchmarks import eui_improvement_rate
+        assert eui_improvement_rate(100.0, 120.0) == pytest.approx(-20.0)
+
+    def test_zero_baseline_raises(self) -> None:
+        from app.benchmarks import eui_improvement_rate
+        with pytest.raises(ValueError):
+            eui_improvement_rate(0.0, 80.0)
+
+
+class TestNormalisedEui:
+    def test_basic(self) -> None:
+        from app.benchmarks import normalised_eui
+        result = normalised_eui(10000.0, 100.0, 2000.0)
+        assert result == pytest.approx(0.05)
+
+    def test_zero_area_raises(self) -> None:
+        from app.benchmarks import normalised_eui
+        with pytest.raises(ValueError):
+            normalised_eui(10000.0, 0.0, 2000.0)
+
+    def test_zero_hours_raises(self) -> None:
+        from app.benchmarks import normalised_eui
+        with pytest.raises(ValueError):
+            normalised_eui(10000.0, 100.0, 0.0)
+
+
+class TestSavingsToInvestmentRatio:
+    def test_basic(self) -> None:
+        from app.benchmarks import savings_to_investment_ratio
+        result = savings_to_investment_ratio(5000.0, 0.15, 10000.0)
+        assert result == pytest.approx(0.075)
+
+    def test_zero_savings(self) -> None:
+        from app.benchmarks import savings_to_investment_ratio
+        assert savings_to_investment_ratio(0.0, 0.15, 10000.0) == pytest.approx(0.0)
+
+    def test_zero_investment_raises(self) -> None:
+        from app.benchmarks import savings_to_investment_ratio
+        with pytest.raises(ValueError):
+            savings_to_investment_ratio(5000.0, 0.15, 0.0)
