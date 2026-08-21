@@ -42,7 +42,7 @@ Initial release.
 - **Infrastructure** — Dockerfile (non-root user, healthcheck), docker-compose with
   PostgreSQL, Makefile, pre-commit hooks, and GitHub Actions CI running ruff and pytest on
   Python 3.11 and 3.12.
-- **Tests** — 285 tests across eleven modules, with transactional database isolation.
+- **Tests** — 293 tests across twelve modules, with transactional database isolation.
 
 ### Fixed
 

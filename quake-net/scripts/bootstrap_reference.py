@@ -8,10 +8,17 @@ from __future__ import annotations
 
 import argparse
 import json
+import sys
 from pathlib import Path
 
-from app.features import make_synthetic_dataset
-from app.monitoring import REFERENCE_PATH, save_reference_distribution
+# Running this file directly puts scripts/ on sys.path rather than the project
+# root, so `app` would not be importable. Prepend the root before importing it.
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
+
+from app.features import make_synthetic_dataset  # noqa: E402
+from app.monitoring import REFERENCE_PATH, save_reference_distribution  # noqa: E402
 
 NUMERIC_COLUMNS = (
     "latitude",

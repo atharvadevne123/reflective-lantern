@@ -249,7 +249,7 @@ pytest tests/ -m "not slow"     # skip the end-to-end retraining test
 pytest tests/test_model.py -v   # a single module
 ```
 
-285 tests across eleven modules cover feature transforms, model training and prediction
+293 tests across twelve modules cover feature transforms, model training and prediction
 bounds, drift and PSI maths, the similarity index, anomaly rules, Omori forecasting,
 input validation, cache eviction and TTL expiry, database round-trips, the retraining
 gate, and every API route. Database tests run
