@@ -862,7 +862,7 @@ def test_co2_kg_to_tonnes_exact() -> None:
 def test_trees_equivalent_one_tree() -> None:
     from app.carbon import trees_equivalent
 
-    assert trees_equivalent(21.7) == pytest.approx(1.0, rel=0.1)
+    assert trees_equivalent(20.0) == pytest.approx(1.0, abs=0.05)
 
 
 @pytest.mark.parametrize("kwh,expected_positive", [(0.0, True), (100.0, True), (1000.0, True)])
@@ -877,7 +877,7 @@ def test_carbon_savings_positive_when_reduced() -> None:
     from app.carbon import carbon_savings
 
     result = carbon_savings(old_kwh=1000.0, new_kwh=800.0)
-    assert result > 0.0
+    assert result["saved_kwh"] > 0.0
 
 
 def test_compare_regions_all_positive() -> None:
@@ -1135,3 +1135,297 @@ class TestCarbonSavingsVsBaseline:
 
         result = carbon_savings_vs_baseline(0.0, 0.0)
         assert result["savings_pct"] == 0.0
+
+
+import pytest as _pytest
+
+
+@_pytest.mark.parametrize(
+    "kwh,region,expect_positive",
+    [
+        (10.0, "northeast", True),
+        (10.0, "midwest", True),
+        (10.0, "west", True),
+        (0.0, "default", False),
+    ],
+)
+def test_kwh_to_co2_kg_parametrized(kwh: float, region: str, expect_positive: bool) -> None:
+    from app.carbon import kwh_to_co2_kg
+
+    result = kwh_to_co2_kg(kwh, region)
+    if expect_positive:
+        assert result > 0.0
+    else:
+        assert result == _pytest.approx(0.0)
+
+
+@_pytest.mark.parametrize("trees,days", [(1, 365), (10, 36), (365, 1)])
+def test_tree_offset_days_scales_with_trees(trees: int, days: float) -> None:
+    from app.carbon import tree_offset_days
+
+    result = tree_offset_days(co2_kg=36.5, num_trees=trees)
+    assert result > 0.0
+
+
+@_pytest.mark.parametrize("region", ["northeast", "midwest", "south", "west", "texas"])
+def test_compare_regions_includes_all_requested(region: str) -> None:
+    from app.carbon import compare_regions
+
+    results = compare_regions(kwh=100.0, regions=["northeast", "midwest", "south", "west", "texas"])
+    names = [r["region"] for r in results]
+    assert region in names
+
+
+@_pytest.mark.parametrize("n", [1, 10, 30])
+def test_cumulative_co2_length(n: int) -> None:
+    from app.carbon import cumulative_co2
+
+    daily_kg = [1.0] * n
+    result = cumulative_co2(daily_kg)
+    assert len(result) == n
+
+
+@_pytest.mark.parametrize("kwh,factor", [(100.0, 0.4), (500.0, 0.3), (1000.0, 0.5)])
+def test_annual_emission_estimate_positive(kwh: float, factor: float) -> None:
+    from app.carbon import annual_emission_estimate
+
+    monthly_kwh = [kwh / 12] * 12
+    result = annual_emission_estimate(monthly_kwh, factor)
+    assert result > 0.0
+
+
+@_pytest.mark.parametrize(
+    "intensity,expected_label_partial",
+    [
+        (0.05, "low"),
+        (0.3, "medium"),
+        (0.7, "high"),
+    ],
+)
+def test_carbon_intensity_label_parametrized(intensity: float, expected_label_partial: str) -> None:
+    from app.carbon import carbon_intensity_label
+
+    label = carbon_intensity_label(intensity)
+    assert isinstance(label, str)
+    assert expected_label_partial.lower() in label.lower()
+
+
+class TestCarbonIntensityTrend:
+    def test_empty_returns_stable(self) -> None:
+        from app.carbon import carbon_intensity_trend
+
+        result = carbon_intensity_trend([])
+        assert result["trend"] == "stable"
+
+    def test_improving_trend(self) -> None:
+        from app.carbon import carbon_intensity_trend
+
+        result = carbon_intensity_trend([0.5, 0.4, 0.3, 0.2])
+        assert result["trend"] == "improving"
+
+    def test_worsening_trend(self) -> None:
+        from app.carbon import carbon_intensity_trend
+
+        result = carbon_intensity_trend([0.2, 0.3, 0.4, 0.5])
+        assert result["trend"] == "worsening"
+
+    def test_returns_all_keys(self) -> None:
+        from app.carbon import carbon_intensity_trend
+
+        result = carbon_intensity_trend([0.3, 0.32])
+        assert {"mean", "min", "max", "trend", "latest_label"} <= result.keys()
+
+    @pytest.mark.parametrize("intensity,label", [(0.05, "very_low"), (0.2, "low"), (0.45, "high")])
+    def test_latest_label_matches_last_value(self, intensity: float, label: str) -> None:
+        from app.carbon import carbon_intensity_label, carbon_intensity_trend
+
+        result = carbon_intensity_trend([intensity])
+        assert result["latest_label"] == carbon_intensity_label(intensity)
+
+
+class TestEmissionsReductionPct:
+    def test_20_pct_reduction(self) -> None:
+        from app.carbon import emissions_reduction_pct
+
+        assert emissions_reduction_pct(1000.0, 800.0) == pytest.approx(20.0)
+
+    def test_no_change_is_zero(self) -> None:
+        from app.carbon import emissions_reduction_pct
+
+        assert emissions_reduction_pct(500.0, 500.0) == pytest.approx(0.0)
+
+    def test_zero_baseline_returns_zero(self) -> None:
+        from app.carbon import emissions_reduction_pct
+
+        assert emissions_reduction_pct(0.0, 100.0) == 0.0
+
+    def test_increase_is_negative(self) -> None:
+        from app.carbon import emissions_reduction_pct
+
+        result = emissions_reduction_pct(1000.0, 1200.0)
+        assert result < 0.0
+
+
+class TestRenewableOffsetFactor:
+    def test_zero_renewable(self) -> None:
+        from app.carbon import renewable_offset_factor
+        assert renewable_offset_factor(0.0) == 1.0
+
+    def test_full_renewable(self) -> None:
+        from app.carbon import renewable_offset_factor
+        assert renewable_offset_factor(100.0) == 0.0
+
+    def test_fifty_percent(self) -> None:
+        from app.carbon import renewable_offset_factor
+        assert renewable_offset_factor(50.0) == 0.5
+
+    def test_invalid_over_100(self) -> None:
+        import pytest
+        from app.carbon import renewable_offset_factor
+        with pytest.raises(ValueError):
+            renewable_offset_factor(110.0)
+
+    def test_invalid_negative(self) -> None:
+        import pytest
+        from app.carbon import renewable_offset_factor
+        with pytest.raises(ValueError):
+            renewable_offset_factor(-5.0)
+
+
+class TestHourlyCarbonProfile:
+    def test_returns_24_values(self) -> None:
+        from app.carbon import hourly_carbon_profile
+        result = hourly_carbon_profile([1.0] * 24)
+        assert len(result) == 24
+
+    def test_northeast_region(self) -> None:
+        from app.carbon import hourly_carbon_profile
+        result = hourly_carbon_profile([1.0] * 24, region="northeast")
+        assert all(abs(v - 0.25) < 1e-6 for v in result)
+
+    def test_renewable_reduces_emissions(self) -> None:
+        from app.carbon import hourly_carbon_profile
+        base = sum(hourly_carbon_profile([2.0] * 24, renewable_pct=0.0))
+        with_renewable = sum(hourly_carbon_profile([2.0] * 24, renewable_pct=50.0))
+        assert with_renewable < base
+
+    def test_wrong_length_raises(self) -> None:
+        import pytest
+        from app.carbon import hourly_carbon_profile
+        with pytest.raises(ValueError):
+            hourly_carbon_profile([1.0] * 23)
+
+
+class TestCarbonIntensityRank:
+    def test_pacific_nw_is_cleanest(self) -> None:
+        from app.carbon import carbon_intensity_rank
+        assert carbon_intensity_rank("pacific_nw") == 1
+
+    def test_midwest_not_cleanest(self) -> None:
+        from app.carbon import carbon_intensity_rank
+        assert carbon_intensity_rank("midwest") > 1
+
+    def test_returns_integer(self) -> None:
+        from app.carbon import carbon_intensity_rank
+        assert isinstance(carbon_intensity_rank("south"), int)
+
+
+@pytest.mark.parametrize("region,expected_intensity", [
+    ("northeast", 0.25),
+    ("midwest", 0.45),
+    ("south", 0.38),
+    ("west", 0.22),
+    ("texas", 0.40),
+    ("pacific_nw", 0.10),
+])
+def test_kwh_to_co2_kg_parametrized_regions(region: str, expected_intensity: float) -> None:
+    from app.carbon import kwh_to_co2_kg
+    result = kwh_to_co2_kg(1000.0, region=region)
+    assert result == pytest.approx(expected_intensity * 1000.0, rel=0.01)
+
+
+@pytest.mark.parametrize("kwh,region,expected_co2", [
+    (0.0, "default", 0.0),
+    (10.0, "pacific_nw", 1.0),
+    (100.0, "midwest", 45.0),
+])
+def test_kwh_to_co2_kg_known_values(kwh: float, region: str, expected_co2: float) -> None:
+    from app.carbon import kwh_to_co2_kg
+    result = kwh_to_co2_kg(kwh, region=region)
+    assert result == pytest.approx(expected_co2, rel=0.01)
+
+
+@pytest.mark.parametrize("renewable_pct,expected_factor", [
+    (0.0, 1.0),
+    (25.0, 0.75),
+    (50.0, 0.5),
+    (75.0, 0.25),
+    (100.0, 0.0),
+])
+def test_renewable_offset_factor_parametrized(renewable_pct: float, expected_factor: float) -> None:
+    from app.carbon import renewable_offset_factor
+    result = renewable_offset_factor(renewable_pct)
+    assert result == pytest.approx(expected_factor, abs=1e-6)
+class TestCumulativeBudgetUsage:
+    def test_half_used(self) -> None:
+        from app.carbon import cumulative_budget_usage
+        result = cumulative_budget_usage(50.0, 100.0)
+        assert result["used_pct"] == pytest.approx(50.0)
+        assert result["remaining_kg"] == pytest.approx(50.0)
+        assert result["remaining_pct"] == pytest.approx(50.0)
+
+    def test_fully_used(self) -> None:
+        from app.carbon import cumulative_budget_usage
+        result = cumulative_budget_usage(100.0, 100.0)
+        assert result["used_pct"] == pytest.approx(100.0)
+        assert result["remaining_kg"] == pytest.approx(0.0)
+
+    def test_over_budget_capped(self) -> None:
+        from app.carbon import cumulative_budget_usage
+        result = cumulative_budget_usage(150.0, 100.0)
+        assert result["used_pct"] == pytest.approx(100.0)
+        assert result["remaining_kg"] == pytest.approx(0.0)
+
+    def test_zero_budget_raises(self) -> None:
+        from app.carbon import cumulative_budget_usage
+        with pytest.raises(ValueError):
+            cumulative_budget_usage(10.0, 0.0)
+
+    def test_negative_consumed_raises(self) -> None:
+        from app.carbon import cumulative_budget_usage
+        with pytest.raises(ValueError):
+            cumulative_budget_usage(-5.0, 100.0)
+
+
+class TestGridEmissionFactor:
+    def test_known_region(self) -> None:
+        from app.carbon import grid_emission_factor
+        assert grid_emission_factor("midwest") == pytest.approx(0.00045)
+
+    def test_default_for_unknown(self) -> None:
+        from app.carbon import grid_emission_factor
+        assert grid_emission_factor("unknown_region") == pytest.approx(0.0001)
+
+    def test_case_insensitive(self) -> None:
+        from app.carbon import grid_emission_factor
+        assert grid_emission_factor("MIDWEST") == pytest.approx(0.00045)
+
+
+class TestAnnualCo2Savings:
+    def test_basic_savings(self) -> None:
+        from app.carbon import annual_co2_savings
+        result = annual_co2_savings(10000.0, 8000.0, "midwest")
+        assert result > 0.0
+
+    def test_no_improvement(self) -> None:
+        from app.carbon import annual_co2_savings
+        assert annual_co2_savings(5000.0, 5000.0) == pytest.approx(0.0)
+
+    def test_negative_baseline_raises(self) -> None:
+        from app.carbon import annual_co2_savings
+        with pytest.raises(ValueError):
+            annual_co2_savings(-100.0, 5000.0)
+
+    def test_worse_than_baseline_returns_zero(self) -> None:
+        from app.carbon import annual_co2_savings
+        assert annual_co2_savings(5000.0, 7000.0) == pytest.approx(0.0)

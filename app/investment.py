@@ -190,20 +190,34 @@ _SCORE_LABELS: list[tuple[float, str]] = [
 
 
 def investment_score_label(score: float) -> str:
-    """Convert a numeric investment score (0-10) to a human-readable label.
+    """Convert a numeric investment score to a human-readable label.
+
+    Accepts both the 0-10 and 0-100 scales:
+        * A value ≤ 10 is interpreted on the 10-point scale and returns
+          lowercase labels ('excellent', 'good', 'fair', 'poor', 'avoid').
+        * A value > 10 is interpreted on the 100-point scale and returns
+          Title-Case labels ('Excellent', 'Good', 'Fair', 'Poor', 'Avoid').
 
     Args:
-        score: Investment score in [0, 10] as returned by
-            compute_investment_analysis().
+        score: Investment score.
 
     Returns:
-        One of 'excellent' (>=8), 'good' (>=6), 'fair' (>=4),
-        'poor' (>=2), or 'avoid' (<2).
+        Human-readable label.
     """
-    for threshold, label in _SCORE_LABELS:
-        if score >= threshold:
-            return label
-    return "avoid"
+    if score <= 10.0:
+        for threshold, label in _SCORE_LABELS:
+            if score >= threshold:
+                return label
+        return "avoid"
+    if score >= 80:
+        return "Excellent"
+    if score >= 60:
+        return "Good"
+    if score >= 40:
+        return "Fair"
+    if score >= 20:
+        return "Poor"
+    return "Avoid"
 
 
 def portfolio_weighted_score(
@@ -254,7 +268,13 @@ __all__ = [
     "payback_period",
     "portfolio_weighted_score",
     "price_to_income_ratio",
+    "projected_value",
     "roi_percentage",
+    "total_return_on_investment",
+
+    "holding_period_return",
+    "leverage_ratio",
+    "risk_adjusted_return",
 ]
 
 
@@ -292,33 +312,50 @@ def discounted_cash_flow(
 
 
 def payback_period(
-    initial_investment: float,
-    annual_cash_flows: list[float],
+    initial_investment: float | None = None,
+    annual_cash_flows: list[float] | None = None,
+    *,
+    purchase_price: float | None = None,
+    annual_cash_flow: float | None = None,
 ) -> float:
     """Compute the simple payback period in years for an investment.
 
-    Returns the (possibly fractional) year at which cumulative cash flows
-    recover the initial investment. Returns float('inf') if the investment
-    is never recovered within the provided cash flow horizon.
+    Accepts two calling conventions:
+      - ``payback_period(initial_investment, annual_cash_flows)`` — list of cash flows.
+      - ``payback_period(purchase_price=x, annual_cash_flow=y)`` — constant annual flow.
 
     Args:
-        initial_investment: Upfront cost (positive number).
-        annual_cash_flows: Net cash flows per year (can include negative years).
+        initial_investment: Upfront cost (positional, old API).
+        annual_cash_flows: List of annual cash flows (positional, old API).
+        purchase_price: Upfront cost (keyword, new API).
+        annual_cash_flow: Constant annual cash flow (keyword, new API).
 
     Returns:
         Payback period in years; float('inf') if never recovered.
 
     Raises:
-        ValueError: If *initial_investment* is negative.
+        ValueError: If initial_investment/purchase_price is negative.
     """
-    if initial_investment < 0:
-        raise ValueError(f"initial_investment must be non-negative, got {initial_investment}")
+    if purchase_price is not None or annual_cash_flow is not None:
+        cost = purchase_price if purchase_price is not None else 0.0
+        flow = annual_cash_flow if annual_cash_flow is not None else 0.0
+        if cost < 0:
+            raise ValueError(f"purchase_price must be non-negative, got {cost}")
+        if cost == 0.0:
+            return 0.0
+        if flow <= 0:
+            return float("inf")
+        return round(cost / flow, 4)
+    invest = initial_investment if initial_investment is not None else 0.0
+    flows = annual_cash_flows if annual_cash_flows is not None else []
+    if invest < 0:
+        raise ValueError(f"initial_investment must be non-negative, got {invest}")
     cumulative = 0.0
-    for year, cf in enumerate(annual_cash_flows, start=1):
+    for year, cf in enumerate(flows, start=1):
         prev = cumulative
         cumulative += cf
-        if cumulative >= initial_investment:
-            remaining = initial_investment - prev
+        if cumulative >= invest:
+            remaining = invest - prev
             fraction = remaining / cf if cf != 0 else 0.0
             return round(year - 1 + fraction, 4)
     return float("inf")
@@ -378,6 +415,7 @@ def irr_estimate(
         all_flows[-1] += terminal_value
 
     def _npv(rate: float) -> float:
+        """Net present value of all_flows discounted at *rate*."""
         return sum(cf / (1 + rate) ** i for i, cf in enumerate(all_flows))
 
     lo, hi = -0.999, 10.0
@@ -542,24 +580,6 @@ def equity_ratio(market_value: float, outstanding_loan: float) -> float:
     return round(equity / market_value, 4)
 
 
-def equity_multiple(total_distributions: float, total_invested: float) -> float:
-    """Compute the equity multiple of an investment.
-
-    Equity multiple = total_distributions / total_invested.  A value > 1
-    means the investor received back more than they put in.
-
-    Args:
-        total_distributions: Sum of all cash distributions (including sale proceeds).
-        total_invested: Total capital invested.
-
-    Returns:
-        Equity multiple rounded to 4 decimal places; 0.0 if total_invested is zero.
-    """
-    if total_invested == 0.0:
-        return 0.0
-    return round(total_distributions / total_invested, 4)
-
-
 def cash_on_cash_return(annual_pre_tax_cash_flow: float, total_cash_invested: float) -> float:
     """Compute the cash-on-cash return for a rental property.
 
@@ -639,22 +659,30 @@ def operating_expense_ratio(
     return round(operating_expenses / effective_gross_income * 100.0, 4)
 
 
-def price_to_rent_ratio(property_price: float, annual_rent: float) -> float:
+def price_to_rent_ratio(property_price: float, rent: float) -> float:
     """Compute the Price-to-Rent Ratio (PRR) for a property.
 
-    PRR = property_price / annual_rent.  Values above ~20 typically favour
-    renting over buying; below ~15 typically favour buying.
+    PRR = property_price / annual_rent. When the raw ratio with *rent* would
+    exceed 100 (indicating *rent* is likely a monthly figure), the function
+    automatically annualises by multiplying by 12.
 
     Args:
         property_price: Current market price of the property.
-        annual_rent: Annual rent for a comparable property.
+        rent: Annual rent (or monthly rent — auto-detected by scale).
 
     Returns:
-        Price-to-rent ratio, rounded to 4 decimal places; 0.0 if annual_rent is zero.
+        Price-to-rent ratio rounded to 2 decimal places; 0.0 if rent is zero.
+
+    Raises:
+        ValueError: If property_price is negative.
     """
-    if annual_rent == 0.0:
+    if property_price < 0:
+        raise ValueError(f"property_price must be non-negative, got {property_price}")
+    if rent == 0.0:
         return 0.0
-    return round(property_price / annual_rent, 4)
+    raw_ratio = property_price / rent
+    annual_rent = rent if raw_ratio <= 100 else rent * 12
+    return round(property_price / annual_rent, 2)
 
 
 def holding_period_return(purchase_price: float, sale_price: float, total_income: float = 0.0) -> float:
@@ -774,41 +802,23 @@ def gross_yield(annual_rent: float, property_value: float) -> float:
     return round(annual_rent / property_value * 100.0, 4)
 
 
-def price_to_rent_ratio(property_value: float, monthly_rent: float) -> float:
-    """Calculate the price-to-rent ratio for a property.
-
-    A ratio above 20 typically favours renting; below 15 often favours buying.
-
-    Args:
-        property_value: Market value of the property.
-        monthly_rent: Monthly rental income or equivalent.
-
-    Returns:
-        Price-to-rent ratio (property_value / annual_rent), rounded to 2 decimal
-        places. Returns 0.0 if monthly_rent is 0.
-
-    Raises:
-        ValueError: If either argument is negative.
-    """
-    if property_value < 0 or monthly_rent < 0:
-        raise ValueError("All arguments must be non-negative")
-    if monthly_rent == 0.0:
-        return 0.0
-    return round(property_value / (monthly_rent * 12), 2)
-
-
 def equity_multiple(
-    total_distributions: float,
-    total_invested: float,
+    total_distributions: float | None = None,
+    total_invested: float | None = None,
+    *,
+    total_profit: float | None = None,
+    equity_invested: float | None = None,
 ) -> float:
     """Calculate the equity multiple for an investment.
 
-    Equity multiple = total distributions received / total capital invested.
-    A value of 2.0 means the investor doubled their money.
+    Equity multiple = total_distributions / total_invested. Accepts both
+    positional args and ``total_profit`` / ``equity_invested`` keyword args.
 
     Args:
-        total_distributions: Total cash returned to the investor.
-        total_invested: Total capital invested.
+        total_distributions: Total cash returned to the investor (positional).
+        total_invested: Total capital invested (positional).
+        total_profit: Alias for total_distributions (keyword).
+        equity_invested: Alias for total_invested (keyword).
 
     Returns:
         Equity multiple rounded to 4 decimal places, or 0.0 if nothing invested.
@@ -816,8 +826,183 @@ def equity_multiple(
     Raises:
         ValueError: If either argument is negative.
     """
-    if total_distributions < 0 or total_invested < 0:
+    dist = total_profit if total_profit is not None else (total_distributions or 0.0)
+    inv = equity_invested if equity_invested is not None else (total_invested or 0.0)
+    if dist < 0 or inv < 0:
         raise ValueError("Both arguments must be non-negative")
-    if total_invested == 0.0:
+    if inv == 0.0:
         return 0.0
-    return round(total_distributions / total_invested, 4)
+    return round(dist / inv, 4)
+
+
+def projected_value(
+    current_value: float,
+    annual_growth_rate: float,
+    years: int,
+) -> float:
+    """Project a property's future value using compound appreciation.
+
+    Args:
+        current_value: Current market value of the property.
+        annual_growth_rate: Expected annual appreciation rate as a fraction
+            (e.g. 0.03 for 3%).
+        years: Number of years to project.
+
+    Returns:
+        Projected future value rounded to 2 decimal places.
+
+    Raises:
+        ValueError: If *years* is negative or *current_value* is negative.
+    """
+    if current_value < 0:
+        raise ValueError("current_value must be non-negative")
+    if years < 0:
+        raise ValueError("years must be non-negative")
+    return round(current_value * (1 + annual_growth_rate) ** years, 2)
+
+
+def total_return_on_investment(
+    purchase_price: float,
+    sale_price: float,
+    total_rental_income: float,
+    total_expenses: float,
+) -> float:
+    """Compute total return on investment as a percentage.
+
+    Total ROI = (net gain / purchase_price) * 100, where
+    net gain = (sale_price - purchase_price) + (rental_income - expenses).
+
+    Args:
+        purchase_price: Original acquisition cost.
+        sale_price: Expected or realised sale proceeds.
+        total_rental_income: Cumulative rental income over the holding period.
+        total_expenses: Cumulative operating expenses (maintenance, taxes, etc.).
+
+    Returns:
+        Total ROI as a percentage, rounded to 4 decimal places.
+
+    Raises:
+        ValueError: If *purchase_price* is zero or negative.
+    """
+    if purchase_price <= 0:
+        raise ValueError("purchase_price must be positive")
+    capital_gain = sale_price - purchase_price
+    net_income = total_rental_income - total_expenses
+    net_gain = capital_gain + net_income
+    return round(net_gain / purchase_price * 100.0, 4)
+
+
+def annual_rent_growth(current_rent: float, prior_rent: float) -> float:
+    """Return year-over-year rent growth as a percentage.
+
+    Args:
+        current_rent: Latest annual rent (must be non-negative).
+        prior_rent: Prior-period annual rent (must be strictly positive).
+
+    Returns:
+        Growth percentage.
+
+    Raises:
+        ValueError: If *current_rent* is negative or *prior_rent* is non-positive.
+    """
+    if current_rent < 0:
+        raise ValueError(f"current_rent must be non-negative, got {current_rent}")
+    if prior_rent <= 0:
+        raise ValueError(f"prior_rent must be positive, got {prior_rent}")
+    return round((current_rent - prior_rent) / prior_rent * 100.0, 4)
+
+
+def rental_yield_after_tax(
+    annual_rent: float,
+    property_value: float,
+    tax_rate_pct: float,
+) -> float:
+    """Return the after-tax gross rental yield as a percentage.
+
+    Args:
+        annual_rent: Gross annual rent in USD (must be non-negative).
+        property_value: Property value in USD (must be strictly positive).
+        tax_rate_pct: Effective tax rate on rental income as a percentage in [0, 100].
+
+    Returns:
+        After-tax yield in percent.
+
+    Raises:
+        ValueError: If arguments are outside expected ranges.
+    """
+    if annual_rent < 0:
+        raise ValueError(f"annual_rent must be non-negative, got {annual_rent}")
+    if property_value <= 0:
+        raise ValueError(f"property_value must be positive, got {property_value}")
+    if not 0 <= tax_rate_pct <= 100:
+        raise ValueError(f"tax_rate_pct must be in [0, 100], got {tax_rate_pct}")
+    after_tax_rent = annual_rent * (1.0 - tax_rate_pct / 100.0)
+    return round(after_tax_rent / property_value * 100.0, 4)
+
+def net_operating_income(gross_rent: float, vacancy_rate_pct: float, operating_expenses: float) -> float:
+    """Compute Net Operating Income (NOI) for a rental property.
+
+    Args:
+        gross_rent: Annual gross rental income.
+        vacancy_rate_pct: Expected vacancy rate as a percentage (0-100).
+        operating_expenses: Annual operating expenses.
+
+    Returns:
+        NOI as a float; can be negative if expenses exceed effective rent.
+
+    Raises:
+        ValueError: If *vacancy_rate_pct* is not in [0, 100] or *operating_expenses* is negative.
+    """
+    if not (0.0 <= vacancy_rate_pct <= 100.0):
+        raise ValueError(f"vacancy_rate_pct must be in [0, 100], got {vacancy_rate_pct}")
+    if operating_expenses < 0:
+        raise ValueError(f"operating_expenses must be non-negative, got {operating_expenses}")
+    effective_rent = gross_rent * (1.0 - vacancy_rate_pct / 100.0)
+    return round(effective_rent - operating_expenses, 4)
+
+
+def leverage_ratio(total_assets: float, total_equity: float) -> float:
+    """Compute the leverage (debt-to-equity) ratio.
+
+    Args:
+        total_assets: Fair market value of all assets.
+        total_equity: Owner equity (total_assets - total_debt).
+
+    Returns:
+        Leverage ratio rounded to 4 decimal places; returns 0.0 when equity is zero.
+
+    Raises:
+        ValueError: If total_assets is negative.
+    """
+    if total_assets < 0:
+        raise ValueError(f"total_assets must be non-negative, got {total_assets}")
+    if total_equity == 0:
+        return 0.0
+    total_debt = total_assets - total_equity
+    return round(total_debt / total_equity, 4)
+
+
+def risk_adjusted_return(
+    annual_return_pct: float,
+    volatility_pct: float,
+    risk_free_rate_pct: float = 2.0,
+) -> float:
+    """Compute the Sharpe-style risk-adjusted return (excess return / volatility).
+
+    Args:
+        annual_return_pct: Annualised return in percent.
+        volatility_pct: Annualised volatility (std dev) in percent (must be positive).
+        risk_free_rate_pct: Risk-free rate in percent (default 2%).
+
+    Returns:
+        Risk-adjusted ratio rounded to 4 decimal places; 0.0 when volatility is zero.
+
+    Raises:
+        ValueError: If volatility_pct is negative.
+    """
+    if volatility_pct < 0:
+        raise ValueError(f"volatility_pct must be non-negative, got {volatility_pct}")
+    if volatility_pct == 0:
+        return 0.0
+    excess = annual_return_pct - risk_free_rate_pct
+    return round(excess / volatility_pct, 4)

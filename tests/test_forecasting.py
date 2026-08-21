@@ -10,13 +10,18 @@ from app.forecasting import (
     ensemble_forecast,
     exponential_smoothing_forecast,
     forecast_bias,
+    forecast_error_metrics,
+    forecast_residuals,
     forecast_summary,
+    horizon_degradation,
     mae_score,
+    mape_score,
     naive_forecast,
     rmse_score,
     seasonal_naive_forecast,
     stepwise_error_growth,
     weighted_ensemble_forecast,
+    weighted_forecast,
 )
 
 HISTORY = [10.0, 12.0, 11.0, 13.0, 14.0, 12.0, 15.0]
@@ -774,13 +779,13 @@ class TestWeightedEnsembleForecastNew:
         with pytest.raises(ValueError):
             weighted_ensemble_forecast([])
 
-    def test_weights_not_summing_to_one_raises(self) -> None:
+    def test_negative_weights_raises(self) -> None:
         import pytest
 
         from app.forecasting import weighted_ensemble_forecast
 
         with pytest.raises(ValueError):
-            weighted_ensemble_forecast([[1.0, 2.0]], weights=[0.5])
+            weighted_ensemble_forecast([[1.0, 2.0], [3.0, 4.0]], weights=[-0.5, 0.5])
 
 
 class TestHorizonDegradation:
@@ -802,3 +807,194 @@ class TestHorizonDegradation:
 
         with pytest.raises(ValueError):
             horizon_degradation([1.0])
+
+
+@pytest.mark.parametrize("steps", [1, 3, 5, 10])
+def test_naive_forecast_step_count(steps: int) -> None:
+    result = naive_forecast(7.5, steps=steps)
+    assert len(result) == steps
+    assert all(v == 7.5 for v in result)
+
+
+@pytest.mark.parametrize(
+    "actual,predicted,expected_bias_sign",
+    [
+        ([10.0, 10.0, 10.0], [11.0, 11.0, 11.0], 1),
+        ([10.0, 10.0, 10.0], [9.0, 9.0, 9.0], -1),
+        ([10.0, 10.0], [10.0, 10.0], 0),
+    ],
+)
+def test_forecast_bias_sign(actual: list[float], predicted: list[float], expected_bias_sign: int) -> None:
+    bias = forecast_bias(actual, predicted)
+    if expected_bias_sign > 0:
+        assert bias > 0
+    elif expected_bias_sign < 0:
+        assert bias < 0
+    else:
+        assert bias == pytest.approx(0.0, abs=1e-9)
+
+
+def test_forecast_residuals_zero_for_perfect_prediction() -> None:
+    actual = [1.0, 2.0, 3.0, 4.0]
+    residuals = forecast_residuals(actual, actual)
+    assert all(r == pytest.approx(0.0) for r in residuals)
+
+
+def test_forecast_error_metrics_perfect_prediction() -> None:
+    actual = [5.0, 10.0, 15.0]
+    metrics = forecast_error_metrics(actual, actual)
+    assert metrics["mae"] == pytest.approx(0.0)
+    assert metrics["rmse"] == pytest.approx(0.0)
+
+
+@pytest.mark.parametrize("alpha", [0.1, 0.3, 0.5, 0.9])
+def test_exponential_smoothing_length(alpha: float) -> None:
+    result = exponential_smoothing_forecast(HISTORY, steps=4, alpha=alpha)
+    assert len(result) == 4
+
+
+def test_mape_score_perfect_prediction() -> None:
+    actual = [10.0, 20.0, 30.0]
+    assert mape_score(actual, actual) == pytest.approx(0.0, abs=1e-6)
+
+
+def test_weighted_forecast_equal_weights() -> None:
+    result = weighted_forecast([10.0, 20.0, 30.0], [1 / 3, 1 / 3, 1 / 3])
+    assert result == pytest.approx(20.0, abs=1e-4)
+
+
+@pytest.mark.parametrize("n", [5, 10, 20])
+def test_mae_score_zero_for_perfect_prediction(n: int) -> None:
+    actual = [float(i) for i in range(n)]
+    assert mae_score(actual, actual) == pytest.approx(0.0, abs=1e-9)
+
+
+@pytest.mark.parametrize("n", [5, 10, 20])
+def test_rmse_score_zero_for_perfect_prediction(n: int) -> None:
+    actual = [float(i) for i in range(n)]
+    assert rmse_score(actual, actual) == pytest.approx(0.0, abs=1e-9)
+
+
+@pytest.mark.parametrize(
+    "actual,predicted",
+    [
+        ([1.0, 2.0, 3.0], [2.0, 3.0, 4.0]),
+        ([10.0, 10.0, 10.0], [12.0, 12.0, 12.0]),
+    ],
+)
+def test_forecast_bias_positive_when_over_predicted(actual: list, predicted: list) -> None:
+    from app.forecasting import bias_score
+
+    result = bias_score(actual, predicted)
+    assert result > 0.0
+
+
+@pytest.mark.parametrize("horizon", [3, 6, 12])
+def test_horizon_degradation_length(horizon: int) -> None:
+    values = [float(i + 1) for i in range(30)]
+    result = horizon_degradation(values, horizon=horizon)
+    assert len(result) == horizon
+
+
+class TestDirectionalAccuracy:
+    def test_perfect_directional_accuracy(self) -> None:
+        from app.forecasting import directional_accuracy
+
+        result = directional_accuracy([1.0, 2.0, 3.0], [1.0, 2.0, 3.0])
+        assert result == pytest.approx(1.0)
+
+    def test_short_series_returns_zero(self) -> None:
+        from app.forecasting import directional_accuracy
+
+        assert directional_accuracy([1.0], [1.0]) == 0.0
+
+    def test_opposite_directions_zero(self) -> None:
+        from app.forecasting import directional_accuracy
+
+        result = directional_accuracy([1.0, 2.0, 3.0], [3.0, 2.0, 1.0])
+        assert result == pytest.approx(0.0)
+
+    def test_raises_on_length_mismatch(self) -> None:
+        from app.forecasting import directional_accuracy
+
+        with pytest.raises(ValueError):
+            directional_accuracy([1.0, 2.0], [1.0])
+
+
+class TestForecastBiasRatio:
+    def test_unbiased_returns_one(self) -> None:
+        from app.forecasting import forecast_bias_ratio
+
+        assert forecast_bias_ratio([2.0, 4.0], [2.0, 4.0]) == pytest.approx(1.0)
+
+    def test_zero_actual_returns_zero(self) -> None:
+        from app.forecasting import forecast_bias_ratio
+
+        assert forecast_bias_ratio([0.0, 0.0], [1.0, 1.0]) == 0.0
+
+    def test_overprediction_ratio_gt_one(self) -> None:
+        from app.forecasting import forecast_bias_ratio
+
+        result = forecast_bias_ratio([1.0, 2.0], [2.0, 4.0])
+        assert result > 1.0
+
+    def test_raises_on_length_mismatch(self) -> None:
+        from app.forecasting import forecast_bias_ratio
+
+        with pytest.raises(ValueError):
+            forecast_bias_ratio([1.0, 2.0], [1.0])
+
+
+class TestMeanPercentageError:
+    def test_over_forecast(self) -> None:
+        from app.forecasting import mean_percentage_error
+        assert mean_percentage_error([10.0, 20.0], [11.0, 22.0]) == pytest.approx(10.0)
+
+    def test_under_forecast(self) -> None:
+        from app.forecasting import mean_percentage_error
+        assert mean_percentage_error([10.0, 20.0], [9.0, 18.0]) == pytest.approx(-10.0)
+
+    def test_perfect_forecast(self) -> None:
+        from app.forecasting import mean_percentage_error
+        assert mean_percentage_error([5.0, 10.0], [5.0, 10.0]) == pytest.approx(0.0)
+
+    def test_zero_in_actual_raises(self) -> None:
+        from app.forecasting import mean_percentage_error
+        with pytest.raises(ValueError, match="zeros"):
+            mean_percentage_error([0.0, 10.0], [1.0, 10.0])
+
+    def test_length_mismatch_raises(self) -> None:
+        from app.forecasting import mean_percentage_error
+        with pytest.raises(ValueError):
+            mean_percentage_error([1.0, 2.0], [1.0])
+
+
+class TestPeakForecastHour:
+    def test_peak_at_end(self) -> None:
+        from app.forecasting import peak_forecast_hour
+        assert peak_forecast_hour([1.0, 2.0, 3.0]) == 2
+
+    def test_peak_in_middle(self) -> None:
+        from app.forecasting import peak_forecast_hour
+        assert peak_forecast_hour([1.0, 5.0, 2.0]) == 1
+
+    def test_empty_raises(self) -> None:
+        from app.forecasting import peak_forecast_hour
+        with pytest.raises(ValueError):
+            peak_forecast_hour([])
+
+
+class TestForecastVolatility:
+    def test_constant_series(self) -> None:
+        from app.forecasting import forecast_volatility
+        assert forecast_volatility([5.0, 5.0, 5.0]) == pytest.approx(0.0)
+
+    def test_positive_volatility(self) -> None:
+        from app.forecasting import forecast_volatility
+        result = forecast_volatility([1.0, 2.0, 3.0, 4.0, 5.0])
+        assert result > 0.0
+
+    def test_empty_raises(self) -> None:
+        from app.forecasting import forecast_volatility
+        with pytest.raises(ValueError):
+            forecast_volatility([])

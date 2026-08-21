@@ -162,3 +162,35 @@ class TestPredictDemand:
             X_dummy = pd.DataFrame([{"a": 1}])
             result = predict_demand(xgb_pipe, lgbm_pipe, X_dummy)
         assert result["demand_tier"] == "low"
+
+
+@pytest.mark.parametrize("n", [50, 100, 500])
+def test_generate_sample_data_row_count(n: int) -> None:
+    from app.model import generate_sample_data
+
+    df, y = generate_sample_data(n)
+    assert len(df) == n
+    assert len(y) == n
+
+
+@pytest.mark.parametrize(
+    "key",
+    ["demand_score", "demand_tier", "confidence"],
+)
+def test_predict_demand_output_keys(key: str) -> None:
+    from unittest.mock import patch
+
+    import numpy as np
+    import pandas as pd
+
+    from app.model import _make_lgbm_pipe, _make_xgb_pipe, predict_demand
+
+    xgb_pipe = _make_xgb_pipe()
+    lgbm_pipe = _make_lgbm_pipe()
+    probs = np.array([0.7])
+    with (
+        patch.object(xgb_pipe, "predict_proba", return_value=np.column_stack([1 - probs, probs])),
+        patch.object(lgbm_pipe, "predict_proba", return_value=np.column_stack([1 - probs, probs])),
+    ):
+        result = predict_demand(xgb_pipe, lgbm_pipe, pd.DataFrame([{"a": 1}]))
+    assert key in result

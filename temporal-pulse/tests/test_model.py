@@ -129,3 +129,37 @@ class TestForecaster:
         X = trained_models["X"]
         preds = predict_forecast(X, horizon=horizon, rf_model=trained_models["rf_model"])
         assert len(preds) == horizon
+
+
+@pytest.mark.parametrize("n", [50, 100, 200])
+def test_train_anomaly_detector_various_sizes(n: int) -> None:
+    import numpy as np
+    import pandas as pd
+
+    from app.model import score_anomaly, train_anomaly_detector
+
+    rng = np.random.default_rng(n)
+    data = pd.DataFrame(
+        {
+            "temperature": rng.uniform(60, 90, n),
+            "pressure": rng.uniform(40, 70, n),
+            "vibration": rng.uniform(0, 5, n),
+            "cycle_time": rng.uniform(20, 40, n),
+            "tool_wear": rng.uniform(0, 50, n),
+            "power_consumption": rng.uniform(80, 150, n),
+            "humidity": rng.uniform(30, 60, n),
+        }
+    )
+    model = train_anomaly_detector(data)
+    assert model is not None
+    sample = data.iloc[0].to_dict()
+    score = score_anomaly(model, sample)
+    assert isinstance(score, float)
+
+
+def test_get_model_version_returns_string() -> None:
+    from app.model import get_model_version
+
+    version = get_model_version()
+    assert isinstance(version, str)
+    assert len(version) > 0

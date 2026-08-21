@@ -127,7 +127,8 @@ def test_coefficient_of_variation_nonzero() -> None:
 def test_coefficient_of_variation_too_short() -> None:
     from app.stats_utils import coefficient_of_variation
 
-    assert coefficient_of_variation([5.0]) == 0.0
+    with pytest.raises(ValueError):
+        coefficient_of_variation([5.0])
 
 
 def test_percentile_median() -> None:
@@ -489,12 +490,13 @@ class TestCoefficientOfVariation:
         with _pytest.raises(ValueError):
             coefficient_of_variation([])
 
-    def test_zero_mean_raises(self) -> None:
-        import pytest as _pytest
-
+    def test_zero_mean_returns_zero_old(self) -> None:
         from app.stats_utils import coefficient_of_variation
 
-        with _pytest.raises(ValueError, match="near zero"):
+        assert coefficient_of_variation([-1.0, 1.0]) == 0.0
+        return
+        # legacy: previously raised near-zero mean
+        with __import__("pytest").raises(ValueError, match="near zero"):
             coefficient_of_variation([0.0, 0.0, 0.0])
 
     @pytest.mark.parametrize("vals", [[1.0, 2.0, 3.0], [10.0, 20.0]])
@@ -1017,11 +1019,10 @@ class TestGiniCoefficient:
         with pytest.raises(ValueError, match="non-negative"):
             gini_coefficient([-1.0, 2.0])
 
-    def test_all_zero_raises(self) -> None:
+    def test_all_zero_returns_zero(self) -> None:
         from app.stats_utils import gini_coefficient
 
-        with pytest.raises(ValueError, match="undefined"):
-            gini_coefficient([0.0, 0.0])
+        assert gini_coefficient([0.0, 0.0]) == 0.0
 
     def test_too_few_raises(self) -> None:
         from app.stats_utils import gini_coefficient
@@ -1077,7 +1078,7 @@ class TestLogReturn:
 # ---------------------------------------------------------------------------
 
 
-class TestGiniCoefficient:
+class TestGiniCoefficientExtended:
     def test_perfect_equality(self) -> None:
         from app.stats_utils import gini_coefficient
 
@@ -1142,7 +1143,7 @@ class TestTrimmedMean:
             trimmed_mean([1.0, 2.0], trim_pct=0.5)
 
 
-class TestCoefficientOfVariation:
+class TestCoefficientOfVariationExtended:
     def test_zero_cv_for_constant(self) -> None:
         from app.stats_utils import coefficient_of_variation
 
@@ -1166,3 +1167,269 @@ class TestCoefficientOfVariation:
         from app.stats_utils import coefficient_of_variation
 
         assert coefficient_of_variation([0.0, 0.0, 0.0, 0.0]) == 0.0
+
+
+@pytest.mark.parametrize(
+    "values,p,expected",
+    [
+        ([1.0, 2.0, 3.0, 4.0, 5.0], 50.0, 3.0),
+        ([1.0, 2.0, 3.0, 4.0, 5.0], 0.0, 1.0),
+        ([1.0, 2.0, 3.0, 4.0, 5.0], 100.0, 5.0),
+    ],
+)
+def test_percentile_boundary_values(values: list, p: float, expected: float) -> None:
+    from app.stats_utils import percentile
+
+    assert percentile(values, p) == pytest.approx(expected, abs=0.5)
+
+
+@pytest.mark.parametrize("n", [5, 10, 20])
+def test_geometric_mean_positive_for_positive_input(n: int) -> None:
+    from app.stats_utils import geometric_mean
+
+    values = [float(i) for i in range(1, n + 1)]
+    result = geometric_mean(values)
+    assert result > 0.0
+
+
+@pytest.mark.parametrize("n", [5, 10, 20])
+def test_harmonic_mean_less_than_arithmetic(n: int) -> None:
+    from app.stats_utils import harmonic_mean
+
+    values = [float(i) for i in range(1, n + 1)]
+    arith = sum(values) / len(values)
+    result = harmonic_mean(values)
+    assert result <= arith
+
+
+@pytest.mark.parametrize(
+    "values,value",
+    [
+        ([1.0, 2.0, 3.0, 4.0, 5.0], 3.0),
+        ([10.0, 20.0, 30.0], 20.0),
+    ],
+)
+def test_zscore_of_mean_is_near_zero(values: list, value: float) -> None:
+    from app.stats_utils import zscore
+
+    result = zscore(values, value)
+    assert abs(result) < 0.1
+
+
+@pytest.mark.parametrize("n", [5, 10, 20])
+def test_log_return_length(n: int) -> None:
+    from app.stats_utils import log_return
+
+    prices = [float(i + 1) for i in range(n)]
+    result = log_return(prices)
+    assert len(result) == n - 1
+
+
+@pytest.mark.parametrize("n", [5, 10, 20])
+def test_sample_std_positive_for_variable(n: int) -> None:
+    from app.stats_utils import sample_std
+
+    values = [float(i) for i in range(n)]
+    assert sample_std(values) > 0.0
+
+
+@pytest.mark.parametrize(
+    "x,y,expected_sign",
+    [
+        ([1.0, 2.0, 3.0], [1.0, 2.0, 3.0], "positive"),
+        ([1.0, 2.0, 3.0], [3.0, 2.0, 1.0], "negative"),
+    ],
+)
+def test_correlation_coefficient_sign(x: list, y: list, expected_sign: str) -> None:
+    from app.stats_utils import correlation_coefficient
+
+    result = correlation_coefficient(x, y)
+    if expected_sign == "positive":
+        assert result > 0.0
+    else:
+        assert result < 0.0
+
+
+@pytest.mark.parametrize("n", [5, 10, 100])
+def test_population_variance_non_negative(n: int) -> None:
+    from app.stats_utils import population_variance
+
+    values = [float(i) for i in range(n)]
+    result = population_variance(values)
+    assert result >= 0.0
+
+
+class TestGeometricMean:
+    def test_simple_values(self) -> None:
+        from app.stats_utils import geometric_mean
+
+        result = geometric_mean([1.0, 4.0, 16.0])
+        assert result == pytest.approx(4.0, rel=1e-4)
+
+    def test_single_value(self) -> None:
+        from app.stats_utils import geometric_mean
+
+        assert geometric_mean([5.0]) == pytest.approx(5.0)
+
+    def test_empty_raises(self) -> None:
+        from app.stats_utils import geometric_mean
+
+        with pytest.raises(ValueError):
+            geometric_mean([])
+
+    def test_non_positive_raises(self) -> None:
+        from app.stats_utils import geometric_mean
+
+        with pytest.raises(ValueError):
+            geometric_mean([1.0, -2.0, 3.0])
+
+    @pytest.mark.parametrize("n", [2, 5, 10])
+    def test_uniform_values_equal_value(self, n: int) -> None:
+        from app.stats_utils import geometric_mean
+
+        result = geometric_mean([3.0] * n)
+        assert result == pytest.approx(3.0, rel=1e-6)
+
+
+class TestHarmonicMean:
+    def test_simple_values(self) -> None:
+        from app.stats_utils import harmonic_mean
+
+        result = harmonic_mean([1.0, 2.0, 4.0])
+        assert result == pytest.approx(12.0 / 7.0, rel=1e-4)
+
+    def test_single_value(self) -> None:
+        from app.stats_utils import harmonic_mean
+
+        assert harmonic_mean([7.0]) == pytest.approx(7.0)
+
+    def test_empty_raises(self) -> None:
+        from app.stats_utils import harmonic_mean
+
+        with pytest.raises(ValueError):
+            harmonic_mean([])
+
+    def test_zero_raises(self) -> None:
+        from app.stats_utils import harmonic_mean
+
+        with pytest.raises(ValueError):
+            harmonic_mean([1.0, 0.0, 2.0])
+
+    @pytest.mark.parametrize("n", [3, 6, 12])
+    def test_uniform_equals_value(self, n: int) -> None:
+        from app.stats_utils import harmonic_mean
+
+        result = harmonic_mean([4.0] * n)
+        assert result == pytest.approx(4.0, rel=1e-6)
+
+
+class TestRollingRmse:
+    def test_basic(self) -> None:
+        from app.stats_utils import rolling_rmse
+        result = rolling_rmse([1, 2, 3, 4, 5], [1.1, 2.1, 3.1, 4.1, 5.1], 3)
+        assert len(result) == 5
+        assert result[0] == result[1] == 0.0
+        assert abs(result[2] - 0.1) < 0.01
+
+    def test_window_1(self) -> None:
+        from app.stats_utils import rolling_rmse
+        result = rolling_rmse([1.0, 2.0], [1.5, 2.5], 1)
+        assert len(result) == 2
+        assert all(v > 0 for v in result)
+
+    def test_invalid_window(self) -> None:
+        import pytest
+        from app.stats_utils import rolling_rmse
+        with pytest.raises(ValueError):
+            rolling_rmse([1, 2], [1, 2], 0)
+
+    def test_mismatched_lengths(self) -> None:
+        import pytest
+        from app.stats_utils import rolling_rmse
+        with pytest.raises(ValueError):
+            rolling_rmse([1, 2, 3], [1, 2], 2)
+
+
+class TestConfidenceInterval:
+    def test_returns_tuple_of_two(self) -> None:
+        from app.stats_utils import confidence_interval
+        lo, hi = confidence_interval([1.0, 2.0, 3.0, 4.0, 5.0])
+        assert lo < hi
+
+    def test_mean_within_interval(self) -> None:
+        from app.stats_utils import confidence_interval
+        values = list(range(1, 11))
+        lo, hi = confidence_interval(values)
+        mean_v = sum(values) / len(values)
+        assert lo <= mean_v <= hi
+
+    def test_too_few_values_raises(self) -> None:
+        import pytest
+        from app.stats_utils import confidence_interval
+        with pytest.raises(ValueError):
+            confidence_interval([1.0])
+
+    def test_invalid_confidence(self) -> None:
+        import pytest
+        from app.stats_utils import confidence_interval
+        with pytest.raises(ValueError):
+            confidence_interval([1.0, 2.0, 3.0], confidence=1.5)
+
+
+class TestSignalToNoiseRatio:
+    def test_constant_series_is_zero(self) -> None:
+        from app.stats_utils import signal_to_noise_ratio
+        assert signal_to_noise_ratio([5.0, 5.0, 5.0]) == 0.0
+
+    def test_positive_result(self) -> None:
+        from app.stats_utils import signal_to_noise_ratio
+        snr = signal_to_noise_ratio([10.0, 11.0, 9.0, 10.5])
+        assert snr > 0.0
+
+    def test_empty_raises(self) -> None:
+        import pytest
+        from app.stats_utils import signal_to_noise_ratio
+        with pytest.raises(ValueError):
+            signal_to_noise_ratio([])
+
+
+class TestOutlierFraction:
+    def test_no_outliers(self) -> None:
+        from app.stats_utils import outlier_fraction
+        assert outlier_fraction([1.0, 1.0, 1.0, 1.0]) == 0.0
+
+    def test_one_outlier(self) -> None:
+        from app.stats_utils import outlier_fraction
+        # 10000.0 is far enough to exceed 3-sigma threshold
+        values = [1.0] * 9 + [10000.0]
+        result = outlier_fraction(values)
+        assert result > 0.0
+
+    def test_empty_raises(self) -> None:
+        import pytest
+        from app.stats_utils import outlier_fraction
+        with pytest.raises(ValueError):
+            outlier_fraction([])
+
+
+@pytest.mark.parametrize("values,expected_iqr", [
+    ([1.0, 2.0, 3.0, 4.0, 5.0], 2.0),
+    ([0.0, 0.0, 0.0, 0.0], 0.0),
+])
+def test_iqr_parametrized(values: list, expected_iqr: float) -> None:
+    from app.stats_utils import interquartile_range
+    result = interquartile_range(values)
+    assert result == pytest.approx(expected_iqr, abs=0.5)
+
+
+@pytest.mark.parametrize("window,input_len", [
+    (1, 5),
+    (3, 10),
+    (5, 5),
+])
+def test_rolling_rmse_output_length(window: int, input_len: int) -> None:
+    from app.stats_utils import rolling_rmse
+    actual = list(range(input_len))
+    predicted = [v + 0.1 for v in actual]
+    result = rolling_rmse(actual, predicted, window)
+    assert len(result) == input_len

@@ -27,90 +27,90 @@ SAMPLE = [
 ]
 
 
-def test_records_to_csv_has_header():
+def test_records_to_csv_has_header() -> None:
     csv_str = records_to_csv(SAMPLE)
     lines = csv_str.strip().splitlines()
     assert "hour" in lines[0]
     assert "consumption_kwh" in lines[0]
 
 
-def test_records_to_csv_correct_row_count():
+def test_records_to_csv_correct_row_count() -> None:
     csv_str = records_to_csv(SAMPLE)
     lines = csv_str.strip().splitlines()
     assert len(lines) == len(SAMPLE) + 1  # header + rows
 
 
-def test_records_to_csv_empty_returns_empty_string():
+def test_records_to_csv_empty_returns_empty_string() -> None:
     assert records_to_csv([]) == ""
 
 
-def test_records_to_json_valid():
+def test_records_to_json_valid() -> None:
     result = records_to_json(SAMPLE)
     parsed = json.loads(result)
     assert len(parsed) == len(SAMPLE)
 
 
-def test_records_to_json_indent():
+def test_records_to_json_indent() -> None:
     result = records_to_json(SAMPLE, indent=4)
     assert "    " in result
 
 
-def test_filter_records_by_min_kwh():
+def test_filter_records_by_min_kwh() -> None:
     result = filter_records(SAMPLE, min_kwh=10.0)
     assert all(r["consumption_kwh"] >= 10.0 for r in result)
 
 
-def test_filter_records_by_max_kwh():
+def test_filter_records_by_max_kwh() -> None:
     result = filter_records(SAMPLE, max_kwh=10.0)
     assert all(r["consumption_kwh"] <= 10.0 for r in result)
 
 
-def test_filter_records_by_hour():
+def test_filter_records_by_hour() -> None:
     result = filter_records(SAMPLE, hour=8)
     assert all(r["hour"] == 8 for r in result)
     assert len(result) == 2
 
 
-def test_filter_records_by_building_id():
+def test_filter_records_by_building_id() -> None:
     result = filter_records(SAMPLE, building_id="A")
     assert all(r["building_id"] == "A" for r in result)
     assert len(result) == 2
 
 
-def test_filter_records_combined():
+def test_filter_records_combined() -> None:
     result = filter_records(SAMPLE, hour=14, building_id="A")
     assert len(result) == 1
     assert result[0]["consumption_kwh"] == 20.0
 
 
-def test_aggregate_by_hour_groups_correctly():
+def test_aggregate_by_hour_groups_correctly() -> None:
     result = aggregate_by_hour(SAMPLE)
     hours = {r["hour"] for r in result}
     assert hours == {8, 14}
 
 
-def test_aggregate_by_hour_mean_correct():
+def test_aggregate_by_hour_mean_correct() -> None:
     result = aggregate_by_hour(SAMPLE)
     hour8 = next(r for r in result if r["hour"] == 8)
     assert hour8["mean_kwh"] == pytest.approx(10.0)
 
 
-def test_aggregate_by_hour_empty():
+def test_aggregate_by_hour_empty() -> None:
     result = aggregate_by_hour([])
     assert result == []
 
 
-def test_summarize_export_total_records():
+def test_summarize_export_total_records() -> None:
     s = summarize_export(SAMPLE)
     assert s["total_records"] == 4
 
 
-def test_summarize_export_total_kwh():
+def test_summarize_export_total_kwh() -> None:
     s = summarize_export(SAMPLE)
     assert s["total_kwh"] == pytest.approx(45.0)
 
 
-def test_summarize_export_empty():
+def test_summarize_export_empty() -> None:
     s = summarize_export([])
     assert s["total_records"] == 0
     assert s["mean_kwh"] == 0.0
@@ -118,37 +118,37 @@ def test_summarize_export_empty():
 
 
 @pytest.mark.parametrize("min_kwh,expected_count", [(0.0, 4), (10.0, 2), (25.0, 0)])
-def test_filter_min_kwh_parametrize(min_kwh, expected_count):
+def test_filter_min_kwh_parametrize(min_kwh, expected_count) -> None:
     result = filter_records(SAMPLE, min_kwh=min_kwh)
     assert len(result) == expected_count
 
 
 @pytest.mark.parametrize("max_kwh,expected_count", [(100.0, 4), (10.0, 2), (0.0, 0)])
-def test_filter_max_kwh_parametrize(max_kwh, expected_count):
+def test_filter_max_kwh_parametrize(max_kwh, expected_count) -> None:
     result = filter_records(SAMPLE, max_kwh=max_kwh)
     assert len(result) == expected_count
 
 
-def test_records_to_json_empty():
+def test_records_to_json_empty() -> None:
     result = records_to_json([])
     assert result == "[]"
 
 
-def test_aggregate_by_hour_counts():
+def test_aggregate_by_hour_counts() -> None:
     result = aggregate_by_hour(SAMPLE)
     assert all("count" in r for r in result)
     hour8 = next(r for r in result if r["hour"] == 8)
     assert hour8["count"] == 2
 
 
-def test_summarize_export_min_max():
+def test_summarize_export_min_max() -> None:
     s = summarize_export(SAMPLE)
     assert s["min_kwh"] == pytest.approx(5.0)
     assert s["max_kwh"] == pytest.approx(20.0)
 
 
 @pytest.mark.parametrize("hour,expected_count", [(8, 2), (14, 2), (0, 0)])
-def test_filter_by_hour_parametrize(hour, expected_count):
+def test_filter_by_hour_parametrize(hour, expected_count) -> None:
     result = filter_records(SAMPLE, hour=hour)
     assert len(result) == expected_count
 
@@ -384,23 +384,23 @@ class TestSampleRecords:
         assert len(result) == 3
 
 
-def test_top_buildings_by_kwh_order():
+def test_top_buildings_by_kwh_order() -> None:
     result = top_buildings_by_kwh(SAMPLE, n=2)
     assert result[0]["building_id"] == "A"
     assert result[0]["total_kwh"] == pytest.approx(32.0)
 
 
-def test_top_buildings_by_kwh_n_limit():
+def test_top_buildings_by_kwh_n_limit() -> None:
     result = top_buildings_by_kwh(SAMPLE, n=1)
     assert len(result) == 1
 
 
-def test_top_buildings_by_kwh_empty():
+def test_top_buildings_by_kwh_empty() -> None:
     result = top_buildings_by_kwh([])
     assert result == []
 
 
-def test_pivot_by_hour_structure():
+def test_pivot_by_hour_structure() -> None:
     pivot = pivot_by_hour(SAMPLE)
     assert "A" in pivot
     assert "B" in pivot
@@ -408,7 +408,7 @@ def test_pivot_by_hour_structure():
     assert pivot["A"][8] == pytest.approx(12.0)
 
 
-def test_pivot_by_hour_accumulates():
+def test_pivot_by_hour_accumulates() -> None:
     records = [
         {"hour": 8, "building_id": "A", "consumption_kwh": 5.0},
         {"hour": 8, "building_id": "A", "consumption_kwh": 3.0},
@@ -417,29 +417,29 @@ def test_pivot_by_hour_accumulates():
     assert pivot["A"][8] == pytest.approx(8.0)
 
 
-def test_pivot_by_hour_empty():
+def test_pivot_by_hour_empty() -> None:
     assert pivot_by_hour([]) == {}
 
 
-def test_normalize_kwh_range():
+def test_normalize_kwh_range() -> None:
     result = normalize_kwh(SAMPLE)
     kwh_vals = [r["consumption_kwh"] for r in result]
     assert min(kwh_vals) == pytest.approx(0.0)
     assert max(kwh_vals) == pytest.approx(1.0)
 
 
-def test_normalize_kwh_preserves_other_fields():
+def test_normalize_kwh_preserves_other_fields() -> None:
     result = normalize_kwh(SAMPLE)
     assert result[0]["building_id"] == SAMPLE[0]["building_id"]
 
 
-def test_normalize_kwh_empty():
+def test_normalize_kwh_empty() -> None:
     result = normalize_kwh([])
     assert result == []
 
 
 @pytest.mark.parametrize("n,expected_len", [(1, 1), (2, 2), (10, 2)])
-def test_top_buildings_n_parametrize(n, expected_len):
+def test_top_buildings_n_parametrize(n, expected_len) -> None:
     result = top_buildings_by_kwh(SAMPLE, n=n)
     assert len(result) == expected_len
 
@@ -688,3 +688,45 @@ class TestFilterRecordsByValue:
         from app.energy_export import filter_records_by_value
 
         assert filter_records_by_value([], "v", 0.0, 10.0) == []
+
+
+class TestKwhToMwh:
+    def test_basic(self) -> None:
+        from app.energy_export import kwh_to_mwh
+        assert kwh_to_mwh(5000.0) == pytest.approx(5.0)
+
+    def test_zero(self) -> None:
+        from app.energy_export import kwh_to_mwh
+        assert kwh_to_mwh(0.0) == pytest.approx(0.0)
+
+    def test_negative_raises(self) -> None:
+        from app.energy_export import kwh_to_mwh
+        with pytest.raises(ValueError):
+            kwh_to_mwh(-1.0)
+
+
+class TestMwhToKwh:
+    def test_basic(self) -> None:
+        from app.energy_export import mwh_to_kwh
+        assert mwh_to_kwh(5.0) == pytest.approx(5000.0)
+
+    def test_zero(self) -> None:
+        from app.energy_export import mwh_to_kwh
+        assert mwh_to_kwh(0.0) == pytest.approx(0.0)
+
+    def test_negative_raises(self) -> None:
+        from app.energy_export import mwh_to_kwh
+        with pytest.raises(ValueError):
+            mwh_to_kwh(-1.0)
+
+
+class TestDailyPeakConsumption:
+    def test_finds_max(self) -> None:
+        from app.energy_export import daily_peak_consumption
+        profile = [float(i) for i in range(24)]
+        assert daily_peak_consumption(profile) == pytest.approx(23.0)
+
+    def test_wrong_length_raises(self) -> None:
+        from app.energy_export import daily_peak_consumption
+        with pytest.raises(ValueError):
+            daily_peak_consumption([1.0, 2.0])

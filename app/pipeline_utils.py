@@ -388,7 +388,7 @@ def pipeline_feature_count(pipeline: Any) -> int:
     try:
         return int(pipeline.n_features_in_)
     except AttributeError:
-        pass
+        pass  # fall through to alternative lookup
     try:
         return len(pipeline[:-1].get_feature_names_out())
     except Exception:
@@ -413,3 +413,58 @@ def is_pipeline_fitted(pipeline: Any) -> bool:
     except Exception:
         steps = [pipeline]
     return any(hasattr(step, attr) for step in steps for attr in fitted_attrs)
+
+
+def pipeline_step_at(pipeline: Any, index: int) -> Any:
+    """Return the step object at *index* in the pipeline's step list.
+
+    Args:
+        pipeline: A scikit-learn Pipeline object.
+        index: Zero-based index of the desired step.
+
+    Returns:
+        The estimator at the given position.
+
+    Raises:
+        IndexError: If *index* is out of range.
+        AttributeError: If *pipeline* has no ``steps`` attribute.
+    """
+    steps = pipeline.steps
+    if index < 0 or index >= len(steps):
+        raise IndexError(f"step index {index} out of range (pipeline has {len(steps)} steps)")
+    return steps[index][1]
+
+
+def pipeline_step_name_at(pipeline: Any, index: int) -> str:
+    """Return the step name at *index* in the pipeline.
+
+    Args:
+        pipeline: A scikit-learn Pipeline object.
+        index: Zero-based index of the desired step.
+
+    Returns:
+        Step name as a string.
+
+    Raises:
+        IndexError: If *index* is out of range.
+        AttributeError: If *pipeline* has no ``steps`` attribute.
+    """
+    steps = pipeline.steps
+    if index < 0 or index >= len(steps):
+        raise IndexError(f"step index {index} out of range (pipeline has {len(steps)} steps)")
+    return steps[index][0]
+
+
+def pipeline_estimator_classes(pipeline: Any) -> list[type]:
+    """Return a list of the actual class objects for each step.
+
+    Args:
+        pipeline: A scikit-learn Pipeline object.
+
+    Returns:
+        List of class objects in step order.
+
+    Raises:
+        AttributeError: If *pipeline* has no ``steps`` attribute.
+    """
+    return [type(step) for _, step in pipeline.steps]

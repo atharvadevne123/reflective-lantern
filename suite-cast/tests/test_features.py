@@ -295,3 +295,141 @@ class TestLengthOfStayBucket:
 
         assert length_of_stay_bucket(7) == "long"
         assert length_of_stay_bucket(30) == "long"
+
+
+@pytest.mark.parametrize(
+    "month,expected_season",
+    [
+        (1, "winter"),
+        (4, "spring"),
+        (7, "summer"),
+        (10, "fall"),
+        (12, "winter"),
+    ],
+)
+def test_seasonality_score_by_month(month: int, expected_season: str) -> None:
+    from app.features import _MONTH_TO_SEASON
+
+    assert _MONTH_TO_SEASON[month] == expected_season
+
+
+@pytest.mark.parametrize("lead_time", [0, 1, 3, 7, 14, 30, 90])
+def test_feature_engineer_handles_various_lead_times(lead_time: int) -> None:
+    eng = HotelFeatureEngineer()
+    df = _minimal_df(lead_time=lead_time)
+    result = eng.transform(df)
+    assert result.shape[0] == 1
+    assert not result.isnull().any().any()
+
+
+@pytest.mark.parametrize("room_type", ["standard", "deluxe", "suite"])
+def test_feature_engineer_all_room_types(room_type: str) -> None:
+    eng = HotelFeatureEngineer()
+    result = eng.transform(_minimal_df(room_type=room_type))
+    assert result.shape == (1, len(FEATURE_COLS))
+
+
+@pytest.mark.parametrize("guests_count", [1, 2, 4, 8])
+def test_feature_engineer_various_guest_counts(guests_count: int) -> None:
+    eng = HotelFeatureEngineer()
+    result = eng.transform(_minimal_df(guests_count=guests_count))
+    assert not result.isnull().any().any()
+
+
+class TestRevenuePerAvailableRoom:
+    def test_basic_revpar(self) -> None:
+        from app.features import revenue_per_available_room
+
+        assert revenue_per_available_room(1000.0, 10) == pytest.approx(100.0)
+
+    def test_zero_rooms_returns_zero(self) -> None:
+        from app.features import revenue_per_available_room
+
+        assert revenue_per_available_room(500.0, 0) == 0.0
+
+    @pytest.mark.parametrize("rooms,expected", [(1, 100.0), (10, 10.0), (100, 1.0)])
+    def test_revpar_scales_with_rooms(self, rooms: int, expected: float) -> None:
+        from app.features import revenue_per_available_room
+
+        assert revenue_per_available_room(100.0, rooms) == pytest.approx(expected)
+
+
+class TestBookingConversionRate:
+    def test_full_conversion(self) -> None:
+        from app.features import booking_conversion_rate
+
+        assert booking_conversion_rate(10, 10) == pytest.approx(1.0)
+
+    def test_zero_enquiries_returns_zero(self) -> None:
+        from app.features import booking_conversion_rate
+
+        assert booking_conversion_rate(0, 0) == 0.0
+
+    def test_capped_at_one(self) -> None:
+        from app.features import booking_conversion_rate
+
+        assert booking_conversion_rate(5, 10) == pytest.approx(1.0)
+
+    @pytest.mark.parametrize("enquiries,confirmed,expected", [(10, 5, 0.5), (100, 25, 0.25)])
+    def test_partial_conversion(self, enquiries: int, confirmed: int, expected: float) -> None:
+        from app.features import booking_conversion_rate
+
+        assert booking_conversion_rate(enquiries, confirmed) == pytest.approx(expected)
+
+
+class TestAverageDailyRate:
+    def test_basic_adr(self) -> None:
+        from app.features import average_daily_rate
+
+        assert average_daily_rate(1000.0, 10) == pytest.approx(100.0)
+
+    def test_zero_occupied_returns_zero(self) -> None:
+        from app.features import average_daily_rate
+
+        assert average_daily_rate(500.0, 0) == 0.0
+
+
+class TestGrossOperatingProfitPerAvailableRoom:
+    def test_standard_case(self) -> None:
+        from app.features import gross_operating_profit_per_available_room
+
+        result = gross_operating_profit_per_available_room(50000.0, 30000.0, 100)
+        assert result == pytest.approx(200.0)
+
+    def test_zero_rooms_returns_zero(self) -> None:
+        from app.features import gross_operating_profit_per_available_room
+
+        assert gross_operating_profit_per_available_room(50000.0, 30000.0, 0) == 0.0
+
+    def test_loss_is_negative(self) -> None:
+        from app.features import gross_operating_profit_per_available_room
+
+        result = gross_operating_profit_per_available_room(10000.0, 30000.0, 100)
+        assert result < 0.0
+
+
+class TestLengthOfStayMix:
+    def test_empty_returns_zeros(self) -> None:
+        from app.features import length_of_stay_mix
+
+        result = length_of_stay_mix([])
+        assert all(v == 0.0 for v in result.values())
+
+    def test_fractions_sum_to_one(self) -> None:
+        from app.features import length_of_stay_mix
+
+        result = length_of_stay_mix([1, 2, 3, 5])
+        assert sum(result.values()) == pytest.approx(1.0, abs=1e-4)
+
+    def test_only_one_night_stays(self) -> None:
+        from app.features import length_of_stay_mix
+
+        result = length_of_stay_mix([1, 1, 1])
+        assert result["one_night"] == 1.0
+        assert result["two_three_nights"] == 0.0
+
+    def test_keys_present(self) -> None:
+        from app.features import length_of_stay_mix
+
+        result = length_of_stay_mix([2])
+        assert {"one_night", "two_three_nights", "four_plus_nights"} <= result.keys()

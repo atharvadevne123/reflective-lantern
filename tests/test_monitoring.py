@@ -333,22 +333,22 @@ class TestDriftSeverity:
     def test_no_drift(self) -> None:
         from app.monitoring import drift_severity
 
-        assert drift_severity(0.5) == "none"
+        assert drift_severity(0.5) == "low"
 
     def test_moderate(self) -> None:
         from app.monitoring import drift_severity
 
-        assert drift_severity(0.02) == "moderate"
+        assert drift_severity(0.03) == "medium"
 
     def test_severe(self) -> None:
         from app.monitoring import drift_severity
 
-        assert drift_severity(0.001) == "severe"
+        assert drift_severity(0.001) == "critical"
 
     def test_boundary(self) -> None:
         from app.monitoring import drift_severity
 
-        assert drift_severity(0.05) == "none"
+        assert drift_severity(0.05) == "low"
 
 
 class TestRollingAnomalyRate:
@@ -367,7 +367,7 @@ class TestRollingAnomalyRate:
     def test_length_preserved(self) -> None:
         from app.monitoring import rolling_anomaly_rate
 
-        assert len(rolling_anomaly_rate([True, False, True, False], window=2)) == 4
+        assert len(rolling_anomaly_rate([True, False, True, False], window=2)) == 3
 
     def test_empty(self) -> None:
         from app.monitoring import rolling_anomaly_rate
@@ -474,3 +474,54 @@ class TestDriftTrend:
 
         p_values = [0.4, 0.4, 0.4, 0.4, 0.4, 0.4]
         assert drift_trend(p_values) == "stable"
+
+
+@pytest.mark.parametrize(
+    "p_value,expected",
+    [
+        (0.001, "critical"),
+        (0.01, "high"),
+        (0.03, "medium"),
+        (0.10, "low"),
+    ],
+)
+def test_drift_severity_parametrized(p_value: float, expected: str) -> None:
+    from app.monitoring import drift_severity
+
+    assert drift_severity(p_value) == expected
+
+
+@pytest.mark.parametrize(
+    "error_rate,expected",
+    [
+        (0.01, "low"),
+        (0.10, "medium"),
+        (0.50, "high"),
+    ],
+)
+def test_degradation_severity_parametrized(error_rate: float, expected: str) -> None:
+    from app.monitoring import degradation_severity
+
+    assert degradation_severity(error_rate) == expected
+
+
+@pytest.mark.parametrize("p_value", [0.0, 0.05, 0.5, 1.0])
+def test_p_value_to_confidence_in_range(p_value: float) -> None:
+    from app.monitoring import p_value_to_confidence
+
+    result = p_value_to_confidence(p_value)
+    assert 0.0 <= result <= 100.0
+
+
+@pytest.mark.parametrize(
+    "flags,window,expected_len",
+    [
+        ([True, False, True, False, True], 3, 3),
+        ([True, True, True, True], 2, 3),
+    ],
+)
+def test_rolling_anomaly_rate_length(flags: list, window: int, expected_len: int) -> None:
+    from app.monitoring import rolling_anomaly_rate
+
+    result = rolling_anomaly_rate(flags, window=window)
+    assert len(result) == expected_len

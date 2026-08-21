@@ -155,7 +155,7 @@ def weighted_answer_confidence(
         return 0.0
     weights = [max(0.0, c.rerank_score) * rerank_weight + (1.0 - rerank_weight) for c in chunks]
     total_w = sum(weights) or 1.0
-    return round(sum(c.trust * w for c, w in zip(chunks, weights)) / total_w, 6)
+    return round(sum(c.trust * w for c, w in zip(chunks, weights, strict=False)) / total_w, 6)
 
 
 def min_trust_gate(chunks: list[ScoredChunk], threshold: float = 0.40) -> list[ScoredChunk]:

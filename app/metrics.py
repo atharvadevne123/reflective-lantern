@@ -45,7 +45,7 @@ def root_mean_squared_error(actual: list[float], predicted: list[float]) -> floa
     if len(actual) != len(predicted):
         raise ValueError("actual and predicted must have the same length")
     mse = sum((a - p) ** 2 for a, p in zip(actual, predicted, strict=False)) / len(actual)
-    return round(mse ** 0.5, 6)
+    return round(mse**0.5, 6)
 
 
 def mean_absolute_percentage_error(
@@ -142,3 +142,72 @@ __all__ = [
     "r_squared",
     "root_mean_squared_error",
 ]
+
+
+def symmetric_mape(actual: list[float], predicted: list[float]) -> float:
+    """Compute the Symmetric Mean Absolute Percentage Error (sMAPE).
+
+    Args:
+        actual: List of observed values.
+        predicted: List of forecast values (same length as *actual*).
+
+    Returns:
+        sMAPE as a percentage [0, 200]; 0.0 for a perfect forecast.
+
+    Raises:
+        ValueError: If lists are empty or have different lengths.
+    """
+    if not actual or not predicted:
+        raise ValueError("actual and predicted must be non-empty")
+    if len(actual) != len(predicted):
+        raise ValueError("actual and predicted must have the same length")
+    total = 0.0
+    for a, p in zip(actual, predicted):
+        denom = (abs(a) + abs(p)) / 2.0
+        total += 0.0 if denom == 0 else abs(a - p) / denom * 100.0
+    return round(total / len(actual), 6)
+
+
+def max_absolute_error(actual: list[float], predicted: list[float]) -> float:
+    """Return the maximum absolute error between *actual* and *predicted*.
+
+    Args:
+        actual: List of observed values.
+        predicted: List of forecast values.
+
+    Returns:
+        Largest absolute difference.
+
+    Raises:
+        ValueError: If lists are empty or have different lengths.
+    """
+    if not actual or not predicted:
+        raise ValueError("actual and predicted must be non-empty")
+    if len(actual) != len(predicted):
+        raise ValueError("actual and predicted must have the same length")
+    return max(abs(a - p) for a, p in zip(actual, predicted))
+
+
+def normalised_rmse(actual: list[float], predicted: list[float]) -> float:
+    """Return RMSE normalised by the range of *actual* values.
+
+    Args:
+        actual: List of observed values.
+        predicted: List of forecast values.
+
+    Returns:
+        NRMSE as a fraction; 0.0 when range is zero.
+
+    Raises:
+        ValueError: If lists are empty or have different lengths.
+    """
+    if not actual or not predicted:
+        raise ValueError("actual and predicted must be non-empty")
+    if len(actual) != len(predicted):
+        raise ValueError("actual and predicted must have the same length")
+    mse = sum((a - p) ** 2 for a, p in zip(actual, predicted)) / len(actual)
+    rmse = mse ** 0.5
+    rng = max(actual) - min(actual)
+    if rng == 0:
+        return 0.0
+    return round(rmse / rng, 6)

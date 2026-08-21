@@ -264,3 +264,15 @@ class BatchValidationResponse(BaseModel):
     valid_count: int
     invalid_count: int
     results: list[dict[str, Any]]
+
+
+class LivenessResponse(BaseModel):
+    """Response body for the /api/v1/live liveness probe."""
+
+    status: str = Field(..., description="Process liveness status; always 'alive'")
+
+
+class ReadinessResponse(BaseModel):
+    """Response body for the /api/v1/ready readiness probe."""
+
+    status: str = Field(..., description="Service readiness status; 'ready' when models are loaded")

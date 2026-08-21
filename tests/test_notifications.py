@@ -16,7 +16,7 @@ from app.notifications import (
 )
 
 
-def test_alert_to_dict_has_required_keys():
+def test_alert_to_dict_has_required_keys() -> None:
     alert = Alert(severity="warning", message="test")
     d = alert.to_dict()
     assert "severity" in d
@@ -26,27 +26,27 @@ def test_alert_to_dict_has_required_keys():
     assert "metadata" in d
 
 
-def test_severity_rank_ordering():
+def test_severity_rank_ordering() -> None:
     assert severity_rank("info") < severity_rank("warning") < severity_rank("critical")
 
 
-def test_severity_rank_unknown_returns_negative():
+def test_severity_rank_unknown_returns_negative() -> None:
     assert severity_rank("unknown") < 0
 
 
 @pytest.mark.parametrize("sev", ["info", "warning", "critical"])
-def test_severity_rank_valid_severities(sev):
+def test_severity_rank_valid_severities(sev) -> None:
     assert severity_rank(sev) >= 0
 
 
-def test_alert_queue_push_and_len():
+def test_alert_queue_push_and_len() -> None:
     q = AlertQueue()
     q.push(Alert(severity="info", message="m1"))
     q.push(Alert(severity="warning", message="m2"))
     assert len(q) == 2
 
 
-def test_alert_queue_max_size_evicts_oldest():
+def test_alert_queue_max_size_evicts_oldest() -> None:
     q = AlertQueue(max_size=3)
     for i in range(5):
         q.push(Alert(severity="info", message=f"msg-{i}"))
@@ -54,7 +54,7 @@ def test_alert_queue_max_size_evicts_oldest():
     assert q.alerts[0].message == "msg-2"
 
 
-def test_alert_queue_filter_by_severity():
+def test_alert_queue_filter_by_severity() -> None:
     q = AlertQueue()
     q.push(Alert(severity="info", message="i"))
     q.push(Alert(severity="warning", message="w"))
@@ -64,7 +64,7 @@ def test_alert_queue_filter_by_severity():
     assert len(result) == 2
 
 
-def test_alert_queue_filter_by_tag():
+def test_alert_queue_filter_by_tag() -> None:
     q = AlertQueue()
     q.push(Alert(severity="info", message="a", tags=["anomaly"]))
     q.push(Alert(severity="info", message="b", tags=["drift"]))
@@ -73,7 +73,7 @@ def test_alert_queue_filter_by_tag():
     assert result[0].message == "a"
 
 
-def test_alert_queue_summary_counts():
+def test_alert_queue_summary_counts() -> None:
     q = AlertQueue()
     q.push(Alert(severity="info", message="i"))
     q.push(Alert(severity="critical", message="c1"))
@@ -84,26 +84,26 @@ def test_alert_queue_summary_counts():
     assert s["warning"] == 0
 
 
-def test_alert_queue_clear():
+def test_alert_queue_clear() -> None:
     q = AlertQueue()
     q.push(Alert(severity="info", message="x"))
     q.clear()
     assert len(q) == 0
 
 
-def test_make_anomaly_alert_warning():
+def test_make_anomaly_alert_warning() -> None:
     a = make_anomaly_alert("bldg-1", 0.75, is_critical=False)
     assert a.severity == "warning"
     assert "bldg-1" in a.message
     assert a.metadata["anomaly_score"] == pytest.approx(0.75)
 
 
-def test_make_anomaly_alert_critical():
+def test_make_anomaly_alert_critical() -> None:
     a = make_anomaly_alert("bldg-2", 0.95, is_critical=True)
     assert a.severity == "critical"
 
 
-def test_make_drift_alert():
+def test_make_drift_alert() -> None:
     a = make_drift_alert(0.42, 0.03)
     assert a.severity == "warning"
     assert "drift" in a.tags
@@ -111,31 +111,31 @@ def test_make_drift_alert():
 
 
 @pytest.mark.parametrize("n_alerts", [1, 5, 10])
-def test_alert_queue_length_parametrize(n_alerts):
+def test_alert_queue_length_parametrize(n_alerts) -> None:
     q = AlertQueue(max_size=100)
     for i in range(n_alerts):
         q.push(Alert(severity="info", message=f"m{i}"))
     assert len(q) == n_alerts
 
 
-def test_alert_to_dict_severity_matches():
+def test_alert_to_dict_severity_matches() -> None:
     for sev in ("info", "warning", "critical"):
         a = Alert(severity=sev, message="test")
         assert a.to_dict()["severity"] == sev
 
 
-def test_alert_with_custom_source():
+def test_alert_with_custom_source() -> None:
     a = Alert(severity="info", message="msg", source="sensor-42")
     d = a.to_dict()
     assert d["source"] == "sensor-42"
 
 
-def test_alert_with_metadata():
+def test_alert_with_metadata() -> None:
     a = Alert(severity="warning", message="msg", metadata={"score": 0.9})
     assert a.to_dict()["metadata"]["score"] == pytest.approx(0.9)
 
 
-def test_alert_queue_summary_empty():
+def test_alert_queue_summary_empty() -> None:
     q = AlertQueue()
     s = q.summary()
     assert s["info"] == 0
@@ -143,14 +143,14 @@ def test_alert_queue_summary_empty():
     assert s["critical"] == 0
 
 
-def test_alert_queue_filter_no_match():
+def test_alert_queue_filter_no_match() -> None:
     q = AlertQueue()
     q.push(Alert(severity="info", message="x"))
     result = q.filter_by_severity("critical")
     assert result == []
 
 
-def test_make_drift_alert_has_ks_stat():
+def test_make_drift_alert_has_ks_stat() -> None:
     a = make_drift_alert(0.7, 0.01)
     assert "ks_statistic" in a.metadata
 
@@ -162,7 +162,7 @@ def test_make_drift_alert_has_ks_stat():
         (0.95, True, "critical"),
     ],
 )
-def test_make_anomaly_alert_severity(score, is_critical, expected_sev):
+def test_make_anomaly_alert_severity(score, is_critical, expected_sev) -> None:
     a = make_anomaly_alert("zone-1", score, is_critical=is_critical)
     assert a.severity == expected_sev
 
@@ -462,3 +462,53 @@ class TestAlertsWithinWindow:
         result = alerts_within_window(alerts, window_seconds=3600.0)
         assert len(result) == 1
         assert result[0].message == "new"
+
+
+class TestCountAlertsBySource:
+    def test_basic(self) -> None:
+        from app.notifications import count_alerts_by_source
+        alerts = [
+            Alert(severity="info", message="m", source="api"),
+            Alert(severity="info", message="m", source="model"),
+            Alert(severity="info", message="m", source="api"),
+        ]
+        result = count_alerts_by_source(alerts)
+        assert result == {"api": 2, "model": 1}
+
+    def test_empty(self) -> None:
+        from app.notifications import count_alerts_by_source
+        assert count_alerts_by_source([]) == {}
+
+
+class TestMostRecentAlert:
+    def test_returns_most_recent(self) -> None:
+        from app.notifications import most_recent_alert
+        a1 = Alert(severity="info", message="old", created_at=100.0)
+        a2 = Alert(severity="info", message="new", created_at=200.0)
+        assert most_recent_alert([a1, a2]).message == "new"
+
+    def test_empty_returns_none(self) -> None:
+        from app.notifications import most_recent_alert
+        assert most_recent_alert([]) is None
+
+    def test_single_alert(self) -> None:
+        from app.notifications import most_recent_alert
+        a = Alert(severity="info", message="only", created_at=50.0)
+        assert most_recent_alert([a]) is a
+
+
+class TestAlertsContainSeverity:
+    def test_found(self) -> None:
+        from app.notifications import alerts_contain_severity
+        alerts = [Alert(severity="warning", message="m"), Alert(severity="critical", message="m")]
+        assert alerts_contain_severity(alerts, "critical") is True
+
+    def test_not_found(self) -> None:
+        from app.notifications import alerts_contain_severity
+        alerts = [Alert(severity="info", message="m")]
+        assert alerts_contain_severity(alerts, "critical") is False
+
+    def test_case_insensitive(self) -> None:
+        from app.notifications import alerts_contain_severity
+        alerts = [Alert(severity="WARNING", message="m")]
+        assert alerts_contain_severity(alerts, "warning") is True

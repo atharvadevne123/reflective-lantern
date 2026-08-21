@@ -109,16 +109,26 @@ def cosine_distance(a: list[float] | np.ndarray, b: list[float] | np.ndarray) ->
 __all__ = [
     "BuildingSimilarityIndex",
     "batch_add",
+    "batch_similarity_matrix",
     "chebyshev_distance",
     "cosine_distance",
+    "dice_similarity",
     "euclidean_distance",
     "get_global_index",
     "hourly_pattern_distance",
+    "jaccard_similarity",
     "manhattan_distance",
+    "minkowski_distance",
+    "normalize_distances",
+    "normalize_profile",
+    "overlap_coefficient",
+    "pearson_correlation",
     "pearson_similarity",
     "score_distribution",
     "search_comparable",
     "similarity_matrix",
+    "top_k_similar",
+    "weighted_jaccard_similarity",
 ]
 
 
@@ -131,7 +141,14 @@ def euclidean_distance(a: list[float] | np.ndarray, b: list[float] | np.ndarray)
 
     Returns:
         L2 distance rounded to 6 decimal places.
+
+    Raises:
+        ValueError: If either vector is empty or their lengths differ.
     """
+    if len(a) == 0 or len(b) == 0:
+        raise ValueError("vectors must be non-empty")
+    if len(a) != len(b):
+        raise ValueError(f"vector length mismatch: {len(a)} vs {len(b)}")
     va = np.array(a, dtype=np.float32)
     vb = np.array(b, dtype=np.float32)
     return round(float(np.linalg.norm(va - vb)), 6)
@@ -242,7 +259,7 @@ def normalize_distances(distances: list[float]) -> list[float]:
     max_d = max(distances)
     rng = max_d - min_d
     if rng < 1e-12:
-        return [0.5] * len(distances)
+        return [0.0] * len(distances)
     return [round((d - min_d) / rng, 6) for d in distances]
 
 
@@ -286,6 +303,8 @@ def top_k_similar(
     """
     if not query:
         raise ValueError("query must not be empty")
+    if not candidates:
+        raise ValueError("candidates must not be empty")
     if k < 1:
         raise ValueError(f"k must be at least 1, got {k}")
     dists = []
@@ -386,149 +405,215 @@ def similarity_matrix(profiles: list[list[float]]) -> list[list[float]]:
     return [[round(float(mat[i, j]), 6) for j in range(n)] for i in range(n)]
 
 
-def minkowski_distance(a: list[float], b: list[float], p: float = 2.0) -> float:
-    """Compute the Minkowski distance of order *p* between two vectors.
+def normalize_profile(profile: list[float]) -> list[float]:
+    """Return L2-normalized version of *profile*.
 
-    Special cases: p=1 is Manhattan distance, p=2 is Euclidean distance.
+    Args:
+        profile: Raw feature vector as a list of floats.
+
+    Returns:
+        Unit-length vector (L2 norm = 1.0) as a list of floats.
+        Returns the zero vector unchanged if the norm is zero.
+    """
+    arr = np.array(profile, dtype=np.float64)
+    norm = float(np.linalg.norm(arr))
+    if norm == 0.0:
+        return list(arr)
+    return [round(float(x), 8) for x in arr / norm]
+
+
+def batch_similarity_matrix(profiles: list[list[float]]) -> list[list[float]]:
+    """Compute an NxN pairwise cosine similarity matrix for *profiles*.
+
+    Args:
+        profiles: List of feature vectors (all must have the same length).
+
+    Returns:
+        NxN list-of-lists where entry [i][j] is the cosine similarity
+        between profile i and profile j.  Values are rounded to 6 decimals.
+        Returns an empty list for empty input.
+
+    Raises:
+        ValueError: If profiles have inconsistent lengths.
+    """
+    if not profiles:
+        return []
+    dim = len(profiles[0])
+    if any(len(p) != dim for p in profiles):
+        raise ValueError("All profiles must have the same length")
+    arr = np.array(profiles, dtype=np.float64)
+    norms = np.linalg.norm(arr, axis=1, keepdims=True)
+    norms[norms == 0] = 1e-9
+    normed = arr / norms
+    matrix = normed @ normed.T
+    n = len(profiles)
+    return [[round(float(matrix[i, j]), 6) for j in range(n)] for i in range(n)]
+
+
+def minkowski_distance(a: list[float], b: list[float], p: float = 2.0) -> float:
+    """Return the Minkowski distance of order *p* between two vectors.
 
     Args:
         a: First vector.
-        b: Second vector (must be same length as *a*).
-        p: Order of the norm (must be >= 1).
+        b: Second vector (same length as *a*).
+        p: Order of the norm (must be ≥ 1). ``p=1`` is Manhattan, ``p=2`` is Euclidean.
 
     Returns:
-        Minkowski distance rounded to 6 decimal places.
+        Non-negative distance.
 
     Raises:
-        ValueError: If *p* < 1 or vectors differ in length.
+        ValueError: If lengths differ or *p* < 1.
     """
-    if p < 1.0:
-        raise ValueError(f"p must be >= 1, got {p}")
     if len(a) != len(b):
-        raise ValueError(f"Vectors must be same length: {len(a)} != {len(b)}")
-    return round(sum(abs(x - y) ** p for x, y in zip(a, b)) ** (1.0 / p), 6)
+        raise ValueError(f"vectors must be same length, got {len(a)} and {len(b)}")
+    if p < 1:
+        raise ValueError(f"p must be >= 1, got {p}")
+    total = sum(abs(x - y) ** p for x, y in zip(a, b, strict=False))
+    return round(total ** (1.0 / p), 6)
 
 
-def dice_similarity(set_a: set[str], set_b: set[str]) -> float:
-    """Compute Dice similarity coefficient between two sets.
-
-    Dice = 2 * |A ∩ B| / (|A| + |B|).
+def dice_similarity(a: set, b: set) -> float:
+    """Return the Sørensen-Dice coefficient between two sets.
 
     Args:
-        set_a: First set.
-        set_b: Second set.
+        a: First set.
+        b: Second set.
 
     Returns:
-        Dice similarity in [0, 1]; 0.0 if both sets are empty.
+        ``2 * |a ∩ b| / (|a| + |b|)``, or 0.0 when both sets are empty.
     """
-    if not set_a and not set_b:
+    if not a and not b:
         return 0.0
-    intersection = len(set_a & set_b)
-    return round(2.0 * intersection / (len(set_a) + len(set_b)), 6)
+    inter = len(a & b)
+    return round(2 * inter / (len(a) + len(b)), 6)
 
 
-def overlap_coefficient(set_a: set[str], set_b: set[str]) -> float:
-    """Compute the Overlap (Szymkiewicz–Simpson) coefficient.
-
-    Overlap = |A ∩ B| / min(|A|, |B|).
-
-    Returns 0.0 when either set is empty.
+def overlap_coefficient(a: set, b: set) -> float:
+    """Return the Szymkiewicz-Simpson overlap coefficient between two sets.
 
     Args:
-        set_a: First set.
-        set_b: Second set.
+        a: First set.
+        b: Second set.
 
     Returns:
-        Overlap coefficient in [0, 1].
+        ``|a ∩ b| / min(|a|, |b|)``, or 0.0 when either set is empty.
     """
-    if not set_a or not set_b:
+    if not a or not b:
         return 0.0
-    return round(len(set_a & set_b) / min(len(set_a), len(set_b)), 6)
+    inter = len(a & b)
+    return round(inter / min(len(a), len(b)), 6)
 
 
-def euclidean_distance(vec_a: list[float], vec_b: list[float]) -> float:
-    """Compute the Euclidean distance between two vectors.
+def pearson_correlation(a: list[float], b: list[float]) -> float:
+    """Return the Pearson correlation coefficient between two series.
 
     Args:
-        vec_a: First numeric vector.
-        vec_b: Second numeric vector.
+        a: First series (length ≥ 2).
+        b: Second series (same length as *a*).
 
     Returns:
-        Euclidean distance rounded to 6 decimal places.
+        Coefficient in [-1, 1]; 0.0 when either series has zero variance.
 
     Raises:
-        ValueError: If vectors have different lengths or are empty.
+        ValueError: If lengths differ or either series has fewer than 2 points.
     """
-    if not vec_a or not vec_b:
-        raise ValueError("Vectors must not be empty")
-    if len(vec_a) != len(vec_b):
-        raise ValueError("Vectors must have the same length")
-    return round(sum((a - b) ** 2 for a, b in zip(vec_a, vec_b, strict=False)) ** 0.5, 6)
-
-
-def pearson_correlation(
-    x: list[float],
-    y: list[float],
-) -> float:
-    """Compute the Pearson correlation coefficient between *x* and *y*.
-
-    Args:
-        x: First numeric series.
-        y: Second numeric series.
-
-    Returns:
-        Pearson r in [-1, 1] rounded to 6 decimal places, or 0.0 if either
-        series has zero variance.
-
-    Raises:
-        ValueError: If series have different lengths or fewer than 2 elements.
-    """
-    if len(x) < 2 or len(y) < 2:
-        raise ValueError("At least 2 elements required")
-    if len(x) != len(y):
-        raise ValueError("Series must have the same length")
-    n = len(x)
-    mean_x = sum(x) / n
-    mean_y = sum(y) / n
-    num = sum((xi - mean_x) * (yi - mean_y) for xi, yi in zip(x, y, strict=False))
-    den_x = sum((xi - mean_x) ** 2 for xi in x) ** 0.5
-    den_y = sum((yi - mean_y) ** 2 for yi in y) ** 0.5
-    if den_x < 1e-12 or den_y < 1e-12:
+    if len(a) != len(b):
+        raise ValueError(f"series must be same length, got {len(a)} and {len(b)}")
+    if len(a) < 2:
+        raise ValueError(f"series must have at least 2 points, got {len(a)}")
+    n = len(a)
+    mean_a = sum(a) / n
+    mean_b = sum(b) / n
+    num = sum((x - mean_a) * (y - mean_b) for x, y in zip(a, b, strict=False))
+    var_a = sum((x - mean_a) ** 2 for x in a)
+    var_b = sum((y - mean_b) ** 2 for y in b)
+    if var_a == 0 or var_b == 0:
         return 0.0
-    return round(num / (den_x * den_y), 6)
+    denom = (var_a * var_b) ** 0.5
+    return round(num / denom, 6)
 
 
-def top_k_similar(
-    query: list[float],
-    candidates: list[list[float]],
-    k: int = 5,
-) -> list[tuple[int, float]]:
-    """Find the *k* most similar candidates to a query vector by cosine similarity.
+def hamming_distance(a: str, b: str) -> int:
+    """Return the Hamming distance between two equal-length strings.
 
     Args:
-        query: Query feature vector.
-        candidates: List of candidate vectors (same dimension as *query*).
-        k: Number of top results to return. Default 5.
+        a: First string.
+        b: Second string (must have the same length as *a*).
 
     Returns:
-        List of (index, similarity_score) tuples, sorted by score descending.
+        Number of positions at which the strings differ.
 
     Raises:
-        ValueError: If *k* < 1 or *candidates* is empty.
+        ValueError: If the strings have different lengths.
     """
-    if not candidates:
-        raise ValueError("candidates must not be empty")
-    if k < 1:
-        raise ValueError("k must be at least 1")
+    if len(a) != len(b):
+        raise ValueError(f"strings must have the same length, got {len(a)} and {len(b)}")
+    return sum(1 for ca, cb in zip(a, b, strict=False) if ca != cb)
 
-    def _cosine(a: list[float], b: list[float]) -> float:
-        dot = sum(ai * bi for ai, bi in zip(a, b, strict=False))
-        mag_a = sum(ai**2 for ai in a) ** 0.5
-        mag_b = sum(bi**2 for bi in b) ** 0.5
-        if mag_a < 1e-12 or mag_b < 1e-12:
-            return 0.0
-        return dot / (mag_a * mag_b)
 
-    scored = [(i, round(_cosine(query, c), 6)) for i, c in enumerate(candidates)]
-    scored.sort(key=lambda x: x[1], reverse=True)
-    return scored[:k]
+def tanimoto_similarity(a: list[float], b: list[float]) -> float:
+    """Return the Tanimoto similarity between two numeric vectors.
+
+    Also known as the Extended Jaccard coefficient. Ranges from -1/3 to 1
+    for arbitrary vectors, and from 0 to 1 for non-negative vectors.
+
+    Args:
+        a: First numeric vector.
+        b: Second numeric vector (same length as *a*).
+
+    Returns:
+        Tanimoto coefficient in [-1/3, 1]; 0.0 when both vectors are all-zero.
+
+    Raises:
+        ValueError: If the vectors have different lengths.
+    """
+    if len(a) != len(b):
+        raise ValueError(f"vectors must have same length, got {len(a)} and {len(b)}")
+    dot = sum(x * y for x, y in zip(a, b, strict=False))
+    norm_a = sum(x * x for x in a)
+    norm_b = sum(y * y for y in b)
+    denom = norm_a + norm_b - dot
+    if denom == 0:
+        return 0.0
+    return round(dot / denom, 6)
+
+
+def vector_magnitude(a: list[float]) -> float:
+    """Compute the L2 (Euclidean) norm (magnitude) of vector *a*.
+
+    Args:
+        a: Input vector.
+
+    Returns:
+        Non-negative magnitude; 0.0 for an empty or all-zero vector.
+    """
+    return round(sum(x * x for x in a) ** 0.5, 6)
+
+
+def angular_distance(a: list[float], b: list[float]) -> float:
+    """Compute angular distance (in radians) between two vectors.
+
+    Angular distance is the arccosine of the cosine similarity, clipped to
+    [0, pi] to handle floating-point rounding at the boundaries.
+
+    Args:
+        a: First vector.
+        b: Second vector; must have the same length as *a*.
+
+    Returns:
+        Angular distance in [0.0, pi]; pi/2 when vectors are orthogonal.
+
+    Raises:
+        ValueError: If the vectors have different lengths.
+    """
+    import math
+
+    if len(a) != len(b):
+        raise ValueError(f"vectors must have same length, got {len(a)} and {len(b)}")
+    mag_a = vector_magnitude(a)
+    mag_b = vector_magnitude(b)
+    if mag_a == 0.0 or mag_b == 0.0:
+        return math.pi / 2.0
+    dot = sum(x * y for x, y in zip(a, b, strict=False))
+    cos_sim = max(-1.0, min(1.0, dot / (mag_a * mag_b)))
+    return round(math.acos(cos_sim), 6)

@@ -118,13 +118,18 @@ def make_drift_alert(ks_stat: float, p_value: float) -> Alert:
 __all__ = [
     "Alert",
     "AlertQueue",
+    "alert_age_seconds",
     "alert_summary",
+    "alerts_within_window",
     "deduplicate_alerts",
+    "escalate_alert",
+    "filter_alerts_by_severity",
     "group_alerts_by_severity",
     "highest_severity",
     "make_anomaly_alert",
     "make_drift_alert",
     "make_performance_alert",
+    "mute_alert",
     "severity_rank",
 ]
 
@@ -293,75 +298,150 @@ def deduplicate_alerts_by_window(alerts: list[Alert], window_seconds: float = 30
 
 
 def top_alerts(alerts: list[Alert], n: int = 5) -> list[Alert]:
-    """Return the *n* most severe alerts, breaking ties by recency.
+    """Return the *n* most severe alerts, breaking ties by insertion order (latest first).
 
     Args:
         alerts: List of Alert objects.
         n: Maximum number to return.
 
     Returns:
-        Up to *n* alerts sorted by severity (highest first), then recency.
+        Up to *n* alerts sorted by severity (highest first), then by recency
+        (later items in *alerts* are treated as more recent).
     """
     severity_order = {"critical": 0, "warning": 1, "info": 2}
+    indexed = list(enumerate(alerts))
     sorted_alerts = sorted(
-        alerts,
-        key=lambda a: (severity_order.get(a.severity.lower(), 99), -a.created_at),
+        indexed,
+        key=lambda ia: (severity_order.get(ia[1].severity.lower(), 99), -ia[0]),
     )
-    return sorted_alerts[:n]
+    return [a for _, a in sorted_alerts[:n]]
 
 
-def alert_age_seconds(alert: Alert) -> float:
-    """Return the age of *alert* in seconds relative to the current time.
+def mute_alert(alert: Alert, reason: str = "") -> Alert:
+    """Return a copy of *alert* tagged as muted.
+
+    The returned alert has 'muted' added to its tags list and, if *reason*
+    is provided, a 'mute_reason' key in its metadata.
 
     Args:
-        alert: Alert to measure age for.
+        alert: The Alert instance to mute.
+        reason: Optional human-readable reason for muting.
 
     Returns:
-        Non-negative float representing seconds elapsed since alert.created_at.
+        A new Alert with updated tags and metadata.
     """
-    return max(0.0, _time.time() - alert.created_at)
+    new_tags = [*list(alert.tags), "muted"]
+    new_meta = dict(alert.metadata)
+    if reason:
+        new_meta["mute_reason"] = reason
+    return Alert(
+        severity=alert.severity,
+        message=alert.message,
+        source=alert.source,
+        tags=new_tags,
+        metadata=new_meta,
+    )
+
+
+def alert_age_seconds(alert: Alert, now: float | None = None) -> float:
+    """Return the age of *alert* in seconds relative to *now*.
+
+    Args:
+        alert: Alert to inspect.
+        now: Reference wall-clock time (seconds since epoch). Defaults to
+            ``time.time()``.
+
+    Returns:
+        Non-negative age in seconds; 0.0 for alerts newer than *now*.
+    """
+    reference = now if now is not None else _time.time()
+    return max(0.0, reference - alert.created_at)
 
 
 def escalate_alert(alert: Alert) -> Alert:
-    """Return a copy of *alert* with its severity escalated one level.
-
-    Escalation ladder: info → warning → critical.
-    Critical alerts are returned unchanged.
+    """Return a copy of *alert* with severity raised one step (max: 'critical').
 
     Args:
-        alert: Original alert.
+        alert: Alert to escalate.
 
     Returns:
-        New Alert with escalated severity (same message and metadata).
+        New :class:`Alert` with severity bumped:
+        info → warning → critical → critical.
     """
     ladder = {"info": "warning", "warning": "critical", "critical": "critical"}
-    new_severity = ladder.get(alert.severity.lower(), alert.severity)
+    new_severity = ladder.get(alert.severity.lower(), "warning")
     return Alert(
-        source=alert.source,
         severity=new_severity,
         message=alert.message,
+        source=alert.source,
+        tags=list(alert.tags),
         metadata=dict(alert.metadata),
+        created_at=alert.created_at,
     )
 
 
 def alerts_within_window(
     alerts: list[Alert],
     window_seconds: float = 3600.0,
+    now: float | None = None,
 ) -> list[Alert]:
-    """Return alerts created within *window_seconds* of the most recent alert.
-
-    Useful for correlating burst patterns — only alerts fired inside the
-    rolling window are returned.
+    """Return alerts whose age is <= *window_seconds* relative to *now*.
 
     Args:
-        alerts: List of Alert objects (any order).
-        window_seconds: Look-back window in seconds.
+        alerts: Sequence of Alert objects to filter.
+        window_seconds: Maximum age in seconds (must be non-negative).
+        now: Reference time; defaults to ``time.time()``.
 
     Returns:
-        Sub-list of alerts within the window; empty if *alerts* is empty.
+        List of alerts within the window, order preserved.
+
+    Raises:
+        ValueError: If ``window_seconds`` is negative.
+    """
+    if window_seconds < 0:
+        raise ValueError(f"window_seconds must be non-negative, got {window_seconds}")
+    reference = now if now is not None else _time.time()
+    return [a for a in alerts if (reference - a.created_at) <= window_seconds]
+
+
+def count_alerts_by_source(alerts: list[Alert]) -> dict[str, int]:
+    """Count alerts grouped by their *source* field.
+
+    Args:
+        alerts: Sequence of Alert objects.
+
+    Returns:
+        Dict mapping source name to count.
+    """
+    result: dict[str, int] = {}
+    for alert in alerts:
+        result[alert.source] = result.get(alert.source, 0) + 1
+    return result
+
+
+def most_recent_alert(alerts: list[Alert]) -> Alert | None:
+    """Return the most recently created alert, or None if *alerts* is empty.
+
+    Args:
+        alerts: Sequence of Alert objects (with *created_at* timestamps).
+
+    Returns:
+        Alert with the highest *created_at* value, or None.
     """
     if not alerts:
-        return []
-    latest_ts = max(a.created_at for a in alerts)
-    cutoff = latest_ts - window_seconds
-    return [a for a in alerts if a.created_at >= cutoff]
+        return None
+    return max(alerts, key=lambda a: a.created_at)
+
+
+def alerts_contain_severity(alerts: list[Alert], severity: str) -> bool:
+    """Return True if any alert in *alerts* matches *severity*.
+
+    Args:
+        alerts: Sequence of Alert objects.
+        severity: Severity string to search for (case-insensitive).
+
+    Returns:
+        True when at least one alert has the given severity.
+    """
+    target = severity.lower()
+    return any(a.severity.lower() == target for a in alerts)

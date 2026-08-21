@@ -1097,21 +1097,15 @@ class TestPricePerSqftNew:
 
         assert price_per_sqft(300000.0, 1500.0) == pytest.approx(200.0, abs=0.01)
 
-    def test_zero_sqft_raises(self) -> None:
-        import pytest
-
+    def test_zero_sqft_returns_zero(self) -> None:
         from app.market_context import price_per_sqft
 
-        with pytest.raises(ValueError):
-            price_per_sqft(300000.0, 0.0)
+        assert price_per_sqft(300000.0, 0.0) == 0.0
 
-    def test_zero_price_raises(self) -> None:
-        import pytest
-
+    def test_zero_price_returns_zero(self) -> None:
         from app.market_context import price_per_sqft
 
-        with pytest.raises(ValueError):
-            price_per_sqft(0.0, 1000.0)
+        assert price_per_sqft(0.0, 1000.0) == 0.0
 
 
 class TestDomCategory:
@@ -1143,3 +1137,90 @@ class TestDomCategory:
 
         assert dom_category(13) == "fast"
         assert dom_category(14) == "normal"
+
+
+class TestPriceToIncomeRatio:
+    def test_standard_case(self) -> None:
+        from app.market_context import price_to_income_ratio
+
+        result = price_to_income_ratio(400000.0, 80000.0)
+        assert result == pytest.approx(5.0)
+
+    def test_zero_income_returns_zero(self) -> None:
+        from app.market_context import price_to_income_ratio
+
+        assert price_to_income_ratio(400000.0, 0.0) == 0.0
+
+    def test_negative_income_returns_zero(self) -> None:
+        from app.market_context import price_to_income_ratio
+
+        assert price_to_income_ratio(400000.0, -1.0) == 0.0
+
+    @pytest.mark.parametrize(
+        "price,income,expected",
+        [
+            (100000.0, 50000.0, 2.0),
+            (300000.0, 100000.0, 3.0),
+        ],
+    )
+    def test_parametrized(self, price: float, income: float, expected: float) -> None:
+        from app.market_context import price_to_income_ratio
+
+        assert price_to_income_ratio(price, income) == pytest.approx(expected)
+
+
+class TestDemandPressureIndex:
+    def test_equal_buyers_listings(self) -> None:
+        from app.market_context import demand_pressure_index
+        assert demand_pressure_index(10, 10) == pytest.approx(1.0)
+
+    def test_more_buyers_than_listings(self) -> None:
+        from app.market_context import demand_pressure_index
+        assert demand_pressure_index(20, 10) == pytest.approx(2.0)
+
+    def test_no_listings_returns_zero(self) -> None:
+        from app.market_context import demand_pressure_index
+        assert demand_pressure_index(5, 0) == pytest.approx(0.0)
+
+    def test_negative_buyers_raises(self) -> None:
+        from app.market_context import demand_pressure_index
+        with pytest.raises(ValueError):
+            demand_pressure_index(-1, 10)
+
+
+class TestPriceDeviationFromMedian:
+    def test_above_median(self) -> None:
+        from app.market_context import price_deviation_from_median
+        assert price_deviation_from_median(110.0, 100.0) == pytest.approx(10.0)
+
+    def test_below_median(self) -> None:
+        from app.market_context import price_deviation_from_median
+        assert price_deviation_from_median(90.0, 100.0) == pytest.approx(-10.0)
+
+    def test_at_median(self) -> None:
+        from app.market_context import price_deviation_from_median
+        assert price_deviation_from_median(100.0, 100.0) == pytest.approx(0.0)
+
+    def test_zero_median_raises(self) -> None:
+        from app.market_context import price_deviation_from_median
+        with pytest.raises(ValueError):
+            price_deviation_from_median(100.0, 0.0)
+
+
+class TestEffectiveDaysOnMarket:
+    def test_not_relisted(self) -> None:
+        from app.market_context import effective_days_on_market
+        assert effective_days_on_market(45) == 45
+
+    def test_relisted_adds_penalty(self) -> None:
+        from app.market_context import effective_days_on_market
+        assert effective_days_on_market(45, relisted=True) == 75
+
+    def test_custom_penalty(self) -> None:
+        from app.market_context import effective_days_on_market
+        assert effective_days_on_market(10, relisted=True, relist_penalty=14) == 24
+
+    def test_negative_dom_raises(self) -> None:
+        from app.market_context import effective_days_on_market
+        with pytest.raises(ValueError):
+            effective_days_on_market(-1)

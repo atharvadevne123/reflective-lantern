@@ -114,6 +114,46 @@ def get_prediction_stats(db: Session, limit: int = 200) -> dict[str, Any]:
     }
 
 
+def drift_severity(ks_statistic: float) -> str:
+    """Classify drift severity from a KS statistic value.
+
+    Args:
+        ks_statistic: KS statistic value in [0, 1].
+
+    Returns:
+        One of 'none', 'mild', 'moderate', 'severe'.
+    """
+    if ks_statistic < 0.1:
+        return "none"
+    if ks_statistic < 0.25:
+        return "mild"
+    if ks_statistic < 0.5:
+        return "moderate"
+    return "severe"
+
+
+def prediction_accuracy_rate(db: Session, threshold: float = 0.1, limit: int = 200) -> float:
+    """Return fraction of recent predictions whose demand_score is non-trivial.
+
+    A prediction is considered non-trivial (non-zero useful) when its
+    demand_score exceeds *threshold*.  Useful as a proxy for model health.
+
+    Args:
+        db: Active SQLAlchemy session.
+        threshold: Minimum demand_score to count as a non-trivial prediction.
+        limit: How many recent records to inspect.
+
+    Returns:
+        Float in [0, 1] representing the non-trivial fraction; 0.0 if no
+        predictions exist.
+    """
+    preds = db.query(Prediction).order_by(Prediction.timestamp.desc()).limit(limit).all()
+    if not preds:
+        return 0.0
+    count_above = sum(1 for p in preds if p.demand_score > threshold)
+    return round(count_above / len(preds), 4)
+
+
 def log_model_metrics(db: Session, model_version: str, metrics: dict[str, Any]) -> None:
     """Persist model training metrics to the database.
 
@@ -136,3 +176,50 @@ def log_model_metrics(db: Session, model_version: str, metrics: dict[str, Any]) 
         model_version,
         metrics.get("auc_mean", 0.0),
     )
+
+
+def demand_score_trend(db: Session, limit: int = 100) -> dict[str, object]:
+    """Summarise the trend in recent demand scores.
+
+    Args:
+        db: Active SQLAlchemy session.
+        limit: Number of most-recent predictions to inspect.
+
+    Returns:
+        Dict with 'mean', 'min', 'max', 'trend' ('rising'|'falling'|'stable'),
+        and 'count'. Returns zeros dict when no predictions exist.
+    """
+    preds = db.query(Prediction).order_by(Prediction.timestamp.asc()).limit(limit).all()
+    if not preds:
+        return {"mean": 0.0, "min": 0.0, "max": 0.0, "trend": "stable", "count": 0}
+    scores = [float(p.demand_score) for p in preds]
+    mean_score = sum(scores) / len(scores)
+    if len(scores) >= 2:
+        delta = scores[-1] - scores[0]
+        trend = "rising" if delta > 0.05 else ("falling" if delta < -0.05 else "stable")
+    else:
+        trend = "stable"
+    return {
+        "mean": round(mean_score, 4),
+        "min": round(min(scores), 4),
+        "max": round(max(scores), 4),
+        "trend": trend,
+        "count": len(scores),
+    }
+
+
+def rate_spread(db: Session, limit: int = 100) -> float:
+    """Return the difference between the max and min suggested rates in recent predictions.
+
+    Args:
+        db: Active SQLAlchemy session.
+        limit: Number of most-recent predictions to inspect.
+
+    Returns:
+        Spread value (max - min); 0.0 when fewer than 2 predictions exist.
+    """
+    preds = db.query(Prediction).order_by(Prediction.timestamp.desc()).limit(limit).all()
+    if len(preds) < 2:
+        return 0.0
+    rates = [float(p.suggested_rate) for p in preds]
+    return round(max(rates) - min(rates), 4)

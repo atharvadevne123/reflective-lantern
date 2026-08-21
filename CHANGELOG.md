@@ -1,5 +1,15 @@
 # Changelog
 
+## [2026-08-19] — Improvement Run
+
+### Fixed
+- CI: Resolved 7 ruff lint errors across `app/similarity.py`, `app/time_series.py`, `app/validation.py`, `app/date_utils.py`, `app/reporting.py`, `price-prophet/app/pricing/elasticity.py`, and `veritas-rag/app/scoring/trust.py` (B905, RUF002, RUF022)
+- CI: Applied `ruff format` to 33 files to eliminate formatting drift
+
+### Changed
+- Added `-> None` return type annotations to test functions in 13 files across `tests/` and `cart-mind/tests/`, improving mypy compliance and code clarity
+
+
 ## [2026-07-20] — Improvement Run
 
 ### Changed

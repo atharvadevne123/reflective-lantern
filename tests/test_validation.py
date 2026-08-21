@@ -902,11 +902,14 @@ class TestValidateListLength:
 
         assert validate_list_length([1, 2], min_len=2, max_len=5) == []
 
-    @pytest.mark.parametrize("length,min_len,max_len,expect_errors", [
-        (3, 1, 5, False),
-        (0, 1, 5, True),
-        (6, 1, 5, True),
-    ])
+    @pytest.mark.parametrize(
+        "length,min_len,max_len,expect_errors",
+        [
+            (3, 1, 5, False),
+            (0, 1, 5, True),
+            (6, 1, 5, True),
+        ],
+    )
     def test_parametrized(self, length: int, min_len: int, max_len: int, expect_errors: bool) -> None:
         from app.validation import validate_list_length
 
@@ -933,10 +936,13 @@ class TestValidateEnum:
         errors = validate_enum("bad", ["good"], field_name="status")
         assert "status" in errors[0]
 
-    @pytest.mark.parametrize("value,allowed", [
-        ("a", ["a", "b", "c"]),
-        ("low", ["low", "medium", "high"]),
-    ])
+    @pytest.mark.parametrize(
+        "value,allowed",
+        [
+            ("a", ["a", "b", "c"]),
+            ("low", ["low", "medium", "high"]),
+        ],
+    )
     def test_parametrized_valid(self, value: str, allowed: list) -> None:
         from app.validation import validate_enum
 
@@ -1005,3 +1011,184 @@ class TestValidateUniqueIds:
         from app.validation import validate_unique_ids
 
         assert validate_unique_ids([]) == []
+
+
+import pytest as _pytest
+
+
+@_pytest.mark.parametrize(
+    "hour,dow,month,expect_valid",
+    [
+        (0, 0, 1, True),
+        (23, 6, 12, True),
+        (-1, 0, 1, False),
+        (24, 0, 1, False),
+        (0, 7, 1, False),
+        (0, 0, 0, False),
+        (0, 0, 13, False),
+    ],
+)
+def test_validate_temporal_fields_parametrized(hour: int, dow: int, month: int, expect_valid: bool) -> None:
+    from app.validation import validate_temporal_fields
+
+    errors = validate_temporal_fields(hour, dow, month)
+    assert (len(errors) == 0) == expect_valid
+
+
+@_pytest.mark.parametrize(
+    "temp,humidity,expect_valid",
+    [
+        (20.0, 50.0, True),
+        (-50.0, 50.0, True),
+        (60.0, 100.0, True),
+        (20.0, -1.0, False),
+        (20.0, 101.0, False),
+    ],
+)
+def test_validate_weather_fields_parametrized(temp: float, humidity: float, expect_valid: bool) -> None:
+    from app.validation import validate_weather_fields
+
+    errors = validate_weather_fields(temp, humidity)
+    assert (len(errors) == 0) == expect_valid
+
+
+@_pytest.mark.parametrize("consumption", [0.0, 1.0, 100.0, 9999.0])
+def test_validate_consumption_valid_values(consumption: float) -> None:
+    from app.validation import validate_consumption_kwh
+
+    assert validate_consumption_kwh(consumption) == []
+
+
+@_pytest.mark.parametrize("consumption", [-1.0, -0.001])
+def test_validate_consumption_negative_invalid(consumption: float) -> None:
+    from app.validation import validate_consumption_kwh
+
+    assert len(validate_consumption_kwh(consumption)) > 0
+
+
+@_pytest.mark.parametrize(
+    "building_id,expect_valid",
+    [
+        ("building_001", True),
+        ("B1", True),
+        ("", False),
+        ("a" * 65, False),
+    ],
+)
+def test_validate_building_id_parametrized(building_id: str, expect_valid: bool) -> None:
+    from app.validation import validate_building_id
+
+    errors = validate_building_id(building_id)
+    assert (len(errors) == 0) == expect_valid
+
+
+@_pytest.mark.parametrize("price", [0.01, 1.0, 999.99])
+def test_validate_price_positive_no_errors(price: float) -> None:
+    from app.validation import validate_price
+
+    errors = validate_price(price)
+    assert len(errors) == 0
+
+
+@_pytest.mark.parametrize("price", [-1.0, -100.0])
+def test_validate_price_non_positive_has_errors(price: float) -> None:
+    from app.validation import validate_price
+
+    errors = validate_price(price)
+    assert len(errors) > 0
+
+
+@_pytest.mark.parametrize(
+    "lat,lon,expect_valid",
+    [
+        (0.0, 0.0, True),
+        (90.0, 180.0, True),
+        (91.0, 0.0, False),
+        (0.0, 181.0, False),
+    ],
+)
+def test_validate_coordinate_parametrized(lat: float, lon: float, expect_valid: bool) -> None:
+    from app.validation import validate_coordinate
+
+    errors = validate_coordinate(lat, lon)
+    assert (len(errors) == 0) == expect_valid
+
+
+@_pytest.mark.parametrize("pct", [0.0, 50.0, 100.0])
+def test_validate_percentage_valid_range(pct: float) -> None:
+    from app.validation import validate_percentage
+
+    errors = validate_percentage(pct)
+    assert len(errors) == 0
+
+
+@_pytest.mark.parametrize("pct", [-1.0, 101.0, 200.0])
+def test_validate_percentage_out_of_range(pct: float) -> None:
+    from app.validation import validate_percentage
+
+    errors = validate_percentage(pct)
+    assert len(errors) > 0
+
+
+class TestValidateYear:
+    def test_valid_year(self) -> None:
+        from app.validation import validate_year
+        assert validate_year(2026) == []
+
+    def test_too_old(self) -> None:
+        from app.validation import validate_year
+        errors = validate_year(1800)
+        assert len(errors) > 0
+
+    def test_too_far_future(self) -> None:
+        from app.validation import validate_year
+        errors = validate_year(2500)
+        assert len(errors) > 0
+
+    def test_boundary_min(self) -> None:
+        from app.validation import validate_year
+        assert validate_year(1900) == []
+
+    def test_boundary_max(self) -> None:
+        from app.validation import validate_year
+        assert validate_year(2200) == []
+
+
+class TestValidateEnergySeries:
+    def test_valid_series(self) -> None:
+        from app.validation import validate_energy_series
+        assert validate_energy_series([0.0, 1.5, 3.0]) == []
+
+    def test_empty_series(self) -> None:
+        from app.validation import validate_energy_series
+        errors = validate_energy_series([])
+        assert len(errors) > 0
+
+    def test_negative_value(self) -> None:
+        from app.validation import validate_energy_series
+        errors = validate_energy_series([1.0, -0.5, 2.0])
+        assert any("-0.5" in e for e in errors)
+
+
+class TestValidateRatio:
+    def test_valid_ratio(self) -> None:
+        from app.validation import validate_ratio
+        assert validate_ratio(0.5) == []
+
+    def test_boundary_zero(self) -> None:
+        from app.validation import validate_ratio
+        assert validate_ratio(0.0) == []
+
+    def test_boundary_one(self) -> None:
+        from app.validation import validate_ratio
+        assert validate_ratio(1.0) == []
+
+    def test_above_one(self) -> None:
+        from app.validation import validate_ratio
+        errors = validate_ratio(1.1)
+        assert len(errors) > 0
+
+    def test_below_zero(self) -> None:
+        from app.validation import validate_ratio
+        errors = validate_ratio(-0.1)
+        assert len(errors) > 0

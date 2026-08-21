@@ -137,6 +137,7 @@ class DropNonNumeric(BaseEstimator, TransformerMixin):
         return X[self.numeric_cols_]
 
     def get_feature_names_out(self, input_features: list[str] | None = None) -> np.ndarray:
+        """Return the names of numeric columns selected by this transformer."""
         return np.array(self.numeric_cols_)
 
 
@@ -144,6 +145,7 @@ class DataFrameWrapper(BaseEstimator, TransformerMixin):
     """Wrap numpy/array output back to a DataFrame, preserving column names."""
 
     def fit(self, X: pd.DataFrame, y: object = None) -> DataFrameWrapper:
+        """Record column names from X for use in transform."""
         if hasattr(X, "columns"):
             self.columns_: list[str] = list(X.columns)
         else:
@@ -151,6 +153,7 @@ class DataFrameWrapper(BaseEstimator, TransformerMixin):
         return self
 
     def transform(self, X: pd.DataFrame) -> pd.DataFrame:
+        """Wrap a numpy array back into a DataFrame with the fitted column names."""
         if isinstance(X, pd.DataFrame):
             return X
         arr = np.array(X)
@@ -163,10 +166,12 @@ class DropColumnsTransformer(BaseEstimator, TransformerMixin):
     DROP_COLS = ["historical_loads", "region", "timestamp"]
 
     def fit(self, X: pd.DataFrame, y: object = None) -> DropColumnsTransformer:
+        """Identify which DROP_COLS are present in X."""
         self.cols_to_drop_ = [c for c in self.DROP_COLS if c in X.columns]
         return self
 
     def transform(self, X: pd.DataFrame) -> pd.DataFrame:
+        """Drop the pre-identified helper columns from X."""
         return X.drop(columns=self.cols_to_drop_, errors="ignore")
 
 
@@ -422,7 +427,7 @@ def feature_names_for_bundle(bundle: dict) -> list[str]:
     try:
         return list(model.feature_names_in_)
     except AttributeError:
-        pass
+        pass  # fall through to pipeline alternative
     try:
         return list(model[:-1].get_feature_names_out())
     except Exception:
@@ -442,13 +447,23 @@ __all__ = [
     "RollingStatsExtractor",
     "TemporalFeatureExtractor",
     "WeatherFeatureExtractor",
+    "bin_feature",
     "build_feature_pipeline",
+    "clip_feature_values",
+    "cumulative_sum_feature",
     "demand_response_potential",
+    "difference_feature",
     "encode_cyclical",
     "extract_feature_array",
     "feature_names_for_bundle",
+    "lag_features",
     "make_feature_row",
+    "minmax_normalize",
     "normalize_consumption",
+    "percentile_feature",
+    "ratio_feature",
+    "rolling_max_feature",
+    "zscore_feature",
 ]
 
 
@@ -631,3 +646,73 @@ def percentile_feature(
     idx = int(len(sorted_ref) * percentile / 100.0)
     threshold = sorted_ref[min(idx, len(sorted_ref) - 1)]
     return [1.0 if v >= threshold else 0.0 for v in values]
+
+
+def zscore_feature(values: list[float]) -> list[float]:
+    """Convert *values* to per-element z-scores using the series mean and std.
+
+    Args:
+        values: Numeric series with at least 2 elements.
+
+    Returns:
+        Z-scores of the same length; all zeros when standard deviation is 0.
+
+    Raises:
+        ValueError: If *values* has fewer than 2 elements.
+    """
+    if len(values) < 2:
+        raise ValueError(f"values must have at least 2 elements, got {len(values)}")
+    mean = sum(values) / len(values)
+    variance = sum((v - mean) ** 2 for v in values) / len(values)
+    std = variance**0.5
+    if std == 0:
+        return [0.0] * len(values)
+    return [round((v - mean) / std, 6) for v in values]
+
+
+def minmax_normalize(values: list[float]) -> list[float]:
+    """Min-max normalise *values* to the closed range [0, 1].
+
+    Args:
+        values: Numeric series with at least 1 element.
+
+    Returns:
+        List of normalised values; ``0.5`` for every position when all
+        values are identical (degenerate range).
+
+    Raises:
+        ValueError: If *values* is empty.
+    """
+    if not values:
+        raise ValueError("values must not be empty")
+    lo, hi = min(values), max(values)
+    rng = hi - lo
+    if rng == 0:
+        return [0.5] * len(values)
+    return [round((v - lo) / rng, 6) for v in values]
+
+
+def rank_features(importances: dict[str, float]) -> list[tuple[str, float]]:
+    """Sort feature importances from highest to lowest.
+
+    Args:
+        importances: Mapping of feature name to importance score.
+
+    Returns:
+        List of (feature_name, score) tuples sorted descending by score.
+    """
+    return sorted(importances.items(), key=lambda kv: kv[1], reverse=True)
+
+
+def top_k_features(importances: dict[str, float], k: int = 5) -> list[str]:
+    """Return the names of the *k* most important features.
+
+    Args:
+        importances: Mapping of feature name to importance score.
+        k: Number of top features to return.
+
+    Returns:
+        List of feature names, most important first, up to *k* entries.
+    """
+    ranked = rank_features(importances)
+    return [name for name, _ in ranked[:k]]

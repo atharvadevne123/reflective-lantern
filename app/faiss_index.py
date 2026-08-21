@@ -218,7 +218,7 @@ def batch_add_properties(vectors: list[list[float]], metadata_list: list[dict | 
             add_property(vec, meta)
             added += 1
         except Exception:
-            pass
+            logger.warning("Failed to add vector %d to FAISS index", added)
     return added
 
 

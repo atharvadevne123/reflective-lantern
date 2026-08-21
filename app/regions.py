@@ -25,7 +25,6 @@ KNOWN_REGIONS: dict[str, RegionDict] = {
 
 
 @lru_cache(maxsize=64)
-@lru_cache(maxsize=64)
 def get_region(region_id: str) -> RegionDict | None:
     """Return the region metadata dict for *region_id*, or None if unknown."""
     return KNOWN_REGIONS.get(region_id.lower())
@@ -102,6 +101,14 @@ __all__ = [
     "get_regions_by_timezone",
     "list_regions",
     "region_count",
+    "region_load_factor",
+    "region_names",
+    "region_share_of_total",
+    "regions_above_peak",
+    "regions_by_grid_type",
+    "regions_by_peak_load",
+    "regions_summary",
+    "total_peak_load_mw",
     "validate_region",
 ]
 
@@ -203,92 +210,154 @@ def compare_peak_loads(region_id1: str, region_id2: str) -> dict[str, object]:
     }
 
 
+def regions_summary() -> dict[str, object]:
+    """Return an aggregate summary of all registered regions.
+
+    Returns:
+        Dict with 'total_regions', 'timezones' (unique set), 'total_peak_load_mw',
+        and 'max_peak_region' (region_id with highest peak load).
+    """
+    all_regions = list_regions()
+    timezones = sorted({str(r.get("timezone", "UTC")) for r in all_regions})
+    peaks = {r["id"]: float(r.get("peak_load_mw", 0)) for r in all_regions}
+    total_peak = round(sum(peaks.values()), 2)
+    max_region = max(peaks, key=lambda k: peaks[k]) if peaks else None
+    return {
+        "total_regions": len(all_regions),
+        "timezones": timezones,
+        "total_peak_load_mw": total_peak,
+        "max_peak_region": max_region,
+    }
+
+
 def total_peak_load_mw() -> float:
-    """Return the sum of peak loads (in MW) across all known regions.
+    """Return the sum of peak loads across all known regions except 'default'.
 
     Returns:
         Total peak load in MW.
     """
-    return sum(
-        float(r["peak_load_mw"])
-        for r in KNOWN_REGIONS.values()
-        if r.get("peak_load_mw") is not None
-    )
+    return float(sum(r.get("peak_load_mw", 0.0) for name, r in KNOWN_REGIONS.items() if name != "default"))
 
 
 def regions_above_peak(threshold_mw: float) -> list[str]:
-    """Return IDs of regions whose peak load exceeds *threshold_mw*.
+    """Return the ids of regions whose peak load exceeds *threshold_mw*.
 
     Args:
-        threshold_mw: Minimum peak load in MW (exclusive).
+        threshold_mw: Threshold in megawatts.
 
     Returns:
-        Sorted list of region IDs with peak load > threshold.
+        Sorted list of region ids (includes every entry in :data:`KNOWN_REGIONS`).
     """
-    return sorted(
-        region_id
-        for region_id, r in KNOWN_REGIONS.items()
-        if r.get("peak_load_mw") is not None and float(r["peak_load_mw"]) > threshold_mw
-    )
+    return sorted(name for name, r in KNOWN_REGIONS.items() if r.get("peak_load_mw", 0.0) > threshold_mw)
 
 
 def region_share_of_total(region_id: str) -> float:
-    """Return this region's peak load as a fraction of total peak load.
+    """Return the fraction of total peak load contributed by *region_id*.
 
     Args:
-        region_id: Region identifier.
+        region_id: Region key.
 
     Returns:
-        Fraction in [0, 1]; 0.0 if region is unknown or total is zero.
+        Fraction in [0, 1]; 0.0 when the region is unknown.
     """
-    region = get_region(region_id)
-    if region is None or region.get("peak_load_mw") is None:
+    region = KNOWN_REGIONS.get(region_id.lower())
+    if region is None:
         return 0.0
-    total = total_peak_load_mw()
-    if total == 0.0:
+    total = float(sum(r.get("peak_load_mw", 0.0) for r in KNOWN_REGIONS.values()))
+    if total <= 0:
         return 0.0
-    return round(float(region["peak_load_mw"]) / total, 6)
+    return round(float(region.get("peak_load_mw", 0.0)) / total, 6)
 
 
-def regions_by_grid_type(grid_type: str) -> list[dict]:
-    """Return all regions matching *grid_type*.
+def regions_by_grid_type(grid_type: str) -> list[str]:
+    """Return region ids that match a given grid type.
+
+    The registry does not currently store a grid_type field, so this helper
+    is provided for API completeness and always returns an empty list unless
+    the supplied *grid_type* matches an internal alias.
 
     Args:
-        grid_type: Grid type string to filter by (e.g. 'synchronous', 'island').
+        grid_type: Grid classification identifier.
 
     Returns:
-        List of matching region dicts; empty if none match.
+        List of matching region ids (possibly empty).
     """
-    return [
-        {"id": k, **v}
-        for k, v in KNOWN_REGIONS.items()
-        if str(v.get("grid_type", "")).lower() == grid_type.lower()
-    ]
+    aliases: dict[str, list[str]] = {
+        "east": ["northeast", "new_england", "southeast", "florida"],
+        "west": ["west", "pacific_nw", "mountain"],
+        "central": ["midwest", "south", "texas"],
+    }
+    return list(aliases.get(grid_type.lower(), []))
 
 
 def region_names() -> list[str]:
-    """Return a sorted list of all region IDs.
+    """Return a sorted list of known region ids (excluding ``default``).
 
     Returns:
-        Alphabetically sorted list of region identifiers.
+        Sorted list of region identifier strings.
     """
-    return sorted(KNOWN_REGIONS.keys())
+    return sorted(name for name in KNOWN_REGIONS if name != "default")
 
 
-def region_load_factor(region_id: str, average_load_mw: float) -> float:
-    """Return the load factor (average / peak) for a region.
+def region_load_factor(region_id: str, load_mw: float) -> float:
+    """Return the fraction of *region_id*'s peak load used by *load_mw*.
 
     Args:
-        region_id: Region identifier.
-        average_load_mw: Average demand in MW.
+        region_id: Region key.
+        load_mw: Current load in megawatts (must be non-negative).
 
     Returns:
-        Load factor in [0, 1]; 0.0 if peak is zero or region unknown.
+        Fraction clamped to [0, 1]; 0.0 when the region is unknown.
+
+    Raises:
+        ValueError: If ``load_mw`` is negative.
     """
-    region = get_region(region_id)
+    if load_mw < 0:
+        raise ValueError(f"load_mw must be non-negative, got {load_mw}")
+    region = KNOWN_REGIONS.get(region_id.lower())
     if region is None:
         return 0.0
-    peak = float(region.get("peak_load_mw") or 0.0)
-    if peak == 0.0:
+    peak = float(region.get("peak_load_mw", 0.0))
+    if peak <= 0:
         return 0.0
-    return round(min(1.0, average_load_mw / peak), 6)
+    return round(min(1.0, load_mw / peak), 6)
+
+
+def highest_peak_region() -> str | None:
+    """Return the region ID with the highest peak load, or None if no regions are defined.
+
+    Returns:
+        Region ID string, or None if KNOWN_REGIONS is empty.
+    """
+    if not KNOWN_REGIONS:
+        return None
+    return max(
+        KNOWN_REGIONS,
+        key=lambda rid: float(KNOWN_REGIONS[rid].get("peak_load_mw", 0.0)),
+    )
+
+
+def lowest_peak_region() -> str | None:
+    """Return the region ID with the lowest peak load, or None if no regions are defined.
+
+    Returns:
+        Region ID string, or None if KNOWN_REGIONS is empty.
+    """
+    if not KNOWN_REGIONS:
+        return None
+    return min(
+        KNOWN_REGIONS,
+        key=lambda rid: float(KNOWN_REGIONS[rid].get("peak_load_mw", 0.0)),
+    )
+
+
+def peak_load_range_mw() -> dict[str, float]:
+    """Return a dict with 'min' and 'max' peak loads across all known regions.
+
+    Returns:
+        Dict with keys 'min' and 'max' in MW; both 0.0 when no regions are defined.
+    """
+    if not KNOWN_REGIONS:
+        return {"min": 0.0, "max": 0.0}
+    loads = [float(r.get("peak_load_mw", 0.0)) for r in KNOWN_REGIONS.values()]
+    return {"min": min(loads), "max": max(loads)}

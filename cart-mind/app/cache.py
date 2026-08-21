@@ -130,3 +130,35 @@ class TTLCache:
 
 RECOMMENDATION_CACHE = TTLCache()
 SIMILARITY_CACHE = TTLCache()
+
+
+def cache_hit_rate(cache: TTLCache) -> float:
+    """Return the current hit rate of *cache* as a fraction in [0, 1].
+
+    Args:
+        cache: A TTLCache instance.
+
+    Returns:
+        Hit rate; 0.0 when no requests have been made.
+    """
+    s = cache.stats()
+    return s["hit_rate"]
+
+
+def evict_expired(cache: TTLCache) -> int:
+    """Scan *cache* and evict all entries whose TTL has elapsed.
+
+    Args:
+        cache: A TTLCache instance to scan.
+
+    Returns:
+        Number of entries evicted.
+    """
+    evicted = 0
+    with cache._lock:
+        now = time.monotonic()
+        expired_keys = [k for k, (ts, _) in cache._store.items() if now - ts > cache._ttl]
+        for k in expired_keys:
+            del cache._store[k]
+            evicted += 1
+    return evicted

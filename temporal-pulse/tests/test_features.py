@@ -321,3 +321,45 @@ class TestPairwiseRatioFeatures:
         from app.features import pairwise_ratio_features
 
         assert pairwise_ratio_features({"a": 1.0}, []) == {}
+
+
+@pytest.mark.parametrize(
+    "row,expected_keys_prefix",
+    [
+        ({"temperature": 75.0, "pressure": 50.0}, "temperature"),
+        ({"vibration": 2.0, "humidity": 45.0}, "vibration"),
+    ],
+)
+def test_sensor_zscore_row_returns_expected_keys(row: dict, expected_keys_prefix: str) -> None:
+    from app.features import sensor_zscore_row
+
+    result = sensor_zscore_row(row)
+    assert any(k.startswith(expected_keys_prefix) or k == expected_keys_prefix for k in result)
+
+
+@pytest.mark.parametrize(
+    "values,decay,expected_len",
+    [
+        ([1.0, 2.0, 3.0, 4.0, 5.0], 0.9, 5),
+        ([10.0] * 10, 0.5, 10),
+    ],
+)
+def test_exponential_decay_feature_length(values: list, decay: float, expected_len: int) -> None:
+    from app.features import exponential_decay_feature
+
+    result = exponential_decay_feature(values, decay=decay)
+    assert len(result) == expected_len
+
+
+@pytest.mark.parametrize(
+    "values,thresholds",
+    [
+        ([1.0, 5.0, 10.0], {"low": 3.0, "high": 8.0}),
+        ([0.0, 2.0, 4.0], {"low": 1.0, "high": 3.0}),
+    ],
+)
+def test_threshold_exceedance_vector_length(values: list, thresholds: dict) -> None:
+    from app.features import threshold_exceedance_vector
+
+    result = threshold_exceedance_vector(values, thresholds)
+    assert len(result) == len(values)

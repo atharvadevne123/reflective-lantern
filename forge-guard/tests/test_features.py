@@ -291,3 +291,21 @@ class TestDefectRiskIndex:
         from app.features import defect_risk_index
 
         assert defect_risk_index(temp, vib, wear, pres) == pytest.approx(expected)
+
+    @pytest.mark.parametrize("temp", [60.0, 70.0, 80.0, 90.0, 100.0])
+    def test_risk_increases_with_temperature(self, temp: float) -> None:
+        from app.features import defect_risk_index
+
+        risk = defect_risk_index(temp, 2.0, 10.0, 45.0)
+        assert 0.0 <= risk <= 1.0
+
+    def test_all_normal_values_give_zero_risk(self) -> None:
+        from app.features import defect_risk_index
+
+        assert defect_risk_index(70.0, 2.0, 10.0, 45.0) == pytest.approx(0.0)
+
+    def test_all_max_values_give_high_risk(self) -> None:
+        from app.features import defect_risk_index
+
+        risk = defect_risk_index(150.0, 20.0, 100.0, 120.0)
+        assert risk >= 0.5

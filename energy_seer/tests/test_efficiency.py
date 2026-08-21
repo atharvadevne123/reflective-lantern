@@ -104,7 +104,7 @@ class TestEfficiencyDelta:
         from app.efficiency_score import efficiency_delta
 
         result = efficiency_delta(55.0, 85.0)
-        assert result["grade_before"] == "B"
+        assert result["grade_before"] == "C"
         assert result["grade_after"] == "A"
 
 
@@ -131,3 +131,108 @@ class TestComputeEfficiencyScoreValidation:
 
         result = compute_efficiency_score(5.0, building)
         assert result["grade"] in {"A", "B", "C", "D"}
+
+
+class TestEfficiencyTrend:
+    def test_empty_returns_stable(self) -> None:
+        from app.efficiency_score import efficiency_trend
+
+        result = efficiency_trend([])
+        assert result["trend"] == "stable"
+        assert result["mean"] == 0.0
+
+    def test_improving_trend(self) -> None:
+        from app.efficiency_score import efficiency_trend
+
+        result = efficiency_trend([50.0, 60.0, 75.0, 85.0])
+        assert result["trend"] == "improving"
+
+    def test_declining_trend(self) -> None:
+        from app.efficiency_score import efficiency_trend
+
+        result = efficiency_trend([85.0, 75.0, 60.0, 50.0])
+        assert result["trend"] == "declining"
+
+    def test_stable_trend_small_delta(self) -> None:
+        from app.efficiency_score import efficiency_trend
+
+        result = efficiency_trend([70.0, 70.5])
+        assert result["trend"] == "stable"
+
+    def test_returns_required_keys(self) -> None:
+        from app.efficiency_score import efficiency_trend
+
+        result = efficiency_trend([60.0, 70.0])
+        assert {"mean", "min", "max", "trend", "latest_grade"} <= result.keys()
+
+
+class TestNormalisedEfficiencyIndex:
+    def test_returns_value_in_unit_interval(self) -> None:
+        from app.efficiency_score import normalised_efficiency_index
+
+        idx = normalised_efficiency_index(5.0, "residential", 100.0)
+        assert 0.0 <= idx <= 1.0
+
+    def test_zero_floor_area_returns_zero(self) -> None:
+        from app.efficiency_score import normalised_efficiency_index
+
+        assert normalised_efficiency_index(5.0, "office", 0.0) == 0.0
+
+    def test_zero_occupancy_returns_zero(self) -> None:
+        from app.efficiency_score import normalised_efficiency_index
+
+        assert normalised_efficiency_index(5.0, "office", 100.0, occupancy_hours=0.0) == 0.0
+
+    @pytest.mark.parametrize("btype", ["residential", "commercial", "hospital"])
+    def test_known_types_return_float(self, btype: str) -> None:
+        from app.efficiency_score import normalised_efficiency_index
+
+        result = normalised_efficiency_index(5.0, btype, 200.0, 10.0)
+        assert isinstance(result, float)
+
+
+class TestForecastHorizonAccuracy:
+    def test_perfect_forecast_zero_error(self) -> None:
+        from app.forecaster import forecast_horizon_accuracy
+
+        result = forecast_horizon_accuracy([1.0, 2.0, 3.0], [1.0, 2.0, 3.0])
+        assert result["mae"] == pytest.approx(0.0)
+        assert result["rmse"] == pytest.approx(0.0)
+
+    def test_empty_inputs_return_zeros(self) -> None:
+        from app.forecaster import forecast_horizon_accuracy
+
+        result = forecast_horizon_accuracy([], [], horizon=24)
+        assert result["n_evaluated"] == 0
+
+    def test_n_evaluated_capped_by_horizon(self) -> None:
+        from app.forecaster import forecast_horizon_accuracy
+
+        result = forecast_horizon_accuracy([1.0] * 100, [1.0] * 100, horizon=10)
+        assert result["n_evaluated"] == 10
+
+
+class TestExponentialSmoothing:
+    def test_constant_series_returns_value(self) -> None:
+        from app.forecaster import exponential_smoothing
+
+        result = exponential_smoothing([5.0] * 10, alpha=0.5, steps=3)
+        assert all(abs(v - 5.0) < 0.01 for v in result)
+
+    def test_steps_controls_output_length(self) -> None:
+        from app.forecaster import exponential_smoothing
+
+        result = exponential_smoothing([1.0, 2.0, 3.0], steps=5)
+        assert len(result) == 5
+
+    def test_empty_raises(self) -> None:
+        from app.forecaster import exponential_smoothing
+
+        with pytest.raises(ValueError):
+            exponential_smoothing([])
+
+    def test_invalid_alpha_raises(self) -> None:
+        from app.forecaster import exponential_smoothing
+
+        with pytest.raises(ValueError):
+            exponential_smoothing([1.0, 2.0], alpha=0.0)

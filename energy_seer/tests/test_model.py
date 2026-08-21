@@ -126,3 +126,53 @@ class TestBuildEnsemble:
         ens = build_ensemble()
         names = [name for name, _ in ens.estimators]
         assert set(names) == {"xgb", "lgbm", "rf"}
+
+
+@pytest.mark.parametrize("n_samples", [50, 100, 200])
+def test_train_model_various_sample_sizes(n_samples: int) -> None:
+    import numpy as np
+    import pandas as pd
+
+    from app.model import train_model
+
+    rng = np.random.default_rng(42)
+    X = pd.DataFrame(
+        {
+            "hour": rng.integers(0, 24, n_samples),
+            "day_of_week": rng.integers(0, 7, n_samples),
+            "month": rng.integers(1, 13, n_samples),
+            "temperature_c": rng.uniform(5, 35, n_samples),
+            "humidity_pct": rng.uniform(30, 80, n_samples),
+            "occupancy": rng.integers(0, 150, n_samples),
+            "hvac_state": rng.integers(0, 2, n_samples),
+        }
+    )
+    y = pd.Series(rng.uniform(5, 30, n_samples))
+    model, metrics = train_model(X, y)
+    assert model is not None
+    assert "mae" in metrics
+
+
+@pytest.mark.parametrize("metric", ["mae", "rmse", "r2", "cv_r2_mean"])
+def test_train_model_returns_expected_metrics(metric: str) -> None:
+    import numpy as np
+    import pandas as pd
+
+    from app.model import train_model
+
+    rng = np.random.default_rng(7)
+    n = 80
+    X = pd.DataFrame(
+        {
+            "hour": rng.integers(0, 24, n),
+            "day_of_week": rng.integers(0, 7, n),
+            "month": rng.integers(1, 13, n),
+            "temperature_c": rng.uniform(5, 35, n),
+            "humidity_pct": rng.uniform(30, 80, n),
+            "occupancy": rng.integers(0, 150, n),
+            "hvac_state": rng.integers(0, 2, n),
+        }
+    )
+    y = pd.Series(rng.uniform(5, 30, n))
+    _, metrics = train_model(X, y)
+    assert metric in metrics

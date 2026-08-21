@@ -7,7 +7,7 @@ import pytest
 
 
 class TestComputeDrift:
-    def test_no_drift_same_distribution(self):
+    def test_no_drift_same_distribution(self) -> None:
         from app.monitoring import compute_drift
 
         rng = np.random.default_rng(0)
@@ -17,7 +17,7 @@ class TestComputeDrift:
         assert "ks_statistic" in result
         assert "drift_detected" in result
 
-    def test_drift_detected_different_distribution(self):
+    def test_drift_detected_different_distribution(self) -> None:
         from app.monitoring import compute_drift
 
         rng = np.random.default_rng(42)
@@ -26,14 +26,14 @@ class TestComputeDrift:
         result = compute_drift(ref, cur)
         assert result["drift_detected"] is True
 
-    def test_insufficient_data_returns_reason(self):
+    def test_insufficient_data_returns_reason(self) -> None:
         from app.monitoring import compute_drift
 
         result = compute_drift([1.0, 2.0], [3.0, 4.0])
         assert result["drift_detected"] is False
         assert result.get("reason") == "insufficient_data"
 
-    def test_ks_statistic_in_range(self):
+    def test_ks_statistic_in_range(self) -> None:
         from app.monitoring import compute_drift
 
         rng = np.random.default_rng(1)
@@ -44,7 +44,7 @@ class TestComputeDrift:
             assert 0.0 <= result["ks_statistic"] <= 1.0
 
     @pytest.mark.parametrize("n", [20, 50, 100, 500])
-    def test_drift_with_various_sample_sizes(self, n):
+    def test_drift_with_various_sample_sizes(self, n) -> None:
         from app.monitoring import compute_drift
 
         rng = np.random.default_rng(n)
@@ -55,14 +55,14 @@ class TestComputeDrift:
 
 
 class TestReferenceWindow:
-    def test_update_and_retrieve(self):
+    def test_update_and_retrieve(self) -> None:
         from app.monitoring import get_reference_window, update_reference_window
 
         update_reference_window("test_feat", [1.0, 2.0, 3.0])
         window = get_reference_window("test_feat")
         assert len(window) >= 3
 
-    def test_window_capped_at_max_size(self):
+    def test_window_capped_at_max_size(self) -> None:
         from app.monitoring import (
             REFERENCE_WINDOW_SIZE,
             get_reference_window,
@@ -77,7 +77,7 @@ class TestReferenceWindow:
 
 
 class TestLogPrediction:
-    def test_log_persists_record(self, db_session):
+    def test_log_persists_record(self, db_session) -> None:
         from app.database import PredictionLog
         from app.monitoring import log_prediction
 
@@ -94,7 +94,7 @@ class TestLogPrediction:
         assert row is not None
         assert abs(row.score - 0.75) < 1e-4
 
-    def test_log_without_item_id(self, db_session):
+    def test_log_without_item_id(self, db_session) -> None:
         from app.database import PredictionLog
         from app.monitoring import log_prediction
 
@@ -113,21 +113,21 @@ class TestLogPrediction:
 
 
 class TestCounters:
-    def test_record_increments_total(self):
+    def test_record_increments_total(self) -> None:
         from app.monitoring import _Counters
 
         c = _Counters()
         c.record("intent", 10.0)
         assert c.total_requests == 1
 
-    def test_record_increments_route(self):
+    def test_record_increments_route(self) -> None:
         from app.monitoring import _Counters
 
         c = _Counters()
         c.record("recommend", 5.0)
         assert c.recommend_requests == 1
 
-    def test_snapshot_returns_dict(self):
+    def test_snapshot_returns_dict(self) -> None:
         from app.monitoring import _Counters
 
         c = _Counters()
@@ -138,7 +138,7 @@ class TestCounters:
 
 
 class TestComputePSI:
-    def test_identical_distributions_are_stable(self):
+    def test_identical_distributions_are_stable(self) -> None:
         from app.monitoring import compute_psi
 
         rng = np.random.default_rng(0)
@@ -146,7 +146,7 @@ class TestComputePSI:
         assert result["severity"] == "stable"
         assert result["drift_detected"] is False
 
-    def test_shifted_distribution_flagged_major(self):
+    def test_shifted_distribution_flagged_major(self) -> None:
         from app.monitoring import compute_psi
 
         rng = np.random.default_rng(1)
@@ -154,28 +154,28 @@ class TestComputePSI:
         assert result["severity"] == "major"
         assert result["drift_detected"] is True
 
-    def test_psi_is_non_negative(self):
+    def test_psi_is_non_negative(self) -> None:
         from app.monitoring import compute_psi
 
         rng = np.random.default_rng(2)
         result = compute_psi(rng.uniform(0, 1, 500).tolist(), rng.uniform(0, 1, 500).tolist())
         assert result["psi"] >= 0.0
 
-    def test_insufficient_data_returns_reason(self):
+    def test_insufficient_data_returns_reason(self) -> None:
         from app.monitoring import compute_psi
 
         result = compute_psi([1.0, 2.0], [3.0])
         assert result["psi"] is None
         assert result["reason"] == "insufficient_data"
 
-    def test_constant_reference_is_degenerate(self):
+    def test_constant_reference_is_degenerate(self) -> None:
         from app.monitoring import compute_psi
 
         result = compute_psi([5.0] * 100, [5.0] * 100)
         assert result["psi"] is None
         assert result["reason"] == "degenerate_reference"
 
-    def test_empty_bins_do_not_produce_infinity(self):
+    def test_empty_bins_do_not_produce_infinity(self) -> None:
         """Disjoint supports must yield a finite PSI, not inf from a zero bin."""
         from app.monitoring import compute_psi
 
@@ -184,7 +184,7 @@ class TestComputePSI:
         assert result["psi"] is not None
         assert np.isfinite(result["psi"])
 
-    def test_psi_grows_with_shift_magnitude(self):
+    def test_psi_grows_with_shift_magnitude(self) -> None:
         from app.monitoring import compute_psi
 
         rng = np.random.default_rng(4)
@@ -193,7 +193,7 @@ class TestComputePSI:
         large = compute_psi(ref, rng.normal(2.0, 1, 1000).tolist())["psi"]
         assert large > small
 
-    def test_psi_converges_toward_zero_with_sample_size(self):
+    def test_psi_converges_toward_zero_with_sample_size(self) -> None:
         """Unlike a KS p-value, PSI must not grow more alarming with sample size.
 
         For two samples from the same distribution a KS test grows more
@@ -213,7 +213,7 @@ class TestComputePSI:
         assert large < 0.05
 
     @pytest.mark.parametrize("bins", [5, 10, 20])
-    def test_various_bin_counts(self, bins):
+    def test_various_bin_counts(self, bins) -> None:
         from app.monitoring import compute_psi
 
         rng = np.random.default_rng(bins)
@@ -224,7 +224,7 @@ class TestComputePSI:
 
 
 class TestCheckAllFeaturesReportsPSI:
-    def test_results_include_psi_fields(self, db_session):
+    def test_results_include_psi_fields(self, db_session) -> None:
         from app.monitoring import check_all_features, update_reference_window
 
         rng = np.random.default_rng(11)
@@ -233,7 +233,7 @@ class TestCheckAllFeaturesReportsPSI:
         assert "psi" in results["psi_feat"]
         assert "psi_severity" in results["psi_feat"]
 
-    def test_ks_and_psi_agree_on_large_shift(self, db_session):
+    def test_ks_and_psi_agree_on_large_shift(self, db_session) -> None:
         from app.monitoring import check_all_features, update_reference_window
 
         rng = np.random.default_rng(12)
@@ -242,7 +242,7 @@ class TestCheckAllFeaturesReportsPSI:
         assert results["shift_feat"]["drift_detected"] is True
         assert results["shift_feat"]["psi_severity"] == "major"
 
-    def test_drift_rows_persisted(self, db_session):
+    def test_drift_rows_persisted(self, db_session) -> None:
         from app.database import DriftLog
         from app.monitoring import check_all_features, update_reference_window
 
@@ -256,7 +256,7 @@ class TestCheckAllFeaturesReportsPSI:
 class TestResetReferenceWindow:
     """Tests for the reset_reference_window helper added in improvement run."""
 
-    def test_reset_specific_feature(self):
+    def test_reset_specific_feature(self) -> None:
         from app.monitoring import (
             get_reference_window,
             reset_reference_window,
@@ -269,7 +269,7 @@ class TestResetReferenceWindow:
         assert get_reference_window("feat_a") == []
         assert len(get_reference_window("feat_b")) == 3
 
-    def test_reset_all_features(self):
+    def test_reset_all_features(self) -> None:
         from app.monitoring import (
             get_reference_window,
             reset_reference_window,
@@ -282,12 +282,12 @@ class TestResetReferenceWindow:
         assert get_reference_window("x") == []
         assert get_reference_window("y") == []
 
-    def test_reset_absent_feature_is_noop(self):
+    def test_reset_absent_feature_is_noop(self) -> None:
         from app.monitoring import reset_reference_window
 
         reset_reference_window("does_not_exist")  # must not raise
 
-    def test_reset_then_repopulate(self):
+    def test_reset_then_repopulate(self) -> None:
         from app.monitoring import (
             get_reference_window,
             reset_reference_window,

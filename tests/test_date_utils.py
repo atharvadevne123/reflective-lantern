@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import datetime as _dt
 from datetime import datetime
 
 import pytest
@@ -787,7 +788,7 @@ class TestWeekOfMonth:
         assert week_of_month(d) <= 5
 
 
-class TestFiscalQuarter:
+class TestFiscalQuarterExtended:
     def test_calendar_q1(self) -> None:
         import datetime
 
@@ -852,3 +853,175 @@ class TestNextWeekday:
 
         with pytest.raises(ValueError):
             next_weekday(datetime.date(2026, 8, 11), weekday=8)
+
+
+import pytest as _pytest
+
+
+@_pytest.mark.parametrize(
+    "year,expected_leap",
+    [(2000, True), (1900, False), (2024, True), (2026, False), (2100, False)],
+)
+def test_is_leap_year_parametrized(year: int, expected_leap: bool) -> None:
+    from app.date_utils import is_leap_year
+
+    assert is_leap_year(year) == expected_leap
+
+
+@_pytest.mark.parametrize(
+    "year,month,expected_days",
+    [
+        (2024, 2, 29),
+        (2026, 2, 28),
+        (2026, 1, 31),
+        (2026, 4, 30),
+    ],
+)
+def test_days_in_month_parametrized(year: int, month: int, expected_days: int) -> None:
+    from app.date_utils import days_in_month
+
+    assert days_in_month(year, month) == expected_days
+
+
+@_pytest.mark.parametrize(
+    "month,expected_quarter",
+    [(1, 1), (3, 1), (4, 2), (6, 2), (7, 3), (9, 3), (10, 4), (12, 4)],
+)
+def test_quarter_of_year_parametrized(month: int, expected_quarter: int) -> None:
+    from app.date_utils import quarter_of_year
+
+    dt = _dt.datetime(2026, month, 1)
+    assert quarter_of_year(dt) == expected_quarter
+
+
+@_pytest.mark.parametrize("n_hours", [1, 24, 48, 168])
+def test_generate_hourly_timestamps_count(n_hours: int) -> None:
+    from app.date_utils import generate_hourly_timestamps
+
+    start = _dt.datetime(2026, 1, 1, 0, 0)
+    result = generate_hourly_timestamps(start, n_hours)
+    assert len(result) == n_hours
+
+
+@_pytest.mark.parametrize(
+    "dt,expected_is_weekend",
+    [
+        (_dt.datetime(2026, 8, 15), True),  # Saturday
+        (_dt.datetime(2026, 8, 16), True),  # Sunday
+        (_dt.datetime(2026, 8, 14), False),  # Friday
+    ],
+)
+def test_is_weekend_parametrized(dt, expected_is_weekend: bool) -> None:
+    from app.date_utils import is_weekend
+
+    assert is_weekend(dt) == expected_is_weekend
+
+
+@_pytest.mark.parametrize("seconds,expected_contains", [(60.0, "1m"), (3600.0, "1h"), (90.0, "1m")])
+def test_format_duration_parametrized(seconds: float, expected_contains: str) -> None:
+    from app.date_utils import format_duration
+
+    result = format_duration(seconds)
+    assert isinstance(result, str)
+    assert len(result) > 0
+
+
+@_pytest.mark.parametrize(
+    "start,end,expected",
+    [
+        (_dt.datetime(2026, 1, 1), _dt.datetime(2026, 1, 11), 10),
+        (_dt.datetime(2026, 6, 1), _dt.datetime(2026, 6, 1), 0),
+    ],
+)
+def test_days_between_parametrized(start, end, expected: int) -> None:
+    from app.date_utils import days_between
+
+    assert days_between(start, end) == expected
+
+
+class TestIsWeekend:
+    def test_saturday_is_weekend(self) -> None:
+        from datetime import date
+
+        from app.date_utils import is_weekend
+
+        assert is_weekend(date(2025, 1, 4)) is True
+
+    def test_sunday_is_weekend(self) -> None:
+        from datetime import date
+
+        from app.date_utils import is_weekend
+
+        assert is_weekend(date(2025, 1, 5)) is True
+
+    def test_monday_is_not_weekend(self) -> None:
+        from datetime import date
+
+        from app.date_utils import is_weekend
+
+        assert is_weekend(date(2025, 1, 6)) is False
+
+    @pytest.mark.parametrize("isoday,expected", [(1, False), (5, False), (6, True), (7, True)])
+    def test_parametrized_weekdays(self, isoday: int, expected: bool) -> None:
+        from datetime import date
+
+        from app.date_utils import is_weekend
+
+        from_monday = date(2025, 1, 6)
+        target = from_monday + __import__("datetime").timedelta(days=isoday - 1)
+        assert is_weekend(target) is expected
+
+
+class TestMinutesBetween:
+    def test_basic(self) -> None:
+        from app.date_utils import minutes_between
+        from datetime import datetime, UTC
+        a = datetime(2026, 1, 1, 10, 0, tzinfo=UTC)
+        b = datetime(2026, 1, 1, 10, 30, tzinfo=UTC)
+        assert minutes_between(a, b) == 30
+
+    def test_negative_when_reversed(self) -> None:
+        from app.date_utils import minutes_between
+        from datetime import datetime, UTC
+        a = datetime(2026, 1, 1, 10, 0, tzinfo=UTC)
+        b = datetime(2026, 1, 1, 9, 0, tzinfo=UTC)
+        assert minutes_between(a, b) == -60
+
+    def test_same_time(self) -> None:
+        from app.date_utils import minutes_between
+        from datetime import datetime, UTC
+        a = datetime(2026, 1, 1, tzinfo=UTC)
+        assert minutes_between(a, a) == 0
+
+
+class TestIsSameDay:
+    def test_same_day(self) -> None:
+        from app.date_utils import is_same_day
+        from datetime import datetime, UTC
+        a = datetime(2026, 6, 15, 9, 0, tzinfo=UTC)
+        b = datetime(2026, 6, 15, 23, 0, tzinfo=UTC)
+        assert is_same_day(a, b) is True
+
+    def test_different_day(self) -> None:
+        from app.date_utils import is_same_day
+        from datetime import datetime, UTC
+        a = datetime(2026, 6, 15, tzinfo=UTC)
+        b = datetime(2026, 6, 16, tzinfo=UTC)
+        assert is_same_day(a, b) is False
+
+
+class TestEndOfDay:
+    def test_hour_is_23(self) -> None:
+        from app.date_utils import end_of_day
+        from datetime import datetime, UTC
+        dt = datetime(2026, 3, 10, 14, 30, tzinfo=UTC)
+        result = end_of_day(dt)
+        assert result.hour == 23
+        assert result.minute == 59
+        assert result.second == 59
+
+    def test_preserves_tzinfo(self) -> None:
+        from app.date_utils import end_of_day
+        from datetime import datetime, UTC
+        dt = datetime(2026, 1, 1, tzinfo=UTC)
+        assert end_of_day(dt).tzinfo is UTC

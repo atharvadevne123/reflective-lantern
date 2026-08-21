@@ -869,7 +869,7 @@ class TestFindDuplicateRows:
         assert find_duplicate_rows([], ["id"]) == []
 
 
-class TestValueRangeCheck:
+class TestValueRangeCheckExtended:
     def test_all_in_range(self) -> None:
         from app.data_quality import value_range_check
 
@@ -925,3 +925,193 @@ class TestFieldEntropy:
         records = [{"x": 1}, {}, {}]
         result = field_entropy(records, "x")
         assert result > 0.0
+
+
+import pytest as _pytest
+
+
+@_pytest.mark.parametrize(
+    "records,required,expected_score",
+    [
+        ([{"a": 1, "b": 2}], ["a", "b"], 1.0),
+        ([{"a": 1}], ["a", "b"], 0.5),
+        ([], ["a"], 0.0),
+    ],
+)
+def test_completeness_score_parametrized(records: list, required: list, expected_score: float) -> None:
+    from app.data_quality import completeness_score
+
+    assert completeness_score(records, required) == _pytest.approx(expected_score, abs=0.001)
+
+
+@_pytest.mark.parametrize(
+    "records,field,expected_null_rate",
+    [
+        ([{"v": 1}, {"v": 2}], "v", 0.0),
+        ([{"v": None}, {"v": None}], "v", 1.0),
+        ([{"v": 1}, {"v": None}], "v", 0.5),
+    ],
+)
+def test_null_rate_parametrized(records: list, field: str, expected_null_rate: float) -> None:
+    from app.data_quality import null_rate
+
+    assert null_rate(records, field) == _pytest.approx(expected_null_rate, abs=0.001)
+
+
+@_pytest.mark.parametrize("n", [0, 1, 5, 100])
+def test_batch_score_length_matches_input(n: int) -> None:
+    from app.data_quality import batch_score
+
+    records = [{"consumption_kwh": 10.0, "hour": 12, "month": 6, "day_of_week": 2}] * n
+    result = batch_score(records)
+    assert len(result) == n
+
+
+@_pytest.mark.parametrize("null_count,total", [(0, 10), (5, 10), (10, 10)])
+def test_null_rate_with_mixed_records(null_count: int, total: int) -> None:
+    from app.data_quality import null_rate
+
+    field = "consumption_kwh"
+    records = [{field: None}] * null_count + [{field: 10.0}] * (total - null_count)
+    result = null_rate(records, field)
+    assert result == _pytest.approx(null_count / total if total > 0 else 0.0, abs=0.001)
+
+
+@_pytest.mark.parametrize(
+    "values,lo,hi,expected_violations",
+    [
+        ([1.0, 5.0, 10.0], 0.0, 15.0, 0),
+        ([1.0, 5.0, 100.0], 0.0, 10.0, 1),
+        ([-1.0, 5.0, 10.0], 0.0, 10.0, 1),
+    ],
+)
+def test_range_violation_count_parametrized(values: list, lo: float, hi: float, expected_violations: int) -> None:
+    from app.data_quality import range_violation_count
+
+    field = "x"
+    records = [{field: v} for v in values]
+    count = range_violation_count(records, field, lo, hi)
+    assert count == expected_violations
+
+
+@_pytest.mark.parametrize("n_unique", [1, 5, 10])
+def test_unique_values_count(n_unique: int) -> None:
+    from app.data_quality import unique_values
+
+    field = "val"
+    records = [{field: float(i)} for i in range(n_unique)]
+    result = unique_values(records, field)
+    assert len(result) == n_unique
+
+
+class TestConstantColumns:
+    def test_constant_field_detected(self) -> None:
+        from app.data_quality import constant_columns
+
+        records = [{"a": 1, "b": 2}, {"a": 1, "b": 3}]
+        assert constant_columns(records) == ["a"]
+
+    def test_no_constant_columns(self) -> None:
+        from app.data_quality import constant_columns
+
+        records = [{"a": 1, "b": 2}, {"a": 3, "b": 4}]
+        assert constant_columns(records) == []
+
+    def test_empty_returns_empty(self) -> None:
+        from app.data_quality import constant_columns
+
+        assert constant_columns([]) == []
+
+    def test_all_constant(self) -> None:
+        from app.data_quality import constant_columns
+
+        records = [{"x": 0, "y": 0}] * 3
+        result = constant_columns(records)
+        assert set(result) == {"x", "y"}
+
+
+class TestConsecutiveMissingCount:
+    def test_no_nones(self) -> None:
+        from app.data_quality import consecutive_missing_count
+        assert consecutive_missing_count([1.0, 2.0, 3.0]) == 0
+
+    def test_single_run(self) -> None:
+        from app.data_quality import consecutive_missing_count
+        assert consecutive_missing_count([1.0, None, None, None, 2.0]) == 3
+
+    def test_multiple_runs(self) -> None:
+        from app.data_quality import consecutive_missing_count
+        assert consecutive_missing_count([None, None, 1.0, None, 2.0]) == 2
+
+    def test_all_none(self) -> None:
+        from app.data_quality import consecutive_missing_count
+        assert consecutive_missing_count([None, None, None]) == 3
+
+    def test_empty_list(self) -> None:
+        from app.data_quality import consecutive_missing_count
+        assert consecutive_missing_count([]) == 0
+
+
+class TestColumnCardinality:
+    def test_basic(self) -> None:
+        from app.data_quality import column_cardinality
+        records = [{"a": 1, "b": "x"}, {"a": 2, "b": "x"}, {"a": 1, "b": "y"}]
+        result = column_cardinality(records)
+        assert result["a"] == 2
+        assert result["b"] == 2
+
+    def test_empty_records(self) -> None:
+        from app.data_quality import column_cardinality
+        assert column_cardinality([]) == {}
+
+    def test_nones_excluded(self) -> None:
+        from app.data_quality import column_cardinality
+        records = [{"a": None}, {"a": None}, {"a": 1}]
+        result = column_cardinality(records)
+        assert result["a"] == 1
+
+
+class TestOutlierSummary:
+    def test_no_outliers(self) -> None:
+        from app.data_quality import outlier_summary
+        result = outlier_summary([1.0, 1.0, 1.0, 1.0, 1.0])
+        assert result["count"] == 0
+
+    def test_with_outlier(self) -> None:
+        from app.data_quality import outlier_summary
+        result = outlier_summary([1.0] * 9 + [10000.0])
+        assert result["count"] > 0
+        assert result["max_outlier"] == 10000.0
+
+    def test_too_few_values(self) -> None:
+        from app.data_quality import outlier_summary
+        result = outlier_summary([5.0])
+        assert result["count"] == 0
+class TestUniqueValueCount:
+    def test_basic(self) -> None:
+        from app.data_quality import unique_value_count
+        assert unique_value_count([1, 2, 2, None, 3]) == 3
+
+    def test_all_same(self) -> None:
+        from app.data_quality import unique_value_count
+        assert unique_value_count([5, 5, 5]) == 1
+
+    def test_empty(self) -> None:
+        from app.data_quality import unique_value_count
+        assert unique_value_count([]) == 0
+
+
+class TestCompletenessScore:
+    def test_full_completeness(self) -> None:
+        from app.data_quality import completeness_score
+        records = [{"a": 1, "b": 2}, {"a": 3, "b": 4}]
+        assert completeness_score(records, ["a", "b"]) == pytest.approx(1.0)
+
+    def test_partial_completeness(self) -> None:
+        from app.data_quality import completeness_score
+        records = [{"a": 1, "b": None}, {"a": 2, "b": 3}]
+        assert completeness_score(records, ["a", "b"]) == pytest.approx(0.75)
+
+    def test_empty_records(self) -> None:
+        from app.data_quality import completeness_score
+        assert completeness_score([], ["a"]) == pytest.approx(0.0)

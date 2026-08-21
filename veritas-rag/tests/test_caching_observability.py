@@ -128,3 +128,77 @@ class TestPipelineTracing:
         # Cached path skips retrieval stages entirely
         stage_names = [s["stage"] for s in trace.stages]
         assert "bm25" not in stage_names
+
+
+class TestCacheFillRatio:
+    def test_empty_cache_is_zero(self) -> None:
+        from app.caching import RetrievalCache, cache_fill_ratio
+
+        c = RetrievalCache(max_size=10)
+        assert cache_fill_ratio(c) == 0.0
+
+    def test_full_cache_is_one(self) -> None:
+        from app.caching import RetrievalCache, cache_fill_ratio
+
+        c = RetrievalCache(max_size=2)
+        c.put("q1", "v1")
+        c.put("q2", "v2")
+        assert cache_fill_ratio(c) == 1.0
+
+    def test_partial_fill(self) -> None:
+        from app.caching import RetrievalCache, cache_fill_ratio
+
+        c = RetrievalCache(max_size=4)
+        c.put("q1", "v1")
+        assert 0.0 < cache_fill_ratio(c) <= 0.5
+
+
+class TestTopCachedQueries:
+    def test_empty_cache_returns_empty(self) -> None:
+        from app.caching import RetrievalCache, top_cached_queries
+
+        c = RetrievalCache()
+        assert top_cached_queries(c) == []
+
+    def test_returns_at_most_n(self) -> None:
+        from app.caching import RetrievalCache, top_cached_queries
+
+        c = RetrievalCache()
+        for i in range(10):
+            c.put(f"query_{i}", f"val_{i}")
+        result = top_cached_queries(c, n=3)
+        assert len(result) == 3
+
+    def test_returns_list_of_strings(self) -> None:
+        from app.caching import RetrievalCache, top_cached_queries
+
+        c = RetrievalCache()
+        c.put("hello world", "v")
+        result = top_cached_queries(c, n=5)
+        assert all(isinstance(k, str) for k in result)
+
+
+class TestAverageLatencyMs:
+    def test_empty_store_returns_zero(self) -> None:
+        from app.observability import TraceStore, average_latency_ms
+
+        assert average_latency_ms(TraceStore()) == 0.0
+
+    def test_missing_stage_returns_zero(self) -> None:
+        from app.observability import TraceStore, average_latency_ms
+
+        s = TraceStore()
+        assert average_latency_ms(s, stage="nonexistent") == 0.0
+
+
+class TestTraceErrorRate:
+    def test_empty_store_returns_zero(self) -> None:
+        from app.observability import TraceStore, trace_error_rate
+
+        assert trace_error_rate(TraceStore()) == 0.0
+
+    def test_returns_float(self) -> None:
+        from app.observability import TraceStore, trace_error_rate
+
+        result = trace_error_rate(TraceStore())
+        assert isinstance(result, float)

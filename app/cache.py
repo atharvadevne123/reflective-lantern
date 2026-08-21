@@ -107,6 +107,7 @@ class TTLCache:
             "hits": self.hits,
             "misses": self.misses,
             "hit_rate": self.hit_rate,
+            "evictions": self.eviction_count,
         }
 
 
@@ -114,9 +115,18 @@ prediction_cache = TTLCache(ttl_seconds=30, max_size=500)
 
 __all__ = [
     "TTLCache",
+    "batch_delete",
+    "batch_get",
+    "batch_set",
+    "build_cache_key",
+    "cache_fill_rate",
+    "cache_hit_rate",
+    "cache_key_count",
     "cache_key_from_dict",
     "cache_stats_summary",
-    "logger",
+    "evict_expired_keys",
+    "get_or_default",
+    "peek",
     "prediction_cache",
     "warm_cache",
 ]
@@ -221,51 +231,62 @@ def cache_stats_summary(cache: TTLCache) -> dict[str, object]:
     }
 
 
-def cache_fill_rate(cache: TTLCache) -> float:
-    """Return the fraction of cache capacity currently in use.
+def batch_get(cache: TTLCache, keys: list[str]) -> dict[str, object]:
+    """Retrieve multiple keys from *cache* in one call.
 
     Args:
-        cache: The :class:`TTLCache` instance to inspect.
+        cache: The :class:`TTLCache` instance to query.
+        keys: List of cache key strings.
 
     Returns:
-        Fill rate in [0, 1]; 0.0 if max_size is 0.
+        Dict mapping each key to its cached value; missing/expired keys
+        are absent from the result.
     """
-    if cache.max_size == 0:
-        return 0.0
-    return round(cache.size / cache.max_size, 6)
+    result: dict[str, object] = {}
+    for key in keys:
+        val = cache.get(key)
+        if val is not None:
+            result[key] = val
+    return result
+
+
+def batch_set(cache: TTLCache, items: dict[str, object]) -> None:
+    """Store multiple key-value pairs in *cache* at once.
+
+    Args:
+        cache: The :class:`TTLCache` instance to populate.
+        items: Dict of key → value pairs to cache.
+    """
+    for key, value in items.items():
+        cache.set(key, value)
 
 
 def peek(cache: TTLCache, key: str) -> object | None:
-    """Return the stored value for *key* without updating hit/miss counters.
-
-    Useful for admin/diagnostics where you want to inspect the cache without
-    affecting the hit-rate metrics.
+    """Return the cached value for *key* WITHOUT counting a hit/miss.
 
     Args:
-        cache: The :class:`TTLCache` instance.
-        key: Cache key to inspect.
+        cache: The :class:`TTLCache` instance to inspect.
+        key: Cache key.
 
     Returns:
-        The raw value if the key exists and is unexpired; None otherwise.
+        The stored value, or ``None`` when the key is absent or expired.
     """
-    import time as _time
-
     with cache._lock:
         entry = cache._store.get(key)
-        if entry is None:
-            return None
-        value, expire_at = entry
-        if expire_at is not None and _time.monotonic() > expire_at:
-            return None
-        return value
+    if entry is None:
+        return None
+    value, expires_at = entry
+    if time.monotonic() > expires_at:
+        return None
+    return value
 
 
 def batch_delete(cache: TTLCache, keys: list[str]) -> int:
-    """Delete multiple keys from *cache* in a single call.
+    """Remove several *keys* from *cache* in one call.
 
     Args:
-        cache: The :class:`TTLCache` instance.
-        keys: List of keys to remove.
+        cache: The :class:`TTLCache` instance to modify.
+        keys: List of cache keys to invalidate.
 
     Returns:
         Number of keys that were actually present and removed.
@@ -279,45 +300,85 @@ def batch_delete(cache: TTLCache, keys: list[str]) -> int:
     return removed
 
 
-def cache_key_count(cache: "TTLCache") -> int:
-    """Return the number of non-expired keys currently in *cache*.
+def cache_key_count(cache: TTLCache) -> int:
+    """Return the current number of entries in *cache* (including expired).
 
     Args:
-        cache: The :class:`TTLCache` instance.
+        cache: A :class:`TTLCache` instance.
 
     Returns:
-        Count of live keys.
+        Non-negative integer count of stored entries.
     """
-    return len(cache)
+    return cache.size
 
 
-def warm_cache(cache: "TTLCache", data: dict) -> int:
-    """Populate *cache* with all key-value pairs from *data*.
+def cache_fill_rate(cache: TTLCache) -> float:
+    """Return the fraction of the cache's capacity currently in use.
 
     Args:
-        cache: The :class:`TTLCache` instance.
-        data: Mapping of keys to values to pre-load.
+        cache: A :class:`TTLCache` instance.
 
     Returns:
-        Number of entries successfully loaded.
+        Fraction in [0, 1].
     """
-    loaded = 0
-    for k, v in data.items():
-        cache.set(str(k), v)
-        loaded += 1
-    return loaded
+    if cache._max <= 0:
+        return 0.0
+    return round(cache.size / cache._max, 6)
 
 
-def get_or_default(cache: "TTLCache", key: str, default: object = None) -> object:
-    """Return the cached value for *key*, or *default* if absent or expired.
+def get_or_default(cache: TTLCache, key: str, default: object | None = None) -> object | None:
+    """Return the cached value for *key*, or *default* when absent/expired.
 
     Args:
-        cache: The :class:`TTLCache` instance.
-        key: Cache key to look up.
-        default: Fallback value returned when the key is missing.
+        cache: The :class:`TTLCache` instance to query.
+        key: Cache key.
+        default: Value returned when the key is missing.
 
     Returns:
         Cached value or *default*.
     """
     value = cache.get(key)
     return value if value is not None else default
+
+
+def cache_miss_rate(hits: int, misses: int) -> float:
+    """Return the cache miss rate as a fraction in [0.0, 1.0].
+
+    Args:
+        hits: Number of cache hits.
+        misses: Number of cache misses.
+
+    Returns:
+        Miss rate; 0.0 when no requests have been made.
+
+    Raises:
+        ValueError: If either argument is negative.
+    """
+    if hits < 0 or misses < 0:
+        raise ValueError("hits and misses must be non-negative")
+    total = hits + misses
+    return 0.0 if total == 0 else round(misses / total, 6)
+
+
+def is_cache_empty(cache: TTLCache) -> bool:
+    """Return True if the cache holds no entries.
+
+    Args:
+        cache: A TTLCache instance.
+
+    Returns:
+        True when the cache is empty.
+    """
+    return len(cache._store) == 0
+
+
+def cache_remaining_capacity(cache: TTLCache) -> int:
+    """Return the number of additional entries the cache can hold.
+
+    Args:
+        cache: A TTLCache instance.
+
+    Returns:
+        Difference between max size and current size (always >= 0).
+    """
+    return max(0, cache._max - len(cache._store))

@@ -258,3 +258,37 @@ def item_count_flag(item_count: int, bulk_threshold: int = 10) -> bool:
         True if item_count >= bulk_threshold.
     """
     return item_count >= bulk_threshold
+
+
+def cross_field_penalty_score(warnings: list[str]) -> float:
+    """Convert a warning list to a numeric penalty for downstream scoring.
+
+    Each coherence warning reduces the score by 0.1, floored at 0.0.
+
+    Args:
+        warnings: List of warning strings from any coherence check.
+
+    Returns:
+        Penalty score in [0.0, 1.0]; 0.0 means no penalty (no warnings).
+    """
+    return min(1.0, round(len(warnings) * 0.1, 4))
+
+
+def normalise_payload(
+    payload: dict[str, Any], defaults: dict[str, Any] | None = None
+) -> dict[str, Any]:
+    """Fill missing keys from *defaults* and return a complete payload copy.
+
+    Args:
+        payload: Raw incoming payload, possibly with missing optional fields.
+        defaults: Fallback values for any missing keys. If ``None``, no filling
+            is performed.
+
+    Returns:
+        New dict with defaults merged in where the original had no value.
+    """
+    if defaults is None:
+        return dict(payload)
+    result = dict(defaults)
+    result.update(payload)
+    return result

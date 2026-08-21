@@ -318,19 +318,30 @@ def benchmark_vs_portfolio(
 
 __all__ = [
     "benchmark_vs_portfolio",
+    "carbon_report_section",
+    "consumption_budget_variance",
     "consumption_efficiency_ratio",
+    "consumption_heatmap_data",
     "consumption_trend",
     "daily_average_consumption",
+    "demand_variance_report",
+    "emission_report",
+    "energy_cost_estimate",
     "energy_efficiency_grade",
     "estimate_savings",
+    "hourly_cost_breakdown",
     "kwh_to_wh",
     "monthly_consumption_summary",
     "peak_demand_by_period",
     "peak_demand_report",
+    "peak_usage_window",
     "rolling_savings_summary",
+    "savings_report",
+    "savings_summary",
     "seasonal_efficiency_score",
     "tariff_cost",
     "top_consumption_hours",
+    "top_n_consumers",
     "wh_to_kwh",
 ]
 
@@ -518,37 +529,225 @@ def rolling_savings_summary(
     return results
 
 
+def carbon_cost_report(
+    kwh_series: list[float],
+    rate_per_kwh: float,
+    co2_per_kwh_kg: float = 0.233,
+) -> dict[str, float]:
+    """Compute total energy cost and carbon impact from a kWh series.
+
+    Args:
+        kwh_series: List of energy consumption readings (kWh).
+        rate_per_kwh: Tariff rate in currency per kWh.
+        co2_per_kwh_kg: Grid emission factor (kg CO2 per kWh).
+
+    Returns:
+        Dict with total_kwh, total_cost, total_co2_kg, avg_kwh.
+    """
+    total = sum(kwh_series)
+    n = len(kwh_series)
+    return {
+        "total_kwh": round(total, 4),
+        "total_cost": round(total * rate_per_kwh, 4),
+        "total_co2_kg": round(total * co2_per_kwh_kg, 4),
+        "avg_kwh": round(total / n, 4) if n > 0 else 0.0,
+    }
+
+
+def demand_variance_report(readings: list[float]) -> dict[str, float]:
+    """Summarise demand variability from a series of consumption readings.
+
+    Args:
+        readings: List of energy consumption readings.
+
+    Returns:
+        Dict with mean, std_dev, cv_pct (coefficient of variation as %),
+        peak, valley, and peak_to_valley_ratio.
+
+    Raises:
+        ValueError: If *readings* is empty.
+    """
+    if not readings:
+        raise ValueError("readings must not be empty")
+    n = len(readings)
+    mean = sum(readings) / n
+    variance = sum((r - mean) ** 2 for r in readings) / n
+    std_dev = variance**0.5
+    peak = max(readings)
+    valley = min(readings)
+    cv_pct = round(std_dev / mean * 100.0, 4) if mean > 0 else 0.0
+    ptv = round(peak / valley, 4) if valley > 0 else float("inf")
+    return {
+        "mean": round(mean, 4),
+        "std_dev": round(std_dev, 4),
+        "variance": round(variance, 4),
+        "cv_pct": cv_pct,
+        "peak": peak,
+        "valley": valley,
+        "peak_to_valley_ratio": ptv,
+    }
+
+
+def hourly_cost_breakdown(
+    hourly_kwh: list[float],
+    tariff_per_kwh: float,
+) -> list[dict[str, float]]:
+    """Compute per-hour energy cost from an hourly consumption series.
+
+    Args:
+        hourly_kwh: Hourly energy readings in kWh (typically 24 or 168 values).
+        tariff_per_kwh: Cost per kWh.
+
+    Returns:
+        List of dicts with 'hour' (0-based index), 'kwh', and 'cost' keys.
+
+    Raises:
+        ValueError: If *hourly_kwh* is empty or *tariff_per_kwh* is negative.
+    """
+    if not hourly_kwh:
+        raise ValueError("hourly_kwh must not be empty")
+    if tariff_per_kwh < 0:
+        raise ValueError("tariff_per_kwh must be non-negative")
+    return [
+        {"hour": i, "kwh": round(kwh, 4), "cost": round(kwh * tariff_per_kwh, 4)} for i, kwh in enumerate(hourly_kwh)
+    ]
+
+
+def savings_report(
+    baseline_kwh: float,
+    actual_kwh: float,
+    tariff_per_kwh: float = 0.15,
+) -> dict[str, float]:
+    """Summarise energy savings against a baseline in kWh and monetary terms.
+
+    Args:
+        baseline_kwh: Reference (pre-improvement) energy consumption in kWh.
+        actual_kwh: Measured consumption in kWh.
+        tariff_per_kwh: Energy unit cost for monetary calculation.
+
+    Returns:
+        Dict with 'saved_kwh', 'saved_cost', 'pct_saved', and 'efficiency_ratio'.
+        Positive 'saved_kwh' means actual < baseline (improvement).
+
+    Raises:
+        ValueError: If *tariff_per_kwh* is negative or *baseline_kwh* is negative.
+    """
+    if baseline_kwh < 0:
+        raise ValueError("baseline_kwh must be non-negative")
+    if tariff_per_kwh < 0:
+        raise ValueError("tariff_per_kwh must be non-negative")
+    saved_kwh = round(baseline_kwh - actual_kwh, 4)
+    saved_cost = round(saved_kwh * tariff_per_kwh, 4)
+    pct_saved = round(saved_kwh / baseline_kwh * 100.0, 4) if baseline_kwh > 0 else 0.0
+    efficiency_ratio = round(actual_kwh / baseline_kwh, 4) if baseline_kwh > 0 else 1.0
+    return {
+        "saved_kwh": saved_kwh,
+        "saved_cost": saved_cost,
+        "pct_saved": pct_saved,
+        "efficiency_ratio": efficiency_ratio,
+    }
+
+
+def peak_usage_window(hourly_kwh: list[float], window_size: int = 3) -> dict[str, object]:
+    """Find the consecutive window of *window_size* hours with the highest total usage.
+
+    Args:
+        hourly_kwh: List of 24 (or more) hourly kWh values.
+        window_size: Number of consecutive hours in the window (default 3).
+
+    Returns:
+        Dict with 'start_hour', 'end_hour', 'total_kwh', and 'avg_kwh'.
+        Returns zeros if *hourly_kwh* is shorter than *window_size*.
+
+    Raises:
+        ValueError: If *window_size* < 1.
+    """
+    if window_size < 1:
+        raise ValueError("window_size must be at least 1")
+    n = len(hourly_kwh)
+    if n < window_size:
+        return {"start_hour": 0, "end_hour": 0, "total_kwh": 0.0, "avg_kwh": 0.0}
+    best_start = 0
+    best_total = sum(hourly_kwh[:window_size])
+    current = best_total
+    for i in range(1, n - window_size + 1):
+        current = current - hourly_kwh[i - 1] + hourly_kwh[i + window_size - 1]
+        if current > best_total:
+            best_total = current
+            best_start = i
+    total = round(best_total, 4)
+    end_hour = best_start + window_size - 1
+    return {
+        "start_hour": best_start,
+        "end_hour": end_hour,
+        "peak_start": best_start,
+        "peak_end": end_hour,
+        "total_kwh": total,
+        "avg_kwh": round(total / window_size, 4),
+    }
+
+
+def emission_report(kwh_values: list[float], carbon_intensity_kg_per_kwh: float = 0.35) -> dict[str, float]:
+    """Compute CO2 emission totals from a list of kWh readings.
+
+    Args:
+        kwh_values: List of energy consumption values in kWh.
+        carbon_intensity_kg_per_kwh: Grid emission factor in kg CO2 per kWh.
+
+    Returns:
+        Dict with 'total_kwh', 'total_co2_kg', 'avg_co2_kg_per_period',
+        and 'max_co2_kg' (emission for the highest single-period consumption).
+
+    Raises:
+        ValueError: If *carbon_intensity_kg_per_kwh* is negative.
+    """
+    if carbon_intensity_kg_per_kwh < 0:
+        raise ValueError("carbon_intensity_kg_per_kwh must be non-negative")
+    if not kwh_values:
+        return {"total_kwh": 0.0, "total_co2_kg": 0.0, "avg_co2_kg_per_period": 0.0, "max_co2_kg": 0.0}
+    total_kwh = sum(kwh_values)
+    total_co2 = total_kwh * carbon_intensity_kg_per_kwh
+    avg_co2 = total_co2 / len(kwh_values)
+    max_co2 = max(kwh_values) * carbon_intensity_kg_per_kwh
+    return {
+        "total_kwh": round(total_kwh, 4),
+        "total_co2_kg": round(total_co2, 4),
+        "avg_co2_kg_per_period": round(avg_co2, 4),
+        "max_co2_kg": round(max_co2, 4),
+    }
+
+
 def energy_cost_estimate(
     kwh: float,
     tariff_per_kwh: float,
     vat_rate: float = 0.0,
 ) -> dict[str, float]:
-    """Estimate the energy cost for a given consumption and tariff.
+    """Estimate a period energy cost including optional VAT.
 
     Args:
-        kwh: Energy consumed in kilowatt-hours (must be >= 0).
-        tariff_per_kwh: Cost per kWh in the user's currency (must be >= 0).
-        vat_rate: VAT/tax rate as a decimal fraction (e.g. 0.2 for 20 %).
-            Defaults to 0.0.
+        kwh: Energy consumption in kilowatt-hours.
+        tariff_per_kwh: Retail tariff in currency per kWh.
+        vat_rate: VAT rate as a fraction (e.g. 0.20 for 20%). Must be >= 0.
 
     Returns:
-        Dict with ``net_cost``, ``vat_amount``, and ``total_cost`` keys.
+        Dict with ``kwh``, ``net_cost``, ``vat_amount``, and ``total_cost``.
 
     Raises:
-        ValueError: If *kwh* or *tariff_per_kwh* is negative, or *vat_rate* < 0.
+        ValueError: If ``kwh`` or ``tariff_per_kwh`` is negative or ``vat_rate`` < 0.
     """
     if kwh < 0:
-        raise ValueError(f"kwh must be >= 0, got {kwh}")
+        raise ValueError(f"kwh must be non-negative, got {kwh}")
     if tariff_per_kwh < 0:
-        raise ValueError(f"tariff_per_kwh must be >= 0, got {tariff_per_kwh}")
+        raise ValueError(f"tariff_per_kwh must be non-negative, got {tariff_per_kwh}")
     if vat_rate < 0:
-        raise ValueError(f"vat_rate must be >= 0, got {vat_rate}")
-    net = round(kwh * tariff_per_kwh, 4)
-    vat = round(net * vat_rate, 4)
+        raise ValueError(f"vat_rate must be non-negative, got {vat_rate}")
+    net_cost = kwh * tariff_per_kwh
+    vat_amount = net_cost * vat_rate
     return {
-        "net_cost": net,
-        "vat_amount": vat,
-        "total_cost": round(net + vat, 4),
+        "kwh": round(kwh, 4),
+        "net_cost": round(net_cost, 4),
+        "vat_amount": round(vat_amount, 4),
+        "total_cost": round(net_cost + vat_amount, 4),
     }
 
 
@@ -556,32 +755,33 @@ def carbon_report_section(
     kwh: float,
     emission_factor_kg_per_kwh: float,
     label: str = "period",
-) -> dict[str, Any]:
-    """Generate a carbon emissions report section for a given energy reading.
+) -> dict[str, object]:
+    """Produce a small carbon-emissions block suitable for a report section.
 
     Args:
-        kwh: Energy consumed in kWh (must be >= 0).
-        emission_factor_kg_per_kwh: Carbon emission intensity in kg CO₂/kWh.
-        label: Human-readable label for the reporting period. Default ``"period"``.
+        kwh: Energy consumption in kilowatt-hours (must be non-negative).
+        emission_factor_kg_per_kwh: Grid emission factor (kg CO₂ per kWh),
+            must be non-negative.
+        label: Human-readable label for this section (e.g. month name).
 
     Returns:
-        Dict with ``label``, ``kwh``, ``kg_co2``, ``tonnes_co2``, and
-        ``emission_factor`` keys.
+        Dict with ``label``, ``kwh``, ``kg_co2``, ``tonnes_co2``,
+        and ``emission_factor``.
 
     Raises:
-        ValueError: If *kwh* < 0 or *emission_factor_kg_per_kwh* < 0.
+        ValueError: If ``kwh`` or ``emission_factor_kg_per_kwh`` is negative.
     """
     if kwh < 0:
-        raise ValueError(f"kwh must be >= 0, got {kwh}")
+        raise ValueError(f"kwh must be non-negative, got {kwh}")
     if emission_factor_kg_per_kwh < 0:
-        raise ValueError(f"emission_factor_kg_per_kwh must be >= 0, got {emission_factor_kg_per_kwh}")
-    kg_co2 = round(kwh * emission_factor_kg_per_kwh, 4)
+        raise ValueError(f"emission_factor must be non-negative, got {emission_factor_kg_per_kwh}")
+    kg = kwh * emission_factor_kg_per_kwh
     return {
         "label": label,
         "kwh": round(kwh, 4),
-        "kg_co2": kg_co2,
-        "tonnes_co2": round(kg_co2 / 1000.0, 6),
-        "emission_factor": emission_factor_kg_per_kwh,
+        "kg_co2": round(kg, 4),
+        "tonnes_co2": round(kg / 1000.0, 6),
+        "emission_factor": round(emission_factor_kg_per_kwh, 6),
     }
 
 
@@ -589,113 +789,177 @@ def consumption_budget_variance(
     actual_kwh: float,
     budget_kwh: float,
 ) -> dict[str, float]:
-    """Compute variance between actual and budgeted energy consumption.
+    """Compare actual consumption against a budget.
 
     Args:
-        actual_kwh: Measured energy consumption (kWh).
-        budget_kwh: Planned/budgeted energy consumption (kWh, must be > 0).
+        actual_kwh: Measured consumption in kWh.
+        budget_kwh: Budgeted consumption in kWh (must be strictly positive).
 
     Returns:
-        Dict with ``delta_kwh`` (actual - budget), ``variance_pct``,
-        and ``on_budget`` (bool as 1/0).
+        Dict with ``actual_kwh``, ``budget_kwh``, ``delta_kwh``
+        (actual - budget), ``variance_pct``, and ``on_budget``
+        (1 when actual <= budget, otherwise 0).
 
     Raises:
-        ValueError: If *budget_kwh* <= 0.
+        ValueError: If either argument is negative or ``budget_kwh`` is 0.
     """
+    if actual_kwh < 0:
+        raise ValueError(f"actual_kwh must be non-negative, got {actual_kwh}")
     if budget_kwh <= 0:
-        raise ValueError(f"budget_kwh must be > 0, got {budget_kwh}")
-    delta = round(actual_kwh - budget_kwh, 4)
-    variance_pct = round(100.0 * delta / budget_kwh, 4)
+        raise ValueError(f"budget_kwh must be positive, got {budget_kwh}")
+    delta = actual_kwh - budget_kwh
+    variance = (delta / budget_kwh) * 100.0
     return {
-        "delta_kwh": delta,
-        "variance_pct": variance_pct,
-        "on_budget": 1 if abs(variance_pct) <= 5.0 else 0,
+        "actual_kwh": round(actual_kwh, 4),
+        "budget_kwh": round(budget_kwh, 4),
+        "delta_kwh": round(delta, 4),
+        "variance_pct": round(variance, 4),
+        "on_budget": 1 if actual_kwh <= budget_kwh else 0,
     }
 
 
-def top_n_consumers(
-    readings: list[dict[str, object]],
-    n: int = 5,
-    value_field: str = "consumption_kwh",
-    label_field: str = "building_id",
-) -> list[dict[str, object]]:
-    """Return the top *n* consumers from a list of meter readings.
+def top_n_consumers(readings: list[dict[str, Any]], n: int = 10) -> list[dict[str, Any]]:
+    """Return the top *n* readings sorted by ``consumption_kwh`` descending.
+
+    Records missing ``consumption_kwh`` are skipped.
 
     Args:
-        readings: List of dicts containing at least *value_field* and *label_field*.
-        n: Number of top consumers to return. Default 5.
-        value_field: Key holding the consumption value. Default ``"consumption_kwh"``.
-        label_field: Key holding the entity identifier. Default ``"building_id"``.
+        readings: Sequence of reading dicts with a ``consumption_kwh`` key.
+        n: Maximum number of records to return (must be >= 1).
 
     Returns:
-        Up to *n* records sorted by *value_field* descending.
+        List of at most *n* dicts, sorted from highest to lowest consumption.
 
     Raises:
         ValueError: If *n* < 1.
     """
     if n < 1:
-        raise ValueError(f"n must be at least 1, got {n}")
-    valid = [r for r in readings if value_field in r and r[value_field] is not None]
-    sorted_records = sorted(valid, key=lambda r: float(r[value_field]), reverse=True)  # type: ignore[arg-type]
-    return sorted_records[:n]
+        raise ValueError(f"n must be >= 1, got {n}")
+    filtered = [r for r in readings if r.get("consumption_kwh") is not None]
+    ordered = sorted(filtered, key=lambda r: r["consumption_kwh"], reverse=True)
+    return ordered[:n]
 
 
 def consumption_heatmap_data(
-    readings: list[dict[str, object]],
-    hour_field: str = "hour",
-    dow_field: str = "day_of_week",
-    value_field: str = "consumption_kwh",
+    readings: list[dict[str, Any]],
 ) -> dict[str, dict[str, float]]:
-    """Aggregate consumption into a day-of-week × hour-of-day heatmap.
+    """Aggregate readings into a day_of_week x hour heatmap.
+
+    Each cell contains the mean ``consumption_kwh`` for that (day, hour) pair.
+    Records lacking any of ``day_of_week``, ``hour``, or ``consumption_kwh``
+    are skipped.
 
     Args:
-        readings: List of dicts containing hour, day_of_week, and consumption.
-        hour_field: Key for hour column. Default ``"hour"``.
-        dow_field: Key for day-of-week column (0=Monday). Default ``"day_of_week"``.
-        value_field: Key for the consumption value. Default ``"consumption_kwh"``.
+        readings: List of dicts with ``day_of_week``, ``hour``, and
+            ``consumption_kwh`` keys.
 
     Returns:
-        Nested dict ``{day_of_week_str: {hour_str: avg_consumption}}``.
+        Nested dict: ``{day_of_week_str: {hour_str: mean_kwh}}``.
     """
-    totals: dict[str, dict[str, list[float]]] = {}
-    for r in readings:
-        dow = str(r.get(dow_field, "?"))
-        hour = str(r.get(hour_field, "?"))
-        val = r.get(value_field)
-        if val is None:
+    buckets: dict[str, dict[str, list[float]]] = {}
+    for rec in readings:
+        dow = rec.get("day_of_week")
+        hour = rec.get("hour")
+        kwh = rec.get("consumption_kwh")
+        if dow is None or hour is None or kwh is None:
             continue
-        totals.setdefault(dow, {}).setdefault(hour, []).append(float(val))
-    return {
-        dow: {h: round(sum(vals) / len(vals), 4) for h, vals in hours.items()}
-        for dow, hours in totals.items()
-    }
+        dkey = str(dow)
+        hkey = str(hour)
+        buckets.setdefault(dkey, {}).setdefault(hkey, []).append(float(kwh))
+    return {d: {h: round(sum(v) / len(v), 4) for h, v in hours.items()} for d, hours in buckets.items()}
 
 
 def savings_summary(
     before_kwh: float,
     after_kwh: float,
-    unit_cost: float = 0.15,
+    unit_cost: float = 0.0,
 ) -> dict[str, float]:
-    """Summarise energy and cost savings between two periods.
+    """Summarise absolute and percentage energy savings.
 
     Args:
-        before_kwh: Energy consumed before an intervention (kWh).
-        after_kwh: Energy consumed after the intervention (kWh).
-        unit_cost: Cost per kWh in the user's currency. Default 0.15.
+        before_kwh: Consumption before the change (must be non-negative).
+        after_kwh: Consumption after the change (must be non-negative).
+        unit_cost: Optional tariff to translate savings into currency.
 
     Returns:
-        Dict with ``saved_kwh``, ``saved_cost``, and ``reduction_pct``.
+        Dict with ``saved_kwh`` (may be negative if consumption grew),
+        ``saved_cost`` (``saved_kwh * unit_cost``), and ``reduction_pct``
+        (0 when ``before_kwh`` is 0).
 
     Raises:
-        ValueError: If any argument is negative or *before_kwh* is 0.
+        ValueError: If either kWh input is negative.
     """
-    if before_kwh < 0 or after_kwh < 0 or unit_cost < 0:
-        raise ValueError("All arguments must be non-negative")
-    if before_kwh == 0.0:
+    if before_kwh < 0 or after_kwh < 0:
+        raise ValueError("kWh values must be non-negative")
+    if before_kwh == 0:
         return {"saved_kwh": 0.0, "saved_cost": 0.0, "reduction_pct": 0.0}
-    saved = before_kwh - after_kwh
+    saved_kwh = before_kwh - after_kwh
+    reduction_pct = (saved_kwh / before_kwh) * 100.0
     return {
-        "saved_kwh": round(saved, 4),
-        "saved_cost": round(saved * unit_cost, 4),
-        "reduction_pct": round(saved / before_kwh * 100, 4),
+        "saved_kwh": round(saved_kwh, 4),
+        "saved_cost": round(saved_kwh * unit_cost, 4),
+        "reduction_pct": round(reduction_pct, 4),
     }
+
+
+def peak_to_offpeak_ratio(readings: list[float], peak_hours: tuple[int, int] = (9, 17)) -> float:
+    """Return the ratio of average peak-hour to off-peak consumption.
+
+    Peak hours are 09:00-17:00 by default. Assumes *readings* are hourly and
+    begin at hour 0 (midnight).
+
+    Args:
+        readings: Hourly kWh readings; length ≥ 24 recommended.
+        peak_hours: (start_hour, end_hour) inclusive range for peak hours.
+
+    Returns:
+        Ratio; 0.0 when off-peak average is zero or readings is empty.
+
+    Raises:
+        ValueError: If peak_hours is not a valid tuple in [0, 23].
+    """
+    start, end = peak_hours
+    if not (0 <= start <= 23 and 0 <= end <= 23 and start <= end):
+        raise ValueError(f"peak_hours must be an ordered pair in [0, 23], got {peak_hours}")
+    if not readings:
+        return 0.0
+    peaks: list[float] = []
+    off_peaks: list[float] = []
+    for i, reading in enumerate(readings):
+        hour = i % 24
+        if start <= hour <= end:
+            peaks.append(reading)
+        else:
+            off_peaks.append(reading)
+    if not peaks or not off_peaks:
+        return 0.0
+    off_avg = sum(off_peaks) / len(off_peaks)
+    if off_avg == 0:
+        return 0.0
+    peak_avg = sum(peaks) / len(peaks)
+    return round(peak_avg / off_avg, 4)
+
+
+def format_kwh(value: float) -> str:
+    """Format a kWh value with a compact unit suffix.
+
+    - Values < 1 kWh render in Wh.
+    - Values >= 1000 kWh render in MWh.
+    - Otherwise the raw kWh is used.
+
+    Args:
+        value: Energy amount in kWh (must be non-negative).
+
+    Returns:
+        Human-readable string (e.g. ``"1.23 MWh"``).
+
+    Raises:
+        ValueError: If ``value`` is negative.
+    """
+    if value < 0:
+        raise ValueError(f"value must be non-negative, got {value}")
+    if value < 1.0:
+        return f"{value * 1000:.1f} Wh"
+    if value >= 1000.0:
+        return f"{value / 1000.0:.2f} MWh"
+    return f"{value:.2f} kWh"

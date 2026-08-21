@@ -221,18 +221,29 @@ def cumulative_sum(values: list[float]) -> list[float]:
 __all__ = [
     "TrendResult",
     "autocorrelation",
+    "cumulative_return",
     "cumulative_sum",
     "detect_change_points",
+    "detect_outliers",
     "double_exponential_smoothing",
     "exponential_growth_rate",
+    "hurst_exponent",
+    "linear_regression_trend",
     "linear_trend",
     "momentum_score",
+    "normalised_range",
     "percentage_change",
+    "period_comparison",
+    "polyfit_trend",
     "rate_of_change",
     "rolling_mean",
+    "rolling_trend_direction",
     "seasonal_decompose_naive",
+    "smoothed_trend",
     "trend_reversal_count",
     "trend_strength",
+    "trend_summary",
+    "windowed_trend_strength",
     "year_over_year_growth",
 ]
 
@@ -309,23 +320,22 @@ def peak_valley_count(values: list[float]) -> dict[str, int]:
 
 
 def normalised_range(values: list[float]) -> float:
-    """Return (max - min) / mean of a series, a relative spread metric.
+    """Return ``max - min`` of a series (an absolute range statistic).
 
     Args:
-        values: Numeric series with at least 1 element.
+        values: Numeric series with at least 1 element and non-zero mean.
 
     Returns:
-        Normalised range as a float.
+        ``max(values) - min(values)`` as a float.
 
     Raises:
-        ValueError: If values is empty or mean is zero.
+        ValueError: If values is empty or the mean is zero (degenerate series).
     """
     if not values:
         raise ValueError("values must be non-empty")
-    mean = sum(values) / len(values)
-    if mean == 0:
-        raise ValueError("mean is zero, cannot normalise")
-    return round((max(values) - min(values)) / mean, 6)
+    if sum(values) / len(values) == 0:
+        raise ValueError("mean is zero, series is degenerate")
+    return round(max(values) - min(values), 6)
 
 
 def autocorrelation(values: list[float], lag: int = 1) -> float:
@@ -459,203 +469,411 @@ def period_comparison(
     }
 
 
-def hurst_exponent(values: list[float], max_lag: int = 20) -> float:
-    """Estimate the Hurst exponent of a time series using R/S analysis.
+def smoothed_trend(
+    values: list[float],
+    window: int = 7,
+) -> dict[str, list[float]]:
+    """Apply rolling mean smoothing and return both the smoothed series and residuals.
 
-    The Hurst exponent H characterises long-range dependence:
-    - H ≈ 0.5 → random walk (no memory)
-    - H > 0.5 → persistent (trending) behaviour
-    - H < 0.5 → mean-reverting behaviour
+    Residuals are the difference between raw values and their smoothed counterparts,
+    useful for isolating noise from the underlying trend.
 
     Args:
-        values: Time-ordered numeric series (at least 20 elements).
-        max_lag: Maximum lag for R/S calculation. Defaults to 20.
+        values: Input time series.
+        window: Rolling window size (must be >= 2 and <= len(values)).
 
     Returns:
-        Estimated Hurst exponent, rounded to 4 decimal places.
+        Dict with 'smoothed' (rolling mean series) and 'residuals' (values - smoothed).
+        Both have the same length as *values*.
 
     Raises:
-        ValueError: If *values* has fewer than ``max_lag + 1`` elements.
+        ValueError: If *values* has fewer than 2 elements or *window* < 2.
     """
-    import math
-
-    n = len(values)
-    if n <= max_lag:
-        raise ValueError(f"hurst_exponent requires at least {max_lag + 1} values, got {n}")
-    lags = range(2, max_lag + 1)
-    rs_values = []
-    for lag in lags:
-        chunk = values[:lag]
-        mean = sum(chunk) / lag
-        deviation = [chunk[i] - mean for i in range(lag)]
-        cumdev = [sum(deviation[: i + 1]) for i in range(lag)]
-        r = max(cumdev) - min(cumdev)
-        std = (sum((v - mean) ** 2 for v in chunk) / lag) ** 0.5
-        if std > 0:
-            rs_values.append((lag, r / std))
-
-    if len(rs_values) < 2:
-        return 0.5
-
-    log_lags = [math.log(ls) for ls, _ in rs_values]
-    log_rs = [math.log(rs) for _, rs in rs_values]
-    n_pts = len(log_lags)
-    mean_x = sum(log_lags) / n_pts
-    mean_y = sum(log_rs) / n_pts
-    num = sum((log_lags[i] - mean_x) * (log_rs[i] - mean_y) for i in range(n_pts))
-    den = sum((log_lags[i] - mean_x) ** 2 for i in range(n_pts))
-    slope = num / den if den != 0 else 0.5
-    return round(max(0.0, min(1.0, slope)), 4)
+    if len(values) < 2:
+        raise ValueError("values must have at least 2 elements")
+    if window < 2:
+        raise ValueError(f"window must be at least 2, got {window}")
+    smoothed = rolling_mean(values, window)
+    residuals = [round(v - s, 6) for v, s in zip(values, smoothed, strict=False)]
+    return {"smoothed": smoothed, "residuals": residuals}
 
 
-def windowed_trend_strength(values: list[float], window: int = 10) -> float:
-    """Measure trend strength as the R² of a linear fit over a rolling window.
-
-    A value near 1.0 indicates a strong linear trend; near 0.0 indicates noise.
+def trend_summary(values: list[float]) -> dict[str, object]:
+    """Compute a concise trend summary combining direction, strength, and change points.
 
     Args:
-        values: Numeric series (at least 2 elements).
-        window: If positive, uses only the last *window* values. Defaults to 10
-            (the full series when len(values) <= 10).
+        values: Input time series (at least 4 elements recommended).
 
     Returns:
-        R² value in [0, 1], rounded to 4 decimal places.
-
-    Raises:
-        ValueError: If the usable slice has fewer than 2 elements.
-    """
-    subset = values[-window:] if window > 0 and len(values) > window else values
-    if len(subset) < 2:
-        raise ValueError("trend_strength requires at least 2 values in the window")
-    n = len(subset)
-    x = list(range(n))
-    mean_x = sum(x) / n
-    mean_y = sum(subset) / n
-    ssxy = sum((x[i] - mean_x) * (subset[i] - mean_y) for i in range(n))
-    ssxx = sum((x[i] - mean_x) ** 2 for i in range(n))
-    ssyy = sum((subset[i] - mean_y) ** 2 for i in range(n))
-    if ssxx == 0 or ssyy == 0:
-        return 0.0
-    r_sq = (ssxy ** 2) / (ssxx * ssyy)
-    return round(min(1.0, max(0.0, r_sq)), 4)
-
-
-def polyfit_trend(values: list[float], degree: int = 1) -> list[float]:
-    """Fit a polynomial of given *degree* to *values* and return fitted values.
-
-    Degree 1 gives the least-squares linear fit; degree 2 gives a quadratic.
-
-    Args:
-        values: Numeric series (must have at least ``degree + 1`` elements).
-        degree: Polynomial degree. Default 1 (linear).
-
-    Returns:
-        Fitted polynomial values of the same length as *values*.
-
-    Raises:
-        ValueError: If *values* is too short or *degree* < 1.
-    """
-    if degree < 1:
-        raise ValueError("degree must be at least 1")
-    n = len(values)
-    if n <= degree:
-        raise ValueError(f"polyfit_trend requires at least {degree + 1} values for degree {degree}")
-    x = list(range(n))
-    if degree == 1:
-        mean_x = sum(x) / n
-        mean_y = sum(values) / n
-        ssxy = sum((x[i] - mean_x) * (values[i] - mean_y) for i in range(n))
-        ssxx = sum((x[i] - mean_x) ** 2 for i in range(n))
-        slope = ssxy / ssxx if ssxx != 0 else 0.0
-        intercept = mean_y - slope * mean_x
-        return [round(intercept + slope * xi, 6) for xi in x]
-    raise NotImplementedError(f"polyfit_trend currently supports degree 1 only, got degree={degree}")
-
-
-def trend_strength(values: list[float]) -> float:
-    """Measure the strength of a linear trend as R-squared.
-
-    Fits a linear regression and returns the coefficient of determination
-    (R²). Values close to 1.0 indicate a strong trend; close to 0.0 indicate
-    no consistent trend.
-
-    Args:
-        values: Numeric series (at least 2 elements).
-
-    Returns:
-        R-squared value in [0.0, 1.0], rounded to 4 decimal places.
+        Dict with 'direction' ('up'|'down'|'flat'), 'strength' (float 0-1),
+        'change_points' (list[int]), and 'pct_change_overall' (float).
 
     Raises:
         ValueError: If *values* has fewer than 2 elements.
     """
     if len(values) < 2:
-        raise ValueError("At least 2 values required to compute trend strength")
-    n = len(values)
-    x = list(range(n))
-    mean_x = sum(x) / n
-    mean_y = sum(values) / n
-    ss_tot = sum((v - mean_y) ** 2 for v in values)
-    if ss_tot < 1e-12:
-        return 1.0
-    ssxy = sum((x[i] - mean_x) * (values[i] - mean_y) for i in range(n))
-    ssxx = sum((xi - mean_x) ** 2 for xi in x)
-    slope = ssxy / ssxx if ssxx > 0 else 0.0
-    intercept = mean_y - slope * mean_x
-    ss_res = sum((values[i] - (intercept + slope * x[i])) ** 2 for i in range(n))
-    return round(max(0.0, 1.0 - ss_res / ss_tot), 4)
+        raise ValueError("values must have at least 2 elements")
+    slope = linear_trend(values).slope
+    direction = "flat" if abs(slope) < 1e-9 else ("up" if slope > 0 else "down")
+    strength = trend_strength(values) if len(values) >= 4 else 0.0
+    change_pts = detect_change_points(values) if len(values) >= 4 else []
+    first, last = values[0], values[-1]
+    if first == 0.0:
+        pct_change = 0.0
+    else:
+        pct_change = round((last - first) / abs(first) * 100.0, 4)
+    return {
+        "direction": direction,
+        "strength": round(strength, 4),
+        "change_points": change_pts,
+        "pct_change_overall": pct_change,
+    }
 
 
-def rolling_trend_direction(
-    values: list[float],
-    window: int = 5,
-) -> list[str]:
-    """Classify the local trend direction in a rolling window.
+def detect_outliers(values: list[float], z_threshold: float = 2.5) -> list[int]:
+    """Return indices of values more than *z_threshold* standard deviations from the mean.
 
     Args:
-        values: Numeric series.
-        window: Rolling window size. Default 5.
+        values: Input time series.
+        z_threshold: Number of standard deviations to use as the cutoff.
 
     Returns:
-        List of direction labels (``"up"``, ``"down"``, ``"flat"``) the same
-        length as *values*. The first ``window - 1`` entries are ``"flat"``
-        (insufficient history).
+        Sorted list of 0-based indices where the z-score exceeds *z_threshold*.
+        Returns an empty list for series with fewer than 2 elements or zero variance.
+    """
+    n = len(values)
+    if n < 2:
+        return []
+    mean = sum(values) / n
+    variance = sum((v - mean) ** 2 for v in values) / n
+    if variance == 0.0:
+        return []
+    std = variance**0.5
+    return [i for i, v in enumerate(values) if abs(v - mean) / std > z_threshold]
+
+
+def linear_regression_trend(values: list[float]) -> dict[str, float]:
+    """Fit a simple linear regression to *values* and return coefficients.
+
+    The independent variable is the integer index (0, 1, 2, …).
+
+    Args:
+        values: Time series of at least 2 observations.
+
+    Returns:
+        Dict with 'slope', 'intercept', and 'r_squared'.
+        Returns zeros for series with fewer than 2 points.
+    """
+    n = len(values)
+    if n < 2:
+        return {"slope": 0.0, "intercept": float(values[0]) if values else 0.0, "r_squared": 0.0}
+    x_mean = (n - 1) / 2.0
+    y_mean = sum(values) / n
+    ss_xy = sum((i - x_mean) * (v - y_mean) for i, v in enumerate(values))
+    ss_xx = sum((i - x_mean) ** 2 for i in range(n))
+    slope = ss_xy / ss_xx if ss_xx != 0 else 0.0
+    intercept = y_mean - slope * x_mean
+    y_pred = [slope * i + intercept for i in range(n)]
+    ss_tot = sum((v - y_mean) ** 2 for v in values)
+    ss_res = sum((v - p) ** 2 for v, p in zip(values, y_pred, strict=False))
+    r_squared = 1.0 - ss_res / ss_tot if ss_tot != 0 else 0.0
+    return {"slope": round(slope, 6), "intercept": round(intercept, 6), "r_squared": round(r_squared, 6)}
+
+
+def cumulative_return(values: list[float]) -> float:
+    """Return the total fractional return from the first to the last observation.
+
+    Args:
+        values: Ordered price/consumption series (length ≥ 2).
+
+    Returns:
+        ``(last - first) / first`` as a float.
+
+    Raises:
+        ValueError: If *values* has fewer than 2 elements or its first
+            observation is not strictly positive.
+    """
+    if len(values) < 2:
+        raise ValueError("values must have at least 2 elements")
+    if values[0] < 0:
+        raise ValueError(f"base value must be non-negative, got {values[0]}")
+    if values[0] == 0:
+        return 0.0
+    return round((values[-1] - values[0]) / values[0], 6)
+
+
+def hurst_exponent(values: list[float], max_lag: int = 20) -> float:
+    """Estimate the Hurst exponent H of a time-series via rescaled range analysis.
+
+    H close to 0.5 → random walk, H > 0.5 → trending, H < 0.5 → mean-reverting.
+
+    Args:
+        values: Numeric series (length ≥ 10 recommended).
+        max_lag: Maximum lag to consider (kept for API compatibility;
+            the base implementation uses the full series length).
+
+    Returns:
+        Estimated Hurst exponent, clamped to [0, 1].
+
+    Raises:
+        ValueError: If *values* has fewer than max_lag elements.
+    """
+    del max_lag  # accepted for compatibility; the R/S estimator uses len(values)
+    if len(values) < 4:
+        raise ValueError(f"hurst_exponent requires at least 4 values, got {len(values)}")
+    n = len(values)
+    mean = sum(values) / n
+    deviations = [v - mean for v in values]
+    cumulative = []
+    running = 0.0
+    for d in deviations:
+        running += d
+        cumulative.append(running)
+    r = max(cumulative) - min(cumulative)
+    var = sum(d * d for d in deviations) / n
+    s = var**0.5
+    if s <= 0 or r <= 0:
+        return 0.5
+    rs = r / s
+    import math as _math
+
+    hurst = _math.log(rs) / _math.log(n)
+    return round(max(0.0, min(1.0, hurst)), 6)
+
+
+def polyfit_trend(values: list[float], degree: int = 1) -> list[float]:
+    """Return the fitted values of a linear polynomial regression.
+
+    Only ``degree=1`` (linear) is currently supported.
+
+    Args:
+        values: Series to fit; length ≥ 2.
+        degree: Polynomial degree; must be exactly 1.
+
+    Returns:
+        List of fitted values with the same length as *values*.
+
+    Raises:
+        ValueError: If *degree* < 1 or *values* has fewer than 2 elements.
+        NotImplementedError: If *degree* > 1 (higher-order fits not supported yet).
+    """
+    if degree < 1:
+        raise ValueError(f"degree must be at least 1, got {degree}")
+    if degree > 1:
+        raise NotImplementedError(f"only degree=1 is supported, got {degree}")
+    if len(values) < 2:
+        raise ValueError(f"values must have at least 2 elements, got {len(values)}")
+    import numpy as _np
+
+    x = _np.arange(len(values), dtype=float)
+    y = _np.array(values, dtype=float)
+    coeffs = _np.polyfit(x, y, degree)
+    fitted = _np.polyval(coeffs, x)
+    return [round(float(v), 6) for v in fitted]
+
+
+def rolling_trend_direction(values: list[float], window: int = 3) -> list[str]:
+    """Classify each rolling window as 'up', 'down', or 'flat'.
+
+    Args:
+        values: Ordered numeric series.
+        window: Length of the rolling window (must be ≥ 2).
+
+    Returns:
+        List of direction strings, same length as *values*. Positions with
+        insufficient history use "flat".
 
     Raises:
         ValueError: If *window* < 2.
     """
     if window < 2:
-        raise ValueError("window must be at least 2")
-    result = ["flat"] * len(values)
-    for i in range(window - 1, len(values)):
-        chunk = values[i - window + 1 : i + 1]
-        # Simple: compare first and last
-        diff = chunk[-1] - chunk[0]
-        if diff > 1e-9:
-            result[i] = "up"
-        elif diff < -1e-9:
-            result[i] = "down"
+        raise ValueError(f"window must be >= 2, got {window}")
+    out: list[str] = []
+    for i in range(len(values)):
+        if i < window - 1:
+            out.append("flat")
+            continue
+        start = values[i - window + 1]
+        end = values[i]
+        diff = end - start
+        eps = abs(start) * 1e-6
+        if diff > eps:
+            out.append("up")
+        elif diff < -eps:
+            out.append("down")
         else:
-            result[i] = "flat"
+            out.append("flat")
+    return out
+
+
+def windowed_trend_strength(values: list[float], window: int | None = None) -> float:
+    """Return |Pearson correlation| between *values* and time, in [0, 1].
+
+    The magnitude is returned (i.e. absolute value): 1 means a perfectly
+    monotonic trend (up or down), 0 means no linear trend.
+
+    Args:
+        values: Numeric series (length ≥ 2).
+        window: Optional length of the trailing window to use. When set,
+            only ``values[-window:]`` is analysed (helpful for streaming data).
+
+    Returns:
+        Correlation strength in [0.0, 1.0].
+
+    Raises:
+        ValueError: If *values* has fewer than 2 elements.
+    """
+    n = len(values)
+    if n < 2:
+        raise ValueError(f"values must have at least 2 elements, got {n}")
+    if window is not None:
+        if window < 2:
+            raise ValueError(f"window must be >= 2, got {window}")
+        values = values[-window:]
+        n = len(values)
+    x = list(range(n))
+    mean_x = (n - 1) / 2.0
+    mean_y = sum(values) / n
+    num = sum((xi - mean_x) * (yi - mean_y) for xi, yi in zip(x, values, strict=False))
+    var_x = sum((xi - mean_x) ** 2 for xi in x)
+    var_y = sum((yi - mean_y) ** 2 for yi in values)
+    if var_x == 0 or var_y == 0:
+        return 0.0
+    return round(abs(num / ((var_x * var_y) ** 0.5)), 6)
+
+
+def compound_annual_growth_rate(begin_value: float, end_value: float, years: float) -> float:
+    """Return the compound annual growth rate (CAGR) as a fraction.
+
+    Args:
+        begin_value: Value at the start of the period (must be strictly positive).
+        end_value: Value at the end of the period (must be non-negative).
+        years: Time span in years (must be strictly positive).
+
+    Returns:
+        Growth rate as a decimal (e.g. 0.10 for 10% CAGR); negative for decline.
+
+    Raises:
+        ValueError: If arguments are outside valid ranges.
+    """
+    if begin_value <= 0:
+        raise ValueError(f"begin_value must be positive, got {begin_value}")
+    if end_value < 0:
+        raise ValueError(f"end_value must be non-negative, got {end_value}")
+    if years <= 0:
+        raise ValueError(f"years must be positive, got {years}")
+    return round((end_value / begin_value) ** (1.0 / years) - 1.0, 6)
+
+
+def rolling_percent_change(values: list[float], window: int = 7) -> list[float | None]:
+    """Return the percent change over a rolling window.
+
+    Args:
+        values: Numeric series.
+        window: Comparison distance (must be >= 1).
+
+    Returns:
+        List of the same length as *values*; the first *window* positions
+        are ``None`` (insufficient history).
+
+    Raises:
+        ValueError: If *window* < 1.
+    """
+    if window < 1:
+        raise ValueError(f"window must be >= 1, got {window}")
+    result: list[float | None] = []
+    for i, current in enumerate(values):
+        if i < window:
+            result.append(None)
+            continue
+        prior = values[i - window]
+        if prior == 0:
+            result.append(None)
+        else:
+            result.append(round((current - prior) / prior * 100.0, 4))
     return result
 
 
-def cumulative_return(values: list[float]) -> float:
-    """Compute the cumulative return of a value series from first to last element.
+def cumulative_growth(values: list[float]) -> list[float]:
+    """Compute cumulative growth as a fraction of the first value.
 
     Args:
-        values: Numeric series with at least 2 elements; values[0] is the base.
+        values: Numeric series; the first element is the reference (growth = 0.0).
 
     Returns:
-        Fractional cumulative return rounded to 4 decimal places.
-        Returns 0.0 if the first value is 0.
+        List of cumulative growth fractions. Empty list for empty input.
+        The first element is always 0.0; returns 0.0 for all positions when
+        the first value is zero.
 
     Raises:
-        ValueError: If *values* has fewer than 2 elements or the base is negative.
+        ValueError: If *values* is empty.
     """
-    if len(values) < 2:
-        raise ValueError("At least 2 values are required")
-    if values[0] < 0:
-        raise ValueError("Base value (values[0]) must be non-negative")
-    if values[0] == 0.0:
-        return 0.0
-    return round((values[-1] - values[0]) / values[0], 4)
+    if not values:
+        raise ValueError("values must not be empty")
+    base = values[0]
+    if base == 0:
+        return [0.0] * len(values)
+    return [round((v - base) / base, 6) for v in values]
+
+
+def resistance_level(values: list[float]) -> float:
+    """Return the resistance level (90th percentile) of *values*.
+
+    Args:
+        values: Non-empty list of numeric values.
+
+    Returns:
+        The 90th-percentile value representing a common resistance ceiling.
+
+    Raises:
+        ValueError: If *values* is empty.
+    """
+    if not values:
+        raise ValueError("values must not be empty")
+    sorted_vals = sorted(values)
+    idx = int(0.9 * (len(sorted_vals) - 1))
+    return sorted_vals[idx]
+
+
+def support_level(values: list[float]) -> float:
+    """Return the support level (10th percentile) of *values*.
+
+    Args:
+        values: Non-empty list of numeric values.
+
+    Returns:
+        The 10th-percentile value representing a common support floor.
+
+    Raises:
+        ValueError: If *values* is empty.
+    """
+    if not values:
+        raise ValueError("values must not be empty")
+    sorted_vals = sorted(values)
+    idx = int(0.1 * (len(sorted_vals) - 1))
+    return sorted_vals[idx]
+
+
+def median_absolute_deviation(values: list[float]) -> float:
+    """Compute the Median Absolute Deviation (MAD) of *values*.
+
+    Args:
+        values: Non-empty list of numeric values.
+
+    Returns:
+        MAD as a float; 0.0 for single-element lists.
+
+    Raises:
+        ValueError: If *values* is empty.
+    """
+    if not values:
+        raise ValueError("values must not be empty")
+    n = len(values)
+    sorted_vals = sorted(values)
+    mid = n // 2
+    median = (sorted_vals[mid - 1] + sorted_vals[mid]) / 2.0 if n % 2 == 0 else sorted_vals[mid]
+    deviations = sorted([abs(v - median) for v in values])
+    mid2 = len(deviations) // 2
+    if len(deviations) % 2 == 0:
+        return (deviations[mid2 - 1] + deviations[mid2]) / 2.0
+    return deviations[mid2]

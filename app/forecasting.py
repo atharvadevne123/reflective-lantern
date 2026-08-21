@@ -163,18 +163,22 @@ def forecast_bias(actual: list[float], predicted: list[float]) -> float:
 
 
 __all__ = [
+    "bias_score",
     "confidence_interval",
     "drift_forecast",
     "ensemble_forecast",
     "exponential_smoothing_forecast",
     "forecast_bias",
+    "forecast_residuals",
     "forecast_summary",
     "mae_score",
+    "mape_score",
     "naive_forecast",
     "rmse_score",
     "seasonal_naive_forecast",
     "stepwise_error_growth",
     "weighted_ensemble_forecast",
+    "weighted_forecast",
 ]
 
 
@@ -335,22 +339,28 @@ def stepwise_error_growth(
 
 def weighted_ensemble_forecast(
     forecasts: list[list[float]],
-    weights: list[float],
+    weights: list[float] | None = None,
 ) -> list[float]:
     """Blend multiple forecast sequences using per-model weights.
 
     Args:
         forecasts: List of forecast sequences; all must have the same length.
-        weights: Non-negative weights (one per forecast sequence).
+        weights: Non-negative weights (one per forecast sequence). When ``None``,
+            equal weights are used. Weights must sum to approximately 1.0.
 
     Returns:
         Weighted-average forecast of the same length.
 
     Raises:
-        ValueError: If inputs are empty, have mismatched lengths, or weights sum to zero.
+        ValueError: If inputs are empty, have mismatched lengths, weights sum
+            to zero, or weights don't sum to (approximately) 1.
     """
-    if not forecasts or not weights:
-        raise ValueError("forecasts and weights must not be empty")
+    if not forecasts:
+        raise ValueError("forecasts must not be empty")
+    if weights is None:
+        weights = [1.0 / len(forecasts)] * len(forecasts)
+    if not weights:
+        raise ValueError("weights must not be empty")
     if len(forecasts) != len(weights):
         raise ValueError("forecasts and weights must have the same length")
     n_steps = len(forecasts[0])
@@ -359,6 +369,8 @@ def weighted_ensemble_forecast(
     total_w = sum(weights)
     if total_w == 0:
         raise ValueError("weights must sum to a positive value")
+    if any(w < 0 for w in weights):
+        raise ValueError("weights must be non-negative")
     result = []
     for i in range(n_steps):
         blended = sum(w * f[i] for w, f in zip(weights, forecasts, strict=False)) / total_w
@@ -572,57 +584,31 @@ def forecast_confidence_interval(
     return [(round(p - margin, 4), round(p + margin, 4)) for p in predictions]
 
 
-def weighted_ensemble_forecast(
-    forecasts: list[list[float]],
-    weights: list[float] | None = None,
-) -> list[float]:
-    """Blend multiple forecast series into a single ensemble prediction.
-
-    Args:
-        forecasts: List of equal-length forecast series.
-        weights: Optional per-series weights. If None, uses equal weights.
-
-    Returns:
-        Weighted mean forecast series.
-
-    Raises:
-        ValueError: If *forecasts* is empty, series differ in length, or weights
-            don't sum to approximately 1.0.
-    """
-    if not forecasts:
-        raise ValueError("forecasts must not be empty")
-    n = len(forecasts[0])
-    if any(len(f) != n for f in forecasts):
-        raise ValueError("All forecast series must have the same length")
-    if weights is None:
-        k = len(forecasts)
-        weights = [1.0 / k] * k
-    if abs(sum(weights) - 1.0) > 1e-6:
-        raise ValueError(f"weights must sum to 1.0, got {sum(weights)}")
-    result = []
-    for i in range(n):
-        value = sum(w * f[i] for w, f in zip(weights, forecasts, strict=False))
-        result.append(round(value, 4))
-    return result
-
-
 def horizon_degradation(
     errors: list[float],
-) -> float:
-    """Compute the rate at which forecast error grows with horizon.
+    horizon: int | None = None,
+) -> float | list[float]:
+    """Model how forecast error grows with the horizon step.
 
-    Fits a linear regression of error vs horizon index and returns the slope
-    (error increase per step). A positive slope means accuracy declines as
-    the forecast extends further into the future.
+    Two calling forms:
+
+    * ``horizon_degradation(errors)`` → returns the slope (float) of a linear
+      regression of error against horizon step.
+    * ``horizon_degradation(values, horizon=H)`` → returns an ``H``-item list
+      simulating linearly-growing error over the horizon.
 
     Args:
-        errors: Forecast errors ordered by horizon (1-step, 2-step, …).
+        errors: When ``horizon`` is None these are per-step forecast errors.
+            When ``horizon`` is provided this is any input series and only
+            its slope (over the horizon axis) is used to project degradation.
+        horizon: Optional horizon length; when set, a list of projected
+            errors is returned.
 
     Returns:
-        Slope of error vs horizon, rounded to 6 decimal places.
+        Slope (float) or a list of projected error values.
 
     Raises:
-        ValueError: If *errors* has fewer than 2 elements.
+        ValueError: If *errors* has fewer than 2 elements, or *horizon* < 1.
     """
     if len(errors) < 2:
         raise ValueError("At least 2 error values are required")
@@ -631,4 +617,214 @@ def horizon_degradation(
     y_mean = sum(errors) / n
     numer = sum((i - x_mean) * (errors[i] - y_mean) for i in range(n))
     denom = sum((i - x_mean) ** 2 for i in range(n))
-    return round(numer / denom if denom > 0 else 0.0, 6)
+    slope = numer / denom if denom > 0 else 0.0
+    if horizon is None:
+        return round(slope, 6)
+    if horizon < 1:
+        raise ValueError(f"horizon must be >= 1, got {horizon}")
+    intercept = y_mean - slope * x_mean
+    return [round(slope * (i + 1) + intercept, 6) for i in range(horizon)]
+
+
+def mape_score(actual: list[float], predicted: list[float]) -> float:
+    """Compute Mean Absolute Percentage Error (MAPE).
+
+    MAPE is expressed as a percentage and measures the average magnitude of
+    forecast errors relative to actuals. Observations with actual == 0 are skipped.
+
+    Args:
+        actual: Observed values.
+        predicted: Forecasted values (same length as *actual*).
+
+    Returns:
+        MAPE as a percentage (e.g. 5.0 = 5%). Returns 0.0 for empty inputs.
+
+    Raises:
+        ValueError: If *actual* and *predicted* differ in length.
+    """
+    if len(actual) != len(predicted):
+        raise ValueError(f"Length mismatch: actual={len(actual)}, predicted={len(predicted)}")
+    pairs = [(a, p) for a, p in zip(actual, predicted, strict=False) if a != 0.0]
+    if not pairs:
+        return 0.0
+    return round(sum(abs((a - p) / a) for a, p in pairs) / len(pairs) * 100.0, 6)
+
+
+def forecast_residuals(actual: list[float], predicted: list[float]) -> list[float]:
+    """Compute element-wise residuals (actual - predicted).
+
+    Args:
+        actual: Observed target values.
+        predicted: Model predictions (must be same length as *actual*).
+
+    Returns:
+        List of residuals (actual[i] - predicted[i]) rounded to 6 decimal places.
+
+    Raises:
+        ValueError: If lengths differ.
+    """
+    if len(actual) != len(predicted):
+        raise ValueError(f"Length mismatch: actual={len(actual)}, predicted={len(predicted)}")
+    return [round(a - p, 6) for a, p in zip(actual, predicted, strict=False)]
+
+
+def weighted_forecast(forecasts: list[float], weights: list[float]) -> float:
+    """Return a weighted average of multiple forecast values.
+
+    Args:
+        forecasts: List of forecast values.
+        weights: Corresponding weights (need not sum to 1).
+
+    Returns:
+        Weighted average as a float.
+
+    Raises:
+        ValueError: If lists have different lengths or all weights are zero.
+    """
+    if len(forecasts) != len(weights):
+        raise ValueError("forecasts and weights must have the same length")
+    total_weight = sum(weights)
+    if total_weight == 0.0:
+        raise ValueError("Sum of weights must be non-zero")
+    return round(sum(f * w for f, w in zip(forecasts, weights, strict=False)) / total_weight, 6)
+
+
+def bias_score(actual: list[float], predicted: list[float]) -> float:
+    """Compute mean forecast bias (mean of predicted - actual).
+
+    A positive bias means the model over-predicts on average; a negative
+    bias means it under-predicts.
+
+    Args:
+        actual: Observed values.
+        predicted: Model predictions (same length as *actual*).
+
+    Returns:
+        Mean bias rounded to 6 decimal places; 0.0 for empty input.
+
+    Raises:
+        ValueError: If lengths differ.
+    """
+    if len(actual) != len(predicted):
+        raise ValueError(f"Length mismatch: actual={len(actual)}, predicted={len(predicted)}")
+    if not actual:
+        return 0.0
+    return round(sum(p - a for a, p in zip(actual, predicted, strict=False)) / len(actual), 6)
+
+
+def directional_accuracy(actual: list[float], predicted: list[float]) -> float:
+    """Compute the fraction of steps where the predicted direction matches the actual.
+
+    Direction is the sign of the change from one step to the next.
+
+    Args:
+        actual: Observed values.
+        predicted: Predicted values; must have the same length as *actual*.
+
+    Returns:
+        Directional accuracy in [0.0, 1.0]; 0.0 for series shorter than 2 steps.
+
+    Raises:
+        ValueError: If lengths differ.
+    """
+    if len(actual) != len(predicted):
+        raise ValueError(f"Length mismatch: actual={len(actual)}, predicted={len(predicted)}")
+    if len(actual) < 2:
+        return 0.0
+    correct = 0
+    total = 0
+    for i in range(1, len(actual)):
+        actual_dir = actual[i] - actual[i - 1]
+        pred_dir = predicted[i] - predicted[i - 1]
+        if (actual_dir >= 0) == (pred_dir >= 0):
+            correct += 1
+        total += 1
+    return round(correct / total, 4)
+
+
+def forecast_bias_ratio(actual: list[float], predicted: list[float]) -> float:
+    """Compute the ratio of mean prediction to mean actual (bias ratio).
+
+    A ratio of 1.0 means the forecaster is unbiased on average.
+    Values > 1 indicate systematic over-prediction; < 1 indicates under-prediction.
+
+    Args:
+        actual: Observed values.
+        predicted: Predicted values; must have the same length.
+
+    Returns:
+        Bias ratio; 0.0 when mean actual is zero.
+
+    Raises:
+        ValueError: If lengths differ.
+    """
+    if len(actual) != len(predicted):
+        raise ValueError(f"Length mismatch: actual={len(actual)}, predicted={len(predicted)}")
+    if not actual:
+        return 0.0
+    mean_actual = sum(actual) / len(actual)
+    if mean_actual == 0:
+        return 0.0
+    mean_pred = sum(predicted) / len(predicted)
+    return round(mean_pred / mean_actual, 6)
+
+
+def mean_percentage_error(actual: list[float], predicted: list[float]) -> float:
+    """Compute the Mean Percentage Error (MPE) between *actual* and *predicted*.
+
+    Args:
+        actual: List of observed values (no zeros allowed).
+        predicted: List of forecast values (same length as *actual*).
+
+    Returns:
+        MPE as a percentage float (can be negative, indicating over-forecasting).
+
+    Raises:
+        ValueError: If lists are empty, have different lengths, or *actual* contains a zero.
+    """
+    if not actual or not predicted:
+        raise ValueError("actual and predicted must be non-empty")
+    if len(actual) != len(predicted):
+        raise ValueError("actual and predicted must have the same length")
+    if any(a == 0.0 for a in actual):
+        raise ValueError("actual must not contain zeros (division by zero)")
+    return round(sum((p - a) / a * 100.0 for a, p in zip(actual, predicted)) / len(actual), 6)
+
+
+def peak_forecast_hour(forecasts: list[float]) -> int:
+    """Return the index of the peak forecasted value.
+
+    Args:
+        forecasts: Non-empty list of forecast values (e.g. hourly load).
+
+    Returns:
+        Zero-based index of the maximum forecasted value.
+
+    Raises:
+        ValueError: If *forecasts* is empty.
+    """
+    if not forecasts:
+        raise ValueError("forecasts must not be empty")
+    return forecasts.index(max(forecasts))
+
+
+def forecast_volatility(forecasts: list[float]) -> float:
+    """Return the coefficient of variation (std/mean) of *forecasts* as a measure of volatility.
+
+    Args:
+        forecasts: Non-empty list of forecast values.
+
+    Returns:
+        Coefficient of variation; 0.0 when mean is zero.
+
+    Raises:
+        ValueError: If *forecasts* is empty.
+    """
+    if not forecasts:
+        raise ValueError("forecasts must not be empty")
+    n = len(forecasts)
+    mean = sum(forecasts) / n
+    if mean == 0.0:
+        return 0.0
+    variance = sum((v - mean) ** 2 for v in forecasts) / n
+    return round(variance ** 0.5 / abs(mean), 6)

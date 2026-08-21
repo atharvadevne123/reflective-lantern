@@ -169,3 +169,97 @@ def normalise_scores(scores: list[float]) -> list[float]:
     if hi == lo:
         return [0.0] * len(scores)
     return [(s - lo) / (hi - lo) for s in scores]
+
+
+def anomaly_burst_count(
+    scores: list[float],
+    threshold: float,
+    min_burst: int = 3,
+) -> int:
+    """Count the number of anomaly bursts (consecutive runs above threshold).
+
+    Args:
+        scores: Ordered anomaly scores.
+        threshold: Score threshold above which a point is anomalous.
+        min_burst: Minimum consecutive points to qualify as a burst.
+
+    Returns:
+        Number of bursts found.
+    """
+    bursts = 0
+    i = 0
+    while i < len(scores):
+        if scores[i] > threshold:
+            j = i
+            while j < len(scores) and scores[j] > threshold:
+                j += 1
+            if j - i >= min_burst:
+                bursts += 1
+            i = j
+        else:
+            i += 1
+    return bursts
+
+
+def score_percentile_threshold(
+    scores: list[float],
+    percentile: float = 95.0,
+) -> float:
+    """Return the score value at the given percentile as an anomaly threshold.
+
+    Args:
+        scores: Collection of anomaly scores.
+        percentile: Target percentile in (0, 100].
+
+    Returns:
+        Threshold value; 0.0 when *scores* is empty.
+    """
+    if not scores:
+        return 0.0
+    arr = np.array(scores, dtype=float)
+    return float(np.percentile(arr, percentile))
+
+
+def consecutive_anomaly_lengths(
+    flags: list[bool],
+) -> list[int]:
+    """Return the lengths of all consecutive True runs in *flags*.
+
+    Args:
+        flags: Boolean sequence where True marks an anomalous step.
+
+    Returns:
+        List of run lengths (int). Empty when no anomalies exist.
+    """
+    lengths = []
+    run = 0
+    for f in flags:
+        if f:
+            run += 1
+        elif run > 0:
+            lengths.append(run)
+            run = 0
+    if run > 0:
+        lengths.append(run)
+    return lengths
+
+
+def anomaly_density(scores: list[float], threshold: float, window: int = 10) -> list[float]:
+    """Compute a rolling anomaly density (fraction of anomalies per window).
+
+    Args:
+        scores: Sequence of anomaly scores.
+        threshold: Minimum absolute score to count as an anomaly.
+        window: Rolling window size.
+
+    Returns:
+        List of densities the same length as *scores*; initial positions have
+        partial windows.
+    """
+    densities = []
+    for i in range(len(scores)):
+        start = max(0, i - window + 1)
+        chunk = scores[start : i + 1]
+        anomalies = sum(1 for s in chunk if abs(s) >= threshold)
+        densities.append(round(anomalies / len(chunk), 4))
+    return densities

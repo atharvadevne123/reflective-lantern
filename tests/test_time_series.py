@@ -1372,3 +1372,240 @@ class TestSeriesRangeByWindow:
 
         values = [float(i) for i in range(10)]
         assert len(series_range_by_window(values, window=3)) == 10
+
+
+@pytest.mark.parametrize("window", [2, 5, 10])
+def test_simple_moving_average_length(window: int) -> None:
+    from app.time_series import simple_moving_average
+
+    values = list(range(20))
+    result = simple_moving_average(values, window=window)
+    assert len(result) == len(values)
+
+
+@pytest.mark.parametrize("horizon", [6, 12, 24])
+def test_forecast_linear_trend_length(horizon: int) -> None:
+    from app.time_series import forecast_linear_trend
+
+    values = [float(i) for i in range(30)]
+    result = forecast_linear_trend(values, horizon=horizon)
+    assert len(result) == horizon
+
+
+@pytest.mark.parametrize(
+    "values,expected_load_factor",
+    [
+        ([1.0, 1.0, 1.0], 1.0),
+        ([0.0, 0.0, 10.0], pytest.approx(1 / 3, abs=0.01)),
+    ],
+)
+def test_load_factor_specific_inputs(values: list, expected_load_factor) -> None:
+    from app.time_series import load_factor
+
+    assert load_factor(values) == expected_load_factor
+
+
+@pytest.mark.parametrize("n", [24, 48, 96])
+def test_cumulative_sum_length(n: int) -> None:
+    from app.time_series import cumulative_sum
+
+    values = [1.0] * n
+    result = cumulative_sum(values)
+    assert len(result) == n
+
+
+@pytest.mark.parametrize(
+    "values,alpha",
+    [
+        ([1.0, 2.0, 3.0, 4.0, 5.0], 0.1),
+        ([10.0, 8.0, 6.0, 4.0], 0.5),
+    ],
+)
+def test_exponential_moving_average_length(values: list, alpha: float) -> None:
+    from app.time_series import exponential_moving_average
+
+    result = exponential_moving_average(values, alpha=alpha)
+    assert len(result) == len(values)
+
+
+class TestSeriesAutocorrelation:
+    def test_perfectly_correlated_series(self) -> None:
+        from app.time_series import series_autocorrelation
+
+        values = [1.0, 2.0, 3.0, 4.0, 5.0]
+        result = series_autocorrelation(values, lag=1)
+        assert result > 0.9
+
+    def test_too_short_returns_zero(self) -> None:
+        from app.time_series import series_autocorrelation
+
+        assert series_autocorrelation([1.0], lag=1) == 0.0
+
+    def test_invalid_lag_raises(self) -> None:
+        from app.time_series import series_autocorrelation
+
+        with pytest.raises(ValueError):
+            series_autocorrelation([1.0, 2.0], lag=0)
+
+    def test_result_in_unit_interval(self) -> None:
+        import math
+
+        from app.time_series import series_autocorrelation
+
+        values = [float(i) + (i % 3) for i in range(20)]
+        result = series_autocorrelation(values, lag=1)
+        assert not math.isnan(result)
+        assert -1.0 <= result <= 1.0
+
+
+class TestSeriesEntropy:
+    def test_constant_series_zero_entropy(self) -> None:
+        from app.time_series import series_entropy
+
+        assert series_entropy([5.0] * 10) == 0.0
+
+    def test_empty_returns_zero(self) -> None:
+        from app.time_series import series_entropy
+
+        assert series_entropy([]) == 0.0
+
+    def test_high_entropy_uniform_distribution(self) -> None:
+        from app.time_series import series_entropy
+
+        values = list(range(1, 101))
+        result = series_entropy(values, bins=10)
+        assert result > 2.0
+
+    @pytest.mark.parametrize("bins", [5, 10, 20])
+    def test_non_negative_for_various_bins(self, bins: int) -> None:
+        from app.time_series import series_entropy
+
+        values = [float(i) for i in range(50)]
+        assert series_entropy(values, bins=bins) >= 0.0
+
+
+class TestEnergyIntensityScore:
+    def test_basic(self) -> None:
+        from app.time_series import energy_intensity_score
+        result = energy_intensity_score([100.0, 200.0, 150.0], 1000.0)
+        assert abs(result - 0.45) < 0.001
+
+    def test_empty_raises(self) -> None:
+        import pytest
+        from app.time_series import energy_intensity_score
+        with pytest.raises(ValueError):
+            energy_intensity_score([], 100.0)
+
+    def test_zero_sqft_raises(self) -> None:
+        import pytest
+        from app.time_series import energy_intensity_score
+        with pytest.raises(ValueError):
+            energy_intensity_score([10.0], 0.0)
+
+
+class TestBaselineDeviation:
+    def test_first_n_are_zero(self) -> None:
+        from app.time_series import baseline_deviation
+        result = baseline_deviation([1, 2, 3, 4, 5, 6, 7, 10], baseline_days=3)
+        assert result[0] == result[1] == result[2] == 0.0
+
+    def test_deviation_computed(self) -> None:
+        from app.time_series import baseline_deviation
+        result = baseline_deviation([1, 2, 3, 4, 5, 6, 7, 10], baseline_days=3)
+        assert result[3] != 0.0
+
+    def test_invalid_baseline_raises(self) -> None:
+        import pytest
+        from app.time_series import baseline_deviation
+        with pytest.raises(ValueError):
+            baseline_deviation([1, 2, 3], baseline_days=0)
+
+
+class TestWeekendWeekdayRatio:
+    def test_equal_consumption_ratio_one(self) -> None:
+        from app.time_series import weekend_weekday_ratio
+        # 14 days of constant consumption
+        values = [10.0] * 14
+        result = weekend_weekday_ratio(values, start_weekday=0)
+        assert abs(result - 1.0) < 0.01
+
+    def test_empty_raises(self) -> None:
+        import pytest
+        from app.time_series import weekend_weekday_ratio
+        with pytest.raises(ValueError):
+            weekend_weekday_ratio([])
+
+    def test_invalid_start_weekday(self) -> None:
+        import pytest
+        from app.time_series import weekend_weekday_ratio
+        with pytest.raises(ValueError):
+            weekend_weekday_ratio([1.0] * 7, start_weekday=7)
+
+
+class TestHourlyVariability:
+    def test_constant_series_low_variability(self) -> None:
+        from app.time_series import hourly_variability
+        result = hourly_variability([10.0, 10.0, 10.0, 10.0])
+        assert result == 0.0
+
+    def test_variable_series(self) -> None:
+        from app.time_series import hourly_variability
+        result = hourly_variability([1.0, 10.0, 1.0, 10.0])
+        assert result > 0.0
+
+    def test_single_value_raises(self) -> None:
+        import pytest
+        from app.time_series import hourly_variability
+        with pytest.raises(ValueError):
+            hourly_variability([5.0])
+
+
+class TestZeroCrossingRate:
+    def test_alternating_signs(self) -> None:
+        import pytest
+        from app.time_series import zero_crossing_rate
+        assert zero_crossing_rate([-1.0, 1.0, -1.0, 1.0]) == pytest.approx(1.0)
+
+    def test_no_crossings(self) -> None:
+        import pytest
+        from app.time_series import zero_crossing_rate
+        assert zero_crossing_rate([1.0, 2.0, 3.0]) == pytest.approx(0.0)
+
+    def test_too_short_raises(self) -> None:
+        from app.time_series import zero_crossing_rate
+        with __import__("pytest").raises(ValueError):
+            zero_crossing_rate([1.0])
+
+
+class TestPeakToTroughRatio:
+    def test_basic(self) -> None:
+        import pytest
+        from app.time_series import peak_to_trough_ratio
+        assert peak_to_trough_ratio([1.0, 5.0, 2.0, 8.0]) == pytest.approx(8.0)
+
+    def test_zero_trough(self) -> None:
+        import pytest
+        from app.time_series import peak_to_trough_ratio
+        assert peak_to_trough_ratio([0.0, 5.0]) == pytest.approx(0.0)
+
+    def test_empty_raises(self) -> None:
+        from app.time_series import peak_to_trough_ratio
+        with __import__("pytest").raises(ValueError):
+            peak_to_trough_ratio([])
+
+
+class TestLoadFactor:
+    def test_basic(self) -> None:
+        from app.time_series import load_factor
+        result = load_factor([10.0, 20.0, 15.0, 25.0])
+        assert 0.0 < result < 1.0
+
+    def test_all_peak(self) -> None:
+        import pytest
+        from app.time_series import load_factor
+        assert load_factor([5.0, 5.0, 5.0]) == pytest.approx(1.0)
+
+    def test_empty_returns_zero(self) -> None:
+        import pytest
+        from app.time_series import load_factor
+        assert load_factor([]) == pytest.approx(0.0)

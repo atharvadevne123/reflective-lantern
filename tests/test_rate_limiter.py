@@ -13,30 +13,30 @@ from app.rate_limiter import (
 )
 
 
-def test_first_request_allowed():
+def test_first_request_allowed() -> None:
     limiter = TokenBucketRateLimiter(capacity=5.0, rate_per_second=1.0)
     assert limiter.is_allowed("client-1") is True
 
 
-def test_exhausted_bucket_denied():
+def test_exhausted_bucket_denied() -> None:
     limiter = TokenBucketRateLimiter(capacity=2.0, rate_per_second=0.01)
     limiter.is_allowed("c")
     limiter.is_allowed("c")
     assert limiter.is_allowed("c") is False
 
 
-def test_remaining_tokens_full_for_new_client():
+def test_remaining_tokens_full_for_new_client() -> None:
     limiter = TokenBucketRateLimiter(capacity=10.0, rate_per_second=1.0)
     assert limiter.remaining_tokens("new") == 10.0
 
 
-def test_remaining_tokens_decreases_after_request():
+def test_remaining_tokens_decreases_after_request() -> None:
     limiter = TokenBucketRateLimiter(capacity=5.0, rate_per_second=0.01)
     limiter.is_allowed("x")
     assert limiter.remaining_tokens("x") < 5.0
 
 
-def test_reset_restores_full_capacity():
+def test_reset_restores_full_capacity() -> None:
     limiter = TokenBucketRateLimiter(capacity=3.0, rate_per_second=0.01)
     limiter.is_allowed("r")
     limiter.is_allowed("r")
@@ -44,7 +44,7 @@ def test_reset_restores_full_capacity():
     assert limiter.remaining_tokens("r") == 3.0
 
 
-def test_clear_removes_all_clients():
+def test_clear_removes_all_clients() -> None:
     limiter = TokenBucketRateLimiter(capacity=5.0, rate_per_second=1.0)
     limiter.is_allowed("a")
     limiter.is_allowed("b")
@@ -52,7 +52,7 @@ def test_clear_removes_all_clients():
     assert limiter.client_count == 0
 
 
-def test_client_count_tracks_unique_keys():
+def test_client_count_tracks_unique_keys() -> None:
     limiter = TokenBucketRateLimiter(capacity=5.0, rate_per_second=1.0)
     limiter.is_allowed("alpha")
     limiter.is_allowed("beta")
@@ -60,37 +60,37 @@ def test_client_count_tracks_unique_keys():
     assert limiter.client_count == 2
 
 
-def test_invalid_capacity_raises():
+def test_invalid_capacity_raises() -> None:
     with pytest.raises(ValueError):
         TokenBucketRateLimiter(capacity=0.0, rate_per_second=1.0)
 
 
-def test_invalid_rate_raises():
+def test_invalid_rate_raises() -> None:
     with pytest.raises(ValueError):
         TokenBucketRateLimiter(capacity=5.0, rate_per_second=-1.0)
 
 
-def test_make_rate_limiter_factory():
+def test_make_rate_limiter_factory() -> None:
     limiter = make_rate_limiter(capacity=30.0, rate_per_second=0.5)
     assert isinstance(limiter, TokenBucketRateLimiter)
     assert limiter.is_allowed("x") is True
 
 
 @pytest.mark.parametrize("capacity", [1.0, 5.0, 10.0, 100.0])
-def test_capacity_respected(capacity):
+def test_capacity_respected(capacity) -> None:
     limiter = TokenBucketRateLimiter(capacity=capacity, rate_per_second=0.001)
     allowed = sum(1 for _ in range(int(capacity) + 5) if limiter.is_allowed("k"))
     assert allowed == int(capacity)
 
 
-def test_separate_clients_independent():
+def test_separate_clients_independent() -> None:
     limiter = TokenBucketRateLimiter(capacity=1.0, rate_per_second=0.01)
     limiter.is_allowed("client-a")
     assert limiter.is_allowed("client-b") is True
 
 
 @pytest.mark.parametrize("n_clients", [1, 5, 10])
-def test_clear_resets_all_clients(n_clients):
+def test_clear_resets_all_clients(n_clients) -> None:
     limiter = TokenBucketRateLimiter(capacity=10.0, rate_per_second=1.0)
     for i in range(n_clients):
         limiter.is_allowed(f"c-{i}")
@@ -98,13 +98,13 @@ def test_clear_resets_all_clients(n_clients):
     assert limiter.client_count == 0
 
 
-def test_is_allowed_returns_bool():
+def test_is_allowed_returns_bool() -> None:
     limiter = TokenBucketRateLimiter(capacity=5.0, rate_per_second=1.0)
     result = limiter.is_allowed("test")
     assert isinstance(result, bool)
 
 
-def test_remaining_tokens_after_clear():
+def test_remaining_tokens_after_clear() -> None:
     limiter = TokenBucketRateLimiter(capacity=5.0, rate_per_second=0.01)
     limiter.is_allowed("c")
     limiter.clear()
@@ -112,7 +112,7 @@ def test_remaining_tokens_after_clear():
 
 
 @pytest.mark.parametrize("rate", [0.1, 0.5, 1.0, 5.0])
-def test_make_rate_limiter_various_rates(rate):
+def test_make_rate_limiter_various_rates(rate) -> None:
     limiter = make_rate_limiter(capacity=10.0, rate_per_second=rate)
     assert limiter.is_allowed("test") is True
 
@@ -352,14 +352,15 @@ class TestIsRateLimitedHelper:
 
 
 class TestResetClient:
-    def test_reset_removes_bucket(self) -> None:
-        from app.rate_limiter import client_exists, make_rate_limiter, reset_client
+    def test_reset_restores_bucket(self) -> None:
+        from app.rate_limiter import bucket_fill_percentage, make_rate_limiter, reset_client
 
-        limiter = make_rate_limiter()
-        limiter.is_allowed("z")
-        assert client_exists(limiter, "z") is True
+        limiter = make_rate_limiter(capacity=5.0, refill_rate=0.0)
+        for _ in range(5):
+            limiter.is_allowed("z")
+        assert bucket_fill_percentage(limiter, "z") == pytest.approx(0.0, abs=1.0)
         reset_client(limiter, "z")
-        assert client_exists(limiter, "z") is False
+        assert bucket_fill_percentage(limiter, "z") == pytest.approx(100.0, abs=1.0)
 
     def test_reset_nonexistent_returns_false(self) -> None:
         from app.rate_limiter import make_rate_limiter, reset_client

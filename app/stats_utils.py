@@ -125,7 +125,10 @@ def percentile(values: list[float], p: float) -> float:
 
 __all__ = [
     "coefficient_of_variation",
+    "compute_correlation",
+    "correlation_coefficient",
     "geometric_mean",
+    "gini_coefficient",
     "harmonic_mean",
     "interquartile_range",
     "mape",
@@ -135,13 +138,23 @@ __all__ = [
     "normalize_series",
     "percentile",
     "percentile_rank",
+    "population_variance",
     "r_squared",
     "rolling_mean",
+    "rolling_sharpe",
     "root_mean_squared_error",
+    "sample_std",
+    "sharpe_ratio",
     "trimmed_mean",
     "variance",
     "weighted_average",
+    "weighted_median",
     "zscore",
+
+    "confidence_interval",
+    "outlier_fraction",
+    "rolling_rmse",
+    "signal_to_noise_ratio",
 ]
 
 
@@ -313,21 +326,23 @@ def coefficient_of_variation(values: list[float]) -> float:
     dispersion across series with different scales.
 
     Args:
-        values: Non-empty list of numeric observations (mean must be non-zero).
+        values: List of at least 2 numeric observations.
 
     Returns:
         CV as a percentage (std / mean * 100), rounded to 4 decimal places.
-        Returns 0.0 when all values are identical.
+        Returns 0.0 when all values are identical or the mean is zero.
 
     Raises:
-        ValueError: If *values* is empty or the mean is zero.
+        ValueError: If *values* is empty.
     """
     if not values:
         raise ValueError("values must not be empty")
+    if len(values) < 2:
+        raise ValueError(f"values must have at least 2 elements, got {len(values)}")
     n = len(values)
     mean = sum(values) / n
     if abs(mean) < 1e-12:
-        raise ValueError(f"Mean is near zero ({mean:.6e}); CV is undefined")
+        return 0.0
     variance = sum((v - mean) ** 2 for v in values) / n
     std = variance**0.5
     if std < 1e-12:
@@ -384,8 +399,8 @@ def winsorize(values: list[float], lower_pct: float = 5.0, upper_pct: float = 95
         raise ValueError(f"Percentiles must satisfy 0 <= lower_pct < upper_pct <= 100, got {lower_pct}, {upper_pct}")
     sorted_vals = sorted(values)
     n = len(sorted_vals)
-    lo_idx = int(lower_pct / 100.0 * (n - 1))
-    hi_idx = int(upper_pct / 100.0 * (n - 1))
+    lo_idx = min(n - 1, int(lower_pct / 100.0 * n))
+    hi_idx = max(0, min(n - 1, int(upper_pct / 100.0 * n) - 1))
     lo_val = sorted_vals[lo_idx]
     hi_val = sorted_vals[hi_idx]
     return [max(lo_val, min(hi_val, v)) for v in values]
@@ -753,7 +768,7 @@ def gini_coefficient(values: list[float]) -> float:
         raise ValueError("gini_coefficient requires non-negative values")
     total = sum(values)
     if total == 0:
-        raise ValueError("gini_coefficient is undefined when all values are zero")
+        return 0.0
     n = len(values)
     sorted_vals = sorted(values)
     cumulative = sum((2 * (i + 1) - n - 1) * v for i, v in enumerate(sorted_vals))
@@ -784,80 +799,273 @@ def log_return(prices: list[float]) -> list[float]:
     return [round(math.log(prices[i] / prices[i - 1]), 6) for i in range(1, len(prices))]
 
 
-def gini_coefficient(values: list[float]) -> float:
-    """Compute the Gini coefficient of a distribution.
+def sharpe_ratio(returns: list[float], risk_free_rate: float = 0.0) -> float:
+    """Compute the Sharpe ratio for a return series.
 
-    A value of 0 represents perfect equality; 1 represents maximum inequality.
+    Sharpe ratio = (mean_return - risk_free_rate) / std_return.
 
     Args:
-        values: Non-negative numeric values (e.g. incomes, consumptions).
+        returns: List of periodic returns (e.g. daily log returns).
+        risk_free_rate: Annualised risk-free rate expressed in the same
+            units as *returns* (default 0.0).
 
     Returns:
-        Gini coefficient in [0, 1], rounded to 4 decimal places.
+        Sharpe ratio rounded to 4 decimal places, or 0.0 when std is
+        effectively zero.
 
     Raises:
-        ValueError: If *values* is empty or contains negative numbers.
+        ValueError: If *returns* has fewer than 2 observations.
     """
-    if not values:
-        raise ValueError("values must not be empty")
-    if any(v < 0 for v in values):
-        raise ValueError("All values must be non-negative")
-    n = len(values)
-    sorted_vals = sorted(values)
-    cumulative = sum((2 * (i + 1) - n - 1) * v for i, v in enumerate(sorted_vals))
-    total = sum(sorted_vals)
-    if total == 0.0:
+    import math
+
+    if len(returns) < 2:
+        raise ValueError("sharpe_ratio requires at least 2 return observations")
+    n = len(returns)
+    mean = sum(returns) / n
+    variance = sum((r - mean) ** 2 for r in returns) / (n - 1)
+    std = math.sqrt(variance)
+    if std < 1e-12:
         return 0.0
-    return round(cumulative / (n * total), 4)
+    return round((mean - risk_free_rate) / std, 4)
 
 
-def trimmed_mean(values: list[float], trim_pct: float = 0.1) -> float:
-    """Compute the trimmed mean by discarding the highest and lowest fraction.
+def rolling_sharpe(returns: list[float], window: int, risk_free_rate: float = 0.0) -> list[float]:
+    """Compute rolling Sharpe ratio over *window* periods.
+
+    Positions before a full window is available are NaN.
 
     Args:
-        values: Numeric series.
-        trim_pct: Fraction of values to trim from each end. Default 0.1 (10%).
+        returns: Ordered list of periodic returns.
+        window: Rolling window size (must be >= 2).
+        risk_free_rate: Risk-free rate in same units as returns.
 
     Returns:
-        Trimmed mean of the remaining values, rounded to 6 decimal places.
+        Rolling Sharpe ratio list of the same length as *returns*.
 
     Raises:
-        ValueError: If *values* is empty, *trim_pct* outside [0, 0.5), or too few
-            values remain after trimming.
+        ValueError: If *window* < 2.
+    """
+    import math
+
+    if window < 2:
+        raise ValueError("rolling_sharpe window must be >= 2")
+    result: list[float] = []
+    for i in range(len(returns)):
+        if i + 1 < window:
+            result.append(math.nan)
+        else:
+            chunk = returns[i - window + 1 : i + 1]
+            result.append(sharpe_ratio(chunk, risk_free_rate))
+    return result
+
+
+def weighted_median(values: list[float], weights: list[float]) -> float:
+    """Compute the weighted median of *values*.
+
+    The weighted median is the value v where the cumulative weight below v is
+    at most 0.5 and the cumulative weight above v is at most 0.5.
+
+    Args:
+        values: Numeric observations.
+        weights: Non-negative weight for each observation (same length).
+
+    Returns:
+        Weighted median as a float.
+
+    Raises:
+        ValueError: If *values* is empty, lengths differ, or any weight is negative.
     """
     if not values:
         raise ValueError("values must not be empty")
-    if not (0.0 <= trim_pct < 0.5):
-        raise ValueError(f"trim_pct must be in [0, 0.5), got {trim_pct}")
-    n = len(values)
-    k = int(n * trim_pct)
-    sorted_vals = sorted(values)
-    trimmed = sorted_vals[k : n - k] if k > 0 else sorted_vals
-    if not trimmed:
-        raise ValueError("No values remain after trimming — reduce trim_pct")
-    return round(sum(trimmed) / len(trimmed), 6)
+    if len(values) != len(weights):
+        raise ValueError("values and weights must have the same length")
+    if any(w < 0 for w in weights):
+        raise ValueError("All weights must be non-negative")
+    total_w = sum(weights)
+    if total_w == 0:
+        return values[len(values) // 2]
+    paired = sorted(zip(values, weights, strict=False), key=lambda x: x[0])
+    cumulative = 0.0
+    for val, w in paired:
+        cumulative += w
+        if cumulative >= total_w / 2.0:
+            return float(val)
+    return float(paired[-1][0])
 
 
-def coefficient_of_variation(values: list[float]) -> float:
-    """Return the coefficient of variation (std / mean) as a percentage.
-
-    CV measures relative variability. It is undefined when the mean is 0.
+def population_variance(values: list[float]) -> float:
+    """Compute the population variance (denominator N) of *values*.
 
     Args:
-        values: Numeric series.
+        values: Numeric sample values.
 
     Returns:
-        CV as a percentage, rounded to 4 decimal places, or 0.0 if mean is 0.
+        Population variance as a float, rounded to 6 decimal places.
 
     Raises:
-        ValueError: If *values* has fewer than 2 elements.
+        ValueError: If *values* is empty.
+    """
+    if not values:
+        raise ValueError("values must not be empty")
+    mean = sum(values) / len(values)
+    return round(sum((v - mean) ** 2 for v in values) / len(values), 6)
+
+
+def sample_std(values: list[float]) -> float:
+    """Compute the sample standard deviation (Bessel-corrected, denominator N-1).
+
+    Args:
+        values: Numeric sample values.
+
+    Returns:
+        Sample standard deviation as a float.
+
+    Raises:
+        ValueError: If fewer than 2 values are provided.
+    """
+    n = len(values)
+    if n < 2:
+        raise ValueError("Need at least 2 values for sample standard deviation")
+    mean = sum(values) / n
+    return round((sum((v - mean) ** 2 for v in values) / (n - 1)) ** 0.5, 6)
+
+
+def correlation_coefficient(x: list[float], y: list[float]) -> float:
+    """Compute the Pearson correlation coefficient between two series.
+
+    Args:
+        x: First numeric series.
+        y: Second numeric series (must be same length as *x*).
+
+    Returns:
+        Pearson r in [-1, 1]; 0.0 when variance in either series is zero.
+
+    Raises:
+        ValueError: If *x* and *y* have different lengths or fewer than 2 points.
+    """
+    n = len(x)
+    if n != len(y):
+        raise ValueError("x and y must have the same length")
+    if n < 2:
+        raise ValueError("Need at least 2 data points")
+    mean_x = sum(x) / n
+    mean_y = sum(y) / n
+    cov = sum((xi - mean_x) * (yi - mean_y) for xi, yi in zip(x, y, strict=False))
+    var_x = sum((xi - mean_x) ** 2 for xi in x)
+    var_y = sum((yi - mean_y) ** 2 for yi in y)
+    denom = (var_x * var_y) ** 0.5
+    if denom == 0.0:
+        return 0.0
+    return round(cov / denom, 6)
+
+
+def rolling_rmse(actual: list[float], predicted: list[float], window: int) -> list[float]:
+    """Compute rolling RMSE between actual and predicted over a sliding window.
+
+    Args:
+        actual: Ground-truth series.
+        predicted: Predicted series (same length as actual).
+        window: Number of data points per rolling window.
+
+    Returns:
+        List of RMSE values; first (window - 1) entries are NaN-padded as 0.0.
+
+    Raises:
+        ValueError: If window < 1 or lists have mismatched lengths.
+    """
+    if window < 1:
+        raise ValueError(f"window must be >= 1, got {window}")
+    if len(actual) != len(predicted):
+        raise ValueError("actual and predicted must have the same length")
+    result: list[float] = []
+    for i in range(len(actual)):
+        if i < window - 1:
+            result.append(0.0)
+        else:
+            a_w = actual[i - window + 1 : i + 1]
+            p_w = predicted[i - window + 1 : i + 1]
+            mse = sum((a - p) ** 2 for a, p in zip(a_w, p_w)) / window
+            result.append(round(mse ** 0.5, 6))
+    return result
+
+
+def confidence_interval(values: list[float], confidence: float = 0.95) -> tuple[float, float]:
+    """Compute a parametric confidence interval for the mean of *values*.
+
+    Uses a t-distribution approximation via the standard error.
+
+    Args:
+        values: Sample data (must have at least 2 elements).
+        confidence: Confidence level in (0, 1).
+
+    Returns:
+        (lower, upper) bounds as a tuple of floats.
+
+    Raises:
+        ValueError: If values has fewer than 2 elements or confidence is out of range.
     """
     if len(values) < 2:
-        raise ValueError("At least 2 values required")
+        raise ValueError("confidence_interval requires at least 2 values")
+    if not (0.0 < confidence < 1.0):
+        raise ValueError(f"confidence must be in (0, 1), got {confidence}")
+    import math
+
     n = len(values)
-    mean = sum(values) / n
-    if mean == 0.0:
+    mean_v = sum(values) / n
+    std_v = (sum((v - mean_v) ** 2 for v in values) / (n - 1)) ** 0.5
+    se = std_v / math.sqrt(n)
+    # Approximate z-score for common confidence levels
+    z_map = {0.90: 1.645, 0.95: 1.96, 0.99: 2.576}
+    z = z_map.get(round(confidence, 2), 1.96)
+    margin = z * se
+    return (round(mean_v - margin, 6), round(mean_v + margin, 6))
+
+
+def signal_to_noise_ratio(values: list[float]) -> float:
+    """Compute the signal-to-noise ratio (mean / std) of *values*.
+
+    Args:
+        values: Numeric series with at least 2 elements.
+
+    Returns:
+        SNR as a float; returns 0.0 when std is zero.
+
+    Raises:
+        ValueError: If values is empty.
+    """
+    if not values:
+        raise ValueError("values must not be empty")
+    if len(values) < 2:
         return 0.0
-    variance = sum((v - mean) ** 2 for v in values) / (n - 1)
-    std = variance ** 0.5
-    return round(std / abs(mean) * 100.0, 4)
+    mean_v = sum(values) / len(values)
+    variance = sum((v - mean_v) ** 2 for v in values) / (len(values) - 1)
+    std_v = variance ** 0.5
+    if std_v == 0.0:
+        return 0.0
+    return round(abs(mean_v) / std_v, 6)
+
+
+def outlier_fraction(values: list[float], z_threshold: float = 3.0) -> float:
+    """Return the fraction of *values* that are beyond *z_threshold* standard deviations.
+
+    Args:
+        values: Numeric series with at least 2 elements.
+        z_threshold: Number of standard deviations defining an outlier.
+
+    Returns:
+        Fraction in [0.0, 1.0]; 0.0 if std is zero.
+
+    Raises:
+        ValueError: If values is empty.
+    """
+    if not values:
+        raise ValueError("values must not be empty")
+    if len(values) < 2:
+        return 0.0
+    mean_v = sum(values) / len(values)
+    variance = sum((v - mean_v) ** 2 for v in values) / len(values)
+    std_v = variance ** 0.5
+    if std_v == 0.0:
+        return 0.0
+    count = sum(1 for v in values if abs(v - mean_v) / std_v > z_threshold)
+    return round(count / len(values), 6)

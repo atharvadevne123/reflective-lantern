@@ -180,3 +180,32 @@ def log_level_name(level_int: int) -> str:
     if isinstance(name, str) and not name.startswith("Level "):
         return name
     return "UNKNOWN"
+
+
+def has_handler(logger_name: str = "root") -> bool:
+    """Return True if the named logger currently has any handlers attached.
+
+    Args:
+        logger_name: Logger name; use ``"root"`` for the root logger.
+
+    Returns:
+        True when at least one handler is registered.
+    """
+    logger_obj = logging.getLogger() if logger_name == "root" else logging.getLogger(logger_name)
+    return len(logger_obj.handlers) > 0
+
+
+def clear_handlers(logger_name: str = "root") -> int:
+    """Remove all handlers from the named logger and return the count removed.
+
+    Args:
+        logger_name: Logger name; use ``"root"`` for the root logger.
+
+    Returns:
+        Number of handlers removed.
+    """
+    logger_obj = logging.getLogger() if logger_name == "root" else logging.getLogger(logger_name)
+    count = len(logger_obj.handlers)
+    for handler in list(logger_obj.handlers):
+        logger_obj.removeHandler(handler)
+    return count

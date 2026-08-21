@@ -7,35 +7,35 @@ import pytest
 from app.benchmarks import eui_percentile_category, target_eui
 
 
-def test_compute_eui_basic():
+def test_compute_eui_basic() -> None:
     from app.benchmarks import compute_eui
 
     result = compute_eui(10000.0, 100.0)
     assert abs(result - 100.0) < 0.01
 
 
-def test_compute_eui_zero_area_raises():
+def test_compute_eui_zero_area_raises() -> None:
     from app.benchmarks import compute_eui
 
     with pytest.raises(ValueError, match="floor_area_sqm"):
         compute_eui(1000.0, 0.0)
 
 
-def test_compute_eui_negative_area_raises():
+def test_compute_eui_negative_area_raises() -> None:
     from app.benchmarks import compute_eui
 
     with pytest.raises(ValueError, match="floor_area_sqm"):
         compute_eui(1000.0, -50.0)
 
 
-def test_compute_eui_negative_kwh_raises():
+def test_compute_eui_negative_kwh_raises() -> None:
     from app.benchmarks import compute_eui
 
     with pytest.raises(ValueError, match="annual_kwh"):
         compute_eui(-100.0, 50.0)
 
 
-def test_compute_eui_zero_kwh():
+def test_compute_eui_zero_kwh() -> None:
     from app.benchmarks import compute_eui
 
     assert compute_eui(0.0, 100.0) == 0.0
@@ -49,41 +49,41 @@ def test_compute_eui_zero_kwh():
         (25000.0, 125.0, 200.0),
     ],
 )
-def test_compute_eui_parametrized(annual_kwh, sqm, expected):
+def test_compute_eui_parametrized(annual_kwh, sqm, expected) -> None:
     from app.benchmarks import compute_eui
 
     assert abs(compute_eui(annual_kwh, sqm) - expected) < 0.01
 
 
-def test_benchmark_eui_excellent():
+def test_benchmark_eui_excellent() -> None:
     from app.benchmarks import benchmark_eui
 
     result = benchmark_eui(100.0, "office")  # 100 vs 176 benchmark -> ratio ~0.57
     assert result["rating"] == "excellent"
 
 
-def test_benchmark_eui_poor():
+def test_benchmark_eui_poor() -> None:
     from app.benchmarks import benchmark_eui
 
     result = benchmark_eui(300.0, "office")  # 300 vs 176 benchmark -> ratio ~1.7
     assert result["rating"] == "poor"
 
 
-def test_benchmark_eui_average():
+def test_benchmark_eui_average() -> None:
     from app.benchmarks import benchmark_eui
 
     result = benchmark_eui(176.0, "office")  # ratio = 1.0
     assert result["rating"] == "average"
 
 
-def test_benchmark_eui_unknown_type_uses_default():
+def test_benchmark_eui_unknown_type_uses_default() -> None:
     from app.benchmarks import benchmark_eui
 
     result = benchmark_eui(200.0, "unknown_type")
     assert result["benchmark_eui"] == 200.0  # default benchmark
 
 
-def test_benchmark_eui_has_all_keys():
+def test_benchmark_eui_has_all_keys() -> None:
     from app.benchmarks import benchmark_eui
 
     result = benchmark_eui(150.0, "office")
@@ -94,7 +94,7 @@ def test_benchmark_eui_has_all_keys():
     assert "rating" in result
 
 
-def test_annual_to_monthly_estimate_sums_to_annual():
+def test_annual_to_monthly_estimate_sums_to_annual() -> None:
     from app.benchmarks import annual_to_monthly_estimate
 
     result = annual_to_monthly_estimate(12000.0)
@@ -102,7 +102,7 @@ def test_annual_to_monthly_estimate_sums_to_annual():
     assert abs(sum(result) - 12000.0) < 1.0
 
 
-def test_annual_to_monthly_estimate_custom_profile():
+def test_annual_to_monthly_estimate_custom_profile() -> None:
     from app.benchmarks import annual_to_monthly_estimate
 
     profile = [1.0] * 12
@@ -110,14 +110,14 @@ def test_annual_to_monthly_estimate_custom_profile():
     assert all(abs(v - 100.0) < 0.1 for v in result)
 
 
-def test_annual_to_monthly_estimate_invalid_profile():
+def test_annual_to_monthly_estimate_invalid_profile() -> None:
     from app.benchmarks import annual_to_monthly_estimate
 
     with pytest.raises(ValueError, match="12 elements"):
         annual_to_monthly_estimate(1000.0, profile=[1.0] * 11)
 
 
-def test_list_building_types():
+def test_list_building_types() -> None:
     from app.benchmarks import list_building_types
 
     types = list_building_types()
@@ -127,7 +127,7 @@ def test_list_building_types():
 
 
 @pytest.mark.parametrize("building_type", ["office", "hotel", "school", "warehouse"])
-def test_benchmark_eui_known_types(building_type):
+def test_benchmark_eui_known_types(building_type) -> None:
     from app.benchmarks import ASHRAE_EUI_BENCHMARKS, benchmark_eui
 
     result = benchmark_eui(200.0, building_type)
@@ -626,3 +626,112 @@ class TestPortfolioEuiSummary:
 
         result = portfolio_eui_summary([])
         assert result == {"mean_eui": 0.0, "min_eui": 0.0, "max_eui": 0.0}
+
+
+@pytest.mark.parametrize(
+    "annual_kwh,floor_area,expected_eui",
+    [
+        (10000.0, 100.0, 100.0),
+        (50000.0, 500.0, 100.0),
+        (20000.0, 200.0, 100.0),
+    ],
+)
+def test_compute_eui_scales_linearly(annual_kwh: float, floor_area: float, expected_eui: float) -> None:
+    from app.benchmarks import compute_eui
+
+    assert compute_eui(annual_kwh, floor_area) == pytest.approx(expected_eui, abs=0.1)
+
+
+@pytest.mark.parametrize(
+    "actual_eui,benchmark,expected_sign",
+    [
+        (80.0, 100.0, "positive"),
+        (120.0, 100.0, "negative"),
+        (100.0, 100.0, "zero"),
+    ],
+)
+def test_percentage_below_benchmark_sign(actual_eui: float, benchmark: float, expected_sign: str) -> None:
+    from app.benchmarks import percentage_below_benchmark
+
+    result = percentage_below_benchmark(actual_eui, benchmark)
+    if expected_sign == "positive":
+        assert result > 0.0
+    elif expected_sign == "negative":
+        assert result < 0.0
+    else:
+        assert result == pytest.approx(0.0, abs=0.01)
+
+
+@pytest.mark.parametrize("score", [0.0, 50.0, 75.0, 100.0])
+def test_benchmark_score_label_returns_string(score: float) -> None:
+    from app.benchmarks import benchmark_score_label
+
+    label = benchmark_score_label(score)
+    assert isinstance(label, str)
+    assert len(label) > 0
+
+
+@pytest.mark.parametrize(
+    "euis,weights",
+    [
+        ([100.0, 200.0], [0.5, 0.5]),
+        ([100.0, 200.0, 300.0], [1.0, 2.0, 1.0]),
+    ],
+)
+def test_weighted_average_eui_in_range(euis: list, weights: list) -> None:
+    from app.benchmarks import weighted_average_eui
+
+    result = weighted_average_eui(euis, weights)
+    assert min(euis) <= result <= max(euis)
+
+
+class TestEuiImprovementRate:
+    def test_improvement(self) -> None:
+        from app.benchmarks import eui_improvement_rate
+        assert eui_improvement_rate(100.0, 80.0) == pytest.approx(20.0)
+
+    def test_no_change(self) -> None:
+        from app.benchmarks import eui_improvement_rate
+        assert eui_improvement_rate(100.0, 100.0) == pytest.approx(0.0)
+
+    def test_regression(self) -> None:
+        from app.benchmarks import eui_improvement_rate
+        assert eui_improvement_rate(100.0, 120.0) == pytest.approx(-20.0)
+
+    def test_zero_baseline_raises(self) -> None:
+        from app.benchmarks import eui_improvement_rate
+        with pytest.raises(ValueError):
+            eui_improvement_rate(0.0, 80.0)
+
+
+class TestNormalisedEui:
+    def test_basic(self) -> None:
+        from app.benchmarks import normalised_eui
+        result = normalised_eui(10000.0, 100.0, 2000.0)
+        assert result == pytest.approx(0.05)
+
+    def test_zero_area_raises(self) -> None:
+        from app.benchmarks import normalised_eui
+        with pytest.raises(ValueError):
+            normalised_eui(10000.0, 0.0, 2000.0)
+
+    def test_zero_hours_raises(self) -> None:
+        from app.benchmarks import normalised_eui
+        with pytest.raises(ValueError):
+            normalised_eui(10000.0, 100.0, 0.0)
+
+
+class TestSavingsToInvestmentRatio:
+    def test_basic(self) -> None:
+        from app.benchmarks import savings_to_investment_ratio
+        result = savings_to_investment_ratio(5000.0, 0.15, 10000.0)
+        assert result == pytest.approx(0.075)
+
+    def test_zero_savings(self) -> None:
+        from app.benchmarks import savings_to_investment_ratio
+        assert savings_to_investment_ratio(0.0, 0.15, 10000.0) == pytest.approx(0.0)
+
+    def test_zero_investment_raises(self) -> None:
+        from app.benchmarks import savings_to_investment_ratio
+        with pytest.raises(ValueError):
+            savings_to_investment_ratio(5000.0, 0.15, 0.0)

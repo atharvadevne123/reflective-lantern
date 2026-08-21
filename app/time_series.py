@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import logging
+import math
+import statistics
 
 import numpy as np
 
@@ -122,6 +124,8 @@ def cumulative_sum(values: list[float]) -> list[float]:
 def moving_max(values: list[float], window: int = 3) -> list[float]:
     """Return the rolling maximum over *window* periods.
 
+    Positions with fewer than *window* preceding values are NaN (strict window).
+
     Args:
         values: Time-ordered consumption readings.
         window: Number of periods to include in each rolling window.
@@ -133,9 +137,12 @@ def moving_max(values: list[float], window: int = 3) -> list[float]:
         return []
     result: list[float] = []
     for i in range(len(values)):
-        start = max(0, i - window + 1)
-        result.append(max(values[start : i + 1]))
-    return [round(x, 6) for x in result]
+        if i + 1 < window:
+            result.append(math.nan)
+        else:
+            start = i - window + 1
+            result.append(round(max(values[start : i + 1]), 6))
+    return result
 
 
 def resample_hourly_to_daily(hourly: list[float]) -> list[float]:
@@ -408,6 +415,7 @@ __all__ = [
     "min_max_scale",
     "moving_max",
     "moving_median",
+    "moving_min",
     "moving_range",
     "normalize_series",
     "pair_difference",
@@ -419,6 +427,11 @@ __all__ = [
     "seasonal_baseline",
     "simple_moving_average",
     "z_normalize",
+
+    "baseline_deviation",
+    "energy_intensity_score",
+    "hourly_variability",
+    "weekend_weekday_ratio",
 ]
 
 
@@ -433,7 +446,7 @@ def moving_median(values: list[float], window: int) -> list[float]:
         window: Rolling window size (must be >= 1).
 
     Returns:
-        List of rolling max values, NaN-padded at the start.
+        List of rolling median values, partial windows used near the start.
     """
     if not values:
         return []
@@ -446,6 +459,30 @@ def moving_median(values: list[float], window: int) -> list[float]:
             result.append(round((chunk[mid - 1] + chunk[mid]) / 2.0, 6))
         else:
             result.append(round(chunk[mid], 6))
+    return result
+
+
+def moving_min(values: list[float], window: int = 3) -> list[float]:
+    """Return the rolling minimum over *window* periods.
+
+    Positions with fewer than *window* preceding values are NaN (strict window).
+
+    Args:
+        values: Time-ordered consumption readings.
+        window: Number of periods to include in each rolling window.
+
+    Returns:
+        Rolling minimum series of the same length as *values*.
+    """
+    if not values:
+        return []
+    result: list[float] = []
+    for i in range(len(values)):
+        if i + 1 < window:
+            result.append(math.nan)
+        else:
+            start = i - window + 1
+            result.append(round(min(values[start : i + 1]), 6))
     return result
 
 
@@ -685,8 +722,6 @@ def seasonal_variance(values: list[float], period: int = 24) -> float:
         raise ValueError("values must not be empty")
     if period < 1:
         raise ValueError(f"period must be at least 1, got {period}")
-    import statistics
-
     buckets: list[list[float]] = [[] for _ in range(period)]
     for i, v in enumerate(values):
         buckets[i % period].append(v)
@@ -975,8 +1010,6 @@ def linear_interpolation(values: list[float | None]) -> list[float]:
     Raises:
         ValueError: If *values* is empty or contains only None values.
     """
-    import math
-
     if not values:
         raise ValueError("values must not be empty")
     if all(v is None for v in values):
@@ -1107,3 +1140,208 @@ def series_range_by_window(
         chunk = values[start : i + 1]
         result.append(round(max(chunk) - min(chunk), 6))
     return result
+
+
+def series_autocorrelation(values: list[float], lag: int = 1) -> float:
+    """Compute the Pearson autocorrelation of *values* at the given lag.
+
+    Args:
+        values: Numeric time series.
+        lag: Number of steps to lag (default 1).
+
+    Returns:
+        Autocorrelation coefficient in [-1, 1]; 0.0 when insufficient data
+        or zero variance.
+
+    Raises:
+        ValueError: If *lag* is not positive.
+    """
+    if lag < 1:
+        raise ValueError(f"lag must be >= 1, got {lag}")
+    n = len(values)
+    if n <= lag:
+        return 0.0
+    x = values[: n - lag]
+    y = values[lag:]
+    mx, my = sum(x) / len(x), sum(y) / len(y)
+    num = sum((a - mx) * (b - my) for a, b in zip(x, y, strict=False))
+    denom_x = sum((a - mx) ** 2 for a in x) ** 0.5
+    denom_y = sum((b - my) ** 2 for b in y) ** 0.5
+    denom = denom_x * denom_y
+    return round(num / denom, 6) if denom > 1e-12 else 0.0
+
+
+def series_entropy(values: list[float], bins: int = 10) -> float:
+    """Estimate the Shannon entropy of a time series distribution.
+
+    Discretises the series into *bins* equal-width histogram bins and
+    computes the Shannon entropy of the resulting probability distribution.
+
+    Args:
+        values: Numeric time series.
+        bins: Number of histogram bins.
+
+    Returns:
+        Entropy value >= 0; 0.0 for empty or constant series.
+    """
+    import math
+
+    if len(values) < 2:
+        return 0.0
+    lo, hi = min(values), max(values)
+    if hi == lo:
+        return 0.0
+    width = (hi - lo) / bins
+    counts: dict[int, int] = {}
+    for v in values:
+        bucket = min(int((v - lo) / width), bins - 1)
+        counts[bucket] = counts.get(bucket, 0) + 1
+    n = len(values)
+    entropy = -sum((c / n) * math.log2(c / n) for c in counts.values() if c > 0)
+    return round(entropy, 6)
+
+
+def energy_intensity_score(values: list[float], sqft: float) -> float:
+    """Compute energy intensity (kWh per square foot) from a consumption series.
+
+    Args:
+        values: Energy consumption readings (kWh).
+        sqft: Floor area in square feet (must be positive).
+
+    Returns:
+        Mean energy intensity rounded to 4 decimal places.
+
+    Raises:
+        ValueError: If values is empty or sqft is not positive.
+    """
+    if not values:
+        raise ValueError("values must not be empty")
+    if sqft <= 0:
+        raise ValueError(f"sqft must be positive, got {sqft}")
+    total = sum(values)
+    return round(total / sqft, 4)
+
+
+def baseline_deviation(values: list[float], baseline_days: int = 7) -> list[float]:
+    """Compute deviation of each value from a rolling baseline mean.
+
+    Args:
+        values: Time-series of readings (daily granularity assumed).
+        baseline_days: Number of preceding days used as the baseline window.
+
+    Returns:
+        List of deviations; first baseline_days entries are 0.0.
+
+    Raises:
+        ValueError: If baseline_days < 1.
+    """
+    if baseline_days < 1:
+        raise ValueError(f"baseline_days must be >= 1, got {baseline_days}")
+    result: list[float] = []
+    for i, v in enumerate(values):
+        if i < baseline_days:
+            result.append(0.0)
+        else:
+            window = values[i - baseline_days : i]
+            mean_baseline = sum(window) / len(window)
+            result.append(round(v - mean_baseline, 6))
+    return result
+
+
+def weekend_weekday_ratio(values: list[float], start_weekday: int = 0) -> float:
+    """Compute ratio of mean weekend consumption to mean weekday consumption.
+
+    Assumes *values* is a daily series starting on *start_weekday* (0=Monday, 6=Sunday).
+
+    Args:
+        values: Daily energy readings.
+        start_weekday: Weekday index of the first element (0=Monday … 6=Sunday).
+
+    Returns:
+        Ratio as a float; 1.0 if either group is empty or mean is zero.
+
+    Raises:
+        ValueError: If values is empty or start_weekday is outside [0, 6].
+    """
+    if not values:
+        raise ValueError("values must not be empty")
+    if not (0 <= start_weekday <= 6):
+        raise ValueError(f"start_weekday must be in [0, 6], got {start_weekday}")
+    weekday_vals: list[float] = []
+    weekend_vals: list[float] = []
+    for i, v in enumerate(values):
+        wd = (start_weekday + i) % 7
+        if wd >= 5:
+            weekend_vals.append(v)
+        else:
+            weekday_vals.append(v)
+    if not weekday_vals or not weekend_vals:
+        return 1.0
+    mean_wd = sum(weekday_vals) / len(weekday_vals)
+    mean_we = sum(weekend_vals) / len(weekend_vals)
+    if mean_wd == 0.0:
+        return 1.0
+    return round(mean_we / mean_wd, 6)
+
+
+def hourly_variability(values: list[float]) -> float:
+    """Compute the coefficient of variation (std / mean) for an hourly series.
+
+    Args:
+        values: Hourly energy readings (at least 2 values required).
+
+    Returns:
+        Coefficient of variation in [0, ∞); 0.0 when mean is zero.
+
+    Raises:
+        ValueError: If values has fewer than 2 elements.
+    """
+    if len(values) < 2:
+        raise ValueError("hourly_variability requires at least 2 values")
+    mean_v = sum(values) / len(values)
+    if mean_v == 0.0:
+        return 0.0
+    variance = sum((v - mean_v) ** 2 for v in values) / (len(values) - 1)
+    std_v = variance ** 0.5
+    return round(std_v / mean_v, 6)
+
+
+def zero_crossing_rate(values: list[float]) -> float:
+    """Compute the zero-crossing rate of *values*.
+
+    Args:
+        values: List of floats (at least 2 elements).
+
+    Returns:
+        Fraction of consecutive pairs with sign change (or transition through zero).
+
+    Raises:
+        ValueError: If *values* has fewer than 2 elements.
+    """
+    if len(values) < 2:
+        raise ValueError("values must have at least 2 elements")
+    crossings = sum(
+        1 for i in range(len(values) - 1) if values[i] * values[i + 1] < 0
+    )
+    return round(crossings / (len(values) - 1), 6)
+
+
+def peak_to_trough_ratio(values: list[float]) -> float:
+    """Return the ratio of the maximum to minimum value in *values*.
+
+    Args:
+        values: Non-empty list of floats.
+
+    Returns:
+        Ratio; returns 0.0 when min is zero.
+
+    Raises:
+        ValueError: If *values* is empty.
+    """
+    if not values:
+        raise ValueError("values must not be empty")
+    peak = max(values)
+    trough = min(values)
+    if trough == 0.0:
+        return 0.0
+    return round(peak / trough, 6)

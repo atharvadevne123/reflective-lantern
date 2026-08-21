@@ -139,7 +139,10 @@ def deduplicate_records(
 __all__ = [
     "aggregate_by_hour",
     "deduplicate_records",
+    "export_summary_csv",
+    "export_to_json",
     "filter_records",
+    "filter_records_by_field",
     "kwh_stats_by_building",
     "normalize_kwh",
     "partition_records",
@@ -151,6 +154,7 @@ __all__ = [
     "split_by_day",
     "summarize_export",
     "top_buildings_by_kwh",
+    "validate_export_schema",
 ]
 
 
@@ -292,24 +296,30 @@ def top_buildings_by_kwh(records: list[dict[str, Any]], n: int = 5) -> list[dict
 
 def pivot_by_hour(
     records: list[dict[str, Any]],
+    hour_field: str = "hour",
+    value_field: str = "consumption_kwh",
+    label_field: str = "building_id",
 ) -> dict[str, dict[int, float]]:
-    """Pivot records into a dict of building_id -> {hour: total_kwh}.
+    """Pivot records into a label -> {hour: total_value} mapping.
 
     Args:
-        records: List of row dicts with ``building_id``, ``hour``, and ``consumption_kwh``.
+        records: List of row dicts.
+        hour_field: Key for the hour integer (default ``"hour"``).
+        value_field: Key for the numeric value to aggregate (default ``"consumption_kwh"``).
+        label_field: Key for the label (default ``"building_id"``).
 
     Returns:
-        Nested dict keyed by building_id then hour.
+        Nested dict keyed by label then hour, with values summed.
     """
     pivot: dict[str, dict[int, float]] = {}
     for rec in records:
-        bid = rec.get("building_id")
-        hour = rec.get("hour")
-        kwh = rec.get("consumption_kwh")
-        if bid is None or hour is None or kwh is None:
+        label = rec.get(label_field)
+        hour = rec.get(hour_field)
+        value = rec.get(value_field)
+        if label is None or hour is None or value is None:
             continue
-        pivot.setdefault(str(bid), {})
-        pivot[str(bid)][int(hour)] = pivot[str(bid)].get(int(hour), 0.0) + float(kwh)
+        pivot.setdefault(str(label), {})
+        pivot[str(label)][int(hour)] = pivot[str(label)].get(int(hour), 0.0) + float(value)
     return pivot
 
 
@@ -471,10 +481,7 @@ def records_missing_fields(records: list[dict[str, Any]], required: list[str]) -
     Returns:
         Sorted list of zero-based indices of incomplete records.
     """
-    return sorted(
-        i for i, r in enumerate(records)
-        if any(field not in r or r[field] is None for field in required)
-    )
+    return sorted(i for i, r in enumerate(records) if any(field not in r or r[field] is None for field in required))
 
 
 def records_to_lookup(records: list[dict[str, Any]], key: str) -> dict[str, dict[str, Any]]:
@@ -522,32 +529,6 @@ def rename_record_fields(
     return result
 
 
-def pivot_by_hour(
-    records: list[dict[str, Any]],
-    hour_field: str,
-    value_field: str,
-    label_field: str,
-) -> dict[str, dict[int, float]]:
-    """Pivot records into a label → hour → value mapping.
-
-    Args:
-        records: List of dicts containing label, hour, and value fields.
-        hour_field: Key for the hour integer (0-23).
-        value_field: Key for the numeric value to aggregate.
-        label_field: Key for the row label (e.g. building ID).
-
-    Returns:
-        Nested dict: {label: {hour: value}}.
-    """
-    result: dict[str, dict[int, float]] = {}
-    for r in records:
-        label = str(r[label_field])
-        hour = int(r[hour_field])
-        value = float(r[value_field])
-        result.setdefault(label, {})[hour] = value
-    return result
-
-
 def flat_to_wide(
     records: list[dict[str, Any]],
     id_field: str,
@@ -590,3 +571,141 @@ def filter_records_by_value(
         Filtered list preserving order.
     """
     return [r for r in records if min_value <= float(r.get(field, float("nan"))) <= max_value]
+
+
+def export_summary_csv(records: list[dict[str, Any]], group_field: str = "building_id") -> str:
+    """Export a grouped summary as CSV.
+
+    Groups records by *group_field* and emits one row per group with
+    total_kwh, record_count, and avg_kwh columns.
+
+    Args:
+        records: List of energy record dicts (each must have *group_field* and
+            ``consumption_kwh`` keys).
+        group_field: Field to group by (default ``building_id``).
+
+    Returns:
+        CSV string with header row.
+    """
+    from collections import defaultdict
+
+    groups: dict[str, list[float]] = defaultdict(list)
+    for r in records:
+        key = str(r.get(group_field, "unknown"))
+        try:
+            groups[key].append(float(r.get("consumption_kwh", 0.0)))
+        except (TypeError, ValueError):
+            groups[key].append(0.0)
+    lines = [f"{group_field},total_kwh,record_count,avg_kwh"]
+    for grp, vals in sorted(groups.items()):
+        total = round(sum(vals), 4)
+        count = len(vals)
+        avg = round(total / count, 4) if count else 0.0
+        lines.append(f"{grp},{total},{count},{avg}")
+    return "\n".join(lines)
+
+
+def validate_export_schema(
+    records: list[dict[str, Any]],
+    required_fields: list[str],
+) -> dict[str, Any]:
+    """Check that all records have the required fields and return a validation report.
+
+    Args:
+        records: List of export records to validate.
+        required_fields: Field names that must be present (non-None) in every record.
+
+    Returns:
+        Dict with 'valid' (bool), 'total_records', 'invalid_count', and
+        'invalid_indices' (list of 0-based indices with missing fields).
+    """
+    invalid: list[int] = []
+    for i, rec in enumerate(records):
+        if any(rec.get(f) is None for f in required_fields):
+            invalid.append(i)
+    return {
+        "valid": len(invalid) == 0,
+        "total_records": len(records),
+        "invalid_count": len(invalid),
+        "invalid_indices": invalid,
+    }
+
+
+def export_to_json(records: list[dict], indent: int = 2) -> str:
+    """Serialize *records* to a JSON string.
+
+    Args:
+        records: List of export record dicts.
+        indent: JSON indentation level (default 2).
+
+    Returns:
+        JSON-encoded string of the records list.
+    """
+    import json
+
+    return json.dumps(records, indent=indent, default=str)
+
+
+def filter_records_by_field(records: list[dict], field: str, value: object) -> list[dict]:
+    """Return records where *field* equals *value*.
+
+    Args:
+        records: List of record dicts to filter.
+        field: Dict key to match on.
+        value: Required value for *field*.
+
+    Returns:
+        Filtered list preserving original order.
+    """
+    return [r for r in records if r.get(field) == value]
+
+
+def kwh_to_mwh(kwh: float) -> float:
+    """Convert kilowatt-hours to megawatt-hours.
+
+    Args:
+        kwh: Energy in kWh (must be non-negative).
+
+    Returns:
+        Equivalent MWh value.
+
+    Raises:
+        ValueError: If *kwh* is negative.
+    """
+    if kwh < 0:
+        raise ValueError(f"kwh must be non-negative, got {kwh}")
+    return round(kwh / 1000.0, 6)
+
+
+def mwh_to_kwh(mwh: float) -> float:
+    """Convert megawatt-hours to kilowatt-hours.
+
+    Args:
+        mwh: Energy in MWh (must be non-negative).
+
+    Returns:
+        Equivalent kWh value.
+
+    Raises:
+        ValueError: If *mwh* is negative.
+    """
+    if mwh < 0:
+        raise ValueError(f"mwh must be non-negative, got {mwh}")
+    return round(mwh * 1000.0, 6)
+
+
+def daily_peak_consumption(hourly_kwh: list[float]) -> float:
+    """Return the maximum hourly energy consumption from a daily profile.
+
+    Args:
+        hourly_kwh: List of 24 hourly kWh values.
+
+    Returns:
+        Maximum kWh value in the profile.
+
+    Raises:
+        ValueError: If the list does not have exactly 24 entries.
+    """
+    if len(hourly_kwh) != 24:
+        raise ValueError(f"hourly_kwh must have exactly 24 entries, got {len(hourly_kwh)}")
+    return max(hourly_kwh)

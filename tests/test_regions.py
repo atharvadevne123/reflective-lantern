@@ -543,3 +543,45 @@ class TestRegionLoadFactor:
 
         factor = region_load_factor("northeast", 1_000_000_000.0)
         assert factor == pytest.approx(1.0)
+
+
+class TestHighestPeakRegion:
+    def test_returns_string(self) -> None:
+        from app.regions import highest_peak_region
+        result = highest_peak_region()
+        assert result is None or isinstance(result, str)
+
+    def test_known_result(self) -> None:
+        from app.regions import highest_peak_region
+        result = highest_peak_region()
+        assert result == "south"
+
+
+class TestLowestPeakRegion:
+    def test_returns_string(self) -> None:
+        from app.regions import lowest_peak_region
+        result = lowest_peak_region()
+        assert result is None or isinstance(result, str)
+
+    def test_known_result(self) -> None:
+        from app.regions import lowest_peak_region
+        result = lowest_peak_region()
+        assert result == "new_england"
+
+
+class TestPeakLoadRangeMw:
+    def test_returns_dict(self) -> None:
+        from app.regions import peak_load_range_mw
+        result = peak_load_range_mw()
+        assert "min" in result and "max" in result
+
+    def test_min_less_than_max(self) -> None:
+        from app.regions import peak_load_range_mw
+        result = peak_load_range_mw()
+        assert result["min"] <= result["max"]
+
+    def test_known_values(self) -> None:
+        from app.regions import peak_load_range_mw
+        result = peak_load_range_mw()
+        assert result["max"] == pytest.approx(14000.0)
+        assert result["min"] == pytest.approx(5500.0)

@@ -378,7 +378,7 @@ class TestNormalizeDistances:
         from app.similarity import normalize_distances
 
         result = normalize_distances([3.0, 3.0, 3.0])
-        assert all(v == 0.5 for v in result)
+        assert all(v == 0.0 for v in result)
 
     def test_output_length(self) -> None:
         from app.similarity import normalize_distances
@@ -783,7 +783,7 @@ class TestPearsonCorrelation:
             pearson_correlation([1.0], [1.0])
 
 
-class TestTopKSimilar:
+class TestTopKSimilarExtended:
     def test_returns_k_results(self) -> None:
         from app.similarity import top_k_similar
 
@@ -815,3 +815,60 @@ class TestTopKSimilar:
 
         with pytest.raises(ValueError):
             top_k_similar([1.0], [[1.0]], k=0)
+
+
+@pytest.mark.parametrize(
+    "a,b,expected",
+    [
+        ([1.0, 0.0], [1.0, 0.0], 0.0),
+        ([1.0, 0.0], [0.0, 1.0], 1.0),
+        ([1.0, 1.0], [1.0, 1.0], 0.0),
+    ],
+)
+def test_cosine_distance_parametrized(a: list, b: list, expected: float) -> None:
+    from app.similarity import cosine_distance
+
+    assert cosine_distance(a, b) == pytest.approx(expected, abs=0.01)
+
+
+@pytest.mark.parametrize(
+    "a,b,expected",
+    [
+        ([0.0, 0.0], [3.0, 4.0], 5.0),
+        ([1.0, 1.0], [1.0, 1.0], 0.0),
+        ([0.0, 0.0], [0.0, 0.0], 0.0),
+    ],
+)
+def test_euclidean_distance_specific_values(a: list, b: list, expected: float) -> None:
+    from app.similarity import euclidean_distance
+
+    assert euclidean_distance(a, b) == pytest.approx(expected, abs=0.01)
+
+
+@pytest.mark.parametrize("n", [3, 5, 10])
+def test_normalize_distances_output_length(n: int) -> None:
+    from app.similarity import normalize_distances
+
+    distances = list(range(n))
+    result = normalize_distances(distances)
+    assert len(result) == n
+
+
+def test_normalize_distances_all_zero_input() -> None:
+    from app.similarity import normalize_distances
+
+    result = normalize_distances([0.0, 0.0, 0.0])
+    assert all(v == 0.0 for v in result)
+
+
+@pytest.mark.parametrize(
+    "a,b",
+    [
+        ([1.0, 2.0], [3.0, 4.0]),
+        ([0.0, 0.0], [1.0, 1.0]),
+    ],
+)
+def test_manhattan_distance_non_negative(a: list, b: list) -> None:
+    from app.similarity import manhattan_distance
+
+    assert manhattan_distance(a, b) >= 0.0

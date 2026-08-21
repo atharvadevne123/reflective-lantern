@@ -196,3 +196,54 @@ def test_index_size_after_adding(n_vecs: int) -> None:
     for i in range(n_vecs):
         add_property(np.ones(DIM) * float(i), {"id": i})
     assert index_size() == n_vecs
+
+
+class TestVectorMagnitude:
+    def test_3_4_5_triangle(self) -> None:
+        from app.similarity import vector_magnitude
+
+        assert vector_magnitude([3.0, 4.0]) == pytest.approx(5.0)
+
+    def test_zero_vector(self) -> None:
+        from app.similarity import vector_magnitude
+
+        assert vector_magnitude([0.0, 0.0]) == 0.0
+
+    def test_unit_vector(self) -> None:
+        from app.similarity import vector_magnitude
+
+        assert vector_magnitude([1.0, 0.0, 0.0]) == pytest.approx(1.0)
+
+    @pytest.mark.parametrize("v", [[1.0], [1.0, 1.0], [1.0, 0.0, 0.0, 0.0]])
+    def test_non_negative(self, v: list) -> None:
+        from app.similarity import vector_magnitude
+
+        assert vector_magnitude(v) >= 0.0
+
+
+class TestAngularDistance:
+    def test_same_vector_zero(self) -> None:
+        from app.similarity import angular_distance
+
+        result = angular_distance([1.0, 0.0], [1.0, 0.0])
+        assert result == pytest.approx(0.0, abs=1e-5)
+
+    def test_orthogonal_is_half_pi(self) -> None:
+        import math
+
+        from app.similarity import angular_distance
+
+        result = angular_distance([1.0, 0.0], [0.0, 1.0])
+        assert result == pytest.approx(math.pi / 2, rel=1e-4)
+
+    def test_raises_on_length_mismatch(self) -> None:
+        from app.similarity import angular_distance
+
+        with pytest.raises(ValueError):
+            angular_distance([1.0, 0.0], [1.0, 0.0, 0.0])
+
+    def test_returns_float(self) -> None:
+        from app.similarity import angular_distance
+
+        result = angular_distance([1.0, 1.0], [1.0, -1.0])
+        assert isinstance(result, float)

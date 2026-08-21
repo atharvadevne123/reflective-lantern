@@ -1140,3 +1140,160 @@ class TestAnomalyPeakRatio:
         values = [1.0, 1.0, 100.0]
         flags = [False, False, True]
         assert anomaly_peak_ratio(values, flags) > 1.0
+
+
+@pytest.mark.parametrize(
+    "value,mean,std,threshold,expected",
+    [
+        (10.0, 10.0, 1.0, 3.0, False),
+        (100.0, 10.0, 1.0, 3.0, True),
+        (12.0, 10.0, 1.0, 1.5, True),
+        (10.5, 10.0, 1.0, 3.0, False),
+    ],
+)
+def test_zscore_flag_various_cases(value: float, mean: float, std: float, threshold: float, expected: bool) -> None:
+    from app.anomaly import zscore_flag
+
+    assert zscore_flag(value, mean, std, threshold) == expected
+
+
+@pytest.mark.parametrize(
+    "flags,expected_rate",
+    [
+        ([False, False, False, False], 0.0),
+        ([True, True, True, True], 1.0),
+        ([True, False, True, False], 0.5),
+    ],
+)
+def test_flag_anomaly_rate_parametrized(flags: list, expected_rate: float) -> None:
+    from app.anomaly import flag_anomaly_rate
+
+    assert flag_anomaly_rate(flags) == pytest.approx(expected_rate, abs=0.01)
+
+
+@pytest.mark.parametrize("n_anomalies", [0, 1, 5, 10])
+def test_anomaly_free_streak_all_normal(n_anomalies: int) -> None:
+    from app.anomaly import anomaly_free_streak
+
+    flags = [False] * 10
+    result = anomaly_free_streak(flags)
+    assert result == 10
+
+
+@pytest.mark.parametrize(
+    "severities,expected_total",
+    [
+        ([], 0),
+        ([{"level": "high"}, {"level": "low"}], 2),
+    ],
+)
+def test_anomaly_summary_total_count(severities: list, expected_total: int) -> None:
+    from app.anomaly import anomaly_summary
+
+    result = anomaly_summary(severities)
+    total = sum(result.values())
+    assert total == expected_total
+
+
+class TestAnomalyRate:
+    def test_no_anomalies_returns_zero(self) -> None:
+        from app.anomaly import anomaly_rate
+
+        sevs = [{"severity": "none"}, {"severity": "none"}]
+        assert anomaly_rate(sevs) == 0.0
+
+    def test_all_anomalies_returns_one(self) -> None:
+        from app.anomaly import anomaly_rate
+
+        sevs = [{"severity": "warning"}, {"severity": "critical"}, {"severity": "warning"}]
+        assert anomaly_rate(sevs) == 1.0
+
+    def test_empty_returns_zero(self) -> None:
+        from app.anomaly import anomaly_rate
+
+        assert anomaly_rate([]) == 0.0
+
+    @pytest.mark.parametrize(
+        "sevs,expected",
+        [
+            ([{"severity": "none"}, {"severity": "none"}, {"severity": "critical"}], pytest.approx(1 / 3, rel=1e-4)),
+            ([{"severity": "warning"}, {"severity": "critical"}, {"severity": "none"}], pytest.approx(2 / 3, rel=1e-4)),
+        ],
+    )
+    def test_partial_anomaly_rate(self, sevs: list, expected: object) -> None:
+        from app.anomaly import anomaly_rate
+
+        assert anomaly_rate(sevs) == expected
+
+
+class TestRollingAnomalyFlag:
+    def test_output_same_length(self) -> None:
+        from app.anomaly import rolling_anomaly_flag
+
+        values = [1.0] * 20
+        result = rolling_anomaly_flag(values, window=5)
+        assert len(result) == 20
+
+    def test_first_window_all_false(self) -> None:
+        from app.anomaly import rolling_anomaly_flag
+
+        result = rolling_anomaly_flag([1.0] * 15, window=10)
+        assert all(not f for f in result[:10])
+
+    def test_returns_list_of_bool(self) -> None:
+        from app.anomaly import rolling_anomaly_flag
+
+        result = rolling_anomaly_flag([1.0, 2.0, 3.0, 4.0, 5.0])
+        assert all(isinstance(f, bool) for f in result)
+
+
+class TestAnomalyPersistenceScore:
+    def test_all_anomalies(self) -> None:
+        from app.anomaly import anomaly_persistence_score
+        assert anomaly_persistence_score([True, True, True]) == pytest.approx(1.0)
+
+    def test_no_anomalies(self) -> None:
+        from app.anomaly import anomaly_persistence_score
+        assert anomaly_persistence_score([False, False, False]) == pytest.approx(0.0)
+
+    def test_partial(self) -> None:
+        from app.anomaly import anomaly_persistence_score
+        assert anomaly_persistence_score([True, False, True]) == pytest.approx(2 / 3)
+
+    def test_empty_raises(self) -> None:
+        from app.anomaly import anomaly_persistence_score
+        with pytest.raises(ValueError):
+            anomaly_persistence_score([])
+
+
+class TestFirstAnomalyIndex:
+    def test_found(self) -> None:
+        from app.anomaly import first_anomaly_index
+        assert first_anomaly_index([False, False, True, False]) == 2
+
+    def test_not_found(self) -> None:
+        from app.anomaly import first_anomaly_index
+        assert first_anomaly_index([False, False]) == -1
+
+    def test_first_element(self) -> None:
+        from app.anomaly import first_anomaly_index
+        assert first_anomaly_index([True, False]) == 0
+
+
+class TestInterAnomalyGap:
+    def test_regular_gaps(self) -> None:
+        from app.anomaly import inter_anomaly_gap
+        assert inter_anomaly_gap([True, False, False, True, False, False, True]) == pytest.approx(3.0)
+
+    def test_no_anomaly(self) -> None:
+        from app.anomaly import inter_anomaly_gap
+        assert inter_anomaly_gap([False, False, False]) == float("inf")
+
+    def test_one_anomaly(self) -> None:
+        from app.anomaly import inter_anomaly_gap
+        assert inter_anomaly_gap([False, True, False]) == float("inf")
+
+    def test_empty_raises(self) -> None:
+        from app.anomaly import inter_anomaly_gap
+        with pytest.raises(ValueError):
+            inter_anomaly_gap([])

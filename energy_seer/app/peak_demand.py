@@ -105,8 +105,63 @@ def demand_flexibility_score(
     }
 
 
+def peak_demand_window(
+    hourly_forecasts: list[float],
+    window_hours: int = 4,
+) -> dict[str, object]:
+    """Find the rolling window with the highest total demand.
+
+    Args:
+        hourly_forecasts: Hourly consumption values.
+        window_hours: Number of consecutive hours per window (default 4).
+
+    Returns:
+        Dict with 'window_start', 'window_end', 'total_kwh', and 'avg_kwh'
+        for the highest-demand window.  Returns zeros dict when series is
+        shorter than *window_hours*.
+    """
+    n = len(hourly_forecasts)
+    if n < window_hours:
+        return {"window_start": 0, "window_end": 0, "total_kwh": 0.0, "avg_kwh": 0.0}
+    arr = np.array(hourly_forecasts, dtype=float)
+    best_start = int(
+        np.argmax([arr[i : i + window_hours].sum() for i in range(n - window_hours + 1)])
+    )
+    window_vals = arr[best_start : best_start + window_hours]
+    total = float(window_vals.sum())
+    return {
+        "window_start": best_start,
+        "window_end": best_start + window_hours - 1,
+        "total_kwh": round(total, 4),
+        "avg_kwh": round(total / window_hours, 4),
+    }
+
+
+def load_factor(hourly_forecasts: list[float]) -> float:
+    """Compute load factor as mean demand divided by peak demand.
+
+    A load factor of 1.0 means perfectly flat demand; values closer to 0
+    indicate high variability between peak and average.
+
+    Args:
+        hourly_forecasts: Hourly consumption values.
+
+    Returns:
+        Load factor in (0, 1]; 0.0 when *hourly_forecasts* is empty.
+    """
+    if not hourly_forecasts:
+        return 0.0
+    arr = np.array(hourly_forecasts, dtype=float)
+    peak = float(arr.max())
+    if peak < 1e-9:
+        return 0.0
+    return round(float(arr.mean()) / peak, 4)
+
+
 __all__ = [
     "demand_flexibility_score",
     "estimate_peak_shaving_savings",
     "find_peak_hours",
+    "load_factor",
+    "peak_demand_window",
 ]

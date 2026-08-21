@@ -112,7 +112,7 @@ def sensor_zscore_row(row: dict[str, float]) -> dict[str, float]:
     values = list(row.values())
     mean = sum(values) / len(values)
     variance = sum((v - mean) ** 2 for v in values) / len(values)
-    std = variance ** 0.5
+    std = variance**0.5
     if std == 0.0:
         return {f"{k}_zscore": 0.0 for k in row}
     return {f"{k}_zscore": round((v - mean) / std, 6) for k, v in row.items()}

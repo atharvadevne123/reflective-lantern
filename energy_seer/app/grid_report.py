@@ -113,9 +113,62 @@ def merge_reports(reports: list[dict]) -> dict:
     }
 
 
+def report_trend(reports: list[dict]) -> dict:
+    """Compute trend statistics across an ordered sequence of grid reports.
+
+    Args:
+        reports: Ordered list of report dicts (oldest first).
+
+    Returns:
+        Dict with 'status_counts', 'anomaly_total', 'escalating' (bool),
+        and 'latest_status'.
+    """
+    if not reports:
+        return {
+            "status_counts": {},
+            "anomaly_total": 0,
+            "escalating": False,
+            "latest_status": "healthy",
+        }
+    status_counts: dict[str, int] = {}
+    anomaly_total = 0
+    for r in reports:
+        s = str(r.get("status", "healthy"))
+        status_counts[s] = status_counts.get(s, 0) + 1
+        anomaly_total += int(r.get("anomaly_count", 0))
+    status_priority = {"healthy": 0, "warning": 1, "critical": 2}
+    first_status = str(reports[0].get("status", "healthy"))
+    last_status = str(reports[-1].get("status", "healthy"))
+    escalating = status_priority.get(last_status, 0) > status_priority.get(first_status, 0)
+    return {
+        "status_counts": status_counts,
+        "anomaly_total": anomaly_total,
+        "escalating": escalating,
+        "latest_status": last_status,
+    }
+
+
+def alert_frequency(reports: list[dict]) -> dict[str, int]:
+    """Count how often each alert string appears across a list of reports.
+
+    Args:
+        reports: List of report dicts each with an 'alerts' list.
+
+    Returns:
+        Dict mapping alert text to occurrence count, sorted by count descending.
+    """
+    counts: dict[str, int] = {}
+    for r in reports:
+        for alert in r.get("alerts", []):
+            counts[alert] = counts.get(alert, 0) + 1
+    return dict(sorted(counts.items(), key=lambda x: x[1], reverse=True))
+
+
 __all__ = [
     "generate_grid_report",
     "merge_reports",
     "report_status_code",
     "summarise_alerts",
+    "report_trend",
+    "alert_frequency",
 ]

@@ -172,7 +172,7 @@ def zscore_outlier(values: list[float], threshold: float = 3.0) -> list[bool]:
         raise ValueError("values must not be empty")
     mean = sum(values) / len(values)
     variance = sum((v - mean) ** 2 for v in values) / len(values)
-    std = variance ** 0.5
+    std = variance**0.5
     if std == 0.0:
         return [False] * len(values)
     return [abs((v - mean) / std) > threshold for v in values]
@@ -211,3 +211,54 @@ def clamp_reading(value: float, lo: float, hi: float) -> float:
     if lo > hi:
         raise ValueError(f"lo ({lo}) must be <= hi ({hi})")
     return max(lo, min(hi, value))
+
+
+def validate_batch(records: list[dict[str, float]]) -> dict[str, object]:
+    """Validate a batch of sensor readings and return a summary.
+
+    Args:
+        records: List of sensor reading dicts.
+
+    Returns:
+        Dict with 'total', 'valid_count', 'invalid_count', and 'errors'
+        (a list of dicts with 'index' and 'messages' for invalid records).
+    """
+    errors: list[dict[str, object]] = []
+    valid_count = 0
+    for i, record in enumerate(records):
+        msgs = validate_sensor_reading(record)
+        if msgs:
+            errors.append({"index": i, "messages": msgs})
+        else:
+            valid_count += 1
+    return {
+        "total": len(records),
+        "valid_count": valid_count,
+        "invalid_count": len(errors),
+        "errors": errors,
+    }
+
+
+def field_statistics(records: list[dict[str, float]], field: str) -> dict[str, float]:
+    """Compute basic statistics for a single field across a batch of records.
+
+    Args:
+        records: List of sensor reading dicts.
+        field: Field name to analyse.
+
+    Returns:
+        Dict with 'mean', 'min', 'max', and 'std'. Returns zeros when no
+        records contain the field.
+    """
+    values = [r[field] for r in records if field in r and math.isfinite(r[field])]
+    if not values:
+        return {"mean": 0.0, "min": 0.0, "max": 0.0, "std": 0.0}
+    n = len(values)
+    mean = sum(values) / n
+    variance = sum((v - mean) ** 2 for v in values) / n
+    return {
+        "mean": round(mean, 4),
+        "min": round(min(values), 4),
+        "max": round(max(values), 4),
+        "std": round(variance**0.5, 4),
+    }

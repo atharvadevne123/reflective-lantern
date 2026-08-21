@@ -103,9 +103,64 @@ def efficiency_delta(
     }
 
 
+def efficiency_trend(scores: list[float]) -> dict[str, object]:
+    """Summarise a sequence of efficiency scores as a trend.
+
+    Args:
+        scores: Ordered list of efficiency scores (0–100).
+
+    Returns:
+        Dict with 'mean', 'min', 'max', 'trend' ('improving'|'declining'|'stable'),
+        and 'latest_grade'.  Returns a zeros dict when *scores* is empty.
+    """
+    if not scores:
+        return {"mean": 0.0, "min": 0.0, "max": 0.0, "trend": "stable", "latest_grade": "D"}
+    mean_score = round(sum(scores) / len(scores), 2)
+    if len(scores) >= 2:
+        delta = scores[-1] - scores[0]
+        trend = "improving" if delta > 1 else ("declining" if delta < -1 else "stable")
+    else:
+        trend = "stable"
+    return {
+        "mean": mean_score,
+        "min": round(min(scores), 2),
+        "max": round(max(scores), 2),
+        "trend": trend,
+        "latest_grade": _grade(scores[-1]),
+    }
+
+
+def normalised_efficiency_index(
+    consumption_kwh: float,
+    building_type: str,
+    floor_area_sqm: float,
+    occupancy_hours: float = 8.0,
+) -> float:
+    """Compute a normalised efficiency index adjusted for occupancy hours.
+
+    Args:
+        consumption_kwh: Daily energy consumption (kWh).
+        building_type: Building category (case-insensitive).
+        floor_area_sqm: Conditioned floor area (m²).
+        occupancy_hours: Average occupied hours per day (default 8).
+
+    Returns:
+        Index in [0, 1]; higher values indicate better efficiency.
+    """
+    if floor_area_sqm <= 0 or occupancy_hours <= 0:
+        return 0.0
+    btype = building_type.lower()
+    benchmark = BUILDING_BENCHMARKS.get(btype, 10.0)
+    adjusted = consumption_kwh / (floor_area_sqm * (occupancy_hours / 24.0))
+    index = float(np.clip(1.0 - adjusted / max(benchmark, 1e-6), 0.0, 1.0))
+    return round(index, 4)
+
+
 __all__ = [
     "BUILDING_BENCHMARKS",
     "GRADE_THRESHOLDS",
     "compute_efficiency_score",
     "efficiency_delta",
+    "efficiency_trend",
+    "normalised_efficiency_index",
 ]

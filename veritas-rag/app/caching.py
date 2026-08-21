@@ -79,3 +79,31 @@ class RetrievalCache:
 
     def __len__(self) -> int:
         return len(self._store)
+
+
+def cache_fill_ratio(cache: RetrievalCache) -> float:
+    """Return the fraction of cache capacity currently used.
+
+    Args:
+        cache: A QueryCache instance.
+
+    Returns:
+        Ratio in [0.0, 1.0]; 0.0 for an empty cache.
+    """
+    if cache.max_size == 0:
+        return 0.0
+    return round(len(cache) / cache.max_size, 4)
+
+
+def top_cached_queries(cache: RetrievalCache, n: int = 5) -> list[str]:
+    """Return the *n* most-recently-used cache keys.
+
+    Args:
+        cache: A QueryCache instance.
+        n: Maximum number of keys to return.
+
+    Returns:
+        List of keys from most-recent to least-recent, up to *n* entries.
+    """
+    keys = list(cache._store.keys())
+    return list(reversed(keys[-n:]))

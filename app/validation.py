@@ -10,7 +10,7 @@ logger = logging.getLogger(__name__)
 VALID_HOURS = frozenset(range(24))
 VALID_MONTHS = frozenset(range(1, 13))
 VALID_DOW = frozenset(range(7))
-MIN_TEMP_C = -40.0
+MIN_TEMP_C = -50.0
 MAX_TEMP_C = 60.0
 MIN_HUMIDITY = 0.0
 MAX_HUMIDITY = 100.0
@@ -290,7 +290,7 @@ def validate_price(price: float) -> list[str]:
     """Return validation errors for a price value in USD.
 
     Args:
-        price: Dollar amount to validate.
+        price: Dollar amount to validate; must be finite and non-negative.
 
     Returns:
         List of error strings (empty when valid).
@@ -335,14 +335,23 @@ __all__ = [
     "validate_building_id",
     "validate_consumption_kwh",
     "validate_coordinate",
+    "validate_date_string",
+    "validate_email",
+    "validate_enum",
     "validate_feature_vector",
     "validate_forecast_horizon",
+    "validate_list_length",
     "validate_load_series",
+    "validate_non_negative",
     "validate_percentage",
+    "validate_positive",
     "validate_price",
+    "validate_range",
     "validate_reading_dict",
     "validate_region_id",
+    "validate_string_length",
     "validate_temporal_fields",
+    "validate_unique_ids",
     "validate_weather_fields",
 ]
 
@@ -492,112 +501,12 @@ def validate_region_id(region_id: str) -> list[str]:
     return errors
 
 
-def validate_percentage_typed(value: object, field_name: str = "value") -> list[str]:
-    """Return validation errors if *value* is not a valid percentage in [0, 100].
-
-    Unlike :func:`validate_percentage`, this also validates the type of *value*.
-
-    Args:
-        value: Value to validate as a percentage.
-        field_name: Name shown in error messages. Defaults to ``"value"``.
-
-    Returns:
-        List of error strings (empty when valid).
-    """
-    errors: list[str] = []
-    if not isinstance(value, (int, float)):
-        errors.append(f"{field_name} must be a number, got {type(value).__name__}")
-        return errors
-    if value < 0 or value > 100:
-        errors.append(f"{field_name} must be in [0, 100], got {value}")
-    return errors
-
-
-def validate_positive(value: float, field_name: str = "value") -> list[str]:
-    """Return validation errors if *value* is not strictly positive.
+def validate_non_negative(value: float, field_name: str = "value") -> list[str]:
+    """Validate that *value* is non-negative (>= 0).
 
     Args:
         value: Numeric value to validate.
-        field_name: Name shown in error messages. Defaults to ``"value"``.
-
-    Returns:
-        List of error strings (empty when valid).
-    """
-    errors: list[str] = []
-    if not isinstance(value, (int, float)):
-        errors.append(f"{field_name} must be a number, got {type(value).__name__}")
-        return errors
-    if value <= 0:
-        errors.append(f"{field_name} must be > 0, got {value}")
-    return errors
-
-
-def validate_list_length(
-    values: list,
-    field_name: str = "values",
-    min_len: int = 1,
-    max_len: int | None = None,
-) -> list[str]:
-    """Return validation errors if a list's length is outside allowed bounds.
-
-    Args:
-        values: List to validate.
-        field_name: Name shown in error messages.
-        min_len: Minimum allowed length (inclusive). Defaults to 1.
-        max_len: Maximum allowed length (inclusive). None means no upper bound.
-
-    Returns:
-        List of error strings (empty when valid).
-    """
-    errors: list[str] = []
-    if len(values) < min_len:
-        errors.append(f"{field_name} must have at least {min_len} element(s), got {len(values)}")
-    if max_len is not None and len(values) > max_len:
-        errors.append(f"{field_name} must have at most {max_len} element(s), got {len(values)}")
-    return errors
-
-
-def validate_enum(value: str, allowed: list[str], field_name: str = "value") -> list[str]:
-    """Return validation errors if *value* is not in *allowed*.
-
-    Args:
-        value: String value to validate.
-        allowed: Accepted values.
-        field_name: Name shown in error messages.
-
-    Returns:
-        List of error strings (empty when valid).
-    """
-    errors: list[str] = []
-    if value not in allowed:
-        errors.append(f"{field_name} must be one of {allowed!r}, got {value!r}")
-    return errors
-
-
-def validate_date_string(value: str, field_name: str = "date") -> list[str]:
-    """Validate that *value* is an ISO 8601 date string (YYYY-MM-DD).
-
-    Args:
-        value: String to validate.
-        field_name: Name shown in error messages.
-
-    Returns:
-        List of error strings (empty when valid).
-    """
-    import re
-
-    errors: list[str] = []
-    if not re.fullmatch(r"\d{4}-(?:0[1-9]|1[0-2])-(?:0[1-9]|[12]\d|3[01])", value):
-        errors.append(f"{field_name} must be a valid ISO 8601 date (YYYY-MM-DD), got {value!r}")
-    return errors
-
-
-def validate_non_negative(value: float, field_name: str = "value") -> list[str]:
-    """Return validation errors if *value* is negative.
-
-    Args:
-        value: Numeric value to check.
-        field_name: Name shown in error messages.
+        field_name: Name of the field for error message context.
 
     Returns:
         List of error strings (empty when valid).
@@ -607,21 +516,291 @@ def validate_non_negative(value: float, field_name: str = "value") -> list[str]:
     return []
 
 
-def validate_unique_ids(records: list[dict], id_field: str = "id") -> list[str]:
-    """Return validation errors for duplicate IDs in *records*.
+def validate_positive(value: float, field_name: str = "value") -> list[str]:
+    """Validate that *value* is strictly positive (> 0).
 
     Args:
-        records: List of dicts with an identifier field.
-        id_field: Name of the ID field to check.
+        value: Numeric value to validate.
+        field_name: Name of the field for error message context.
 
     Returns:
-        List of error strings naming each duplicate ID.
+        List of error strings (empty when valid).
     """
-    seen: set = set()
-    dupes: list[str] = []
-    for r in records:
-        rid = r.get(id_field)
+    if value <= 0:
+        return [f"{field_name} must be positive, got {value}"]
+    return []
+
+
+def validate_string_length(
+    value: str,
+    field_name: str = "value",
+    min_length: int = 1,
+    max_length: int = 255,
+) -> list[str]:
+    """Validate that a string's length is within [min_length, max_length].
+
+    Args:
+        value: String to validate.
+        field_name: Human-readable field name for error messages.
+        min_length: Minimum acceptable length (inclusive).
+        max_length: Maximum acceptable length (inclusive).
+
+    Returns:
+        List of error strings (empty when valid).
+    """
+    errors: list[str] = []
+    if len(value) < min_length:
+        errors.append(f"{field_name} must be at least {min_length} characters, got {len(value)}")
+    if len(value) > max_length:
+        errors.append(f"{field_name} must be at most {max_length} characters, got {len(value)}")
+    return errors
+
+
+def validate_range(
+    value: float,
+    field_name: str,
+    min_value: float = float("-inf"),
+    max_value: float = float("inf"),
+) -> list[str]:
+    """Validate that *value* is within [min_value, max_value].
+
+    Args:
+        value: Numeric value to validate.
+        field_name: Human-readable field name for error messages.
+        min_value: Inclusive lower bound (default -inf).
+        max_value: Inclusive upper bound (default +inf).
+
+    Returns:
+        List of error strings (empty when valid).
+    """
+    errors: list[str] = []
+    if value < min_value:
+        errors.append(f"{field_name} must be >= {min_value}, got {value}")
+    if value > max_value:
+        errors.append(f"{field_name} must be <= {max_value}, got {value}")
+    return errors
+
+
+def validate_email(value: str, field_name: str = "email") -> list[str]:
+    """Basic validation that *value* looks like an email address.
+
+    Checks for a single '@' character with non-empty local and domain parts,
+    and at least one '.' in the domain.  Not RFC 5322 complete.
+
+    Args:
+        value: String to validate.
+        field_name: Human-readable field name for error messages.
+
+    Returns:
+        List of error strings (empty when valid).
+    """
+    errors: list[str] = []
+    if not value or "@" not in value:
+        errors.append(f"{field_name} must contain '@'")
+        return errors
+    parts = value.split("@")
+    if len(parts) != 2 or not parts[0] or not parts[1]:
+        errors.append(f"{field_name} must have non-empty local and domain parts")
+        return errors
+    if "." not in parts[1]:
+        errors.append(f"{field_name} domain must contain at least one '.'")
+    return errors
+
+
+def validate_list_length(
+    values: list[object],
+    min_len: int = 1,
+    max_len: int = 1000,
+    field_name: str = "list",
+) -> list[str]:
+    """Return validation errors when *values* has length outside ``[min_len, max_len]``.
+
+    Args:
+        values: Sequence to validate.
+        min_len: Minimum acceptable length (default 1).
+        max_len: Maximum acceptable length (default 1000).
+        field_name: Field name used in the error message.
+
+    Returns:
+        List of error strings (empty when valid).
+    """
+    errors: list[str] = []
+    n = len(values)
+    if n < min_len:
+        errors.append(f"{field_name} must have at least {min_len} item(s), got {n}")
+    if n > max_len:
+        errors.append(f"{field_name} must have at most {max_len} item(s), got {n}")
+    return errors
+
+
+def validate_enum(
+    value: object,
+    allowed: list[object],
+    field_name: str = "value",
+) -> list[str]:
+    """Return validation errors when *value* is not one of *allowed*.
+
+    Args:
+        value: The value to test.
+        allowed: Permitted values.
+        field_name: Field name used in the error message.
+
+    Returns:
+        List of error strings (empty when valid).
+    """
+    if value in allowed:
+        return []
+    return [f"{field_name} {value!r} is not one of {list(allowed)}"]
+
+
+def validate_date_string(
+    value: str,
+    field_name: str = "date",
+    fmt: str = "%Y-%m-%d",
+) -> list[str]:
+    """Return validation errors when *value* does not parse as an ISO date.
+
+    Args:
+        value: Candidate date string.
+        field_name: Field name used in the error message.
+        fmt: ``strptime`` format string (default ``%Y-%m-%d``).
+
+    Returns:
+        List of error strings (empty when valid).
+    """
+    try:
+        datetime.strptime(value, fmt)
+    except (TypeError, ValueError):
+        return [f"{field_name} {value!r} is not a valid date in format {fmt!r}"]
+    return []
+
+
+def validate_unique_ids(
+    records: list[dict[str, object]],
+    id_field: str = "id",
+) -> list[str]:
+    """Return validation errors listing duplicate id values found across *records*.
+
+    Args:
+        records: Sequence of record dicts.
+        id_field: Field name whose values must be unique.
+
+    Returns:
+        List of error strings; empty when all ids are unique or *records* is empty.
+    """
+    if not records:
+        return []
+    seen: dict[object, int] = {}
+    duplicates: dict[object, int] = {}
+    for rec in records:
+        rid = rec.get(id_field)
+        if rid is None:
+            continue
         if rid in seen:
-            dupes.append(f"Duplicate {id_field}: {rid!r}")
-        seen.add(rid)
-    return dupes
+            duplicates[rid] = duplicates.get(rid, 1) + 1
+        else:
+            seen[rid] = 1
+    return [f"{id_field} {rid!r} appears more than once ({count + 1} times)" for rid, count in duplicates.items()]
+
+
+def validate_url(
+    value: str, field_name: str = "url", allowed_schemes: tuple[str, ...] = ("http", "https")
+) -> list[str]:
+    """Return validation errors when *value* is not a well-formed URL.
+
+    Args:
+        value: Candidate URL string.
+        field_name: Field name for the error message.
+        allowed_schemes: Permitted URL schemes; default is HTTP/HTTPS only.
+
+    Returns:
+        List of error strings (empty when valid).
+    """
+    errors: list[str] = []
+    if not value:
+        return [f"{field_name} must not be empty"]
+    try:
+        from urllib.parse import urlparse
+
+        parsed = urlparse(value)
+    except (TypeError, ValueError):
+        return [f"{field_name} could not be parsed as a URL: {value!r}"]
+    if not parsed.scheme:
+        errors.append(f"{field_name} is missing a scheme")
+    elif parsed.scheme not in allowed_schemes:
+        errors.append(
+            f"{field_name} scheme {parsed.scheme!r} is not in allowed {list(allowed_schemes)}",
+        )
+    if not parsed.netloc:
+        errors.append(f"{field_name} is missing a host")
+    return errors
+
+
+def validate_iso_timestamp(value: str, field_name: str = "timestamp") -> list[str]:
+    """Return validation errors when *value* is not an ISO-8601 timestamp.
+
+    Args:
+        value: Candidate timestamp string.
+        field_name: Field name for the error message.
+
+    Returns:
+        List of error strings (empty when valid).
+    """
+    if not value:
+        return [f"{field_name} must not be empty"]
+    try:
+        datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except (TypeError, ValueError):
+        return [f"{field_name} is not a valid ISO-8601 timestamp: {value!r}"]
+    return []
+
+
+def validate_year(year: int) -> list[str]:
+    """Validate that *year* is a plausible calendar year.
+
+    Args:
+        year: Integer year to check.
+
+    Returns:
+        Empty list when valid; list with one error string otherwise.
+    """
+    errors: list[str] = []
+    if year < 1900 or year > 2200:
+        errors.append(f"year must be between 1900 and 2200, got {year}")
+    return errors
+
+
+def validate_energy_series(values: list[float], field_name: str = "energy_series") -> list[str]:
+    """Validate a list of energy readings (must be non-empty and non-negative).
+
+    Args:
+        values: List of energy values in kWh.
+        field_name: Name used in error messages.
+
+    Returns:
+        Empty list when valid; list of error strings otherwise.
+    """
+    errors: list[str] = []
+    if not values:
+        errors.append(f"{field_name} must not be empty")
+        return errors
+    for i, v in enumerate(values):
+        if v < 0:
+            errors.append(f"{field_name}[{i}] must be non-negative, got {v}")
+    return errors
+
+
+def validate_ratio(value: float, field_name: str = "ratio") -> list[str]:
+    """Validate that *value* is a ratio in [0.0, 1.0].
+
+    Args:
+        value: Ratio value to validate.
+        field_name: Name used in error messages.
+
+    Returns:
+        Empty list when valid; list with one error string otherwise.
+    """
+    errors: list[str] = []
+    if not (0.0 <= value <= 1.0):
+        errors.append(f"{field_name} must be in [0, 1], got {value}")
+    return errors

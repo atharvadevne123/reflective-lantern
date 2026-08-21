@@ -197,14 +197,14 @@ def test_mode_label_improvement() -> None:
     assert all(is_innovation_day(d) for d in days)
 
 
-def test_upcoming_innovation_days_sorted():
+def test_upcoming_innovation_days_sorted() -> None:
     from config.mode import upcoming_innovation_days
 
     days = upcoming_innovation_days(count=4)
     assert days == sorted(days)
 
 
-def test_mode_schedule_weekdays_only():
+def test_mode_schedule_weekdays_only() -> None:
     from config.mode import mode_schedule
 
     schedule = mode_schedule(weeks=1)
@@ -212,7 +212,7 @@ def test_mode_schedule_weekdays_only():
         assert entry["mode"] in ("IMPROVEMENT", "INNOVATION")
 
 
-def test_mode_schedule_length():
+def test_mode_schedule_length() -> None:
     from config.mode import mode_schedule
 
     schedule = mode_schedule(weeks=1)
@@ -254,14 +254,14 @@ def test_determine_mode_saturday_is_improvement() -> None:
     assert result == RunMode.IMPROVEMENT
 
 
-def test_upcoming_innovation_days_returns_count():
+def test_upcoming_innovation_days_returns_count() -> None:
     from config.mode import upcoming_innovation_days
 
     days = upcoming_innovation_days(count=3)
     assert len(days) == 3
 
 
-def test_upcoming_innovation_days_all_innovation():
+def test_upcoming_innovation_days_all_innovation() -> None:
     from config.mode import is_innovation_day, upcoming_innovation_days
 
     days = upcoming_innovation_days(count=5)

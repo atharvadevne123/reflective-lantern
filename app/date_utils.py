@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import logging
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, date, datetime, timedelta
 from functools import lru_cache
 
 logger = logging.getLogger(__name__)
@@ -102,21 +102,35 @@ def week_of_year(dt: datetime) -> int:
 
 
 __all__ = [
+    "business_days_between",
     "clamp_to_range",
+    "date_range",
+    "date_range_overlap_days",
     "datetime_to_iso",
     "days_between",
+    "days_in_month",
     "days_until",
+    "elapsed_seconds",
+    "fiscal_quarter",
+    "format_duration",
     "format_iso",
     "generate_hourly_timestamps",
     "hours_between",
+    "is_business_day",
     "is_business_hour",
+    "is_leap_year",
     "is_weekend",
     "iso_to_datetime",
+    "next_business_day",
+    "next_midnight",
+    "next_weekday",
     "quarter_of_year",
     "round_to_hour",
     "start_of_day",
     "start_of_month",
     "utc_now",
+    "week_number",
+    "week_of_month",
     "week_of_year",
 ]
 
@@ -331,45 +345,133 @@ def clamp_to_range(dt: datetime, start: datetime, end: datetime) -> datetime:
     return dt
 
 
-def week_number(dt: "datetime") -> int:
+def date_range(start: datetime, end: datetime, step_hours: int = 24) -> list[datetime]:
+    """Generate a list of datetimes from *start* to *end* (exclusive) at *step_hours* intervals.
+
+    Args:
+        start: Range start (inclusive).
+        end: Range end (exclusive).
+        step_hours: Interval between successive datetimes in hours (default 24).
+
+    Returns:
+        List of datetimes beginning at *start* and stepping by *step_hours* until *end*.
+
+    Raises:
+        ValueError: If *step_hours* < 1 or *start* >= *end*.
+    """
+    if step_hours < 1:
+        raise ValueError(f"step_hours must be at least 1, got {step_hours}")
+    if start >= end:
+        raise ValueError("start must be before end")
+    result: list[datetime] = []
+    current = start
+    delta = timedelta(hours=step_hours)
+    while current < end:
+        result.append(current)
+        current += delta
+    return result
+
+
+def elapsed_seconds(start: datetime, end: datetime) -> float:
+    """Return the number of seconds between *start* and *end*.
+
+    Args:
+        start: Earlier datetime.
+        end: Later datetime.
+
+    Returns:
+        Total seconds as a float; negative when *end* precedes *start*.
+    """
+    return (end - start).total_seconds()
+
+
+def next_midnight(dt: datetime) -> datetime:
+    """Return the next midnight after *dt* (start of the following day).
+
+    Args:
+        dt: Reference datetime (timezone is preserved).
+
+    Returns:
+        Datetime set to midnight at the start of the next calendar day.
+    """
+    next_day = (dt + timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0)
+    return next_day
+
+
+def business_days_between(start: datetime, end: datetime) -> int:
+    """Count the number of business days (Mon-Fri) between *start* and *end*.
+
+    Args:
+        start: Start datetime (inclusive).
+        end: End datetime (exclusive).
+
+    Returns:
+        Number of weekdays in [start.date(), end.date()).
+    """
+    if end <= start:
+        return 0
+    s = start.date()
+    e = end.date()
+    total = 0
+    current = s
+    while current < e:
+        if current.weekday() < 5:
+            total += 1
+        current += timedelta(days=1)
+    return total
+
+
+def is_business_day(dt: datetime) -> bool:
+    """Return True if *dt* falls on a Monday through Friday.
+
+    Args:
+        dt: Datetime to check.
+
+    Returns:
+        True for weekdays, False for Saturday and Sunday.
+    """
+    return dt.weekday() < 5
+
+
+def week_number(dt: datetime) -> int:
     """Return the ISO week number (1-53) for *dt*.
 
     Args:
-        dt: A datetime or date object.
+        dt: Datetime to inspect.
 
     Returns:
-        ISO 8601 week number.
+        ISO week number in the range 1-53.
     """
     return dt.isocalendar()[1]
 
 
-def fiscal_quarter(dt: "datetime", fiscal_year_start_month: int = 1) -> int:
-    """Return the fiscal quarter (1-4) for *dt*.
+def fiscal_quarter(dt: date | datetime, fiscal_year_start_month: int = 1) -> int:
+    """Return the fiscal quarter (1-4) for a date given the fiscal year start month.
 
     Args:
-        dt: A datetime or date object.
-        fiscal_year_start_month: Month number (1-12) when the fiscal year begins.
-            Defaults to 1 (calendar year).
+        dt: Date or datetime to inspect.
+        fiscal_year_start_month: Month (1-12) the fiscal year begins. Defaults to 1 (January).
 
     Returns:
-        Fiscal quarter 1, 2, 3, or 4.
+        Fiscal quarter number 1-4.
 
     Raises:
-        ValueError: If *fiscal_year_start_month* is not in 1-12.
+        ValueError: If fiscal_year_start_month is not in 1-12.
     """
     if not 1 <= fiscal_year_start_month <= 12:
         raise ValueError(f"fiscal_year_start_month must be 1-12, got {fiscal_year_start_month}")
-    offset = (dt.month - fiscal_year_start_month) % 12
+    month = dt.month
+    offset = (month - fiscal_year_start_month) % 12
     return offset // 3 + 1
 
 
 def date_range_overlap_days(
-    start_a: "datetime",
-    end_a: "datetime",
-    start_b: "datetime",
-    end_b: "datetime",
+    start_a: date | datetime,
+    end_a: date | datetime,
+    start_b: date | datetime,
+    end_b: date | datetime,
 ) -> int:
-    """Return the number of days that two date ranges overlap.
+    """Return the number of overlapping days between two inclusive date ranges [start, end].
 
     Args:
         start_a: Start of range A (inclusive).
@@ -378,80 +480,102 @@ def date_range_overlap_days(
         end_b: End of range B (inclusive).
 
     Returns:
-        Number of overlapping days; 0 if there is no overlap.
+        Number of overlapping days; 0 if no overlap.
 
     Raises:
-        ValueError: If either range is invalid (start > end).
+        ValueError: If either range has start strictly after end.
     """
-    if start_a > end_a:
-        raise ValueError("Range A is invalid: start_a > end_a")
-    if start_b > end_b:
-        raise ValueError("Range B is invalid: start_b > end_b")
-    overlap_start = max(start_a, start_b)
-    overlap_end = min(end_a, end_b)
+
+    def _to_date(d: date | datetime) -> date:
+        """Coerce a datetime to a plain date, leaving date objects unchanged."""
+        return d.date() if isinstance(d, datetime) else d
+
+    sa, ea = _to_date(start_a), _to_date(end_a)
+    sb, eb = _to_date(start_b), _to_date(end_b)
+    if sa > ea:
+        raise ValueError(f"Range A is invalid: start {sa} > end {ea}")
+    if sb > eb:
+        raise ValueError(f"Range B is invalid: start {sb} > end {eb}")
+    overlap_start = max(sa, sb)
+    overlap_end = min(ea, eb)
     delta = (overlap_end - overlap_start).days + 1
-    return max(0, delta)
+    return max(delta, 0)
 
 
-def week_of_month(dt: object) -> int:
-    """Return the week-of-month number (1-indexed) for a date.
+def week_of_month(dt: date | datetime) -> int:
+    """Return the week-of-month number (1-5) for a date.
 
-    Uses the ISO convention: week 1 contains the first day of the month.
-
-    Args:
-        dt: A ``datetime.date`` or ``datetime.datetime`` object.
-
-    Returns:
-        Week number within the month (1 to 5).
-    """
-    import datetime
-
-    d = dt.date() if isinstance(dt, datetime.datetime) else dt  # type: ignore[union-attr]
-    first_day = d.replace(day=1)
-    adjusted = d.day + first_day.weekday()
-    return (adjusted - 1) // 7 + 1
-
-
-def fiscal_quarter(dt: object, fiscal_year_start_month: int = 1) -> int:
-    """Return the fiscal quarter (1–4) for a date.
+    Week 1 starts on the first day of the month; each Monday begins a new week.
 
     Args:
-        dt: A ``datetime.date`` or ``datetime.datetime``.
-        fiscal_year_start_month: Month number (1–12) at which the fiscal year
-            starts. Default 1 (calendar year).
+        dt: Date or datetime to inspect.
 
     Returns:
-        Fiscal quarter number 1 through 4.
-
-    Raises:
-        ValueError: If *fiscal_year_start_month* is outside [1, 12].
+        Week number within the month, starting at 1.
     """
-    import datetime
-
-    if not (1 <= fiscal_year_start_month <= 12):
-        raise ValueError(f"fiscal_year_start_month must be in [1, 12], got {fiscal_year_start_month}")
-    month = dt.month if isinstance(dt, (datetime.date, datetime.datetime)) else int(dt)  # type: ignore[union-attr]
-    adjusted = (month - fiscal_year_start_month) % 12
-    return adjusted // 3 + 1
+    d = dt.date() if isinstance(dt, datetime) else dt
+    first_day = date(d.year, d.month, 1)
+    first_weekday = first_day.weekday()
+    day_of_month = d.day
+    return (day_of_month + first_weekday - 1) // 7 + 1
 
 
-def next_weekday(dt: object, weekday: int) -> object:
+def next_weekday(dt: date | datetime, weekday: int) -> date:
     """Return the next occurrence of *weekday* on or after *dt*.
 
     Args:
-        dt: A ``datetime.date`` or ``datetime.datetime``.
-        weekday: Target weekday as an ISO integer (1=Monday, 7=Sunday).
+        dt: Starting date or datetime.
+        weekday: Target weekday as an integer (1=Monday … 7=Sunday, ISO convention).
 
     Returns:
-        A ``datetime.date`` on or after *dt* with the given weekday.
+        The next (or same) date matching the target weekday.
 
     Raises:
-        ValueError: If *weekday* is outside [1, 7].
+        ValueError: If weekday is not in 1-7.
     """
-    import datetime
+    if not 1 <= weekday <= 7:
+        raise ValueError(f"weekday must be 1-7 (ISO), got {weekday}")
+    d = dt.date() if isinstance(dt, datetime) else dt
+    iso_wd = weekday  # 1=Mon … 7=Sun
+    current_iso = d.isoweekday()
+    days_ahead = (iso_wd - current_iso) % 7
+    return d + timedelta(days=days_ahead)
 
-    if not (1 <= weekday <= 7):
-        raise ValueError(f"weekday must be in [1, 7], got {weekday}")
-    d = dt.date() if isinstance(dt, datetime.datetime) else dt  # type: ignore[union-attr]
-    days_ahead = (weekday - d.isoweekday()) % 7
-    return d + datetime.timedelta(days=days_ahead)
+
+def minutes_between(start: datetime, end: datetime) -> int:
+    """Return the number of whole minutes between *start* and *end*.
+
+    Args:
+        start: Earlier datetime.
+        end: Later datetime.
+
+    Returns:
+        Integer count of whole minutes; negative if end < start.
+    """
+    delta = end - start
+    return int(delta.total_seconds() // 60)
+
+
+def is_same_day(a: datetime, b: datetime) -> bool:
+    """Return True if *a* and *b* fall on the same calendar day.
+
+    Args:
+        a: First datetime.
+        b: Second datetime.
+
+    Returns:
+        True when year, month, and day are all equal.
+    """
+    return a.year == b.year and a.month == b.month and a.day == b.day
+
+
+def end_of_day(dt: datetime) -> datetime:
+    """Return 23:59:59.999999 of the same day as *dt*.
+
+    Args:
+        dt: Any datetime (timezone is preserved).
+
+    Returns:
+        Datetime at the very end of *dt*'s calendar day.
+    """
+    return dt.replace(hour=23, minute=59, second=59, microsecond=999999)

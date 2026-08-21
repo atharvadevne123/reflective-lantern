@@ -167,3 +167,25 @@ def test_predict_batch_consistency(feature_arrays, tmp_path, monkeypatch):
     label2, prob2 = m.predict(pipe, X[:1])
     assert label1 == label2
     assert prob1 == prob2
+
+
+@pytest.mark.parametrize("cv_folds", [2, 3, 5])
+def test_train_model_cv_folds_parametrized(feature_arrays, cv_folds: int) -> None:
+    from app.model import train_model
+
+    X, y = feature_arrays
+    pipe, metrics = train_model(X, y, cv_folds=cv_folds)
+    assert pipe is not None
+    assert isinstance(metrics.get("auc_cv_mean"), float)
+
+
+@pytest.mark.parametrize(
+    "metric_key",
+    ["auc_cv_mean", "auc_cv_std", "accuracy"],
+)
+def test_train_model_has_metric(feature_arrays, metric_key: str) -> None:
+    from app.model import train_model
+
+    X, y = feature_arrays
+    _, metrics = train_model(X, y, cv_folds=2)
+    assert metric_key in metrics

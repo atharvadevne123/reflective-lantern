@@ -139,3 +139,31 @@ def test_export_predictions_csv_respects_limit(db_session):
     result = export_predictions_csv(db_session, limit=2)
     lines = result.strip().splitlines()
     assert len(lines) <= 3  # header + up to 2 rows
+
+
+@pytest.mark.parametrize("n_rows", [1, 3, 5, 10])
+def test_export_predictions_csv_row_count(db_session, n_rows: int) -> None:
+    from app.reporting import export_predictions_csv
+
+    _add_predictions(db_session, n_rows)
+    result = export_predictions_csv(db_session, limit=n_rows)
+    lines = result.strip().splitlines()
+    assert len(lines) == n_rows + 1  # header + n_rows
+
+
+@pytest.mark.parametrize("n_preds", [2, 4, 6])
+def test_prediction_summary_json_count(db_session, n_preds: int) -> None:
+    from app.reporting import prediction_summary_json
+
+    _add_predictions(db_session, n_preds)
+    result = prediction_summary_json(db_session)
+    assert result["total_predictions"] == n_preds
+
+
+def test_csv_export_includes_field_names(db_session) -> None:
+    from app.reporting import export_predictions_csv
+
+    _add_predictions(db_session, 1)
+    result = export_predictions_csv(db_session, limit=1)
+    first_line = result.strip().splitlines()[0]
+    assert "defect_probability" in first_line or "prediction" in first_line

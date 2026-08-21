@@ -173,6 +173,65 @@ def normalise_demand(values: list[float]) -> list[float]:
     return [(v - lo) / (hi - lo) for v in values]
 
 
+def sustained_demand_violation(
+    values: list[float],
+    threshold: float,
+    min_duration: int = 3,
+) -> list[dict[str, int | float]]:
+    """Detect sustained demand violations exceeding a threshold for min_duration steps.
+
+    Args:
+        values: Time-ordered demand readings.
+        threshold: Violation threshold value.
+        min_duration: Minimum consecutive steps above threshold to count as violation.
+
+    Returns:
+        List of dicts with 'start', 'end', 'duration', and 'peak' for each violation.
+    """
+    violations: list[dict[str, int | float]] = []
+    i = 0
+    while i < len(values):
+        if values[i] > threshold:
+            j = i
+            while j < len(values) and values[j] > threshold:
+                j += 1
+            duration = j - i
+            if duration >= min_duration:
+                peak = max(values[i:j])
+                violations.append(
+                    {"start": i, "end": j - 1, "duration": duration, "peak": round(peak, 4)}
+                )
+            i = j
+        else:
+            i += 1
+    return violations
+
+
+def demand_variability(values: list[float]) -> dict[str, float]:
+    """Compute variability statistics for a demand series.
+
+    Args:
+        values: Demand readings (must have at least 2 elements).
+
+    Returns:
+        Dict with 'cv' (coefficient of variation), 'range', 'iqr', and 'std'.
+        Returns zeros dict when insufficient data.
+    """
+    if len(values) < 2:
+        return {"cv": 0.0, "range": 0.0, "iqr": 0.0, "std": 0.0}
+    arr = np.array(values, dtype=float)
+    mean = float(arr.mean())
+    std = float(arr.std())
+    q1, q3 = float(np.percentile(arr, 25)), float(np.percentile(arr, 75))
+    cv = round(std / mean, 6) if mean != 0 else 0.0
+    return {
+        "cv": cv,
+        "range": round(float(arr.max() - arr.min()), 4),
+        "iqr": round(q3 - q1, 4),
+        "std": round(std, 4),
+    }
+
+
 __all__ = [
     "detect_spike",
     "rolling_spike_count",
@@ -180,6 +239,8 @@ __all__ = [
     "spike_ratio",
     "consecutive_spike_run",
     "normalise_demand",
+    "sustained_demand_violation",
+    "demand_variability",
 ]
 
 

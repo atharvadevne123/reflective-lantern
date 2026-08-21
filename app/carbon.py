@@ -115,21 +115,28 @@ def annual_carbon_report(
 
 
 def carbon_savings(
-    actual_kwh: float,
-    baseline_kwh: float,
+    actual_kwh: float | None = None,
+    baseline_kwh: float | None = None,
     region: str = "default",
+    *,
+    old_kwh: float | None = None,
+    new_kwh: float | None = None,
 ) -> dict[str, float]:
     """Estimate CO2 savings from reduced energy consumption.
 
     Args:
-        actual_kwh: Measured energy consumption in kWh.
-        baseline_kwh: Reference baseline consumption in kWh.
+        actual_kwh: Measured energy consumption in kWh (or use new_kwh).
+        baseline_kwh: Reference baseline consumption in kWh (or use old_kwh).
         region: Grid region identifier.
+        old_kwh: Alias for baseline_kwh.
+        new_kwh: Alias for actual_kwh.
 
     Returns:
         Dict with saved_kwh, saved_co2_kg, saved_co2_tonnes, and trees_saved.
     """
-    saved_kwh = max(0.0, baseline_kwh - actual_kwh)
+    _actual = new_kwh if new_kwh is not None else (actual_kwh or 0.0)
+    _baseline = old_kwh if old_kwh is not None else (baseline_kwh or 0.0)
+    saved_kwh = max(0.0, _baseline - _actual)
     saved_co2_kg = kwh_to_co2_kg(saved_kwh, region)
     return {
         "saved_kwh": round(saved_kwh, 3),
@@ -168,15 +175,25 @@ def daily_carbon_estimate(
 
 __all__ = [
     "GRID_CARBON_INTENSITY",
+    "carbon_intensity_rank",
+    "hourly_carbon_profile",
+    "renewable_offset_factor",
     "KG_TO_TONNES",
     "TREES_PER_TONNE_CO2_PER_YEAR",
+    "annual_carbon_budget",
     "annual_carbon_report",
+    "annual_carbon_trajectory",
     "carbon_budget_remaining",
+    "carbon_budget_status",
     "carbon_intensity_by_hour",
+    "carbon_intensity_category",
+    "carbon_intensity_label",
+    "carbon_offset_cost",
     "carbon_per_sqm",
     "carbon_reduction_pct",
     "carbon_saved_kwh",
     "carbon_savings",
+    "carbon_savings_vs_baseline",
     "co2_kg_to_tonnes",
     "compare_regions",
     "daily_carbon_estimate",
@@ -186,6 +203,7 @@ __all__ = [
     "monthly_co2_breakdown",
     "tree_offset_days",
     "trees_equivalent",
+    "weighted_carbon_factor",
 ]
 
 
@@ -616,78 +634,178 @@ def carbon_per_occupant(co2_kg: float, occupants: int) -> float:
     return round(co2_kg / occupants, 4)
 
 
-def carbon_budget_status(
-    budget_kg: float,
-    consumed_kg: float,
-) -> dict[str, float]:
-    """Compute remaining carbon budget and percentage used.
+def net_zero_timeline(
+    annual_co2_kg: float,
+    annual_reduction_pct: float,
+    offset_co2_kg_per_year: float = 0.0,
+    max_years: int = 100,
+) -> dict[str, object]:
+    """Estimate years to reach net-zero given a yearly reduction rate and offsets.
 
     Args:
-        budget_kg: Total carbon budget in kg CO₂.
-        consumed_kg: Carbon already consumed in kg CO₂ (must be >= 0).
+        annual_co2_kg: Starting annual CO2 emissions in kg.
+        annual_reduction_pct: Percentage reduction applied each year (0-100).
+        offset_co2_kg_per_year: CO2 offset added each year (e.g. renewable credits).
+        max_years: Maximum number of years to simulate before giving up.
 
     Returns:
-        Dict with ``remaining_kg``, ``consumed_pct``, and ``overage_kg`` keys.
-        ``overage_kg`` is positive when budget is exceeded, else 0.
+        Dict with ``years_to_net_zero`` (int or None if not reached),
+        ``trajectory`` (list of annual totals), and ``achieved`` (bool).
 
     Raises:
-        ValueError: If *budget_kg* <= 0 or *consumed_kg* < 0.
+        ValueError: If *annual_reduction_pct* is outside [0, 100).
+    """
+    if not (0.0 <= annual_reduction_pct < 100.0):
+        raise ValueError("annual_reduction_pct must be in [0, 100)")
+
+    rate = annual_reduction_pct / 100.0
+    current = float(annual_co2_kg)
+    trajectory: list[float] = []
+    years_to_net_zero: int | None = None
+
+    for year in range(1, max_years + 1):
+        current = max(0.0, current * (1.0 - rate) - offset_co2_kg_per_year)
+        trajectory.append(round(current, 2))
+        if current <= 0.0 and years_to_net_zero is None:
+            years_to_net_zero = year
+            break
+
+    achieved = years_to_net_zero is not None
+    return {
+        "years_to_net_zero": years_to_net_zero,
+        "trajectory": trajectory,
+        "achieved": achieved,
+    }
+
+
+def carbon_intensity_label(intensity_kg_per_kwh: float) -> str:
+    """Return a descriptive label for a carbon intensity value.
+
+    Args:
+        intensity_kg_per_kwh: Grid carbon intensity in kg CO2e per kWh.
+
+    Returns:
+        One of 'very_low', 'low', 'moderate', 'high', 'very_high'.
+    """
+    if intensity_kg_per_kwh < 0.15:
+        return "very_low"
+    if intensity_kg_per_kwh < 0.25:
+        return "low"
+    if intensity_kg_per_kwh < 0.40:
+        return "medium"
+    if intensity_kg_per_kwh < 0.55:
+        return "high"
+    return "very_high"
+
+
+def annual_carbon_budget(
+    target_co2_tonnes: float,
+    current_co2_kg: float,
+    year_fraction_elapsed: float = 0.0,
+) -> dict[str, float]:
+    """Compute carbon budget remaining for the year given a tonne target.
+
+    Args:
+        target_co2_tonnes: Annual CO2 budget in tonnes.
+        current_co2_kg: CO2 already emitted this year in kilograms.
+        year_fraction_elapsed: Fraction of the year elapsed (0.0 to 1.0).
+
+    Returns:
+        Dict with 'budget_kg', 'spent_kg', 'remaining_kg',
+        'on_track' (bool), and 'projected_annual_kg'.
+
+    Raises:
+        ValueError: If *year_fraction_elapsed* is outside [0, 1].
+    """
+    if not (0.0 <= year_fraction_elapsed <= 1.0):
+        raise ValueError("year_fraction_elapsed must be between 0 and 1")
+    budget_kg = target_co2_tonnes * 1000.0
+    remaining_kg = max(0.0, budget_kg - current_co2_kg)
+    projected = (current_co2_kg / year_fraction_elapsed) if year_fraction_elapsed > 0 else current_co2_kg
+    on_track = projected <= budget_kg
+    return {
+        "budget_kg": round(budget_kg, 2),
+        "spent_kg": round(current_co2_kg, 2),
+        "remaining_kg": round(remaining_kg, 2),
+        "on_track": on_track,
+        "projected_annual_kg": round(projected, 2),
+    }
+
+
+def carbon_budget_status(budget_kg: float, consumed_kg: float) -> dict[str, float]:
+    """Compute a snapshot of carbon-budget usage.
+
+    Args:
+        budget_kg: Total carbon budget in kilograms of CO₂ (must be positive).
+        consumed_kg: Amount already emitted, in kilograms (must be non-negative).
+
+    Returns:
+        Dict with ``budget_kg``, ``consumed_kg``, ``consumed_pct``,
+        ``remaining_kg`` (negative when over-budget), and ``overage_kg``.
+
+    Raises:
+        ValueError: If ``budget_kg`` is not strictly positive or
+            ``consumed_kg`` is negative.
     """
     if budget_kg <= 0:
-        raise ValueError(f"budget_kg must be > 0, got {budget_kg}")
+        raise ValueError(f"budget_kg must be positive, got {budget_kg}")
     if consumed_kg < 0:
-        raise ValueError(f"consumed_kg must be >= 0, got {consumed_kg}")
+        raise ValueError(f"consumed_kg must be non-negative, got {consumed_kg}")
     remaining = budget_kg - consumed_kg
     overage = max(0.0, -remaining)
+    consumed_pct = (consumed_kg / budget_kg) * 100.0
     return {
+        "budget_kg": round(budget_kg, 4),
+        "consumed_kg": round(consumed_kg, 4),
+        "consumed_pct": round(consumed_pct, 4),
         "remaining_kg": round(remaining, 4),
-        "consumed_pct": round(100.0 * consumed_kg / budget_kg, 4),
         "overage_kg": round(overage, 4),
     }
 
 
-def weighted_carbon_factor(
-    sources: list[dict],
-) -> float:
-    """Compute a weighted average carbon emission factor for a mixed energy source.
+def weighted_carbon_factor(sources: list[dict[str, float]]) -> float:
+    """Compute the emissions-weighted mean carbon factor across a fuel mix.
+
+    Each source dict must have ``fraction`` (sums to 1) and ``factor_kg_per_kwh``.
 
     Args:
-        sources: List of dicts, each with ``"fraction"`` (share of total, 0-1)
-            and ``"factor_kg_per_kwh"`` (emission intensity).
+        sources: List of dicts describing the energy mix.
 
     Returns:
-        Weighted emission factor rounded to 6 decimal places.
+        Weighted mean factor in kg CO₂ per kWh.
 
     Raises:
-        ValueError: If *sources* is empty, fractions don't sum to approximately 1.0,
-            or any fraction is negative.
+        ValueError: If *sources* is empty or fractions don't sum to (approximately) 1.
     """
     if not sources:
         raise ValueError("sources must not be empty")
-    total_fraction = sum(s["fraction"] for s in sources)
-    if abs(total_fraction - 1.0) > 0.01:
-        raise ValueError(f"fractions must sum to 1.0, got {total_fraction:.4f}")
-    if any(s["fraction"] < 0 for s in sources):
-        raise ValueError("all fractions must be non-negative")
-    weighted = sum(s["fraction"] * s["factor_kg_per_kwh"] for s in sources)
+    total_fraction = sum(s.get("fraction", 0.0) for s in sources)
+    if abs(total_fraction - 1.0) > 0.05:
+        raise ValueError(f"source fractions must sum to 1, got {total_fraction}")
+    weighted = sum(s.get("fraction", 0.0) * s.get("factor_kg_per_kwh", 0.0) for s in sources)
     return round(weighted, 6)
 
 
 def carbon_intensity_category(factor_kg_per_kwh: float) -> str:
-    """Classify a carbon intensity factor into a descriptive category.
+    """Classify a grid carbon factor into a qualitative bucket.
+
+    Buckets:
+        * ``factor < 0.1`` → ``"very_low"``
+        * ``factor < 0.3`` → ``"low"``
+        * ``factor < 0.5`` → ``"medium"``
+        * otherwise → ``"high"``
 
     Args:
-        factor_kg_per_kwh: Carbon emission factor in kg CO₂ per kWh.
+        factor_kg_per_kwh: Emission factor (kg CO₂ per kWh); must be non-negative.
 
     Returns:
-        One of ``"very_low"`` (< 0.1), ``"low"`` (< 0.3), ``"medium"`` (< 0.5),
-        or ``"high"`` (>= 0.5).
+        Category label.
 
     Raises:
-        ValueError: If *factor_kg_per_kwh* is negative.
+        ValueError: If ``factor_kg_per_kwh`` is negative.
     """
     if factor_kg_per_kwh < 0:
-        raise ValueError(f"factor_kg_per_kwh must be >= 0, got {factor_kg_per_kwh}")
+        raise ValueError(f"factor must be non-negative, got {factor_kg_per_kwh}")
     if factor_kg_per_kwh < 0.1:
         return "very_low"
     if factor_kg_per_kwh < 0.3:
@@ -697,59 +815,57 @@ def carbon_intensity_category(factor_kg_per_kwh: float) -> str:
     return "high"
 
 
-def carbon_offset_cost(
-    emissions_kg: float,
-    cost_per_tonne: float = 15.0,
-) -> float:
-    """Estimate the monetary cost to offset *emissions_kg* of CO₂.
+def carbon_offset_cost(co2_kg: float, cost_per_tonne: float = 15.0) -> float:
+    """Estimate the market cost of offsetting *co2_kg* of emissions.
 
     Args:
-        emissions_kg: Total CO₂ emissions in kilograms.
-        cost_per_tonne: Market cost per metric tonne of CO₂ offsets.
-            Default 15.0 USD/t.
+        co2_kg: Kilograms of CO₂ to offset; must be non-negative.
+        cost_per_tonne: Offset price in USD per metric tonne (default $15).
 
     Returns:
-        Estimated offset cost in the same currency as *cost_per_tonne*.
+        Cost in USD.
 
     Raises:
-        ValueError: If either argument is negative.
+        ValueError: If ``co2_kg`` is negative or ``cost_per_tonne`` is negative.
     """
-    if emissions_kg < 0:
-        raise ValueError(f"emissions_kg must be >= 0, got {emissions_kg}")
+    if co2_kg < 0:
+        raise ValueError(f"co2_kg must be non-negative, got {co2_kg}")
     if cost_per_tonne < 0:
-        raise ValueError(f"cost_per_tonne must be >= 0, got {cost_per_tonne}")
-    return round(emissions_kg / 1000.0 * cost_per_tonne, 4)
+        raise ValueError(f"cost_per_tonne must be non-negative, got {cost_per_tonne}")
+    tonnes = co2_kg / 1000.0
+    return round(tonnes * cost_per_tonne, 4)
 
 
-def annual_carbon_trajectory(
-    monthly_emissions_kg: list[float],
-) -> dict[str, float]:
-    """Summarise a 12-month emission trajectory.
+def annual_carbon_trajectory(monthly_kg: list[float]) -> dict[str, float]:
+    """Summarise a series of monthly CO₂ totals into an annual trajectory.
 
     Args:
-        monthly_emissions_kg: List of monthly CO₂ emissions in kg.
-            Fewer than 12 values are accepted (partial year).
+        monthly_kg: Sequence of monthly emission totals (kg). Must be non-empty
+            and non-negative.
 
     Returns:
-        Dict with keys ``total_kg``, ``monthly_avg_kg``, ``peak_month_kg``,
-        and ``trend_slope`` (linear regression slope in kg/month).
+        Dict with ``total_kg``, ``monthly_avg_kg``, ``peak_month_kg``, and
+        ``trend_slope`` (least-squares slope of monthly totals).
 
     Raises:
-        ValueError: If *monthly_emissions_kg* is empty or contains negatives.
+        ValueError: If ``monthly_kg`` is empty or contains negative values.
     """
-    if not monthly_emissions_kg:
-        raise ValueError("monthly_emissions_kg must not be empty")
-    if any(v < 0 for v in monthly_emissions_kg):
-        raise ValueError("All monthly emissions must be >= 0")
-    n = len(monthly_emissions_kg)
-    total = sum(monthly_emissions_kg)
+    if not monthly_kg:
+        raise ValueError("monthly_kg must not be empty")
+    if any(v < 0 for v in monthly_kg):
+        raise ValueError("monthly_kg values must be non-negative")
+    n = len(monthly_kg)
+    total = float(sum(monthly_kg))
     avg = total / n
-    peak = max(monthly_emissions_kg)
-    # Simple OLS slope
-    x_mean = (n - 1) / 2.0
-    slope_num = sum((i - x_mean) * (v - avg) for i, v in enumerate(monthly_emissions_kg))
-    slope_den = sum((i - x_mean) ** 2 for i in range(n))
-    slope = slope_num / slope_den if slope_den > 0 else 0.0
+    peak = float(max(monthly_kg))
+    if n < 2:
+        slope = 0.0
+    else:
+        mean_x = (n - 1) / 2.0
+        mean_y = avg
+        num = sum((i - mean_x) * (v - mean_y) for i, v in enumerate(monthly_kg))
+        den = sum((i - mean_x) ** 2 for i in range(n))
+        slope = num / den if den > 0 else 0.0
     return {
         "total_kg": round(total, 4),
         "monthly_avg_kg": round(avg, 4),
@@ -758,25 +874,258 @@ def annual_carbon_trajectory(
     }
 
 
-def carbon_savings_vs_baseline(
-    actual_kg: float,
-    baseline_kg: float,
-) -> dict[str, float]:
-    """Calculate CO₂ savings relative to a baseline.
+def carbon_savings_vs_baseline(actual_kg: float, baseline_kg: float) -> dict[str, float]:
+    """Compute absolute and percentage carbon savings against a baseline.
 
     Args:
-        actual_kg: Actual observed emissions in kg.
-        baseline_kg: Reference/baseline emissions in kg.
+        actual_kg: Actual emissions in kg (must be non-negative).
+        baseline_kg: Baseline (typical or prior) emissions in kg (must be non-negative).
 
     Returns:
-        Dict with ``savings_kg`` (positive = savings, negative = excess) and
-        ``savings_pct`` relative to baseline.
+        Dict with ``savings_kg`` (baseline - actual; negative when worse) and
+        ``savings_pct`` (percentage; 0 when baseline is zero).
 
     Raises:
         ValueError: If either value is negative.
     """
-    if actual_kg < 0 or baseline_kg < 0:
-        raise ValueError("Emissions values must be >= 0")
+    if actual_kg < 0:
+        raise ValueError(f"actual_kg must be non-negative, got {actual_kg}")
+    if baseline_kg < 0:
+        raise ValueError(f"baseline_kg must be non-negative, got {baseline_kg}")
     savings = baseline_kg - actual_kg
-    pct = savings / baseline_kg * 100 if baseline_kg > 0 else 0.0
-    return {"savings_kg": round(savings, 4), "savings_pct": round(pct, 4)}
+    pct = (savings / baseline_kg) * 100.0 if baseline_kg > 0 else 0.0
+    return {
+        "savings_kg": round(savings, 4),
+        "savings_pct": round(pct, 4),
+    }
+
+
+def carbon_per_capita(total_kg: float, population: int) -> float:
+    """Return per-capita carbon emissions (kg CO₂ per person).
+
+    Args:
+        total_kg: Total emissions in kilograms (must be non-negative).
+        population: Number of people (must be strictly positive).
+
+    Returns:
+        Emissions per person in kg.
+
+    Raises:
+        ValueError: If ``total_kg`` is negative or ``population`` is non-positive.
+    """
+    if total_kg < 0:
+        raise ValueError(f"total_kg must be non-negative, got {total_kg}")
+    if population <= 0:
+        raise ValueError(f"population must be positive, got {population}")
+    return round(total_kg / population, 4)
+
+
+def carbon_reduction_years(annual_kg: float, reduction_pct: float, target_kg: float) -> float:
+    """Estimate the number of years to hit *target_kg* by cutting *reduction_pct* each year.
+
+    Args:
+        annual_kg: Current annual emissions (must be strictly positive).
+        reduction_pct: Annual reduction as a percentage in (0, 100].
+        target_kg: Target annual emissions (must be non-negative).
+
+    Returns:
+        Number of years (float). Returns 0.0 when already at or below target,
+        or ``inf`` when the reduction never gets there.
+
+    Raises:
+        ValueError: If arguments are outside expected ranges.
+    """
+    if annual_kg <= 0:
+        raise ValueError(f"annual_kg must be positive, got {annual_kg}")
+    if not 0 < reduction_pct <= 100:
+        raise ValueError(f"reduction_pct must be in (0, 100], got {reduction_pct}")
+    if target_kg < 0:
+        raise ValueError(f"target_kg must be non-negative, got {target_kg}")
+    if annual_kg <= target_kg:
+        return 0.0
+    if target_kg == 0:
+        return float("inf")
+    import math as _math
+
+    factor = 1.0 - reduction_pct / 100.0
+    if factor <= 0:
+        return 1.0
+    return round(_math.log(target_kg / annual_kg) / _math.log(factor), 4)
+
+
+def emissions_reduction_pct(baseline_kg: float, current_kg: float) -> float:
+    """Return the percentage reduction in emissions relative to a baseline.
+
+    Args:
+        baseline_kg: Reference (historical) emissions in kg CO2.
+        current_kg: Current emissions in kg CO2.
+
+    Returns:
+        Positive value when emissions fell, negative when they rose. 0.0 when baseline is zero.
+    """
+    if baseline_kg == 0.0:
+        return 0.0
+    return round((baseline_kg - current_kg) / baseline_kg * 100.0, 4)
+
+
+def carbon_intensity_trend(
+    intensities: list[float],
+) -> dict[str, object]:
+    """Analyse a sequence of carbon intensity readings for trend direction.
+
+    Args:
+        intensities: Ordered carbon intensity values (kg CO2/kWh).
+
+    Returns:
+        Dict with 'mean', 'min', 'max', 'trend' ('improving'|'worsening'|'stable'),
+        and 'latest_label'. Returns a zeros dict when *intensities* is empty.
+    """
+    if not intensities:
+        return {"mean": 0.0, "min": 0.0, "max": 0.0, "trend": "stable", "latest_label": "very_low"}
+    mean_val = sum(intensities) / len(intensities)
+    if len(intensities) >= 2:
+        delta = intensities[-1] - intensities[0]
+        trend = "worsening" if delta > 0.01 else ("improving" if delta < -0.01 else "stable")
+    else:
+        trend = "stable"
+    return {
+        "mean": round(mean_val, 6),
+        "min": round(min(intensities), 6),
+        "max": round(max(intensities), 6),
+        "trend": trend,
+        "latest_label": carbon_intensity_label(intensities[-1]),
+    }
+
+
+def renewable_offset_factor(renewable_pct: float) -> float:
+    """Return the effective carbon intensity multiplier after accounting for renewables.
+
+    Args:
+        renewable_pct: Percentage of energy from renewable sources (0-100).
+
+    Returns:
+        Multiplier in range [0.0, 1.0]; 0.0 means fully renewable.
+
+    Raises:
+        ValueError: If renewable_pct is outside [0, 100].
+    """
+    if not (0.0 <= renewable_pct <= 100.0):
+        raise ValueError(f"renewable_pct must be in [0, 100], got {renewable_pct}")
+    return round(1.0 - renewable_pct / 100.0, 6)
+
+
+def hourly_carbon_profile(
+    hourly_kwh: list[float],
+    region: str = "default",
+    *,
+    renewable_pct: float = 0.0,
+) -> list[float]:
+    """Compute per-hour CO2 emissions (kg) for a 24-hour energy consumption profile.
+
+    Args:
+        hourly_kwh: Energy readings for each hour (must have exactly 24 values).
+        region: Grid region identifier for intensity lookup.
+        renewable_pct: Percentage of renewables that reduces effective intensity.
+
+    Returns:
+        List of 24 CO2-kg values, one per hour.
+
+    Raises:
+        ValueError: If hourly_kwh does not contain exactly 24 values.
+    """
+    if len(hourly_kwh) != 24:
+        raise ValueError(f"hourly_kwh must have 24 values, got {len(hourly_kwh)}")
+    factor = renewable_offset_factor(renewable_pct)
+    intensity = _grid_intensity(region.lower())
+    return [round(kwh * intensity * factor, 6) for kwh in hourly_kwh]
+
+
+def carbon_intensity_rank(region: str) -> int:
+    """Rank *region* by grid carbon intensity (1 = cleanest, higher = dirtier).
+
+    Args:
+        region: Grid region identifier (case-insensitive).
+
+    Returns:
+        Integer rank where 1 is the cleanest region.
+    """
+    sorted_regions = sorted(GRID_CARBON_INTENSITY.items(), key=lambda kv: kv[1])
+    intensity = _grid_intensity(region.lower())
+    for rank, (_, val) in enumerate(sorted_regions, start=1):
+        if abs(val - intensity) < 1e-9:
+            return rank
+    return len(sorted_regions)
+
+
+def cumulative_budget_usage(consumed_co2_kg: float, budget_co2_kg: float) -> dict[str, float]:
+    """Compute cumulative carbon budget usage statistics.
+
+    Args:
+        consumed_co2_kg: CO2 consumed so far (must be non-negative).
+        budget_co2_kg: Total CO2 budget (must be positive).
+
+    Returns:
+        Dict with 'used_pct', 'remaining_kg', and 'remaining_pct' keys.
+
+    Raises:
+        ValueError: If *budget_co2_kg* is not positive or *consumed_co2_kg* is negative.
+    """
+    if budget_co2_kg <= 0:
+        raise ValueError(f"budget_co2_kg must be positive, got {budget_co2_kg}")
+    if consumed_co2_kg < 0:
+        raise ValueError(f"consumed_co2_kg must be non-negative, got {consumed_co2_kg}")
+    used_pct = min(consumed_co2_kg / budget_co2_kg * 100.0, 100.0)
+    remaining_kg = max(budget_co2_kg - consumed_co2_kg, 0.0)
+    remaining_pct = max(100.0 - used_pct, 0.0)
+    return {
+        "used_pct": round(used_pct, 4),
+        "remaining_kg": round(remaining_kg, 4),
+        "remaining_pct": round(remaining_pct, 4),
+    }
+
+
+def grid_emission_factor(region: str) -> float:
+    """Return the CO2 emission factor (kg/kWh) for *region*.
+
+    Args:
+        region: Region key (same as those recognised by kwh_to_co2_kg).
+
+    Returns:
+        Emission factor in kg CO2 per kWh; falls back to the default factor
+        when the region is unknown.
+    """
+    factors: dict[str, float] = {
+        "default": 0.0001,
+        "northeast": 0.00014,
+        "midwest": 0.00045,
+        "south": 0.00042,
+        "west": 0.00028,
+        "pacific_nw": 0.00010,
+        "new_england": 0.00016,
+        "texas": 0.00038,
+        "florida": 0.00040,
+    }
+    return factors.get(region.lower(), factors["default"])
+
+
+def annual_co2_savings(baseline_kwh: float, improved_kwh: float, region: str = "default") -> float:
+    """Compute the annual CO2 savings (kg) from an energy-efficiency improvement.
+
+    Args:
+        baseline_kwh: Annual consumption before improvement (must be non-negative).
+        improved_kwh: Annual consumption after improvement (must be non-negative).
+        region: Region key for emission factor lookup.
+
+    Returns:
+        CO2 savings in kg; 0.0 when improved_kwh >= baseline_kwh.
+
+    Raises:
+        ValueError: If either consumption value is negative.
+    """
+    if baseline_kwh < 0:
+        raise ValueError(f"baseline_kwh must be non-negative, got {baseline_kwh}")
+    if improved_kwh < 0:
+        raise ValueError(f"improved_kwh must be non-negative, got {improved_kwh}")
+    saved_kwh = max(0.0, baseline_kwh - improved_kwh)
+    factor = grid_emission_factor(region)
+    return round(saved_kwh * factor * 1000.0, 4)

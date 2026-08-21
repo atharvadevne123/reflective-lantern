@@ -9,7 +9,7 @@ import pytest
 from app.database import AnomalyLog, DriftLog, EnergyReading, PredictionLog
 
 
-def test_energy_reading_insert(db_session):
+def test_energy_reading_insert(db_session) -> None:
     r = EnergyReading(
         building_id="bldg-db-test",
         timestamp=datetime.utcnow(),
@@ -24,7 +24,7 @@ def test_energy_reading_insert(db_session):
     assert r.id is not None
 
 
-def test_prediction_log_insert(db_session):
+def test_prediction_log_insert(db_session) -> None:
     p = PredictionLog(
         building_id="bldg-db-test",
         timestamp=datetime.utcnow(),
@@ -37,7 +37,7 @@ def test_prediction_log_insert(db_session):
     assert p.model_version == "1.0.0"
 
 
-def test_anomaly_log_insert(db_session):
+def test_anomaly_log_insert(db_session) -> None:
     a = AnomalyLog(
         building_id="bldg-db-test",
         timestamp=datetime.utcnow(),
@@ -51,7 +51,7 @@ def test_anomaly_log_insert(db_session):
     assert a.id is not None
 
 
-def test_drift_log_insert(db_session):
+def test_drift_log_insert(db_session) -> None:
     d = DriftLog(
         feature_name="consumption_kwh",
         ks_statistic=0.42,
@@ -63,7 +63,7 @@ def test_drift_log_insert(db_session):
     assert d.id is not None
 
 
-def test_query_by_building_id(db_session):
+def test_query_by_building_id(db_session) -> None:
     for i in range(3):
         db_session.add(
             EnergyReading(
@@ -77,7 +77,7 @@ def test_query_by_building_id(db_session):
     assert len(rows) >= 3
 
 
-def test_prediction_log_actual_kwh_nullable(db_session):
+def test_prediction_log_actual_kwh_nullable(db_session) -> None:
     p = PredictionLog(
         building_id="nullable-test",
         timestamp=datetime.utcnow(),
@@ -90,7 +90,7 @@ def test_prediction_log_actual_kwh_nullable(db_session):
     assert p.actual_kwh is None
 
 
-def test_drift_log_drift_detected_zero(db_session):
+def test_drift_log_drift_detected_zero(db_session) -> None:
     d = DriftLog(
         feature_name="temperature_c",
         ks_statistic=0.02,
@@ -104,7 +104,7 @@ def test_drift_log_drift_detected_zero(db_session):
     assert fetched.drift_detected == 0
 
 
-def test_anomaly_log_severity_none(db_session):
+def test_anomaly_log_severity_none(db_session) -> None:
     a = AnomalyLog(
         building_id="normal-bldg",
         timestamp=datetime.utcnow(),
@@ -118,14 +118,14 @@ def test_anomaly_log_severity_none(db_session):
     assert a.severity == "none"
 
 
-def test_get_predictions_by_building_empty(db_session):
+def test_get_predictions_by_building_empty(db_session) -> None:
     from app.database import get_predictions_by_building
 
     results = get_predictions_by_building(db_session, "nonexistent-bldg")
     assert results == []
 
 
-def test_get_predictions_by_building_filters(db_session):
+def test_get_predictions_by_building_filters(db_session) -> None:
     import uuid
     from datetime import datetime
 
@@ -150,7 +150,7 @@ def test_get_predictions_by_building_filters(db_session):
     assert len(results_b) == 1
 
 
-def test_get_predictions_by_building_limit(db_session):
+def test_get_predictions_by_building_limit(db_session) -> None:
     from datetime import datetime
 
     from app.database import PredictionLog, get_predictions_by_building
@@ -168,14 +168,14 @@ def test_get_predictions_by_building_limit(db_session):
     assert len(results) == 3
 
 
-def test_prediction_log_missing_building_returns_empty(db_session):
+def test_prediction_log_missing_building_returns_empty(db_session) -> None:
     from app.database import get_predictions_by_building
 
     results = get_predictions_by_building(db_session, "nonexistent-building")
     assert results == []
 
 
-def test_anomaly_log_stored_and_retrieved(db_session):
+def test_anomaly_log_stored_and_retrieved(db_session) -> None:
     from datetime import datetime
 
     from app.database import AnomalyLog
@@ -195,7 +195,7 @@ def test_anomaly_log_stored_and_retrieved(db_session):
     assert retrieved.severity == "critical"
 
 
-def test_drift_log_stored_and_retrieved(db_session):
+def test_drift_log_stored_and_retrieved(db_session) -> None:
     from datetime import datetime
 
     from app.database import DriftLog
@@ -215,7 +215,7 @@ def test_drift_log_stored_and_retrieved(db_session):
 
 
 @pytest.mark.parametrize("n", [1, 3, 5, 10])
-def test_prediction_log_multiple_buildings(db_session, n):
+def test_prediction_log_multiple_buildings(db_session, n) -> None:
     from datetime import datetime
 
     from app.database import PredictionLog, get_predictions_by_building
@@ -236,14 +236,14 @@ def test_prediction_log_multiple_buildings(db_session, n):
         assert results[0].predicted_kwh == float(i * 2)
 
 
-def test_get_recent_anomalies_empty(db_session):
+def test_get_recent_anomalies_empty(db_session) -> None:
     from app.database import get_recent_anomalies
 
     results = get_recent_anomalies(db_session, "nonexistent-building-xyz")
     assert results == []
 
 
-def test_get_recent_anomalies_returns_records(db_session):
+def test_get_recent_anomalies_returns_records(db_session) -> None:
     from datetime import datetime
 
     from app.database import AnomalyLog, get_recent_anomalies
@@ -264,7 +264,7 @@ def test_get_recent_anomalies_returns_records(db_session):
     assert len(results) >= 3
 
 
-def test_get_recent_anomalies_severity_filter(db_session):
+def test_get_recent_anomalies_severity_filter(db_session) -> None:
     from datetime import datetime
 
     from app.database import AnomalyLog, get_recent_anomalies
@@ -294,14 +294,14 @@ def test_get_recent_anomalies_severity_filter(db_session):
     assert all(r.severity == "critical" for r in critical)
 
 
-def test_count_anomalies_by_building_zero(db_session):
+def test_count_anomalies_by_building_zero(db_session) -> None:
     from app.database import count_anomalies_by_building
 
     count = count_anomalies_by_building(db_session, "no-such-building-count")
     assert count == 0
 
 
-def test_count_anomalies_by_building_positive(db_session):
+def test_count_anomalies_by_building_positive(db_session) -> None:
     from datetime import datetime
 
     from app.database import AnomalyLog, count_anomalies_by_building
@@ -322,7 +322,7 @@ def test_count_anomalies_by_building_positive(db_session):
 
 
 @pytest.mark.parametrize("limit", [1, 2, 5])
-def test_get_recent_anomalies_limit(db_session, limit):
+def test_get_recent_anomalies_limit(db_session, limit) -> None:
     from datetime import datetime
 
     from app.database import AnomalyLog, get_recent_anomalies
@@ -343,7 +343,7 @@ def test_get_recent_anomalies_limit(db_session, limit):
     assert len(results) == limit
 
 
-def test_drift_log_can_be_created(db_session):
+def test_drift_log_can_be_created(db_session) -> None:
     from app.database import DriftLog
 
     entry = DriftLog(
@@ -357,7 +357,7 @@ def test_drift_log_can_be_created(db_session):
     assert entry.id is not None
 
 
-def test_model_metrics_can_be_created(db_session):
+def test_model_metrics_can_be_created(db_session) -> None:
     from app.database import ModelMetrics
 
     m = ModelMetrics(
@@ -371,7 +371,7 @@ def test_model_metrics_can_be_created(db_session):
     assert m.id is not None
 
 
-def test_energy_reading_fields(db_session):
+def test_energy_reading_fields(db_session) -> None:
     from datetime import datetime
 
     from app.database import EnergyReading
@@ -390,7 +390,7 @@ def test_energy_reading_fields(db_session):
 
 
 @pytest.mark.parametrize("severity", ["low", "medium", "high", "critical"])
-def test_anomaly_log_severity_field(db_session, severity):
+def test_anomaly_log_severity_field(db_session, severity) -> None:
     from datetime import datetime
 
     from app.database import AnomalyLog
