@@ -29,6 +29,7 @@ _counters: dict[str, int] = {"predictions": 0, "errors": 0, "drift_checks": 0}
 _rate_limit: dict[str, list[float]] = {}
 RATE_LIMIT_WINDOW = 60.0
 RATE_LIMIT_MAX = 200
+_START_TIME = time.monotonic()
 
 FAULT_TYPES = ["strike_slip", "reverse", "normal", "oblique", "unknown"]
 
@@ -142,6 +143,7 @@ class BatchPredictResponse(BaseModel):
     results: list[PredictResponse]
     count: int
     errors: int
+    failures: list[dict] = []
 
 
 class DriftResponse(BaseModel):
@@ -153,6 +155,8 @@ class DriftResponse(BaseModel):
 class HealthResponse(BaseModel):
     status: str
     model_loaded: bool
+    database_reachable: bool
+    uptime_seconds: float
     predictions_served: int
     version: str = "1.0.0"
 
@@ -164,9 +168,29 @@ async def root() -> dict:
 
 @app.get("/api/v1/health", response_model=HealthResponse, tags=["operations"])
 async def health() -> HealthResponse:
+    """Report liveness, model availability and database connectivity."""
+    from sqlalchemy import text
+
+    from app.database import engine
+
+    database_reachable = True
+    try:
+        with engine.connect() as connection:
+            connection.execute(text("SELECT 1"))
+    except Exception:
+        database_reachable = False
+        logger.warning('"Health check: database unreachable"')
+
+    model_loaded = "pipeline" in _model_cache
+    # Degraded rather than failed: the process is alive and can still serve
+    # cached reads, so a load balancer should keep it in rotation while alerting.
+    status = "ok" if (model_loaded and database_reachable) else "degraded"
+
     return HealthResponse(
-        status="ok",
-        model_loaded="pipeline" in _model_cache,
+        status=status,
+        model_loaded=model_loaded,
+        database_reachable=database_reachable,
+        uptime_seconds=round(time.monotonic() - _START_TIME, 2),
         predictions_served=_counters["predictions"],
     )
 
@@ -223,11 +247,12 @@ async def predict_batch(
         raise HTTPException(status_code=503, detail="Model not loaded")
 
     results = []
+    failures: list[dict[str, Any]] = []
     error_count = 0
     cid = getattr(request.state, "correlation_id", "")
     store = get_store()
 
-    for event_req in body.events:
+    for index, event_req in enumerate(body.events):
         try:
             features = event_req.model_dump()
             result = predict_magnitude(pipeline, features)
@@ -251,10 +276,13 @@ async def predict_batch(
             results.append(PredictResponse(**result, correlation_id=cid))
         except Exception as exc:
             error_count += 1
-            logger.warning('"Batch prediction error: %s"', exc)
+            failures.append({"index": index, "error": str(exc)})
+            logger.warning('"Batch prediction error at index %d: %s"', index, exc)
 
     db.commit()
-    return BatchPredictResponse(results=results, count=len(results), errors=error_count)
+    return BatchPredictResponse(
+        results=results, count=len(results), errors=error_count, failures=failures
+    )
 
 
 @app.get("/api/v1/metrics", tags=["operations"])
