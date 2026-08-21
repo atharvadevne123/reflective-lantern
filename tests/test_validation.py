@@ -1128,3 +1128,67 @@ def test_validate_percentage_out_of_range(pct: float) -> None:
 
     errors = validate_percentage(pct)
     assert len(errors) > 0
+
+
+class TestValidateYear:
+    def test_valid_year(self) -> None:
+        from app.validation import validate_year
+        assert validate_year(2026) == []
+
+    def test_too_old(self) -> None:
+        from app.validation import validate_year
+        errors = validate_year(1800)
+        assert len(errors) > 0
+
+    def test_too_far_future(self) -> None:
+        from app.validation import validate_year
+        errors = validate_year(2500)
+        assert len(errors) > 0
+
+    def test_boundary_min(self) -> None:
+        from app.validation import validate_year
+        assert validate_year(1900) == []
+
+    def test_boundary_max(self) -> None:
+        from app.validation import validate_year
+        assert validate_year(2200) == []
+
+
+class TestValidateEnergySeries:
+    def test_valid_series(self) -> None:
+        from app.validation import validate_energy_series
+        assert validate_energy_series([0.0, 1.5, 3.0]) == []
+
+    def test_empty_series(self) -> None:
+        from app.validation import validate_energy_series
+        errors = validate_energy_series([])
+        assert len(errors) > 0
+
+    def test_negative_value(self) -> None:
+        from app.validation import validate_energy_series
+        errors = validate_energy_series([1.0, -0.5, 2.0])
+        assert any("-0.5" in e for e in errors)
+
+
+class TestValidateRatio:
+    def test_valid_ratio(self) -> None:
+        from app.validation import validate_ratio
+        assert validate_ratio(0.5) == []
+
+    def test_boundary_zero(self) -> None:
+        from app.validation import validate_ratio
+        assert validate_ratio(0.0) == []
+
+    def test_boundary_one(self) -> None:
+        from app.validation import validate_ratio
+        assert validate_ratio(1.0) == []
+
+    def test_above_one(self) -> None:
+        from app.validation import validate_ratio
+        errors = validate_ratio(1.1)
+        assert len(errors) > 0
+
+    def test_below_zero(self) -> None:
+        from app.validation import validate_ratio
+        errors = validate_ratio(-0.1)
+        assert len(errors) > 0
