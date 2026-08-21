@@ -65,6 +65,7 @@ _anomaly_bundle: dict[str, Any] | None = None
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> Any:  # type: ignore[type-arg]
+    """Initialise DB tables and load ML models on startup; release resources on shutdown."""
     global _model_bundle, _anomaly_bundle
     create_tables()
     _model_bundle = load_model()
@@ -302,6 +303,7 @@ def predict_batch(
 
 @app.post("/api/v1/comparable-properties", response_model=ComparableResponse, tags=["Search"])
 async def comparable_properties(request: Request, body: ComparableRequest) -> ComparableResponse:
+    """Find comparable properties based on a query property's feature vector."""
     prop = body.property
     query_vec = np.array(
         [
@@ -330,6 +332,7 @@ async def comparable_properties(request: Request, body: ComparableRequest) -> Co
     tags=["Analytics"],
 )
 async def neighborhood_stats(zipcode: str, db: Session = Depends(get_db)) -> NeighborhoodStatsResponse:
+    """Return cached or default neighborhood statistics for the given zipcode."""
     from app.database import NeighborhoodStat
 
     stat = db.query(NeighborhoodStat).filter(NeighborhoodStat.zipcode == zipcode).first()
@@ -358,6 +361,7 @@ async def neighborhood_stats(zipcode: str, db: Session = Depends(get_db)) -> Nei
 
 @app.get("/api/v1/drift-status", response_model=DriftStatusResponse, tags=["Monitoring"])
 async def drift_status(db: Session = Depends(get_db)) -> DriftStatusResponse:
+    """Return the current drift detection summary and total prediction count."""
     reports = get_drift_summary(db)
     total = len(get_recent_predictions(db, limit=10000))
     return DriftStatusResponse(drift_reports=reports, total_predictions=total)
@@ -365,6 +369,7 @@ async def drift_status(db: Session = Depends(get_db)) -> DriftStatusResponse:
 
 @app.post("/api/v1/run-drift-check", tags=["Monitoring"])
 async def trigger_drift_check(db: Session = Depends(get_db)) -> dict:
+    """Run a KS-test drift check on the most recent prediction window."""
     recent = get_recent_predictions(db, limit=200)
     if len(recent) < 20:
         return {"status": "skipped", "reason": "insufficient predictions"}
