@@ -1108,3 +1108,50 @@ def cumulative_budget_usage(
         "remaining_kg": round(remaining_kg, 4),
         "remaining_pct": round(remaining_pct, 4),
     }
+
+
+def grid_emission_factor(region: str) -> float:
+    """Return the CO2 emission factor (kg/kWh) for *region*.
+
+    Args:
+        region: Region key (same as those recognised by kwh_to_co2_kg).
+
+    Returns:
+        Emission factor in kg CO2 per kWh; falls back to the default factor
+        when the region is unknown.
+    """
+    factors: dict[str, float] = {
+        "default": 0.0001,
+        "northeast": 0.00014,
+        "midwest": 0.00045,
+        "south": 0.00042,
+        "west": 0.00028,
+        "pacific_nw": 0.00010,
+        "new_england": 0.00016,
+        "texas": 0.00038,
+        "florida": 0.00040,
+    }
+    return factors.get(region.lower(), factors["default"])
+
+
+def annual_co2_savings(baseline_kwh: float, improved_kwh: float, region: str = "default") -> float:
+    """Compute the annual CO2 savings (kg) from an energy-efficiency improvement.
+
+    Args:
+        baseline_kwh: Annual consumption before improvement (must be non-negative).
+        improved_kwh: Annual consumption after improvement (must be non-negative).
+        region: Region key for emission factor lookup.
+
+    Returns:
+        CO2 savings in kg; 0.0 when improved_kwh >= baseline_kwh.
+
+    Raises:
+        ValueError: If either consumption value is negative.
+    """
+    if baseline_kwh < 0:
+        raise ValueError(f"baseline_kwh must be non-negative, got {baseline_kwh}")
+    if improved_kwh < 0:
+        raise ValueError(f"improved_kwh must be non-negative, got {improved_kwh}")
+    saved_kwh = max(0.0, baseline_kwh - improved_kwh)
+    factor = grid_emission_factor(region)
+    return round(saved_kwh * factor * 1000.0, 4)
