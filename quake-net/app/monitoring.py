@@ -30,6 +30,7 @@ class PredictionStore:
         self._max_size = max_size
 
     def record(self, features: dict[str, Any], prediction: float) -> None:
+        """Append one prediction's numeric features and output to the windows."""
         with self._lock:
             for key, val in features.items():
                 if not isinstance(val, (int, float)):
@@ -42,14 +43,17 @@ class PredictionStore:
             self._store["prediction"].append(prediction)
 
     def get_feature_window(self, feature: str) -> list[float]:
+        """Return a snapshot copy of the retained values for ``feature``."""
         with self._lock:
             return list(self._store.get(feature, []))
 
     def all_features(self) -> list[str]:
+        """Return every feature name currently being tracked."""
         with self._lock:
             return list(self._store.keys())
 
     def sample_count(self, feature: str) -> int:
+        """Return how many samples are retained for ``feature``."""
         with self._lock:
             return len(self._store.get(feature, []))
 
@@ -58,10 +62,19 @@ _store = PredictionStore()
 
 
 def get_store() -> PredictionStore:
+    """Return the process-wide prediction store used for drift checks."""
     return _store
 
 
 def compute_drift(reference: list[float], current: list[float]) -> dict[str, Any]:
+    """Two-sample Kolmogorov-Smirnov test between reference and current values.
+
+    Returns:
+        ``ks_statistic``, ``p_value`` and a ``drift_detected`` flag set when the
+        p-value falls below ``DRIFT_ALPHA``. Samples too small to test return
+        ``drift_detected: False`` with an ``error`` key rather than raising —
+        an unseeded feature is not evidence of drift.
+    """
     if len(reference) < 2 or len(current) < 2:
         return {
             "ks_statistic": None,
@@ -78,12 +91,14 @@ def compute_drift(reference: list[float], current: list[float]) -> dict[str, Any
 
 
 def load_reference_distribution() -> dict[str, list[float]]:
+    """Load the stored drift baseline, or an empty mapping when unseeded."""
     if not REFERENCE_PATH.exists():
         return {}
     return json.loads(REFERENCE_PATH.read_text())
 
 
 def save_reference_distribution(dist: dict[str, list[float]]) -> None:
+    """Persist a per-feature drift baseline to ``REFERENCE_PATH``."""
     REFERENCE_PATH.write_text(json.dumps(dist))
 
 

@@ -153,6 +153,12 @@ class InfinityNaNFixer(BaseEstimator, TransformerMixin):
 
 
 def build_feature_pipeline() -> Pipeline:
+    """Assemble the six-stage feature pipeline.
+
+    Stage order matters: the categorical drop and inf/NaN repair must both run
+    before ``StandardScaler``, which cannot handle non-numeric or non-finite
+    input.
+    """
     return Pipeline(
         steps=[
             ("geo_features", GeoFeatureEngineer()),

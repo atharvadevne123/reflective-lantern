@@ -31,6 +31,8 @@ class Base(DeclarativeBase):
 
 
 class SeismicEvent(Base):
+    """A scored seismic event: the request features plus the model's output."""
+
     __tablename__ = "seismic_events"
 
     id = Column(Integer, primary_key=True, index=True)
@@ -49,6 +51,8 @@ class SeismicEvent(Base):
 
 
 class DriftLog(Base):
+    """One feature's KS-test result from a single drift check."""
+
     __tablename__ = "drift_logs"
 
     id = Column(Integer, primary_key=True, index=True)
@@ -61,6 +65,8 @@ class DriftLog(Base):
 
 
 class ModelMetrics(Base):
+    """Historical record of one training run's evaluation metrics."""
+
     __tablename__ = "model_metrics"
 
     id = Column(Integer, primary_key=True, index=True)
@@ -77,6 +83,7 @@ class ModelMetrics(Base):
 
 
 def get_db() -> Session:
+    """Yield a request-scoped session, closing it when the request completes."""
     db = SessionLocal()
     try:
         yield db
@@ -85,4 +92,9 @@ def get_db() -> Session:
 
 
 def init_db() -> None:
+    """Create any missing tables.
+
+    Safe to call on every boot: existing tables are left untouched. Schema
+    changes go through Alembic, not through this function.
+    """
     Base.metadata.create_all(bind=engine)
