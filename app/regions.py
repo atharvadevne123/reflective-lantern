@@ -321,3 +321,43 @@ def region_load_factor(region_id: str, load_mw: float) -> float:
     if peak <= 0:
         return 0.0
     return round(min(1.0, load_mw / peak), 6)
+
+
+def highest_peak_region() -> str | None:
+    """Return the region ID with the highest peak load, or None if no regions are defined.
+
+    Returns:
+        Region ID string, or None if KNOWN_REGIONS is empty.
+    """
+    if not KNOWN_REGIONS:
+        return None
+    return max(
+        KNOWN_REGIONS,
+        key=lambda rid: float(KNOWN_REGIONS[rid].get("peak_load_mw", 0.0)),
+    )
+
+
+def lowest_peak_region() -> str | None:
+    """Return the region ID with the lowest peak load, or None if no regions are defined.
+
+    Returns:
+        Region ID string, or None if KNOWN_REGIONS is empty.
+    """
+    if not KNOWN_REGIONS:
+        return None
+    return min(
+        KNOWN_REGIONS,
+        key=lambda rid: float(KNOWN_REGIONS[rid].get("peak_load_mw", 0.0)),
+    )
+
+
+def peak_load_range_mw() -> dict[str, float]:
+    """Return a dict with 'min' and 'max' peak loads across all known regions.
+
+    Returns:
+        Dict with keys 'min' and 'max' in MW; both 0.0 when no regions are defined.
+    """
+    if not KNOWN_REGIONS:
+        return {"min": 0.0, "max": 0.0}
+    loads = [float(r.get("peak_load_mw", 0.0)) for r in KNOWN_REGIONS.values()]
+    return {"min": min(loads), "max": max(loads)}
