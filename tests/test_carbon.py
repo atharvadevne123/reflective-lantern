@@ -1264,3 +1264,67 @@ class TestEmissionsReductionPct:
 
         result = emissions_reduction_pct(1000.0, 1200.0)
         assert result < 0.0
+
+
+class TestRenewableOffsetFactor:
+    def test_zero_renewable(self) -> None:
+        from app.carbon import renewable_offset_factor
+        assert renewable_offset_factor(0.0) == 1.0
+
+    def test_full_renewable(self) -> None:
+        from app.carbon import renewable_offset_factor
+        assert renewable_offset_factor(100.0) == 0.0
+
+    def test_fifty_percent(self) -> None:
+        from app.carbon import renewable_offset_factor
+        assert renewable_offset_factor(50.0) == 0.5
+
+    def test_invalid_over_100(self) -> None:
+        import pytest
+        from app.carbon import renewable_offset_factor
+        with pytest.raises(ValueError):
+            renewable_offset_factor(110.0)
+
+    def test_invalid_negative(self) -> None:
+        import pytest
+        from app.carbon import renewable_offset_factor
+        with pytest.raises(ValueError):
+            renewable_offset_factor(-5.0)
+
+
+class TestHourlyCarbonProfile:
+    def test_returns_24_values(self) -> None:
+        from app.carbon import hourly_carbon_profile
+        result = hourly_carbon_profile([1.0] * 24)
+        assert len(result) == 24
+
+    def test_northeast_region(self) -> None:
+        from app.carbon import hourly_carbon_profile
+        result = hourly_carbon_profile([1.0] * 24, region="northeast")
+        assert all(abs(v - 0.25) < 1e-6 for v in result)
+
+    def test_renewable_reduces_emissions(self) -> None:
+        from app.carbon import hourly_carbon_profile
+        base = sum(hourly_carbon_profile([2.0] * 24, renewable_pct=0.0))
+        with_renewable = sum(hourly_carbon_profile([2.0] * 24, renewable_pct=50.0))
+        assert with_renewable < base
+
+    def test_wrong_length_raises(self) -> None:
+        import pytest
+        from app.carbon import hourly_carbon_profile
+        with pytest.raises(ValueError):
+            hourly_carbon_profile([1.0] * 23)
+
+
+class TestCarbonIntensityRank:
+    def test_pacific_nw_is_cleanest(self) -> None:
+        from app.carbon import carbon_intensity_rank
+        assert carbon_intensity_rank("pacific_nw") == 1
+
+    def test_midwest_not_cleanest(self) -> None:
+        from app.carbon import carbon_intensity_rank
+        assert carbon_intensity_rank("midwest") > 1
+
+    def test_returns_integer(self) -> None:
+        from app.carbon import carbon_intensity_rank
+        assert isinstance(carbon_intensity_rank("south"), int)
