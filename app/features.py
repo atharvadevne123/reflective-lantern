@@ -137,6 +137,7 @@ class DropNonNumeric(BaseEstimator, TransformerMixin):
         return X[self.numeric_cols_]
 
     def get_feature_names_out(self, input_features: list[str] | None = None) -> np.ndarray:
+        """Return the names of numeric columns selected by this transformer."""
         return np.array(self.numeric_cols_)
 
 
@@ -144,6 +145,7 @@ class DataFrameWrapper(BaseEstimator, TransformerMixin):
     """Wrap numpy/array output back to a DataFrame, preserving column names."""
 
     def fit(self, X: pd.DataFrame, y: object = None) -> DataFrameWrapper:
+        """Record column names from X for use in transform."""
         if hasattr(X, "columns"):
             self.columns_: list[str] = list(X.columns)
         else:
@@ -151,6 +153,7 @@ class DataFrameWrapper(BaseEstimator, TransformerMixin):
         return self
 
     def transform(self, X: pd.DataFrame) -> pd.DataFrame:
+        """Wrap a numpy array back into a DataFrame with the fitted column names."""
         if isinstance(X, pd.DataFrame):
             return X
         arr = np.array(X)
@@ -163,10 +166,12 @@ class DropColumnsTransformer(BaseEstimator, TransformerMixin):
     DROP_COLS = ["historical_loads", "region", "timestamp"]
 
     def fit(self, X: pd.DataFrame, y: object = None) -> DropColumnsTransformer:
+        """Identify which DROP_COLS are present in X."""
         self.cols_to_drop_ = [c for c in self.DROP_COLS if c in X.columns]
         return self
 
     def transform(self, X: pd.DataFrame) -> pd.DataFrame:
+        """Drop the pre-identified helper columns from X."""
         return X.drop(columns=self.cols_to_drop_, errors="ignore")
 
 
