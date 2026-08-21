@@ -934,3 +934,69 @@ def rental_yield_after_tax(
         raise ValueError(f"tax_rate_pct must be in [0, 100], got {tax_rate_pct}")
     after_tax_rent = annual_rent * (1.0 - tax_rate_pct / 100.0)
     return round(after_tax_rent / property_value * 100.0, 4)
+
+
+def holding_period_return(purchase_price: float, sale_price: float, income: float = 0.0) -> float:
+    """Compute total holding-period return including income.
+
+    Args:
+        purchase_price: Initial acquisition cost (must be positive).
+        sale_price: Proceeds at disposition.
+        income: Total net income received during holding period (e.g. rent).
+
+    Returns:
+        HPR as a percentage, rounded to 4 decimal places.
+
+    Raises:
+        ValueError: If purchase_price is not positive.
+    """
+    if purchase_price <= 0:
+        raise ValueError(f"purchase_price must be positive, got {purchase_price}")
+    return round(((sale_price - purchase_price + income) / purchase_price) * 100.0, 4)
+
+
+def leverage_ratio(total_assets: float, total_equity: float) -> float:
+    """Compute the leverage (debt-to-equity) ratio.
+
+    Args:
+        total_assets: Fair market value of all assets.
+        total_equity: Owner equity (total_assets - total_debt).
+
+    Returns:
+        Leverage ratio rounded to 4 decimal places; returns 0.0 when equity is zero.
+
+    Raises:
+        ValueError: If total_assets is negative.
+    """
+    if total_assets < 0:
+        raise ValueError(f"total_assets must be non-negative, got {total_assets}")
+    if total_equity == 0:
+        return 0.0
+    total_debt = total_assets - total_equity
+    return round(total_debt / total_equity, 4)
+
+
+def risk_adjusted_return(
+    annual_return_pct: float,
+    volatility_pct: float,
+    risk_free_rate_pct: float = 2.0,
+) -> float:
+    """Compute the Sharpe-style risk-adjusted return (excess return / volatility).
+
+    Args:
+        annual_return_pct: Annualised return in percent.
+        volatility_pct: Annualised volatility (std dev) in percent (must be positive).
+        risk_free_rate_pct: Risk-free rate in percent (default 2%).
+
+    Returns:
+        Risk-adjusted ratio rounded to 4 decimal places; 0.0 when volatility is zero.
+
+    Raises:
+        ValueError: If volatility_pct is negative.
+    """
+    if volatility_pct < 0:
+        raise ValueError(f"volatility_pct must be non-negative, got {volatility_pct}")
+    if volatility_pct == 0:
+        return 0.0
+    excess = annual_return_pct - risk_free_rate_pct
+    return round(excess / volatility_pct, 4)
