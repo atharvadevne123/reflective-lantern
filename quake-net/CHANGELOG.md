@@ -26,6 +26,12 @@ Initial release.
   Tukey IQR rules, reported side by side.
 - **Similarity search** — FAISS `IndexFlatL2` over historical event signatures with an
   exact brute-force NumPy fallback when FAISS is unavailable.
+- **Aftershock forecasting** — modified Omori law (`n(t) = K/(t+c)^p`) with closed-form
+  interval integration, maximum-likelihood fitting of K and p over a decay-exponent grid,
+  Bath's-law largest-aftershock estimate, and rate half-life, exposed at
+  `POST /api/v1/forecast/aftershocks`.
+- **Input validation helpers** — shared range, completeness and S/P-coherence checks used
+  by both the API and batch ingestion.
 - **Automated retraining** — Airflow-compatible weekly DAG with a champion/challenger gate
   requiring both an improvement over the incumbent and an absolute R² floor of 0.70.
 - **Persistence** — SQLAlchemy models for seismic events, drift logs and model metrics;
@@ -36,7 +42,7 @@ Initial release.
 - **Infrastructure** — Dockerfile (non-root user, healthcheck), docker-compose with
   PostgreSQL, Makefile, pre-commit hooks, and GitHub Actions CI running ruff and pytest on
   Python 3.11 and 3.12.
-- **Tests** — 201 tests across nine modules, with transactional database isolation.
+- **Tests** — 282 tests across eleven modules, with transactional database isolation.
 
 ### Fixed
 
