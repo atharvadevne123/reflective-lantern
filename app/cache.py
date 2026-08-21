@@ -339,3 +339,46 @@ def get_or_default(cache: TTLCache, key: str, default: object | None = None) -> 
     """
     value = cache.get(key)
     return value if value is not None else default
+
+
+def cache_miss_rate(hits: int, misses: int) -> float:
+    """Return the cache miss rate as a fraction in [0.0, 1.0].
+
+    Args:
+        hits: Number of cache hits.
+        misses: Number of cache misses.
+
+    Returns:
+        Miss rate; 0.0 when no requests have been made.
+
+    Raises:
+        ValueError: If either argument is negative.
+    """
+    if hits < 0 or misses < 0:
+        raise ValueError("hits and misses must be non-negative")
+    total = hits + misses
+    return 0.0 if total == 0 else round(misses / total, 6)
+
+
+def is_cache_empty(cache: TTLCache) -> bool:
+    """Return True if the cache holds no entries.
+
+    Args:
+        cache: A TTLCache instance.
+
+    Returns:
+        True when the cache is empty.
+    """
+    return len(cache._store) == 0
+
+
+def cache_remaining_capacity(cache: TTLCache) -> int:
+    """Return the number of additional entries the cache can hold.
+
+    Args:
+        cache: A TTLCache instance.
+
+    Returns:
+        Difference between max size and current size (always >= 0).
+    """
+    return max(0, cache._max - len(cache._store))
