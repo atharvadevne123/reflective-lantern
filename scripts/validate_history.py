@@ -17,6 +17,7 @@ VALID_EMAIL_STATUS_PREFIXES: tuple[str, ...] = (
     "skipped",
     "failed_smtp",
     "failed_",
+    "failed:",
     "network_blocked",
     "pdf_generated_ok",
     "smtp_",
