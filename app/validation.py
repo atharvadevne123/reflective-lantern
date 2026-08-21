@@ -753,3 +753,54 @@ def validate_iso_timestamp(value: str, field_name: str = "timestamp") -> list[st
     except (TypeError, ValueError):
         return [f"{field_name} is not a valid ISO-8601 timestamp: {value!r}"]
     return []
+
+
+def validate_year(year: int) -> list[str]:
+    """Validate that *year* is a plausible calendar year.
+
+    Args:
+        year: Integer year to check.
+
+    Returns:
+        Empty list when valid; list with one error string otherwise.
+    """
+    errors: list[str] = []
+    if year < 1900 or year > 2200:
+        errors.append(f"year must be between 1900 and 2200, got {year}")
+    return errors
+
+
+def validate_energy_series(values: list[float], field_name: str = "energy_series") -> list[str]:
+    """Validate a list of energy readings (must be non-empty and non-negative).
+
+    Args:
+        values: List of energy values in kWh.
+        field_name: Name used in error messages.
+
+    Returns:
+        Empty list when valid; list of error strings otherwise.
+    """
+    errors: list[str] = []
+    if not values:
+        errors.append(f"{field_name} must not be empty")
+        return errors
+    for i, v in enumerate(values):
+        if v < 0:
+            errors.append(f"{field_name}[{i}] must be non-negative, got {v}")
+    return errors
+
+
+def validate_ratio(value: float, field_name: str = "ratio") -> list[str]:
+    """Validate that *value* is a ratio in [0.0, 1.0].
+
+    Args:
+        value: Ratio value to validate.
+        field_name: Name used in error messages.
+
+    Returns:
+        Empty list when valid; list with one error string otherwise.
+    """
+    errors: list[str] = []
+    if not (0.0 <= value <= 1.0):
+        errors.append(f"{field_name} must be in [0, 1], got {value}")
+    return errors
