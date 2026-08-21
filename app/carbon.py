@@ -992,3 +992,63 @@ def carbon_intensity_trend(
         "trend": trend,
         "latest_label": carbon_intensity_label(intensities[-1]),
     }
+
+
+def renewable_offset_factor(renewable_pct: float) -> float:
+    """Return the effective carbon intensity multiplier after accounting for renewables.
+
+    Args:
+        renewable_pct: Percentage of energy from renewable sources (0-100).
+
+    Returns:
+        Multiplier in range [0.0, 1.0]; 0.0 means fully renewable.
+
+    Raises:
+        ValueError: If renewable_pct is outside [0, 100].
+    """
+    if not (0.0 <= renewable_pct <= 100.0):
+        raise ValueError(f"renewable_pct must be in [0, 100], got {renewable_pct}")
+    return round(1.0 - renewable_pct / 100.0, 6)
+
+
+def hourly_carbon_profile(
+    hourly_kwh: list[float],
+    region: str = "default",
+    *,
+    renewable_pct: float = 0.0,
+) -> list[float]:
+    """Compute per-hour CO2 emissions (kg) for a 24-hour energy consumption profile.
+
+    Args:
+        hourly_kwh: Energy readings for each hour (must have exactly 24 values).
+        region: Grid region identifier for intensity lookup.
+        renewable_pct: Percentage of renewables that reduces effective intensity.
+
+    Returns:
+        List of 24 CO2-kg values, one per hour.
+
+    Raises:
+        ValueError: If hourly_kwh does not contain exactly 24 values.
+    """
+    if len(hourly_kwh) != 24:
+        raise ValueError(f"hourly_kwh must have 24 values, got {len(hourly_kwh)}")
+    factor = renewable_offset_factor(renewable_pct)
+    intensity = _grid_intensity(region.lower())
+    return [round(kwh * intensity * factor, 6) for kwh in hourly_kwh]
+
+
+def carbon_intensity_rank(region: str) -> int:
+    """Rank *region* by grid carbon intensity (1 = cleanest, higher = dirtier).
+
+    Args:
+        region: Grid region identifier (case-insensitive).
+
+    Returns:
+        Integer rank where 1 is the cleanest region.
+    """
+    sorted_regions = sorted(GRID_CARBON_INTENSITY.items(), key=lambda kv: kv[1])
+    intensity = _grid_intensity(region.lower())
+    for rank, (_, val) in enumerate(sorted_regions, start=1):
+        if abs(val - intensity) < 1e-9:
+            return rank
+    return len(sorted_regions)
