@@ -644,3 +644,66 @@ def eui_rank(eui: float, cohort: list[float]) -> int:
         raise ValueError("cohort must not be empty")
     lower_count = sum(1 for c in cohort if c < eui)
     return lower_count + 1
+
+
+def eui_improvement_rate(baseline_eui: float, current_eui: float) -> float:
+    """Return the percentage improvement in EUI relative to baseline.
+
+    Args:
+        baseline_eui: Reference EUI value (must be positive).
+        current_eui: Current EUI value (must be non-negative).
+
+    Returns:
+        Improvement percentage; positive means improvement, negative means regression.
+
+    Raises:
+        ValueError: If *baseline_eui* is not positive or *current_eui* is negative.
+    """
+    if baseline_eui <= 0:
+        raise ValueError(f"baseline_eui must be positive, got {baseline_eui}")
+    if current_eui < 0:
+        raise ValueError(f"current_eui must be non-negative, got {current_eui}")
+    return round((baseline_eui - current_eui) / baseline_eui * 100.0, 4)
+
+
+def normalised_eui(annual_kwh: float, floor_area_sqm: float, occupancy_hours: float) -> float:
+    """Return EUI normalised by occupancy hours per year.
+
+    Args:
+        annual_kwh: Annual energy consumption in kWh.
+        floor_area_sqm: Floor area in square metres (must be positive).
+        occupancy_hours: Annual occupancy hours (must be positive).
+
+    Returns:
+        Occupancy-normalised EUI in kWh/m²/h.
+
+    Raises:
+        ValueError: If *floor_area_sqm* or *occupancy_hours* is not positive.
+    """
+    if floor_area_sqm <= 0:
+        raise ValueError(f"floor_area_sqm must be positive, got {floor_area_sqm}")
+    if occupancy_hours <= 0:
+        raise ValueError(f"occupancy_hours must be positive, got {occupancy_hours}")
+    return round(annual_kwh / floor_area_sqm / occupancy_hours, 6)
+
+
+def savings_to_investment_ratio(annual_savings_kwh: float, tariff_per_kwh: float, investment_cost: float) -> float:
+    """Compute the ratio of annual monetary savings to upfront investment cost.
+
+    Args:
+        annual_savings_kwh: Annual energy savings in kWh.
+        tariff_per_kwh: Electricity tariff in currency per kWh.
+        investment_cost: Upfront investment cost (must be positive).
+
+    Returns:
+        Simple annual savings-to-investment ratio.
+
+    Raises:
+        ValueError: If *investment_cost* is not positive or tariff is negative.
+    """
+    if investment_cost <= 0:
+        raise ValueError(f"investment_cost must be positive, got {investment_cost}")
+    if tariff_per_kwh < 0:
+        raise ValueError(f"tariff_per_kwh must be non-negative, got {tariff_per_kwh}")
+    annual_savings_currency = annual_savings_kwh * tariff_per_kwh
+    return round(annual_savings_currency / investment_cost, 6)
