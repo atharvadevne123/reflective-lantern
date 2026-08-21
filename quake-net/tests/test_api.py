@@ -247,3 +247,52 @@ class TestForecastEndpoint:
     def test_forecast_rejects_out_of_range_magnitude(self, app_client: TestClient) -> None:
         resp = app_client.post("/api/v1/forecast/aftershocks", json={"mainshock_magnitude": 42.0})
         assert resp.status_code == 422
+
+
+class TestHealthDiagnostics:
+    def test_health_reports_database_reachable(self, app_client: TestClient) -> None:
+        resp = app_client.get("/api/v1/health")
+        assert resp.json()["database_reachable"] is True
+
+    def test_health_reports_uptime(self, app_client: TestClient) -> None:
+        resp = app_client.get("/api/v1/health")
+        assert resp.json()["uptime_seconds"] >= 0.0
+
+    def test_health_degrades_without_model(self, app_client: TestClient) -> None:
+        from app.main import _model_cache
+
+        pipeline = _model_cache.pop("pipeline", None)
+        try:
+            body = app_client.get("/api/v1/health").json()
+            assert body["status"] == "degraded"
+            assert body["model_loaded"] is False
+        finally:
+            if pipeline is not None:
+                _model_cache["pipeline"] = pipeline
+
+
+class TestBatchFailureReporting:
+    def test_successful_batch_has_no_failures(self, app_client: TestClient) -> None:
+        resp = app_client.post("/api/v1/predict/batch", json={"events": [VALID_EVENT] * 3})
+        body = resp.json()
+        assert body["errors"] == 0
+        assert body["failures"] == []
+
+    def test_failure_carries_index(self, app_client: TestClient, monkeypatch) -> None:
+        import app.main as main_module
+
+        calls = {"n": 0}
+        real = main_module.predict_magnitude
+
+        def flaky(pipeline, features):
+            calls["n"] += 1
+            if calls["n"] == 2:
+                raise RuntimeError("synthetic failure")
+            return real(pipeline, features)
+
+        monkeypatch.setattr(main_module, "predict_magnitude", flaky)
+        resp = app_client.post("/api/v1/predict/batch", json={"events": [VALID_EVENT] * 3})
+        body = resp.json()
+        assert body["errors"] == 1
+        assert body["failures"][0]["index"] == 1
+        assert body["count"] == 2
