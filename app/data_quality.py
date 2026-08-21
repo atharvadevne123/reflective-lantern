@@ -905,3 +905,74 @@ def constant_columns(records: list[dict[str, Any]]) -> list[str]:
         all_keys &= set(rec.keys())
     result = [k for k in all_keys if len({rec.get(k) for rec in records}) == 1]
     return sorted(result)
+
+
+def consecutive_missing_count(values: list[float | None]) -> int:
+    """Count the longest run of consecutive None values in *values*.
+
+    Args:
+        values: A list that may contain None for missing entries.
+
+    Returns:
+        Length of the longest consecutive None sequence; 0 if no Nones.
+    """
+    max_run = current_run = 0
+    for v in values:
+        if v is None:
+            current_run += 1
+            max_run = max(max_run, current_run)
+        else:
+            current_run = 0
+    return max_run
+
+
+def column_cardinality(records: list[dict[str, object]]) -> dict[str, int]:
+    """Return the number of distinct non-None values per column.
+
+    Args:
+        records: List of flat dicts (rows).
+
+    Returns:
+        Dict mapping column name to its cardinality (unique value count).
+    """
+    if not records:
+        return {}
+    all_keys: set[str] = set().union(*(r.keys() for r in records))
+    return {
+        key: len({r.get(key) for r in records if r.get(key) is not None})
+        for key in sorted(all_keys)
+    }
+
+
+def outlier_summary(
+    values: list[float],
+    z_threshold: float = 3.0,
+) -> dict[str, object]:
+    """Summarise outliers in *values* using z-score thresholding.
+
+    Args:
+        values: Numeric series with at least 2 elements.
+        z_threshold: Z-score beyond which a value is an outlier.
+
+    Returns:
+        Dict with keys: count, fraction, min_outlier, max_outlier, indices.
+        Returns zeroed summary when std is zero or fewer than 2 values.
+    """
+    if len(values) < 2:
+        return {"count": 0, "fraction": 0.0, "min_outlier": None, "max_outlier": None, "indices": []}
+    mean_v = sum(values) / len(values)
+    variance = sum((v - mean_v) ** 2 for v in values) / len(values)
+    std_v = variance ** 0.5
+    if std_v == 0.0:
+        return {"count": 0, "fraction": 0.0, "min_outlier": None, "max_outlier": None, "indices": []}
+    outliers = [(i, v) for i, v in enumerate(values) if abs(v - mean_v) / std_v > z_threshold]
+    if not outliers:
+        return {"count": 0, "fraction": 0.0, "min_outlier": None, "max_outlier": None, "indices": []}
+    outlier_vals = [v for _, v in outliers]
+    return {
+        "count": len(outliers),
+        "fraction": round(len(outliers) / len(values), 6),
+        "min_outlier": min(outlier_vals),
+        "max_outlier": max(outlier_vals),
+        "indices": [i for i, _ in outliers],
+    }
