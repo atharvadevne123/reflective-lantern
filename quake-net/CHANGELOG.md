@@ -42,7 +42,7 @@ Initial release.
 - **Infrastructure** — Dockerfile (non-root user, healthcheck), docker-compose with
   PostgreSQL, Makefile, pre-commit hooks, and GitHub Actions CI running ruff and pytest on
   Python 3.11 and 3.12.
-- **Tests** — 282 tests across eleven modules, with transactional database isolation.
+- **Tests** — 285 tests across eleven modules, with transactional database isolation.
 
 ### Fixed
 
@@ -55,3 +55,9 @@ Initial release.
   and a rejected run restores its metrics.
 - Ad-hoc similarity index builds unconditionally overwrote the persisted FAISS index that
   the API serves from. Persistence is now opt-in.
+- `train_model` reported `n_features` as the raw input width (8) rather than the
+  post-pipeline width the model actually sees (47), understating the feature space in
+  every metrics record. Both are now reported.
+- The `model_metrics` table was defined but never written to, so training history was lost
+  on every retrain. `record_training_run` now appends each run, and the retraining DAG
+  opts in; a persistence failure is logged without aborting the training run.
