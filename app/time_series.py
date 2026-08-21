@@ -1304,3 +1304,65 @@ def hourly_variability(values: list[float]) -> float:
     variance = sum((v - mean_v) ** 2 for v in values) / (len(values) - 1)
     std_v = variance ** 0.5
     return round(std_v / mean_v, 6)
+
+
+def zero_crossing_rate(values: list[float]) -> float:
+    """Compute the zero-crossing rate of *values*.
+
+    Args:
+        values: List of floats (at least 2 elements).
+
+    Returns:
+        Fraction of consecutive pairs with sign change (or transition through zero).
+
+    Raises:
+        ValueError: If *values* has fewer than 2 elements.
+    """
+    if len(values) < 2:
+        raise ValueError("values must have at least 2 elements")
+    crossings = sum(
+        1 for i in range(len(values) - 1) if values[i] * values[i + 1] < 0
+    )
+    return round(crossings / (len(values) - 1), 6)
+
+
+def peak_to_trough_ratio(values: list[float]) -> float:
+    """Return the ratio of the maximum to minimum value in *values*.
+
+    Args:
+        values: Non-empty list of floats.
+
+    Returns:
+        Ratio; returns 0.0 when min is zero.
+
+    Raises:
+        ValueError: If *values* is empty.
+    """
+    if not values:
+        raise ValueError("values must not be empty")
+    peak = max(values)
+    trough = min(values)
+    if trough == 0.0:
+        return 0.0
+    return round(peak / trough, 6)
+
+
+def load_factor(actual_kwh: float, peak_kw: float, hours: int = 8760) -> float:
+    """Compute the load factor (average load / peak load).
+
+    Args:
+        actual_kwh: Total energy consumed in kWh over the period.
+        peak_kw: Peak demand in kW (must be positive).
+        hours: Number of hours in the period (default 8760 = one year).
+
+    Returns:
+        Load factor as a fraction in [0, 1].
+
+    Raises:
+        ValueError: If *peak_kw* or *hours* is not positive.
+    """
+    if peak_kw <= 0:
+        raise ValueError(f"peak_kw must be positive, got {peak_kw}")
+    if hours <= 0:
+        raise ValueError(f"hours must be positive, got {hours}")
+    return round(actual_kwh / (peak_kw * hours), 6)
