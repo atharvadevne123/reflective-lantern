@@ -1245,3 +1245,55 @@ class TestRollingAnomalyFlag:
 
         result = rolling_anomaly_flag([1.0, 2.0, 3.0, 4.0, 5.0])
         assert all(isinstance(f, bool) for f in result)
+
+
+class TestAnomalyPersistenceScore:
+    def test_all_anomalies(self) -> None:
+        from app.anomaly import anomaly_persistence_score
+        assert anomaly_persistence_score([True, True, True]) == pytest.approx(1.0)
+
+    def test_no_anomalies(self) -> None:
+        from app.anomaly import anomaly_persistence_score
+        assert anomaly_persistence_score([False, False, False]) == pytest.approx(0.0)
+
+    def test_partial(self) -> None:
+        from app.anomaly import anomaly_persistence_score
+        assert anomaly_persistence_score([True, False, True]) == pytest.approx(2 / 3)
+
+    def test_empty_raises(self) -> None:
+        from app.anomaly import anomaly_persistence_score
+        with pytest.raises(ValueError):
+            anomaly_persistence_score([])
+
+
+class TestFirstAnomalyIndex:
+    def test_found(self) -> None:
+        from app.anomaly import first_anomaly_index
+        assert first_anomaly_index([False, False, True, False]) == 2
+
+    def test_not_found(self) -> None:
+        from app.anomaly import first_anomaly_index
+        assert first_anomaly_index([False, False]) == -1
+
+    def test_first_element(self) -> None:
+        from app.anomaly import first_anomaly_index
+        assert first_anomaly_index([True, False]) == 0
+
+
+class TestInterAnomalyGap:
+    def test_regular_gaps(self) -> None:
+        from app.anomaly import inter_anomaly_gap
+        assert inter_anomaly_gap([True, False, False, True, False, False, True]) == pytest.approx(3.0)
+
+    def test_no_anomaly(self) -> None:
+        from app.anomaly import inter_anomaly_gap
+        assert inter_anomaly_gap([False, False, False]) == float("inf")
+
+    def test_one_anomaly(self) -> None:
+        from app.anomaly import inter_anomaly_gap
+        assert inter_anomaly_gap([False, True, False]) == float("inf")
+
+    def test_empty_raises(self) -> None:
+        from app.anomaly import inter_anomaly_gap
+        with pytest.raises(ValueError):
+            inter_anomaly_gap([])
