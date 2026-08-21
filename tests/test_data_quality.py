@@ -1087,3 +1087,47 @@ class TestOutlierSummary:
         from app.data_quality import outlier_summary
         result = outlier_summary([5.0])
         assert result["count"] == 0
+
+
+class TestNullRate:
+    def test_half_null(self) -> None:
+        from app.data_quality import null_rate
+        assert null_rate([1, None, 2, None]) == pytest.approx(0.5)
+
+    def test_no_nulls(self) -> None:
+        from app.data_quality import null_rate
+        assert null_rate([1, 2, 3]) == pytest.approx(0.0)
+
+    def test_empty_returns_zero(self) -> None:
+        from app.data_quality import null_rate
+        assert null_rate([]) == pytest.approx(0.0)
+
+
+class TestUniqueValueCount:
+    def test_basic(self) -> None:
+        from app.data_quality import unique_value_count
+        assert unique_value_count([1, 2, 2, None, 3]) == 3
+
+    def test_all_same(self) -> None:
+        from app.data_quality import unique_value_count
+        assert unique_value_count([5, 5, 5]) == 1
+
+    def test_empty(self) -> None:
+        from app.data_quality import unique_value_count
+        assert unique_value_count([]) == 0
+
+
+class TestCompletenessScore:
+    def test_full_completeness(self) -> None:
+        from app.data_quality import completeness_score
+        records = [{"a": 1, "b": 2}, {"a": 3, "b": 4}]
+        assert completeness_score(records, ["a", "b"]) == pytest.approx(1.0)
+
+    def test_partial_completeness(self) -> None:
+        from app.data_quality import completeness_score
+        records = [{"a": 1, "b": None}, {"a": 2, "b": 3}]
+        assert completeness_score(records, ["a", "b"]) == pytest.approx(0.75)
+
+    def test_empty_records(self) -> None:
+        from app.data_quality import completeness_score
+        assert completeness_score([], ["a"]) == pytest.approx(1.0)
