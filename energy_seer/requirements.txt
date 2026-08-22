@@ -1,7 +1,7 @@
 fastapi==0.141.1
 uvicorn[standard]==0.52.1
 pydantic==2.9.2
-sqlalchemy==2.0.35
+sqlalchemy==2.0.52
 alembic==1.19.1
 xgboost==2.1.1
 lightgbm==4.7.0
