@@ -1,78 +1,37 @@
-.PHONY: install test lint format run train diagram docker-up docker-down \
-        coverage coverage-xml typecheck clean help migrate check profile
+.PHONY: help install test lint format benchmark seed clean
 
-## help: Show this help message
-help:
-	@grep -E '^## [a-z]' Makefile | sed 's/## /  make /'
+PYTHON ?= python
+PIP    ?= pip
 
-## install: Install Python dependencies
-install:
-	pip install -r requirements.txt
+help:  ## Show available targets
+	@grep -E '^[a-zA-Z_-]+:.*##' $(MAKEFILE_LIST) | \
+	  awk 'BEGIN{FS=":.*##"}; {printf "  %-18s %s\n", $$1, $$2}'
 
-## test: Run the full test suite
-test:
-	pytest tests/ -v --tb=short 2>&1 | tail -60
+install:  ## Install package and dev dependencies
+	$(PIP) install -e ".[dev]"
 
-## coverage: Run tests with HTML coverage report
-coverage:
-	pytest tests/ --cov=app --cov-report=term-missing --cov-report=html:htmlcov -q
-	@echo "Coverage report: htmlcov/index.html"
+test:  ## Run the full test suite
+	pytest -q --tb=short
 
-## typecheck: Run mypy type checks on the app package
-typecheck:
-	mypy app/ --ignore-missing-imports --no-error-summary
+test-cov:  ## Run tests with coverage report
+	pytest -q --tb=short --cov=app --cov-report=term-missing
 
-## lint: Check code style with ruff
-lint:
-	ruff check .
-	ruff format --check .
+lint:  ## Run ruff linter
+	ruff check app/ tests/
 
-## format: Auto-format and fix lint issues with ruff
-format:
-	ruff format .
-	ruff check . --fix
+format:  ## Auto-format with ruff
+	ruff format app/ tests/
 
-## check: Run lint + typecheck together (CI equivalent)
-check: lint typecheck
+typecheck:  ## Run mypy static type checker
+	mypy app/ --ignore-missing-imports
 
-## run: Start the FastAPI dev server with hot-reload
-run:
-	uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+benchmark:  ## Run micro-benchmarks
+	$(PYTHON) scripts/benchmark.py --runs 500
 
-## train: Trigger model training via the local API
-train:
-	curl -s -X POST http://localhost:8000/api/v1/train | python3 -m json.tool
+seed:  ## Seed development data
+	$(PYTHON) scripts/seed_data.py --verbose
 
-## migrate: Initialise / migrate the database schema
-migrate:
-	python -c "from app.database import Base, engine; Base.metadata.create_all(bind=engine); print('DB tables created.')"
-
-## diagram: Regenerate the system-architecture PNG
-diagram:
-	python scripts/generate_diagram.py
-
-## docker-up: Build and start the Docker Compose stack
-docker-up:
-	docker-compose up --build -d
-
-## docker-down: Tear down the Docker Compose stack and volumes
-docker-down:
-	docker-compose down -v
-
-## coverage-xml: Run tests and export XML coverage report for CI
-coverage-xml:
-	pytest tests/ --cov=app --cov-report=xml -q
-	@echo "Coverage XML written to coverage.xml"
-
-## profile: Run tests under cProfile and show top 20 hotspots
-profile:
-	python -m cProfile -o /tmp/wattguard_profile.prof -m pytest tests/ -q 2>/dev/null; true
-	python -c "import pstats; p=pstats.Stats('/tmp/wattguard_profile.prof'); p.sort_stats('cumulative'); p.print_stats(20)"
-
-## clean: Remove Python cache files, coverage artefacts, and test DBs
-clean:
-	find . -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null; true
-	find . -type f -name "*.pyc" -delete 2>/dev/null; true
-	rm -rf .pytest_cache htmlcov .mypy_cache .ruff_cache
-	rm -f test_watt_guard.db watt_guard.db coverage.xml
-	@echo "Clean complete."
+clean:  ## Remove compiled Python files and caches
+	find . -type d -name __pycache__ -exec rm -rf {} + 2>/dev/null || true
+	find . -name '*.pyc' -delete
+	rm -rf .pytest_cache .mypy_cache .ruff_cache htmlcov .coverage
