@@ -1,94 +1,110 @@
-# Watt-Guard — Monitoring Guide
+# Monitoring & Observability
 
-## Overview
+## Metrics
 
-Every prediction request is persisted to the `prediction_logs` table and checked for anomalies and distribution drift in real time.
+All runtime metrics are collected via `app.metrics_collector` and exposed
+on the `/metrics` HTTP endpoint in Prometheus text format.
 
-## Drift Detection
+### Key Metrics
 
-Watt-Guard uses a two-sample Kolmogorov-Smirnov (KS) test to compare the **reference distribution** (the last 500 training samples) with the **current window** (recent predictions).
+| Metric | Type | Description |
+|--------|------|-------------|
+| `http_requests_total` | Counter | Total HTTP requests by method and status |
+| `http_request_duration_seconds` | Histogram | Latency distribution |
+| `active_workers` | Gauge | Current TaskQueue worker count |
+| `circuit_breaker_state` | Gauge | 0=CLOSED, 1=OPEN, 2=HALF_OPEN |
+| `token_bucket_rejections_total` | Counter | Rate-limit rejections per client key |
+| `model_inference_duration_seconds` | Histogram | Model serving latency |
 
-### Reference Window
+## Health Checks
 
-Set automatically when the model is trained (`POST /api/v1/train`). The last `REFERENCE_WINDOW_SIZE` (default 500) consumption values are stored in memory. To reset it, retrain the model.
+Register checks via `app.health_check`:
 
-### Drift Check (`POST /api/v1/drift`)
+```python
+from app.health_check import CheckResult, check
 
-```json
-{
-  "current_values": [12.1, 11.8, 13.4, ...]
-}
+@check("postgres")
+def check_postgres():
+    # run a SELECT 1
+    return CheckResult(name="postgres", healthy=True)
 ```
 
-Response:
-
-```json
-{
-  "ks_statistic": 0.142,
-  "p_value": 0.031,
-  "drift_detected": true,
-  "checked_features": ["consumption_kwh"]
-}
-```
-
-A `p_value < 0.05` triggers `drift_detected: true`. Each check is logged to `drift_logs`.
-
-### Thresholds
-
-| Variable | Default | Effect |
-|---|---|---|
-| `DRIFT_P_THRESHOLD` | `0.05` | p-value below which drift is flagged |
-| `REFERENCE_WINDOW_SIZE` | `500` | Max samples kept as reference |
-
-## Anomaly Detection
-
-The `IsolationForest` model scores each reading during `POST /api/v1/anomaly`. Scores below the contamination threshold are flagged.
-
-### Severity Classification
-
-| Flags | Severity |
-|---|---|
-| Both Z-score AND IQR | `critical` |
-| Either Z-score OR IQR | `warning` |
-| Neither | `none` |
-
-### Anomaly Log
-
-All anomaly checks are persisted to `anomaly_logs` regardless of outcome.
-
-## Metrics Endpoint
-
-`GET /api/v1/metrics` returns aggregate statistics:
-
-```json
-{
-  "total_predictions": 1042,
-  "total_anomalies_flagged": 17,
-  "total_drift_events": 3,
-  "reference_window_size": 500,
-  "model_r2": 0.91,
-  "model_mae_kwh": 0.87
-}
-```
-
-## Database Schema
-
-| Table | Key Columns |
-|---|---|
-| `prediction_logs` | `building_id`, `timestamp`, `predicted_kwh`, `actual_kwh`, `latency_ms` |
-| `anomaly_logs` | `building_id`, `timestamp`, `consumption_kwh`, `anomaly_score`, `is_anomaly`, `severity` |
-| `drift_logs` | `feature_name`, `ks_statistic`, `p_value`, `drift_detected`, `checked_at` |
+The `/health/ready` endpoint runs all registered checks and returns:
+- `200 OK` with `{"healthy": true}` when all pass
+- `503 Service Unavailable` with a list of failures otherwise
 
 ## Alerting
 
-Currently logging-only. To add alerting:
-1. Subscribe to `drift_detected=true` rows in `drift_logs`
-2. Or set up a cron to poll `GET /api/v1/metrics` and alert on `total_drift_events` increase
+Threshold-based alerts are managed by `app.alerting.AlertManager`.
+Add rules at startup:
 
-## Airflow Retraining
+```python
+from app.alerting import AlertManager, AlertRule, Severity
 
-The `watt_guard_weekly_retrain` DAG (every Sunday) automatically resets the reference window after a successful retrain. Manual trigger:
-
-```bash
-airflow dags trigger watt_guard_weekly_retrain
+manager = AlertManager()
+manager.add_rule(AlertRule(
+    name="high_error_rate",
+    metric="error_rate",
+    threshold=0.05,
+    operator=">",
+    severity=Severity.CRITICAL,
+    cooldown=300,
+))
+manager.add_handler(lambda alert: notify_oncall(alert))
 ```
+
+## Distributed Tracing
+
+Every request should propagate a correlation ID via the `X-Correlation-ID`
+HTTP header. The `app.correlation_id` module stores it in thread-local
+memory so all log lines within the request carry the same ID.
+
+```python
+from app.correlation_id import correlation_context
+
+with correlation_context(request.headers.get("X-Correlation-ID")):
+    handle_request()
+```
+
+## Log Format
+
+All modules use the standard `logging` module at the `DEBUG`/`INFO`/`ERROR`
+levels. Structured JSON logging is recommended in production:
+
+```python
+import logging, json
+
+class JsonFormatter(logging.Formatter):
+    def format(self, record):
+        return json.dumps({
+            "level": record.levelname,
+            "msg": record.getMessage(),
+            "module": record.module,
+        })
+```
+
+## Dashboards
+
+Import the provided Grafana dashboard JSON from `docs/grafana/` to get
+pre-built panels for:
+- Request rate and latency (P50/P95/P99)
+- Circuit breaker state transitions
+- Token bucket rejection rate
+- Worker queue depth
+- Health check pass rate
+
+## Runbook: Circuit Breaker Open
+
+1. Check `circuit_breaker_state` metric — confirm it is `1` (OPEN).
+2. Identify the downstream dependency that is failing.
+3. Resolve the underlying issue (restart the dependency, fix network route).
+4. The circuit transitions to HALF_OPEN automatically after `recovery_timeout`.
+5. If the probe call succeeds, the circuit closes; otherwise it stays OPEN.
+6. Do **not** manually reset the breaker — let the recovery timeout handle it.
+
+## Runbook: High Memory Usage
+
+1. Check `active_workers` — a large queue depth may indicate a processing backlog.
+2. Profile with `app.profiler.get_stats()` to identify hot paths.
+3. Increase `workers` in `TaskQueue` if CPU is available.
+4. Consider enabling `compression` for large in-memory data structures.
