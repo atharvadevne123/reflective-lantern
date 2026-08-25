@@ -5,13 +5,13 @@ from __future__ import annotations
 import functools
 import logging
 import time
-from typing import Callable, Sequence, Type
+from collections.abc import Callable, Sequence
 
 logger = logging.getLogger(__name__)
 
 
 def retry(
-    exceptions: Sequence[Type[Exception]] = (Exception,),
+    exceptions: Sequence[type[Exception]] = (Exception,),
     max_attempts: int = 3,
     base_delay: float = 1.0,
     max_delay: float = 60.0,
@@ -31,6 +31,7 @@ def retry(
     Returns:
         Decorated function that retries on the specified exceptions.
     """
+
     def decorator(func: Callable) -> Callable:
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
@@ -60,7 +61,9 @@ def retry(
                 func.__qualname__,
             )
             raise last_exc  # type: ignore[misc]
+
         return wrapper
+
     return decorator
 
 
@@ -75,6 +78,7 @@ def retry_on_network_error(max_attempts: int = 3, base_delay: float = 2.0) -> Ca
         Decorator configured for network errors.
     """
     import urllib.error
+
     return retry(
         exceptions=(ConnectionError, TimeoutError, urllib.error.URLError, OSError),
         max_attempts=max_attempts,
