@@ -9,7 +9,7 @@ from __future__ import annotations
 import json
 import time
 from dataclasses import asdict, dataclass, field
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 __all__ = [
     "AuditEntry",
@@ -25,7 +25,7 @@ class AuditEntry:
     action: str
     resource: str
     timestamp: float = field(default_factory=time.time)
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
     outcome: str = "success"
 
 
@@ -33,7 +33,7 @@ class AuditLog:
     """Append-only in-memory audit log."""
 
     def __init__(self) -> None:
-        self._entries: List[AuditEntry] = []
+        self._entries: list[AuditEntry] = []
 
     def record(
         self,
@@ -56,13 +56,13 @@ class AuditLog:
 
     def search(
         self,
-        actor: Optional[str] = None,
-        action: Optional[str] = None,
-        resource: Optional[str] = None,
-        outcome: Optional[str] = None,
-        since: Optional[float] = None,
-        until: Optional[float] = None,
-    ) -> List[AuditEntry]:
+        actor: str | None = None,
+        action: str | None = None,
+        resource: str | None = None,
+        outcome: str | None = None,
+        since: float | None = None,
+        until: float | None = None,
+    ) -> list[AuditEntry]:
         """Return entries matching all provided filter criteria."""
         results = self._entries
         if actor:
