@@ -1172,18 +1172,22 @@ class TestPriceToIncomeRatio:
 class TestDemandPressureIndex:
     def test_equal_buyers_listings(self) -> None:
         from app.market_context import demand_pressure_index
+
         assert demand_pressure_index(10, 10) == pytest.approx(1.0)
 
     def test_more_buyers_than_listings(self) -> None:
         from app.market_context import demand_pressure_index
+
         assert demand_pressure_index(20, 10) == pytest.approx(2.0)
 
     def test_no_listings_returns_zero(self) -> None:
         from app.market_context import demand_pressure_index
+
         assert demand_pressure_index(5, 0) == pytest.approx(0.0)
 
     def test_negative_buyers_raises(self) -> None:
         from app.market_context import demand_pressure_index
+
         with pytest.raises(ValueError):
             demand_pressure_index(-1, 10)
 
@@ -1191,18 +1195,22 @@ class TestDemandPressureIndex:
 class TestPriceDeviationFromMedian:
     def test_above_median(self) -> None:
         from app.market_context import price_deviation_from_median
+
         assert price_deviation_from_median(110.0, 100.0) == pytest.approx(10.0)
 
     def test_below_median(self) -> None:
         from app.market_context import price_deviation_from_median
+
         assert price_deviation_from_median(90.0, 100.0) == pytest.approx(-10.0)
 
     def test_at_median(self) -> None:
         from app.market_context import price_deviation_from_median
+
         assert price_deviation_from_median(100.0, 100.0) == pytest.approx(0.0)
 
     def test_zero_median_raises(self) -> None:
         from app.market_context import price_deviation_from_median
+
         with pytest.raises(ValueError):
             price_deviation_from_median(100.0, 0.0)
 
@@ -1210,17 +1218,21 @@ class TestPriceDeviationFromMedian:
 class TestEffectiveDaysOnMarket:
     def test_not_relisted(self) -> None:
         from app.market_context import effective_days_on_market
+
         assert effective_days_on_market(45) == 45
 
     def test_relisted_adds_penalty(self) -> None:
         from app.market_context import effective_days_on_market
+
         assert effective_days_on_market(45, relisted=True) == 75
 
     def test_custom_penalty(self) -> None:
         from app.market_context import effective_days_on_market
+
         assert effective_days_on_market(10, relisted=True, relist_penalty=14) == 24
 
     def test_negative_dom_raises(self) -> None:
         from app.market_context import effective_days_on_market
+
         with pytest.raises(ValueError):
             effective_days_on_market(-1)
