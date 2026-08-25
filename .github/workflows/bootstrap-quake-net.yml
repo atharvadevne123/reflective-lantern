@@ -1,0 +1,63 @@
+name: Publish Quake-Net Repo
+
+# One-click publisher: this session's GitHub access is bound to reflective-lantern,
+# so the standalone Quake-Net repository could not be created from the build
+# environment. Run this workflow from the Actions tab with a repo-scope PAT to
+# create atharvadevne123/Quake-Net, push the project as its main branch via
+# subtree split, tag v1.0.0, create the release, and upload the wheel.
+
+on:
+  workflow_dispatch:
+    inputs:
+      pat:
+        description: "GitHub PAT with repo scope (used once, not stored)"
+        required: true
+        type: string
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: innovation/quake-net
+          fetch-depth: 0
+
+      - name: Create the Quake-Net repository
+        run: |
+          curl -sf -X POST \
+            -H "Authorization: Bearer ${{ inputs.pat }}" \
+            -H "Content-Type: application/json" \
+            https://api.github.com/user/repos \
+            -d '{"name":"Quake-Net","description":"Seismic event magnitude prediction and aftershock forecasting API using XGBoost RandomForest ensemble with Omori law decay modelling, drift monitoring, anomaly detection and automated retraining.","private":false,"auto_init":false}' \
+            || echo "Repo may already exist — continuing."
+
+      - name: Push quake-net subtree as main
+        run: |
+          git config user.email "devneatharva@gmail.com"
+          git config user.name "Reflective Lantern"
+          git subtree split --prefix=quake-net -b quake-net-main
+          git push "https://x-access-token:${{ inputs.pat }}@github.com/atharvadevne123/Quake-Net" quake-net-main:main
+
+      - name: Tag and release v1.0.0
+        run: |
+          curl -sf -X POST \
+            -H "Authorization: Bearer ${{ inputs.pat }}" \
+            -H "Content-Type: application/json" \
+            "https://api.github.com/repos/atharvadevne123/Quake-Net/releases" \
+            -d "{\"tag_name\":\"v1.0.0\",\"target_commitish\":\"main\",\"name\":\"v1.0.0 — Initial Release\",\"body\":\"Built by Reflective Lantern on 2026-08-21. XGBoost + RandomForest voting ensemble for seismic magnitude prediction (CV R2 0.822, RMSE 0.264), modified Omori law aftershock forecasting, KS-test and PSI drift monitoring, IsolationForest anomaly detection, FAISS similarity search, champion/challenger retraining. 285 tests. See README for setup.\",\"draft\":false,\"prerelease\":false}"
+
+      - name: Build and upload wheel asset
+        run: |
+          git checkout quake-net-main
+          pip install build -q
+          python -m build --wheel 2>&1 | tail -3
+          WHL=$(ls dist/*.whl | head -1)
+          RELEASE_ID=$(curl -sf -H "Authorization: Bearer ${{ inputs.pat }}" \
+            "https://api.github.com/repos/atharvadevne123/Quake-Net/releases/tags/v1.0.0" \
+            | python3 -c "import json,sys; print(json.load(sys.stdin)['id'])")
+          curl -sf -X POST \
+            -H "Authorization: Bearer ${{ inputs.pat }}" \
+            -H "Content-Type: application/octet-stream" \
+            --data-binary @"$WHL" \
+            "https://uploads.github.com/repos/atharvadevne123/Quake-Net/releases/$RELEASE_ID/assets?name=$(basename $WHL)"
