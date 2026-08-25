@@ -7,7 +7,7 @@ import io
 import json
 import logging
 import zlib
-from typing import Any, Union
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -124,7 +124,7 @@ def decompress_json(data: bytes, method: str = "gzip") -> Any:
     return json.loads(raw)
 
 
-def compression_ratio(original: Union[bytes, str], method: str = "gzip") -> float:
+def compression_ratio(original: bytes | str, method: str = "gzip") -> float:
     """Return the compression ratio for the given data.
 
     Args:
