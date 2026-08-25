@@ -3,8 +3,9 @@
 from __future__ import annotations
 
 import logging
+from collections.abc import Callable, Iterator
 from dataclasses import dataclass, field
-from typing import Any, Callable, Generic, Iterator, List, Optional, TypeVar
+from typing import Generic, TypeVar
 
 logger = logging.getLogger(__name__)
 
@@ -25,8 +26,8 @@ class BatchResult(Generic[R]):
 
     batch_index: int
     items_processed: int
-    results: List[R]
-    errors: List[Exception] = field(default_factory=list)
+    results: list[R]
+    errors: list[Exception] = field(default_factory=list)
 
 
 @dataclass
@@ -59,10 +60,10 @@ class BatchProcessor(Generic[T, R]):
 
     def __init__(
         self,
-        processor: Callable[[List[T]], List[R]],
+        processor: Callable[[list[T]], list[R]],
         batch_size: int = 100,
         error_handling: str = "raise",
-        on_batch_done: Optional[Callable[[BatchResult[R]], None]] = None,
+        on_batch_done: Callable[[BatchResult[R]], None] | None = None,
     ) -> None:
         if batch_size < 1:
             raise ValueError("batch_size must be >= 1")
@@ -74,11 +75,11 @@ class BatchProcessor(Generic[T, R]):
         self.on_batch_done = on_batch_done
 
     @staticmethod
-    def _chunk(items: List[T], size: int) -> Iterator[List[T]]:
+    def _chunk(items: list[T], size: int) -> Iterator[list[T]]:
         for i in range(0, len(items), size):
-            yield items[i: i + size]
+            yield items[i : i + size]
 
-    def run(self, items: List[T]) -> RunSummary:
+    def run(self, items: list[T]) -> RunSummary:
         """Process all items in batches.
 
         Args:
@@ -92,8 +93,8 @@ class BatchProcessor(Generic[T, R]):
         batch_index = 0
 
         for batch in self._chunk(items, self.batch_size):
-            errors: List[Exception] = []
-            results: List[R] = []
+            errors: list[Exception] = []
+            results: list[R] = []
             try:
                 results = self.processor(batch)
             except Exception as exc:
@@ -118,7 +119,10 @@ class BatchProcessor(Generic[T, R]):
             batch_index += 1
             logger.debug(
                 "Batch %d: %d in, %d out, %d errors",
-                batch_index, len(batch), len(results), len(errors),
+                batch_index,
+                len(batch),
+                len(results),
+                len(errors),
             )
 
         return RunSummary(
