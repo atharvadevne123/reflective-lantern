@@ -5,7 +5,6 @@ from __future__ import annotations
 import hashlib
 import logging
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -22,7 +21,7 @@ class Variant:
 
     name: str
     weight: float = 1.0
-    metadata: Dict = field(default_factory=dict)
+    metadata: dict = field(default_factory=dict)
 
 
 @dataclass
@@ -55,7 +54,7 @@ class Experiment:
     def __init__(
         self,
         name: str,
-        variants: List[Variant],
+        variants: list[Variant],
         enabled: bool = True,
     ) -> None:
         if not variants:
@@ -64,7 +63,7 @@ class Experiment:
         self.variants = variants
         self.enabled = enabled
         self._total_weight = sum(v.weight for v in variants)
-        self._assignment_counts: Dict[str, int] = {v.name: 0 for v in variants}
+        self._assignment_counts: dict[str, int] = {v.name: 0 for v in variants}
 
     def assign(self, entity_id: str) -> ExperimentResult:
         """Assign an entity to a variant deterministically.
@@ -81,7 +80,7 @@ class Experiment:
             return ExperimentResult(self.name, variant.name, entity_id)
 
         key = f"{self.name}:{entity_id}"
-        digest = int(hashlib.md5(key.encode()).hexdigest(), 16)  # noqa: S324
+        digest = int(hashlib.md5(key.encode()).hexdigest(), 16)
         bucket = (digest % 10_000) / 10_000.0 * self._total_weight
         cumulative = 0.0
         selected = self.variants[-1]
@@ -93,11 +92,13 @@ class Experiment:
         self._assignment_counts[selected.name] += 1
         logger.debug(
             "Experiment '%s': entity '%s' -> variant '%s'",
-            self.name, entity_id, selected.name,
+            self.name,
+            entity_id,
+            selected.name,
         )
         return ExperimentResult(self.name, selected.name, entity_id)
 
-    def assignment_distribution(self) -> Dict[str, int]:
+    def assignment_distribution(self) -> dict[str, int]:
         """Return how many entities were assigned to each variant."""
         return dict(self._assignment_counts)
 
@@ -106,18 +107,18 @@ class ExperimentRegistry:
     """Registry of named experiments."""
 
     def __init__(self) -> None:
-        self._experiments: Dict[str, Experiment] = {}
+        self._experiments: dict[str, Experiment] = {}
 
     def register(self, experiment: Experiment) -> None:
         """Add an experiment to the registry."""
         self._experiments[experiment.name] = experiment
         logger.info("Registered experiment '%s'", experiment.name)
 
-    def get(self, name: str) -> Optional[Experiment]:
+    def get(self, name: str) -> Experiment | None:
         """Retrieve an experiment by name."""
         return self._experiments.get(name)
 
-    def assign(self, experiment_name: str, entity_id: str) -> Optional[ExperimentResult]:
+    def assign(self, experiment_name: str, entity_id: str) -> ExperimentResult | None:
         """Assign an entity to a variant in the named experiment.
 
         Returns None if the experiment is not found.
@@ -128,7 +129,7 @@ class ExperimentRegistry:
             return None
         return exp.assign(entity_id)
 
-    def list_experiments(self) -> List[str]:
+    def list_experiments(self) -> list[str]:
         """Return names of all registered experiments."""
         return list(self._experiments)
 
