@@ -1487,18 +1487,23 @@ class TestSeriesEntropy:
 class TestEnergyIntensityScore:
     def test_basic(self) -> None:
         from app.time_series import energy_intensity_score
+
         result = energy_intensity_score([100.0, 200.0, 150.0], 1000.0)
         assert abs(result - 0.45) < 0.001
 
     def test_empty_raises(self) -> None:
         import pytest
+
         from app.time_series import energy_intensity_score
+
         with pytest.raises(ValueError):
             energy_intensity_score([], 100.0)
 
     def test_zero_sqft_raises(self) -> None:
         import pytest
+
         from app.time_series import energy_intensity_score
+
         with pytest.raises(ValueError):
             energy_intensity_score([10.0], 0.0)
 
@@ -1506,17 +1511,21 @@ class TestEnergyIntensityScore:
 class TestBaselineDeviation:
     def test_first_n_are_zero(self) -> None:
         from app.time_series import baseline_deviation
+
         result = baseline_deviation([1, 2, 3, 4, 5, 6, 7, 10], baseline_days=3)
         assert result[0] == result[1] == result[2] == 0.0
 
     def test_deviation_computed(self) -> None:
         from app.time_series import baseline_deviation
+
         result = baseline_deviation([1, 2, 3, 4, 5, 6, 7, 10], baseline_days=3)
         assert result[3] != 0.0
 
     def test_invalid_baseline_raises(self) -> None:
         import pytest
+
         from app.time_series import baseline_deviation
+
         with pytest.raises(ValueError):
             baseline_deviation([1, 2, 3], baseline_days=0)
 
@@ -1524,6 +1533,7 @@ class TestBaselineDeviation:
 class TestWeekendWeekdayRatio:
     def test_equal_consumption_ratio_one(self) -> None:
         from app.time_series import weekend_weekday_ratio
+
         # 14 days of constant consumption
         values = [10.0] * 14
         result = weekend_weekday_ratio(values, start_weekday=0)
@@ -1531,13 +1541,17 @@ class TestWeekendWeekdayRatio:
 
     def test_empty_raises(self) -> None:
         import pytest
+
         from app.time_series import weekend_weekday_ratio
+
         with pytest.raises(ValueError):
             weekend_weekday_ratio([])
 
     def test_invalid_start_weekday(self) -> None:
         import pytest
+
         from app.time_series import weekend_weekday_ratio
+
         with pytest.raises(ValueError):
             weekend_weekday_ratio([1.0] * 7, start_weekday=7)
 
@@ -1545,17 +1559,21 @@ class TestWeekendWeekdayRatio:
 class TestHourlyVariability:
     def test_constant_series_low_variability(self) -> None:
         from app.time_series import hourly_variability
+
         result = hourly_variability([10.0, 10.0, 10.0, 10.0])
         assert result == 0.0
 
     def test_variable_series(self) -> None:
         from app.time_series import hourly_variability
+
         result = hourly_variability([1.0, 10.0, 1.0, 10.0])
         assert result > 0.0
 
     def test_single_value_raises(self) -> None:
         import pytest
+
         from app.time_series import hourly_variability
+
         with pytest.raises(ValueError):
             hourly_variability([5.0])
 
@@ -1563,16 +1581,21 @@ class TestHourlyVariability:
 class TestZeroCrossingRate:
     def test_alternating_signs(self) -> None:
         import pytest
+
         from app.time_series import zero_crossing_rate
+
         assert zero_crossing_rate([-1.0, 1.0, -1.0, 1.0]) == pytest.approx(1.0)
 
     def test_no_crossings(self) -> None:
         import pytest
+
         from app.time_series import zero_crossing_rate
+
         assert zero_crossing_rate([1.0, 2.0, 3.0]) == pytest.approx(0.0)
 
     def test_too_short_raises(self) -> None:
         from app.time_series import zero_crossing_rate
+
         with __import__("pytest").raises(ValueError):
             zero_crossing_rate([1.0])
 
@@ -1580,16 +1603,21 @@ class TestZeroCrossingRate:
 class TestPeakToTroughRatio:
     def test_basic(self) -> None:
         import pytest
+
         from app.time_series import peak_to_trough_ratio
+
         assert peak_to_trough_ratio([1.0, 5.0, 2.0, 8.0]) == pytest.approx(8.0)
 
     def test_zero_trough(self) -> None:
         import pytest
+
         from app.time_series import peak_to_trough_ratio
+
         assert peak_to_trough_ratio([0.0, 5.0]) == pytest.approx(0.0)
 
     def test_empty_raises(self) -> None:
         from app.time_series import peak_to_trough_ratio
+
         with __import__("pytest").raises(ValueError):
             peak_to_trough_ratio([])
 
@@ -1597,15 +1625,20 @@ class TestPeakToTroughRatio:
 class TestLoadFactor:
     def test_basic(self) -> None:
         from app.time_series import load_factor
+
         result = load_factor([10.0, 20.0, 15.0, 25.0])
         assert 0.0 < result < 1.0
 
     def test_all_peak(self) -> None:
         import pytest
+
         from app.time_series import load_factor
+
         assert load_factor([5.0, 5.0, 5.0]) == pytest.approx(1.0)
 
     def test_empty_returns_zero(self) -> None:
         import pytest
+
         from app.time_series import load_factor
+
         assert load_factor([]) == pytest.approx(0.0)
