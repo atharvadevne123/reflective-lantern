@@ -3,15 +3,16 @@
 from __future__ import annotations
 
 import logging
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Callable, Dict, List, Optional
 
 logger = logging.getLogger(__name__)
 
 
 class Severity(Enum):
     """Alert severity levels."""
+
     INFO = "info"
     WARNING = "warning"
     CRITICAL = "critical"
@@ -57,9 +58,9 @@ class AlertRule:
     severity: Severity = Severity.WARNING
     comparison: str = ">"
     cooldown_s: float = 60.0
-    _last_fired: Optional[float] = field(default=None, repr=False, compare=False)
+    _last_fired: float | None = field(default=None, repr=False, compare=False)
 
-    _OPS: Dict[str, Callable[[float, float], bool]] = field(
+    _OPS: dict[str, Callable[[float, float], bool]] = field(
         default_factory=lambda: {
             ">": lambda v, t: v > t,
             ">=": lambda v, t: v >= t,
@@ -71,7 +72,7 @@ class AlertRule:
         compare=False,
     )
 
-    def evaluate(self, value: float, now: float) -> Optional[Alert]:
+    def evaluate(self, value: float, now: float) -> Alert | None:
         """Evaluate the rule against a metric value.
 
         Args:
@@ -91,10 +92,7 @@ class AlertRule:
             logger.debug("Rule '%s' in cooldown", self.name)
             return None
         self._last_fired = now
-        msg = (
-            f"[{self.severity.value.upper()}] {self.name}: "
-            f"{self.metric}={value} {self.comparison} {self.threshold}"
-        )
+        msg = f"[{self.severity.value.upper()}] {self.name}: {self.metric}={value} {self.comparison} {self.threshold}"
         logger.warning(msg)
         return Alert(
             name=self.name,
@@ -113,10 +111,10 @@ class AlertManager:
         handlers: Optional list of callables that receive each fired Alert.
     """
 
-    def __init__(self, handlers: Optional[List[Callable[[Alert], None]]] = None) -> None:
-        self._rules: Dict[str, AlertRule] = {}
-        self._handlers: List[Callable[[Alert], None]] = handlers or []
-        self._fired: List[Alert] = []
+    def __init__(self, handlers: list[Callable[[Alert], None]] | None = None) -> None:
+        self._rules: dict[str, AlertRule] = {}
+        self._handlers: list[Callable[[Alert], None]] = handlers or []
+        self._fired: list[Alert] = []
 
     def add_rule(self, rule: AlertRule) -> None:
         """Register an alerting rule."""
@@ -127,7 +125,7 @@ class AlertManager:
         """Remove a rule by name. Returns True if found."""
         return self._rules.pop(name, None) is not None
 
-    def evaluate_all(self, metrics: Dict[str, float], now: Optional[float] = None) -> List[Alert]:
+    def evaluate_all(self, metrics: dict[str, float], now: float | None = None) -> list[Alert]:
         """Evaluate all registered rules against a metrics snapshot.
 
         Args:
@@ -138,8 +136,9 @@ class AlertManager:
             List of alerts that fired.
         """
         import time as _time
+
         ts = now if now is not None else _time.monotonic()
-        fired: List[Alert] = []
+        fired: list[Alert] = []
         for rule in self._rules.values():
             value = metrics.get(rule.metric)
             if value is None:
@@ -156,7 +155,7 @@ class AlertManager:
         return fired
 
     @property
-    def history(self) -> List[Alert]:
+    def history(self) -> list[Alert]:
         """Return all alerts fired since creation."""
         return list(self._fired)
 
