@@ -5,8 +5,6 @@ from __future__ import annotations
 import pytest
 
 from app.pagination import (
-    CursorPage,
-    Page,
     PageInfo,
     cursor_paginate,
     decode_cursor,
@@ -19,12 +17,15 @@ DICT_ITEMS = [{"id": i, "val": i * 2} for i in range(50)]
 
 
 class TestPageInfo:
-    @pytest.mark.parametrize("total,page,per_page,expected_pages", [
-        (100, 1, 10, 10),
-        (0, 1, 10, 0),
-        (1, 1, 10, 1),
-        (101, 1, 10, 11),
-    ])
+    @pytest.mark.parametrize(
+        "total,page,per_page,expected_pages",
+        [
+            (100, 1, 10, 10),
+            (0, 1, 10, 0),
+            (1, 1, 10, 1),
+            (101, 1, 10, 11),
+        ],
+    )
     def test_total_pages(self, total, page, per_page, expected_pages):
         info = PageInfo(total=total, page=page, per_page=per_page)
         assert info.total_pages == expected_pages
@@ -81,11 +82,14 @@ class TestCursorEncoding:
         with pytest.raises(ValueError, match="Invalid cursor"):
             decode_cursor("!!!not-base64!!!")
 
-    @pytest.mark.parametrize("data", [
-        {"id": 0},
-        {"id": 999, "extra": True},
-        {"key": "string-value"},
-    ])
+    @pytest.mark.parametrize(
+        "data",
+        [
+            {"id": 0},
+            {"id": 999, "extra": True},
+            {"key": "string-value"},
+        ],
+    )
     def test_various_payloads(self, data):
         assert decode_cursor(encode_cursor(data)) == data
 
