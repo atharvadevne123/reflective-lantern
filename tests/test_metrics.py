@@ -215,20 +215,24 @@ def test_rmse_non_negative_for_imperfect(n: int) -> None:
 class TestSymmetricMape:
     def test_perfect_forecast(self) -> None:
         from app.metrics import symmetric_mape
+
         assert symmetric_mape([10.0, 20.0], [10.0, 20.0]) == pytest.approx(0.0)
 
     def test_over_forecast(self) -> None:
         from app.metrics import symmetric_mape
+
         result = symmetric_mape([10.0], [12.0])
         assert result > 0.0
 
     def test_empty_raises(self) -> None:
         from app.metrics import symmetric_mape
+
         with pytest.raises(ValueError):
             symmetric_mape([], [])
 
     def test_length_mismatch_raises(self) -> None:
         from app.metrics import symmetric_mape
+
         with pytest.raises(ValueError):
             symmetric_mape([1.0, 2.0], [1.0])
 
@@ -236,14 +240,17 @@ class TestSymmetricMape:
 class TestMaxAbsoluteError:
     def test_basic(self) -> None:
         from app.metrics import max_absolute_error
+
         assert max_absolute_error([1.0, 2.0, 3.0], [2.0, 2.0, 2.0]) == pytest.approx(1.0)
 
     def test_perfect(self) -> None:
         from app.metrics import max_absolute_error
+
         assert max_absolute_error([1.0, 2.0], [1.0, 2.0]) == pytest.approx(0.0)
 
     def test_empty_raises(self) -> None:
         from app.metrics import max_absolute_error
+
         with pytest.raises(ValueError):
             max_absolute_error([], [])
 
@@ -251,13 +258,16 @@ class TestMaxAbsoluteError:
 class TestNormalisedRmse:
     def test_perfect_forecast(self) -> None:
         from app.metrics import normalised_rmse
+
         assert normalised_rmse([1.0, 2.0, 3.0], [1.0, 2.0, 3.0]) == pytest.approx(0.0)
 
     def test_nonzero_error(self) -> None:
         from app.metrics import normalised_rmse
+
         result = normalised_rmse([1.0, 2.0, 3.0], [2.0, 2.0, 2.0])
         assert result > 0.0
 
     def test_constant_actual_returns_zero(self) -> None:
         from app.metrics import normalised_rmse
+
         assert normalised_rmse([5.0, 5.0], [4.0, 6.0]) == pytest.approx(0.0)
