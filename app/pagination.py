@@ -6,7 +6,7 @@ import base64
 import json
 import math
 from dataclasses import dataclass, field
-from typing import Any, Generic, List, Optional, TypeVar
+from typing import Any, Generic, TypeVar
 
 T = TypeVar("T")
 
@@ -46,7 +46,7 @@ class Page(Generic[T]):
         info: Pagination metadata.
     """
 
-    items: List[T]
+    items: list[T]
     info: PageInfo
 
 
@@ -114,14 +114,14 @@ class CursorPage(Generic[T]):
         has_next: Whether a next page exists.
     """
 
-    items: List[T]
-    next_cursor: Optional[str]
+    items: list[T]
+    next_cursor: str | None
     has_next: bool
 
 
 def cursor_paginate(
     items: list,
-    cursor: Optional[str] = None,
+    cursor: str | None = None,
     per_page: int = 20,
     key: str = "id",
 ) -> CursorPage:
@@ -144,9 +144,9 @@ def cursor_paginate(
             if isinstance(item, dict) and item.get(key) == last_val:
                 start_idx = idx + 1
                 break
-    page_items = items[start_idx: start_idx + per_page]
+    page_items = items[start_idx : start_idx + per_page]
     has_next = (start_idx + per_page) < len(items)
-    next_cursor: Optional[str] = None
+    next_cursor: str | None = None
     if has_next and page_items:
         last_item = page_items[-1]
         if isinstance(last_item, dict):
