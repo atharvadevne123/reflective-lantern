@@ -265,7 +265,9 @@ def normalize_record(record: dict[str, Any]) -> dict[str, Any]:
 
 __all__ = [
     "batch_score",
+    "column_cardinality",
     "completeness_score",
+    "consecutive_missing_count",
     "cross_field_consistency",
     "cross_field_validation",
     "detect_data_gaps",
@@ -279,6 +281,7 @@ __all__ = [
     "normalize_record",
     "null_rate",
     "outlier_count_iqr",
+    "outlier_summary",
     "quality_summary",
     "range_violation_count",
     "record_completeness",
@@ -290,10 +293,6 @@ __all__ = [
     "validate_date_range",
     "validate_enum_field",
     "value_range_check",
-
-    "column_cardinality",
-    "consecutive_missing_count",
-    "outlier_summary",
 ]
 
 
@@ -942,10 +941,7 @@ def column_cardinality(records: list[dict[str, object]]) -> dict[str, int]:
     if not records:
         return {}
     all_keys: set[str] = set().union(*(r.keys() for r in records))
-    return {
-        key: len({r.get(key) for r in records if r.get(key) is not None})
-        for key in sorted(all_keys)
-    }
+    return {key: len({r.get(key) for r in records if r.get(key) is not None}) for key in sorted(all_keys)}
 
 
 def outlier_summary(
@@ -966,7 +962,7 @@ def outlier_summary(
         return {"count": 0, "fraction": 0.0, "min_outlier": None, "max_outlier": None, "indices": []}
     mean_v = sum(values) / len(values)
     variance = sum((v - mean_v) ** 2 for v in values) / len(values)
-    std_v = variance ** 0.5
+    std_v = variance**0.5
     if std_v == 0.0:
         return {"count": 0, "fraction": 0.0, "min_outlier": None, "max_outlier": None, "indices": []}
     outliers = [(i, v) for i, v in enumerate(values) if abs(v - mean_v) / std_v > z_threshold]
@@ -981,6 +977,7 @@ def outlier_summary(
         "indices": [i for i, _ in outliers],
     }
 
+
 def unique_value_count(values: list[object]) -> int:
     """Count the number of distinct non-None values in *values*.
 
@@ -991,4 +988,3 @@ def unique_value_count(values: list[object]) -> int:
         Count of unique non-None entries.
     """
     return len({v for v in values if v is not None})
-
