@@ -395,6 +395,7 @@ def peak_to_valley_ratio(values: list[float]) -> float:
 
 __all__ = [
     "autocorrelation",
+    "baseline_deviation",
     "clip_outliers",
     "consumption_variance",
     "cumulative_consumption",
@@ -402,6 +403,7 @@ __all__ = [
     "daily_totals",
     "detect_plateau",
     "detect_spikes",
+    "energy_intensity_score",
     "exponential_moving_average",
     "find_changepoints",
     "first_nonzero",
@@ -409,6 +411,7 @@ __all__ = [
     "forecast_trend_with_seasonality",
     "hampel_filter",
     "holt_winters_smooth",
+    "hourly_variability",
     "load_factor",
     "logger",
     "mape",
@@ -426,12 +429,8 @@ __all__ = [
     "rolling_zscore",
     "seasonal_baseline",
     "simple_moving_average",
-    "z_normalize",
-
-    "baseline_deviation",
-    "energy_intensity_score",
-    "hourly_variability",
     "weekend_weekday_ratio",
+    "z_normalize",
 ]
 
 
@@ -1302,7 +1301,7 @@ def hourly_variability(values: list[float]) -> float:
     if mean_v == 0.0:
         return 0.0
     variance = sum((v - mean_v) ** 2 for v in values) / (len(values) - 1)
-    std_v = variance ** 0.5
+    std_v = variance**0.5
     return round(std_v / mean_v, 6)
 
 
@@ -1320,9 +1319,7 @@ def zero_crossing_rate(values: list[float]) -> float:
     """
     if len(values) < 2:
         raise ValueError("values must have at least 2 elements")
-    crossings = sum(
-        1 for i in range(len(values) - 1) if values[i] * values[i + 1] < 0
-    )
+    crossings = sum(1 for i in range(len(values) - 1) if values[i] * values[i + 1] < 0)
     return round(crossings / (len(values) - 1), 6)
 
 
