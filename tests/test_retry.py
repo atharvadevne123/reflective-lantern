@@ -28,11 +28,14 @@ def _make_flaky(fail_times: int, exc: type = _Boom):
     return fn
 
 
-@pytest.mark.parametrize("fail_times,max_attempts,expected", [
-    (0, 3, "ok"),
-    (1, 3, "ok"),
-    (2, 3, "ok"),
-])
+@pytest.mark.parametrize(
+    "fail_times,max_attempts,expected",
+    [
+        (0, 3, "ok"),
+        (1, 3, "ok"),
+        (2, 3, "ok"),
+    ],
+)
 def test_retry_succeeds_after_failures(fail_times, max_attempts, expected, monkeypatch):
     monkeypatch.setattr("time.sleep", lambda _: None)
     fn = _make_flaky(fail_times)
