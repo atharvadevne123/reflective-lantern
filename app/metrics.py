@@ -162,7 +162,7 @@ def symmetric_mape(actual: list[float], predicted: list[float]) -> float:
     if len(actual) != len(predicted):
         raise ValueError("actual and predicted must have the same length")
     total = 0.0
-    for a, p in zip(actual, predicted):
+    for a, p in zip(actual, predicted, strict=False):
         denom = (abs(a) + abs(p)) / 2.0
         total += 0.0 if denom == 0 else abs(a - p) / denom * 100.0
     return round(total / len(actual), 6)
@@ -185,7 +185,7 @@ def max_absolute_error(actual: list[float], predicted: list[float]) -> float:
         raise ValueError("actual and predicted must be non-empty")
     if len(actual) != len(predicted):
         raise ValueError("actual and predicted must have the same length")
-    return max(abs(a - p) for a, p in zip(actual, predicted))
+    return max(abs(a - p) for a, p in zip(actual, predicted, strict=False))
 
 
 def normalised_rmse(actual: list[float], predicted: list[float]) -> float:
@@ -205,8 +205,8 @@ def normalised_rmse(actual: list[float], predicted: list[float]) -> float:
         raise ValueError("actual and predicted must be non-empty")
     if len(actual) != len(predicted):
         raise ValueError("actual and predicted must have the same length")
-    mse = sum((a - p) ** 2 for a, p in zip(actual, predicted)) / len(actual)
-    rmse = mse ** 0.5
+    mse = sum((a - p) ** 2 for a, p in zip(actual, predicted, strict=False)) / len(actual)
+    rmse = mse**0.5
     rng = max(actual) - min(actual)
     if rng == 0:
         return 0.0
