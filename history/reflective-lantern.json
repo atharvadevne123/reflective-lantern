@@ -93,6 +93,6 @@
       "chore: merged innovation/quake-net test files"
     ],
     "tests_passed": true,
-    "email_status": "pending"
+    "email_status": "network_blocked"
   }
 ]
