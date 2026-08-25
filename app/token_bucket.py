@@ -6,7 +6,6 @@ import logging
 import threading
 import time
 from dataclasses import dataclass, field
-from typing import Dict
 
 logger = logging.getLogger(__name__)
 
@@ -103,7 +102,7 @@ class PerKeyTokenBucket:
     def __init__(self, capacity: float, rate: float) -> None:
         self.capacity = capacity
         self.rate = rate
-        self._buckets: Dict[str, TokenBucket] = {}
+        self._buckets: dict[str, TokenBucket] = {}
         self._lock = threading.Lock()
 
     def consume(self, key: str, tokens: float = 1.0) -> bool:
