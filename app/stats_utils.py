@@ -126,6 +126,7 @@ def percentile(values: list[float], p: float) -> float:
 __all__ = [
     "coefficient_of_variation",
     "compute_correlation",
+    "confidence_interval",
     "correlation_coefficient",
     "geometric_mean",
     "gini_coefficient",
@@ -136,25 +137,23 @@ __all__ = [
     "median_absolute_deviation",
     "mode_count",
     "normalize_series",
+    "outlier_fraction",
     "percentile",
     "percentile_rank",
     "population_variance",
     "r_squared",
     "rolling_mean",
+    "rolling_rmse",
     "rolling_sharpe",
     "root_mean_squared_error",
     "sample_std",
     "sharpe_ratio",
+    "signal_to_noise_ratio",
     "trimmed_mean",
     "variance",
     "weighted_average",
     "weighted_median",
     "zscore",
-
-    "confidence_interval",
-    "outlier_fraction",
-    "rolling_rmse",
-    "signal_to_noise_ratio",
 ]
 
 
@@ -984,8 +983,8 @@ def rolling_rmse(actual: list[float], predicted: list[float], window: int) -> li
         else:
             a_w = actual[i - window + 1 : i + 1]
             p_w = predicted[i - window + 1 : i + 1]
-            mse = sum((a - p) ** 2 for a, p in zip(a_w, p_w)) / window
-            result.append(round(mse ** 0.5, 6))
+            mse = sum((a - p) ** 2 for a, p in zip(a_w, p_w, strict=False)) / window
+            result.append(round(mse**0.5, 6))
     return result
 
 
@@ -1039,7 +1038,7 @@ def signal_to_noise_ratio(values: list[float]) -> float:
         return 0.0
     mean_v = sum(values) / len(values)
     variance = sum((v - mean_v) ** 2 for v in values) / (len(values) - 1)
-    std_v = variance ** 0.5
+    std_v = variance**0.5
     if std_v == 0.0:
         return 0.0
     return round(abs(mean_v) / std_v, 6)
@@ -1064,7 +1063,7 @@ def outlier_fraction(values: list[float], z_threshold: float = 3.0) -> float:
         return 0.0
     mean_v = sum(values) / len(values)
     variance = sum((v - mean_v) ** 2 for v in values) / len(values)
-    std_v = variance ** 0.5
+    std_v = variance**0.5
     if std_v == 0.0:
         return 0.0
     count = sum(1 for v in values if abs(v - mean_v) / std_v > z_threshold)
