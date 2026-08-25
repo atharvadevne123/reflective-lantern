@@ -4,7 +4,8 @@ from __future__ import annotations
 
 import logging
 from collections import defaultdict
-from typing import Any, Callable, Dict, List
+from collections.abc import Callable
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -19,8 +20,8 @@ class EventBus:
     """
 
     def __init__(self) -> None:
-        self._handlers: Dict[str, List[Handler]] = defaultdict(list)
-        self._wildcard_handlers: List[Handler] = []
+        self._handlers: dict[str, list[Handler]] = defaultdict(list)
+        self._wildcard_handlers: list[Handler] = []
 
     def subscribe(self, event: str, handler: Handler) -> None:
         """Register a handler for a named event.
