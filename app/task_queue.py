@@ -10,8 +10,9 @@ import heapq
 import logging
 import threading
 import time
+from collections.abc import Callable
 from dataclasses import dataclass, field
-from typing import Any, Callable, List, Optional
+from typing import Any
 
 __all__ = [
     "Task",
@@ -40,14 +41,14 @@ class TaskQueue:
     """Thread-safe priority queue that executes tasks on worker threads."""
 
     def __init__(self, workers: int = 2) -> None:
-        self._heap: List[Task] = []
+        self._heap: list[Task] = []
         self._lock = threading.Lock()
         self._not_empty = threading.Condition(self._lock)
         self._running = False
-        self._threads: List[threading.Thread] = []
+        self._threads: list[threading.Thread] = []
         self._workers = workers
         self._completed = 0
-        self._errors: List[Exception] = []
+        self._errors: list[Exception] = []
 
     def submit(self, fn: Callable[..., Any], priority: int = 5, *args: Any, **kwargs: Any) -> None:
         """Enqueue a task; lower *priority* values run first."""
@@ -96,7 +97,7 @@ class TaskQueue:
             return self._completed
 
     @property
-    def errors(self) -> List[Exception]:
+    def errors(self) -> list[Exception]:
         with self._lock:
             return list(self._errors)
 
