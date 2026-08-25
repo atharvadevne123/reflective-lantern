@@ -5,14 +5,15 @@ from __future__ import annotations
 import functools
 import logging
 import time
+from collections.abc import Callable, Sequence
 from enum import Enum
-from typing import Callable, Sequence, Type
 
 logger = logging.getLogger(__name__)
 
 
 class CircuitState(Enum):
     """Possible states of a circuit breaker."""
+
     CLOSED = "closed"
     OPEN = "open"
     HALF_OPEN = "half_open"
@@ -35,7 +36,7 @@ class CircuitBreaker:
         self,
         failure_threshold: int = 5,
         recovery_timeout: float = 30.0,
-        expected_exceptions: Sequence[Type[Exception]] = (Exception,),
+        expected_exceptions: Sequence[type[Exception]] = (Exception,),
     ) -> None:
         self.failure_threshold = failure_threshold
         self.recovery_timeout = recovery_timeout
@@ -47,12 +48,11 @@ class CircuitBreaker:
     @property
     def state(self) -> CircuitState:
         """Return current circuit state, transitioning OPEN -> HALF_OPEN when ready."""
-        if self._state is CircuitState.OPEN:
-            if self._opened_at is not None:
-                elapsed = time.monotonic() - self._opened_at
-                if elapsed >= self.recovery_timeout:
-                    logger.info("Circuit entering HALF_OPEN after %.1fs", elapsed)
-                    self._state = CircuitState.HALF_OPEN
+        if self._state is CircuitState.OPEN and self._opened_at is not None:
+            elapsed = time.monotonic() - self._opened_at
+            if elapsed >= self.recovery_timeout:
+                logger.info("Circuit entering HALF_OPEN after %.1fs", elapsed)
+                self._state = CircuitState.HALF_OPEN
         return self._state
 
     def call(self, func: Callable, *args, **kwargs):
@@ -68,9 +68,7 @@ class CircuitBreaker:
             Exception: Whatever func raises when the circuit is CLOSED or HALF_OPEN.
         """
         if self.state is CircuitState.OPEN:
-            raise CircuitOpenError(
-                f"Circuit is OPEN; calls blocked for {self.recovery_timeout}s"
-            )
+            raise CircuitOpenError(f"Circuit is OPEN; calls blocked for {self.recovery_timeout}s")
         try:
             result = func(*args, **kwargs)
             self._on_success()
@@ -89,17 +87,17 @@ class CircuitBreaker:
     def _on_failure(self) -> None:
         self._failure_count += 1
         if self._state is CircuitState.HALF_OPEN or self._failure_count >= self.failure_threshold:
-            logger.warning(
-                "Circuit OPEN after %d failures", self._failure_count
-            )
+            logger.warning("Circuit OPEN after %d failures", self._failure_count)
             self._state = CircuitState.OPEN
             self._opened_at = time.monotonic()
 
     def __call__(self, func: Callable) -> Callable:
         """Use as a decorator."""
+
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
             return self.call(func, *args, **kwargs)
+
         return wrapper
 
 
