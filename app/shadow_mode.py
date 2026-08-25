@@ -4,8 +4,9 @@ from __future__ import annotations
 
 import logging
 import time
-from dataclasses import dataclass, field
-from typing import Any, Callable, Dict, List, Optional
+from collections.abc import Callable
+from dataclasses import dataclass
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -24,8 +25,8 @@ class ShadowResult:
     """
 
     primary_result: Any
-    shadow_result: Optional[Any]
-    shadow_error: Optional[Exception]
+    shadow_result: Any | None
+    shadow_error: Exception | None
     primary_latency_ms: float
     shadow_latency_ms: float
     matched: bool
@@ -48,12 +49,12 @@ class ShadowRunner:
         self,
         primary: Callable,
         shadow: Callable,
-        comparer: Optional[Callable[[Any, Any], bool]] = None,
+        comparer: Callable[[Any, Any], bool] | None = None,
     ) -> None:
         self.primary = primary
         self.shadow = shadow
         self.comparer = comparer or (lambda a, b: a == b)
-        self._results: List[ShadowResult] = []
+        self._results: list[ShadowResult] = []
 
     def call(self, *args, **kwargs) -> Any:
         """Execute primary and shadow handlers, return primary result.
@@ -97,11 +98,12 @@ class ShadowRunner:
         if not matched:
             logger.info(
                 "Shadow mismatch: primary=%r shadow=%r",
-                primary_result, shadow_result,
+                primary_result,
+                shadow_result,
             )
         return primary_result
 
-    def stats(self) -> Dict[str, Any]:
+    def stats(self) -> dict[str, Any]:
         """Return aggregate comparison statistics.
 
         Returns:
