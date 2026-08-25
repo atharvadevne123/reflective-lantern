@@ -618,18 +618,22 @@ class TestGetOrDefault:
 class TestCacheMissRate:
     def test_basic(self) -> None:
         from app.cache import cache_miss_rate
+
         assert cache_miss_rate(8, 2) == pytest.approx(0.2)
 
     def test_all_hits(self) -> None:
         from app.cache import cache_miss_rate
+
         assert cache_miss_rate(10, 0) == pytest.approx(0.0)
 
     def test_no_requests(self) -> None:
         from app.cache import cache_miss_rate
+
         assert cache_miss_rate(0, 0) == pytest.approx(0.0)
 
     def test_negative_raises(self) -> None:
         from app.cache import cache_miss_rate
+
         with pytest.raises(ValueError):
             cache_miss_rate(-1, 5)
 
@@ -637,11 +641,13 @@ class TestCacheMissRate:
 class TestIsCacheEmpty:
     def test_empty_cache(self) -> None:
         from app.cache import is_cache_empty
+
         c = TTLCache(ttl_seconds=60)
         assert is_cache_empty(c) is True
 
     def test_non_empty_cache(self) -> None:
         from app.cache import is_cache_empty
+
         c = TTLCache(ttl_seconds=60)
         c.set("key", "val")
         assert is_cache_empty(c) is False
@@ -650,11 +656,13 @@ class TestIsCacheEmpty:
 class TestCacheRemainingCapacity:
     def test_full_capacity_when_empty(self) -> None:
         from app.cache import cache_remaining_capacity
+
         c = TTLCache(ttl_seconds=60, max_size=5)
         assert cache_remaining_capacity(c) == 5
 
     def test_decreases_after_set(self) -> None:
         from app.cache import cache_remaining_capacity
+
         c = TTLCache(ttl_seconds=60, max_size=5)
         c.set("a", 1)
         assert cache_remaining_capacity(c) == 4
