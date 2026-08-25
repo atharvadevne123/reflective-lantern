@@ -3,8 +3,7 @@
 from __future__ import annotations
 
 import logging
-from dataclasses import dataclass, field
-from typing import Dict, List, Optional
+from dataclasses import dataclass
 
 logger = logging.getLogger(__name__)
 
@@ -59,7 +58,7 @@ class CostBreakdown:
     def total_usd(self) -> float:
         return self.cpu_cost_usd + self.memory_cost_usd + self.gpu_cost_usd
 
-    def to_dict(self) -> Dict[str, float]:
+    def to_dict(self) -> dict[str, float]:
         return {
             "cpu_cost_usd": round(self.cpu_cost_usd, 6),
             "memory_cost_usd": round(self.memory_cost_usd, 6),
@@ -95,7 +94,10 @@ def estimate_cost(
     )
     logger.debug(
         "Cost estimate: CPU=%.4f MEM=%.4f GPU=%.4f total=%.4f USD",
-        cpu_cost, mem_cost, gpu_cost, breakdown.total_usd,
+        cpu_cost,
+        mem_cost,
+        gpu_cost,
+        breakdown.total_usd,
     )
     return breakdown
 
@@ -128,10 +130,10 @@ def monthly_estimate(
 
 
 def compare_specs(
-    specs: List[ResourceSpec],
-    labels: Optional[List[str]] = None,
+    specs: list[ResourceSpec],
+    labels: list[str] | None = None,
     **rate_kwargs,
-) -> List[Dict]:
+) -> list[dict]:
     """Estimate and compare costs for multiple resource configurations.
 
     Args:
@@ -144,7 +146,7 @@ def compare_specs(
     """
     labels = labels or [f"spec-{i}" for i in range(len(specs))]
     results = []
-    for label, spec in zip(labels, specs):
+    for label, spec in zip(labels, specs, strict=False):
         breakdown = estimate_cost(spec, **rate_kwargs)
         row = {"label": label, **breakdown.to_dict()}
         results.append(row)
