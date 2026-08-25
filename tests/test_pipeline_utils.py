@@ -581,16 +581,19 @@ class TestPipelineStepAt:
 
     def test_index_zero(self) -> None:
         from app.pipeline_utils import pipeline_step_at
+
         step = pipeline_step_at(self.pipe, 0)
         assert isinstance(step, StandardScaler)
 
     def test_index_one(self) -> None:
         from app.pipeline_utils import pipeline_step_at
+
         step = pipeline_step_at(self.pipe, 1)
         assert isinstance(step, LinearRegression)
 
     def test_out_of_range_raises(self) -> None:
         from app.pipeline_utils import pipeline_step_at
+
         with pytest.raises(IndexError):
             pipeline_step_at(self.pipe, 5)
 
@@ -601,14 +604,17 @@ class TestPipelineStepNameAt:
 
     def test_name_at_zero(self) -> None:
         from app.pipeline_utils import pipeline_step_name_at
+
         assert pipeline_step_name_at(self.pipe, 0) == "scaler"
 
     def test_name_at_one(self) -> None:
         from app.pipeline_utils import pipeline_step_name_at
+
         assert pipeline_step_name_at(self.pipe, 1) == "reg"
 
     def test_out_of_range_raises(self) -> None:
         from app.pipeline_utils import pipeline_step_name_at
+
         with pytest.raises(IndexError):
             pipeline_step_name_at(self.pipe, 99)
 
@@ -619,9 +625,11 @@ class TestPipelineEstimatorClasses:
 
     def test_returns_classes(self) -> None:
         from app.pipeline_utils import pipeline_estimator_classes
+
         classes = pipeline_estimator_classes(self.pipe)
         assert classes == [StandardScaler, LinearRegression]
 
     def test_length(self) -> None:
         from app.pipeline_utils import pipeline_estimator_classes
+
         assert len(pipeline_estimator_classes(self.pipe)) == 2
