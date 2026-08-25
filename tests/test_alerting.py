@@ -6,27 +6,29 @@ import pytest
 
 from app.alerting import Alert, AlertManager, AlertRule, Severity
 
-
 BASE_NOW = 1_000_000.0
 
 
 def _make_rule(**kwargs) -> AlertRule:
-    defaults = dict(name="r1", metric="cpu", threshold=80.0, cooldown_s=60)
+    defaults = {"name": "r1", "metric": "cpu", "threshold": 80.0, "cooldown_s": 60}
     defaults.update(kwargs)
     return AlertRule(**defaults)
 
 
 class TestAlertRuleEvaluate:
-    @pytest.mark.parametrize("op,value,threshold,fires", [
-        (">",  90, 80, True),
-        (">",  80, 80, False),
-        (">=", 80, 80, True),
-        ("<",  70, 80, True),
-        ("<",  90, 80, False),
-        ("<=", 80, 80, True),
-        ("==", 80, 80, True),
-        ("==", 81, 80, False),
-    ])
+    @pytest.mark.parametrize(
+        "op,value,threshold,fires",
+        [
+            (">", 90, 80, True),
+            (">", 80, 80, False),
+            (">=", 80, 80, True),
+            ("<", 70, 80, True),
+            ("<", 90, 80, False),
+            ("<=", 80, 80, True),
+            ("==", 80, 80, True),
+            ("==", 81, 80, False),
+        ],
+    )
     def test_comparison_operators(self, op, value, threshold, fires):
         rule = _make_rule(comparison=op, threshold=threshold)
         result = rule.evaluate(value, BASE_NOW)
@@ -109,6 +111,7 @@ class TestAlertManager:
     def test_handler_exception_does_not_block(self):
         def bad_handler(a):
             raise RuntimeError("oops")
+
         mgr = AlertManager(handlers=[bad_handler])
         mgr.add_rule(_make_rule())
         alerts = mgr.evaluate_all({"cpu": 90}, now=BASE_NOW)
