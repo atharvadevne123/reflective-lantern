@@ -788,7 +788,7 @@ def mean_percentage_error(actual: list[float], predicted: list[float]) -> float:
         raise ValueError("actual and predicted must have the same length")
     if any(a == 0.0 for a in actual):
         raise ValueError("actual must not contain zeros (division by zero)")
-    return round(sum((p - a) / a * 100.0 for a, p in zip(actual, predicted)) / len(actual), 6)
+    return round(sum((p - a) / a * 100.0 for a, p in zip(actual, predicted, strict=False)) / len(actual), 6)
 
 
 def peak_forecast_hour(forecasts: list[float]) -> int:
@@ -827,4 +827,4 @@ def forecast_volatility(forecasts: list[float]) -> float:
     if mean == 0.0:
         return 0.0
     variance = sum((v - mean) ** 2 for v in forecasts) / n
-    return round(variance ** 0.5 / abs(mean), 6)
+    return round(variance**0.5 / abs(mean), 6)
