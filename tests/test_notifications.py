@@ -467,6 +467,7 @@ class TestAlertsWithinWindow:
 class TestCountAlertsBySource:
     def test_basic(self) -> None:
         from app.notifications import count_alerts_by_source
+
         alerts = [
             Alert(severity="info", message="m", source="api"),
             Alert(severity="info", message="m", source="model"),
@@ -477,22 +478,26 @@ class TestCountAlertsBySource:
 
     def test_empty(self) -> None:
         from app.notifications import count_alerts_by_source
+
         assert count_alerts_by_source([]) == {}
 
 
 class TestMostRecentAlert:
     def test_returns_most_recent(self) -> None:
         from app.notifications import most_recent_alert
+
         a1 = Alert(severity="info", message="old", created_at=100.0)
         a2 = Alert(severity="info", message="new", created_at=200.0)
         assert most_recent_alert([a1, a2]).message == "new"
 
     def test_empty_returns_none(self) -> None:
         from app.notifications import most_recent_alert
+
         assert most_recent_alert([]) is None
 
     def test_single_alert(self) -> None:
         from app.notifications import most_recent_alert
+
         a = Alert(severity="info", message="only", created_at=50.0)
         assert most_recent_alert([a]) is a
 
@@ -500,15 +505,18 @@ class TestMostRecentAlert:
 class TestAlertsContainSeverity:
     def test_found(self) -> None:
         from app.notifications import alerts_contain_severity
+
         alerts = [Alert(severity="warning", message="m"), Alert(severity="critical", message="m")]
         assert alerts_contain_severity(alerts, "critical") is True
 
     def test_not_found(self) -> None:
         from app.notifications import alerts_contain_severity
+
         alerts = [Alert(severity="info", message="m")]
         assert alerts_contain_severity(alerts, "critical") is False
 
     def test_case_insensitive(self) -> None:
         from app.notifications import alerts_contain_severity
+
         alerts = [Alert(severity="WARNING", message="m")]
         assert alerts_contain_severity(alerts, "warning") is True
