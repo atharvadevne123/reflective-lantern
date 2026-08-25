@@ -2,15 +2,15 @@
 
 from __future__ import annotations
 
-import pytest
-
 from app.event_bus import EventBus, get_bus
 
 
 def _make_recorder():
     calls = []
+
     def handler(event, payload):
         calls.append((event, payload))
+
     return handler, calls
 
 
@@ -43,8 +43,13 @@ class TestEventBusSubscribePublish:
     def test_handler_exception_does_not_block_others(self):
         bus = EventBus()
         results = []
-        def bad(e, p): raise RuntimeError("bad")
-        def good(e, p): results.append("good")
+
+        def bad(e, p):
+            raise RuntimeError("bad")
+
+        def good(e, p):
+            results.append("good")
+
         bus.subscribe("x", bad)
         bus.subscribe("x", good)
         bus.publish("x")
