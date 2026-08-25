@@ -55,8 +55,10 @@ class TestCircuitBreakerOpens:
 
     def test_open_circuit_does_not_call_function(self):
         calls = [0]
+
         def counting():
             calls[0] += 1
+
         cb = CircuitBreaker(failure_threshold=1)
         with pytest.raises(ValueError):
             cb.call(_always_fail)
