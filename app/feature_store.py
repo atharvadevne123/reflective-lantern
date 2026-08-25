@@ -3,8 +3,8 @@
 from __future__ import annotations
 
 import logging
-from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional
+from dataclasses import dataclass
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -22,14 +22,14 @@ class FeatureSet:
 
     name: str
     version: str
-    features: Dict[str, Any]
+    features: dict[str, Any]
     description: str = ""
 
     def get(self, feature: str, default: Any = None) -> Any:
         """Retrieve a feature value by name."""
         return self.features.get(feature, default)
 
-    def keys(self) -> List[str]:
+    def keys(self) -> list[str]:
         """Return all feature names."""
         return list(self.features.keys())
 
@@ -42,7 +42,7 @@ class FeatureStore:
     """
 
     def __init__(self) -> None:
-        self._store: Dict[str, List[FeatureSet]] = {}
+        self._store: dict[str, list[FeatureSet]] = {}
 
     def publish(self, feature_set: FeatureSet) -> None:
         """Publish a feature set, appending to its version history.
@@ -55,15 +55,11 @@ class FeatureStore:
         versions = self._store[feature_set.name]
         existing_versions = {fs.version for fs in versions}
         if feature_set.version in existing_versions:
-            raise ValueError(
-                f"Version '{feature_set.version}' already exists for '{feature_set.name}'"
-            )
+            raise ValueError(f"Version '{feature_set.version}' already exists for '{feature_set.name}'")
         versions.append(feature_set)
-        logger.info(
-            "Published feature set '%s' v%s", feature_set.name, feature_set.version
-        )
+        logger.info("Published feature set '%s' v%s", feature_set.name, feature_set.version)
 
-    def get_latest(self, name: str) -> Optional[FeatureSet]:
+    def get_latest(self, name: str) -> FeatureSet | None:
         """Return the most recently published version of a feature set.
 
         Args:
@@ -78,7 +74,7 @@ class FeatureStore:
             return None
         return versions[-1]
 
-    def get_version(self, name: str, version: str) -> Optional[FeatureSet]:
+    def get_version(self, name: str, version: str) -> FeatureSet | None:
         """Return a specific version of a feature set.
 
         Args:
@@ -93,15 +89,15 @@ class FeatureStore:
                 return fs
         return None
 
-    def list_versions(self, name: str) -> List[str]:
+    def list_versions(self, name: str) -> list[str]:
         """Return all published version strings for a feature set name."""
         return [fs.version for fs in self._store.get(name, [])]
 
-    def list_names(self) -> List[str]:
+    def list_names(self) -> list[str]:
         """Return all registered feature set names."""
         return list(self._store.keys())
 
-    def delete(self, name: str, version: Optional[str] = None) -> bool:
+    def delete(self, name: str, version: str | None = None) -> bool:
         """Delete a feature set or a specific version.
 
         Args:
