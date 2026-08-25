@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from app.batch_processor import BatchProcessor, BatchResult, RunSummary
+from app.batch_processor import BatchProcessor
 
 
 def _identity(items):
@@ -75,25 +75,20 @@ class TestBatchProcessorErrors:
 class TestBatchProcessorCallbacks:
     def test_on_batch_done_called_per_batch(self):
         called = []
-        bp = BatchProcessor(
-            _identity, batch_size=5,
-            on_batch_done=lambda br: called.append(br.batch_index)
-        )
+        bp = BatchProcessor(_identity, batch_size=5, on_batch_done=lambda br: called.append(br.batch_index))
         bp.run(list(range(15)))
         assert called == [0, 1, 2]
 
     def test_callback_receives_batch_result(self):
         results_seen = []
-        bp = BatchProcessor(
-            _double, batch_size=3,
-            on_batch_done=lambda br: results_seen.extend(br.results)
-        )
+        bp = BatchProcessor(_double, batch_size=3, on_batch_done=lambda br: results_seen.extend(br.results))
         bp.run([1, 2, 3])
         assert results_seen == [2, 4, 6]
 
     def test_callback_exception_does_not_abort(self):
         def bad_cb(br):
             raise RuntimeError("cb fail")
+
         bp = BatchProcessor(_identity, batch_size=5, on_batch_done=bad_cb)
         summary = bp.run(list(range(10)))
         assert summary.total_results == 10
