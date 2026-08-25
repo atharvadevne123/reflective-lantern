@@ -1,9 +1,6 @@
 """Tests for app.task_queue."""
 
-import time
 import threading
-
-import pytest
 
 from app.task_queue import Task, TaskQueue
 
@@ -57,7 +54,7 @@ class TestTaskQueue:
     def test_priority_order_respected(self):
         order = []
         lock = threading.Lock()
-        barrier = threading.Barrier(2)
+        threading.Barrier(2)
 
         # Use 1 worker so tasks run sequentially
         q = TaskQueue(workers=1)
@@ -67,8 +64,8 @@ class TestTaskQueue:
                 order.append(val)
 
         # Submit low-priority first, then high-priority before starting
-        q.submit(record, priority=10, *["low"])
-        q.submit(record, priority=1, *["high"])
+        q.submit(record, 10, "low")
+        q.submit(record, 1, "high")
         q.start()
         q.stop(timeout=2.0)
         assert order[0] == "high"
