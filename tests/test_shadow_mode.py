@@ -62,7 +62,7 @@ class TestShadowRunnerBasic:
 
     def test_match_rate_none_matched(self):
         runner = ShadowRunner(_primary, _shadow_different)
-        for i in range(4):
+        for i in range(1, 5):  # start at 1 to avoid 0*2==0*3 edge case
             runner.call(i)
         assert runner.stats()["match_rate"] == pytest.approx(0.0)
 
