@@ -1,7 +1,5 @@
 """Tests for app.notification_dispatcher."""
 
-import pytest
-
 from app.notification_dispatcher import (
     Channel,
     Notification,
@@ -40,7 +38,7 @@ class TestDispatch:
         assert len(received) == 0
 
     def test_delivers_above_min_severity(self):
-        ch, received = make_channel(min_severity=Severity.WARNING)
+        ch, _received = make_channel(min_severity=Severity.WARNING)
         d = NotificationDispatcher()
         d.register(ch)
         n = Notification(title="Crit", body="", severity=Severity.CRITICAL)
@@ -48,7 +46,7 @@ class TestDispatch:
         assert results["email"] is True
 
     def test_disabled_channel_skipped(self):
-        ch, received = make_channel(enabled=False)
+        ch, _received = make_channel(enabled=False)
         d = NotificationDispatcher()
         d.register(ch)
         n = Notification(title="x", body="")
@@ -74,7 +72,7 @@ class TestDispatch:
         assert results["slack"] is False
 
     def test_unregister(self):
-        ch, received = make_channel()
+        ch, _received = make_channel()
         d = NotificationDispatcher()
         d.register(ch)
         d.unregister("email")
