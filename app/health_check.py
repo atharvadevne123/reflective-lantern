@@ -7,13 +7,13 @@ results into an overall status suitable for /health endpoints.
 from __future__ import annotations
 
 import traceback
+from collections.abc import Callable
 from dataclasses import dataclass, field
-from typing import Callable, Dict, List, Optional
 
 __all__ = [
     "CheckResult",
-    "HealthStatus",
     "HealthRegistry",
+    "HealthStatus",
     "check",
 ]
 
@@ -33,10 +33,10 @@ class HealthStatus:
     """Aggregated health report."""
 
     healthy: bool
-    results: List[CheckResult]
+    results: list[CheckResult]
 
     @property
-    def failed(self) -> List[CheckResult]:
+    def failed(self) -> list[CheckResult]:
         """Return only the failing checks."""
         return [r for r in self.results if not r.healthy]
 
@@ -48,7 +48,7 @@ class HealthRegistry:
     """Registry that runs named health checks and aggregates results."""
 
     def __init__(self) -> None:
-        self._checks: Dict[str, CheckFn] = {}
+        self._checks: dict[str, CheckFn] = {}
 
     def register(self, name: str, fn: CheckFn) -> None:
         """Register *fn* under *name*."""
@@ -60,7 +60,7 @@ class HealthRegistry:
 
     def run(self) -> HealthStatus:
         """Execute all registered checks and return an aggregated status."""
-        results: List[CheckResult] = []
+        results: list[CheckResult] = []
         for name, fn in self._checks.items():
             try:
                 result = fn()
@@ -81,9 +81,9 @@ class HealthRegistry:
 _default_registry = HealthRegistry()
 
 
-def check(name: str, registry: Optional[HealthRegistry] = None) -> Callable[[CheckFn], CheckFn]:
+def check(name: str, registry: HealthRegistry | None = None) -> Callable[[CheckFn], CheckFn]:
     """Decorator that registers a function as a named health check."""
-    reg = registry or _default_registry
+    reg = _default_registry if registry is None else registry
 
     def decorator(fn: CheckFn) -> CheckFn:
         reg.register(name, fn)
