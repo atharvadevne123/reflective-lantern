@@ -22,7 +22,7 @@ def seed_model_registry() -> None:
     from app.model_registry import ModelRegistry
 
     reg = ModelRegistry()
-    v1 = reg.register(
+    reg.register(
         name="churn_classifier",
         version="1.0.0",
         artifact_path="s3://models/churn/v1",
