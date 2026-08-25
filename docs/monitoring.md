@@ -23,6 +23,7 @@ Register checks via `app.health_check`:
 ```python
 from app.health_check import CheckResult, check
 
+
 @check("postgres")
 def check_postgres():
     # run a SELECT 1
@@ -42,14 +43,16 @@ Add rules at startup:
 from app.alerting import AlertManager, AlertRule, Severity
 
 manager = AlertManager()
-manager.add_rule(AlertRule(
-    name="high_error_rate",
-    metric="error_rate",
-    threshold=0.05,
-    operator=">",
-    severity=Severity.CRITICAL,
-    cooldown=300,
-))
+manager.add_rule(
+    AlertRule(
+        name="high_error_rate",
+        metric="error_rate",
+        threshold=0.05,
+        operator=">",
+        severity=Severity.CRITICAL,
+        cooldown=300,
+    )
+)
 manager.add_handler(lambda alert: notify_oncall(alert))
 ```
 
@@ -74,13 +77,16 @@ levels. Structured JSON logging is recommended in production:
 ```python
 import logging, json
 
+
 class JsonFormatter(logging.Formatter):
     def format(self, record):
-        return json.dumps({
-            "level": record.levelname,
-            "msg": record.getMessage(),
-            "module": record.module,
-        })
+        return json.dumps(
+            {
+                "level": record.levelname,
+                "msg": record.getMessage(),
+                "module": record.module,
+            }
+        )
 ```
 
 ## Dashboards
