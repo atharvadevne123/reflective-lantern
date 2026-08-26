@@ -185,3 +185,29 @@ Returns 24 hourly `ForecastPoint` objects with 80% prediction intervals.
 Reports which features have drifted against the reference distribution.
 
 ---
+
+## Testing
+
+```bash
+make test        # 192 tests
+make test-cov    # with coverage report
+```
+
+The suite covers every module: API contract and validation boundaries, feature
+transform correctness (including the zero-error-rate division guard), model
+training and persistence round-trips, KS drift detection on both matched and
+shifted distributions, forecast interval ordering, FAISS retrieval relevance,
+CRUD aggregates, middleware behaviour (correlation-ID propagation, per-IP rate
+limit isolation), and schema validation.
+
+`TestArtifactPairing` is a regression guard worth calling out. The model and its
+feature pipeline must be persisted and loaded as a matched pair — the scaler is
+stateful, so a model loaded next to an unfitted pipeline makes every prediction
+fail with HTTP 422. That fault only appears on a *warm* start, once a model file
+exists on disk, so a naive single-run test suite passes straight through it.
+The test forces the reload path explicitly.
+
+Tests run against SQLite with a per-test transaction rollback, so no database
+server is needed and tests cannot leak state into each other.
+
+---
