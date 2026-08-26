@@ -1,4 +1,4 @@
-.PHONY: install test lint format run train docker clean help
+.PHONY: install test lint format run train migrate docker clean help
 
 help:
 	@echo "Threat-Lens — available targets:"
@@ -7,6 +7,7 @@ help:
 	@echo "  lint      Run ruff checks"
 	@echo "  format    Auto-fix lint issues with ruff"
 	@echo "  train     Train the ensemble model from synthetic data"
+	@echo "  migrate   Apply Alembic database migrations"
 	@echo "  run       Start the FastAPI server on :8000"
 	@echo "  docker    Build and start the docker-compose stack"
 	@echo "  clean     Remove build artefacts and caches"
@@ -26,6 +27,9 @@ format:
 train:
 	python -c "from app.features import generate_synthetic_dataset; from app.model import train_model; X, y = generate_synthetic_dataset(); print(train_model(X, y)[1])"
 
+migrate:
+	alembic upgrade head
+
 run:
 	uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 
@@ -35,4 +39,4 @@ docker:
 clean:
 	rm -rf __pycache__ .pytest_cache .ruff_cache dist build *.egg-info
 	find . -name "*.pyc" -delete
-	rm -f test_threat_lens.db
+	rm -f test_threat_lens.db experiment_runs.jsonl
