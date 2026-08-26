@@ -817,5 +817,51 @@
     "email_status": "network_blocked \u2014 raw TCP to smtp.gmail.com:465 and :587 both fail with OSError errno 97 (address family not supported); the egress proxy passes HTTPS only. Report committed to history/reports/ instead.",
     "report_pdf": "history/reports/Quake-Net_innovation_2026-08-21.pdf",
     "environment_note": "System cryptography 41.0.7 panics on import of hazmat bindings (pyo3 'Python API call failed'), which breaks fpdf2. Worked around by installing cryptography into /tmp/pylibs and setting PYTHONPATH."
+  },
+  {
+    "date": "2026-08-26",
+    "mode": "innovation",
+    "project": "Ops-Vision",
+    "description": "SRE ML platform for real-time incident prediction, alert classification, and performance anomaly detection using XGBoost/LightGBM/RF ensemble, FAISS runbook RAG, and KS-test drift monitoring.",
+    "inspired_by": "SRE/observability domain (HN scrape blocked by network policy \u2014 curated selection)",
+    "repo_url": "https://github.com/atharvadevne123/reflective-lantern/tree/main/ops-vision",
+    "location_note": "Built inside reflective-lantern/ops-vision \u2014 standalone repo creation returned 403 (session GitHub scope limited to this repository).",
+    "tech_stack": [
+      "Python 3.11",
+      "FastAPI",
+      "XGBoost",
+      "LightGBM",
+      "RandomForest",
+      "sklearn Pipeline",
+      "FAISS (cosine fallback)",
+      "SQLAlchemy",
+      "PostgreSQL",
+      "Alembic",
+      "Docker + compose",
+      "Airflow DAG",
+      "KS-test drift detection",
+      "Holt exponential smoothing",
+      "pytest",
+      "GitHub Actions CI",
+      "ruff"
+    ],
+    "optional_enhancements": [
+      "RAG+FAISS",
+      "Airflow DAG",
+      "time-series forecasting",
+      "5-fold CV + AUC-ROC"
+    ],
+    "endpoints": 10,
+    "file_count": 50,
+    "test_count": 192,
+    "tests_passed": true,
+    "lint_clean": true,
+    "commits": 60,
+    "bugs_found_and_fixed": [
+      "Eager engine creation at import time required a live psycopg2 driver, breaking test collection and CI \u2014 made lazy and dialect-aware.",
+      "Fitted feature pipeline was never persisted alongside the model, so any warm start paired the model with an unfitted scaler and returned HTTP 422 on every prediction. Fixed by loading both artifacts as a matched pair; regression test added."
+    ],
+    "email_status": "failed_network_blocked (SMTP ports 587/465 unreachable \u2014 outbound is HTTPS-proxy-only; report committed to reports/ instead)",
+    "report_path": "reports/Ops-Vision_report_2026-08-26.pdf"
   }
 ]
