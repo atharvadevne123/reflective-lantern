@@ -898,7 +898,7 @@
       "GitHub Actions CI"
     ],
     "note": "Standalone repo creation blocked: session GitHub access scoped to reflective-lantern only. Shipped as subdirectory + draft PR. Release/wheel upload not attempted for the same reason.",
-    "email_status": "blocked - SMTP unreachable from remote session (OSError 97 / connect timeout); report delivered via session attachment",
+    "email_status": "network_blocked: SMTP unreachable from remote session (OSError 97 / connect timeout); PDF generated and delivered via session attachment",
     "scrape_status": "blocked - HN Firebase and GitHub trending return 403 on proxy CONNECT"
   }
 ]
