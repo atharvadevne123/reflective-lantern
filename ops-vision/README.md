@@ -155,3 +155,33 @@ curl -X POST http://localhost:8000/api/v1/predict/batch \
 
 Lists persisted incidents most-recent-first, with `limit` (1–500), `offset`,
 and an optional exact-match `service_name` filter.
+
+### `GET /api/v1/health`
+
+Returns model load state and both drift window sizes — useful as a readiness
+probe, since it reports `degraded` when the model failed to load.
+
+### `GET /api/v1/metrics`
+
+Aggregate counters for dashboards: total predictions, incident count and rate,
+drift alerts in the last 24 hours, and mean confidence.
+
+### `POST /api/v1/runbooks/search`
+
+Retrieves remediation runbooks by similarity.
+
+```bash
+curl -X POST http://localhost:8000/api/v1/runbooks/search \
+  -H 'Content-Type: application/json' \
+  -d '{"query": "database connection pool exhausted", "top_k": 3}'
+```
+
+### `GET /api/v1/forecast`
+
+Returns 24 hourly `ForecastPoint` objects with 80% prediction intervals.
+
+### `GET /api/v1/drift/status`
+
+Reports which features have drifted against the reference distribution.
+
+---
