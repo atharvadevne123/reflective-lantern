@@ -46,3 +46,20 @@ I/O). Three things make the prediction usable rather than merely interesting:
 | Forecasting | `app/forecasting.py` | Holt double exponential smoothing, 24h horizon |
 | Persistence | `app/database.py`, `app/crud.py` | SQLAlchemy models, pooled PostgreSQL access |
 | Retraining | `pipelines/retrain_dag.py` | Nightly Airflow DAG with AUC promotion gate |
+
+### Feature engineering
+
+The pipeline expands six raw metrics into ten features before scaling:
+
+| Feature | Definition | Rationale |
+|---|---|---|
+| `resource_pressure` | `(0.6·cpu + 0.4·mem) / 100` | Single composite saturation signal |
+| `latency_err_ratio` | `latency_p99 / max(error_rate, 0.001)` | Separates slow-but-healthy from failing |
+| `throughput_pressure` | `rps · (1 + disk_io/100)` | Load weighted by I/O contention |
+| `log_latency_p99` | `log1p(latency_p99)` | Compresses the heavy right tail |
+
+The denominator clamp in `latency_err_ratio` is deliberate — error rate is
+legitimately zero on healthy services, and an unguarded division would produce
+`inf` and poison the scaler.
+
+---
