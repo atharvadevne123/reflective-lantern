@@ -35,8 +35,12 @@ def build_tfidf_index(docs: list[dict[str, str]]) -> dict[str, Any]:
     row_sums = matrix.sum(axis=1, keepdims=True) + 1e-9
     matrix /= row_sums
 
-    df = (matrix > 0).sum(axis=0).astype(float) + 1.0
-    idf = np.log(max(len(texts), 1) / df)
+    # Smoothed IDF, as sklearn computes it: log((1 + n) / (1 + df)) + 1.
+    # The naive log(n / (1 + df)) collapses to zero when a term appears in
+    # exactly one document of a two-document corpus, and goes negative for
+    # terms present in every document — both of which corrupt the ranking.
+    df = (matrix > 0).sum(axis=0).astype(float)
+    idf = np.log((1.0 + len(texts)) / (1.0 + df)) + 1.0
     matrix *= idf
 
     logger.info("Index: %d docs × %d terms", len(texts), len(vocab))

@@ -94,9 +94,11 @@ class ThreatIntelRetriever:
         row_sums = matrix.sum(axis=1, keepdims=True) + 1e-9
         matrix = matrix / row_sums
 
-        # IDF weighting
-        df = (matrix > 0).sum(axis=0) + 1.0
-        idf = np.log(len(texts) / df)
+        # Smoothed IDF, as sklearn computes it: log((1 + n) / (1 + df)) + 1.
+        # The naive log(n / (1 + df)) goes to zero or negative for terms that
+        # appear in most of the corpus, which inverts their contribution.
+        df = (matrix > 0).sum(axis=0).astype(np.float32)
+        idf = np.log((1.0 + len(texts)) / (1.0 + df)) + 1.0
         self._index = matrix * idf
         logger.info("Threat intel index built: %d docs, %d terms", len(texts), len(self._vocab))
 
