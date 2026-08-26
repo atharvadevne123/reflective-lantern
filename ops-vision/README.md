@@ -63,3 +63,37 @@ legitimately zero on healthy services, and an unguarded division would produce
 `inf` and poison the scaler.
 
 ---
+
+## Quick start
+
+```bash
+# 1. Clone and enter the project
+cd ops-vision
+
+# 2. Install dependencies
+make install-dev
+
+# 3. Copy the environment template
+cp .env.example .env
+
+# 4. Run the test suite
+make test
+
+# 5. Start the API
+make run
+```
+
+The API is then live at <http://localhost:8000>, with interactive docs at
+<http://localhost:8000/docs>.
+
+### Docker
+
+```bash
+make docker-up     # API + PostgreSQL 16
+make docker-down   # tear down
+```
+
+The API container waits on a Postgres healthcheck before starting, so a single
+`docker compose up` is enough for a cold start.
+
+---
