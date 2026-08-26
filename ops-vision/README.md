@@ -11,3 +11,21 @@ soft-voting ensemble, retrieves the matching remediation runbook, watches its ow
 input distribution for drift, and forecasts the next 24 hours of incident load.
 
 ---
+
+## Why this exists
+
+On-call engineers find out about degradation when the pager fires — after users
+are already affected. Ops-Vision moves that signal earlier by treating incident
+onset as a supervised classification problem over ordinary telemetry every
+service already emits (CPU, memory, error rate, p99 latency, request rate, disk
+I/O). Three things make the prediction usable rather than merely interesting:
+
+- **It explains itself.** Every positive prediction carries a severity band and
+  a retrieved runbook, so the responder gets a next action, not just a score.
+- **It knows when it is wrong.** A KS-test drift monitor watches the live
+  feature distribution against a reference window; when production drifts away
+  from training, that is surfaced rather than silently degrading accuracy.
+- **It retrains itself.** An Airflow DAG retrains nightly on recent production
+  data and only promotes the candidate if it clears an AUC-ROC gate.
+
+---
