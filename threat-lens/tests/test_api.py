@@ -87,3 +87,45 @@ def test_predict_all_protocols(client: TestClient, sample_normal_flow: dict, pro
     flow = {**sample_normal_flow, "protocol_type": protocol}
     resp = client.post("/api/v1/predict", json=flow)
     assert resp.status_code == 200
+
+
+def test_batch_predict(client: TestClient, sample_normal_flow: dict, sample_dos_flow: dict) -> None:
+    resp = client.post(
+        "/api/v1/predict/batch",
+        json={"flows": [sample_normal_flow, sample_dos_flow]},
+    )
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["count"] == 2
+    assert len(data["results"]) == 2
+    assert isinstance(data["attacks_detected"], int)
+
+
+def test_batch_predict_empty_rejected(client: TestClient) -> None:
+    resp = client.post("/api/v1/predict/batch", json={"flows": []})
+    assert resp.status_code == 422
+
+
+def test_batch_predict_oversized_rejected(client: TestClient, sample_normal_flow: dict) -> None:
+    resp = client.post(
+        "/api/v1/predict/batch",
+        json={"flows": [sample_normal_flow] * 500},
+    )
+    assert resp.status_code == 422
+
+
+def test_batch_results_match_single_predict(
+    client: TestClient, sample_dos_flow: dict
+) -> None:
+    """A flow classified in a batch must get the same label as on its own."""
+    single = client.post("/api/v1/predict", json=sample_dos_flow).json()
+    batch = client.post(
+        "/api/v1/predict/batch", json={"flows": [sample_dos_flow]}
+    ).json()
+    assert batch["results"][0]["predicted_class"] == single["predicted_class"]
+
+
+def test_rate_limit_headers_present(client: TestClient) -> None:
+    resp = client.get("/api/v1/health")
+    assert "X-RateLimit-Limit" in resp.headers
+    assert "X-RateLimit-Remaining" in resp.headers
