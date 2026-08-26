@@ -80,6 +80,7 @@ async def correlation_id_middleware(request: Request, call_next: Any) -> Any:
 
 # ──────────────────────────── Request / Response schemas ──────────────────────
 
+
 class NetworkFlow(BaseModel):
     """Single network flow observation for classification."""
 
@@ -94,7 +95,9 @@ class NetworkFlow(BaseModel):
     logged_in: int = Field(default=0, ge=0, le=1, description="1 if successfully logged in")
     num_compromised: int = Field(default=0, ge=0, description="Number of compromised conditions")
     count: int = Field(default=1, ge=1, description="Connections to same host in past 2 seconds")
-    srv_count: int = Field(default=1, ge=1, description="Connections to same service in past 2 seconds")
+    srv_count: int = Field(
+        default=1, ge=1, description="Connections to same service in past 2 seconds"
+    )
     serror_rate: float = Field(default=0.0, ge=0.0, le=1.0)
     rerror_rate: float = Field(default=0.0, ge=0.0, le=1.0)
     same_srv_rate: float = Field(default=1.0, ge=0.0, le=1.0)
@@ -119,9 +122,7 @@ class NetworkFlow(BaseModel):
 class BatchRequest(BaseModel):
     """A batch of network flows to classify in one call."""
 
-    flows: list[NetworkFlow] = Field(
-        ..., min_length=1, description="Network flows to classify"
-    )
+    flows: list[NetworkFlow] = Field(..., min_length=1, description="Network flows to classify")
 
     @field_validator("flows")
     @classmethod
@@ -154,6 +155,7 @@ class MetricsResponse(BaseModel):
 
 
 # ──────────────────────────── API Endpoints ───────────────────────────────────
+
 
 @app.get("/api/v1/health", response_model=HealthResponse, tags=["ops"])
 async def health() -> HealthResponse:
@@ -259,6 +261,7 @@ async def predict_batch_endpoint(
 async def metrics_endpoint(db: Session = Depends(get_db)) -> MetricsResponse:
     """Return model training metrics and recent drift reports."""
     from app.database import PredictionLog  # noqa: PLC0415
+
     count = db.query(PredictionLog).count()
 
     drift = []

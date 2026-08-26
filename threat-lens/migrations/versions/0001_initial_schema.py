@@ -32,9 +32,7 @@ def upgrade() -> None:
         sa.Column("raw_features", sa.Text()),
     )
     op.create_index("ix_prediction_logs_id", "prediction_logs", ["id"])
-    op.create_index(
-        "ix_prediction_logs_correlation_id", "prediction_logs", ["correlation_id"]
-    )
+    op.create_index("ix_prediction_logs_correlation_id", "prediction_logs", ["correlation_id"])
 
     op.create_table(
         "drift_reports",

@@ -9,6 +9,7 @@ from app.experiment_tracker import ExperimentTracker
 
 # ── Experiment tracker ────────────────────────────────────────────────────────
 
+
 def test_falls_back_to_local_without_mlflow_uri(tmp_path, monkeypatch) -> None:
     monkeypatch.delenv("MLFLOW_TRACKING_URI", raising=False)
     path = tmp_path / "runs.jsonl"
@@ -58,6 +59,7 @@ def test_multiple_runs_append(tmp_path, monkeypatch) -> None:
 
 
 # ── Artefact store ────────────────────────────────────────────────────────────
+
 
 def test_store_falls_back_to_memory(monkeypatch) -> None:
     monkeypatch.delenv("S3_BUCKET", raising=False)

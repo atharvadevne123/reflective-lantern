@@ -32,24 +32,30 @@ def test_collect_new_samples_counts_rows() -> None:
 
 def test_pipeline_skips_retrain_when_quiet() -> None:
     """No drift and too few samples means no retraining run."""
-    with patch("pipelines.retrain_dag.check_drift", return_value=False), \
-         patch("pipelines.retrain_dag.collect_new_samples", return_value=0), \
-         patch("pipelines.retrain_dag.retrain_model") as retrain:
+    with (
+        patch("pipelines.retrain_dag.check_drift", return_value=False),
+        patch("pipelines.retrain_dag.collect_new_samples", return_value=0),
+        patch("pipelines.retrain_dag.retrain_model") as retrain,
+    ):
         run_retraining_pipeline()
     retrain.assert_not_called()
 
 
 def test_pipeline_retrains_on_drift() -> None:
-    with patch("pipelines.retrain_dag.check_drift", return_value=True), \
-         patch("pipelines.retrain_dag.collect_new_samples", return_value=0), \
-         patch("pipelines.retrain_dag.retrain_model", return_value={}) as retrain:
+    with (
+        patch("pipelines.retrain_dag.check_drift", return_value=True),
+        patch("pipelines.retrain_dag.collect_new_samples", return_value=0),
+        patch("pipelines.retrain_dag.retrain_model", return_value={}) as retrain,
+    ):
         run_retraining_pipeline()
     retrain.assert_called_once()
 
 
 def test_pipeline_retrains_on_sample_threshold() -> None:
-    with patch("pipelines.retrain_dag.check_drift", return_value=False), \
-         patch("pipelines.retrain_dag.collect_new_samples", return_value=MIN_NEW_SAMPLES), \
-         patch("pipelines.retrain_dag.retrain_model", return_value={}) as retrain:
+    with (
+        patch("pipelines.retrain_dag.check_drift", return_value=False),
+        patch("pipelines.retrain_dag.collect_new_samples", return_value=MIN_NEW_SAMPLES),
+        patch("pipelines.retrain_dag.retrain_model", return_value={}) as retrain,
+    ):
         run_retraining_pipeline()
     retrain.assert_called_once()

@@ -114,14 +114,10 @@ def test_batch_predict_oversized_rejected(client: TestClient, sample_normal_flow
     assert resp.status_code == 422
 
 
-def test_batch_results_match_single_predict(
-    client: TestClient, sample_dos_flow: dict
-) -> None:
+def test_batch_results_match_single_predict(client: TestClient, sample_dos_flow: dict) -> None:
     """A flow classified in a batch must get the same label as on its own."""
     single = client.post("/api/v1/predict", json=sample_dos_flow).json()
-    batch = client.post(
-        "/api/v1/predict/batch", json={"flows": [sample_dos_flow]}
-    ).json()
+    batch = client.post("/api/v1/predict/batch", json={"flows": [sample_dos_flow]}).json()
     assert batch["results"][0]["predicted_class"] == single["predicted_class"]
 
 

@@ -57,29 +57,37 @@ def _build_estimators() -> list[tuple[str, Any]]:
     ]
     if _HAS_LGB:
         import lightgbm as lgb  # noqa: PLC0415
-        estimators.append((
-            "lgb",
-            lgb.LGBMClassifier(
-                n_estimators=150,
-                max_depth=5,
-                learning_rate=0.1,
-                num_leaves=31,
-                random_state=42,
-                verbose=-1,
-            ),
-        ))
+
+        estimators.append(
+            (
+                "lgb",
+                lgb.LGBMClassifier(
+                    n_estimators=150,
+                    max_depth=5,
+                    learning_rate=0.1,
+                    num_leaves=31,
+                    random_state=42,
+                    verbose=-1,
+                ),
+            )
+        )
     return estimators
 
 
 def build_pipeline() -> Pipeline:
     """Return the full sklearn Pipeline (scaler + voting ensemble)."""
-    return Pipeline([
-        ("scaler", StandardScaler()),
-        ("ensemble", VotingClassifier(
-            estimators=_build_estimators(),
-            voting="soft",
-        )),
-    ])
+    return Pipeline(
+        [
+            ("scaler", StandardScaler()),
+            (
+                "ensemble",
+                VotingClassifier(
+                    estimators=_build_estimators(),
+                    voting="soft",
+                ),
+            ),
+        ]
+    )
 
 
 def train_model(X: np.ndarray, y: np.ndarray) -> tuple[Pipeline, dict[str, float]]:
@@ -122,6 +130,7 @@ def load_model() -> Pipeline:
         return joblib.load(MODEL_PATH)
     logger.warning("No saved model found — training default model now")
     from app.features import generate_synthetic_dataset  # noqa: PLC0415
+
     X, y = generate_synthetic_dataset()
     pipe, _ = train_model(X, y)
     return pipe
@@ -144,9 +153,7 @@ def predict(pipe: Pipeline, features: np.ndarray) -> dict[str, Any]:
         "predicted_class": predicted_class,
         "is_attack": int(predicted_class != "normal"),
         "confidence": round(float(proba[class_idx]), 4),
-        "class_probabilities": {
-            cls: round(float(p), 4) for cls, p in zip(ATTACK_CLASSES, proba)
-        },
+        "class_probabilities": {cls: round(float(p), 4) for cls, p in zip(ATTACK_CLASSES, proba)},
     }
 
 

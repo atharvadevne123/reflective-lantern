@@ -105,9 +105,7 @@ def run_full_drift_check(
 
     db.commit()
     drifted = [r for r in results if r["drift_detected"]]
-    logger.info(
-        "Drift check: %d/%d features drifted", len(drifted), len(results)
-    )
+    logger.info("Drift check: %d/%d features drifted", len(drifted), len(results))
     return results
 
 
@@ -127,12 +125,7 @@ def _extract_feature(logs: list[PredictionLog], feature: str) -> list[float]:
 
 def get_drift_summary(db: Session, limit: int = 50) -> list[dict[str, Any]]:
     """Return the most recent drift reports."""
-    rows = (
-        db.query(DriftReport)
-        .order_by(DriftReport.timestamp.desc())
-        .limit(limit)
-        .all()
-    )
+    rows = db.query(DriftReport).order_by(DriftReport.timestamp.desc()).limit(limit).all()
     return [
         {
             "id": r.id,

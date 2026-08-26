@@ -11,10 +11,13 @@ from app.exceptions import (
 )
 
 
-@pytest.mark.parametrize("exc", [
-    ModelNotLoadedError,
-    RetrieverNotReadyError,
-])
+@pytest.mark.parametrize(
+    "exc",
+    [
+        ModelNotLoadedError,
+        RetrieverNotReadyError,
+    ],
+)
 def test_simple_errors_subclass_base(exc: type) -> None:
     assert issubclass(exc, ThreatLensError)
     assert str(exc()) != ""

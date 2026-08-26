@@ -104,9 +104,15 @@ def test_generate_synthetic_dataset_classes() -> None:
     assert unique_classes == {0, 1, 2, 3, 4}
 
 
-@pytest.mark.parametrize("flag,expected_idx", [
-    ("SF", 0), ("S0", 1), ("REJ", 2), ("RSTO", 3),
-])
+@pytest.mark.parametrize(
+    "flag,expected_idx",
+    [
+        ("SF", 0),
+        ("S0", 1),
+        ("REJ", 2),
+        ("RSTO", 3),
+    ],
+)
 def test_flag_encoding(flag: str, expected_idx: int) -> None:
     eng = NetworkFeatureEngineer()
     flag_col = FEATURE_NAMES.index("flag_encoded")

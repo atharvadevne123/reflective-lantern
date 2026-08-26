@@ -85,12 +85,18 @@ def test_load_index_missing_returns_none(tmp_path) -> None:
 
 
 def test_cosine_search_finds_match() -> None:
-    docs = [{"id": "a", "text": "denial of service flooding"},
-            {"id": "b", "text": "privilege escalation rootkit"}]
+    docs = [
+        {"id": "a", "text": "denial of service flooding"},
+        {"id": "b", "text": "privilege escalation rootkit"},
+    ]
     index = build_tfidf_index(docs)
     results = cosine_search(
-        "flooding", index["matrix"], index["vocab"], index["ids"],
-        [d["text"] for d in docs], top_k=1,
+        "flooding",
+        index["matrix"],
+        index["vocab"],
+        index["ids"],
+        [d["text"] for d in docs],
+        top_k=1,
     )
     assert results[0]["id"] == "a"
 
@@ -99,8 +105,12 @@ def test_cosine_search_unknown_terms_returns_empty() -> None:
     docs = [{"id": "a", "text": "denial of service"}]
     index = build_tfidf_index(docs)
     results = cosine_search(
-        "zzzz nonexistent", index["matrix"], index["vocab"], index["ids"],
-        [d["text"] for d in docs], top_k=1,
+        "zzzz nonexistent",
+        index["matrix"],
+        index["vocab"],
+        index["ids"],
+        [d["text"] for d in docs],
+        top_k=1,
     )
     assert results == []
 
@@ -118,11 +128,21 @@ def test_idf_weights_never_negative() -> None:
 
 def test_two_doc_corpus_ranks_correctly() -> None:
     """With only two documents, unique terms must still carry signal."""
-    docs = [{"id": "a", "text": "denial of service flooding"},
-            {"id": "b", "text": "privilege escalation rootkit"}]
+    docs = [
+        {"id": "a", "text": "denial of service flooding"},
+        {"id": "b", "text": "privilege escalation rootkit"},
+    ]
     index = build_tfidf_index(docs)
     texts = [d["text"] for d in docs]
-    assert cosine_search("flooding", index["matrix"], index["vocab"],
-                         index["ids"], texts, top_k=1)[0]["id"] == "a"
-    assert cosine_search("rootkit", index["matrix"], index["vocab"],
-                         index["ids"], texts, top_k=1)[0]["id"] == "b"
+    assert (
+        cosine_search("flooding", index["matrix"], index["vocab"], index["ids"], texts, top_k=1)[0][
+            "id"
+        ]
+        == "a"
+    )
+    assert (
+        cosine_search("rootkit", index["matrix"], index["vocab"], index["ids"], texts, top_k=1)[0][
+            "id"
+        ]
+        == "b"
+    )

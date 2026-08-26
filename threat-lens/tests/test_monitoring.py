@@ -38,8 +38,14 @@ def test_compute_drift_empty_lists() -> None:
 
 
 def test_log_prediction_creates_record(db_session) -> None:
-    flow = {"src_bytes": 500.0, "dst_bytes": 1000.0, "duration": 2.0,
-            "protocol_type": "tcp", "service": "http", "flag": "SF"}
+    flow = {
+        "src_bytes": 500.0,
+        "dst_bytes": 1000.0,
+        "duration": 2.0,
+        "protocol_type": "tcp",
+        "service": "http",
+        "flag": "SF",
+    }
     result = {"predicted_class": "normal", "confidence": 0.95, "is_attack": 0}
     record = log_prediction(db_session, "test-corr-id", flow, result)
     assert record.id is not None
@@ -69,14 +75,15 @@ def test_get_drift_summary_returns_list(db_session) -> None:
     assert isinstance(summary, list)
 
 
-@pytest.mark.parametrize("ref,cur,expect_drift", [
-    ([1] * 50, [1] * 50, False),          # identical → no drift
-    ([0] * 50, [1000] * 50, True),        # very different → drift
-    ([1, 2] * 25, [1, 2] * 25, False),   # same alternating → no drift
-])
-def test_compute_drift_parametrize(
-    ref: list[float], cur: list[float], expect_drift: bool
-) -> None:
+@pytest.mark.parametrize(
+    "ref,cur,expect_drift",
+    [
+        ([1] * 50, [1] * 50, False),  # identical → no drift
+        ([0] * 50, [1000] * 50, True),  # very different → drift
+        ([1, 2] * 25, [1, 2] * 25, False),  # same alternating → no drift
+    ],
+)
+def test_compute_drift_parametrize(ref: list[float], cur: list[float], expect_drift: bool) -> None:
     result = compute_drift(ref, cur)
     if expect_drift:
         assert result["drift_detected"] is True

@@ -13,12 +13,29 @@ logger = logging.getLogger(__name__)
 
 PROTOCOL_MAP: dict[str, int] = {"tcp": 0, "udp": 1, "icmp": 2}
 FLAG_MAP: dict[str, int] = {
-    "SF": 0, "S0": 1, "REJ": 2, "RSTO": 3, "RSTR": 4,
-    "SH": 5, "S1": 6, "S2": 7, "S3": 8, "OTH": 9,
+    "SF": 0,
+    "S0": 1,
+    "REJ": 2,
+    "RSTO": 3,
+    "RSTR": 4,
+    "SH": 5,
+    "S1": 6,
+    "S2": 7,
+    "S3": 8,
+    "OTH": 9,
 }
 HIGH_RISK_SERVICES: set[str] = {
-    "telnet", "ftp", "smtp", "finger", "auth", "shell", "exec",
-    "login", "pop_3", "imap4", "netbios_ssn",
+    "telnet",
+    "ftp",
+    "smtp",
+    "finger",
+    "auth",
+    "shell",
+    "exec",
+    "login",
+    "pop_3",
+    "imap4",
+    "netbios_ssn",
 }
 
 FEATURE_NAMES: list[str] = [
@@ -114,25 +131,50 @@ class NetworkFeatureEngineer(BaseEstimator, TransformerMixin):
         connection_density = count / (dst_host_count + 1e-9)
 
         return [
-            duration, src_bytes, dst_bytes, land, wrong_fragment,
-            urgent, hot, num_failed, logged_in, num_comp,
-            count, srv_count, serror_rate, rerror_rate, same_srv_rate,
-            diff_srv_rate, dst_host_count, dst_host_srv, dst_host_same_srv,
-            dst_host_diff_srv, protocol_encoded, flag_encoded, service_risk,
-            bytes_ratio, total_bytes, bytes_per_second, error_rate_combined,
+            duration,
+            src_bytes,
+            dst_bytes,
+            land,
+            wrong_fragment,
+            urgent,
+            hot,
+            num_failed,
+            logged_in,
+            num_comp,
+            count,
+            srv_count,
+            serror_rate,
+            rerror_rate,
+            same_srv_rate,
+            diff_srv_rate,
+            dst_host_count,
+            dst_host_srv,
+            dst_host_same_srv,
+            dst_host_diff_srv,
+            protocol_encoded,
+            flag_encoded,
+            service_risk,
+            bytes_ratio,
+            total_bytes,
+            bytes_per_second,
+            error_rate_combined,
             connection_density,
         ]
 
 
 def build_feature_pipeline() -> Pipeline:
     """Return an sklearn pipeline that engineers + scales features."""
-    return Pipeline([
-        ("engineer", NetworkFeatureEngineer()),
-        ("scaler", StandardScaler()),
-    ])
+    return Pipeline(
+        [
+            ("engineer", NetworkFeatureEngineer()),
+            ("scaler", StandardScaler()),
+        ]
+    )
 
 
-def generate_synthetic_dataset(n_samples: int = 2000, seed: int = 42) -> tuple[np.ndarray, np.ndarray]:
+def generate_synthetic_dataset(
+    n_samples: int = 2000, seed: int = 42
+) -> tuple[np.ndarray, np.ndarray]:
     """Generate synthetic network flow data for training and testing.
 
     Args:
@@ -154,91 +196,101 @@ def generate_synthetic_dataset(n_samples: int = 2000, seed: int = 42) -> tuple[n
 
     # Normal traffic
     for _ in range(per_class):
-        records.append({
-            "duration": rng.exponential(10),
-            "src_bytes": rng.integers(200, 5000),
-            "dst_bytes": rng.integers(200, 8000),
-            "protocol_type": rng.choice(["tcp", "udp"]),
-            "flag": rng.choice(["SF", "S1"]),
-            "service": rng.choice(["http", "ftp_data", "smtp"]),
-            "logged_in": 1,
-            "count": rng.integers(1, 10),
-            "serror_rate": rng.uniform(0, 0.1),
-            "rerror_rate": rng.uniform(0, 0.1),
-            "same_srv_rate": rng.uniform(0.8, 1.0),
-            "dst_host_count": rng.integers(1, 20),
-        })
+        records.append(
+            {
+                "duration": rng.exponential(10),
+                "src_bytes": rng.integers(200, 5000),
+                "dst_bytes": rng.integers(200, 8000),
+                "protocol_type": rng.choice(["tcp", "udp"]),
+                "flag": rng.choice(["SF", "S1"]),
+                "service": rng.choice(["http", "ftp_data", "smtp"]),
+                "logged_in": 1,
+                "count": rng.integers(1, 10),
+                "serror_rate": rng.uniform(0, 0.1),
+                "rerror_rate": rng.uniform(0, 0.1),
+                "same_srv_rate": rng.uniform(0.8, 1.0),
+                "dst_host_count": rng.integers(1, 20),
+            }
+        )
         labels.append(0)
 
     # DoS: high connection count, large src_bytes, high serror_rate
     for _ in range(per_class):
-        records.append({
-            "duration": rng.exponential(0.5),
-            "src_bytes": rng.integers(0, 100),
-            "dst_bytes": 0,
-            "protocol_type": "tcp",
-            "flag": rng.choice(["S0", "REJ"]),
-            "service": "http",
-            "logged_in": 0,
-            "count": rng.integers(200, 512),
-            "serror_rate": rng.uniform(0.8, 1.0),
-            "rerror_rate": rng.uniform(0.0, 0.2),
-            "same_srv_rate": rng.uniform(0.9, 1.0),
-            "dst_host_count": rng.integers(200, 256),
-        })
+        records.append(
+            {
+                "duration": rng.exponential(0.5),
+                "src_bytes": rng.integers(0, 100),
+                "dst_bytes": 0,
+                "protocol_type": "tcp",
+                "flag": rng.choice(["S0", "REJ"]),
+                "service": "http",
+                "logged_in": 0,
+                "count": rng.integers(200, 512),
+                "serror_rate": rng.uniform(0.8, 1.0),
+                "rerror_rate": rng.uniform(0.0, 0.2),
+                "same_srv_rate": rng.uniform(0.9, 1.0),
+                "dst_host_count": rng.integers(200, 256),
+            }
+        )
         labels.append(1)
 
     # Probe: port scanning
     for _ in range(per_class):
-        records.append({
-            "duration": rng.exponential(1),
-            "src_bytes": rng.integers(0, 500),
-            "dst_bytes": rng.integers(0, 200),
-            "protocol_type": rng.choice(["tcp", "icmp"]),
-            "flag": rng.choice(["S0", "RSTO", "OTH"]),
-            "service": rng.choice(["private", "domain_u", "auth"]),
-            "logged_in": 0,
-            "count": rng.integers(10, 100),
-            "serror_rate": rng.uniform(0.5, 1.0),
-            "rerror_rate": rng.uniform(0.0, 0.5),
-            "diff_srv_rate": rng.uniform(0.5, 1.0),
-            "dst_host_count": rng.integers(50, 256),
-        })
+        records.append(
+            {
+                "duration": rng.exponential(1),
+                "src_bytes": rng.integers(0, 500),
+                "dst_bytes": rng.integers(0, 200),
+                "protocol_type": rng.choice(["tcp", "icmp"]),
+                "flag": rng.choice(["S0", "RSTO", "OTH"]),
+                "service": rng.choice(["private", "domain_u", "auth"]),
+                "logged_in": 0,
+                "count": rng.integers(10, 100),
+                "serror_rate": rng.uniform(0.5, 1.0),
+                "rerror_rate": rng.uniform(0.0, 0.5),
+                "diff_srv_rate": rng.uniform(0.5, 1.0),
+                "dst_host_count": rng.integers(50, 256),
+            }
+        )
         labels.append(2)
 
     # R2L: remote to local
     for _ in range(per_class):
-        records.append({
-            "duration": rng.exponential(50),
-            "src_bytes": rng.integers(500, 20000),
-            "dst_bytes": rng.integers(100, 5000),
-            "protocol_type": "tcp",
-            "flag": "SF",
-            "service": rng.choice(["telnet", "ftp", "smtp"]),
-            "logged_in": rng.integers(0, 2),
-            "num_failed_logins": rng.integers(1, 10),
-            "count": rng.integers(1, 5),
-            "serror_rate": rng.uniform(0, 0.3),
-            "dst_host_count": rng.integers(1, 20),
-        })
+        records.append(
+            {
+                "duration": rng.exponential(50),
+                "src_bytes": rng.integers(500, 20000),
+                "dst_bytes": rng.integers(100, 5000),
+                "protocol_type": "tcp",
+                "flag": "SF",
+                "service": rng.choice(["telnet", "ftp", "smtp"]),
+                "logged_in": rng.integers(0, 2),
+                "num_failed_logins": rng.integers(1, 10),
+                "count": rng.integers(1, 5),
+                "serror_rate": rng.uniform(0, 0.3),
+                "dst_host_count": rng.integers(1, 20),
+            }
+        )
         labels.append(3)
 
     # U2R: user to root
     for _ in range(per_class):
-        records.append({
-            "duration": rng.exponential(100),
-            "src_bytes": rng.integers(1000, 50000),
-            "dst_bytes": rng.integers(500, 10000),
-            "protocol_type": "tcp",
-            "flag": "SF",
-            "service": rng.choice(["shell", "exec", "login"]),
-            "logged_in": 1,
-            "hot": rng.integers(10, 100),
-            "num_compromised": rng.integers(1, 20),
-            "count": rng.integers(1, 3),
-            "serror_rate": rng.uniform(0, 0.2),
-            "dst_host_count": rng.integers(1, 10),
-        })
+        records.append(
+            {
+                "duration": rng.exponential(100),
+                "src_bytes": rng.integers(1000, 50000),
+                "dst_bytes": rng.integers(500, 10000),
+                "protocol_type": "tcp",
+                "flag": "SF",
+                "service": rng.choice(["shell", "exec", "login"]),
+                "logged_in": 1,
+                "hot": rng.integers(10, 100),
+                "num_compromised": rng.integers(1, 20),
+                "count": rng.integers(1, 3),
+                "serror_rate": rng.uniform(0, 0.2),
+                "dst_host_count": rng.integers(1, 10),
+            }
+        )
         labels.append(4)
 
     eng = NetworkFeatureEngineer()

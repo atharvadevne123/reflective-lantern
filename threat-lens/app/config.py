@@ -39,9 +39,7 @@ class Settings:
     database_url: str = field(
         default_factory=lambda: os.getenv("DATABASE_URL", "sqlite:///./threat_lens.db")
     )
-    model_path: Path = field(
-        default_factory=lambda: Path(os.getenv("MODEL_PATH", "model.joblib"))
-    )
+    model_path: Path = field(default_factory=lambda: Path(os.getenv("MODEL_PATH", "model.joblib")))
     metrics_path: Path = field(
         default_factory=lambda: Path(os.getenv("METRICS_PATH", "metrics.json"))
     )

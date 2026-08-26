@@ -27,8 +27,8 @@ class ExperimentTracker:
         self.enabled = bool(_HAS_MLFLOW and self.tracking_uri)
         if not self.enabled:
             logger.info(
-                "MLflow unavailable or MLFLOW_TRACKING_URI unset; "
-                "logging runs to %s", LOCAL_RUNS_PATH,
+                "MLflow unavailable or MLFLOW_TRACKING_URI unset; logging runs to %s",
+                LOCAL_RUNS_PATH,
             )
 
     def log_run(
