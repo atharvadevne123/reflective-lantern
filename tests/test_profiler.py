@@ -80,7 +80,10 @@ class TestTracked:
         fn()
         fn()
         stats = get_stats("avg")
-        assert stats["avg_ms"] == stats["total_ms"] / 2
+        # to_dict() rounds total_ms and avg_ms independently to 3dp, so exact
+        # equality is not guaranteed: a total of 0.003 reports avg 0.001 while
+        # total/2 is 0.0015. Allow one rounding step of slack.
+        assert stats["avg_ms"] == pytest.approx(stats["total_ms"] / 2, abs=0.001)
 
     def test_get_all_stats(self):
         @tracked(label="a_func")
