@@ -211,3 +211,24 @@ Tests run against SQLite with a per-test transaction rollback, so no database
 server is needed and tests cannot leak state into each other.
 
 ---
+
+## Configuration
+
+All settings are environment-driven via `pydantic-settings`. See
+[`.env.example`](.env.example) for the full list.
+
+| Variable | Default | Purpose |
+|---|---|---|
+| `DATABASE_URL` | `postgresql://ops:ops@localhost:5432/opsvision` | Connection string |
+| `MODEL_PATH` | `/tmp/ops_vision_model.pkl` | Serialised ensemble location |
+| `DRIFT_THRESHOLD` | `0.05` | KS-test p-value below which drift is flagged |
+| `REFERENCE_WINDOW_SIZE` | `1000` | Reference distribution sample count |
+| `CURRENT_WINDOW_SIZE` | `200` | Samples per drift check |
+| `RATE_LIMIT_REQUESTS` | `100` | Requests per IP per window |
+| `LOG_LEVEL` | `INFO` | Root log level |
+
+The engine is constructed lazily on first use, so importing `app.database`
+never requires a reachable database — which is what lets the test suite and CI
+run without a Postgres service.
+
+---
