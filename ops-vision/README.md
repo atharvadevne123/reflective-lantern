@@ -135,3 +135,23 @@ curl -X POST http://localhost:8000/api/v1/predict \
 
 Severity bands map from confidence: `≥0.90` critical, `≥0.75` high,
 `≥0.50` medium, below that low.
+
+### `POST /api/v1/predict/batch`
+
+Scores up to 500 observations in one call, returning results in submission
+order. Batching amortises the model and pipeline lookup across the request,
+which matters when backfilling historical telemetry.
+
+```bash
+curl -X POST http://localhost:8000/api/v1/predict/batch \
+  -H 'Content-Type: application/json' \
+  -d '{"items": [{ "service_name": "payments-api", "cpu_usage_pct": 85.0,
+        "memory_usage_pct": 88.0, "error_rate_per_min": 62.0,
+        "latency_p99_ms": 1450.0, "request_rate_per_sec": 45.0,
+        "disk_io_util_pct": 80.0 }]}'
+```
+
+### `GET /api/v1/incidents`
+
+Lists persisted incidents most-recent-first, with `limit` (1–500), `offset`,
+and an optional exact-match `service_name` filter.
