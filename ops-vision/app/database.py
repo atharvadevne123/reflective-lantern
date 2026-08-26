@@ -3,7 +3,6 @@
 import logging
 import os
 from datetime import datetime
-from typing import Optional
 
 from sqlalchemy import (
     JSON,
@@ -22,12 +21,10 @@ from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
 
 logger = logging.getLogger(__name__)
 
-DATABASE_URL: str = os.environ.get(
-    "DATABASE_URL", "postgresql://ops:ops@localhost:5432/opsvision"
-)
+DATABASE_URL: str = os.environ.get("DATABASE_URL", "postgresql://ops:ops@localhost:5432/opsvision")
 
-_engine: Optional[Engine] = None
-_SessionLocal: Optional[sessionmaker] = None
+_engine: Engine | None = None
+_SessionLocal: sessionmaker | None = None
 
 
 def _engine_kwargs(url: str) -> dict:
@@ -77,9 +74,7 @@ def get_session_factory() -> sessionmaker:
     """
     global _SessionLocal
     if _SessionLocal is None:
-        _SessionLocal = sessionmaker(
-            autocommit=False, autoflush=False, bind=get_engine()
-        )
+        _SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=get_engine())
     return _SessionLocal
 
 
@@ -106,9 +101,7 @@ class Incident(Base):
 
     # list_incidents() filters on service_name and orders by created_at, so the
     # composite index lets a single scan satisfy both halves of that query.
-    __table_args__ = (
-        Index("ix_incidents_service_created", "service_name", "created_at"),
-    )
+    __table_args__ = (Index("ix_incidents_service_created", "service_name", "created_at"),)
 
 
 class Prediction(Base):
@@ -127,9 +120,7 @@ class Prediction(Base):
     created_at = Column(DateTime, default=datetime.utcnow, index=True)
 
     # count_incidents_predicted() aggregates on the incident flag.
-    __table_args__ = (
-        Index("ix_predictions_incident_flag", "predicted_incident"),
-    )
+    __table_args__ = (Index("ix_predictions_incident_flag", "predicted_incident"),)
 
 
 class DriftAlert(Base):
@@ -148,9 +139,7 @@ class DriftAlert(Base):
     created_at = Column(DateTime, default=datetime.utcnow, index=True)
 
     # count_drift_alerts_last_24h() filters on drifted AND a created_at range.
-    __table_args__ = (
-        Index("ix_drift_alerts_drifted_created", "drifted", "created_at"),
-    )
+    __table_args__ = (Index("ix_drift_alerts_drifted_created", "drifted", "created_at"),)
 
 
 def get_db() -> Session:

@@ -6,7 +6,7 @@ from email.mime.text import MIMEText
 import io
 
 GMAIL_USER = "devneatharva@gmail.com"
-GMAIL_APP_PASS = "mzizhaaiaemssxls"
+GMAIL_APP_PASS = "<REDACTED — was committed in plaintext; credential must be revoked>"
 TO = "devneatharva@gmail.com"
 SUBJECT = "[Reflective Lantern] 2026-07-11 IMPROVEMENT — reflective-lantern (Watt-Guard) — 60 commits pushed"
 
