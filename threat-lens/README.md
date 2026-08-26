@@ -98,16 +98,42 @@ during build, so the container is ready to serve as soon as it is healthy.
 
 All endpoints are versioned under `/api/v1`.
 
-| Method | Path                | Purpose                                             |
-|--------|---------------------|-----------------------------------------------------|
-| `GET`  | `/api/v1/health`    | Liveness probe; reports whether the model is loaded  |
-| `POST` | `/api/v1/predict`   | Classify a single network flow                       |
-| `GET`  | `/api/v1/metrics`   | Training metrics, live drift results, prediction count |
-| `GET`  | `/api/v1/drift`     | Recent KS-test drift reports (`?limit=`)             |
-| `GET`  | `/api/v1/threats`   | Search threat intel corpus (`?q=`, `?top_k=`)        |
+| Method | Path                     | Purpose                                             |
+|--------|--------------------------|-----------------------------------------------------|
+| `GET`  | `/api/v1/health`         | Liveness probe; reports whether the model is loaded  |
+| `POST` | `/api/v1/predict`        | Classify a single network flow                       |
+| `POST` | `/api/v1/predict/batch`  | Classify up to `MAX_BATCH_SIZE` flows in one call     |
+| `GET`  | `/api/v1/metrics`        | Training metrics, live drift results, prediction count |
+| `GET`  | `/api/v1/drift`          | Recent KS-test drift reports (`?limit=`)             |
+| `GET`  | `/api/v1/threats`        | Search threat intel corpus (`?q=`, `?top_k=`)        |
 
 Every response carries `X-Correlation-ID` and `X-Response-Time-Ms` headers. Pass your
 own `X-Correlation-ID` on the request to trace a call through the logs.
+
+Requests are rate limited per client IP — `RATE_LIMIT_PER_MINUTE`, default 120 —
+and every response reports `X-RateLimit-Limit` and `X-RateLimit-Remaining`.
+Exceeding the limit returns HTTP 429. The limiter keeps its counters in process
+memory, so behind multiple workers you will want a shared store such as Redis.
+
+### Batch inference
+
+```bash
+curl -X POST localhost:8000/api/v1/predict/batch \
+  -H 'Content-Type: application/json' \
+  -d '{"flows":[{"src_bytes":20,"flag":"S0","count":480},{"src_bytes":2400}]}'
+```
+
+The response returns one result per flow in submission order, alongside a count of
+how many were judged malicious.
+
+### Database migrations
+
+```bash
+make migrate     # alembic upgrade head
+```
+
+The initial revision creates `prediction_logs`, `drift_reports`, and
+`retraining_events`. `DATABASE_URL` overrides the URL baked into `alembic.ini`.
 
 ### Request fields
 
@@ -145,10 +171,15 @@ exports) before reading anything into the number.
 ## Development
 
 ```bash
-make test     # 50 tests across API, model, features, and monitoring
+make test     # 118 tests across API, model, features, monitoring, RAG and config
 make lint     # ruff
 make format   # ruff --fix
 ```
+
+Optional integrations degrade rather than fail. `ExperimentTracker` forwards runs to
+MLflow when `MLFLOW_TRACKING_URI` is set and appends them to a local JSONL file
+otherwise; `ModelArtifactStore` uploads to S3 when `S3_BUCKET` is set and keeps
+artefacts in memory otherwise. Neither can take down a training job.
 
 CI runs ruff and the full pytest suite on every push and pull request touching
 `threat-lens/`.
