@@ -97,3 +97,41 @@ The API container waits on a Postgres healthcheck before starting, so a single
 `docker compose up` is enough for a cold start.
 
 ---
+
+## API reference
+
+All business endpoints are versioned under `/api/v1`. Liveness probes
+(`/health`, `/version`) are unversioned so load balancers never need updating.
+
+### `POST /api/v1/predict`
+
+Scores one telemetry observation.
+
+```bash
+curl -X POST http://localhost:8000/api/v1/predict \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "service_name": "payments-api",
+    "cpu_usage_pct": 85.0,
+    "memory_usage_pct": 88.0,
+    "error_rate_per_min": 62.0,
+    "latency_p99_ms": 1450.0,
+    "request_rate_per_sec": 45.0,
+    "disk_io_util_pct": 80.0
+  }'
+```
+
+```json
+{
+  "service_name": "payments-api",
+  "predicted_incident": true,
+  "predicted_severity": "critical",
+  "confidence": 0.94,
+  "model_version": "1.0.0",
+  "runbook_hint": "High CPU Mitigation",
+  "timestamp": "2026-08-26T14:32:00Z"
+}
+```
+
+Severity bands map from confidence: `≥0.90` critical, `≥0.75` high,
+`≥0.50` medium, below that low.
