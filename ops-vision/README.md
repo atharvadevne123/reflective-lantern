@@ -29,3 +29,20 @@ I/O). Three things make the prediction usable rather than merely interesting:
   data and only promotes the candidate if it clears an AUC-ROC gate.
 
 ---
+
+## Architecture
+
+![Architecture](screenshots/architecture.svg)
+
+| Layer | Component | Responsibility |
+|---|---|---|
+| Ingest | `app/schemas.py` | Pydantic validation of the six telemetry metrics |
+| API | `app/api/v1/routes.py` | Eight versioned endpoints under `/api/v1` |
+| Middleware | `app/middleware.py` | Correlation-ID propagation, per-IP rate limiting |
+| Features | `app/features.py` | 4 engineered features + `RobustScaler`, as a sklearn `Pipeline` |
+| Model | `app/model.py` | Soft-voting ensemble (XGBoost + LightGBM + RandomForest) |
+| Retrieval | `app/faiss_index.py` | FAISS runbook index with brute-force cosine fallback |
+| Monitoring | `app/monitoring.py` | KS-test drift detection over sliding windows |
+| Forecasting | `app/forecasting.py` | Holt double exponential smoothing, 24h horizon |
+| Persistence | `app/database.py`, `app/crud.py` | SQLAlchemy models, pooled PostgreSQL access |
+| Retraining | `pipelines/retrain_dag.py` | Nightly Airflow DAG with AUC promotion gate |
