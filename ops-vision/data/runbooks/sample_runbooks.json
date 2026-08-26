@@ -1,0 +1,52 @@
+[
+  {
+    "title": "High CPU Mitigation",
+    "content": "Identify top CPU consumers with top -c or ps aux --sort=-%cpu. Check for runaway processes. Restart offending service with systemctl restart. Scale horizontally if load is legitimate. Tune JVM GC settings if Java service. Enable cgroups CPU throttling for non-critical workloads.",
+    "category": "cpu"
+  },
+  {
+    "title": "Memory Leak Remediation",
+    "content": "Take heap dump with jmap or py-spy. Inspect allocations. Restart service to relieve pressure. Increase container memory limit temporarily. Check for large caches or unbounded queues. Profile with memory_profiler. Deploy fix within 4 hours to avoid OOM kill cascade.",
+    "category": "memory"
+  },
+  {
+    "title": "Network Latency Investigation",
+    "content": "Check DNS resolution times with dig +stats. Inspect TCP retransmissions with ss -s. Verify load balancer health checks. Test inter-zone latency with iperf3. Check MTU settings. Review service mesh sidecar configuration. Enable bbr TCP congestion control.",
+    "category": "network"
+  },
+  {
+    "title": "Disk I/O Saturation Playbook",
+    "content": "Identify I/O-heavy processes with iotop or iostat. Move write-heavy logs to a separate EBS volume. Tune fsync frequency in application config. Enable write coalescing. Check for missing database indexes causing full table scans. Set io_uring for async I/O.",
+    "category": "disk"
+  },
+  {
+    "title": "Database Connection Pool Exhaustion",
+    "content": "Increase max_connections in postgresql.conf or pool_size in SQLAlchemy. Kill idle connections with pg_terminate_backend. Check for connection leaks via pg_stat_activity. Enable connection pooling with PgBouncer. Set statement_timeout to 30s. Add circuit breaker.",
+    "category": "database"
+  },
+  {
+    "title": "Service Error Rate Spike",
+    "content": "Check recent deployments with git log --oneline -20. Review application logs for stack traces. Inspect dependency health (DB, cache, downstream APIs). Verify TLS certificate expiry. Enable detailed error logging. Roll back deployment if correlation confirmed.",
+    "category": "errors"
+  },
+  {
+    "title": "API Latency Degradation",
+    "content": "Profile slow endpoints with distributed tracing (Jaeger/Zipkin). Check database query plans with EXPLAIN ANALYZE. Review N+1 query patterns. Inspect cache hit rates in Redis. Add database indexes. Enable HTTP/2 multiplexing. Precompute expensive aggregations.",
+    "category": "latency"
+  },
+  {
+    "title": "Container OOM Kill Recovery",
+    "content": "Identify killed containers with docker inspect or kubectl describe pod. Review memory limits in deployment manifests. Increase limit by 25% incrementally. Add liveness probe with appropriate thresholds. Profile memory usage with Prometheus metrics. Set requests == limits for guaranteed QoS.",
+    "category": "memory"
+  },
+  {
+    "title": "Request Rate Saturation",
+    "content": "Enable horizontal pod autoscaling (HPA) with target CPU 70%. Add queue-based worker scaling. Implement request queuing at the edge. Rate-limit abusive clients by IP. Enable circuit breakers. Add CDN caching for static responses. Pre-warm instances before traffic spikes.",
+    "category": "traffic"
+  },
+  {
+    "title": "Incident Postmortem Template",
+    "content": "Document timeline, root cause, impact, and action items. Identify contributing factors (deployment, config change, traffic spike). List mitigations applied. Define SLO impact. Assign action items with owners and deadlines. Share with team within 24 hours of resolution.",
+    "category": "process"
+  }
+]
