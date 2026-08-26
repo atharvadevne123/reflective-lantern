@@ -12,17 +12,20 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field, field_validator
 from sqlalchemy.orm import Session
 
+from app.config import get_settings
 from app.database import get_db, init_db
 from app.features import NetworkFeatureEngineer
+from app.logging_config import configure_logging
+from app.middleware import RateLimiter, build_rate_limit_middleware
 from app.model import load_metrics, load_model, predict
 from app.monitoring import get_drift_summary, log_prediction, run_full_drift_check
 from app.rag_retriever import ThreatIntelRetriever
 
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s %(levelname)s %(name)s %(message)s",
-)
+settings = get_settings()
+configure_logging(level=settings.log_level)
 logger = logging.getLogger(__name__)
+
+rate_limiter = RateLimiter(limit_per_minute=settings.rate_limit_per_minute)
 
 _model = None
 _retriever: ThreatIntelRetriever | None = None
@@ -59,6 +62,8 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+app.middleware("http")(build_rate_limit_middleware(rate_limiter))
 
 
 @app.middleware("http")
@@ -109,6 +114,22 @@ class NetworkFlow(BaseModel):
         if v.lower() not in allowed:
             raise ValueError(f"protocol_type must be one of {allowed}")
         return v.lower()
+
+
+class BatchRequest(BaseModel):
+    """A batch of network flows to classify in one call."""
+
+    flows: list[NetworkFlow] = Field(
+        ..., min_length=1, description="Network flows to classify"
+    )
+
+    @field_validator("flows")
+    @classmethod
+    def validate_batch_size(cls, v: list[NetworkFlow]) -> list[NetworkFlow]:
+        maximum = get_settings().max_batch_size
+        if len(v) > maximum:
+            raise ValueError(f"Batch of {len(v)} exceeds the maximum of {maximum}")
+        return v
 
 
 class PredictionResponse(BaseModel):
@@ -193,6 +214,45 @@ async def predict_endpoint(
         class_probabilities=result["class_probabilities"],
         threat_context=threat_ctx,
     )
+
+
+@app.post(
+    "/api/v1/predict/batch",
+    tags=["inference"],
+    summary="Classify many network flows in a single request",
+)
+async def predict_batch_endpoint(
+    batch: BatchRequest,
+    request: Request,
+    db: Session = Depends(get_db),
+) -> dict[str, Any]:
+    """Classify up to `MAX_BATCH_SIZE` flows in one call.
+
+    Returns one result per input flow, in the order submitted, plus a summary
+    counting how many were judged malicious.
+    """
+    if _model is None:
+        raise HTTPException(status_code=503, detail="Model not loaded")
+
+    correlation_id = request.state.correlation_id
+    flows = [f.model_dump() for f in batch.flows]
+
+    engineer = NetworkFeatureEngineer()
+    features = engineer.transform(flows)
+
+    results: list[dict[str, Any]] = []
+    for i, flow_dict in enumerate(flows):
+        result = predict(_model, features[i : i + 1])
+        log_prediction(db, correlation_id, flow_dict, result)
+        results.append(result)
+
+    attacks = sum(r["is_attack"] for r in results)
+    return {
+        "correlation_id": correlation_id,
+        "count": len(results),
+        "attacks_detected": int(attacks),
+        "results": results,
+    }
 
 
 @app.get("/api/v1/metrics", response_model=MetricsResponse, tags=["ops"])
