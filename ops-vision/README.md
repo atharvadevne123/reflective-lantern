@@ -232,3 +232,28 @@ never requires a reachable database — which is what lets the test suite and CI
 run without a Postgres service.
 
 ---
+
+## Retraining
+
+`pipelines/retrain_dag.py` defines an Airflow DAG (`ops_vision_retrain`, nightly
+at 02:00) with two tasks:
+
+1. **`retrain_model`** — pulls up to 10,000 recent rows from `incidents`, runs
+   5-fold stratified CV, and writes a candidate model.
+2. **`promote_model`** — promotes the candidate to production only if test
+   AUC-ROC ≥ 0.70.
+
+The module degrades gracefully: if Airflow is not installed the DAG definition
+is skipped and the task functions remain importable and directly callable, so
+retraining can also be driven from cron or invoked in tests.
+
+---
+
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md). In short: `make install-dev` sets up
+pre-commit hooks, `make lint` and `make test` must both pass before a PR.
+
+## License
+
+MIT — see [LICENSE](LICENSE).
