@@ -28,6 +28,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
     """Reject requests exceeding settings.rate_limit_per_minute per IP per minute."""
 
     async def dispatch(self, request: Request, call_next: Any) -> Response:
+        """Reject the request with 429 if the client IP has exceeded the rate limit."""
         ip = request.client.host if request.client else "unknown"
         now = time.time()
         limit = settings.rate_limit_per_minute
@@ -49,6 +50,7 @@ class CorrelationIDMiddleware(BaseHTTPMiddleware):
     """Attach X-Correlation-ID to every request/response."""
 
     async def dispatch(self, request: Request, call_next: Any) -> Response:
+        """Attach a correlation ID header to the request state and response."""
         correlation_id = request.headers.get("X-Correlation-ID", str(uuid.uuid4()))
         request.state.correlation_id = correlation_id
         response = await call_next(request)
