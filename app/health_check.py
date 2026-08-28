@@ -48,6 +48,7 @@ class HealthRegistry:
     """Registry that runs named health checks and aggregates results."""
 
     def __init__(self) -> None:
+        """Initialise the registry with an empty check dictionary."""
         self._checks: Dict[str, CheckFn] = {}
 
     def register(self, name: str, fn: CheckFn) -> None:
@@ -75,6 +76,7 @@ class HealthRegistry:
         return HealthStatus(healthy=overall, results=results)
 
     def __len__(self) -> int:
+        """Return the number of registered health checks."""
         return len(self._checks)
 
 
@@ -86,6 +88,7 @@ def check(name: str, registry: Optional[HealthRegistry] = None) -> Callable[[Che
     reg = registry or _default_registry
 
     def decorator(fn: CheckFn) -> CheckFn:
+        """Register *fn* and return it unchanged."""
         reg.register(name, fn)
         return fn
 
