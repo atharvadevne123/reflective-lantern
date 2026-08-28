@@ -23,6 +23,7 @@ def content_hash(text: str) -> str:
 
 
 def _shingles(text: str, size: int = _SHINGLE_SIZE) -> set[str]:
+    """Return the set of word-level n-grams of length *size* from *text*."""
     words = text.lower().split()
     if len(words) < size:
         return {" ".join(words)} if words else set()
@@ -30,6 +31,7 @@ def _shingles(text: str, size: int = _SHINGLE_SIZE) -> set[str]:
 
 
 def _hash64(value: str, seed: int) -> int:
+    """Hash *value* to a 64-bit integer using BLAKE2b keyed by *seed*."""
     digest = hashlib.blake2b(
         value.encode("utf-8"), digest_size=8, salt=struct.pack("<Q", seed)[:8]
     ).digest()
@@ -56,6 +58,7 @@ class DuplicateDetector:
     """Streaming duplicate detector with exact + LSH-bucketed near-dup checks."""
 
     def __init__(self, near_threshold: float = 0.85) -> None:
+        """Initialise the detector with a Jaccard similarity threshold for near-duplicates."""
         self.near_threshold = near_threshold
         self._exact: dict[str, str] = {}  # content_hash -> doc_id
         self._signatures: dict[str, tuple[int, ...]] = {}  # doc_id -> signature
@@ -63,6 +66,7 @@ class DuplicateDetector:
 
     @staticmethod
     def _bands(signature: tuple[int, ...]) -> list[tuple[int, int]]:
+        """Split *signature* into LSH band keys for bucket lookup."""
         rows = _NUM_HASHES // _LSH_BANDS
         keys = []
         for band in range(_LSH_BANDS):
@@ -107,4 +111,5 @@ class DuplicateDetector:
             self._lsh_buckets.setdefault(key, []).append(doc_id)
 
     def __len__(self) -> int:
+        """Return the number of documents registered in the index."""
         return len(self._signatures)
