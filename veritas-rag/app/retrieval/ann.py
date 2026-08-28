@@ -26,6 +26,7 @@ class VectorIndex:
     """ANN index over chunk embeddings with id mapping and deletion support."""
 
     def __init__(self, dim: int, ivf_threshold: int = 5000) -> None:
+        """Initialise the index for *dim*-dimensional embeddings, using FAISS IVF above *ivf_threshold* documents."""
         self.dim = dim
         self.ivf_threshold = ivf_threshold
         self._ids: list[str] = []
@@ -47,9 +48,11 @@ class VectorIndex:
         self._deleted.update(chunk_ids)
 
     def __len__(self) -> int:
+        """Return the count of active (non-deleted) chunks in the index."""
         return len(self._ids) - len(self._deleted & set(self._ids))
 
     def _rebuild_faiss(self) -> None:
+        """Rebuild the FAISS IVF index from current non-deleted vectors."""
         n = self._vectors.shape[0]
         if not _FAISS or n < self.ivf_threshold:
             self._faiss_index = None
