@@ -34,6 +34,7 @@ class Backtester:
     """
 
     def __init__(self, model: Any, baseline: Any = None, window: int = 30) -> None:
+        """Initialise the backtester with a model, optional baseline prices, and window size."""
         self.model = model
         self.window = window
         self._baseline: list[float] = list(baseline) if baseline is not None else []
@@ -61,6 +62,7 @@ class Backtester:
     def _run_simple(
         self, X: list[Any], y_actual: list[float], y_model: list[float] | None = None
     ) -> dict[str, Any]:
+        """Compute revenue and MAE over pre-computed actual and model predictions."""
         n = len(X)
         if n == 0:
             return {"n_periods": 0, "baseline_revenue": 0.0, "model_revenue": 0.0, "mae": 0.0}
