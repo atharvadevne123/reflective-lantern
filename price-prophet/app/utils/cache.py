@@ -28,6 +28,7 @@ class TTLCache:
     """
 
     def __init__(self, ttl_seconds: int = 300, max_size: int = 1000) -> None:
+        """Initialise the cache with a TTL and optional maximum entry count."""
         self.ttl_seconds = ttl_seconds
         self.max_size = max_size
         # Each entry: (value, stored_at_monotonic)
@@ -38,6 +39,7 @@ class TTLCache:
     # ------------------------------------------------------------------
 
     def _is_expired(self, stored_at: float) -> bool:
+        """Return True if the entry stored at *stored_at* has exceeded the TTL."""
         return (time.monotonic() - stored_at) > self.ttl_seconds
 
     def _evict_oldest(self) -> None:
@@ -146,4 +148,5 @@ class TTLCache:
         return len(self.items())
 
     def __len__(self) -> int:
+        """Return the total number of entries (including potentially expired ones)."""
         return self.size()
