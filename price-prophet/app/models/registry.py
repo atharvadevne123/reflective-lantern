@@ -21,6 +21,7 @@ class ModelRegistry:
     """
 
     def __init__(self) -> None:
+        """Initialise an empty model registry."""
         self._store: dict[str, Any] = {}
 
     def register(self, name: str, model: Any) -> None:
@@ -94,9 +95,11 @@ class ModelRegistry:
         return name in self._store
 
     def __len__(self) -> int:
+        """Return the number of models currently registered."""
         return len(self._store)
 
     def __repr__(self) -> str:
+        """Return a concise string listing all registered model names."""
         names = self.list_models()
         return f"ModelRegistry({names})"
 
