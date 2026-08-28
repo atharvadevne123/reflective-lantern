@@ -26,6 +26,7 @@ class LinearPricingModel(BasePricingModel):
     """
 
     def __init__(self, fit_intercept: bool = True) -> None:
+        """Initialise the linear pricing model with optional intercept fitting."""
         self.fit_intercept = fit_intercept
         self._model = None
         self._fitted: bool = False
@@ -83,5 +84,6 @@ class LinearPricingModel(BasePricingModel):
         return self._model.coef_.tolist()
 
     def __repr__(self) -> str:
+        """Return a concise string showing fit_intercept setting and fit status."""
         fitted_str = "fitted" if self._fitted else "not fitted"
         return f"LinearPricingModel(fit_intercept={self.fit_intercept}, {fitted_str})"
