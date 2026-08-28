@@ -97,6 +97,7 @@ def generate_sample_data(n: int = 2000) -> tuple[pd.DataFrame, np.ndarray]:
 
 
 def _make_xgb_pipe() -> Pipeline:
+    """Build an XGBoost classifier pipeline with feature engineering and scaling."""
     return Pipeline(
         [
             ("engineer", HotelFeatureEngineer()),
@@ -118,6 +119,7 @@ def _make_xgb_pipe() -> Pipeline:
 
 
 def _make_lgbm_pipe() -> Pipeline:
+    """Build a LightGBM classifier pipeline with feature engineering and scaling."""
     return Pipeline(
         [
             ("engineer", HotelFeatureEngineer()),
