@@ -42,6 +42,7 @@ class FeatureStore:
     """
 
     def __init__(self) -> None:
+        """Initialise the feature store with an empty version-history dictionary."""
         self._store: Dict[str, List[FeatureSet]] = {}
 
     def publish(self, feature_set: FeatureSet) -> None:
