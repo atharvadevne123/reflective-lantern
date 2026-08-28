@@ -21,10 +21,12 @@ def timed(label: Optional[str] = None, log_level: int = logging.DEBUG) -> Callab
         Wrapped function that logs its duration on each call.
     """
     def decorator(func: Callable) -> Callable:
+        """Wrap *func* to log its duration on every call."""
         name = label or func.__qualname__
 
         @functools.wraps(func)
-        def wrapper(*args, **kwargs):
+        def wrapper(*args, **kwargs):  # type: ignore[return]
+            """Execute *func* and log elapsed time."""
             start = time.perf_counter()
             try:
                 result = func(*args, **kwargs)
@@ -41,12 +43,14 @@ class _Stats:
     """Running statistics for call durations."""
 
     def __init__(self) -> None:
+        """Initialise counters for call count, total time, min, and max."""
         self.calls: int = 0
         self.total_ms: float = 0.0
         self.min_ms: float = float("inf")
         self.max_ms: float = 0.0
 
     def record(self, ms: float) -> None:
+        """Accumulate a single timing observation of *ms* milliseconds."""
         self.calls += 1
         self.total_ms += ms
         self.min_ms = min(self.min_ms, ms)
@@ -54,6 +58,7 @@ class _Stats:
 
     @property
     def avg_ms(self) -> float:
+        """Return mean duration in milliseconds; 0.0 if no calls recorded."""
         return self.total_ms / self.calls if self.calls else 0.0
 
     def to_dict(self) -> Dict[str, float | int]:
