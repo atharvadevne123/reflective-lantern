@@ -1492,12 +1492,14 @@ class TestEnergyIntensityScore:
 
     def test_empty_raises(self) -> None:
         import pytest
+
         from app.time_series import energy_intensity_score
         with pytest.raises(ValueError):
             energy_intensity_score([], 100.0)
 
     def test_zero_sqft_raises(self) -> None:
         import pytest
+
         from app.time_series import energy_intensity_score
         with pytest.raises(ValueError):
             energy_intensity_score([10.0], 0.0)
@@ -1516,6 +1518,7 @@ class TestBaselineDeviation:
 
     def test_invalid_baseline_raises(self) -> None:
         import pytest
+
         from app.time_series import baseline_deviation
         with pytest.raises(ValueError):
             baseline_deviation([1, 2, 3], baseline_days=0)
@@ -1531,12 +1534,14 @@ class TestWeekendWeekdayRatio:
 
     def test_empty_raises(self) -> None:
         import pytest
+
         from app.time_series import weekend_weekday_ratio
         with pytest.raises(ValueError):
             weekend_weekday_ratio([])
 
     def test_invalid_start_weekday(self) -> None:
         import pytest
+
         from app.time_series import weekend_weekday_ratio
         with pytest.raises(ValueError):
             weekend_weekday_ratio([1.0] * 7, start_weekday=7)
@@ -1555,6 +1560,7 @@ class TestHourlyVariability:
 
     def test_single_value_raises(self) -> None:
         import pytest
+
         from app.time_series import hourly_variability
         with pytest.raises(ValueError):
             hourly_variability([5.0])
@@ -1563,11 +1569,13 @@ class TestHourlyVariability:
 class TestZeroCrossingRate:
     def test_alternating_signs(self) -> None:
         import pytest
+
         from app.time_series import zero_crossing_rate
         assert zero_crossing_rate([-1.0, 1.0, -1.0, 1.0]) == pytest.approx(1.0)
 
     def test_no_crossings(self) -> None:
         import pytest
+
         from app.time_series import zero_crossing_rate
         assert zero_crossing_rate([1.0, 2.0, 3.0]) == pytest.approx(0.0)
 
@@ -1580,11 +1588,13 @@ class TestZeroCrossingRate:
 class TestPeakToTroughRatio:
     def test_basic(self) -> None:
         import pytest
+
         from app.time_series import peak_to_trough_ratio
         assert peak_to_trough_ratio([1.0, 5.0, 2.0, 8.0]) == pytest.approx(8.0)
 
     def test_zero_trough(self) -> None:
         import pytest
+
         from app.time_series import peak_to_trough_ratio
         assert peak_to_trough_ratio([0.0, 5.0]) == pytest.approx(0.0)
 
@@ -1602,10 +1612,12 @@ class TestLoadFactor:
 
     def test_all_peak(self) -> None:
         import pytest
+
         from app.time_series import load_factor
         assert load_factor([5.0, 5.0, 5.0]) == pytest.approx(1.0)
 
     def test_empty_returns_zero(self) -> None:
         import pytest
+
         from app.time_series import load_factor
         assert load_factor([]) == pytest.approx(0.0)

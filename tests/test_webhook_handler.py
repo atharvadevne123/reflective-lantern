@@ -8,7 +8,6 @@ import pytest
 
 from app.webhook_handler import SignatureError, WebhookEvent, WebhookHandler
 
-
 SECRET = "test-secret"
 
 

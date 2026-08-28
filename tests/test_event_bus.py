@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-import pytest
-
 from app.event_bus import EventBus, get_bus
 
 

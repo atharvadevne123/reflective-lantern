@@ -5,7 +5,6 @@ from __future__ import annotations
 import pytest
 
 from app.cost_estimator import (
-    CostBreakdown,
     ResourceSpec,
     compare_specs,
     estimate_cost,

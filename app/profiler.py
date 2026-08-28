@@ -5,7 +5,7 @@ from __future__ import annotations
 import functools
 import logging
 import time
-from typing import Callable, Dict, List, Optional
+from typing import Callable, Dict, Optional
 
 logger = logging.getLogger(__name__)
 

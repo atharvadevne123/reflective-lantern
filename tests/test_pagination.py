@@ -5,8 +5,6 @@ from __future__ import annotations
 import pytest
 
 from app.pagination import (
-    CursorPage,
-    Page,
     PageInfo,
     cursor_paginate,
     decode_cursor,

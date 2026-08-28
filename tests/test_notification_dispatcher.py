@@ -1,6 +1,5 @@
 """Tests for app.notification_dispatcher."""
 
-import pytest
 
 from app.notification_dispatcher import (
     Channel,

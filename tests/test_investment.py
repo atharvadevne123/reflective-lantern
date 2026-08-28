@@ -1248,6 +1248,7 @@ class TestLeverageRatio:
 
     def test_negative_assets_raises(self) -> None:
         import pytest
+
         from app.investment import leverage_ratio
         with pytest.raises(ValueError):
             leverage_ratio(-1000.0, 500.0)
@@ -1265,6 +1266,7 @@ class TestRiskAdjustedReturn:
 
     def test_negative_volatility_raises(self) -> None:
         import pytest
+
         from app.investment import risk_adjusted_return
         with pytest.raises(ValueError):
             risk_adjusted_return(10.0, -1.0)

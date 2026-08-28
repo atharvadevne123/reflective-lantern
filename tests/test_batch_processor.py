@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from app.batch_processor import BatchProcessor, BatchResult, RunSummary
+from app.batch_processor import BatchProcessor
 
 
 def _identity(items):

@@ -1339,12 +1339,14 @@ class TestRollingRmse:
 
     def test_invalid_window(self) -> None:
         import pytest
+
         from app.stats_utils import rolling_rmse
         with pytest.raises(ValueError):
             rolling_rmse([1, 2], [1, 2], 0)
 
     def test_mismatched_lengths(self) -> None:
         import pytest
+
         from app.stats_utils import rolling_rmse
         with pytest.raises(ValueError):
             rolling_rmse([1, 2, 3], [1, 2], 2)
@@ -1365,12 +1367,14 @@ class TestConfidenceInterval:
 
     def test_too_few_values_raises(self) -> None:
         import pytest
+
         from app.stats_utils import confidence_interval
         with pytest.raises(ValueError):
             confidence_interval([1.0])
 
     def test_invalid_confidence(self) -> None:
         import pytest
+
         from app.stats_utils import confidence_interval
         with pytest.raises(ValueError):
             confidence_interval([1.0, 2.0, 3.0], confidence=1.5)
@@ -1388,6 +1392,7 @@ class TestSignalToNoiseRatio:
 
     def test_empty_raises(self) -> None:
         import pytest
+
         from app.stats_utils import signal_to_noise_ratio
         with pytest.raises(ValueError):
             signal_to_noise_ratio([])
@@ -1407,6 +1412,7 @@ class TestOutlierFraction:
 
     def test_empty_raises(self) -> None:
         import pytest
+
         from app.stats_utils import outlier_fraction
         with pytest.raises(ValueError):
             outlier_fraction([])

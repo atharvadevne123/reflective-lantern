@@ -6,7 +6,6 @@ import pytest
 
 from app.alerting import Alert, AlertManager, AlertRule, Severity
 
-
 BASE_NOW = 1_000_000.0
 
 

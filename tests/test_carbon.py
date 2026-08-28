@@ -1281,12 +1281,14 @@ class TestRenewableOffsetFactor:
 
     def test_invalid_over_100(self) -> None:
         import pytest
+
         from app.carbon import renewable_offset_factor
         with pytest.raises(ValueError):
             renewable_offset_factor(110.0)
 
     def test_invalid_negative(self) -> None:
         import pytest
+
         from app.carbon import renewable_offset_factor
         with pytest.raises(ValueError):
             renewable_offset_factor(-5.0)
@@ -1311,6 +1313,7 @@ class TestHourlyCarbonProfile:
 
     def test_wrong_length_raises(self) -> None:
         import pytest
+
         from app.carbon import hourly_carbon_profile
         with pytest.raises(ValueError):
             hourly_carbon_profile([1.0] * 23)

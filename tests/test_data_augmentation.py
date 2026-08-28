@@ -1,8 +1,7 @@
 """Tests for app.data_augmentation."""
 
+import random
 import re
-
-import pytest
 
 from app.data_augmentation import (
     AugmentationConfig,
@@ -13,7 +12,6 @@ from app.data_augmentation import (
     random_swap,
     synonym_replace,
 )
-import random
 
 
 def make_rng(seed: int = 42) -> random.Random:

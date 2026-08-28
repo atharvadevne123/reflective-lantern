@@ -1,9 +1,6 @@
 """Tests for app.task_queue."""
 
-import time
 import threading
-
-import pytest
 
 from app.task_queue import Task, TaskQueue
 

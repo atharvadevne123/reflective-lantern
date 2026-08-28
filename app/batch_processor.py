@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass, field
-from typing import Any, Callable, Generic, Iterator, List, Optional, TypeVar
+from typing import Callable, Generic, Iterator, List, Optional, TypeVar
 
 logger = logging.getLogger(__name__)
 

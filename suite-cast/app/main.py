@@ -5,8 +5,8 @@ from __future__ import annotations
 import logging
 import time
 import uuid
-from contextlib import asynccontextmanager
 from collections.abc import AsyncGenerator
+from contextlib import asynccontextmanager
 from typing import Any
 
 import numpy as np

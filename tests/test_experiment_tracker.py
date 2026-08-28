@@ -10,7 +10,6 @@ from app.experiment_tracker import (
     Variant,
 )
 
-
 CONTROL = Variant("control", weight=1.0)
 TREATMENT = Variant("treatment", weight=1.0)
 

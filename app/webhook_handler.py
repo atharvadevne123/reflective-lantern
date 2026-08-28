@@ -6,7 +6,6 @@ handlers, preventing spoofed payloads from being acted upon.
 
 from __future__ import annotations
 
-import hashlib
 import hmac
 import json
 import logging
