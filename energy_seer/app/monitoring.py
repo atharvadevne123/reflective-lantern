@@ -20,14 +20,15 @@ _reference_distributions: dict[str, list[float]] = {}
 _isolation_forest: IsolationForest | None = None
 
 
-# Set reference feature distributions for KS-test drift comparisons.
 def set_reference_distributions(data: dict[str, list[float]]) -> None:
+    """Store reference feature distributions used as the baseline for KS-test drift detection."""
     global _reference_distributions
     _reference_distributions = {k: list(v) for k, v in data.items()}
     logger.info("Reference distributions set for %d features", len(data))
 
 
 def compute_drift(reference: list[float], current: list[float]) -> dict:
+    """Run a two-sample KS test between *reference* and *current* distributions."""
     if len(reference) < 5 or len(current) < 5:
         return {
             "ks_statistic": 0.0,
@@ -44,6 +45,7 @@ def compute_drift(reference: list[float], current: list[float]) -> dict:
 
 
 def check_all_features(current_window: dict[str, list[float]]) -> dict[str, dict]:
+    """Check drift for every feature in *current_window* against stored references."""
     results: dict[str, dict] = {}
     for feature, current in current_window.items():
         ref = _reference_distributions.get(feature, [])
@@ -52,6 +54,7 @@ def check_all_features(current_window: dict[str, list[float]]) -> dict[str, dict
 
 
 def train_anomaly_detector(consumption_values: list[float]) -> IsolationForest:
+    """Fit an IsolationForest on *consumption_values* and store it as the global detector."""
     global _isolation_forest
     X = np.array(consumption_values).reshape(-1, 1)
     _isolation_forest = IsolationForest(
@@ -65,6 +68,7 @@ def train_anomaly_detector(consumption_values: list[float]) -> IsolationForest:
 
 
 def detect_anomaly(consumption_kwh: float) -> dict:
+    """Classify *consumption_kwh* as anomalous using IsolationForest and z-score checks."""
     z_score = 0.0
     iso_score = 0.0
     is_iso_anomaly = False
@@ -116,6 +120,7 @@ def log_prediction(
     prediction_horizon_h: int = 1,
     actual_kwh: float | None = None,
 ) -> None:
+    """Persist a prediction event to the database for audit and monitoring."""
     from app.database import PredictionLog
 
     record = PredictionLog(
@@ -138,6 +143,7 @@ def log_anomaly(
     consumption_kwh: float,
     anomaly_result: dict,
 ) -> None:
+    """Write an anomaly detection result to the database."""
     from app.database import AnomalyLog
 
     record = AnomalyLog(
@@ -155,6 +161,7 @@ def log_anomaly(
 
 
 def log_drift(db: Session, feature_results: dict[str, dict]) -> None:
+    """Persist per-feature KS-test drift results to the database."""
     from app.database import DriftLog
 
     for feature, result in feature_results.items():
@@ -175,6 +182,7 @@ def log_drift(db: Session, feature_results: dict[str, dict]) -> None:
 
 
 def compute_prediction_stats(db: Session) -> dict:
+    """Return summary statistics (count, mean, std, min, max) over the last 200 predictions."""
     from app.database import PredictionLog
 
     logs = db.query(PredictionLog).order_by(PredictionLog.timestamp.desc()).limit(200).all()
