@@ -31,6 +31,7 @@ class TokenBucket:
     _lock: threading.Lock = field(init=False, repr=False)
 
     def __post_init__(self) -> None:
+        """Validate parameters and initialise token count, refill timestamp, and lock."""
         if self.capacity <= 0:
             raise ValueError("capacity must be positive")
         if self.rate <= 0:
@@ -40,6 +41,7 @@ class TokenBucket:
         self._lock = threading.Lock()
 
     def _refill(self) -> None:
+        """Add tokens proportional to elapsed time since the last refill."""
         now = time.monotonic()
         elapsed = now - self._last_refill
         added = elapsed * self.rate
@@ -101,6 +103,7 @@ class PerKeyTokenBucket:
     """
 
     def __init__(self, capacity: float, rate: float) -> None:
+        """Initialise the per-key bucket store with shared capacity and rate settings."""
         self.capacity = capacity
         self.rate = rate
         self._buckets: Dict[str, TokenBucket] = {}
