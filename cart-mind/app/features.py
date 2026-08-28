@@ -54,9 +54,11 @@ class RatioFeatures(BaseEstimator, TransformerMixin):
     """
 
     def fit(self, X: pd.DataFrame, y: Any = None) -> RatioFeatures:
+        """No-op fit; returns self for pipeline compatibility."""
         return self
 
     def transform(self, X: pd.DataFrame) -> pd.DataFrame:
+        """Compute epsilon-guarded ratio features from price, rating, and engagement columns."""
         X = X.copy()
         eps = 1e-6
         X["price_per_rating"] = X["item_price"] / (X["item_avg_rating"] + eps)
@@ -75,9 +77,11 @@ class InteractionFeatures(BaseEstimator, TransformerMixin):
     """
 
     def fit(self, X: pd.DataFrame, y: Any = None) -> InteractionFeatures:
+        """No-op fit; returns self for pipeline compatibility."""
         return self
 
     def transform(self, X: pd.DataFrame) -> pd.DataFrame:
+        """Add affinity score, recency decay weight, and price sensitivity columns."""
         X = X.copy()
         X["affinity_score"] = (
             X["same_category_purchases"] * 2.0 + X["wishlist_flag"] * 3.0 + X["click_count"] * 0.5
@@ -99,11 +103,13 @@ class LagRollingFeatures(BaseEstimator, TransformerMixin):
     """
 
     def fit(self, X: pd.DataFrame, y: Any = None) -> LagRollingFeatures:
+        """Learn training-set means for session count and order value normalisation."""
         self.session_mean_ = float(X["session_count_7d"].mean())
         self.order_mean_ = float(X["avg_order_value"].mean())
         return self
 
     def transform(self, X: pd.DataFrame) -> pd.DataFrame:
+        """Apply learned normalisation and derive purchase velocity."""
         X = X.copy()
         X["session_norm"] = X["session_count_7d"] / (self.session_mean_ + 1e-6)
         X["order_value_norm"] = X["avg_order_value"] / (self.order_mean_ + 1e-6)
@@ -125,9 +131,11 @@ class DiscountEncoder(BaseEstimator, TransformerMixin):
     DISCOUNT_LABELS = [0, 1, 2, 3, 4]
 
     def fit(self, X: pd.DataFrame, y: Any = None) -> DiscountEncoder:
+        """No-op fit; returns self for pipeline compatibility."""
         return self
 
     def transform(self, X: pd.DataFrame) -> pd.DataFrame:
+        """Bucket discount percentage and add inventory scarcity flag."""
         X = X.copy()
         X["discount_bucket"] = pd.cut(
             X["item_discount_pct"],
@@ -240,6 +248,7 @@ def make_purchase_labels(df: pd.DataFrame, seed: int = 42, noise: float = 0.35) 
     rng = np.random.default_rng(seed)
 
     def _z(col: str) -> np.ndarray:
+        """Z-score normalise column *col* from the outer DataFrame *df*."""
         v = df[col].to_numpy(dtype=float)
         return (v - v.mean()) / (v.std() + 1e-6)
 
