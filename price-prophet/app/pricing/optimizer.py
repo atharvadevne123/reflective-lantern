@@ -47,6 +47,7 @@ class PriceOptimizer:
         min_multiplier: float = 0.5,
         max_multiplier: float = 3.0,
     ) -> None:
+        """Initialise the optimiser with a model and price multiplier bounds."""
         self.model = model
         self.min_multiplier = min_multiplier
         self.max_multiplier = max_multiplier
