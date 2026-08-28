@@ -20,6 +20,7 @@ class MetricsCollector:
     """
 
     def __init__(self) -> None:
+        """Initialise the collector with empty records, counters, and timings."""
         self._records: list[dict[str, Any]] = []
         self._counters: dict[str, float] = {}
         self._timings: dict[str, list[float]] = {}
