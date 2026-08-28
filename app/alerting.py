@@ -114,6 +114,7 @@ class AlertManager:
     """
 
     def __init__(self, handlers: Optional[List[Callable[[Alert], None]]] = None) -> None:
+        """Initialise the alert manager with optional handler callables."""
         self._rules: Dict[str, AlertRule] = {}
         self._handlers: List[Callable[[Alert], None]] = handlers or []
         self._fired: List[Alert] = []
