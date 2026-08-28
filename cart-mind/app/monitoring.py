@@ -191,6 +191,7 @@ class _Counters:
     """
 
     def __init__(self) -> None:
+        """Initialise all request counters and the bounded latency deque."""
         self._lock = Lock()
         self.total_requests = 0
         self.intent_requests = 0
