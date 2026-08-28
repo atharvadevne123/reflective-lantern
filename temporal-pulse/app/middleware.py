@@ -26,19 +26,22 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
 
     def __init__(
         self, app, requests_per_window: int | None = None, window_seconds: int | None = None
-    ):
+    ) -> None:
+        """Initialise the middleware with optional per-window and window-size overrides."""
         super().__init__(app)
         self.requests_per_window = requests_per_window or RATE_LIMIT_REQUESTS
         self.window_seconds = window_seconds or RATE_LIMIT_WINDOW_SECONDS
         self._request_log: dict[str, deque] = defaultdict(deque)
 
     def _client_key(self, request: Request) -> str:
+        """Return the canonical client identifier (X-Forwarded-For or remote host)."""
         forwarded = request.headers.get("X-Forwarded-For")
         if forwarded:
             return forwarded.split(",")[0].strip()
         return request.client.host if request.client else "unknown"
 
-    async def dispatch(self, request: Request, call_next):
+    async def dispatch(self, request: Request, call_next) -> JSONResponse:  # type: ignore[override]
+        """Allow or reject the request based on the sliding-window rate limit."""
         key = self._client_key(request)
         now = time.monotonic()
         window = self._request_log[key]
