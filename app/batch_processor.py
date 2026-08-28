@@ -64,6 +64,7 @@ class BatchProcessor(Generic[T, R]):
         error_handling: str = "raise",
         on_batch_done: Optional[Callable[[BatchResult[R]], None]] = None,
     ) -> None:
+        """Initialise the batch processor with a processor callable and batch configuration."""
         if batch_size < 1:
             raise ValueError("batch_size must be >= 1")
         if error_handling not in ("raise", "collect"):
@@ -75,6 +76,7 @@ class BatchProcessor(Generic[T, R]):
 
     @staticmethod
     def _chunk(items: List[T], size: int) -> Iterator[List[T]]:
+        """Yield successive sub-lists of *items* each at most *size* elements long."""
         for i in range(0, len(items), size):
             yield items[i: i + size]
 
