@@ -34,6 +34,7 @@ _model = None
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
+    """Initialise DB and load model on startup; clean up on shutdown."""
     global _model
     init_db()
     _model = load_model()
@@ -81,6 +82,7 @@ RATE_LIMIT = int(os.getenv("RATE_LIMIT_RPM", "60"))
 
 @app.middleware("http")
 async def rate_limit_middleware(request: Request, call_next: Any) -> Any:
+    """Enforce per-IP rate limiting using a sliding 60-second window."""
     client_ip = request.client.host if request.client else "unknown"
     now = time.time()
     window = _RATE_WINDOW.setdefault(client_ip, [])
@@ -95,6 +97,7 @@ async def rate_limit_middleware(request: Request, call_next: Any) -> Any:
 
 @app.middleware("http")
 async def correlation_id_middleware(request: Request, call_next: Any) -> Any:
+    """Attach a correlation ID to every request and propagate it in the response."""
     cid = request.headers.get("X-Correlation-ID", str(uuid.uuid4()))
     request.state.correlation_id = cid
     response = await call_next(request)
@@ -116,6 +119,7 @@ class SensorInput(BaseModel):
     @field_validator("temperature", "pressure", "vibration", "cycle_time", "power_consumption")
     @classmethod
     def must_be_finite(cls, v: float) -> float:
+        """Reject NaN and ±Inf values before they reach the model."""
         import math
 
         if not math.isfinite(v):
@@ -198,6 +202,7 @@ async def predict_legacy(
     request: Request,
     db: Annotated[Session, Depends(get_db)],
 ) -> PredictionResponse:
+    """Legacy /predict alias; delegates to /api/v1/predict."""
     return await predict_defect(payload, request, db)
 
 
@@ -219,6 +224,7 @@ async def metrics(db: Annotated[Session, Depends(get_db)]) -> MetricsResponse:
 
 @app.get("/metrics", tags=["ops"], deprecated=True)
 async def metrics_legacy(db: Annotated[Session, Depends(get_db)]) -> MetricsResponse:
+    """Legacy /metrics alias; delegates to /api/v1/metrics."""
     return await metrics(db)
 
 
