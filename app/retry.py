@@ -32,8 +32,10 @@ def retry(
         Decorated function that retries on the specified exceptions.
     """
     def decorator(func: Callable) -> Callable:
+        """Wrap *func* with retry logic using the captured parameters."""
         @functools.wraps(func)
-        def wrapper(*args, **kwargs):
+        def wrapper(*args, **kwargs):  # type: ignore[return]
+            """Execute *func* with exponential backoff retries on failure."""
             delay = base_delay
             last_exc: Exception | None = None
             for attempt in range(1, max_attempts + 1):
