@@ -46,6 +46,7 @@ class ModelRegistry:
     """
 
     def __init__(self) -> None:
+        """Initialise the registry with an empty model store."""
         self._models: Dict[str, List[ModelVersion]] = {}
 
     def register(self, model: ModelVersion) -> None:
@@ -101,6 +102,7 @@ class ModelRegistry:
         return versions[-1] if versions else None
 
     def _get(self, name: str, version: str) -> Optional[ModelVersion]:
+        """Return the ModelVersion matching *name* and *version*, or None if absent."""
         for mv in self._models.get(name, []):
             if mv.version == version:
                 return mv
