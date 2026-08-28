@@ -10,8 +10,9 @@ import heapq
 import logging
 import threading
 import time
+from collections.abc import Callable
 from dataclasses import dataclass, field
-from typing import Any, Callable, List
+from typing import Any
 
 __all__ = [
     "Task",
@@ -40,15 +41,14 @@ class TaskQueue:
     """Thread-safe priority queue that executes tasks on worker threads."""
 
     def __init__(self, workers: int = 2) -> None:
-        """Initialise the task queue with a fixed number of worker threads."""
-        self._heap: List[Task] = []
+        self._heap: list[Task] = []
         self._lock = threading.Lock()
         self._not_empty = threading.Condition(self._lock)
         self._running = False
-        self._threads: List[threading.Thread] = []
+        self._threads: list[threading.Thread] = []
         self._workers = workers
         self._completed = 0
-        self._errors: List[Exception] = []
+        self._errors: list[Exception] = []
 
     def submit(self, fn: Callable[..., Any], priority: int = 5, *args: Any, **kwargs: Any) -> None:
         """Enqueue a task; lower *priority* values run first."""
@@ -75,7 +75,6 @@ class TaskQueue:
         self._threads.clear()
 
     def _worker(self) -> None:
-        """Pop and execute tasks from the heap until the queue is stopped."""
         while True:
             with self._not_empty:
                 while not self._heap and self._running:
@@ -94,17 +93,14 @@ class TaskQueue:
 
     @property
     def completed(self) -> int:
-        """Return the count of successfully completed tasks."""
         with self._lock:
             return self._completed
 
     @property
-    def errors(self) -> List[Exception]:
-        """Return a snapshot list of exceptions raised by failed tasks."""
+    def errors(self) -> list[Exception]:
         with self._lock:
             return list(self._errors)
 
     def __len__(self) -> int:
-        """Return the number of tasks currently waiting in the queue."""
         with self._lock:
             return len(self._heap)

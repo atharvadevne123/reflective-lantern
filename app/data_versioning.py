@@ -6,7 +6,7 @@ import hashlib
 import json
 import logging
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -29,11 +29,11 @@ class DataSnapshot:
     name: str
     version: str
     source: str
-    schema: Dict[str, str] = field(default_factory=dict)
+    schema: dict[str, str] = field(default_factory=dict)
     row_count: int = 0
     checksum: str = ""
-    tags: Dict[str, Any] = field(default_factory=dict)
-    parent_versions: List[str] = field(default_factory=list)
+    tags: dict[str, Any] = field(default_factory=dict)
+    parent_versions: list[str] = field(default_factory=list)
 
     @classmethod
     def compute_checksum(cls, data: Any) -> str:
@@ -53,8 +53,7 @@ class DataLineage:
     """Tracks dataset snapshots and their lineage graph."""
 
     def __init__(self) -> None:
-        """Initialise the lineage tracker with an empty snapshot store."""
-        self._snapshots: Dict[str, List[DataSnapshot]] = {}
+        self._snapshots: dict[str, list[DataSnapshot]] = {}
 
     def record(self, snapshot: DataSnapshot) -> None:
         """Record a new dataset snapshot.
@@ -69,16 +68,16 @@ class DataLineage:
             self._snapshots[snapshot.name] = []
         existing = {s.version for s in self._snapshots[snapshot.name]}
         if snapshot.version in existing:
-            raise ValueError(
-                f"Snapshot '{snapshot.name}' v{snapshot.version} already recorded"
-            )
+            raise ValueError(f"Snapshot '{snapshot.name}' v{snapshot.version} already recorded")
         self._snapshots[snapshot.name].append(snapshot)
         logger.info(
             "Recorded dataset '%s' v%s (%d rows)",
-            snapshot.name, snapshot.version, snapshot.row_count,
+            snapshot.name,
+            snapshot.version,
+            snapshot.row_count,
         )
 
-    def get(self, name: str, version: Optional[str] = None) -> Optional[DataSnapshot]:
+    def get(self, name: str, version: str | None = None) -> DataSnapshot | None:
         """Retrieve a snapshot by name and optional version.
 
         Args:
@@ -98,7 +97,7 @@ class DataLineage:
                 return snap
         return None
 
-    def lineage(self, name: str, version: str) -> List[DataSnapshot]:
+    def lineage(self, name: str, version: str) -> list[DataSnapshot]:
         """Return the ancestry chain of a snapshot (breadth-first).
 
         Args:
@@ -108,7 +107,7 @@ class DataLineage:
         Returns:
             Ordered list of ancestor snapshots, excluding the start.
         """
-        ancestors: List[DataSnapshot] = []
+        ancestors: list[DataSnapshot] = []
         queue = list(self.get(name, version).parent_versions if self.get(name, version) else [])
         seen: set = set()
         while queue:
@@ -122,11 +121,11 @@ class DataLineage:
                 queue.extend(snap.parent_versions)
         return ancestors
 
-    def list_versions(self, name: str) -> List[str]:
+    def list_versions(self, name: str) -> list[str]:
         """Return all recorded version strings for a dataset."""
         return [s.version for s in self._snapshots.get(name, [])]
 
-    def list_datasets(self) -> List[str]:
+    def list_datasets(self) -> list[str]:
         """Return all dataset names."""
         return list(self._snapshots.keys())
 

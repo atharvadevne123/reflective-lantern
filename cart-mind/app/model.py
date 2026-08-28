@@ -287,17 +287,14 @@ class _BruteForceIndex:
     """
 
     def __init__(self, vectors: np.ndarray, item_ids: list[str]) -> None:
-        """Initialise the index with pre-computed float32 *vectors* and their *item_ids*."""
         self._vecs = vectors.astype(np.float32)
         self._ids = item_ids
 
     def search(self, query: np.ndarray, k: int) -> tuple[np.ndarray, np.ndarray]:
-        """Return the *k* nearest vectors by squared L2 distance as (distances, indices)."""
         diffs = self._vecs - query
         dists = np.sum(diffs**2, axis=1)
         top_idx = np.argsort(dists)[:k]
         return dists[top_idx].reshape(1, -1), top_idx.reshape(1, -1)
 
     def add(self, vectors: np.ndarray) -> None:
-        """Append *vectors* to the index."""
         self._vecs = np.vstack([self._vecs, vectors.astype(np.float32)])

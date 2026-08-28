@@ -18,15 +18,12 @@ class LagFeatureTransformer(BaseEstimator, TransformerMixin):
     """Create lag features for time-series energy data."""
 
     def __init__(self, lags: list[int] | None = None) -> None:
-        """Initialise with the list of hourly lag offsets to generate."""
         self.lags = lags or [1, 2, 3, 6, 12, 24]
 
     def fit(self, X: pd.DataFrame, y: Any = None) -> LagFeatureTransformer:
-        """No-op fit; returns self for pipeline compatibility."""
         return self
 
     def transform(self, X: pd.DataFrame) -> pd.DataFrame:
-        """Append lagged consumption columns to the DataFrame."""
         df = X.copy()
         if "consumption_kwh" in df.columns:
             for lag in self.lags:
@@ -38,15 +35,12 @@ class RollingStatsTransformer(BaseEstimator, TransformerMixin):
     """Rolling mean, std, min, max over configurable windows."""
 
     def __init__(self, windows: list[int] | None = None) -> None:
-        """Initialise with the list of rolling window sizes in hours."""
         self.windows = windows or [3, 6, 12, 24]
 
     def fit(self, X: pd.DataFrame, y: Any = None) -> RollingStatsTransformer:
-        """No-op fit; returns self for pipeline compatibility."""
         return self
 
     def transform(self, X: pd.DataFrame) -> pd.DataFrame:
-        """Append rolling mean, std, and max columns for each window."""
         df = X.copy()
         if "consumption_kwh" in df.columns:
             for w in self.windows:
@@ -62,11 +56,9 @@ class TemporalFeatureTransformer(BaseEstimator, TransformerMixin):
     """Encode hour-of-day, day-of-week, and seasonal cyclical features."""
 
     def fit(self, X: pd.DataFrame, y: Any = None) -> TemporalFeatureTransformer:
-        """No-op fit; returns self for pipeline compatibility."""
         return self
 
     def transform(self, X: pd.DataFrame) -> pd.DataFrame:
-        """Add cyclical hour/day encodings and peak-period indicator columns."""
         df = X.copy()
         if "hour_of_day" in df.columns:
             df["hour_sin"] = np.sin(2 * np.pi * df["hour_of_day"] / 24)
@@ -89,15 +81,12 @@ class WeatherRatioTransformer(BaseEstimator, TransformerMixin):
     """Compute weather-based energy ratio features."""
 
     def __init__(self, comfort_temp: float = 20.0) -> None:
-        """Initialise with the comfort temperature threshold in degrees Celsius."""
         self.comfort_temp = comfort_temp
 
     def fit(self, X: pd.DataFrame, y: Any = None) -> WeatherRatioTransformer:
-        """No-op fit; returns self for pipeline compatibility."""
         return self
 
     def transform(self, X: pd.DataFrame) -> pd.DataFrame:
-        """Compute temperature deviation and degree-day features."""
         df = X.copy()
         if "temperature_c" in df.columns:
             df["temp_deviation"] = (df["temperature_c"] - self.comfort_temp).abs()
@@ -123,11 +112,9 @@ class BuildingEncoderTransformer(BaseEstimator, TransformerMixin):
     }
 
     def fit(self, X: pd.DataFrame, y: Any = None) -> BuildingEncoderTransformer:
-        """No-op fit; returns self for pipeline compatibility."""
         return self
 
     def transform(self, X: pd.DataFrame) -> pd.DataFrame:
-        """Replace building_type with a numeric energy-intensity score."""
         df = X.copy()
         if "building_type" in df.columns:
             df["building_intensity"] = df["building_type"].map(self.BUILDING_INTENSITY).fillna(2.0)
@@ -141,11 +128,9 @@ class DropRawColumnsTransformer(BaseEstimator, TransformerMixin):
     COLS_TO_DROP = ["meter_id", "timestamp", "consumption_kwh"]
 
     def fit(self, X: pd.DataFrame, y: Any = None) -> DropRawColumnsTransformer:
-        """No-op fit; returns self for pipeline compatibility."""
         return self
 
     def transform(self, X: pd.DataFrame) -> pd.DataFrame:
-        """Remove raw identifier and target columns that must not reach the model."""
         df = X.copy()
         cols = [c for c in self.COLS_TO_DROP if c in df.columns]
         return df.drop(columns=cols)

@@ -7,7 +7,6 @@ import pytest
 
 @pytest.fixture
 def sample_records():
-    """Return a small list of product record dicts for use in tests."""
     return [
         {
             "product_id": "A1",
@@ -59,7 +58,6 @@ def sample_records():
 
 @pytest.fixture
 def feature_matrix():
-    """Return a small feature matrix (list of lists) for model tests."""
     return [
         [100.0, 80.0, 95.0, 1.0, 0.0],
         [50.0, 200.0, 52.0, 6.0, 1.0],
@@ -69,11 +67,9 @@ def feature_matrix():
 
 @pytest.fixture
 def price_series():
-    """Return a short sequence of sample prices for backtesting tests."""
     return [10.0, 12.0, 11.0, 13.0, 15.0, 14.0, 16.0, 18.0]
 
 
 @pytest.fixture
 def demand_series():
-    """Return a short sequence of sample demand values for backtesting tests."""
     return [200.0, 180.0, 190.0, 170.0, 150.0, 155.0, 140.0, 120.0]

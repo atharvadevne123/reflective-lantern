@@ -85,7 +85,6 @@ def post_to_api(readings: list[dict], base_url: str) -> None:
 
 
 def main() -> None:
-    """Parse CLI arguments and either POST to the API, write to file, or print a sample."""
     parser = argparse.ArgumentParser(description="Seed Temporal-Pulse with synthetic data")
     parser.add_argument("--n", type=int, default=500, help="Number of readings")
     parser.add_argument("--sensor-id", default="turbine-01")

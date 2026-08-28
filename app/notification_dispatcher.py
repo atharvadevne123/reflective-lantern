@@ -7,21 +7,21 @@ Slack, webhook) based on severity and channel availability.
 from __future__ import annotations
 
 import logging
+from collections.abc import Callable
 from dataclasses import dataclass, field
-from enum import Enum
-from typing import Callable, Dict, List
+from enum import StrEnum
 
 __all__ = [
-    "Severity",
-    "Notification",
     "Channel",
+    "Notification",
     "NotificationDispatcher",
+    "Severity",
 ]
 
 logger = logging.getLogger(__name__)
 
 
-class Severity(str, Enum):
+class Severity(StrEnum):
     INFO = "info"
     WARNING = "warning"
     ERROR = "error"
@@ -35,7 +35,7 @@ class Notification:
     title: str
     body: str
     severity: Severity = Severity.INFO
-    tags: List[str] = field(default_factory=list)
+    tags: list[str] = field(default_factory=list)
 
 
 SendFn = Callable[[Notification], None]
@@ -58,7 +58,7 @@ class NotificationDispatcher:
     """Dispatches notifications to all eligible registered channels."""
 
     def __init__(self) -> None:
-        self._channels: Dict[str, Channel] = {}
+        self._channels: dict[str, Channel] = {}
 
     def register(self, channel: Channel) -> None:
         """Add or replace a channel by name."""
@@ -68,13 +68,13 @@ class NotificationDispatcher:
         """Remove a channel by name."""
         self._channels.pop(name, None)
 
-    def dispatch(self, notification: Notification) -> Dict[str, bool]:
+    def dispatch(self, notification: Notification) -> dict[str, bool]:
         """Send *notification* to all eligible channels.
 
         Returns:
             Mapping of channel name to delivery success.
         """
-        results: Dict[str, bool] = {}
+        results: dict[str, bool] = {}
         notif_rank = _SEVERITY_ORDER.index(notification.severity)
 
         for name, channel in self._channels.items():

@@ -9,13 +9,14 @@ from __future__ import annotations
 import hmac
 import json
 import logging
+from collections.abc import Callable
 from dataclasses import dataclass, field
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any
 
 __all__ = [
+    "SignatureError",
     "WebhookEvent",
     "WebhookHandler",
-    "SignatureError",
 ]
 
 logger = logging.getLogger(__name__)
@@ -30,8 +31,8 @@ class WebhookEvent:
     """A parsed and verified webhook event."""
 
     event_type: str
-    payload: Dict[str, Any]
-    headers: Dict[str, str] = field(default_factory=dict)
+    payload: dict[str, Any]
+    headers: dict[str, str] = field(default_factory=dict)
 
 
 EventHandler = Callable[[WebhookEvent], None]
@@ -43,8 +44,8 @@ class WebhookHandler:
     def __init__(self, secret: str, algorithm: str = "sha256") -> None:
         self._secret = secret.encode() if isinstance(secret, str) else secret
         self._algorithm = algorithm
-        self._handlers: Dict[str, List[EventHandler]] = {}
-        self._catch_all: List[EventHandler] = []
+        self._handlers: dict[str, list[EventHandler]] = {}
+        self._catch_all: list[EventHandler] = []
 
     # ------------------------------------------------------------------
     # Registration
@@ -73,9 +74,9 @@ class WebhookHandler:
             SignatureError: If verification fails.
         """
         try:
-            scheme, provided_digest = signature.split("=", 1)
-        except ValueError:
-            raise SignatureError(f"Malformed signature: {signature!r}")
+            _scheme, provided_digest = signature.split("=", 1)
+        except ValueError as exc:
+            raise SignatureError(f"Malformed signature: {signature!r}") from exc
 
         expected = hmac.new(self._secret, body, self._algorithm).hexdigest()
         if not hmac.compare_digest(expected, provided_digest):
@@ -85,8 +86,8 @@ class WebhookHandler:
         self,
         body: bytes,
         event_type: str,
-        signature: Optional[str] = None,
-        headers: Optional[Dict[str, str]] = None,
+        signature: str | None = None,
+        headers: dict[str, str] | None = None,
     ) -> WebhookEvent:
         """Parse, verify, and dispatch a webhook payload.
 

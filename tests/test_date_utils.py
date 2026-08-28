@@ -977,6 +977,7 @@ class TestMinutesBetween:
         from datetime import UTC, datetime
 
         from app.date_utils import minutes_between
+
         a = datetime(2026, 1, 1, 10, 0, tzinfo=UTC)
         b = datetime(2026, 1, 1, 10, 30, tzinfo=UTC)
         assert minutes_between(a, b) == 30
@@ -985,6 +986,7 @@ class TestMinutesBetween:
         from datetime import UTC, datetime
 
         from app.date_utils import minutes_between
+
         a = datetime(2026, 1, 1, 10, 0, tzinfo=UTC)
         b = datetime(2026, 1, 1, 9, 0, tzinfo=UTC)
         assert minutes_between(a, b) == -60
@@ -993,6 +995,7 @@ class TestMinutesBetween:
         from datetime import UTC, datetime
 
         from app.date_utils import minutes_between
+
         a = datetime(2026, 1, 1, tzinfo=UTC)
         assert minutes_between(a, a) == 0
 
@@ -1002,6 +1005,7 @@ class TestIsSameDay:
         from datetime import UTC, datetime
 
         from app.date_utils import is_same_day
+
         a = datetime(2026, 6, 15, 9, 0, tzinfo=UTC)
         b = datetime(2026, 6, 15, 23, 0, tzinfo=UTC)
         assert is_same_day(a, b) is True
@@ -1010,6 +1014,7 @@ class TestIsSameDay:
         from datetime import UTC, datetime
 
         from app.date_utils import is_same_day
+
         a = datetime(2026, 6, 15, tzinfo=UTC)
         b = datetime(2026, 6, 16, tzinfo=UTC)
         assert is_same_day(a, b) is False
@@ -1020,6 +1025,7 @@ class TestEndOfDay:
         from datetime import UTC, datetime
 
         from app.date_utils import end_of_day
+
         dt = datetime(2026, 3, 10, 14, 30, tzinfo=UTC)
         result = end_of_day(dt)
         assert result.hour == 23
@@ -1030,5 +1036,6 @@ class TestEndOfDay:
         from datetime import UTC, datetime
 
         from app.date_utils import end_of_day
+
         dt = datetime(2026, 1, 1, tzinfo=UTC)
         assert end_of_day(dt).tzinfo is UTC

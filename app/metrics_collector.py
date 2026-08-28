@@ -9,7 +9,6 @@ from __future__ import annotations
 import math
 import threading
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional
 
 __all__ = [
     "Counter",
@@ -78,11 +77,11 @@ class Histogram:
 
     name: str
     description: str = ""
-    buckets: List[float] = field(default_factory=lambda: [0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1.0, 2.5, 5.0])
+    buckets: list[float] = field(default_factory=lambda: [0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1.0, 2.5, 5.0])
 
     def __post_init__(self) -> None:
         self._lock = threading.Lock()
-        self._counts: List[int] = [0] * len(self.buckets)
+        self._counts: list[int] = [0] * len(self.buckets)
         self._sum: float = 0.0
         self._total: int = 0
 
@@ -104,14 +103,14 @@ class Histogram:
         with self._lock:
             return self._total
 
-    def percentile(self, p: float) -> Optional[float]:
-        """Estimate the *p*-th percentile (0–1) from bucket boundaries."""
+    def percentile(self, p: float) -> float | None:
+        """Estimate the *p*-th percentile (0-1) from bucket boundaries."""
         with self._lock:
             if self._total == 0:
                 return None
             target = math.ceil(p * self._total)
             cumulative = 0
-            for bound, cnt in zip(self.buckets, self._counts):
+            for bound, cnt in zip(self.buckets, self._counts, strict=False):
                 cumulative += cnt
                 if cumulative >= target:
                     return bound
@@ -122,7 +121,7 @@ class MetricsRegistry:
     """Central registry for named metrics."""
 
     def __init__(self) -> None:
-        self._metrics: Dict[str, object] = {}
+        self._metrics: dict[str, object] = {}
 
     def counter(self, name: str, description: str = "") -> Counter:
         if name not in self._metrics:
@@ -134,7 +133,7 @@ class MetricsRegistry:
             self._metrics[name] = Gauge(name, description)
         return self._metrics[name]  # type: ignore[return-value]
 
-    def histogram(self, name: str, description: str = "", buckets: Optional[List[float]] = None) -> Histogram:
+    def histogram(self, name: str, description: str = "", buckets: list[float] | None = None) -> Histogram:
         if name not in self._metrics:
             kwargs = {"name": name, "description": description}
             if buckets is not None:
@@ -142,7 +141,7 @@ class MetricsRegistry:
             self._metrics[name] = Histogram(**kwargs)
         return self._metrics[name]  # type: ignore[return-value]
 
-    def all_metrics(self) -> Dict[str, object]:
+    def all_metrics(self) -> dict[str, object]:
         return dict(self._metrics)
 
 

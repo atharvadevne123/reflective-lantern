@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import math
 from dataclasses import dataclass
-from typing import List
 
 _EARTH_RADIUS_KM = 6_371.0
 
@@ -67,10 +66,7 @@ class BoundingBox:
 
     def contains(self, coord: Coordinate) -> bool:
         """Return True if coord falls within this bounding box."""
-        return (
-            self.min_lat <= coord.lat <= self.max_lat
-            and self.min_lon <= coord.lon <= self.max_lon
-        )
+        return self.min_lat <= coord.lat <= self.max_lat and self.min_lon <= coord.lon <= self.max_lon
 
     @property
     def center(self) -> Coordinate:
@@ -81,7 +77,7 @@ class BoundingBox:
         )
 
 
-def bounding_box_of(coords: List[Coordinate]) -> BoundingBox:
+def bounding_box_of(coords: list[Coordinate]) -> BoundingBox:
     """Compute the smallest bounding box that contains all coordinates.
 
     Args:
@@ -103,7 +99,7 @@ def bounding_box_of(coords: List[Coordinate]) -> BoundingBox:
     )
 
 
-def nearest_neighbor(query: Coordinate, candidates: List[Coordinate]) -> Coordinate:
+def nearest_neighbor(query: Coordinate, candidates: list[Coordinate]) -> Coordinate:
     """Return the candidate closest to query using haversine distance.
 
     Args:
@@ -138,10 +134,12 @@ def midpoint(a: Coordinate, b: Coordinate) -> Coordinate:
     dlon = math.radians(b.lon - a.lon)
     bx = math.cos(lat2) * math.cos(dlon)
     by = math.cos(lat2) * math.sin(dlon)
-    mid_lat = math.degrees(math.atan2(
-        math.sin(lat1) + math.sin(lat2),
-        math.sqrt((math.cos(lat1) + bx) ** 2 + by ** 2),
-    ))
+    mid_lat = math.degrees(
+        math.atan2(
+            math.sin(lat1) + math.sin(lat2),
+            math.sqrt((math.cos(lat1) + bx) ** 2 + by**2),
+        )
+    )
     mid_lon = a.lon + math.degrees(math.atan2(by, math.cos(lat1) + bx))
     return Coordinate(lat=mid_lat, lon=mid_lon)
 

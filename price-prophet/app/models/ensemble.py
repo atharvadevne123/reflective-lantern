@@ -39,7 +39,6 @@ class EnsemblePricingModel(BasePricingModel):
         models: list[BasePricingModel],
         weights: list[float] | None = None,
     ) -> None:
-        """Initialise the ensemble with *models* and optional *weights* for averaging."""
         if not models:
             raise ValueError("EnsemblePricingModel requires at least one member model.")
         self.models = list(models)
@@ -167,7 +166,6 @@ class EnsemblePricingModel(BasePricingModel):
         return removed
 
     def __repr__(self) -> str:
-        """Return a concise string showing member model names and fit status."""
         fitted_str = "fitted" if self._fitted else "not fitted"
         member_names = ", ".join(type(m).__name__ for m in self.models)
         return f"EnsemblePricingModel([{member_names}], {fitted_str})"

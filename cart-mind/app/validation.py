@@ -24,7 +24,6 @@ class ValidationIssue(Exception):
     """
 
     def __init__(self, message: str, field: str | None = None) -> None:
-        """Initialise the exception with a human-readable *message* and optional *field* name."""
         super().__init__(message)
         self.message = message
         self.field = field

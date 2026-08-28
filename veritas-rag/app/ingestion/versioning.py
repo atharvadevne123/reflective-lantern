@@ -29,7 +29,6 @@ class VersionChain:
 
     @property
     def latest(self) -> Document:
-        """Return the most recently added version of this document."""
         return self.versions[-1]
 
 
@@ -37,7 +36,6 @@ class VersionStore:
     """Tracks version chains keyed by source identity."""
 
     def __init__(self) -> None:
-        """Initialise the store with an empty chain registry."""
         self._chains: dict[str, VersionChain] = {}
 
     def next_version(self, source: str) -> int:
@@ -56,12 +54,10 @@ class VersionStore:
         chain.versions.append(doc)
 
     def latest(self, source: str) -> Document | None:
-        """Return the most recent document for *source*, or None if unknown."""
         chain = self._chains.get(source)
         return chain.latest if chain else None
 
     def history(self, source: str) -> list[Document]:
-        """Return all versions of *source* in chronological order."""
         chain = self._chains.get(source)
         return list(chain.versions) if chain else []
 
@@ -73,5 +69,4 @@ class VersionStore:
         return [d.doc_id for d in chain.versions[:-1]]
 
     def __len__(self) -> int:
-        """Return the number of distinct sources tracked by this store."""
         return len(self._chains)

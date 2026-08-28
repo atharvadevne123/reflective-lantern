@@ -20,28 +20,23 @@ class _HTMLTextExtractor(HTMLParser):
     _SKIP = {"script", "style", "noscript"}
 
     def __init__(self) -> None:
-        """Initialise the parser with empty text buffer and zero skip depth."""
         super().__init__()
         self._parts: list[str] = []
         self._skip_depth = 0
 
     def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
-        """Increment skip depth when entering a non-visible tag such as script or style."""
         if tag in self._SKIP:
             self._skip_depth += 1
 
     def handle_endtag(self, tag: str) -> None:
-        """Decrement skip depth when leaving a previously skipped tag."""
         if tag in self._SKIP and self._skip_depth > 0:
             self._skip_depth -= 1
 
     def handle_data(self, data: str) -> None:
-        """Collect visible text, ignoring content inside skipped tags."""
         if self._skip_depth == 0 and data.strip():
             self._parts.append(data.strip())
 
     def text(self) -> str:
-        """Return all collected visible text joined by newlines."""
         return "\n".join(self._parts)
 
 

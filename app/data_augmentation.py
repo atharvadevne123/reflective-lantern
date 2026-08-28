@@ -7,17 +7,17 @@ from __future__ import annotations
 
 import random
 import re
+from collections.abc import Callable, Sequence
 from dataclasses import dataclass, field
-from typing import Callable, List, Optional, Sequence
 
 __all__ = [
     "AugmentationConfig",
+    "augment_batch",
     "augment_text",
-    "synonym_replace",
+    "jitter_numerics",
     "random_deletion",
     "random_swap",
-    "jitter_numerics",
-    "augment_batch",
+    "synonym_replace",
 ]
 
 
@@ -29,11 +29,11 @@ class AugmentationConfig:
     deletion_prob: float = 0.1
     swap_prob: float = 0.1
     numeric_jitter_pct: float = 0.05
-    seed: Optional[int] = None
+    seed: int | None = None
     synonyms: dict = field(default_factory=dict)
 
 
-def synonym_replace(tokens: List[str], synonyms: dict, prob: float, rng: random.Random) -> List[str]:
+def synonym_replace(tokens: list[str], synonyms: dict, prob: float, rng: random.Random) -> list[str]:
     """Replace tokens with synonyms at random."""
     result = []
     for token in tokens:
@@ -44,7 +44,7 @@ def synonym_replace(tokens: List[str], synonyms: dict, prob: float, rng: random.
     return result
 
 
-def random_deletion(tokens: List[str], prob: float, rng: random.Random) -> List[str]:
+def random_deletion(tokens: list[str], prob: float, rng: random.Random) -> list[str]:
     """Delete tokens randomly; always keeps at least one."""
     if len(tokens) == 1:
         return tokens[:]
@@ -52,7 +52,7 @@ def random_deletion(tokens: List[str], prob: float, rng: random.Random) -> List[
     return kept if kept else [rng.choice(tokens)]
 
 
-def random_swap(tokens: List[str], prob: float, rng: random.Random) -> List[str]:
+def random_swap(tokens: list[str], prob: float, rng: random.Random) -> list[str]:
     """Swap adjacent token pairs randomly."""
     result = tokens[:]
     for i in range(len(result) - 1):
@@ -63,8 +63,8 @@ def random_swap(tokens: List[str], prob: float, rng: random.Random) -> List[str]
 
 def jitter_numerics(text: str, pct: float, rng: random.Random) -> str:
     """Add Gaussian jitter to numeric values found in *text*."""
+
     def _jitter(m: re.Match) -> str:
-        """Replace the matched number with a Gaussian-jittered version."""
         val = float(m.group())
         noise = rng.gauss(0, abs(val) * pct) if val != 0 else rng.gauss(0, pct)
         return str(round(val + noise, 6))
@@ -89,8 +89,8 @@ def augment_batch(
     samples: Sequence[str],
     config: AugmentationConfig,
     n_augments: int = 1,
-    transform: Optional[Callable[[str, AugmentationConfig], str]] = None,
-) -> List[str]:
+    transform: Callable[[str, AugmentationConfig], str] | None = None,
+) -> list[str]:
     """Augment every sample *n_augments* times and return all results."""
     fn = transform or augment_text
     return [fn(s, config) for s in samples for _ in range(n_augments)]

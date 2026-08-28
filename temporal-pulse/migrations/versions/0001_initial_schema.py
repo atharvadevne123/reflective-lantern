@@ -16,7 +16,6 @@ depends_on = None
 
 
 def upgrade() -> None:
-    """Create sensor_readings, anomaly_events, predictions, and drift_logs tables."""
     op.create_table(
         "sensor_readings",
         sa.Column("id", sa.Integer(), primary_key=True),
@@ -68,7 +67,6 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
-    """Drop all tables created by this migration in reverse order."""
     op.drop_table("drift_logs")
     op.drop_table("predictions")
     op.drop_table("anomaly_events")

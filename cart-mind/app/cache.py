@@ -38,7 +38,6 @@ class TTLCache:
         ttl_seconds: float = DEFAULT_TTL_SECONDS,
         max_entries: int = DEFAULT_MAX_ENTRIES,
     ) -> None:
-        """Initialise the TTL cache with the given time-to-live and capacity limits."""
         self._ttl = ttl_seconds
         self._max = max_entries
         self._store: OrderedDict[str, tuple[float, Any]] = OrderedDict()

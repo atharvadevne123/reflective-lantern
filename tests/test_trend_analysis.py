@@ -980,15 +980,18 @@ class TestTrendReversalCount:
 class TestResistanceLevel:
     def test_basic(self) -> None:
         from app.trend_analysis import resistance_level
+
         vals = list(range(1, 11))
         assert resistance_level(vals) == 9
 
     def test_single_element(self) -> None:
         from app.trend_analysis import resistance_level
+
         assert resistance_level([42.0]) == 42.0
 
     def test_empty_raises(self) -> None:
         from app.trend_analysis import resistance_level
+
         with pytest.raises(ValueError):
             resistance_level([])
 
@@ -996,15 +999,18 @@ class TestResistanceLevel:
 class TestSupportLevel:
     def test_basic(self) -> None:
         from app.trend_analysis import support_level
+
         vals = list(range(1, 11))
         assert support_level(vals) == 1
 
     def test_single_element(self) -> None:
         from app.trend_analysis import support_level
+
         assert support_level([7.0]) == 7.0
 
     def test_empty_raises(self) -> None:
         from app.trend_analysis import support_level
+
         with pytest.raises(ValueError):
             support_level([])
 
@@ -1012,13 +1018,16 @@ class TestSupportLevel:
 class TestMedianAbsoluteDeviation:
     def test_uniform_series(self) -> None:
         from app.trend_analysis import median_absolute_deviation
+
         assert median_absolute_deviation([5.0, 5.0, 5.0]) == pytest.approx(0.0)
 
     def test_known_values(self) -> None:
         from app.trend_analysis import median_absolute_deviation
+
         assert median_absolute_deviation([1.0, 2.0, 3.0, 4.0, 5.0]) == pytest.approx(1.0)
 
     def test_empty_raises(self) -> None:
         from app.trend_analysis import median_absolute_deviation
+
         with pytest.raises(ValueError):
             median_absolute_deviation([])

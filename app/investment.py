@@ -259,8 +259,10 @@ __all__ = [
     "discounted_cash_flow",
     "equity_multiple",
     "gross_rent_multiplier",
+    "holding_period_return",
     "investment_score_label",
     "irr_estimate",
+    "leverage_ratio",
     "loan_to_value_ratio",
     "margin_of_safety",
     "mortgage_payment",
@@ -269,12 +271,9 @@ __all__ = [
     "portfolio_weighted_score",
     "price_to_income_ratio",
     "projected_value",
+    "risk_adjusted_return",
     "roi_percentage",
     "total_return_on_investment",
-
-    "holding_period_return",
-    "leverage_ratio",
-    "risk_adjusted_return",
 ]
 
 
@@ -938,6 +937,7 @@ def rental_yield_after_tax(
         raise ValueError(f"tax_rate_pct must be in [0, 100], got {tax_rate_pct}")
     after_tax_rent = annual_rent * (1.0 - tax_rate_pct / 100.0)
     return round(after_tax_rent / property_value * 100.0, 4)
+
 
 def net_operating_income(gross_rent: float, vacancy_rate_pct: float, operating_expenses: float) -> float:
     """Compute Net Operating Income (NOI) for a rental property.

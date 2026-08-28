@@ -231,7 +231,6 @@ def top_anomalies(
     default_rank = len(order)
 
     def _key(entry: dict[str, object]) -> int:
-        """Return the numeric rank of *entry*'s severity for sorting."""
         return rank.get(str(entry.get("severity", "")), default_rank)
 
     return sorted(severities, key=_key)[:n]

@@ -55,7 +55,6 @@ class BM25Index:
     """
 
     def __init__(self, k1: float = 1.5, b: float = 0.75) -> None:
-        """Initialise BM25 with term-frequency saturation *k1* and length-normalisation *b*."""
         self.k1 = k1
         self.b = b
         self._doc_tokens: dict[str, Counter[str]] = {}
@@ -85,7 +84,6 @@ class BM25Index:
                 del self._df[term]
 
     def __len__(self) -> int:
-        """Return the number of chunks currently indexed."""
         return len(self._doc_tokens)
 
     def search(self, query: str, top_k: int = 50) -> list[tuple[str, float]]:

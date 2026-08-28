@@ -12,24 +12,28 @@ class TestTimed:
         @timed()
         def add(a, b):
             return a + b
+
         assert add(2, 3) == 5
 
     def test_preserves_function_name(self):
         @timed()
         def my_func():
             pass
+
         assert my_func.__name__ == "my_func"
 
     def test_custom_label_accepted(self):
         @timed(label="custom")
         def fn():
             return 42
+
         assert fn() == 42
 
     def test_propagates_exception(self):
         @timed()
         def bad():
             raise ValueError("boom")
+
         with pytest.raises(ValueError):
             bad()
 
@@ -42,6 +46,7 @@ class TestTracked:
         @tracked(label="test_fn")
         def fn():
             return 1
+
         fn()
         stats = get_stats("test_fn")
         assert stats["calls"] == 1
@@ -51,6 +56,7 @@ class TestTracked:
         @tracked(label="multi")
         def fn():
             pass
+
         fn()
         fn()
         fn()
@@ -60,6 +66,7 @@ class TestTracked:
         @tracked(label="minmax")
         def fn():
             pass
+
         fn()
         fn()
         stats = get_stats("minmax")
@@ -69,15 +76,20 @@ class TestTracked:
         @tracked(label="avg")
         def fn():
             pass
+
         fn()
         fn()
         stats = get_stats("avg")
-        assert stats["avg_ms"] == stats["total_ms"] / 2
+        # to_dict() rounds total_ms and avg_ms independently to 3dp, so exact
+        # equality is not guaranteed: a total of 0.003 reports avg 0.001 while
+        # total/2 is 0.0015. Allow one rounding step of slack.
+        assert stats["avg_ms"] == pytest.approx(stats["total_ms"] / 2, abs=0.001)
 
     def test_get_all_stats(self):
         @tracked(label="a_func")
         def a():
             pass
+
         a()
         all_stats = get_stats()
         assert "a_func" in all_stats
@@ -90,6 +102,7 @@ class TestTracked:
         @tracked(label="reset_me")
         def fn():
             pass
+
         fn()
         reset_stats("reset_me")
         assert get_stats("reset_me")["calls"] == 0
@@ -99,6 +112,7 @@ class TestTracked:
         @tracked(label=f"count_{n}")
         def fn():
             pass
+
         for _ in range(n):
             fn()
         assert get_stats(f"count_{n}")["calls"] == n

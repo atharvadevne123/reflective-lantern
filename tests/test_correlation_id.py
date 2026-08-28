@@ -84,13 +84,11 @@ class TestThreadIsolation:
         def worker(name, cid):
             with correlation_context(cid):
                 import time
+
                 time.sleep(0.01)
                 results[name] = get_correlation_id()
 
-        threads = [
-            threading.Thread(target=worker, args=(f"t{i}", f"id-{i}"))
-            for i in range(5)
-        ]
+        threads = [threading.Thread(target=worker, args=(f"t{i}", f"id-{i}")) for i in range(5)]
         for t in threads:
             t.start()
         for t in threads:

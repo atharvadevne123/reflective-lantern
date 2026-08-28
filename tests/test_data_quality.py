@@ -1033,28 +1033,34 @@ class TestConstantColumns:
 class TestConsecutiveMissingCount:
     def test_no_nones(self) -> None:
         from app.data_quality import consecutive_missing_count
+
         assert consecutive_missing_count([1.0, 2.0, 3.0]) == 0
 
     def test_single_run(self) -> None:
         from app.data_quality import consecutive_missing_count
+
         assert consecutive_missing_count([1.0, None, None, None, 2.0]) == 3
 
     def test_multiple_runs(self) -> None:
         from app.data_quality import consecutive_missing_count
+
         assert consecutive_missing_count([None, None, 1.0, None, 2.0]) == 2
 
     def test_all_none(self) -> None:
         from app.data_quality import consecutive_missing_count
+
         assert consecutive_missing_count([None, None, None]) == 3
 
     def test_empty_list(self) -> None:
         from app.data_quality import consecutive_missing_count
+
         assert consecutive_missing_count([]) == 0
 
 
 class TestColumnCardinality:
     def test_basic(self) -> None:
         from app.data_quality import column_cardinality
+
         records = [{"a": 1, "b": "x"}, {"a": 2, "b": "x"}, {"a": 1, "b": "y"}]
         result = column_cardinality(records)
         assert result["a"] == 2
@@ -1062,10 +1068,12 @@ class TestColumnCardinality:
 
     def test_empty_records(self) -> None:
         from app.data_quality import column_cardinality
+
         assert column_cardinality([]) == {}
 
     def test_nones_excluded(self) -> None:
         from app.data_quality import column_cardinality
+
         records = [{"a": None}, {"a": None}, {"a": 1}]
         result = column_cardinality(records)
         assert result["a"] == 1
@@ -1074,44 +1082,55 @@ class TestColumnCardinality:
 class TestOutlierSummary:
     def test_no_outliers(self) -> None:
         from app.data_quality import outlier_summary
+
         result = outlier_summary([1.0, 1.0, 1.0, 1.0, 1.0])
         assert result["count"] == 0
 
     def test_with_outlier(self) -> None:
         from app.data_quality import outlier_summary
+
         result = outlier_summary([1.0] * 9 + [10000.0])
         assert result["count"] > 0
         assert result["max_outlier"] == 10000.0
 
     def test_too_few_values(self) -> None:
         from app.data_quality import outlier_summary
+
         result = outlier_summary([5.0])
         assert result["count"] == 0
+
+
 class TestUniqueValueCount:
     def test_basic(self) -> None:
         from app.data_quality import unique_value_count
+
         assert unique_value_count([1, 2, 2, None, 3]) == 3
 
     def test_all_same(self) -> None:
         from app.data_quality import unique_value_count
+
         assert unique_value_count([5, 5, 5]) == 1
 
     def test_empty(self) -> None:
         from app.data_quality import unique_value_count
+
         assert unique_value_count([]) == 0
 
 
 class TestCompletenessScore:
     def test_full_completeness(self) -> None:
         from app.data_quality import completeness_score
+
         records = [{"a": 1, "b": 2}, {"a": 3, "b": 4}]
         assert completeness_score(records, ["a", "b"]) == pytest.approx(1.0)
 
     def test_partial_completeness(self) -> None:
         from app.data_quality import completeness_score
+
         records = [{"a": 1, "b": None}, {"a": 2, "b": 3}]
         assert completeness_score(records, ["a", "b"]) == pytest.approx(0.75)
 
     def test_empty_records(self) -> None:
         from app.data_quality import completeness_score
+
         assert completeness_score([], ["a"]) == pytest.approx(0.0)

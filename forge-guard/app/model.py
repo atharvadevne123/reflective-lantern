@@ -24,8 +24,7 @@ from xgboost import XGBClassifier
 _orig_xgb_tags = XGBClassifier.__sklearn_tags__  # type: ignore[attr-defined]
 
 
-def _patched_xgb_tags(self) -> object:  # type: ignore[no-untyped-def]
-    """Return sklearn tags with estimator_type set to 'classifier' for XGBoost compatibility."""
+def _patched_xgb_tags(self):  # type: ignore[no-untyped-def]
     tags = _orig_xgb_tags(self)
     tags.estimator_type = "classifier"
     return tags

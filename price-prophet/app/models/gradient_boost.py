@@ -35,7 +35,6 @@ class GradientBoostPricingModel(BasePricingModel):
         max_depth: int = 4,
         learning_rate: float = 0.1,
     ) -> None:
-        """Initialise the gradient boost model with tree count, depth, and learning rate."""
         self.n_estimators = n_estimators
         self.max_depth = max_depth
         self.learning_rate = learning_rate
@@ -101,7 +100,6 @@ class GradientBoostPricingModel(BasePricingModel):
         return self._model.feature_importances_.tolist()
 
     def __repr__(self) -> str:
-        """Return a concise string showing hyperparameters and fit status."""
         fitted_str = "fitted" if self._fitted else "not fitted"
         return (
             f"GradientBoostPricingModel("

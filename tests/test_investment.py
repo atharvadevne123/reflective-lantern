@@ -1236,20 +1236,25 @@ def test_gross_yield_in_range(annual_rent: float, property_value: float) -> None
 
     result = gross_yield(annual_rent, property_value)
     assert 0.0 < result < 100.0
+
+
 class TestLeverageRatio:
     def test_basic(self) -> None:
         from app.investment import leverage_ratio
+
         result = leverage_ratio(500000.0, 150000.0)
         assert result > 0.0
 
     def test_zero_equity_returns_zero(self) -> None:
         from app.investment import leverage_ratio
+
         assert leverage_ratio(100000.0, 0.0) == 0.0
 
     def test_negative_assets_raises(self) -> None:
         import pytest
 
         from app.investment import leverage_ratio
+
         with pytest.raises(ValueError):
             leverage_ratio(-1000.0, 500.0)
 
@@ -1257,17 +1262,20 @@ class TestLeverageRatio:
 class TestRiskAdjustedReturn:
     def test_positive_return(self) -> None:
         from app.investment import risk_adjusted_return
+
         result = risk_adjusted_return(10.0, 5.0, 2.0)
         assert abs(result - 1.6) < 0.01
 
     def test_zero_volatility(self) -> None:
         from app.investment import risk_adjusted_return
+
         assert risk_adjusted_return(10.0, 0.0) == 0.0
 
     def test_negative_volatility_raises(self) -> None:
         import pytest
 
         from app.investment import risk_adjusted_return
+
         with pytest.raises(ValueError):
             risk_adjusted_return(10.0, -1.0)
 
@@ -1275,15 +1283,18 @@ class TestRiskAdjustedReturn:
 class TestNetOperatingIncome:
     def test_basic(self) -> None:
         from app.investment import net_operating_income
+
         result = net_operating_income(100000.0, 5.0, 30000.0)
         assert result == pytest.approx(65000.0)
 
     def test_zero_vacancy(self) -> None:
         from app.investment import net_operating_income
+
         result = net_operating_income(100000.0, 0.0, 20000.0)
         assert result == pytest.approx(80000.0)
 
     def test_invalid_vacancy_raises(self) -> None:
         from app.investment import net_operating_income
+
         with pytest.raises(ValueError):
             net_operating_income(100000.0, 110.0, 20000.0)

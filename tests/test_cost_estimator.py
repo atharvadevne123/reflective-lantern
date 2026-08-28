@@ -59,7 +59,9 @@ class TestEstimateCost:
     @pytest.mark.parametrize("duration", [0.5, 1.0, 8.0, 24.0])
     def test_cost_scales_with_duration(self, duration):
         base = estimate_cost(ResourceSpec(cpu_cores=1, memory_gb=1, duration_hours=1), cpu_rate=1.0, memory_rate=1.0)
-        scaled = estimate_cost(ResourceSpec(cpu_cores=1, memory_gb=1, duration_hours=duration), cpu_rate=1.0, memory_rate=1.0)
+        scaled = estimate_cost(
+            ResourceSpec(cpu_cores=1, memory_gb=1, duration_hours=duration), cpu_rate=1.0, memory_rate=1.0
+        )
         assert scaled.total_usd == pytest.approx(base.total_usd * duration, rel=1e-6)
 
 

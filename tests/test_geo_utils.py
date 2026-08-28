@@ -34,9 +34,7 @@ class TestCoordinate:
         with pytest.raises(ValueError, match="Longitude"):
             Coordinate(lat=0, lon=181)
 
-    @pytest.mark.parametrize("lat,lon", [
-        (-90, -180), (90, 180), (0, 0), (45.5, -120.3)
-    ])
+    @pytest.mark.parametrize("lat,lon", [(-90, -180), (90, 180), (0, 0), (45.5, -120.3)])
     def test_boundary_values_accepted(self, lat, lon):
         c = Coordinate(lat=lat, lon=lon)
         assert c.lat == lat and c.lon == lon

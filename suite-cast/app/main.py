@@ -5,7 +5,6 @@ from __future__ import annotations
 import logging
 import time
 import uuid
-from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 from typing import Any
 
@@ -47,7 +46,7 @@ _request_windows: dict[str, list[float]] = {}
 
 
 @asynccontextmanager
-async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:  # noqa: ANN001
+async def lifespan(app: FastAPI):  # noqa: ANN001
     """Startup: load models and build reference score distribution."""
     global _xgb_model, _lgbm_model, _model_metrics, _reference_scores  # noqa: PLW0603
 

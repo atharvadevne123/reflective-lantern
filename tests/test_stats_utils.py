@@ -1326,6 +1326,7 @@ class TestHarmonicMean:
 class TestRollingRmse:
     def test_basic(self) -> None:
         from app.stats_utils import rolling_rmse
+
         result = rolling_rmse([1, 2, 3, 4, 5], [1.1, 2.1, 3.1, 4.1, 5.1], 3)
         assert len(result) == 5
         assert result[0] == result[1] == 0.0
@@ -1333,6 +1334,7 @@ class TestRollingRmse:
 
     def test_window_1(self) -> None:
         from app.stats_utils import rolling_rmse
+
         result = rolling_rmse([1.0, 2.0], [1.5, 2.5], 1)
         assert len(result) == 2
         assert all(v > 0 for v in result)
@@ -1341,6 +1343,7 @@ class TestRollingRmse:
         import pytest
 
         from app.stats_utils import rolling_rmse
+
         with pytest.raises(ValueError):
             rolling_rmse([1, 2], [1, 2], 0)
 
@@ -1348,6 +1351,7 @@ class TestRollingRmse:
         import pytest
 
         from app.stats_utils import rolling_rmse
+
         with pytest.raises(ValueError):
             rolling_rmse([1, 2, 3], [1, 2], 2)
 
@@ -1355,11 +1359,13 @@ class TestRollingRmse:
 class TestConfidenceInterval:
     def test_returns_tuple_of_two(self) -> None:
         from app.stats_utils import confidence_interval
+
         lo, hi = confidence_interval([1.0, 2.0, 3.0, 4.0, 5.0])
         assert lo < hi
 
     def test_mean_within_interval(self) -> None:
         from app.stats_utils import confidence_interval
+
         values = list(range(1, 11))
         lo, hi = confidence_interval(values)
         mean_v = sum(values) / len(values)
@@ -1369,6 +1375,7 @@ class TestConfidenceInterval:
         import pytest
 
         from app.stats_utils import confidence_interval
+
         with pytest.raises(ValueError):
             confidence_interval([1.0])
 
@@ -1376,6 +1383,7 @@ class TestConfidenceInterval:
         import pytest
 
         from app.stats_utils import confidence_interval
+
         with pytest.raises(ValueError):
             confidence_interval([1.0, 2.0, 3.0], confidence=1.5)
 
@@ -1383,10 +1391,12 @@ class TestConfidenceInterval:
 class TestSignalToNoiseRatio:
     def test_constant_series_is_zero(self) -> None:
         from app.stats_utils import signal_to_noise_ratio
+
         assert signal_to_noise_ratio([5.0, 5.0, 5.0]) == 0.0
 
     def test_positive_result(self) -> None:
         from app.stats_utils import signal_to_noise_ratio
+
         snr = signal_to_noise_ratio([10.0, 11.0, 9.0, 10.5])
         assert snr > 0.0
 
@@ -1394,6 +1404,7 @@ class TestSignalToNoiseRatio:
         import pytest
 
         from app.stats_utils import signal_to_noise_ratio
+
         with pytest.raises(ValueError):
             signal_to_noise_ratio([])
 
@@ -1401,10 +1412,12 @@ class TestSignalToNoiseRatio:
 class TestOutlierFraction:
     def test_no_outliers(self) -> None:
         from app.stats_utils import outlier_fraction
+
         assert outlier_fraction([1.0, 1.0, 1.0, 1.0]) == 0.0
 
     def test_one_outlier(self) -> None:
         from app.stats_utils import outlier_fraction
+
         # 10000.0 is far enough to exceed 3-sigma threshold
         values = [1.0] * 9 + [10000.0]
         result = outlier_fraction(values)
@@ -1414,27 +1427,36 @@ class TestOutlierFraction:
         import pytest
 
         from app.stats_utils import outlier_fraction
+
         with pytest.raises(ValueError):
             outlier_fraction([])
 
 
-@pytest.mark.parametrize("values,expected_iqr", [
-    ([1.0, 2.0, 3.0, 4.0, 5.0], 2.0),
-    ([0.0, 0.0, 0.0, 0.0], 0.0),
-])
+@pytest.mark.parametrize(
+    "values,expected_iqr",
+    [
+        ([1.0, 2.0, 3.0, 4.0, 5.0], 2.0),
+        ([0.0, 0.0, 0.0, 0.0], 0.0),
+    ],
+)
 def test_iqr_parametrized(values: list, expected_iqr: float) -> None:
     from app.stats_utils import interquartile_range
+
     result = interquartile_range(values)
     assert result == pytest.approx(expected_iqr, abs=0.5)
 
 
-@pytest.mark.parametrize("window,input_len", [
-    (1, 5),
-    (3, 10),
-    (5, 5),
-])
+@pytest.mark.parametrize(
+    "window,input_len",
+    [
+        (1, 5),
+        (3, 10),
+        (5, 5),
+    ],
+)
 def test_rolling_rmse_output_length(window: int, input_len: int) -> None:
     from app.stats_utils import rolling_rmse
+
     actual = list(range(input_len))
     predicted = [v + 0.1 for v in actual]
     result = rolling_rmse(actual, predicted, window)

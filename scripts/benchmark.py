@@ -11,10 +11,10 @@ from __future__ import annotations
 import argparse
 import statistics
 import time
-from typing import Callable, List
+from collections.abc import Callable
 
 
-def _timeit(fn: Callable, runs: int) -> List[float]:
+def _timeit(fn: Callable, runs: int) -> list[float]:
     times = []
     for _ in range(runs):
         t0 = time.perf_counter()
@@ -23,7 +23,7 @@ def _timeit(fn: Callable, runs: int) -> List[float]:
     return times
 
 
-def _report(name: str, times: List[float]) -> None:
+def _report(name: str, times: list[float]) -> None:
     mean_ms = statistics.mean(times) * 1000
     p95_ms = sorted(times)[int(len(times) * 0.95)] * 1000
     print(f"{name:<40} mean={mean_ms:8.3f}ms  p95={p95_ms:8.3f}ms  n={len(times)}")

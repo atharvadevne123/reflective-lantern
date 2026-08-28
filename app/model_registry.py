@@ -5,13 +5,13 @@ from __future__ import annotations
 import logging
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Dict, List, Optional
 
 logger = logging.getLogger(__name__)
 
 
 class ModelStage(Enum):
     """Lifecycle stage of a registered model version."""
+
     STAGING = "staging"
     PRODUCTION = "production"
     ARCHIVED = "archived"
@@ -34,8 +34,8 @@ class ModelVersion:
     version: str
     artifact_path: str
     stage: ModelStage = ModelStage.STAGING
-    metrics: Dict[str, float] = field(default_factory=dict)
-    tags: Dict[str, str] = field(default_factory=dict)
+    metrics: dict[str, float] = field(default_factory=dict)
+    tags: dict[str, str] = field(default_factory=dict)
 
 
 class ModelRegistry:
@@ -46,8 +46,7 @@ class ModelRegistry:
     """
 
     def __init__(self) -> None:
-        """Initialise the registry with an empty model store."""
-        self._models: Dict[str, List[ModelVersion]] = {}
+        self._models: dict[str, list[ModelVersion]] = {}
 
     def register(self, model: ModelVersion) -> None:
         """Register a new model version.
@@ -62,15 +61,11 @@ class ModelRegistry:
             self._models[model.name] = []
         existing = {mv.version for mv in self._models[model.name]}
         if model.version in existing:
-            raise ValueError(
-                f"Version '{model.version}' already registered for model '{model.name}'"
-            )
+            raise ValueError(f"Version '{model.version}' already registered for model '{model.name}'")
         self._models[model.name].append(model)
         logger.info("Registered model '%s' v%s", model.name, model.version)
 
-    def transition_stage(
-        self, name: str, version: str, stage: ModelStage
-    ) -> bool:
+    def transition_stage(self, name: str, version: str, stage: ModelStage) -> bool:
         """Transition a model version to a new stage.
 
         Args:
@@ -88,31 +83,27 @@ class ModelRegistry:
         logger.info("Model '%s' v%s -> %s", name, version, stage.value)
         return True
 
-    def get_production(self, name: str) -> Optional[ModelVersion]:
+    def get_production(self, name: str) -> ModelVersion | None:
         """Return the most recent PRODUCTION version of a model."""
-        prod = [
-            mv for mv in self._models.get(name, [])
-            if mv.stage is ModelStage.PRODUCTION
-        ]
+        prod = [mv for mv in self._models.get(name, []) if mv.stage is ModelStage.PRODUCTION]
         return prod[-1] if prod else None
 
-    def get_latest(self, name: str) -> Optional[ModelVersion]:
+    def get_latest(self, name: str) -> ModelVersion | None:
         """Return the most recently registered version."""
         versions = self._models.get(name)
         return versions[-1] if versions else None
 
-    def _get(self, name: str, version: str) -> Optional[ModelVersion]:
-        """Return the ModelVersion matching *name* and *version*, or None if absent."""
+    def _get(self, name: str, version: str) -> ModelVersion | None:
         for mv in self._models.get(name, []):
             if mv.version == version:
                 return mv
         return None
 
-    def list_versions(self, name: str) -> List[ModelVersion]:
+    def list_versions(self, name: str) -> list[ModelVersion]:
         """Return all versions of a model."""
         return list(self._models.get(name, []))
 
-    def list_models(self) -> List[str]:
+    def list_models(self) -> list[str]:
         """Return names of all registered models."""
         return list(self._models.keys())
 

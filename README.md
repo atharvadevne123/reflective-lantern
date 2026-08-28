@@ -59,8 +59,10 @@ pytest -q
 # Retry with exponential backoff
 from app.retry import retry
 
+
 @retry(max_attempts=3, delay=0.5)
 def fetch_data(url: str) -> dict: ...
+
 
 # Circuit breaker
 from app.circuit_breaker import CircuitBreaker
