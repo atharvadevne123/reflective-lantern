@@ -25,6 +25,7 @@ METRICS_PATH = Path(os.getenv("METRICS_PATH", "metrics.json"))
 
 
 def build_ensemble() -> VotingRegressor:
+    """Build and return an XGBoost + LightGBM + RandomForest VotingRegressor."""
     xgb = XGBRegressor(
         n_estimators=200,
         max_depth=5,
@@ -53,6 +54,7 @@ def build_ensemble() -> VotingRegressor:
 
 
 def generate_synthetic_data(n: int = 2000) -> tuple[pd.DataFrame, pd.Series]:
+    """Generate *n* synthetic hourly energy consumption records for training."""
     rng = np.random.default_rng(42)
     hours = np.arange(n) % 24
     days = (np.arange(n) // 24) % 7
@@ -80,6 +82,7 @@ def train_model(
     X_raw: pd.DataFrame | None = None,
     y: pd.Series | None = None,
 ) -> tuple[Any, dict[str, float]]:
+    """Train the ensemble on *X_raw*/*y*, or synthetic data if none provided."""
     if X_raw is None or y is None:
         logger.info("No data provided — generating synthetic training data")
         X_raw, y = generate_synthetic_data()
@@ -114,6 +117,7 @@ def train_model(
 
 
 def load_model() -> dict[str, Any]:
+    """Load the saved model bundle from disk, training a new one if absent."""
     if MODEL_PATH.exists():
         return joblib.load(MODEL_PATH)
     logger.warning("No model found — training on synthetic data")
@@ -126,6 +130,7 @@ def predict(
     readings: list[dict],
     horizon_h: int = 1,
 ) -> list[float]:
+    """Run inference on *readings* and return consumption forecasts in kWh."""
     df = prepare_dataframe(readings)
     X = bundle["pipeline"].transform(df)
     if hasattr(X, "toarray"):
@@ -136,6 +141,7 @@ def predict(
 
 
 def get_metrics() -> dict[str, float]:
+    """Return training metrics from the saved JSON file, or an empty dict if absent."""
     if METRICS_PATH.exists():
         return json.loads(METRICS_PATH.read_text())
     return {}
