@@ -58,6 +58,7 @@ class Experiment:
         variants: List[Variant],
         enabled: bool = True,
     ) -> None:
+        """Initialise the experiment with variants and compute total weight."""
         if not variants:
             raise ValueError("At least one variant is required")
         self.name = name
@@ -106,6 +107,7 @@ class ExperimentRegistry:
     """Registry of named experiments."""
 
     def __init__(self) -> None:
+        """Initialise an empty experiment registry."""
         self._experiments: Dict[str, Experiment] = {}
 
     def register(self, experiment: Experiment) -> None:
