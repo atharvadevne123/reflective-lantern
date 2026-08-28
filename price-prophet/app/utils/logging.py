@@ -92,7 +92,8 @@ def log_call(func: Callable) -> Callable:
     _logger = logging.getLogger(func.__module__)
 
     @functools.wraps(func)
-    def wrapper(*args, **kwargs):
+    def wrapper(*args, **kwargs):  # type: ignore[return]
+        """Log entry and exit of the wrapped function at DEBUG level."""
         _logger.debug(
             "CALL %s args=%r kwargs=%r",
             func.__qualname__,
