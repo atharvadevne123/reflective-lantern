@@ -64,6 +64,7 @@ def random_swap(tokens: List[str], prob: float, rng: random.Random) -> List[str]
 def jitter_numerics(text: str, pct: float, rng: random.Random) -> str:
     """Add Gaussian jitter to numeric values found in *text*."""
     def _jitter(m: re.Match) -> str:
+        """Replace the matched number with a Gaussian-jittered version."""
         val = float(m.group())
         noise = rng.gauss(0, abs(val) * pct) if val != 0 else rng.gauss(0, pct)
         return str(round(val + noise, 6))
