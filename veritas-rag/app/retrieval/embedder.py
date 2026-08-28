@@ -31,6 +31,7 @@ class Embedder(Protocol):
 
 
 def _bucket(feature: str, dim: int) -> tuple[int, float]:
+    """Hash *feature* to a (dimension-index, ±1 sign) pair for feature hashing."""
     digest = hashlib.blake2b(feature.encode("utf-8"), digest_size=8).digest()
     value = struct.unpack("<Q", digest)[0]
     index = value % dim
@@ -42,9 +43,11 @@ class HashingEmbedder:
     """Feature-hashing embedder (deterministic, no model download)."""
 
     def __init__(self, dim: int = 384) -> None:
+        """Initialise the embedder with output dimensionality *dim*."""
         self.dim = dim
 
     def _features(self, text: str) -> list[str]:
+        """Extract unigram, bigram, and character-trigram features from *text*."""
         tokens = tokenize(text)
         features = [f"w:{t}" for t in tokens]
         features += [f"b:{a}_{b}" for a, b in zip(tokens, tokens[1:], strict=False)]
