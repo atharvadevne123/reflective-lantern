@@ -1,6 +1,6 @@
 fastapi==0.141.1
 uvicorn[standard]==0.52.1
-pydantic==2.9.2
+pydantic==2.13.4
 numpy==2.4.6
 faiss-cpu==1.14.3
 pypdf==5.1.0
