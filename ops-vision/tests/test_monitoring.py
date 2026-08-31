@@ -271,3 +271,39 @@ class TestDriftResultRepr:
             drifted=False,
         )
         assert "stable" in repr(r)
+
+
+class TestDriftMonitorSummary:
+    """Tests for DriftMonitor.summary()."""
+
+    def test_summary_returns_dict(self):
+        """summary() returns a dict."""
+        monitor = DriftMonitor()
+        result = monitor.summary()
+        assert isinstance(result, dict)
+
+    def test_summary_has_reference_size(self):
+        """summary() dict contains reference_size key."""
+        monitor = DriftMonitor()
+        assert "reference_size" in monitor.summary()
+
+    def test_summary_has_current_size(self):
+        """summary() dict contains current_size key."""
+        monitor = DriftMonitor()
+        assert "current_size" in monitor.summary()
+
+    def test_summary_reference_size_matches(self):
+        """summary reference_size matches actual reference window size."""
+        monitor = DriftMonitor()
+        monitor.update_reference(_normal_batch(50))
+        assert monitor.summary()["reference_size"] == 50
+
+    def test_summary_feature_count_correct(self):
+        """summary feature_count equals FEATURE_COLS length."""
+        monitor = DriftMonitor()
+        assert monitor.summary()["feature_count"] == len(FEATURE_COLS)
+
+    def test_summary_threshold_matches_init(self):
+        """summary threshold matches the value passed at construction."""
+        monitor = DriftMonitor(threshold=0.01)
+        assert monitor.summary()["threshold"] == 0.01
