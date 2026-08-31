@@ -279,3 +279,42 @@ def bulk_create_predictions(db: Session, items: list[dict]) -> int:
         db.rollback()
         logger.exception("Failed to bulk insert predictions")
         raise
+
+
+def get_prediction_by_id(db: Session, prediction_id: int) -> Optional[Prediction]:
+    """Fetch a single prediction by primary key.
+
+    Args:
+        db: Active SQLAlchemy session.
+        prediction_id: Primary key to look up.
+
+    Returns:
+        Prediction instance or None if not found.
+    """
+    try:
+        return db.query(Prediction).filter(Prediction.id == prediction_id).first()
+    except Exception:
+        logger.exception("Failed to fetch prediction id=%d", prediction_id)
+        raise
+
+
+def count_predictions_by_service(db: Session, service_name: str) -> int:
+    """Count predictions for a specific service.
+
+    Args:
+        db: Active SQLAlchemy session.
+        service_name: Service to filter by.
+
+    Returns:
+        Integer count of predictions for that service.
+    """
+    try:
+        return (
+            db.query(func.count(Prediction.id))
+            .filter(Prediction.service_name == service_name)
+            .scalar()
+            or 0
+        )
+    except Exception:
+        logger.exception("Failed to count predictions for service=%s", service_name)
+        raise
