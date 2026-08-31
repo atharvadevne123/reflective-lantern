@@ -54,6 +54,14 @@ class DriftResult:
     drifted: bool
     timestamp: datetime = field(default_factory=datetime.utcnow)
 
+    def __repr__(self) -> str:
+        """Return a concise string representation."""
+        status = "DRIFTED" if self.drifted else "stable"
+        return (
+            f"DriftResult({self.feature_name}, {status}, "
+            f"KS={self.ks_statistic:.4f}, p={self.p_value:.6f})"
+        )
+
 
 class DriftMonitor:
     """Monitors feature distributions for covariate shift using the KS test.
