@@ -181,6 +181,23 @@ class DriftMonitor:
         """Return names of features that drifted from a results list."""
         return [r.feature_name for r in results if r.drifted]
 
+    def stable_features(self, results: list[DriftResult]) -> list[str]:
+        """Return names of features that did NOT drift from a results list."""
+        return [r.feature_name for r in results if not r.drifted]
+
+    def drift_rate(self, results: list[DriftResult]) -> float:
+        """Return the fraction of features that drifted.
+
+        Args:
+            results: List of DriftResult from check_drift().
+
+        Returns:
+            Float in [0.0, 1.0]; 0.0 if results is empty.
+        """
+        if not results:
+            return 0.0
+        return sum(1 for r in results if r.drifted) / len(results)
+
     def summary(self) -> dict:
         """Return a snapshot of the monitor's current state.
 
