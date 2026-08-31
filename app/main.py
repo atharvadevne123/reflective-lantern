@@ -641,3 +641,25 @@ def compare_tariffs_endpoint(hourly_kwh: list[float], start_hour: int = 0) -> di
         "saving_vs_flat": result.saving_vs_flat,
         "hours_priced": result.hours_priced,
     }
+
+
+@app.post("/api/v1/load-profile", tags=["Analytics"])
+def load_profile_endpoint(hourly_kwh: list[float]) -> dict:
+    """Characterise a building's demand shape: base load, load factor, ramp rate."""
+    from app.load_profile import build_load_profile
+
+    if not hourly_kwh:
+        raise HTTPException(status_code=422, detail="hourly_kwh must not be empty")
+    try:
+        profile = build_load_profile(hourly_kwh)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    return {
+        "base_load_kwh": profile.base_load_kwh,
+        "peak_kwh": profile.peak_kwh,
+        "mean_kwh": profile.mean_kwh,
+        "load_factor": profile.load_factor,
+        "peak_to_average": profile.peak_to_average,
+        "max_ramp_kwh": profile.max_ramp_kwh,
+        "profile_class": profile.profile_class,
+    }
