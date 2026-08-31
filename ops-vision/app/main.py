@@ -93,3 +93,19 @@ def version():
         Dict with the semantic version.
     """
     return {"version": __version__}
+
+
+@app.get("/ready", tags=["health"], summary="Readiness probe")
+def ready():
+    """Kubernetes-style readiness check — fails if the model is not loaded.
+
+    Returns:
+        Dict with status 'ready' or raises 503 if the model is unavailable.
+    """
+    from fastapi import HTTPException
+
+    from app.api.v1.routes import _model
+
+    if _model is None:
+        raise HTTPException(status_code=503, detail="Model not yet loaded")
+    return {"status": "ready", "version": __version__}
