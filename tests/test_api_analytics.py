@@ -195,3 +195,50 @@ class TestPowerQualityEndpoint:
             "?real_power_kw=100&current_power_factor=0.8&target_power_factor=1.5"
         )
         assert r.status_code == 422
+
+
+class TestSolarEndpoints:
+    def test_economics_reports_full_split(self, client: TestClient) -> None:
+        r = client.post(
+            "/api/v1/solar/economics",
+            json={
+                "generation_hourly_kwh": [0.0, 2.0, 8.0, 2.0],
+                "consumption_hourly_kwh": [3.0, 3.0, 3.0, 3.0],
+            },
+        )
+        assert r.status_code == 200
+        data = r.json()
+        assert data["self_consumed_kwh"] + data["exported_kwh"] == pytest.approx(data["generated_kwh"])
+        assert data["self_consumed_kwh"] + data["imported_kwh"] == pytest.approx(data["consumed_kwh"])
+
+    def test_economics_total_benefit_sums_components(self, client: TestClient) -> None:
+        r = client.post(
+            "/api/v1/solar/economics",
+            json={"generation_hourly_kwh": [5.0] * 4, "consumption_hourly_kwh": [3.0] * 4},
+        )
+        data = r.json()
+        assert data["total_benefit"] == pytest.approx(round(data["bill_saving"] + data["export_revenue"], 2))
+
+    def test_economics_mismatched_series_rejected(self, client: TestClient) -> None:
+        r = client.post(
+            "/api/v1/solar/economics",
+            json={"generation_hourly_kwh": [5.0] * 4, "consumption_hourly_kwh": [3.0]},
+        )
+        assert r.status_code == 422
+
+    def test_payback_returns_years(self, client: TestClient) -> None:
+        r = client.get("/api/v1/solar/payback?system_cost=10000&annual_benefit=1000")
+        assert r.status_code == 200
+        data = r.json()
+        assert data["repays_within_lifetime"] is True
+        assert data["payback_years"] > 0
+
+    def test_payback_null_when_never_repaid(self, client: TestClient) -> None:
+        r = client.get("/api/v1/solar/payback?system_cost=10000&annual_benefit=0")
+        data = r.json()
+        assert data["repays_within_lifetime"] is False
+        assert data["payback_years"] is None
+
+    def test_payback_negative_cost_rejected(self, client: TestClient) -> None:
+        r = client.get("/api/v1/solar/payback?system_cost=-1&annual_benefit=1000")
+        assert r.status_code == 422
