@@ -663,3 +663,53 @@ def load_profile_endpoint(hourly_kwh: list[float]) -> dict:
         "max_ramp_kwh": profile.max_ramp_kwh,
         "profile_class": profile.profile_class,
     }
+
+
+@app.post("/api/v1/weather-normalize", tags=["Analytics"])
+def weather_normalize_endpoint(
+    baseline_kwh: float,
+    current_kwh: float,
+    baseline_degree_days: float,
+    current_degree_days: float,
+) -> dict:
+    """Split period-over-period consumption change into weather and efficiency effects."""
+    from app.weather_normalization import compare_periods
+
+    try:
+        result = compare_periods(baseline_kwh, current_kwh, baseline_degree_days, current_degree_days)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    return {
+        "baseline_kwh": result.baseline_kwh,
+        "current_kwh": result.current_kwh,
+        "raw_change_pct": result.raw_change_pct,
+        "normalized_current_kwh": result.normalized_current_kwh,
+        "normalized_change_pct": result.normalized_change_pct,
+        "weather_effect_pct": result.weather_effect_pct,
+    }
+
+
+@app.post("/api/v1/demand-response/evaluate", tags=["Reporting"])
+def demand_response_endpoint(
+    baseline_hourly_kwh: list[float],
+    actual_hourly_kwh: list[float],
+    committed_kwh: float,
+) -> dict:
+    """Evaluate a demand-response event: curtailment, performance score, and settlement."""
+    from app.demand_response import evaluate_event
+
+    try:
+        result = evaluate_event(baseline_hourly_kwh, actual_hourly_kwh, committed_kwh)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    return {
+        "baseline_kwh": result.baseline_kwh,
+        "actual_kwh": result.actual_kwh,
+        "curtailed_kwh": result.curtailed_kwh,
+        "curtailment_pct": result.curtailment_pct,
+        "shortfall_kwh": result.shortfall_kwh,
+        "incentive": result.incentive,
+        "penalty": result.penalty,
+        "net_payment": result.net_payment,
+        "performance_score": result.performance_score,
+    }
