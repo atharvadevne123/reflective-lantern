@@ -212,6 +212,6 @@
       "tests/test_model.py"
     ],
     "summary": "60 atomic commits on ops-vision: added SeverityLevel/ErrorResponse/PredictionStats/ServiceHealthStatus/ModelInfoResponse schemas, RequestSizeLimitMiddleware + X-RateLimit/X-Response-Time headers, DriftMonitor.summary/to_dict/drift_rate/stable_features, IncidentRateBuffer.reset/__len__/total_incidents/window_span_hours, ExponentialSmoothingForecaster.is_fitted/params, RunbookIndex.size/is_built/categories/search_by_category, get_prediction_by_id/count_predictions_by_service/ping_db, app/exceptions.py hierarchy, app/constants.py with severity thresholds, Settings pydantic validators, 5 new test files + 8 enhanced test files with 150+ new test cases.",
-    "email_status": "pending"
+    "email_status": "failed_smtp_blocked"
   }
 ]
