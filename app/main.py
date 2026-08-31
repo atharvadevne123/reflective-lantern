@@ -861,3 +861,27 @@ def battery_sizing_endpoint(hourly_load_kw: list[float], target_peak_kw: float) 
         "required_usable_kwh": needed,
         "peak_load_kw": round(max(hourly_load_kw), 4) if hourly_load_kw else 0.0,
     }
+
+
+@app.post("/api/v1/benchmark/cohort", tags=["Analytics"])
+def cohort_benchmark_endpoint(
+    cohort_euis: list[float],
+    annual_kwh: float,
+    floor_area_m2: float,
+) -> dict:
+    """Rank a building's energy use intensity against a peer cohort."""
+    from app.energy_benchmark import benchmark
+
+    try:
+        result = benchmark(annual_kwh, floor_area_m2, cohort_euis)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    return {
+        "eui": result.eui,
+        "cohort_size": result.cohort_size,
+        "cohort_median_eui": result.cohort_median_eui,
+        "percentile_rank": result.percentile_rank,
+        "score": result.score,
+        "grade": result.grade,
+        "savings_potential_kwh": result.savings_potential_kwh,
+    }
