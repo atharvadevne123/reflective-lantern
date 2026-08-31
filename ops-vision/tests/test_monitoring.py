@@ -307,3 +307,44 @@ class TestDriftMonitorSummary:
         """summary threshold matches the value passed at construction."""
         monitor = DriftMonitor(threshold=0.01)
         assert monitor.summary()["threshold"] == 0.01
+
+
+class TestDriftMonitorStableAndRate:
+    """Tests for stable_features() and drift_rate()."""
+
+    def test_stable_features_complement_of_drifted(self):
+        """stable_features() returns features not in drifted_features()."""
+        monitor = DriftMonitor(current_window_size=50)
+        rng = np.random.default_rng(42)
+        monitor.update_reference(_normal_batch(200, rng=rng))
+        for s in _normal_batch(50, rng=rng):
+            monitor._current.append(s)
+        results = monitor.check_drift()
+        drifted = set(monitor.drifted_features(results))
+        stable = set(monitor.stable_features(results))
+        assert drifted | stable == set(FEATURE_COLS)
+        assert drifted & stable == set()
+
+    def test_drift_rate_between_zero_and_one(self):
+        """drift_rate() is always in [0.0, 1.0]."""
+        monitor = DriftMonitor(current_window_size=50)
+        rng = np.random.default_rng(10)
+        monitor.update_reference(_normal_batch(200, rng=rng))
+        for s in _normal_batch(50, rng=rng):
+            monitor._current.append(s)
+        results = monitor.check_drift()
+        rate = monitor.drift_rate(results)
+        assert 0.0 <= rate <= 1.0
+
+    def test_drift_rate_zero_for_empty_results(self):
+        """drift_rate() returns 0.0 for an empty results list."""
+        monitor = DriftMonitor()
+        assert monitor.drift_rate([]) == 0.0
+
+    def test_drift_rate_one_when_all_drifted(self):
+        """drift_rate() returns 1.0 when all features drifted."""
+        monitor = DriftMonitor()
+        all_drifted = [
+            DriftResult(f, 0.9, 0.0001, True) for f in FEATURE_COLS
+        ]
+        assert monitor.drift_rate(all_drifted) == 1.0
