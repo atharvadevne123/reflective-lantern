@@ -174,3 +174,21 @@ class PredictionStats(BaseModel):
     incident_count: int
     incident_rate: float
     avg_confidence: float
+
+
+class ServiceHealthStatus(BaseModel):
+    """Per-service health summary derived from recent predictions."""
+
+    service_name: str
+    total_predictions: int
+    incident_count: int
+    incident_rate: float = Field(..., ge=0.0, le=1.0)
+    avg_confidence: float = Field(..., ge=0.0, le=1.0)
+
+
+class ModelInfoResponse(BaseModel):
+    """Response for the model version and status endpoint."""
+
+    model_version: str
+    model_loaded: bool
+    estimators: Optional[list[str]] = None
