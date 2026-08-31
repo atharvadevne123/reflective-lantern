@@ -127,3 +127,212 @@ def test_listener_count():
 
 def test_get_bus_returns_singleton():
     assert get_bus() is get_bus()
+
+
+class TestHandlerIsolation:
+    """A failing handler must not stop the others."""
+
+    def test_failing_handler_does_not_block_later_handlers(self) -> None:
+        bus = EventBus()
+        seen: list[str] = []
+
+        def explodes(event, payload) -> None:
+            raise RuntimeError("handler bug")
+
+        bus.subscribe("tick", explodes)
+        bus.subscribe("tick", lambda e, p: seen.append("second"))
+        bus.publish("tick")
+        assert seen == ["second"]
+
+    def test_failing_handler_is_not_counted_as_called(self) -> None:
+        bus = EventBus()
+
+        def explodes(event, payload) -> None:
+            raise RuntimeError("handler bug")
+
+        bus.subscribe("tick", explodes)
+        bus.subscribe("tick", lambda e, p: None)
+        assert bus.publish("tick") == 1
+
+    def test_failure_is_logged(self, caplog) -> None:
+        bus = EventBus()
+
+        def explodes(event, payload) -> None:
+            raise RuntimeError("handler bug")
+
+        bus.subscribe("tick", explodes)
+        bus.publish("tick")
+        assert "handler bug" in caplog.text
+
+    def test_publish_survives_all_handlers_failing(self) -> None:
+        bus = EventBus()
+
+        def explodes(event, payload) -> None:
+            raise RuntimeError("down")
+
+        bus.subscribe("tick", explodes)
+        bus.subscribe("tick", explodes)
+        assert bus.publish("tick") == 0
+
+
+class TestWildcardHandlers:
+    def test_wildcard_receives_every_event(self) -> None:
+        bus = EventBus()
+        seen: list[str] = []
+        bus.subscribe("*", lambda e, p: seen.append(e))
+        bus.publish("alpha")
+        bus.publish("beta")
+        assert seen == ["alpha", "beta"]
+
+    def test_wildcard_runs_alongside_specific_handler(self) -> None:
+        bus = EventBus()
+        seen: list[str] = []
+        bus.subscribe("tick", lambda e, p: seen.append("specific"))
+        bus.subscribe("*", lambda e, p: seen.append("wildcard"))
+        assert bus.publish("tick") == 2
+        assert set(seen) == {"specific", "wildcard"}
+
+    def test_wildcard_excluded_from_listener_count(self) -> None:
+        bus = EventBus()
+        bus.subscribe("*", lambda e, p: None)
+        assert bus.listener_count("tick") == 0
+
+    def test_unsubscribing_wildcard_stops_delivery(self) -> None:
+        bus = EventBus()
+        seen: list[str] = []
+
+        def handler(event, payload) -> None:
+            seen.append(event)
+
+        bus.subscribe("*", handler)
+        assert bus.unsubscribe("*", handler) is True
+        bus.publish("tick")
+        assert seen == []
+
+
+class TestUnsubscribeEdgeCases:
+    def test_returns_false_for_unknown_handler(self) -> None:
+        bus = EventBus()
+        assert bus.unsubscribe("tick", lambda e, p: None) is False
+
+    def test_returns_false_for_unknown_wildcard_handler(self) -> None:
+        bus = EventBus()
+        assert bus.unsubscribe("*", lambda e, p: None) is False
+
+    def test_removes_only_the_named_handler(self) -> None:
+        bus = EventBus()
+        seen: list[str] = []
+
+        def first(event, payload) -> None:
+            seen.append("first")
+
+        def second(event, payload) -> None:
+            seen.append("second")
+
+        bus.subscribe("tick", first)
+        bus.subscribe("tick", second)
+        bus.unsubscribe("tick", first)
+        bus.publish("tick")
+        assert seen == ["second"]
+
+    def test_same_handler_subscribed_twice_needs_two_removals(self) -> None:
+        bus = EventBus()
+
+        def handler(event, payload) -> None:
+            pass
+
+        bus.subscribe("tick", handler)
+        bus.subscribe("tick", handler)
+        assert bus.listener_count("tick") == 2
+        bus.unsubscribe("tick", handler)
+        assert bus.listener_count("tick") == 1
+
+
+class TestClearBehaviour:
+    def test_clearing_one_event_leaves_others(self) -> None:
+        bus = EventBus()
+        bus.subscribe("alpha", lambda e, p: None)
+        bus.subscribe("beta", lambda e, p: None)
+        bus.clear("alpha")
+        assert bus.listener_count("alpha") == 0
+        assert bus.listener_count("beta") == 1
+
+    def test_clearing_everything_removes_wildcards_too(self) -> None:
+        bus = EventBus()
+        seen: list[str] = []
+        bus.subscribe("tick", lambda e, p: seen.append("specific"))
+        bus.subscribe("*", lambda e, p: seen.append("wildcard"))
+        bus.clear()
+        assert bus.publish("tick") == 0
+        assert seen == []
+
+    def test_clearing_wildcards_leaves_specific_handlers(self) -> None:
+        bus = EventBus()
+        bus.subscribe("tick", lambda e, p: None)
+        bus.subscribe("*", lambda e, p: None)
+        bus.clear("*")
+        assert bus.publish("tick") == 1
+
+    def test_clearing_unknown_event_is_harmless(self) -> None:
+        bus = EventBus()
+        bus.clear("never-registered")
+        assert bus.listener_count("never-registered") == 0
+
+
+class TestPublishSemantics:
+    def test_publish_with_no_handlers_returns_zero(self) -> None:
+        assert EventBus().publish("nobody-listening") == 0
+
+    def test_payload_is_passed_through_unchanged(self) -> None:
+        bus = EventBus()
+        received: list[object] = []
+        payload = {"building_id": "bldg-001", "kwh": 42.0}
+        bus.subscribe("reading", lambda e, p: received.append(p))
+        bus.publish("reading", payload)
+        assert received == [payload]
+
+    def test_default_payload_is_none(self) -> None:
+        bus = EventBus()
+        received: list[object] = []
+        bus.subscribe("tick", lambda e, p: received.append(p))
+        bus.publish("tick")
+        assert received == [None]
+
+    def test_handlers_run_in_registration_order(self) -> None:
+        bus = EventBus()
+        order: list[int] = []
+        for index in range(5):
+            bus.subscribe("tick", lambda e, p, i=index: order.append(i))
+        bus.publish("tick")
+        assert order == [0, 1, 2, 3, 4]
+
+    def test_subscribing_during_publish_does_not_affect_current_dispatch(self) -> None:
+        # publish() snapshots its handler list, so a late subscriber waits.
+        bus = EventBus()
+        seen: list[str] = []
+
+        def adds_another(event, payload) -> None:
+            seen.append("first")
+            bus.subscribe("tick", lambda e, p: seen.append("late"))
+
+        bus.subscribe("tick", adds_another)
+        bus.publish("tick")
+        assert seen == ["first"]
+        bus.publish("tick")
+        assert seen == ["first", "first", "late"]
+
+
+class TestDefaultBus:
+    def test_get_bus_returns_the_same_instance(self) -> None:
+        assert get_bus() is get_bus()
+
+    def test_default_bus_is_usable(self) -> None:
+        bus = get_bus()
+        bus.clear()
+        seen: list[str] = []
+        bus.subscribe("tick", lambda e, p: seen.append(e))
+        try:
+            bus.publish("tick")
+            assert seen == ["tick"]
+        finally:
+            bus.clear()
