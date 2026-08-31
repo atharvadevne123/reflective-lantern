@@ -140,6 +140,20 @@ class RunbookIndex:
 
         return results
 
+    @property
+    def size(self) -> int:
+        """Return the number of runbooks in the index."""
+        return len(self.runbooks)
+
+    @property
+    def is_built(self) -> bool:
+        """Return True if the index has been built with at least one runbook."""
+        return len(self.runbooks) > 0
+
+    def categories(self) -> list[str]:
+        """Return the distinct categories of indexed runbooks, sorted."""
+        return sorted({r.category for r in self.runbooks})
+
     def save(self, path: Path) -> None:
         """Persist the index metadata to a JSON file (embeddings not saved).
 
