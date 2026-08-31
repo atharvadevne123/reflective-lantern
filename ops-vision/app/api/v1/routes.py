@@ -9,6 +9,11 @@ from sqlalchemy.orm import Session
 
 from app import __version__
 from app.config import get_settings
+from app.constants import (
+    SEVERITY_CRITICAL_THRESHOLD,
+    SEVERITY_HIGH_THRESHOLD,
+    SEVERITY_MEDIUM_THRESHOLD,
+)
 from app.crud import (
     avg_confidence,
     bulk_create_predictions,
@@ -450,10 +455,10 @@ def _infer_severity(confidence: float) -> str:
     Returns:
         One of 'critical', 'high', 'medium', or 'low'.
     """
-    if confidence >= 0.9:
+    if confidence >= SEVERITY_CRITICAL_THRESHOLD:
         return "critical"
-    if confidence >= 0.75:
+    if confidence >= SEVERITY_HIGH_THRESHOLD:
         return "high"
-    if confidence >= 0.5:
+    if confidence >= SEVERITY_MEDIUM_THRESHOLD:
         return "medium"
     return "low"
