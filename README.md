@@ -105,12 +105,33 @@ make seed        # seed dev data fixtures
 make test-cov    # tests with coverage report
 ```
 
+## Testing
+
+```bash
+make test          # full suite
+make test-cov      # with coverage report
+make check         # lint + typecheck + tests, as CI runs them
+```
+
+The root suite holds 5767 tests and is green. Sub-project suites live under
+their own directories (`quake-net/tests/`, `veritas-rag/tests/`, and so on)
+and are run from within each project:
+
+```bash
+cd quake-net && pytest tests/ -q
+```
+
+Some sub-project suites have pre-existing failures — see
+[Known Issues](docs/known_issues.md) for the cause and suggested fix of each.
+
 ## Docs
 
 - [Architecture](docs/architecture.md)
 - [API Reference](docs/api_reference.md)
+- [Energy Analytics](docs/energy_analytics.md)
 - [Deployment](docs/deployment.md)
 - [Monitoring](docs/monitoring.md)
+- [Known Issues](docs/known_issues.md)
 
 ## License
 
