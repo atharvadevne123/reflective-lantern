@@ -620,3 +620,24 @@ def ses_forecast_endpoint(values: list[float], steps: int = 6, alpha: float = 0.
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
     return {"forecast": preds, "method": "ses", "alpha": alpha, **forecast_summary(preds)}
+
+
+@app.post("/api/v1/tariff/compare", tags=["Reporting"])
+def compare_tariffs_endpoint(hourly_kwh: list[float], start_hour: int = 0) -> dict:
+    """Price an hourly load profile under flat, time-of-use, and tiered tariffs."""
+    from app.tariff import compare_tariffs
+
+    if not hourly_kwh:
+        raise HTTPException(status_code=422, detail="hourly_kwh must not be empty")
+    try:
+        result = compare_tariffs(hourly_kwh, start_hour=start_hour)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    return {
+        "flat_cost": result.flat_cost,
+        "time_of_use_cost": result.time_of_use_cost,
+        "tiered_cost": result.tiered_cost,
+        "cheapest_scheme": result.cheapest_scheme,
+        "saving_vs_flat": result.saving_vs_flat,
+        "hours_priced": result.hours_priced,
+    }
