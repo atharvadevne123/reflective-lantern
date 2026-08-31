@@ -146,3 +146,52 @@ class TestDemandResponseEndpoint:
             json={"baseline_hourly_kwh": [10.0] * 4, "actual_hourly_kwh": [6.0]},
         )
         assert r.status_code == 422
+
+
+class TestPowerQualityEndpoint:
+    def test_healthy_site_reports_good_factor(self, client: TestClient) -> None:
+        r = client.post(
+            "/api/v1/power-quality?real_power_kw=100&reactive_power_kvar=10",
+            json=[230.0, 230.0, 230.0],
+        )
+        assert r.status_code == 200
+        data = r.json()
+        assert data["power_factor_rating"] == "good"
+        assert data["imbalance_within_limit"] is True
+
+    def test_poor_factor_is_reported(self, client: TestClient) -> None:
+        r = client.post(
+            "/api/v1/power-quality?real_power_kw=100&reactive_power_kvar=90",
+            json=[230.0, 230.0, 230.0],
+        )
+        assert r.json()["power_factor_rating"] == "poor"
+
+    def test_imbalanced_phases_flagged(self, client: TestClient) -> None:
+        r = client.post(
+            "/api/v1/power-quality?real_power_kw=100&reactive_power_kvar=10",
+            json=[230.0, 280.0, 190.0],
+        )
+        assert r.json()["imbalance_within_limit"] is False
+
+    def test_single_phase_rejected(self, client: TestClient) -> None:
+        r = client.post(
+            "/api/v1/power-quality?real_power_kw=100&reactive_power_kvar=10",
+            json=[230.0],
+        )
+        assert r.status_code == 422
+
+    def test_correction_zero_when_already_at_target(self, client: TestClient) -> None:
+        r = client.get("/api/v1/power-quality/correction?real_power_kw=100&current_power_factor=0.98")
+        assert r.status_code == 200
+        assert r.json()["required_kvar"] == 0.0
+
+    def test_correction_positive_for_poor_factor(self, client: TestClient) -> None:
+        r = client.get("/api/v1/power-quality/correction?real_power_kw=100&current_power_factor=0.75")
+        assert r.json()["required_kvar"] > 0
+
+    def test_correction_invalid_target_rejected(self, client: TestClient) -> None:
+        r = client.get(
+            "/api/v1/power-quality/correction"
+            "?real_power_kw=100&current_power_factor=0.8&target_power_factor=1.5"
+        )
+        assert r.status_code == 422
