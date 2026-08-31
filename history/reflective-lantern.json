@@ -94,5 +94,38 @@
     ],
     "tests_passed": true,
     "email_status": "network_blocked"
+  },
+  {
+    "date": "2026-08-27",
+    "mode": "IMPROVEMENT",
+    "commits": 60,
+    "repo": "reflective-lantern",
+    "changes": [
+      "feat: app/tariff.py \u2014 flat, time-of-use and tiered electricity pricing with scheme comparison",
+      "feat: app/load_profile.py \u2014 base load, load factor, peak-to-average, ramp rate, profile class",
+      "feat: app/weather_normalization.py \u2014 degree-day adjustment separating weather from efficiency",
+      "feat: app/demand_response.py \u2014 customer baseline load, curtailment, event settlement",
+      "feat: app/power_quality.py \u2014 power factor, reactive power, voltage imbalance, capacitor sizing",
+      "feat: app/solar.py \u2014 PV generation, hourly self-consumption split, payback with degradation",
+      "feat: app/battery.py \u2014 storage dispatch simulation, peak shaving, capacity sizing",
+      "feat: app/energy_benchmark.py \u2014 peer-cohort EUI ranking with 1-100 score and letter grade",
+      "feat: 11 new /api/v1/ endpoints exposing the analytics modules, all validating to HTTP 422",
+      "fix: tests/conftest.py \u2014 restore root logger state between tests; configure_logging cleared pytest's capture handler and silently broke caplog for every later test",
+      "fix: tests/test_event_bus.py \u2014 two appended classes shadowed earlier same-named classes, silently dropping 5 tests from the run",
+      "chore: Makefile \u2014 test-cov and typecheck were missing from .PHONY; added check/serve/lint-fix",
+      "test: 397 new tests across new modules, endpoints and expanded existing suites",
+      "test: expanded thin suites \u2014 circuit_breaker 13->29, retry 8->25, event_bus 14->37",
+      "test: veritas-rag +45 trust scoring tests with injected clock",
+      "test: quake-net +66 validation edge-case tests",
+      "test: suite-cast +27 drift detection tests with seeded RNG",
+      "test: forge-guard +27 defect risk and sensor range tests",
+      "docs: docs/energy_analytics.md, docs/known_issues.md, API.md +10 endpoints, README, CHANGELOG",
+      "docs: price-prophet governance set \u2014 README, LICENSE, CHANGELOG, CONTRIBUTING, SECURITY, CODE_OF_CONDUCT, Makefile, .env.example, pre-commit, Dockerfile, docker-compose",
+      "docs: SECURITY.md and CODE_OF_CONDUCT.md for suite-cast and veritas-rag"
+    ],
+    "tests_passed": true,
+    "test_summary": "root suite 5767 passed (was 5615, and 3 failures fixed); quake-net 359 passed",
+    "known_issues": "Pre-existing sub-project failures documented in docs/known_issues.md; verified present at f7a3249 so they predate this run",
+    "email_status": "pending"
   }
 ]
