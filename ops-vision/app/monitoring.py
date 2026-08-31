@@ -171,6 +171,16 @@ class DriftMonitor:
         """Number of samples accumulated in the current window."""
         return len(self._current)
 
+    def reset(self) -> None:
+        """Clear both reference and current windows, resetting the monitor."""
+        self._reference.clear()
+        self._current.clear()
+        logger.info("DriftMonitor windows reset")
+
+    def drifted_features(self, results: list[DriftResult]) -> list[str]:
+        """Return names of features that drifted from a results list."""
+        return [r.feature_name for r in results if r.drifted]
+
 
 _monitor_singleton: Optional[DriftMonitor] = None
 
