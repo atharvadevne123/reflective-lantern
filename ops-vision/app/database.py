@@ -179,3 +179,20 @@ def create_tables() -> None:
     logger.info("Creating database tables")
     Base.metadata.create_all(bind=get_engine())
     logger.info("Database tables created successfully")
+
+
+def ping_db() -> bool:
+    """Check database connectivity by executing a trivial query.
+
+    Returns:
+        True if the database is reachable, False otherwise.
+    """
+    try:
+        from sqlalchemy import text
+
+        with get_engine().connect() as conn:
+            conn.execute(text("SELECT 1"))
+        return True
+    except Exception:
+        logger.exception("Database ping failed")
+        return False
