@@ -1,0 +1,148 @@
+"""API tests for the tariff, load-profile, weather-normalization and
+demand-response analytics endpoints."""
+
+from __future__ import annotations
+
+import pytest
+from fastapi.testclient import TestClient
+
+FLAT_DAY = [1.0] * 24
+PEAKY_DAY = [1.0] * 20 + [20.0, 22.0, 21.0, 1.0]
+
+
+class TestTariffCompareEndpoint:
+    def test_returns_all_three_schemes(self, client: TestClient) -> None:
+        r = client.post("/api/v1/tariff/compare", json=FLAT_DAY)
+        assert r.status_code == 200
+        data = r.json()
+        assert data["flat_cost"] > 0
+        assert data["time_of_use_cost"] > 0
+        assert data["tiered_cost"] > 0
+        assert data["hours_priced"] == 24
+
+    def test_cheapest_scheme_is_a_known_name(self, client: TestClient) -> None:
+        r = client.post("/api/v1/tariff/compare", json=FLAT_DAY)
+        assert r.json()["cheapest_scheme"] in {"flat", "time_of_use", "tiered"}
+
+    def test_start_hour_shifts_time_of_use_cost(self, client: TestClient) -> None:
+        off_peak = client.post("/api/v1/tariff/compare?start_hour=0", json=[1.0] * 5)
+        on_peak = client.post("/api/v1/tariff/compare?start_hour=16", json=[1.0] * 5)
+        assert on_peak.json()["time_of_use_cost"] > off_peak.json()["time_of_use_cost"]
+
+    def test_empty_series_rejected(self, client: TestClient) -> None:
+        r = client.post("/api/v1/tariff/compare", json=[])
+        assert r.status_code == 422
+
+    def test_negative_consumption_rejected(self, client: TestClient) -> None:
+        r = client.post("/api/v1/tariff/compare", json=[1.0, -5.0])
+        assert r.status_code == 422
+
+    def test_invalid_start_hour_rejected(self, client: TestClient) -> None:
+        r = client.post("/api/v1/tariff/compare?start_hour=99", json=FLAT_DAY)
+        assert r.status_code == 422
+
+
+class TestLoadProfileEndpoint:
+    def test_flat_day_classified_flat(self, client: TestClient) -> None:
+        r = client.post("/api/v1/load-profile", json=FLAT_DAY)
+        assert r.status_code == 200
+        data = r.json()
+        assert data["profile_class"] == "flat"
+        assert data["load_factor"] == pytest.approx(1.0)
+
+    def test_peaky_day_classified_peaky(self, client: TestClient) -> None:
+        r = client.post("/api/v1/load-profile", json=PEAKY_DAY)
+        assert r.status_code == 200
+        data = r.json()
+        assert data["profile_class"] == "peaky"
+        assert data["peak_kwh"] == pytest.approx(22.0)
+
+    def test_all_shape_metrics_present(self, client: TestClient) -> None:
+        data = client.post("/api/v1/load-profile", json=PEAKY_DAY).json()
+        for key in (
+            "base_load_kwh",
+            "peak_kwh",
+            "mean_kwh",
+            "load_factor",
+            "peak_to_average",
+            "max_ramp_kwh",
+            "profile_class",
+        ):
+            assert key in data
+
+    def test_empty_series_rejected(self, client: TestClient) -> None:
+        assert client.post("/api/v1/load-profile", json=[]).status_code == 422
+
+
+class TestWeatherNormalizeEndpoint:
+    def test_identical_weather_matches_raw_change(self, client: TestClient) -> None:
+        r = client.post(
+            "/api/v1/weather-normalize"
+            "?baseline_kwh=1000&current_kwh=900&baseline_degree_days=500&current_degree_days=500"
+        )
+        assert r.status_code == 200
+        data = r.json()
+        assert data["raw_change_pct"] == pytest.approx(-10.0)
+        assert data["normalized_change_pct"] == pytest.approx(-10.0)
+        assert data["weather_effect_pct"] == pytest.approx(0.0)
+
+    def test_mild_period_reveals_hidden_regression(self, client: TestClient) -> None:
+        r = client.post(
+            "/api/v1/weather-normalize"
+            "?baseline_kwh=1000&current_kwh=900&baseline_degree_days=500&current_degree_days=400"
+        )
+        data = r.json()
+        assert data["raw_change_pct"] < 0
+        assert data["normalized_change_pct"] > 0
+
+    def test_zero_baseline_rejected(self, client: TestClient) -> None:
+        r = client.post(
+            "/api/v1/weather-normalize"
+            "?baseline_kwh=0&current_kwh=900&baseline_degree_days=500&current_degree_days=500"
+        )
+        assert r.status_code == 422
+
+    def test_negative_current_rejected(self, client: TestClient) -> None:
+        r = client.post(
+            "/api/v1/weather-normalize"
+            "?baseline_kwh=1000&current_kwh=-5&baseline_degree_days=500&current_degree_days=500"
+        )
+        assert r.status_code == 422
+
+
+class TestDemandResponseEndpoint:
+    def test_full_delivery_pays_without_penalty(self, client: TestClient) -> None:
+        r = client.post(
+            "/api/v1/demand-response/evaluate?committed_kwh=16",
+            json={"baseline_hourly_kwh": [10.0] * 4, "actual_hourly_kwh": [6.0] * 4},
+        )
+        assert r.status_code == 200
+        data = r.json()
+        assert data["curtailed_kwh"] == pytest.approx(16.0)
+        assert data["penalty"] == 0.0
+        assert data["performance_score"] == pytest.approx(1.0)
+
+    def test_shortfall_incurs_penalty(self, client: TestClient) -> None:
+        r = client.post(
+            "/api/v1/demand-response/evaluate?committed_kwh=16",
+            json={"baseline_hourly_kwh": [10.0] * 4, "actual_hourly_kwh": [8.0] * 4},
+        )
+        data = r.json()
+        assert data["shortfall_kwh"] == pytest.approx(8.0)
+        assert data["penalty"] > 0
+        assert data["performance_score"] < 1.0
+
+    def test_net_payment_is_incentive_minus_penalty(self, client: TestClient) -> None:
+        r = client.post(
+            "/api/v1/demand-response/evaluate?committed_kwh=20",
+            json={"baseline_hourly_kwh": [10.0] * 4, "actual_hourly_kwh": [9.0] * 4},
+        )
+        data = r.json()
+        assert data["net_payment"] == pytest.approx(round(data["incentive"] - data["penalty"], 2))
+
+    def test_mismatched_series_rejected(self, client: TestClient) -> None:
+        r = client.post(
+            "/api/v1/demand-response/evaluate?committed_kwh=5",
+            json={"baseline_hourly_kwh": [10.0] * 4, "actual_hourly_kwh": [6.0]},
+        )
+        assert r.status_code == 422
