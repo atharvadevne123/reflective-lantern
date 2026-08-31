@@ -57,6 +57,15 @@ class IncidentRateBuffer:
         sorted_counts = sorted(self.counts, key=lambda x: x[0])
         return np.array([c for _, c in sorted_counts], dtype=np.float64)
 
+    def reset(self) -> None:
+        """Clear all accumulated counts."""
+        self.counts.clear()
+        logger.debug("IncidentRateBuffer reset")
+
+    def __len__(self) -> int:
+        """Return the number of observations in the buffer."""
+        return len(self.counts)
+
 
 class ExponentialSmoothingForecaster:
     """Simple double exponential smoothing (Holt's linear) forecaster.
