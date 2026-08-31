@@ -181,6 +181,19 @@ class DriftMonitor:
         """Return names of features that drifted from a results list."""
         return [r.feature_name for r in results if r.drifted]
 
+    def summary(self) -> dict:
+        """Return a snapshot of the monitor's current state.
+
+        Returns:
+            Dict with reference_size, current_size, threshold, and feature count.
+        """
+        return {
+            "reference_size": self.reference_size,
+            "current_size": self.current_size,
+            "threshold": self.threshold,
+            "feature_count": len(FEATURE_COLS),
+        }
+
 
 _monitor_singleton: Optional[DriftMonitor] = None
 
