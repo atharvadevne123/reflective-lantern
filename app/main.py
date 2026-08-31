@@ -810,3 +810,54 @@ def solar_payback_endpoint(
         "payback_years": None if years == float("inf") else years,
         "repays_within_lifetime": years != float("inf"),
     }
+
+
+@app.post("/api/v1/battery/peak-shave", tags=["Analytics"])
+def battery_peak_shave_endpoint(
+    hourly_load_kw: list[float],
+    capacity_kwh: float,
+    max_charge_kw: float,
+    max_discharge_kw: float,
+    target_peak_kw: float,
+    demand_charge_per_kw: float = 15.0,
+) -> dict:
+    """Simulate battery peak shaving against an hourly load and value the reduction."""
+    from app.battery import BatterySpec, demand_charge_saving, peak_shave
+
+    try:
+        spec = BatterySpec(
+            capacity_kwh=capacity_kwh,
+            max_charge_kw=max_charge_kw,
+            max_discharge_kw=max_discharge_kw,
+        )
+        result = peak_shave(hourly_load_kw, spec, target_peak_kw)
+        saving = demand_charge_saving(result, demand_charge_per_kw)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    return {
+        "peak_before_kw": result.peak_before_kw,
+        "peak_after_kw": result.peak_after_kw,
+        "peak_reduction_kw": result.peak_reduction_kw,
+        "peak_reduction_pct": result.peak_reduction_pct,
+        "target_met": result.peak_after_kw <= target_peak_kw,
+        "energy_discharged_kwh": result.energy_discharged_kwh,
+        "energy_charged_kwh": result.energy_charged_kwh,
+        "equivalent_cycles": result.equivalent_cycles,
+        "demand_charge_saving": saving,
+    }
+
+
+@app.post("/api/v1/battery/sizing", tags=["Analytics"])
+def battery_sizing_endpoint(hourly_load_kw: list[float], target_peak_kw: float) -> dict:
+    """Return the usable battery capacity needed to hold load under a target."""
+    from app.battery import required_capacity_kwh
+
+    try:
+        needed = required_capacity_kwh(hourly_load_kw, target_peak_kw)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    return {
+        "target_peak_kw": target_peak_kw,
+        "required_usable_kwh": needed,
+        "peak_load_kw": round(max(hourly_load_kw), 4) if hourly_load_kw else 0.0,
+    }
