@@ -194,3 +194,80 @@ class TestGetMonitorSingleton:
         m1 = get_monitor()
         m2 = get_monitor()
         assert m1 is m2
+
+
+class TestDriftMonitorReset:
+    """Tests for DriftMonitor.reset() and drifted_features()."""
+
+    def test_reset_clears_reference_window(self):
+        """reset() empties the reference window."""
+        monitor = DriftMonitor()
+        monitor.update_reference(_normal_batch(100))
+        assert monitor.reference_size == 100
+        monitor.reset()
+        assert monitor.reference_size == 0
+
+    def test_reset_clears_current_window(self):
+        """reset() empties the current window."""
+        monitor = DriftMonitor(current_window_size=50)
+        monitor.update_reference(_normal_batch(50))
+        for s in _normal_batch(30):
+            monitor._current.append(s)
+        monitor.reset()
+        assert monitor.current_size == 0
+
+    def test_drifted_features_returns_correct_names(self):
+        """drifted_features() filters DriftResult list to drifted names."""
+        monitor = DriftMonitor(current_window_size=50)
+        monitor.update_reference(_normal_batch(200))
+        for s in _drifted_batch(50):
+            monitor._current.append(s)
+        results = monitor.check_drift()
+        drifted = monitor.drifted_features(results)
+        assert isinstance(drifted, list)
+        assert all(name in FEATURE_COLS for name in drifted)
+
+    def test_drifted_features_empty_when_no_drift(self):
+        """drifted_features() returns [] when no features drifted."""
+        monitor = DriftMonitor(current_window_size=50)
+        rng = np.random.default_rng(7)
+        monitor.update_reference(_normal_batch(200, rng=rng))
+        for s in _normal_batch(50, rng=rng):
+            monitor._current.append(s)
+        results = monitor.check_drift()
+        stable_only = [r for r in results if not r.drifted]
+        assert monitor.drifted_features(stable_only) == []
+
+
+class TestDriftResultRepr:
+    """Tests for DriftResult.__repr__."""
+
+    def test_repr_contains_feature_name(self):
+        """DriftResult repr includes the feature name."""
+        r = DriftResult(
+            feature_name="cpu_usage_pct",
+            ks_statistic=0.3,
+            p_value=0.001,
+            drifted=True,
+        )
+        assert "cpu_usage_pct" in repr(r)
+
+    def test_repr_contains_drifted_status(self):
+        """DriftResult repr says DRIFTED for a drifted result."""
+        r = DriftResult(
+            feature_name="latency_p99_ms",
+            ks_statistic=0.45,
+            p_value=0.0001,
+            drifted=True,
+        )
+        assert "DRIFTED" in repr(r)
+
+    def test_repr_contains_stable_status(self):
+        """DriftResult repr says stable for a non-drifted result."""
+        r = DriftResult(
+            feature_name="memory_usage_pct",
+            ks_statistic=0.05,
+            p_value=0.8,
+            drifted=False,
+        )
+        assert "stable" in repr(r)
