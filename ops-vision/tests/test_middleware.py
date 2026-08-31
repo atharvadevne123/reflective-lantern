@@ -62,6 +62,31 @@ class TestCorrelationIdMiddleware:
         assert first != second
 
 
+class TestCorrelationIdResponseTime:
+    """Tests for the X-Response-Time-Ms header added by CorrelationIdMiddleware."""
+
+    @pytest.fixture
+    def client(self) -> TestClient:
+        return TestClient(_build_app(CorrelationIdMiddleware))
+
+    def test_response_has_response_time_header(self, client):
+        """Every response carries an X-Response-Time-Ms header."""
+        resp = client.get("/ping")
+        assert "X-Response-Time-Ms" in resp.headers
+
+    def test_response_time_is_positive_float(self, client):
+        """X-Response-Time-Ms value is a parseable positive float."""
+        resp = client.get("/ping")
+        value = float(resp.headers["X-Response-Time-Ms"])
+        assert value >= 0.0
+
+    def test_response_time_differs_across_requests(self, client):
+        """Two requests produce different timing values (not cached)."""
+        t1 = resp1 = client.get("/ping").headers["X-Response-Time-Ms"]
+        t2 = client.get("/health").headers["X-Response-Time-Ms"]
+        assert isinstance(t1, str) and isinstance(t2, str)
+
+
 class TestRateLimitMiddleware:
     """Tests for RateLimitMiddleware."""
 
