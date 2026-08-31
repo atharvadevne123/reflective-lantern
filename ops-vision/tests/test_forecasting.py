@@ -125,6 +125,36 @@ class TestExponentialSmoothingForecaster:
         assert len(points) == horizon
 
 
+class TestExponentialSmoothingForecasterProperties:
+    """Tests for is_fitted property and params dict."""
+
+    def test_is_fitted_false_before_fit(self):
+        """is_fitted is False before calling fit()."""
+        f = ExponentialSmoothingForecaster()
+        assert f.is_fitted is False
+
+    def test_is_fitted_true_after_fit(self):
+        """is_fitted becomes True after successful fit()."""
+        f = ExponentialSmoothingForecaster()
+        f.fit(np.array([1.0, 2.0, 3.0]))
+        assert f.is_fitted is True
+
+    def test_params_contains_alpha(self):
+        """params dict has alpha key matching constructor arg."""
+        f = ExponentialSmoothingForecaster(alpha=0.5)
+        assert f.params["alpha"] == 0.5
+
+    def test_params_contains_beta(self):
+        """params dict has beta key matching constructor arg."""
+        f = ExponentialSmoothingForecaster(beta=0.2)
+        assert f.params["beta"] == 0.2
+
+    def test_params_contains_horizon(self):
+        """params dict has horizon key matching constructor arg."""
+        f = ExponentialSmoothingForecaster(horizon=12)
+        assert f.params["horizon"] == 12
+
+
 class TestIncidentRateBufferResetAndLen:
     """Tests for IncidentRateBuffer.reset() and __len__()."""
 
