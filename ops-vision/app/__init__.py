@@ -7,4 +7,10 @@ try:
 except PackageNotFoundError:
     __version__ = "1.0.0"
 
-__all__ = ["__version__"]
+__author__: str = "Reflective Lantern"
+__description__: str = (
+    "SRE ML platform for real-time incident prediction, "
+    "alert classification, and performance anomaly detection."
+)
+
+__all__ = ["__version__", "__author__", "__description__"]
