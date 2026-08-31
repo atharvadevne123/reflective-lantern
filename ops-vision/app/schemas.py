@@ -1,9 +1,27 @@
 """Pydantic request/response schemas for Ops-Vision API."""
 
 from datetime import datetime
+from enum import Enum
 from typing import Optional
 
 from pydantic import BaseModel, Field, field_validator
+
+
+class SeverityLevel(str, Enum):
+    """Enumeration of incident severity levels."""
+
+    low = "low"
+    medium = "medium"
+    high = "high"
+    critical = "critical"
+
+
+class ErrorResponse(BaseModel):
+    """Standard error response returned on 4xx/5xx."""
+
+    detail: str
+    error_code: Optional[str] = None
+    request_id: Optional[str] = None
 
 
 class MetricsPayload(BaseModel):
