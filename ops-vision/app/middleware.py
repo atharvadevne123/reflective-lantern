@@ -4,6 +4,7 @@ import logging
 import time
 import uuid
 from collections import defaultdict, deque
+from typing import Optional
 
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
@@ -31,8 +32,11 @@ class CorrelationIdMiddleware(BaseHTTPMiddleware):
             correlation_id,
         )
 
+        start = time.perf_counter()
         response: Response = await call_next(request)
+        elapsed_ms = (time.perf_counter() - start) * 1000
         response.headers["X-Correlation-ID"] = correlation_id
+        response.headers["X-Response-Time-Ms"] = f"{elapsed_ms:.2f}"
         return response
 
 
