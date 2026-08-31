@@ -3,7 +3,15 @@
 import pytest
 from pydantic import ValidationError
 
-from app.schemas import BatchPredictRequest, ErrorResponse, MetricsPayload, RunbookSearchRequest, SeverityLevel
+from app.schemas import (
+    BatchPredictRequest,
+    ErrorResponse,
+    MetricsPayload,
+    ModelInfoResponse,
+    RunbookSearchRequest,
+    ServiceHealthStatus,
+    SeverityLevel,
+)
 
 
 class TestMetricsPayload:
@@ -167,3 +175,50 @@ class TestBatchPredictRequest:
         """More than 100 items raises ValidationError."""
         with pytest.raises(ValidationError):
             BatchPredictRequest(items=[self._item()] * 101)
+
+
+class TestServiceHealthStatus:
+    """Tests for the ServiceHealthStatus schema."""
+
+    def test_valid_health_status_parses(self):
+        """Valid ServiceHealthStatus is accepted."""
+        status = ServiceHealthStatus(
+            service_name="payments-api",
+            total_predictions=100,
+            incident_count=10,
+            incident_rate=0.1,
+            avg_confidence=0.75,
+        )
+        assert status.service_name == "payments-api"
+
+    def test_incident_rate_out_of_range_rejected(self):
+        """incident_rate > 1 raises ValidationError."""
+        from pydantic import ValidationError
+        with pytest.raises(ValidationError):
+            ServiceHealthStatus(
+                service_name="svc",
+                total_predictions=10,
+                incident_count=5,
+                incident_rate=1.5,
+                avg_confidence=0.5,
+            )
+
+
+class TestModelInfoResponse:
+    """Tests for the ModelInfoResponse schema."""
+
+    def test_minimal_model_info(self):
+        """ModelInfoResponse with only required fields parses correctly."""
+        resp = ModelInfoResponse(model_version="1.0.0", model_loaded=True)
+        assert resp.model_version == "1.0.0"
+        assert resp.model_loaded is True
+        assert resp.estimators is None
+
+    def test_full_model_info(self):
+        """ModelInfoResponse with estimators list parses correctly."""
+        resp = ModelInfoResponse(
+            model_version="1.0.0",
+            model_loaded=True,
+            estimators=["xgb", "lgbm", "rf"],
+        )
+        assert len(resp.estimators) == 3
