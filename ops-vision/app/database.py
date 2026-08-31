@@ -126,9 +126,11 @@ class Prediction(Base):
     model_version = Column(String(32), nullable=False, default="1.0.0")
     created_at = Column(DateTime, default=datetime.utcnow, index=True)
 
-    # count_incidents_predicted() aggregates on the incident flag.
+    # count_incidents_predicted() aggregates on the incident flag;
+    # delete_old_predictions() and per-service queries use service_name + created_at.
     __table_args__ = (
         Index("ix_predictions_incident_flag", "predicted_incident"),
+        Index("ix_predictions_service_created", "service_name", "created_at"),
     )
 
 
