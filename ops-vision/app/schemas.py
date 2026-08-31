@@ -107,7 +107,15 @@ class RunbookResult(BaseModel):
 class BatchPredictRequest(BaseModel):
     """A batch of telemetry observations to score in one call."""
 
-    items: list["MetricsPayload"] = Field(..., min_length=1, max_length=500)
+    items: list["MetricsPayload"] = Field(..., min_length=1, max_length=100)
+
+
+class BatchPredictResponse(BaseModel):
+    """Summary response for a batch prediction call."""
+
+    total: int
+    incident_count: int
+    predictions: list["PredictionResponse"]
 
 
 class IncidentRecord(BaseModel):
