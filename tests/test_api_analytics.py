@@ -242,3 +242,55 @@ class TestSolarEndpoints:
     def test_payback_negative_cost_rejected(self, client: TestClient) -> None:
         r = client.get("/api/v1/solar/payback?system_cost=-1&annual_benefit=1000")
         assert r.status_code == 422
+
+
+class TestBatteryEndpoints:
+    SPIKY = [10.0, 10.0, 50.0, 60.0, 55.0, 10.0, 10.0]
+
+    def _shave(self, client: TestClient, **params: float):
+        query = {
+            "capacity_kwh": 200.0,
+            "max_charge_kw": 100.0,
+            "max_discharge_kw": 100.0,
+            "target_peak_kw": 30.0,
+        }
+        query.update(params)
+        qs = "&".join(f"{k}={v}" for k, v in query.items())
+        return client.post(f"/api/v1/battery/peak-shave?{qs}", json=self.SPIKY)
+
+    def test_ample_battery_meets_target(self, client: TestClient) -> None:
+        r = self._shave(client)
+        assert r.status_code == 200
+        data = r.json()
+        assert data["target_met"] is True
+        assert data["peak_after_kw"] <= 30.0
+
+    def test_power_limit_prevents_meeting_target(self, client: TestClient) -> None:
+        data = self._shave(client, max_discharge_kw=25.0).json()
+        assert data["target_met"] is False
+        assert data["peak_after_kw"] == pytest.approx(35.0)
+
+    def test_saving_scales_with_reduction(self, client: TestClient) -> None:
+        data = self._shave(client, demand_charge_per_kw=15.0).json()
+        assert data["demand_charge_saving"] == pytest.approx(round(data["peak_reduction_kw"] * 15.0, 2))
+
+    def test_invalid_capacity_rejected(self, client: TestClient) -> None:
+        assert self._shave(client, capacity_kwh=0.0).status_code == 422
+
+    def test_negative_target_rejected(self, client: TestClient) -> None:
+        assert self._shave(client, target_peak_kw=-5.0).status_code == 422
+
+    def test_sizing_reports_required_capacity(self, client: TestClient) -> None:
+        r = client.post("/api/v1/battery/sizing?target_peak_kw=30", json=self.SPIKY)
+        assert r.status_code == 200
+        data = r.json()
+        assert data["required_usable_kwh"] == pytest.approx(75.0)
+        assert data["peak_load_kw"] == pytest.approx(60.0)
+
+    def test_sizing_zero_when_load_under_target(self, client: TestClient) -> None:
+        r = client.post("/api/v1/battery/sizing?target_peak_kw=100", json=self.SPIKY)
+        assert r.json()["required_usable_kwh"] == 0.0
+
+    def test_sizing_negative_target_rejected(self, client: TestClient) -> None:
+        r = client.post("/api/v1/battery/sizing?target_peak_kw=-1", json=self.SPIKY)
+        assert r.status_code == 422
