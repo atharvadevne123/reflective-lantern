@@ -3,7 +3,7 @@
 import pytest
 from pydantic import ValidationError
 
-from app.schemas import MetricsPayload, RunbookSearchRequest
+from app.schemas import BatchPredictRequest, ErrorResponse, MetricsPayload, RunbookSearchRequest, SeverityLevel
 
 
 class TestMetricsPayload:
@@ -106,3 +106,64 @@ class TestRunbookSearchRequest:
         """top_k values 1–10 are all valid."""
         req = RunbookSearchRequest(query="disk io saturation", top_k=top_k)
         assert req.top_k == top_k
+
+
+class TestSeverityLevel:
+    """Tests for the SeverityLevel enum."""
+
+    @pytest.mark.parametrize("val", ["low", "medium", "high", "critical"])
+    def test_valid_severity_levels(self, val):
+        """All four severity strings are valid enum members."""
+        level = SeverityLevel(val)
+        assert level.value == val
+
+    def test_invalid_severity_raises(self):
+        """An unknown severity string raises ValueError."""
+        with pytest.raises(ValueError):
+            SeverityLevel("extreme")
+
+
+class TestErrorResponse:
+    """Tests for the ErrorResponse schema."""
+
+    def test_minimal_error_response(self):
+        """ErrorResponse with only detail parses correctly."""
+        resp = ErrorResponse(detail="Something went wrong")
+        assert resp.detail == "Something went wrong"
+        assert resp.error_code is None
+
+    def test_full_error_response(self):
+        """ErrorResponse with all fields parses correctly."""
+        resp = ErrorResponse(detail="Not found", error_code="E404", request_id="abc-123")
+        assert resp.error_code == "E404"
+        assert resp.request_id == "abc-123"
+
+
+class TestBatchPredictRequest:
+    """Tests for the BatchPredictRequest schema."""
+
+    def _item(self) -> dict:
+        return {
+            "service_name": "svc",
+            "cpu_usage_pct": 50.0,
+            "memory_usage_pct": 50.0,
+            "error_rate_per_min": 5.0,
+            "latency_p99_ms": 200.0,
+            "request_rate_per_sec": 100.0,
+            "disk_io_util_pct": 30.0,
+        }
+
+    def test_single_item_accepted(self):
+        """A batch of 1 item is valid."""
+        req = BatchPredictRequest(items=[self._item()])
+        assert len(req.items) == 1
+
+    def test_empty_items_rejected(self):
+        """An empty items list raises ValidationError."""
+        with pytest.raises(ValidationError):
+            BatchPredictRequest(items=[])
+
+    def test_over_limit_rejected(self):
+        """More than 100 items raises ValidationError."""
+        with pytest.raises(ValidationError):
+            BatchPredictRequest(items=[self._item()] * 101)
