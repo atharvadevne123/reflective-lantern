@@ -294,3 +294,47 @@ class TestBatteryEndpoints:
     def test_sizing_negative_target_rejected(self, client: TestClient) -> None:
         r = client.post("/api/v1/battery/sizing?target_peak_kw=-1", json=self.SPIKY)
         assert r.status_code == 422
+
+
+class TestCohortBenchmarkEndpoint:
+    COHORT = [80.0, 90.0, 110.0, 120.0, 150.0]
+
+    def test_efficient_building_grades_well(self, client: TestClient) -> None:
+        r = client.post(
+            "/api/v1/benchmark/cohort?annual_kwh=50000&floor_area_m2=1000",
+            json=self.COHORT,
+        )
+        assert r.status_code == 200
+        data = r.json()
+        assert data["grade"] == "A"
+        assert data["percentile_rank"] == pytest.approx(100.0)
+
+    def test_wasteful_building_grades_poorly(self, client: TestClient) -> None:
+        r = client.post(
+            "/api/v1/benchmark/cohort?annual_kwh=200000&floor_area_m2=1000",
+            json=self.COHORT,
+        )
+        assert r.json()["grade"] == "F"
+
+    def test_reports_cohort_context(self, client: TestClient) -> None:
+        r = client.post(
+            "/api/v1/benchmark/cohort?annual_kwh=100000&floor_area_m2=1000",
+            json=self.COHORT,
+        )
+        data = r.json()
+        assert data["cohort_size"] == 5
+        assert data["cohort_median_eui"] == pytest.approx(110.0)
+
+    def test_undersized_cohort_rejected(self, client: TestClient) -> None:
+        r = client.post(
+            "/api/v1/benchmark/cohort?annual_kwh=100000&floor_area_m2=1000",
+            json=[100.0, 110.0],
+        )
+        assert r.status_code == 422
+
+    def test_zero_floor_area_rejected(self, client: TestClient) -> None:
+        r = client.post(
+            "/api/v1/benchmark/cohort?annual_kwh=100000&floor_area_m2=0",
+            json=self.COHORT,
+        )
+        assert r.status_code == 422
