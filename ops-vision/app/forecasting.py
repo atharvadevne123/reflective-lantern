@@ -66,6 +66,20 @@ class IncidentRateBuffer:
         """Return the number of observations in the buffer."""
         return len(self.counts)
 
+    @property
+    def total_incidents(self) -> int:
+        """Return the sum of all incident counts in the buffer."""
+        return sum(c for _, c in self.counts)
+
+    @property
+    def window_span_hours(self) -> float:
+        """Return the time span of buffered data in hours, or 0 if fewer than 2 entries."""
+        if len(self.counts) < 2:
+            return 0.0
+        sorted_ts = sorted(t for t, _ in self.counts)
+        delta = sorted_ts[-1] - sorted_ts[0]
+        return delta.total_seconds() / 3600.0
+
 
 DEFAULT_ALPHA: float = 0.3
 DEFAULT_BETA: float = 0.1
