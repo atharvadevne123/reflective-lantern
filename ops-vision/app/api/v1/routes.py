@@ -11,10 +11,13 @@ from app import __version__
 from app.config import get_settings
 from app.crud import (
     avg_confidence,
+    bulk_create_predictions,
     count_drift_alerts_last_24h,
     count_incidents_predicted,
     count_predictions,
     create_prediction,
+    delete_old_predictions,
+    get_incidents_by_service,
     list_incidents,
 )
 from app.database import get_db
@@ -32,6 +35,7 @@ from app.schemas import (
     MetricsPayload,
     MetricsResponse,
     PredictionResponse,
+    PredictionStats,
     RunbookResult,
     RunbookSearchRequest,
 )
