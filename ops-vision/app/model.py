@@ -187,6 +187,23 @@ def predict(
     return preds, proba
 
 
+def model_summary(model: VotingClassifier) -> dict:
+    """Return a summary dict describing the ensemble members.
+
+    Args:
+        model: Fitted or unfitted VotingClassifier.
+
+    Returns:
+        Dict with member names, voting strategy, and model version.
+    """
+    return {
+        "model_version": MODEL_VERSION,
+        "voting": model.voting,
+        "estimators": [name for name, _ in model.estimators],
+        "n_estimators": len(model.estimators),
+    }
+
+
 def generate_synthetic_data(
     n_samples: int = 2000,
     incident_rate: float = 0.2,
