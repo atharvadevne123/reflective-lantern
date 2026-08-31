@@ -198,6 +198,21 @@ class DriftMonitor:
             return 0.0
         return sum(1 for r in results if r.drifted) / len(results)
 
+    def to_dict(self) -> dict:
+        """Serialise the monitor's state to a plain dict for JSON responses.
+
+        Returns:
+            Dict with keys: reference_size, current_size, threshold,
+            feature_count, and feature_cols.
+        """
+        return {
+            "reference_size": self.reference_size,
+            "current_size": self.current_size,
+            "threshold": self.threshold,
+            "feature_count": len(FEATURE_COLS),
+            "feature_cols": FEATURE_COLS,
+        }
+
     def summary(self) -> dict:
         """Return a snapshot of the monitor's current state.
 
