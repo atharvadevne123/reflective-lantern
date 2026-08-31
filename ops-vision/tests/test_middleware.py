@@ -107,6 +107,33 @@ class TestRateLimitMiddleware:
         resp = client.get("/ping", headers={"X-Forwarded-For": "10.0.0.5, 192.168.1.1"})
         assert resp.status_code == 429
 
+    def test_rate_limit_remaining_header_present(self):
+        """Successful responses carry X-RateLimit-Remaining header."""
+        client = TestClient(_build_app(RateLimitMiddleware, max_requests=5, window_seconds=60))
+        resp = client.get("/ping")
+        assert "X-RateLimit-Remaining" in resp.headers
+
+    def test_rate_limit_remaining_decrements(self):
+        """X-RateLimit-Remaining decreases with each request."""
+        client = TestClient(_build_app(RateLimitMiddleware, max_requests=5, window_seconds=60))
+        first = int(client.get("/ping").headers["X-RateLimit-Remaining"])
+        second = int(client.get("/ping").headers["X-RateLimit-Remaining"])
+        assert second < first
+
+    def test_rate_limit_limit_header_matches_config(self):
+        """X-RateLimit-Limit matches the configured max_requests."""
+        client = TestClient(_build_app(RateLimitMiddleware, max_requests=7, window_seconds=60))
+        resp = client.get("/ping")
+        assert resp.headers["X-RateLimit-Limit"] == "7"
+
+    def test_429_includes_rate_limit_remaining_zero(self):
+        """A throttled 429 response sets X-RateLimit-Remaining to 0."""
+        client = TestClient(_build_app(RateLimitMiddleware, max_requests=1, window_seconds=60))
+        client.get("/ping")
+        resp = client.get("/ping")
+        assert resp.status_code == 429
+        assert resp.headers.get("X-RateLimit-Remaining") == "0"
+
 
 class TestRequestSizeLimitMiddleware:
     """Tests for RequestSizeLimitMiddleware."""
