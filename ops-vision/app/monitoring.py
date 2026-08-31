@@ -4,12 +4,24 @@ import logging
 from collections import deque
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Optional
+from typing import TypedDict
 
 import numpy as np
 from scipy import stats
 
 logger = logging.getLogger(__name__)
+
+
+class MetricSample(TypedDict, total=False):
+    """Type alias for a raw SRE metrics observation dict."""
+
+    cpu_usage_pct: float
+    memory_usage_pct: float
+    error_rate_per_min: float
+    latency_p99_ms: float
+    request_rate_per_sec: float
+    disk_io_util_pct: float
+
 
 DRIFT_THRESHOLD: float = 0.05
 REFERENCE_WINDOW_SIZE: int = 1000
@@ -42,6 +54,14 @@ class DriftResult:
     p_value: float
     drifted: bool
     timestamp: datetime = field(default_factory=datetime.utcnow)
+
+    def __repr__(self) -> str:
+        """Return a concise string representation."""
+        status = "DRIFTED" if self.drifted else "stable"
+        return (
+            f"DriftResult({self.feature_name}, {status}, "
+            f"KS={self.ks_statistic:.4f}, p={self.p_value:.6f})"
+        )
 
 
 class DriftMonitor:
@@ -79,11 +99,9 @@ class DriftMonitor:
         """
         for s in samples:
             self._reference.append(s)
-        logger.info(
-            "Reference window updated: %d samples", len(self._reference)
-        )
+        logger.info("Reference window updated: %d samples", len(self._reference))
 
-    def record(self, sample: dict) -> Optional[list[DriftResult]]:
+    def record(self, sample: dict) -> list[DriftResult] | None:
         """Record a production sample and trigger drift check when window fills.
 
         Args:
@@ -112,12 +130,10 @@ class DriftMonitor:
             raise ValueError("Reference window is empty — cannot test for drift")
 
         ref_arrays: dict[str, np.ndarray] = {
-            col: np.array([s.get(col, 0.0) for s in self._reference])
-            for col in FEATURE_COLS
+            col: np.array([s.get(col, 0.0) for s in self._reference]) for col in FEATURE_COLS
         }
         cur_arrays: dict[str, np.ndarray] = {
-            col: np.array([s.get(col, 0.0) for s in self._current])
-            for col in FEATURE_COLS
+            col: np.array([s.get(col, 0.0) for s in self._current]) for col in FEATURE_COLS
         }
 
         results: list[DriftResult] = []
@@ -132,13 +148,9 @@ class DriftMonitor:
             )
             results.append(result)
             if drifted:
-                logger.warning(
-                    "DRIFT DETECTED on %s: KS=%.4f p=%.6f", col, ks_stat, p_val
-                )
+                logger.warning("DRIFT DETECTED on %s: KS=%.4f p=%.6f", col, ks_stat, p_val)
             else:
-                logger.debug(
-                    "No drift on %s: KS=%.4f p=%.6f", col, ks_stat, p_val
-                )
+                logger.debug("No drift on %s: KS=%.4f p=%.6f", col, ks_stat, p_val)
 
         return results
 
@@ -152,8 +164,63 @@ class DriftMonitor:
         """Number of samples accumulated in the current window."""
         return len(self._current)
 
+    def reset(self) -> None:
+        """Clear both reference and current windows, resetting the monitor."""
+        self._reference.clear()
+        self._current.clear()
+        logger.info("DriftMonitor windows reset")
 
-_monitor_singleton: Optional[DriftMonitor] = None
+    def drifted_features(self, results: list[DriftResult]) -> list[str]:
+        """Return names of features that drifted from a results list."""
+        return [r.feature_name for r in results if r.drifted]
+
+    def stable_features(self, results: list[DriftResult]) -> list[str]:
+        """Return names of features that did NOT drift from a results list."""
+        return [r.feature_name for r in results if not r.drifted]
+
+    def drift_rate(self, results: list[DriftResult]) -> float:
+        """Return the fraction of features that drifted.
+
+        Args:
+            results: List of DriftResult from check_drift().
+
+        Returns:
+            Float in [0.0, 1.0]; 0.0 if results is empty.
+        """
+        if not results:
+            return 0.0
+        return sum(1 for r in results if r.drifted) / len(results)
+
+    def to_dict(self) -> dict:
+        """Serialise the monitor's state to a plain dict for JSON responses.
+
+        Returns:
+            Dict with keys: reference_size, current_size, threshold,
+            feature_count, and feature_cols.
+        """
+        return {
+            "reference_size": self.reference_size,
+            "current_size": self.current_size,
+            "threshold": self.threshold,
+            "feature_count": len(FEATURE_COLS),
+            "feature_cols": FEATURE_COLS,
+        }
+
+    def summary(self) -> dict:
+        """Return a snapshot of the monitor's current state.
+
+        Returns:
+            Dict with reference_size, current_size, threshold, and feature count.
+        """
+        return {
+            "reference_size": self.reference_size,
+            "current_size": self.current_size,
+            "threshold": self.threshold,
+            "feature_count": len(FEATURE_COLS),
+        }
+
+
+_monitor_singleton: DriftMonitor | None = None
 
 
 def get_monitor() -> DriftMonitor:

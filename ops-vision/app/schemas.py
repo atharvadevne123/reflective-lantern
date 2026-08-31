@@ -1,9 +1,26 @@
 """Pydantic request/response schemas for Ops-Vision API."""
 
 from datetime import datetime
-from typing import Optional
+from enum import StrEnum
 
 from pydantic import BaseModel, Field, field_validator
+
+
+class SeverityLevel(StrEnum):
+    """Enumeration of incident severity levels."""
+
+    low = "low"
+    medium = "medium"
+    high = "high"
+    critical = "critical"
+
+
+class ErrorResponse(BaseModel):
+    """Standard error response returned on 4xx/5xx."""
+
+    detail: str
+    error_code: str | None = None
+    request_id: str | None = None
 
 
 class MetricsPayload(BaseModel):
@@ -43,10 +60,10 @@ class PredictionResponse(BaseModel):
 
     service_name: str
     predicted_incident: bool
-    predicted_severity: Optional[str]
+    predicted_severity: str | None
     confidence: float = Field(..., ge=0.0, le=1.0)
     model_version: str
-    runbook_hint: Optional[str] = None
+    runbook_hint: str | None = None
     timestamp: datetime
 
 
@@ -89,7 +106,15 @@ class RunbookResult(BaseModel):
 class BatchPredictRequest(BaseModel):
     """A batch of telemetry observations to score in one call."""
 
-    items: list["MetricsPayload"] = Field(..., min_length=1, max_length=500)
+    items: list["MetricsPayload"] = Field(..., min_length=1, max_length=100)
+
+
+class BatchPredictResponse(BaseModel):
+    """Summary response for a batch prediction call."""
+
+    total: int
+    incident_count: int
+    predictions: list["PredictionResponse"]
 
 
 class IncidentRecord(BaseModel):
@@ -104,8 +129,8 @@ class IncidentRecord(BaseModel):
     request_rate_per_sec: float
     disk_io_util_pct: float
     is_incident: bool
-    severity: Optional[str]
-    created_at: Optional[datetime]
+    severity: str | None
+    created_at: datetime | None
 
     model_config = {"from_attributes": True}
 
@@ -122,7 +147,47 @@ class ForecastPoint(BaseModel):
 class DriftStatusResponse(BaseModel):
     """Response summarising the latest drift detection results."""
 
-    checked_at: Optional[datetime]
+    checked_at: datetime | None
     features_drifted: list[str]
     features_stable: list[str]
     total_features: int
+
+
+class DriftAlertRecord(BaseModel):
+    """A persisted drift alert row."""
+
+    id: int
+    feature_name: str
+    ks_statistic: float
+    p_value: float
+    drifted: bool
+    created_at: datetime | None
+
+    model_config = {"from_attributes": True}
+
+
+class PredictionStats(BaseModel):
+    """Aggregated statistics for the predictions table."""
+
+    total_predictions: int
+    incident_count: int
+    incident_rate: float
+    avg_confidence: float
+
+
+class ServiceHealthStatus(BaseModel):
+    """Per-service health summary derived from recent predictions."""
+
+    service_name: str
+    total_predictions: int
+    incident_count: int
+    incident_rate: float = Field(..., ge=0.0, le=1.0)
+    avg_confidence: float = Field(..., ge=0.0, le=1.0)
+
+
+class ModelInfoResponse(BaseModel):
+    """Response for the model version and status endpoint."""
+
+    model_version: str
+    model_loaded: bool
+    estimators: list[str] | None = None
