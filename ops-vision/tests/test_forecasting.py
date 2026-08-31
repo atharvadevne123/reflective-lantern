@@ -125,6 +125,45 @@ class TestExponentialSmoothingForecaster:
         assert len(points) == horizon
 
 
+class TestIncidentRateBufferResetAndLen:
+    """Tests for IncidentRateBuffer.reset() and __len__()."""
+
+    def test_reset_clears_all_counts(self):
+        """reset() removes all entries from the buffer."""
+        buf = IncidentRateBuffer()
+        for i in range(5):
+            buf.record(datetime.utcnow() + timedelta(hours=i), i + 1)
+        buf.reset()
+        assert len(buf.counts) == 0
+
+    def test_reset_allows_new_records(self):
+        """Buffer is usable after reset."""
+        buf = IncidentRateBuffer()
+        buf.record(datetime.utcnow(), 3)
+        buf.reset()
+        buf.record(datetime.utcnow(), 7)
+        assert len(buf) == 1
+
+    def test_len_reflects_count(self):
+        """__len__ returns number of entries in the buffer."""
+        buf = IncidentRateBuffer()
+        for i in range(4):
+            buf.record(datetime.utcnow() + timedelta(hours=i), 1)
+        assert len(buf) == 4
+
+    def test_len_zero_on_empty_buffer(self):
+        """__len__ returns 0 for a new buffer."""
+        buf = IncidentRateBuffer()
+        assert len(buf) == 0
+
+    def test_len_decreases_after_reset(self):
+        """__len__ returns 0 after reset."""
+        buf = IncidentRateBuffer()
+        buf.record(datetime.utcnow(), 2)
+        buf.reset()
+        assert len(buf) == 0
+
+
 class TestGetRateBufferSingleton:
     """Tests for the get_rate_buffer() singleton helper."""
 
