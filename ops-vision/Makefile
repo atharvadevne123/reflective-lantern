@@ -1,4 +1,4 @@
-.PHONY: help install install-dev test test-cov lint format typecheck run docker-build docker-up docker-down clean
+.PHONY: help install install-dev test test-cov test-fast lint format typecheck run docker-build docker-up docker-down clean check-all
 
 help:
 	@echo "Ops-Vision — available targets:"
@@ -49,6 +49,11 @@ docker-up:
 
 docker-down:
 	docker compose down
+
+test-fast:
+	python -m pytest tests/ -x -q --tb=short
+
+check-all: lint typecheck test
 
 clean:
 	find . -type d -name __pycache__ -exec rm -rf {} + 2>/dev/null || true
