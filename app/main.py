@@ -713,3 +713,48 @@ def demand_response_endpoint(
         "net_payment": result.net_payment,
         "performance_score": result.performance_score,
     }
+
+
+@app.post("/api/v1/power-quality", tags=["Analytics"])
+def power_quality_endpoint(
+    real_power_kw: float,
+    reactive_power_kvar: float,
+    phase_voltages: list[float],
+) -> dict:
+    """Report power factor, apparent power, and voltage imbalance for a site."""
+    from app.power_quality import build_report
+
+    try:
+        report = build_report(real_power_kw, reactive_power_kvar, phase_voltages)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    return {
+        "real_power_kw": report.real_power_kw,
+        "apparent_power_kva": report.apparent_power_kva,
+        "reactive_power_kvar": report.reactive_power_kvar,
+        "power_factor": report.power_factor,
+        "power_factor_rating": report.power_factor_rating,
+        "voltage_imbalance_pct": report.voltage_imbalance_pct,
+        "imbalance_within_limit": report.imbalance_within_limit,
+    }
+
+
+@app.get("/api/v1/power-quality/correction", tags=["Analytics"])
+def power_factor_correction_endpoint(
+    real_power_kw: float,
+    current_power_factor: float,
+    target_power_factor: float = 0.95,
+) -> dict:
+    """Return the capacitor rating needed to reach a target power factor."""
+    from app.power_quality import correction_kvar
+
+    try:
+        required = correction_kvar(real_power_kw, current_power_factor, target_power_factor)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    return {
+        "real_power_kw": real_power_kw,
+        "current_power_factor": current_power_factor,
+        "target_power_factor": target_power_factor,
+        "required_kvar": required,
+    }
