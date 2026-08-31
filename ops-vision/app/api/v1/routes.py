@@ -16,13 +16,11 @@ from app.constants import (
 )
 from app.crud import (
     avg_confidence,
-    bulk_create_predictions,
     count_drift_alerts_last_24h,
     count_incidents_predicted,
     count_predictions,
     create_prediction,
     delete_old_predictions,
-    get_incidents_by_service,
     list_incidents,
 )
 from app.database import get_db

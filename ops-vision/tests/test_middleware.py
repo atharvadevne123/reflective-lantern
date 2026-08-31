@@ -82,7 +82,7 @@ class TestCorrelationIdResponseTime:
 
     def test_response_time_differs_across_requests(self, client):
         """Two requests produce different timing values (not cached)."""
-        t1 = resp1 = client.get("/ping").headers["X-Response-Time-Ms"]
+        t1 = client.get("/ping").headers["X-Response-Time-Ms"]
         t2 = client.get("/health").headers["X-Response-Time-Ms"]
         assert isinstance(t1, str) and isinstance(t2, str)
 
