@@ -178,3 +178,40 @@ class TestGetPredictionByIdAndCountByService:
         """count_predictions_by_service() returns 0 for an unknown service."""
         from app.crud import count_predictions_by_service
         assert count_predictions_by_service(db_session, "totally-unknown-svc-xyz") == 0
+
+
+class TestBulkCreateAndDeleteOld:
+    """Tests for bulk_create_predictions() and delete_old_predictions()."""
+
+    def _make_prediction(self, service: str = "bulk-svc") -> dict:
+        return {
+            "service_name": service,
+            "features": {"cpu_usage_pct": 50.0},
+            "predicted_incident": False,
+            "predicted_severity": None,
+            "confidence": 0.4,
+            "model_version": "1.0.0",
+        }
+
+    def test_bulk_create_returns_count(self, db_session):
+        """bulk_create_predictions() returns the number of inserted rows."""
+        from app.crud import bulk_create_predictions
+        items = [self._make_prediction() for _ in range(5)]
+        result = bulk_create_predictions(db_session, items)
+        assert result == 5
+
+    def test_bulk_create_persists_rows(self, db_session):
+        """Rows inserted by bulk_create_predictions are retrievable."""
+        from app.crud import bulk_create_predictions, count_predictions_by_service
+        items = [self._make_prediction("bulk-target") for _ in range(3)]
+        before = count_predictions_by_service(db_session, "bulk-target")
+        bulk_create_predictions(db_session, items)
+        after = count_predictions_by_service(db_session, "bulk-target")
+        assert after == before + 3
+
+    def test_delete_old_predictions_returns_count(self, db_session):
+        """delete_old_predictions() returns the number of deleted rows."""
+        from app.crud import delete_old_predictions
+        result = delete_old_predictions(db_session, older_than_days=365)
+        assert isinstance(result, int)
+        assert result >= 0
