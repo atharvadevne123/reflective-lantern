@@ -1,10 +1,10 @@
-"""Tests for correlation-ID and rate-limiting middleware."""
+"""Tests for correlation-ID, rate-limiting, and request-size middleware."""
 
 import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
-from app.middleware import CorrelationIdMiddleware, RateLimitMiddleware
+from app.middleware import CorrelationIdMiddleware, RateLimitMiddleware, RequestSizeLimitMiddleware
 
 
 def _build_app(middleware_cls, **kwargs) -> FastAPI:
@@ -106,3 +106,41 @@ class TestRateLimitMiddleware:
         client.get("/ping", headers={"X-Forwarded-For": "10.0.0.5, 172.16.0.1"})
         resp = client.get("/ping", headers={"X-Forwarded-For": "10.0.0.5, 192.168.1.1"})
         assert resp.status_code == 429
+
+
+class TestRequestSizeLimitMiddleware:
+    """Tests for RequestSizeLimitMiddleware."""
+
+    def _build(self, max_bytes: int = 100) -> TestClient:
+        app = FastAPI()
+        app.add_middleware(RequestSizeLimitMiddleware, max_bytes=max_bytes)
+
+        @app.post("/upload")
+        def upload():
+            return {"ok": True}
+
+        return TestClient(app)
+
+    def test_small_request_passes(self):
+        """A request within the size limit is forwarded normally."""
+        client = self._build(max_bytes=1024)
+        resp = client.post("/upload", headers={"Content-Length": "512"})
+        assert resp.status_code == 200
+
+    def test_oversized_request_returns_413(self):
+        """A request exceeding the limit is rejected with HTTP 413."""
+        client = self._build(max_bytes=100)
+        resp = client.post("/upload", headers={"Content-Length": "200"})
+        assert resp.status_code == 413
+
+    def test_413_response_has_detail_key(self):
+        """The 413 response body contains a 'detail' key."""
+        client = self._build(max_bytes=10)
+        resp = client.post("/upload", headers={"Content-Length": "100"})
+        assert "detail" in resp.json()
+
+    def test_no_content_length_passes(self):
+        """A request without Content-Length header is allowed through."""
+        client = self._build(max_bytes=100)
+        resp = client.post("/upload")
+        assert resp.status_code == 200
