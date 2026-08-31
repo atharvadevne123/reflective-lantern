@@ -136,3 +136,45 @@ class TestCreateDriftAlert:
         create_drift_alert(db_session, self._make_alert_data(drifted=False))
         after = count_drift_alerts_last_24h(db_session)
         assert after == before
+
+
+class TestGetPredictionByIdAndCountByService:
+    """Tests for get_prediction_by_id() and count_predictions_by_service()."""
+
+    def _make_prediction(self, service: str = "svc-a", confidence: float = 0.75) -> dict:
+        return {
+            "service_name": service,
+            "features": {"cpu_usage_pct": 70.0},
+            "predicted_incident": True,
+            "predicted_severity": "high",
+            "confidence": confidence,
+            "model_version": "1.0.0",
+        }
+
+    def test_get_prediction_by_id_returns_record(self, db_session):
+        """get_prediction_by_id() returns the created prediction."""
+        from app.crud import create_prediction, get_prediction_by_id
+        pred = create_prediction(db_session, self._make_prediction())
+        fetched = get_prediction_by_id(db_session, pred.id)
+        assert fetched is not None
+        assert fetched.id == pred.id
+
+    def test_get_prediction_by_id_none_for_missing(self, db_session):
+        """get_prediction_by_id() returns None for unknown id."""
+        from app.crud import get_prediction_by_id
+        assert get_prediction_by_id(db_session, 9999999) is None
+
+    def test_count_predictions_by_service(self, db_session):
+        """count_predictions_by_service() counts only matching service rows."""
+        from app.crud import count_predictions_by_service, create_prediction
+        before = count_predictions_by_service(db_session, "svc-unique-x")
+        create_prediction(db_session, self._make_prediction("svc-unique-x"))
+        create_prediction(db_session, self._make_prediction("svc-unique-x"))
+        create_prediction(db_session, self._make_prediction("other-svc"))
+        after = count_predictions_by_service(db_session, "svc-unique-x")
+        assert after == before + 2
+
+    def test_count_predictions_by_service_zero_for_unknown(self, db_session):
+        """count_predictions_by_service() returns 0 for an unknown service."""
+        from app.crud import count_predictions_by_service
+        assert count_predictions_by_service(db_session, "totally-unknown-svc-xyz") == 0
