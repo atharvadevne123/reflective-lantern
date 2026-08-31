@@ -348,3 +348,29 @@ class TestDriftMonitorStableAndRate:
             DriftResult(f, 0.9, 0.0001, True) for f in FEATURE_COLS
         ]
         assert monitor.drift_rate(all_drifted) == 1.0
+
+
+class TestDriftMonitorToDict:
+    """Tests for DriftMonitor.to_dict()."""
+
+    def test_to_dict_returns_dict(self):
+        """to_dict() returns a dict."""
+        monitor = DriftMonitor()
+        assert isinstance(monitor.to_dict(), dict)
+
+    def test_to_dict_has_feature_cols(self):
+        """to_dict() includes feature_cols key with all feature names."""
+        monitor = DriftMonitor()
+        d = monitor.to_dict()
+        assert "feature_cols" in d
+        assert set(d["feature_cols"]) == set(FEATURE_COLS)
+
+    def test_to_dict_feature_count_correct(self):
+        """to_dict() feature_count matches FEATURE_COLS length."""
+        monitor = DriftMonitor()
+        assert monitor.to_dict()["feature_count"] == len(FEATURE_COLS)
+
+    def test_to_dict_threshold_matches(self):
+        """to_dict() threshold matches the value at construction."""
+        monitor = DriftMonitor(threshold=0.02)
+        assert monitor.to_dict()["threshold"] == 0.02
