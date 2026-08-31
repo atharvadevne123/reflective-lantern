@@ -184,6 +184,16 @@ class ExponentialSmoothingForecaster:
         )
         return points
 
+    @property
+    def is_fitted(self) -> bool:
+        """Return True if fit() has been called successfully."""
+        return self._is_fitted
+
+    @property
+    def params(self) -> dict:
+        """Return current smoothing parameters as a dict."""
+        return {"alpha": self.alpha, "beta": self.beta, "horizon": self.horizon}
+
 
 _buffer_singleton: Optional[IncidentRateBuffer] = None
 
