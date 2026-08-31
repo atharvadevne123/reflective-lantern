@@ -134,3 +134,43 @@ class TestRunbookIndexPersistence:
         index.save(path)
         loaded = RunbookIndex.load(path)
         assert len(loaded.runbooks) == len(SAMPLE_RUNBOOKS)
+
+
+class TestRunbookIndexProperties:
+    """Tests for RunbookIndex.size, is_built, and categories()."""
+
+    @pytest.fixture
+    def built_index(self) -> RunbookIndex:
+        index = RunbookIndex()
+        index.build(SAMPLE_RUNBOOKS)
+        return index
+
+    def test_size_matches_runbook_count(self, built_index):
+        """size property equals number of indexed runbooks."""
+        assert built_index.size == len(SAMPLE_RUNBOOKS)
+
+    def test_size_zero_for_empty_index(self):
+        """size is 0 for an empty (un-built) index."""
+        assert RunbookIndex().size == 0
+
+    def test_is_built_true_after_build(self, built_index):
+        """is_built is True after calling build()."""
+        assert built_index.is_built is True
+
+    def test_is_built_false_before_build(self):
+        """is_built is False before any build() call."""
+        assert RunbookIndex().is_built is False
+
+    def test_categories_returns_sorted_list(self, built_index):
+        """categories() returns a sorted list of unique categories."""
+        cats = built_index.categories()
+        assert cats == sorted(cats)
+
+    def test_categories_contains_all_runbook_categories(self, built_index):
+        """categories() includes every category present in the runbooks."""
+        expected = {r.category for r in SAMPLE_RUNBOOKS}
+        assert set(built_index.categories()) == expected
+
+    def test_categories_empty_for_unbuilt_index(self):
+        """categories() returns [] for an empty index."""
+        assert RunbookIndex().categories() == []
