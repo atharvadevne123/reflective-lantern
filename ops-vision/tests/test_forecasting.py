@@ -125,6 +125,36 @@ class TestExponentialSmoothingForecaster:
         assert len(points) == horizon
 
 
+class TestIncidentRateBufferProperties:
+    """Tests for total_incidents and window_span_hours properties."""
+
+    def test_total_incidents_sums_counts(self):
+        """total_incidents sums all counts in the buffer."""
+        buf = IncidentRateBuffer()
+        buf.record(datetime.utcnow(), 3)
+        buf.record(datetime.utcnow() + timedelta(hours=1), 7)
+        assert buf.total_incidents == 10
+
+    def test_total_incidents_zero_on_empty(self):
+        """total_incidents is 0 for an empty buffer."""
+        buf = IncidentRateBuffer()
+        assert buf.total_incidents == 0
+
+    def test_window_span_zero_for_one_entry(self):
+        """window_span_hours is 0.0 when fewer than 2 entries exist."""
+        buf = IncidentRateBuffer()
+        buf.record(datetime.utcnow(), 1)
+        assert buf.window_span_hours == 0.0
+
+    def test_window_span_correct_for_multiple_entries(self):
+        """window_span_hours reflects the spread between oldest and newest entries."""
+        buf = IncidentRateBuffer()
+        base = datetime(2026, 8, 31, 0, 0)
+        buf.record(base, 1)
+        buf.record(base + timedelta(hours=5), 2)
+        assert abs(buf.window_span_hours - 5.0) < 0.01
+
+
 class TestExponentialSmoothingForecasterProperties:
     """Tests for is_fitted property and params dict."""
 
