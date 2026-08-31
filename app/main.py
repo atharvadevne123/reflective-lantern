@@ -758,3 +758,55 @@ def power_factor_correction_endpoint(
         "target_power_factor": target_power_factor,
         "required_kvar": required,
     }
+
+
+@app.post("/api/v1/solar/economics", tags=["Sustainability"])
+def solar_economics_endpoint(
+    generation_hourly_kwh: list[float],
+    consumption_hourly_kwh: list[float],
+    import_rate: float = 0.15,
+    export_rate: float = 0.05,
+) -> dict:
+    """Split solar generation into self-consumed and exported energy, and value both."""
+    from app.solar import analyze_economics
+
+    try:
+        result = analyze_economics(
+            generation_hourly_kwh, consumption_hourly_kwh, import_rate=import_rate, export_rate=export_rate
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    return {
+        "generated_kwh": result.generated_kwh,
+        "consumed_kwh": result.consumed_kwh,
+        "self_consumed_kwh": result.self_consumed_kwh,
+        "exported_kwh": result.exported_kwh,
+        "imported_kwh": result.imported_kwh,
+        "self_consumption_rate": result.self_consumption_rate,
+        "self_sufficiency_rate": result.self_sufficiency_rate,
+        "bill_saving": result.bill_saving,
+        "export_revenue": result.export_revenue,
+        "total_benefit": result.total_benefit,
+    }
+
+
+@app.get("/api/v1/solar/payback", tags=["Sustainability"])
+def solar_payback_endpoint(
+    system_cost: float,
+    annual_benefit: float,
+    annual_degradation: float = 0.005,
+) -> dict:
+    """Return the simple payback period for a rooftop PV system."""
+    from app.solar import payback_years
+
+    try:
+        years = payback_years(system_cost, annual_benefit, annual_degradation)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    return {
+        "system_cost": system_cost,
+        "annual_benefit": annual_benefit,
+        "annual_degradation": annual_degradation,
+        "payback_years": None if years == float("inf") else years,
+        "repays_within_lifetime": years != float("inf"),
+    }
