@@ -152,3 +152,25 @@ class DriftStatusResponse(BaseModel):
     features_drifted: list[str]
     features_stable: list[str]
     total_features: int
+
+
+class DriftAlertRecord(BaseModel):
+    """A persisted drift alert row."""
+
+    id: int
+    feature_name: str
+    ks_statistic: float
+    p_value: float
+    drifted: bool
+    created_at: Optional[datetime]
+
+    model_config = {"from_attributes": True}
+
+
+class PredictionStats(BaseModel):
+    """Aggregated statistics for the predictions table."""
+
+    total_predictions: int
+    incident_count: int
+    incident_rate: float
+    avg_confidence: float
