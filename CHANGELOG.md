@@ -8,6 +8,25 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [Unreleased]
 
 ### Added
+- `app/tariff.py` — flat, time-of-use, and tiered electricity pricing with scheme comparison
+- `app/load_profile.py` — base load, load factor, peak-to-average, ramp rate, profile class
+- `app/weather_normalization.py` — degree-day adjustment separating weather from efficiency change
+- `app/demand_response.py` — customer baseline load, curtailment measurement, event settlement
+- `app/power_quality.py` — power factor, reactive power, voltage imbalance, capacitor sizing
+- `app/solar.py` — PV generation, hourly self-consumption split, payback with degradation
+- `app/battery.py` — storage dispatch simulation, peak shaving, capacity sizing
+- `app/energy_benchmark.py` — peer-cohort EUI ranking with 1-100 score and letter grade
+- 11 API endpoints exposing the above under `/api/v1/`
+- `docs/energy_analytics.md` — full reference for the energy analytics modules
+- 397 tests across the new modules, endpoints, and expanded existing suites
+
+### Fixed
+- Root logger state is now restored between tests. `configure_logging` clears the
+  root logger's handlers, which removed pytest's capture handler and silently
+  broke `caplog` for every test that ran afterwards.
+- Two test classes in `tests/test_event_bus.py` shadowed earlier definitions of
+  the same name, silently dropping the shadowed tests from the run.
+
 - `app/data_augmentation.py` — text and numeric training data augmentation
 - `app/correlation_id.py` — thread-local request tracing context
 - `app/health_check.py` — composable readiness/liveness probe registry
