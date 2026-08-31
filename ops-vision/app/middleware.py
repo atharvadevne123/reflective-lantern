@@ -89,11 +89,19 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
             return JSONResponse(
                 {"detail": "Rate limit exceeded. Try again later."},
                 status_code=429,
-                headers={"Retry-After": str(self.window_seconds)},
+                headers={
+                    "Retry-After": str(self.window_seconds),
+                    "X-RateLimit-Limit": str(self.max_requests),
+                    "X-RateLimit-Remaining": "0",
+                },
             )
 
         bucket.append(now)
-        return await call_next(request)
+        response = await call_next(request)
+        remaining = max(0, self.max_requests - len(bucket))
+        response.headers["X-RateLimit-Limit"] = str(self.max_requests)
+        response.headers["X-RateLimit-Remaining"] = str(remaining)
+        return response
 
 
 EXEMPT_PATHS: frozenset[str] = frozenset(
