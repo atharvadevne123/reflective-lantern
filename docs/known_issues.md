@@ -17,11 +17,14 @@ confined to sub-project suites.
 ModuleNotFoundError: No module named 'pypdf'
 ```
 
-**Cause:** environmental. `pypdf` is imported by the PDF extractor but is not
-installed in the CI/dev image.
+**Cause:** purely environmental. `pypdf==5.1.0` **is** already declared in
+`veritas-rag/requirements.txt` (line 6) — it simply was not installed in the
+image the suite ran under.
 
-**Fix:** add `pypdf` to `veritas-rag/requirements.txt`, or mark the test with
-`pytest.importorskip("pypdf")` if PDF ingestion is genuinely optional.
+**Fix:** nothing to change in the repo. Install the declared dependencies
+(`pip install -r veritas-rag/requirements.txt`) before running this suite.
+Optionally guard the test with `pytest.importorskip("pypdf")` so a partial
+environment skips rather than fails.
 
 ---
 
