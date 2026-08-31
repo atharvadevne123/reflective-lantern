@@ -4,12 +4,23 @@ import logging
 from collections import deque
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Optional
+from typing import Optional, TypedDict
 
 import numpy as np
 from scipy import stats
 
 logger = logging.getLogger(__name__)
+
+
+class MetricSample(TypedDict, total=False):
+    """Type alias for a raw SRE metrics observation dict."""
+
+    cpu_usage_pct: float
+    memory_usage_pct: float
+    error_rate_per_min: float
+    latency_p99_ms: float
+    request_rate_per_sec: float
+    disk_io_util_pct: float
 
 DRIFT_THRESHOLD: float = 0.05
 REFERENCE_WINDOW_SIZE: int = 1000
