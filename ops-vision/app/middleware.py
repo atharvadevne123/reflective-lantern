@@ -94,3 +94,43 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
 
         bucket.append(now)
         return await call_next(request)
+
+
+EXEMPT_PATHS: frozenset[str] = frozenset(
+    {"/health", "/ready", "/docs", "/openapi.json", "/redoc"}
+)
+
+MAX_REQUEST_BYTES: int = 1 * 1024 * 1024  # 1 MiB
+
+
+class RequestSizeLimitMiddleware(BaseHTTPMiddleware):
+    """Reject requests whose body exceeds a configurable byte limit.
+
+    Attributes:
+        max_bytes: Maximum allowed Content-Length in bytes.
+    """
+
+    def __init__(self, app, max_bytes: int = MAX_REQUEST_BYTES) -> None:
+        """Initialise with the byte limit.
+
+        Args:
+            app: The ASGI application to wrap.
+            max_bytes: Maximum allowed request body size.
+        """
+        super().__init__(app)
+        self.max_bytes = max_bytes
+
+    async def dispatch(self, request: Request, call_next) -> Response:
+        """Reject oversized requests before forwarding."""
+        content_length = request.headers.get("Content-Length")
+        if content_length and int(content_length) > self.max_bytes:
+            logger.warning(
+                "Request too large: %s bytes from %s",
+                content_length,
+                request.url.path,
+            )
+            return JSONResponse(
+                {"detail": f"Request body exceeds {self.max_bytes} bytes"},
+                status_code=413,
+            )
+        return await call_next(request)
