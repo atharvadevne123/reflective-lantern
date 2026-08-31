@@ -67,6 +67,12 @@ class IncidentRateBuffer:
         return len(self.counts)
 
 
+DEFAULT_ALPHA: float = 0.3
+DEFAULT_BETA: float = 0.1
+DEFAULT_HORIZON: int = 24
+Z80_CONFIDENCE: float = 1.282
+
+
 class ExponentialSmoothingForecaster:
     """Simple double exponential smoothing (Holt's linear) forecaster.
 
@@ -95,6 +101,7 @@ class ExponentialSmoothingForecaster:
         self.alpha = alpha
         self.beta = beta
         self.horizon = horizon
+        self._is_fitted: bool = False
         self._level: Optional[float] = None
         self._trend: Optional[float] = None
         self._residuals: list[float] = []
@@ -127,6 +134,7 @@ class ExponentialSmoothingForecaster:
         self._level = float(level)
         self._trend = float(trend)
         self._residuals = residuals
+        self._is_fitted = True
         logger.debug(
             "Holt fit: level=%.4f trend=%.4f on %d points", level, trend, len(series)
         )
@@ -153,7 +161,7 @@ class ExponentialSmoothingForecaster:
         residual_std = (
             float(np.std(self._residuals)) if self._residuals else 1.0
         )
-        z80 = 1.282
+        z80 = Z80_CONFIDENCE
 
         points: list[ForecastPoint] = []
         for h in range(1, self.horizon + 1):
