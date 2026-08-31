@@ -174,3 +174,36 @@ class TestRunbookIndexProperties:
     def test_categories_empty_for_unbuilt_index(self):
         """categories() returns [] for an empty index."""
         assert RunbookIndex().categories() == []
+
+
+class TestRunbookIndexSearchByCategory:
+    """Tests for RunbookIndex.search_by_category()."""
+
+    @pytest.fixture
+    def built_index(self) -> RunbookIndex:
+        index = RunbookIndex()
+        index.build(SAMPLE_RUNBOOKS)
+        return index
+
+    def test_search_by_category_returns_matching_category(self, built_index):
+        """Results from search_by_category all belong to the requested category."""
+        results = built_index.search_by_category("cpu usage high", "cpu", top_k=3)
+        for rb, _ in results:
+            assert rb.category == "cpu"
+
+    def test_search_by_category_empty_for_wrong_category(self, built_index):
+        """Query for an irrelevant category returns an empty list (or fewer hits)."""
+        results = built_index.search_by_category("cpu process", "network", top_k=3)
+        for rb, _ in results:
+            assert rb.category == "network"
+
+    def test_search_by_category_respects_top_k(self, built_index):
+        """search_by_category returns at most top_k results."""
+        results = built_index.search_by_category("query", "cpu", top_k=1)
+        assert len(results) <= 1
+
+    def test_search_by_category_empty_index(self):
+        """search_by_category on empty index returns empty list."""
+        index = RunbookIndex()
+        results = index.search_by_category("cpu", "cpu", top_k=3)
+        assert results == []
