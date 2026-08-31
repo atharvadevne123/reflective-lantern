@@ -379,6 +379,68 @@ def drift_status():
     )
 
 
+@router.get(
+    "/predictions/stats",
+    response_model=PredictionStats,
+    summary="Aggregated prediction statistics",
+)
+def prediction_stats(db: Session = Depends(get_db)) -> PredictionStats:
+    """Return aggregated statistics about all stored predictions.
+
+    Args:
+        db: Injected database session.
+
+    Returns:
+        PredictionStats with totals, incident count, rate, and avg confidence.
+    """
+    total = count_predictions(db)
+    incidents = count_incidents_predicted(db)
+    avg_conf = avg_confidence(db)
+    return PredictionStats(
+        total_predictions=total,
+        incident_count=incidents,
+        incident_rate=round(incidents / total, 4) if total > 0 else 0.0,
+        avg_confidence=round(avg_conf, 4),
+    )
+
+
+@router.get(
+    "/model/version",
+    summary="Current model version",
+)
+def model_version() -> dict:
+    """Return the currently loaded model version string.
+
+    Returns:
+        Dict with model_version and model_loaded flag.
+    """
+    return {
+        "model_version": MODEL_VERSION,
+        "model_loaded": _model is not None,
+    }
+
+
+@router.delete(
+    "/predictions/old",
+    summary="Delete old prediction records",
+)
+def prune_predictions(
+    older_than_days: int = Query(default=30, ge=1, le=365),
+    db: Session = Depends(get_db),
+) -> dict:
+    """Delete prediction records older than the specified number of days.
+
+    Args:
+        older_than_days: Predictions older than this are removed (default 30).
+        db: Injected database session.
+
+    Returns:
+        Dict with the count of deleted records.
+    """
+    deleted = delete_old_predictions(db, older_than_days=older_than_days)
+    return {"deleted": deleted, "older_than_days": older_than_days}
+
+
 def _infer_severity(confidence: float) -> str:
     """Map confidence score to a severity label.
 
