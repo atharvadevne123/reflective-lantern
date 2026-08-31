@@ -11,7 +11,7 @@ lint:
 	ruff check . --select E,F,W,I --ignore E501 --fix
 
 run:
-	uvicorn app.api.server:app --reload --host 0.0.0.0 --port 8000
+	uvicorn app.api.main:app --reload --host 0.0.0.0 --port 8000
 
 docker-build:
 	docker build -t price-prophet:latest .

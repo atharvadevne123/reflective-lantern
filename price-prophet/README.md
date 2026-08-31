@@ -31,7 +31,7 @@ pip install -r requirements.txt
 cp .env.example .env
 
 # Start the API server
-uvicorn app.api.server:app --reload --port 8000
+uvicorn app.api.main:app --reload --port 8000
 ```
 
 ## API Reference
