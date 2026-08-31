@@ -4,7 +4,7 @@ import logging
 from collections import deque
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Optional, TypedDict
+from typing import TypedDict
 
 import numpy as np
 from scipy import stats
@@ -21,6 +21,7 @@ class MetricSample(TypedDict, total=False):
     latency_p99_ms: float
     request_rate_per_sec: float
     disk_io_util_pct: float
+
 
 DRIFT_THRESHOLD: float = 0.05
 REFERENCE_WINDOW_SIZE: int = 1000
@@ -98,11 +99,9 @@ class DriftMonitor:
         """
         for s in samples:
             self._reference.append(s)
-        logger.info(
-            "Reference window updated: %d samples", len(self._reference)
-        )
+        logger.info("Reference window updated: %d samples", len(self._reference))
 
-    def record(self, sample: dict) -> Optional[list[DriftResult]]:
+    def record(self, sample: dict) -> list[DriftResult] | None:
         """Record a production sample and trigger drift check when window fills.
 
         Args:
@@ -131,12 +130,10 @@ class DriftMonitor:
             raise ValueError("Reference window is empty — cannot test for drift")
 
         ref_arrays: dict[str, np.ndarray] = {
-            col: np.array([s.get(col, 0.0) for s in self._reference])
-            for col in FEATURE_COLS
+            col: np.array([s.get(col, 0.0) for s in self._reference]) for col in FEATURE_COLS
         }
         cur_arrays: dict[str, np.ndarray] = {
-            col: np.array([s.get(col, 0.0) for s in self._current])
-            for col in FEATURE_COLS
+            col: np.array([s.get(col, 0.0) for s in self._current]) for col in FEATURE_COLS
         }
 
         results: list[DriftResult] = []
@@ -151,13 +148,9 @@ class DriftMonitor:
             )
             results.append(result)
             if drifted:
-                logger.warning(
-                    "DRIFT DETECTED on %s: KS=%.4f p=%.6f", col, ks_stat, p_val
-                )
+                logger.warning("DRIFT DETECTED on %s: KS=%.4f p=%.6f", col, ks_stat, p_val)
             else:
-                logger.debug(
-                    "No drift on %s: KS=%.4f p=%.6f", col, ks_stat, p_val
-                )
+                logger.debug("No drift on %s: KS=%.4f p=%.6f", col, ks_stat, p_val)
 
         return results
 
@@ -227,7 +220,7 @@ class DriftMonitor:
         }
 
 
-_monitor_singleton: Optional[DriftMonitor] = None
+_monitor_singleton: DriftMonitor | None = None
 
 
 def get_monitor() -> DriftMonitor:

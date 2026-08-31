@@ -40,17 +40,20 @@ class TestMetricsPayload:
         payload = MetricsPayload(**data)
         assert payload.service_name == "my-service"
 
-    @pytest.mark.parametrize("field,bad_value", [
-        ("cpu_usage_pct", -1.0),
-        ("cpu_usage_pct", 101.0),
-        ("memory_usage_pct", -0.1),
-        ("memory_usage_pct", 100.1),
-        ("disk_io_util_pct", -1.0),
-        ("disk_io_util_pct", 101.0),
-        ("error_rate_per_min", -0.1),
-        ("latency_p99_ms", -1.0),
-        ("request_rate_per_sec", -1.0),
-    ])
+    @pytest.mark.parametrize(
+        "field,bad_value",
+        [
+            ("cpu_usage_pct", -1.0),
+            ("cpu_usage_pct", 101.0),
+            ("memory_usage_pct", -0.1),
+            ("memory_usage_pct", 100.1),
+            ("disk_io_util_pct", -1.0),
+            ("disk_io_util_pct", 101.0),
+            ("error_rate_per_min", -0.1),
+            ("latency_p99_ms", -1.0),
+            ("request_rate_per_sec", -1.0),
+        ],
+    )
     def test_out_of_range_values_rejected(self, field, bad_value):
         """Values outside the allowed range raise ValidationError."""
         data = self._valid()
@@ -194,6 +197,7 @@ class TestServiceHealthStatus:
     def test_incident_rate_out_of_range_rejected(self):
         """incident_rate > 1 raises ValidationError."""
         from pydantic import ValidationError
+
         with pytest.raises(ValidationError):
             ServiceHealthStatus(
                 service_name="svc",

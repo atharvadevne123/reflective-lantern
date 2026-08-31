@@ -3,7 +3,6 @@
 import logging
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
-from typing import Optional
 
 import numpy as np
 
@@ -116,8 +115,8 @@ class ExponentialSmoothingForecaster:
         self.beta = beta
         self.horizon = horizon
         self._is_fitted: bool = False
-        self._level: Optional[float] = None
-        self._trend: Optional[float] = None
+        self._level: float | None = None
+        self._trend: float | None = None
         self._residuals: list[float] = []
 
     def fit(self, series: np.ndarray) -> "ExponentialSmoothingForecaster":
@@ -149,14 +148,10 @@ class ExponentialSmoothingForecaster:
         self._trend = float(trend)
         self._residuals = residuals
         self._is_fitted = True
-        logger.debug(
-            "Holt fit: level=%.4f trend=%.4f on %d points", level, trend, len(series)
-        )
+        logger.debug("Holt fit: level=%.4f trend=%.4f on %d points", level, trend, len(series))
         return self
 
-    def forecast(
-        self, base_time: datetime, step_hours: int = 1
-    ) -> list[ForecastPoint]:
+    def forecast(self, base_time: datetime, step_hours: int = 1) -> list[ForecastPoint]:
         """Generate horizon-step-ahead forecasts.
 
         Args:
@@ -172,15 +167,13 @@ class ExponentialSmoothingForecaster:
         if self._level is None or self._trend is None:
             raise RuntimeError("Forecaster must be fitted before calling forecast()")
 
-        residual_std = (
-            float(np.std(self._residuals)) if self._residuals else 1.0
-        )
+        residual_std = float(np.std(self._residuals)) if self._residuals else 1.0
         z80 = Z80_CONFIDENCE
 
         points: list[ForecastPoint] = []
         for h in range(1, self.horizon + 1):
             value = max(0.0, self._level + h * self._trend)
-            interval = z80 * residual_std * (h ** 0.5)
+            interval = z80 * residual_std * (h**0.5)
             lower = max(0.0, value - interval)
             upper = value + interval
             ts = base_time + timedelta(hours=h * step_hours)
@@ -193,9 +186,7 @@ class ExponentialSmoothingForecaster:
                 )
             )
 
-        logger.info(
-            "Forecast generated: %d points, next=%.4f", len(points), points[0].value
-        )
+        logger.info("Forecast generated: %d points, next=%.4f", len(points), points[0].value)
         return points
 
     @property
@@ -209,7 +200,7 @@ class ExponentialSmoothingForecaster:
         return {"alpha": self.alpha, "beta": self.beta, "horizon": self.horizon}
 
 
-_buffer_singleton: Optional[IncidentRateBuffer] = None
+_buffer_singleton: IncidentRateBuffer | None = None
 
 
 def get_rate_buffer() -> IncidentRateBuffer:

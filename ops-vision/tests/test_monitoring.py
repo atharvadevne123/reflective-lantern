@@ -344,9 +344,7 @@ class TestDriftMonitorStableAndRate:
     def test_drift_rate_one_when_all_drifted(self):
         """drift_rate() returns 1.0 when all features drifted."""
         monitor = DriftMonitor()
-        all_drifted = [
-            DriftResult(f, 0.9, 0.0001, True) for f in FEATURE_COLS
-        ]
+        all_drifted = [DriftResult(f, 0.9, 0.0001, True) for f in FEATURE_COLS]
         assert monitor.drift_rate(all_drifted) == 1.0
 
 

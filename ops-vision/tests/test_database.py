@@ -1,6 +1,5 @@
 """Tests for Ops-Vision database utilities."""
 
-
 from app.database import Base, DriftAlert, Incident, Prediction, ping_db
 
 

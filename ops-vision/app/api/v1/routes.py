@@ -75,8 +75,7 @@ def _load_artifacts() -> tuple:
         return model, pipeline
     except (FileNotFoundError, OSError, pickle.UnpicklingError):
         logger.warning(
-            "Model/pipeline artifacts missing or unreadable — bootstrapping "
-            "from synthetic data"
+            "Model/pipeline artifacts missing or unreadable — bootstrapping from synthetic data"
         )
 
     from app.model import generate_synthetic_data, save_model, train
@@ -139,7 +138,7 @@ def predict_endpoint(payload: MetricsPayload, db: Session = Depends(get_db)):
         X = pipeline.transform(df)
     except Exception:
         logger.exception("Feature transform failed")
-        raise HTTPException(status_code=422, detail="Feature engineering failed")
+        raise HTTPException(status_code=422, detail="Feature engineering failed") from None
 
     preds, proba = predict(model, X)
     is_incident = bool(preds[0])
@@ -152,9 +151,7 @@ def predict_endpoint(payload: MetricsPayload, db: Session = Depends(get_db)):
     runbook_hint: str | None = None
     if is_incident:
         index = get_runbook_index(get_settings().runbooks_path)
-        results = index.search(
-            f"high cpu memory error latency {payload.service_name}", top_k=1
-        )
+        results = index.search(f"high cpu memory error latency {payload.service_name}", top_k=1)
         if results:
             runbook_hint = results[0][0].title
 
@@ -270,6 +267,7 @@ def forecast_incident_rate():
 
     if len(series) < 2:
         from datetime import timedelta
+
         now = datetime.utcnow()
         return [
             ForecastPoint(
@@ -321,7 +319,7 @@ def predict_batch(request: BatchPredictRequest, db: Session = Depends(get_db)):
     now = datetime.utcnow()
 
     responses: list[PredictionResponse] = []
-    for item, pred, conf in zip(request.items, preds, proba):
+    for item, pred, conf in zip(request.items, preds, proba, strict=False):
         is_incident = bool(pred)
         responses.append(
             PredictionResponse(
@@ -365,7 +363,9 @@ def get_incidents(
     return [IncidentRecord.model_validate(row) for row in rows]
 
 
-@router.get("/drift/status", response_model=DriftStatusResponse, summary="Latest drift check status")
+@router.get(
+    "/drift/status", response_model=DriftStatusResponse, summary="Latest drift check status"
+)
 def drift_status():
     """Return the drift monitor's last check results.
 

@@ -13,4 +13,4 @@ __description__: str = (
     "alert classification, and performance anomaly detection."
 )
 
-__all__ = ["__version__", "__author__", "__description__"]
+__all__ = ["__author__", "__description__", "__version__"]

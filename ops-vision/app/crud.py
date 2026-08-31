@@ -2,7 +2,6 @@
 
 import logging
 from datetime import datetime, timedelta
-from typing import Optional
 
 from sqlalchemy import func
 from sqlalchemy.orm import Session
@@ -35,7 +34,7 @@ def create_incident(db: Session, data: dict) -> Incident:
         raise
 
 
-def get_incident(db: Session, incident_id: int) -> Optional[Incident]:
+def get_incident(db: Session, incident_id: int) -> Incident | None:
     """Fetch a single incident by primary key.
 
     Args:
@@ -56,7 +55,7 @@ def list_incidents(
     db: Session,
     limit: int = 100,
     offset: int = 0,
-    service_name: Optional[str] = None,
+    service_name: str | None = None,
 ) -> list[Incident]:
     """List incidents with optional service filter and pagination.
 
@@ -281,7 +280,7 @@ def bulk_create_predictions(db: Session, items: list[dict]) -> int:
         raise
 
 
-def get_prediction_by_id(db: Session, prediction_id: int) -> Optional[Prediction]:
+def get_prediction_by_id(db: Session, prediction_id: int) -> Prediction | None:
     """Fetch a single prediction by primary key.
 
     Args:

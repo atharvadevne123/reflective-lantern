@@ -107,9 +107,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         return response
 
 
-EXEMPT_PATHS: frozenset[str] = frozenset(
-    {"/health", "/ready", "/docs", "/openapi.json", "/redoc"}
-)
+EXEMPT_PATHS: frozenset[str] = frozenset({"/health", "/ready", "/docs", "/openapi.json", "/redoc"})
 
 MAX_REQUEST_BYTES: int = 1 * 1024 * 1024  # 1 MiB
 

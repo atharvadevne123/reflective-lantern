@@ -1,13 +1,12 @@
 """Pydantic request/response schemas for Ops-Vision API."""
 
 from datetime import datetime
-from enum import Enum
-from typing import Optional
+from enum import StrEnum
 
 from pydantic import BaseModel, Field, field_validator
 
 
-class SeverityLevel(str, Enum):
+class SeverityLevel(StrEnum):
     """Enumeration of incident severity levels."""
 
     low = "low"
@@ -20,8 +19,8 @@ class ErrorResponse(BaseModel):
     """Standard error response returned on 4xx/5xx."""
 
     detail: str
-    error_code: Optional[str] = None
-    request_id: Optional[str] = None
+    error_code: str | None = None
+    request_id: str | None = None
 
 
 class MetricsPayload(BaseModel):
@@ -61,10 +60,10 @@ class PredictionResponse(BaseModel):
 
     service_name: str
     predicted_incident: bool
-    predicted_severity: Optional[str]
+    predicted_severity: str | None
     confidence: float = Field(..., ge=0.0, le=1.0)
     model_version: str
-    runbook_hint: Optional[str] = None
+    runbook_hint: str | None = None
     timestamp: datetime
 
 
@@ -130,8 +129,8 @@ class IncidentRecord(BaseModel):
     request_rate_per_sec: float
     disk_io_util_pct: float
     is_incident: bool
-    severity: Optional[str]
-    created_at: Optional[datetime]
+    severity: str | None
+    created_at: datetime | None
 
     model_config = {"from_attributes": True}
 
@@ -148,7 +147,7 @@ class ForecastPoint(BaseModel):
 class DriftStatusResponse(BaseModel):
     """Response summarising the latest drift detection results."""
 
-    checked_at: Optional[datetime]
+    checked_at: datetime | None
     features_drifted: list[str]
     features_stable: list[str]
     total_features: int
@@ -162,7 +161,7 @@ class DriftAlertRecord(BaseModel):
     ks_statistic: float
     p_value: float
     drifted: bool
-    created_at: Optional[datetime]
+    created_at: datetime | None
 
     model_config = {"from_attributes": True}
 
@@ -191,4 +190,4 @@ class ModelInfoResponse(BaseModel):
 
     model_version: str
     model_loaded: bool
-    estimators: Optional[list[str]] = None
+    estimators: list[str] | None = None

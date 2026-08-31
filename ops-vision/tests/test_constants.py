@@ -45,6 +45,7 @@ class TestInferSeverity:
     @pytest.fixture(autouse=True)
     def _import(self):
         from app.api.v1.routes import _infer_severity
+
         self._infer = _infer_severity
 
     def test_critical_at_threshold(self):
@@ -65,12 +66,15 @@ class TestInferSeverity:
         assert self._infer(0.49) == "low"
         assert self._infer(0.0) == "low"
 
-    @pytest.mark.parametrize("conf,expected", [
-        (0.95, "critical"),
-        (0.80, "high"),
-        (0.60, "medium"),
-        (0.30, "low"),
-    ])
+    @pytest.mark.parametrize(
+        "conf,expected",
+        [
+            (0.95, "critical"),
+            (0.80, "high"),
+            (0.60, "medium"),
+            (0.30, "low"),
+        ],
+    )
     def test_severity_levels_parametrized(self, conf, expected):
         """Parametrized boundary checks for all severity levels."""
         assert self._infer(conf) == expected
