@@ -38,6 +38,19 @@ ML-serving platforms, API services, and data pipelines.
 | `app/shadow_mode.py` | Parallel shadow traffic comparison |
 | `app/cost_estimator.py` | USD cost projection from resource specs |
 
+### Energy Analytics
+| Module | Description |
+|--------|-------------|
+| `app/tariff.py` | Flat, time-of-use and tiered electricity pricing |
+| `app/load_profile.py` | Base load, load factor, ramp rate, profile class |
+| `app/weather_normalization.py` | Degree-day adjustment separating weather from efficiency |
+| `app/demand_response.py` | Baseline load, curtailment and event settlement |
+| `app/power_quality.py` | Power factor, reactive power, voltage imbalance |
+| `app/solar.py` | PV generation, self-consumption split, payback |
+| `app/battery.py` | Storage dispatch, peak shaving, capacity sizing |
+
+See [docs/energy_analytics.md](docs/energy_analytics.md) for the full reference.
+
 ### Utilities
 | Module | Description |
 |--------|-------------|
