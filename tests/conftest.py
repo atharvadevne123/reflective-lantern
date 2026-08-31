@@ -254,3 +254,23 @@ def single_row() -> pd.DataFrame:
             "hvac_state": [1],
         }
     )
+
+
+@pytest.fixture(autouse=True)
+def restore_root_logging():
+    """Snapshot and restore root logger state around every test.
+
+    ``configure_logging`` clears the root logger's handlers, which would
+    otherwise remove pytest's capture handler and silently break ``caplog``
+    for every test that runs afterwards.
+    """
+    import logging
+
+    root = logging.getLogger()
+    saved_handlers = list(root.handlers)
+    saved_level = root.level
+    try:
+        yield
+    finally:
+        root.handlers[:] = saved_handlers
+        root.setLevel(saved_level)
