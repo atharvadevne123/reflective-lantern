@@ -436,7 +436,9 @@ class TestLengthOfStayMix:
 
 
 class TestLengthOfStayMixEdgeCases:
-    @pytest.mark.parametrize("stays,key", [([], "one_night"), ([1], "one_night"), ([5], "four_plus_nights")])
+    @pytest.mark.parametrize(
+        "stays,key", [([], "one_night"), ([1], "one_night"), ([5], "four_plus_nights")]
+    )
     def test_expected_key_for_stay_list(self, stays: list, key: str) -> None:
         from app.features import length_of_stay_mix
 

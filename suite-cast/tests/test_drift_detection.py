@@ -45,14 +45,19 @@ class TestComputeDrift:
         reference = [rng.gauss(0.5, 0.05) for _ in range(SAMPLE_SIZE)]
         small = [rng.gauss(0.55, 0.05) for _ in range(SAMPLE_SIZE)]
         large = [rng.gauss(0.95, 0.05) for _ in range(SAMPLE_SIZE)]
-        assert compute_drift(reference, large)["ks_statistic"] > compute_drift(reference, small)["ks_statistic"]
+        assert (
+            compute_drift(reference, large)["ks_statistic"]
+            > compute_drift(reference, small)["ks_statistic"]
+        )
 
     def test_variance_change_is_detected(self, rng: random.Random) -> None:
         reference = [rng.gauss(0.5, 0.02) for _ in range(SAMPLE_SIZE)]
         current = [rng.gauss(0.5, 0.30) for _ in range(SAMPLE_SIZE)]
         assert compute_drift(reference, current)["drift_detected"] is True
 
-    def test_drift_is_logged_as_a_warning(self, rng: random.Random, caplog: pytest.LogCaptureFixture) -> None:
+    def test_drift_is_logged_as_a_warning(
+        self, rng: random.Random, caplog: pytest.LogCaptureFixture
+    ) -> None:
         reference = [rng.gauss(0.2, 0.05) for _ in range(SAMPLE_SIZE)]
         current = [rng.gauss(0.9, 0.05) for _ in range(SAMPLE_SIZE)]
         compute_drift(reference, current)
