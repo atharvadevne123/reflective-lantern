@@ -134,3 +134,25 @@ def test_r_squared_worst_fit_negative(v: float) -> None:
     actual = [0.0, v]
     predicted = [v, 0.0]
     assert r_squared(actual, predicted) < 0.0
+
+
+@pytest.mark.parametrize("n", [2, 10, 100])
+def test_rmse_zero_for_perfect_predictions(n: int) -> None:
+    from app.evaluation.metrics import rmse
+
+    vals = list(range(n))
+    assert rmse(vals, vals) == pytest.approx(0.0, abs=1e-9)
+
+
+def test_revenue_uplift_positive_improvement() -> None:
+    from app.evaluation.metrics import revenue_uplift
+
+    result = revenue_uplift(100.0, 120.0)
+    assert result > 0.0
+
+
+def test_mae_non_negative() -> None:
+    from app.evaluation.metrics import mae
+
+    result = mae([1.0, 2.0, 3.0], [3.0, 2.0, 1.0])
+    assert result >= 0.0
