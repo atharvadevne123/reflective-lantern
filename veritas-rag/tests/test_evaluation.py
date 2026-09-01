@@ -91,3 +91,19 @@ class TestFullEval:
 
         report = run_full_eval(pipeline, gold_cases()[:1], UNANSWERABLE[:1])
         assert json.loads(json.dumps(report.to_dict()))
+
+    def test_report_details_nonempty(self, pipeline) -> None:
+        report = run_full_eval(pipeline, gold_cases()[:1], UNANSWERABLE[:1])
+        assert len(report.details) > 0
+
+    def test_report_adversarial_pass_rate_in_range(self, pipeline) -> None:
+        report = run_full_eval(pipeline, gold_cases(), UNANSWERABLE)
+        assert 0.0 <= report.adversarial_pass_rate <= 1.0
+
+
+class TestRecallEvalEdgeCases:
+    def test_empty_gold_cases_returns_perfect_recall(self, pipeline) -> None:
+        recall, accuracy, details = run_recall_eval(pipeline, [])
+        assert recall == 1.0
+        assert accuracy == 1.0
+        assert details == []
