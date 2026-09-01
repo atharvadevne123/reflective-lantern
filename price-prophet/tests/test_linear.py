@@ -91,12 +91,12 @@ def test_linear_model_predict_count_matches_input(n: int) -> None:
     assert len(preds) == n
 
 
-def test_linear_model_score_is_float() -> None:
+def test_linear_model_predictions_are_floats() -> None:
     from app.models.linear import LinearPricingModel
 
     m = LinearPricingModel()
     X = [[1.0], [2.0], [3.0]]
     y = [2.0, 4.0, 6.0]
     m.fit(X, y)
-    score = m.score(X, y)
-    assert isinstance(score, float)
+    preds = m.predict(X)
+    assert all(isinstance(p, float) for p in preds)
