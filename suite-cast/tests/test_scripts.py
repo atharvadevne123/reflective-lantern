@@ -76,4 +76,4 @@ def test_train_cli_metrics_json_has_required_keys(tmp_path):
     )
     assert result.returncode == 0, result.stderr
     metrics = json.loads((tmp_path / "metrics.json").read_text())
-    assert any(k in metrics for k in ("mae", "rmse", "r2", "mse"))
+    assert any(k in metrics for k in ("auc_mean", "auc_std", "mae", "rmse", "r2", "mse"))

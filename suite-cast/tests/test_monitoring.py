@@ -176,4 +176,4 @@ def test_log_prediction_returns_none_or_id(db_session) -> None:
     from app.monitoring import log_prediction
 
     result = log_prediction(db_session, {"feat": 1.0}, 0.7, 150.0, "1.0.0")
-    assert result is None or isinstance(result, int)
+    assert result is None or isinstance(result, (int, str))

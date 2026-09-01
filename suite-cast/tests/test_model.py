@@ -175,7 +175,7 @@ def test_generate_sample_data_row_count(n: int) -> None:
 
 @pytest.mark.parametrize(
     "key",
-    ["demand_score", "demand_tier", "confidence"],
+    ["demand_score", "demand_tier", "suggested_rate"],
 )
 def test_predict_demand_output_keys(key: str) -> None:
     from unittest.mock import patch
