@@ -145,3 +145,29 @@ def test_validate_price_non_numeric() -> None:
 
     result = validate_price("abc")
     assert result.valid is False
+
+
+import pytest
+
+
+@pytest.mark.parametrize("price", [0.01, 1.0, 9999.99])
+def test_validate_price_valid_values(price: float) -> None:
+    from app.data.validator import validate_price
+
+    result = validate_price(price)
+    assert result.valid is True
+
+
+@pytest.mark.parametrize("price", [-1.0, 0.0, -999.0])
+def test_validate_price_non_positive_invalid(price: float) -> None:
+    from app.data.validator import validate_price
+
+    result = validate_price(price)
+    assert result.valid is False
+
+
+def test_validate_dataset_empty_records_valid() -> None:
+    from app.data.validator import validate_dataset
+
+    result = validate_dataset([])
+    assert isinstance(result.valid, bool)
