@@ -129,3 +129,25 @@ def test_grid_intensity_has_expected_regions(region: str) -> None:
 )
 def test_range_constants_lo_less_than_hi(lo: float, hi: float) -> None:
     assert lo < hi
+
+
+def test_efficiency_grade_thresholds_decreasing() -> None:
+    assert EFFICIENCY_GRADE_A_THRESHOLD > EFFICIENCY_GRADE_B_THRESHOLD > EFFICIENCY_GRADE_C_THRESHOLD
+
+
+def test_grid_intensity_dict_is_nonempty() -> None:
+    assert len(GRID_INTENSITY_KG_PER_KWH) > 0
+
+
+@pytest.mark.parametrize(
+    "key,expected_type",
+    [
+        ("DEFAULT_CACHE_MAX_SIZE", int),
+        ("DEFAULT_CACHE_TTL_SECONDS", (int, float)),
+        ("DEFAULT_RATE_LIMIT_PER_MINUTE", int),
+        ("MAX_FORECAST_HORIZON", int),
+    ],
+)
+def test_config_constants_have_correct_types(key: str, expected_type) -> None:
+    import app.constants as c
+    assert isinstance(getattr(c, key), expected_type)
