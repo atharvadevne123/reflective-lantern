@@ -433,3 +433,19 @@ class TestLengthOfStayMix:
 
         result = length_of_stay_mix([2])
         assert {"one_night", "two_three_nights", "four_plus_nights"} <= result.keys()
+
+
+class TestLengthOfStayMixEdgeCases:
+    @pytest.mark.parametrize("stays,key", [([], "one_night"), ([1], "one_night"), ([5], "four_plus_nights")])
+    def test_expected_key_for_stay_list(self, stays: list, key: str) -> None:
+        from app.features import length_of_stay_mix
+
+        result = length_of_stay_mix(stays)
+        assert key in result
+
+    @pytest.mark.parametrize("n", [1, 10, 100])
+    def test_fractions_sum_to_one_for_various_n(self, n: int) -> None:
+        from app.features import length_of_stay_mix
+
+        result = length_of_stay_mix(list(range(1, n + 1)))
+        assert sum(result.values()) == pytest.approx(1.0, abs=1e-4)
