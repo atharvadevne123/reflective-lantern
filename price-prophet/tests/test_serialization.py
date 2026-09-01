@@ -103,3 +103,27 @@ def test_save_empty_dict() -> None:
         assert loaded == {}
     finally:
         os.unlink(path)
+
+
+import pytest
+
+
+@pytest.mark.parametrize("payload", [{"x": 1}, [1, 2, 3], "just a string", 42])
+def test_save_and_load_various_types(payload) -> None:
+    from app.utils.serialization import load_model, save_model
+
+    with tempfile.NamedTemporaryFile(suffix=".joblib", delete=False) as f:
+        path = f.name
+    try:
+        save_model(payload, path)
+        loaded = load_model(path)
+        assert loaded == payload
+    finally:
+        os.unlink(path)
+
+
+def test_load_from_nonexistent_path_raises() -> None:
+    from app.utils.serialization import load_model
+
+    with pytest.raises(Exception):
+        load_model("/nonexistent/path/model.joblib")
