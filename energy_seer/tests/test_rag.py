@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import numpy as np
+import pytest
 
 
 class TestBuildPatternVector:
@@ -41,9 +42,6 @@ class TestRetriever:
         retriever._meta = []
         baseline = retriever.get_baseline_consumption(12, 2, "residential")
         assert baseline == 3.5
-
-
-import pytest
 
 
 class TestBuildPatternVectorEdgeCases:

@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import pytest
+
 
 def test_log_run_returns_string(tmp_path, monkeypatch):
     from app import mlflow_compat
@@ -54,9 +56,6 @@ def test_log_run_unique_ids(tmp_path, monkeypatch):
     time.sleep(0.01)
     id2 = mlflow_compat.log_run({"x": 2.0})
     assert id1 != id2
-
-
-import pytest
 
 
 @pytest.mark.parametrize("metric_val", [0.0, 0.5, 1.0])
