@@ -1,5 +1,7 @@
 """Tests for app.notification_dispatcher."""
 
+import pytest
+
 from app.notification_dispatcher import (
     Channel,
     Notification,
@@ -88,8 +90,6 @@ class TestDispatch:
         d.dispatch(Notification(title="t", body=""))
         assert len(r1) == 1
         assert len(r2) == 1
-
-    import pytest
 
     @pytest.mark.parametrize("n", [1, 3, 5])
     def test_dispatch_n_channels_all_succeed(self, n: int) -> None:

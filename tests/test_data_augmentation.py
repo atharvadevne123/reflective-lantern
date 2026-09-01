@@ -3,6 +3,8 @@
 import random
 import re
 
+import pytest
+
 from app.data_augmentation import (
     AugmentationConfig,
     augment_batch,

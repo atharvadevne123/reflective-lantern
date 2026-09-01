@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import pytest
+
 
 class _FakeModel:
     _fitted = True
@@ -60,8 +62,6 @@ def test_ensemble_remove_model(feature_matrix) -> None:
 
 
 def test_ensemble_remove_last_raises(feature_matrix) -> None:
-    import pytest
-
     from app.models.ensemble import EnsemblePricingModel
 
     ens = EnsemblePricingModel([_FakeModel(10.0)])
@@ -77,11 +77,8 @@ def test_ensemble_contains_in_repr(feature_matrix) -> None:
     assert "fitted" in r or "not fitted" in r
 
 
-import pytest
-
-
 @pytest.mark.parametrize("n_models", [1, 2, 3])
-def test_ensemble_member_count(feature_matrix, n_models: int) -> None:
+def test_ensemble_member_count_parametrized(feature_matrix, n_models: int) -> None:
     from app.models.ensemble import EnsemblePricingModel
 
     models = [_FakeModel(float(i)) for i in range(n_models)]

@@ -2,6 +2,8 @@
 
 import threading
 
+import pytest
+
 from app.task_queue import Task, TaskQueue
 
 

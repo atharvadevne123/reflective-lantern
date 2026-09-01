@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import pytest
+
 
 class ConcreteModel:
     """Minimal concrete subclass for testing BasePricingModel."""
@@ -93,9 +95,6 @@ def test_base_model_is_fitted_true_after_fit() -> None:
     m = _Impl()
     m.fit([[1.0]], [1.0])
     assert m.is_fitted() is True
-
-
-import pytest
 
 
 @pytest.mark.parametrize("n_preds", [1, 5, 10])

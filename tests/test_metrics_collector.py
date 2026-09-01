@@ -117,7 +117,7 @@ class TestMetricsRegistry:
         from app.metrics_collector import MetricsRegistry
 
         reg = MetricsRegistry()
-        counter = reg.counter(name)
+        reg.counter(name)
         assert name in reg.all_metrics()
 
     def test_empty_registry_all_metrics_is_dict(self) -> None:

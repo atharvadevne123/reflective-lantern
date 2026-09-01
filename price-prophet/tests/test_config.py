@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import pytest
+
 
 def test_settings_defaults():
     from app.config import Settings
@@ -96,9 +98,6 @@ def test_settings_debug_is_bool() -> None:
     from app.config import settings
 
     assert isinstance(settings.debug, bool)
-
-
-import pytest
 
 
 @pytest.mark.parametrize(

@@ -118,7 +118,7 @@ def test_load_json_file_not_found_raises() -> None:
 
 
 @pytest.mark.parametrize("n", [1, 10, 100])
-def test_generate_synthetic_data_count(n: int) -> None:
+def test_generate_synthetic_data_count_various(n: int) -> None:
     from app.data.loader import generate_synthetic_data
 
     records = generate_synthetic_data(n_samples=n)

@@ -2,6 +2,8 @@
 
 import threading
 
+import pytest
+
 from app.correlation_id import (
     clear_correlation_id,
     correlation_context,

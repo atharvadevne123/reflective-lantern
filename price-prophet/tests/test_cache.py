@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import time
 
+import pytest
+
 
 def test_cache_set_get():
     from app.utils.cache import TTLCache
@@ -121,9 +123,6 @@ def test_cache_estimated_valid_count_zero_after_clear() -> None:
     c.set("a", 1)
     c.clear()
     assert c.estimated_valid_count() == 0
-
-
-import pytest
 
 
 @pytest.mark.parametrize("key,value", [("str", "hello"), ("int", 42), ("list", [1, 2, 3])])

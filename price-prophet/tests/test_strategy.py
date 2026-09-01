@@ -146,9 +146,6 @@ def test_competitive_strategy_undercuts_by_one_percent() -> None:
     assert price < 100.0
 
 
-import pytest
-
-
 @pytest.mark.parametrize("base", [10.0, 100.0, 1000.0])
 def test_penetration_price_below_base(base: float) -> None:
     from app.pricing.strategy import PricingStrategy, apply_strategy

@@ -105,9 +105,6 @@ def test_save_empty_dict() -> None:
         os.unlink(path)
 
 
-import pytest
-
-
 @pytest.mark.parametrize("payload", [{"x": 1}, [1, 2, 3], "just a string", 42])
 def test_save_and_load_various_types(payload) -> None:
     from app.utils.serialization import load_model, save_model

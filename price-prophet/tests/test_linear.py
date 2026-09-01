@@ -76,9 +76,6 @@ def test_linear_model_repr_contains_fitted_state() -> None:
     assert "fitted" in repr(m)
 
 
-import pytest
-
-
 @pytest.mark.parametrize("n", [5, 20, 50])
 def test_linear_model_predict_count_matches_input(n: int) -> None:
     from app.models.linear import LinearPricingModel

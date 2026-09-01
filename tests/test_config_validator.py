@@ -65,9 +65,6 @@ class TestValidate:
         assert result["debug"] is False
 
 
-import pytest
-
-
 @pytest.mark.parametrize("port", [1, 80, 443, 8080, 65535])
 def test_valid_ports_accepted(port: int) -> None:
     from app.config_validator import make_schema, validate
