@@ -96,3 +96,22 @@ def test_settings_debug_is_bool() -> None:
     from app.config import settings
 
     assert isinstance(settings.debug, bool)
+
+
+import pytest
+
+
+@pytest.mark.parametrize(
+    "attr",
+    ["min_price_multiplier", "max_price_multiplier", "model_dir", "debug"],
+)
+def test_settings_has_required_attribute(attr: str) -> None:
+    from app.config import settings
+
+    assert hasattr(settings, attr)
+
+
+def test_settings_min_less_than_max() -> None:
+    from app.config import settings
+
+    assert settings.min_price_multiplier < settings.max_price_multiplier
