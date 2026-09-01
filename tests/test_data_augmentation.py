@@ -123,3 +123,25 @@ class TestAugmentBatch:
         cfg = AugmentationConfig(seed=0)
         out = augment_batch(["hello"], cfg, n_augments=1, transform=lambda t, c: t.upper())
         assert out == ["HELLO"]
+
+    @pytest.mark.parametrize("n", [1, 3, 5])
+    def test_n_augments_scales_output(self, n: int) -> None:
+        cfg = AugmentationConfig(seed=0)
+        samples = ["sample text"]
+        out = augment_batch(samples, cfg, n_augments=n)
+        assert len(out) == n
+
+    def test_empty_batch_returns_empty(self) -> None:
+        cfg = AugmentationConfig(seed=0)
+        assert augment_batch([], cfg) == []
+
+
+class TestRandomSwapEdgeCases:
+    def test_single_token_unchanged(self) -> None:
+        rng = make_rng(0)
+        result = random_swap(["only"], prob=1.0, rng=rng)
+        assert result == ["only"]
+
+    def test_empty_tokens_returns_empty(self) -> None:
+        rng = make_rng(0)
+        assert random_swap([], prob=1.0, rng=rng) == []
