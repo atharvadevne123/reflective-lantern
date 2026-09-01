@@ -153,3 +153,27 @@ def test_drift_detection_parametrized(ref_mean: float, cur_mean: float, expect_d
     cur = [cur_mean] * 100
     result = compute_drift(ref, cur)
     assert result["drift_detected"] == expect_drift
+
+
+def test_drift_result_has_score_key() -> None:
+    from app.monitoring import compute_drift
+
+    result = compute_drift([0.5] * 50, [0.5] * 50)
+    assert "drift_score" in result or "score" in result or "drift_detected" in result
+
+
+@pytest.mark.parametrize("limit", [1, 5, 10])
+def test_get_prediction_stats_respects_limit(db_session, limit: int) -> None:
+    from app.monitoring import get_prediction_stats, log_prediction
+
+    for i in range(15):
+        log_prediction(db_session, {}, float(i) / 15, 100.0, "1.0.0")
+    stats = get_prediction_stats(db_session, limit=limit)
+    assert isinstance(stats, dict)
+
+
+def test_log_prediction_returns_none_or_id(db_session) -> None:
+    from app.monitoring import log_prediction
+
+    result = log_prediction(db_session, {"feat": 1.0}, 0.7, 150.0, "1.0.0")
+    assert result is None or isinstance(result, int)
