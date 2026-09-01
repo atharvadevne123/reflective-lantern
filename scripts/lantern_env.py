@@ -83,6 +83,7 @@ class Capabilities:
 
     def summary(self) -> str:
         """Return a multi-line human-readable summary."""
+
         def mark(v: bool) -> str:
             return "yes" if v else "NO"
 
@@ -101,8 +102,7 @@ class Capabilities:
         return "\n".join(lines)
 
 
-def _request(path: str, token: str | None = None, method: str = "GET",
-             payload: dict | None = None) -> tuple[int, str]:
+def _request(path: str, token: str | None = None, method: str = "GET", payload: dict | None = None) -> tuple[int, str]:
     """Issue a GitHub API request and return (status_code, body).
 
     Args:
@@ -129,7 +129,7 @@ def _request(path: str, token: str | None = None, method: str = "GET",
             return resp.status, resp.read().decode("utf-8", "replace")
     except urllib.error.HTTPError as exc:
         return exc.code, exc.read().decode("utf-8", "replace")
-    except Exception as exc:  # noqa: BLE001 - any transport failure is a "no"
+    except Exception as exc:
         logger.debug("Request to %s failed: %s", path, exc)
         return 0, str(exc)
 
@@ -203,10 +203,7 @@ def can_create_repo() -> tuple[bool, str]:
     if status in (401, 404):
         return False, f"Repository creation unavailable (HTTP {status})."
     if "bound to their configured repositories" in body:
-        return False, (
-            "Repository creation BLOCKED: the session is bound to its configured "
-            "repositories."
-        )
+        return False, ("Repository creation BLOCKED: the session is bound to its configured repositories.")
     return False, f"Repository creation unavailable (HTTP {status})."
 
 
@@ -228,7 +225,7 @@ def can_push_git(remote: str | None = None) -> tuple[bool, str]:
         cmd.append("origin")
     try:
         result = subprocess.run(cmd, capture_output=True, timeout=45, text=True)
-    except Exception as exc:  # noqa: BLE001
+    except Exception as exc:
         return False, f"git ls-remote failed to run: {exc}"
 
     if result.returncode == 0:
@@ -236,9 +233,12 @@ def can_push_git(remote: str | None = None) -> tuple[bool, str]:
     return False, f"git cannot reach origin: {result.stderr.strip()[:140]}"
 
 
-def smtp_reachable(hosts: tuple[tuple[str, int], ...] = (
-    ("smtp.gmail.com", 587), ("smtp.gmail.com", 465),
-)) -> tuple[bool, str]:
+def smtp_reachable(
+    hosts: tuple[tuple[str, int], ...] = (
+        ("smtp.gmail.com", 587),
+        ("smtp.gmail.com", 465),
+    ),
+) -> tuple[bool, str]:
     """Detect whether any SMTP endpoint accepts a TCP connection.
 
     Args:
@@ -251,7 +251,7 @@ def smtp_reachable(hosts: tuple[tuple[str, int], ...] = (
         try:
             with socket.create_connection((host, port), timeout=10):
                 return True, f"SMTP reachable at {host}:{port}."
-        except Exception as exc:  # noqa: BLE001
+        except Exception as exc:
             logger.debug("SMTP %s:%s unreachable: %s", host, port, exc)
     return False, (
         "SMTP UNREACHABLE on all ports — egress is HTTPS-proxy-only. Email "
@@ -269,13 +269,12 @@ def detect(use_cache: bool = True, cache_path: str | None = None) -> Capabilitie
     Returns:
         A populated Capabilities instance.
     """
-    path = Path(cache_path or os.environ.get(
-        "LANTERN_CAPS_CACHE", "/tmp/lantern_capabilities.json"))
+    path = Path(cache_path or os.environ.get("LANTERN_CAPS_CACHE", "/tmp/lantern_capabilities.json"))
 
     if use_cache and path.exists():
         try:
             return Capabilities(**json.loads(path.read_text()))
-        except Exception:  # noqa: BLE001
+        except Exception:
             logger.debug("Capability cache unreadable — re-probing")
 
     caps = Capabilities()
