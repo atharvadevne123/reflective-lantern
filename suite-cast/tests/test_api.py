@@ -245,7 +245,7 @@ def test_predictions_history_parametrized_limit(client, limit: int) -> None:
     assert resp.json()["count"] <= limit
 
 
-def test_predict_response_has_request_id(client, sample_booking_dict) -> None:
+def test_predict_response_contains_request_id(client, sample_booking_dict) -> None:
     resp = client.post("/api/v1/predict", json=sample_booking_dict)
     assert resp.status_code == 200
     assert "request_id" in resp.json()
