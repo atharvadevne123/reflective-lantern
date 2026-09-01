@@ -106,3 +106,16 @@ class TestCacheStats:
         first = client.post("/api/v1/similar", json=payload).json()
         second = client.post("/api/v1/similar", json=payload).json()
         assert first["similar_items"] == second["similar_items"]
+
+    import pytest
+
+    @pytest.mark.parametrize("endpoint", ["/api/v1/cache/stats", "/health"])
+    def test_get_endpoints_return_200(self, client, endpoint: str) -> None:
+        resp = client.get(endpoint)
+        assert resp.status_code == 200
+
+    def test_cache_stats_entries_is_non_negative(self, client) -> None:
+        data = client.get("/api/v1/cache/stats").json()
+        for cache_name, stats in data.items():
+            if isinstance(stats, dict) and "entries" in stats:
+                assert stats["entries"] >= 0
