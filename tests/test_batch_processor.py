@@ -92,3 +92,27 @@ class TestBatchProcessorCallbacks:
         bp = BatchProcessor(_identity, batch_size=5, on_batch_done=bad_cb)
         summary = bp.run(list(range(10)))
         assert summary.total_results == 10
+
+
+class TestBatchProcessorEdgeCases:
+    def test_exactly_one_item_per_batch(self) -> None:
+        bp = BatchProcessor(_double, batch_size=1)
+        summary = bp.run([10, 20, 30])
+        assert summary.total_batches == 3
+        assert summary.total_results == 3
+
+    @pytest.mark.parametrize("n", [1, 7, 100])
+    def test_total_items_matches_input_length(self, n: int) -> None:
+        bp = BatchProcessor(_identity, batch_size=10)
+        summary = bp.run(list(range(n)))
+        assert summary.total_items == n
+
+    def test_results_order_preserved(self) -> None:
+        collected: list[int] = []
+        bp = BatchProcessor(
+            lambda items: items,
+            batch_size=3,
+            on_batch_done=lambda br: collected.extend(br.results),
+        )
+        bp.run([1, 2, 3, 4, 5])
+        assert collected == [1, 2, 3, 4, 5]

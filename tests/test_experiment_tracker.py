@@ -87,3 +87,21 @@ class TestExperimentRegistry:
         reg.register(Experiment("a", [CONTROL]))
         reg.register(Experiment("b", [CONTROL]))
         assert set(reg.list_experiments()) == {"a", "b"}
+
+    def test_register_duplicate_overwrites(self) -> None:
+        reg = ExperimentRegistry()
+        exp1 = Experiment("dup", [CONTROL])
+        exp2 = Experiment("dup", [CONTROL, TREATMENT])
+        reg.register(exp1)
+        reg.register(exp2)
+        assert reg.get("dup") is exp2
+
+    def test_empty_registry_list_is_empty(self) -> None:
+        reg = ExperimentRegistry()
+        assert reg.list_experiments() == []
+
+
+@pytest.mark.parametrize("weight", [0.1, 1.0, 10.0])
+def test_variant_weight_stored(weight: float) -> None:
+    v = Variant("v", weight=weight)
+    assert v.weight == weight

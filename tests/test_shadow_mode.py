@@ -115,3 +115,24 @@ class TestShadowResultFields:
         runner = ShadowRunner(_primary, _shadow_same)
         ret = runner.call(x)
         assert ret == x * 2
+
+
+class TestShadowRunnerEdgeCases:
+    def test_zero_total_match_rate_is_zero(self) -> None:
+        runner = ShadowRunner(_primary, _shadow_same)
+        assert runner.stats()["match_rate"] == 0.0
+
+    def test_primary_error_propagates(self) -> None:
+        def _boom(x):
+            raise RuntimeError("primary boom")
+
+        runner = ShadowRunner(_boom, _shadow_same)
+        with pytest.raises(RuntimeError, match="primary boom"):
+            runner.call(1)
+
+    @pytest.mark.parametrize("calls", [1, 10, 50])
+    def test_total_tracks_all_calls(self, calls: int) -> None:
+        runner = ShadowRunner(_primary, _shadow_same)
+        for i in range(calls):
+            runner.call(i)
+        assert runner.stats()["total"] == calls

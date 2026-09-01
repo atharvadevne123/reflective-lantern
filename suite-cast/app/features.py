@@ -234,6 +234,52 @@ def gross_operating_profit_per_available_room(
     return round((total_revenue - total_costs) / total_rooms, 4)
 
 
+def lead_time_bucket(lead_time_days: int) -> int:
+    """Map lead-time days to a 0-3 integer bucket."""
+    if lead_time_days < 4:
+        return 0
+    if lead_time_days <= 14:
+        return 1
+    if lead_time_days <= 60:
+        return 2
+    return 3
+
+
+def competitor_rate_ratio(our_rate: float, competitor_rate: float) -> float:
+    """Ratio of our rate to competitor rate, clamped to [0.5, 3.0]."""
+    if competitor_rate <= 0:
+        return 1.0
+    return round(max(0.5, min(3.0, our_rate / competitor_rate)), 4)
+
+
+def occupancy_yoy_delta(current: float, prior: float) -> float:
+    """Year-over-year occupancy delta clamped to [-1, 1]."""
+    return round(max(-1.0, min(1.0, current - prior)), 4)
+
+
+def adr_from_revenue(total_revenue: float, rooms_sold: int) -> float:
+    """Average daily rate; returns 0 when rooms_sold <= 0."""
+    if rooms_sold <= 0:
+        return 0.0
+    return round(total_revenue / rooms_sold, 4)
+
+
+def revpar(total_revenue: float, available_rooms: int) -> float:
+    """Revenue per available room; returns 0 when available_rooms <= 0."""
+    if available_rooms <= 0:
+        return 0.0
+    return round(total_revenue / available_rooms, 4)
+
+
+def length_of_stay_bucket(nights: int) -> str:
+    """Classify stay length as 'short' (1-2), 'medium' (3-6), or 'long' (7+)."""
+    if nights <= 2:
+        return "short"
+    if nights <= 6:
+        return "medium"
+    return "long"
+
+
 def length_of_stay_mix(stays: list[int]) -> dict[str, float]:
     """Compute the distribution of stays by length category.
 

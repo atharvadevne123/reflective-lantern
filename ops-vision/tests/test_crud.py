@@ -1,6 +1,5 @@
 """Tests for Ops-Vision CRUD database operations."""
 
-
 from app.crud import (
     avg_confidence,
     count_drift_alerts_last_24h,
