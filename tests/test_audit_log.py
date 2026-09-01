@@ -71,3 +71,22 @@ class TestAuditLog:
         log.record("a", "b", "c")
         log.record("d", "e", "f")
         assert len(log.search()) == 2
+
+    import pytest
+
+    @pytest.mark.parametrize("n", [1, 3, 10])
+    def test_record_count_matches(self, n: int) -> None:
+        from app.audit_log import AuditLog
+
+        log = AuditLog()
+        for i in range(n):
+            log.record(f"user{i}", "read", f"res/{i}")
+        assert len(log.search()) == n
+
+    def test_record_timestamp_is_string(self) -> None:
+        from app.audit_log import AuditLog
+
+        log = AuditLog()
+        log.record("alice", "read", "doc/1")
+        entry = log.search()[0]
+        assert isinstance(entry.timestamp, str)
