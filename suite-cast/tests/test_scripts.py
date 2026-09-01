@@ -46,3 +46,34 @@ def test_demo_client_help_exits_zero():
     )
     assert result.returncode == 0
     assert "--host" in result.stdout
+
+
+def test_train_cli_default_samples_succeeds():
+    """Running train without --samples uses the default and exits 0."""
+    import tempfile
+
+    with tempfile.TemporaryDirectory() as tmp:
+        result = subprocess.run(
+            [sys.executable, str(PROJECT_ROOT / "scripts" / "train.py")],
+            cwd=tmp,
+            capture_output=True,
+            text=True,
+            timeout=300,
+        )
+        assert result.returncode == 0
+
+
+def test_train_cli_metrics_json_has_required_keys(tmp_path):
+    """metrics.json produced by train CLI must contain key model metrics."""
+    import json
+
+    result = subprocess.run(
+        [sys.executable, str(PROJECT_ROOT / "scripts" / "train.py"), "--samples", "100"],
+        cwd=tmp_path,
+        capture_output=True,
+        text=True,
+        timeout=300,
+    )
+    assert result.returncode == 0, result.stderr
+    metrics = json.loads((tmp_path / "metrics.json").read_text())
+    assert any(k in metrics for k in ("mae", "rmse", "r2", "mse"))
