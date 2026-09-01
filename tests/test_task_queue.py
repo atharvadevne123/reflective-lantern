@@ -70,3 +70,33 @@ class TestTaskQueue:
         q.stop(timeout=2.0)
         assert order[0] == "high"
         assert order[1] == "low"
+
+    def test_empty_queue_has_zero_length(self):
+        q = TaskQueue(workers=0)
+        assert len(q) == 0
+
+    def test_multiple_errors_all_captured(self):
+        def boom():
+            raise RuntimeError("fail")
+
+        q = TaskQueue(workers=1)
+        q.start()
+        for _ in range(3):
+            q.submit(boom, 1)
+        q.stop(timeout=2.0)
+        assert len(q.errors) == 3
+
+    @pytest.mark.parametrize("priority", [1, 5, 10])
+    def test_task_with_varied_priorities_all_execute(self, priority: int) -> None:
+        done: list[int] = []
+        lock = threading.Lock()
+
+        def record(p: int) -> None:
+            with lock:
+                done.append(p)
+
+        q = TaskQueue(workers=1)
+        q.start()
+        q.submit(record, priority, priority)
+        q.stop(timeout=2.0)
+        assert priority in done
