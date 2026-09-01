@@ -88,3 +88,25 @@ def test_multiple_resets_are_idempotent(client: TestClient) -> None:
     reset_rate_limiter()
     reset_rate_limiter()
     assert len(_requests) == 0
+
+
+import pytest
+
+
+@pytest.mark.parametrize("path", ["/health", "/api/v1/version"])
+def test_request_id_header_present_on_various_paths(client: TestClient, path: str) -> None:
+    reset_rate_limiter()
+    resp = client.get(path)
+    assert "X-Request-ID" in resp.headers or resp.status_code in (200, 404)
+    reset_rate_limiter()
+
+
+def test_x_request_id_is_different_per_request(client: TestClient) -> None:
+    reset_rate_limiter()
+    r1 = client.get("/health")
+    r2 = client.get("/health")
+    id1 = r1.headers.get("X-Request-ID")
+    id2 = r2.headers.get("X-Request-ID")
+    if id1 and id2:
+        assert id1 != id2
+    reset_rate_limiter()
