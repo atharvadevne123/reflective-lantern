@@ -63,3 +63,24 @@ class TestValidate:
         schema = make_schema()
         result = validate({"host": "h", "port": 80, "env": "prod"}, schema)
         assert result["debug"] is False
+
+
+import pytest
+
+
+@pytest.mark.parametrize("port", [1, 80, 443, 8080, 65535])
+def test_valid_ports_accepted(port: int) -> None:
+    from app.config_validator import make_schema, validate
+
+    schema = make_schema()
+    result = validate({"host": "localhost", "port": port, "env": "prod"}, schema)
+    assert result["port"] == port
+
+
+@pytest.mark.parametrize("env", ["dev", "staging", "prod"])
+def test_valid_envs_accepted(env: str) -> None:
+    from app.config_validator import make_schema, validate
+
+    schema = make_schema()
+    result = validate({"host": "localhost", "port": 8080, "env": env}, schema)
+    assert result["env"] == env
