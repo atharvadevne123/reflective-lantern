@@ -116,6 +116,6 @@ class TestCacheStats:
 
     def test_cache_stats_entries_is_non_negative(self, client) -> None:
         data = client.get("/api/v1/cache/stats").json()
-        for cache_name, stats in data.items():
+        for _cache_name, stats in data.items():
             if isinstance(stats, dict) and "entries" in stats:
                 assert stats["entries"] >= 0
