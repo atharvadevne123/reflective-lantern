@@ -150,4 +150,5 @@ def test_grid_intensity_dict_is_nonempty() -> None:
 )
 def test_config_constants_have_correct_types(key: str, expected_type) -> None:
     import app.constants as c
+
     assert isinstance(getattr(c, key), expected_type)

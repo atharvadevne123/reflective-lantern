@@ -120,7 +120,9 @@ class TestInitDb:
         )
         db_session.add(log)
         db_session.flush()
-        found = db_session.query(DriftLog).filter_by(feature_name=f"feature_{drift_detected}").first()
+        found = (
+            db_session.query(DriftLog).filter_by(feature_name=f"feature_{drift_detected}").first()
+        )
         assert found.drift_detected == drift_detected
 
     def test_drift_log_ks_statistic_stored(self, db_session) -> None:

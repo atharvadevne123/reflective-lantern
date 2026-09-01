@@ -64,7 +64,9 @@ class TestExtractReadings:
     import pytest
 
     @pytest.mark.parametrize("lookback_days", [1, 7, 30])
-    def test_extract_with_bad_db_returns_empty_for_various_days(self, monkeypatch, lookback_days: int) -> None:
+    def test_extract_with_bad_db_returns_empty_for_various_days(
+        self, monkeypatch, lookback_days: int
+    ) -> None:
         from pipelines import retrain_dag
 
         monkeypatch.setattr(retrain_dag, "DATABASE_URL", "postgresql://bad:bad@nonexistent:5/db")

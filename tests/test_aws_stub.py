@@ -121,10 +121,13 @@ class TestUploadDictAsJson:
 
 
 class TestBuildS3UriParametrized:
-    @pytest.mark.parametrize("bucket,key", [
-        ("bucket-a", "path/key.pkl"),
-        ("my-bucket", "nested/deep/file.joblib"),
-    ])
+    @pytest.mark.parametrize(
+        "bucket,key",
+        [
+            ("bucket-a", "path/key.pkl"),
+            ("my-bucket", "nested/deep/file.joblib"),
+        ],
+    )
     def test_uri_format(self, bucket: str, key: str) -> None:
         from app.aws_stub import build_s3_uri
 

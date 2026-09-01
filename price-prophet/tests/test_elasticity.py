@@ -157,8 +157,12 @@ def test_is_elastic_threshold_boundary(elasticity: float) -> None:
     assert is_elastic(elasticity) is expected
 
 
-@pytest.mark.parametrize("base_demand,price_from,price_to", [(100.0, 50.0, 60.0), (200.0, 100.0, 80.0)])
-def test_apply_elasticity_returns_non_negative(base_demand: float, price_from: float, price_to: float) -> None:
+@pytest.mark.parametrize(
+    "base_demand,price_from,price_to", [(100.0, 50.0, 60.0), (200.0, 100.0, 80.0)]
+)
+def test_apply_elasticity_returns_non_negative(
+    base_demand: float, price_from: float, price_to: float
+) -> None:
     from app.pricing.elasticity import apply_elasticity
 
     result = apply_elasticity(base_demand, price_from, price_to, -1.0)
