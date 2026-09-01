@@ -139,3 +139,22 @@ def test_feature_validation_error_contains_field(field: str, reason: str) -> Non
 def test_exceptions_are_exception(exc_class) -> None:
     exc = exc_class("test")
     assert isinstance(exc, Exception)
+
+
+def test_database_error_repr_contains_message() -> None:
+    err = DatabaseError("timeout after 30s")
+    assert "timeout" in str(err)
+
+
+def test_configuration_error_can_be_chained() -> None:
+    cause = KeyError("missing_key")
+    try:
+        raise ConfigurationError("bad config") from cause
+    except ConfigurationError as err:
+        assert err.__cause__ is cause
+
+
+@pytest.mark.parametrize("msg", ["short", "a" * 500])
+def test_prediction_error_various_lengths(msg: str) -> None:
+    err = PredictionError(msg)
+    assert msg in str(err)
