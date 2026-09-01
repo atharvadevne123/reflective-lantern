@@ -122,3 +122,25 @@ class TestAlertManager:
         rule = _make_rule(severity=severity)
         alert = rule.evaluate(90, BASE_NOW)
         assert alert.severity == severity
+
+    def test_multiple_rules_all_evaluated(self):
+        mgr = AlertManager()
+        mgr.add_rule(_make_rule(name="r1", metric="cpu"))
+        mgr.add_rule(_make_rule(name="r2", metric="mem"))
+        alerts = mgr.evaluate_all({"cpu": 90, "mem": 95}, now=BASE_NOW)
+        assert len(alerts) == 2
+
+    @pytest.mark.parametrize("threshold,value,fires", [(50.0, 60.0, True), (80.0, 70.0, False)])
+    def test_threshold_boundary(self, threshold: float, value: float, fires: bool) -> None:
+        mgr = AlertManager()
+        mgr.add_rule(_make_rule(threshold=threshold))
+        alerts = mgr.evaluate_all({"cpu": value}, now=BASE_NOW)
+        assert (len(alerts) > 0) == fires
+
+    def test_clear_history(self):
+        mgr = AlertManager()
+        mgr.add_rule(_make_rule(cooldown_s=0))
+        mgr.evaluate_all({"cpu": 90}, now=BASE_NOW)
+        assert len(mgr.history) >= 1
+        mgr.history.clear()
+        assert len(mgr.history) == 0
