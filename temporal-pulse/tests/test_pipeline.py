@@ -60,3 +60,21 @@ class TestExtractReadings:
         monkeypatch.setattr(retrain_dag, "DATABASE_URL", "postgresql://bad:bad@nonexistent:5/db")
         readings = retrain_dag.extract_recent_readings(lookback_days=1)
         assert readings == []
+
+    import pytest
+
+    @pytest.mark.parametrize("lookback_days", [1, 7, 30])
+    def test_extract_with_bad_db_returns_empty_for_various_days(self, monkeypatch, lookback_days: int) -> None:
+        from pipelines import retrain_dag
+
+        monkeypatch.setattr(retrain_dag, "DATABASE_URL", "postgresql://bad:bad@nonexistent:5/db")
+        readings = retrain_dag.extract_recent_readings(lookback_days=lookback_days)
+        assert isinstance(readings, list)
+
+
+class TestFeatureMatrixEdgeCases:
+    def test_feature_matrix_no_readings_returns_empty(self) -> None:
+        from pipelines import retrain_dag
+
+        X, cols = retrain_dag.run_feature_engineering([])
+        assert X.shape[0] == 0
