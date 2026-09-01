@@ -96,13 +96,16 @@ class TestRunbookIndexSearch:
         titles = [r.title for r, _ in results]
         assert any("CPU" in t or "cpu" in t.lower() for t in titles)
 
-    @pytest.mark.parametrize("query,category", [
-        ("cpu high consumer", "cpu"),
-        ("memory heap profiler", "memory"),
-        ("network dns latency", "network"),
-        ("disk io iotop", "disk"),
-        ("database pool connection", "database"),
-    ])
+    @pytest.mark.parametrize(
+        "query,category",
+        [
+            ("cpu high consumer", "cpu"),
+            ("memory heap profiler", "memory"),
+            ("network dns latency", "network"),
+            ("disk io iotop", "disk"),
+            ("database pool connection", "database"),
+        ],
+    )
     def test_search_category_relevance(self, built_index, query, category):
         """Top result for each query should match the expected category."""
         results = built_index.search(query, top_k=1)

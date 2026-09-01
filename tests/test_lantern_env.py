@@ -34,8 +34,7 @@ class TestCapabilities:
     def test_summary_lists_every_capability(self):
         """The summary names each probed capability."""
         text = lantern_env.Capabilities(notes=["n"]).summary()
-        for label in ("credentials honoured", "enumerate repos",
-                      "create repositories", "git push", "SMTP reachable"):
+        for label in ("credentials honoured", "enumerate repos", "create repositories", "git push", "SMTP reachable"):
             assert label in text
 
 
@@ -68,9 +67,7 @@ class TestEnumerationProbe:
 
     def test_json_list_means_allowed(self, monkeypatch):
         """A JSON array response means enumeration works."""
-        monkeypatch.setattr(
-            lantern_env, "_request", lambda *a, **k: (200, json.dumps([{"name": "r"}]))
-        )
+        monkeypatch.setattr(lantern_env, "_request", lambda *a, **k: (200, json.dumps([{"name": "r"}])))
         assert lantern_env.can_enumerate_repos()[0] is True
 
     def test_session_binding_message_means_blocked(self, monkeypatch):
@@ -124,6 +121,7 @@ class TestSmtpProbe:
 
     def test_unreachable_when_connection_fails(self, monkeypatch):
         """All ports failing yields an unreachable verdict."""
+
         def boom(*a, **k):
             raise OSError("blocked")
 
@@ -152,6 +150,7 @@ class TestDeliveryFallback:
 
     def test_deliver_survives_email_exception(self, monkeypatch, tmp_path):
         """An exception during send must not fail the run."""
+
         def boom(*a, **k):
             raise RuntimeError("smtp exploded")
 

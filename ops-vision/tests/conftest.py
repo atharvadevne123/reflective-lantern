@@ -14,9 +14,7 @@ from app.model import generate_synthetic_data
 
 TEST_DATABASE_URL = "sqlite:///./test_ops_vision.db"
 
-test_engine = create_engine(
-    TEST_DATABASE_URL, connect_args={"check_same_thread": False}
-)
+test_engine = create_engine(TEST_DATABASE_URL, connect_args={"check_same_thread": False})
 TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=test_engine)
 
 

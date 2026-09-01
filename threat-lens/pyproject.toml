@@ -1,0 +1,41 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.backends.legacy:build"
+
+[project]
+name = "threat-lens"
+version = "1.0.0"
+description = "Network intrusion detection API with ensemble ML and threat intelligence RAG"
+readme = "README.md"
+license = { text = "MIT" }
+requires-python = ">=3.11"
+authors = [{ name = "Reflective Lantern", email = "devneatharva@gmail.com" }]
+keywords = ["machine-learning", "intrusion-detection", "cybersecurity", "fastapi", "xgboost"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Information Technology",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3.11",
+    "Topic :: Security",
+]
+
+[project.urls]
+Repository = "https://github.com/atharvadevne123/reflective-lantern"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["app*", "rag*", "pipelines*"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "N", "W", "UP"]
+# N803/N806: `X` / `y` are the conventional sklearn names for feature matrices.
+ignore = ["E501", "N803", "N806"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+filterwarnings = ["ignore::DeprecationWarning"]

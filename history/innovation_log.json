@@ -863,5 +863,42 @@
     ],
     "email_status": "failed_network_blocked (SMTP ports 587/465 unreachable \u2014 outbound is HTTPS-proxy-only; report committed to reports/ instead)",
     "report_path": "reports/Ops-Vision_report_2026-08-26.pdf"
+  },
+  {
+    "date": "2026-08-26",
+    "project": "Threat-Lens",
+    "description": "Network intrusion detection API classifying malicious traffic into dos/probe/r2l/u2r using an XGBoost-LightGBM-RandomForest ensemble, TF-IDF CVE/MITRE retrieval, KS-drift monitoring and Airflow retraining.",
+    "inspired_by": "Network security / IDS domain (HN and GitHub trending scrape blocked by egress proxy; topic chosen from duplicate-gate free list)",
+    "chosen_keywords": "cyber intrusion network security detection malicious",
+    "repo_url": "https://github.com/atharvadevne123/reflective-lantern/tree/main/threat-lens",
+    "pr_url": "https://github.com/atharvadevne123/reflective-lantern/pull/57",
+    "archetype": "Prediction API + RAG/Knowledge System",
+    "file_count": 51,
+    "test_count": 118,
+    "coverage_pct": 100,
+    "commits": 60,
+    "stack": [
+      "Python 3.11",
+      "FastAPI",
+      "XGBoost",
+      "LightGBM",
+      "RandomForest",
+      "sklearn Pipeline",
+      "KS-test drift monitoring",
+      "SQLAlchemy",
+      "PostgreSQL",
+      "Alembic",
+      "TF-IDF RAG",
+      "Airflow DAG",
+      "MLflow",
+      "boto3/S3",
+      "Docker+compose",
+      "pytest",
+      "ruff",
+      "GitHub Actions CI"
+    ],
+    "note": "Standalone repo creation blocked: session GitHub access scoped to reflective-lantern only. Shipped as subdirectory + draft PR. Release/wheel upload not attempted for the same reason.",
+    "email_status": "network_blocked: SMTP unreachable from remote session (OSError 97 / connect timeout); PDF generated and delivered via session attachment",
+    "scrape_status": "blocked - HN Firebase and GitHub trending return 403 on proxy CONNECT"
   }
 ]
