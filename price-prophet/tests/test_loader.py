@@ -115,3 +115,18 @@ def test_load_json_file_not_found_raises() -> None:
 
     with pytest.raises(FileNotFoundError):
         load_json("/nonexistent/path/data.json")
+
+
+@pytest.mark.parametrize("n", [1, 10, 100])
+def test_generate_synthetic_data_count(n: int) -> None:
+    from app.data.loader import generate_synthetic_data
+
+    records = generate_synthetic_data(n_samples=n)
+    assert len(records) == n
+
+
+def test_generate_synthetic_data_has_product_id() -> None:
+    from app.data.loader import generate_synthetic_data
+
+    records = generate_synthetic_data(n_samples=5)
+    assert all("product_id" in r for r in records)
