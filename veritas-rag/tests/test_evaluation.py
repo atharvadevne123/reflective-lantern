@@ -102,8 +102,8 @@ class TestFullEval:
 
 
 class TestRecallEvalEdgeCases:
-    def test_empty_gold_cases_returns_perfect_recall(self, pipeline) -> None:
+    def test_empty_gold_cases_returns_zero_recall(self, pipeline) -> None:
         recall, accuracy, details = run_recall_eval(pipeline, [])
-        assert recall == 1.0
-        assert accuracy == 1.0
+        assert recall == 0.0
+        assert accuracy == 0.0
         assert details == []
