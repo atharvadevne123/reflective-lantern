@@ -104,3 +104,36 @@ class TestInitDb:
         from app.database import init_db
 
         init_db()
+
+    import pytest
+
+    @pytest.mark.parametrize("drift_detected", [0, 1])
+    def test_drift_log_detected_values(self, db_session, drift_detected: int) -> None:
+        from app.database import DriftLog
+
+        log = DriftLog(
+            sensor_id="s2",
+            feature_name=f"feature_{drift_detected}",
+            ks_statistic=0.3,
+            p_value=0.05,
+            drift_detected=drift_detected,
+        )
+        db_session.add(log)
+        db_session.flush()
+        found = db_session.query(DriftLog).filter_by(feature_name=f"feature_{drift_detected}").first()
+        assert found.drift_detected == drift_detected
+
+    def test_drift_log_ks_statistic_stored(self, db_session) -> None:
+        from app.database import DriftLog
+
+        log = DriftLog(
+            sensor_id="s3",
+            feature_name="vibration_mean",
+            ks_statistic=0.75,
+            p_value=0.02,
+            drift_detected=1,
+        )
+        db_session.add(log)
+        db_session.flush()
+        found = db_session.query(DriftLog).filter_by(feature_name="vibration_mean").first()
+        assert abs(found.ks_statistic - 0.75) < 1e-6
