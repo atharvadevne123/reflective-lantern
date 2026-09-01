@@ -107,9 +107,7 @@ class TestCacheStats:
         second = client.post("/api/v1/similar", json=payload).json()
         assert first["similar_items"] == second["similar_items"]
 
-    import pytest
-
-    @pytest.mark.parametrize("endpoint", ["/api/v1/cache/stats", "/health"])
+    @pytest.mark.parametrize("endpoint", ["/api/v1/cache/stats", "/api/v1/health"])
     def test_get_endpoints_return_200(self, client, endpoint: str) -> None:
         resp = client.get(endpoint)
         assert resp.status_code == 200

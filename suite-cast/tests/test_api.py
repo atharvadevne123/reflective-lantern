@@ -252,6 +252,6 @@ def test_predict_response_contains_request_id(client, sample_booking_dict) -> No
 
 
 def test_health_response_contains_version(client) -> None:
-    resp = client.get("/health")
+    resp = client.get("/api/v1/health")
     body = resp.json()
     assert "version" in body or "status" in body
