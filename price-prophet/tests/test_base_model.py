@@ -93,3 +93,40 @@ def test_base_model_is_fitted_true_after_fit() -> None:
     m = _Impl()
     m.fit([[1.0]], [1.0])
     assert m.is_fitted() is True
+
+
+import pytest
+
+
+@pytest.mark.parametrize("n_preds", [1, 5, 10])
+def test_base_predict_count_matches_input(n_preds: int) -> None:
+    from app.models.base import BasePricingModel
+
+    class _Impl(BasePricingModel):
+        def fit(self, X, y):
+            self._fitted = True
+
+        def predict(self, X):
+            return [1.0] * len(X)
+
+    m = _Impl()
+    m.fit([[0.0]], [0.0])
+    result = m.predict([[float(i)] for i in range(n_preds)])
+    assert len(result) == n_preds
+
+
+def test_base_model_predict_raises_when_not_fitted() -> None:
+    from app.models.base import BasePricingModel
+
+    class _Impl(BasePricingModel):
+        def fit(self, X, y):
+            self._fitted = True
+
+        def predict(self, X):
+            if not self.is_fitted():
+                raise RuntimeError("not fitted")
+            return [1.0] * len(X)
+
+    m = _Impl()
+    with pytest.raises(RuntimeError):
+        m.predict([[1.0]])
