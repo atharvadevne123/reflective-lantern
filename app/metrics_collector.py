@@ -29,6 +29,7 @@ class Counter:
         self._lock = threading.Lock()
 
     def inc(self, amount: float = 1.0) -> None:
+        """Increment the counter by *amount*; raises ValueError for negative amounts."""
         if amount < 0:
             raise ValueError("Counter can only increase")
         with self._lock:
@@ -36,10 +37,12 @@ class Counter:
 
     @property
     def value(self) -> float:
+        """Return the current counter value."""
         with self._lock:
             return self._value
 
     def reset(self) -> None:
+        """Reset the counter to zero."""
         with self._lock:
             self._value = 0.0
 
@@ -54,19 +57,23 @@ class Gauge:
         self._lock = threading.Lock()
 
     def set(self, value: float) -> None:
+        """Set the gauge to an absolute *value*."""
         with self._lock:
             self._value = value
 
     def inc(self, amount: float = 1.0) -> None:
+        """Increment the gauge by *amount*."""
         with self._lock:
             self._value += amount
 
     def dec(self, amount: float = 1.0) -> None:
+        """Decrement the gauge by *amount*."""
         with self._lock:
             self._value -= amount
 
     @property
     def value(self) -> float:
+        """Return the current gauge value."""
         with self._lock:
             return self._value
 
