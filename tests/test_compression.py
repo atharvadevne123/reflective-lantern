@@ -107,3 +107,26 @@ class TestRoundtripLargePayload:
     def test_json_list_roundtrip(self) -> None:
         obj = list(range(1000))
         assert decompress_json(compress_json(obj)) == obj
+
+
+@pytest.mark.parametrize(
+    "obj",
+    [
+        {"key": "value"},
+        [1, 2, 3],
+        {"nested": {"a": 1}},
+        42,
+        "string",
+    ],
+)
+def test_compress_json_roundtrip_various_types(obj) -> None:
+    """compress_json / decompress_json round-trips any JSON-serialisable value."""
+    assert decompress_json(compress_json(obj)) == obj
+
+
+@pytest.mark.parametrize("level", [1, 5, 9])
+def test_gzip_compress_produces_smaller_output(level: int) -> None:
+    """gzip_compress reduces the size of highly repetitive data at any level."""
+    data = b"a" * 10_000
+    compressed = gzip_compress(data, level=level)
+    assert len(compressed) < len(data)
