@@ -184,8 +184,8 @@ def test_clamp_parametrized(value: float, lo: float, hi: float, expected: float)
 
 
 @pytest.mark.parametrize("tariff", [0.01, 0.5, 1.0, 100.0])
-def test_validate_tariff_positive_returns_value(tariff: float) -> None:
-    """validate_tariff accepts positive rates and returns the value."""
+def test_validate_tariff_returns_exact_value(tariff: float) -> None:
+    """validate_tariff returns the exact tariff value for positive inputs."""
     from energy_seer.app.validators import validate_tariff
 
     result = validate_tariff(tariff)

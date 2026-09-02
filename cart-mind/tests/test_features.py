@@ -253,8 +253,8 @@ def test_constant_column_dropped_at_any_threshold(threshold: float) -> None:
 @pytest.mark.parametrize("n_cols", [1, 3, 5])
 def test_high_variance_columns_all_kept(n_cols: int) -> None:
     """drop_low_variance_features retains all columns that exceed the threshold."""
-    import pandas as pd
     import numpy as np
+    import pandas as pd
 
     from app.features import drop_low_variance_features
 

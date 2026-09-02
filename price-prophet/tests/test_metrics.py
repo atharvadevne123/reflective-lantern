@@ -170,7 +170,7 @@ import pytest  # noqa: E402
         ([10.0, 20.0], [12.0, 18.0], 2.0),
     ],
 )
-def test_mae_parametrized(actual, predicted, expected_mae: float) -> None:
+def test_mae_known_values(actual, predicted, expected_mae: float) -> None:
     """mae returns the correct mean absolute error for known inputs."""
     from app.evaluation.metrics import mae
 
