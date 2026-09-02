@@ -29,3 +29,15 @@ clean:
 	rm -rf __pycache__ .pytest_cache .ruff_cache dist build *.egg-info
 	find . -name "*.pyc" -delete
 	rm -f test_cyber_guard.db
+
+migrate:
+	alembic upgrade head
+
+migrate-down:
+	alembic downgrade -1
+
+seed:
+	python scripts/seed_data.py
+
+seed-drift:
+	python scripts/seed_data.py --drift
