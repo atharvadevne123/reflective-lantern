@@ -65,3 +65,26 @@ def test_upload_model_uses_version_in_key(monkeypatch, tmp_path):
     monkeypatch.setattr(aws_stub, "S3_BUCKET", "")
     result = aws_stub.upload_model(Path("model.joblib"), version="2.0.0")
     assert result is False
+
+
+import pytest  # noqa: E402
+
+
+@pytest.mark.parametrize("version", ["1.0.0", "2.3.1", "0.0.1"])
+def test_upload_various_versions_without_bucket(monkeypatch, tmp_path, version: str) -> None:
+    """Upload returns False for any version when bucket is unset."""
+    from app import aws_stub
+
+    monkeypatch.setattr(aws_stub, "S3_BUCKET", "")
+    result = aws_stub.upload_model(tmp_path / "model.joblib", version=version)
+    assert result is False
+
+
+@pytest.mark.parametrize("filename", ["model.joblib", "lgbm.joblib", "scaler.pkl"])
+def test_download_various_filenames_without_bucket(monkeypatch, tmp_path, filename: str) -> None:
+    """Download returns False for any model filename when bucket is unset."""
+    from app import aws_stub
+
+    monkeypatch.setattr(aws_stub, "S3_BUCKET", "")
+    result = aws_stub.download_model(tmp_path / filename)
+    assert result is False
