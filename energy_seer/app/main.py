@@ -6,6 +6,7 @@ from __future__ import annotations
 import logging
 import time
 import uuid
+from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 from typing import Annotated, Any
 
@@ -41,7 +42,7 @@ RATE_LIMIT = 300
 
 
 @asynccontextmanager
-async def lifespan(app: FastAPI):
+async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     global _model_bundle
     init_db()
     _model_bundle = load_model()
@@ -69,7 +70,7 @@ app.add_middleware(
 
 
 @app.middleware("http")
-async def correlation_id_middleware(request: Request, call_next):
+async def correlation_id_middleware(request: Request, call_next) -> Response:
     request_id = request.headers.get("X-Request-ID", str(uuid.uuid4())[:8])
     start = time.perf_counter()
     response: Response = await call_next(request)
@@ -80,7 +81,7 @@ async def correlation_id_middleware(request: Request, call_next):
 
 
 @app.middleware("http")
-async def rate_limit_middleware(request: Request, call_next):
+async def rate_limit_middleware(request: Request, call_next) -> Response:
     client_ip = request.client.host if request.client else "unknown"
     now = time.time()
     window_start = _rate_limit_window.get(client_ip, now)
