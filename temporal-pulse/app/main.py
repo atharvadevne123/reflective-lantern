@@ -288,7 +288,7 @@ async def drift_report() -> list[DriftReport]:
 
 
 @app.get("/api/v1/feature-importance", tags=["model"])
-async def feature_importance() -> list[dict]:
+async def feature_importance() -> list[dict[str, object]]:
     """Return top-20 feature importances from the forecaster."""
     return get_feature_importance()
 
