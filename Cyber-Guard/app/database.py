@@ -49,6 +49,11 @@ class DriftLog(Base):
 
 
 def get_db() -> Session:
+    """Yield a database session for FastAPI dependency injection.
+
+    Yields:
+        A session that is closed when the request completes.
+    """
     db = SessionLocal()
     try:
         yield db
@@ -57,4 +62,5 @@ def get_db() -> Session:
 
 
 def create_tables() -> None:
+    """Create every table declared on Base if it does not already exist."""
     Base.metadata.create_all(bind=engine)
