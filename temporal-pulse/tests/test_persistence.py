@@ -68,3 +68,24 @@ class TestSaveLoad:
 
         saved = save_models(tmp_path)
         assert key in saved
+
+
+import pytest  # noqa: E402
+
+
+@pytest.mark.parametrize("key", ["isolation_forest", "scaler"])
+def test_saved_file_is_nonempty(trained_models, tmp_path, key: str) -> None:
+    """Each artifact saved by save_models is a non-empty file on disk."""
+    from app.model import save_models
+
+    saved = save_models(tmp_path)
+    assert Path(saved[key]).stat().st_size > 0
+
+
+@pytest.mark.parametrize("key", ["isolation_forest", "scaler"])
+def test_saved_path_ends_with_joblib(trained_models, tmp_path, key: str) -> None:
+    """save_models writes .joblib files."""
+    from app.model import save_models
+
+    saved = save_models(tmp_path)
+    assert saved[key].endswith(".joblib")
