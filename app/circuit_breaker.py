@@ -95,7 +95,7 @@ class CircuitBreaker:
         """Use as a decorator."""
 
         @functools.wraps(func)
-        def wrapper(*args, **kwargs):
+        def wrapper(*args, **kwargs) -> object:
             return self.call(func, *args, **kwargs)
 
         return wrapper
