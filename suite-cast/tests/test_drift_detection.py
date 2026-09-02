@@ -152,8 +152,8 @@ class TestDriftResultKeys:
     "statistic,valid_label",
     [
         (0.0, "none"),
-        (0.12, "none"),
-        (0.13, "mild"),
+        (0.09, "none"),
+        (0.1, "mild"),
         (0.24, "mild"),
         (0.25, "moderate"),
         (0.49, "moderate"),
