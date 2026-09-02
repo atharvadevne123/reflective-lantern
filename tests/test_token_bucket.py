@@ -106,3 +106,28 @@ class TestPerKeyTokenBucket:
 
         pkb = PerKeyTokenBucket(capacity=5, rate=1)
         assert pkb.bucket_count() == 0
+
+
+import pytest
+
+
+@pytest.mark.parametrize("capacity", [1, 5, 10])
+def test_per_key_bucket_capacity_allows_that_many_calls(capacity: int) -> None:
+    """PerKeyTokenBucket allows exactly *capacity* consecutive calls per key."""
+    from app.token_bucket import PerKeyTokenBucket
+
+    pkb = PerKeyTokenBucket(capacity=capacity, rate=0)
+    for _ in range(capacity):
+        assert pkb.consume("k") is True
+    assert pkb.consume("k") is False
+
+
+@pytest.mark.parametrize("n_keys", [1, 3, 5])
+def test_per_key_bucket_count_matches_distinct_keys(n_keys: int) -> None:
+    """bucket_count returns the number of unique keys that were consumed."""
+    from app.token_bucket import PerKeyTokenBucket
+
+    pkb = PerKeyTokenBucket(capacity=10, rate=0)
+    for i in range(n_keys):
+        pkb.consume(f"key-{i}")
+    assert pkb.bucket_count() == n_keys
