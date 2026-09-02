@@ -2,6 +2,7 @@
 
 from functools import lru_cache
 
+from pydantic import field_validator
 from pydantic_settings import BaseSettings
 
 
@@ -34,6 +35,30 @@ class Settings(BaseSettings):
     cors_origins: list[str] = ["*"]
 
     model_config = {"env_file": ".env", "env_file_encoding": "utf-8"}
+
+    @field_validator("drift_threshold")
+    @classmethod
+    def validate_drift_threshold(cls, v: float) -> float:
+        """Drift threshold must be strictly between 0 and 1."""
+        if not 0.0 < v < 1.0:
+            raise ValueError(f"drift_threshold must be in (0, 1), got {v}")
+        return v
+
+    @field_validator("rate_limit_requests")
+    @classmethod
+    def validate_rate_limit_requests(cls, v: int) -> int:
+        """Rate limit must be a positive integer."""
+        if v <= 0:
+            raise ValueError(f"rate_limit_requests must be > 0, got {v}")
+        return v
+
+    @field_validator("rate_limit_window_seconds")
+    @classmethod
+    def validate_rate_limit_window(cls, v: int) -> int:
+        """Window must be a positive number of seconds."""
+        if v <= 0:
+            raise ValueError(f"rate_limit_window_seconds must be > 0, got {v}")
+        return v
 
 
 @lru_cache(maxsize=1)

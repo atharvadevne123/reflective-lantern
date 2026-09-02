@@ -119,8 +119,12 @@ class Prediction(Base):
     model_version = Column(String(32), nullable=False, default="1.0.0")
     created_at = Column(DateTime, default=datetime.utcnow, index=True)
 
-    # count_incidents_predicted() aggregates on the incident flag.
-    __table_args__ = (Index("ix_predictions_incident_flag", "predicted_incident"),)
+    # count_incidents_predicted() aggregates on the incident flag;
+    # delete_old_predictions() and per-service queries use service_name + created_at.
+    __table_args__ = (
+        Index("ix_predictions_incident_flag", "predicted_incident"),
+        Index("ix_predictions_service_created", "service_name", "created_at"),
+    )
 
 
 class DriftAlert(Base):
@@ -166,3 +170,20 @@ def create_tables() -> None:
     logger.info("Creating database tables")
     Base.metadata.create_all(bind=get_engine())
     logger.info("Database tables created successfully")
+
+
+def ping_db() -> bool:
+    """Check database connectivity by executing a trivial query.
+
+    Returns:
+        True if the database is reachable, False otherwise.
+    """
+    try:
+        from sqlalchemy import text
+
+        with get_engine().connect() as conn:
+            conn.execute(text("SELECT 1"))
+        return True
+    except Exception:
+        logger.exception("Database ping failed")
+        return False

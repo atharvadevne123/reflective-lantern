@@ -56,6 +56,35 @@ class IncidentRateBuffer:
         sorted_counts = sorted(self.counts, key=lambda x: x[0])
         return np.array([c for _, c in sorted_counts], dtype=np.float64)
 
+    def reset(self) -> None:
+        """Clear all accumulated counts."""
+        self.counts.clear()
+        logger.debug("IncidentRateBuffer reset")
+
+    def __len__(self) -> int:
+        """Return the number of observations in the buffer."""
+        return len(self.counts)
+
+    @property
+    def total_incidents(self) -> int:
+        """Return the sum of all incident counts in the buffer."""
+        return sum(c for _, c in self.counts)
+
+    @property
+    def window_span_hours(self) -> float:
+        """Return the time span of buffered data in hours, or 0 if fewer than 2 entries."""
+        if len(self.counts) < 2:
+            return 0.0
+        sorted_ts = sorted(t for t, _ in self.counts)
+        delta = sorted_ts[-1] - sorted_ts[0]
+        return delta.total_seconds() / 3600.0
+
+
+DEFAULT_ALPHA: float = 0.3
+DEFAULT_BETA: float = 0.1
+DEFAULT_HORIZON: int = 24
+Z80_CONFIDENCE: float = 1.282
+
 
 class ExponentialSmoothingForecaster:
     """Simple double exponential smoothing (Holt's linear) forecaster.
@@ -85,6 +114,7 @@ class ExponentialSmoothingForecaster:
         self.alpha = alpha
         self.beta = beta
         self.horizon = horizon
+        self._is_fitted: bool = False
         self._level: float | None = None
         self._trend: float | None = None
         self._residuals: list[float] = []
@@ -117,6 +147,7 @@ class ExponentialSmoothingForecaster:
         self._level = float(level)
         self._trend = float(trend)
         self._residuals = residuals
+        self._is_fitted = True
         logger.debug("Holt fit: level=%.4f trend=%.4f on %d points", level, trend, len(series))
         return self
 
@@ -137,7 +168,7 @@ class ExponentialSmoothingForecaster:
             raise RuntimeError("Forecaster must be fitted before calling forecast()")
 
         residual_std = float(np.std(self._residuals)) if self._residuals else 1.0
-        z80 = 1.282
+        z80 = Z80_CONFIDENCE
 
         points: list[ForecastPoint] = []
         for h in range(1, self.horizon + 1):
@@ -157,6 +188,16 @@ class ExponentialSmoothingForecaster:
 
         logger.info("Forecast generated: %d points, next=%.4f", len(points), points[0].value)
         return points
+
+    @property
+    def is_fitted(self) -> bool:
+        """Return True if fit() has been called successfully."""
+        return self._is_fitted
+
+    @property
+    def params(self) -> dict:
+        """Return current smoothing parameters as a dict."""
+        return {"alpha": self.alpha, "beta": self.beta, "horizon": self.horizon}
 
 
 _buffer_singleton: IncidentRateBuffer | None = None

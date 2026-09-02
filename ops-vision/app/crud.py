@@ -203,3 +203,117 @@ def count_drift_alerts_last_24h(db: Session) -> int:
     except Exception:
         logger.exception("Failed to count drift alerts")
         raise
+
+
+def get_incidents_by_service(
+    db: Session,
+    service_name: str,
+    limit: int = 50,
+) -> list[Incident]:
+    """Return incidents for a specific service, newest first.
+
+    Args:
+        db: Active SQLAlchemy session.
+        service_name: Exact service name to filter by.
+        limit: Maximum records to return.
+
+    Returns:
+        List of Incident objects.
+    """
+    try:
+        return (
+            db.query(Incident)
+            .filter(Incident.service_name == service_name)
+            .order_by(Incident.created_at.desc())
+            .limit(limit)
+            .all()
+        )
+    except Exception:
+        logger.exception("Failed to get incidents for service=%s", service_name)
+        raise
+
+
+def delete_old_predictions(db: Session, older_than_days: int = 30) -> int:
+    """Delete prediction records older than a given number of days.
+
+    Args:
+        db: Active SQLAlchemy session.
+        older_than_days: Predictions older than this many days are removed.
+
+    Returns:
+        Number of rows deleted.
+    """
+    try:
+        cutoff = datetime.utcnow() - timedelta(days=older_than_days)
+        deleted = (
+            db.query(Prediction)
+            .filter(Prediction.created_at < cutoff)
+            .delete(synchronize_session=False)
+        )
+        db.commit()
+        logger.info("Deleted %d old predictions (cutoff=%s)", deleted, cutoff.date())
+        return deleted
+    except Exception:
+        db.rollback()
+        logger.exception("Failed to delete old predictions")
+        raise
+
+
+def bulk_create_predictions(db: Session, items: list[dict]) -> int:
+    """Insert multiple prediction records in a single transaction.
+
+    Args:
+        db: Active SQLAlchemy session.
+        items: List of field dicts, one per Prediction row.
+
+    Returns:
+        Number of rows inserted.
+    """
+    try:
+        db.bulk_insert_mappings(Prediction, items)
+        db.commit()
+        logger.info("Bulk inserted %d predictions", len(items))
+        return len(items)
+    except Exception:
+        db.rollback()
+        logger.exception("Failed to bulk insert predictions")
+        raise
+
+
+def get_prediction_by_id(db: Session, prediction_id: int) -> Prediction | None:
+    """Fetch a single prediction by primary key.
+
+    Args:
+        db: Active SQLAlchemy session.
+        prediction_id: Primary key to look up.
+
+    Returns:
+        Prediction instance or None if not found.
+    """
+    try:
+        return db.query(Prediction).filter(Prediction.id == prediction_id).first()
+    except Exception:
+        logger.exception("Failed to fetch prediction id=%d", prediction_id)
+        raise
+
+
+def count_predictions_by_service(db: Session, service_name: str) -> int:
+    """Count predictions for a specific service.
+
+    Args:
+        db: Active SQLAlchemy session.
+        service_name: Service to filter by.
+
+    Returns:
+        Integer count of predictions for that service.
+    """
+    try:
+        return (
+            db.query(func.count(Prediction.id))
+            .filter(Prediction.service_name == service_name)
+            .scalar()
+            or 0
+        )
+    except Exception:
+        logger.exception("Failed to count predictions for service=%s", service_name)
+        raise

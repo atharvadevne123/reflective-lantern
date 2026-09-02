@@ -134,6 +134,37 @@ class RunbookIndex:
 
         return results
 
+    @property
+    def size(self) -> int:
+        """Return the number of runbooks in the index."""
+        return len(self.runbooks)
+
+    @property
+    def is_built(self) -> bool:
+        """Return True if the index has been built with at least one runbook."""
+        return len(self.runbooks) > 0
+
+    def categories(self) -> list[str]:
+        """Return the distinct categories of indexed runbooks, sorted."""
+        return sorted({r.category for r in self.runbooks})
+
+    def search_by_category(
+        self, query: str, category: str, top_k: int = 3
+    ) -> list[tuple["Runbook", float]]:
+        """Search the index for runbooks filtered to a specific category.
+
+        Args:
+            query: Natural-language search string.
+            category: Only return runbooks whose category matches this value.
+            top_k: Maximum number of results to return.
+
+        Returns:
+            List of (Runbook, score) tuples within the category, sorted by score.
+        """
+        all_results = self.search(query, top_k=self.size or top_k)
+        filtered = [(rb, score) for rb, score in all_results if rb.category == category]
+        return filtered[:top_k]
+
     def save(self, path: Path) -> None:
         """Persist the index metadata to a JSON file (embeddings not saved).
 
