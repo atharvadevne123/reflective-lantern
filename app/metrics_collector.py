@@ -93,6 +93,7 @@ class Histogram:
         self._total: int = 0
 
     def observe(self, value: float) -> None:
+        """Record *value* in the appropriate histogram buckets."""
         with self._lock:
             self._sum += value
             self._total += 1
@@ -102,11 +103,13 @@ class Histogram:
 
     @property
     def sum(self) -> float:
+        """Return the sum of all observed values."""
         with self._lock:
             return self._sum
 
     @property
     def count(self) -> int:
+        """Return the total number of observations."""
         with self._lock:
             return self._total
 
@@ -131,16 +134,19 @@ class MetricsRegistry:
         self._metrics: dict[str, object] = {}
 
     def counter(self, name: str, description: str = "") -> Counter:
+        """Return an existing counter by *name*, creating it on first access."""
         if name not in self._metrics:
             self._metrics[name] = Counter(name, description)
         return self._metrics[name]  # type: ignore[return-value]
 
     def gauge(self, name: str, description: str = "") -> Gauge:
+        """Return an existing gauge by *name*, creating it on first access."""
         if name not in self._metrics:
             self._metrics[name] = Gauge(name, description)
         return self._metrics[name]  # type: ignore[return-value]
 
     def histogram(self, name: str, description: str = "", buckets: list[float] | None = None) -> Histogram:
+        """Return an existing histogram by *name*, creating it on first access."""
         if name not in self._metrics:
             kwargs = {"name": name, "description": description}
             if buckets is not None:
