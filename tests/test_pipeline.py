@@ -118,3 +118,23 @@ def test_train_model_returns_metrics_keys() -> None:
     _, metrics = train_model(df, df["consumption_kwh"])
     assert "r2_mean" in metrics
     assert "rmse_mean" in metrics
+
+
+@pytest.mark.parametrize("key", ["r2_mean", "rmse_mean"])
+def test_train_model_metric_is_float(key: str) -> None:
+    """Each metric returned by train_model is a float value."""
+    from app.model import train_model
+
+    df = _make_df(150)
+    _, metrics = train_model(df, df["consumption_kwh"])
+    assert isinstance(metrics[key], float)
+
+
+@pytest.mark.parametrize("n_rows", [100, 200, 300])
+def test_anomaly_model_trains_on_various_sizes(n_rows: int) -> None:
+    """train_anomaly_model completes successfully for different dataset sizes."""
+    from app.model import train_anomaly_model
+
+    df = _make_df(n_rows)
+    bundle = train_anomaly_model(df)
+    assert bundle is not None
