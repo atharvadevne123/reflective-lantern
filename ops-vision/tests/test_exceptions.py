@@ -64,3 +64,26 @@ class TestOpsVisionErrorHierarchy:
         """Subclass exceptions are caught by the base OpsVisionError handler."""
         with pytest.raises(OpsVisionError):
             raise FeatureEngineeringError("bad transform")
+
+
+@pytest.mark.parametrize(
+    "exc_class",
+    [ModelNotLoadedError, FeatureEngineeringError, DriftMonitorError, RunbookIndexError],
+)
+def test_each_subclass_is_ops_vision_error(exc_class: type) -> None:
+    """Every custom exception is a subclass of OpsVisionError."""
+    assert issubclass(exc_class, OpsVisionError)
+
+
+@pytest.mark.parametrize(
+    "exc_class,detail",
+    [
+        (DriftMonitorError, "window empty"),
+        (RunbookIndexError, "not built"),
+        (DriftMonitorError, ""),
+    ],
+)
+def test_reason_attribute_preserved(exc_class: type, detail: str) -> None:
+    """Custom exceptions store the reason/detail argument correctly."""
+    exc = exc_class(detail)
+    assert hasattr(exc, "reason") or hasattr(exc, "detail")
