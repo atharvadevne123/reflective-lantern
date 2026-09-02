@@ -105,13 +105,13 @@ def _ensure_artifacts() -> None:
         _model, _feature_pipeline = _load_artifacts()
 
 
-def _get_model():
+def _get_model() -> object:
     """Return the cached model, loading or bootstrapping it on first use."""
     _ensure_artifacts()
     return _model
 
 
-def _get_pipeline():
+def _get_pipeline() -> object:
     """Return the cached fitted feature pipeline, matched to the loaded model."""
     _ensure_artifacts()
     return _feature_pipeline
@@ -411,7 +411,7 @@ def prediction_stats(db: Session = Depends(get_db)) -> PredictionStats:
     "/model/version",
     summary="Current model version",
 )
-def model_version() -> dict:
+def model_version() -> dict[str, object]:
     """Return the currently loaded model version string.
 
     Returns:
