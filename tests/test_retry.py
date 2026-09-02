@@ -308,3 +308,33 @@ def test_retry_returns_correct_value(return_val, monkeypatch):
         return return_val
 
     assert fn() == return_val
+
+
+@pytest.mark.parametrize("max_attempts", [1, 2, 3, 5])
+def test_retry_exhausts_exactly_max_attempts(max_attempts: int, monkeypatch) -> None:
+    """retry raises after exactly max_attempts failed calls."""
+    monkeypatch.setattr("time.sleep", lambda _: None)
+    call_count = 0
+
+    @retry(exceptions=(_Boom,), max_attempts=max_attempts, base_delay=0)
+    def always_fail():
+        nonlocal call_count
+        call_count += 1
+        raise _Boom("fail")
+
+    with pytest.raises(_Boom):
+        always_fail()
+    assert call_count == max_attempts
+
+
+@pytest.mark.parametrize("exc_class", [ValueError, RuntimeError, KeyError])
+def test_retry_does_not_catch_unregistered_exceptions(exc_class: type, monkeypatch) -> None:
+    """retry only catches the exceptions listed in its exceptions parameter."""
+    monkeypatch.setattr("time.sleep", lambda _: None)
+
+    @retry(exceptions=(_Boom,), max_attempts=3, base_delay=0)
+    def raise_other():
+        raise exc_class("not retried")
+
+    with pytest.raises(exc_class):
+        raise_other()
