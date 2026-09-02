@@ -25,13 +25,31 @@ Cyber-Guard classifies network connections into five threat categories:
 
 ## Tech Stack
 
-- **API**: FastAPI with correlation-ID middleware, Pydantic v2 validation
-- **ML**: XGBoost + RandomForest VotingClassifier (soft voting), 5-fold cross-validation
+- **API**: FastAPI with correlation-ID and rate-limit middleware, Pydantic v2 validation
+- **ML**: XGBoost + RandomForest VotingClassifier (soft voting), 5-fold stratified CV
 - **Features**: 15 engineered features — byte ratios, log transforms, rolling stats, protocol encodings
-- **Monitoring**: SciPy KS-test drift detection on `src_bytes` distribution
-- **Storage**: SQLAlchemy (SQLite dev / PostgreSQL prod) for prediction & drift logs
-- **Retraining**: Airflow DAG scheduled weekly, accuracy gate ≥ 70%
+- **Anomaly detection**: IsolationForest over the same feature space, for traffic
+  that matches none of the five known classes
+- **Monitoring**: SciPy KS-test drift detection on the `src_bytes` distribution
+- **Storage**: SQLAlchemy (SQLite dev / PostgreSQL prod), Alembic migrations
+- **Retraining**: Airflow DAG scheduled weekly, configurable accuracy gate
+- **Tracking**: optional MLflow runs and optional S3 artifact storage — both
+  degrade to no-ops when unconfigured
 - **Infra**: Docker + docker-compose, GitHub Actions CI (ruff + pytest)
+
+### Measured performance
+
+Five-fold stratified cross-validation on 600 generated connections:
+
+| Metric | Value |
+|--------|-------|
+| Accuracy | 0.960 ± 0.021 |
+| AUC-ROC (weighted OvR) | 0.997 ± 0.002 |
+
+The generator in `app.model` samples packet fields *conditional on* the threat
+class, so the task is genuinely learnable. Sampling features and labels
+independently — the obvious way to write such a generator — caps AUC at ~0.5
+no matter how good the model is.
 
 ## Quick Start
 
@@ -92,9 +110,35 @@ Returns API and model status.
 
 Returns prediction statistics and optional drift check.
 
+### POST /api/v1/anomaly
+
+Scores a connection for outlier-ness without assigning a threat class. A novel
+attack looks like an inlier to a classifier forced to pick one of five labels,
+but like an outlier here.
+
+```json
+{ "anomaly_score": 0.1497, "decision_score": -0.1497, "is_anomaly": true }
+```
+
 ### GET /api/v1/drift
 
-Runs KS-test drift check on `src_bytes` distribution.
+Runs a KS-test drift check on the `src_bytes` distribution, comparing the last
+24 hours against everything older than `REFERENCE_WINDOW_DAYS`.
+
+To see it fire on a fresh database:
+
+```bash
+make seed-drift          # backfill both windows with a 10x volume shift
+curl localhost:8000/api/v1/drift
+# {"ks_statistic":0.9475,"p_value":0.0,"drift_detected":true}
+```
+
+### Rate limiting
+
+All endpoints except `/api/v1/health` are limited to `RATE_LIMIT_PER_MINUTE`
+requests per caller per 60s sliding window, and respond with `429` plus a
+`Retry-After` header when exceeded. Health is exempt so that a liveness probe
+can never rate-limit the service out of its own cluster.
 
 ## Environment Variables
 
@@ -106,12 +150,27 @@ See [.env.example](.env.example) for all variables.
 | `MODEL_PATH` | `model.joblib` | Path to serialised model |
 | `DRIFT_P_THRESHOLD` | `0.05` | KS-test p-value threshold |
 | `REFERENCE_WINDOW_DAYS` | `7` | Days of history for reference distribution |
+| `RATE_LIMIT_PER_MINUTE` | `120` | Per-caller request limit |
+| `RETRAIN_ACCURACY_FLOOR` | `0.70` | Below this, a retrained model is not promoted |
+| `MLFLOW_TRACKING_URI` | *(empty)* | Empty disables MLflow tracking |
+| `S3_BUCKET` | *(empty)* | Empty keeps model artifacts local |
+
+## Database Migrations
+
+```bash
+make migrate        # alembic upgrade head
+make migrate-down   # roll back one revision
+```
+
+Alembic reads `DATABASE_URL` from the same environment variable the app does,
+so migrations can never run against a different database than the service.
 
 ## Running Tests
 
 ```bash
 cd Cyber-Guard
-pytest tests/ -v --tb=short
+make test           # 100 tests
+make lint           # ruff, must exit 0
 ```
 
 ## Feature Engineering
@@ -124,12 +183,29 @@ Fifteen features are derived from six raw packet fields:
 - **Interaction features**: `bytes_per_second`
 - **Rolling statistics**: 5-connection rolling mean and std of `src_bytes`
 
+### A note on train/serve skew
+
+The model is fitted on batches but served one connection at a time. Computing
+a rolling window over a one-row frame yields `mean == src_bytes` and
+`std == 0` — not a noisy estimate but a systematically wrong one, and it put
+*every* served request off the training manifold (the anomaly detector flagged
+100% of traffic as a result).
+
+`NetworkFeatureEngineer` therefore learns the training averages of those two
+columns at `fit` time and imputes them whenever the frame is shorter than the
+window. `tests/test_train_serve_parity.py` pins the invariant that scoring a
+row alone agrees with scoring it inside a batch.
+
 ## Model Retraining
 
 The Airflow DAG (`pipelines/retrain_dag.py`) runs weekly and:
 1. Fetches the last 7 days of prediction logs
 2. Retrains the ensemble model
-3. Validates accuracy ≥ 70% (raises an error and prevents promotion otherwise)
+3. Validates accuracy against `RETRAIN_ACCURACY_FLOOR` (default 0.70), raising
+   and leaving the previous model in place if the new one is worse
+
+The gate fails closed: a metrics file missing an accuracy figure is treated as
+zero rather than passing.
 
 ## Contributing
 
