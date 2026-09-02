@@ -61,9 +61,7 @@ class Settings:
     log_level: str = field(default_factory=lambda: os.getenv("LOG_LEVEL", "INFO"))
     api_version: str = field(default_factory=lambda: os.getenv("API_VERSION", "1.0.0"))
     drift_p_threshold: float = field(default_factory=lambda: _env_float("DRIFT_P_THRESHOLD", 0.05))
-    reference_window_days: int = field(
-        default_factory=lambda: _env_int("REFERENCE_WINDOW_DAYS", 7)
-    )
+    reference_window_days: int = field(default_factory=lambda: _env_int("REFERENCE_WINDOW_DAYS", 7))
     rate_limit_per_minute: int = field(
         default_factory=lambda: _env_int("RATE_LIMIT_PER_MINUTE", 120)
     )

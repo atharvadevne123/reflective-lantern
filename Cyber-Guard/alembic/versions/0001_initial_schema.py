@@ -35,9 +35,7 @@ def upgrade() -> None:
     )
     # Drift queries filter on timestamp ranges over the full table, so this
     # index is what keeps /api/v1/drift from degrading into a scan.
-    op.create_index(
-        "ix_prediction_logs_timestamp", "prediction_logs", ["timestamp"]
-    )
+    op.create_index("ix_prediction_logs_timestamp", "prediction_logs", ["timestamp"])
     op.create_index("ix_prediction_logs_id", "prediction_logs", ["id"])
 
     op.create_table(

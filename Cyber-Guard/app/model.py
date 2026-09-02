@@ -62,35 +62,45 @@ def _build_ensemble() -> VotingClassifier:
 _CLASS_PROFILES: dict[str, dict[str, Any]] = {
     # Ordinary request/response: bytes flow both ways, connection completes.
     "normal": {
-        "src_scale": 300.0, "dst_scale": 800.0, "dur_scale": 2.0,
+        "src_scale": 300.0,
+        "dst_scale": 800.0,
+        "dur_scale": 2.0,
         "protocols": (["tcp", "udp"], [0.8, 0.2]),
         "services": (["http", "smtp", "dns", "ssh"], [0.55, 0.2, 0.15, 0.1]),
         "flags": (["SF"], [1.0]),
     },
     # Flood: huge outbound volume, near-zero response, half-open connections.
     "dos": {
-        "src_scale": 5000.0, "dst_scale": 5.0, "dur_scale": 0.2,
+        "src_scale": 5000.0,
+        "dst_scale": 5.0,
+        "dur_scale": 0.2,
         "protocols": (["tcp", "icmp"], [0.6, 0.4]),
         "services": (["http", "other"], [0.7, 0.3]),
         "flags": (["S0", "REJ"], [0.7, 0.3]),
     },
     # Scan: tiny payloads, no response, connection refused across services.
     "probe": {
-        "src_scale": 40.0, "dst_scale": 8.0, "dur_scale": 0.1,
+        "src_scale": 40.0,
+        "dst_scale": 8.0,
+        "dur_scale": 0.1,
         "protocols": (["tcp", "icmp"], [0.5, 0.5]),
         "services": (["other", "ftp", "ssh", "dns"], [0.4, 0.2, 0.2, 0.2]),
         "flags": (["REJ", "S0"], [0.6, 0.4]),
     },
     # Remote-to-local: credential pushes against auth-bearing services.
     "r2l": {
-        "src_scale": 700.0, "dst_scale": 350.0, "dur_scale": 9.0,
+        "src_scale": 700.0,
+        "dst_scale": 350.0,
+        "dur_scale": 9.0,
         "protocols": (["tcp"], [1.0]),
         "services": (["ftp", "telnet", "pop_3"], [0.45, 0.35, 0.2]),
         "flags": (["SF", "RSTO"], [0.7, 0.3]),
     },
     # Privilege escalation: long interactive session pulling data back.
     "u2r": {
-        "src_scale": 250.0, "dst_scale": 6000.0, "dur_scale": 45.0,
+        "src_scale": 250.0,
+        "dst_scale": 6000.0,
+        "dur_scale": 45.0,
         "protocols": (["tcp"], [1.0]),
         "services": (["telnet", "ssh"], [0.6, 0.4]),
         "flags": (["SF"], [1.0]),
@@ -128,14 +138,16 @@ def generate_synthetic_data(
         protos, proto_w = p["protocols"]
         svcs, svc_w = p["services"]
         flags, flag_w = p["flags"]
-        rows.append({
-            "src_bytes": float(rng.exponential(p["src_scale"])),
-            "dst_bytes": float(rng.exponential(p["dst_scale"])),
-            "duration": float(rng.exponential(p["dur_scale"])),
-            "protocol_type": str(rng.choice(protos, p=proto_w)),
-            "service": str(rng.choice(svcs, p=svc_w)),
-            "flag": str(rng.choice(flags, p=flag_w)),
-        })
+        rows.append(
+            {
+                "src_bytes": float(rng.exponential(p["src_scale"])),
+                "dst_bytes": float(rng.exponential(p["dst_scale"])),
+                "duration": float(rng.exponential(p["dur_scale"])),
+                "protocol_type": str(rng.choice(protos, p=proto_w)),
+                "service": str(rng.choice(svcs, p=svc_w)),
+                "flag": str(rng.choice(flags, p=flag_w)),
+            }
+        )
 
     return pd.DataFrame(rows), pd.Series(labels)
 
@@ -162,10 +174,12 @@ def train_model(
     feature_pipe = build_feature_pipeline()
     ensemble = _build_ensemble()
 
-    pipe = Pipeline([
-        ("features", feature_pipe),
-        ("model", ensemble),
-    ])
+    pipe = Pipeline(
+        [
+            ("features", feature_pipe),
+            ("model", ensemble),
+        ]
+    )
 
     y_enc = label_encoder.transform(y)
 
@@ -191,7 +205,8 @@ def train_model(
         if scored_folds < len(auc_scores):
             logger.warning(
                 "AUC averaged over %d of %d folds; the rest lacked a class",
-                scored_folds, len(auc_scores),
+                scored_folds,
+                len(auc_scores),
             )
         auc_mean = float(np.nanmean(auc_scores))
         auc_std = float(np.nanstd(auc_scores))
@@ -211,12 +226,14 @@ def train_model(
     }
 
     with track_run("train_model"):
-        log_params({
-            "n_estimators": 100,
-            "max_depth": 4,
-            "ensemble": "xgboost+randomforest",
-            "n_features": len(FEATURE_NAMES),
-        })
+        log_params(
+            {
+                "n_estimators": 100,
+                "max_depth": 4,
+                "ensemble": "xgboost+randomforest",
+                "n_features": len(FEATURE_NAMES),
+            }
+        )
         log_metrics(metrics)
 
     joblib.dump({"pipeline": pipe, "label_encoder": label_encoder}, model_path)

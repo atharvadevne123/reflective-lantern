@@ -13,11 +13,14 @@ from app.main import app
 
 @pytest.fixture(scope="session")
 def test_engine():
-    engine = create_engine("sqlite:///./test_cyber_guard.db", connect_args={"check_same_thread": False})
+    engine = create_engine(
+        "sqlite:///./test_cyber_guard.db", connect_args={"check_same_thread": False}
+    )
     Base.metadata.create_all(bind=engine)
     yield engine
     Base.metadata.drop_all(bind=engine)
     import os
+
     if os.path.exists("test_cyber_guard.db"):
         os.remove("test_cyber_guard.db")
 
@@ -68,11 +71,16 @@ def sample_request_payload():
 @pytest.fixture
 def sample_dataframe():
     import pandas as pd
-    return pd.DataFrame([{
-        "src_bytes": 100.0,
-        "dst_bytes": 200.0,
-        "duration": 1.0,
-        "protocol_type": "tcp",
-        "service": "http",
-        "flag": "SF",
-    }])
+
+    return pd.DataFrame(
+        [
+            {
+                "src_bytes": 100.0,
+                "dst_bytes": 200.0,
+                "duration": 1.0,
+                "protocol_type": "tcp",
+                "service": "http",
+                "flag": "SF",
+            }
+        ]
+    )

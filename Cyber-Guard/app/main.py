@@ -74,12 +74,19 @@ async def correlation_id_middleware(request: Request, call_next):
     elapsed = round((time.time() - start) * 1000, 2)
     response.headers["X-Correlation-ID"] = correlation_id
     response.headers["X-Response-Time-Ms"] = str(elapsed)
-    logger.info("request method=%s path=%s status=%d ms=%s cid=%s",
-                request.method, request.url.path, response.status_code, elapsed, correlation_id)
+    logger.info(
+        "request method=%s path=%s status=%d ms=%s cid=%s",
+        request.method,
+        request.url.path,
+        response.status_code,
+        elapsed,
+        correlation_id,
+    )
     return response
 
 
 # --- Pydantic schemas ---
+
 
 class NetworkConnectionRequest(BaseModel):
     src_bytes: float = Field(..., ge=0, description="Source bytes transferred")
@@ -89,10 +96,18 @@ class NetworkConnectionRequest(BaseModel):
     service: str = Field(..., description="Network service: http, ftp, ssh, etc.")
     flag: str = Field(..., description="Connection flag: SF, S0, REJ, etc.")
 
-    model_config = {"json_schema_extra": {"example": {
-        "src_bytes": 491, "dst_bytes": 0, "duration": 0,
-        "protocol_type": "tcp", "service": "http", "flag": "SF",
-    }}}
+    model_config = {
+        "json_schema_extra": {
+            "example": {
+                "src_bytes": 491,
+                "dst_bytes": 0,
+                "duration": 0,
+                "protocol_type": "tcp",
+                "service": "http",
+                "flag": "SF",
+            }
+        }
+    }
 
 
 class PredictionResponse(BaseModel):
@@ -134,6 +149,7 @@ class MetricsResponse(BaseModel):
 
 # --- API routes ---
 
+
 @app.get("/api/v1/health", response_model=HealthResponse, tags=["system"])
 async def health(db: Session = Depends(get_db)):
     """Report readiness of the models and the database.
@@ -172,7 +188,9 @@ async def predict_intrusion(
         raise HTTPException(status_code=503, detail="model not loaded")
 
     if payload.protocol_type not in ["tcp", "udp", "icmp"]:
-        raise HTTPException(status_code=422, detail=f"unknown protocol_type: {payload.protocol_type}")
+        raise HTTPException(
+            status_code=422, detail=f"unknown protocol_type: {payload.protocol_type}"
+        )
 
     features = payload.model_dump()
     df = make_sample_df(**features)

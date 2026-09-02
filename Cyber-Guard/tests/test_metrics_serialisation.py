@@ -57,7 +57,6 @@ def test_model_learns_real_signal(tmp_path):
     metrics, _ = _train(tmp_path, 600)
     assert metrics["auc_mean"] is not None
     assert metrics["auc_mean"] > 0.75, (
-        f"AUC {metrics['auc_mean']:.3f} is near chance — labels look "
-        "independent of features"
+        f"AUC {metrics['auc_mean']:.3f} is near chance — labels look independent of features"
     )
     assert metrics["accuracy_mean"] > 0.75

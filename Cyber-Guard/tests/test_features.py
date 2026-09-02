@@ -16,10 +16,18 @@ from app.features import (
 
 @pytest.fixture
 def basic_df():
-    return pd.DataFrame([{
-        "src_bytes": 100.0, "dst_bytes": 200.0, "duration": 1.0,
-        "protocol_type": "tcp", "service": "http", "flag": "SF",
-    }])
+    return pd.DataFrame(
+        [
+            {
+                "src_bytes": 100.0,
+                "dst_bytes": 200.0,
+                "duration": 1.0,
+                "protocol_type": "tcp",
+                "service": "http",
+                "flag": "SF",
+            }
+        ]
+    )
 
 
 def test_feature_engineer_fit_transform_shape(basic_df: pd.DataFrame):

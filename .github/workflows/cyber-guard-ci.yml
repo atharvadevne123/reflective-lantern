@@ -5,7 +5,7 @@ on:
     branches: [main, cyber-guard-innovation]
     paths:
       - 'Cyber-Guard/**'
-      - '.github/workflows/**'
+      - '.github/workflows/cyber-guard-ci.yml'
   pull_request:
     branches: [main]
     paths:

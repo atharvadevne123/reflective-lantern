@@ -62,17 +62,19 @@ def seed(
     for frame, labels, ts in ((ref_X, ref_y, ref_ts), (cur_X, cur_y, recent_ts)):
         for i in range(len(frame)):
             row = frame.iloc[i]
-            db.add(PredictionLog(
-                timestamp=ts + timedelta(seconds=i),
-                src_bytes=float(row["src_bytes"]),
-                dst_bytes=float(row["dst_bytes"]),
-                duration=float(row["duration"]),
-                protocol_type=str(row["protocol_type"]),
-                service=str(row["service"]),
-                flag=str(row["flag"]),
-                prediction=str(labels.iloc[i]),
-                confidence=0.9,
-            ))
+            db.add(
+                PredictionLog(
+                    timestamp=ts + timedelta(seconds=i),
+                    src_bytes=float(row["src_bytes"]),
+                    dst_bytes=float(row["dst_bytes"]),
+                    duration=float(row["duration"]),
+                    protocol_type=str(row["protocol_type"]),
+                    service=str(row["service"]),
+                    flag=str(row["flag"]),
+                    prediction=str(labels.iloc[i]),
+                    confidence=0.9,
+                )
+            )
     db.commit()
 
     counts = {"reference": n_reference, "recent": n_recent}

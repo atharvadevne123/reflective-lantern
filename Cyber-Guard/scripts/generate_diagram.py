@@ -12,7 +12,9 @@ os.makedirs("screenshots", exist_ok=True)
 
 def draw_box(ax, x, y, w, h, label, color="#2563eb", fontsize=9):
     rect = mpatches.FancyBboxPatch(
-        (x, y), w, h,
+        (x, y),
+        w,
+        h,
         boxstyle="round,pad=0.1",
         facecolor=color,
         edgecolor="white",
@@ -20,15 +22,28 @@ def draw_box(ax, x, y, w, h, label, color="#2563eb", fontsize=9):
         alpha=0.88,
     )
     ax.add_patch(rect)
-    ax.text(x + w / 2, y + h / 2, label, ha="center", va="center",
-            fontsize=fontsize, fontweight="bold", color="white", wrap=True)
+    ax.text(
+        x + w / 2,
+        y + h / 2,
+        label,
+        ha="center",
+        va="center",
+        fontsize=fontsize,
+        fontweight="bold",
+        color="white",
+        wrap=True,
+    )
 
 
 def draw_arrow(ax, x1, y1, x2, y2, label=""):
     ax.annotate(
-        label, xy=(x2, y2), xytext=(x1, y1),
+        label,
+        xy=(x2, y2),
+        xytext=(x1, y1),
         arrowprops=dict(arrowstyle="->", color="#374151", lw=1.5),
-        fontsize=7.5, color="#374151", ha="center",
+        fontsize=7.5,
+        color="#374151",
+        ha="center",
     )
 
 
@@ -41,14 +56,19 @@ def main():
 
     plt.title(
         "Cyber-Guard — System Architecture",
-        fontsize=15, fontweight="bold", color="#0f172a", pad=15,
+        fontsize=15,
+        fontweight="bold",
+        color="#0f172a",
+        pad=15,
     )
 
     # Client
     draw_box(ax, 0.3, 3.5, 1.8, 1.0, "Client /\nSOC Analyst", color="#1d4ed8")
 
     # FastAPI
-    draw_box(ax, 2.8, 2.8, 2.2, 2.4, "FastAPI\n/predict\n/health\n/metrics\n/drift", color="#0891b2")
+    draw_box(
+        ax, 2.8, 2.8, 2.2, 2.4, "FastAPI\n/predict\n/health\n/metrics\n/drift", color="#0891b2"
+    )
 
     # Feature Engineering
     draw_box(ax, 6.0, 5.0, 2.2, 1.2, "Feature\nEngineering\nPipeline", color="#7c3aed")

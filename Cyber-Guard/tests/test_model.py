@@ -49,10 +49,18 @@ def test_train_and_load_predict():
         _, _ = train_model(X, y, model_path=mp, metrics_path=metp)
         pipe, le = load_model(mp)
 
-    sample = pd.DataFrame([{
-        "src_bytes": 100.0, "dst_bytes": 50.0, "duration": 1.0,
-        "protocol_type": "tcp", "service": "http", "flag": "SF",
-    }])
+    sample = pd.DataFrame(
+        [
+            {
+                "src_bytes": 100.0,
+                "dst_bytes": 50.0,
+                "duration": 1.0,
+                "protocol_type": "tcp",
+                "service": "http",
+                "flag": "SF",
+            }
+        ]
+    )
     result = predict(sample, pipe, le)
     assert result["prediction"] in THREAT_CLASSES
     assert 0.0 <= result["confidence"] <= 1.0
@@ -77,10 +85,18 @@ def test_probabilities_sum_to_one():
         _, _ = train_model(X, y, model_path=mp, metrics_path=metp)
         pipe, le = load_model(mp)
 
-    sample = pd.DataFrame([{
-        "src_bytes": 500.0, "dst_bytes": 100.0, "duration": 0.5,
-        "protocol_type": "udp", "service": "dns", "flag": "SF",
-    }])
+    sample = pd.DataFrame(
+        [
+            {
+                "src_bytes": 500.0,
+                "dst_bytes": 100.0,
+                "duration": 0.5,
+                "protocol_type": "udp",
+                "service": "dns",
+                "flag": "SF",
+            }
+        ]
+    )
     result = predict(sample, pipe, le)
     total = sum(result["class_probabilities"].values())
     assert abs(total - 1.0) < 1e-6

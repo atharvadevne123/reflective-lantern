@@ -19,9 +19,7 @@ config = context.config
 # The URL in alembic.ini is a placeholder; the real one comes from the same
 # environment variable the application reads, so migrations can never run
 # against a different database than the app.
-config.set_main_option(
-    "sqlalchemy.url", os.getenv("DATABASE_URL", "sqlite:///./cyber_guard.db")
-)
+config.set_main_option("sqlalchemy.url", os.getenv("DATABASE_URL", "sqlite:///./cyber_guard.db"))
 
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)

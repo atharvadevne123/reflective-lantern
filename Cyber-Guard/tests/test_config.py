@@ -35,10 +35,13 @@ def test_malformed_int_falls_back(monkeypatch):
     assert _env_int("REFERENCE_WINDOW_DAYS", 7) == 7
 
 
-@pytest.mark.parametrize("url,expected", [
-    ("sqlite:///./cyber_guard.db", True),
-    ("postgresql://u:p@localhost:5432/db", False),
-])
+@pytest.mark.parametrize(
+    "url,expected",
+    [
+        ("sqlite:///./cyber_guard.db", True),
+        ("postgresql://u:p@localhost:5432/db", False),
+    ],
+)
 def test_is_sqlite_detection(url: str, expected: bool, monkeypatch):
     monkeypatch.setenv("DATABASE_URL", url)
     assert get_settings().is_sqlite() is expected

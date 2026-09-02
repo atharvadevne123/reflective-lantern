@@ -13,6 +13,7 @@ from app import storage, tracking
 
 # --- tracking ---
 
+
 def test_tracking_disabled_without_uri(monkeypatch):
     monkeypatch.setattr(tracking, "MLFLOW_TRACKING_URI", "")
     assert tracking.is_tracking_enabled() is False
@@ -38,6 +39,7 @@ def test_log_params_noop_when_disabled(monkeypatch):
 
 
 # --- storage ---
+
 
 def test_s3_disabled_without_bucket(monkeypatch):
     monkeypatch.setattr(storage, "S3_BUCKET", "")
@@ -83,11 +85,14 @@ def test_upload_swallows_aws_error(monkeypatch, tmp_path):
     assert storage.upload_artifact(str(f)) is None
 
 
-@pytest.mark.parametrize("metrics", [
-    {"accuracy": 0.9, "classes": ["a", "b"]},
-    {"auc": float("nan")},
-    {},
-])
+@pytest.mark.parametrize(
+    "metrics",
+    [
+        {"accuracy": 0.9, "classes": ["a", "b"]},
+        {"auc": float("nan")},
+        {},
+    ],
+)
 def test_log_metrics_tolerates_non_numeric(monkeypatch, metrics):
     monkeypatch.setattr(tracking, "MLFLOW_TRACKING_URI", "")
     tracking.log_metrics(metrics)  # must not raise

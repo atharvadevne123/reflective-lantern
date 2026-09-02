@@ -43,23 +43,34 @@ def test_typical_connection_is_not_anomalous(trained_detector):
 
 def test_extreme_connection_is_flagged(trained_detector):
     """A connection orders of magnitude outside training range is an outlier."""
-    extreme = pd.DataFrame([{
-        "src_bytes": 5_000_000_000.0,
-        "dst_bytes": 5_000_000_000.0,
-        "duration": 500_000.0,
-        "protocol_type": "icmp",
-        "service": "other",
-        "flag": "OTH",
-    }])
+    extreme = pd.DataFrame(
+        [
+            {
+                "src_bytes": 5_000_000_000.0,
+                "dst_bytes": 5_000_000_000.0,
+                "duration": 500_000.0,
+                "protocol_type": "icmp",
+                "service": "other",
+                "flag": "OTH",
+            }
+        ]
+    )
     result = score_anomaly(extreme, trained_detector)
     assert result["is_anomaly"] is True
     assert result["anomaly_score"] > 0
 
 
 def test_batch_anomaly_rate_empty(trained_detector):
-    empty = pd.DataFrame(columns=[
-        "src_bytes", "dst_bytes", "duration", "protocol_type", "service", "flag",
-    ])
+    empty = pd.DataFrame(
+        columns=[
+            "src_bytes",
+            "dst_bytes",
+            "duration",
+            "protocol_type",
+            "service",
+            "flag",
+        ]
+    )
     assert batch_anomaly_rate(empty, trained_detector) == 0.0
 
 

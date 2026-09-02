@@ -92,7 +92,9 @@ def test_drift_endpoint(client: TestClient):
 
 def test_correlation_id_header_forwarded(client: TestClient, sample_request_payload: dict):
     cid = "test-correlation-id-123"
-    resp = client.post("/api/v1/predict", json=sample_request_payload, headers={"X-Correlation-ID": cid})
+    resp = client.post(
+        "/api/v1/predict", json=sample_request_payload, headers={"X-Correlation-ID": cid}
+    )
     assert resp.status_code == 200
     assert resp.headers.get("X-Correlation-ID") == cid
 

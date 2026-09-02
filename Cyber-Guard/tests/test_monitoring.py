@@ -38,8 +38,12 @@ def test_compute_drift_p_value_range():
 
 def test_log_prediction(db_session):
     features = {
-        "src_bytes": 100.0, "dst_bytes": 50.0, "duration": 1.0,
-        "protocol_type": "tcp", "service": "http", "flag": "SF",
+        "src_bytes": 100.0,
+        "dst_bytes": 50.0,
+        "duration": 1.0,
+        "protocol_type": "tcp",
+        "service": "http",
+        "flag": "SF",
     }
     record = log_prediction(db_session, features, "normal", 0.95)
     assert record.id is not None
@@ -55,8 +59,12 @@ def test_get_prediction_stats_empty(db_session):
 
 def test_get_prediction_stats_with_data(db_session):
     features = {
-        "src_bytes": 200.0, "dst_bytes": 100.0, "duration": 0.5,
-        "protocol_type": "udp", "service": "dns", "flag": "SF",
+        "src_bytes": 200.0,
+        "dst_bytes": 100.0,
+        "duration": 0.5,
+        "protocol_type": "udp",
+        "service": "dns",
+        "flag": "SF",
     }
     log_prediction(db_session, features, "probe", 0.80)
     log_prediction(db_session, features, "normal", 0.90)
@@ -64,17 +72,24 @@ def test_get_prediction_stats_with_data(db_session):
     assert stats["total"] >= 2
 
 
-@pytest.mark.parametrize("label,conf", [
-    ("normal", 0.99),
-    ("dos", 0.85),
-    ("probe", 0.72),
-    ("r2l", 0.65),
-    ("u2r", 0.91),
-])
+@pytest.mark.parametrize(
+    "label,conf",
+    [
+        ("normal", 0.99),
+        ("dos", 0.85),
+        ("probe", 0.72),
+        ("r2l", 0.65),
+        ("u2r", 0.91),
+    ],
+)
 def test_log_prediction_all_labels(db_session, label: str, conf: float):
     features = {
-        "src_bytes": 50.0, "dst_bytes": 25.0, "duration": 0.1,
-        "protocol_type": "tcp", "service": "ftp", "flag": "REJ",
+        "src_bytes": 50.0,
+        "dst_bytes": 25.0,
+        "duration": 0.1,
+        "protocol_type": "tcp",
+        "service": "ftp",
+        "flag": "REJ",
     }
     record = log_prediction(db_session, features, label, conf)
     assert record.prediction == label

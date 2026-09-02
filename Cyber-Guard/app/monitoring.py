@@ -53,7 +53,9 @@ def log_prediction(
     db.add(record)
     db.commit()
     db.refresh(record)
-    logger.info("prediction logged id=%d label=%s confidence=%.4f", record.id, prediction, confidence)
+    logger.info(
+        "prediction logged id=%d label=%s confidence=%.4f", record.id, prediction, confidence
+    )
     return record
 
 
@@ -70,7 +72,12 @@ def compute_drift(reference: list[float], current: list[float]) -> dict[str, Any
         computable and an ``error`` key is returned instead of raising.
     """
     if len(reference) < 2 or len(current) < 2:
-        return {"ks_statistic": 0.0, "p_value": 1.0, "drift_detected": False, "error": "insufficient data"}
+        return {
+            "ks_statistic": 0.0,
+            "p_value": 1.0,
+            "drift_detected": False,
+            "error": "insufficient data",
+        }
     stat, p = ks_2samp(reference, current)
     drift = bool(p < DRIFT_P_THRESHOLD)
     logger.info("drift check ks=%.4f p=%.4f drift=%s", stat, p, drift)
@@ -95,12 +102,12 @@ def run_drift_check(db: Session) -> dict[str, Any]:
     cutoff = datetime.utcnow() - timedelta(days=REFERENCE_WINDOW_DAYS)
     recent = datetime.utcnow() - timedelta(hours=24)
 
-    ref_rows = db.query(PredictionLog.src_bytes).filter(
-        PredictionLog.timestamp < cutoff
-    ).limit(500).all()
-    cur_rows = db.query(PredictionLog.src_bytes).filter(
-        PredictionLog.timestamp >= recent
-    ).limit(500).all()
+    ref_rows = (
+        db.query(PredictionLog.src_bytes).filter(PredictionLog.timestamp < cutoff).limit(500).all()
+    )
+    cur_rows = (
+        db.query(PredictionLog.src_bytes).filter(PredictionLog.timestamp >= recent).limit(500).all()
+    )
 
     ref_vals = [r[0] for r in ref_rows]
     cur_vals = [r[0] for r in cur_rows]

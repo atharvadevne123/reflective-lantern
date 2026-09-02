@@ -10,8 +10,18 @@ from sklearn.preprocessing import LabelEncoder, StandardScaler
 
 PROTOCOL_TYPES = ["tcp", "udp", "icmp"]
 SERVICES = [
-    "http", "ftp", "smtp", "ssh", "dns", "ftp_data", "finger", "auth",
-    "telnet", "pop_3", "irc", "other",
+    "http",
+    "ftp",
+    "smtp",
+    "ssh",
+    "dns",
+    "ftp_data",
+    "finger",
+    "auth",
+    "telnet",
+    "pop_3",
+    "irc",
+    "other",
 ]
 FLAGS = ["SF", "S0", "REJ", "RSTO", "RSTOS0", "SH", "OTH", "S1", "S2", "S3"]
 
@@ -111,31 +121,51 @@ class NetworkFeatureEngineer(BaseEstimator, TransformerMixin):
             df["rolling_src_std"] = self.rolling_std_fallback_
 
         feature_cols = [
-            "protocol_enc", "service_enc", "flag_enc",
-            "src_bytes", "dst_bytes", "duration",
-            "byte_ratio", "total_bytes",
-            "log_src_bytes", "log_dst_bytes", "log_duration",
-            "bytes_per_second", "src_dst_diff",
-            "rolling_src_mean", "rolling_src_std",
+            "protocol_enc",
+            "service_enc",
+            "flag_enc",
+            "src_bytes",
+            "dst_bytes",
+            "duration",
+            "byte_ratio",
+            "total_bytes",
+            "log_src_bytes",
+            "log_dst_bytes",
+            "log_duration",
+            "bytes_per_second",
+            "src_dst_diff",
+            "rolling_src_mean",
+            "rolling_src_std",
         ]
         return df[feature_cols].values.astype(np.float64)
 
 
 def build_feature_pipeline() -> Pipeline:
     """Build the feature-engineering then standard-scaling pipeline."""
-    return Pipeline([
-        ("engineer", NetworkFeatureEngineer()),
-        ("scaler", StandardScaler()),
-    ])
+    return Pipeline(
+        [
+            ("engineer", NetworkFeatureEngineer()),
+            ("scaler", StandardScaler()),
+        ]
+    )
 
 
 FEATURE_NAMES = [
-    "protocol_enc", "service_enc", "flag_enc",
-    "src_bytes", "dst_bytes", "duration",
-    "byte_ratio", "total_bytes",
-    "log_src_bytes", "log_dst_bytes", "log_duration",
-    "bytes_per_second", "src_dst_diff",
-    "rolling_src_mean", "rolling_src_std",
+    "protocol_enc",
+    "service_enc",
+    "flag_enc",
+    "src_bytes",
+    "dst_bytes",
+    "duration",
+    "byte_ratio",
+    "total_bytes",
+    "log_src_bytes",
+    "log_dst_bytes",
+    "log_duration",
+    "bytes_per_second",
+    "src_dst_diff",
+    "rolling_src_mean",
+    "rolling_src_std",
 ]
 
 
@@ -152,11 +182,15 @@ def make_sample_df(
     Returns:
         A single-row DataFrame carrying the six raw packet columns.
     """
-    return pd.DataFrame([{
-        "src_bytes": src_bytes,
-        "dst_bytes": dst_bytes,
-        "duration": duration,
-        "protocol_type": protocol_type,
-        "service": service,
-        "flag": flag,
-    }])
+    return pd.DataFrame(
+        [
+            {
+                "src_bytes": src_bytes,
+                "dst_bytes": dst_bytes,
+                "duration": duration,
+                "protocol_type": protocol_type,
+                "service": service,
+                "flag": flag,
+            }
+        ]
+    )

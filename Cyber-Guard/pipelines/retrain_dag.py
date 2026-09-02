@@ -31,11 +31,13 @@ def _fetch_recent_predictions(**context) -> dict:
 
     from sqlalchemy import create_engine
     from sqlalchemy.orm import sessionmaker
+
     db_url = os.getenv("DATABASE_URL", "sqlite:///./cyber_guard.db")
     engine = create_engine(db_url)
     Session = sessionmaker(bind=engine)
     with Session() as db:
         from app.database import PredictionLog
+
         since = datetime.utcnow() - timedelta(days=7)
         rows = db.query(PredictionLog).filter(PredictionLog.timestamp >= since).all()
         logger.info("fetched %d rows for retraining", len(rows))
