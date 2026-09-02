@@ -156,3 +156,37 @@ def test_mae_non_negative() -> None:
 
     result = mae([1.0, 2.0, 3.0], [3.0, 2.0, 1.0])
     assert result >= 0.0
+
+
+import pytest  # noqa: E402
+
+
+@pytest.mark.parametrize(
+    "actual,predicted,expected_mae",
+    [
+        ([0.0], [0.0], 0.0),
+        ([0.0], [1.0], 1.0),
+        ([1.0, 3.0], [2.0, 2.0], 1.0),
+        ([10.0, 20.0], [12.0, 18.0], 2.0),
+    ],
+)
+def test_mae_parametrized(actual, predicted, expected_mae: float) -> None:
+    """mae returns the correct mean absolute error for known inputs."""
+    from app.evaluation.metrics import mae
+
+    assert mae(actual, predicted) == pytest.approx(expected_mae, abs=1e-9)
+
+
+@pytest.mark.parametrize(
+    "baseline,optimised",
+    [
+        (100.0, 110.0),
+        (50.0, 75.0),
+        (200.0, 201.0),
+    ],
+)
+def test_revenue_uplift_positive_for_improvement(baseline: float, optimised: float) -> None:
+    """revenue_uplift is positive whenever optimised > baseline."""
+    from app.evaluation.metrics import revenue_uplift
+
+    assert revenue_uplift(baseline, optimised) > 0.0
