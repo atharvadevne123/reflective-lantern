@@ -14,6 +14,34 @@ def test_health_endpoint(client: TestClient):
     assert body["version"] == "1.0.0"
 
 
+def test_health_reports_all_dependencies(client: TestClient):
+    """Readiness must cover the database, not just that the process is up."""
+    body = client.get("/api/v1/health").json()
+    assert body["model_loaded"] is True
+    assert body["anomaly_model_loaded"] is True
+    assert body["database_reachable"] is True
+
+
+def test_health_degrades_when_database_down(client: TestClient, monkeypatch):
+    """A dead database must surface as degraded, not healthy."""
+    from sqlalchemy.exc import OperationalError
+
+    from app import main
+
+    class _DeadSession:
+        def execute(self, *a, **k):
+            raise OperationalError("SELECT 1", {}, Exception("connection refused"))
+
+    main.app.dependency_overrides[main.get_db] = lambda: _DeadSession()
+    try:
+        body = client.get("/api/v1/health").json()
+    finally:
+        main.app.dependency_overrides.pop(main.get_db, None)
+
+    assert body["status"] == "degraded"
+    assert body["database_reachable"] is False
+
+
 def test_predict_valid_payload(client: TestClient, sample_request_payload: dict):
     resp = client.post("/api/v1/predict", json=sample_request_payload)
     assert resp.status_code == 200
