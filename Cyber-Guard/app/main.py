@@ -11,6 +11,8 @@ from typing import Any
 from fastapi import Depends, FastAPI, HTTPException, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
+from sqlalchemy import text
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
 from app.anomaly import ensure_anomaly_model_exists, load_anomaly_detector, score_anomaly
@@ -117,6 +119,8 @@ class AnomalyResponse(BaseModel):
 class HealthResponse(BaseModel):
     status: str
     model_loaded: bool
+    anomaly_model_loaded: bool
+    database_reachable: bool
     version: str
 
 
@@ -131,12 +135,29 @@ class MetricsResponse(BaseModel):
 # --- API routes ---
 
 @app.get("/api/v1/health", response_model=HealthResponse, tags=["system"])
-async def health():
-    """Health check endpoint."""
+async def health(db: Session = Depends(get_db)):
+    """Report readiness of the models and the database.
+
+    Reports ``degraded`` rather than ``healthy`` if any dependency is down.
+    A probe that only checked that the process was up would keep routing
+    traffic to an instance whose database had gone away.
+    """
+    try:
+        db.execute(text("SELECT 1"))
+        db_ok = True
+    except SQLAlchemyError as exc:
+        logger.error("health check: database unreachable: %s", exc)
+        db_ok = False
+
+    model_ok = _pipeline is not None
+    anomaly_ok = _anomaly_pipeline is not None
+
     return HealthResponse(
-        status="healthy",
-        model_loaded=_pipeline is not None,
-        version="1.0.0",
+        status="healthy" if (db_ok and model_ok) else "degraded",
+        model_loaded=model_ok,
+        anomaly_model_loaded=anomaly_ok,
+        database_reachable=db_ok,
+        version=settings.api_version,
     )
 
 
