@@ -666,3 +666,23 @@ class TestCacheRemainingCapacity:
         c = TTLCache(ttl_seconds=60, max_size=5)
         c.set("a", 1)
         assert cache_remaining_capacity(c) == 4
+
+
+@pytest.mark.parametrize("max_size", [1, 3, 10])
+def test_remaining_capacity_equals_max_when_empty(max_size: int) -> None:
+    """Remaining capacity equals max_size on an empty cache."""
+    from app.cache import TTLCache, cache_remaining_capacity
+
+    c = TTLCache(ttl_seconds=60, max_size=max_size)
+    assert cache_remaining_capacity(c) == max_size
+
+
+@pytest.mark.parametrize("n_items,max_size", [(1, 5), (3, 5), (5, 5)])
+def test_remaining_capacity_decreases_with_items(n_items: int, max_size: int) -> None:
+    """Remaining capacity equals max_size minus the number of items stored."""
+    from app.cache import TTLCache, cache_remaining_capacity
+
+    c = TTLCache(ttl_seconds=60, max_size=max_size)
+    for i in range(n_items):
+        c.set(f"k{i}", i)
+    assert cache_remaining_capacity(c) == max_size - n_items
