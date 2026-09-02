@@ -1461,3 +1461,22 @@ def test_rolling_rmse_output_length(window: int, input_len: int) -> None:
     predicted = [v + 0.1 for v in actual]
     result = rolling_rmse(actual, predicted, window)
     assert len(result) == input_len
+
+
+@pytest.mark.parametrize("values", [[1.0], [1.0, 2.0, 3.0], [2.0, 2.0, 2.0]])
+def test_geometric_mean_positive_for_positive_inputs(values) -> None:
+    """geometric_mean returns a positive value when all inputs are positive."""
+    assert geometric_mean(values) > 0.0
+
+
+@pytest.mark.parametrize(
+    "values,expected",
+    [
+        ([1.0], 1.0),
+        ([4.0, 1.0], 2.0),
+        ([8.0, 1.0, 1.0], 2.0),
+    ],
+)
+def test_geometric_mean_simple_cases(values, expected: float) -> None:
+    """geometric_mean returns the correct value for simple known inputs."""
+    assert geometric_mean(values) == pytest.approx(expected, rel=1e-6)
