@@ -77,7 +77,7 @@ async def shutdown_event() -> None:
 
 
 @app.get("/health", tags=["health"], summary="Root health check")
-def root_health():
+def root_health() -> dict[str, str]:
     """Lightweight liveness probe for load balancers.
 
     Returns:
@@ -87,7 +87,7 @@ def root_health():
 
 
 @app.get("/version", tags=["health"], summary="Application version")
-def version():
+def version() -> dict[str, str]:
     """Return the application version string.
 
     Returns:
@@ -97,7 +97,7 @@ def version():
 
 
 @app.get("/ready", tags=["health"], summary="Readiness probe")
-def ready():
+def ready() -> dict[str, str]:
     """Kubernetes-style readiness check — fails if the model is not loaded.
 
     Returns:
