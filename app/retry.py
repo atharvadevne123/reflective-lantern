@@ -34,7 +34,7 @@ def retry(
 
     def decorator(func: Callable) -> Callable:
         @functools.wraps(func)
-        def wrapper(*args, **kwargs):
+        def wrapper(*args, **kwargs) -> object:
             delay = base_delay
             last_exc: Exception | None = None
             for attempt in range(1, max_attempts + 1):
