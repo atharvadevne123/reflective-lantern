@@ -307,6 +307,6 @@
     ],
     "ruff_clean": true,
     "summary": "60 atomic commits: 43 test expansions with pytest.mark.parametrize across all sub-projects and root app suite (boundary values, known-output cases, size-scaling, client-isolation scenarios); 9 docstring additions to private/public methods in circuit_breaker, batch_processor, cost_estimator, event_bus, audit_log, data_augmentation, energy_export, metrics_collector, task_queue; 4 type annotation refinements on FastAPI route handlers (dict[str, object], dict[str, str], list[dict[str, object]]); 3 pyproject.toml improvements (stricter mypy options, pytest addopts, expanded classifiers); 1 ruff autofix commit.",
-    "email_status": "pending"
+    "email_status": "failed_smtp_blocked"
   }
 ]
