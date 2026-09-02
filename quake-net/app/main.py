@@ -163,7 +163,7 @@ class HealthResponse(BaseModel):
 
 
 @app.get("/", include_in_schema=False)
-async def root() -> dict:
+async def root() -> dict[str, str]:
     return {"service": "Quake-Net", "version": "1.0.0", "docs": "/docs"}
 
 
@@ -287,7 +287,7 @@ async def predict_batch(
 
 
 @app.get("/api/v1/metrics", tags=["operations"])
-async def metrics(db: Session = Depends(get_db)) -> dict:
+async def metrics(db: Session = Depends(get_db)) -> dict[str, object]:
     model_metrics = read_champion_metrics()
     return {
         "service_counters": _counters,
