@@ -49,3 +49,28 @@ class TestPingDb:
         """ping_db() returns a boolean."""
         result = ping_db()
         assert isinstance(result, bool)
+
+
+import pytest  # noqa: E402
+
+
+@pytest.mark.parametrize(
+    "model_key,column",
+    [
+        ("incidents", "id"),
+        ("incidents", "service_name"),
+        ("predictions", "confidence"),
+        ("predictions", "model_version"),
+        ("drift_alerts", "ks_statistic"),
+        ("drift_alerts", "drifted"),
+    ],
+)
+def test_column_exists_on_table(model_key: str, column: str) -> None:
+    """Each expected column is present on its ORM table."""
+    assert column in [c.name for c in Base.metadata.tables[model_key].columns]
+
+
+@pytest.mark.parametrize("table_name", ["incidents", "predictions", "drift_alerts"])
+def test_table_registered_in_metadata(table_name: str) -> None:
+    """All ORM tables are registered in SQLAlchemy metadata."""
+    assert table_name in Base.metadata.tables
