@@ -13,28 +13,37 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
+from app.anomaly import ensure_anomaly_model_exists, load_anomaly_detector, score_anomaly
+from app.config import get_settings
 from app.database import create_tables, get_db
 from app.features import make_sample_df
 from app.model import ensure_model_exists, load_model, predict
 from app.monitoring import get_prediction_stats, log_prediction, run_drift_check
+from app.rate_limit import RateLimitMiddleware
+
+settings = get_settings()
 
 logging.basicConfig(
-    level=logging.INFO,
+    level=getattr(logging, settings.log_level.upper(), logging.INFO),
     format="%(asctime)s %(levelname)s %(name)s %(message)s",
 )
 logger = logging.getLogger(__name__)
 
 _pipeline = None
 _label_encoder = None
+_anomaly_pipeline = None
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    global _pipeline, _label_encoder
+    """Load models and create tables on startup; log on shutdown."""
+    global _pipeline, _label_encoder, _anomaly_pipeline
     create_tables()
     ensure_model_exists()
+    ensure_anomaly_model_exists()
     _pipeline, _label_encoder = load_model()
-    logger.info("model loaded version=1.0.0")
+    _anomaly_pipeline = load_anomaly_detector()
+    logger.info("models loaded version=%s", settings.api_version)
     yield
     logger.info("shutting down")
 
@@ -52,6 +61,7 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+app.add_middleware(RateLimitMiddleware, limit_per_minute=settings.rate_limit_per_minute)
 
 
 @app.middleware("http")
@@ -88,6 +98,20 @@ class PredictionResponse(BaseModel):
     confidence: float
     class_probabilities: dict[str, float]
     correlation_id: str | None = None
+    anomaly: dict[str, Any] | None = Field(
+        default=None,
+        description=(
+            "Unsupervised outlier assessment. When is_anomaly is true the "
+            "connection sits outside the training distribution, so the "
+            "supervised label above should be treated with low trust."
+        ),
+    )
+
+
+class AnomalyResponse(BaseModel):
+    anomaly_score: float
+    decision_score: float
+    is_anomaly: bool
 
 
 class HealthResponse(BaseModel):
@@ -134,10 +158,26 @@ async def predict_intrusion(
 
     result = predict(df, _pipeline, _label_encoder)
 
+    anomaly = score_anomaly(df, _anomaly_pipeline) if _anomaly_pipeline is not None else None
+
     cid = request.headers.get("X-Correlation-ID")
     log_prediction(db, features, result["prediction"], result["confidence"])
 
-    return PredictionResponse(**result, correlation_id=cid)
+    return PredictionResponse(**result, correlation_id=cid, anomaly=anomaly)
+
+
+@app.post("/api/v1/anomaly", response_model=AnomalyResponse, tags=["prediction"])
+async def anomaly_check(payload: NetworkConnectionRequest):
+    """Score a connection for outlier-ness without assigning a threat class.
+
+    Useful for triaging traffic the supervised model has no class for --
+    a novel attack looks like an inlier to a classifier forced to pick one
+    of five labels, but like an outlier here.
+    """
+    if _anomaly_pipeline is None:
+        raise HTTPException(status_code=503, detail="anomaly model not loaded")
+    df = make_sample_df(**payload.model_dump())
+    return AnomalyResponse(**score_anomaly(df, _anomaly_pipeline))
 
 
 @app.get("/api/v1/metrics", response_model=MetricsResponse, tags=["monitoring"])
