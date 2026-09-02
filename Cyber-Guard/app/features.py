@@ -62,6 +62,15 @@ class NetworkFeatureEngineer(BaseEstimator, TransformerMixin):
         return self
 
     def transform(self, X: pd.DataFrame) -> np.ndarray:
+        """Derive the engineered feature matrix from raw connection fields.
+
+        Args:
+            X: Raw connection records with the six standard packet columns.
+
+        Returns:
+            A float64 array of shape ``(len(X), len(FEATURE_NAMES))``, with
+            columns ordered to match :data:`FEATURE_NAMES`.
+        """
         df = X.copy()
 
         # Categorical encodings
@@ -113,6 +122,7 @@ class NetworkFeatureEngineer(BaseEstimator, TransformerMixin):
 
 
 def build_feature_pipeline() -> Pipeline:
+    """Build the feature-engineering then standard-scaling pipeline."""
     return Pipeline([
         ("engineer", NetworkFeatureEngineer()),
         ("scaler", StandardScaler()),
@@ -137,6 +147,11 @@ def make_sample_df(
     service: str = "http",
     flag: str = "SF",
 ) -> pd.DataFrame:
+    """Build a one-row DataFrame in the shape the pipeline expects.
+
+    Returns:
+        A single-row DataFrame carrying the six raw packet columns.
+    """
     return pd.DataFrame([{
         "src_bytes": src_bytes,
         "dst_bytes": dst_bytes,

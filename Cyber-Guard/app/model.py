@@ -39,6 +39,7 @@ label_encoder.fit(THREAT_CLASSES)
 
 
 def _build_ensemble() -> VotingClassifier:
+    """Build the soft-voting XGBoost + RandomForest ensemble."""
     xgb = XGBClassifier(
         n_estimators=100,
         max_depth=4,
@@ -236,6 +237,14 @@ def train_model(
 
 
 def load_model(model_path: str = MODEL_PATH) -> tuple[Pipeline, LabelEncoder]:
+    """Load a serialised pipeline and its label encoder.
+
+    Args:
+        model_path: Path written by :func:`train_model`.
+
+    Returns:
+        A ``(pipeline, label_encoder)`` pair.
+    """
     artifact = joblib.load(model_path)
     return artifact["pipeline"], artifact["label_encoder"]
 
@@ -245,6 +254,17 @@ def predict(
     pipeline: Pipeline,
     le: LabelEncoder,
 ) -> dict[str, Any]:
+    """Classify a single connection.
+
+    Args:
+        X: A one-row DataFrame of raw connection fields.
+        pipeline: A fitted pipeline from :func:`train_model`.
+        le: The matching label encoder.
+
+    Returns:
+        A dict with ``prediction``, ``confidence`` and the full
+        ``class_probabilities`` mapping.
+    """
     proba = pipeline.predict_proba(X)[0]
     class_idx = int(np.argmax(proba))
     label = le.inverse_transform([class_idx])[0]
@@ -256,6 +276,11 @@ def predict(
 
 
 def ensure_model_exists(model_path: str = MODEL_PATH) -> None:
+    """Train and persist a model on first boot if none exists yet.
+
+    Args:
+        model_path: Path checked for an existing artifact.
+    """
     if not Path(model_path).exists():
         X, y = generate_synthetic_data(500)
         train_model(X, y, model_path)
