@@ -157,7 +157,7 @@ class ForecastRequest(BaseModel):
 
 
 @app.get("/api/v1/health", tags=["System"])
-async def health() -> dict:
+async def health() -> dict[str, object]:
     """Check API and model health status."""
     return {
         "status": "ok",
@@ -167,7 +167,7 @@ async def health() -> dict:
 
 
 @app.get("/api/v1/metrics", tags=["System"])
-async def metrics(db: Annotated[Session, Depends(get_db)]) -> dict:
+async def metrics(db: Annotated[Session, Depends(get_db)]) -> dict[str, object]:
     """Return model performance metrics and recent prediction statistics."""
     model_metrics = get_metrics()
     pred_stats = compute_prediction_stats(db)
@@ -306,7 +306,7 @@ async def drift_endpoint(
 
 
 @app.post("/api/v1/retrain", tags=["System"], status_code=status.HTTP_202_ACCEPTED)
-async def trigger_retrain() -> dict:
+async def trigger_retrain() -> dict[str, object]:
     """Trigger synchronous model retraining on synthetic data (demo endpoint)."""
     global _model_bundle
     _, metrics = train_model()
