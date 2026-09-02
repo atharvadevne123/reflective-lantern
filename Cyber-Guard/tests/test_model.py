@@ -5,14 +5,12 @@ from __future__ import annotations
 import os
 import tempfile
 
-import numpy as np
 import pandas as pd
 import pytest
 
 from app.model import (
     THREAT_CLASSES,
     generate_synthetic_data,
-    label_encoder,
     load_model,
     predict,
     train_model,

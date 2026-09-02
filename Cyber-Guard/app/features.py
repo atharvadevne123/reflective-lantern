@@ -25,7 +25,7 @@ class NetworkFeatureEngineer(BaseEstimator, TransformerMixin):
         self.flag_enc = LabelEncoder()
         self._fitted = False
 
-    def fit(self, X: pd.DataFrame, y: pd.Series | None = None) -> "NetworkFeatureEngineer":
+    def fit(self, X: pd.DataFrame, y: pd.Series | None = None) -> NetworkFeatureEngineer:
         self.protocol_enc.fit(PROTOCOL_TYPES)
         self.service_enc.fit(SERVICES)
         self.flag_enc.fit(FLAGS)

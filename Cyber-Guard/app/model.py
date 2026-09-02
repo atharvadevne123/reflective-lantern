@@ -16,7 +16,7 @@ from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import LabelEncoder
 from xgboost import XGBClassifier
 
-from app.features import NetworkFeatureEngineer, build_feature_pipeline
+from app.features import build_feature_pipeline
 
 MODEL_PATH = os.getenv("MODEL_PATH", "model.joblib")
 METRICS_PATH = os.getenv("METRICS_PATH", "metrics.json")
@@ -39,7 +39,6 @@ def _build_ensemble() -> VotingClassifier:
         max_depth=4,
         learning_rate=0.1,
         eval_metric="mlogloss",
-        use_label_encoder=False,
         random_state=42,
     )
     rf = RandomForestClassifier(n_estimators=100, max_depth=6, random_state=42)

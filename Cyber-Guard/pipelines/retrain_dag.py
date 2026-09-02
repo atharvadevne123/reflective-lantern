@@ -27,10 +27,10 @@ except ImportError:
 
 
 def _fetch_recent_predictions(**context) -> dict:
+    import os
+
     from sqlalchemy import create_engine
     from sqlalchemy.orm import sessionmaker
-
-    import os
     db_url = os.getenv("DATABASE_URL", "sqlite:///./cyber_guard.db")
     engine = create_engine(db_url)
     Session = sessionmaker(bind=engine)
@@ -43,7 +43,6 @@ def _fetch_recent_predictions(**context) -> dict:
 
 
 def _retrain_model(**context) -> None:
-    import pandas as pd
     from app.model import generate_synthetic_data, train_model
 
     ti = context["ti"]

@@ -24,10 +24,18 @@ def test_engine():
 
 @pytest.fixture
 def db_session(test_engine):
+    """Yield a session against a clean database.
+
+    ``log_prediction`` commits, so rolling back is not enough to isolate
+    tests — every table is truncated on teardown.
+    """
     Session = sessionmaker(bind=test_engine)
     session = Session()
     yield session
     session.rollback()
+    for table in reversed(Base.metadata.sorted_tables):
+        session.execute(table.delete())
+    session.commit()
     session.close()
 
 

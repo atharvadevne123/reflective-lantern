@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import logging
-import os
 import time
 import uuid
 from contextlib import asynccontextmanager
@@ -15,8 +14,8 @@ from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
 from app.database import create_tables, get_db
-from app.features import SERVICES, make_sample_df
-from app.model import MODEL_PATH, ensure_model_exists, load_model, predict
+from app.features import make_sample_df
+from app.model import ensure_model_exists, load_model, predict
 from app.monitoring import get_prediction_stats, log_prediction, run_drift_check
 
 logging.basicConfig(
