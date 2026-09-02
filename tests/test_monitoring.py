@@ -525,3 +525,23 @@ def test_rolling_anomaly_rate_length(flags: list, window: int, expected_len: int
 
     result = rolling_anomaly_rate(flags, window=window)
     assert len(result) == expected_len
+
+
+@pytest.mark.parametrize("window", [1, 2, 3, 5])
+def test_rolling_anomaly_rate_values_in_range(window: int) -> None:
+    """All values from rolling_anomaly_rate are in [0.0, 1.0]."""
+    from app.monitoring import rolling_anomaly_rate
+
+    flags = [True, False, True, True, False, False, True]
+    result = rolling_anomaly_rate(flags, window=window)
+    assert all(0.0 <= r <= 1.0 for r in result)
+
+
+@pytest.mark.parametrize("n", [5, 10, 20])
+def test_rolling_anomaly_rate_all_true(n: int) -> None:
+    """rolling_anomaly_rate returns 1.0 for every window when all flags are True."""
+    from app.monitoring import rolling_anomaly_rate
+
+    flags = [True] * n
+    result = rolling_anomaly_rate(flags, window=3)
+    assert all(r == 1.0 for r in result)
