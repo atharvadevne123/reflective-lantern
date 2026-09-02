@@ -138,3 +138,20 @@ def test_anomaly_model_trains_on_various_sizes(n_rows: int) -> None:
     df = _make_df(n_rows)
     bundle = train_anomaly_model(df)
     assert bundle is not None
+
+
+@pytest.mark.parametrize("n_rows", [50, 100, 200])
+def test_run_pipeline_returns_predictions_list(n_rows: int) -> None:
+    """run_pipeline returns a list of predictions for any reasonable dataset size."""
+    from app.pipeline import run_pipeline
+
+    df = _make_df(n_rows)
+    result = run_pipeline(df)
+    assert isinstance(result.get("predictions"), list)
+
+
+@pytest.mark.parametrize("col", ["consumption_kwh", "temperature", "hour"])
+def test_feature_columns_present_in_training_df(col: str) -> None:
+    """Expected feature columns are present in the synthetic training dataframe."""
+    df = _make_df(100)
+    assert col in df.columns
