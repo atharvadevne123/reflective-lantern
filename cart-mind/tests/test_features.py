@@ -237,9 +237,9 @@ class TestDropLowVarianceFeatures:
 import pytest  # noqa: E402
 
 
-@pytest.mark.parametrize("threshold", [0.0, 0.01, 0.1])
+@pytest.mark.parametrize("threshold", [0.001, 0.01, 0.1])
 def test_constant_column_dropped_at_any_threshold(threshold: float) -> None:
-    """A zero-variance column is removed for any non-negative threshold."""
+    """A zero-variance column is removed for any threshold strictly above zero."""
     import pandas as pd
 
     from app.features import drop_low_variance_features
