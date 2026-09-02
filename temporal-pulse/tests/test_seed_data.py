@@ -49,3 +49,21 @@ class TestGenerateReadings:
         normal = [r["values"]["vibration"] for r in readings if not r["_injected_anomaly"]]
         anomalous = [r["values"]["vibration"] for r in readings if r["_injected_anomaly"]]
         assert sum(anomalous) / len(anomalous) > sum(normal) / len(normal)
+
+    def test_single_reading_valid(self):
+        readings = generate_readings(n=1)
+        assert len(readings) == 1
+        assert "timestamp" in readings[0]
+        assert "values" in readings[0]
+
+    def test_different_seeds_produce_different_data(self):
+        a = generate_readings(n=20, seed=1)
+        b = generate_readings(n=20, seed=2)
+        assert a != b
+
+    import pytest
+
+    @pytest.mark.parametrize("n", [10, 50, 200])
+    def test_count_matches_parametrized(self, n: int):
+        readings = generate_readings(n=n)
+        assert len(readings) == n

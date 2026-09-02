@@ -96,3 +96,18 @@ class TestFeatureStore:
             store.publish(_fs(version=v, features={"v": v}))
         result = store.get_version("energy", version)
         assert result.features["v"] == version
+
+    def test_list_versions_empty_for_unknown(self) -> None:
+        store = FeatureStore()
+        assert store.list_versions("nonexistent") == []
+
+    def test_list_names_empty_store(self) -> None:
+        store = FeatureStore()
+        assert store.list_names() == []
+
+    def test_publish_different_feature_sets(self) -> None:
+        store = FeatureStore()
+        store.publish(_fs(name="alpha", version="1.0.0", features={"x": 1}))
+        store.publish(_fs(name="beta", version="1.0.0", features={"y": 2}))
+        assert store.get_latest("alpha").features == {"x": 1}
+        assert store.get_latest("beta").features == {"y": 2}

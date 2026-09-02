@@ -1039,3 +1039,41 @@ class TestEndOfDay:
 
         dt = datetime(2026, 1, 1, tzinfo=UTC)
         assert end_of_day(dt).tzinfo is UTC
+
+
+@pytest.mark.parametrize(
+    "year,month,day",
+    [
+        (2026, 1, 1),
+        (2026, 6, 15),
+        (2026, 12, 31),
+    ],
+)
+def test_end_of_day_always_23_59_59(year: int, month: int, day: int) -> None:
+    """end_of_day always produces 23:59:59 regardless of the input date."""
+    from datetime import UTC, datetime
+
+    from app.date_utils import end_of_day
+
+    dt = datetime(year, month, day, tzinfo=UTC)
+    result = end_of_day(dt)
+    assert (result.hour, result.minute, result.second) == (23, 59, 59)
+
+
+@pytest.mark.parametrize(
+    "year,month,day",
+    [
+        (2026, 1, 1),
+        (2026, 3, 10),
+        (2026, 9, 2),
+    ],
+)
+def test_end_of_day_same_date(year: int, month: int, day: int) -> None:
+    """end_of_day keeps the same calendar date as the input."""
+    from datetime import UTC, datetime
+
+    from app.date_utils import end_of_day
+
+    dt = datetime(year, month, day, tzinfo=UTC)
+    result = end_of_day(dt)
+    assert (result.year, result.month, result.day) == (year, month, day)

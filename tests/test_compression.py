@@ -91,3 +91,42 @@ class TestCompressionRatio:
     def test_both_methods(self, method):
         ratio = compression_ratio("test " * 100, method=method)
         assert 0 < ratio < 1.0
+
+
+class TestRoundtripLargePayload:
+    @pytest.mark.parametrize("size", [1000, 10000, 100000])
+    def test_gzip_large_roundtrip(self, size: int) -> None:
+        data = b"x" * size
+        assert gzip_decompress(gzip_compress(data)) == data
+
+    @pytest.mark.parametrize("size", [1000, 10000, 100000])
+    def test_zlib_large_roundtrip(self, size: int) -> None:
+        data = b"y" * size
+        assert zlib_decompress(zlib_compress(data)) == data
+
+    def test_json_list_roundtrip(self) -> None:
+        obj = list(range(1000))
+        assert decompress_json(compress_json(obj)) == obj
+
+
+@pytest.mark.parametrize(
+    "obj",
+    [
+        {"key": "value"},
+        [1, 2, 3],
+        {"nested": {"a": 1}},
+        42,
+        "string",
+    ],
+)
+def test_compress_json_roundtrip_various_types(obj) -> None:
+    """compress_json / decompress_json round-trips any JSON-serialisable value."""
+    assert decompress_json(compress_json(obj)) == obj
+
+
+@pytest.mark.parametrize("level", [1, 5, 9])
+def test_gzip_compress_produces_smaller_output(level: int) -> None:
+    """gzip_compress reduces the size of highly repetitive data at any level."""
+    data = b"a" * 10_000
+    compressed = gzip_compress(data, level=level)
+    assert len(compressed) < len(data)

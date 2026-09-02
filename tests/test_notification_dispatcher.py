@@ -1,5 +1,7 @@
 """Tests for app.notification_dispatcher."""
 
+import pytest
+
 from app.notification_dispatcher import (
     Channel,
     Notification,
@@ -88,3 +90,24 @@ class TestDispatch:
         d.dispatch(Notification(title="t", body=""))
         assert len(r1) == 1
         assert len(r2) == 1
+
+    @pytest.mark.parametrize("n", [1, 3, 5])
+    def test_dispatch_n_channels_all_succeed(self, n: int) -> None:
+        from app.notification_dispatcher import Channel, Notification, NotificationDispatcher
+
+        dispatcher = NotificationDispatcher()
+        received_all = []
+        for i in range(n):
+            received = []
+            received_all.append(received)
+            ch = Channel(name=f"ch{i}", send=lambda notif, r=received: r.append(notif))
+            dispatcher.register(ch)
+        dispatcher.dispatch(Notification(title="test", body="body"))
+        assert all(len(r) == 1 for r in received_all)
+
+    def test_dispatch_to_no_channels_returns_empty_dict(self) -> None:
+        from app.notification_dispatcher import Notification, NotificationDispatcher
+
+        d = NotificationDispatcher()
+        results = d.dispatch(Notification(title="t", body="b"))
+        assert results == {}

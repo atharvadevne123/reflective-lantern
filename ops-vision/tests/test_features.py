@@ -14,6 +14,8 @@ from app.features import (
     ThroughputPressureTransformer,
     build_feature_pipeline,
     dataframe_from_dict,
+    safe_dataframe_from_dict,
+    validate_positive_float,
 )
 
 
@@ -22,9 +24,7 @@ class TestResourcePressureTransformer:
 
     def make_df(self, cpu: float, mem: float) -> pd.DataFrame:
         """Create a minimal DataFrame for pressure tests."""
-        return pd.DataFrame(
-            [{"cpu_usage_pct": cpu, "memory_usage_pct": mem}]
-        )
+        return pd.DataFrame([{"cpu_usage_pct": cpu, "memory_usage_pct": mem}])
 
     def test_adds_resource_pressure_column(self):
         """Transformer adds resource_pressure column."""
@@ -40,11 +40,14 @@ class TestResourcePressureTransformer:
         out = t.fit_transform(df)
         assert 0.0 <= out["resource_pressure"].iloc[0] <= 1.0
 
-    @pytest.mark.parametrize("cpu,mem,expected", [
-        (100.0, 100.0, 1.0),
-        (0.0, 0.0, 0.0),
-        (60.0, 0.0, 0.36),
-    ])
+    @pytest.mark.parametrize(
+        "cpu,mem,expected",
+        [
+            (100.0, 100.0, 1.0),
+            (0.0, 0.0, 0.0),
+            (60.0, 0.0, 0.36),
+        ],
+    )
     def test_pressure_calculation(self, cpu, mem, expected):
         """resource_pressure matches the 0.6*cpu + 0.4*mem / 100 formula."""
         t = ResourcePressureTransformer()
@@ -57,9 +60,7 @@ class TestLatencyErrRatioTransformer:
     """Tests for LatencyErrRatioTransformer."""
 
     def make_df(self, latency: float, error_rate: float) -> pd.DataFrame:
-        return pd.DataFrame(
-            [{"latency_p99_ms": latency, "error_rate_per_min": error_rate}]
-        )
+        return pd.DataFrame([{"latency_p99_ms": latency, "error_rate_per_min": error_rate}])
 
     def test_adds_latency_err_ratio(self):
         """Transformer adds latency_err_ratio column."""
@@ -179,3 +180,72 @@ class TestDataframeFromDict:
         payload = {c: 42.0 for c in FEATURE_COLS}
         df = dataframe_from_dict(payload)
         assert col in df.columns
+
+
+class TestValidatePositiveFloat:
+    """Tests for validate_positive_float()."""
+
+    def test_valid_positive_value_passes(self):
+        """Positive float is returned unchanged."""
+        assert validate_positive_float(5.0, "cpu") == 5.0
+
+    def test_zero_is_valid(self):
+        """Zero is accepted as a non-negative float."""
+        assert validate_positive_float(0.0, "cpu") == 0.0
+
+    def test_negative_raises_value_error(self):
+        """Negative value raises ValueError."""
+        with pytest.raises(ValueError, match="must be >= 0"):
+            validate_positive_float(-1.0, "cpu")
+
+    def test_nan_raises_value_error(self):
+        """NaN raises ValueError as it is not finite."""
+        with pytest.raises(ValueError, match="must be finite"):
+            validate_positive_float(float("nan"), "cpu")
+
+    def test_inf_raises_value_error(self):
+        """Infinity raises ValueError as it is not finite."""
+        with pytest.raises(ValueError, match="must be finite"):
+            validate_positive_float(float("inf"), "cpu")
+
+    def test_error_message_contains_field_name(self):
+        """Error message includes the field name for diagnostics."""
+        with pytest.raises(ValueError, match="latency_p99_ms"):
+            validate_positive_float(-0.1, "latency_p99_ms")
+
+
+class TestSafeDataframeFromDict:
+    """Tests for safe_dataframe_from_dict()."""
+
+    def _valid(self) -> dict:
+        return {col: 10.0 for col in FEATURE_COLS}
+
+    def test_valid_payload_returns_dataframe(self):
+        """Valid payload produces a single-row DataFrame."""
+        df = safe_dataframe_from_dict(self._valid())
+        assert len(df) == 1
+
+    def test_all_feature_cols_present(self):
+        """All FEATURE_COLS appear in the returned DataFrame."""
+        df = safe_dataframe_from_dict(self._valid())
+        for col in FEATURE_COLS:
+            assert col in df.columns
+
+    def test_negative_value_raises_value_error(self):
+        """Negative metric raises ValueError."""
+        data = self._valid()
+        data["cpu_usage_pct"] = -5.0
+        with pytest.raises(ValueError):
+            safe_dataframe_from_dict(data)
+
+    def test_missing_keys_default_to_zero(self):
+        """Missing keys default to 0.0."""
+        df = safe_dataframe_from_dict({})
+        assert df["cpu_usage_pct"].iloc[0] == 0.0
+
+    def test_string_coercion_to_float(self):
+        """String numeric values are coerced to float."""
+        data = self._valid()
+        data["cpu_usage_pct"] = "75.0"
+        df = safe_dataframe_from_dict(data)
+        assert df["cpu_usage_pct"].iloc[0] == 75.0

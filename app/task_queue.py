@@ -93,14 +93,17 @@ class TaskQueue:
 
     @property
     def completed(self) -> int:
+        """Return the number of tasks that have finished successfully."""
         with self._lock:
             return self._completed
 
     @property
     def errors(self) -> list[Exception]:
+        """Return a snapshot of all exceptions raised by failed tasks."""
         with self._lock:
             return list(self._errors)
 
     def __len__(self) -> int:
+        """Return the number of tasks currently waiting in the queue."""
         with self._lock:
             return len(self._heap)

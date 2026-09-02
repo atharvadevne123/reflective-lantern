@@ -45,9 +45,7 @@ class TestBatchPredict:
     def test_batch_matches_single_predict(self, client, sample_metrics):
         """A batch of one yields the same verdict as the single-item endpoint."""
         single = client.post("/api/v1/predict", json=sample_metrics).json()
-        batched = client.post(
-            "/api/v1/predict/batch", json={"items": [sample_metrics]}
-        ).json()[0]
+        batched = client.post("/api/v1/predict/batch", json={"items": [sample_metrics]}).json()[0]
         assert batched["predicted_incident"] == single["predicted_incident"]
         assert batched["confidence"] == pytest.approx(single["confidence"], abs=1e-6)
 

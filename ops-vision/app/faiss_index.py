@@ -4,7 +4,6 @@ import json
 import logging
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Optional
 
 import numpy as np
 
@@ -43,18 +42,20 @@ class RunbookIndex:
         """
         self.embedding_dim = embedding_dim
         self.runbooks: list[Runbook] = []
-        self._index: Optional[object] = None
-        self._embeddings: Optional[np.ndarray] = None
+        self._index: object | None = None
+        self._embeddings: np.ndarray | None = None
         self._vocab: dict[str, int] = {}
 
     def _tokenize(self, text: str) -> list[str]:
         """Lowercase and split text into tokens, stripping punctuation."""
         import re
+
         return re.findall(r"[a-z]+", text.lower())
 
     def _build_vocab(self, corpus: list[str]) -> None:
         """Build vocabulary from corpus, keeping the top embedding_dim terms."""
         from collections import Counter
+
         counts: Counter = Counter()
         for doc in corpus:
             counts.update(self._tokenize(doc))
@@ -98,16 +99,12 @@ class RunbookIndex:
             index = faiss.IndexFlatIP(self.embedding_dim)
             index.add(embeddings)
             self._index = index
-            logger.info(
-                "FAISS index built with %d runbooks (faiss-cpu)", len(runbooks)
-            )
+            logger.info("FAISS index built with %d runbooks (faiss-cpu)", len(runbooks))
         except ImportError:
             logger.warning("faiss-cpu not installed — using brute-force cosine search")
             self._index = None
 
-    def search(
-        self, query: str, top_k: int = 3
-    ) -> list[tuple[Runbook, float]]:
+    def search(self, query: str, top_k: int = 3) -> list[tuple[Runbook, float]]:
         """Search the index for runbooks similar to query.
 
         Args:
@@ -123,22 +120,50 @@ class RunbookIndex:
         q_vec = self._embed(query).reshape(1, -1)
 
         if self._index is not None:
-
             distances, indices = self._index.search(q_vec, min(top_k, len(self.runbooks)))
             results = [
                 (self.runbooks[idx], float(dist))
-                for idx, dist in zip(indices[0], distances[0])
+                for idx, dist in zip(indices[0], distances[0], strict=False)
                 if idx >= 0
             ]
         else:
             assert self._embeddings is not None
             scores = (self._embeddings @ q_vec.T).flatten()
             top_indices = np.argsort(scores)[::-1][:top_k]
-            results = [
-                (self.runbooks[int(i)], float(scores[i])) for i in top_indices
-            ]
+            results = [(self.runbooks[int(i)], float(scores[i])) for i in top_indices]
 
         return results
+
+    @property
+    def size(self) -> int:
+        """Return the number of runbooks in the index."""
+        return len(self.runbooks)
+
+    @property
+    def is_built(self) -> bool:
+        """Return True if the index has been built with at least one runbook."""
+        return len(self.runbooks) > 0
+
+    def categories(self) -> list[str]:
+        """Return the distinct categories of indexed runbooks, sorted."""
+        return sorted({r.category for r in self.runbooks})
+
+    def search_by_category(
+        self, query: str, category: str, top_k: int = 3
+    ) -> list[tuple["Runbook", float]]:
+        """Search the index for runbooks filtered to a specific category.
+
+        Args:
+            query: Natural-language search string.
+            category: Only return runbooks whose category matches this value.
+            top_k: Maximum number of results to return.
+
+        Returns:
+            List of (Runbook, score) tuples within the category, sorted by score.
+        """
+        all_results = self.search(query, top_k=self.size or top_k)
+        filtered = [(rb, score) for rb, score in all_results if rb.category == category]
+        return filtered[:top_k]
 
     def save(self, path: Path) -> None:
         """Persist the index metadata to a JSON file (embeddings not saved).
@@ -171,16 +196,13 @@ class RunbookIndex:
         data = json.loads(path.read_text())
         index = cls(embedding_dim=data["embedding_dim"])
         index._vocab = data["vocab"]
-        runbooks = [
-            Runbook(r["title"], r["content"], r["category"])
-            for r in data["runbooks"]
-        ]
+        runbooks = [Runbook(r["title"], r["content"], r["category"]) for r in data["runbooks"]]
         index.build(runbooks)
         logger.info("RunbookIndex loaded from %s (%d runbooks)", path, len(runbooks))
         return index
 
 
-_index_singleton: Optional[RunbookIndex] = None
+_index_singleton: RunbookIndex | None = None
 
 
 def get_runbook_index(runbooks_path: str = "data/runbooks/sample_runbooks.json") -> RunbookIndex:
@@ -197,9 +219,7 @@ def get_runbook_index(runbooks_path: str = "data/runbooks/sample_runbooks.json")
         _index_singleton = RunbookIndex()
         try:
             data = json.loads(Path(runbooks_path).read_text())
-            runbooks = [
-                Runbook(r["title"], r["content"], r["category"]) for r in data
-            ]
+            runbooks = [Runbook(r["title"], r["content"], r["category"]) for r in data]
             _index_singleton.build(runbooks)
         except Exception:
             logger.exception("Failed to load runbooks from %s — index empty", runbooks_path)

@@ -33,6 +33,7 @@ class AuditLog:
     """Append-only in-memory audit log."""
 
     def __init__(self) -> None:
+        """Initialise an empty, append-only audit log."""
         self._entries: list[AuditEntry] = []
 
     def record(
@@ -84,4 +85,5 @@ class AuditLog:
         return "\n".join(json.dumps(asdict(e)) for e in self._entries)
 
     def __len__(self) -> int:
+        """Return the number of recorded audit entries."""
         return len(self._entries)

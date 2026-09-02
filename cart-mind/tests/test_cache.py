@@ -216,3 +216,36 @@ class TestEvictExpired:
         c = TTLCache()
         result = evict_expired(c)
         assert isinstance(result, int)
+
+
+import pytest  # noqa: E402
+
+
+@pytest.mark.parametrize("n_items", [1, 5, 10])
+def test_cache_size_after_n_sets(n_items: int) -> None:
+    """TTLCache grows to exactly n_items after n distinct sets."""
+    from app.cache import TTLCache
+
+    c = TTLCache()
+    for i in range(n_items):
+        c.set(f"k{i}", i)
+    assert c.size() == n_items
+
+
+@pytest.mark.parametrize("key", ["alpha", "beta", "gamma"])
+def test_get_missing_key_returns_none(key: str) -> None:
+    """TTLCache.get returns None for keys that were never set."""
+    from app.cache import TTLCache
+
+    c = TTLCache()
+    assert c.get(key) is None
+
+
+@pytest.mark.parametrize("value", [0, "text", 3.14, True])
+def test_cache_round_trips_various_value_types(value: object) -> None:
+    """TTLCache stores and retrieves any hashable value correctly."""
+    from app.cache import TTLCache
+
+    c = TTLCache()
+    c.set("k", value)
+    assert c.get("k") == value

@@ -164,3 +164,29 @@ def test_validate_meter_id_valid_returns_string(meter_id: str) -> None:
     result = validate_meter_id(meter_id)
     assert isinstance(result, str)
     assert result == meter_id
+
+
+@pytest.mark.parametrize(
+    "value,lo,hi,expected",
+    [
+        (5.0, 0.0, 10.0, 5.0),
+        (-5.0, 0.0, 10.0, 0.0),
+        (15.0, 0.0, 10.0, 10.0),
+        (0.0, 0.0, 1.0, 0.0),
+        (1.0, 0.0, 1.0, 1.0),
+    ],
+)
+def test_clamp_parametrized(value: float, lo: float, hi: float, expected: float) -> None:
+    """clamp returns the correct boundary-clamped value."""
+    from energy_seer.app.validators import clamp
+
+    assert clamp(value, lo, hi) == expected
+
+
+@pytest.mark.parametrize("tariff", [0.01, 0.5, 1.0, 100.0])
+def test_validate_tariff_returns_exact_value(tariff: float) -> None:
+    """validate_tariff returns the exact tariff value for positive inputs."""
+    from energy_seer.app.validators import validate_tariff
+
+    result = validate_tariff(tariff)
+    assert result == tariff

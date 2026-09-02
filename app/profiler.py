@@ -25,7 +25,7 @@ def timed(label: str | None = None, log_level: int = logging.DEBUG) -> Callable:
         name = label or func.__qualname__
 
         @functools.wraps(func)
-        def wrapper(*args, **kwargs):
+        def wrapper(*args, **kwargs) -> object:
             start = time.perf_counter()
             try:
                 result = func(*args, **kwargs)
@@ -86,7 +86,7 @@ def tracked(label: str | None = None) -> Callable:
         _registry[name] = _Stats()
 
         @functools.wraps(func)
-        def wrapper(*args, **kwargs):
+        def wrapper(*args, **kwargs) -> object:
             start = time.perf_counter()
             try:
                 return func(*args, **kwargs)

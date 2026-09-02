@@ -45,14 +45,19 @@ class TestComputeDrift:
         reference = [rng.gauss(0.5, 0.05) for _ in range(SAMPLE_SIZE)]
         small = [rng.gauss(0.55, 0.05) for _ in range(SAMPLE_SIZE)]
         large = [rng.gauss(0.95, 0.05) for _ in range(SAMPLE_SIZE)]
-        assert compute_drift(reference, large)["ks_statistic"] > compute_drift(reference, small)["ks_statistic"]
+        assert (
+            compute_drift(reference, large)["ks_statistic"]
+            > compute_drift(reference, small)["ks_statistic"]
+        )
 
     def test_variance_change_is_detected(self, rng: random.Random) -> None:
         reference = [rng.gauss(0.5, 0.02) for _ in range(SAMPLE_SIZE)]
         current = [rng.gauss(0.5, 0.30) for _ in range(SAMPLE_SIZE)]
         assert compute_drift(reference, current)["drift_detected"] is True
 
-    def test_drift_is_logged_as_a_warning(self, rng: random.Random, caplog: pytest.LogCaptureFixture) -> None:
+    def test_drift_is_logged_as_a_warning(
+        self, rng: random.Random, caplog: pytest.LogCaptureFixture
+    ) -> None:
         reference = [rng.gauss(0.2, 0.05) for _ in range(SAMPLE_SIZE)]
         current = [rng.gauss(0.9, 0.05) for _ in range(SAMPLE_SIZE)]
         compute_drift(reference, current)
@@ -119,3 +124,43 @@ class TestDriftSeverity:
         current = [rng.gauss(0.7, 0.1) for _ in range(SAMPLE_SIZE)]
         statistic = compute_drift(reference, current)["ks_statistic"]
         assert drift_severity(statistic) in {"none", "mild", "moderate", "severe"}
+
+
+class TestDriftResultKeys:
+    """Verify the dict keys returned by compute_drift."""
+
+    @pytest.mark.parametrize("key", ["drift_detected", "ks_statistic", "p_value"])
+    def test_result_has_key(self, rng: random.Random, key: str) -> None:
+        """compute_drift result always contains the expected key."""
+        values = [rng.gauss(0.5, 0.1) for _ in range(SAMPLE_SIZE)]
+        result = compute_drift(values, list(values))
+        assert key in result
+
+    def test_ks_statistic_is_float(self, rng: random.Random) -> None:
+        values = [rng.gauss(0.5, 0.1) for _ in range(SAMPLE_SIZE)]
+        result = compute_drift(values, list(values))
+        assert isinstance(result["ks_statistic"], float)
+
+    def test_p_value_between_zero_and_one(self, rng: random.Random) -> None:
+        reference = [rng.gauss(0.3, 0.05) for _ in range(SAMPLE_SIZE)]
+        current = [rng.gauss(0.7, 0.05) for _ in range(SAMPLE_SIZE)]
+        result = compute_drift(reference, current)
+        assert 0.0 <= result["p_value"] <= 1.0
+
+
+@pytest.mark.parametrize(
+    "statistic,valid_label",
+    [
+        (0.0, "none"),
+        (0.09, "none"),
+        (0.1, "mild"),
+        (0.24, "mild"),
+        (0.25, "moderate"),
+        (0.49, "moderate"),
+        (0.5, "severe"),
+        (0.99, "severe"),
+    ],
+)
+def test_drift_severity_label_parametrized(statistic: float, valid_label: str) -> None:
+    """drift_severity maps each boundary value to the correct label."""
+    assert drift_severity(statistic) == valid_label

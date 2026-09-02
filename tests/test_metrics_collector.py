@@ -109,3 +109,19 @@ class TestMetricsRegistry:
         metrics = reg.all_metrics()
         assert "a" in metrics
         assert "b" in metrics
+
+    import pytest
+
+    @pytest.mark.parametrize("name", ["requests", "latency_ms", "error_rate"])
+    def test_counter_name_preserved(self, name: str) -> None:
+        from app.metrics_collector import MetricsRegistry
+
+        reg = MetricsRegistry()
+        reg.counter(name)
+        assert name in reg.all_metrics()
+
+    def test_empty_registry_all_metrics_is_dict(self) -> None:
+        from app.metrics_collector import MetricsRegistry
+
+        reg = MetricsRegistry()
+        assert isinstance(reg.all_metrics(), dict)

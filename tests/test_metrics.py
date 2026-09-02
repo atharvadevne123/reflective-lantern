@@ -271,3 +271,27 @@ class TestNormalisedRmse:
         from app.metrics import normalised_rmse
 
         assert normalised_rmse([5.0, 5.0], [4.0, 6.0]) == pytest.approx(0.0)
+
+
+@pytest.mark.parametrize(
+    "actual,predicted",
+    [
+        ([1.0], [1.0]),
+        ([0.0, 0.0], [0.0, 0.0]),
+        ([3.0, 4.0, 5.0], [3.0, 4.0, 5.0]),
+    ],
+)
+def test_normalised_rmse_zero_for_perfect_forecast(actual, predicted) -> None:
+    """normalised_rmse returns 0.0 when actual equals predicted."""
+    from app.metrics import normalised_rmse
+
+    assert normalised_rmse(actual, predicted) == pytest.approx(0.0)
+
+
+@pytest.mark.parametrize("n", [2, 5, 10])
+def test_mape_zero_for_identical_sequences(n: int) -> None:
+    """mape returns 0.0 when actual and predicted are identical."""
+    from app.metrics import mape
+
+    vals = [float(i + 1) for i in range(n)]
+    assert mape(vals, vals) == pytest.approx(0.0)

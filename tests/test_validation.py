@@ -1205,3 +1205,19 @@ class TestValidateRatio:
 
         errors = validate_ratio(-0.1)
         assert len(errors) > 0
+
+
+@pytest.mark.parametrize("ratio", [0.0, 0.5, 1.0])
+def test_validate_ratio_valid_values(ratio: float) -> None:
+    """validate_ratio returns no errors for values in [0, 1]."""
+    from app.validation import validate_ratio
+
+    assert validate_ratio(ratio) == []
+
+
+@pytest.mark.parametrize("ratio", [-0.01, -1.0, 1.01, 2.0])
+def test_validate_ratio_invalid_values(ratio: float) -> None:
+    """validate_ratio returns at least one error for out-of-range values."""
+    from app.validation import validate_ratio
+
+    assert len(validate_ratio(ratio)) > 0

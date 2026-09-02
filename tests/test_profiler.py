@@ -116,3 +116,24 @@ class TestTracked:
         for _ in range(n):
             fn()
         assert get_stats(f"count_{n}")["calls"] == n
+
+    def test_total_time_non_negative(self) -> None:
+        reset_stats()
+
+        @tracked(label="timing_check")
+        def fn():
+            pass
+
+        fn()
+        assert get_stats("timing_check")["total_time"] >= 0.0
+
+    def test_stats_have_required_keys(self) -> None:
+        reset_stats()
+
+        @tracked(label="keys_check")
+        def fn():
+            pass
+
+        fn()
+        stats = get_stats("keys_check")
+        assert "calls" in stats and "total_time" in stats

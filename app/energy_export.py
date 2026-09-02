@@ -457,6 +457,7 @@ def flatten_nested_records(
     """
 
     def _flatten(d: dict[str, Any], parent: str = "") -> dict[str, Any]:
+        """Recursively flatten *d* into a single-level dict using *separator*."""
         items: dict[str, Any] = {}
         for k, v in d.items():
             key = f"{parent}{separator}{k}" if parent else k

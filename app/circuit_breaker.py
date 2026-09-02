@@ -78,6 +78,7 @@ class CircuitBreaker:
             raise exc
 
     def _on_success(self) -> None:
+        """Reset to CLOSED state after a successful call."""
         if self._state is CircuitState.HALF_OPEN:
             logger.info("Circuit CLOSED after successful probe")
         self._state = CircuitState.CLOSED
@@ -85,6 +86,7 @@ class CircuitBreaker:
         self._opened_at = None
 
     def _on_failure(self) -> None:
+        """Increment the failure counter and open the circuit when the threshold is reached."""
         self._failure_count += 1
         if self._state is CircuitState.HALF_OPEN or self._failure_count >= self.failure_threshold:
             logger.warning("Circuit OPEN after %d failures", self._failure_count)
@@ -95,7 +97,7 @@ class CircuitBreaker:
         """Use as a decorator."""
 
         @functools.wraps(func)
-        def wrapper(*args, **kwargs):
+        def wrapper(*args, **kwargs) -> object:
             return self.call(func, *args, **kwargs)
 
         return wrapper
