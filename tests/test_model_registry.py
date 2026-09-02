@@ -94,3 +94,19 @@ class TestTagging:
         reg = ModelRegistry()
         reg.register(mv)
         assert reg.get_latest("price-model").metrics["rmse"] == 0.05
+
+
+class TestModelRegistryMisc:
+    def test_list_models_empty_when_no_models(self) -> None:
+        reg = ModelRegistry()
+        assert reg.list_models() == []
+
+    def test_list_versions_empty_for_unknown(self) -> None:
+        reg = ModelRegistry()
+        assert reg.list_versions("unknown") == []
+
+    @pytest.mark.parametrize("version", ["1.0.0", "1.1.0", "2.0.0"])
+    def test_registered_version_found_in_list(self, version: str) -> None:
+        reg = ModelRegistry()
+        reg.register(_mv(version=version))
+        assert version in reg.list_versions("price-model")

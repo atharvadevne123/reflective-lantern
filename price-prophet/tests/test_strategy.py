@@ -144,3 +144,20 @@ def test_competitive_strategy_undercuts_by_one_percent() -> None:
 
     price = apply_strategy(100.0, PricingStrategy.COMPETITIVE, competitor_price=100.0)
     assert price < 100.0
+
+
+@pytest.mark.parametrize("base", [10.0, 100.0, 1000.0])
+def test_penetration_price_below_base(base: float) -> None:
+    from app.pricing.strategy import PricingStrategy, apply_strategy
+
+    price = apply_strategy(base, PricingStrategy.PENETRATION)
+    assert price < base
+
+
+@pytest.mark.parametrize("strategy_name", ["PENETRATION", "PREMIUM", "SKIMMING", "COST_PLUS"])
+def test_all_strategies_return_float(strategy_name: str) -> None:
+    from app.pricing.strategy import PricingStrategy, apply_strategy
+
+    strategy = PricingStrategy[strategy_name]
+    price = apply_strategy(50.0, strategy)
+    assert isinstance(price, float)

@@ -115,3 +115,27 @@ class TestCursorPaginate:
         result = cursor_paginate([], per_page=10)
         assert result.items == []
         assert result.has_next is False
+
+    import pytest
+
+    @pytest.mark.parametrize("per_page", [1, 5, 10, 25])
+    def test_page_size_respected(self, per_page: int) -> None:
+        from app.pagination import cursor_paginate
+
+        items = [{"id": i} for i in range(50)]
+        result = cursor_paginate(items, cursor=None, per_page=per_page)
+        assert len(result.items) == per_page
+
+    def test_full_traversal_covers_all_items(self) -> None:
+        from app.pagination import cursor_paginate
+
+        items = [{"id": i} for i in range(20)]
+        seen = []
+        cursor = None
+        while True:
+            page = cursor_paginate(items, cursor=cursor, per_page=5)
+            seen.extend(page.items)
+            if not page.has_next:
+                break
+            cursor = page.next_cursor
+        assert len(seen) == 20

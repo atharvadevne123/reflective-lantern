@@ -91,3 +91,19 @@ class TestCompressionRatio:
     def test_both_methods(self, method):
         ratio = compression_ratio("test " * 100, method=method)
         assert 0 < ratio < 1.0
+
+
+class TestRoundtripLargePayload:
+    @pytest.mark.parametrize("size", [1000, 10000, 100000])
+    def test_gzip_large_roundtrip(self, size: int) -> None:
+        data = b"x" * size
+        assert gzip_decompress(gzip_compress(data)) == data
+
+    @pytest.mark.parametrize("size", [1000, 10000, 100000])
+    def test_zlib_large_roundtrip(self, size: int) -> None:
+        data = b"y" * size
+        assert zlib_decompress(zlib_compress(data)) == data
+
+    def test_json_list_roundtrip(self) -> None:
+        obj = list(range(1000))
+        assert decompress_json(compress_json(obj)) == obj

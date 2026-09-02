@@ -116,3 +116,24 @@ class TestFaissIndex:
         query = np.random.rand(8).astype(np.float32)
         results = search_similar_items(index, ids, query, top_k=3)
         assert len(results) == 3
+
+    @pytest.mark.parametrize("top_k", [1, 5, 10])
+    def test_search_respects_top_k(self, top_k: int) -> None:
+        from app.model import build_faiss_index, search_similar_items
+
+        vecs = np.random.rand(50, 8).astype(np.float32)
+        ids = [f"item_{i}" for i in range(50)]
+        index = build_faiss_index(vecs, ids)
+        query = np.random.rand(8).astype(np.float32)
+        results = search_similar_items(index, ids, query, top_k=top_k)
+        assert len(results) == top_k
+
+    def test_result_has_item_id_field(self) -> None:
+        from app.model import build_faiss_index, search_similar_items
+
+        vecs = np.random.rand(20, 8).astype(np.float32)
+        ids = [f"p_{i}" for i in range(20)]
+        index = build_faiss_index(vecs, ids)
+        query = np.random.rand(8).astype(np.float32)
+        results = search_similar_items(index, ids, query, top_k=1)
+        assert "item_id" in results[0]

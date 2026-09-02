@@ -2,6 +2,8 @@
 
 import threading
 
+import pytest
+
 from app.correlation_id import (
     clear_correlation_id,
     correlation_context,
@@ -96,3 +98,21 @@ class TestThreadIsolation:
 
         for i in range(5):
             assert results[f"t{i}"] == f"id-{i}"
+
+
+class TestNewCorrelationIdFormat:
+    @pytest.mark.parametrize("_run", range(5))
+    def test_id_is_nonempty_string(self, _run: int) -> None:
+        cid = new_correlation_id()
+        assert isinstance(cid, str) and len(cid) > 0
+
+    def test_set_empty_string_is_accepted(self) -> None:
+        set_correlation_id("")
+        assert get_correlation_id() == ""
+        clear_correlation_id()
+
+    def test_overwrite_existing_id(self) -> None:
+        set_correlation_id("first")
+        set_correlation_id("second")
+        assert get_correlation_id() == "second"
+        clear_correlation_id()

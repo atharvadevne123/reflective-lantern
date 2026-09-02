@@ -116,3 +116,23 @@ class TestMidpoint:
     def test_midpoint_london_paris_is_between(self):
         mid = midpoint(LONDON, PARIS)
         assert LONDON.lat > mid.lat > PARIS.lat
+
+
+class TestHaversineEdgeCases:
+    @pytest.mark.parametrize("coord", [LONDON, PARIS, NEW_YORK, SYDNEY])
+    def test_self_distance_is_zero(self, coord: Coordinate) -> None:
+        assert haversine(coord, coord) == pytest.approx(0.0, abs=1e-6)
+
+    def test_distance_is_nonnegative(self) -> None:
+        assert haversine(LONDON, SYDNEY) > 0.0
+
+
+class TestBoundingBoxEdgeCases:
+    def test_single_point_bounding_box(self) -> None:
+        bbox = bounding_box_of([LONDON])
+        assert bbox.min_lat == bbox.max_lat == LONDON.lat
+        assert bbox.min_lon == bbox.max_lon == LONDON.lon
+
+    def test_contains_boundary_point(self) -> None:
+        bbox = BoundingBox(min_lat=40, max_lat=50, min_lon=-5, max_lon=5)
+        assert bbox.contains(Coordinate(40, -5))

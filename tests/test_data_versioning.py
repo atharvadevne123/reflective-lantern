@@ -98,3 +98,17 @@ class TestDataLineage:
         dl = DataLineage()
         dl.record(_snap(row_count=rows))
         assert dl.get("energy").row_count == rows
+
+    def test_list_datasets_empty_when_none_recorded(self) -> None:
+        dl = DataLineage()
+        assert dl.list_datasets() == []
+
+    def test_list_versions_empty_for_unknown(self) -> None:
+        dl = DataLineage()
+        assert dl.list_versions("nonexistent") == []
+
+    def test_schema_stored_and_retrieved(self) -> None:
+        schema = {"col_a": "float", "col_b": "int"}
+        dl = DataLineage()
+        dl.record(_snap(schema=schema))
+        assert dl.get("energy").schema == schema

@@ -97,3 +97,21 @@ class TestCompareSpecs:
         results = compare_specs(specs)
         labels = {r["label"] for r in results}
         assert "spec-0" in labels or "spec-1" in labels
+
+    import pytest
+
+    @pytest.mark.parametrize("n_specs", [1, 3, 5])
+    def test_compare_specs_result_count(self, n_specs: int) -> None:
+        from app.cost_estimator import ResourceSpec, compare_specs
+
+        specs = [ResourceSpec(cpu_cores=i + 1, memory_gb=(i + 1) * 4) for i in range(n_specs)]
+        results = compare_specs(specs)
+        assert len(results) == n_specs
+
+    def test_compare_single_spec_returns_list(self) -> None:
+        from app.cost_estimator import ResourceSpec, compare_specs
+
+        specs = [ResourceSpec(cpu_cores=2, memory_gb=8)]
+        results = compare_specs(specs)
+        assert isinstance(results, list)
+        assert len(results) == 1

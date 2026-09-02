@@ -82,3 +82,20 @@ class TestProcess:
         body = b'{"ping": true}'
         wh.process(body, "ping", signature=make_sig(body))
         assert calls == [1, 2]
+
+    @pytest.mark.parametrize("event_type", ["push", "pull_request", "release"])
+    def test_process_various_event_types(self, event_type: str) -> None:
+        from app.webhook_handler import WebhookHandler
+
+        wh = WebhookHandler(SECRET)
+        body = b'{"action": "opened"}'
+        event = wh.process(body, event_type, signature=make_sig(body))
+        assert event.event_type == event_type
+
+    def test_process_returns_event_with_payload(self) -> None:
+        from app.webhook_handler import WebhookHandler
+
+        wh = WebhookHandler(SECRET)
+        body = b'{"key": "value"}'
+        event = wh.process(body, "custom", signature=make_sig(body))
+        assert event.payload == {"key": "value"}

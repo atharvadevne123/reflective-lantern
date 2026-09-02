@@ -82,3 +82,35 @@ class TestCheckDecorator:
 
         result = noop()
         assert result.name == "noop"
+
+
+import pytest
+
+
+class TestHealthRegistryEdgeCases:
+    @pytest.mark.parametrize("n", [1, 3, 5])
+    def test_multiple_checks_all_run(self, n: int) -> None:
+        from app.health_check import CheckResult, HealthRegistry, check
+
+        reg = HealthRegistry()
+        for i in range(n):
+            idx = i
+
+            @check(f"chk{idx}", registry=reg)
+            def fn(i=idx):
+                return CheckResult(name=f"chk{i}", healthy=True)
+
+        status = reg.run()
+        assert len(status.results) == n
+
+    def test_unhealthy_check_makes_status_unhealthy(self) -> None:
+        from app.health_check import CheckResult, HealthRegistry, check
+
+        reg = HealthRegistry()
+
+        @check("bad", registry=reg)
+        def bad_check():
+            return CheckResult(name="bad", healthy=False)
+
+        status = reg.run()
+        assert status.healthy is False

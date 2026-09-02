@@ -91,3 +91,18 @@ class TestPerKeyTokenBucket:
         pkb.consume("k1")
         pkb.consume("k2")
         assert pkb.bucket_count() == 2
+
+    import pytest
+
+    @pytest.mark.parametrize("key", ["a", "user-1", "192.168.1.1"])
+    def test_fresh_key_always_succeeds(self, key: str) -> None:
+        from app.token_bucket import PerKeyTokenBucket
+
+        pkb = PerKeyTokenBucket(capacity=1, rate=100)
+        assert pkb.consume(key) is True
+
+    def test_bucket_count_zero_initially(self) -> None:
+        from app.token_bucket import PerKeyTokenBucket
+
+        pkb = PerKeyTokenBucket(capacity=5, rate=1)
+        assert pkb.bucket_count() == 0

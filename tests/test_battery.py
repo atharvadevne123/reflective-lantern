@@ -48,9 +48,7 @@ class TestBatterySpec:
     @pytest.mark.parametrize("efficiency", [0.0, -0.5, 1.5])
     def test_invalid_efficiency_rejected(self, efficiency: float) -> None:
         with pytest.raises(ValueError, match=r"round_trip_efficiency must be in \(0, 1\]"):
-            BatterySpec(
-                capacity_kwh=100.0, max_charge_kw=10.0, max_discharge_kw=10.0, round_trip_efficiency=efficiency
-            )
+            BatterySpec(capacity_kwh=100.0, max_charge_kw=10.0, max_discharge_kw=10.0, round_trip_efficiency=efficiency)
 
     @pytest.mark.parametrize("dod", [0.0, -0.5, 1.5])
     def test_invalid_depth_of_discharge_rejected(self, dod: float) -> None:

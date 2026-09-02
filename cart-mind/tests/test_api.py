@@ -145,3 +145,27 @@ class TestDriftEndpoint:
         payload = {"feature_values": {}}
         r = client.post("/api/v1/drift", json=payload)
         assert r.status_code == 200
+
+    import pytest
+
+    @pytest.mark.parametrize("n_samples", [10, 50, 100])
+    def test_drift_various_sample_sizes(self, client, n_samples: int) -> None:
+        import numpy as np
+
+        rng = np.random.default_rng(42)
+        payload = {"feature_values": {"item_price": rng.uniform(5, 500, n_samples).tolist()}}
+        r = client.post("/api/v1/drift", json=payload)
+        assert r.status_code == 200
+
+    def test_drift_total_checked_matches_features(self, client) -> None:
+        import numpy as np
+
+        rng = np.random.default_rng(7)
+        payload = {
+            "feature_values": {
+                "item_price": rng.uniform(5, 500, 50).tolist(),
+                "avg_order_value": rng.uniform(10, 300, 50).tolist(),
+            }
+        }
+        data = client.post("/api/v1/drift", json=payload).json()
+        assert data["total_checked"] == 2
