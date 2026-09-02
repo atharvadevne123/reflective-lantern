@@ -276,3 +276,33 @@ class TestDecoratorUsage:
     def test_return_value_passes_through(self) -> None:
         breaker = CircuitBreaker()
         assert breaker.call(lambda x: x * 2, 21) == 42
+
+
+@pytest.mark.parametrize("threshold", [1, 2, 5])
+def test_circuit_opens_after_threshold_failures(threshold: int) -> None:
+    """CircuitBreaker opens exactly after *threshold* consecutive failures."""
+    breaker = CircuitBreaker(failure_threshold=threshold, recovery_timeout=3600.0)
+
+    def always_fails() -> None:
+        raise ValueError("boom")
+
+    for _ in range(threshold):
+        with pytest.raises(ValueError):
+            breaker.call(always_fails)
+    with pytest.raises(CircuitOpenError):
+        breaker.call(always_fails)
+
+
+@pytest.mark.parametrize("n_successes", [1, 3, 5])
+def test_failure_count_resets_after_success(n_successes: int) -> None:
+    """A success after failures resets the failure counter."""
+    breaker = CircuitBreaker(failure_threshold=10)
+
+    for _ in range(3):
+        with pytest.raises(RuntimeError):
+            breaker.call(lambda: (_ for _ in ()).throw(RuntimeError("err")))  # type: ignore[misc]
+
+    for _ in range(n_successes):
+        breaker.call(lambda: None)
+
+    assert breaker._failure_count == 0
