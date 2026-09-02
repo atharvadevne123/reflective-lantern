@@ -60,14 +60,29 @@ def _retrain_model(**context) -> None:
 
 
 def _evaluate_model(**context) -> None:
+    """Gate promotion on the retrained model clearing the accuracy floor.
+
+    Raises:
+        FileNotFoundError: If the retrain step wrote no metrics.
+        ValueError: If accuracy is below ``RETRAIN_ACCURACY_FLOOR``, which
+            aborts the DAG and leaves the previous model serving.
+    """
+    from app.config import get_settings
+
+    floor = get_settings().retrain_accuracy_floor
+
     metrics_path = Path("retrain_metrics.json")
     if not metrics_path.exists():
         raise FileNotFoundError("metrics not found after retrain")
+
     metrics = json.loads(metrics_path.read_text())
-    acc = metrics.get("accuracy_mean", 0)
-    if acc < 0.70:
-        raise ValueError(f"retrained model accuracy {acc:.4f} below threshold 0.70 — rollback needed")
-    logger.info("model evaluation passed accuracy=%.4f", acc)
+    acc = metrics.get("accuracy_mean", 0.0)
+    if acc < floor:
+        raise ValueError(
+            f"retrained model accuracy {acc:.4f} is below the {floor:.2f} "
+            "floor; keeping the previous model"
+        )
+    logger.info("model evaluation passed accuracy=%.4f floor=%.2f", acc, floor)
 
 
 def run_retrain_pipeline() -> dict:
