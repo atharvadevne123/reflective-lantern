@@ -109,3 +109,32 @@ class TestMetricsRegistry:
         metrics = reg.all_metrics()
         assert "a" in metrics
         assert "b" in metrics
+
+
+class TestMetricsRegistryExtensions:
+    def test_metric_names_sorted(self):
+        reg = MetricsRegistry()
+        reg.counter("z_metric")
+        reg.gauge("a_metric")
+        assert reg.metric_names() == ["a_metric", "z_metric"]
+
+    def test_remove_existing(self):
+        reg = MetricsRegistry()
+        reg.counter("x")
+        assert reg.remove("x") is True
+        assert "x" not in reg.all_metrics()
+
+    def test_remove_missing(self):
+        reg = MetricsRegistry()
+        assert reg.remove("ghost") is False
+
+    def test_len_counts_metrics(self):
+        reg = MetricsRegistry()
+        assert len(reg) == 0
+        reg.counter("c1")
+        reg.gauge("g1")
+        assert len(reg) == 2
+
+    def test_metric_names_empty(self):
+        reg = MetricsRegistry()
+        assert reg.metric_names() == []
