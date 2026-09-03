@@ -141,7 +141,37 @@ def compression_ratio(original: bytes | str, method: str = "gzip") -> float:
     return len(compressed) / len(raw)
 
 
+def compress_and_measure(data: bytes, method: str = "gzip", level: int = 6) -> dict[str, Any]:
+    """Compress *data* and return a stats dict.
+
+    Args:
+        data: Raw bytes to compress.
+        method: ``'gzip'`` or ``'zlib'``.
+        level: Compression level 0–9.
+
+    Returns:
+        Dict with keys ``original_bytes``, ``compressed_bytes``, ``ratio``,
+        and ``savings_pct``.
+    """
+    if method == "gzip":
+        compressed = gzip_compress(data, level)
+    elif method == "zlib":
+        compressed = zlib_compress(data, level)
+    else:
+        raise ValueError(f"Unknown compression method: {method}")
+    orig_len = len(data)
+    comp_len = len(compressed)
+    ratio = comp_len / orig_len if orig_len else 1.0
+    return {
+        "original_bytes": orig_len,
+        "compressed_bytes": comp_len,
+        "ratio": round(ratio, 6),
+        "savings_pct": round((1 - ratio) * 100, 2),
+    }
+
+
 __all__ = [
+    "compress_and_measure",
     "compress_json",
     "compression_ratio",
     "decompress_json",
