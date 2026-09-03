@@ -255,3 +255,94 @@ def length_of_stay_mix(stays: list[int]) -> dict[str, float]:
         "two_three_nights": round(two_three / n, 4),
         "four_plus_nights": round(four_plus / n, 4),
     }
+
+
+def lead_time_bucket(lead_days: int) -> int:
+    """Return the ordinal lead-time bucket (0 = last-minute, 3 = advance).
+
+    Args:
+        lead_days: Days between booking and check-in.
+
+    Returns:
+        Integer bucket: 0 (≤3 days), 1 (4-14), 2 (15-60), 3 (61+).
+    """
+    if lead_days <= 3:
+        return 0
+    if lead_days <= 14:
+        return 1
+    if lead_days <= 60:
+        return 2
+    return 3
+
+
+def competitor_rate_ratio(room_rate: float, competitor_avg_rate: float) -> float:
+    """Compute the ratio of room rate to competitor average, clamped to [0.5, 3.0].
+
+    Args:
+        room_rate: Proposed room rate.
+        competitor_avg_rate: Competitor average rate; 150.0 used as fallback when 0.
+
+    Returns:
+        Clamped rate ratio.
+    """
+    denom = competitor_avg_rate if competitor_avg_rate > 0 else 150.0
+    return float(min(3.0, max(0.5, room_rate / denom)))
+
+
+def occupancy_yoy_delta(current_occ_rate: float, prev_year_occ_rate: float) -> float:
+    """Return year-over-year occupancy delta, clamped to [-1.0, 1.0].
+
+    Args:
+        current_occ_rate: Current period occupancy rate.
+        prev_year_occ_rate: Prior-year occupancy rate.
+
+    Returns:
+        Delta clipped to [-1.0, 1.0], rounded to 4 decimal places.
+    """
+    return round(max(-1.0, min(1.0, current_occ_rate - prev_year_occ_rate)), 4)
+
+
+def adr_from_revenue(total_revenue: float, occupied_rooms: int) -> float:
+    """Compute Average Daily Rate from revenue and occupied rooms.
+
+    Args:
+        total_revenue: Total room revenue.
+        occupied_rooms: Number of occupied room-nights.
+
+    Returns:
+        ADR rounded to 4 decimal places; 0.0 when occupied_rooms <= 0.
+    """
+    if occupied_rooms <= 0:
+        return 0.0
+    return round(total_revenue / occupied_rooms, 4)
+
+
+def revpar(revenue: float, available_rooms: int) -> float:
+    """Compute Revenue Per Available Room.
+
+    Args:
+        revenue: Total room revenue.
+        available_rooms: Number of available room-nights.
+
+    Returns:
+        RevPAR rounded to 4 decimal places; 0.0 when available_rooms <= 0.
+    """
+    if available_rooms <= 0:
+        return 0.0
+    return round(revenue / available_rooms, 4)
+
+
+def length_of_stay_bucket(nights: int) -> str:
+    """Categorise a stay length into a label.
+
+    Args:
+        nights: Length of stay in nights.
+
+    Returns:
+        'short' (1-2 nights), 'medium' (3-6 nights), or 'long' (7+ nights).
+    """
+    if nights <= 2:
+        return "short"
+    if nights <= 6:
+        return "medium"
+    return "long"

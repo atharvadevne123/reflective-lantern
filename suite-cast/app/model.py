@@ -216,8 +216,8 @@ def predict_demand(
         base_rate: Baseline room rate used for dynamic pricing calculation.
 
     Returns:
-        Dict containing demand_score, demand_tier, suggested_rate, and
-        per_row_scores for drift monitoring.
+        Dict containing demand_score, demand_tier, confidence, suggested_rate,
+        and per_row_scores for drift monitoring.
     """
     xgb_probs: np.ndarray = xgb_model.predict_proba(X)[:, 1]
 
@@ -243,6 +243,7 @@ def predict_demand(
     return {
         "demand_score": round(demand_score, 4),
         "demand_tier": tier,
+        "confidence": round(demand_score, 4),
         "suggested_rate": suggested_rate,
         "per_row_scores": per_row.tolist(),
     }
