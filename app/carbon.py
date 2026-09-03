@@ -1129,3 +1129,35 @@ def annual_co2_savings(baseline_kwh: float, improved_kwh: float, region: str = "
     saved_kwh = max(0.0, baseline_kwh - improved_kwh)
     factor = grid_emission_factor(region)
     return round(saved_kwh * factor * 1000.0, 4)
+
+
+def kwh_to_grams_co2(kwh: float, region: str = "default") -> float:
+    """Convert energy consumption (kWh) to CO2 equivalent in grams.
+
+    Args:
+        kwh: Energy consumption in kilowatt-hours.
+        region: Grid region identifier.
+
+    Returns:
+        Estimated CO2 equivalent in grams, rounded to 2 decimal places.
+
+    Raises:
+        ValueError: If *kwh* is negative.
+    """
+    return round(kwh_to_co2_kg(kwh, region) * 1000.0, 2)
+
+
+def peak_emission_hour(hourly_kwh: list[float], region: str = "default") -> int:
+    """Return the hour index (0-23) with the highest CO2 emissions.
+
+    Args:
+        hourly_kwh: List of hourly energy consumption values in kWh.
+        region: Grid region identifier.
+
+    Returns:
+        Index of the peak-emission hour. Returns 0 when *hourly_kwh* is empty.
+    """
+    if not hourly_kwh:
+        return 0
+    intensities = carbon_intensity_by_hour(hourly_kwh, region)
+    return int(max(range(len(intensities)), key=lambda i: intensities[i]))

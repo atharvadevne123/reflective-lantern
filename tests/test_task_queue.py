@@ -70,3 +70,46 @@ class TestTaskQueue:
         q.stop(timeout=2.0)
         assert order[0] == "high"
         assert order[1] == "low"
+
+
+class TestTaskQueueExtensions:
+    def test_peek_returns_highest_priority(self):
+        q = TaskQueue(workers=0)
+        q.submit(lambda: None, priority=10)
+        q.submit(lambda: None, priority=1)
+        top = q.peek()
+        assert top is not None
+        assert top.priority == 1
+
+    def test_peek_empty_queue_returns_none(self):
+        q = TaskQueue(workers=0)
+        assert q.peek() is None
+
+    def test_drain_removes_all_pending(self):
+        q = TaskQueue(workers=0)
+        for i in range(5):
+            q.submit(lambda: None, priority=i)
+        drained = q.drain()
+        assert len(drained) == 5
+        assert len(q) == 0
+
+    def test_clear_errors_empties_error_list(self):
+        def boom():
+            raise RuntimeError("err")
+
+        q = TaskQueue(workers=1)
+        q.start()
+        q.submit(boom, 1)
+        q.stop(timeout=2.0)
+        assert len(q.errors) == 1
+        q.clear_errors()
+        assert len(q.errors) == 0
+
+    def test_drain_returns_tasks_in_priority_order(self):
+        q = TaskQueue(workers=0)
+        q.submit(lambda: None, priority=5)
+        q.submit(lambda: None, priority=2)
+        q.submit(lambda: None, priority=8)
+        drained = q.drain()
+        priorities = [t.priority for t in drained]
+        assert sorted(priorities) == priorities

@@ -139,9 +139,7 @@ def peak_shave(
     cycles = round(discharged_total / usable, 4) if usable > 0 else 0.0
 
     if peak_after > target_peak_kw:
-        logger.warning(
-            "Battery could not defend %.2f kW target; peak reached %.2f kW", target_peak_kw, peak_after
-        )
+        logger.warning("Battery could not defend %.2f kW target; peak reached %.2f kW", target_peak_kw, peak_after)
     return DispatchResult(
         peak_before_kw=peak_before,
         peak_after_kw=peak_after,
@@ -205,13 +203,58 @@ def demand_charge_saving(
     return round(result.peak_reduction_kw * demand_charge_per_kw, 2)
 
 
+def round_trip_losses_kwh(charged_kwh: float, efficiency: float) -> float:
+    """Return the energy lost in a charge/discharge round trip.
+
+    Args:
+        charged_kwh: Energy drawn from the grid to charge.
+        efficiency: Round-trip efficiency in (0, 1].
+
+    Returns:
+        Energy lost in kWh, rounded to 4 decimal places.
+
+    Raises:
+        ValueError: If *charged_kwh* is negative or *efficiency* is outside (0, 1].
+    """
+    if charged_kwh < 0:
+        raise ValueError(f"charged_kwh must be non-negative, got {charged_kwh}")
+    if not 0.0 < efficiency <= 1.0:
+        raise ValueError(f"efficiency must be in (0, 1], got {efficiency}")
+    return round(charged_kwh * (1.0 - efficiency), 4)
+
+
+def break_even_cycles(capex: float, saving_per_cycle: float) -> float:
+    """Return the cycles needed to recover a capital expenditure.
+
+    Args:
+        capex: Upfront cost in currency units.
+        saving_per_cycle: Revenue or saving per equivalent full cycle.
+
+    Returns:
+        Cycles to break even, rounded to 2 decimal places. Returns
+        ``float('inf')`` when *saving_per_cycle* is zero.
+
+    Raises:
+        ValueError: If either argument is negative.
+    """
+    if capex < 0:
+        raise ValueError(f"capex must be non-negative, got {capex}")
+    if saving_per_cycle < 0:
+        raise ValueError(f"saving_per_cycle must be non-negative, got {saving_per_cycle}")
+    if saving_per_cycle == 0:
+        return float("inf")
+    return round(capex / saving_per_cycle, 2)
+
+
 __all__ = [
     "DEFAULT_DEGRADATION_PER_CYCLE",
     "DEFAULT_MAX_DEPTH_OF_DISCHARGE",
     "DEFAULT_ROUND_TRIP_EFFICIENCY",
     "BatterySpec",
     "DispatchResult",
+    "break_even_cycles",
     "demand_charge_saving",
     "peak_shave",
     "required_capacity_kwh",
+    "round_trip_losses_kwh",
 ]

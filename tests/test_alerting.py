@@ -122,3 +122,37 @@ class TestAlertManager:
         rule = _make_rule(severity=severity)
         alert = rule.evaluate(90, BASE_NOW)
         assert alert.severity == severity
+
+
+class TestAlertManagerExtensions:
+    def test_clear_history_empties_list(self):
+        mgr = AlertManager()
+        mgr.add_rule(_make_rule())
+        mgr.evaluate_all({"cpu": 90}, now=BASE_NOW)
+        mgr.clear_history()
+        assert mgr.history == []
+
+    def test_rule_names_sorted(self):
+        mgr = AlertManager()
+        mgr.add_rule(_make_rule(name="z_rule"))
+        mgr.add_rule(_make_rule(name="a_rule", metric="mem"))
+        names = mgr.rule_names()
+        assert names == ["a_rule", "z_rule"]
+
+    def test_history_for_metric_filters(self):
+        mgr = AlertManager()
+        mgr.add_rule(_make_rule(name="r1", metric="cpu"))
+        mgr.add_rule(_make_rule(name="r2", metric="mem", threshold=80))
+        mgr.evaluate_all({"cpu": 90, "mem": 90}, now=BASE_NOW)
+        assert all(a.metric == "cpu" for a in mgr.history_for_metric("cpu"))
+
+    def test_add_handler_fires(self):
+        received = []
+        mgr = AlertManager()
+        mgr.add_rule(_make_rule())
+        mgr.add_handler(received.append)
+        mgr.evaluate_all({"cpu": 90}, now=BASE_NOW)
+        assert len(received) == 1
+
+    def test_rule_names_empty(self):
+        assert AlertManager().rule_names() == []

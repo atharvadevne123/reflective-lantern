@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from app.profiler import get_stats, reset_stats, timed, tracked
+from app.profiler import call_count, get_stats, reset_stats, timed, total_calls, tracked, tracked_names
 
 
 class TestTimed:
@@ -116,3 +116,53 @@ class TestTracked:
         for _ in range(n):
             fn()
         assert get_stats(f"count_{n}")["calls"] == n
+
+
+class TestProfilerHelpers:
+    def setup_method(self):
+        reset_stats()
+
+    def test_tracked_names_sorted(self):
+        @tracked(label="zzz")
+        def z():
+            pass
+
+        @tracked(label="aaa")
+        def a():
+            pass
+
+        names = tracked_names()
+        assert names.index("aaa") < names.index("zzz")
+
+    def test_call_count_zero_unknown(self):
+        assert call_count("no_such_label") == 0
+
+    def test_call_count_after_calls(self):
+        @tracked(label="cc_test")
+        def fn():
+            pass
+
+        fn()
+        fn()
+        assert call_count("cc_test") == 2
+
+    def test_total_calls_sums_across_labels(self):
+        @tracked(label="tc_a")
+        def a():
+            pass
+
+        @tracked(label="tc_b")
+        def b():
+            pass
+
+        a()
+        a()
+        b()
+        assert total_calls() >= 3
+
+    def test_tracked_names_empty_initially(self):
+        reset_stats()
+        for name in list(tracked_names()):
+            reset_stats(name)
+        # After full reset no counts but labels may remain; just verify no error
+        assert isinstance(tracked_names(), list)

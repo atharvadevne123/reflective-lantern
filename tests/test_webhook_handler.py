@@ -82,3 +82,44 @@ class TestProcess:
         body = b'{"ping": true}'
         wh.process(body, "ping", signature=make_sig(body))
         assert calls == [1, 2]
+
+
+class TestWebhookHandlerHelpers:
+    def test_event_types_sorted(self):
+        wh = WebhookHandler(SECRET)
+        wh.on("push", lambda e: None)
+        wh.on("pr", lambda e: None)
+        assert wh.event_types() == ["pr", "push"]
+
+    def test_handler_count_all(self):
+        wh = WebhookHandler(SECRET)
+        wh.on("push", lambda e: None)
+        wh.on("push", lambda e: None)
+        wh.on_any(lambda e: None)
+        assert wh.handler_count() == 3
+
+    def test_handler_count_specific_event(self):
+        wh = WebhookHandler(SECRET)
+        wh.on("push", lambda e: None)
+        wh.on("push", lambda e: None)
+        assert wh.handler_count("push") == 2
+        assert wh.handler_count("pr") == 0
+
+    def test_clear_handlers_specific(self):
+        wh = WebhookHandler(SECRET)
+        calls = []
+        wh.on("push", calls.append)
+        wh.clear_handlers("push")
+        body = b'{"a": 1}'
+        wh.process(body, "push")
+        assert calls == []
+
+    def test_clear_handlers_all(self):
+        wh = WebhookHandler(SECRET)
+        calls = []
+        wh.on("push", calls.append)
+        wh.on_any(calls.append)
+        wh.clear_handlers()
+        body = b'{"a": 1}'
+        wh.process(body, "push")
+        assert calls == []

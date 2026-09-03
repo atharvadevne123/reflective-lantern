@@ -2,11 +2,15 @@
 
 import threading
 
+import pytest
+
 from app.correlation_id import (
     clear_correlation_id,
     correlation_context,
     get_correlation_id,
+    is_valid_uuid,
     new_correlation_id,
+    require_correlation_id,
     set_correlation_id,
 )
 
@@ -96,3 +100,25 @@ class TestThreadIsolation:
 
         for i in range(5):
             assert results[f"t{i}"] == f"id-{i}"
+
+
+class TestCorrelationIdExtensions:
+    def setup_method(self):
+        clear_correlation_id()
+
+    def test_require_returns_set_id(self):
+        set_correlation_id("abc-123")
+        assert require_correlation_id() == "abc-123"
+
+    def test_require_raises_when_unset(self):
+        with pytest.raises(RuntimeError, match="No correlation ID"):
+            require_correlation_id()
+
+    def test_is_valid_uuid_true(self):
+        assert is_valid_uuid(new_correlation_id()) is True
+
+    def test_is_valid_uuid_false(self):
+        assert is_valid_uuid("not-a-uuid") is False
+
+    def test_is_valid_uuid_empty(self):
+        assert is_valid_uuid("") is False

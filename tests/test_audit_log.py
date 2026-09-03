@@ -71,3 +71,53 @@ class TestAuditLog:
         log.record("a", "b", "c")
         log.record("d", "e", "f")
         assert len(log.search()) == 2
+
+
+class TestAuditLogExtensions:
+    def test_clear_removes_all_entries(self):
+        from app.audit_log import AuditLog
+
+        log = AuditLog()
+        log.record("alice", "create", "doc/1")
+        log.record("bob", "delete", "doc/2")
+        log.clear()
+        assert len(log) == 0
+
+    def test_count_all_entries(self):
+        from app.audit_log import AuditLog
+
+        log = AuditLog()
+        for i in range(5):
+            log.record("u", "read", f"file/{i}")
+        assert log.count() == 5
+
+    def test_count_by_actor(self):
+        from app.audit_log import AuditLog
+
+        log = AuditLog()
+        log.record("alice", "read", "x")
+        log.record("alice", "write", "y")
+        log.record("bob", "read", "z")
+        assert log.count(actor="alice") == 2
+        assert log.count(actor="bob") == 1
+
+    def test_actors_returns_sorted_unique(self):
+        from app.audit_log import AuditLog
+
+        log = AuditLog()
+        log.record("charlie", "x", "r")
+        log.record("alice", "x", "r")
+        log.record("alice", "y", "r")
+        log.record("bob", "x", "r")
+        assert log.actors() == ["alice", "bob", "charlie"]
+
+    @pytest.mark.parametrize("outcome", ["success", "failure", "error"])
+    def test_search_by_outcome(self, outcome: str):
+        from app.audit_log import AuditLog
+
+        log = AuditLog()
+        log.record("u", "act", "r", outcome=outcome)
+        log.record("u", "act", "r", outcome="other")
+        results = log.search(outcome=outcome)
+        assert len(results) == 1
+        assert results[0].outcome == outcome

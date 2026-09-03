@@ -154,3 +154,70 @@ class TestPeakShiftSaving:
     def test_invalid_fraction_rejected(self, fraction: float) -> None:
         with pytest.raises(ValueError, match="shiftable_fraction must be in 0-1"):
             peak_shift_saving(FLAT_DAY, shiftable_fraction=fraction)
+
+
+class TestAnnualCostEstimate:
+    def test_full_year_flat_consumption(self) -> None:
+        from app.tariff import annual_cost_estimate
+
+        result = annual_cost_estimate([100.0] * 12, rate=0.10)
+        assert result == pytest.approx(120.0)
+
+    def test_partial_year_extrapolates(self) -> None:
+        from app.tariff import annual_cost_estimate
+
+        result = annual_cost_estimate([100.0] * 6, rate=0.10)
+        assert result == pytest.approx(120.0)
+
+    def test_empty_raises(self) -> None:
+        from app.tariff import annual_cost_estimate
+
+        with pytest.raises(ValueError, match="empty"):
+            annual_cost_estimate([])
+
+    def test_negative_rate_raises(self) -> None:
+        from app.tariff import annual_cost_estimate
+
+        with pytest.raises(ValueError, match="non-negative"):
+            annual_cost_estimate([100.0], rate=-0.1)
+
+    def test_over_12_months_raises(self) -> None:
+        from app.tariff import annual_cost_estimate
+
+        with pytest.raises(ValueError, match="at most 12"):
+            annual_cost_estimate([100.0] * 13)
+
+
+class TestPeakHourFraction:
+    def test_all_off_peak_is_zero(self) -> None:
+        from app.tariff import peak_hour_fraction
+
+        result = peak_hour_fraction([1.0] * 4, start_hour=0)
+        assert result == pytest.approx(0.0, abs=0.001)
+
+    def test_all_peak_is_one(self) -> None:
+        from app.tariff import peak_hour_fraction
+
+        result = peak_hour_fraction(
+            [1.0] * len(DEFAULT_PEAK_HOURS),
+            start_hour=DEFAULT_PEAK_HOURS[0],
+            peak_hours=DEFAULT_PEAK_HOURS,
+        )
+        assert result == pytest.approx(1.0)
+
+    def test_zero_consumption_returns_zero(self) -> None:
+        from app.tariff import peak_hour_fraction
+
+        assert peak_hour_fraction([0.0] * 24) == 0.0
+
+    def test_fraction_between_zero_and_one(self) -> None:
+        from app.tariff import peak_hour_fraction
+
+        result = peak_hour_fraction(FLAT_DAY, start_hour=0)
+        assert 0.0 <= result <= 1.0
+
+    def test_invalid_start_hour_raises(self) -> None:
+        from app.tariff import peak_hour_fraction
+
+        with pytest.raises(ValueError, match="start_hour"):
+            peak_hour_fraction(FLAT_DAY, start_hour=25)

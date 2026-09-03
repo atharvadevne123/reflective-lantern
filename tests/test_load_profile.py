@@ -10,8 +10,10 @@ from app.load_profile import (
     base_load,
     build_load_profile,
     classify_profile,
+    demand_variability,
     load_factor,
     max_ramp_rate,
+    night_load_fraction,
     peak_to_average_ratio,
 )
 
@@ -138,3 +140,26 @@ class TestBuildLoadProfile:
     def test_empty_series_rejected(self) -> None:
         with pytest.raises(ValueError, match="must not be empty"):
             build_load_profile([])
+
+
+class TestLoadProfileExtensions:
+    def test_demand_variability_flat_is_zero(self):
+        assert demand_variability([5.0] * 24) == pytest.approx(0.0, abs=0.001)
+
+    def test_demand_variability_volatile_series(self):
+        series = [1.0, 10.0, 1.0, 10.0] * 6
+        assert demand_variability(series) > 0.5
+
+    def test_demand_variability_single_value(self):
+        assert demand_variability([5.0]) == 0.0
+
+    def test_night_load_fraction_all_night(self):
+        hourly = [0.0] * 6 + [0.0] * 16 + [10.0] * 2
+        frac = night_load_fraction(hourly, night_hours=(22, 6))
+        assert frac == pytest.approx(1.0, abs=0.01)
+
+    def test_night_load_fraction_short_series(self):
+        assert night_load_fraction([1.0] * 10) == 0.0
+
+    def test_night_load_fraction_zero_total(self):
+        assert night_load_fraction([0.0] * 24) == 0.0

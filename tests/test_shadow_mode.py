@@ -115,3 +115,59 @@ class TestShadowResultFields:
         runner = ShadowRunner(_primary, _shadow_same)
         ret = runner.call(x)
         assert ret == x * 2
+
+
+class TestShadowRunnerExtensions:
+    def test_last_result_none_before_calls(self):
+        from app.shadow_mode import ShadowRunner
+
+        runner = ShadowRunner(_primary, _shadow_same)
+        assert runner.last_result() is None
+
+    def test_last_result_returns_most_recent(self):
+        from app.shadow_mode import ShadowRunner
+
+        runner = ShadowRunner(_primary, _shadow_same)
+        runner.call(1)
+        runner.call(2)
+        result = runner.last_result()
+        assert result is not None
+        assert result.primary_result == 4  # 2 * 2
+
+    def test_mismatches_only_mismatches(self):
+        from app.shadow_mode import ShadowRunner
+
+        runner = ShadowRunner(_primary, _shadow_different)
+        runner.call(1)
+        runner.call(2)
+        ms = runner.mismatches()
+        assert len(ms) == 2
+        for m in ms:
+            assert not m.matched
+
+    def test_error_results_only_errors(self):
+        from app.shadow_mode import ShadowRunner
+
+        runner = ShadowRunner(_primary, _shadow_error)
+        runner.call(1)
+        runner.call(2)
+        errs = runner.error_results()
+        assert len(errs) == 2
+        for e in errs:
+            assert e.shadow_error is not None
+
+    def test_mismatches_empty_when_all_match(self):
+        from app.shadow_mode import ShadowRunner
+
+        runner = ShadowRunner(_primary, _shadow_same)
+        runner.call(5)
+        assert runner.mismatches() == []
+
+    @pytest.mark.parametrize("calls", [1, 3, 5])
+    def test_error_results_count(self, calls: int):
+        from app.shadow_mode import ShadowRunner
+
+        runner = ShadowRunner(_primary, _shadow_error)
+        for i in range(calls):
+            runner.call(i)
+        assert len(runner.error_results()) == calls

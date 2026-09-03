@@ -336,3 +336,32 @@ class TestDefaultBus:
             assert seen == ["tick"]
         finally:
             bus.clear()
+
+
+class TestEventBusExtensions:
+    def test_event_names_sorted(self) -> None:
+        bus = EventBus()
+        bus.subscribe("z_ev", lambda e, p: None)
+        bus.subscribe("a_ev", lambda e, p: None)
+        assert bus.event_names() == ["a_ev", "z_ev"]
+
+    def test_event_names_excludes_cleared(self) -> None:
+        bus = EventBus()
+        bus.subscribe("ev", lambda e, p: None)
+        bus.clear("ev")
+        assert "ev" not in bus.event_names()
+
+    def test_total_listeners_includes_wildcard(self) -> None:
+        bus = EventBus()
+        bus.subscribe("ev", lambda e, p: None)
+        bus.subscribe("*", lambda e, p: None)
+        assert bus.total_listeners() == 2
+
+    def test_has_listeners_true(self) -> None:
+        bus = EventBus()
+        bus.subscribe("x", lambda e, p: None)
+        assert bus.has_listeners("x") is True
+
+    def test_has_listeners_false(self) -> None:
+        bus = EventBus()
+        assert bus.has_listeners("ghost") is False

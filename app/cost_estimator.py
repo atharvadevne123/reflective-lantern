@@ -154,10 +154,49 @@ def compare_specs(
     return results
 
 
+def cheapest_spec(specs: list[ResourceSpec], **rate_kwargs) -> ResourceSpec | None:
+    """Return the least expensive spec from *specs* at the given rates.
+
+    Args:
+        specs: List of resource specs to evaluate.
+        **rate_kwargs: Forwarded to :func:`estimate_cost`.
+
+    Returns:
+        The :class:`ResourceSpec` with the lowest total cost, or ``None``
+        when *specs* is empty.
+    """
+    if not specs:
+        return None
+    return min(specs, key=lambda s: estimate_cost(s, **rate_kwargs).total_usd)
+
+
+def cost_per_unit(breakdown: CostBreakdown, units: int) -> float:
+    """Return the cost per processed unit from a :class:`CostBreakdown`.
+
+    Args:
+        breakdown: A populated cost breakdown.
+        units: Number of units processed (e.g. requests, rows, samples).
+
+    Returns:
+        Cost per unit in USD, rounded to 8 decimal places. Returns 0.0
+        when *units* is zero.
+
+    Raises:
+        ValueError: If *units* is negative.
+    """
+    if units < 0:
+        raise ValueError(f"units must be non-negative, got {units}")
+    if units == 0:
+        return 0.0
+    return round(breakdown.total_usd / units, 8)
+
+
 __all__ = [
     "CostBreakdown",
     "ResourceSpec",
+    "cheapest_spec",
     "compare_specs",
+    "cost_per_unit",
     "estimate_cost",
     "monthly_estimate",
 ]

@@ -140,3 +140,33 @@ class TestEvaluateEvent:
     def test_negative_rates_rejected(self, incentive: float, penalty: float) -> None:
         with pytest.raises(ValueError, match="rates must be non-negative"):
             evaluate_event(BASELINE, CURTAILED, 16.0, incentive_per_kwh=incentive, penalty_per_kwh=penalty)
+
+
+class TestDemandResponseHelpers:
+    def test_curtailment_rate_basic(self) -> None:
+        from app.demand_response import curtailment_rate
+
+        assert curtailment_rate(8.0, event_hours=4) == pytest.approx(2.0)
+
+    def test_curtailment_rate_zero_hours_raises(self) -> None:
+        from app.demand_response import curtailment_rate
+
+        with pytest.raises(ValueError, match="event_hours must be positive"):
+            curtailment_rate(10.0, event_hours=0)
+
+    def test_event_roi_positive_when_profitable(self) -> None:
+        from app.demand_response import event_roi
+
+        roi = event_roi(net_payment=10.0, baseline_cost_per_kwh=0.10, baseline_kwh=50.0)
+        assert roi > 0.0
+
+    def test_event_roi_zero_baseline_returns_zero(self) -> None:
+        from app.demand_response import event_roi
+
+        assert event_roi(net_payment=10.0, baseline_cost_per_kwh=0.0, baseline_kwh=50.0) == 0.0
+
+    def test_event_roi_negative_rate_raises(self) -> None:
+        from app.demand_response import event_roi
+
+        with pytest.raises(ValueError):
+            event_roi(net_payment=10.0, baseline_cost_per_kwh=-0.1, baseline_kwh=50.0)

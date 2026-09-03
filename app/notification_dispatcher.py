@@ -96,3 +96,14 @@ class NotificationDispatcher:
         """Toggle a channel on or off."""
         if name in self._channels:
             self._channels[name].enabled = enabled
+
+    def channel_names(self) -> list[str]:
+        """Return sorted list of all registered channel names."""
+        return sorted(self._channels)
+
+    def enabled_channels(self) -> list[str]:
+        """Return names of all currently enabled channels."""
+        return [name for name, ch in self._channels.items() if ch.enabled]
+
+    def __len__(self) -> int:
+        return len(self._channels)

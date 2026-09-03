@@ -88,3 +88,33 @@ class TestDispatch:
         d.dispatch(Notification(title="t", body=""))
         assert len(r1) == 1
         assert len(r2) == 1
+
+
+class TestDispatcherHelpers:
+    def test_channel_names_sorted(self):
+        d = NotificationDispatcher()
+        d.register(make_channel("zebra")[0])
+        d.register(make_channel("alpha")[0])
+        assert d.channel_names() == ["alpha", "zebra"]
+
+    def test_channel_names_empty(self):
+        assert NotificationDispatcher().channel_names() == []
+
+    def test_enabled_channels_excludes_disabled(self):
+        d = NotificationDispatcher()
+        d.register(make_channel("a", enabled=True)[0])
+        d.register(make_channel("b", enabled=False)[0])
+        assert d.enabled_channels() == ["a"]
+
+    def test_len(self):
+        d = NotificationDispatcher()
+        assert len(d) == 0
+        d.register(make_channel("x")[0])
+        assert len(d) == 1
+        d.unregister("x")
+        assert len(d) == 0
+
+    def test_enabled_channels_all_disabled(self):
+        d = NotificationDispatcher()
+        d.register(make_channel("x", enabled=False)[0])
+        assert d.enabled_channels() == []

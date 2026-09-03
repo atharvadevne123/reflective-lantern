@@ -83,5 +83,17 @@ class AuditLog:
         """Return all entries serialised as newline-delimited JSON."""
         return "\n".join(json.dumps(asdict(e)) for e in self._entries)
 
+    def clear(self) -> None:
+        """Remove all entries (use only in tests or after export)."""
+        self._entries.clear()
+
+    def count(self, actor: str | None = None, action: str | None = None) -> int:
+        """Count entries matching optional actor and/or action filters."""
+        return len(self.search(actor=actor, action=action))
+
+    def actors(self) -> list[str]:
+        """Return sorted list of distinct actor names in the log."""
+        return sorted({e.actor for e in self._entries})
+
     def __len__(self) -> int:
         return len(self._entries)

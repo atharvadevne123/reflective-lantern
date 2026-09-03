@@ -98,3 +98,33 @@ class TestDataLineage:
         dl = DataLineage()
         dl.record(_snap(row_count=rows))
         assert dl.get("energy").row_count == rows
+
+
+class TestDataLineageExtensions:
+    def test_snapshot_count(self):
+        dl = DataLineage()
+        dl.record(_snap(version="1.0.0"))
+        dl.record(_snap(version="2.0.0"))
+        assert dl.snapshot_count("energy") == 2
+
+    def test_snapshot_count_unknown(self):
+        assert DataLineage().snapshot_count("ghost") == 0
+
+    def test_total_rows(self):
+        dl = DataLineage()
+        dl.record(_snap(version="1.0.0", row_count=100))
+        dl.record(_snap(version="2.0.0", row_count=200))
+        assert dl.total_rows("energy") == 300
+
+    def test_delete_all(self):
+        dl = DataLineage()
+        dl.record(_snap())
+        assert dl.delete("energy") is True
+        assert dl.list_datasets() == []
+
+    def test_delete_version(self):
+        dl = DataLineage()
+        dl.record(_snap(version="1.0.0"))
+        dl.record(_snap(version="2.0.0"))
+        dl.delete("energy", "1.0.0")
+        assert dl.list_versions("energy") == ["2.0.0"]

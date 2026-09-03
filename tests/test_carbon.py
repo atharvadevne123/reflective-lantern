@@ -1470,3 +1470,41 @@ class TestAnnualCo2Savings:
         from app.carbon import annual_co2_savings
 
         assert annual_co2_savings(5000.0, 7000.0) == pytest.approx(0.0)
+
+
+class TestKwhToGramsCo2:
+    def test_grams_are_1000x_kg(self) -> None:
+        from app.carbon import kwh_to_co2_kg, kwh_to_grams_co2
+
+        assert kwh_to_grams_co2(100.0) == pytest.approx(kwh_to_co2_kg(100.0) * 1000.0)
+
+    def test_zero_kwh(self) -> None:
+        from app.carbon import kwh_to_grams_co2
+
+        assert kwh_to_grams_co2(0.0) == 0.0
+
+    def test_region_respected(self) -> None:
+        from app.carbon import kwh_to_grams_co2
+
+        pacific = kwh_to_grams_co2(100.0, "pacific_nw")
+        midwest = kwh_to_grams_co2(100.0, "midwest")
+        assert pacific < midwest
+
+
+class TestPeakEmissionHour:
+    def test_highest_kwh_is_peak(self) -> None:
+        from app.carbon import peak_emission_hour
+
+        hourly = [1.0] * 24
+        hourly[14] = 10.0
+        assert peak_emission_hour(hourly) == 14
+
+    def test_empty_returns_zero(self) -> None:
+        from app.carbon import peak_emission_hour
+
+        assert peak_emission_hour([]) == 0
+
+    def test_flat_series_returns_zero(self) -> None:
+        from app.carbon import peak_emission_hour
+
+        assert peak_emission_hour([5.0] * 24) == 0

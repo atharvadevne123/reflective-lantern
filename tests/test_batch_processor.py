@@ -92,3 +92,33 @@ class TestBatchProcessorCallbacks:
         bp = BatchProcessor(_identity, batch_size=5, on_batch_done=bad_cb)
         summary = bp.run(list(range(10)))
         assert summary.total_results == 10
+
+
+class TestBatchProcessorStream:
+    def test_run_stream_yields_all_batches(self):
+        bp = BatchProcessor(_identity, batch_size=3)
+        batches = list(bp.run_stream(list(range(7))))
+        assert len(batches) == 3
+        assert batches[0].batch_index == 0
+        assert batches[2].batch_index == 2
+
+    def test_run_stream_results_correct(self):
+        bp = BatchProcessor(_double, batch_size=2)
+        results = [r for br in bp.run_stream([1, 2, 3, 4]) for r in br.results]
+        assert results == [2, 4, 6, 8]
+
+    def test_run_stream_empty(self):
+        bp = BatchProcessor(_identity, batch_size=5)
+        assert list(bp.run_stream([])) == []
+
+    def test_batch_count_helper(self):
+        bp = BatchProcessor(_identity, batch_size=10)
+        assert bp.batch_count(0) == 0
+        assert bp.batch_count(10) == 1
+        assert bp.batch_count(11) == 2
+        assert bp.batch_count(25) == 3
+
+    def test_run_stream_collect_errors(self):
+        bp = BatchProcessor(_failing, batch_size=5, error_handling="collect")
+        batches = list(bp.run_stream(list(range(10))))
+        assert all(len(br.errors) == 1 for br in batches)

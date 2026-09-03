@@ -709,3 +709,33 @@ def daily_peak_consumption(hourly_kwh: list[float]) -> float:
     if len(hourly_kwh) != 24:
         raise ValueError(f"hourly_kwh must have exactly 24 entries, got {len(hourly_kwh)}")
     return max(hourly_kwh)
+
+
+def records_total_kwh(records: list[dict[str, Any]]) -> float:
+    """Return the sum of all ``consumption_kwh`` values in *records*.
+
+    Args:
+        records: List of energy record dicts.
+
+    Returns:
+        Total kWh rounded to 4 decimal places. Returns 0.0 when no record
+        has a ``consumption_kwh`` field.
+    """
+    total = sum(float(r["consumption_kwh"]) for r in records if "consumption_kwh" in r)
+    return round(total, 4)
+
+
+def records_kwh_range(records: list[dict[str, Any]]) -> tuple[float, float] | None:
+    """Return the (min, max) consumption_kwh across *records*.
+
+    Args:
+        records: List of energy record dicts.
+
+    Returns:
+        Tuple (min_kwh, max_kwh) or ``None`` when no record has a
+        ``consumption_kwh`` field.
+    """
+    vals = [float(r["consumption_kwh"]) for r in records if "consumption_kwh" in r]
+    if not vals:
+        return None
+    return (min(vals), max(vals))

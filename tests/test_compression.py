@@ -5,6 +5,7 @@ from __future__ import annotations
 import pytest
 
 from app.compression import (
+    compress_and_measure,
     compress_json,
     compression_ratio,
     decompress_json,
@@ -91,3 +92,27 @@ class TestCompressionRatio:
     def test_both_methods(self, method):
         ratio = compression_ratio("test " * 100, method=method)
         assert 0 < ratio < 1.0
+
+
+class TestCompressAndMeasure:
+    def test_returns_expected_keys(self):
+        result = compress_and_measure(b"hello world " * 100)
+        assert set(result.keys()) == {"original_bytes", "compressed_bytes", "ratio", "savings_pct"}
+
+    def test_savings_positive_for_repetitive(self):
+        result = compress_and_measure(b"abcabc" * 200)
+        assert result["savings_pct"] > 0
+
+    def test_original_bytes_matches_input(self):
+        data = b"x" * 500
+        result = compress_and_measure(data)
+        assert result["original_bytes"] == 500
+
+    @pytest.mark.parametrize("method", ["gzip", "zlib"])
+    def test_both_methods_accepted(self, method):
+        result = compress_and_measure(b"data " * 100, method=method)
+        assert result["ratio"] < 1.0
+
+    def test_unknown_method_raises(self):
+        with pytest.raises(ValueError, match="Unknown"):
+            compress_and_measure(b"data", method="bzip2")

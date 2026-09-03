@@ -101,6 +101,30 @@ class TaskQueue:
         with self._lock:
             return list(self._errors)
 
+    def clear_errors(self) -> None:
+        """Remove all recorded errors."""
+        with self._lock:
+            self._errors.clear()
+
+    def peek(self) -> Task | None:
+        """Return the highest-priority pending task without removing it.
+
+        Returns:
+            The Task with the lowest priority value, or None if queue is empty.
+        """
+        with self._lock:
+            return self._heap[0] if self._heap else None
+
+    def drain(self) -> list[Task]:
+        """Remove and return all pending (not-yet-started) tasks.
+
+        Useful for graceful shutdown where you want to log dropped work.
+        """
+        with self._not_empty:
+            drained = list(self._heap)
+            self._heap.clear()
+            return drained
+
     def __len__(self) -> int:
         with self._lock:
             return len(self._heap)

@@ -128,4 +128,20 @@ def reset_stats(label: str | None = None) -> None:
             _registry[key] = _Stats()
 
 
-__all__ = ["get_stats", "reset_stats", "timed", "tracked"]
+def tracked_names() -> list[str]:
+    """Return sorted list of labels currently in the stats registry."""
+    return sorted(_registry)
+
+
+def call_count(label: str) -> int:
+    """Return the number of recorded calls for a given label, or 0 if unknown."""
+    stats = _registry.get(label)
+    return stats.calls if stats else 0
+
+
+def total_calls() -> int:
+    """Return the sum of all call counts across every tracked label."""
+    return sum(s.calls for s in _registry.values())
+
+
+__all__ = ["call_count", "get_stats", "reset_stats", "timed", "total_calls", "tracked", "tracked_names"]
