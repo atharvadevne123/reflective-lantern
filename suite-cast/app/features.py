@@ -255,3 +255,48 @@ def length_of_stay_mix(stays: list[int]) -> dict[str, float]:
         "two_three_nights": round(two_three / n, 4),
         "four_plus_nights": round(four_plus / n, 4),
     }
+
+
+def lead_time_bucket(lead_days: int) -> int:
+    """Return ordinal bucket: 0 (<=3 days), 1 (4-14), 2 (15-60), 3 (61+)."""
+    if lead_days <= 3:
+        return 0
+    if lead_days <= 14:
+        return 1
+    if lead_days <= 60:
+        return 2
+    return 3
+
+
+def competitor_rate_ratio(room_rate: float, competitor_avg_rate: float) -> float:
+    """Compute ratio clipped to [0.5, 3.0]; fallback 150.0 when competitor is 0."""
+    denom = competitor_avg_rate if competitor_avg_rate > 0 else 150.0
+    return float(min(3.0, max(0.5, room_rate / denom)))
+
+
+def occupancy_yoy_delta(current_occ_rate: float, prev_year_occ_rate: float) -> float:
+    """Year-over-year occupancy delta clamped to [-1.0, 1.0]."""
+    return round(max(-1.0, min(1.0, current_occ_rate - prev_year_occ_rate)), 4)
+
+
+def adr_from_revenue(total_revenue: float, occupied_rooms: int) -> float:
+    """ADR; 0.0 when occupied_rooms <= 0."""
+    if occupied_rooms <= 0:
+        return 0.0
+    return round(total_revenue / occupied_rooms, 4)
+
+
+def revpar(revenue: float, available_rooms: int) -> float:
+    """RevPAR; 0.0 when available_rooms <= 0."""
+    if available_rooms <= 0:
+        return 0.0
+    return round(revenue / available_rooms, 4)
+
+
+def length_of_stay_bucket(nights: int) -> str:
+    """'short' (1-2), 'medium' (3-6), 'long' (7+)."""
+    if nights <= 2:
+        return "short"
+    if nights <= 6:
+        return "medium"
+    return "long"
