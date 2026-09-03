@@ -94,3 +94,35 @@ class TestTagging:
         reg = ModelRegistry()
         reg.register(mv)
         assert reg.get_latest("price-model").metrics["rmse"] == 0.05
+
+
+class TestModelRegistryExtensions:
+    def test_delete_version_removes_it(self):
+        reg = ModelRegistry()
+        reg.register(_mv(version="1.0.0"))
+        assert reg.delete_version("price-model", "1.0.0") is True
+        assert reg.get_latest("price-model") is None
+
+    def test_delete_version_nonexistent_returns_false(self):
+        reg = ModelRegistry()
+        assert reg.delete_version("ghost", "1.0.0") is False
+
+    def test_get_by_stage_returns_matching(self):
+        reg = ModelRegistry()
+        reg.register(_mv(version="1.0.0"))
+        reg.register(_mv(version="2.0.0"))
+        reg.transition_stage("price-model", "1.0.0", ModelStage.PRODUCTION)
+        prod = reg.get_by_stage("price-model", ModelStage.PRODUCTION)
+        assert len(prod) == 1 and prod[0].version == "1.0.0"
+
+    def test_version_count(self):
+        reg = ModelRegistry()
+        assert reg.version_count("price-model") == 0
+        reg.register(_mv(version="1.0.0"))
+        reg.register(_mv(version="2.0.0"))
+        assert reg.version_count("price-model") == 2
+
+    def test_get_by_stage_empty_when_none_match(self):
+        reg = ModelRegistry()
+        reg.register(_mv())
+        assert reg.get_by_stage("price-model", ModelStage.PRODUCTION) == []
