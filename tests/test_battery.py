@@ -6,9 +6,11 @@ import pytest
 
 from app.battery import (
     BatterySpec,
+    break_even_cycles,
     demand_charge_saving,
     peak_shave,
     required_capacity_kwh,
+    round_trip_losses_kwh,
 )
 
 SPIKY_LOAD = [10.0, 10.0, 50.0, 60.0, 55.0, 10.0, 10.0]
@@ -175,3 +177,20 @@ class TestDemandChargeSaving:
         result = peak_shave(SPIKY_LOAD, make_spec(), target_peak_kw=30.0)
         with pytest.raises(ValueError, match="demand_charge_per_kw must be non-negative"):
             demand_charge_saving(result, -1.0)
+
+
+class TestBatteryHelpers:
+    def test_perfect_efficiency_has_no_losses(self) -> None:
+        assert round_trip_losses_kwh(100.0, efficiency=1.0) == pytest.approx(0.0)
+
+    def test_losses_scale_with_charged_energy(self) -> None:
+        assert round_trip_losses_kwh(100.0, efficiency=0.9) == pytest.approx(10.0)
+
+    def test_zero_charged_means_no_losses(self) -> None:
+        assert round_trip_losses_kwh(0.0, efficiency=0.9) == pytest.approx(0.0)
+
+    def test_break_even_basic(self) -> None:
+        assert break_even_cycles(1000.0, saving_per_cycle=10.0) == pytest.approx(100.0)
+
+    def test_break_even_zero_saving_returns_inf(self) -> None:
+        assert break_even_cycles(1000.0, saving_per_cycle=0.0) == float("inf")
