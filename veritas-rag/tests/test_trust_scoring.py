@@ -59,11 +59,15 @@ class TestFreshnessScore:
 
     def test_half_life_halves_the_score(self) -> None:
         created = (NOW - timedelta(days=365)).isoformat()
-        assert freshness_score(created, half_life_days=365.0, now=NOW) == pytest.approx(0.5, rel=1e-6)
+        assert freshness_score(created, half_life_days=365.0, now=NOW) == pytest.approx(
+            0.5, rel=1e-6
+        )
 
     def test_two_half_lives_quarter_the_score(self) -> None:
         created = (NOW - timedelta(days=730)).isoformat()
-        assert freshness_score(created, half_life_days=365.0, now=NOW) == pytest.approx(0.25, rel=1e-6)
+        assert freshness_score(created, half_life_days=365.0, now=NOW) == pytest.approx(
+            0.25, rel=1e-6
+        )
 
     def test_older_documents_score_lower(self) -> None:
         recent = freshness_score((NOW - timedelta(days=10)).isoformat(), now=NOW)
@@ -153,7 +157,9 @@ class TestScoreChunk:
 
     def test_stale_single_retriever_chunk_scores_low(self) -> None:
         scored = make_scored(
-            chunk=make_chunk(created_at=(NOW - timedelta(days=3650)).isoformat(), source_type="email"),
+            chunk=make_chunk(
+                created_at=(NOW - timedelta(days=3650)).isoformat(), source_type="email"
+            ),
             bm25_rank=None,
             vector_rank=45,
             rerank_score=0.1,

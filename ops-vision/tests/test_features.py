@@ -22,9 +22,7 @@ class TestResourcePressureTransformer:
 
     def make_df(self, cpu: float, mem: float) -> pd.DataFrame:
         """Create a minimal DataFrame for pressure tests."""
-        return pd.DataFrame(
-            [{"cpu_usage_pct": cpu, "memory_usage_pct": mem}]
-        )
+        return pd.DataFrame([{"cpu_usage_pct": cpu, "memory_usage_pct": mem}])
 
     def test_adds_resource_pressure_column(self):
         """Transformer adds resource_pressure column."""
@@ -40,11 +38,14 @@ class TestResourcePressureTransformer:
         out = t.fit_transform(df)
         assert 0.0 <= out["resource_pressure"].iloc[0] <= 1.0
 
-    @pytest.mark.parametrize("cpu,mem,expected", [
-        (100.0, 100.0, 1.0),
-        (0.0, 0.0, 0.0),
-        (60.0, 0.0, 0.36),
-    ])
+    @pytest.mark.parametrize(
+        "cpu,mem,expected",
+        [
+            (100.0, 100.0, 1.0),
+            (0.0, 0.0, 0.0),
+            (60.0, 0.0, 0.36),
+        ],
+    )
     def test_pressure_calculation(self, cpu, mem, expected):
         """resource_pressure matches the 0.6*cpu + 0.4*mem / 100 formula."""
         t = ResourcePressureTransformer()
@@ -57,9 +58,7 @@ class TestLatencyErrRatioTransformer:
     """Tests for LatencyErrRatioTransformer."""
 
     def make_df(self, latency: float, error_rate: float) -> pd.DataFrame:
-        return pd.DataFrame(
-            [{"latency_p99_ms": latency, "error_rate_per_min": error_rate}]
-        )
+        return pd.DataFrame([{"latency_p99_ms": latency, "error_rate_per_min": error_rate}])
 
     def test_adds_latency_err_ratio(self):
         """Transformer adds latency_err_ratio column."""
