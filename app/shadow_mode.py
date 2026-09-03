@@ -120,6 +120,18 @@ class ShadowRunner:
             "match_rate": matched / total if total else 0.0,
         }
 
+    def last_result(self) -> ShadowResult | None:
+        """Return the most recent shadow result, or None if no calls have been made."""
+        return self._results[-1] if self._results else None
+
+    def mismatches(self) -> list[ShadowResult]:
+        """Return all results where the shadow disagreed with the primary."""
+        return [r for r in self._results if not r.matched and r.shadow_error is None]
+
+    def error_results(self) -> list[ShadowResult]:
+        """Return all results where the shadow raised an exception."""
+        return [r for r in self._results if r.shadow_error is not None]
+
     def clear(self) -> None:
         """Reset accumulated results."""
         self._results.clear()
