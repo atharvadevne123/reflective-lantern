@@ -115,5 +115,23 @@ class ModelRegistry:
         mv.tags[key] = value
         return True
 
+    def delete_version(self, name: str, version: str) -> bool:
+        """Remove a specific version. Returns True if removed."""
+        versions = self._models.get(name, [])
+        for i, mv in enumerate(versions):
+            if mv.version == version:
+                versions.pop(i)
+                logger.info("Deleted model '%s' v%s", name, version)
+                return True
+        return False
+
+    def get_by_stage(self, name: str, stage: ModelStage) -> list[ModelVersion]:
+        """Return all versions of a model at the given stage."""
+        return [mv for mv in self._models.get(name, []) if mv.stage is stage]
+
+    def version_count(self, name: str) -> int:
+        """Return number of registered versions for a model."""
+        return len(self._models.get(name, []))
+
 
 __all__ = ["ModelRegistry", "ModelStage", "ModelVersion"]
