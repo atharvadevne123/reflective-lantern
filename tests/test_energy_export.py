@@ -738,3 +738,39 @@ class TestDailyPeakConsumption:
 
         with pytest.raises(ValueError):
             daily_peak_consumption([1.0, 2.0])
+
+
+class TestRecordsTotalKwh:
+    def test_sums_kwh_values(self) -> None:
+        from app.energy_export import records_total_kwh
+
+        assert records_total_kwh(SAMPLE) == pytest.approx(45.0)
+
+    def test_empty_returns_zero(self) -> None:
+        from app.energy_export import records_total_kwh
+
+        assert records_total_kwh([]) == 0.0
+
+    def test_records_without_kwh_skipped(self) -> None:
+        from app.energy_export import records_total_kwh
+
+        assert records_total_kwh([{"hour": 0}, {"consumption_kwh": 5.0}]) == pytest.approx(5.0)
+
+
+class TestRecordsKwhRange:
+    def test_returns_min_max(self) -> None:
+        from app.energy_export import records_kwh_range
+
+        lo, hi = records_kwh_range(SAMPLE)
+        assert lo == pytest.approx(5.0)
+        assert hi == pytest.approx(20.0)
+
+    def test_no_kwh_field_returns_none(self) -> None:
+        from app.energy_export import records_kwh_range
+
+        assert records_kwh_range([{"hour": 0}]) is None
+
+    def test_empty_returns_none(self) -> None:
+        from app.energy_export import records_kwh_range
+
+        assert records_kwh_range([]) is None
