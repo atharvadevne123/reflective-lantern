@@ -167,13 +167,60 @@ def build_load_profile(hourly_kwh: list[float]) -> LoadProfile:
     return profile
 
 
+def demand_variability(hourly_kwh: list[float]) -> float:
+    """Return coefficient of variation of the demand series.
+
+    CV = std_dev / mean; measures volatility relative to average demand.
+    Returns 0.0 for series with zero mean or fewer than 2 points.
+
+    Args:
+        hourly_kwh: Consumption values in kWh, one entry per hour.
+
+    Returns:
+        Coefficient of variation, rounded to 4 decimal places.
+    """
+    if len(hourly_kwh) < 2:
+        return 0.0
+    mean = statistics.fmean(hourly_kwh)
+    if mean <= 0:
+        return 0.0
+    return round(statistics.stdev(hourly_kwh) / mean, 4)
+
+
+def night_load_fraction(hourly_kwh: list[float], night_hours: tuple[int, int] = (22, 6)) -> float:
+    """Return the fraction of total energy consumed during night hours.
+
+    Args:
+        hourly_kwh: 24-element list of hourly consumption values (index 0 = midnight).
+        night_hours: Tuple (start_hour, end_hour) defining the night window.
+            The window wraps midnight, e.g. (22, 6) covers 22:00–05:59.
+
+    Returns:
+        Fraction in [0, 1] rounded to 4 decimal places. Returns 0.0 if total
+        consumption is zero or the series has fewer than 24 values.
+    """
+    if len(hourly_kwh) < 24:
+        return 0.0
+    total = sum(hourly_kwh[:24])
+    if total <= 0:
+        return 0.0
+    start, end = night_hours
+    if start > end:
+        night = sum(hourly_kwh[start:24]) + sum(hourly_kwh[:end])
+    else:
+        night = sum(hourly_kwh[start:end])
+    return round(night / total, 4)
+
+
 __all__ = [
     "BASE_LOAD_PERCENTILE",
     "LoadProfile",
     "base_load",
     "build_load_profile",
     "classify_profile",
+    "demand_variability",
     "load_factor",
     "max_ramp_rate",
+    "night_load_fraction",
     "peak_to_average_ratio",
 ]
