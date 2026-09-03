@@ -178,13 +178,61 @@ def evaluate_event(
     )
 
 
+def curtailment_rate(curtailed_kwh: float, event_hours: int) -> float:
+    """Return the average curtailment rate in kWh per hour.
+
+    Args:
+        curtailed_kwh: Total curtailment delivered over the event window.
+        event_hours: Duration of the event in hours (must be > 0).
+
+    Returns:
+        Average kWh curtailed per hour, rounded to 4 decimal places.
+
+    Raises:
+        ValueError: If *event_hours* is not positive.
+    """
+    if event_hours <= 0:
+        raise ValueError(f"event_hours must be positive, got {event_hours}")
+    return round(curtailed_kwh / event_hours, 4)
+
+
+def event_roi(net_payment: float, baseline_cost_per_kwh: float, baseline_kwh: float) -> float:
+    """Estimate the return on investment of participating in a DR event.
+
+    ROI is the net payment received divided by the electricity cost the
+    site would have paid at baseline.
+
+    Args:
+        net_payment: Net incentive minus penalty for the event.
+        baseline_cost_per_kwh: Electricity rate the site normally pays ($/kWh).
+        baseline_kwh: Expected energy consumption absent the event.
+
+    Returns:
+        ROI as a decimal fraction rounded to 4 decimal places. Returns 0.0
+        when *baseline_kwh* or *baseline_cost_per_kwh* is zero.
+
+    Raises:
+        ValueError: If *baseline_cost_per_kwh* or *baseline_kwh* is negative.
+    """
+    if baseline_cost_per_kwh < 0:
+        raise ValueError(f"baseline_cost_per_kwh must be non-negative, got {baseline_cost_per_kwh}")
+    if baseline_kwh < 0:
+        raise ValueError(f"baseline_kwh must be non-negative, got {baseline_kwh}")
+    reference_cost = baseline_cost_per_kwh * baseline_kwh
+    if reference_cost <= 0:
+        return 0.0
+    return round(net_payment / reference_cost, 4)
+
+
 __all__ = [
     "DEFAULT_CBL_DAYS",
     "DEFAULT_INCENTIVE_PER_KWH",
     "DEFAULT_PENALTY_PER_KWH",
     "DemandResponseResult",
     "curtailment",
+    "curtailment_rate",
     "customer_baseline_load",
     "evaluate_event",
+    "event_roi",
     "performance_score",
 ]
