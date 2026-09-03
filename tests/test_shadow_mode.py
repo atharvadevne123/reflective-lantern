@@ -134,7 +134,7 @@ class TestShadowRunnerExtensions:
 
     def test_mismatches_only_mismatches(self):
         from app.shadow_mode import ShadowRunner
-        runner = ShadowRunner(_primary, _shadow_diff)
+        runner = ShadowRunner(_primary, _shadow_different)
         runner.call(1)
         runner.call(2)
         ms = runner.mismatches()
