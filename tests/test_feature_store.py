@@ -96,3 +96,31 @@ class TestFeatureStore:
             store.publish(_fs(version=v, features={"v": v}))
         result = store.get_version("energy", version)
         assert result.features["v"] == version
+
+
+class TestFeatureStoreExtensions:
+    def test_version_count(self):
+        store = FeatureStore()
+        store.publish(_fs(version="1.0.0"))
+        store.publish(_fs(version="2.0.0"))
+        assert store.version_count("energy") == 2
+
+    def test_version_count_unknown(self):
+        assert FeatureStore().version_count("ghost") == 0
+
+    def test_len_counts_names(self):
+        store = FeatureStore()
+        assert len(store) == 0
+        store.publish(_fs(name="a"))
+        store.publish(_fs(name="b"))
+        assert len(store) == 2
+
+    def test_total_versions(self):
+        store = FeatureStore()
+        store.publish(_fs(name="a", version="1.0.0"))
+        store.publish(_fs(name="a", version="2.0.0"))
+        store.publish(_fs(name="b", version="1.0.0"))
+        assert store.total_versions() == 3
+
+    def test_total_versions_empty(self):
+        assert FeatureStore().total_versions() == 0
