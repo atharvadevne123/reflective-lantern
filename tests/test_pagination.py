@@ -9,6 +9,8 @@ from app.pagination import (
     cursor_paginate,
     decode_cursor,
     encode_cursor,
+    last_page_items,
+    page_range,
     paginate,
 )
 
@@ -115,3 +117,30 @@ class TestCursorPaginate:
         result = cursor_paginate([], per_page=10)
         assert result.items == []
         assert result.has_next is False
+
+
+class TestPageRange:
+    def test_middle_page(self):
+        info = PageInfo(total=100, page=5, per_page=10)
+        rng = page_range(info, window=5)
+        assert 5 in rng
+        assert len(rng) <= 5
+
+    def test_first_page_starts_at_one(self):
+        info = PageInfo(total=100, page=1, per_page=10)
+        rng = page_range(info, window=5)
+        assert rng[0] == 1
+
+    def test_last_page_ends_at_total(self):
+        info = PageInfo(total=100, page=10, per_page=10)
+        rng = page_range(info, window=5)
+        assert rng[-1] == 10
+
+    def test_last_page_items_exact(self):
+        assert last_page_items(list(range(25)), per_page=10) == 5
+
+    def test_last_page_items_full_page(self):
+        assert last_page_items(list(range(20)), per_page=10) == 10
+
+    def test_last_page_items_empty(self):
+        assert last_page_items([], per_page=10) == 0
