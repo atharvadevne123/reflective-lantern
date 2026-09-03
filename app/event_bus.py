@@ -104,6 +104,18 @@ class EventBus:
         """
         return len(self._handlers.get(event, []))
 
+    def event_names(self) -> list[str]:
+        """Return sorted list of event names that have at least one handler."""
+        return sorted(k for k, v in self._handlers.items() if v)
+
+    def total_listeners(self) -> int:
+        """Return the total number of specific and wildcard handlers registered."""
+        return sum(len(v) for v in self._handlers.values()) + len(self._wildcard_handlers)
+
+    def has_listeners(self, event: str) -> bool:
+        """Return True if any handlers are registered for *event*."""
+        return bool(self._handlers.get(event)) or bool(self._wildcard_handlers)
+
 
 _default_bus: EventBus = EventBus()
 
