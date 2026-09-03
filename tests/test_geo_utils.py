@@ -9,10 +9,12 @@ import pytest
 from app.geo_utils import (
     BoundingBox,
     Coordinate,
+    bearing,
     bounding_box_of,
     haversine,
     midpoint,
     nearest_neighbor,
+    within_radius,
 )
 
 LONDON = Coordinate(51.5074, -0.1278)
@@ -116,3 +118,30 @@ class TestMidpoint:
     def test_midpoint_london_paris_is_between(self):
         mid = midpoint(LONDON, PARIS)
         assert LONDON.lat > mid.lat > PARIS.lat
+
+
+class TestBearingAndRadius:
+    LONDON = Coordinate(51.5074, -0.1278)
+    NORTH = Coordinate(52.5074, -0.1278)
+
+    def test_bearing_due_north(self):
+        b = bearing(self.LONDON, self.NORTH)
+        assert b == pytest.approx(0.0, abs=0.5)
+
+    def test_bearing_in_range(self):
+        b = bearing(LONDON, PARIS)
+        assert 0 <= b < 360
+
+    def test_within_radius_includes_close_point(self):
+        close = Coordinate(51.51, -0.13)
+        result = within_radius(LONDON, 5.0, [close, PARIS])
+        assert close in result
+        assert PARIS not in result
+
+    def test_within_radius_empty_candidates(self):
+        assert within_radius(LONDON, 100.0, []) == []
+
+    def test_within_radius_all_included(self):
+        nearby = [Coordinate(51.5, -0.12), Coordinate(51.52, -0.13)]
+        result = within_radius(LONDON, 10.0, nearby)
+        assert len(result) == 2
