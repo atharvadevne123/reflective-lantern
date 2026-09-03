@@ -132,5 +132,41 @@ class BatchProcessor(Generic[T, R]):
             total_errors=total_errors,
         )
 
+    def run_stream(self, items: list[T]) -> Iterator[BatchResult[R]]:
+        """Yield a :class:`BatchResult` for each batch as it completes.
+
+        Unlike :meth:`run`, this yields results incrementally so callers
+        can process or stream output before all batches finish.
+        """
+        for batch_index, batch in enumerate(self._chunk(items, self.batch_size)):
+            errors: list[Exception] = []
+            results: list[R] = []
+            try:
+                results = self.processor(batch)
+            except Exception as exc:
+                if self.error_handling == "raise":
+                    raise
+                errors.append(exc)
+                logger.error("Batch %d failed: %s", batch_index, exc)
+
+            br = BatchResult(
+                batch_index=batch_index,
+                items_processed=len(batch),
+                results=results,
+                errors=errors,
+            )
+            if self.on_batch_done:
+                try:
+                    self.on_batch_done(br)
+                except Exception as cb_exc:
+                    logger.warning("on_batch_done callback failed: %s", cb_exc)
+            yield br
+
+    def batch_count(self, total_items: int) -> int:
+        """Return the number of batches needed for *total_items*."""
+        if total_items <= 0:
+            return 0
+        return (total_items + self.batch_size - 1) // self.batch_size
+
 
 __all__ = ["BatchProcessor", "BatchResult", "RunSummary"]
