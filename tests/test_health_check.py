@@ -1,6 +1,8 @@
 """Tests for app.health_check."""
 
 from app.health_check import CheckResult, HealthRegistry, check
+import pytest
+
 
 
 def make_ok(name="db") -> CheckResult:
@@ -82,3 +84,50 @@ class TestCheckDecorator:
 
         result = noop()
         assert result.name == "noop"
+
+
+class TestHealthRegistryExtended:
+    def test_run_empty_registry_is_healthy(self):
+        from app.health_check import HealthRegistry
+        reg = HealthRegistry()
+        status = reg.run()
+        assert status.healthy is True
+        assert status.results == []
+
+    def test_failed_property_filters_unhealthy(self):
+        from app.health_check import CheckResult, HealthRegistry
+        reg = HealthRegistry()
+        reg.register("ok", lambda: CheckResult("ok", True, "fine"))
+        reg.register("bad", lambda: CheckResult("bad", False, "broken"))
+        status = reg.run()
+        assert len(status.failed) == 1
+        assert status.failed[0].name == "bad"
+
+    def test_unregister_removes_check(self):
+        from app.health_check import CheckResult, HealthRegistry
+        reg = HealthRegistry()
+        reg.register("x", lambda: CheckResult("x", True))
+        assert len(reg) == 1
+        reg.unregister("x")
+        assert len(reg) == 0
+
+    def test_exception_in_check_captured_as_unhealthy(self):
+        from app.health_check import HealthRegistry
+        reg = HealthRegistry()
+        def boom() -> None:
+            raise RuntimeError("crash")
+        reg.register("boom", boom)
+        status = reg.run()
+        assert not status.healthy
+        assert "RuntimeError" in status.results[0].message
+
+    @pytest.mark.parametrize("n", [1, 3, 5])
+    def test_all_healthy_checks_aggregate_healthy(self, n: int):
+        from app.health_check import CheckResult, HealthRegistry
+        reg = HealthRegistry()
+        for i in range(n):
+            name = f"check_{i}"
+            reg.register(name, lambda _name=name: CheckResult(_name, True))
+        status = reg.run()
+        assert status.healthy is True
+        assert len(status.results) == n
