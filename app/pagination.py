@@ -154,6 +154,39 @@ def cursor_paginate(
     return CursorPage(items=page_items, next_cursor=next_cursor, has_next=has_next)
 
 
+def page_range(info: PageInfo, window: int = 5) -> list[int]:
+    """Return a list of page numbers centred on *info.page* for navigation.
+
+    Args:
+        info: PageInfo from a paginated response.
+        window: Total number of page numbers to show (capped by total_pages).
+
+    Returns:
+        Sorted list of 1-based page numbers.
+    """
+    half = window // 2
+    start = max(1, info.page - half)
+    end = min(info.total_pages, start + window - 1)
+    start = max(1, end - window + 1)
+    return list(range(start, end + 1))
+
+
+def last_page_items(items: list, per_page: int) -> int:
+    """Return how many items appear on the final page.
+
+    Args:
+        items: Full list of items.
+        per_page: Page size.
+
+    Returns:
+        Remainder count (1–per_page), or 0 if items is empty.
+    """
+    if not items or per_page < 1:
+        return 0
+    remainder = len(items) % per_page
+    return remainder if remainder else per_page
+
+
 __all__ = [
     "CursorPage",
     "Page",
@@ -161,5 +194,7 @@ __all__ = [
     "cursor_paginate",
     "decode_cursor",
     "encode_cursor",
+    "last_page_items",
+    "page_range",
     "paginate",
 ]
