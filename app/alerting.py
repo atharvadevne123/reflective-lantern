@@ -159,5 +159,21 @@ class AlertManager:
         """Return all alerts fired since creation."""
         return list(self._fired)
 
+    def clear_history(self) -> None:
+        """Remove all previously fired alerts from the history list."""
+        self._fired.clear()
+
+    def rule_names(self) -> list[str]:
+        """Return sorted list of registered rule names."""
+        return sorted(self._rules)
+
+    def history_for_metric(self, metric: str) -> list[Alert]:
+        """Return all historical alerts for a specific metric name."""
+        return [a for a in self._fired if a.metric == metric]
+
+    def add_handler(self, handler: Callable[[Alert], None]) -> None:
+        """Register an additional alert handler."""
+        self._handlers.append(handler)
+
 
 __all__ = ["Alert", "AlertManager", "AlertRule", "Severity"]
