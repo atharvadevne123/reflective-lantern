@@ -63,3 +63,20 @@ def correlation_context(cid: str | None = None) -> Generator[str, None, None]:
             clear_correlation_id()
         else:
             set_correlation_id(previous)
+
+
+def require_correlation_id() -> str:
+    """Return the current correlation ID or raise RuntimeError if unset."""
+    cid = get_correlation_id()
+    if cid is None:
+        raise RuntimeError("No correlation ID set for this thread")
+    return cid
+
+
+def is_valid_uuid(value: str) -> bool:
+    """Return True if *value* is a valid UUID string (any version)."""
+    try:
+        uuid.UUID(value)
+        return True
+    except ValueError:
+        return False
