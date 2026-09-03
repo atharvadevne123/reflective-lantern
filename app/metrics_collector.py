@@ -144,6 +144,17 @@ class MetricsRegistry:
     def all_metrics(self) -> dict[str, object]:
         return dict(self._metrics)
 
+    def metric_names(self) -> list[str]:
+        """Return sorted list of all registered metric names."""
+        return sorted(self._metrics)
+
+    def remove(self, name: str) -> bool:
+        """Unregister a metric by name. Returns True if it existed."""
+        return self._metrics.pop(name, None) is not None
+
+    def __len__(self) -> int:
+        return len(self._metrics)
+
 
 _default = MetricsRegistry()
 
