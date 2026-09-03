@@ -276,3 +276,46 @@ class TestDecoratorUsage:
     def test_return_value_passes_through(self) -> None:
         breaker = CircuitBreaker()
         assert breaker.call(lambda x: x * 2, 21) == 42
+
+
+class TestCircuitBreakerReset:
+    def test_reset_clears_failure_count(self) -> None:
+        cb = CircuitBreaker(failure_threshold=5)
+        for _ in range(3):
+            with pytest.raises(ValueError):
+                cb.call(_always_fail)
+        cb.reset()
+        assert cb.failure_count == 0
+
+    def test_reset_from_open_returns_to_closed(self) -> None:
+        cb = CircuitBreaker(failure_threshold=2)
+        for _ in range(2):
+            with pytest.raises(ValueError):
+                cb.call(_always_fail)
+        assert cb.state is CircuitState.OPEN
+        cb.reset()
+        assert cb.state is CircuitState.CLOSED
+
+    def test_reset_allows_calls_after_open(self) -> None:
+        cb = CircuitBreaker(failure_threshold=1)
+        with pytest.raises(ValueError):
+            cb.call(_always_fail)
+        cb.reset()
+        assert cb.call(_always_succeed) == "ok"
+
+    def test_failure_count_property_tracks_failures(self) -> None:
+        cb = CircuitBreaker(failure_threshold=10)
+        for i in range(4):
+            with pytest.raises(ValueError):
+                cb.call(_always_fail)
+        assert cb.failure_count == 4
+
+    @pytest.mark.parametrize("n", [1, 3, 5])
+    def test_reset_after_n_failures(self, n: int) -> None:
+        cb = CircuitBreaker(failure_threshold=10)
+        for _ in range(n):
+            with pytest.raises(ValueError):
+                cb.call(_always_fail)
+        cb.reset()
+        assert cb.failure_count == 0
+        assert cb.state is CircuitState.CLOSED
