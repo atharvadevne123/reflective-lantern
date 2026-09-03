@@ -7,6 +7,7 @@ import logging
 import time
 from collections.abc import Callable, Sequence
 from enum import Enum
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -55,7 +56,7 @@ class CircuitBreaker:
                 self._state = CircuitState.HALF_OPEN
         return self._state
 
-    def call(self, func: Callable, *args, **kwargs):
+    def call(self, func: Callable, *args: Any, **kwargs: Any) -> Any:
         """Execute func through the circuit breaker.
 
         Args:
