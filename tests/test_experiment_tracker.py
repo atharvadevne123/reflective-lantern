@@ -87,3 +87,40 @@ class TestExperimentRegistry:
         reg.register(Experiment("a", [CONTROL]))
         reg.register(Experiment("b", [CONTROL]))
         assert set(reg.list_experiments()) == {"a", "b"}
+
+
+class TestExperimentTrackerExtensions:
+    def test_reset_counts_zeroes_all(self):
+        exp = Experiment("e", [CONTROL, TREATMENT])
+        for i in range(10):
+            exp.assign(str(i))
+        exp.reset_counts()
+        assert exp.total_assignments() == 0
+
+    def test_total_assignments_accumulates(self):
+        exp = Experiment("e", [CONTROL])
+        for i in range(5):
+            exp.assign(str(i))
+        assert exp.total_assignments() == 5
+
+    def test_registry_deregister(self):
+        reg = ExperimentRegistry()
+        reg.register(Experiment("x", [CONTROL]))
+        assert reg.deregister("x") is True
+        assert reg.get("x") is None
+
+    def test_registry_deregister_missing(self):
+        reg = ExperimentRegistry()
+        assert reg.deregister("ghost") is False
+
+    def test_registry_active_experiments(self):
+        reg = ExperimentRegistry()
+        reg.register(Experiment("on", [CONTROL], enabled=True))
+        reg.register(Experiment("off", [CONTROL], enabled=False))
+        assert reg.active_experiments() == ["on"]
+
+    def test_registry_len(self):
+        reg = ExperimentRegistry()
+        assert len(reg) == 0
+        reg.register(Experiment("a", [CONTROL]))
+        assert len(reg) == 1
