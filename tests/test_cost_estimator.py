@@ -97,3 +97,40 @@ class TestCompareSpecs:
         results = compare_specs(specs)
         labels = {r["label"] for r in results}
         assert "spec-0" in labels or "spec-1" in labels
+
+
+class TestCostEstimatorHelpers:
+    def test_cheapest_spec_returns_lowest_cost(self):
+        from app.cost_estimator import cheapest_spec
+
+        cheap = ResourceSpec(cpu_cores=1, memory_gb=1)
+        expensive = ResourceSpec(cpu_cores=8, memory_gb=32, gpu_count=4)
+        result = cheapest_spec([cheap, expensive])
+        assert result is cheap
+
+    def test_cheapest_spec_empty_returns_none(self):
+        from app.cost_estimator import cheapest_spec
+
+        assert cheapest_spec([]) is None
+
+    def test_cost_per_unit_basic(self):
+        from app.cost_estimator import cost_per_unit
+
+        spec = ResourceSpec(cpu_cores=4, memory_gb=16, duration_hours=1)
+        bd = estimate_cost(spec, cpu_rate=1.0, memory_rate=0.0, gpu_rate=0.0)
+        assert cost_per_unit(bd, 4) == pytest.approx(1.0)
+
+    def test_cost_per_unit_zero_units_returns_zero(self):
+        from app.cost_estimator import cost_per_unit
+
+        spec = ResourceSpec(cpu_cores=1, memory_gb=1)
+        bd = estimate_cost(spec)
+        assert cost_per_unit(bd, 0) == 0.0
+
+    def test_cost_per_unit_negative_raises(self):
+        from app.cost_estimator import cost_per_unit
+
+        spec = ResourceSpec(cpu_cores=1, memory_gb=1)
+        bd = estimate_cost(spec)
+        with pytest.raises(ValueError, match="non-negative"):
+            cost_per_unit(bd, -1)
