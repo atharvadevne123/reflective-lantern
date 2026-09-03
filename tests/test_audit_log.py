@@ -2,7 +2,6 @@
 
 import json
 import time
-import pytest
 
 import pytest
 
@@ -77,6 +76,7 @@ class TestAuditLog:
 class TestAuditLogExtensions:
     def test_clear_removes_all_entries(self):
         from app.audit_log import AuditLog
+
         log = AuditLog()
         log.record("alice", "create", "doc/1")
         log.record("bob", "delete", "doc/2")
@@ -85,6 +85,7 @@ class TestAuditLogExtensions:
 
     def test_count_all_entries(self):
         from app.audit_log import AuditLog
+
         log = AuditLog()
         for i in range(5):
             log.record("u", "read", f"file/{i}")
@@ -92,6 +93,7 @@ class TestAuditLogExtensions:
 
     def test_count_by_actor(self):
         from app.audit_log import AuditLog
+
         log = AuditLog()
         log.record("alice", "read", "x")
         log.record("alice", "write", "y")
@@ -101,6 +103,7 @@ class TestAuditLogExtensions:
 
     def test_actors_returns_sorted_unique(self):
         from app.audit_log import AuditLog
+
         log = AuditLog()
         log.record("charlie", "x", "r")
         log.record("alice", "x", "r")
@@ -111,6 +114,7 @@ class TestAuditLogExtensions:
     @pytest.mark.parametrize("outcome", ["success", "failure", "error"])
     def test_search_by_outcome(self, outcome: str):
         from app.audit_log import AuditLog
+
         log = AuditLog()
         log.record("u", "act", "r", outcome=outcome)
         log.record("u", "act", "r", outcome="other")

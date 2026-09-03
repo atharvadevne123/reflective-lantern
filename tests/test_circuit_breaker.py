@@ -305,7 +305,7 @@ class TestCircuitBreakerReset:
 
     def test_failure_count_property_tracks_failures(self) -> None:
         cb = CircuitBreaker(failure_threshold=10)
-        for i in range(4):
+        for _i in range(4):
             with pytest.raises(ValueError):
                 cb.call(_always_fail)
         assert cb.failure_count == 4

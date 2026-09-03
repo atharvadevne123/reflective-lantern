@@ -147,7 +147,7 @@ def compress_and_measure(data: bytes, method: str = "gzip", level: int = 6) -> d
     Args:
         data: Raw bytes to compress.
         method: ``'gzip'`` or ``'zlib'``.
-        level: Compression level 0–9.
+        level: Compression level 0-9.
 
     Returns:
         Dict with keys ``original_bytes``, ``compressed_bytes``, ``ratio``,

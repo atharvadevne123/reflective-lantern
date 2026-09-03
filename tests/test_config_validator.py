@@ -2,7 +2,14 @@
 
 import pytest
 
-from app.config_validator import ConfigSchema, FieldSpec, ValidationError, has_required_fields, schema_field_names, validate
+from app.config_validator import (
+    ConfigSchema,
+    FieldSpec,
+    ValidationError,
+    has_required_fields,
+    schema_field_names,
+    validate,
+)
 
 
 def make_schema() -> ConfigSchema:
@@ -68,6 +75,7 @@ class TestValidate:
 class TestValidateChoicesAndBounds:
     def test_multiple_violations_reported_together(self):
         from app.config_validator import ConfigSchema, FieldSpec, ValidationError, validate
+
         schema = ConfigSchema()
         schema.add(FieldSpec("a", int, required=True))
         schema.add(FieldSpec("b", str, required=True))
@@ -77,6 +85,7 @@ class TestValidateChoicesAndBounds:
 
     def test_choices_violation_message(self):
         from app.config_validator import ConfigSchema, FieldSpec, ValidationError, validate
+
         schema = ConfigSchema()
         schema.add(FieldSpec("env", str, choices=["prod", "staging", "dev"]))
         with pytest.raises(ValidationError) as exc_info:
@@ -86,6 +95,7 @@ class TestValidateChoicesAndBounds:
     @pytest.mark.parametrize("val,valid", [(0, False), (1, True), (10, True), (11, False)])
     def test_min_max_bounds(self, val: int, valid: bool):
         from app.config_validator import ConfigSchema, FieldSpec, ValidationError, validate
+
         schema = ConfigSchema()
         schema.add(FieldSpec("workers", int, min_value=1, max_value=10))
         if valid:
@@ -97,6 +107,7 @@ class TestValidateChoicesAndBounds:
 
     def test_optional_field_gets_default(self):
         from app.config_validator import ConfigSchema, FieldSpec, validate
+
         schema = ConfigSchema()
         schema.add(FieldSpec("timeout", int, required=False, default=30))
         result = validate({}, schema)
@@ -104,6 +115,7 @@ class TestValidateChoicesAndBounds:
 
     def test_schema_add_returns_self_for_chaining(self):
         from app.config_validator import ConfigSchema, FieldSpec
+
         schema = ConfigSchema()
         returned = schema.add(FieldSpec("x", int))
         assert returned is schema

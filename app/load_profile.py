@@ -193,7 +193,7 @@ def night_load_fraction(hourly_kwh: list[float], night_hours: tuple[int, int] = 
     Args:
         hourly_kwh: 24-element list of hourly consumption values (index 0 = midnight).
         night_hours: Tuple (start_hour, end_hour) defining the night window.
-            The window wraps midnight, e.g. (22, 6) covers 22:00–05:59.
+            The window wraps midnight, e.g. (22, 6) covers 22:00-05:59.
 
     Returns:
         Fraction in [0, 1] rounded to 4 decimal places. Returns 0.0 if total

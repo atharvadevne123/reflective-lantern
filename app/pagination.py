@@ -179,7 +179,7 @@ def last_page_items(items: list, per_page: int) -> int:
         per_page: Page size.
 
     Returns:
-        Remainder count (1–per_page), or 0 if items is empty.
+        Remainder count (1-per_page), or 0 if items is empty.
     """
     if not items or per_page < 1:
         return 0

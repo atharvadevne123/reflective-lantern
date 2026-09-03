@@ -96,18 +96,21 @@ class TestPerKeyTokenBucket:
 class TestTokenBucketEdgeCases:
     def test_consume_zero_tokens_always_succeeds(self):
         from app.token_bucket import TokenBucket
+
         b = TokenBucket(capacity=1.0, rate=1.0)
         b.consume(1.0)  # empty bucket
         assert b.consume(0.0) is True
 
     def test_consume_more_than_capacity_fails(self):
         from app.token_bucket import TokenBucket
+
         b = TokenBucket(capacity=5.0, rate=1.0)
         assert b.consume(6.0) is False
 
     @pytest.mark.parametrize("cap", [1.0, 5.0, 10.0])
     def test_initial_tokens_equal_capacity(self, cap: float):
         from app.token_bucket import TokenBucket
+
         b = TokenBucket(capacity=cap, rate=1.0)
         # Consume all tokens
         for _ in range(int(cap)):
@@ -117,6 +120,7 @@ class TestTokenBucketEdgeCases:
 
     def test_per_key_creates_independent_buckets(self):
         from app.token_bucket import PerKeyTokenBucket
+
         pkb = PerKeyTokenBucket(capacity=1.0, rate=1.0)
         assert pkb.consume("a") is True
         assert pkb.consume("a") is False
@@ -124,6 +128,7 @@ class TestTokenBucketEdgeCases:
 
     def test_per_key_bucket_count(self):
         from app.token_bucket import PerKeyTokenBucket
+
         pkb = PerKeyTokenBucket(capacity=5.0, rate=5.0)
         pkb.consume("x")
         pkb.consume("y")
