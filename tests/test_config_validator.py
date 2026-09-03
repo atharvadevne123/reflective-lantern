@@ -2,7 +2,7 @@
 
 import pytest
 
-from app.config_validator import ConfigSchema, FieldSpec, ValidationError, validate
+from app.config_validator import ConfigSchema, FieldSpec, ValidationError, has_required_fields, schema_field_names, validate
 
 
 def make_schema() -> ConfigSchema:
@@ -108,3 +108,30 @@ class TestValidateChoicesAndBounds:
         returned = schema.add(FieldSpec("x", int))
         assert returned is schema
         assert len(schema.fields) == 1
+
+
+class TestConfigValidatorHelpers:
+    def test_schema_field_names_returns_sorted(self):
+        schema = ConfigSchema()
+        schema.add(FieldSpec("zebra", str))
+        schema.add(FieldSpec("alpha", int))
+        schema.add(FieldSpec("middle", bool))
+        assert schema_field_names(schema) == ["alpha", "middle", "zebra"]
+
+    def test_schema_field_names_empty_schema(self):
+        assert schema_field_names(ConfigSchema()) == []
+
+    def test_has_required_fields_true_when_required_present(self):
+        schema = ConfigSchema()
+        schema.add(FieldSpec("x", str, required=True))
+        schema.add(FieldSpec("y", int, required=False, default=0))
+        assert has_required_fields(schema) is True
+
+    def test_has_required_fields_false_when_all_optional(self):
+        schema = ConfigSchema()
+        schema.add(FieldSpec("a", str, required=False, default="hi"))
+        schema.add(FieldSpec("b", int, required=False, default=0))
+        assert has_required_fields(schema) is False
+
+    def test_has_required_fields_false_for_empty_schema(self):
+        assert has_required_fields(ConfigSchema()) is False
