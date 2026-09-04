@@ -135,3 +135,44 @@ class TestComparePeriods:
     def test_negative_current_rejected(self) -> None:
         with pytest.raises(ValueError, match="current_kwh must be non-negative"):
             compare_periods(1000.0, -10.0, 500.0, 500.0)
+
+
+class TestHeatingDegreeDaysEdgeCases:
+    @pytest.mark.parametrize("base", [10.0, 15.0, 18.0, 21.0])
+    def test_various_base_temperatures(self, base: float) -> None:
+        temps = [base - 5.0] * 7
+        result = heating_degree_days(temps, base)
+        assert result == pytest.approx(7 * 5.0)
+
+    def test_single_day(self) -> None:
+        assert heating_degree_days([10.0]) == pytest.approx(8.0)
+
+    def test_mixed_above_below_base(self) -> None:
+        temps = [10.0, 20.0, 10.0]
+        result = heating_degree_days(temps, DEFAULT_BASE_TEMPERATURE_C)
+        expected = (8.0 + 0.0 + 8.0)
+        assert result == pytest.approx(expected)
+
+
+class TestCoolingDegreeDaysEdgeCases:
+    @pytest.mark.parametrize("base", [10.0, 15.0, 18.0, 21.0])
+    def test_various_base_temperatures(self, base: float) -> None:
+        temps = [base + 5.0] * 7
+        result = cooling_degree_days(temps, base)
+        assert result == pytest.approx(7 * 5.0)
+
+    def test_single_day(self) -> None:
+        assert cooling_degree_days([30.0]) == pytest.approx(12.0)
+
+    def test_exactly_at_base_yields_zero(self) -> None:
+        assert cooling_degree_days([DEFAULT_BASE_TEMPERATURE_C]) == 0.0
+
+
+class TestNormalizationFactorEdgeCases:
+    @pytest.mark.parametrize("factor", [0.5, 1.0, 2.0])
+    def test_expected_scale(self, factor: float) -> None:
+        result = normalization_factor(500.0 * factor, 500.0)
+        assert result == pytest.approx(factor, rel=1e-3)
+
+    def test_both_zero_returns_unity(self) -> None:
+        assert normalization_factor(0.0, 0.0) == 1.0
