@@ -40,14 +40,27 @@ class TokenBucketRateLimiter:
         self._lock = threading.RLock()
 
     def _refill(self, bucket: _Bucket) -> None:
-        """Refill *bucket* tokens based on elapsed time since last refill."""
+        """Refill *bucket* tokens based on elapsed time since last refill.
+
+        Args:
+            bucket: The :class:`_Bucket` to update in-place. Tokens are capped
+                at :attr:`_capacity`. Must be called while holding :attr:`_lock`.
+        """
         now = time.monotonic()
         elapsed = now - bucket.last_refill
         bucket.tokens = min(self._capacity, bucket.tokens + elapsed * self._rate)
         bucket.last_refill = now
 
     def is_allowed(self, client_key: str) -> bool:
-        """Return True and consume one token if the client is within rate limit."""
+        """Return True and consume one token if the client is within rate limit.
+
+        Args:
+            client_key: Identifier for the client (e.g. IP address, user ID).
+
+        Returns:
+            True when a token was available and consumed; False when the bucket
+            is empty and the request should be throttled.
+        """
         with self._lock:
             if client_key not in self._buckets:
                 self._buckets[client_key] = _Bucket(tokens=self._capacity)
@@ -60,7 +73,15 @@ class TokenBucketRateLimiter:
             return False
 
     def remaining_tokens(self, client_key: str) -> float:
-        """Return current token count for *client_key* after a refill."""
+        """Return current token count for *client_key* after a refill.
+
+        Args:
+            client_key: Client identifier.
+
+        Returns:
+            Float token count, up to :attr:`_capacity`. Returns the full
+            capacity when the key has never been seen.
+        """
         with self._lock:
             if client_key not in self._buckets:
                 return self._capacity
@@ -69,18 +90,27 @@ class TokenBucketRateLimiter:
             return bucket.tokens
 
     def reset(self, client_key: str) -> None:
-        """Reset the bucket for *client_key* to full capacity."""
+        """Reset the bucket for *client_key* to full capacity.
+
+        Args:
+            client_key: Client identifier whose bucket should be restored.
+        """
         with self._lock:
             self._buckets[client_key] = _Bucket(tokens=self._capacity)
 
     def clear(self) -> None:
-        """Remove all client buckets."""
+        """Remove all client buckets, effectively resetting every rate limit."""
         with self._lock:
             self._buckets.clear()
 
     @property
     def client_count(self) -> int:
-        """Number of tracked client keys."""
+        """Number of tracked client keys (including exhausted ones).
+
+        Returns:
+            Integer count of distinct client identifiers seen since creation
+            or the last :meth:`clear` call.
+        """
         with self._lock:
             return len(self._buckets)
 
