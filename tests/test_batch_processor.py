@@ -92,3 +92,38 @@ class TestBatchProcessorCallbacks:
         bp = BatchProcessor(_identity, batch_size=5, on_batch_done=bad_cb)
         summary = bp.run(list(range(10)))
         assert summary.total_results == 10
+
+
+class TestBatchProcessorSummary:
+    def test_summary_total_items_matches_input(self):
+        bp = BatchProcessor(_identity, batch_size=7)
+        summary = bp.run(list(range(21)))
+        assert summary.total_items == 21
+
+    def test_summary_no_errors_on_clean_run(self):
+        bp = BatchProcessor(_identity, batch_size=5)
+        summary = bp.run(list(range(20)))
+        assert summary.total_errors == 0
+
+    def test_batch_size_one_creates_n_batches(self):
+        n = 10
+        bp = BatchProcessor(_identity, batch_size=1)
+        summary = bp.run(list(range(n)))
+        assert summary.total_batches == n
+
+    def test_results_count_equals_input_on_identity(self):
+        bp = BatchProcessor(_identity, batch_size=4)
+        items = list(range(13))
+        summary = bp.run(items)
+        assert summary.total_results == len(items)
+
+    @pytest.mark.parametrize("n,size,expected_batches", [
+        (10, 5, 2),
+        (11, 5, 3),
+        (100, 10, 10),
+        (1, 100, 1),
+    ])
+    def test_batch_count_formula(self, n: int, size: int, expected_batches: int) -> None:
+        bp = BatchProcessor(_identity, batch_size=size)
+        summary = bp.run(list(range(n)))
+        assert summary.total_batches == expected_batches
