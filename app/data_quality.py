@@ -69,6 +69,14 @@ def score_record(record: dict[str, Any]) -> dict[str, Any]:
 
     Each check contributes points. Missing or out-of-range fields deduct points.
     Returns the original record augmented with ``dq_score`` and ``dq_issues``.
+
+    Args:
+        record: Dict containing energy reading fields such as hour, month,
+            day_of_week, consumption_kwh, temperature_c, and humidity_pct.
+
+    Returns:
+        Copy of *record* with ``dq_score`` (int 0-100) and ``dq_issues``
+        (list of strings describing each penalty) added.
     """
     issues: list[str] = []
     penalty = 0
@@ -95,7 +103,14 @@ def score_record(record: dict[str, Any]) -> dict[str, Any]:
 
 
 def batch_score(records: list[dict[str, Any]]) -> list[dict[str, Any]]:
-    """Apply :func:`score_record` to each record in *records*."""
+    """Apply :func:`score_record` to each record in *records*.
+
+    Args:
+        records: List of raw energy reading dicts.
+
+    Returns:
+        New list where each element is the corresponding scored record.
+    """
     return [score_record(r) for r in records]
 
 
@@ -130,7 +145,19 @@ def flag_outliers(
     field: str,
     z_threshold: float = 3.0,
 ) -> list[dict[str, Any]]:
-    """Return records whose *field* value is more than *z_threshold* std devs from the mean."""
+    """Return records whose *field* value is more than *z_threshold* std devs from the mean.
+
+    Args:
+        records: List of scored or raw records containing *field*.
+        field: The numeric field to evaluate for outliers.
+        z_threshold: Number of standard deviations beyond which a value is
+            considered an outlier (default 3.0).
+
+    Returns:
+        Subset of *records* whose *field* value exceeds the z-score threshold.
+        Returns an empty list when fewer than two records contain the field, or
+        when the standard deviation is zero.
+    """
     vals = [float(r[field]) for r in records if field in r]
     if len(vals) < 2:
         return []
