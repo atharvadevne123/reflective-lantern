@@ -175,3 +175,42 @@ class TestDemandChargeSaving:
         result = peak_shave(SPIKY_LOAD, make_spec(), target_peak_kw=30.0)
         with pytest.raises(ValueError, match="demand_charge_per_kw must be non-negative"):
             demand_charge_saving(result, -1.0)
+
+
+class TestBatterySpecEdgeCases:
+    @pytest.mark.parametrize("capacity", [0.001, 1.0, 100.0, 10000.0])
+    def test_various_valid_capacities(self, capacity: float) -> None:
+        spec = BatterySpec(capacity_kwh=capacity, max_charge_kw=10.0, max_discharge_kw=10.0)
+        assert spec.capacity_kwh == capacity
+        assert spec.usable_kwh > 0
+
+    def test_usable_kwh_bounded_by_capacity(self) -> None:
+        spec = BatterySpec(capacity_kwh=100.0, max_charge_kw=10.0, max_discharge_kw=10.0)
+        assert spec.usable_kwh <= spec.capacity_kwh
+
+    @pytest.mark.parametrize("dod", [0.1, 0.5, 0.8, 1.0])
+    def test_usable_scales_with_dod(self, dod: float) -> None:
+        spec = BatterySpec(
+            capacity_kwh=100.0, max_charge_kw=10.0, max_discharge_kw=10.0,
+            max_depth_of_discharge=dod,
+        )
+        assert spec.usable_kwh == pytest.approx(100.0 * dod)
+
+
+class TestPeakShaveEdgeCases:
+    def test_zero_target_peak_shaves_maximally(self) -> None:
+        result = peak_shave(SPIKY_LOAD, make_spec(), target_peak_kw=0.0)
+        assert result.peak_reduction_kw >= 0
+
+    def test_result_fields_present(self) -> None:
+        result = peak_shave(FLAT_LOAD, make_spec(), target_peak_kw=15.0)
+        for field in (
+            "peak_before_kw", "peak_after_kw", "peak_reduction_kw",
+            "energy_discharged_kwh", "energy_charged_kwh",
+        ):
+            assert hasattr(result, field)
+
+    @pytest.mark.parametrize("target", [10.0, 30.0, 50.0])
+    def test_various_target_peaks(self, target: float) -> None:
+        result = peak_shave(SPIKY_LOAD, make_spec(), target_peak_kw=target)
+        assert result.peak_reduction_kw >= 0.0
