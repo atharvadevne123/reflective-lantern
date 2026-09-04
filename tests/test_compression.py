@@ -91,3 +91,49 @@ class TestCompressionRatio:
     def test_both_methods(self, method):
         ratio = compression_ratio("test " * 100, method=method)
         assert 0 < ratio < 1.0
+
+
+class TestEdgeCases:
+    def test_zlib_single_byte_roundtrip(self):
+        data = b"\xff"
+        assert zlib_decompress(zlib_compress(data)) == data
+
+    def test_gzip_single_byte_roundtrip(self):
+        data = b"\x00"
+        assert gzip_decompress(gzip_compress(data)) == data
+
+    def test_zlib_level_zero_no_compression(self):
+        compressed = zlib_compress(SAMPLE, level=0)
+        assert zlib_decompress(compressed) == SAMPLE
+
+    def test_gzip_level_zero_no_compression(self):
+        compressed = gzip_compress(SAMPLE, level=0)
+        assert gzip_decompress(compressed) == SAMPLE
+
+    def test_compress_json_with_list(self):
+        obj = list(range(500))
+        assert decompress_json(compress_json(obj)) == obj
+
+    def test_compress_json_with_unicode(self):
+        obj = {"emoji": "\U0001f600", "arabic": "مرحبا"}
+        assert decompress_json(compress_json(obj)) == obj
+
+    def test_compress_json_bool_values(self):
+        obj = {"flag": True, "other": False, "none": None}
+        result = decompress_json(compress_json(obj))
+        assert result["flag"] is True
+        assert result["other"] is False
+        assert result["none"] is None
+
+    def test_zlib_level9_smallest(self):
+        c1 = zlib_compress(SAMPLE, level=1)
+        c9 = zlib_compress(SAMPLE, level=9)
+        assert len(c9) <= len(c1)
+
+    def test_compression_ratio_string_input(self):
+        ratio = compression_ratio("aaaa" * 500)
+        assert ratio < 0.1  # highly compressible
+
+    @pytest.mark.parametrize("obj", [[], {}, 0, False, ""])
+    def test_compress_json_falsy_primitives(self, obj):
+        assert decompress_json(compress_json(obj)) == obj
