@@ -76,6 +76,15 @@ class BatchProcessor(Generic[T, R]):
 
     @staticmethod
     def _chunk(items: list[T], size: int) -> Iterator[list[T]]:
+        """Yield successive fixed-size slices of *items*.
+
+        Args:
+            items: Sequence to split.
+            size: Maximum elements per yielded chunk.
+
+        Yields:
+            Consecutive sublists of *items* each containing at most *size* elements.
+        """
         for i in range(0, len(items), size):
             yield items[i : i + size]
 
