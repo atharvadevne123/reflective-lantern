@@ -71,3 +71,70 @@ class TestAuditLog:
         log.record("a", "b", "c")
         log.record("d", "e", "f")
         assert len(log.search()) == 2
+
+    def test_record_returns_entry(self):
+        log = AuditLog()
+        entry = log.record("alice", "login", "/session")
+        assert isinstance(entry, AuditEntry)
+        assert entry.actor == "alice"
+
+    def test_metadata_stored_correctly(self):
+        log = AuditLog()
+        log.record("alice", "api_call", "/predict", model="xgb", latency_ms=42.5)
+        results = log.search(actor="alice")
+        assert results[0].metadata["model"] == "xgb"
+        assert results[0].metadata["latency_ms"] == 42.5
+
+    def test_search_by_resource(self):
+        log = AuditLog()
+        log.record("alice", "read", "doc/1")
+        log.record("alice", "read", "doc/2")
+        results = log.search(resource="doc/1")
+        assert len(results) == 1
+
+    def test_search_by_action(self):
+        log = AuditLog()
+        log.record("alice", "read", "doc/1")
+        log.record("alice", "write", "doc/1")
+        log.record("bob", "read", "doc/2")
+        results = log.search(action="read")
+        assert len(results) == 2
+
+    def test_search_since_excludes_earlier(self):
+        log = AuditLog()
+        past = time.time() - 1000
+        log.record("x", "a", "r")
+        results = log.search(since=time.time())  # future bound
+        assert len(results) == 0
+
+    def test_export_jsonl_multiple_lines(self):
+        log = AuditLog()
+        log.record("alice", "login", "/session")
+        log.record("bob", "logout", "/session")
+        jsonl = log.export_jsonl()
+        lines = jsonl.strip().split("\n")
+        assert len(lines) == 2
+        for line in lines:
+            parsed = json.loads(line)
+            assert "actor" in parsed
+            assert "timestamp" in parsed
+
+    def test_empty_log_len_is_zero(self):
+        log = AuditLog()
+        assert len(log) == 0
+
+    def test_multiple_failures_searchable(self):
+        log = AuditLog()
+        for i in range(5):
+            log.record("bot", "brute_force", f"login/{i}", outcome="failure")
+        log.record("alice", "login", "session/1")
+        results = log.search(outcome="failure")
+        assert len(results) == 5
+
+    @pytest.mark.parametrize("outcome", ["success", "failure", "error", "denied"])
+    def test_arbitrary_outcome_values_stored(self, outcome: str) -> None:
+        log = AuditLog()
+        log.record("svc", "call", "endpoint", outcome=outcome)
+        results = log.search(outcome=outcome)
+        assert len(results) == 1
+        assert results[0].outcome == outcome
