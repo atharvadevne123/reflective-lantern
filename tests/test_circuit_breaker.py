@@ -276,3 +276,39 @@ class TestDecoratorUsage:
     def test_return_value_passes_through(self) -> None:
         breaker = CircuitBreaker()
         assert breaker.call(lambda x: x * 2, 21) == 42
+
+
+class TestCircuitBreakerReset:
+    def test_failure_count_resets_after_success(self) -> None:
+        cb = CircuitBreaker(failure_threshold=5)
+        for _ in range(3):
+            with pytest.raises(ValueError):
+                cb.call(_always_fail)
+        cb.call(_always_succeed)
+        assert cb._failure_count == 0
+
+    def test_state_is_closed_after_success_reset(self) -> None:
+        cb = CircuitBreaker(failure_threshold=5)
+        for _ in range(3):
+            with pytest.raises(ValueError):
+                cb.call(_always_fail)
+        cb.call(_always_succeed)
+        assert cb.state is CircuitState.CLOSED
+
+    @pytest.mark.parametrize("threshold", [2, 4, 6])
+    def test_opens_at_exact_threshold_parametrized(self, threshold: int) -> None:
+        cb = CircuitBreaker(failure_threshold=threshold, expected_exceptions=(ValueError,))
+        for _ in range(threshold):
+            with pytest.raises(ValueError):
+                cb.call(_always_fail)
+        assert cb.state is CircuitState.OPEN
+
+    def test_opened_at_is_set_on_open(self) -> None:
+        cb = CircuitBreaker(failure_threshold=1, expected_exceptions=(ValueError,))
+        with pytest.raises(ValueError):
+            cb.call(_always_fail)
+        assert cb._opened_at is not None
+
+    def test_opened_at_is_none_when_closed(self) -> None:
+        cb = CircuitBreaker()
+        assert cb._opened_at is None
