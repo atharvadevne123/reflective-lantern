@@ -23,22 +23,38 @@ _local = threading.local()
 
 
 def new_correlation_id() -> str:
-    """Return a fresh UUID4 string suitable as a correlation ID."""
+    """Return a fresh UUID4 string suitable as a correlation ID.
+
+    Returns:
+        36-character UUID4 string in canonical hyphenated format.
+    """
     return str(uuid.uuid4())
 
 
 def get_correlation_id() -> str | None:
-    """Return the correlation ID for the current thread, or *None*."""
+    """Return the correlation ID for the current thread, or *None*.
+
+    Returns:
+        The currently active correlation ID string, or ``None`` when none has
+        been set on this thread.
+    """
     return getattr(_local, "correlation_id", None)
 
 
 def set_correlation_id(cid: str) -> None:
-    """Set the correlation ID for the current thread."""
+    """Set the correlation ID for the current thread.
+
+    Args:
+        cid: The correlation ID string to store on thread-local storage.
+    """
     _local.correlation_id = cid
 
 
 def clear_correlation_id() -> None:
-    """Remove the correlation ID from the current thread."""
+    """Remove the correlation ID from the current thread.
+
+    No-ops when no ID is currently set.
+    """
     if hasattr(_local, "correlation_id"):
         del _local.correlation_id
 
