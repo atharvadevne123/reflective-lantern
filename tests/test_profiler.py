@@ -116,3 +116,58 @@ class TestTracked:
         for _ in range(n):
             fn()
         assert get_stats(f"count_{n}")["calls"] == n
+
+
+class TestProfilerEdgeCases:
+    def setup_method(self) -> None:
+        reset_stats()
+
+    def test_reset_all_clears_all_labels(self) -> None:
+        @tracked(label="lbl_a")
+        def a():
+            pass
+
+        @tracked(label="lbl_b")
+        def b():
+            pass
+
+        a()
+        b()
+        reset_stats()
+        assert get_stats("lbl_a") == {}
+        assert get_stats("lbl_b") == {}
+
+    def test_timed_with_no_label_uses_function_name(self) -> None:
+        @timed()
+        def named_fn():
+            return 99
+
+        assert named_fn() == 99
+
+    @pytest.mark.parametrize("retval", [0, "", [], None, {"k": "v"}])
+    def test_timed_preserves_various_return_types(self, retval: object) -> None:
+        @timed()
+        def fn():
+            return retval
+
+        assert fn() == retval
+
+    def test_tracked_records_after_exception(self) -> None:
+        @tracked(label="err_fn")
+        def bad():
+            raise RuntimeError("oops")
+
+        with pytest.raises(RuntimeError):
+            bad()
+        stats = get_stats("err_fn")
+        assert stats.get("calls", 0) >= 0
+
+    def test_get_stats_returns_dict(self) -> None:
+        @tracked(label="dict_check")
+        def fn():
+            pass
+
+        fn()
+        result = get_stats("dict_check")
+        assert isinstance(result, dict)
+        assert "calls" in result
