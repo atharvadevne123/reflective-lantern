@@ -176,3 +176,56 @@ class TestCursorPaginateEdgeCases:
                 break
             cursor = result.next_cursor
         assert [c["id"] for c in collected] == list(range(n))
+
+
+class TestPageInfoPageBoundaries:
+    @pytest.mark.parametrize(
+        "total,page,per_page,has_next,has_prev",
+        [
+            (10, 1, 10, False, False),
+            (10, 2, 5, False, True),
+            (10, 1, 5, True, False),
+            (0, 1, 10, False, False),
+        ],
+    )
+    def test_has_next_prev_flags(self, total, page, per_page, has_next, has_prev):
+        info = PageInfo(total=total, page=page, per_page=per_page)
+        assert info.has_next is has_next
+        assert info.has_prev is has_prev
+
+    def test_empty_list_has_zero_pages(self):
+        info = PageInfo(total=0, page=1, per_page=10)
+        assert info.total_pages == 0
+
+    @pytest.mark.parametrize("total,per_page,expected", [(10, 3, 4), (9, 3, 3), (12, 4, 3)])
+    def test_total_pages_rounding(self, total, per_page, expected):
+        info = PageInfo(total=total, page=1, per_page=per_page)
+        assert info.total_pages == expected
+
+
+class TestEncodeCursorEdgeCases:
+    def test_empty_dict_roundtrips(self):
+        assert decode_cursor(encode_cursor({})) == {}
+
+    def test_nested_dict_roundtrips(self):
+        data = {"nested": {"a": 1}}
+        assert decode_cursor(encode_cursor(data)) == data
+
+    @pytest.mark.parametrize("key,val", [("id", 0), ("name", ""), ("flag", True)])
+    def test_various_value_types(self, key, val):
+        data = {key: val}
+        assert decode_cursor(encode_cursor(data)) == data
+
+
+class TestPaginateInfoField:
+    def test_info_is_page_info_instance(self):
+        page = paginate(ITEMS, page=1, per_page=10)
+        assert isinstance(page.info, PageInfo)
+
+    def test_info_page_matches_requested_page(self):
+        page = paginate(ITEMS, page=3, per_page=10)
+        assert page.info.page == 3
+
+    def test_info_per_page_matches_requested(self):
+        page = paginate(ITEMS, page=1, per_page=15)
+        assert page.info.per_page == 15
