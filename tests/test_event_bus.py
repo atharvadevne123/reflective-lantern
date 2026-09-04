@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import pytest
+
 from app.event_bus import EventBus, get_bus
 
 
@@ -336,3 +338,48 @@ class TestDefaultBus:
             assert seen == ["tick"]
         finally:
             bus.clear()
+
+
+class TestEventBusClearAndCount:
+    def test_clear_specific_event(self) -> None:
+        bus = EventBus()
+        bus.subscribe("a", lambda e, p: None)
+        bus.subscribe("b", lambda e, p: None)
+        bus.clear("a")
+        assert bus.listener_count("a") == 0
+        assert bus.listener_count("b") == 1
+
+    def test_clear_all_events(self) -> None:
+        bus = EventBus()
+        bus.subscribe("a", lambda e, p: None)
+        bus.subscribe("b", lambda e, p: None)
+        bus.clear()
+        assert bus.listener_count("a") == 0
+        assert bus.listener_count("b") == 0
+
+    def test_listener_count_after_unsubscribe(self) -> None:
+        bus = EventBus()
+        h = lambda e, p: None  # noqa: E731
+        bus.subscribe("evt", h)
+        assert bus.listener_count("evt") == 1
+        bus.unsubscribe("evt", h)
+        assert bus.listener_count("evt") == 0
+
+    def test_multiple_subscribers_counted(self) -> None:
+        bus = EventBus()
+        for _ in range(5):
+            bus.subscribe("evt", lambda e, p: None)
+        assert bus.listener_count("evt") == 5
+
+    @pytest.mark.parametrize("event_name", ["a", "user.login", "data:received", "x.y.z"])
+    def test_zero_count_for_unregistered_events(self, event_name: str) -> None:
+        bus = EventBus()
+        assert bus.listener_count(event_name) == 0
+
+    def test_clear_wildcard_handlers(self) -> None:
+        bus = EventBus()
+        received: list[str] = []
+        bus.subscribe("*", lambda e, p: received.append(e))
+        bus.clear("*")
+        bus.publish("any")
+        assert received == []
