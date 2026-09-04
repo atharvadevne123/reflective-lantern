@@ -122,3 +122,53 @@ class TestAlertManager:
         rule = _make_rule(severity=severity)
         alert = rule.evaluate(90, BASE_NOW)
         assert alert.severity == severity
+
+
+class TestAlertManagerMultipleRules:
+    def test_two_rules_both_fire(self):
+        mgr = AlertManager()
+        mgr.add_rule(_make_rule(name="r1", metric="cpu"))
+        mgr.add_rule(_make_rule(name="r2", metric="mem"))
+        alerts = mgr.evaluate_all({"cpu": 90, "mem": 90}, now=BASE_NOW)
+        assert len(alerts) == 2
+
+    def test_only_matching_rule_fires(self):
+        mgr = AlertManager()
+        mgr.add_rule(_make_rule(name="r1", metric="cpu"))
+        mgr.add_rule(_make_rule(name="r2", metric="mem"))
+        alerts = mgr.evaluate_all({"cpu": 90, "mem": 50}, now=BASE_NOW)
+        assert len(alerts) == 1
+        assert alerts[0].name == "r1"
+
+    def test_replace_existing_rule(self):
+        mgr = AlertManager()
+        mgr.add_rule(_make_rule(name="r1", threshold=80.0))
+        mgr.add_rule(_make_rule(name="r1", threshold=95.0))
+        alerts = mgr.evaluate_all({"cpu": 90}, now=BASE_NOW)
+        assert alerts == []
+
+    @pytest.mark.parametrize("n", [1, 3, 5])
+    def test_n_rules_all_fire(self, n):
+        mgr = AlertManager()
+        for i in range(n):
+            mgr.add_rule(_make_rule(name=f"r{i}", metric=f"m{i}"))
+        metrics = {f"m{i}": 90 for i in range(n)}
+        assert len(mgr.evaluate_all(metrics, now=BASE_NOW)) == n
+
+    def test_clear_history_via_new_manager(self):
+        mgr = AlertManager()
+        mgr.add_rule(_make_rule(cooldown_s=0))
+        mgr.evaluate_all({"cpu": 90}, now=BASE_NOW)
+        mgr.evaluate_all({"cpu": 90}, now=BASE_NOW + 1)
+        assert len(mgr.history) == 2
+
+    def test_add_rule_returns_none(self):
+        mgr = AlertManager()
+        result = mgr.add_rule(_make_rule())
+        assert result is None
+
+    def test_remove_rule_idempotent(self):
+        mgr = AlertManager()
+        mgr.add_rule(_make_rule())
+        assert mgr.remove_rule("r1") is True
+        assert mgr.remove_rule("r1") is False
