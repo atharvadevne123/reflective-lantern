@@ -109,3 +109,68 @@ class TestMetricsRegistry:
         metrics = reg.all_metrics()
         assert "a" in metrics
         assert "b" in metrics
+
+
+class TestCounterEdgeCases:
+    def test_inc_zero_is_valid(self):
+        c = Counter("x")
+        c.inc(0)
+        assert c.value == 0.0
+
+    def test_inc_fractional_amount(self):
+        c = Counter("bytes")
+        c.inc(0.5)
+        c.inc(0.5)
+        assert c.value == pytest.approx(1.0)
+
+    def test_multiple_resets(self):
+        c = Counter("x")
+        for _ in range(3):
+            c.inc(10)
+            c.reset()
+        assert c.value == 0.0
+
+    @pytest.mark.parametrize("amount", [0.001, 1.0, 1_000_000.0])
+    def test_various_amounts(self, amount: float) -> None:
+        c = Counter("x")
+        c.inc(amount)
+        assert c.value == pytest.approx(amount)
+
+
+class TestGaugeEdgeCases:
+    def test_initial_value_is_zero(self):
+        g = Gauge("x")
+        assert g.value == 0.0
+
+    def test_overwrite_with_set(self):
+        g = Gauge("x")
+        g.inc(100)
+        g.set(5.0)
+        assert g.value == 5.0
+
+    def test_inc_dec_cancel(self):
+        g = Gauge("x")
+        g.inc(10)
+        g.dec(10)
+        assert g.value == pytest.approx(0.0)
+
+
+class TestHistogramEdgeCases:
+    def test_value_above_all_buckets_still_counted(self):
+        h = Histogram("lat", buckets=[0.1, 0.5])
+        h.observe(999.0)
+        assert h.count == 1
+        assert h.sum == pytest.approx(999.0)
+
+    def test_percentile_when_all_in_first_bucket(self):
+        h = Histogram("lat", buckets=[0.01, 0.1, 1.0])
+        for _ in range(10):
+            h.observe(0.001)
+        assert h.percentile(0.5) == 0.01
+
+    @pytest.mark.parametrize("n", [1, 10, 100])
+    def test_count_matches_observations(self, n: int) -> None:
+        h = Histogram("lat")
+        for _ in range(n):
+            h.observe(0.5)
+        assert h.count == n
