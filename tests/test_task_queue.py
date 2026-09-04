@@ -70,3 +70,65 @@ class TestTaskQueue:
         q.stop(timeout=2.0)
         assert order[0] == "high"
         assert order[1] == "low"
+
+    def test_empty_queue_len_zero(self):
+        q = TaskQueue(workers=0)
+        assert len(q) == 0
+
+    def test_errors_list_empty_on_clean_run(self):
+        q = TaskQueue(workers=1)
+        q.start()
+        q.submit(lambda: None, 1)
+        q.stop(timeout=2.0)
+        assert q.errors == []
+
+    def test_multiple_errors_all_captured(self):
+        def explode():
+            raise RuntimeError("boom")
+
+        q = TaskQueue(workers=1)
+        q.start()
+        for _ in range(3):
+            q.submit(explode, 1)
+        q.stop(timeout=2.0)
+        assert len(q.errors) == 3
+        assert all(isinstance(e, RuntimeError) for e in q.errors)
+
+    def test_completed_count_zero_before_start(self):
+        q = TaskQueue(workers=1)
+        assert q.completed == 0
+
+    def test_stop_without_start_is_safe(self):
+        q = TaskQueue(workers=2)
+        q.stop(timeout=0.1)  # should not raise
+
+    def test_task_kwargs_passed_correctly(self):
+        results = {}
+
+        def store(**kw):
+            results.update(kw)
+
+        t = Task(priority=0, fn=store, kwargs={"a": 1, "b": 2})
+        t.run()
+        assert results == {"a": 1, "b": 2}
+
+    def test_high_volume_tasks_all_complete(self):
+        import time
+
+        counter = {"n": 0}
+        lock = threading.Lock()
+
+        def inc():
+            with lock:
+                counter["n"] += 1
+
+        n = 50
+        q = TaskQueue(workers=4)
+        q.start()
+        for _ in range(n):
+            q.submit(inc, 1)
+        deadline = time.monotonic() + 5.0
+        while q.completed < n and time.monotonic() < deadline:
+            time.sleep(0.05)
+        q.stop(timeout=2.0)
+        assert counter["n"] == n
