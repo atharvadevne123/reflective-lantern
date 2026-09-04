@@ -22,10 +22,12 @@ def timed(label: str | None = None, log_level: int = logging.DEBUG) -> Callable:
     """
 
     def decorator(func: Callable) -> Callable:
+        """Wrap *func* to log its execution time on every call."""
         name = label or func.__qualname__
 
         @functools.wraps(func)
-        def wrapper(*args, **kwargs):
+        def wrapper(*args: object, **kwargs: object) -> object:
+            """Run *func* and emit a timing log entry."""
             start = time.perf_counter()
             try:
                 result = func(*args, **kwargs)
@@ -49,6 +51,11 @@ class _Stats:
         self.max_ms: float = 0.0
 
     def record(self, ms: float) -> None:
+        """Accumulate a new timing sample *ms* (milliseconds).
+
+        Args:
+            ms: Elapsed time in milliseconds for one function call.
+        """
         self.calls += 1
         self.total_ms += ms
         self.min_ms = min(self.min_ms, ms)
@@ -56,9 +63,11 @@ class _Stats:
 
     @property
     def avg_ms(self) -> float:
+        """Mean call duration in milliseconds; 0 when no calls have been recorded."""
         return self.total_ms / self.calls if self.calls else 0.0
 
     def to_dict(self) -> dict[str, float | int]:
+        """Serialise stats as a plain dict suitable for JSON responses."""
         return {
             "calls": self.calls,
             "total_ms": round(self.total_ms, 3),
@@ -82,11 +91,13 @@ def tracked(label: str | None = None) -> Callable:
     """
 
     def decorator(func: Callable) -> Callable:
+        """Wrap *func* so every call is timed and recorded in the stats registry."""
         name = label or func.__qualname__
         _registry[name] = _Stats()
 
         @functools.wraps(func)
-        def wrapper(*args, **kwargs):
+        def wrapper(*args: object, **kwargs: object) -> object:
+            """Run *func*, record elapsed time, and return the result."""
             start = time.perf_counter()
             try:
                 return func(*args, **kwargs)
