@@ -169,3 +169,50 @@ class TestPaybackYears:
     def test_invalid_degradation_rejected(self, degradation: float) -> None:
         with pytest.raises(ValueError, match=r"annual_degradation must be in \[0, 1\)"):
             payback_years(10000.0, 1000.0, annual_degradation=degradation)
+
+
+class TestSolarEconomicsFields:
+    def test_all_fields_present(self) -> None:
+        result = analyze_economics(GENERATION, CONSUMPTION)
+        for field in (
+            "generated_kwh",
+            "consumed_kwh",
+            "self_consumed_kwh",
+            "exported_kwh",
+            "imported_kwh",
+            "self_consumption_rate",
+            "self_sufficiency_rate",
+            "bill_saving",
+            "export_revenue",
+            "total_benefit",
+        ):
+            assert hasattr(result, field)
+
+    def test_generated_kwh_matches_sum(self) -> None:
+        result = analyze_economics(GENERATION, CONSUMPTION)
+        assert result.generated_kwh == pytest.approx(sum(GENERATION))
+
+    def test_consumed_kwh_matches_sum(self) -> None:
+        result = analyze_economics(GENERATION, CONSUMPTION)
+        assert result.consumed_kwh == pytest.approx(sum(CONSUMPTION))
+
+    def test_rates_between_zero_and_one(self) -> None:
+        result = analyze_economics(GENERATION, CONSUMPTION)
+        assert 0.0 <= result.self_consumption_rate <= 1.0
+        assert 0.0 <= result.self_sufficiency_rate <= 1.0
+
+
+class TestGenerationKwhParametrize:
+    @pytest.mark.parametrize("area", [0.0, 10.0, 100.0, 500.0])
+    def test_scales_linearly_with_area(self, area: float) -> None:
+        result = generation_kwh(area, 5.0)
+        assert result >= 0.0
+
+    @pytest.mark.parametrize("irr", [0.0, 1.0, 5.0, 10.0])
+    def test_scales_linearly_with_irradiance(self, irr: float) -> None:
+        result = generation_kwh(100.0, irr)
+        assert result >= 0.0
+
+    def test_max_efficiency_and_ratio(self) -> None:
+        result = generation_kwh(100.0, 5.0, panel_efficiency=1.0, performance_ratio=1.0)
+        assert result == pytest.approx(100.0 * 5.0)
