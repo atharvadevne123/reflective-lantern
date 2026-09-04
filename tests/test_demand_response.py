@@ -140,3 +140,53 @@ class TestEvaluateEvent:
     def test_negative_rates_rejected(self, incentive: float, penalty: float) -> None:
         with pytest.raises(ValueError, match="rates must be non-negative"):
             evaluate_event(BASELINE, CURTAILED, 16.0, incentive_per_kwh=incentive, penalty_per_kwh=penalty)
+
+
+class TestCurtailmentEdgeCases:
+    @pytest.mark.parametrize(
+        "baseline,actual,expected",
+        [
+            ([10.0, 10.0], [5.0, 5.0], 10.0),
+            ([0.0, 0.0], [0.0, 0.0], 0.0),
+            ([5.0], [5.0], 0.0),
+        ],
+    )
+    def test_various_curtailment_values(self, baseline: list, actual: list, expected: float) -> None:
+        assert curtailment(baseline, actual) == pytest.approx(expected)
+
+    def test_single_hour_curtailment(self) -> None:
+        assert curtailment([10.0], [3.0]) == pytest.approx(7.0)
+
+
+class TestPerformanceScoreParametrize:
+    @pytest.mark.parametrize(
+        "curtailed,committed,expected",
+        [
+            (10.0, 10.0, 1.0),
+            (5.0, 10.0, 0.5),
+            (15.0, 10.0, 1.0),
+            (0.0, 10.0, 0.0),
+        ],
+    )
+    def test_score_values(self, curtailed: float, committed: float, expected: float) -> None:
+        assert performance_score(curtailed, committed) == pytest.approx(expected)
+
+    def test_score_is_bounded(self) -> None:
+        for curtailed, committed in [(0.0, 5.0), (5.0, 5.0), (100.0, 5.0)]:
+            score = performance_score(curtailed, committed)
+            assert 0.0 <= score <= 1.0
+
+
+class TestEvaluateEventFields:
+    def test_result_has_all_required_fields(self) -> None:
+        result = evaluate_event(BASELINE, CURTAILED, committed_kwh=10.0)
+        for field in (
+            "baseline_kwh", "actual_kwh", "curtailed_kwh", "curtailment_pct",
+            "committed_kwh", "shortfall_kwh", "incentive", "penalty",
+            "net_payment", "performance_score",
+        ):
+            assert hasattr(result, field)
+
+    def test_performance_score_bounded(self) -> None:
+        result = evaluate_event(BASELINE, CURTAILED, committed_kwh=16.0)
+        assert 0.0 <= result.performance_score <= 1.0
