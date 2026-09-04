@@ -97,3 +97,43 @@ class TestCompareSpecs:
         results = compare_specs(specs)
         labels = {r["label"] for r in results}
         assert "spec-0" in labels or "spec-1" in labels
+
+
+class TestResourceSpecDefaults:
+    def test_gpu_count_defaults_to_zero(self):
+        spec = ResourceSpec(cpu_cores=2, memory_gb=8)
+        assert spec.gpu_count == 0
+
+    def test_duration_defaults_to_one_hour(self):
+        spec = ResourceSpec(cpu_cores=2, memory_gb=8)
+        assert spec.duration_hours == 1.0
+
+    @pytest.mark.parametrize("cpu,mem", [(1, 1), (8, 64), (64, 256)])
+    def test_valid_spec_combinations(self, cpu: int, mem: int) -> None:
+        spec = ResourceSpec(cpu_cores=cpu, memory_gb=mem)
+        assert spec.cpu_cores == cpu
+        assert spec.memory_gb == mem
+
+
+class TestEstimateCostEdgeCases:
+    def test_all_zero_rates_gives_zero_total(self):
+        spec = ResourceSpec(cpu_cores=4, memory_gb=16, gpu_count=2, duration_hours=8)
+        bd = estimate_cost(spec, cpu_rate=0.0, memory_rate=0.0, gpu_rate=0.0)
+        assert bd.total_usd == pytest.approx(0.0)
+
+    def test_memory_cost_scales_with_gb(self):
+        spec1 = ResourceSpec(cpu_cores=1, memory_gb=4, duration_hours=1)
+        spec2 = ResourceSpec(cpu_cores=1, memory_gb=8, duration_hours=1)
+        bd1 = estimate_cost(spec1, cpu_rate=0.0, memory_rate=1.0, gpu_rate=0.0)
+        bd2 = estimate_cost(spec2, cpu_rate=0.0, memory_rate=1.0, gpu_rate=0.0)
+        assert bd2.memory_cost_usd == pytest.approx(bd1.memory_cost_usd * 2)
+
+    def test_to_dict_all_values_non_negative(self):
+        spec = ResourceSpec(cpu_cores=2, memory_gb=8, gpu_count=1, duration_hours=4)
+        d = estimate_cost(spec).to_dict()
+        assert all(v >= 0 for v in d.values())
+
+    def test_fractional_duration_accepted(self):
+        spec = ResourceSpec(cpu_cores=2, memory_gb=4, duration_hours=0.25)
+        bd = estimate_cost(spec, cpu_rate=1.0, memory_rate=0.0, gpu_rate=0.0)
+        assert bd.cpu_cost_usd == pytest.approx(0.5)  # 2 cores * 0.25h
