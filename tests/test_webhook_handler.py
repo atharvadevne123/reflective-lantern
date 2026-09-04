@@ -82,3 +82,49 @@ class TestProcess:
         body = b'{"ping": true}'
         wh.process(body, "ping", signature=make_sig(body))
         assert calls == [1, 2]
+
+
+class TestWebhookHandlerEdgeCases:
+    def test_event_type_stored_on_event(self):
+        wh = WebhookHandler(SECRET)
+        body = b'{"x": 1}'
+        event = wh.process(body, "my_event", signature=make_sig(body))
+        assert event.event_type == "my_event"
+
+    def test_empty_payload_accepted(self):
+        wh = WebhookHandler(SECRET)
+        body = b"{}"
+        event = wh.process(body, "ping", signature=make_sig(body))
+        assert event.payload == {}
+
+    def test_on_any_receives_all_events(self):
+        wh = WebhookHandler(SECRET)
+        received_types = []
+        wh.on_any(lambda e: received_types.append(e.event_type))
+        for ev in ("push", "pull_request", "release"):
+            body = json.dumps({"event": ev}).encode()
+            wh.process(body, ev, signature=make_sig(body))
+        assert received_types == ["push", "pull_request", "release"]
+
+    @pytest.mark.parametrize("event_type", ["push", "pull_request", "issue", "release"])
+    def test_various_event_types_dispatched(self, event_type: str) -> None:
+        wh = WebhookHandler(SECRET)
+        received = []
+        wh.on(event_type, received.append)
+        body = json.dumps({"type": event_type}).encode()
+        wh.process(body, event_type, signature=make_sig(body))
+        assert len(received) == 1
+        assert received[0].payload["type"] == event_type
+
+    def test_signature_with_wrong_secret_raises(self):
+        wh = WebhookHandler(SECRET)
+        body = b'{"a": 1}'
+        bad_sig = make_sig(body, secret="wrong-secret")
+        with pytest.raises(SignatureError):
+            wh.process(body, "push", signature=bad_sig)
+
+    def test_unregistered_event_no_crash(self):
+        wh = WebhookHandler(SECRET)
+        body = b'{"k": "v"}'
+        event = wh.process(body, "unknown_event", signature=make_sig(body))
+        assert event.event_type == "unknown_event"
