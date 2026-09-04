@@ -165,3 +165,43 @@ class TestBuildReport:
     def test_single_phase_rejected(self) -> None:
         with pytest.raises(ValueError, match="at least 2 phase voltages"):
             build_report(100.0, 10.0, [230.0])
+
+
+class TestPowerFactorParametrize:
+    @pytest.mark.parametrize(
+        "real,apparent,expected",
+        [
+            (100.0, 100.0, 1.0),
+            (0.0, 100.0, 0.0),
+            (50.0, 100.0, 0.5),
+            (80.0, 100.0, 0.8),
+        ],
+    )
+    def test_various_ratios(self, real: float, apparent: float, expected: float) -> None:
+        assert power_factor(real, apparent) == pytest.approx(expected)
+
+
+class TestApparentPowerParametrize:
+    @pytest.mark.parametrize(
+        "real,reactive,expected",
+        [
+            (3.0, 4.0, 5.0),
+            (5.0, 12.0, 13.0),
+            (0.0, 0.0, 0.0),
+            (100.0, 0.0, 100.0),
+        ],
+    )
+    def test_pythagorean_triples(self, real: float, reactive: float, expected: float) -> None:
+        assert apparent_power(real, reactive) == pytest.approx(expected)
+
+
+class TestVoltageImbalanceEdgeCases:
+    @pytest.mark.parametrize("n", [2, 3, 4, 5])
+    def test_balanced_n_phase_system(self, n: int) -> None:
+        phases = [230.0] * n
+        assert voltage_imbalance(phases) == pytest.approx(0.0)
+
+    def test_imbalance_increases_with_spread(self) -> None:
+        narrow = [230.0, 232.0]
+        wide = [230.0, 250.0]
+        assert voltage_imbalance(wide) > voltage_imbalance(narrow)
