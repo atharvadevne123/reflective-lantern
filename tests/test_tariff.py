@@ -154,3 +154,44 @@ class TestPeakShiftSaving:
     def test_invalid_fraction_rejected(self, fraction: float) -> None:
         with pytest.raises(ValueError, match="shiftable_fraction must be in 0-1"):
             peak_shift_saving(FLAT_DAY, shiftable_fraction=fraction)
+
+
+class TestFlatRateCostParametrize:
+    @pytest.mark.parametrize(
+        "consumption,rate,expected",
+        [
+            ([1.0] * 10, 0.10, 1.0),
+            ([2.0] * 5, 0.20, 2.0),
+            ([0.0] * 24, 0.15, 0.0),
+        ],
+    )
+    def test_various_inputs(self, consumption: list, rate: float, expected: float) -> None:
+        assert flat_rate_cost(consumption, rate=rate) == pytest.approx(expected)
+
+
+class TestTieredBandModel:
+    def test_none_limit_means_unbounded(self) -> None:
+        band = TieredBand(limit_kwh=None, rate=0.10)
+        assert band.limit_kwh is None
+
+    def test_band_has_rate_field(self) -> None:
+        band = TieredBand(limit_kwh=100.0, rate=0.15)
+        assert band.rate == 0.15
+
+    @pytest.mark.parametrize("limit", [10.0, 100.0, 500.0, None])
+    def test_various_limits(self, limit: float | None) -> None:
+        band = TieredBand(limit_kwh=limit, rate=0.10)
+        assert band.limit_kwh == limit
+
+
+class TestCompareTariffsEdgeCases:
+    def test_empty_series_all_zero(self) -> None:
+        result = compare_tariffs([])
+        assert result.flat_cost == 0.0
+        assert result.time_of_use_cost == 0.0
+        assert result.hours_priced == 0
+
+    def test_saving_vs_flat_non_negative(self) -> None:
+        for consumption in [[1.0] * 24, [0.0] * 24, [5.0] * 8]:
+            result = compare_tariffs(consumption)
+            assert result.saving_vs_flat >= 0.0
