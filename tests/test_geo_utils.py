@@ -116,3 +116,51 @@ class TestMidpoint:
     def test_midpoint_london_paris_is_between(self):
         mid = midpoint(LONDON, PARIS)
         assert LONDON.lat > mid.lat > PARIS.lat
+
+
+class TestHaversineEdgeCases:
+    @pytest.mark.parametrize("lat,lon", [(-90, 0), (90, 0), (0, -180), (0, 180)])
+    def test_pole_and_antimeridian_coords(self, lat: float, lon: float) -> None:
+        c = Coordinate(lat=lat, lon=lon)
+        assert haversine(c, c) == pytest.approx(0.0, abs=1e-6)
+
+    def test_short_distance_positive(self) -> None:
+        a = Coordinate(0, 0)
+        b = Coordinate(0, 0.001)
+        assert haversine(a, b) > 0
+
+    @pytest.mark.parametrize("city", [LONDON, PARIS, NEW_YORK, SYDNEY])
+    def test_zero_self_distance_for_cities(self, city: "Coordinate") -> None:
+        assert haversine(city, city) == pytest.approx(0.0, abs=1e-6)
+
+
+class TestBoundingBoxEdgeCases:
+    def test_single_coord_bbox(self) -> None:
+        bbox = bounding_box_of([LONDON])
+        assert bbox.min_lat == LONDON.lat
+        assert bbox.max_lat == LONDON.lat
+
+    def test_center_of_single_point_is_that_point(self) -> None:
+        bbox = bounding_box_of([PARIS])
+        center = bbox.center
+        assert center.lat == pytest.approx(PARIS.lat)
+        assert center.lon == pytest.approx(PARIS.lon)
+
+    @pytest.mark.parametrize("n", [2, 5, 10])
+    def test_bbox_contains_all_points(self, n: int) -> None:
+        coords = [Coordinate(float(i), float(i)) for i in range(n)]
+        bbox = bounding_box_of(coords)
+        for c in coords:
+            assert bbox.contains(c)
+
+
+class TestNearestNeighborEdgeCases:
+    def test_all_equidistant_returns_one(self) -> None:
+        base = Coordinate(0, 0)
+        candidates = [Coordinate(0, 1), Coordinate(0, -1)]
+        result = nearest_neighbor(base, candidates)
+        assert result in candidates
+
+    def test_returns_exact_match_if_present(self) -> None:
+        result = nearest_neighbor(LONDON, [PARIS, LONDON, NEW_YORK])
+        assert result == LONDON
