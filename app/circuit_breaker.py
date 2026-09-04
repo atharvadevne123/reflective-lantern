@@ -55,7 +55,7 @@ class CircuitBreaker:
                 self._state = CircuitState.HALF_OPEN
         return self._state
 
-    def call(self, func: Callable, *args, **kwargs):
+    def call(self, func: Callable, *args: object, **kwargs: object) -> object:
         """Execute func through the circuit breaker.
 
         Args:
