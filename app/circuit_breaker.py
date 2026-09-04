@@ -78,7 +78,11 @@ class CircuitBreaker:
             raise exc
 
     def _on_success(self) -> None:
-        """Record a successful call, closing the circuit if it was half-open."""
+        """Record a successful call, closing the circuit if it was half-open.
+
+        Resets :attr:`_failure_count` to zero and clears :attr:`_opened_at`.
+        Transitions HALF_OPEN → CLOSED and leaves CLOSED unchanged.
+        """
         if self._state is CircuitState.HALF_OPEN:
             logger.info("Circuit CLOSED after successful probe")
         self._state = CircuitState.CLOSED
@@ -86,7 +90,12 @@ class CircuitBreaker:
         self._opened_at = None
 
     def _on_failure(self) -> None:
-        """Record a failed call, opening the circuit when threshold is exceeded."""
+        """Record a failed call, opening the circuit when threshold is exceeded.
+
+        Increments :attr:`_failure_count`. Transitions to OPEN when the count
+        reaches :attr:`failure_threshold`, or immediately when HALF_OPEN (one
+        bad probe re-opens without waiting for the threshold).
+        """
         self._failure_count += 1
         if self._state is CircuitState.HALF_OPEN or self._failure_count >= self.failure_threshold:
             logger.warning("Circuit OPEN after %d failures", self._failure_count)
