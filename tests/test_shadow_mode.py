@@ -115,3 +115,51 @@ class TestShadowResultFields:
         runner = ShadowRunner(_primary, _shadow_same)
         ret = runner.call(x)
         assert ret == x * 2
+
+
+class TestShadowRunnerStatsCompleteness:
+    def test_stats_keys_present(self):
+        runner = ShadowRunner(_primary, _shadow_same)
+        stats = runner.stats()
+        for key in ("total", "matched", "mismatched", "errors", "match_rate"):
+            assert key in stats
+
+    def test_stats_on_zero_calls(self):
+        runner = ShadowRunner(_primary, _shadow_same)
+        stats = runner.stats()
+        assert stats["total"] == 0
+        assert stats["match_rate"] == pytest.approx(0.0) or stats["match_rate"] == pytest.approx(1.0)
+
+    def test_mixed_match_mismatch_error(self):
+        runner = ShadowRunner(_primary, lambda x: x * 2 if x % 2 == 0 else x * 3)
+        for i in range(1, 5):
+            runner.call(i)
+        stats = runner.stats()
+        assert stats["total"] == 4
+        assert stats["matched"] + stats["mismatched"] + stats["errors"] == 4
+
+    def test_match_rate_0_5_for_half_matched(self):
+        runner = ShadowRunner(_primary, lambda x: x * 2 if x < 5 else x * 99)
+        for i in range(1, 11):
+            runner.call(i)
+        stats = runner.stats()
+        assert stats["match_rate"] == pytest.approx(0.4)
+
+    def test_clear_then_rerun_gives_fresh_stats(self):
+        runner = ShadowRunner(_primary, _shadow_same)
+        for _ in range(3):
+            runner.call(1)
+        runner.clear()
+        runner.call(2)
+        assert runner.stats()["total"] == 1
+
+    def test_primary_always_returns_regardless_of_shadow(self):
+        def slow_shadow(x):
+            import time
+
+            time.sleep(0.001)
+            return x * 2
+
+        runner = ShadowRunner(_primary, slow_shadow)
+        for i in range(5):
+            assert runner.call(i) == i * 2
