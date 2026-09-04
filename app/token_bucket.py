@@ -39,6 +39,11 @@ class TokenBucket:
         self._lock = threading.Lock()
 
     def _refill(self) -> None:
+        """Compute elapsed time since last refill and add tokens accordingly.
+
+        Caps accumulated tokens at :attr:`capacity` to prevent unbounded growth
+        during long idle periods.  Must be called while holding :attr:`_lock`.
+        """
         now = time.monotonic()
         elapsed = now - self._last_refill
         added = elapsed * self.rate
@@ -106,7 +111,15 @@ class PerKeyTokenBucket:
         self._lock = threading.Lock()
 
     def consume(self, key: str, tokens: float = 1.0) -> bool:
-        """Consume tokens from the bucket for key, creating it on first use."""
+        """Consume tokens from the bucket for *key*, creating it on first use.
+
+        Args:
+            key: Client or resource identifier (e.g. IP address, user ID).
+            tokens: Number of tokens to consume (default 1).
+
+        Returns:
+            True if the bucket for *key* had sufficient tokens; False otherwise.
+        """
         with self._lock:
             if key not in self._buckets:
                 self._buckets[key] = TokenBucket(self.capacity, self.rate)
@@ -114,7 +127,11 @@ class PerKeyTokenBucket:
         return bucket.consume(tokens)
 
     def bucket_count(self) -> int:
-        """Return number of distinct keys tracked."""
+        """Return the number of distinct keys currently tracked.
+
+        Returns:
+            Integer count of keys that have had at least one :meth:`consume` call.
+        """
         return len(self._buckets)
 
 
