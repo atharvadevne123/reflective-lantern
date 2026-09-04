@@ -61,18 +61,35 @@ class NotificationDispatcher:
         self._channels: dict[str, Channel] = {}
 
     def register(self, channel: Channel) -> None:
-        """Add or replace a channel by name."""
+        """Add or replace a channel by name.
+
+        Args:
+            channel: :class:`Channel` instance to register; overwrites any
+                existing channel with the same :attr:`~Channel.name`.
+        """
         self._channels[channel.name] = channel
 
     def unregister(self, name: str) -> None:
-        """Remove a channel by name."""
+        """Remove a channel by name.
+
+        Args:
+            name: Name of the channel to remove. No-ops if not registered.
+        """
         self._channels.pop(name, None)
 
     def dispatch(self, notification: Notification) -> dict[str, bool]:
         """Send *notification* to all eligible channels.
 
+        A channel is eligible when it is enabled and its minimum severity is
+        at or below the notification's severity.
+
+        Args:
+            notification: The :class:`Notification` to deliver.
+
         Returns:
-            Mapping of channel name to delivery success.
+            Mapping of channel name → ``True`` (delivered) or ``False``
+            (send raised an exception). Disabled or filtered channels are
+            not included.
         """
         results: dict[str, bool] = {}
         notif_rank = _SEVERITY_ORDER.index(notification.severity)
@@ -93,6 +110,12 @@ class NotificationDispatcher:
         return results
 
     def set_enabled(self, name: str, enabled: bool) -> None:
-        """Toggle a channel on or off."""
+        """Toggle a channel on or off.
+
+        Args:
+            name: Channel name to update.
+            enabled: ``True`` to enable, ``False`` to disable. No-ops when the
+                channel is not registered.
+        """
         if name in self._channels:
             self._channels[name].enabled = enabled
