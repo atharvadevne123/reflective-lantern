@@ -96,3 +96,36 @@ class TestFeatureStore:
             store.publish(_fs(version=v, features={"v": v}))
         result = store.get_version("energy", version)
         assert result.features["v"] == version
+
+    def test_empty_store_list_names_empty(self):
+        store = FeatureStore()
+        assert store.list_names() == []
+
+    def test_empty_store_list_versions_empty(self):
+        store = FeatureStore()
+        assert store.list_versions("energy") == []
+
+    def test_feature_values_preserved_exactly(self):
+        features = {"a": 1.5, "b": "text", "c": [1, 2, 3], "d": True}
+        store = FeatureStore()
+        store.publish(_fs(features=features))
+        result = store.get_latest("energy")
+        assert result.get("a") == 1.5
+        assert result.get("b") == "text"
+        assert result.get("d") is True
+
+    def test_delete_specific_version_leaves_others(self):
+        store = FeatureStore()
+        for v in ["1.0.0", "2.0.0", "3.0.0"]:
+            store.publish(_fs(version=v))
+        store.delete("energy", "2.0.0")
+        remaining = store.list_versions("energy")
+        assert "2.0.0" not in remaining
+        assert len(remaining) == 2
+
+    def test_publish_multiple_feature_sets_same_version_different_name(self):
+        store = FeatureStore()
+        store.publish(_fs(name="setA", version="1.0.0"))
+        store.publish(_fs(name="setB", version="1.0.0"))
+        assert store.get_latest("setA") is not None
+        assert store.get_latest("setB") is not None
