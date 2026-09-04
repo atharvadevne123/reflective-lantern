@@ -91,3 +91,47 @@ class TestPerKeyTokenBucket:
         pkb.consume("k1")
         pkb.consume("k2")
         assert pkb.bucket_count() == 2
+
+    def test_consume_multiple_tokens_per_request(self):
+        pkb = PerKeyTokenBucket(capacity=10, rate=1)
+        assert pkb.consume("key", tokens=5) is True
+        assert pkb.consume("key", tokens=5) is True
+        assert pkb.consume("key", tokens=1) is False
+
+    def test_same_key_creates_single_bucket(self):
+        pkb = PerKeyTokenBucket(capacity=5, rate=1)
+        for _ in range(3):
+            pkb.consume("k1")
+        assert pkb.bucket_count() == 1
+
+    def test_many_unique_keys_all_independent(self):
+        pkb = PerKeyTokenBucket(capacity=1, rate=0.001)
+        keys = [f"user:{i}" for i in range(20)]
+        results = [pkb.consume(k) for k in keys]
+        assert all(results)
+        assert pkb.bucket_count() == 20
+
+
+class TestTokenBucketRefill:
+    def test_refill_does_not_exceed_capacity(self):
+        tb = TokenBucket(capacity=5, rate=1000)
+        tb._tokens = 0  # type: ignore[attr-defined]
+        tb._last_refill = time.monotonic() - 100  # 100s of refill available  # type: ignore[attr-defined]
+        # available is capped at capacity
+        assert tb.available <= 5
+
+    def test_consume_zero_always_succeeds(self):
+        tb = TokenBucket(capacity=5, rate=1)
+        assert tb.consume(0) is True
+
+    @pytest.mark.parametrize("cap", [1, 10, 100, 1000])
+    def test_various_capacities(self, cap: int) -> None:
+        tb = TokenBucket(capacity=cap, rate=1)
+        assert tb.consume(cap) is True
+        assert tb.consume(1) is False
+
+    def test_consume_exactly_available(self):
+        tb = TokenBucket(capacity=7, rate=1)
+        available_before = tb.available
+        result = tb.consume(int(available_before))
+        assert result is True
