@@ -102,7 +102,6 @@ class TestAuditLog:
 
     def test_search_since_excludes_earlier(self):
         log = AuditLog()
-        past = time.time() - 1000
         log.record("x", "a", "r")
         results = log.search(since=time.time())  # future bound
         assert len(results) == 0
