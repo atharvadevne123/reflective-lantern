@@ -96,3 +96,54 @@ class TestThreadIsolation:
 
         for i in range(5):
             assert results[f"t{i}"] == f"id-{i}"
+
+    def test_main_thread_unaffected_by_worker(self):
+        set_correlation_id("main-cid")
+        results = []
+
+        def worker():
+            set_correlation_id("worker-cid")
+            results.append(get_correlation_id())
+
+        t = threading.Thread(target=worker)
+        t.start()
+        t.join()
+        assert get_correlation_id() == "main-cid"
+        assert results == ["worker-cid"]
+        clear_correlation_id()
+
+
+class TestNewCorrelationIdFormat:
+    def test_uuid_format(self):
+        import re
+
+        cid = new_correlation_id()
+        assert re.match(r"^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$", cid)
+
+    def test_length_36_chars(self):
+        assert len(new_correlation_id()) == 36
+
+    def test_contains_hyphens(self):
+        cid = new_correlation_id()
+        assert cid.count("-") == 4
+
+    def test_generated_ids_all_unique_in_bulk(self):
+        ids = [new_correlation_id() for _ in range(500)]
+        assert len(set(ids)) == 500
+
+
+class TestSetCorrelationIdEdgeCases:
+    def setup_method(self):
+        clear_correlation_id()
+
+    def teardown_method(self):
+        clear_correlation_id()
+
+    def test_set_empty_string(self):
+        set_correlation_id("")
+        assert get_correlation_id() == ""
+
+    def test_set_overwrite_existing(self):
+        set_correlation_id("first")
+        set_correlation_id("second")
+        assert get_correlation_id() == "second"
