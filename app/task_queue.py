@@ -51,14 +51,25 @@ class TaskQueue:
         self._errors: list[Exception] = []
 
     def submit(self, fn: Callable[..., Any], priority: int = 5, *args: Any, **kwargs: Any) -> None:
-        """Enqueue a task; lower *priority* values run first."""
+        """Enqueue a task; lower *priority* values run first.
+
+        Args:
+            fn: Callable to execute on a worker thread.
+            priority: Execution priority — lower numbers are dequeued first.
+            *args: Positional arguments forwarded to *fn*.
+            **kwargs: Keyword arguments forwarded to *fn*.
+        """
         task = Task(priority=priority, fn=fn, args=args, kwargs=kwargs)
         with self._not_empty:
             heapq.heappush(self._heap, task)
             self._not_empty.notify()
 
     def start(self) -> None:
-        """Start worker threads."""
+        """Start worker threads.
+
+        Spawns :attr:`_workers` daemon threads that continuously pull tasks
+        from the heap.  Call :meth:`stop` to shut them down cleanly.
+        """
         self._running = True
         for _ in range(self._workers):
             t = threading.Thread(target=self._worker, daemon=True)
@@ -66,7 +77,12 @@ class TaskQueue:
             self._threads.append(t)
 
     def stop(self, timeout: float = 2.0) -> None:
-        """Signal workers to stop and wait for them."""
+        """Signal workers to stop and wait for them.
+
+        Args:
+            timeout: Maximum seconds to wait per worker thread before giving
+                up on a clean shutdown.
+        """
         with self._not_empty:
             self._running = False
             self._not_empty.notify_all()
