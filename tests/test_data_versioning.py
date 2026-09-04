@@ -98,3 +98,49 @@ class TestDataLineage:
         dl = DataLineage()
         dl.record(_snap(row_count=rows))
         assert dl.get("energy").row_count == rows
+
+
+class TestDataSnapshotChecksum:
+    def test_checksum_is_deterministic_across_runs(self):
+        data = {"key": "value", "num": 42}
+        c1 = DataSnapshot.compute_checksum(data)
+        c2 = DataSnapshot.compute_checksum(data)
+        assert c1 == c2
+
+    def test_empty_dict_checksum_differs_from_empty_list(self):
+        c1 = DataSnapshot.compute_checksum({})
+        c2 = DataSnapshot.compute_checksum([])
+        assert c1 != c2
+
+    @pytest.mark.parametrize("data", [None, 0, "", False, [], {}])
+    def test_checksum_of_falsy_values_is_string(self, data):
+        result = DataSnapshot.compute_checksum(data)
+        assert isinstance(result, str)
+        assert len(result) == 64
+
+
+class TestDataLineageEdgeCases:
+    def test_schema_tags_stored_and_retrieved(self):
+        dl = DataLineage()
+        dl.record(_snap(schema={"col_a": "float64"}, tags={"source": "sensor"}))
+        snap = dl.get("energy")
+        assert snap.schema["col_a"] == "float64"
+        assert snap.tags["source"] == "sensor"
+
+    def test_empty_lineage_datasets_empty(self):
+        dl = DataLineage()
+        assert dl.list_datasets() == []
+
+    def test_deep_parent_chain_lineage(self):
+        dl = DataLineage()
+        dl.record(_snap(version="1.0.0"))
+        dl.record(_snap(version="2.0.0", parent_versions=["1.0.0"]))
+        dl.record(_snap(version="3.0.0", parent_versions=["2.0.0"]))
+        ancestors = dl.lineage("energy", "3.0.0")
+        versions = {a.version for a in ancestors}
+        assert "2.0.0" in versions
+
+    def test_source_url_stored(self):
+        dl = DataLineage()
+        dl.record(_snap(source="s3://bucket/path"))
+        assert dl.get("energy").source == "s3://bucket/path"
