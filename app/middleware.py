@@ -19,7 +19,11 @@ _requests = _request_counts
 
 
 def reset_rate_limiter() -> None:
-    """Clear all rate-limit tracking state (useful in tests)."""
+    """Clear all rate-limit tracking state (useful in tests).
+
+    Resets both the sliding-window request counts and the token-bucket state
+    so that each test starts with a clean slate.
+    """
     _request_counts.clear()
     _rate_buckets.clear()
 
@@ -28,6 +32,16 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
     """Reject requests exceeding settings.rate_limit_per_minute per IP per minute."""
 
     async def dispatch(self, request: Request, call_next: Any) -> Response:
+        """Apply per-IP sliding-window rate limiting.
+
+        Args:
+            request: Incoming HTTP request.
+            call_next: ASGI callable to forward compliant requests.
+
+        Returns:
+            The downstream response, or a 429 JSON response when the client
+            has exceeded the configured rate limit.
+        """
         ip = request.client.host if request.client else "unknown"
         now = time.time()
         limit = settings.rate_limit_per_minute
@@ -49,6 +63,20 @@ class CorrelationIDMiddleware(BaseHTTPMiddleware):
     """Attach X-Correlation-ID to every request/response."""
 
     async def dispatch(self, request: Request, call_next: Any) -> Response:
+        """Echo or generate an X-Correlation-ID header.
+
+        Reads ``X-Correlation-ID`` from the incoming headers if present;
+        otherwise generates a new UUID4 string. The chosen ID is stored on
+        ``request.state.correlation_id`` and echoed back in the response
+        headers.
+
+        Args:
+            request: Incoming HTTP request.
+            call_next: ASGI callable to forward the request downstream.
+
+        Returns:
+            The downstream response with the correlation-id header attached.
+        """
         correlation_id = request.headers.get("X-Correlation-ID", str(uuid.uuid4()))
         request.state.correlation_id = correlation_id
         response = await call_next(request)
