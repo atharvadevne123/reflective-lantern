@@ -37,7 +37,11 @@ class HealthStatus:
 
     @property
     def failed(self) -> list[CheckResult]:
-        """Return only the failing checks."""
+        """Return only the failing checks.
+
+        Returns:
+            Subset of :attr:`results` where ``healthy`` is ``False``.
+        """
         return [r for r in self.results if not r.healthy]
 
 
@@ -51,15 +55,30 @@ class HealthRegistry:
         self._checks: dict[str, CheckFn] = {}
 
     def register(self, name: str, fn: CheckFn) -> None:
-        """Register *fn* under *name*."""
+        """Register *fn* under *name*.
+
+        Args:
+            name: Unique identifier for this check; overwrites any existing
+                check registered under the same name.
+            fn: Zero-argument callable that returns a :class:`CheckResult`.
+        """
         self._checks[name] = fn
 
     def unregister(self, name: str) -> None:
-        """Remove the check registered under *name*."""
+        """Remove the check registered under *name*.
+
+        Args:
+            name: Identifier of the check to remove. No-ops if not registered.
+        """
         self._checks.pop(name, None)
 
     def run(self) -> HealthStatus:
-        """Execute all registered checks and return an aggregated status."""
+        """Execute all registered checks and return an aggregated status.
+
+        Returns:
+            :class:`HealthStatus` whose *healthy* flag is ``True`` only when
+            every check passes. Failing checks are captured rather than raised.
+        """
         results: list[CheckResult] = []
         for name, fn in self._checks.items():
             try:
@@ -82,7 +101,16 @@ _default_registry = HealthRegistry()
 
 
 def check(name: str, registry: HealthRegistry | None = None) -> Callable[[CheckFn], CheckFn]:
-    """Decorator that registers a function as a named health check."""
+    """Decorator that registers a function as a named health check.
+
+    Args:
+        name: Display name for the check.
+        registry: Registry to register with; defaults to the module-level
+            ``_default_registry``.
+
+    Returns:
+        Decorator that registers the wrapped function and returns it unchanged.
+    """
     reg = _default_registry if registry is None else registry
 
     def decorator(fn: CheckFn) -> CheckFn:
