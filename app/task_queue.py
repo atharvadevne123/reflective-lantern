@@ -75,6 +75,7 @@ class TaskQueue:
         self._threads.clear()
 
     def _worker(self) -> None:
+        """Worker thread loop: pop tasks from the heap and execute them until stopped."""
         while True:
             with self._not_empty:
                 while not self._heap and self._running:
@@ -93,14 +94,17 @@ class TaskQueue:
 
     @property
     def completed(self) -> int:
+        """Number of tasks that have finished successfully (thread-safe)."""
         with self._lock:
             return self._completed
 
     @property
     def errors(self) -> list[Exception]:
+        """Snapshot list of exceptions raised by failed tasks (thread-safe)."""
         with self._lock:
             return list(self._errors)
 
     def __len__(self) -> int:
+        """Return the number of tasks currently waiting in the queue."""
         with self._lock:
             return len(self._heap)
