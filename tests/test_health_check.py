@@ -82,3 +82,64 @@ class TestCheckDecorator:
 
         result = noop()
         assert result.name == "noop"
+
+
+class TestCheckResultDetails:
+    def test_check_result_defaults(self):
+        r = CheckResult(name="test", healthy=True)
+        assert r.message == ""
+        assert r.details == {}
+
+    def test_check_result_with_details(self):
+        r = CheckResult(name="db", healthy=False, message="timeout", details={"latency_ms": 5000})
+        assert r.details["latency_ms"] == 5000
+
+    def test_health_status_failed_property(self):
+        results = [make_ok("a"), make_fail("b"), make_ok("c")]
+        from app.health_check import HealthStatus
+
+        status = HealthStatus(healthy=False, results=results)
+        failed = status.failed
+        assert len(failed) == 1
+        assert failed[0].name == "b"
+
+    def test_multiple_failures_collected(self):
+        reg = HealthRegistry()
+        reg.register("x", lambda: make_fail("x"))
+        reg.register("y", lambda: make_fail("y"))
+        reg.register("z", lambda: make_ok("z"))
+        status = reg.run()
+        assert status.healthy is False
+        assert len(status.failed) == 2
+
+    def test_check_details_preserved_in_registry_run(self):
+        reg = HealthRegistry()
+
+        def detailed_check():
+            return CheckResult(name="db", healthy=True, details={"pool_size": 10, "idle": 5})
+
+        reg.register("db", detailed_check)
+        status = reg.run()
+        assert status.results[0].details["pool_size"] == 10
+
+    def test_exception_message_includes_traceback(self):
+        reg = HealthRegistry()
+
+        def raises():
+            raise ValueError("disk full")
+
+        reg.register("disk", raises)
+        status = reg.run()
+        assert "ValueError" in status.failed[0].message
+
+    def test_reregister_overwrites_previous(self):
+        reg = HealthRegistry()
+        reg.register("svc", lambda: make_fail("svc"))
+        reg.register("svc", lambda: make_ok("svc"))
+        status = reg.run()
+        assert status.healthy is True
+
+    def test_unregister_nonexistent_is_safe(self):
+        reg = HealthRegistry()
+        reg.unregister("not_there")  # should not raise
+        assert len(reg) == 0
