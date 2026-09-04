@@ -22,14 +22,28 @@ DRIFT_P_THRESHOLD = 0.05
 
 
 def set_reference_window(values: list[float]) -> None:
-    """Set the reference distribution for drift detection."""
+    """Set the reference distribution for drift detection.
+
+    Args:
+        values: Sequence of historical prediction or feature values. Only the
+            last :data:`REFERENCE_WINDOW_SIZE` samples are retained.
+    """
     global _reference_window
     _reference_window = list(values[-REFERENCE_WINDOW_SIZE:])
     logger.info("Reference window set: %d samples", len(_reference_window))
 
 
 def compute_drift(reference: list[float], current: list[float]) -> dict[str, Any]:
-    """Run KS-test between reference and current distributions."""
+    """Run KS-test between reference and current distributions.
+
+    Args:
+        reference: Baseline sample (historical values).
+        current: Recent sample to compare against the baseline.
+
+    Returns:
+        Dict with keys ``ks_statistic``, ``p_value``, ``drift_detected``
+        (bool), and optionally ``reason`` when the test could not be computed.
+    """
     if len(reference) < 10 or len(current) < 10:
         return {"ks_statistic": 0.0, "p_value": 1.0, "drift_detected": False, "reason": "insufficient_data"}
     stat, p = ks_2samp(reference, current)
