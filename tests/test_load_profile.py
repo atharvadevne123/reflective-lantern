@@ -138,3 +138,42 @@ class TestBuildLoadProfile:
     def test_empty_series_rejected(self) -> None:
         with pytest.raises(ValueError, match="must not be empty"):
             build_load_profile([])
+
+
+class TestLoadFactorParametrize:
+    @pytest.mark.parametrize("n", [1, 2, 24, 48])
+    def test_constant_series_load_factor_is_one(self, n: int) -> None:
+        assert load_factor([5.0] * n) == pytest.approx(1.0)
+
+    @pytest.mark.parametrize("peak", [10.0, 100.0, 1000.0])
+    def test_single_spike_load_factor_decreases_with_peak(self, peak: float) -> None:
+        # A series of mostly 1s with one spike: higher spike → lower load factor
+        series = [1.0] * 23 + [peak]
+        lf = load_factor(series)
+        assert 0.0 < lf <= 1.0
+
+
+class TestBaseLoadEdgeCases:
+    def test_sorted_ascending_picks_correct_percentile(self) -> None:
+        # 10 values, percentile=0.1 → index 0 → value 0
+        vals = list(range(10))
+        result = base_load(vals, percentile=0.1)
+        assert result == 1.0
+
+    @pytest.mark.parametrize("percentile", [0.0, 0.25, 0.5, 0.75, 1.0])
+    def test_percentile_always_in_series_range(self, percentile: float) -> None:
+        vals = [float(i) for i in range(1, 11)]
+        result = base_load(vals, percentile=percentile)
+        assert min(vals) <= result <= max(vals)
+
+
+class TestBuildLoadProfileFields:
+    def test_profile_fields_present(self) -> None:
+        profile = build_load_profile(FLAT)
+        for attr in ("profile_class", "load_factor", "peak_kwh", "mean_kwh", "base_load_kwh", "max_ramp_kwh"):
+            assert hasattr(profile, attr)
+
+    def test_single_value_series(self) -> None:
+        profile = build_load_profile([7.0])
+        assert profile.profile_class == "flat"
+        assert profile.load_factor == pytest.approx(1.0)
