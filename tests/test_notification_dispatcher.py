@@ -1,5 +1,7 @@
 """Tests for app.notification_dispatcher."""
 
+import pytest
+
 from app.notification_dispatcher import (
     Channel,
     Notification,
@@ -88,3 +90,47 @@ class TestDispatch:
         d.dispatch(Notification(title="t", body=""))
         assert len(r1) == 1
         assert len(r2) == 1
+
+    def test_dispatch_returns_false_on_failure(self):
+        def explode(n):
+            raise ValueError("boom")
+
+        ch = Channel(name="pager", send=explode)
+        d = NotificationDispatcher()
+        d.register(ch)
+        results = d.dispatch(Notification(title="x", body="y"))
+        assert results["pager"] is False
+
+    def test_notification_default_severity_is_info(self):
+        n = Notification(title="t", body="b")
+        assert n.severity == Severity.INFO
+
+    def test_notification_body_preserved(self):
+        ch, received = make_channel()
+        d = NotificationDispatcher()
+        d.register(ch)
+        d.dispatch(Notification(title="Alert", body="Memory at 95%"))
+        assert received[0].body == "Memory at 95%"
+
+    def test_empty_dispatcher_dispatch_returns_empty(self):
+        d = NotificationDispatcher()
+        results = d.dispatch(Notification(title="t", body=""))
+        assert results == {}
+
+    def test_reregister_overwrites_channel(self):
+        _, r1 = make_channel("x")
+        ch2, r2 = make_channel("x")
+        d = NotificationDispatcher()
+        _, _ = make_channel("x")
+        d.register(Channel(name="x", send=lambda n: r1.append(n)))
+        d.register(ch2)
+        d.dispatch(Notification(title="t", body=""))
+        assert len(r2) == 1
+
+    @pytest.mark.parametrize("severity", [Severity.INFO, Severity.WARNING, Severity.ERROR, Severity.CRITICAL])
+    def test_all_severities_accepted(self, severity):
+        ch, received = make_channel(min_severity=Severity.INFO)
+        d = NotificationDispatcher()
+        d.register(ch)
+        d.dispatch(Notification(title="t", body="", severity=severity))
+        assert len(received) == 1
