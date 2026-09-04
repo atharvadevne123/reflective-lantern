@@ -23,7 +23,16 @@ class TTLCache:
         self.evictions = 0
 
     def get(self, key: str) -> Any | None:
-        """Return the cached value for *key*, or None if absent or expired."""
+        """Return the cached value for *key*, or None if absent or expired.
+
+        Args:
+            key: Cache key to look up.
+
+        Returns:
+            The cached value when the entry exists and has not expired;
+            ``None`` otherwise.  Increments :attr:`hits` or :attr:`misses`
+            accordingly.
+        """
         with self._lock:
             entry = self._store.get(key)
             if entry is None:
@@ -41,6 +50,11 @@ class TTLCache:
         """Store *value* under *key* with the configured TTL.
 
         Evicts the entry with the earliest expiry when the cache is full.
+
+        Args:
+            key: Cache key to write.
+            value: Arbitrary value to store. The TTL clock starts at the
+                moment of this call.
         """
         with self._lock:
             if len(self._store) >= self._max:
@@ -50,7 +64,11 @@ class TTLCache:
             self._store[key] = (value, time.monotonic() + self._ttl)
 
     def invalidate(self, key: str) -> None:
-        """Remove *key* from the cache (no-op if absent)."""
+        """Remove *key* from the cache (no-op if absent).
+
+        Args:
+            key: Cache key to remove. No-ops silently if not present.
+        """
         with self._lock:
             self._store.pop(key, None)
 
