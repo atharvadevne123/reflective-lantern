@@ -115,3 +115,64 @@ class TestCursorPaginate:
         result = cursor_paginate([], per_page=10)
         assert result.items == []
         assert result.has_next is False
+
+
+class TestPageInfoEdgeCases:
+    def test_total_pages_exact_multiple(self):
+        info = PageInfo(total=20, page=1, per_page=5)
+        assert info.total_pages == 4
+
+    def test_page_beyond_total_pages(self):
+        info = PageInfo(total=10, page=99, per_page=5)
+        assert info.has_next is False
+
+    @pytest.mark.parametrize("per_page", [1, 5, 10, 25, 100])
+    def test_per_page_values(self, per_page: int) -> None:
+        info = PageInfo(total=100, page=1, per_page=per_page)
+        assert info.total_pages == 100 // per_page
+
+
+class TestPaginateSliceAccuracy:
+    def test_page2_slice_starts_at_correct_offset(self):
+        items = list(range(20))
+        result = paginate(items, page=2, per_page=5)
+        assert result.items == [5, 6, 7, 8, 9]
+
+    def test_all_pages_cover_all_items(self):
+        items = list(range(23))
+        collected = []
+        for p in range(1, 5):
+            result = paginate(items, page=p, per_page=7)
+            collected.extend(result.items)
+        assert collected == items
+
+    def test_single_item_list(self):
+        result = paginate([42], page=1, per_page=10)
+        assert result.items == [42]
+        assert result.info.has_next is False
+
+    def test_page_info_total_always_matches_input_length(self):
+        for n in [0, 1, 10, 99]:
+            result = paginate(list(range(n)), page=1, per_page=5)
+            assert result.info.total == n
+
+
+class TestCursorPaginateEdgeCases:
+    def test_per_page_larger_than_total(self):
+        result = cursor_paginate(DICT_ITEMS[:3], cursor=None, per_page=100)
+        assert len(result.items) == 3
+        assert result.has_next is False
+
+    def test_full_traversal_via_cursors(self):
+        n = 22
+        per_page = 5
+        items = [{"id": i} for i in range(n)]
+        collected = []
+        cursor = None
+        while True:
+            result = cursor_paginate(items, cursor=cursor, per_page=per_page)
+            collected.extend(result.items)
+            if not result.has_next:
+                break
+            cursor = result.next_cursor
+        assert [c["id"] for c in collected] == list(range(n))
