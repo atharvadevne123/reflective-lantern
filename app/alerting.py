@@ -117,12 +117,24 @@ class AlertManager:
         self._fired: list[Alert] = []
 
     def add_rule(self, rule: AlertRule) -> None:
-        """Register an alerting rule."""
+        """Register an alerting rule.
+
+        Args:
+            rule: The :class:`AlertRule` to register. Any existing rule with the
+                same :attr:`~AlertRule.name` is replaced.
+        """
         self._rules[rule.name] = rule
         logger.debug("Registered alert rule '%s'", rule.name)
 
     def remove_rule(self, name: str) -> bool:
-        """Remove a rule by name. Returns True if found."""
+        """Remove a rule by name.
+
+        Args:
+            name: The :attr:`~AlertRule.name` of the rule to remove.
+
+        Returns:
+            ``True`` if the rule existed and was removed; ``False`` otherwise.
+        """
         return self._rules.pop(name, None) is not None
 
     def evaluate_all(self, metrics: dict[str, float], now: float | None = None) -> list[Alert]:
@@ -156,7 +168,12 @@ class AlertManager:
 
     @property
     def history(self) -> list[Alert]:
-        """Return all alerts fired since creation."""
+        """Return all alerts fired since creation.
+
+        Returns:
+            A new list snapshot of every :class:`Alert` that was returned by
+            :meth:`evaluate_all` since this manager was created.
+        """
         return list(self._fired)
 
 
