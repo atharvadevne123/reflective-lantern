@@ -65,6 +65,7 @@ class BatchProcessor(Generic[T, R]):
         error_handling: str = "raise",
         on_batch_done: Callable[[BatchResult[R]], None] | None = None,
     ) -> None:
+        """Configure the batch processor with a callable, size limit, and error policy."""
         if batch_size < 1:
             raise ValueError("batch_size must be >= 1")
         if error_handling not in ("raise", "collect"):
@@ -76,6 +77,7 @@ class BatchProcessor(Generic[T, R]):
 
     @staticmethod
     def _chunk(items: list[T], size: int) -> Iterator[list[T]]:
+        """Yield successive non-overlapping slices of *items* of length *size*."""
         for i in range(0, len(items), size):
             yield items[i : i + size]
 
