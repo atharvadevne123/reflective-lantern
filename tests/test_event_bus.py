@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import pytest
+
 from app.event_bus import EventBus, get_bus
 
 
@@ -336,3 +338,28 @@ class TestDefaultBus:
             assert seen == ["tick"]
         finally:
             bus.clear()
+
+
+class TestEventBusParametrized:
+    @pytest.mark.parametrize("event_name", ["user.created", "order.placed", "payment.done", "tick"])
+    def test_publish_reaches_subscriber(self, event_name: str) -> None:
+        bus = EventBus()
+        seen: list[str] = []
+        bus.subscribe(event_name, lambda e, p: seen.append(e))
+        bus.publish(event_name)
+        assert seen == [event_name]
+
+    @pytest.mark.parametrize("n_subscribers", [1, 2, 5, 10])
+    def test_publish_returns_subscriber_count(self, n_subscribers: int) -> None:
+        bus = EventBus()
+        for _ in range(n_subscribers):
+            bus.subscribe("ev", lambda e, p: None)
+        assert bus.publish("ev") == n_subscribers
+
+    @pytest.mark.parametrize("payload", [None, 42, "hello", {"key": "val"}, [1, 2, 3]])
+    def test_payload_passed_unchanged(self, payload: object) -> None:
+        bus = EventBus()
+        received: list[object] = []
+        bus.subscribe("data", lambda e, p: received.append(p))
+        bus.publish("data", payload)
+        assert received == [payload]
