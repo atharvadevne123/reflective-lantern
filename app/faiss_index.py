@@ -21,6 +21,7 @@ class LoadPatternIndex:
     """Stores energy load vectors and finds similar historical periods."""
 
     def __init__(self, dim: int = 24) -> None:
+        """Initialise an empty load-pattern index with vector dimensionality *dim*."""
         self.dim = dim
         self._vectors: list[np.ndarray] = []
         self._metadata: list[dict] = []
@@ -135,6 +136,7 @@ __all__ = [
 
 
 def get_pattern_index(dim: int = DIM) -> LoadPatternIndex:
+    """Return (creating on first call) the module-level singleton LoadPatternIndex."""
     global _pattern_index
     if _pattern_index is None:
         _pattern_index = LoadPatternIndex(dim=dim)
