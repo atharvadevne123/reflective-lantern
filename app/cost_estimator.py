@@ -29,6 +29,7 @@ class ResourceSpec:
     duration_hours: float = 1.0
 
     def __post_init__(self) -> None:
+        """Validate that all resource quantities are positive after construction."""
         if self.cpu_cores <= 0:
             raise ValueError("cpu_cores must be positive")
         if self.memory_gb <= 0:
@@ -56,9 +57,11 @@ class CostBreakdown:
 
     @property
     def total_usd(self) -> float:
+        """Return the sum of CPU, memory, and GPU costs in USD."""
         return self.cpu_cost_usd + self.memory_cost_usd + self.gpu_cost_usd
 
     def to_dict(self) -> dict[str, float]:
+        """Serialise the breakdown to a JSON-serialisable dict with rounded values."""
         return {
             "cpu_cost_usd": round(self.cpu_cost_usd, 6),
             "memory_cost_usd": round(self.memory_cost_usd, 6),
