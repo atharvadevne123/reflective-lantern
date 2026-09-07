@@ -29,6 +29,7 @@ class Counter:
         self._lock = threading.Lock()
 
     def inc(self, amount: float = 1.0) -> None:
+        """Increment the counter by *amount* (must be non-negative)."""
         if amount < 0:
             raise ValueError("Counter can only increase")
         with self._lock:
@@ -36,10 +37,12 @@ class Counter:
 
     @property
     def value(self) -> float:
+        """Return the current counter value."""
         with self._lock:
             return self._value
 
     def reset(self) -> None:
+        """Reset the counter to zero (useful for testing)."""
         with self._lock:
             self._value = 0.0
 
@@ -54,19 +57,23 @@ class Gauge:
         self._lock = threading.Lock()
 
     def set(self, value: float) -> None:
+        """Set the gauge to an absolute *value*."""
         with self._lock:
             self._value = value
 
     def inc(self, amount: float = 1.0) -> None:
+        """Increment the gauge by *amount*."""
         with self._lock:
             self._value += amount
 
     def dec(self, amount: float = 1.0) -> None:
+        """Decrement the gauge by *amount*."""
         with self._lock:
             self._value -= amount
 
     @property
     def value(self) -> float:
+        """Return the current gauge value."""
         with self._lock:
             return self._value
 
@@ -80,6 +87,7 @@ class Histogram:
     buckets: list[float] = field(default_factory=lambda: [0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1.0, 2.5, 5.0])
 
     def __post_init__(self) -> None:
+        """Initialise internal counters and threading lock after dataclass construction."""
         self._lock = threading.Lock()
         self._counts: list[int] = [0] * len(self.buckets)
         self._sum: float = 0.0
@@ -121,6 +129,7 @@ class MetricsRegistry:
     """Central registry for named metrics."""
 
     def __init__(self) -> None:
+        """Initialise an empty metrics registry."""
         self._metrics: dict[str, object] = {}
 
     def counter(self, name: str, description: str = "") -> Counter:
