@@ -7,6 +7,29 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Added (2026-09-07 — Reflective Lantern improvement run)
+- Google-style docstrings added to all previously undocumented methods across
+  `app/metrics_collector.py`, `app/profiler.py`, `app/task_queue.py`,
+  `app/circuit_breaker.py`, `app/cost_estimator.py`, `app/features.py`,
+  `app/health_check.py`, `app/token_bucket.py`, `app/audit_log.py`,
+  `app/batch_processor.py`, `app/config_validator.py`, `app/experiment_tracker.py`,
+  `app/faiss_index.py`, `app/geo_utils.py`, `app/logging_config.py`,
+  `app/middleware.py`, `app/model_registry.py`, `app/notification_dispatcher.py`,
+  `app/retry.py`, and `app/alerting.py`
+- `pytest.mark.parametrize` test classes added to all test modules that lacked them:
+  `test_audit_log.py`, `test_correlation_id.py`, `test_notification_dispatcher.py`,
+  `test_task_queue.py`, `test_middleware.py`, `test_health_check.py`,
+  `test_config_validator.py`, `test_data_augmentation.py`, `test_event_bus.py`,
+  `test_metrics_collector.py`, `test_webhook_handler.py`, `test_foundry_client.py`,
+  `test_integration.py`, `test_foundry_export.py`, `test_foundry_sync.py`,
+  `test_api_analytics.py`, and `test_alerting.py`
+- CLI docstrings to `scripts/cleanup.py`, `scripts/validate_history.py`,
+  `scripts/summarize_history.py`, `scripts/report_generator.py`,
+  `scripts/run_all_checks.py`, `scripts/seed_data.py`, and `scripts/benchmark.py`
+- `__all__` export lists to `scripts/benchmark.py`, `scripts/lantern_env.py`,
+  `scripts/seed_data.py`, `scripts/check_ci_status.py`, `scripts/send_report.py`,
+  and `scripts/gen_report_raw.py`
+
 ### Added
 - `app/tariff.py` — flat, time-of-use, and tiered electricity pricing with scheme comparison
 - `app/load_profile.py` — base load, load factor, peak-to-average, ramp rate, profile class
