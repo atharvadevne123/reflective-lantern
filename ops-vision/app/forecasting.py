@@ -3,7 +3,6 @@
 import logging
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
-from typing import Optional
 
 import numpy as np
 
@@ -86,8 +85,8 @@ class ExponentialSmoothingForecaster:
         self.alpha = alpha
         self.beta = beta
         self.horizon = horizon
-        self._level: Optional[float] = None
-        self._trend: Optional[float] = None
+        self._level: float | None = None
+        self._trend: float | None = None
         self._residuals: list[float] = []
 
     def fit(self, series: np.ndarray) -> "ExponentialSmoothingForecaster":
@@ -168,7 +167,7 @@ class ExponentialSmoothingForecaster:
         return points
 
 
-_buffer_singleton: Optional[IncidentRateBuffer] = None
+_buffer_singleton: IncidentRateBuffer | None = None
 
 
 def get_rate_buffer() -> IncidentRateBuffer:

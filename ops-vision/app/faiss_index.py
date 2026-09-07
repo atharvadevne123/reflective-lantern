@@ -4,7 +4,6 @@ import json
 import logging
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Optional
 
 import numpy as np
 
@@ -43,8 +42,8 @@ class RunbookIndex:
         """
         self.embedding_dim = embedding_dim
         self.runbooks: list[Runbook] = []
-        self._index: Optional[object] = None
-        self._embeddings: Optional[np.ndarray] = None
+        self._index: object | None = None
+        self._embeddings: np.ndarray | None = None
         self._vocab: dict[str, int] = {}
 
     def _tokenize(self, text: str) -> list[str]:
@@ -127,7 +126,7 @@ class RunbookIndex:
             distances, indices = self._index.search(q_vec, min(top_k, len(self.runbooks)))
             results = [
                 (self.runbooks[idx], float(dist))
-                for idx, dist in zip(indices[0], distances[0])
+                for idx, dist in zip(indices[0], distances[0], strict=False)
                 if idx >= 0
             ]
         else:
@@ -180,7 +179,7 @@ class RunbookIndex:
         return index
 
 
-_index_singleton: Optional[RunbookIndex] = None
+_index_singleton: RunbookIndex | None = None
 
 
 def get_runbook_index(runbooks_path: str = "data/runbooks/sample_runbooks.json") -> RunbookIndex:

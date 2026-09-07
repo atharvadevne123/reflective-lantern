@@ -132,7 +132,7 @@ def predict_endpoint(payload: MetricsPayload, db: Session = Depends(get_db)):
         X = pipeline.transform(df)
     except Exception:
         logger.exception("Feature transform failed")
-        raise HTTPException(status_code=422, detail="Feature engineering failed")
+        raise HTTPException(status_code=422, detail="Feature engineering failed") from None
 
     preds, proba = predict(model, X)
     is_incident = bool(preds[0])
@@ -314,7 +314,7 @@ def predict_batch(request: BatchPredictRequest, db: Session = Depends(get_db)):
     now = datetime.utcnow()
 
     responses: list[PredictionResponse] = []
-    for item, pred, conf in zip(request.items, preds, proba):
+    for item, pred, conf in zip(request.items, preds, proba, strict=False):
         is_incident = bool(pred)
         responses.append(
             PredictionResponse(

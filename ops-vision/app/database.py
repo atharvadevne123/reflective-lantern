@@ -3,7 +3,6 @@
 import logging
 import os
 from datetime import datetime
-from typing import Optional
 
 from sqlalchemy import (
     JSON,
@@ -26,8 +25,8 @@ DATABASE_URL: str = os.environ.get(
     "DATABASE_URL", "postgresql://ops:ops@localhost:5432/opsvision"
 )
 
-_engine: Optional[Engine] = None
-_SessionLocal: Optional[sessionmaker] = None
+_engine: Engine | None = None
+_SessionLocal: sessionmaker | None = None
 
 
 def _engine_kwargs(url: str) -> dict:

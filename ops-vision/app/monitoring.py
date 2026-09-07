@@ -4,7 +4,6 @@ import logging
 from collections import deque
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Optional
 
 import numpy as np
 from scipy import stats
@@ -83,7 +82,7 @@ class DriftMonitor:
             "Reference window updated: %d samples", len(self._reference)
         )
 
-    def record(self, sample: dict) -> Optional[list[DriftResult]]:
+    def record(self, sample: dict) -> list[DriftResult] | None:
         """Record a production sample and trigger drift check when window fills.
 
         Args:
@@ -153,7 +152,7 @@ class DriftMonitor:
         return len(self._current)
 
 
-_monitor_singleton: Optional[DriftMonitor] = None
+_monitor_singleton: DriftMonitor | None = None
 
 
 def get_monitor() -> DriftMonitor:
