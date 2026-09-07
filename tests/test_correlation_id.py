@@ -2,6 +2,8 @@
 
 import threading
 
+import pytest
+
 from app.correlation_id import (
     clear_correlation_id,
     correlation_context,
@@ -96,3 +98,21 @@ class TestThreadIsolation:
 
         for i in range(5):
             assert results[f"t{i}"] == f"id-{i}"
+
+
+class TestParametrizedCorrelationIds:
+    @pytest.mark.parametrize("cid", ["abc-123", "req-456", "trace-789", "x" * 64])
+    def test_set_and_get_various_ids(self, cid: str) -> None:
+        clear_correlation_id()
+        set_correlation_id(cid)
+        assert get_correlation_id() == cid
+        clear_correlation_id()
+
+    @pytest.mark.parametrize("cid", ["id-1", "id-2", "id-3"])
+    def test_context_manager_restores_previous(self, cid: str) -> None:
+        clear_correlation_id()
+        set_correlation_id("outer")
+        with correlation_context(cid):
+            assert get_correlation_id() == cid
+        assert get_correlation_id() == "outer"
+        clear_correlation_id()
