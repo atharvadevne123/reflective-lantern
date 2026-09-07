@@ -88,3 +88,22 @@ def test_multiple_resets_are_idempotent(client: TestClient) -> None:
     reset_rate_limiter()
     reset_rate_limiter()
     assert len(_requests) == 0
+
+
+@pytest.mark.parametrize("cid", ["abc-123", "trace-xyz", "req-000"])
+def test_custom_correlation_id_echoed(client: TestClient, cid: str) -> None:
+    resp = client.get("/health", headers={"X-Correlation-ID": cid})
+    assert resp.headers.get("x-correlation-id") == cid
+
+
+@pytest.mark.parametrize("limit", [1, 2, 5])
+def test_rate_limit_exact_boundary(client: TestClient, monkeypatch, limit: int) -> None:
+    from types import SimpleNamespace
+
+    from app import middleware
+
+    monkeypatch.setattr(middleware, "settings", SimpleNamespace(rate_limit_per_minute=limit))
+    reset_rate_limiter()
+    for _ in range(limit):
+        assert client.get("/health").status_code == 200
+    assert client.get("/health").status_code == 429
