@@ -42,6 +42,15 @@ def load_latest_entry(path: Path) -> dict | None:
 
 
 def _collect_rows(history_dir: Path, filter_mode: str | None = None) -> list[dict[str, Any]]:
+    """Collect summary rows from all history files in *history_dir*.
+
+    Args:
+        history_dir: Directory containing per-repo JSON history files.
+        filter_mode: If set, only include entries with this mode (case-insensitive).
+
+    Returns:
+        List of dicts with keys: repo, date, commits, mode, tests_passed.
+    """
     rows = []
     for f in sorted(history_dir.glob("*.json")):
         if f.stem in _NON_RECORD_STEMS:
@@ -65,6 +74,11 @@ def _collect_rows(history_dir: Path, filter_mode: str | None = None) -> list[dic
 
 
 def main() -> int | None:
+    """CLI entry-point: print a table summarising the latest run for each repo.
+
+    Returns:
+        None on success (exit 0).
+    """
     parser = argparse.ArgumentParser(description="Summarize run history.")
     parser.add_argument("--sort-by", choices=["commits", "date", "repo"], default="date")
     parser.add_argument("--json", action="store_true", dest="as_json")
