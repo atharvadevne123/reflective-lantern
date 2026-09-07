@@ -123,3 +123,29 @@ class TestAugmentBatch:
         cfg = AugmentationConfig(seed=0)
         out = augment_batch(["hello"], cfg, n_augments=1, transform=lambda t, c: t.upper())
         assert out == ["HELLO"]
+
+
+import pytest
+
+
+class TestJitterParametrized:
+    @pytest.mark.parametrize("jitter_pct", [0.0, 0.01, 0.1, 0.5])
+    def test_jitter_output_length_preserved(self, jitter_pct: float) -> None:
+        rng = make_rng(42)
+        values = [1.0, 2.0, 3.0, 4.0, 5.0]
+        result = jitter_numerics(values, jitter_pct=jitter_pct, rng=rng)
+        assert len(result) == len(values)
+
+    @pytest.mark.parametrize("n_augments", [1, 2, 5])
+    def test_augment_batch_size(self, n_augments: int) -> None:
+        cfg = AugmentationConfig(seed=0)
+        samples = ["hello", "world"]
+        out = augment_batch(samples, cfg, n_augments=n_augments)
+        assert len(out) == len(samples) * n_augments
+
+    @pytest.mark.parametrize("del_prob", [0.0, 0.3, 0.9])
+    def test_random_deletion_keeps_nonempty(self, del_prob: float) -> None:
+        rng = make_rng(7)
+        tokens = ["a", "b", "c", "d", "e"]
+        result = random_deletion(tokens, prob=del_prob, rng=rng, min_words=1)
+        assert len(result) >= 1
