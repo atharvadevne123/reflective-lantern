@@ -266,3 +266,34 @@ def test_validate_history_negative_commits(tmp_path: Path) -> None:
         with patch.object(sys, "argv", ["validate_history.py"]):
             result = vh.main()
     assert result == 1
+
+
+class TestValidateHistoryParametrized:
+    @pytest.mark.parametrize(
+        "commits,expected_exit",
+        [(60, 0), (1, 0), (0, 1), (-1, 1)],
+    )
+    def test_commit_count_validity(self, tmp_path: Path, commits: int, expected_exit: int) -> None:
+        from unittest.mock import patch
+
+        import scripts.validate_history as vh
+
+        h = tmp_path / "history"
+        h.mkdir()
+        (h / "Repo.json").write_text(json.dumps([{"date": "2026-07-01", "commits": commits}]))
+        with patch.object(vh, "HISTORY_DIR", h):
+            with patch.object(sys, "argv", ["validate_history.py"]):
+                assert vh.main() == expected_exit
+
+    @pytest.mark.parametrize("repo_name", ["Alpha", "BetaRepo", "my-repo_123"])
+    def test_valid_repo_name_passes(self, tmp_path: Path, repo_name: str) -> None:
+        from unittest.mock import patch
+
+        import scripts.validate_history as vh
+
+        h = tmp_path / "history"
+        h.mkdir()
+        (h / f"{repo_name}.json").write_text(json.dumps([{"date": "2026-08-01", "commits": 60}]))
+        with patch.object(vh, "HISTORY_DIR", h):
+            with patch.object(sys, "argv", ["validate_history.py"]):
+                assert vh.main() == 0
