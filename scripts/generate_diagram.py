@@ -128,4 +128,4 @@ plt.tight_layout()
 plt.savefig("screenshots/architecture.png", dpi=150, bbox_inches="tight")
 logger.info("Architecture diagram saved to screenshots/architecture.png")
 
-__all__ = ["box", "arrow"]
+__all__ = ["arrow", "box"]

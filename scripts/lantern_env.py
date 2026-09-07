@@ -129,7 +129,7 @@ def _request(path: str, token: str | None = None, method: str = "GET",
             return resp.status, resp.read().decode("utf-8", "replace")
     except urllib.error.HTTPError as exc:
         return exc.code, exc.read().decode("utf-8", "replace")
-    except Exception as exc:  # noqa: BLE001 - any transport failure is a "no"
+    except Exception as exc:
         logger.debug("Request to %s failed: %s", path, exc)
         return 0, str(exc)
 
@@ -228,7 +228,7 @@ def can_push_git(remote: str | None = None) -> tuple[bool, str]:
         cmd.append("origin")
     try:
         result = subprocess.run(cmd, capture_output=True, timeout=45, text=True)
-    except Exception as exc:  # noqa: BLE001
+    except Exception as exc:
         return False, f"git ls-remote failed to run: {exc}"
 
     if result.returncode == 0:
@@ -251,7 +251,7 @@ def smtp_reachable(hosts: tuple[tuple[str, int], ...] = (
         try:
             with socket.create_connection((host, port), timeout=10):
                 return True, f"SMTP reachable at {host}:{port}."
-        except Exception as exc:  # noqa: BLE001
+        except Exception as exc:
             logger.debug("SMTP %s:%s unreachable: %s", host, port, exc)
     return False, (
         "SMTP UNREACHABLE on all ports — egress is HTTPS-proxy-only. Email "
@@ -275,7 +275,7 @@ def detect(use_cache: bool = True, cache_path: str | None = None) -> Capabilitie
     if use_cache and path.exists():
         try:
             return Capabilities(**json.loads(path.read_text()))
-        except Exception:  # noqa: BLE001
+        except Exception:
             logger.debug("Capability cache unreadable — re-probing")
 
     caps = Capabilities()
@@ -301,12 +301,12 @@ def detect(use_cache: bool = True, cache_path: str | None = None) -> Capabilitie
 
 __all__ = [
     "Capabilities",
-    "credentials_are_honoured",
-    "can_enumerate_repos",
     "can_create_repo",
+    "can_enumerate_repos",
     "can_push_git",
-    "smtp_reachable",
+    "credentials_are_honoured",
     "detect",
+    "smtp_reachable",
 ]
 
 if __name__ == "__main__":
