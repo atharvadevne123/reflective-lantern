@@ -94,6 +94,11 @@ def count_entries(directory: Path) -> dict[str, int]:
 
 
 def main() -> int:
+    """CLI entry-point: remove history entries older than --days threshold.
+
+    Returns:
+        Exit code (0 on success).
+    """
     import argparse
     from datetime import timedelta
 
