@@ -122,3 +122,31 @@ class TestAlertManager:
         rule = _make_rule(severity=severity)
         alert = rule.evaluate(90, BASE_NOW)
         assert alert.severity == severity
+
+
+class TestAlertCooldownParametrized:
+    @pytest.mark.parametrize("cooldown_s", [0, 10, 60, 300])
+    def test_refires_after_exact_cooldown(self, cooldown_s: float) -> None:
+        rule = _make_rule(cooldown_s=cooldown_s)
+        rule.evaluate(90, BASE_NOW)
+        result = rule.evaluate(90, BASE_NOW + cooldown_s + 0.001)
+        assert result is not None
+
+    @pytest.mark.parametrize("n_fires", [1, 2, 5])
+    def test_history_count_matches_n_fires(self, n_fires: int) -> None:
+        mgr = AlertManager()
+        mgr.add_rule(_make_rule(cooldown_s=0))
+        for i in range(n_fires):
+            mgr.evaluate_all({"cpu": 90}, now=BASE_NOW + i)
+        assert len(mgr.history) == n_fires
+
+    @pytest.mark.parametrize("threshold,value,should_fire", [
+        (80.0, 79.9, False),
+        (80.0, 80.1, True),
+        (0.0, 0.1, True),
+        (100.0, 100.0, False),
+    ])
+    def test_threshold_boundary(self, threshold: float, value: float, should_fire: bool) -> None:
+        rule = _make_rule(threshold=threshold, comparison=">")
+        alert = rule.evaluate(value, BASE_NOW)
+        assert (alert is not None) == should_fire
