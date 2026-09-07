@@ -210,6 +210,8 @@ def main(generate_descriptions: bool = False) -> None:
     log.info("Done: %d/%d pages updated successfully", ok_count, len(results))
 
 
+__all__ = ["generate_description", "update_notion_page", "project_names", "main"]
+
 if __name__ == "__main__":
     import argparse
 
