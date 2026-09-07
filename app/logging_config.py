@@ -59,10 +59,12 @@ class TraceIdFilter(logging.Filter):
     """Inject a trace_id field into every log record that lacks one."""
 
     def __init__(self, trace_id: str = "") -> None:
+        """Initialise with a *trace_id* string injected into records missing one."""
         super().__init__()
         self.trace_id = trace_id
 
     def filter(self, record: logging.LogRecord) -> bool:
+        """Inject trace_id into *record* if absent; always returns True to pass it through."""
         if not hasattr(record, "trace_id"):
             record.trace_id = self.trace_id  # type: ignore[attr-defined]
         return True
