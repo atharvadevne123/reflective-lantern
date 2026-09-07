@@ -317,3 +317,35 @@ def test_upload_dataset_files_aborts_on_failure() -> None:
             client.upload_dataset_files("ri.ds", {"first.csv": b"1", "second.csv": b"2"})
 
     assert any(u.endswith("/abort") for u in calls)
+
+
+class TestFoundryClientParametrized:
+    @pytest.mark.parametrize("hostname", [
+        "https://stack.palantirfoundry.com",
+        "https://other.palantirfoundry.com",
+        "https://stack.palantirfoundry.com/",
+    ])
+    def test_client_strips_trailing_slash_parametrized(self, hostname: str) -> None:
+        expected = hostname.rstrip("/") + "/api/v2"
+        c = FoundryClient(hostname, "tok")
+        assert c.base_url == expected
+
+    @pytest.mark.parametrize("missing_field", ["hostname", "token"])
+    def test_missing_required_field_raises(self, missing_field: str) -> None:
+        kwargs = {"hostname": "https://stack.palantirfoundry.com", "token": "tok"}
+        kwargs[missing_field] = ""
+        with pytest.raises(FoundryConfigError):
+            FoundryClient(**kwargs)
+
+    @pytest.mark.parametrize("branch", ["main", "dev", "feature-branch"])
+    def test_create_transaction_includes_branch(self, branch: str) -> None:
+        client = make_client()
+        captured: dict = {}
+
+        def fake(req: urllib.request.Request, timeout: float) -> FakeResponse:
+            captured["url"] = req.full_url
+            return FakeResponse({"rid": "ri.txn.1"})
+
+        with patch.object(urllib.request, "urlopen", fake):
+            client.create_transaction("ri.ds", branch=branch)
+        assert f"branchName={branch}" in captured["url"]
