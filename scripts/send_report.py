@@ -192,5 +192,7 @@ def main(argv: list[str] | None = None) -> int:
     return 0
 
 
+__all__ = ["send_email", "file_to_repo", "deliver", "main"]
+
 if __name__ == "__main__":
     sys.exit(main())
