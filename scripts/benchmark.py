@@ -15,6 +15,7 @@ from collections.abc import Callable
 
 
 def _timeit(fn: Callable, runs: int) -> list[float]:
+    """Call *fn* *runs* times and return elapsed seconds per call."""
     times = []
     for _ in range(runs):
         t0 = time.perf_counter()
@@ -24,12 +25,14 @@ def _timeit(fn: Callable, runs: int) -> list[float]:
 
 
 def _report(name: str, times: list[float]) -> None:
+    """Print mean and p95 latency for *times* under the label *name*."""
     mean_ms = statistics.mean(times) * 1000
     p95_ms = sorted(times)[int(len(times) * 0.95)] * 1000
     print(f"{name:<40} mean={mean_ms:8.3f}ms  p95={p95_ms:8.3f}ms  n={len(times)}")
 
 
 def bench_retry(runs: int) -> None:
+    """Benchmark the retry decorator with a single no-op attempt."""
     from app.retry import retry
 
     @retry(max_attempts=1)
@@ -41,6 +44,7 @@ def bench_retry(runs: int) -> None:
 
 
 def bench_token_bucket(runs: int) -> None:
+    """Benchmark TokenBucket.consume with a high-capacity bucket."""
     from app.token_bucket import TokenBucket
 
     bucket = TokenBucket(capacity=10_000, refill_rate=10_000)
@@ -49,6 +53,7 @@ def bench_token_bucket(runs: int) -> None:
 
 
 def bench_metrics_counter(runs: int) -> None:
+    """Benchmark Counter.inc() throughput."""
     from app.metrics_collector import Counter
 
     c = Counter("bench")
