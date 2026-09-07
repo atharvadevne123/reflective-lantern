@@ -71,3 +71,35 @@ class TestAuditLog:
         log.record("a", "b", "c")
         log.record("d", "e", "f")
         assert len(log.search()) == 2
+
+
+class TestAuditEntryOutcomes:
+    @pytest.mark.parametrize("outcome", ["success", "failure", "error", "denied"])
+    def test_custom_outcome_stored(self, outcome: str) -> None:
+        log = AuditLog()
+        log.record("sys", "op", "/res", outcome=outcome)
+        results = log.search(outcome=outcome)
+        assert len(results) == 1
+        assert results[0].outcome == outcome
+
+    @pytest.mark.parametrize(
+        "actor,action,resource",
+        [
+            ("alice", "read", "doc/1"),
+            ("bob", "write", "doc/2"),
+            ("carol", "delete", "doc/3"),
+        ],
+    )
+    def test_record_and_search_roundtrip(self, actor: str, action: str, resource: str) -> None:
+        log = AuditLog()
+        log.record(actor, action, resource)
+        results = log.search(actor=actor, action=action, resource=resource)
+        assert len(results) == 1
+        assert results[0].actor == actor
+
+    @pytest.mark.parametrize("n", [0, 1, 5, 10])
+    def test_len_after_n_records(self, n: int) -> None:
+        log = AuditLog()
+        for i in range(n):
+            log.record("u", "a", f"r/{i}")
+        assert len(log) == n
