@@ -21,12 +21,14 @@ class Coordinate:
     lon: float
 
     def __post_init__(self) -> None:
+        """Validate that latitude is in [-90, 90] and longitude in [-180, 180]."""
         if not -90 <= self.lat <= 90:
             raise ValueError(f"Latitude must be in [-90, 90], got {self.lat}")
         if not -180 <= self.lon <= 180:
             raise ValueError(f"Longitude must be in [-180, 180], got {self.lon}")
 
     def __str__(self) -> str:
+        """Return a human-readable (lat, lon) string rounded to 6 decimal places."""
         return f"({self.lat:.6f}, {self.lon:.6f})"
 
 
