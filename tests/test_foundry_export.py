@@ -7,6 +7,8 @@ import io
 import json
 from pathlib import Path
 
+import pytest
+
 from scripts.foundry_export import (
     DATASET_COLUMNS,
     build_ontology_objects,
@@ -208,3 +210,28 @@ def test_build_ontology_objects_returns_list(history_dir) -> None:
     rows = build_run_rows(history_dir)
     objs = build_ontology_objects(rows)
     assert isinstance(objs, list)
+
+
+class TestFoundryExportParametrized:
+    @pytest.mark.parametrize("col", ["repo", "date", "commits", "mode", "run_key"])
+    def test_required_column_present(self, history_dir: Path, col: str) -> None:
+        rows = build_run_rows(history_dir)
+        assert all(col in row for row in rows)
+
+    @pytest.mark.parametrize("mode", ["improvement", "innovation"])
+    def test_mode_value_is_valid(self, history_dir: Path, mode: str) -> None:
+        rows = build_run_rows(history_dir)
+        valid_modes = {"improvement", "innovation"}
+        assert all(r["mode"] in valid_modes for r in rows)
+
+    @pytest.mark.parametrize("n_rows", [1, 2, 3])
+    def test_rows_to_csv_column_count(self, n_rows: int) -> None:
+        sample_rows = [
+            {"repo": f"Repo{i}", "date": f"2026-0{i+1}-01", "commits": 60,
+             "mode": "improvement", "run_key": f"Repo{i}:2026-0{i+1}-01"}
+            for i in range(n_rows)
+        ]
+        csv_text = rows_to_csv(sample_rows)
+        reader = csv.DictReader(io.StringIO(csv_text))
+        read_rows = list(reader)
+        assert len(read_rows) == n_rows
