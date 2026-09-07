@@ -127,3 +127,5 @@ ax.legend(handles=legend_patches, loc="lower left", fontsize=8, framealpha=0.3, 
 plt.tight_layout()
 plt.savefig("screenshots/architecture.png", dpi=150, bbox_inches="tight")
 logger.info("Architecture diagram saved to screenshots/architecture.png")
+
+__all__ = ["box", "arrow"]
