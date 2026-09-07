@@ -338,3 +338,33 @@ class TestCohortBenchmarkEndpoint:
             json=self.COHORT,
         )
         assert r.status_code == 422
+
+
+class TestAnalyticsDataParametrized:
+    @pytest.mark.parametrize("series_len", [1, 4, 24, 48])
+    def test_flat_day_length_accepted(self, client: TestClient, series_len: int) -> None:
+        series = [1.0] * series_len
+        r = client.post("/api/v1/load-profile", json=series)
+        assert r.status_code == 200
+
+    @pytest.mark.parametrize("start_hour", [0, 6, 12, 18])
+    def test_start_hour_accepted(self, client: TestClient, start_hour: int) -> None:
+        series = [1.0] * 5
+        r = client.post(f"/api/v1/tariff/compare?start_hour={start_hour}", json=series)
+        assert r.status_code == 200
+
+    @pytest.mark.parametrize(
+        "real_kw,reactive_kvar,expected_rating",
+        [
+            (100, 10, "good"),
+            (100, 90, "poor"),
+        ],
+    )
+    def test_power_factor_rating(
+        self, client: TestClient, real_kw: float, reactive_kvar: float, expected_rating: str
+    ) -> None:
+        r = client.post(
+            f"/api/v1/power-quality?real_power_kw={real_kw}&reactive_power_kvar={reactive_kvar}",
+            json=[230.0, 230.0, 230.0],
+        )
+        assert r.json()["power_factor_rating"] == expected_rating
