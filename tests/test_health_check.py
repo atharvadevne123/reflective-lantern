@@ -82,3 +82,30 @@ class TestCheckDecorator:
 
         result = noop()
         assert result.name == "noop"
+
+
+import pytest
+
+
+class TestCheckResultParametrized:
+    @pytest.mark.parametrize(
+        "name,healthy,message",
+        [
+            ("db", True, "connected"),
+            ("redis", False, "timeout"),
+            ("s3", True, "bucket reachable"),
+            ("queue", False, "connection refused"),
+        ],
+    )
+    def test_check_result_fields(self, name: str, healthy: bool, message: str) -> None:
+        result = CheckResult(name=name, healthy=healthy, message=message)
+        assert result.name == name
+        assert result.healthy == healthy
+        assert result.message == message
+
+    @pytest.mark.parametrize("n_checks", [0, 1, 3, 5])
+    def test_registry_len_matches_registered(self, n_checks: int) -> None:
+        reg = HealthRegistry()
+        for i in range(n_checks):
+            reg.register(f"check-{i}", lambda: make_ok())
+        assert len(reg) == n_checks
