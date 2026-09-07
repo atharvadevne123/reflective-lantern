@@ -1,0 +1,15 @@
+# Default owner for all files not matched by a more specific rule.
+* @atharvadevne123
+
+# Core application modules — require owner review for all changes.
+/app/ @atharvadevne123
+
+# Tests — all test changes need owner sign-off.
+/tests/ @atharvadevne123
+
+# CI/CD configuration — changes must be reviewed carefully.
+/.github/workflows/ @atharvadevne123
+
+# Dependency and project configuration files.
+/pyproject.toml @atharvadevne123
+/requirements*.txt @atharvadevne123
