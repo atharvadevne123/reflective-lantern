@@ -102,5 +102,7 @@ def main() -> int:
     return 1 if failing > 0 else 0
 
 
+__all__ = ["get_latest_runs", "main"]
+
 if __name__ == "__main__":
     sys.exit(main())
