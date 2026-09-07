@@ -83,6 +83,7 @@ class Capabilities:
 
     def summary(self) -> str:
         """Return a multi-line human-readable summary."""
+
         def mark(v: bool) -> str:
             return "yes" if v else "NO"
 
@@ -101,8 +102,7 @@ class Capabilities:
         return "\n".join(lines)
 
 
-def _request(path: str, token: str | None = None, method: str = "GET",
-             payload: dict | None = None) -> tuple[int, str]:
+def _request(path: str, token: str | None = None, method: str = "GET", payload: dict | None = None) -> tuple[int, str]:
     """Issue a GitHub API request and return (status_code, body).
 
     Args:
@@ -203,10 +203,7 @@ def can_create_repo() -> tuple[bool, str]:
     if status in (401, 404):
         return False, f"Repository creation unavailable (HTTP {status})."
     if "bound to their configured repositories" in body:
-        return False, (
-            "Repository creation BLOCKED: the session is bound to its configured "
-            "repositories."
-        )
+        return False, ("Repository creation BLOCKED: the session is bound to its configured repositories.")
     return False, f"Repository creation unavailable (HTTP {status})."
 
 
@@ -236,9 +233,12 @@ def can_push_git(remote: str | None = None) -> tuple[bool, str]:
     return False, f"git cannot reach origin: {result.stderr.strip()[:140]}"
 
 
-def smtp_reachable(hosts: tuple[tuple[str, int], ...] = (
-    ("smtp.gmail.com", 587), ("smtp.gmail.com", 465),
-)) -> tuple[bool, str]:
+def smtp_reachable(
+    hosts: tuple[tuple[str, int], ...] = (
+        ("smtp.gmail.com", 587),
+        ("smtp.gmail.com", 465),
+    ),
+) -> tuple[bool, str]:
     """Detect whether any SMTP endpoint accepts a TCP connection.
 
     Args:
@@ -269,8 +269,7 @@ def detect(use_cache: bool = True, cache_path: str | None = None) -> Capabilitie
     Returns:
         A populated Capabilities instance.
     """
-    path = Path(cache_path or os.environ.get(
-        "LANTERN_CAPS_CACHE", "/tmp/lantern_capabilities.json"))
+    path = Path(cache_path or os.environ.get("LANTERN_CAPS_CACHE", "/tmp/lantern_capabilities.json"))
 
     if use_cache and path.exists():
         try:

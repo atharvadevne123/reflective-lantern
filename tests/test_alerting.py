@@ -140,12 +140,15 @@ class TestAlertCooldownParametrized:
             mgr.evaluate_all({"cpu": 90}, now=BASE_NOW + i)
         assert len(mgr.history) == n_fires
 
-    @pytest.mark.parametrize("threshold,value,should_fire", [
-        (80.0, 79.9, False),
-        (80.0, 80.1, True),
-        (0.0, 0.1, True),
-        (100.0, 100.0, False),
-    ])
+    @pytest.mark.parametrize(
+        "threshold,value,should_fire",
+        [
+            (80.0, 79.9, False),
+            (80.0, 80.1, True),
+            (0.0, 0.1, True),
+            (100.0, 100.0, False),
+        ],
+    )
     def test_threshold_boundary(self, threshold: float, value: float, should_fire: bool) -> None:
         rule = _make_rule(threshold=threshold, comparison=">")
         alert = rule.evaluate(value, BASE_NOW)

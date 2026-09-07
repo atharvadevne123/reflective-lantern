@@ -68,8 +68,7 @@ def _load_artifacts() -> tuple:
         return model, pipeline
     except (FileNotFoundError, OSError, pickle.UnpicklingError):
         logger.warning(
-            "Model/pipeline artifacts missing or unreadable — bootstrapping "
-            "from synthetic data"
+            "Model/pipeline artifacts missing or unreadable — bootstrapping from synthetic data"
         )
 
     from app.model import generate_synthetic_data, save_model, train
@@ -145,9 +144,7 @@ def predict_endpoint(payload: MetricsPayload, db: Session = Depends(get_db)):
     runbook_hint: str | None = None
     if is_incident:
         index = get_runbook_index(get_settings().runbooks_path)
-        results = index.search(
-            f"high cpu memory error latency {payload.service_name}", top_k=1
-        )
+        results = index.search(f"high cpu memory error latency {payload.service_name}", top_k=1)
         if results:
             runbook_hint = results[0][0].title
 
@@ -263,6 +260,7 @@ def forecast_incident_rate():
 
     if len(series) < 2:
         from datetime import timedelta
+
         now = datetime.utcnow()
         return [
             ForecastPoint(
@@ -358,7 +356,9 @@ def get_incidents(
     return [IncidentRecord.model_validate(row) for row in rows]
 
 
-@router.get("/drift/status", response_model=DriftStatusResponse, summary="Latest drift check status")
+@router.get(
+    "/drift/status", response_model=DriftStatusResponse, summary="Latest drift check status"
+)
 def drift_status():
     """Return the drift monitor's last check results.
 

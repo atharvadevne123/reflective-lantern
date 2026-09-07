@@ -106,9 +106,7 @@ class TestSeverityFiltering:
             (Severity.CRITICAL, Severity.CRITICAL, True),
         ],
     )
-    def test_severity_threshold(
-        self, channel_min: Severity, msg_severity: Severity, should_deliver: bool
-    ) -> None:
+    def test_severity_threshold(self, channel_min: Severity, msg_severity: Severity, should_deliver: bool) -> None:
         ch, received = make_channel(min_severity=channel_min)
         d = NotificationDispatcher()
         d.register(ch)

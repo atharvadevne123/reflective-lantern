@@ -73,7 +73,9 @@ class TestDefectRiskIndex:
             ("pressure", 60.0, 0.15),
         ],
     )
-    def test_each_sensor_contributes_its_weight(self, sensor: str, tripped_value: float, weight: float) -> None:
+    def test_each_sensor_contributes_its_weight(
+        self, sensor: str, tripped_value: float, weight: float
+    ) -> None:
         readings = dict(NOMINAL)
         readings[sensor] = tripped_value
         assert defect_risk_index(**readings) == pytest.approx(weight)
@@ -113,5 +115,7 @@ class TestDefectRiskIndex:
         assert defect_risk_index(**extreme) == pytest.approx(defect_risk_index(**ALL_TRIPPED))
 
     def test_risk_never_decreases_as_a_sensor_rises(self) -> None:
-        scores = [defect_risk_index(**{**NOMINAL, "temperature": t}) for t in (70.0, 84.0, 86.0, 200.0)]
+        scores = [
+            defect_risk_index(**{**NOMINAL, "temperature": t}) for t in (70.0, 84.0, 86.0, 200.0)
+        ]
         assert scores == sorted(scores)

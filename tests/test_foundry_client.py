@@ -320,11 +320,14 @@ def test_upload_dataset_files_aborts_on_failure() -> None:
 
 
 class TestFoundryClientParametrized:
-    @pytest.mark.parametrize("hostname", [
-        "https://stack.palantirfoundry.com",
-        "https://other.palantirfoundry.com",
-        "https://stack.palantirfoundry.com/",
-    ])
+    @pytest.mark.parametrize(
+        "hostname",
+        [
+            "https://stack.palantirfoundry.com",
+            "https://other.palantirfoundry.com",
+            "https://stack.palantirfoundry.com/",
+        ],
+    )
     def test_client_strips_trailing_slash_parametrized(self, hostname: str) -> None:
         expected = hostname.rstrip("/") + "/api/v2"
         c = FoundryClient(hostname, "tok")

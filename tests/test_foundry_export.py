@@ -227,8 +227,13 @@ class TestFoundryExportParametrized:
     @pytest.mark.parametrize("n_rows", [1, 2, 3])
     def test_rows_to_csv_column_count(self, n_rows: int) -> None:
         sample_rows = [
-            {"repo": f"Repo{i}", "date": f"2026-0{i+1}-01", "commits": 60,
-             "mode": "improvement", "run_key": f"Repo{i}:2026-0{i+1}-01"}
+            {
+                "repo": f"Repo{i}",
+                "date": f"2026-0{i + 1}-01",
+                "commits": 60,
+                "mode": "improvement",
+                "run_key": f"Repo{i}:2026-0{i + 1}-01",
+            }
             for i in range(n_rows)
         ]
         csv_text = rows_to_csv(sample_rows)

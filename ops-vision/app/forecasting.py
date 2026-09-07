@@ -117,14 +117,10 @@ class ExponentialSmoothingForecaster:
         self._level = float(level)
         self._trend = float(trend)
         self._residuals = residuals
-        logger.debug(
-            "Holt fit: level=%.4f trend=%.4f on %d points", level, trend, len(series)
-        )
+        logger.debug("Holt fit: level=%.4f trend=%.4f on %d points", level, trend, len(series))
         return self
 
-    def forecast(
-        self, base_time: datetime, step_hours: int = 1
-    ) -> list[ForecastPoint]:
+    def forecast(self, base_time: datetime, step_hours: int = 1) -> list[ForecastPoint]:
         """Generate horizon-step-ahead forecasts.
 
         Args:
@@ -140,15 +136,13 @@ class ExponentialSmoothingForecaster:
         if self._level is None or self._trend is None:
             raise RuntimeError("Forecaster must be fitted before calling forecast()")
 
-        residual_std = (
-            float(np.std(self._residuals)) if self._residuals else 1.0
-        )
+        residual_std = float(np.std(self._residuals)) if self._residuals else 1.0
         z80 = 1.282
 
         points: list[ForecastPoint] = []
         for h in range(1, self.horizon + 1):
             value = max(0.0, self._level + h * self._trend)
-            interval = z80 * residual_std * (h ** 0.5)
+            interval = z80 * residual_std * (h**0.5)
             lower = max(0.0, value - interval)
             upper = value + interval
             ts = base_time + timedelta(hours=h * step_hours)
@@ -161,9 +155,7 @@ class ExponentialSmoothingForecaster:
                 )
             )
 
-        logger.info(
-            "Forecast generated: %d points, next=%.4f", len(points), points[0].value
-        )
+        logger.info("Forecast generated: %d points, next=%.4f", len(points), points[0].value)
         return points
 
 

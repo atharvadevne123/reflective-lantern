@@ -154,9 +154,7 @@ def test_sync_manifest_is_valid_json(monkeypatch: pytest.MonkeyPatch) -> None:
 
 class TestFoundrySyncParametrized:
     @pytest.mark.parametrize("include_ontology", [True, False])
-    def test_ontology_file_presence_matches_flag(
-        self, monkeypatch: pytest.MonkeyPatch, include_ontology: bool
-    ) -> None:
+    def test_ontology_file_presence_matches_flag(self, monkeypatch: pytest.MonkeyPatch, include_ontology: bool) -> None:
         settings = _configured_settings(monkeypatch)
         with patch("scripts.foundry_sync.client_from_settings") as mocked:
             mocked.return_value.upload_dataset_files.return_value = "ri.txn.1"
@@ -167,9 +165,7 @@ class TestFoundrySyncParametrized:
         assert has_ontology == include_ontology
 
     @pytest.mark.parametrize("fmt", ["csv", "jsonl"])
-    def test_export_format_file_present(
-        self, monkeypatch: pytest.MonkeyPatch, fmt: str
-    ) -> None:
+    def test_export_format_file_present(self, monkeypatch: pytest.MonkeyPatch, fmt: str) -> None:
         settings = _configured_settings(monkeypatch)
         with patch("scripts.foundry_sync.client_from_settings") as mocked:
             mocked.return_value.upload_dataset_files.return_value = "ri.txn.2"
