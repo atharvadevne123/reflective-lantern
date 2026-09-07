@@ -38,6 +38,7 @@ class Settings:
     )
 
     def __init__(self) -> None:
+        """Read all settings from environment variables, applying defaults where unset."""
         object.__setattr__(self, "anthropic_api_key", os.getenv("ANTHROPIC_API_KEY", ""))
         object.__setattr__(self, "gh_pat", os.getenv("GH_PAT", ""))
         object.__setattr__(self, "notion_api_key", os.getenv("NOTION_API_KEY", ""))
@@ -60,6 +61,7 @@ class Settings:
         object.__setattr__(self, "foundry_dataset_rid", os.getenv("FOUNDRY_DATASET_RID", ""))
 
     def __setattr__(self, name: str, value: object) -> None:
+        """Raise AttributeError unconditionally — Settings instances are immutable."""
         raise AttributeError("Settings are frozen")
 
     def __repr__(self) -> str:
