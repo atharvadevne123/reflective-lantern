@@ -22,6 +22,8 @@ logger = logging.getLogger(__name__)
 
 
 class Severity(StrEnum):
+    """Notification severity levels ordered from least to most urgent."""
+
     INFO = "info"
     WARNING = "warning"
     ERROR = "error"
@@ -58,6 +60,7 @@ class NotificationDispatcher:
     """Dispatches notifications to all eligible registered channels."""
 
     def __init__(self) -> None:
+        """Initialise an empty dispatcher with no registered channels."""
         self._channels: dict[str, Channel] = {}
 
     def register(self, channel: Channel) -> None:
