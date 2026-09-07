@@ -41,6 +41,7 @@ class TaskQueue:
     """Thread-safe priority queue that executes tasks on worker threads."""
 
     def __init__(self, workers: int = 2) -> None:
+        """Initialise the queue with *workers* daemon threads (not started yet)."""
         self._heap: list[Task] = []
         self._lock = threading.Lock()
         self._not_empty = threading.Condition(self._lock)
@@ -75,6 +76,7 @@ class TaskQueue:
         self._threads.clear()
 
     def _worker(self) -> None:
+        """Internal worker loop: pop and run tasks until stopped and queue is empty."""
         while True:
             with self._not_empty:
                 while not self._heap and self._running:
@@ -93,14 +95,17 @@ class TaskQueue:
 
     @property
     def completed(self) -> int:
+        """Return the total number of tasks that have finished successfully."""
         with self._lock:
             return self._completed
 
     @property
     def errors(self) -> list[Exception]:
+        """Return a snapshot of all exceptions raised by tasks so far."""
         with self._lock:
             return list(self._errors)
 
     def __len__(self) -> int:
+        """Return the number of tasks currently waiting in the queue."""
         with self._lock:
             return len(self._heap)
