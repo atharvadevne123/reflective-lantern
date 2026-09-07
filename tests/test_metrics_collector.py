@@ -109,3 +109,26 @@ class TestMetricsRegistry:
         metrics = reg.all_metrics()
         assert "a" in metrics
         assert "b" in metrics
+
+
+class TestMetricsParametrized:
+    @pytest.mark.parametrize("amount,expected", [(1, 1.0), (5, 5.0), (100, 100.0), (0, 0.0)])
+    def test_counter_inc_by_amount(self, amount: float, expected: float) -> None:
+        c = Counter("req")
+        c.inc(amount)
+        assert c.value == expected
+
+    @pytest.mark.parametrize("values,expected_sum", [([1.0, 2.0, 3.0], 6.0), ([0.5, 0.5], 1.0), ([10.0], 10.0)])
+    def test_gauge_set_sequence(self, values: list[float], expected_sum: float) -> None:
+        g = Gauge("g")
+        for v in values:
+            g.inc(v)
+        assert g.value == pytest.approx(expected_sum)
+
+    @pytest.mark.parametrize("n_counters", [1, 3, 5, 10])
+    def test_registry_tracks_n_counters(self, n_counters: int) -> None:
+        reg = MetricsRegistry()
+        for i in range(n_counters):
+            reg.counter(f"c{i}")
+        metrics = reg.all_metrics()
+        assert all(f"c{i}" in metrics for i in range(n_counters))
