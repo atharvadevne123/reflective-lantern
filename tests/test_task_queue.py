@@ -2,6 +2,8 @@
 
 import threading
 
+import pytest
+
 from app.task_queue import Task, TaskQueue
 
 
@@ -70,3 +72,45 @@ class TestTaskQueue:
         q.stop(timeout=2.0)
         assert order[0] == "high"
         assert order[1] == "low"
+
+
+class TestTaskPriorityParametrized:
+    @pytest.mark.parametrize(
+        "priorities,expected_first",
+        [
+            ([10, 1, 5], 1),
+            ([3, 3, 3], 3),
+            ([100, 2], 2),
+            ([1], 1),
+        ],
+    )
+    def test_lowest_priority_runs_first(self, priorities: list[int], expected_first: int) -> None:
+        import threading
+
+        order = []
+        lock = threading.Lock()
+
+        def record(val: int) -> None:
+            with lock:
+                order.append(val)
+
+        q = TaskQueue(workers=1)
+        for p in priorities:
+            q.submit(record, p, p)
+        q.start()
+        q.stop(timeout=2.0)
+        assert order[0] == expected_first
+
+    @pytest.mark.parametrize("n_tasks", [1, 5, 10, 20])
+    def test_all_tasks_complete(self, n_tasks: int) -> None:
+        import threading
+
+        done = []
+        lock = threading.Lock()
+
+        q = TaskQueue(workers=4)
+        q.start()
+        for i in range(n_tasks):
+            q.submit(done.append, 1, 1)
+        q.stop(timeout=5.0)
+        assert q.completed == n_tasks
