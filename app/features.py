@@ -218,6 +218,7 @@ class PropertyAgeTransformer(BaseEstimator, TransformerMixin):
     """Compute property age from year_built relative to a reference year."""
 
     def __init__(self, reference_year: int = 2026) -> None:
+        """Set the reference year used to compute property age (default 2026)."""
         self.reference_year = reference_year
 
     def fit(self, X: pd.DataFrame, y: object = None) -> PropertyAgeTransformer:
@@ -310,10 +311,12 @@ class InteractionFeatureExtractor(BaseEstimator, TransformerMixin):
     ]
 
     def fit(self, X: pd.DataFrame, y: object = None) -> InteractionFeatureExtractor:
+        """Record which PAIRS columns are present in X for use in transform."""
         self.available_pairs_ = [(a, b) for a, b in self.PAIRS if a in X.columns and b in X.columns]
         return self
 
     def transform(self, X: pd.DataFrame) -> pd.DataFrame:
+        """Add element-wise product columns for each available feature pair."""
         df = X.copy()
         for a, b in self.available_pairs_:
             df[f"{a}_x_{b}"] = df[a] * df[b]
