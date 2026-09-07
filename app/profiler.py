@@ -22,10 +22,12 @@ def timed(label: str | None = None, log_level: int = logging.DEBUG) -> Callable:
     """
 
     def decorator(func: Callable) -> Callable:
+        """Wrap *func* to emit a timing log on each call."""
         name = label or func.__qualname__
 
         @functools.wraps(func)
-        def wrapper(*args, **kwargs):
+        def wrapper(*args, **kwargs):  # type: ignore[return]
+            """Execute *func* and log wall-clock duration."""
             start = time.perf_counter()
             try:
                 result = func(*args, **kwargs)
@@ -43,12 +45,14 @@ class _Stats:
     """Running statistics for call durations."""
 
     def __init__(self) -> None:
+        """Initialise all accumulators to zero."""
         self.calls: int = 0
         self.total_ms: float = 0.0
         self.min_ms: float = float("inf")
         self.max_ms: float = 0.0
 
     def record(self, ms: float) -> None:
+        """Record a single observation of *ms* milliseconds."""
         self.calls += 1
         self.total_ms += ms
         self.min_ms = min(self.min_ms, ms)
@@ -82,11 +86,13 @@ def tracked(label: str | None = None) -> Callable:
     """
 
     def decorator(func: Callable) -> Callable:
+        """Wrap *func* to accumulate per-call timing statistics."""
         name = label or func.__qualname__
         _registry[name] = _Stats()
 
         @functools.wraps(func)
-        def wrapper(*args, **kwargs):
+        def wrapper(*args, **kwargs):  # type: ignore[return]
+            """Execute *func* and record its duration in the stats registry."""
             start = time.perf_counter()
             try:
                 return func(*args, **kwargs)
