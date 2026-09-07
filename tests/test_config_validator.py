@@ -63,3 +63,39 @@ class TestValidate:
         schema = make_schema()
         result = validate({"host": "h", "port": 80, "env": "prod"}, schema)
         assert result["debug"] is False
+
+
+class TestValidateParametrized:
+    @pytest.mark.parametrize(
+        "port,valid",
+        [
+            (1, True),
+            (80, True),
+            (8080, True),
+            (65535, True),
+            (0, False),
+            (65536, False),
+            (-1, False),
+        ],
+    )
+    def test_port_range(self, port: int, valid: bool) -> None:
+        schema = make_schema()
+        config = {"host": "localhost", "port": port, "env": "dev"}
+        if valid:
+            result = validate(config, schema)
+            assert result["port"] == port
+        else:
+            with pytest.raises(ValidationError):
+                validate(config, schema)
+
+    @pytest.mark.parametrize("env_val", ["dev", "prod"])
+    def test_valid_env_choices(self, env_val: str) -> None:
+        schema = make_schema()
+        result = validate({"host": "h", "port": 80, "env": env_val}, schema)
+        assert result["env"] == env_val
+
+    @pytest.mark.parametrize("env_val", ["staging", "test", "", "DEV"])
+    def test_invalid_env_choices(self, env_val: str) -> None:
+        schema = make_schema()
+        with pytest.raises(ValidationError):
+            validate({"host": "h", "port": 80, "env": env_val}, schema)
