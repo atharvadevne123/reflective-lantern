@@ -82,3 +82,30 @@ class TestProcess:
         body = b'{"ping": true}'
         wh.process(body, "ping", signature=make_sig(body))
         assert calls == [1, 2]
+
+
+class TestWebhookParametrized:
+    @pytest.mark.parametrize("event_type", ["push", "pull_request", "release", "ping"])
+    def test_event_type_stored(self, event_type: str) -> None:
+        wh = WebhookHandler(SECRET)
+        body = json.dumps({"type": event_type}).encode()
+        event = wh.process(body, event_type, signature=make_sig(body))
+        assert event.event_type == event_type
+
+    @pytest.mark.parametrize("secret", ["abc", "my-secret", "s3cr3t!"])
+    def test_signature_matches_secret(self, secret: str) -> None:
+        wh = WebhookHandler(secret)
+        body = b'{"ok": true}'
+        sig = make_sig(body, secret)
+        event = wh.process(body, "push", signature=sig)
+        assert event.payload["ok"] is True
+
+    @pytest.mark.parametrize("n_handlers", [1, 2, 3])
+    def test_catch_all_receives_all_events(self, n_handlers: int) -> None:
+        wh = WebhookHandler(SECRET)
+        calls: list[str] = []
+        for _ in range(n_handlers):
+            wh.on_any(lambda e: calls.append(e.event_type))
+        body = b"{}"
+        wh.process(body, "tick", signature=make_sig(body))
+        assert len(calls) == n_handlers
