@@ -38,6 +38,7 @@ class ConfigSchema:
     fields: list[FieldSpec] = field(default_factory=list)
 
     def add(self, spec: FieldSpec) -> ConfigSchema:
+        """Append *spec* to the schema and return self for method chaining."""
         self.fields.append(spec)
         return self
 
@@ -46,6 +47,7 @@ class ValidationError(Exception):
     """Raised when configuration validation fails."""
 
     def __init__(self, violations: list[str]) -> None:
+        """Store *violations* and format them into the exception message."""
         self.violations = violations
         super().__init__("Config validation failed:\n" + "\n".join(f"  - {v}" for v in violations))
 
