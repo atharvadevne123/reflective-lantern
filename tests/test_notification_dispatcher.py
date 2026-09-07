@@ -1,5 +1,7 @@
 """Tests for app.notification_dispatcher."""
 
+import pytest
+
 from app.notification_dispatcher import (
     Channel,
     Notification,
@@ -88,3 +90,28 @@ class TestDispatch:
         d.dispatch(Notification(title="t", body=""))
         assert len(r1) == 1
         assert len(r2) == 1
+
+
+class TestSeverityFiltering:
+    @pytest.mark.parametrize(
+        "channel_min,msg_severity,should_deliver",
+        [
+            (Severity.INFO, Severity.INFO, True),
+            (Severity.INFO, Severity.CRITICAL, True),
+            (Severity.WARNING, Severity.INFO, False),
+            (Severity.WARNING, Severity.WARNING, True),
+            (Severity.ERROR, Severity.WARNING, False),
+            (Severity.ERROR, Severity.ERROR, True),
+            (Severity.CRITICAL, Severity.ERROR, False),
+            (Severity.CRITICAL, Severity.CRITICAL, True),
+        ],
+    )
+    def test_severity_threshold(
+        self, channel_min: Severity, msg_severity: Severity, should_deliver: bool
+    ) -> None:
+        ch, received = make_channel(min_severity=channel_min)
+        d = NotificationDispatcher()
+        d.register(ch)
+        n = Notification(title="t", body="", severity=msg_severity)
+        d.dispatch(n)
+        assert (len(received) == 1) == should_deliver
