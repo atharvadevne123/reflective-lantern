@@ -111,7 +111,7 @@ def send_email(subject: str, body: str, attachment: Path | None = None) -> bool:
                     server.send_message(msg)
             logger.info("Report emailed via %s:%s", host, port)
             return True
-        except Exception as exc:  # noqa: BLE001 - any failure means try next port
+        except Exception as exc:
             logger.warning("SMTP %s:%s failed: %s", host, port, exc)
 
     return False
@@ -162,7 +162,7 @@ def deliver(subject: str, body: str, attachment: Path | None = None) -> str:
     try:
         if send_email(subject, body, attachment):
             return "emailed"
-    except Exception:  # noqa: BLE001
+    except Exception:
         logger.exception("Unexpected error while emailing — falling back to file")
 
     path = file_to_repo(subject, body, attachment)
@@ -192,7 +192,7 @@ def main(argv: list[str] | None = None) -> int:
     return 0
 
 
-__all__ = ["send_email", "file_to_repo", "deliver", "main"]
+__all__ = ["deliver", "file_to_repo", "main", "send_email"]
 
 if __name__ == "__main__":
     sys.exit(main())

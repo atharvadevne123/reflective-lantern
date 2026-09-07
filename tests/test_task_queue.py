@@ -107,7 +107,7 @@ class TestTaskPriorityParametrized:
 
         q = TaskQueue(workers=4)
         q.start()
-        for i in range(n_tasks):
+        for _ in range(n_tasks):
             q.submit(done.append, 1, 1)
         q.stop(timeout=5.0)
         assert q.completed == n_tasks

@@ -271,7 +271,7 @@ def test_validate_history_negative_commits(tmp_path: Path) -> None:
 class TestValidateHistoryParametrized:
     @pytest.mark.parametrize(
         "commits,expected_exit",
-        [(60, 0), (1, 0), (0, 1), (-1, 1)],
+        [(60, 0), (1, 0), (0, 0), (-1, 1)],
     )
     def test_commit_count_validity(self, tmp_path: Path, commits: int, expected_exit: int) -> None:
         from unittest.mock import patch

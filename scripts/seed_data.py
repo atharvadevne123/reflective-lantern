@@ -115,12 +115,12 @@ def main() -> None:
 
 
 __all__ = [
-    "seed_model_registry",
-    "seed_feature_store",
-    "seed_experiment_tracker",
-    "seed_audit_log",
     "SEED_FUNCTIONS",
     "main",
+    "seed_audit_log",
+    "seed_experiment_tracker",
+    "seed_feature_store",
+    "seed_model_registry",
 ]
 
 if __name__ == "__main__":

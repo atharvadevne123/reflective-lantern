@@ -133,8 +133,10 @@ class TestJitterParametrized:
     def test_jitter_output_length_preserved(self, jitter_pct: float) -> None:
         rng = make_rng(42)
         values = [1.0, 2.0, 3.0, 4.0, 5.0]
-        result = jitter_numerics(values, jitter_pct=jitter_pct, rng=rng)
-        assert len(result) == len(values)
+        text = " ".join(str(v) for v in values)
+        result = jitter_numerics(text, pct=jitter_pct, rng=rng)
+        nums = re.findall(r"-?\d+(?:\.\d+)?", result)
+        assert len(nums) == len(values)
 
     @pytest.mark.parametrize("n_augments", [1, 2, 5])
     def test_augment_batch_size(self, n_augments: int) -> None:
@@ -147,5 +149,5 @@ class TestJitterParametrized:
     def test_random_deletion_keeps_nonempty(self, del_prob: float) -> None:
         rng = make_rng(7)
         tokens = ["a", "b", "c", "d", "e"]
-        result = random_deletion(tokens, prob=del_prob, rng=rng, min_words=1)
+        result = random_deletion(tokens, prob=del_prob, rng=rng)
         assert len(result) >= 1

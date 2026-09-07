@@ -174,7 +174,7 @@ class TestFoundrySyncParametrized:
         with patch("scripts.foundry_sync.client_from_settings") as mocked:
             mocked.return_value.upload_dataset_files.return_value = "ri.txn.2"
             mocked.return_value.list_files.return_value = []
-            sync(settings=settings, export_format=fmt)
+            sync(settings=settings, fmt=fmt)
         files_arg = mocked.return_value.upload_dataset_files.call_args.args[1]
         expected_file = f"reflective_lantern_runs.{fmt}"
         assert expected_file in files_arg
