@@ -80,6 +80,11 @@ def validate_files(paths: list[Path]) -> dict[str, list[str]]:
 
 
 def main() -> int:
+    """CLI entry-point: validate all history JSON files and report errors.
+
+    Returns:
+        0 if all files are valid, 1 if any validation errors were found.
+    """
     import argparse
     import sys
 
