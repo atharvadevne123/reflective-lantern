@@ -174,5 +174,7 @@ def main() -> int:
     return 0 if issues == 0 else 1
 
 
+__all__ = ["RepoHealth", "check_repo", "main"]
+
 if __name__ == "__main__":
     sys.exit(main())
