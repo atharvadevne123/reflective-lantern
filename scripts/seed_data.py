@@ -19,6 +19,7 @@ logger = logging.getLogger("seed")
 
 
 def seed_model_registry() -> None:
+    """Seed a ModelRegistry with a sample churn classifier in PRODUCTION state."""
     from app.model_registry import ModelRegistry
 
     reg = ModelRegistry()
@@ -36,6 +37,7 @@ def seed_model_registry() -> None:
 
 
 def seed_feature_store() -> None:
+    """Seed a FeatureStore with user and item feature set definitions."""
     from app.feature_store import FeatureStore
 
     store = FeatureStore()
@@ -55,6 +57,7 @@ def seed_feature_store() -> None:
 
 
 def seed_experiment_tracker() -> None:
+    """Seed an ExperimentRegistry with homepage CTA and checkout flow A/B tests."""
     from app.experiment_tracker import ExperimentRegistry
 
     reg = ExperimentRegistry()
@@ -68,6 +71,7 @@ def seed_experiment_tracker() -> None:
 
 
 def seed_audit_log() -> None:
+    """Seed an AuditLog with startup, login, and model-update events."""
     from app.audit_log import AuditLog
 
     log = AuditLog()
@@ -86,6 +90,7 @@ SEED_FUNCTIONS = [
 
 
 def main() -> None:
+    """CLI entry-point: run all seed functions to populate in-memory data stores."""
     parser = argparse.ArgumentParser(description="Seed development data")
     parser.add_argument("--verbose", action="store_true")
     args = parser.parse_args()
