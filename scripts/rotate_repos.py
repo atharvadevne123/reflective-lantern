@@ -109,5 +109,7 @@ def main() -> int:
     return 0
 
 
+__all__ = ["date_seed", "fetch_repos", "repo_names", "select_repo", "main"]
+
 if __name__ == "__main__":
     sys.exit(main())
