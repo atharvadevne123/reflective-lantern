@@ -27,6 +27,11 @@ def run_check(name: str, cmd: list) -> tuple[bool, float]:
 
 
 def main() -> int:
+    """CLI entry-point: run all configured pre-flight checks and print a summary.
+
+    Returns:
+        0 if all checks passed, 1 if any failed.
+    """
     parser = argparse.ArgumentParser(description="Run all pre-flight checks.")
     parser.add_argument("--stop-on-failure", action="store_true")
     args = parser.parse_args()
