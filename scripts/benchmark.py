@@ -110,5 +110,14 @@ def main() -> None:
         fn(args.runs)
 
 
+__all__ = [
+    "bench_retry",
+    "bench_token_bucket",
+    "bench_metrics_counter",
+    "bench_event_bus",
+    "BENCHMARKS",
+    "main",
+]
+
 if __name__ == "__main__":
     main()
