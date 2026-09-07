@@ -114,5 +114,14 @@ def main() -> None:
     logger.info("Seeding complete.")
 
 
+__all__ = [
+    "seed_model_registry",
+    "seed_feature_store",
+    "seed_experiment_tracker",
+    "seed_audit_log",
+    "SEED_FUNCTIONS",
+    "main",
+]
+
 if __name__ == "__main__":
     main()
