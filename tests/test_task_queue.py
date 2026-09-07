@@ -103,10 +103,7 @@ class TestTaskPriorityParametrized:
 
     @pytest.mark.parametrize("n_tasks", [1, 5, 10, 20])
     def test_all_tasks_complete(self, n_tasks: int) -> None:
-        import threading
-
         done = []
-        lock = threading.Lock()
 
         q = TaskQueue(workers=4)
         q.start()
