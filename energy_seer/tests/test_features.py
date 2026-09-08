@@ -207,10 +207,17 @@ class TestFeaturePipelineEdgeCases:
 
         from app.features import LagFeatureTransformer
 
-        df = pd.DataFrame({"consumption_kwh": [5.0], "temperature_c": [20.0],
-                           "humidity_pct": [50.0], "hour_of_day": [12],
-                           "day_of_week": [1], "is_holiday": [0],
-                           "building_type": ["office"]})
+        df = pd.DataFrame(
+            {
+                "consumption_kwh": [5.0],
+                "temperature_c": [20.0],
+                "humidity_pct": [50.0],
+                "hour_of_day": [12],
+                "day_of_week": [1],
+                "is_holiday": [0],
+                "building_type": ["office"],
+            }
+        )
         out = LagFeatureTransformer(lags=[1]).fit_transform(df)
         assert "consumption_lag_1h" in out.columns
 
@@ -219,10 +226,17 @@ class TestFeaturePipelineEdgeCases:
 
         from app.features import RollingStatsTransformer
 
-        df = pd.DataFrame({"consumption_kwh": [1.0, 2.0], "temperature_c": [20.0, 21.0],
-                           "humidity_pct": [50.0, 51.0], "hour_of_day": [8, 9],
-                           "day_of_week": [0, 0], "is_holiday": [0, 0],
-                           "building_type": ["office", "office"]})
+        df = pd.DataFrame(
+            {
+                "consumption_kwh": [1.0, 2.0],
+                "temperature_c": [20.0, 21.0],
+                "humidity_pct": [50.0, 51.0],
+                "hour_of_day": [8, 9],
+                "day_of_week": [0, 0],
+                "is_holiday": [0, 0],
+                "building_type": ["office", "office"],
+            }
+        )
         out = RollingStatsTransformer(windows=[10]).fit_transform(df)
         assert "rolling_mean_10h" in out.columns
 
@@ -231,10 +245,17 @@ class TestFeaturePipelineEdgeCases:
 
         from app.features import TemporalFeatureTransformer
 
-        df = pd.DataFrame({"consumption_kwh": [2.0], "temperature_c": [15.0],
-                           "humidity_pct": [55.0], "hour_of_day": [0],
-                           "day_of_week": [6], "is_holiday": [0],
-                           "building_type": ["residential"]})
+        df = pd.DataFrame(
+            {
+                "consumption_kwh": [2.0],
+                "temperature_c": [15.0],
+                "humidity_pct": [55.0],
+                "hour_of_day": [0],
+                "day_of_week": [6],
+                "is_holiday": [0],
+                "building_type": ["residential"],
+            }
+        )
         out = TemporalFeatureTransformer().fit_transform(df)
         assert out["is_weekend"].iloc[0] == 1
 

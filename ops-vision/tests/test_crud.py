@@ -1,6 +1,5 @@
 """Tests for Ops-Vision CRUD database operations."""
 
-
 from app.crud import (
     avg_confidence,
     count_drift_alerts_last_24h,
@@ -166,10 +165,17 @@ class TestCrudEdgeCases:
     def test_avg_confidence_within_unit_interval(self, db_session):
         from app.crud import create_prediction
 
-        create_prediction(db_session, {
-            "service_name": "s", "features": {}, "predicted_incident": False,
-            "predicted_severity": None, "confidence": 0.75, "model_version": "1.0.0",
-        })
+        create_prediction(
+            db_session,
+            {
+                "service_name": "s",
+                "features": {},
+                "predicted_incident": False,
+                "predicted_severity": None,
+                "confidence": 0.75,
+                "model_version": "1.0.0",
+            },
+        )
         avg = avg_confidence(db_session)
         assert 0.0 <= avg <= 1.0
 
@@ -180,8 +186,15 @@ class TestCrudEdgeCases:
 
     def test_count_predictions_increments_by_one(self, db_session):
         before = count_predictions(db_session)
-        create_prediction(db_session, {
-            "service_name": "s", "features": {}, "predicted_incident": True,
-            "predicted_severity": "low", "confidence": 0.5, "model_version": "1.0.0",
-        })
+        create_prediction(
+            db_session,
+            {
+                "service_name": "s",
+                "features": {},
+                "predicted_incident": True,
+                "predicted_severity": "low",
+                "confidence": 0.5,
+                "model_version": "1.0.0",
+            },
+        )
         assert count_predictions(db_session) == before + 1

@@ -31,9 +31,7 @@ class ResourcePressureTransformer(BaseEstimator, TransformerMixin):
     def transform(self, X: pd.DataFrame) -> pd.DataFrame:
         """Add resource_pressure column as weighted sum of CPU and memory."""
         X = X.copy()
-        X["resource_pressure"] = (
-            0.6 * X["cpu_usage_pct"] + 0.4 * X["memory_usage_pct"]
-        ) / 100.0
+        X["resource_pressure"] = (0.6 * X["cpu_usage_pct"] + 0.4 * X["memory_usage_pct"]) / 100.0
         logger.debug("ResourcePressureTransformer applied")
         return X
 
@@ -64,9 +62,7 @@ class ThroughputPressureTransformer(BaseEstimator, TransformerMixin):
     def transform(self, X: pd.DataFrame) -> pd.DataFrame:
         """Add throughput_pressure column."""
         X = X.copy()
-        X["throughput_pressure"] = (
-            X["request_rate_per_sec"] * (1 + X["disk_io_util_pct"] / 100.0)
-        )
+        X["throughput_pressure"] = X["request_rate_per_sec"] * (1 + X["disk_io_util_pct"] / 100.0)
         logger.debug("ThroughputPressureTransformer applied")
         return X
 
