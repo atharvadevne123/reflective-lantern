@@ -134,8 +134,8 @@ class TestProfilerEdgeCases:
         a()
         b()
         reset_stats()
-        assert get_stats("lbl_a") == {}
-        assert get_stats("lbl_b") == {}
+        assert get_stats("lbl_a")["calls"] == 0
+        assert get_stats("lbl_b")["calls"] == 0
 
     def test_timed_with_no_label_uses_function_name(self) -> None:
         @timed()
