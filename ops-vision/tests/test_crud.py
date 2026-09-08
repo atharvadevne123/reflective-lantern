@@ -136,3 +136,52 @@ class TestCreateDriftAlert:
         create_drift_alert(db_session, self._make_alert_data(drifted=False))
         after = count_drift_alerts_last_24h(db_session)
         assert after == before
+
+
+class TestCrudEdgeCases:
+    """Additional edge-case tests for ops-vision CRUD operations."""
+
+    def _incident_data(self, service: str = "edge-svc") -> dict:
+        return {
+            "service_name": service,
+            "cpu_usage_pct": 10.0,
+            "memory_usage_pct": 20.0,
+            "error_rate_per_min": 0.0,
+            "latency_p99_ms": 50.0,
+            "request_rate_per_sec": 100.0,
+            "disk_io_util_pct": 5.0,
+            "is_incident": False,
+            "severity": "low",
+        }
+
+    def test_list_incidents_empty_db_returns_list(self, db_session):
+        results = list_incidents(db_session, service_name="nonexistent-xyz")
+        assert isinstance(results, list)
+
+    def test_create_multiple_incidents_unique_ids(self, db_session):
+        a = create_incident(db_session, self._incident_data("s1"))
+        b = create_incident(db_session, self._incident_data("s2"))
+        assert a.id != b.id
+
+    def test_avg_confidence_within_unit_interval(self, db_session):
+        from app.crud import create_prediction
+
+        create_prediction(db_session, {
+            "service_name": "s", "features": {}, "predicted_incident": False,
+            "predicted_severity": None, "confidence": 0.75, "model_version": "1.0.0",
+        })
+        avg = avg_confidence(db_session)
+        assert 0.0 <= avg <= 1.0
+
+    def test_get_incident_returns_correct_service(self, db_session):
+        inc = create_incident(db_session, self._incident_data("precise-svc"))
+        fetched = get_incident(db_session, inc.id)
+        assert fetched.service_name == "precise-svc"
+
+    def test_count_predictions_increments_by_one(self, db_session):
+        before = count_predictions(db_session)
+        create_prediction(db_session, {
+            "service_name": "s", "features": {}, "predicted_incident": True,
+            "predicted_severity": "low", "confidence": 0.5, "model_version": "1.0.0",
+        })
+        assert count_predictions(db_session) == before + 1

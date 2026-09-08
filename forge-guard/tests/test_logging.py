@@ -157,3 +157,38 @@ def test_json_formatter_message_formatting():
     payload = json.loads(formatter.format(record))
     assert "42" in payload["message"]
     assert "3.14" in payload["message"]
+
+
+class TestJsonFormatterEdgeCases:
+    """Edge-case tests for forge-guard JsonFormatter."""
+
+    def test_critical_level_name(self):
+        formatter = JsonFormatter()
+        record = logging.LogRecord("t", logging.CRITICAL, "f.py", 1, "crit", (), None)
+        payload = json.loads(formatter.format(record))
+        assert payload["level"] == "CRITICAL"
+
+    def test_no_args_message_unchanged(self):
+        formatter = JsonFormatter()
+        record = logging.LogRecord("t", logging.INFO, "f.py", 1, "static msg", (), None)
+        payload = json.loads(formatter.format(record))
+        assert payload["message"] == "static msg"
+
+    def test_extra_integer_field_preserved(self):
+        formatter = JsonFormatter()
+        record = logging.LogRecord("t", logging.INFO, "f.py", 1, "m", (), None)
+        record.request_count = 42
+        payload = json.loads(formatter.format(record))
+        assert payload.get("request_count") == 42
+
+    def test_formatter_output_is_single_line(self):
+        formatter = JsonFormatter()
+        record = logging.LogRecord("t", logging.INFO, "f.py", 1, "line", (), None)
+        line = formatter.format(record)
+        assert "\n" not in line
+
+    def test_configure_sets_json_formatter_on_handler(self):
+        configure_logging(level="WARNING", json_output=True)
+        handler = logging.getLogger().handlers[0]
+        assert isinstance(handler.formatter, JsonFormatter)
+        configure_logging(level="INFO", json_output=False)

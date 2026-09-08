@@ -164,3 +164,44 @@ def test_validate_meter_id_valid_returns_string(meter_id: str) -> None:
     result = validate_meter_id(meter_id)
     assert isinstance(result, str)
     assert result == meter_id
+
+
+class TestValidatorsEdgeCases:
+    """Edge-case tests for energy_seer validator functions."""
+
+    def test_clamp_at_min_boundary(self) -> None:
+        from energy_seer.app.validators import clamp
+
+        assert clamp(0.0, 0.0, 10.0) == 0.0
+
+    def test_clamp_at_max_boundary(self) -> None:
+        from energy_seer.app.validators import clamp
+
+        assert clamp(10.0, 0.0, 10.0) == 10.0
+
+    def test_validate_meter_id_strips_whitespace(self) -> None:
+        from energy_seer.app.validators import validate_meter_id
+
+        assert validate_meter_id("  MTR-X  ") == "MTR-X"
+
+    def test_validate_meter_id_max_length_ok(self) -> None:
+        from energy_seer.app.validators import validate_meter_id
+
+        mid = "A" * 64
+        assert validate_meter_id(mid) == mid
+
+    def test_validate_forecast_length_one(self) -> None:
+        from energy_seer.app.validators import validate_forecast_length
+
+        assert validate_forecast_length(1) == 1
+
+    def test_validate_readings_all_zeros_allowed(self) -> None:
+        from energy_seer.app.validators import validate_readings_list
+
+        result = validate_readings_list([0.0, 0.0, 0.0])
+        assert result == [0.0, 0.0, 0.0]
+
+    def test_validate_tariff_very_large_value(self) -> None:
+        from energy_seer.app.validators import validate_tariff
+
+        assert validate_tariff(9999.0) == 9999.0

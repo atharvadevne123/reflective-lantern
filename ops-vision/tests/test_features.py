@@ -179,3 +179,51 @@ class TestDataframeFromDict:
         payload = {c: 42.0 for c in FEATURE_COLS}
         df = dataframe_from_dict(payload)
         assert col in df.columns
+
+
+class TestFeaturesEdgeCases:
+    """Edge-case tests for ops-vision feature transformers."""
+
+    def test_resource_pressure_zero_inputs(self):
+        import pandas as pd
+
+        from app.features import ResourcePressureTransformer
+
+        t = ResourcePressureTransformer()
+        df = pd.DataFrame([{"cpu_usage_pct": 0.0, "memory_usage_pct": 0.0}])
+        out = t.fit_transform(df)
+        assert out["resource_pressure"].iloc[0] == pytest.approx(0.0)
+
+    def test_resource_pressure_max_inputs(self):
+        import pandas as pd
+
+        from app.features import ResourcePressureTransformer
+
+        t = ResourcePressureTransformer()
+        df = pd.DataFrame([{"cpu_usage_pct": 100.0, "memory_usage_pct": 100.0}])
+        out = t.fit_transform(df)
+        assert out["resource_pressure"].iloc[0] == pytest.approx(1.0)
+
+    def test_log_latency_positive_for_positive_input(self):
+        import pandas as pd
+
+        from app.features import LogLatencyTransformer
+
+        t = LogLatencyTransformer()
+        df = pd.DataFrame([{"latency_p99_ms": 100.0}])
+        out = t.fit_transform(df)
+        assert out["log_latency_p99"].iloc[0] > 0
+
+    def test_column_selector_single_column(self, synthetic_dataframe):
+        from app.features import ColumnSelector
+
+        sel = ColumnSelector(["cpu_usage_pct"])
+        result = sel.fit_transform(synthetic_dataframe)
+        assert result.shape[1] == 1
+
+    def test_pipeline_fit_transform_shape(self, synthetic_dataframe):
+        from app.features import build_feature_pipeline
+
+        pipeline = build_feature_pipeline()
+        X = pipeline.fit_transform(synthetic_dataframe)
+        assert X.shape[0] == len(synthetic_dataframe)

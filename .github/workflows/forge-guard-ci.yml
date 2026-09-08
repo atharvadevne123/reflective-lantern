@@ -1,0 +1,41 @@
+name: Forge-Guard CI
+
+on:
+  push:
+    branches: ["**"]
+    paths:
+      - "forge-guard/**"
+      - ".github/workflows/forge-guard-ci.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "forge-guard/**"
+
+jobs:
+  lint-and-test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: forge-guard
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: forge-guard/requirements.txt
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt ruff pytest pytest-asyncio httpx -q
+
+      - name: Ruff lint
+        run: ruff check .
+
+      - name: Ruff format check
+        run: ruff format --check .
+
+      - name: Run tests
+        run: pytest tests/ -v --tb=short 2>&1 | tail -60

@@ -55,13 +55,16 @@ class CircuitBreaker:
                 self._state = CircuitState.HALF_OPEN
         return self._state
 
-    def call(self, func: Callable, *args: object, **kwargs: object) -> object:
+    def call(self, func: Callable, *args, **kwargs) -> object:
         """Execute func through the circuit breaker.
 
         Args:
             func: The callable to protect.
             *args: Positional arguments forwarded to func.
             **kwargs: Keyword arguments forwarded to func.
+
+        Returns:
+            Whatever func returns on success.
 
         Raises:
             CircuitOpenError: When the circuit is OPEN.
@@ -78,11 +81,6 @@ class CircuitBreaker:
             raise exc
 
     def _on_success(self) -> None:
-        """Record a successful call, closing the circuit if it was half-open.
-
-        Resets :attr:`_failure_count` to zero and clears :attr:`_opened_at`.
-        Transitions HALF_OPEN → CLOSED and leaves CLOSED unchanged.
-        """
         if self._state is CircuitState.HALF_OPEN:
             logger.info("Circuit CLOSED after successful probe")
         self._state = CircuitState.CLOSED
@@ -90,12 +88,6 @@ class CircuitBreaker:
         self._opened_at = None
 
     def _on_failure(self) -> None:
-        """Record a failed call, opening the circuit when threshold is exceeded.
-
-        Increments :attr:`_failure_count`. Transitions to OPEN when the count
-        reaches :attr:`failure_threshold`, or immediately when HALF_OPEN (one
-        bad probe re-opens without waiting for the threshold).
-        """
         self._failure_count += 1
         if self._state is CircuitState.HALF_OPEN or self._failure_count >= self.failure_threshold:
             logger.warning("Circuit OPEN after %d failures", self._failure_count)
@@ -103,18 +95,10 @@ class CircuitBreaker:
             self._opened_at = time.monotonic()
 
     def __call__(self, func: Callable) -> Callable:
-        """Use this :class:`CircuitBreaker` instance as a function decorator.
-
-        Args:
-            func: The function to wrap with circuit-breaker protection.
-
-        Returns:
-            A wrapper that calls *func* through :meth:`call` on every invocation.
-        """
+        """Use as a decorator."""
 
         @functools.wraps(func)
-        def wrapper(*args: object, **kwargs: object) -> object:
-            """Forward the call through the circuit breaker."""
+        def wrapper(*args, **kwargs) -> object:
             return self.call(func, *args, **kwargs)
 
         return wrapper

@@ -64,3 +64,42 @@ class TestConfigureLogging:
         configure_logging(level="DEBUG", json_format=False)
         assert logging.getLogger("sqlalchemy.engine").level == logging.WARNING
         configure_logging(level="INFO", json_format=False)
+
+
+class TestJsonFormatterEdgeCases:
+    """Edge-case tests for JsonFormatter in temporal-pulse logging."""
+
+    def test_formatter_with_string_format_args(self):
+        from app.logging_config import JsonFormatter
+
+        record = logging.LogRecord("t", logging.INFO, "f.py", 1, "val %s", ("foo",), None)
+        payload = json.loads(JsonFormatter().format(record))
+        assert "foo" in payload["message"]
+
+    def test_formatter_warning_level(self):
+        from app.logging_config import JsonFormatter
+
+        record = logging.LogRecord("t", logging.WARNING, "f.py", 1, "warn", None, None)
+        payload = json.loads(JsonFormatter().format(record))
+        assert payload["level"] == "WARNING"
+
+    def test_formatter_debug_level(self):
+        from app.logging_config import JsonFormatter
+
+        record = logging.LogRecord("t", logging.DEBUG, "f.py", 1, "dbg", None, None)
+        payload = json.loads(JsonFormatter().format(record))
+        assert payload["level"] == "DEBUG"
+
+    def test_formatter_no_extra_fields_by_default(self):
+        from app.logging_config import JsonFormatter
+
+        record = logging.LogRecord("t", logging.INFO, "f.py", 1, "hi", None, None)
+        payload = json.loads(JsonFormatter().format(record))
+        assert "message" in payload
+        assert "level" in payload
+
+    def test_configure_returns_none(self):
+        from app.logging_config import configure_logging
+
+        result = configure_logging(level="INFO", json_format=False)
+        assert result is None

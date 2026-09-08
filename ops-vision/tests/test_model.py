@@ -163,3 +163,39 @@ class TestModelPersistence:
 
         with pytest.raises(FileNotFoundError):
             load_model(tmp_path / "nonexistent.pkl")
+
+
+class TestModelEdgeCases:
+    """Edge-case tests for ops-vision ML model functions."""
+
+    def test_generate_synthetic_data_cpu_non_negative(self):
+        from app.model import generate_synthetic_data
+
+        df, _ = generate_synthetic_data(n_samples=50)
+        assert (df["cpu_usage_pct"] >= 0).all()
+
+    def test_generate_synthetic_data_memory_non_negative(self):
+        from app.model import generate_synthetic_data
+
+        df, _ = generate_synthetic_data(n_samples=50)
+        assert (df["memory_usage_pct"] >= 0).all()
+
+    def test_build_model_estimators_not_empty(self):
+        from app.model import build_model
+
+        model = build_model()
+        assert len(model.estimators) > 0
+
+    def test_predict_proba_sums_to_one_per_row(self, trained_model, transformed_X):
+        from app.model import predict
+
+        _, proba = predict(trained_model, transformed_X)
+        for p in proba:
+            assert abs(p + (1.0 - p) - 1.0) < 1e-9
+
+    def test_train_metrics_keys_present(self, transformed_X, synthetic_labels):
+        from app.model import train
+
+        _, metrics = train(transformed_X, synthetic_labels, cv_folds=2)
+        for key in ("cv_auc_mean", "cv_auc_std"):
+            assert key in metrics

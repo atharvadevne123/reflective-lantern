@@ -56,3 +56,41 @@ class TestRateLimit:
         client.get("/ping", headers={"X-Forwarded-For": "9.9.9.9"})
         resp = client.get("/ping", headers={"X-Forwarded-For": "9.9.9.9"})
         assert resp.status_code == 429
+
+
+class TestRateLimitEdgeCases:
+    """Additional edge-case tests for temporal-pulse rate-limit middleware."""
+
+    def test_limit_of_one_second_request_passes(self):
+        client = make_app(limit=1)
+        resp = client.get("/ping")
+        assert resp.status_code == 200
+
+    def test_limit_of_one_second_request_rejected(self):
+        client = make_app(limit=1)
+        client.get("/ping")
+        resp = client.get("/ping")
+        assert resp.status_code == 429
+
+    def test_429_contains_detail_key(self):
+        client = make_app(limit=1)
+        client.get("/ping")
+        resp = client.get("/ping")
+        assert "detail" in resp.json()
+
+    def test_retry_after_positive(self):
+        client = make_app(limit=1, window=30)
+        client.get("/ping")
+        resp = client.get("/ping")
+        assert int(resp.headers["Retry-After"]) > 0
+
+    def test_independent_buckets_for_different_ips(self):
+        client = make_app(limit=1)
+        client.get("/ping", headers={"X-Forwarded-For": "10.0.0.1"})
+        resp = client.get("/ping", headers={"X-Forwarded-For": "10.0.0.2"})
+        assert resp.status_code == 200
+
+    def test_large_limit_all_pass(self):
+        client = make_app(limit=100)
+        for _ in range(100):
+            assert client.get("/ping").status_code == 200

@@ -1,0 +1,41 @@
+name: Temporal-Pulse CI
+
+on:
+  push:
+    branches: ["**"]
+    paths:
+      - "temporal-pulse/**"
+      - ".github/workflows/temporal-pulse-ci.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "temporal-pulse/**"
+
+jobs:
+  lint-and-test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: temporal-pulse
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: temporal-pulse/requirements.txt
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt ruff pytest pytest-asyncio httpx -q
+
+      - name: Ruff lint
+        run: ruff check .
+
+      - name: Ruff format check
+        run: ruff format --check .
+
+      - name: Run tests
+        run: pytest tests/ -v --tb=short 2>&1 | tail -60

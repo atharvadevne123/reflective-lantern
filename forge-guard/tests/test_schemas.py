@@ -111,3 +111,38 @@ def test_drift_check_result_no_drift():
     r = DriftCheckResult(feature="humidity", ks_statistic=0.05, p_value=0.75, drift_detected=False)
     assert r.drift_detected is False
     assert r.p_value == 0.75
+
+
+class TestSchemaEdgeCases:
+    """Edge-case tests for forge-guard Pydantic schemas."""
+
+    def test_batch_input_exactly_one_reading(self):
+        payload = BatchSensorInput(readings=[{"temperature": 70.0}])
+        assert len(payload.readings) == 1
+
+    def test_batch_response_zero_count(self):
+        resp = BatchPredictionResponse(predictions=[], count=0, model_version="0.0.1")
+        assert resp.count == 0
+        assert resp.predictions == []
+
+    def test_drift_check_result_ks_statistic_stored(self):
+        from app.schemas import DriftCheckResult
+
+        r = DriftCheckResult(feature="x", ks_statistic=0.88, p_value=0.01, drift_detected=True)
+        assert r.ks_statistic == pytest.approx(0.88)
+
+    def test_model_summary_defect_rate_zero_when_total_zero(self):
+        from app.schemas import ModelSummaryResponse
+
+        r = ModelSummaryResponse(model_version="1.0.0", total=0)
+        assert r.defect_rate == 0.0
+
+    def test_batch_input_max_boundary(self):
+        payload = BatchSensorInput(readings=[{"temperature": 75.0}] * 100)
+        assert len(payload.readings) == 100
+
+    def test_retraining_trigger_message_stored(self):
+        from app.schemas import RetrainingTriggerResponse
+
+        r = RetrainingTriggerResponse(status="queued", message="Queued for run at midnight")
+        assert r.message == "Queued for run at midnight"

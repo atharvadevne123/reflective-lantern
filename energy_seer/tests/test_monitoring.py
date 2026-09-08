@@ -191,3 +191,38 @@ def test_compute_drift_returns_required_keys(n: int) -> None:
     result = compute_drift(ref, cur)
     for key in ("ks_statistic", "p_value", "drift_detected"):
         assert key in result
+
+
+class TestMonitoringEdgeCases:
+    """Edge-case tests for energy_seer monitoring utilities."""
+
+    def test_compute_drift_result_is_dict(self):
+        from app.monitoring import compute_drift
+
+        result = compute_drift(list(range(30)), list(range(30, 60)))
+        assert isinstance(result, dict)
+
+    def test_drift_detected_is_bool(self):
+        from app.monitoring import compute_drift
+
+        result = compute_drift(list(range(50)), [x + 200 for x in range(50)])
+        assert isinstance(result["drift_detected"], bool)
+
+    def test_ks_statistic_between_zero_and_one(self):
+        from app.monitoring import compute_drift
+
+        result = compute_drift(list(range(50)), list(range(50)))
+        assert 0.0 <= result["ks_statistic"] <= 1.0
+
+    def test_p_value_between_zero_and_one(self):
+        from app.monitoring import compute_drift
+
+        result = compute_drift(list(range(50)), list(range(50)))
+        assert 0.0 <= result["p_value"] <= 1.0
+
+    def test_check_all_features_returns_dict(self):
+        from app.monitoring import check_all_features, set_reference_distributions
+
+        set_reference_distributions({"feat_a": list(range(30))})
+        results = check_all_features({"feat_a": list(range(30))})
+        assert isinstance(results, dict)

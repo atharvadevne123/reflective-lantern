@@ -197,3 +197,57 @@ class TestValidateDataframeColumns:
 
         df = pd.DataFrame({"a": [1], "b": [2]})
         assert validate_dataframe_columns(df, ["a", "c"]) == ["c"]
+
+
+class TestFeaturePipelineEdgeCases:
+    """Edge-case tests for energy_seer feature engineering."""
+
+    def test_lag_transformer_single_row(self):
+        import pandas as pd
+
+        from app.features import LagFeatureTransformer
+
+        df = pd.DataFrame({"consumption_kwh": [5.0], "temperature_c": [20.0],
+                           "humidity_pct": [50.0], "hour_of_day": [12],
+                           "day_of_week": [1], "is_holiday": [0],
+                           "building_type": ["office"]})
+        out = LagFeatureTransformer(lags=[1]).fit_transform(df)
+        assert "consumption_lag_1h" in out.columns
+
+    def test_rolling_stats_window_larger_than_data(self):
+        import pandas as pd
+
+        from app.features import RollingStatsTransformer
+
+        df = pd.DataFrame({"consumption_kwh": [1.0, 2.0], "temperature_c": [20.0, 21.0],
+                           "humidity_pct": [50.0, 51.0], "hour_of_day": [8, 9],
+                           "day_of_week": [0, 0], "is_holiday": [0, 0],
+                           "building_type": ["office", "office"]})
+        out = RollingStatsTransformer(windows=[10]).fit_transform(df)
+        assert "rolling_mean_10h" in out.columns
+
+    def test_temporal_transformer_midnight_hour(self):
+        import pandas as pd
+
+        from app.features import TemporalFeatureTransformer
+
+        df = pd.DataFrame({"consumption_kwh": [2.0], "temperature_c": [15.0],
+                           "humidity_pct": [55.0], "hour_of_day": [0],
+                           "day_of_week": [6], "is_holiday": [0],
+                           "building_type": ["residential"]})
+        out = TemporalFeatureTransformer().fit_transform(df)
+        assert out["is_weekend"].iloc[0] == 1
+
+    def test_pipeline_fit_then_transform_consistent(self, sample_df):
+        from app.features import build_feature_pipeline
+
+        pipe = build_feature_pipeline()
+        out1 = pipe.fit_transform(sample_df)
+        out2 = pipe.transform(sample_df)
+        assert out1.shape == out2.shape
+
+    def test_feature_column_names_no_duplicates(self) -> None:
+        from energy_seer.app.features import feature_column_names
+
+        cols = feature_column_names()
+        assert len(cols) == len(set(cols))

@@ -122,3 +122,39 @@ class TestNewForgeGuardSettings:
         get_settings.cache_clear()
         s = get_settings()
         assert s.db_pool_size == 5
+
+
+class TestConfigEdgeCases:
+    """Edge-case tests for forge-guard settings validation."""
+
+    def test_singleton_survives_repeated_calls(self) -> None:
+        from app.config import get_settings
+
+        get_settings.cache_clear()
+        instances = [get_settings() for _ in range(5)]
+        assert all(i is instances[0] for i in instances[1:])
+
+    def test_drift_p_threshold_less_than_one(self) -> None:
+        from app.config import get_settings
+
+        s = get_settings()
+        assert s.drift_p_threshold < 1.0
+
+    def test_faiss_k_neighbours_at_least_one(self) -> None:
+        from app.config import get_settings
+
+        s = get_settings()
+        assert s.faiss_k_neighbours >= 1
+
+    def test_drift_window_hours_positive(self) -> None:
+        from app.config import get_settings
+
+        s = get_settings()
+        assert s.drift_window_hours > 0
+
+    def test_rate_limit_rpm_positive_integer(self) -> None:
+        from app.config import get_settings
+
+        s = get_settings()
+        assert isinstance(s.rate_limit_rpm, int)
+        assert s.rate_limit_rpm > 0
