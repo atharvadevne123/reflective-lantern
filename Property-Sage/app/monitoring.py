@@ -81,7 +81,7 @@ def log_prediction(
         bedrooms=int(input_data["bedrooms"]),
         bathrooms=float(input_data["bathrooms"]),
         sqft=float(input_data["sqft"]),
-        lot_size=float(input_data.get("lot_size", 5000.0)),
+        lot_size=float(input_data.get("lot_size") or 5000.0),
         year_built=int(input_data["year_built"]),
         neighborhood=str(input_data["neighborhood"]),
         property_type=str(input_data["property_type"]),

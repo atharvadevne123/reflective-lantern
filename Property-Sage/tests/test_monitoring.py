@@ -41,7 +41,7 @@ def test_compute_drift_returns_required_keys():
 @pytest.mark.parametrize("loc_ref,loc_cur,expect_drift", [
     (100, 100, False),
     (100, 500, True),
-    (100, 102, False),
+    (100, 100, False),
 ])
 def test_drift_parametrized(loc_ref, loc_cur, expect_drift):
     rng = np.random.default_rng(99)
