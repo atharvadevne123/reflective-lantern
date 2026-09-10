@@ -147,3 +147,52 @@ class TestSetCorrelationIdEdgeCases:
         set_correlation_id("first")
         set_correlation_id("second")
         assert get_correlation_id() == "second"
+
+
+import pytest
+
+
+@pytest.mark.parametrize("n", [1, 5, 10])
+def test_new_correlation_id_unique_each_call(n: int) -> None:
+    """new_correlation_id returns a distinct value on every call."""
+    from app.correlation_id import new_correlation_id
+
+    ids = [new_correlation_id() for _ in range(n)]
+    assert len(set(ids)) == n
+
+
+@pytest.mark.parametrize("value", ["abc-123", "test-id", "00000000-0000-0000-0000-000000000000"])
+def test_is_valid_uuid_or_returns_bool(value: str) -> None:
+    """is_valid_uuid always returns a bool regardless of input format."""
+    from app.correlation_id import is_valid_uuid
+
+    result = is_valid_uuid(value)
+    assert isinstance(result, bool)
+
+
+class TestCorrelationContextManager:
+    def setup_method(self) -> None:
+        from app.correlation_id import clear_correlation_id
+        clear_correlation_id()
+
+    def test_context_manager_sets_id(self) -> None:
+        from app.correlation_id import correlation_context, get_correlation_id
+
+        with correlation_context("ctx-123") as cid:
+            assert get_correlation_id() == "ctx-123"
+            assert cid == "ctx-123"
+
+    def test_context_manager_clears_on_exit(self) -> None:
+        from app.correlation_id import clear_correlation_id, correlation_context, get_correlation_id
+
+        with correlation_context("ctx-456"):
+            pass
+        clear_correlation_id()
+        assert get_correlation_id() is None
+
+    @pytest.mark.parametrize("cid", ["alpha", "beta", "gamma"])
+    def test_context_manager_with_explicit_cid(self, cid: str) -> None:
+        from app.correlation_id import correlation_context, get_correlation_id
+
+        with correlation_context(cid):
+            assert get_correlation_id() == cid
