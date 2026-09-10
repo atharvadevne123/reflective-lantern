@@ -2,20 +2,22 @@
 
 All notable changes to Property-Sage are documented here.
 
-## [1.0.0] - 2026-09-10
+## [1.0.0] – 2026-09-10
 
 ### Added
-- FastAPI application with `/api/v1/predict`, `/api/v1/health`, `/api/v1/metrics`, `/api/v1/drift-check`
-- XGBoost + LightGBM + RandomForest ensemble for property price and rental yield prediction
-- sklearn Pipeline with 11 engineered features (age², sqft/bed ratio, lot density, neighbourhood index)
-- SQLAlchemy ORM with SQLite (dev) and PostgreSQL (prod) support
-- KS-test drift detection on 24-hour rolling prediction window
-- Automated retraining pipeline triggered on statistical drift (p < 0.05)
-- Docker + docker-compose deployment with PostgreSQL service
-- GitHub Actions CI: ruff lint + pytest on every push
-- Correlation ID middleware and structured request logging
-- Pydantic v2 input validation on all endpoints
-- 5-fold cross-validation with R², RMSE, MAE metrics logged to JSON
-- pytest suite with parametrized tests and mocked DB sessions
-
-## [Unreleased]
+- XGBoost + LightGBM + RandomForest VotingRegressor ensemble (weights 0.4/0.4/0.2)
+- sklearn `Pipeline` with 11 engineered features (property age, age², sqft/bed, bath/bed, lot density, neighbourhood and type encodings)
+- FastAPI REST API under `/api/v1/` with correlation-ID and rate-limiting middleware
+- SQLAlchemy ORM (`Prediction`, `ModelMetrics`, `DriftLog`) for SQLite dev / PostgreSQL prod
+- Alembic migration scaffolding with initial schema revision
+- KS-test drift detection on 24-hour rolling prediction window; auto-retrains when p < 0.05
+- TF-IDF + cosine-similarity RAG pipeline over 10 neighbourhood market reports
+- 5-fold cross-validation reporting R², RMSE, MAE for every training run
+- File-based experiment tracking (JSONL run log) with `log_run`, `get_best_run`, `list_runs`
+- Automated retraining endpoint (`POST /api/v1/retrain`) with API-key guard
+- Structured JSON logging via `JsonFormatter`
+- Docker Compose with health-checks for API + PostgreSQL services
+- GitHub Actions CI (ruff lint + pytest) on push / PR
+- 98 pytest tests covering features, model, monitoring, drift, RAG, retrain, health, and API endpoints
+- Inference latency benchmarking script (`scripts/benchmark.py`)
+- `.env.example` with all required environment variables
