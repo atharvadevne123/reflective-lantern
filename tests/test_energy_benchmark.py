@@ -168,3 +168,34 @@ class TestBenchmark:
     def test_invalid_area_propagates(self) -> None:
         with pytest.raises(ValueError, match="floor_area_m2 must be positive"):
             benchmark(100_000.0, 0.0, COHORT)
+
+
+@pytest.mark.parametrize("area", [100.0, 500.0, 1000.0, 5000.0])
+def test_eui_scales_inversely_with_area(area: float) -> None:
+    """Doubling floor area halves the EUI for the same consumption."""
+    eui_half = energy_use_intensity(100_000.0, area / 2)
+    eui_full = energy_use_intensity(100_000.0, area)
+    assert pytest.approx(eui_half, rel=1e-6) == 2 * eui_full
+
+
+@pytest.mark.parametrize("rank,expected_grade", [
+    (0.95, "A"),
+    (0.75, "B"),
+    (0.55, "C"),
+    (0.35, "D"),
+    (0.10, "F"),
+])
+def test_grade_from_percentile_rank(rank: float, expected_grade: str) -> None:
+    """grade_from_score maps known score ranges to expected letter grades."""
+    score = score_from_percentile(rank)
+    assert grade_from_score(score) == expected_grade
+
+
+class TestPercentileRankEdgeCases:
+    def test_lowest_value_in_cohort_has_lowest_rank(self) -> None:
+        rank = percentile_rank(80.0, COHORT)
+        assert rank <= percentile_rank(100.0, COHORT)
+
+    def test_highest_value_in_cohort_has_highest_rank(self) -> None:
+        rank = percentile_rank(150.0, COHORT)
+        assert rank >= percentile_rank(110.0, COHORT)
