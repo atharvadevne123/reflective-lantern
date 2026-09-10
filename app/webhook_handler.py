@@ -127,3 +127,21 @@ class WebhookHandler:
                 logger.exception("Catch-all handler error for event '%s'", event_type)
 
         return event
+
+    def event_types(self) -> list[str]:
+        """Return sorted list of event types that have registered handlers."""
+        return sorted(self._handlers)
+
+    def handler_count(self, event_type: str | None = None) -> int:
+        """Return total handler count, optionally for a specific event type."""
+        if event_type is not None:
+            return len(self._handlers.get(event_type, []))
+        return sum(len(hs) for hs in self._handlers.values()) + len(self._catch_all)
+
+    def clear_handlers(self, event_type: str | None = None) -> None:
+        """Remove all handlers for *event_type*, or all handlers if None."""
+        if event_type is not None:
+            self._handlers.pop(event_type, None)
+        else:
+            self._handlers.clear()
+            self._catch_all.clear()

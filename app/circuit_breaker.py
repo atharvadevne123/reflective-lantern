@@ -7,6 +7,7 @@ import logging
 import time
 from collections.abc import Callable, Sequence
 from enum import Enum
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -101,6 +102,21 @@ class CircuitBreaker:
             logger.warning("Circuit OPEN after %d failures", self._failure_count)
             self._state = CircuitState.OPEN
             self._opened_at = time.monotonic()
+
+    def reset(self) -> None:
+        """Force the circuit back to CLOSED state and clear failure counters.
+
+        Useful in tests or manual recovery scenarios.
+        """
+        logger.info("Circuit manually reset to CLOSED")
+        self._state = CircuitState.CLOSED
+        self._failure_count = 0
+        self._opened_at = None
+
+    @property
+    def failure_count(self) -> int:
+        """Current consecutive failure count."""
+        return self._failure_count
 
     def __call__(self, func: Callable) -> Callable:
         """Use this :class:`CircuitBreaker` instance as a function decorator.

@@ -244,6 +244,62 @@ def _validated_total(hourly_kwh: list[float]) -> float:
     return float(sum(hourly_kwh))
 
 
+def annual_cost_estimate(monthly_kwh: list[float], rate: float = DEFAULT_FLAT_RATE) -> float:
+    """Estimate the annual electricity cost from monthly consumption totals.
+
+    Short month lists are annualised by pro-rating; a full 12-month list is
+    used as-is.
+
+    Args:
+        monthly_kwh: Monthly energy consumption values in kWh (1-12 entries).
+        rate: Flat rate per kWh.
+
+    Returns:
+        Estimated annual cost rounded to 2 decimal places.
+
+    Raises:
+        ValueError: If *monthly_kwh* is empty or has more than 12 entries,
+            or *rate* is negative.
+    """
+    if not monthly_kwh:
+        raise ValueError("monthly_kwh must not be empty")
+    if len(monthly_kwh) > 12:
+        raise ValueError(f"monthly_kwh must have at most 12 entries, got {len(monthly_kwh)}")
+    if rate < 0:
+        raise ValueError(f"rate must be non-negative, got {rate}")
+    monthly_avg = sum(monthly_kwh) / len(monthly_kwh)
+    return round(monthly_avg * 12 * rate, 2)
+
+
+def peak_hour_fraction(
+    hourly_kwh: list[float],
+    start_hour: int = 0,
+    peak_hours: tuple[int, ...] = DEFAULT_PEAK_HOURS,
+) -> float:
+    """Return the fraction of total consumption that falls during peak hours.
+
+    Args:
+        hourly_kwh: Consumption values in kWh, one entry per hour.
+        start_hour: Clock hour (0-23) of the first entry.
+        peak_hours: Clock hours considered on-peak.
+
+    Returns:
+        Fraction in [0.0, 1.0] rounded to 4 decimal places. Returns 0.0 when
+        total consumption is zero.
+
+    Raises:
+        ValueError: If *start_hour* is outside 0-23.
+    """
+    if not 0 <= start_hour <= 23:
+        raise ValueError(f"start_hour must be in 0-23, got {start_hour}")
+    total = sum(hourly_kwh)
+    if total <= 0:
+        return 0.0
+    peak_set = set(peak_hours)
+    peak_kwh = sum(kwh for offset, kwh in enumerate(hourly_kwh) if (start_hour + offset) % 24 in peak_set)
+    return round(peak_kwh / total, 4)
+
+
 __all__ = [
     "DEFAULT_FLAT_RATE",
     "DEFAULT_OFF_PEAK_RATE",
@@ -251,8 +307,10 @@ __all__ = [
     "DEFAULT_PEAK_RATE",
     "TariffComparison",
     "TieredBand",
+    "annual_cost_estimate",
     "compare_tariffs",
     "flat_rate_cost",
+    "peak_hour_fraction",
     "peak_shift_saving",
     "tiered_cost",
     "time_of_use_cost",

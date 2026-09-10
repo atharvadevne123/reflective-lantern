@@ -129,5 +129,26 @@ class DataLineage:
         """Return all dataset names."""
         return list(self._snapshots.keys())
 
+    def snapshot_count(self, name: str) -> int:
+        """Return the number of recorded snapshots for a dataset."""
+        return len(self._snapshots.get(name, []))
+
+    def total_rows(self, name: str) -> int:
+        """Return the sum of row_count across all snapshots for a dataset."""
+        return sum(s.row_count for s in self._snapshots.get(name, []))
+
+    def delete(self, name: str, version: str | None = None) -> bool:
+        """Delete a snapshot or all snapshots for a dataset. Returns True if something was removed."""
+        if name not in self._snapshots:
+            return False
+        if version is None:
+            del self._snapshots[name]
+            return True
+        before = len(self._snapshots[name])
+        self._snapshots[name] = [s for s in self._snapshots[name] if s.version != version]
+        if not self._snapshots[name]:
+            del self._snapshots[name]
+        return len(self._snapshots.get(name, [])) < before
+
 
 __all__ = ["DataLineage", "DataSnapshot"]

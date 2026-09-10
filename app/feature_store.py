@@ -118,5 +118,16 @@ class FeatureStore:
             del self._store[name]
         return len(self._store.get(name, [])) < before
 
+    def version_count(self, name: str) -> int:
+        """Return the number of published versions for a feature set."""
+        return len(self._store.get(name, []))
+
+    def __len__(self) -> int:
+        return len(self._store)
+
+    def total_versions(self) -> int:
+        """Return the total number of feature set versions across all names."""
+        return sum(len(v) for v in self._store.values())
+
 
 __all__ = ["FeatureSet", "FeatureStore"]

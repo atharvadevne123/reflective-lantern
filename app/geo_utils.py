@@ -144,11 +144,45 @@ def midpoint(a: Coordinate, b: Coordinate) -> Coordinate:
     return Coordinate(lat=mid_lat, lon=mid_lon)
 
 
+def bearing(a: Coordinate, b: Coordinate) -> float:
+    """Compute the initial compass bearing from *a* to *b* in degrees [0, 360).
+
+    Args:
+        a: Origin coordinate.
+        b: Destination coordinate.
+
+    Returns:
+        Bearing in degrees clockwise from north.
+    """
+    lat1 = math.radians(a.lat)
+    lat2 = math.radians(b.lat)
+    dlon = math.radians(b.lon - a.lon)
+    x = math.sin(dlon) * math.cos(lat2)
+    y = math.cos(lat1) * math.sin(lat2) - math.sin(lat1) * math.cos(lat2) * math.cos(dlon)
+    return (math.degrees(math.atan2(x, y)) + 360) % 360
+
+
+def within_radius(center: Coordinate, radius_km: float, candidates: list[Coordinate]) -> list[Coordinate]:
+    """Return all candidates within *radius_km* of *center*.
+
+    Args:
+        center: Reference coordinate.
+        radius_km: Radius in kilometres.
+        candidates: List of coordinates to filter.
+
+    Returns:
+        Subset of candidates within the radius (may be empty).
+    """
+    return [c for c in candidates if haversine(center, c) <= radius_km]
+
+
 __all__ = [
     "BoundingBox",
     "Coordinate",
+    "bearing",
     "bounding_box_of",
     "haversine",
     "midpoint",
     "nearest_neighbor",
+    "within_radius",
 ]

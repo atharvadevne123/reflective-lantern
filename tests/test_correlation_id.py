@@ -8,7 +8,9 @@ from app.correlation_id import (
     clear_correlation_id,
     correlation_context,
     get_correlation_id,
+    is_valid_uuid,
     new_correlation_id,
+    require_correlation_id,
     set_correlation_id,
 )
 

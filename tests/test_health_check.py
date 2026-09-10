@@ -1,5 +1,7 @@
 """Tests for app.health_check."""
 
+import pytest
+
 from app.health_check import CheckResult, HealthRegistry, check
 
 

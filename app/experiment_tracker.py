@@ -102,6 +102,15 @@ class Experiment:
         """Return how many entities were assigned to each variant."""
         return dict(self._assignment_counts)
 
+    def reset_counts(self) -> None:
+        """Reset all assignment counters to zero."""
+        for k in self._assignment_counts:
+            self._assignment_counts[k] = 0
+
+    def total_assignments(self) -> int:
+        """Return total number of entities assigned so far."""
+        return sum(self._assignment_counts.values())
+
 
 class ExperimentRegistry:
     """Registry of named experiments."""
@@ -132,6 +141,17 @@ class ExperimentRegistry:
     def list_experiments(self) -> list[str]:
         """Return names of all registered experiments."""
         return list(self._experiments)
+
+    def deregister(self, name: str) -> bool:
+        """Remove an experiment by name. Returns True if it existed."""
+        return self._experiments.pop(name, None) is not None
+
+    def active_experiments(self) -> list[str]:
+        """Return names of all enabled experiments."""
+        return [name for name, exp in self._experiments.items() if exp.enabled]
+
+    def __len__(self) -> int:
+        return len(self._experiments)
 
 
 __all__ = [

@@ -2,7 +2,14 @@
 
 import pytest
 
-from app.config_validator import ConfigSchema, FieldSpec, ValidationError, validate
+from app.config_validator import (
+    ConfigSchema,
+    FieldSpec,
+    ValidationError,
+    has_required_fields,
+    schema_field_names,
+    validate,
+)
 
 # ---------------------------------------------------------------------------
 # Parametrized helpers
