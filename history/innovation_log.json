@@ -863,5 +863,63 @@
     ],
     "email_status": "failed_network_blocked (SMTP ports 587/465 unreachable \u2014 outbound is HTTPS-proxy-only; report committed to reports/ instead)",
     "report_path": "reports/Ops-Vision_report_2026-08-26.pdf"
+  },
+  {
+    "date": "2026-09-02",
+    "mode": "innovation",
+    "project": "Cyber-Guard",
+    "description": "Real-time network intrusion detection and cybersecurity threat classification API using XGBoost-RandomForest ensemble with KS-drift monitoring, IsolationForest anomaly detection, and automated retraining.",
+    "inspired_by": "ML-for-security tooling; HN/GitHub trending scrape blocked by session egress policy",
+    "chosen_keywords": "cyber intrusion network security threat detection",
+    "archetype": "Prediction API + Anomaly Detection Service",
+    "repo_url": "https://github.com/atharvadevne123/reflective-lantern/pull/70",
+    "repo_note": "Built as subdirectory of reflective-lantern; standalone repo creation blocked by session GitHub API scoping (POST /user/repos and GraphQL createRepository both denied by proxy).",
+    "file_count": 31,
+    "test_count": 102,
+    "commits": 60,
+    "coverage_pct": 100,
+    "metrics": {
+      "accuracy_mean": 0.96,
+      "accuracy_std": 0.021,
+      "auc_mean": 0.997,
+      "auc_std": 0.002
+    },
+    "stack": [
+      "Python",
+      "FastAPI",
+      "XGBoost",
+      "RandomForest",
+      "sklearn Pipeline",
+      "IsolationForest",
+      "KS-test drift",
+      "SQLAlchemy",
+      "Alembic",
+      "Docker+PostgreSQL",
+      "Airflow DAG",
+      "MLflow",
+      "boto3/S3",
+      "pytest",
+      "GitHub Actions CI",
+      "ruff"
+    ],
+    "optional_enhancements": [
+      "anomaly detection",
+      "automated retraining",
+      "drift detection",
+      "5-fold CV + AUC-ROC",
+      "MLflow",
+      "AWS/boto3 stub"
+    ],
+    "bugs_found_and_fixed": [
+      "Train/serve skew: rolling features collapsed to std=0 on single-row inference (training mean 426.66), flagging 100% of traffic as anomalous",
+      "Synthetic labels drawn independently of features, capping AUC at chance (0.490 -> 0.997)",
+      "metrics.json could emit bare NaN, invalid for strict JSON parsers",
+      "Test isolation: log_prediction commits, so rollback was insufficient",
+      "scripts/seed_data.py could not import app when run directly",
+      "/health reported healthy while database was unreachable"
+    ],
+    "tests_passed": true,
+    "server_verified": true,
+    "ruff_clean": true
   }
 ]
