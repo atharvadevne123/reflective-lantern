@@ -338,3 +338,65 @@ def test_retry_does_not_catch_unregistered_exceptions(exc_class: type, monkeypat
 
     with pytest.raises(exc_class):
         raise_other()
+
+
+@pytest.mark.parametrize("max_attempts", [1, 2, 3, 5])
+def test_retry_succeeds_on_first_try_no_sleep(max_attempts: int, monkeypatch) -> None:
+    """When the function succeeds immediately, no sleep occurs regardless of max_attempts."""
+    from app.retry import retry
+
+    sleep_calls = []
+    monkeypatch.setattr("time.sleep", lambda d: sleep_calls.append(d))
+
+    @retry(exceptions=(Exception,), max_attempts=max_attempts, base_delay=0.1)
+    def ok():
+        return 42
+
+    assert ok() == 42
+    assert sleep_calls == []
+
+
+@pytest.mark.parametrize("n_failures", [1, 2, 3])
+def test_retry_attempt_count_on_eventual_success(n_failures: int, monkeypatch) -> None:
+    """retry invokes the function exactly n_failures + 1 times when it fails n_failures times."""
+    from app.retry import retry
+
+    monkeypatch.setattr("time.sleep", lambda _: None)
+    calls = []
+
+    @retry(exceptions=(_Boom,), max_attempts=n_failures + 1, base_delay=0)
+    def flaky():
+        calls.append(1)
+        if len(calls) <= n_failures:
+            raise _Boom("fail")
+        return "done"
+
+    result = flaky()
+    assert result == "done"
+    assert len(calls) == n_failures + 1
+
+
+class TestRetryNetworkError:
+    def test_retry_on_network_error_returns_value(self, monkeypatch) -> None:
+        from app.retry import retry_on_network_error
+
+        monkeypatch.setattr("time.sleep", lambda _: None)
+
+        @retry_on_network_error(max_attempts=3)
+        def fetch():
+            return "data"
+
+        assert fetch() == "data"
+
+    @pytest.mark.parametrize("attempts", [1, 2, 3])
+    def test_retry_on_network_error_propagates_after_exhaustion(self, attempts: int, monkeypatch) -> None:
+        from app.retry import retry_on_network_error
+
+        monkeypatch.setattr("time.sleep", lambda _: None)
+
+        @retry_on_network_error(max_attempts=attempts)
+        def always_fail():
+            raise ConnectionError("network down")
+
+        with pytest.raises(ConnectionError):
+            always_fail()
