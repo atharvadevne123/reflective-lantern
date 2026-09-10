@@ -172,3 +172,31 @@ class TestAlertManagerMultipleRules:
         mgr.add_rule(_make_rule())
         assert mgr.remove_rule("r1") is True
         assert mgr.remove_rule("r1") is False
+
+
+class TestAlertRuleEdgeCases:
+    def test_rule_name_preserved_in_alert(self) -> None:
+        rule = _make_rule(name="my_rule", threshold=10.0)
+        alert = rule.evaluate({"cpu": 20.0}, now=BASE_NOW)
+        assert alert is not None
+        assert alert.rule_name == "my_rule"
+
+    def test_alert_has_metric_value(self) -> None:
+        rule = _make_rule(threshold=5.0)
+        alert = rule.evaluate({"cpu": 9.0}, now=BASE_NOW)
+        assert alert is not None
+        assert alert.value == 9.0
+
+    @pytest.mark.parametrize("severity", ["info", "warning", "critical"])
+    def test_severity_stored_on_alert(self, severity: str) -> None:
+        rule = _make_rule(severity=severity, threshold=1.0)
+        alert = rule.evaluate({"cpu": 2.0}, now=BASE_NOW)
+        assert alert is not None
+        assert alert.severity == Severity(severity)
+
+    def test_manager_history_length_matches_fires(self) -> None:
+        mgr = AlertManager()
+        mgr.add_rule(_make_rule(cooldown_s=0))
+        for i in range(3):
+            mgr.check({"cpu": 100.0}, now=float(i * 1000))
+        assert len(mgr.history) == 3
