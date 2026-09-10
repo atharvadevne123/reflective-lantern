@@ -9,7 +9,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app import __version__
 from app.api.v1.routes import router as v1_router
 from app.config import get_settings
-from app.middleware import CorrelationIdMiddleware, RateLimitMiddleware
+from app.middleware import CorrelationIdMiddleware, RateLimitMiddleware, RequestSizeLimitMiddleware
 
 logging.basicConfig(
     level=os.environ.get("LOG_LEVEL", "INFO"),
@@ -39,6 +39,7 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+app.add_middleware(RequestSizeLimitMiddleware)
 app.add_middleware(CorrelationIdMiddleware)
 app.add_middleware(
     RateLimitMiddleware,
@@ -93,3 +94,19 @@ def version():
         Dict with the semantic version.
     """
     return {"version": __version__}
+
+
+@app.get("/ready", tags=["health"], summary="Readiness probe")
+def ready():
+    """Kubernetes-style readiness check — fails if the model is not loaded.
+
+    Returns:
+        Dict with status 'ready' or raises 503 if the model is unavailable.
+    """
+    from fastapi import HTTPException
+
+    from app.api.v1.routes import _model
+
+    if _model is None:
+        raise HTTPException(status_code=503, detail="Model not yet loaded")
+    return {"status": "ready", "version": __version__}

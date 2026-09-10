@@ -63,7 +63,13 @@ class TestPredictEndpoint:
         """Predict response includes all required schema fields."""
         resp = client.post("/api/v1/predict", json=sample_metrics)
         body = resp.json()
-        for field in ("service_name", "predicted_incident", "confidence", "model_version", "timestamp"):
+        for field in (
+            "service_name",
+            "predicted_incident",
+            "confidence",
+            "model_version",
+            "timestamp",
+        ):
             assert field in body, f"Missing field: {field}"
 
     def test_predict_confidence_in_range(self, client, sample_metrics):
@@ -77,14 +83,17 @@ class TestPredictEndpoint:
         resp = client.post("/api/v1/predict", json=sample_metrics)
         assert resp.json()["service_name"] == sample_metrics["service_name"]
 
-    @pytest.mark.parametrize("missing_field", [
-        "cpu_usage_pct",
-        "memory_usage_pct",
-        "error_rate_per_min",
-        "latency_p99_ms",
-        "request_rate_per_sec",
-        "disk_io_util_pct",
-    ])
+    @pytest.mark.parametrize(
+        "missing_field",
+        [
+            "cpu_usage_pct",
+            "memory_usage_pct",
+            "error_rate_per_min",
+            "latency_p99_ms",
+            "request_rate_per_sec",
+            "disk_io_util_pct",
+        ],
+    )
     def test_predict_rejects_missing_field(self, client, sample_metrics, missing_field):
         """Predict endpoint should return 422 when a required metric is missing."""
         payload = dict(sample_metrics)
@@ -92,14 +101,19 @@ class TestPredictEndpoint:
         resp = client.post("/api/v1/predict", json=payload)
         assert resp.status_code == 422
 
-    @pytest.mark.parametrize("cpu_value,expected_status", [
-        (0.0, 200),
-        (50.0, 200),
-        (100.0, 200),
-        (-1.0, 422),
-        (101.0, 422),
-    ])
-    def test_predict_cpu_boundary_validation(self, client, sample_metrics, cpu_value, expected_status):
+    @pytest.mark.parametrize(
+        "cpu_value,expected_status",
+        [
+            (0.0, 200),
+            (50.0, 200),
+            (100.0, 200),
+            (-1.0, 422),
+            (101.0, 422),
+        ],
+    )
+    def test_predict_cpu_boundary_validation(
+        self, client, sample_metrics, cpu_value, expected_status
+    ):
         """CPU usage must be in [0, 100]."""
         payload = dict(sample_metrics)
         payload["cpu_usage_pct"] = cpu_value
@@ -141,7 +155,9 @@ class TestArtifactPairing:
 
         import app.api.v1.routes as routes
 
-        monkeypatch.setattr(routes, "load_model", lambda: (_ for _ in ()).throw(FileNotFoundError()))
+        monkeypatch.setattr(
+            routes, "load_model", lambda: (_ for _ in ()).throw(FileNotFoundError())
+        )
 
         model, pipeline = routes._load_artifacts()
         assert model is not None
@@ -159,9 +175,7 @@ class TestArtifactPairing:
         routes._feature_pipeline = None
 
         second = client.post("/api/v1/predict", json=sample_metrics)
-        assert second.status_code == 200, (
-            "warm start paired the model with an unfitted pipeline"
-        )
+        assert second.status_code == 200, "warm start paired the model with an unfitted pipeline"
 
 
 class TestMetricsEndpoint:
@@ -176,7 +190,13 @@ class TestMetricsEndpoint:
         """Metrics response contains all required aggregate fields."""
         resp = client.get("/api/v1/metrics")
         body = resp.json()
-        for field in ("total_predictions", "incident_count", "incident_rate", "drift_alerts_24h", "avg_confidence"):
+        for field in (
+            "total_predictions",
+            "incident_count",
+            "incident_rate",
+            "drift_alerts_24h",
+            "avg_confidence",
+        ):
             assert field in body
 
     def test_metrics_incident_rate_valid(self, client):

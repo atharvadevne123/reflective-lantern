@@ -3,7 +3,15 @@
 import pytest
 from pydantic import ValidationError
 
-from app.schemas import MetricsPayload, RunbookSearchRequest
+from app.schemas import (
+    BatchPredictRequest,
+    ErrorResponse,
+    MetricsPayload,
+    ModelInfoResponse,
+    RunbookSearchRequest,
+    ServiceHealthStatus,
+    SeverityLevel,
+)
 
 
 class TestMetricsPayload:
@@ -32,17 +40,20 @@ class TestMetricsPayload:
         payload = MetricsPayload(**data)
         assert payload.service_name == "my-service"
 
-    @pytest.mark.parametrize("field,bad_value", [
-        ("cpu_usage_pct", -1.0),
-        ("cpu_usage_pct", 101.0),
-        ("memory_usage_pct", -0.1),
-        ("memory_usage_pct", 100.1),
-        ("disk_io_util_pct", -1.0),
-        ("disk_io_util_pct", 101.0),
-        ("error_rate_per_min", -0.1),
-        ("latency_p99_ms", -1.0),
-        ("request_rate_per_sec", -1.0),
-    ])
+    @pytest.mark.parametrize(
+        "field,bad_value",
+        [
+            ("cpu_usage_pct", -1.0),
+            ("cpu_usage_pct", 101.0),
+            ("memory_usage_pct", -0.1),
+            ("memory_usage_pct", 100.1),
+            ("disk_io_util_pct", -1.0),
+            ("disk_io_util_pct", 101.0),
+            ("error_rate_per_min", -0.1),
+            ("latency_p99_ms", -1.0),
+            ("request_rate_per_sec", -1.0),
+        ],
+    )
     def test_out_of_range_values_rejected(self, field, bad_value):
         """Values outside the allowed range raise ValidationError."""
         data = self._valid()
@@ -106,3 +117,112 @@ class TestRunbookSearchRequest:
         """top_k values 1–10 are all valid."""
         req = RunbookSearchRequest(query="disk io saturation", top_k=top_k)
         assert req.top_k == top_k
+
+
+class TestSeverityLevel:
+    """Tests for the SeverityLevel enum."""
+
+    @pytest.mark.parametrize("val", ["low", "medium", "high", "critical"])
+    def test_valid_severity_levels(self, val):
+        """All four severity strings are valid enum members."""
+        level = SeverityLevel(val)
+        assert level.value == val
+
+    def test_invalid_severity_raises(self):
+        """An unknown severity string raises ValueError."""
+        with pytest.raises(ValueError):
+            SeverityLevel("extreme")
+
+
+class TestErrorResponse:
+    """Tests for the ErrorResponse schema."""
+
+    def test_minimal_error_response(self):
+        """ErrorResponse with only detail parses correctly."""
+        resp = ErrorResponse(detail="Something went wrong")
+        assert resp.detail == "Something went wrong"
+        assert resp.error_code is None
+
+    def test_full_error_response(self):
+        """ErrorResponse with all fields parses correctly."""
+        resp = ErrorResponse(detail="Not found", error_code="E404", request_id="abc-123")
+        assert resp.error_code == "E404"
+        assert resp.request_id == "abc-123"
+
+
+class TestBatchPredictRequest:
+    """Tests for the BatchPredictRequest schema."""
+
+    def _item(self) -> dict:
+        return {
+            "service_name": "svc",
+            "cpu_usage_pct": 50.0,
+            "memory_usage_pct": 50.0,
+            "error_rate_per_min": 5.0,
+            "latency_p99_ms": 200.0,
+            "request_rate_per_sec": 100.0,
+            "disk_io_util_pct": 30.0,
+        }
+
+    def test_single_item_accepted(self):
+        """A batch of 1 item is valid."""
+        req = BatchPredictRequest(items=[self._item()])
+        assert len(req.items) == 1
+
+    def test_empty_items_rejected(self):
+        """An empty items list raises ValidationError."""
+        with pytest.raises(ValidationError):
+            BatchPredictRequest(items=[])
+
+    def test_over_limit_rejected(self):
+        """More than 100 items raises ValidationError."""
+        with pytest.raises(ValidationError):
+            BatchPredictRequest(items=[self._item()] * 101)
+
+
+class TestServiceHealthStatus:
+    """Tests for the ServiceHealthStatus schema."""
+
+    def test_valid_health_status_parses(self):
+        """Valid ServiceHealthStatus is accepted."""
+        status = ServiceHealthStatus(
+            service_name="payments-api",
+            total_predictions=100,
+            incident_count=10,
+            incident_rate=0.1,
+            avg_confidence=0.75,
+        )
+        assert status.service_name == "payments-api"
+
+    def test_incident_rate_out_of_range_rejected(self):
+        """incident_rate > 1 raises ValidationError."""
+        from pydantic import ValidationError
+
+        with pytest.raises(ValidationError):
+            ServiceHealthStatus(
+                service_name="svc",
+                total_predictions=10,
+                incident_count=5,
+                incident_rate=1.5,
+                avg_confidence=0.5,
+            )
+
+
+class TestModelInfoResponse:
+    """Tests for the ModelInfoResponse schema."""
+
+    def test_minimal_model_info(self):
+        """ModelInfoResponse with only required fields parses correctly."""
+        resp = ModelInfoResponse(model_version="1.0.0", model_loaded=True)
+        assert resp.model_version == "1.0.0"
+        assert resp.model_loaded is True
+        assert resp.estimators is None
+
+    def test_full_model_info(self):
+        """ModelInfoResponse with estimators list parses correctly."""
+        resp = ModelInfoResponse(
+            model_version="1.0.0",
+            model_loaded=True,
+            estimators=["xgb", "lgbm", "rf"],
+        )
+        assert len(resp.estimators) == 3

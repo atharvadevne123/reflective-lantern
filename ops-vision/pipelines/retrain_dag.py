@@ -36,9 +36,7 @@ def fetch_training_data() -> tuple:
 
         from sqlalchemy import create_engine, text
 
-        db_url = os.environ.get(
-            "DATABASE_URL", "postgresql://ops:ops@localhost:5432/opsvision"
-        )
+        db_url = os.environ.get("DATABASE_URL", "postgresql://ops:ops@localhost:5432/opsvision")
         engine = create_engine(db_url)
         with engine.connect() as conn:
             result = conn.execute(
@@ -51,9 +49,7 @@ def fetch_training_data() -> tuple:
             rows = result.fetchall()
 
         if len(rows) < MIN_SAMPLES:
-            logger.warning(
-                "Insufficient data (%d rows) — falling back to synthetic", len(rows)
-            )
+            logger.warning("Insufficient data (%d rows) — falling back to synthetic", len(rows))
             from app.model import generate_synthetic_data
 
             return generate_synthetic_data(n_samples=2000)
@@ -143,9 +139,7 @@ def promote_model(**context) -> None:
         )
         logger.info("Model promoted to production at %s (AUC=%.4f)", prod_path, auc)
     else:
-        logger.warning(
-            "Model NOT promoted — AUC %.4f below threshold %.4f", auc, AUC_THRESHOLD
-        )
+        logger.warning("Model NOT promoted — AUC %.4f below threshold %.4f", auc, AUC_THRESHOLD)
 
 
 try:

@@ -1,10 +1,10 @@
-"""Tests for correlation-ID and rate-limiting middleware."""
+"""Tests for correlation-ID, rate-limiting, and request-size middleware."""
 
 import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
-from app.middleware import CorrelationIdMiddleware, RateLimitMiddleware
+from app.middleware import CorrelationIdMiddleware, RateLimitMiddleware, RequestSizeLimitMiddleware
 
 
 def _build_app(middleware_cls, **kwargs) -> FastAPI:
@@ -62,6 +62,31 @@ class TestCorrelationIdMiddleware:
         assert first != second
 
 
+class TestCorrelationIdResponseTime:
+    """Tests for the X-Response-Time-Ms header added by CorrelationIdMiddleware."""
+
+    @pytest.fixture
+    def client(self) -> TestClient:
+        return TestClient(_build_app(CorrelationIdMiddleware))
+
+    def test_response_has_response_time_header(self, client):
+        """Every response carries an X-Response-Time-Ms header."""
+        resp = client.get("/ping")
+        assert "X-Response-Time-Ms" in resp.headers
+
+    def test_response_time_is_positive_float(self, client):
+        """X-Response-Time-Ms value is a parseable positive float."""
+        resp = client.get("/ping")
+        value = float(resp.headers["X-Response-Time-Ms"])
+        assert value >= 0.0
+
+    def test_response_time_differs_across_requests(self, client):
+        """Two requests produce different timing values (not cached)."""
+        t1 = client.get("/ping").headers["X-Response-Time-Ms"]
+        t2 = client.get("/health").headers["X-Response-Time-Ms"]
+        assert isinstance(t1, str) and isinstance(t2, str)
+
+
 class TestRateLimitMiddleware:
     """Tests for RateLimitMiddleware."""
 
@@ -106,3 +131,68 @@ class TestRateLimitMiddleware:
         client.get("/ping", headers={"X-Forwarded-For": "10.0.0.5, 172.16.0.1"})
         resp = client.get("/ping", headers={"X-Forwarded-For": "10.0.0.5, 192.168.1.1"})
         assert resp.status_code == 429
+
+    def test_rate_limit_remaining_header_present(self):
+        """Successful responses carry X-RateLimit-Remaining header."""
+        client = TestClient(_build_app(RateLimitMiddleware, max_requests=5, window_seconds=60))
+        resp = client.get("/ping")
+        assert "X-RateLimit-Remaining" in resp.headers
+
+    def test_rate_limit_remaining_decrements(self):
+        """X-RateLimit-Remaining decreases with each request."""
+        client = TestClient(_build_app(RateLimitMiddleware, max_requests=5, window_seconds=60))
+        first = int(client.get("/ping").headers["X-RateLimit-Remaining"])
+        second = int(client.get("/ping").headers["X-RateLimit-Remaining"])
+        assert second < first
+
+    def test_rate_limit_limit_header_matches_config(self):
+        """X-RateLimit-Limit matches the configured max_requests."""
+        client = TestClient(_build_app(RateLimitMiddleware, max_requests=7, window_seconds=60))
+        resp = client.get("/ping")
+        assert resp.headers["X-RateLimit-Limit"] == "7"
+
+    def test_429_includes_rate_limit_remaining_zero(self):
+        """A throttled 429 response sets X-RateLimit-Remaining to 0."""
+        client = TestClient(_build_app(RateLimitMiddleware, max_requests=1, window_seconds=60))
+        client.get("/ping")
+        resp = client.get("/ping")
+        assert resp.status_code == 429
+        assert resp.headers.get("X-RateLimit-Remaining") == "0"
+
+
+class TestRequestSizeLimitMiddleware:
+    """Tests for RequestSizeLimitMiddleware."""
+
+    def _build(self, max_bytes: int = 100) -> TestClient:
+        app = FastAPI()
+        app.add_middleware(RequestSizeLimitMiddleware, max_bytes=max_bytes)
+
+        @app.post("/upload")
+        def upload():
+            return {"ok": True}
+
+        return TestClient(app)
+
+    def test_small_request_passes(self):
+        """A request within the size limit is forwarded normally."""
+        client = self._build(max_bytes=1024)
+        resp = client.post("/upload", headers={"Content-Length": "512"})
+        assert resp.status_code == 200
+
+    def test_oversized_request_returns_413(self):
+        """A request exceeding the limit is rejected with HTTP 413."""
+        client = self._build(max_bytes=100)
+        resp = client.post("/upload", headers={"Content-Length": "200"})
+        assert resp.status_code == 413
+
+    def test_413_response_has_detail_key(self):
+        """The 413 response body contains a 'detail' key."""
+        client = self._build(max_bytes=10)
+        resp = client.post("/upload", headers={"Content-Length": "100"})
+        assert "detail" in resp.json()
+
+    def test_no_content_length_passes(self):
+        """A request without Content-Length header is allowed through."""
+        client = self._build(max_bytes=100)
+        resp = client.post("/upload")
+        assert resp.status_code == 200

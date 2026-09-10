@@ -74,9 +74,7 @@ def build_model() -> VotingClassifier:
         Untrained VotingClassifier with XGBoost, LightGBM, and RandomForest.
     """
     estimators = _build_estimators()
-    logger.info(
-        "Building ensemble with members: %s", [name for name, _ in estimators]
-    )
+    logger.info("Building ensemble with members: %s", [name for name, _ in estimators])
     return VotingClassifier(estimators=estimators, voting="soft", n_jobs=-1)
 
 
@@ -99,9 +97,7 @@ def train(
     skf = StratifiedKFold(n_splits=cv_folds, shuffle=True, random_state=42)
 
     logger.info("Running %d-fold CV", cv_folds)
-    cv_scores = cross_val_score(
-        model, X_train, y_train, cv=skf, scoring="roc_auc", n_jobs=-1
-    )
+    cv_scores = cross_val_score(model, X_train, y_train, cv=skf, scoring="roc_auc", n_jobs=-1)
     logger.info("CV AUC-ROC: %.4f ± %.4f", cv_scores.mean(), cv_scores.std())
 
     model.fit(X_train, y_train)
@@ -109,7 +105,7 @@ def train(
     metrics = {
         "cv_auc_mean": float(cv_scores.mean()),
         "cv_auc_std": float(cv_scores.std()),
-        "train_samples": int(len(y_train)),
+        "train_samples": len(y_train),
         "positive_rate": float(y_train.mean()),
     }
     return model, metrics
@@ -185,6 +181,23 @@ def predict(
     proba = model.predict_proba(X)[:, 1]
     preds = model.predict(X)
     return preds, proba
+
+
+def model_summary(model: VotingClassifier) -> dict:
+    """Return a summary dict describing the ensemble members.
+
+    Args:
+        model: Fitted or unfitted VotingClassifier.
+
+    Returns:
+        Dict with member names, voting strategy, and model version.
+    """
+    return {
+        "model_version": MODEL_VERSION,
+        "voting": model.voting,
+        "estimators": [name for name, _ in model.estimators],
+        "n_estimators": len(model.estimators),
+    }
 
 
 def generate_synthetic_data(

@@ -125,6 +125,105 @@ class TestExponentialSmoothingForecaster:
         assert len(points) == horizon
 
 
+class TestIncidentRateBufferProperties:
+    """Tests for total_incidents and window_span_hours properties."""
+
+    def test_total_incidents_sums_counts(self):
+        """total_incidents sums all counts in the buffer."""
+        buf = IncidentRateBuffer()
+        buf.record(datetime.utcnow(), 3)
+        buf.record(datetime.utcnow() + timedelta(hours=1), 7)
+        assert buf.total_incidents == 10
+
+    def test_total_incidents_zero_on_empty(self):
+        """total_incidents is 0 for an empty buffer."""
+        buf = IncidentRateBuffer()
+        assert buf.total_incidents == 0
+
+    def test_window_span_zero_for_one_entry(self):
+        """window_span_hours is 0.0 when fewer than 2 entries exist."""
+        buf = IncidentRateBuffer()
+        buf.record(datetime.utcnow(), 1)
+        assert buf.window_span_hours == 0.0
+
+    def test_window_span_correct_for_multiple_entries(self):
+        """window_span_hours reflects the spread between oldest and newest entries."""
+        buf = IncidentRateBuffer()
+        base = datetime(2026, 8, 31, 0, 0)
+        buf.record(base, 1)
+        buf.record(base + timedelta(hours=5), 2)
+        assert abs(buf.window_span_hours - 5.0) < 0.01
+
+
+class TestExponentialSmoothingForecasterProperties:
+    """Tests for is_fitted property and params dict."""
+
+    def test_is_fitted_false_before_fit(self):
+        """is_fitted is False before calling fit()."""
+        f = ExponentialSmoothingForecaster()
+        assert f.is_fitted is False
+
+    def test_is_fitted_true_after_fit(self):
+        """is_fitted becomes True after successful fit()."""
+        f = ExponentialSmoothingForecaster()
+        f.fit(np.array([1.0, 2.0, 3.0]))
+        assert f.is_fitted is True
+
+    def test_params_contains_alpha(self):
+        """params dict has alpha key matching constructor arg."""
+        f = ExponentialSmoothingForecaster(alpha=0.5)
+        assert f.params["alpha"] == 0.5
+
+    def test_params_contains_beta(self):
+        """params dict has beta key matching constructor arg."""
+        f = ExponentialSmoothingForecaster(beta=0.2)
+        assert f.params["beta"] == 0.2
+
+    def test_params_contains_horizon(self):
+        """params dict has horizon key matching constructor arg."""
+        f = ExponentialSmoothingForecaster(horizon=12)
+        assert f.params["horizon"] == 12
+
+
+class TestIncidentRateBufferResetAndLen:
+    """Tests for IncidentRateBuffer.reset() and __len__()."""
+
+    def test_reset_clears_all_counts(self):
+        """reset() removes all entries from the buffer."""
+        buf = IncidentRateBuffer()
+        for i in range(5):
+            buf.record(datetime.utcnow() + timedelta(hours=i), i + 1)
+        buf.reset()
+        assert len(buf.counts) == 0
+
+    def test_reset_allows_new_records(self):
+        """Buffer is usable after reset."""
+        buf = IncidentRateBuffer()
+        buf.record(datetime.utcnow(), 3)
+        buf.reset()
+        buf.record(datetime.utcnow(), 7)
+        assert len(buf) == 1
+
+    def test_len_reflects_count(self):
+        """__len__ returns number of entries in the buffer."""
+        buf = IncidentRateBuffer()
+        for i in range(4):
+            buf.record(datetime.utcnow() + timedelta(hours=i), 1)
+        assert len(buf) == 4
+
+    def test_len_zero_on_empty_buffer(self):
+        """__len__ returns 0 for a new buffer."""
+        buf = IncidentRateBuffer()
+        assert len(buf) == 0
+
+    def test_len_decreases_after_reset(self):
+        """__len__ returns 0 after reset."""
+        buf = IncidentRateBuffer()
+        buf.record(datetime.utcnow(), 2)
+        buf.reset()
+        assert len(buf) == 0
+
+
 class TestGetRateBufferSingleton:
     """Tests for the get_rate_buffer() singleton helper."""
 

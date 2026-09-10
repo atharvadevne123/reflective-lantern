@@ -163,3 +163,40 @@ class TestModelPersistence:
 
         with pytest.raises(FileNotFoundError):
             load_model(tmp_path / "nonexistent.pkl")
+
+
+class TestModelSummary:
+    """Tests for model_summary() helper."""
+
+    def test_model_summary_returns_dict(self, trained_model):
+        """model_summary() returns a dict."""
+        from app.model import model_summary
+
+        result = model_summary(trained_model)
+        assert isinstance(result, dict)
+
+    def test_model_summary_has_model_version(self, trained_model):
+        """model_summary() includes model_version key."""
+        from app.model import model_summary
+
+        assert "model_version" in model_summary(trained_model)
+
+    def test_model_summary_has_estimators(self, trained_model):
+        """model_summary() includes estimators list."""
+        from app.model import model_summary
+
+        result = model_summary(trained_model)
+        assert "estimators" in result
+        assert isinstance(result["estimators"], list)
+
+    def test_model_summary_n_estimators_positive(self, trained_model):
+        """model_summary() n_estimators is at least 1."""
+        from app.model import model_summary
+
+        assert model_summary(trained_model)["n_estimators"] >= 1
+
+    def test_model_summary_voting_is_soft(self, trained_model):
+        """The ensemble uses soft voting."""
+        from app.model import model_summary
+
+        assert model_summary(trained_model)["voting"] == "soft"

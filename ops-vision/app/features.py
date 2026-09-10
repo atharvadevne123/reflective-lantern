@@ -31,9 +31,7 @@ class ResourcePressureTransformer(BaseEstimator, TransformerMixin):
     def transform(self, X: pd.DataFrame) -> pd.DataFrame:
         """Add resource_pressure column as weighted sum of CPU and memory."""
         X = X.copy()
-        X["resource_pressure"] = (
-            0.6 * X["cpu_usage_pct"] + 0.4 * X["memory_usage_pct"]
-        ) / 100.0
+        X["resource_pressure"] = (0.6 * X["cpu_usage_pct"] + 0.4 * X["memory_usage_pct"]) / 100.0
         logger.debug("ResourcePressureTransformer applied")
         return X
 
@@ -64,9 +62,7 @@ class ThroughputPressureTransformer(BaseEstimator, TransformerMixin):
     def transform(self, X: pd.DataFrame) -> pd.DataFrame:
         """Add throughput_pressure column."""
         X = X.copy()
-        X["throughput_pressure"] = (
-            X["request_rate_per_sec"] * (1 + X["disk_io_util_pct"] / 100.0)
-        )
+        X["throughput_pressure"] = X["request_rate_per_sec"] * (1 + X["disk_io_util_pct"] / 100.0)
         logger.debug("ThroughputPressureTransformer applied")
         return X
 
@@ -142,4 +138,48 @@ def dataframe_from_dict(payload: dict) -> pd.DataFrame:
         Single-row DataFrame with FEATURE_COLS as columns.
     """
     row = {col: payload.get(col, 0.0) for col in FEATURE_COLS}
+    return pd.DataFrame([row])
+
+
+def validate_positive_float(value: float, name: str) -> float:
+    """Ensure value is a non-negative finite float.
+
+    Args:
+        value: The numeric value to validate.
+        name: Field name, used in error messages.
+
+    Returns:
+        The validated value.
+
+    Raises:
+        ValueError: If value is negative or non-finite.
+    """
+    import math
+
+    if not math.isfinite(value):
+        raise ValueError(f"{name} must be finite, got {value}")
+    if value < 0:
+        raise ValueError(f"{name} must be >= 0, got {value}")
+    return value
+
+
+def safe_dataframe_from_dict(payload: dict) -> pd.DataFrame:
+    """Convert a metric dict to a DataFrame, coercing and validating values.
+
+    Args:
+        payload: Dict with metric key-value pairs (may contain None or str).
+
+    Returns:
+        Single-row DataFrame with FEATURE_COLS as columns.
+
+    Raises:
+        ValueError: If a required field cannot be coerced to a non-negative float.
+    """
+    row: dict[str, float] = {}
+    for col in FEATURE_COLS:
+        raw = payload.get(col, 0.0)
+        try:
+            row[col] = validate_positive_float(float(raw), col)
+        except (TypeError, ValueError) as exc:
+            raise ValueError(f"Invalid value for {col}: {raw!r}") from exc
     return pd.DataFrame([row])
