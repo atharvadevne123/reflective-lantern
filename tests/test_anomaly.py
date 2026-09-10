@@ -1329,3 +1329,34 @@ def test_anomaly_rate_for_known_count(n_anomalies: int) -> None:
     total = 20
     flags = [True] * n_anomalies + [False] * (total - n_anomalies)
     assert anomaly_rate(flags) == pytest.approx(n_anomalies / total)
+
+
+@pytest.mark.parametrize("n", [10, 20, 50])
+def test_zscore_flag_output_length_matches_input(n: int) -> None:
+    """zscore_flag returns same number of booleans as input readings."""
+    readings = [float(i % 5) for i in range(n)]
+    flags = zscore_flag(readings)
+    assert len(flags) == n
+
+
+@pytest.mark.parametrize("n", [5, 10, 20])
+def test_iqr_flag_output_length_matches_input(n: int) -> None:
+    """iqr_flag returns same number of booleans as input readings."""
+    readings = [float(i % 3) for i in range(n)]
+    flags = iqr_flag(readings)
+    assert len(flags) == n
+
+
+def test_zscore_flag_constant_series_no_anomalies() -> None:
+    """A constant series has zscore 0 everywhere — no anomalies."""
+    readings = [5.0] * 20
+    flags = zscore_flag(readings)
+    assert not any(flags)
+
+
+@pytest.mark.parametrize("threshold", [1.5, 2.0, 3.0])
+def test_zscore_flag_detects_spike_at_lower_threshold(threshold: float) -> None:
+    """A large spike is flagged at any reasonable threshold."""
+    readings = [1.0] * 19 + [1000.0]
+    flags = zscore_flag(readings, threshold=threshold)
+    assert flags[-1] is True
