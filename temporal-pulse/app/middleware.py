@@ -7,7 +7,7 @@ import os
 import time
 from collections import defaultdict, deque
 
-from fastapi import Request, status
+from fastapi import Request, Response, status
 from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
 
@@ -26,7 +26,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
 
     def __init__(
         self, app, requests_per_window: int | None = None, window_seconds: int | None = None
-    ):
+    ) -> None:
         super().__init__(app)
         self.requests_per_window = requests_per_window or RATE_LIMIT_REQUESTS
         self.window_seconds = window_seconds or RATE_LIMIT_WINDOW_SECONDS
@@ -38,7 +38,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
             return forwarded.split(",")[0].strip()
         return request.client.host if request.client else "unknown"
 
-    async def dispatch(self, request: Request, call_next):
+    async def dispatch(self, request: Request, call_next) -> Response:
         key = self._client_key(request)
         now = time.monotonic()
         window = self._request_log[key]

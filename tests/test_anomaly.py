@@ -1308,3 +1308,24 @@ class TestInterAnomalyGap:
 
         with pytest.raises(ValueError):
             inter_anomaly_gap([])
+
+
+@pytest.mark.parametrize(
+    "flags,expected_rate",
+    [
+        ([False, False, False], 0.0),
+        ([True, True, True], 1.0),
+        ([True, False, True, False], 0.5),
+    ],
+)
+def test_anomaly_rate_fraction_correct(flags, expected_rate: float) -> None:
+    """anomaly_rate returns the fraction of True values in the sequence."""
+    assert anomaly_rate(flags) == pytest.approx(expected_rate)
+
+
+@pytest.mark.parametrize("n_anomalies", [0, 1, 5, 10])
+def test_anomaly_rate_for_known_count(n_anomalies: int) -> None:
+    """anomaly_rate equals n_anomalies / total when total is fixed."""
+    total = 20
+    flags = [True] * n_anomalies + [False] * (total - n_anomalies)
+    assert anomaly_rate(flags) == pytest.approx(n_anomalies / total)

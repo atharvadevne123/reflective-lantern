@@ -1031,3 +1031,29 @@ class TestMedianAbsoluteDeviation:
 
         with pytest.raises(ValueError):
             median_absolute_deviation([])
+
+
+@pytest.mark.parametrize(
+    "values,expected_mad",
+    [
+        ([5.0, 5.0, 5.0], 0.0),
+        ([1.0, 2.0, 3.0, 4.0, 5.0], 1.0),
+        ([10.0], 0.0),
+    ],
+)
+def test_mad_parametrized(values, expected_mad: float) -> None:
+    """median_absolute_deviation returns the correct MAD for known sequences."""
+    from app.trend_analysis import median_absolute_deviation
+
+    assert median_absolute_deviation(values) == pytest.approx(expected_mad)
+
+
+@pytest.mark.parametrize("n", [5, 10, 20])
+def test_mad_non_negative_for_random_data(n: int) -> None:
+    """MAD is never negative for any sequence of values."""
+    import random
+
+    from app.trend_analysis import median_absolute_deviation
+
+    values = [random.gauss(0, 1) for _ in range(n)]
+    assert median_absolute_deviation(values) >= 0.0

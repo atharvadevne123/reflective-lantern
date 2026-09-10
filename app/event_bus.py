@@ -20,6 +20,7 @@ class EventBus:
     """
 
     def __init__(self) -> None:
+        """Initialise with empty handler registries."""
         self._handlers: dict[str, list[Handler]] = defaultdict(list)
         self._wildcard_handlers: list[Handler] = []
 

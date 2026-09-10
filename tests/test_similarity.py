@@ -872,3 +872,35 @@ def test_manhattan_distance_non_negative(a: list, b: list) -> None:
     from app.similarity import manhattan_distance
 
     assert manhattan_distance(a, b) >= 0.0
+
+
+import pytest
+
+
+@pytest.mark.parametrize(
+    "a,b,expected",
+    [
+        ([0.0, 0.0], [0.0, 0.0], 0.0),
+        ([1.0, 0.0], [0.0, 0.0], 1.0),
+        ([1.0, 1.0], [0.0, 0.0], 2.0),
+        ([3.0, 4.0], [0.0, 0.0], 7.0),
+    ],
+)
+def test_manhattan_distance_known_values(a: list, b: list, expected: float) -> None:
+    """manhattan_distance returns the correct L1 norm for known vector pairs."""
+    from app.similarity import manhattan_distance
+
+    assert manhattan_distance(a, b) == pytest.approx(expected)
+
+
+@pytest.mark.parametrize("dim", [2, 4, 8])
+def test_manhattan_distance_symmetric(dim: int) -> None:
+    """manhattan_distance is symmetric: d(a, b) == d(b, a)."""
+    import numpy as np
+
+    from app.similarity import manhattan_distance
+
+    rng = np.random.default_rng(0)
+    a = rng.uniform(-5, 5, dim).tolist()
+    b = rng.uniform(-5, 5, dim).tolist()
+    assert manhattan_distance(a, b) == pytest.approx(manhattan_distance(b, a))

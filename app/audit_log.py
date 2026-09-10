@@ -33,6 +33,7 @@ class AuditLog:
     """Append-only in-memory audit log."""
 
     def __init__(self) -> None:
+        """Initialise an empty, append-only audit log."""
         self._entries: list[AuditEntry] = []
 
     def record(

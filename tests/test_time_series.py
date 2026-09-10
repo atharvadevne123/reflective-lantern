@@ -1642,3 +1642,22 @@ class TestLoadFactor:
         from app.time_series import load_factor
 
         assert load_factor([]) == pytest.approx(0.0)
+
+
+import pytest
+
+
+@pytest.mark.parametrize(
+    "values,expected_load_factor",
+    [
+        ([5.0, 5.0, 5.0], 1.0),
+        ([0.0, 0.0, 0.0], 0.0),
+        ([1.0, 2.0, 3.0, 4.0], pytest.approx(0.5, rel=0.01)),
+    ],
+)
+def test_load_factor_known_cases(values, expected_load_factor) -> None:
+    """load_factor returns the ratio of mean to peak for known inputs."""
+    from app.time_series import load_factor
+
+    result = load_factor(values)
+    assert result == expected_load_factor

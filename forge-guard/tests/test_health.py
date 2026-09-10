@@ -78,3 +78,45 @@ def test_check_database_reachable_returns_url_scheme():
 
     result = health.check_database_reachable("sqlite:///:memory:")
     assert result["url_scheme"] == "sqlite"
+
+
+import pytest  # noqa: E402
+
+
+@pytest.mark.parametrize(
+    "url,expected_scheme",
+    [
+        ("sqlite:///:memory:", "sqlite"),
+        ("sqlite:///test.db", "sqlite"),
+    ],
+)
+def test_url_scheme_captured(url: str, expected_scheme: str) -> None:
+    """check_database_reachable records the correct URL scheme."""
+    from app import health
+
+    result = health.check_database_reachable(url)
+    assert result["url_scheme"] == expected_scheme
+
+
+@pytest.mark.parametrize("size_bytes", [1, 100, 1024])
+def test_model_file_size_reported_correctly(tmp_path, monkeypatch, size_bytes: int) -> None:
+    """check_model_loaded reports the exact file size."""
+    model_file = tmp_path / "model.joblib"
+    model_file.write_bytes(b"x" * size_bytes)
+    monkeypatch.setenv("MODEL_PATH", str(model_file))
+    from app import health
+
+    result = health.check_model_loaded()
+    assert result["model_file_size_bytes"] == size_bytes
+
+
+def test_composite_health_ok_when_all_healthy(tmp_path, monkeypatch) -> None:
+    """composite_health returns 'ok' when model and DB are both healthy."""
+    model_file = tmp_path / "model.joblib"
+    model_file.write_bytes(b"content")
+    monkeypatch.setenv("MODEL_PATH", str(model_file))
+    monkeypatch.setenv("DATABASE_URL", "sqlite:///:memory:")
+    from app import health
+
+    result = health.composite_health()
+    assert result["status"] == "ok"

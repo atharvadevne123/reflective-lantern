@@ -367,3 +367,23 @@ class TestResetClient:
 
         limiter = make_rate_limiter()
         assert reset_client(limiter, "nobody") is False
+
+
+@pytest.mark.parametrize("capacity", [1.0, 5.0, 10.0])
+def test_first_request_always_allowed(capacity: float) -> None:
+    """The first request is always allowed regardless of capacity."""
+    from app.rate_limiter import make_rate_limiter
+
+    limiter = make_rate_limiter(capacity=capacity, refill_rate=0.0)
+    assert limiter.is_allowed("client") is True
+
+
+@pytest.mark.parametrize("client_id", ["user-1", "user-2", "192.168.0.1"])
+def test_distinct_clients_have_independent_buckets(client_id: str) -> None:
+    """Each client ID gets its own bucket."""
+    from app.rate_limiter import make_rate_limiter
+
+    limiter = make_rate_limiter(capacity=1.0, refill_rate=0.0)
+    limiter.is_allowed("other-client")
+    limiter.is_allowed("other-client")
+    assert limiter.is_allowed(client_id) is True

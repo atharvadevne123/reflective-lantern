@@ -115,3 +115,44 @@ class TestValidateEvent:
     def test_explicit_unknown_does_not_warn(self) -> None:
         result = validate_event({**VALID, "fault_type": "unknown"})
         assert result["warnings"] == []
+
+
+class TestMissingFieldsParametrized:
+    @pytest.mark.parametrize(
+        "field",
+        ["latitude", "longitude", "depth_km", "station_count", "p_wave_amplitude"],
+    )
+    def test_each_required_field_reported_when_absent(self, field: str) -> None:
+        payload = {k: v for k, v in VALID.items() if k != field}
+        assert field in missing_fields(payload)
+
+
+class TestNormaliseFaultTypeEdgeCases:
+    @pytest.mark.parametrize(
+        "raw,expected",
+        [
+            ("NORMAL", "normal"),
+            ("oblique", "oblique"),
+            ("unknown", "unknown"),
+            ("", "unknown"),
+            ("STRIKE_SLIP", "strike_slip"),
+        ],
+    )
+    def test_additional_normalisation_cases(self, raw: str, expected: str) -> None:
+        assert normalise_fault_type(raw) == expected
+
+
+class TestAmplitudesEdgeCases:
+    @pytest.mark.parametrize(
+        "p_amp,s_amp,expected",
+        [
+            (1.0, 2.0, True),
+            (5.0, 10.0, True),
+            (10.0, 4.9, False),
+            (0.001, 0.5, True),
+        ],
+    )
+    def test_amplitude_coherence_parametrized(
+        self, p_amp: float, s_amp: float, expected: bool
+    ) -> None:
+        assert amplitudes_are_coherent(p_amp, s_amp) is expected

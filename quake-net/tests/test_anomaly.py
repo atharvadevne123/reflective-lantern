@@ -123,3 +123,22 @@ class TestIqrOutliers:
         tight = sum(iqr_outliers(values, multiplier=1.5))
         loose = sum(iqr_outliers(values, multiplier=multiplier))
         assert loose <= tight
+
+
+class TestZscoreOutliersParametrized:
+    @pytest.mark.parametrize("threshold", [2.0, 3.0, 4.0])
+    def test_extreme_value_flagged_at_strict_threshold(self, threshold: float) -> None:
+        """A value 10 std-devs away is an outlier at any reasonable threshold."""
+        data = [1.0] * 20 + [100.0]
+        flags = zscore_outliers(data, threshold=threshold)
+        assert flags[-1] is True
+
+    @pytest.mark.parametrize("n", [5, 10, 20])
+    def test_identical_values_all_false(self, n: int) -> None:
+        """Identical values produce zero z-scores so no outliers are flagged."""
+        flags = zscore_outliers([3.0] * n)
+        assert not any(flags)
+
+    def test_output_length_matches_input(self) -> None:
+        data = list(range(15))
+        assert len(zscore_outliers(data)) == len(data)

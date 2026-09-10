@@ -232,3 +232,34 @@ class TestDropLowVarianceFeatures:
         df = pd.DataFrame({"a": [1.0, 2.0, 3.0]})
         result = drop_low_variance_features(df)
         assert result is not df
+
+
+import pytest  # noqa: E402
+
+
+@pytest.mark.parametrize("threshold", [0.001, 0.01, 0.1])
+def test_constant_column_dropped_at_any_threshold(threshold: float) -> None:
+    """A zero-variance column is removed for any threshold strictly above zero."""
+    import pandas as pd
+
+    from app.features import drop_low_variance_features
+
+    df = pd.DataFrame({"const": [7.0, 7.0, 7.0], "var": [1.0, 2.0, 3.0]})
+    result = drop_low_variance_features(df, threshold=threshold)
+    assert "const" not in result.columns
+    assert "var" in result.columns
+
+
+@pytest.mark.parametrize("n_cols", [1, 3, 5])
+def test_high_variance_columns_all_kept(n_cols: int) -> None:
+    """drop_low_variance_features retains all columns that exceed the threshold."""
+    import numpy as np
+    import pandas as pd
+
+    from app.features import drop_low_variance_features
+
+    rng = np.random.default_rng(42)
+    data = {f"col{i}": rng.uniform(0, 100, 50).tolist() for i in range(n_cols)}
+    df = pd.DataFrame(data)
+    result = drop_low_variance_features(df, threshold=0.01)
+    assert len(result.columns) == n_cols

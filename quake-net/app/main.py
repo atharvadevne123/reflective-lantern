@@ -6,6 +6,7 @@ import json
 import logging
 import time
 import uuid
+from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 from typing import Any
 
@@ -35,7 +36,7 @@ FAULT_TYPES = ["strike_slip", "reverse", "normal", "oblique", "unknown"]
 
 
 @asynccontextmanager
-async def lifespan(app: FastAPI):
+async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     init_db()
     _model_cache["pipeline"] = load_model()
     logger.info('"Quake-Net API ready"')
@@ -53,7 +54,7 @@ app.add_middleware(GZipMiddleware, minimum_size=1024)
 
 
 @app.middleware("http")
-async def correlation_id_middleware(request: Request, call_next):
+async def correlation_id_middleware(request: Request, call_next) -> Response:
     correlation_id = request.headers.get("X-Correlation-ID", str(uuid.uuid4()))
     request.state.correlation_id = correlation_id
     start = time.monotonic()
@@ -73,7 +74,7 @@ async def correlation_id_middleware(request: Request, call_next):
 
 
 @app.middleware("http")
-async def rate_limit_middleware(request: Request, call_next):
+async def rate_limit_middleware(request: Request, call_next) -> Response:
     if request.url.path in ("/api/v1/health", "/"):
         return await call_next(request)
     client_ip = request.client.host if request.client else "unknown"
@@ -162,7 +163,7 @@ class HealthResponse(BaseModel):
 
 
 @app.get("/", include_in_schema=False)
-async def root() -> dict:
+async def root() -> dict[str, str]:
     return {"service": "Quake-Net", "version": "1.0.0", "docs": "/docs"}
 
 
@@ -286,7 +287,7 @@ async def predict_batch(
 
 
 @app.get("/api/v1/metrics", tags=["operations"])
-async def metrics(db: Session = Depends(get_db)) -> dict:
+async def metrics(db: Session = Depends(get_db)) -> dict[str, object]:
     model_metrics = read_champion_metrics()
     return {
         "service_counters": _counters,

@@ -164,3 +164,36 @@ class TestPipelineRetrieval:
         answer = pipeline.query("What incentive exists for home power storage batteries?")
         assert answer.answered
         assert any("battery-guide" in c.source for c in answer.citations)
+
+
+class TestBM25Parametrized:
+    @pytest.mark.parametrize("stopword", ["the", "of", "and", "a", "is"])
+    def test_common_stopwords_stripped(self, stopword: str) -> None:
+        """Common English stopwords are removed during tokenization."""
+        assert stopword not in tokenize(f"this {stopword} that")
+
+    @pytest.mark.parametrize("top_k", [1, 3, 5])
+    def test_top_k_limits_results(self, top_k: int) -> None:
+        """BM25Index.search respects the top_k limit."""
+        index = BM25Index()
+        for i in range(10):
+            index.add(f"doc{i}", f"solar energy content document {i}")
+        results = index.search("solar", top_k=top_k)
+        assert len(results) == top_k
+
+
+class TestEmbedderParametrized:
+    @pytest.mark.parametrize("dim", [32, 64, 128])
+    def test_embedding_dimension(self, dim: int) -> None:
+        """HashingEmbedder produces vectors of the requested dimension."""
+        emb = HashingEmbedder(dim=dim)
+        vecs = emb.embed(["test text"])
+        assert vecs.shape == (1, dim)
+
+    @pytest.mark.parametrize("n_texts", [1, 5, 10])
+    def test_batch_embedding_shape(self, n_texts: int) -> None:
+        """HashingEmbedder handles batches of various sizes."""
+        emb = HashingEmbedder(dim=64)
+        texts = [f"document number {i}" for i in range(n_texts)]
+        vecs = emb.embed(texts)
+        assert vecs.shape[0] == n_texts

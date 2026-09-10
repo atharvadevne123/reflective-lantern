@@ -5,6 +5,8 @@ from __future__ import annotations
 import os
 import sys
 
+import pytest
+
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
 from fastapi import FastAPI
@@ -56,3 +58,27 @@ class TestRateLimit:
         client.get("/ping", headers={"X-Forwarded-For": "9.9.9.9"})
         resp = client.get("/ping", headers={"X-Forwarded-For": "9.9.9.9"})
         assert resp.status_code == 429
+
+    def test_limit_of_one_allows_single_request(self):
+        client = make_app(limit=1)
+        assert client.get("/ping").status_code == 200
+
+    def test_limit_of_one_blocks_second_request(self):
+        client = make_app(limit=1)
+        client.get("/ping")
+        assert client.get("/ping").status_code == 429
+
+    @pytest.mark.parametrize("limit", [1, 5, 10])
+    def test_exactly_limit_requests_allowed(self, limit: int):
+        """Exactly *limit* requests pass; the next one is blocked."""
+        client = make_app(limit=limit)
+        for _ in range(limit):
+            assert client.get("/ping").status_code == 200
+        assert client.get("/ping").status_code == 429
+
+    def test_retry_after_is_positive_integer(self):
+        client = make_app(limit=1)
+        client.get("/ping")
+        resp = client.get("/ping")
+        retry_after = int(resp.headers["Retry-After"])
+        assert retry_after > 0

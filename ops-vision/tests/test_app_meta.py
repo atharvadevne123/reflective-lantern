@@ -1,6 +1,29 @@
 """Tests for Ops-Vision package metadata."""
 
+import pytest
+
 import app
+
+
+@pytest.mark.parametrize("attr", ["__version__", "__author__", "__description__"])
+def test_metadata_attr_is_nonempty_string(attr: str) -> None:
+    """Each public metadata attribute is a non-empty string."""
+    value = getattr(app, attr)
+    assert isinstance(value, str)
+    assert value.strip()
+
+
+@pytest.mark.parametrize(
+    "version_str,expected_parts",
+    [
+        ("1.0.0", 3),
+        ("2.3", 2),
+        ("0.1.2.dev0", 4),
+    ],
+)
+def test_semver_part_count(version_str: str, expected_parts: int) -> None:
+    """Dot-split version has the expected segment count."""
+    assert len(version_str.split(".")) == expected_parts
 
 
 class TestPackageMetadata:

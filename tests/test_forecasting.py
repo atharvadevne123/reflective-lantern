@@ -1009,3 +1009,22 @@ class TestForecastVolatility:
 
         with pytest.raises(ValueError):
             forecast_volatility([])
+
+
+@pytest.mark.parametrize("values", [[5.0, 5.0, 5.0], [100.0] * 10])
+def test_zero_volatility_for_constant_series(values) -> None:
+    """Constant sequences have zero volatility."""
+    from app.forecasting import forecast_volatility
+
+    assert forecast_volatility(values) == pytest.approx(0.0)
+
+
+@pytest.mark.parametrize("n", [3, 5, 10])
+def test_volatility_non_negative(n: int) -> None:
+    """forecast_volatility is never negative for any sequence of length n."""
+    import random
+
+    from app.forecasting import forecast_volatility
+
+    values = [random.gauss(5.0, 1.0) for _ in range(n)]
+    assert forecast_volatility(values) >= 0.0

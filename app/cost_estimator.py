@@ -56,9 +56,11 @@ class CostBreakdown:
 
     @property
     def total_usd(self) -> float:
+        """Sum of all resource costs in USD."""
         return self.cpu_cost_usd + self.memory_cost_usd + self.gpu_cost_usd
 
     def to_dict(self) -> dict[str, float]:
+        """Serialize costs to a plain dict, rounded to 6 decimal places."""
         return {
             "cpu_cost_usd": round(self.cpu_cost_usd, 6),
             "memory_cost_usd": round(self.memory_cost_usd, 6),
