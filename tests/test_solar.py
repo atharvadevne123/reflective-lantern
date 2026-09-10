@@ -216,3 +216,37 @@ class TestGenerationKwhParametrize:
     def test_max_efficiency_and_ratio(self) -> None:
         result = generation_kwh(100.0, 5.0, panel_efficiency=1.0, performance_ratio=1.0)
         assert result == pytest.approx(100.0 * 5.0)
+
+
+@pytest.mark.parametrize("n_hours", [1, 8, 24])
+def test_self_consumption_output_lengths_match_input(n_hours: int) -> None:
+    """self_consumption result series have the same length as input."""
+    gen = [2.0] * n_hours
+    load = [1.5] * n_hours
+    result = self_consumption(gen, load)
+    assert len(result.self_consumed) == n_hours
+    assert len(result.exported) == n_hours
+    assert len(result.imported_grid) == n_hours
+
+
+@pytest.mark.parametrize("capital_cost", [5000.0, 10000.0, 20000.0])
+def test_payback_years_increases_with_capital_cost(capital_cost: float) -> None:
+    """Higher capital costs result in longer payback periods."""
+    years = payback_years(capital_cost, annual_benefit=1000.0)
+    assert years == pytest.approx(capital_cost / 1000.0, rel=0.1)
+
+
+class TestSelfConsumptionEdgeCases:
+    def test_all_generation_exported_when_no_load(self) -> None:
+        gen = [5.0, 5.0]
+        load = [0.0, 0.0]
+        result = self_consumption(gen, load)
+        assert sum(result.exported) == pytest.approx(10.0)
+        assert sum(result.imported_grid) == pytest.approx(0.0)
+
+    def test_all_imported_when_no_generation(self) -> None:
+        gen = [0.0, 0.0]
+        load = [3.0, 3.0]
+        result = self_consumption(gen, load)
+        assert sum(result.imported_grid) == pytest.approx(6.0)
+        assert sum(result.exported) == pytest.approx(0.0)
