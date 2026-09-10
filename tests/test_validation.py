@@ -1221,3 +1221,47 @@ def test_validate_ratio_invalid_values(ratio: float) -> None:
     from app.validation import validate_ratio
 
     assert len(validate_ratio(ratio)) > 0
+
+
+@pytest.mark.parametrize("hour", [0, 12, 23])
+def test_validate_temporal_valid_hours(hour: int) -> None:
+    """validate_temporal_fields accepts all valid hours 0-23."""
+    from app.validation import validate_temporal_fields
+
+    assert validate_temporal_fields(hour=hour, day_of_week=0, month=1) == []
+
+
+@pytest.mark.parametrize("hour", [-1, 24, 100])
+def test_validate_temporal_invalid_hours(hour: int) -> None:
+    """validate_temporal_fields rejects hours outside 0-23."""
+    from app.validation import validate_temporal_fields
+
+    assert len(validate_temporal_fields(hour=hour, day_of_week=0, month=1)) > 0
+
+
+@pytest.mark.parametrize("value", [0.0, 0.5, 1.0, 100.0])
+def test_validate_non_negative_float_accepts_zero_and_positive(value: float) -> None:
+    """validate_non_negative_float returns no errors for zero or positive values."""
+    from app.validation import validate_non_negative_float
+
+    assert validate_non_negative_float(value) == []
+
+
+def test_validate_non_negative_float_rejects_negative() -> None:
+    from app.validation import validate_non_negative_float
+
+    assert len(validate_non_negative_float(-0.1)) > 0
+
+
+@pytest.mark.parametrize("value", [0.1, 1.0, 999.9])
+def test_validate_positive_float_accepts_positive(value: float) -> None:
+    """validate_positive_float returns no errors for strictly positive values."""
+    from app.validation import validate_positive_float
+
+    assert validate_positive_float(value) == []
+
+
+def test_validate_positive_float_rejects_zero() -> None:
+    from app.validation import validate_positive_float
+
+    assert len(validate_positive_float(0.0)) > 0
