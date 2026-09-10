@@ -493,3 +493,41 @@ class TestLogLevelName:
         from app.logging_config import log_level_name
 
         assert log_level_name(99) == "UNKNOWN"
+
+
+import pytest
+
+
+@pytest.mark.parametrize(
+    "level_name,expected_int",
+    [("DEBUG", 10), ("INFO", 20), ("WARNING", 30), ("ERROR", 40), ("CRITICAL", 50)],
+)
+def test_log_level_int_known_names(level_name: str, expected_int: int) -> None:
+    """log_level_int converts known level names to their integer values."""
+    from app.logging_config import log_level_int
+
+    assert log_level_int(level_name) == expected_int
+
+
+@pytest.mark.parametrize(
+    "level_int,expected_name",
+    [(10, "DEBUG"), (20, "INFO"), (30, "WARNING"), (40, "ERROR"), (50, "CRITICAL")],
+)
+def test_log_level_name_roundtrip(level_int: int, expected_name: str) -> None:
+    """log_level_name(log_level_int(name)) == name for all standard levels."""
+    from app.logging_config import log_level_int, log_level_name
+
+    assert log_level_name(log_level_int(expected_name)) == expected_name
+
+
+class TestConfigureLoggingEdgeCases:
+    @pytest.mark.parametrize("level", ["DEBUG", "INFO", "WARNING", "ERROR"])
+    def test_configure_logging_accepts_level(self, level: str) -> None:
+        from app.logging_config import configure_logging
+
+        configure_logging(level=level)
+
+    def test_json_output_mode_accepted(self) -> None:
+        from app.logging_config import configure_logging
+
+        configure_logging(level="INFO", json_output=True)
