@@ -128,3 +128,30 @@ class TestWebhookHandlerEdgeCases:
         body = b'{"k": "v"}'
         event = wh.process(body, "unknown_event", signature=make_sig(body))
         assert event.event_type == "unknown_event"
+
+
+@pytest.mark.parametrize("payload", [
+    {"key": "value"},
+    {"list": [1, 2, 3]},
+    {"nested": {"a": 1}},
+    {},
+])
+def test_webhook_event_payload_preserved(payload: dict) -> None:
+    """WebhookEvent preserves arbitrary JSON payload fields."""
+    body = json.dumps(payload).encode()
+    wh = WebhookHandler(SECRET)
+    event = wh.process(body, "push", signature=make_sig(body))
+    assert event.payload == payload
+
+
+@pytest.mark.parametrize("n_handlers", [1, 3, 5])
+def test_multiple_handlers_all_called(n_handlers: int) -> None:
+    """All registered handlers for an event type are called."""
+    wh = WebhookHandler(SECRET)
+    counts = []
+    for _ in range(n_handlers):
+        counts.append([])
+        wh.on("push", counts[-1].append)
+    body = b'{"x": 1}'
+    wh.process(body, "push", signature=make_sig(body))
+    assert all(len(c) == 1 for c in counts)
