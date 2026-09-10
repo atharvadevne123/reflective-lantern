@@ -686,3 +686,50 @@ def test_remaining_capacity_decreases_with_items(n_items: int, max_size: int) ->
     for i in range(n_items):
         c.set(f"k{i}", i)
     assert cache_remaining_capacity(c) == max_size - n_items
+
+
+@pytest.mark.parametrize("n", [1, 3, 5])
+def test_batch_set_then_batch_get_roundtrip(n: int) -> None:
+    """batch_set followed by batch_get returns all stored values."""
+    from app.cache import TTLCache, batch_get, batch_set
+
+    c = TTLCache(ttl_seconds=60, max_size=20)
+    items = {f"key{i}": i * 10 for i in range(n)}
+    batch_set(c, items)
+    result = batch_get(c, list(items.keys()))
+    for k, v in items.items():
+        assert result[k] == v
+
+
+@pytest.mark.parametrize("hits,misses", [(10, 0), (5, 5), (0, 10)])
+def test_hit_and_miss_rates_sum_to_one(hits: int, misses: int) -> None:
+    """cache_hit_rate + cache_miss_rate == 1.0 when total > 0."""
+    from app.cache import cache_hit_rate, cache_miss_rate
+
+    assert cache_hit_rate(hits, misses) + cache_miss_rate(hits, misses) == pytest.approx(1.0)
+
+
+class TestCacheIsEmptyEdgeCases:
+    def test_empty_on_init(self) -> None:
+        from app.cache import TTLCache, is_cache_empty
+
+        c = TTLCache(ttl_seconds=60, max_size=10)
+        assert is_cache_empty(c) is True
+
+    def test_not_empty_after_set(self) -> None:
+        from app.cache import TTLCache, is_cache_empty
+
+        c = TTLCache(ttl_seconds=60, max_size=10)
+        c.set("x", 1)
+        assert is_cache_empty(c) is False
+
+    @pytest.mark.parametrize("n", [1, 5])
+    def test_empty_after_all_deleted(self, n: int) -> None:
+        from app.cache import TTLCache, batch_delete, is_cache_empty
+
+        c = TTLCache(ttl_seconds=60, max_size=20)
+        keys = [f"k{i}" for i in range(n)]
+        for k in keys:
+            c.set(k, 1)
+        batch_delete(c, keys)
+        assert is_cache_empty(c) is True
