@@ -807,3 +807,34 @@ class TestTopKFeatures:
         imp = {"a": 1.0, "b": 2.0, "c": 3.0}
         result = top_k_features(imp, k=k)
         assert all(isinstance(n, str) for n in result)
+
+
+@pytest.mark.parametrize("n_rows", [1, 5, 10])
+def test_extract_feature_array_row_count(n_rows: int) -> None:
+    """extract_feature_array returns a numpy array with n_rows rows."""
+    df = pd.DataFrame({
+        "hour": [8] * n_rows,
+        "day_of_week": [1] * n_rows,
+        "month": [6] * n_rows,
+        "temperature_c": [20.0] * n_rows,
+        "humidity_pct": [50.0] * n_rows,
+        "occupancy": [30] * n_rows,
+        "hvac_state": [1] * n_rows,
+        "consumption_kwh": [10.0] * n_rows,
+    })
+    arr = extract_feature_array(df)
+    assert arr.shape[0] == n_rows
+
+
+@pytest.mark.parametrize("hour", [0, 6, 12, 18, 23])
+def test_temporal_extractor_hour_preserved(hour: int) -> None:
+    """TemporalFeatureExtractor includes the raw hour in its output."""
+    df = pd.DataFrame({
+        "hour": [hour],
+        "day_of_week": [0],
+        "month": [1],
+    })
+    extractor = TemporalFeatureExtractor()
+    result = extractor.fit_transform(df)
+    assert "hour" in result.columns
+    assert result["hour"].iloc[0] == hour
