@@ -545,3 +545,62 @@ def test_rolling_anomaly_rate_all_true(n: int) -> None:
     flags = [True] * n
     result = rolling_anomaly_rate(flags, window=3)
     assert all(r == 1.0 for r in result)
+
+
+@pytest.mark.parametrize("n", [5, 10, 20])
+def test_rolling_anomaly_rate_all_false_is_zero(n: int) -> None:
+    """rolling_anomaly_rate returns 0.0 for every window when all flags are False."""
+    from app.monitoring import rolling_anomaly_rate
+
+    flags = [False] * n
+    result = rolling_anomaly_rate(flags, window=3)
+    assert all(r == 0.0 for r in result)
+
+
+@pytest.mark.parametrize("threshold", [1.0, 2.0, 3.0, 4.0])
+def test_zscore_alert_empty_flags_for_constant_series(threshold: float) -> None:
+    """A constant series produces no zscore alerts at any threshold."""
+    from app.monitoring import zscore_alert
+
+    values = [5.0] * 20
+    alerts = zscore_alert(values, threshold=threshold)
+    assert sum(alerts) == 0
+
+
+@pytest.mark.parametrize("p_value", [0.001, 0.01, 0.05, 0.5, 0.99])
+def test_p_value_to_confidence_extended(p_value: float) -> None:
+    """p_value_to_confidence always returns a value in [0.0, 1.0] for various inputs."""
+    from app.monitoring import p_value_to_confidence
+
+    conf = p_value_to_confidence(p_value)
+    assert 0.0 <= conf <= 1.0
+
+
+@pytest.mark.parametrize("rate,expected", [(0.0, "ok"), (0.05, "warning"), (0.2, "critical")])
+def test_degradation_severity_thresholds(rate: float, expected: str) -> None:
+    """degradation_severity returns expected label for boundary rates."""
+    from app.monitoring import degradation_severity
+
+    assert degradation_severity(rate) == expected
+
+
+class TestErrorBudgetEdgeCases:
+    def test_full_budget_when_no_errors(self) -> None:
+        from app.monitoring import error_budget_remaining
+
+        result = error_budget_remaining(total_requests=1000, error_count=0, slo_target=0.99)
+        assert result >= 0.0
+
+    def test_budget_exhausted_when_errors_exceed_allowance(self) -> None:
+        from app.monitoring import error_budget_remaining
+
+        result = error_budget_remaining(total_requests=100, error_count=50, slo_target=0.99)
+        assert result < 0.0
+
+    @pytest.mark.parametrize("slo", [0.9, 0.95, 0.99, 0.999])
+    def test_stricter_slo_gives_less_budget(self, slo: float) -> None:
+        from app.monitoring import error_budget_remaining
+
+        r1 = error_budget_remaining(total_requests=1000, error_count=5, slo_target=0.9)
+        r2 = error_budget_remaining(total_requests=1000, error_count=5, slo_target=0.999)
+        assert r1 >= r2
