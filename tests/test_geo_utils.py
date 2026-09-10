@@ -164,3 +164,31 @@ class TestNearestNeighborEdgeCases:
     def test_returns_exact_match_if_present(self) -> None:
         result = nearest_neighbor(LONDON, [PARIS, LONDON, NEW_YORK])
         assert result == LONDON
+
+
+@pytest.mark.parametrize(
+    "lat,lon",
+    [(-90, 0), (90, 0), (0, -180), (0, 180), (45, 90)],
+)
+def test_coordinate_boundary_lat_lon_accepted(lat: float, lon: float) -> None:
+    """Boundary and typical lat/lon values are accepted by Coordinate."""
+    c = Coordinate(lat, lon)
+    assert c.lat == lat
+    assert c.lon == lon
+
+
+@pytest.mark.parametrize("city_pair", [
+    (LONDON, PARIS),
+    (NEW_YORK, SYDNEY),
+    (LONDON, NEW_YORK),
+])
+def test_haversine_is_positive_for_distinct_cities(city_pair) -> None:
+    """haversine returns a positive distance for any pair of distinct cities."""
+    a, b = city_pair
+    assert haversine(a, b) > 0.0
+
+
+def test_midpoint_is_between_endpoints() -> None:
+    """midpoint coordinate lies between the two input points."""
+    mid = midpoint(LONDON, PARIS)
+    assert min(LONDON.lat, PARIS.lat) <= mid.lat <= max(LONDON.lat, PARIS.lat)
