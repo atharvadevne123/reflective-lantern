@@ -13,7 +13,7 @@ import lightgbm as lgb
 import numpy as np
 import xgboost as xgb
 from sklearn.ensemble import RandomForestClassifier, VotingClassifier
-from sklearn.metrics import classification_report, roc_auc_score
+from sklearn.metrics import roc_auc_score
 from sklearn.model_selection import StratifiedKFold
 
 logger = logging.getLogger(__name__)

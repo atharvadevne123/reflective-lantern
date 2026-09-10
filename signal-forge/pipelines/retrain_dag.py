@@ -1,7 +1,6 @@
 """Automated retraining pipeline for Signal-Forge (Airflow-compatible DAG)."""
 
 import logging
-import os
 from datetime import datetime, timedelta
 from typing import Any
 
@@ -32,7 +31,7 @@ MODEL_MIN_SAMPLES = 100
 
 def fetch_training_data(**context: Any) -> dict[str, Any]:
     """Fetch recent predictions from DB to use as training data."""
-    from app.database import SessionLocal, MarketRegimePrediction
+    from app.database import MarketRegimePrediction, SessionLocal
 
     db = SessionLocal()
     try:
@@ -75,7 +74,6 @@ def train_new_model(**context: Any) -> None:
         return
 
     try:
-        import os
         X = np.load("/tmp/sf_X_retrain.npy")
         y = np.load("/tmp/sf_y_retrain.npy")
     except FileNotFoundError:
@@ -83,7 +81,7 @@ def train_new_model(**context: Any) -> None:
         X = rng.standard_normal((400, 5))
         y = rng.integers(0, 4, 400)
 
-    from app.model import train_model, save_model
+    from app.model import save_model, train_model
     model, metrics = train_model(X, y)
     save_model(model)
     logger.info("Retraining complete: %s", metrics)
@@ -112,8 +110,9 @@ def run_drift_check(**context: Any) -> None:
 def rebuild_faiss_index(**context: Any) -> None:
     """Rebuild FAISS index from current prediction history."""
     import json
-    from app.database import SessionLocal, MarketRegimePrediction
-    from app.model import build_faiss_index, FAISS_INDEX_PATH
+
+    from app.database import MarketRegimePrediction, SessionLocal
+    from app.model import FAISS_INDEX_PATH, build_faiss_index
 
     db = SessionLocal()
     try:

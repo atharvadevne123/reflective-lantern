@@ -2,17 +2,18 @@
 
 import os
 import sys
+
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 import pytest
 
+from app.exceptions import ValidationError
 from app.validators import (
     validate_close,
-    validate_volume,
     validate_market_return,
     validate_predict_input,
+    validate_volume,
 )
-from app.exceptions import ValidationError
 
 
 def test_validate_close_normal():

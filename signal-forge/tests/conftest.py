@@ -1,5 +1,8 @@
 """Pytest fixtures and test database configuration for Signal-Forge."""
 
+import os
+import sys
+
 import numpy as np
 import pandas as pd
 import pytest
@@ -7,8 +10,6 @@ from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
-import sys
-import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from app.database import Base, get_db

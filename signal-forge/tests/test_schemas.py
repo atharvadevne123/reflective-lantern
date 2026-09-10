@@ -2,12 +2,13 @@
 
 import os
 import sys
+
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 import pytest
 from pydantic import ValidationError
 
-from app.schemas import PredictRequest, PredictResponse
+from app.schemas import PredictRequest
 
 
 def test_predict_request_normalises_ticker():

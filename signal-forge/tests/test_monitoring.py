@@ -1,16 +1,18 @@
 """Drift detection and monitoring tests for Signal-Forge."""
 
+import os
+import sys
+
 import numpy as np
 import pytest
 
-import sys, os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from app.monitoring import (
     DRIFT_THRESHOLD,
     FEATURE_NAMES,
-    run_ks_drift_detection,
     get_drift_summary,
+    run_ks_drift_detection,
 )
 
 

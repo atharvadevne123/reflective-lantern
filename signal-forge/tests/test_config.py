@@ -2,11 +2,12 @@
 
 import os
 import sys
+
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 
 def test_get_settings_returns_settings():
-    from app.config import get_settings, Settings
+    from app.config import Settings, get_settings
     s = get_settings()
     assert isinstance(s, Settings)
 

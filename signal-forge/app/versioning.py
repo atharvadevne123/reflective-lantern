@@ -7,7 +7,7 @@ router = APIRouter(prefix="/api/v1", tags=["v1"])
 
 def include_v1_routes(app_instance) -> None:
     """Attach versioned /api/v1 duplicates of all core routes."""
-    from .main import predict_regime, health, metrics, version, drift_check
+    from .main import drift_check, health, metrics, predict_regime, version
 
     router.add_api_route("/predict", predict_regime, methods=["POST"])
     router.add_api_route("/health", health, methods=["GET"])

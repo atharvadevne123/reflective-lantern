@@ -2,11 +2,12 @@
 
 import os
 import sys
+
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 import pytest
 
-from app.health import check_database, check_model, get_uptime, full_health_report
+from app.health import check_database, check_model, full_health_report, get_uptime
 
 
 def test_database_check_ok(db_session):

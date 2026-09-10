@@ -2,11 +2,12 @@
 
 import os
 import sys
+
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 import pytest
 
-from app.alerting import Alert, check_risk_alert, check_drift_alert
+from app.alerting import check_drift_alert, check_risk_alert
 
 
 def test_no_alert_for_low_risk():

@@ -2,13 +2,14 @@
 
 import os
 import sys
+
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 import json
+
 import pytest
 
-from app.reporting import format_prediction_report, report_to_json, log_report_summary
-
+from app.reporting import format_prediction_report, report_to_json
 
 FEATURES = {"volatility": 0.18, "momentum": 0.04, "volume_ratio": 1.1, "correlation": 0.6, "beta": 1.05}
 

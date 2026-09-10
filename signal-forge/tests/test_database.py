@@ -2,12 +2,13 @@
 
 import os
 import sys
+
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 import pytest
 from sqlalchemy import text
 
-from app.database import MarketRegimePrediction, DriftEvent
+from app.database import DriftEvent, MarketRegimePrediction
 
 
 def test_db_session_executes_query(db_session):

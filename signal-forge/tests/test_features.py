@@ -1,16 +1,17 @@
 """Feature engineering pipeline tests for Signal-Forge."""
 
+import os
+import sys
+
 import numpy as np
-import pandas as pd
 import pytest
 
-import sys, os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from app.features import (
+    FEATURE_COLS,
     BetaFeature,
     DropRawColumns,
-    FEATURE_COLS,
     MarketCorrelationFeature,
     MomentumFeature,
     VolatilityFeature,

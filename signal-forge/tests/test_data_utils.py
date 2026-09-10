@@ -2,6 +2,7 @@
 
 import os
 import sys
+
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 import numpy as np
@@ -9,11 +10,11 @@ import pandas as pd
 import pytest
 
 from app.data_utils import (
-    fill_missing_ohlcv,
     compute_log_returns,
+    fill_missing_ohlcv,
+    validate_ohlcv_frame,
     winsorise,
     zscore_normalise,
-    validate_ohlcv_frame,
 )
 
 

@@ -2,13 +2,14 @@
 
 import os
 import sys
+
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 import numpy as np
 import pytest
 
-from app.features import build_feature_pipeline, FEATURE_COLS
-from app.model import _build_ensemble, REGIMES, compute_risk_score
+from app.features import FEATURE_COLS, build_feature_pipeline
+from app.model import REGIMES, _build_ensemble, compute_risk_score
 
 
 def test_pipeline_output_shape(sample_ohlcv_df):

@@ -5,7 +5,6 @@ import time
 from contextlib import asynccontextmanager
 from typing import Any
 
-import numpy as np
 from fastapi import Depends, FastAPI, HTTPException, Request, status
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field, field_validator
@@ -101,7 +100,6 @@ def predict_regime(
 ) -> PredictResponse:
     """Classify market regime for a given asset using ensemble ML model."""
     try:
-        import pandas as pd
         row = {"close": req.close, "volume": req.volume, "market_return": req.market_return}
         df = extract_single_row(row)
         from .features import build_feature_pipeline

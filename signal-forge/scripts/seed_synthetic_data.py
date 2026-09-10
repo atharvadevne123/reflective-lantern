@@ -11,8 +11,8 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 import numpy as np
 
-from app.database import MarketRegimePrediction, SessionLocal, create_tables
 from app.constants import REGIMES
+from app.database import MarketRegimePrediction, SessionLocal, create_tables
 
 logger = logging.getLogger(__name__)
 

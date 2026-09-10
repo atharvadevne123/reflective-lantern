@@ -1,17 +1,19 @@
 """Model training and prediction tests for Signal-Forge."""
 
+import os
+import sys
+
 import numpy as np
 import pytest
 
-import sys, os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from app.model import (
+    REGIMES,
     _build_ensemble,
     compute_risk_score,
     find_similar_periods,
     train_model,
-    REGIMES,
 )
 
 
