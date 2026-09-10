@@ -163,3 +163,40 @@ def test_get_model_version_returns_string() -> None:
     version = get_model_version()
     assert isinstance(version, str)
     assert len(version) > 0
+
+
+class TestAnomalyDetectorEdgeCases:
+    """Edge-case tests for temporal-pulse anomaly detector."""
+
+    def test_scores_array_length_matches_input(self, trained_models):
+        from app.model import score_anomaly
+
+        X = trained_models["X"]
+        scores = score_anomaly(X, trained_models["if_model"], trained_models["scaler"])
+        assert len(scores) == len(X)
+
+    def test_scores_all_finite(self, trained_models):
+        import numpy as np
+
+        from app.model import score_anomaly
+
+        X = trained_models["X"]
+        scores = score_anomaly(X, trained_models["if_model"], trained_models["scaler"])
+        assert np.isfinite(scores).all()
+
+    def test_forecast_returns_floats(self, trained_models):
+        from app.model import predict_forecast
+
+        preds = predict_forecast(
+            trained_models["X"], horizon=2, rf_model=trained_models["rf_model"]
+        )
+        assert all(isinstance(p, float) for p in preds)
+
+    def test_feature_importance_list_not_longer_than_twenty(self, trained_models):
+        from app.model import get_feature_importance
+
+        fi = get_feature_importance(trained_models["rf_model"], trained_models["feature_cols"])
+        assert len(fi) <= 20
+
+    def test_metrics_rmse_non_negative(self, trained_models):
+        assert trained_models["metrics"]["rmse"] >= 0.0

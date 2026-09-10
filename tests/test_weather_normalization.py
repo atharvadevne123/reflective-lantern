@@ -150,7 +150,7 @@ class TestHeatingDegreeDaysEdgeCases:
     def test_mixed_above_below_base(self) -> None:
         temps = [10.0, 20.0, 10.0]
         result = heating_degree_days(temps, DEFAULT_BASE_TEMPERATURE_C)
-        expected = (8.0 + 0.0 + 8.0)
+        expected = 8.0 + 0.0 + 8.0
         assert result == pytest.approx(expected)
 
 

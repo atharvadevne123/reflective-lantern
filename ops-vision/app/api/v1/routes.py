@@ -136,7 +136,7 @@ def predict_endpoint(payload: MetricsPayload, db: Session = Depends(get_db)):
     df = dataframe_from_dict(payload.model_dump())
     try:
         X = pipeline.transform(df)
-    except Exception:
+    except Exception as exc:
         logger.exception("Feature transform failed")
         raise HTTPException(status_code=422, detail="Feature engineering failed") from None
 

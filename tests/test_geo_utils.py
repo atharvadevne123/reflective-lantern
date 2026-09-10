@@ -132,7 +132,7 @@ class TestHaversineEdgeCases:
         assert haversine(a, b) > 0
 
     @pytest.mark.parametrize("city", [LONDON, PARIS, NEW_YORK, SYDNEY])
-    def test_zero_self_distance_for_cities(self, city: "Coordinate") -> None:
+    def test_zero_self_distance_for_cities(self, city: Coordinate) -> None:
         assert haversine(city, city) == pytest.approx(0.0, abs=1e-6)
 
 

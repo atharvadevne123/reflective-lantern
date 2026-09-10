@@ -142,5 +142,5 @@ class TestDataLineageEdgeCases:
 
     def test_source_url_stored(self):
         dl = DataLineage()
-        dl.record(_snap(source="s3://bucket/path"))
+        dl.record(DataSnapshot(name="energy", version="1.0.0", source="s3://bucket/path"))
         assert dl.get("energy").source == "s3://bucket/path"

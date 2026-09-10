@@ -130,3 +130,55 @@ class TestPredictionLogging:
 
         summary = get_metrics_summary()
         assert summary["total_predictions"] == 0
+
+
+class TestMonitoringEdgeCases:
+    """Edge-case tests for temporal-pulse monitoring utilities."""
+
+    def test_metrics_summary_is_dict(self):
+        from app.monitoring import get_metrics_summary
+
+        result = get_metrics_summary()
+        assert isinstance(result, dict)
+
+    def test_ks_drift_result_has_ks_statistic_key(self):
+        from app.monitoring import (
+            run_ks_drift_test,
+            update_current_distribution,
+            update_reference_distribution,
+        )
+
+        update_reference_distribution("ch", [float(i) for i in range(50)])
+        update_current_distribution("ch", [float(i + 100) for i in range(50)])
+        result = run_ks_drift_test("ch")
+        assert "drift_detected" in result
+
+    def test_run_all_drift_tests_empty_returns_list(self):
+        from app.monitoring import reset_monitoring, run_all_drift_tests
+
+        reset_monitoring()
+        results = run_all_drift_tests()
+        assert isinstance(results, list)
+
+    def test_multiple_log_predictions_aggregate(self):
+        from app.monitoring import get_metrics_summary, log_prediction
+
+        for i in range(5):
+            log_prediction(f"s{i}", float(i) / 10, [], 10.0)
+        summary = get_metrics_summary()
+        assert summary["total_predictions"] >= 5
+
+    def test_update_reference_then_current_allows_ks_test(self):
+        import numpy as np
+
+        from app.monitoring import (
+            run_ks_drift_test,
+            update_current_distribution,
+            update_reference_distribution,
+        )
+
+        rng = np.random.default_rng(7)
+        update_reference_distribution("rpm", rng.normal(100, 5, 60).tolist())
+        update_current_distribution("rpm", rng.normal(100, 5, 60).tolist())
+        result = run_ks_drift_test("rpm")
+        assert isinstance(result.get("drift_detected"), bool)

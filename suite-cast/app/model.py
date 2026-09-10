@@ -246,4 +246,5 @@ def predict_demand(
         "confidence": round(demand_score, 4),
         "suggested_rate": suggested_rate,
         "per_row_scores": per_row.tolist(),
+        "confidence": round(demand_score, 4),
     }
