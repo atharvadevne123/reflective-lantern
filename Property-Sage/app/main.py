@@ -20,6 +20,7 @@ from app.database import get_db, init_db
 from app.features import NEIGHBORHOODS, PROPERTY_TYPES, property_to_dataframe
 from app.model import get_metrics, load_models, predict
 from app.monitoring import check_prediction_drift, get_prediction_stats, log_prediction
+from rag.retriever import neighbourhood_summary, retrieve
 
 logging.basicConfig(
     level=logging.INFO,
@@ -241,6 +242,43 @@ async def drift_check(db: Session = Depends(get_db)) -> dict[str, Any]:
         Dict with drift_detected flag and per-feature KS statistics.
     """
     return check_prediction_drift(db)
+
+
+@app.get(
+    "/api/v1/neighbourhood/{name}",
+    tags=["RAG"],
+    summary="Get neighbourhood market intelligence report",
+)
+async def neighbourhood_report(name: str) -> dict[str, str]:
+    """Return the RAG-retrieved market report for a specific neighbourhood.
+
+    Args:
+        name: Neighbourhood identifier (e.g. 'downtown', 'suburb').
+
+    Returns:
+        Dict with neighbourhood name and market report text.
+    """
+    report = neighbourhood_summary(name.lower().strip())
+    return {"neighbourhood": name, "market_report": report}
+
+
+@app.get(
+    "/api/v1/neighbourhood-search",
+    tags=["RAG"],
+    summary="Semantic neighbourhood search",
+)
+async def neighbourhood_search(q: str, top_k: int = 2) -> dict[str, Any]:
+    """Retrieve the most relevant neighbourhood documents for a free-text query.
+
+    Args:
+        q: Free-text query (e.g. 'high rental yield student area').
+        top_k: Number of results to return (default 2).
+
+    Returns:
+        Dict with query string and list of matching neighbourhood docs with scores.
+    """
+    results = retrieve(q, top_k=min(top_k, 5))
+    return {"query": q, "results": results}
 
 
 @app.get("/", tags=["System"], summary="API root")
