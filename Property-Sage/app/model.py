@@ -1,4 +1,8 @@
-"""ML model training, evaluation, and inference for Property-Sage."""
+"""ML model training, evaluation, and inference for Property-Sage.
+
+Trains an XGBoost + LightGBM + RandomForest ensemble for both property
+price and rental yield prediction using 5-fold cross-validation.
+"""
 
 import json
 import logging
@@ -21,13 +25,18 @@ from app.features import PropertyFeatureEngineer, generate_synthetic_data
 
 logger = logging.getLogger(__name__)
 
-MODEL_DIR = Path(os.getenv("MODEL_DIR", "models"))
-PRICE_MODEL_PATH = MODEL_DIR / "price_model.joblib"
-RENTAL_MODEL_PATH = MODEL_DIR / "rental_model.joblib"
-METRICS_PATH = MODEL_DIR / "metrics.json"
+MODEL_DIR: Path = Path(os.getenv("MODEL_DIR", "models"))
+PRICE_MODEL_PATH: Path = MODEL_DIR / "price_model.joblib"
+RENTAL_MODEL_PATH: Path = MODEL_DIR / "rental_model.joblib"
+METRICS_PATH: Path = MODEL_DIR / "metrics.json"
 
 
 def _build_ensemble() -> VotingRegressor:
+    """Construct the weighted XGBoost + LightGBM + RandomForest ensemble.
+
+    Returns:
+        VotingRegressor with weights [0.4, 0.4, 0.2].
+    """
     xgb = XGBRegressor(
         n_estimators=200,
         max_depth=5,
@@ -60,6 +69,11 @@ def _build_ensemble() -> VotingRegressor:
 
 
 def _build_pipeline() -> Pipeline:
+    """Return a full sklearn pipeline: feature engineering → scaling → ensemble.
+
+    Returns:
+        sklearn Pipeline with three steps: features, scaler, model.
+    """
     return Pipeline([
         ("features", PropertyFeatureEngineer()),
         ("scaler", StandardScaler()),
@@ -72,11 +86,22 @@ def train_model(
     y_price: pd.Series,
     y_rental: pd.Series,
 ) -> dict[str, Any]:
-    MODEL_DIR.mkdir(exist_ok=True)
+    """Train price and rental yield models and persist them to disk.
 
+    Runs 5-fold CV to compute R², RMSE, and MAE before saving.
+
+    Args:
+        X: Feature DataFrame (raw property attributes).
+        y_price: Target sale price Series.
+        y_rental: Target rental yield Series (0–1 range).
+
+    Returns:
+        Dict of performance metrics for both models.
+    """
+    MODEL_DIR.mkdir(exist_ok=True)
     kf = KFold(n_splits=5, shuffle=True, random_state=42)
 
-    logger.info("Training price model with 5-fold CV...")
+    logger.info("Training price model — %d samples, 5-fold CV", len(X))
     price_pipe = _build_pipeline()
     price_cv = cross_val_score(price_pipe, X, y_price, cv=kf, scoring="r2", n_jobs=-1)
     price_pipe.fit(X, y_price)
@@ -84,7 +109,7 @@ def train_model(
     price_rmse = float(np.sqrt(mean_squared_error(y_price, price_pred)))
     price_mae = float(mean_absolute_error(y_price, price_pred))
 
-    logger.info("Training rental yield model with 5-fold CV...")
+    logger.info("Training rental yield model — %d samples, 5-fold CV", len(X))
     rental_pipe = _build_pipeline()
     rental_cv = cross_val_score(rental_pipe, X, y_rental, cv=kf, scoring="r2", n_jobs=-1)
     rental_pipe.fit(X, y_rental)
@@ -95,7 +120,7 @@ def train_model(
     joblib.dump(price_pipe, PRICE_MODEL_PATH)
     joblib.dump(rental_pipe, RENTAL_MODEL_PATH)
 
-    metrics = {
+    metrics: dict[str, Any] = {
         "price_r2_mean": float(price_cv.mean()),
         "price_r2_std": float(price_cv.std()),
         "price_rmse": price_rmse,
@@ -107,13 +132,21 @@ def train_model(
         "n_train": len(X),
     }
     METRICS_PATH.write_text(json.dumps(metrics, indent=2))
-    logger.info("Models saved. Price R2=%.4f, Rental R2=%.4f", price_cv.mean(), rental_cv.mean())
+    logger.info(
+        "Models saved — price R²=%.4f rental R²=%.4f",
+        price_cv.mean(), rental_cv.mean(),
+    )
     return metrics
 
 
 def load_models() -> tuple[Pipeline, Pipeline]:
+    """Load serialised models from disk, training from scratch if absent.
+
+    Returns:
+        Tuple of (price_pipeline, rental_yield_pipeline).
+    """
     if not PRICE_MODEL_PATH.exists() or not RENTAL_MODEL_PATH.exists():
-        logger.info("Models not found — training on synthetic data")
+        logger.info("Serialised models not found — training on synthetic data")
         X, y_price, y_rental = generate_synthetic_data(n=2000)
         train_model(X, y_price, y_rental)
     return joblib.load(PRICE_MODEL_PATH), joblib.load(RENTAL_MODEL_PATH)
@@ -124,11 +157,25 @@ def predict(
     rental_model: Pipeline,
     X: pd.DataFrame,
 ) -> dict[str, float]:
+    """Run inference for a single property row.
+
+    Args:
+        price_model: Fitted price prediction pipeline.
+        rental_model: Fitted rental yield prediction pipeline.
+        X: One-row property DataFrame.
+
+    Returns:
+        Dict with predicted_price, predicted_rental_yield, and derived rental estimates.
+    """
     price = float(price_model.predict(X)[0])
     rental_yield = float(np.clip(rental_model.predict(X)[0], 0.01, 0.20))
     annual_rental = price * rental_yield
     monthly_rental = annual_rental / 12
 
+    logger.debug(
+        "Inference complete — price=%.2f yield=%.4f",
+        price, rental_yield,
+    )
     return {
         "predicted_price": round(price, 2),
         "predicted_rental_yield": round(rental_yield, 4),
@@ -138,6 +185,11 @@ def predict(
 
 
 def get_metrics() -> dict[str, Any]:
+    """Return the most recently persisted training metrics.
+
+    Returns:
+        Dict of metric key-value pairs, or empty dict if no metrics exist.
+    """
     if METRICS_PATH.exists():
         return json.loads(METRICS_PATH.read_text())
     return {}
