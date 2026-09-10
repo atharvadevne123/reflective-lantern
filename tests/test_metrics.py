@@ -295,3 +295,38 @@ def test_mape_zero_for_identical_sequences(n: int) -> None:
 
     vals = [float(i + 1) for i in range(n)]
     assert mape(vals, vals) == pytest.approx(0.0)
+
+
+@pytest.mark.parametrize("n", [1, 3, 5])
+def test_mae_zero_for_identical_sequences(n: int) -> None:
+    """mae returns 0.0 when actual and predicted are identical."""
+    from app.metrics import mae
+
+    vals = [float(i + 1) for i in range(n)]
+    assert mae(vals, vals) == pytest.approx(0.0)
+
+
+@pytest.mark.parametrize("n", [2, 4, 6])
+def test_rmse_zero_for_identical_sequences(n: int) -> None:
+    """rmse returns 0.0 when actual equals predicted."""
+    from app.metrics import rmse
+
+    vals = [float(i) for i in range(n)]
+    assert rmse(vals, vals) == pytest.approx(0.0)
+
+
+class TestMaxAbsoluteErrorExtended:
+    def test_all_equal_zero_error(self) -> None:
+        from app.metrics import max_absolute_error
+
+        assert max_absolute_error([5.0, 5.0, 5.0], [5.0, 5.0, 5.0]) == pytest.approx(0.0)
+
+    @pytest.mark.parametrize("n", [1, 2, 5])
+    def test_single_large_error_detected(self, n: int) -> None:
+        from app.metrics import max_absolute_error
+
+        actual = [1.0] * n
+        predicted = [1.0] * n
+        predicted[-1] = 100.0
+        result = max_absolute_error(actual, predicted)
+        assert result == pytest.approx(99.0)
