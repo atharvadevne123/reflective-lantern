@@ -183,3 +183,54 @@ class TestTaskQueueEdgeCases:
         for i in range(5):
             q.submit(lambda: None, priority=i)
         assert len(q) == 5
+
+
+@pytest.mark.parametrize("n_tasks", [1, 5, 10])
+def test_queue_length_increases_with_submissions(n_tasks: int) -> None:
+    """After submitting n_tasks to a stopped queue, len(q) == n_tasks."""
+    from app.task_queue import TaskQueue
+
+    q = TaskQueue(workers=0)
+    for i in range(n_tasks):
+        q.submit(lambda: None, priority=i)
+    assert len(q) == n_tasks
+
+
+@pytest.mark.parametrize("priority", [0, 5, 10, 100])
+def test_task_priority_preserved(priority: int) -> None:
+    """A submitted Task retains the priority it was given."""
+    from app.task_queue import Task, TaskQueue
+
+    q = TaskQueue(workers=0)
+    q.submit(lambda: None, priority=priority)
+    task: Task = q._queue.get()
+    assert task.priority == priority
+
+
+class TestTaskQueueStartStop:
+    def test_empty_queue_stops_cleanly(self) -> None:
+        from app.task_queue import TaskQueue
+
+        q = TaskQueue(workers=1)
+        q.start()
+        q.stop(timeout=2.0)
+
+    @pytest.mark.parametrize("n_workers", [1, 2, 3])
+    def test_all_tasks_completed_after_stop(self, n_workers: int) -> None:
+        import threading
+
+        from app.task_queue import TaskQueue
+
+        results: list[int] = []
+        lock = threading.Lock()
+
+        def work(value: int) -> None:
+            with lock:
+                results.append(value)
+
+        q = TaskQueue(workers=n_workers)
+        q.start()
+        for i in range(5):
+            q.submit(work, i)
+        q.stop(timeout=5.0)
+        assert sorted(results) == list(range(5))
