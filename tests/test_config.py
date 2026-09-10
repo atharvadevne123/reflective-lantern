@@ -542,3 +542,29 @@ class TestNewSettings:
 
         for field_name in ("db_pool_size", "db_max_overflow", "db_pool_recycle", "cors_origins"):
             assert hasattr(settings, field_name)
+
+
+@pytest.mark.parametrize("field", [
+    "db_pool_size",
+    "db_max_overflow",
+    "db_pool_recycle",
+    "cors_origins",
+])
+def test_app_settings_field_is_present(field: str) -> None:
+    """app settings object has all expected database/cors configuration fields."""
+    from app.config import settings
+
+    assert hasattr(settings, field)
+
+
+@pytest.mark.parametrize("field,expected_type", [
+    ("db_pool_size", int),
+    ("db_max_overflow", int),
+    ("db_pool_recycle", int),
+    ("cors_origins", str),
+])
+def test_app_settings_field_types(field: str, expected_type: type) -> None:
+    """Each settings field has the expected Python type."""
+    from app.config import settings
+
+    assert isinstance(getattr(settings, field), expected_type)
