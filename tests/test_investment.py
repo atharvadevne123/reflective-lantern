@@ -1298,3 +1298,30 @@ class TestNetOperatingIncome:
 
         with pytest.raises(ValueError):
             net_operating_income(100000.0, 110.0, 20000.0)
+
+
+@pytest.mark.parametrize("n_years", [1, 5, 10])
+def test_discounted_cash_flow_length_matches_cash_flows(n_years: int) -> None:
+    """DCF computation works for cash flow series of varying lengths."""
+    cash_flows = [10000.0] * n_years
+    result = discounted_cash_flow(cash_flows, discount_rate=0.1)
+    assert isinstance(result, float)
+    assert result > 0.0
+
+
+@pytest.mark.parametrize("rate", [0.05, 0.10, 0.15, 0.20])
+def test_cash_on_cash_return_scales_with_equity(rate: float) -> None:
+    """cash_on_cash_return equals annual_income / equity_invested."""
+    result = cash_on_cash_return(annual_income=10000.0, equity_invested=10000.0 / rate)
+    assert result == pytest.approx(rate, rel=1e-3)
+
+
+class TestPaybackPeriodEdgeCases:
+    def test_immediate_payback_when_benefit_exceeds_cost(self) -> None:
+        result = payback_period(cost=1000.0, annual_benefit=2000.0)
+        assert result == pytest.approx(0.5)
+
+    @pytest.mark.parametrize("cost", [500.0, 1000.0, 5000.0])
+    def test_payback_proportional_to_cost(self, cost: float) -> None:
+        result = payback_period(cost=cost, annual_benefit=500.0)
+        assert result == pytest.approx(cost / 500.0, rel=1e-3)
