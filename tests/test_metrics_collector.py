@@ -174,3 +174,38 @@ class TestHistogramEdgeCases:
         for _ in range(n):
             h.observe(0.5)
         assert h.count == n
+
+
+@pytest.mark.parametrize("n", [1, 5, 10])
+def test_counter_increments_by_n(n: int) -> None:
+    """Counter.inc(n) increases value by exactly n."""
+    c = Counter("counter")
+    c.inc(n)
+    assert c.value == pytest.approx(float(n))
+
+
+@pytest.mark.parametrize("value", [0.0, 5.0, 100.0])
+def test_gauge_set_and_get(value: float) -> None:
+    """Gauge.set() stores the exact value."""
+    g = Gauge("gauge")
+    g.set(value)
+    assert g.value == pytest.approx(value)
+
+
+class TestMetricsRegistryEdgeCases:
+    def test_registry_get_returns_none_for_unknown(self) -> None:
+        reg = MetricsRegistry()
+        assert reg.get("unknown") is None
+
+    def test_counter_registered_is_retrievable(self) -> None:
+        reg = MetricsRegistry()
+        c = Counter("requests")
+        reg.register(c)
+        assert reg.get("requests") is c
+
+    @pytest.mark.parametrize("n", [1, 3, 5])
+    def test_registry_names_count(self, n: int) -> None:
+        reg = MetricsRegistry()
+        for i in range(n):
+            reg.register(Counter(f"metric_{i}"))
+        assert len(reg.names()) == n
