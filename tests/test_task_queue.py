@@ -2,6 +2,8 @@
 
 import threading
 
+import pytest
+
 from app.task_queue import Task, TaskQueue
 
 
@@ -132,3 +134,52 @@ class TestTaskQueue:
             time.sleep(0.05)
         q.stop(timeout=2.0)
         assert counter["n"] == n
+
+
+class TestTaskQueueEdgeCases:
+    def test_submit_after_stop_does_not_raise(self):
+        q = TaskQueue(workers=1)
+        q.start()
+        q.stop(timeout=1.0)
+        q.submit(lambda: None, priority=1)  # should not raise
+
+    def test_task_created_at_is_set(self):
+        import time
+
+        before = time.monotonic()
+        t = Task(priority=0, fn=lambda: None)
+        after = time.monotonic()
+        assert before <= t.created_at <= after
+
+    def test_task_with_both_args_and_kwargs(self):
+        results = {}
+
+        def fn(pos, *, kw):
+            results["pos"] = pos
+            results["kw"] = kw
+
+        t = Task(priority=0, fn=fn, args=(99,), kwargs={"kw": "ok"})
+        t.run()
+        assert results == {"pos": 99, "kw": "ok"}
+
+    @pytest.mark.parametrize("n_workers", [1, 2, 4])
+    def test_concurrent_workers_complete_all(self, n_workers):
+        results = []
+        lock = threading.Lock()
+
+        def work(i):
+            with lock:
+                results.append(i)
+
+        q = TaskQueue(workers=n_workers)
+        q.start()
+        for i in range(10):
+            q.submit(work, 1, i)
+        q.stop(timeout=5.0)
+        assert sorted(results) == list(range(10))
+
+    def test_zero_workers_queue_accepts_tasks(self):
+        q = TaskQueue(workers=0)
+        for i in range(5):
+            q.submit(lambda: None, priority=i)
+        assert len(q) == 5
