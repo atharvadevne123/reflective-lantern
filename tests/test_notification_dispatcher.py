@@ -134,3 +134,36 @@ class TestDispatch:
         d.register(ch)
         d.dispatch(Notification(title="t", body="", severity=severity))
         assert len(received) == 1
+
+
+@pytest.mark.parametrize("n_channels", [1, 3, 5])
+def test_dispatch_reaches_all_channels(n_channels: int) -> None:
+    """dispatch delivers to every registered channel."""
+    results = {}
+    dispatcher = NotificationDispatcher()
+    for i in range(n_channels):
+        ch, received = make_channel(name=f"ch_{i}")
+        dispatcher.register(ch)
+        results[f"ch_{i}"] = received
+    dispatcher.dispatch(Notification(title="Test", body="hello"))
+    assert all(len(v) == 1 for v in results.values())
+
+
+@pytest.mark.parametrize("title", ["Alert", "Warning", "Info"])
+def test_notification_title_preserved_in_channel(title: str) -> None:
+    """The notification title is preserved when delivered to a channel."""
+    ch, received = make_channel()
+    d = NotificationDispatcher()
+    d.register(ch)
+    d.dispatch(Notification(title=title, body="body"))
+    assert received[0].title == title
+
+
+class TestDispatcherUnregister:
+    def test_unregistered_channel_receives_nothing(self) -> None:
+        ch, received = make_channel()
+        d = NotificationDispatcher()
+        d.register(ch)
+        d.unregister("email")
+        d.dispatch(Notification(title="t", body=""))
+        assert received == []
