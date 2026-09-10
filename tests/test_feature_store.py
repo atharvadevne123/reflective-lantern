@@ -129,3 +129,42 @@ class TestFeatureStore:
         store.publish(_fs(name="setB", version="1.0.0"))
         assert store.get_latest("setA") is not None
         assert store.get_latest("setB") is not None
+
+
+@pytest.mark.parametrize("n_versions", [1, 3, 5])
+def test_list_versions_count_matches_published(n_versions: int) -> None:
+    """list_versions returns one entry per published version."""
+    from app.feature_store import FeatureSet, FeatureStore
+
+    store = FeatureStore()
+    for i in range(n_versions):
+        store.publish(FeatureSet(name="ds", version=f"{i}.0.0", features={"f": [1.0]}))
+    assert len(store.list_versions("ds")) == n_versions
+
+
+@pytest.mark.parametrize("n_names", [1, 3, 5])
+def test_list_datasets_includes_all_published_names(n_names: int) -> None:
+    """Every distinct name published appears in list_datasets."""
+    from app.feature_store import FeatureSet, FeatureStore
+
+    store = FeatureStore()
+    names = [f"dataset_{i}" for i in range(n_names)]
+    for name in names:
+        store.publish(FeatureSet(name=name, version="1.0.0", features={"x": [0.0]}))
+    listed = store.list_datasets()
+    assert all(name in listed for name in names)
+
+
+class TestFeatureSetEdgeCases:
+    def test_feature_names_preserved(self) -> None:
+        from app.feature_store import FeatureSet
+
+        fs = FeatureSet(name="my_ds", version="1.0.0", features={"a": [1.0], "b": [2.0]})
+        assert set(fs.features.keys()) == {"a", "b"}
+
+    @pytest.mark.parametrize("version", ["1.0.0", "2.3.4", "0.0.1"])
+    def test_version_string_preserved(self, version: str) -> None:
+        from app.feature_store import FeatureSet
+
+        fs = FeatureSet(name="v_test", version=version, features={})
+        assert fs.version == version
