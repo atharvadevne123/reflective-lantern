@@ -195,3 +195,31 @@ class TestCompareTariffsEdgeCases:
         for consumption in [[1.0] * 24, [0.0] * 24, [5.0] * 8]:
             result = compare_tariffs(consumption)
             assert result.saving_vs_flat >= 0.0
+
+
+@pytest.mark.parametrize("n_hours", [1, 12, 24])
+def test_flat_rate_cost_scales_with_hours(n_hours: int) -> None:
+    """flat_rate_cost is proportional to the number of hours consumed."""
+    consumption = [1.0] * n_hours
+    cost = flat_rate_cost(consumption, rate=0.10)
+    assert cost == pytest.approx(0.10 * n_hours)
+
+
+@pytest.mark.parametrize("rate", [0.05, 0.10, 0.20, 0.50])
+def test_flat_rate_cost_scales_with_rate(rate: float) -> None:
+    """flat_rate_cost is proportional to the rate per kWh."""
+    consumption = [2.0] * 10
+    cost = flat_rate_cost(consumption, rate=rate)
+    assert cost == pytest.approx(rate * 20.0)
+
+
+class TestTimeOfUseCostEdgeCases:
+    def test_zero_consumption_is_free(self) -> None:
+        cost = time_of_use_cost([0.0] * 24)
+        assert cost == pytest.approx(0.0)
+
+    def test_peak_rate_higher_than_off_peak_increases_peak_cost(self) -> None:
+        flat_consumption = [1.0] * 24
+        cost_low = time_of_use_cost(flat_consumption, peak_rate=0.10, off_peak_rate=0.05)
+        cost_high = time_of_use_cost(flat_consumption, peak_rate=0.30, off_peak_rate=0.05)
+        assert cost_high > cost_low
