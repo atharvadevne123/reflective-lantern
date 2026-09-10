@@ -1057,3 +1057,32 @@ def test_mad_non_negative_for_random_data(n: int) -> None:
 
     values = [random.gauss(0, 1) for _ in range(n)]
     assert median_absolute_deviation(values) >= 0.0
+
+
+@pytest.mark.parametrize("n", [5, 10, 20])
+def test_linear_trend_output_is_trend_result(n: int) -> None:
+    """linear_trend returns a TrendResult for series of various lengths."""
+    values = [float(i) for i in range(n)]
+    result = linear_trend(values)
+    assert isinstance(result, TrendResult)
+
+
+@pytest.mark.parametrize("slope", [-2.0, 0.0, 2.0])
+def test_linear_trend_slope_sign_matches_data(slope: float) -> None:
+    """linear_trend slope has the same sign as the actual data slope."""
+    values = [slope * i for i in range(10)]
+    result = linear_trend(values)
+    if slope > 0:
+        assert result.slope > 0
+    elif slope < 0:
+        assert result.slope < 0
+    else:
+        assert abs(result.slope) < 1e-6
+
+
+@pytest.mark.parametrize("n", [3, 5, 10])
+def test_rate_of_change_unit_step_length(n: int) -> None:
+    """rate_of_change with default lag returns n-1 values for a unit-step series."""
+    values = [float(i + 1) for i in range(n)]
+    result = rate_of_change(values)
+    assert len(result) == n - 1
