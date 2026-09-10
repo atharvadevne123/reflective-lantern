@@ -176,3 +176,34 @@ class TestNormalizationFactorEdgeCases:
 
     def test_both_zero_returns_unity(self) -> None:
         assert normalization_factor(0.0, 0.0) == 1.0
+
+
+@pytest.mark.parametrize("n_days", [1, 7, 30])
+def test_normalize_consumption_same_period_is_unchanged(n_days: int) -> None:
+    """Normalizing with equal HDD/CDD returns original consumption."""
+    consumption = [10.0] * n_days
+    hdd = [5.0] * n_days
+    result = normalize_consumption(consumption, hdd, hdd)
+    assert result == pytest.approx(consumption)
+
+
+@pytest.mark.parametrize("base", [15.0, 18.0, 21.0])
+def test_heating_degree_days_increases_as_temp_drops_below_base(base: float) -> None:
+    """Colder temperatures produce larger HDD values."""
+    cold = [base - 10.0] * 7
+    mild = [base - 5.0] * 7
+    assert heating_degree_days(cold, base) > heating_degree_days(mild, base)
+
+
+class TestComparePeriodsSameWeather:
+    def test_same_degree_days_zero_weather_effect(self) -> None:
+        result = compare_periods(1000.0, 800.0, 400.0, 400.0)
+        assert result.weather_effect_pct == pytest.approx(0.0)
+
+    @pytest.mark.parametrize("current_kwh", [800.0, 900.0, 1000.0, 1100.0])
+    def test_normalized_change_direction(self, current_kwh: float) -> None:
+        result = compare_periods(1000.0, current_kwh, 500.0, 500.0)
+        if current_kwh < 1000.0:
+            assert result.normalized_change_pct < 0
+        elif current_kwh > 1000.0:
+            assert result.normalized_change_pct > 0
