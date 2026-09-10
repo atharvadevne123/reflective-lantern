@@ -171,3 +171,64 @@ class TestProfilerEdgeCases:
         result = get_stats("dict_check")
         assert isinstance(result, dict)
         assert "calls" in result
+
+
+class TestProfilerExtended:
+    def setup_method(self) -> None:
+        from app.profiler import reset_stats
+        reset_stats()
+
+    def test_tracked_names_sorted(self) -> None:
+        from app.profiler import tracked, tracked_names
+
+        @tracked(label="z_func")
+        def z(): pass
+
+        @tracked(label="a_func")
+        def a(): pass
+
+        z()
+        a()
+        names = tracked_names()
+        assert names == sorted(names)
+
+    def test_total_calls_across_labels(self) -> None:
+        from app.profiler import total_calls, tracked
+
+        @tracked(label="tc_a")
+        def fa(): pass
+
+        @tracked(label="tc_b")
+        def fb(): pass
+
+        fa()
+        fa()
+        fb()
+        assert total_calls() >= 3
+
+    def test_call_count_unknown_label_returns_zero(self) -> None:
+        from app.profiler import call_count
+        assert call_count("nonexistent_label_xyz") == 0
+
+    @pytest.mark.parametrize("n", [1, 3, 5])
+    def test_call_count_matches_n_calls(self, n: int) -> None:
+        from app.profiler import call_count, tracked
+
+        label = f"param_count_{n}"
+
+        @tracked(label=label)
+        def fn(): pass
+
+        for _ in range(n):
+            fn()
+        assert call_count(label) == n
+
+    def test_reset_stats_removes_label(self) -> None:
+        from app.profiler import get_stats, reset_stats, tracked
+
+        @tracked(label="to_reset")
+        def fn(): pass
+
+        fn()
+        reset_stats("to_reset")
+        assert get_stats("to_reset") == {}
