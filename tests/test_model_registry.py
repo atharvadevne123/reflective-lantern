@@ -136,3 +136,48 @@ class TestProductionPromotion:
         reg = ModelRegistry()
         reg.register(_mv(version=version))
         assert reg.get_latest("price-model").version == version
+
+
+@pytest.mark.parametrize("n_versions", [1, 3, 5])
+def test_list_versions_returns_all_registered(n_versions: int) -> None:
+    """list_versions includes every version that was registered."""
+    from app.model_registry import ModelRegistry, ModelVersion
+
+    reg = ModelRegistry()
+    for i in range(n_versions):
+        reg.register(ModelVersion(name="model", version=f"{i}.0.0", metrics={}))
+    assert len(reg.list_versions("model")) == n_versions
+
+
+@pytest.mark.parametrize("n_models", [1, 3, 5])
+def test_list_models_returns_all_registered_names(n_models: int) -> None:
+    """list_models includes every distinct model name registered."""
+    from app.model_registry import ModelRegistry, ModelVersion
+
+    reg = ModelRegistry()
+    for i in range(n_models):
+        reg.register(ModelVersion(name=f"model_{i}", version="1.0.0", metrics={}))
+    names = reg.list_models()
+    assert all(f"model_{i}" in names for i in range(n_models))
+
+
+class TestModelVersionEdgeCases:
+    def test_metrics_dict_preserved(self) -> None:
+        from app.model_registry import ModelRegistry, ModelVersion
+
+        metrics = {"rmse": 0.5, "r2": 0.9}
+        reg = ModelRegistry()
+        reg.register(ModelVersion(name="mv_test", version="1.0.0", metrics=metrics))
+        stored = reg.get_latest("mv_test")
+        assert stored.metrics == metrics
+
+    @pytest.mark.parametrize("stage_name", ["staging", "production", "archived"])
+    def test_stage_transition_accepted(self, stage_name: str) -> None:
+        from app.model_registry import ModelRegistry, ModelStage, ModelVersion
+
+        reg = ModelRegistry()
+        reg.register(ModelVersion(name="staged_model", version="1.0.0", metrics={}))
+        target = ModelStage[stage_name.upper()]
+        reg.transition_stage("staged_model", "1.0.0", target)
+        stored = reg.get_latest("staged_model")
+        assert stored.stage == target
