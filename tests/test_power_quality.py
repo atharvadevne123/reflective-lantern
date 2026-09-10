@@ -205,3 +205,27 @@ class TestVoltageImbalanceEdgeCases:
         narrow = [230.0, 232.0]
         wide = [230.0, 250.0]
         assert voltage_imbalance(wide) > voltage_imbalance(narrow)
+
+
+@pytest.mark.parametrize("pf", [0.7, 0.8, 0.9, 0.95, 1.0])
+def test_power_factor_accepted_valid_range(pf: float) -> None:
+    """power_factor returns a value in [0, 1] for valid inputs."""
+    result = power_factor(real=pf * 100.0, apparent=100.0)
+    assert 0.0 <= result <= 1.0
+
+
+@pytest.mark.parametrize("kvar", [10.0, 50.0, 100.0])
+def test_correction_kvar_reduces_reactive_power(kvar: float) -> None:
+    """correction_kvar provides non-negative correction for lagging load."""
+    result = correction_kvar(real_kw=100.0, current_pf=0.8, target_pf=0.95)
+    assert result >= 0.0
+
+
+class TestReactivePowerEdgeCases:
+    def test_zero_reactive_power_for_unity_pf(self) -> None:
+        assert reactive_power(apparent=100.0, real=100.0) == pytest.approx(0.0)
+
+    @pytest.mark.parametrize("apparent", [10.0, 100.0, 1000.0])
+    def test_reactive_non_negative_for_valid_inputs(self, apparent: float) -> None:
+        result = reactive_power(apparent=apparent, real=apparent * 0.8)
+        assert result >= 0.0
