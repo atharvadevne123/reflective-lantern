@@ -592,3 +592,40 @@ class TestPeakLoadRangeMw:
         result = peak_load_range_mw()
         assert result["max"] == pytest.approx(14000.0)
         assert result["min"] == pytest.approx(5500.0)
+
+
+@pytest.mark.parametrize("region_id", ["default", "florida", "midwest", "mountain", "new_england"])
+def test_validate_region_returns_true_for_known(region_id: str) -> None:
+    """validate_region returns True for every known built-in region ID."""
+    from app.regions import validate_region
+
+    assert validate_region(region_id) is True
+
+
+@pytest.mark.parametrize("region_id", ["default", "florida", "midwest"])
+def test_get_peak_load_is_positive(region_id: str) -> None:
+    """get_peak_load returns a positive float for known regions."""
+    from app.regions import get_peak_load
+
+    load = get_peak_load(region_id)
+    assert load is not None
+    assert load > 0.0
+
+
+class TestRegionSummaryEdgeCases:
+    def test_region_count_is_positive(self) -> None:
+        from app.regions import region_count
+
+        assert region_count() > 0
+
+    def test_region_names_length_matches_region_count(self) -> None:
+        from app.regions import region_count, region_names
+
+        assert len(region_names()) == region_count()
+
+    @pytest.mark.parametrize("region_id", ["default", "midwest"])
+    def test_region_share_between_zero_and_one(self, region_id: str) -> None:
+        from app.regions import region_share_of_total
+
+        share = region_share_of_total(region_id)
+        assert 0.0 < share <= 1.0
