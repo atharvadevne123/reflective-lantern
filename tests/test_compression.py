@@ -160,3 +160,27 @@ def test_gzip_compress_produces_smaller_output(level: int) -> None:
     data = b"a" * 10_000
     compressed = gzip_compress(data, level=level)
     assert len(compressed) < len(data)
+
+
+@pytest.mark.parametrize("n", [1, 10, 100])
+def test_zlib_roundtrip_various_lengths(n: int) -> None:
+    """zlib_compress / zlib_decompress round-trips data of arbitrary length."""
+    data = b"x" * n
+    assert zlib_decompress(zlib_compress(data)) == data
+
+
+@pytest.mark.parametrize("level", [1, 5, 9])
+def test_zlib_compress_produces_smaller_output_for_repetitive_data(level: int) -> None:
+    """zlib compression reduces size of repetitive data at all levels."""
+    data = b"a" * 5_000
+    assert len(zlib_compress(data, level=level)) < len(data)
+
+
+class TestCompressionRatioEdgeCases:
+    def test_ratio_single_byte(self) -> None:
+        ratio = compression_ratio(b"x")
+        assert ratio > 0.0
+
+    def test_ratio_unicode_string(self) -> None:
+        ratio = compression_ratio("hello world " * 200)
+        assert ratio < 1.0
