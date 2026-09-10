@@ -197,3 +197,31 @@ class TestEvaluateEventFields:
     def test_performance_score_bounded(self) -> None:
         result = evaluate_event(BASELINE, CURTAILED, committed_kwh=16.0)
         assert 0.0 <= result.performance_score <= 1.0
+
+
+@pytest.mark.parametrize("n_hours", [1, 4, 8, 24])
+def test_curtailment_output_length_matches_input(n_hours: int) -> None:
+    """curtailment result has same number of elements as input."""
+    baseline = [5.0] * n_hours
+    actual = [3.0] * n_hours
+    result = curtailment(baseline, actual)
+    assert len(result) == n_hours
+
+
+@pytest.mark.parametrize("reduction", [0.0, 0.25, 0.5, 1.0])
+def test_performance_score_for_known_fractions(reduction: float) -> None:
+    """performance_score returns reduction fraction when committed > 0."""
+    score = performance_score(curtailed=reduction * 10.0, committed_kwh=10.0)
+    assert score == pytest.approx(min(1.0, reduction))
+
+
+class TestCustomerBaselineLoadEdgeCases:
+    def test_two_days_average(self) -> None:
+        result = customer_baseline_load([[4.0, 8.0], [8.0, 4.0]])
+        assert result == pytest.approx([6.0, 6.0])
+
+    @pytest.mark.parametrize("n_days", [1, 3, 7])
+    def test_baseline_length_equals_day_length(self, n_days: int) -> None:
+        history = [[1.0] * 4] * n_days
+        result = customer_baseline_load(history)
+        assert len(result) == 4
