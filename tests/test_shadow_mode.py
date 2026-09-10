@@ -163,3 +163,47 @@ class TestShadowRunnerStatsCompleteness:
         runner = ShadowRunner(_primary, slow_shadow)
         for i in range(5):
             assert runner.call(i) == i * 2
+
+
+@pytest.mark.parametrize("n_calls", [1, 5, 10])
+def test_shadow_runner_total_stats_match_calls(n_calls: int) -> None:
+    """stats()['total'] equals the number of times call() was invoked."""
+    from app.shadow_mode import ShadowRunner
+
+    runner = ShadowRunner(lambda x: x, lambda x: x + 1)
+    for i in range(n_calls):
+        runner.call(i)
+    assert runner.stats()["total"] == n_calls
+
+
+@pytest.mark.parametrize("n_calls", [1, 5, 10])
+def test_shadow_runner_primary_result_always_returned(n_calls: int) -> None:
+    """call() always returns the primary function's result, ignoring shadow."""
+    from app.shadow_mode import ShadowRunner
+
+    primary = lambda x: x * 3  # noqa: E731
+    shadow = lambda x: x * 99  # noqa: E731
+    runner = ShadowRunner(primary, shadow)
+    for i in range(n_calls):
+        assert runner.call(i) == i * 3
+
+
+class TestShadowResultEdgeCases:
+    def test_shadow_result_match_flag_true_when_equal(self) -> None:
+        from app.shadow_mode import ShadowResult
+
+        result = ShadowResult(primary=42, shadow=42, matched=True)
+        assert result.matched is True
+
+    def test_shadow_result_match_flag_false_when_different(self) -> None:
+        from app.shadow_mode import ShadowResult
+
+        result = ShadowResult(primary=42, shadow=99, matched=False)
+        assert result.matched is False
+
+    @pytest.mark.parametrize("value", [0, -1, 100, "ok", None])
+    def test_shadow_result_primary_value_preserved(self, value: object) -> None:
+        from app.shadow_mode import ShadowResult
+
+        result = ShadowResult(primary=value, shadow=value, matched=True)
+        assert result.primary == value
