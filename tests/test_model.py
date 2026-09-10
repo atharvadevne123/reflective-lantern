@@ -472,3 +472,33 @@ class TestThresholdAccuracy:
 
         with pytest.raises(ValueError):
             threshold_accuracy([1.0, 2.0], [1.0])
+
+
+@pytest.mark.parametrize("tolerance", [0.05, 0.10, 0.20])
+def test_threshold_accuracy_perfect_prediction_at_any_tolerance(tolerance: float) -> None:
+    """threshold_accuracy is 1.0 when actual == predicted."""
+    from app.model import threshold_accuracy
+
+    actuals = [10.0, 20.0, 30.0]
+    result = threshold_accuracy(actuals, actuals, tolerance=tolerance)
+    assert result == pytest.approx(1.0)
+
+
+@pytest.mark.parametrize("n", [5, 10, 20])
+def test_train_model_various_sizes_returns_bundle(n: int) -> None:
+    """train_model returns a non-None bundle for different dataset sizes."""
+    from app.model import train_model
+
+    rng = np.random.default_rng(0)
+    df = pd.DataFrame({
+        "hour": rng.integers(0, 24, n),
+        "day_of_week": rng.integers(0, 7, n),
+        "month": rng.integers(1, 13, n),
+        "temperature_c": rng.uniform(0, 40, n),
+        "humidity_pct": rng.uniform(20, 90, n),
+        "occupancy": rng.integers(0, 200, n),
+        "hvac_state": rng.integers(0, 2, n),
+        "consumption_kwh": rng.uniform(5, 50, n),
+    })
+    bundle, _ = train_model(df, df["consumption_kwh"])
+    assert bundle is not None
