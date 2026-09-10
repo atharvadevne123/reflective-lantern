@@ -383,3 +383,55 @@ class TestEventBusClearAndCount:
         bus.clear("*")
         bus.publish("any")
         assert received == []
+
+
+@pytest.mark.parametrize("n_events", [1, 3, 5])
+def test_multiple_events_each_received_once(n_events: int) -> None:
+    """Publishing N distinct events delivers each exactly once to a wildcard listener."""
+    from app.event_bus import EventBus
+
+    bus = EventBus()
+    received: list[str] = []
+    bus.subscribe("*", lambda e, p: received.append(e))
+    for i in range(n_events):
+        bus.publish(f"event-{i}")
+    assert len(received) == n_events
+
+
+@pytest.mark.parametrize("payload", [None, {"key": "val"}, [1, 2, 3], 42])
+def test_payload_is_passed_to_listener(payload: object) -> None:
+    """The published payload reaches the listener unchanged."""
+    from app.event_bus import EventBus
+
+    bus = EventBus()
+    received: list[object] = []
+    bus.subscribe("test", lambda e, p: received.append(p))
+    bus.publish("test", payload)
+    assert received == [payload]
+
+
+class TestEventBusSubscribeMany:
+    @pytest.mark.parametrize("n", [1, 3, 5])
+    def test_all_listeners_called_on_publish(self, n: int) -> None:
+        from app.event_bus import EventBus
+
+        bus = EventBus()
+        counts = [0]
+        for _ in range(n):
+            bus.subscribe("evt", lambda e, p: counts.__setitem__(0, counts[0] + 1))
+        bus.publish("evt")
+        assert counts[0] == n
+
+    def test_unsubscribe_stops_delivery(self) -> None:
+        from app.event_bus import EventBus
+
+        bus = EventBus()
+        received: list[str] = []
+
+        def handler(e: str, p: object) -> None:
+            received.append(e)
+
+        bus.subscribe("done", handler)
+        bus.unsubscribe("done", handler)
+        bus.publish("done")
+        assert received == []
