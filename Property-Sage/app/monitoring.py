@@ -1,4 +1,8 @@
-"""Drift detection, prediction logging, and model monitoring."""
+"""Drift detection, prediction logging, and model monitoring for Property-Sage.
+
+Uses the two-sample Kolmogorov-Smirnov test to compare the distribution of
+recent predictions against a reference window collected at training time.
+"""
 
 import logging
 from datetime import datetime, timedelta
@@ -12,25 +16,50 @@ from app.database import DriftLog, Prediction
 
 logger = logging.getLogger(__name__)
 
-REFERENCE_PRICE_DISTRIBUTION = list(
+REFERENCE_PRICE_DISTRIBUTION: list[float] = list(
     np.random.default_rng(0).normal(loc=450_000, scale=180_000, size=500).clip(50_000, 2_000_000)
 )
-REFERENCE_SQFT_DISTRIBUTION = list(
+REFERENCE_SQFT_DISTRIBUTION: list[float] = list(
     np.random.default_rng(1).normal(loc=1500, scale=600, size=500).clip(300, 5000)
 )
 
+DRIFT_PVALUE_THRESHOLD: float = 0.05
+DRIFT_MIN_SAMPLE_SIZE: int = 10
 
-def compute_drift(reference: list[float], current: list[float]) -> dict[str, Any]:
-    """KS-test drift between a reference window and current predictions."""
-    if len(current) < 10:
-        return {"ks_statistic": 0.0, "p_value": 1.0, "drift_detected": False, "sample_size": len(current)}
+
+def compute_drift(
+    reference: list[float],
+    current: list[float],
+) -> dict[str, Any]:
+    """Run a two-sample KS test to detect distributional drift.
+
+    Args:
+        reference: Reference sample collected at training time.
+        current: Recent sample from the production window.
+
+    Returns:
+        Dict with keys: ks_statistic, p_value, drift_detected, sample_size.
+    """
+    if len(current) < DRIFT_MIN_SAMPLE_SIZE:
+        logger.debug("Drift check skipped — only %d samples (need %d)", len(current), DRIFT_MIN_SAMPLE_SIZE)
+        return {
+            "ks_statistic": 0.0,
+            "p_value": 1.0,
+            "drift_detected": False,
+            "sample_size": len(current),
+        }
     stat, p = ks_2samp(reference, current)
-    return {
+    result: dict[str, Any] = {
         "ks_statistic": round(float(stat), 4),
         "p_value": round(float(p), 4),
-        "drift_detected": bool(p < 0.05),
+        "drift_detected": bool(p < DRIFT_PVALUE_THRESHOLD),
         "sample_size": len(current),
     }
+    logger.info(
+        "KS drift check — stat=%.4f p=%.4f drift_detected=%s",
+        stat, p, result["drift_detected"],
+    )
+    return result
 
 
 def log_prediction(
@@ -39,6 +68,14 @@ def log_prediction(
     input_data: dict[str, Any],
     output: dict[str, float],
 ) -> None:
+    """Persist a single prediction to the predictions table.
+
+    Args:
+        db: Active SQLAlchemy session.
+        request_id: UUID string for this inference request.
+        input_data: Raw property attributes dict.
+        output: Model output dict (predicted_price, predicted_rental_yield).
+    """
     record = Prediction(
         request_id=request_id,
         bedrooms=int(input_data["bedrooms"]),
@@ -54,14 +91,26 @@ def log_prediction(
     )
     db.add(record)
     db.commit()
-    logger.debug("Logged prediction %s", request_id)
+    logger.debug("Logged prediction request_id=%s price=%.2f", request_id, output["predicted_price"])
 
 
 def check_prediction_drift(db: Session) -> dict[str, Any]:
+    """Check for distributional drift in predictions from the last 24 hours.
+
+    Runs KS tests on predicted_price and sqft_input, persisting results
+    to the drift_logs table.
+
+    Args:
+        db: Active SQLAlchemy session.
+
+    Returns:
+        Dict with status, drift_detected flag, and per-feature check results.
+    """
     since = datetime.utcnow() - timedelta(hours=24)
     recent = db.query(Prediction).filter(Prediction.created_at >= since).all()
 
     if not recent:
+        logger.info("Drift check — no predictions in last 24 hours")
         return {"status": "no_recent_predictions", "checks": []}
 
     prices = [r.predicted_price for r in recent]
@@ -86,11 +135,19 @@ def check_prediction_drift(db: Session) -> dict[str, Any]:
     db.commit()
 
     any_drift = any(c["drift_detected"] for c in checks)
-    logger.info("Drift check complete — drift_detected=%s", any_drift)
+    logger.info("Drift check complete — any_drift=%s n_recent=%d", any_drift, len(recent))
     return {"status": "ok", "drift_detected": any_drift, "checks": checks}
 
 
 def get_prediction_stats(db: Session) -> dict[str, Any]:
+    """Return summary statistics for recent predictions.
+
+    Args:
+        db: Active SQLAlchemy session.
+
+    Returns:
+        Dict with total count, last-24h count, and averages of price and yield.
+    """
     total = db.query(Prediction).count()
     since = datetime.utcnow() - timedelta(hours=24)
     last_24h = db.query(Prediction).filter(Prediction.created_at >= since).count()
