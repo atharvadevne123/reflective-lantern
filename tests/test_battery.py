@@ -217,3 +217,31 @@ class TestPeakShaveEdgeCases:
     def test_various_target_peaks(self, target: float) -> None:
         result = peak_shave(SPIKY_LOAD, make_spec(), target_peak_kw=target)
         assert result.peak_reduction_kw >= 0.0
+
+
+@pytest.mark.parametrize("n", [1, 4, 8, 24])
+def test_peak_shave_grid_series_length(n: int) -> None:
+    """Grid series in result has same length as input load series."""
+    load = [30.0] * n
+    result = peak_shave(load, make_spec(), target_peak_kw=20.0)
+    assert len(result.grid_kw) == n
+
+
+@pytest.mark.parametrize("eff", [0.8, 0.9, 1.0])
+def test_battery_spec_round_trip_efficiency_accepted(eff: float) -> None:
+    """BatterySpec accepts round-trip efficiencies in (0, 1]."""
+    spec = BatterySpec(
+        capacity_kwh=10.0,
+        max_charge_kw=5.0,
+        max_discharge_kw=5.0,
+        round_trip_efficiency=eff,
+    )
+    assert spec.round_trip_efficiency == eff
+
+
+class TestRequiredCapacityEdgeCases:
+    def test_zero_load_requires_no_capacity(self) -> None:
+        assert required_capacity_kwh([0.0] * 8, target_peak_kw=5.0) == pytest.approx(0.0)
+
+    def test_flat_load_at_target_requires_no_capacity(self) -> None:
+        assert required_capacity_kwh([10.0] * 8, target_peak_kw=10.0) == pytest.approx(0.0)
