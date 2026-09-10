@@ -1028,3 +1028,47 @@ def test_volatility_non_negative(n: int) -> None:
 
     values = [random.gauss(5.0, 1.0) for _ in range(n)]
     assert forecast_volatility(values) >= 0.0
+
+
+@pytest.mark.parametrize("steps", [1, 5, 10])
+def test_naive_forecast_length_matches_steps(steps: int) -> None:
+    """naive_forecast returns exactly `steps` values."""
+    from app.forecasting import naive_forecast
+
+    result = naive_forecast(last_value=10.0, steps=steps)
+    assert len(result) == steps
+
+
+@pytest.mark.parametrize("steps", [1, 5, 10])
+def test_naive_forecast_all_equal_last_value(steps: int) -> None:
+    """naive_forecast returns the same value repeated for all steps."""
+    from app.forecasting import naive_forecast
+
+    last = 42.0
+    result = naive_forecast(last_value=last, steps=steps)
+    assert all(v == pytest.approx(last) for v in result)
+
+
+@pytest.mark.parametrize("alpha", [0.1, 0.3, 0.5, 0.9])
+def test_exponential_smoothing_length_matches_input(alpha: float) -> None:
+    """exponential_smoothing_forecast returns the same number of steps as the input."""
+    from app.forecasting import exponential_smoothing_forecast
+
+    values = [1.0, 2.0, 3.0, 4.0, 5.0]
+    result = exponential_smoothing_forecast(values, alpha=alpha)
+    assert len(result) == len(values)
+
+
+class TestForecastSummaryEdgeCases:
+    def test_summary_contains_mean_key(self) -> None:
+        from app.forecasting import forecast_summary
+
+        result = forecast_summary([10.0, 20.0, 30.0])
+        assert "mean" in result
+
+    @pytest.mark.parametrize("n", [1, 5, 10])
+    def test_summary_keys_present_for_various_lengths(self, n: int) -> None:
+        from app.forecasting import forecast_summary
+
+        result = forecast_summary([float(i) for i in range(1, n + 1)])
+        assert "min" in result and "max" in result
