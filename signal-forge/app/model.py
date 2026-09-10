@@ -2,6 +2,7 @@
 
 import json
 import logging
+import math
 import os
 import pickle
 from dataclasses import dataclass
@@ -189,9 +190,12 @@ def compute_risk_score(
     regime: str,
 ) -> float:
     """Compute a 0-1 portfolio risk score from key factors."""
-    vol_score = min(volatility / 0.5, 1.0)
-    mom_score = min(abs(momentum) / 0.3, 1.0)
-    beta_score = min(abs(beta) / 2.0, 1.0)
+    vol = 0.0 if (math.isnan(volatility) or math.isinf(volatility)) else volatility
+    mom = 0.0 if (math.isnan(momentum) or math.isinf(momentum)) else momentum
+    b = 1.0 if (math.isnan(beta) or math.isinf(beta)) else beta
+    vol_score = min(vol / 0.5, 1.0)
+    mom_score = min(abs(mom) / 0.3, 1.0)
+    beta_score = min(abs(b) / 2.0, 1.0)
     regime_score = {"bull": 0.2, "bear": 0.85, "volatile": 0.9, "sideways": 0.4}.get(
         regime, 0.5
     )
@@ -221,9 +225,14 @@ def predict(
     regime = REGIMES[regime_idx]
     confidence = round(float(proba[regime_idx]), 4)
 
-    vol = raw_values.get("volatility", 0.0)
-    mom = raw_values.get("momentum", 0.0)
-    beta = raw_values.get("beta", 1.0)
+    def _safe(v: float, default: float) -> float:
+        return default if (math.isnan(v) or math.isinf(v)) else v
+
+    vol = _safe(raw_values.get("volatility", 0.0), 0.0)
+    mom = _safe(raw_values.get("momentum", 0.0), 0.0)
+    corr = _safe(raw_values.get("correlation", 0.0), 0.0)
+    vr = _safe(raw_values.get("volume_ratio", 1.0), 1.0)
+    beta = _safe(raw_values.get("beta", 1.0), 1.0)
     risk_score = compute_risk_score(vol, mom, beta, regime)
     similar = find_similar_periods(feat_vec[0], faiss_index, metadata)
 
@@ -234,8 +243,8 @@ def predict(
         risk_score=risk_score,
         volatility=vol,
         momentum=mom,
-        correlation=raw_values.get("correlation", 0.0),
-        volume_ratio=raw_values.get("volume_ratio", 1.0),
+        correlation=corr,
+        volume_ratio=vr,
         beta=beta,
         similar_periods=similar,
     )

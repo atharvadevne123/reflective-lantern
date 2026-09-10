@@ -42,7 +42,7 @@ def test_prediction_record_fields(db_session):
     )
     db_session.add(record)
     db_session.commit()
-    fetched = db_session.query(MarketRegimePrediction).filter_by(ticker="TSLA").first()
+    fetched = db_session.query(MarketRegimePrediction).filter_by(id=record.id).first()
     assert fetched is not None
     assert fetched.regime == "volatile"
     assert fetched.volatility == pytest.approx(0.35)

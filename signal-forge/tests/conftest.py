@@ -57,9 +57,9 @@ def client(db_session):
 
 @pytest.fixture
 def sample_ohlcv_df():
-    """Generate a synthetic OHLCV DataFrame with 30 rows."""
+    """Generate a synthetic OHLCV DataFrame with 70 rows (enough for 63-day beta window)."""
     rng = np.random.default_rng(42)
-    n = 30
+    n = 70
     close = 100.0 + np.cumsum(rng.normal(0, 1, n))
     return pd.DataFrame({
         "open": close * 0.99,

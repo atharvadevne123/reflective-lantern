@@ -12,6 +12,7 @@ from sqlalchemy.orm import Session
 
 from .database import create_tables, get_db
 from .features import FEATURE_COLS, extract_single_row
+from .middleware import CorrelationIdMiddleware, RateLimitMiddleware
 from .model import predict
 from .monitoring import get_drift_summary, log_prediction, monitor_all_features
 
@@ -45,6 +46,8 @@ app.add_middleware(
     allow_methods=["GET", "POST"],
     allow_headers=["*"],
 )
+app.add_middleware(RateLimitMiddleware)
+app.add_middleware(CorrelationIdMiddleware)
 
 _request_count = 0
 _start_time = time.time()
