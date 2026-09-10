@@ -55,7 +55,8 @@ def log_run(
 
     logger.info(
         "Experiment run logged — experiment=%s run_id=%s",
-        experiment_name, run_id,
+        experiment_name,
+        run_id,
     )
     return run_id
 
@@ -87,7 +88,11 @@ def get_best_run(
     if not valid:
         return None
 
-    return max(valid, key=lambda r: r["metrics"][metric]) if higher_is_better else min(valid, key=lambda r: r["metrics"][metric])
+    return (
+        max(valid, key=lambda r: r["metrics"][metric])
+        if higher_is_better
+        else min(valid, key=lambda r: r["metrics"][metric])
+    )
 
 
 def list_runs(experiment_name: str) -> list[dict[str, Any]]:

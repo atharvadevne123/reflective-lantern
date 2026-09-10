@@ -75,11 +75,13 @@ def _build_pipeline() -> Pipeline:
     Returns:
         sklearn Pipeline with three steps: features, scaler, model.
     """
-    return Pipeline([
-        ("features", PropertyFeatureEngineer()),
-        ("scaler", StandardScaler()),
-        ("model", _build_ensemble()),
-    ])
+    return Pipeline(
+        [
+            ("features", PropertyFeatureEngineer()),
+            ("scaler", StandardScaler()),
+            ("model", _build_ensemble()),
+        ]
+    )
 
 
 def train_model(
@@ -135,7 +137,8 @@ def train_model(
     METRICS_PATH.write_text(json.dumps(metrics, indent=2))
     logger.info(
         "Models saved — price R²=%.4f rental R²=%.4f",
-        price_cv.mean(), rental_cv.mean(),
+        price_cv.mean(),
+        rental_cv.mean(),
     )
 
     log_run(
@@ -186,7 +189,8 @@ def predict(
 
     logger.debug(
         "Inference complete — price=%.2f yield=%.4f",
-        price, rental_yield,
+        price,
+        rental_yield,
     )
     return {
         "predicted_price": round(price, 2),

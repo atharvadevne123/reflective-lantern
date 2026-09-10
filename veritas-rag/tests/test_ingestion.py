@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import itertools
 from datetime import UTC, datetime
 
 import pytest
@@ -144,9 +145,7 @@ class TestChunker:
         chunks = chunk_document(self._doc([sentences]), chunk_size=300, overlap=100)
         assert len(chunks) > 3
         # Overlap: some sentence from chunk N also appears in chunk N+1
-        assert any(
-            c1.text.split(". ")[-1] in c2.text for c1, c2 in zip(chunks, chunks[1:], strict=False)
-        )
+        assert any(c1.text.split(". ")[-1] in c2.text for c1, c2 in itertools.pairwise(chunks))
 
     def test_page_numbers_tracked(self):
         chunks = chunk_document(self._doc(["Page one text here.", "Page two text here."]))

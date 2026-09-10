@@ -21,10 +21,18 @@ class PredictionResponse(BaseModel):
     """Output schema for a successful property valuation."""
 
     request_id: str = Field(..., description="UUID for this inference request.")
-    predicted_price: float = Field(..., description="Estimated market value in USD.", examples=[452300.50])
-    predicted_rental_yield: float = Field(..., description="Gross rental yield (0–1).", examples=[0.0521])
-    estimated_annual_rental: float = Field(..., description="Annual rental income in USD.", examples=[23565.0])
-    estimated_monthly_rental: float = Field(..., description="Monthly rental income in USD.", examples=[1963.75])
+    predicted_price: float = Field(
+        ..., description="Estimated market value in USD.", examples=[452300.50]
+    )
+    predicted_rental_yield: float = Field(
+        ..., description="Gross rental yield (0–1).", examples=[0.0521]
+    )
+    estimated_annual_rental: float = Field(
+        ..., description="Annual rental income in USD.", examples=[23565.0]
+    )
+    estimated_monthly_rental: float = Field(
+        ..., description="Monthly rental income in USD.", examples=[1963.75]
+    )
     neighborhood: str = Field(..., examples=["suburb"])
     property_type: str = Field(..., examples=["house"])
 

@@ -45,7 +45,7 @@ async def lifespan(app: FastAPI):
     global _model_bundle
     init_db()
     _model_bundle = load_model()
-    X_raw, y = generate_synthetic_data(500)
+    _X_raw, y = generate_synthetic_data(500)
     set_reference_distributions({"consumption_kwh": y.tolist()})
     train_anomaly_detector(y.tolist())
     logger.info("Energy-Seer started — model loaded")

@@ -33,9 +33,7 @@ def upgrade() -> None:
     )
     op.create_index("ix_incidents_service_name", "incidents", ["service_name"])
     op.create_index("ix_incidents_created_at", "incidents", ["created_at"])
-    op.create_index(
-        "ix_incidents_service_created", "incidents", ["service_name", "created_at"]
-    )
+    op.create_index("ix_incidents_service_created", "incidents", ["service_name", "created_at"])
 
     op.create_table(
         "predictions",
@@ -52,9 +50,7 @@ def upgrade() -> None:
     )
     op.create_index("ix_predictions_incident_id", "predictions", ["incident_id"])
     op.create_index("ix_predictions_created_at", "predictions", ["created_at"])
-    op.create_index(
-        "ix_predictions_incident_flag", "predictions", ["predicted_incident"]
-    )
+    op.create_index("ix_predictions_incident_flag", "predictions", ["predicted_incident"])
 
     op.create_table(
         "drift_alerts",

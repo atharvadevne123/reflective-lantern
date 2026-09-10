@@ -139,9 +139,7 @@ def peak_shave(
     cycles = round(discharged_total / usable, 4) if usable > 0 else 0.0
 
     if peak_after > target_peak_kw:
-        logger.warning(
-            "Battery could not defend %.2f kW target; peak reached %.2f kW", target_peak_kw, peak_after
-        )
+        logger.warning("Battery could not defend %.2f kW target; peak reached %.2f kW", target_peak_kw, peak_after)
     return DispatchResult(
         peak_before_kw=peak_before,
         peak_after_kw=peak_after,

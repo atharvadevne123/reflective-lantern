@@ -1,7 +1,6 @@
 """Tests for the retrain API endpoint."""
 
 
-
 def test_retrain_requires_api_key(client):
     response = client.post("/api/v1/retrain")
     assert response.status_code == 401
@@ -15,6 +14,7 @@ def test_retrain_wrong_key_rejected(client):
 def test_retrain_with_correct_key(client, monkeypatch):
     monkeypatch.setenv("RETRAIN_API_KEY", "test-key")
     import app.retrain_endpoint as re_mod
+
     re_mod.RETRAIN_API_KEY = "test-key"
 
     response = client.post(
@@ -37,6 +37,7 @@ def test_retrain_history_endpoint(client):
 
 def test_retrain_skips_without_force(client, monkeypatch):
     import app.retrain_endpoint as re_mod
+
     re_mod.RETRAIN_API_KEY = "skip-key"
     response = client.post(
         "/api/v1/retrain",

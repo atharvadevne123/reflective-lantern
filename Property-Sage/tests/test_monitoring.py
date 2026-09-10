@@ -38,11 +38,14 @@ def test_compute_drift_returns_required_keys():
     assert {"ks_statistic", "p_value", "drift_detected", "sample_size"} <= result.keys()
 
 
-@pytest.mark.parametrize("loc_ref,loc_cur,expect_drift", [
-    (100, 100, False),
-    (100, 500, True),
-    (100, 100, False),
-])
+@pytest.mark.parametrize(
+    "loc_ref,loc_cur,expect_drift",
+    [
+        (100, 100, False),
+        (100, 500, True),
+        (100, 100, False),
+    ],
+)
 def test_drift_parametrized(loc_ref, loc_cur, expect_drift):
     rng = np.random.default_rng(99)
     ref = list(rng.normal(loc_ref, 5, 300))
@@ -56,13 +59,18 @@ def test_log_prediction_persists(db_session):
         db=db_session,
         request_id="test-uuid-123",
         input_data={
-            "bedrooms": 3, "bathrooms": 2.0, "sqft": 1500.0,
-            "lot_size": 5000.0, "year_built": 2005,
-            "neighborhood": "suburb", "property_type": "house",
+            "bedrooms": 3,
+            "bathrooms": 2.0,
+            "sqft": 1500.0,
+            "lot_size": 5000.0,
+            "year_built": 2005,
+            "neighborhood": "suburb",
+            "property_type": "house",
         },
         output={"predicted_price": 450_000.0, "predicted_rental_yield": 0.055},
     )
     from app.database import Prediction
+
     record = db_session.query(Prediction).filter_by(request_id="test-uuid-123").first()
     assert record is not None
     assert record.predicted_price == 450_000.0

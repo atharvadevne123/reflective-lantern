@@ -66,9 +66,7 @@ def configure_logging(
     if use_json:
         handler.setFormatter(JsonFormatter(extra_fields={"service": service}))
     else:
-        handler.setFormatter(
-            logging.Formatter("%(asctime)s %(name)s %(levelname)s %(message)s")
-        )
+        handler.setFormatter(logging.Formatter("%(asctime)s %(name)s %(levelname)s %(message)s"))
 
     root = logging.getLogger()
     root.setLevel(resolved_level)

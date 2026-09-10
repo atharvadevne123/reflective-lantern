@@ -14,12 +14,28 @@ from app.features import (
 
 @pytest.fixture
 def sample_df():
-    return pd.DataFrame([
-        {"bedrooms": 3, "bathrooms": 2.0, "sqft": 1500.0, "lot_size": 5000.0,
-         "year_built": 2000, "neighborhood": "suburb", "property_type": "house"},
-        {"bedrooms": 1, "bathrooms": 1.0, "sqft": 500.0, "lot_size": 1000.0,
-         "year_built": 1980, "neighborhood": "downtown", "property_type": "studio"},
-    ])
+    return pd.DataFrame(
+        [
+            {
+                "bedrooms": 3,
+                "bathrooms": 2.0,
+                "sqft": 1500.0,
+                "lot_size": 5000.0,
+                "year_built": 2000,
+                "neighborhood": "suburb",
+                "property_type": "house",
+            },
+            {
+                "bedrooms": 1,
+                "bathrooms": 1.0,
+                "sqft": 500.0,
+                "lot_size": 1000.0,
+                "year_built": 1980,
+                "neighborhood": "downtown",
+                "property_type": "studio",
+            },
+        ]
+    )
 
 
 def test_feature_engineer_fit_transform(sample_df):
@@ -81,8 +97,13 @@ def test_rental_yields_bounded():
 
 def test_property_to_dataframe():
     data = {
-        "bedrooms": 2, "bathrooms": 1.5, "sqft": 900.0, "lot_size": 3000.0,
-        "year_built": 1995, "neighborhood": "midtown", "property_type": "condo",
+        "bedrooms": 2,
+        "bathrooms": 1.5,
+        "sqft": 900.0,
+        "lot_size": 3000.0,
+        "year_built": 1995,
+        "neighborhood": "midtown",
+        "property_type": "condo",
     }
     df = property_to_dataframe(data)
     assert isinstance(df, pd.DataFrame)
@@ -91,10 +112,19 @@ def test_property_to_dataframe():
 
 @pytest.mark.parametrize("beds,sqft", [(1, 400), (3, 1500), (5, 3200)])
 def test_sqft_per_bedroom_computed(beds, sqft):
-    df = pd.DataFrame([{
-        "bedrooms": beds, "bathrooms": 1.0, "sqft": float(sqft), "lot_size": 5000.0,
-        "year_built": 2000, "neighborhood": "suburb", "property_type": "house",
-    }])
+    df = pd.DataFrame(
+        [
+            {
+                "bedrooms": beds,
+                "bathrooms": 1.0,
+                "sqft": float(sqft),
+                "lot_size": 5000.0,
+                "year_built": 2000,
+                "neighborhood": "suburb",
+                "property_type": "house",
+            }
+        ]
+    )
     eng = PropertyFeatureEngineer()
     eng.fit(df)
     result = eng.transform(df)

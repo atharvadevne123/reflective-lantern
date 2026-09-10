@@ -9,9 +9,13 @@ from app.logging_config import JsonFormatter, configure_logging
 def test_json_formatter_produces_valid_json():
     formatter = JsonFormatter()
     record = logging.LogRecord(
-        name="test.logger", level=logging.INFO,
-        pathname="test.py", lineno=1,
-        msg="Hello %s", args=("world",), exc_info=None,
+        name="test.logger",
+        level=logging.INFO,
+        pathname="test.py",
+        lineno=1,
+        msg="Hello %s",
+        args=("world",),
+        exc_info=None,
     )
     output = formatter.format(record)
     parsed = json.loads(output)
@@ -23,9 +27,13 @@ def test_json_formatter_produces_valid_json():
 def test_json_formatter_includes_extra_fields():
     formatter = JsonFormatter(extra_fields={"service": "property-sage", "env": "test"})
     record = logging.LogRecord(
-        name="x", level=logging.DEBUG,
-        pathname="x.py", lineno=2,
-        msg="test", args=(), exc_info=None,
+        name="x",
+        level=logging.DEBUG,
+        pathname="x.py",
+        lineno=2,
+        msg="test",
+        args=(),
+        exc_info=None,
     )
     parsed = json.loads(formatter.format(record))
     assert parsed["service"] == "property-sage"
@@ -49,9 +57,13 @@ def test_configure_logging_json_mode():
 def test_json_formatter_timestamp_present():
     formatter = JsonFormatter()
     record = logging.LogRecord(
-        name="ts", level=logging.ERROR,
-        pathname="ts.py", lineno=5,
-        msg="boom", args=(), exc_info=None,
+        name="ts",
+        level=logging.ERROR,
+        pathname="ts.py",
+        lineno=5,
+        msg="boom",
+        args=(),
+        exc_info=None,
     )
     parsed = json.loads(formatter.format(record))
     assert "timestamp" in parsed

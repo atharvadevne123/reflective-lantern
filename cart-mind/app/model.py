@@ -116,7 +116,7 @@ def train_model(X: pd.DataFrame, y: pd.Series) -> tuple[Pipeline, dict[str, Any]
         "auc_min": round(float(scores.min()), 4),
         "auc_max": round(float(scores.max()), 4),
         "n_features": X.shape[1],
-        "n_samples": int(len(y)),
+        "n_samples": len(y),
         "positive_rate": round(float(y.mean()), 4),
         "model_version": model_version,
     }

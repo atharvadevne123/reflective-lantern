@@ -60,9 +60,16 @@ def test_neighbourhood_summary_unknown():
     assert "not found" in text.lower() or "No market report" in text
 
 
-@pytest.mark.parametrize("neighbourhood", [
-    "downtown", "waterfront", "suburb", "rural", "university",
-])
+@pytest.mark.parametrize(
+    "neighbourhood",
+    [
+        "downtown",
+        "waterfront",
+        "suburb",
+        "rural",
+        "university",
+    ],
+)
 def test_summary_all_known_neighbourhoods(neighbourhood):
     text = neighbourhood_summary(neighbourhood)
     assert len(text) > 20

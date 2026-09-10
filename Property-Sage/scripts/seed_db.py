@@ -39,6 +39,7 @@ def seed(n: int = 100) -> None:
         for _, row in X.iterrows():
             data = row.to_dict()
             from app.features import property_to_dataframe
+
             df = property_to_dataframe(data)
             output = predict(price_model, rental_model, df)
             log_prediction(db, str(uuid.uuid4()), data, output)

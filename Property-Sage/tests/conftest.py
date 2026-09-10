@@ -61,6 +61,7 @@ def sample_property():
 @pytest.fixture
 def sample_price_series():
     import numpy as np
+
     rng = np.random.default_rng(42)
     return list(rng.normal(loc=450_000, scale=50_000, size=100))
 
@@ -68,5 +69,6 @@ def sample_price_series():
 @pytest.fixture
 def sample_sqft_series():
     import numpy as np
+
     rng = np.random.default_rng(42)
     return list(rng.normal(loc=1500, scale=300, size=100))

@@ -135,7 +135,7 @@ def get_feature_importance(
 
     importances = rf_model.feature_importances_
     names = feature_names or [f"feature_{i}" for i in range(len(importances))]
-    ranked = sorted(zip(names, importances), key=lambda x: x[1], reverse=True)
+    ranked = sorted(zip(names, importances, strict=False), key=lambda x: x[1], reverse=True)
     return [{"feature": n, "importance": float(v)} for n, v in ranked[:20]]
 
 

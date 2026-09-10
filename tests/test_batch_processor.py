@@ -117,12 +117,15 @@ class TestBatchProcessorSummary:
         summary = bp.run(items)
         assert summary.total_results == len(items)
 
-    @pytest.mark.parametrize("n,size,expected_batches", [
-        (10, 5, 2),
-        (11, 5, 3),
-        (100, 10, 10),
-        (1, 100, 1),
-    ])
+    @pytest.mark.parametrize(
+        "n,size,expected_batches",
+        [
+            (10, 5, 2),
+            (11, 5, 3),
+            (100, 10, 10),
+            (1, 100, 1),
+        ],
+    )
     def test_batch_count_formula(self, n: int, size: int, expected_batches: int) -> None:
         bp = BatchProcessor(_identity, batch_size=size)
         summary = bp.run(list(range(n)))

@@ -40,8 +40,10 @@ def test_run_retrain_skips_when_no_drift():
 
 def test_run_retrain_completes_with_drift(tmp_path, monkeypatch):
     import pipelines.retrain_dag as dag
+
     monkeypatch.setattr(dag, "RETRAIN_LOG", tmp_path / "retrain_log.json")
     import app.model as m
+
     monkeypatch.setattr(m, "MODEL_DIR", tmp_path)
     monkeypatch.setattr(m, "PRICE_MODEL_PATH", tmp_path / "price_model.joblib")
     monkeypatch.setattr(m, "RENTAL_MODEL_PATH", tmp_path / "rental_model.joblib")
@@ -56,6 +58,7 @@ def test_run_retrain_completes_with_drift(tmp_path, monkeypatch):
 
 def test_get_retrain_history_empty(tmp_path, monkeypatch):
     import pipelines.retrain_dag as dag
+
     monkeypatch.setattr(dag, "RETRAIN_LOG", tmp_path / "nope.json")
     assert get_retrain_history() == []
 
@@ -64,11 +67,14 @@ def test_get_retrain_history_empty(tmp_path, monkeypatch):
 def test_retrain_accepts_various_sample_sizes(tmp_path, monkeypatch, n_samples):
     import app.model as m
     import pipelines.retrain_dag as dag
+
     monkeypatch.setattr(dag, "RETRAIN_LOG", tmp_path / "log.json")
     monkeypatch.setattr(m, "MODEL_DIR", tmp_path)
     monkeypatch.setattr(m, "PRICE_MODEL_PATH", tmp_path / "price_model.joblib")
     monkeypatch.setattr(m, "RENTAL_MODEL_PATH", tmp_path / "rental_model.joblib")
     monkeypatch.setattr(m, "METRICS_PATH", tmp_path / "metrics.json")
 
-    result = run_retrain_pipeline(n_samples=n_samples, drift_results=[{"drift_detected": True, "p_value": 0.01}])
+    result = run_retrain_pipeline(
+        n_samples=n_samples, drift_results=[{"drift_detected": True, "p_value": 0.01}]
+    )
     assert result["n_samples"] == n_samples

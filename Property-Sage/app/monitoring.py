@@ -41,7 +41,9 @@ def compute_drift(
         Dict with keys: ks_statistic, p_value, drift_detected, sample_size.
     """
     if len(current) < DRIFT_MIN_SAMPLE_SIZE:
-        logger.debug("Drift check skipped — only %d samples (need %d)", len(current), DRIFT_MIN_SAMPLE_SIZE)
+        logger.debug(
+            "Drift check skipped — only %d samples (need %d)", len(current), DRIFT_MIN_SAMPLE_SIZE
+        )
         return {
             "ks_statistic": 0.0,
             "p_value": 1.0,
@@ -57,7 +59,9 @@ def compute_drift(
     }
     logger.info(
         "KS drift check — stat=%.4f p=%.4f drift_detected=%s",
-        stat, p, result["drift_detected"],
+        stat,
+        p,
+        result["drift_detected"],
     )
     return result
 
@@ -91,7 +95,9 @@ def log_prediction(
     )
     db.add(record)
     db.commit()
-    logger.debug("Logged prediction request_id=%s price=%.2f", request_id, output["predicted_price"])
+    logger.debug(
+        "Logged prediction request_id=%s price=%.2f", request_id, output["predicted_price"]
+    )
 
 
 def check_prediction_drift(db: Session) -> dict[str, Any]:

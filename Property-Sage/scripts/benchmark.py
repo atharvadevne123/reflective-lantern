@@ -15,7 +15,12 @@ import time
 
 import numpy as np
 
-sys.path.insert(0, __import__("os").path.dirname(__import__("os").path.dirname(__import__("os").path.abspath(__file__))))
+sys.path.insert(
+    0,
+    __import__("os").path.dirname(
+        __import__("os").path.dirname(__import__("os").path.abspath(__file__))
+    ),
+)
 
 logging.basicConfig(level=logging.WARNING)
 

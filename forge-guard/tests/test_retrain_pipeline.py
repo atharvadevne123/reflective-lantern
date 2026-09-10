@@ -52,7 +52,7 @@ def test_task_engineer_features_no_nan(synthetic_df: pd.DataFrame):
 
     from pipelines.retrain_dag import task_engineer_features
 
-    X, y = task_engineer_features(synthetic_df)
+    X, _y = task_engineer_features(synthetic_df)
     assert not np.isnan(X).any()
 
 

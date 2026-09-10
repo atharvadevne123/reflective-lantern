@@ -51,11 +51,13 @@ def retrieve(query: str, top_k: int = 2) -> list[dict[str, object]]:
     results = []
     for idx in top_indices:
         doc_id = _doc_ids[idx]
-        results.append({
-            "id": doc_id,
-            "text": _texts.get(doc_id, ""),
-            "score": round(float(scores[idx]), 4),
-        })
+        results.append(
+            {
+                "id": doc_id,
+                "text": _texts.get(doc_id, ""),
+                "score": round(float(scores[idx]), 4),
+            }
+        )
         logger.debug("RAG hit — id=%s score=%.4f", doc_id, scores[idx])
     return results
 

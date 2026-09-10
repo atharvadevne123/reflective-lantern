@@ -111,7 +111,9 @@ def test_custom_correlation_id_echoed(client):
     assert response.headers.get("x-correlation-id") == "test-id-abc"
 
 
-@pytest.mark.parametrize("neighborhood", ["downtown", "waterfront", "rural", "university", "airport"])
+@pytest.mark.parametrize(
+    "neighborhood", ["downtown", "waterfront", "rural", "university", "airport"]
+)
 def test_predict_all_neighborhoods(client, sample_property, neighborhood):
     body = {**sample_property, "neighborhood": neighborhood}
     response = client.post("/api/v1/predict", json=body)
@@ -126,12 +128,15 @@ def test_predict_all_property_types(client, sample_property, property_type):
     assert response.status_code == 200
 
 
-@pytest.mark.parametrize("year_built,expected_status", [
-    (2020, 200),
-    (1900, 200),
-    (1799, 422),
-    (2025, 422),
-])
+@pytest.mark.parametrize(
+    "year_built,expected_status",
+    [
+        (2020, 200),
+        (1900, 200),
+        (1799, 422),
+        (2025, 422),
+    ],
+)
 def test_year_built_boundary(client, sample_property, year_built, expected_status):
     body = {**sample_property, "year_built": year_built}
     response = client.post("/api/v1/predict", json=body)

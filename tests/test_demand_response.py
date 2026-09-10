@@ -181,9 +181,16 @@ class TestEvaluateEventFields:
     def test_result_has_all_required_fields(self) -> None:
         result = evaluate_event(BASELINE, CURTAILED, committed_kwh=10.0)
         for field in (
-            "baseline_kwh", "actual_kwh", "curtailed_kwh", "curtailment_pct",
-            "committed_kwh", "shortfall_kwh", "incentive", "penalty",
-            "net_payment", "performance_score",
+            "baseline_kwh",
+            "actual_kwh",
+            "curtailed_kwh",
+            "curtailment_pct",
+            "committed_kwh",
+            "shortfall_kwh",
+            "incentive",
+            "penalty",
+            "net_payment",
+            "performance_score",
         ):
             assert hasattr(result, field)
 

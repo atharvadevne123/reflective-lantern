@@ -18,7 +18,10 @@ RETRAIN_LOG = Path("models/retrain_log.json")
 
 def should_retrain(drift_results: list[dict]) -> bool:
     """Return True if any monitored feature shows statistically significant drift."""
-    return any(d.get("drift_detected") and d.get("p_value", 1.0) < RETRAIN_THRESHOLD_DRIFT for d in drift_results)
+    return any(
+        d.get("drift_detected") and d.get("p_value", 1.0) < RETRAIN_THRESHOLD_DRIFT
+        for d in drift_results
+    )
 
 
 def run_retrain_pipeline(
@@ -47,7 +50,11 @@ def run_retrain_pipeline(
     }
 
     _append_log(record)
-    logger.info("Retraining complete — price_r2=%.4f rental_r2=%.4f", metrics["price_r2_mean"], metrics["rental_r2_mean"])
+    logger.info(
+        "Retraining complete — price_r2=%.4f rental_r2=%.4f",
+        metrics["price_r2_mean"],
+        metrics["rental_r2_mean"],
+    )
     return record
 
 

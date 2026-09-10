@@ -11,6 +11,7 @@ from app.model import _build_pipeline, get_metrics, predict, train_model
 def trained_models(tmp_path_factory):
     tmp = tmp_path_factory.mktemp("models")
     import app.model as m
+
     m.MODEL_DIR = tmp
     m.PRICE_MODEL_PATH = tmp / "price_model.joblib"
     m.RENTAL_MODEL_PATH = tmp / "rental_model.joblib"
@@ -42,13 +43,23 @@ def test_rental_r2_reasonable(trained_models):
 def test_predict_output_structure(trained_models):
     m, _ = trained_models
     import joblib
+
     price_model = joblib.load(m.PRICE_MODEL_PATH)
     rental_model = joblib.load(m.RENTAL_MODEL_PATH)
 
-    X = pd.DataFrame([{
-        "bedrooms": 3, "bathrooms": 2.0, "sqft": 1500.0, "lot_size": 6000.0,
-        "year_built": 2005, "neighborhood": "suburb", "property_type": "house",
-    }])
+    X = pd.DataFrame(
+        [
+            {
+                "bedrooms": 3,
+                "bathrooms": 2.0,
+                "sqft": 1500.0,
+                "lot_size": 6000.0,
+                "year_built": 2005,
+                "neighborhood": "suburb",
+                "property_type": "house",
+            }
+        ]
+    )
     result = predict(price_model, rental_model, X)
     assert "predicted_price" in result
     assert "predicted_rental_yield" in result
@@ -56,21 +67,34 @@ def test_predict_output_structure(trained_models):
     assert 0 < result["predicted_rental_yield"] < 1
 
 
-@pytest.mark.parametrize("n_beds,sqft,expected_min", [
-    (5, 3000, 100_000),
-    (1, 400, 50_000),
-    (3, 1500, 80_000),
-])
+@pytest.mark.parametrize(
+    "n_beds,sqft,expected_min",
+    [
+        (5, 3000, 100_000),
+        (1, 400, 50_000),
+        (3, 1500, 80_000),
+    ],
+)
 def test_price_scales_with_features(trained_models, n_beds, sqft, expected_min):
     m, _ = trained_models
     import joblib
+
     price_model = joblib.load(m.PRICE_MODEL_PATH)
     rental_model = joblib.load(m.RENTAL_MODEL_PATH)
 
-    X = pd.DataFrame([{
-        "bedrooms": n_beds, "bathrooms": 1.0, "sqft": sqft, "lot_size": sqft * 2,
-        "year_built": 2000, "neighborhood": "suburb", "property_type": "house",
-    }])
+    X = pd.DataFrame(
+        [
+            {
+                "bedrooms": n_beds,
+                "bathrooms": 1.0,
+                "sqft": sqft,
+                "lot_size": sqft * 2,
+                "year_built": 2000,
+                "neighborhood": "suburb",
+                "property_type": "house",
+            }
+        ]
+    )
     result = predict(price_model, rental_model, X)
     assert result["predicted_price"] >= expected_min
 

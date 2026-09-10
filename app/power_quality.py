@@ -57,9 +57,7 @@ def power_factor(real_power_kw: float, apparent_power_kva: float) -> float:
     if apparent_power_kva == 0:
         return 0.0
     if real_power_kw > apparent_power_kva:
-        raise ValueError(
-            f"real power ({real_power_kw} kW) cannot exceed apparent power ({apparent_power_kva} kVA)"
-        )
+        raise ValueError(f"real power ({real_power_kw} kW) cannot exceed apparent power ({apparent_power_kva} kVA)")
     return round(real_power_kw / apparent_power_kva, 4)
 
 

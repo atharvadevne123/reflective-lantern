@@ -103,13 +103,18 @@ async def correlation_id_middleware(request: Request, call_next):
     response.headers["X-Response-Time-Ms"] = str(duration_ms)
     logger.info(
         "method=%s path=%s status=%d duration_ms=%s correlation_id=%s client=%s",
-        request.method, request.url.path, response.status_code,
-        duration_ms, correlation_id, client_ip,
+        request.method,
+        request.url.path,
+        response.status_code,
+        duration_ms,
+        correlation_id,
+        client_ip,
     )
     return response
 
 
 # --- Request / Response schemas ---
+
 
 class PropertyRequest(BaseModel):
     """Input schema for a property valuation request."""
@@ -147,13 +152,18 @@ class PredictionResponse(BaseModel):
     request_id: str = Field(..., description="Unique identifier for this inference request.")
     predicted_price: float = Field(..., description="Estimated market value in USD.")
     predicted_rental_yield: float = Field(..., description="Estimated gross rental yield (0–1).")
-    estimated_annual_rental: float = Field(..., description="Estimated annual rental income in USD.")
-    estimated_monthly_rental: float = Field(..., description="Estimated monthly rental income in USD.")
+    estimated_annual_rental: float = Field(
+        ..., description="Estimated annual rental income in USD."
+    )
+    estimated_monthly_rental: float = Field(
+        ..., description="Estimated monthly rental income in USD."
+    )
     neighborhood: str
     property_type: str
 
 
 # --- Endpoints ---
+
 
 @app.get(
     "/api/v1/health",

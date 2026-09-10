@@ -18,8 +18,16 @@ logger = logging.getLogger(__name__)
 
 PROPERTY_TYPES: list[str] = ["apartment", "house", "condo", "townhouse", "studio"]
 NEIGHBORHOODS: list[str] = [
-    "downtown", "suburb", "midtown", "uptown", "waterfront",
-    "historic", "industrial", "university", "airport", "rural",
+    "downtown",
+    "suburb",
+    "midtown",
+    "uptown",
+    "waterfront",
+    "historic",
+    "industrial",
+    "university",
+    "airport",
+    "rural",
 ]
 
 REFERENCE_YEAR: int = 2024
@@ -54,9 +62,7 @@ class PropertyFeatureEngineer(BaseEstimator, TransformerMixin):
             self
         """
         self.neighborhood_price_map = (
-            X.groupby("neighborhood")["sqft"].mean().to_dict()
-            if "sqft" in X.columns
-            else {}
+            X.groupby("neighborhood")["sqft"].mean().to_dict() if "sqft" in X.columns else {}
         )
         self.type_encoder.fit(X["property_type"].fillna("apartment"))
         self.neighborhood_encoder.fit(X["neighborhood"].fillna("suburb"))
@@ -115,10 +121,12 @@ def build_feature_pipeline() -> Pipeline:
     Returns:
         sklearn Pipeline: ``features`` → ``scaler`` steps.
     """
-    return Pipeline([
-        ("features", PropertyFeatureEngineer()),
-        ("scaler", StandardScaler()),
-    ])
+    return Pipeline(
+        [
+            ("features", PropertyFeatureEngineer()),
+            ("scaler", StandardScaler()),
+        ]
+    )
 
 
 def generate_synthetic_data(
@@ -145,42 +153,61 @@ def generate_synthetic_data(
     year_built = rng.integers(1950, 2023, n)
 
     neighborhood_multipliers: dict[str, float] = {
-        "waterfront": 1.8, "downtown": 1.5, "midtown": 1.3, "uptown": 1.2,
-        "historic": 1.1, "suburb": 1.0, "university": 0.95, "airport": 0.85,
-        "industrial": 0.75, "rural": 0.65,
+        "waterfront": 1.8,
+        "downtown": 1.5,
+        "midtown": 1.3,
+        "uptown": 1.2,
+        "historic": 1.1,
+        "suburb": 1.0,
+        "university": 0.95,
+        "airport": 0.85,
+        "industrial": 0.75,
+        "rural": 0.65,
     }
     type_multipliers: dict[str, float] = {
-        "house": 1.3, "townhouse": 1.1, "condo": 1.0, "apartment": 0.9, "studio": 0.7,
+        "house": 1.3,
+        "townhouse": 1.1,
+        "condo": 1.0,
+        "apartment": 0.9,
+        "studio": 0.7,
     }
 
     base_price = 200_000
-    prices = np.array([
-        base_price
-        * (sqft[i] / 1000)
-        * neighborhood_multipliers[neighborhoods[i]]
-        * type_multipliers[property_types[i]]
-        * (0.98 ** max(0, 2024 - year_built[i]))
-        * rng.uniform(0.85, 1.15)
-        for i in range(n)
-    ])
+    prices = np.array(
+        [
+            base_price
+            * (sqft[i] / 1000)
+            * neighborhood_multipliers[neighborhoods[i]]
+            * type_multipliers[property_types[i]]
+            * (0.98 ** max(0, 2024 - year_built[i]))
+            * rng.uniform(0.85, 1.15)
+            for i in range(n)
+        ]
+    )
 
-    rental_yields = np.array([
-        max(0.02, min(0.12,
-            0.05 * neighborhood_multipliers[neighborhoods[i]]
-            * rng.uniform(0.9, 1.1)
-        ))
-        for i in range(n)
-    ])
+    rental_yields = np.array(
+        [
+            max(
+                0.02,
+                min(
+                    0.12, 0.05 * neighborhood_multipliers[neighborhoods[i]] * rng.uniform(0.9, 1.1)
+                ),
+            )
+            for i in range(n)
+        ]
+    )
 
-    df = pd.DataFrame({
-        "bedrooms": bedrooms,
-        "bathrooms": bathrooms,
-        "sqft": sqft,
-        "lot_size": lot_size,
-        "year_built": year_built,
-        "neighborhood": neighborhoods,
-        "property_type": property_types,
-    })
+    df = pd.DataFrame(
+        {
+            "bedrooms": bedrooms,
+            "bathrooms": bathrooms,
+            "sqft": sqft,
+            "lot_size": lot_size,
+            "year_built": year_built,
+            "neighborhood": neighborhoods,
+            "property_type": property_types,
+        }
+    )
 
     logger.info("Generated %d synthetic property records (seed=%d)", n, seed)
     return df, pd.Series(prices, name="price"), pd.Series(rental_yields, name="rental_yield")
@@ -193,9 +220,17 @@ def get_feature_names() -> list[str]:
         List of 11 feature column name strings.
     """
     return [
-        "bedrooms", "bathrooms", "sqft", "property_age", "property_age_sq",
-        "sqft_per_bedroom", "bath_bed_ratio", "lot_density",
-        "sqft_vs_neighborhood", "property_type_enc", "neighborhood_enc",
+        "bedrooms",
+        "bathrooms",
+        "sqft",
+        "property_age",
+        "property_age_sq",
+        "sqft_per_bedroom",
+        "bath_bed_ratio",
+        "lot_density",
+        "sqft_vs_neighborhood",
+        "property_type_enc",
+        "neighborhood_enc",
     ]
 
 
@@ -208,12 +243,16 @@ def property_to_dataframe(data: dict[str, Any]) -> pd.DataFrame:
     Returns:
         Single-row DataFrame suitable for model inference.
     """
-    return pd.DataFrame([{
-        "bedrooms": data["bedrooms"],
-        "bathrooms": data["bathrooms"],
-        "sqft": data["sqft"],
-        "lot_size": data.get("lot_size", 5000.0),
-        "year_built": data["year_built"],
-        "neighborhood": data["neighborhood"],
-        "property_type": data["property_type"],
-    }])
+    return pd.DataFrame(
+        [
+            {
+                "bedrooms": data["bedrooms"],
+                "bathrooms": data["bathrooms"],
+                "sqft": data["sqft"],
+                "lot_size": data.get("lot_size", 5000.0),
+                "year_built": data["year_built"],
+                "neighborhood": data["neighborhood"],
+                "property_type": data["property_type"],
+            }
+        ]
+    )

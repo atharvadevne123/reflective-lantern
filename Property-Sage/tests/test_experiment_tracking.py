@@ -1,6 +1,5 @@
 """Tests for the experiment tracking module."""
 
-
 import pytest
 
 from app.experiment_tracking import get_best_run, list_runs, log_run
@@ -10,6 +9,7 @@ from app.experiment_tracking import get_best_run, list_runs, log_run
 def tmp_experiment_dir(tmp_path, monkeypatch):
     monkeypatch.setenv("EXPERIMENT_DIR", str(tmp_path / "experiments"))
     import app.experiment_tracking as et
+
     et.EXPERIMENT_DIR = tmp_path / "experiments"
     yield
 
@@ -22,6 +22,7 @@ def test_log_run_returns_run_id():
 
 def test_log_run_persists_to_file():
     import app.experiment_tracking as et
+
     log_run("test_exp2", params={}, metrics={"rmse": 5000.0})
     log_path = et.EXPERIMENT_DIR / "test_exp2.jsonl"
     assert log_path.exists()
