@@ -1077,3 +1077,53 @@ def test_end_of_day_same_date(year: int, month: int, day: int) -> None:
     dt = datetime(year, month, day, tzinfo=UTC)
     result = end_of_day(dt)
     assert (result.year, result.month, result.day) == (year, month, day)
+
+
+@pytest.mark.parametrize("n_hours", [6, 12, 36])
+def test_generate_hourly_timestamps_extended(n_hours: int) -> None:
+    """generate_hourly_timestamps returns exactly n_hours timestamps for non-standard lengths."""
+    from datetime import UTC, datetime
+
+    from app.date_utils import generate_hourly_timestamps
+
+    start = datetime(2026, 6, 15, tzinfo=UTC)
+    result = generate_hourly_timestamps(start, n_hours)
+    assert len(result) == n_hours
+
+
+@pytest.mark.parametrize("days", [0, 1, 7, 30])
+def test_days_between_round_trip(days: int) -> None:
+    """days_between start and start+days equals days."""
+    from datetime import UTC, datetime, timedelta
+
+    from app.date_utils import days_between
+
+    start = datetime(2026, 1, 1, tzinfo=UTC)
+    end = start + timedelta(days=days)
+    assert days_between(start, end) == days
+
+
+@pytest.mark.parametrize("quarter,months", [(1, [1, 2, 3]), (2, [4, 5, 6]), (3, [7, 8, 9]), (4, [10, 11, 12])])
+def test_quarter_of_year_by_month(quarter: int, months: list[int]) -> None:
+    """quarter_of_year returns the correct quarter for each month."""
+    from datetime import UTC, datetime
+
+    from app.date_utils import quarter_of_year
+
+    for month in months:
+        dt = datetime(2026, month, 1, tzinfo=UTC)
+        assert quarter_of_year(dt) == quarter
+
+
+class TestIsLeapYearEdgeCases:
+    @pytest.mark.parametrize("year", [2000, 2004, 2020, 2024])
+    def test_known_leap_years(self, year: int) -> None:
+        from app.date_utils import is_leap_year
+
+        assert is_leap_year(year) is True
+
+    @pytest.mark.parametrize("year", [1900, 2001, 2023, 2025])
+    def test_known_non_leap_years(self, year: int) -> None:
+        from app.date_utils import is_leap_year
+
+        assert is_leap_year(year) is False
