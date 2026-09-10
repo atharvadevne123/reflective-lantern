@@ -1134,3 +1134,29 @@ class TestCompletenessScore:
         from app.data_quality import completeness_score
 
         assert completeness_score([], ["a"]) == pytest.approx(0.0)
+
+
+@pytest.mark.parametrize("n_records", [1, 5, 10])
+def test_completeness_score_all_filled_is_one(n_records: int) -> None:
+    """completeness_score is 1.0 when all required fields are present."""
+    records = [{"x": 1, "y": 2}] * n_records
+    assert completeness_score(records, ["x", "y"]) == pytest.approx(1.0)
+
+
+@pytest.mark.parametrize("n", [0, 1, 5])
+def test_detect_duplicates_unique_values(n: int) -> None:
+    """detect_duplicates finds no duplicates when all records are unique."""
+    records = [{"id": i, "val": i} for i in range(n)]
+    dups = detect_duplicates(records, key="id")
+    assert len(dups) == 0
+
+
+class TestBatchScoreEdgeCases:
+    def test_empty_batch_returns_empty(self) -> None:
+        result = batch_score([], required_fields=["a"])
+        assert result == []
+
+    def test_all_valid_records_have_high_scores(self) -> None:
+        records = [{"a": 1, "b": 2, "c": 3}] * 5
+        scores = batch_score(records, required_fields=["a", "b", "c"])
+        assert all(s >= 0.9 for s in scores)
