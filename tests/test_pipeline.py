@@ -155,3 +155,44 @@ def test_feature_columns_present_in_training_df(col: str) -> None:
     """Expected feature columns are present in the synthetic training dataframe."""
     df = _make_df(100)
     assert col in df.columns
+
+
+@pytest.mark.parametrize("n_samples", [50, 100, 300, 500])
+def test_train_model_various_sizes(n_samples: int) -> None:
+    """Model trains without error at various dataset sizes."""
+    from app.model import train_model
+
+    df = _make_df(n_samples)
+    bundle, metrics = train_model(df, df["consumption_kwh"])
+    assert "r2_mean" in metrics
+    assert isinstance(metrics["r2_mean"], float)
+
+
+def test_anomaly_score_returns_severity_field() -> None:
+    from app.features import make_feature_row
+    from app.model import score_anomaly, train_anomaly_model
+
+    df = _make_df(200)
+    bundle = train_anomaly_model(df)
+    row = make_feature_row(6, 0, 1, 0.0, 20.0, 0, 0, 0.0)
+    result = score_anomaly(bundle, row)
+    assert "severity" in result
+    assert result["severity"] in ("none", "warning", "critical")
+
+
+def test_train_model_r2_is_numeric() -> None:
+    from app.model import train_model
+
+    df = _make_df(150)
+    _, metrics = train_model(df, df["consumption_kwh"])
+    assert isinstance(metrics.get("r2_mean"), float)
+    assert not (metrics["r2_mean"] != metrics["r2_mean"])  # not NaN
+
+
+@pytest.mark.parametrize("hour", [0, 6, 12, 18, 23])
+def test_make_feature_row_hour_variants(hour: int) -> None:
+    from app.features import make_feature_row
+
+    row = make_feature_row(hour, 0, 1, 20.0, 50.0, 50, 0, 10.0)
+    assert row is not None
+    assert len(row) > 0
