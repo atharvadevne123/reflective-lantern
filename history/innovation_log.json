@@ -863,5 +863,43 @@
     ],
     "email_status": "failed_network_blocked (SMTP ports 587/465 unreachable \u2014 outbound is HTTPS-proxy-only; report committed to reports/ instead)",
     "report_path": "reports/Ops-Vision_report_2026-08-26.pdf"
+  },
+  {
+    "date": "2026-09-10",
+    "mode": "innovation",
+    "project": "signal-forge",
+    "description": "Real-time financial market regime detection and portfolio stress testing API with XGBoost+LightGBM+RandomForest ensemble, 5-factor sklearn feature pipeline, FAISS similarity search, KS-test drift monitoring, and Airflow retraining DAG.",
+    "pr_url": "https://github.com/atharvadevne123/reflective-lantern/pull/80",
+    "subdirectory": "signal-forge/",
+    "commits": 62,
+    "test_count": 197,
+    "tech_stack": [
+      "Python 3.11",
+      "FastAPI",
+      "XGBoost",
+      "LightGBM",
+      "RandomForest",
+      "sklearn Pipeline",
+      "FAISS",
+      "SQLAlchemy",
+      "PostgreSQL",
+      "Docker",
+      "Alembic",
+      "Airflow DAG",
+      "pytest",
+      "ruff",
+      "GitHub Actions CI"
+    ],
+    "archetype": "ML-powered Financial API + Drift Monitoring",
+    "features": [
+      "Soft-voting ensemble classifier (XGBoost + LightGBM + RandomForest)",
+      "5-factor feature pipeline: volatility, momentum, volume_ratio, correlation, beta",
+      "FAISS flat L2 index for historical period similarity search",
+      "KS-test drift detection per feature (p<0.05 threshold)",
+      "Airflow-compatible weekly retraining DAG",
+      "CorrelationIdMiddleware + RateLimitMiddleware (60 req/min)",
+      "Pydantic v2 request/response validation",
+      "197 tests across 17 modules, ruff clean"
+    ]
   }
 ]
