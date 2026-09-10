@@ -158,3 +158,29 @@ def test_configuration_error_can_be_chained() -> None:
 def test_prediction_error_various_lengths(msg: str) -> None:
     err = PredictionError(msg)
     assert msg in str(err)
+
+
+@pytest.mark.parametrize("exc_class", [
+    WattGuardError,
+    ModelNotLoadedError,
+    FeatureValidationError,
+    DriftDetectionError,
+    DatabaseError,
+    ConfigurationError,
+    PredictionError,
+])
+def test_all_exceptions_inherit_watt_guard_error(exc_class: type) -> None:
+    """Every domain exception is a WattGuardError."""
+    assert issubclass(exc_class, WattGuardError)
+
+
+@pytest.mark.parametrize("msg", ["msg1", "hello world", "x" * 100])
+def test_watt_guard_error_str_matches_message(msg: str) -> None:
+    err = WattGuardError(msg)
+    assert msg in str(err)
+
+
+def test_feature_validation_error_has_field_and_reason_attrs() -> None:
+    err = FeatureValidationError(field="temperature", reason="out of range")
+    assert err.field == "temperature"
+    assert err.reason == "out of range"
