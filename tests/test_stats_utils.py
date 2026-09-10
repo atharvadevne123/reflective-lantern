@@ -1480,3 +1480,57 @@ def test_geometric_mean_positive_for_positive_inputs(values) -> None:
 def test_geometric_mean_simple_cases(values, expected: float) -> None:
     """geometric_mean returns the correct value for simple known inputs."""
     assert geometric_mean(values) == pytest.approx(expected, rel=1e-6)
+
+
+@pytest.mark.parametrize("n", [5, 10, 20])
+def test_normalize_series_output_length_matches_input(n: int) -> None:
+    """normalize_series preserves the input length."""
+    from app.stats_utils import normalize_series
+
+    values = [float(i) for i in range(1, n + 1)]
+    result = normalize_series(values)
+    assert len(result) == n
+
+
+@pytest.mark.parametrize("n", [5, 10, 20])
+def test_exponential_moving_average_length_matches_input(n: int) -> None:
+    """exponential_moving_average returns a series of the same length."""
+    from app.stats_utils import exponential_moving_average
+
+    values = [float(i) for i in range(n)]
+    result = exponential_moving_average(values, alpha=0.3)
+    assert len(result) == n
+
+
+@pytest.mark.parametrize("window", [2, 3, 5])
+def test_rolling_std_length_matches_input(window: int) -> None:
+    """rolling_std returns a series whose length equals the input length."""
+    from app.stats_utils import rolling_std
+
+    values = [float(i) for i in range(20)]
+    result = rolling_std(values, window=window)
+    assert len(result) == len(values)
+
+
+class TestWinsorizeEdgeCases:
+    def test_constant_series_unchanged(self) -> None:
+        from app.stats_utils import winsorize
+
+        values = [5.0] * 20
+        result = winsorize(values)
+        assert result == pytest.approx(values)
+
+    @pytest.mark.parametrize("n", [10, 20, 50])
+    def test_output_length_matches_input(self, n: int) -> None:
+        from app.stats_utils import winsorize
+
+        values = [float(i) for i in range(n)]
+        result = winsorize(values)
+        assert len(result) == n
+
+    def test_no_values_exceed_upper_bound(self) -> None:
+        from app.stats_utils import winsorize
+
+        values = list(range(100))
+        result = winsorize([float(v) for v in values], lower_pct=5.0, upper_pct=95.0)
+        assert max(result) <= 95.0
