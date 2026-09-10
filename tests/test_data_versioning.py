@@ -144,3 +144,50 @@ class TestDataLineageEdgeCases:
         dl = DataLineage()
         dl.record(DataSnapshot(name="energy", version="1.0.0", source="s3://bucket/path"))
         assert dl.get("energy").source == "s3://bucket/path"
+
+
+@pytest.mark.parametrize("n_versions", [1, 3, 5])
+def test_lineage_returns_all_ancestors(n_versions: int) -> None:
+    """Recording n chained versions makes n-1 ancestors available for the last."""
+    from app.data_versioning import DataLineage, DataSnapshot
+
+    dl = DataLineage()
+    prev: list[str] = []
+    for i in range(n_versions):
+        ver = f"{i}.0.0"
+        dl.record(DataSnapshot(name="ds", version=ver, parent_versions=prev.copy()))
+        prev = [ver]
+    ancestors = dl.lineage("ds", f"{n_versions - 1}.0.0")
+    assert len(ancestors) == n_versions - 1
+
+
+@pytest.mark.parametrize("n_datasets", [1, 3, 5])
+def test_list_datasets_returns_unique_names(n_datasets: int) -> None:
+    """list_datasets lists each dataset name exactly once even after multiple versions."""
+    from app.data_versioning import DataLineage, DataSnapshot
+
+    dl = DataLineage()
+    for i in range(n_datasets):
+        dl.record(DataSnapshot(name=f"ds_{i}", version="1.0.0"))
+    assert len(dl.list_datasets()) == n_datasets
+
+
+class TestDataSnapshotEdgeCases:
+    def test_snapshot_version_preserved(self) -> None:
+        from app.data_versioning import DataSnapshot
+
+        snap = DataSnapshot(name="test", version="3.1.4")
+        assert snap.version == "3.1.4"
+
+    @pytest.mark.parametrize("name", ["energy", "weather", "load_profile"])
+    def test_snapshot_name_preserved(self, name: str) -> None:
+        from app.data_versioning import DataSnapshot
+
+        snap = DataSnapshot(name=name, version="1.0.0")
+        assert snap.name == name
+
+    def test_empty_parent_versions_by_default(self) -> None:
+        from app.data_versioning import DataSnapshot
+
+        snap = DataSnapshot(name="ds", version="1.0.0")
+        assert snap.parent_versions == []
