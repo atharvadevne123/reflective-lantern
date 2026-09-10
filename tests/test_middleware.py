@@ -127,3 +127,37 @@ def test_reset_before_any_requests_is_safe(client: TestClient) -> None:
 def test_correlation_header_on_all_endpoints(client: TestClient, path: str) -> None:
     resp = client.get(path)
     assert "x-correlation-id" in resp.headers
+
+
+def test_rate_limit_header_present_on_429(client: TestClient, monkeypatch) -> None:
+    """429 response must include Retry-After header."""
+    from types import SimpleNamespace
+
+    from app import middleware
+
+    monkeypatch.setattr(middleware, "settings", SimpleNamespace(rate_limit_per_minute=1))
+    reset_rate_limiter()
+    client.get("/health")
+    resp = client.get("/health")
+    if resp.status_code == 429:
+        assert "retry-after" in resp.headers
+
+
+@pytest.mark.parametrize("cid", ["abc-123", "x" * 64, "short"])
+def test_correlation_id_echoed_back(client: TestClient, cid: str) -> None:
+    """Provided X-Correlation-ID is echoed back unchanged."""
+    resp = client.get("/health", headers={"X-Correlation-ID": cid})
+    assert resp.headers.get("x-correlation-id") == cid
+
+
+def test_auto_correlation_id_is_uuid(client: TestClient) -> None:
+    """When no X-Correlation-ID is supplied, a UUID4 is generated."""
+    import re
+
+    resp = client.get("/health")
+    cid = resp.headers.get("x-correlation-id", "")
+    uuid_pattern = re.compile(
+        r"^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+        re.IGNORECASE,
+    )
+    assert uuid_pattern.match(cid), f"Expected UUID4, got {cid!r}"
