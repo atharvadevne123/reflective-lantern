@@ -147,3 +147,57 @@ class TestRandomSwapEdgeCases:
     def test_empty_tokens_returns_empty(self) -> None:
         rng = make_rng(0)
         assert random_swap([], prob=1.0, rng=rng) == []
+
+
+import pytest
+
+
+@pytest.mark.parametrize("n_tokens", [2, 5, 10])
+def test_random_deletion_output_at_most_input_length(n_tokens: int) -> None:
+    """random_deletion never adds tokens; output length <= input length."""
+    from app.data_augmentation import make_rng, random_deletion
+
+    tokens = [f"tok{i}" for i in range(n_tokens)]
+    rng = make_rng(42)
+    result = random_deletion(tokens, prob=0.3, rng=rng)
+    assert len(result) <= n_tokens
+
+
+@pytest.mark.parametrize("n_tokens", [2, 5, 10])
+def test_random_deletion_zero_prob_unchanged(n_tokens: int) -> None:
+    """random_deletion with prob=0 never removes any token."""
+    from app.data_augmentation import make_rng, random_deletion
+
+    tokens = [f"tok{i}" for i in range(n_tokens)]
+    rng = make_rng(0)
+    result = random_deletion(tokens, prob=0.0, rng=rng)
+    assert result == tokens
+
+
+@pytest.mark.parametrize("n_tokens", [2, 5, 10])
+def test_random_swap_preserves_length(n_tokens: int) -> None:
+    """random_swap always returns the same number of tokens as the input."""
+    from app.data_augmentation import make_rng, random_swap
+
+    tokens = [f"tok{i}" for i in range(n_tokens)]
+    rng = make_rng(7)
+    result = random_swap(tokens, prob=0.5, rng=rng)
+    assert len(result) == n_tokens
+
+
+class TestAugmentBatchEdgeCases:
+    @pytest.mark.parametrize("n", [1, 3, 5])
+    def test_batch_output_length_matches_input(self, n: int) -> None:
+        from app.data_augmentation import AugmentationConfig, augment_batch
+
+        cfg = AugmentationConfig(seed=0)
+        texts = [f"sample text {i}" for i in range(n)]
+        result = augment_batch(texts, cfg)
+        assert len(result) == n
+
+    def test_batch_results_are_strings(self) -> None:
+        from app.data_augmentation import AugmentationConfig, augment_batch
+
+        cfg = AugmentationConfig(seed=42)
+        result = augment_batch(["hello world", "foo bar"], cfg)
+        assert all(isinstance(r, str) for r in result)
