@@ -152,3 +152,51 @@ def test_config_constants_have_correct_types(key: str, expected_type) -> None:
     import app.constants as c
 
     assert isinstance(getattr(c, key), expected_type)
+
+
+@pytest.mark.parametrize(
+    "key",
+    [
+        "ZSCORE_THRESHOLD",
+        "IQR_MULTIPLIER",
+        "MIN_REFERENCE_SIZE",
+        "REFERENCE_WINDOW_SIZE",
+        "DRIFT_P_THRESHOLD",
+        "MAX_CONSUMPTION_KWH",
+        "MIN_CONSUMPTION_KWH",
+    ],
+)
+def test_statistical_constants_are_numeric(key: str) -> None:
+    """Statistical constants must be numeric (int or float)."""
+    import app.constants as c
+
+    assert isinstance(getattr(c, key), (int, float))
+
+
+@pytest.mark.parametrize(
+    "lower,upper",
+    [
+        ("MIN_CONSUMPTION_KWH", "MAX_CONSUMPTION_KWH"),
+        ("MIN_TEMPERATURE_C", "MAX_TEMPERATURE_C"),
+        ("MIN_HUMIDITY_PCT", "MAX_HUMIDITY_PCT"),
+    ],
+)
+def test_min_is_less_than_max(lower: str, upper: str) -> None:
+    """Every MIN_* constant is strictly less than its corresponding MAX_*."""
+    import app.constants as c
+
+    assert getattr(c, lower) < getattr(c, upper)
+
+
+class TestGradeThresholdOrdering:
+    def test_grade_thresholds_ordered(self) -> None:
+        import app.constants as c
+
+        assert c.EFFICIENCY_GRADE_C_THRESHOLD < c.EFFICIENCY_GRADE_B_THRESHOLD < c.EFFICIENCY_GRADE_A_THRESHOLD
+
+    @pytest.mark.parametrize("attr", ["EFFICIENCY_GRADE_A_THRESHOLD", "EFFICIENCY_GRADE_B_THRESHOLD", "EFFICIENCY_GRADE_C_THRESHOLD"])
+    def test_grade_thresholds_between_zero_and_one(self, attr: str) -> None:
+        import app.constants as c
+
+        value = getattr(c, attr)
+        assert 0.0 < value < 1.0
