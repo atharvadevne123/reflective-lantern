@@ -21,7 +21,7 @@ os.environ.setdefault("MODEL_VERSION", "test-1.0.0")
 os.environ.setdefault("BASE_ROOM_RATE", "150.0")
 os.environ.setdefault("RATE_LIMIT_PER_MINUTE", "1000")
 
-from app.database import Base  # noqa: E402
+from app.database import Base
 
 
 @pytest.fixture(scope="session")

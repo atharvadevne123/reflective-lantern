@@ -48,9 +48,7 @@ class TestBatterySpec:
     @pytest.mark.parametrize("efficiency", [0.0, -0.5, 1.5])
     def test_invalid_efficiency_rejected(self, efficiency: float) -> None:
         with pytest.raises(ValueError, match=r"round_trip_efficiency must be in \(0, 1\]"):
-            BatterySpec(
-                capacity_kwh=100.0, max_charge_kw=10.0, max_discharge_kw=10.0, round_trip_efficiency=efficiency
-            )
+            BatterySpec(capacity_kwh=100.0, max_charge_kw=10.0, max_discharge_kw=10.0, round_trip_efficiency=efficiency)
 
     @pytest.mark.parametrize("dod", [0.0, -0.5, 1.5])
     def test_invalid_depth_of_discharge_rejected(self, dod: float) -> None:
@@ -191,7 +189,9 @@ class TestBatterySpecEdgeCases:
     @pytest.mark.parametrize("dod", [0.1, 0.5, 0.8, 1.0])
     def test_usable_scales_with_dod(self, dod: float) -> None:
         spec = BatterySpec(
-            capacity_kwh=100.0, max_charge_kw=10.0, max_discharge_kw=10.0,
+            capacity_kwh=100.0,
+            max_charge_kw=10.0,
+            max_discharge_kw=10.0,
             max_depth_of_discharge=dod,
         )
         assert spec.usable_kwh == pytest.approx(100.0 * dod)
@@ -205,8 +205,11 @@ class TestPeakShaveEdgeCases:
     def test_result_fields_present(self) -> None:
         result = peak_shave(FLAT_LOAD, make_spec(), target_peak_kw=15.0)
         for field in (
-            "peak_before_kw", "peak_after_kw", "peak_reduction_kw",
-            "energy_discharged_kwh", "energy_charged_kwh",
+            "peak_before_kw",
+            "peak_after_kw",
+            "peak_reduction_kw",
+            "energy_discharged_kwh",
+            "energy_charged_kwh",
         ):
             assert hasattr(result, field)
 

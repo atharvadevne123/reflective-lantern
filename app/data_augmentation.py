@@ -39,7 +39,7 @@ def synonym_replace(tokens: list[str], synonyms: dict, prob: float, rng: random.
     Args:
         tokens: Input word list.
         synonyms: Mapping from token to list of replacement candidates.
-        prob: Per-token probability of replacement (0–1).
+        prob: Per-token probability of replacement (0-1).
         rng: Seeded random source for reproducibility.
 
     Returns:
@@ -59,7 +59,7 @@ def random_deletion(tokens: list[str], prob: float, rng: random.Random) -> list[
 
     Args:
         tokens: Input word list.
-        prob: Per-token deletion probability (0–1).
+        prob: Per-token deletion probability (0-1).
         rng: Seeded random source for reproducibility.
 
     Returns:
@@ -76,7 +76,7 @@ def random_swap(tokens: list[str], prob: float, rng: random.Random) -> list[str]
 
     Args:
         tokens: Input word list.
-        prob: Per-pair swap probability (0–1).
+        prob: Per-pair swap probability (0-1).
         rng: Seeded random source for reproducibility.
 
     Returns:

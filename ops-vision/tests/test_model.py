@@ -29,7 +29,7 @@ class TestGenerateSyntheticData:
         """Synthetic data generator works for multiple sample sizes."""
         from app.model import generate_synthetic_data
 
-        df, labels = generate_synthetic_data(n_samples=n_samples)
+        df, _labels = generate_synthetic_data(n_samples=n_samples)
         assert len(df) == n_samples
 
     def test_feature_columns_present(self):
@@ -114,7 +114,7 @@ class TestTrainAndEvaluate:
         """train() should work with different numbers of CV folds."""
         from app.model import train
 
-        model, metrics = train(transformed_X, synthetic_labels, cv_folds=cv_folds)
+        model, _metrics = train(transformed_X, synthetic_labels, cv_folds=cv_folds)
         assert isinstance(model, VotingClassifier)
 
 

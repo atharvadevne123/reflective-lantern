@@ -863,5 +863,52 @@
     ],
     "email_status": "failed_network_blocked (SMTP ports 587/465 unreachable \u2014 outbound is HTTPS-proxy-only; report committed to reports/ instead)",
     "report_path": "reports/Ops-Vision_report_2026-08-26.pdf"
+  },
+  {
+    "date": "2026-09-10",
+    "mode": "innovation",
+    "project": "Property-Sage",
+    "description": "Real estate property valuation and rental yield prediction platform using XGBoost/LightGBM/RF ensemble with RAG neighbourhood reports, KS-test drift detection, automated retraining, 5-fold CV, and full FastAPI REST API.",
+    "inspired_by": "PropTech / real estate ML domain (network policy blocked HN scrape \u2014 curated topic)",
+    "repo_url": "https://github.com/atharvadevne123/reflective-lantern/tree/property-sage/Property-Sage",
+    "location_note": "Built inside reflective-lantern/Property-Sage on branch property-sage \u2014 standalone repo creation returned 403 (session GitHub scope limited to this repository).",
+    "tech_stack": [
+      "Python 3.11",
+      "FastAPI",
+      "XGBoost",
+      "LightGBM",
+      "RandomForest",
+      "sklearn Pipeline",
+      "TF-IDF RAG",
+      "SQLAlchemy",
+      "PostgreSQL",
+      "Alembic",
+      "Docker + compose",
+      "KS-test drift detection",
+      "File-based experiment tracking",
+      "pytest",
+      "GitHub Actions CI",
+      "ruff"
+    ],
+    "optional_enhancements": [
+      "RAG (TF-IDF + cosine similarity)",
+      "automated retraining endpoint",
+      "drift detection (KS-test)",
+      "5-fold CV + R2/RMSE/MAE",
+      "structured JSON logging",
+      "rate limiting middleware"
+    ],
+    "endpoints": 9,
+    "file_count": 55,
+    "test_count": 98,
+    "tests_passed": true,
+    "lint_clean": true,
+    "commits": 60,
+    "bugs_found_and_fixed": [
+      "float(None) TypeError in log_prediction when lot_size is None (optional field) \u2014 fixed with or-default guard.",
+      "Drift detection test parametrization: mean shift of only 2 units still triggered drift at p=0.0002 with n=300 std=5 \u2014 test corrected to use identical distributions for False case."
+    ],
+    "email_status": "failed_network_blocked (SMTP ports 587/465 unreachable \u2014 outbound is HTTPS-proxy-only; report committed to reports/ instead)",
+    "report_path": "history/reports/Property-Sage_report_2026-09-10.md"
   }
 ]

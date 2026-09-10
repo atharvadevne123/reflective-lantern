@@ -38,7 +38,7 @@ class TestPrepareSupervisedData:
         from app.forecaster import prepare_supervised_data
 
         series = make_sine_series(200)
-        X, y = prepare_supervised_data(series, lookback=lookback, horizon=horizon)
+        X, _y = prepare_supervised_data(series, lookback=lookback, horizon=horizon)
         assert len(X) == 200 - lookback - horizon + 1
 
 
@@ -77,7 +77,7 @@ class TestForecastWithConfidence:
         series = make_sine_series()
         model, _ = fit_channel_forecaster(series, lookback=20)
         fc = forecast_with_confidence(model, series[-20:], steps=3)
-        for lo, pt, hi in zip(fc["lower"], fc["point"], fc["upper"]):
+        for lo, pt, hi in zip(fc["lower"], fc["point"], fc["upper"], strict=False):
             assert lo <= pt <= hi
 
 

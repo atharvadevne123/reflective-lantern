@@ -129,7 +129,7 @@ def test_train_on_varying_sample_sizes(n_samples):
     feat_pipe = build_feature_pipeline()
     X = feat_pipe.fit_transform(df[[c for c in df.columns if c != "defect"]])
     y = df["defect"].values
-    pipe, metrics = train_model(X, y, cv_folds=2)
+    _pipe, metrics = train_model(X, y, cv_folds=2)
     assert metrics["n_samples"] == n_samples
 
 

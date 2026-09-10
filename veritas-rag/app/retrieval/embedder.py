@@ -12,6 +12,7 @@ pipeline is agnostic to the backend.
 from __future__ import annotations
 
 import hashlib
+import itertools
 import struct
 from typing import Protocol
 
@@ -47,7 +48,7 @@ class HashingEmbedder:
     def _features(self, text: str) -> list[str]:
         tokens = tokenize(text)
         features = [f"w:{t}" for t in tokens]
-        features += [f"b:{a}_{b}" for a, b in zip(tokens, tokens[1:], strict=False)]
+        features += [f"b:{a}_{b}" for a, b in itertools.pairwise(tokens)]
         compact = "".join(tokens)
         features += [f"c:{compact[i : i + 3]}" for i in range(max(0, len(compact) - 2))]
         return features

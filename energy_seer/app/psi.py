@@ -164,7 +164,7 @@ __all__ = [
     "PSI_MODERATE_THRESHOLD",
     "PSI_STABLE_THRESHOLD",
     "compute_psi",
+    "psi_feature_rank",
     "psi_report",
     "psi_series_trend",
-    "psi_feature_rank",
 ]

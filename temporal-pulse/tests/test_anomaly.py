@@ -172,7 +172,7 @@ class TestNormaliseScores:
         from app.anomaly import normalise_scores
 
         result = normalise_scores(scores)
-        for r, e in zip(result, expected):
+        for r, e in zip(result, expected, strict=False):
             assert r == pytest.approx(e)
 
 

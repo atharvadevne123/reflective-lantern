@@ -170,7 +170,7 @@ def train_model(X: pd.DataFrame, y: np.ndarray) -> tuple[Pipeline, Pipeline, dic
         "lgbm_auc_mean": float(lgbm_cv.mean()),
         "lgbm_auc_std": float(lgbm_cv.std()),
         "n_features": 18,
-        "n_samples": int(len(y)),
+        "n_samples": len(y),
     }
     METRICS_PATH.write_text(json.dumps(metrics, indent=2))
     logger.info(

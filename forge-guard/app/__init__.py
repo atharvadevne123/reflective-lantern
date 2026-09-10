@@ -10,15 +10,15 @@ from app.monitoring import compute_drift, defect_rate, log_prediction, run_drift
 
 __all__ = [
     "__version__",
-    "init_db",
     "build_feature_pipeline",
-    "engineer_single",
-    "generate_synthetic_data",
-    "load_model",
-    "predict",
-    "train_model",
     "compute_drift",
     "defect_rate",
+    "engineer_single",
+    "generate_synthetic_data",
+    "init_db",
+    "load_model",
     "log_prediction",
+    "predict",
     "run_drift_check",
+    "train_model",
 ]
