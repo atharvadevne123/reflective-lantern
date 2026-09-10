@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from app.profiler import call_count, get_stats, reset_stats, timed, total_calls, tracked, tracked_names
+from app.profiler import get_stats, reset_stats, timed, tracked
 
 
 class TestTimed:

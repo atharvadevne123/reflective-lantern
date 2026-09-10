@@ -9,12 +9,10 @@ import pytest
 from app.geo_utils import (
     BoundingBox,
     Coordinate,
-    bearing,
     bounding_box_of,
     haversine,
     midpoint,
     nearest_neighbor,
-    within_radius,
 )
 
 LONDON = Coordinate(51.5074, -0.1278)

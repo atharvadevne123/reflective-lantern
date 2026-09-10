@@ -121,11 +121,9 @@ def reset_stats(label: str | None = None) -> None:
         label: Specific label to reset, or None to reset all.
     """
     if label is not None:
-        if label in _registry:
-            _registry[label] = _Stats()
+        _registry.pop(label, None)
     else:
-        for key in list(_registry):
-            _registry[key] = _Stats()
+        _registry.clear()
 
 
 def tracked_names() -> list[str]:

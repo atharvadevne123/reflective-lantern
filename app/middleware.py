@@ -42,7 +42,8 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
             The downstream response, or a 429 JSON response when the client
             has exceeded the configured rate limit.
         """
-        ip = request.client.host if request.client else "unknown"
+        forwarded = request.headers.get("x-forwarded-for", "").split(",")[0].strip()
+        ip = forwarded or (request.client.host if request.client else "unknown")
         now = time.time()
         limit = settings.rate_limit_per_minute
         window = [t for t in _request_counts[ip] if now - t < 60]

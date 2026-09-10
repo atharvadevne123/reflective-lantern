@@ -9,8 +9,6 @@ from app.pagination import (
     cursor_paginate,
     decode_cursor,
     encode_cursor,
-    last_page_items,
-    page_range,
     paginate,
 )
 

@@ -5,7 +5,6 @@ from __future__ import annotations
 import pytest
 
 from app.compression import (
-    compress_and_measure,
     compress_json,
     compression_ratio,
     decompress_json,

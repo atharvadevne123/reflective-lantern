@@ -6,11 +6,9 @@ import pytest
 
 from app.battery import (
     BatterySpec,
-    break_even_cycles,
     demand_charge_saving,
     peak_shave,
     required_capacity_kwh,
-    round_trip_losses_kwh,
 )
 
 SPIKY_LOAD = [10.0, 10.0, 50.0, 60.0, 55.0, 10.0, 10.0]
