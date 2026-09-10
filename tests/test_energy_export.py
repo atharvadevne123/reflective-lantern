@@ -774,3 +774,35 @@ class TestRecordsKwhRange:
         from app.energy_export import records_kwh_range
 
         assert records_kwh_range([]) is None
+
+
+@pytest.mark.parametrize("n", [1, 5, 10])
+def test_records_to_json_parses_as_list(n: int) -> None:
+    """records_to_json output parses back to a list of the same length."""
+    records = [{"consumption_kwh": float(i), "hour": i % 24} for i in range(n)]
+    result = json.loads(records_to_json(records))
+    assert isinstance(result, list)
+    assert len(result) == n
+
+
+@pytest.mark.parametrize("n", [2, 5, 10])
+def test_normalize_kwh_output_length_matches_input(n: int) -> None:
+    """normalize_kwh returns the same number of records as input."""
+    records = [{"consumption_kwh": float(i + 1)} for i in range(n)]
+    result = normalize_kwh(records)
+    assert len(result) == n
+
+
+class TestFilterRecordsEdgeCases:
+    def test_empty_input_returns_empty(self) -> None:
+        assert filter_records([], min_kwh=0.0) == []
+
+    def test_all_above_threshold_kept(self) -> None:
+        records = [{"consumption_kwh": 5.0}] * 3
+        result = filter_records(records, min_kwh=1.0)
+        assert len(result) == 3
+
+    def test_all_below_threshold_filtered(self) -> None:
+        records = [{"consumption_kwh": 0.5}] * 4
+        result = filter_records(records, min_kwh=1.0)
+        assert len(result) == 0
