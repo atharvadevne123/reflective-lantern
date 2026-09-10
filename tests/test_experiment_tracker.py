@@ -141,3 +141,43 @@ class TestExperimentAssignmentConsistency:
             exp.assign(str(i))
         dist = exp.assignment_distribution()
         assert set(dist.keys()) == {"control", "treatment"}
+
+
+@pytest.mark.parametrize("n_subjects", [10, 50, 100])
+def test_assignment_distribution_sums_to_n(n_subjects: int) -> None:
+    """The sum of assignment counts equals the number of subjects assigned."""
+    from app.experiment_tracker import CONTROL, TREATMENT, Experiment
+
+    exp = Experiment("sum_test", [CONTROL, TREATMENT])
+    for i in range(n_subjects):
+        exp.assign(str(i))
+    dist = exp.assignment_distribution()
+    assert sum(dist.values()) == n_subjects
+
+
+@pytest.mark.parametrize("variant_name", ["control", "treatment"])
+def test_experiment_result_variant_name_preserved(variant_name: str) -> None:
+    """ExperimentResult stores the variant name it was created with."""
+    from app.experiment_tracker import ExperimentResult
+
+    result = ExperimentResult(subject_id="user-1", variant=variant_name)
+    assert result.variant == variant_name
+
+
+class TestExperimentRegistryEdgeCases:
+    def test_registry_starts_empty(self) -> None:
+        from app.experiment_tracker import ExperimentRegistry
+
+        reg = ExperimentRegistry()
+        assert reg.list_experiments() == []
+
+    @pytest.mark.parametrize("n", [1, 3, 5])
+    def test_registry_lists_all_registered(self, n: int) -> None:
+        from app.experiment_tracker import CONTROL, Experiment, ExperimentRegistry, Variant
+
+        reg = ExperimentRegistry()
+        for i in range(n):
+            treatment = Variant(f"treatment_{i}", weight=0.5)
+            exp = Experiment(f"exp_{i}", [CONTROL, treatment])
+            reg.register(exp)
+        assert len(reg.list_experiments()) == n
