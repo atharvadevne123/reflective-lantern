@@ -163,7 +163,7 @@ def test_train_model_various_sizes(n_samples: int) -> None:
     from app.model import train_model
 
     df = _make_df(n_samples)
-    bundle, metrics = train_model(df, df["consumption_kwh"])
+    _bundle, metrics = train_model(df, df["consumption_kwh"])
     assert "r2_mean" in metrics
     assert isinstance(metrics["r2_mean"], float)
 
@@ -186,7 +186,7 @@ def test_train_model_r2_is_numeric() -> None:
     df = _make_df(150)
     _, metrics = train_model(df, df["consumption_kwh"])
     assert isinstance(metrics.get("r2_mean"), float)
-    assert not (metrics["r2_mean"] != metrics["r2_mean"])  # not NaN
+    assert metrics["r2_mean"] == metrics["r2_mean"]  # not NaN
 
 
 @pytest.mark.parametrize("hour", [0, 6, 12, 18, 23])
