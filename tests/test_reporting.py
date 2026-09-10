@@ -1093,3 +1093,34 @@ def test_demand_variance_report_has_keys(n_hours: int) -> None:
     result = demand_variance_report(readings)
     assert "mean" in result
     assert "variance" in result
+
+
+@pytest.mark.parametrize("n", [1, 5, 10, 24])
+def test_top_consumption_hours_count(n: int) -> None:
+    """top_consumption_hours returns at most n hours."""
+    hourly = [float(i) for i in range(24)]
+    result = top_consumption_hours(hourly, top_n=n)
+    assert len(result) <= n
+
+
+@pytest.mark.parametrize("savings_pct", [10.0, 25.0, 50.0])
+def test_estimate_savings_pct_field(savings_pct: float) -> None:
+    """estimate_savings.savings_pct equals expected reduction percentage."""
+    factor = 1 - savings_pct / 100.0
+    baseline = [10.0] * 10
+    optimised = [10.0 * factor] * 10
+    result = estimate_savings(optimised, baseline)
+    assert result["savings_pct"] == pytest.approx(savings_pct, rel=1e-3)
+
+
+class TestRollingSavingsSummaryEdgeCases:
+    def test_equal_series_has_zero_savings(self) -> None:
+        series = [5.0] * 12
+        result = rolling_savings_summary(series, series, window=4)
+        assert all(s == pytest.approx(0.0) for s in result)
+
+    def test_output_length_matches_input(self) -> None:
+        baseline = [10.0] * 20
+        optimised = [8.0] * 20
+        result = rolling_savings_summary(optimised, baseline, window=5)
+        assert len(result) == len(baseline)
