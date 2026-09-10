@@ -137,3 +137,33 @@ class TestEstimateCostEdgeCases:
         spec = ResourceSpec(cpu_cores=2, memory_gb=4, duration_hours=0.25)
         bd = estimate_cost(spec, cpu_rate=1.0, memory_rate=0.0, gpu_rate=0.0)
         assert bd.cpu_cost_usd == pytest.approx(0.5)  # 2 cores * 0.25h
+
+
+@pytest.mark.parametrize("cpu", [1, 2, 4, 8, 16])
+def test_cpu_cost_scales_linearly(cpu: int) -> None:
+    """CPU cost is proportional to core count for fixed rate and duration."""
+    spec = ResourceSpec(cpu_cores=cpu, memory_gb=1, duration_hours=1)
+    bd = estimate_cost(spec, cpu_rate=1.0, memory_rate=0.0, gpu_rate=0.0)
+    assert bd.cpu_cost_usd == pytest.approx(float(cpu))
+
+
+@pytest.mark.parametrize("gpu", [0, 1, 2, 4])
+def test_gpu_cost_scales_with_count(gpu: int) -> None:
+    """GPU cost is proportional to GPU count."""
+    spec = ResourceSpec(cpu_cores=1, memory_gb=1, gpu_count=gpu, duration_hours=1)
+    bd = estimate_cost(spec, cpu_rate=0.0, memory_rate=0.0, gpu_rate=1.0)
+    assert bd.gpu_cost_usd == pytest.approx(float(gpu))
+
+
+class TestMonthlyEstimateEdgeCases:
+    def test_monthly_at_8h_day_scales_correctly(self) -> None:
+        spec = ResourceSpec(cpu_cores=1, memory_gb=1, duration_hours=1)
+        bd = monthly_estimate(spec, hours_per_day=8, days_per_month=30)
+        assert bd.total_usd == pytest.approx(estimate_cost(spec).total_usd * 8 * 30)
+
+    @pytest.mark.parametrize("days", [1, 7, 30])
+    def test_monthly_days_scales_total(self, days: int) -> None:
+        spec = ResourceSpec(cpu_cores=2, memory_gb=4, duration_hours=1)
+        bd = monthly_estimate(spec, hours_per_day=1, days_per_month=days)
+        single_day = estimate_cost(spec)
+        assert bd.total_usd == pytest.approx(single_day.total_usd * days)
