@@ -177,3 +177,32 @@ class TestBuildLoadProfileFields:
         profile = build_load_profile([7.0])
         assert profile.profile_class == "flat"
         assert profile.load_factor == pytest.approx(1.0)
+
+
+@pytest.mark.parametrize("n", [1, 4, 12, 24])
+def test_build_load_profile_works_for_various_lengths(n: int) -> None:
+    """build_load_profile succeeds for different series lengths."""
+    profile = build_load_profile([5.0] * n)
+    assert profile is not None
+    assert profile.load_factor > 0.0
+
+
+@pytest.mark.parametrize("peak_mult", [1.1, 2.0, 5.0, 10.0])
+def test_peaky_profile_class_for_high_peak(peak_mult: float) -> None:
+    """Profiles with a large peak vs average are classified as peaky or moderate."""
+    series = [1.0] * 23 + [peak_mult * 23]
+    profile = build_load_profile(series)
+    assert profile.profile_class in ("peaky", "moderate", "flat")
+
+
+class TestMaxRampRateEdgeCases:
+    def test_constant_series_ramp_is_zero(self) -> None:
+        assert max_ramp_rate([5.0] * 8) == pytest.approx(0.0)
+
+    def test_single_element_ramp_is_zero(self) -> None:
+        assert max_ramp_rate([7.0]) == pytest.approx(0.0)
+
+    @pytest.mark.parametrize("step", [1.0, 5.0, 10.0])
+    def test_linear_ramp_equals_step(self, step: float) -> None:
+        series = [0.0, step, 2 * step, 3 * step]
+        assert max_ramp_rate(series) == pytest.approx(step)
