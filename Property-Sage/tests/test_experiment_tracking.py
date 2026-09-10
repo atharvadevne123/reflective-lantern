@@ -1,6 +1,5 @@
 """Tests for the experiment tracking module."""
 
-import os
 
 import pytest
 

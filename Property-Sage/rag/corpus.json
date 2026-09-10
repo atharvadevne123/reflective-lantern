@@ -1,0 +1,42 @@
+[
+  {
+    "id": "downtown",
+    "text": "Downtown is the most densely developed neighbourhood with the highest price per sqft. Properties are predominantly condos and apartments built between 1980 and 2020. Rental demand is very strong due to office proximity, yielding 4.5\u20136% gross annually."
+  },
+  {
+    "id": "waterfront",
+    "text": "Waterfront commands a 80% premium over the city average. Luxury houses and high-rise condos dominate. Rental yields are lower (3\u20134.5%) but capital appreciation averages 6% per year. Strong demand from high-income renters and short-term letting platforms."
+  },
+  {
+    "id": "suburb",
+    "text": "Suburb is the reference neighbourhood for family homes. Median price sits near the city average. Three-bedroom houses built in the 1990s make up the majority of stock. Rental yields of 4.8\u20135.5% are the most stable in the market."
+  },
+  {
+    "id": "midtown",
+    "text": "Midtown is a mixed-use area popular with young professionals. A 30% premium over suburb reflects proximity to transit and amenities. Townhouses and condos are typical. Gross rental yields range from 4.2\u20135.2%."
+  },
+  {
+    "id": "uptown",
+    "text": "Uptown is an established residential area with well-maintained detached houses. Properties command a 20% premium over the city average. Rental yields are moderate at 4\u20135%, but vacancy rates are very low at under 2%."
+  },
+  {
+    "id": "historic",
+    "text": "Historic district properties carry a heritage premium of 10% over comparable houses elsewhere. Renovation costs can be high due to preservation requirements. Rental demand from academics and professionals is consistent, yielding 4.5\u20135.5%."
+  },
+  {
+    "id": "university",
+    "text": "University neighbourhood is dominated by student accommodation. Studios and 1-bedroom apartments are priced 5% below the city average but generate the highest gross yields in the market at 6.5\u20138% due to consistent occupancy during academic terms."
+  },
+  {
+    "id": "airport",
+    "text": "Airport zone offers the lowest entry prices at 15% below average. It attracts logistics workers and short-term corporate lettings. Gross rental yields are 6\u20137% but capital appreciation is muted. Noise blight must be factored in."
+  },
+  {
+    "id": "industrial",
+    "text": "Industrial fringe has seen recent residential development targeting first-time buyers. Prices are 25% below the city average. Rental yields of 6.5\u20137.5% are attractive, though tenants are sensitive to the industrial character of adjacent lots."
+  },
+  {
+    "id": "rural",
+    "text": "Rural properties offer the most affordable entry point at 35% below city average. Land and lot sizes are large. Rental demand is thin and seasonal, with gross yields of 3.5\u20135%. Best suited to owner-occupiers or holiday-let investors."
+  }
+]

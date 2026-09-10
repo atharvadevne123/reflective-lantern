@@ -1,6 +1,5 @@
 """Tests for the retrain API endpoint."""
 
-import pytest
 
 
 def test_retrain_requires_api_key(client):

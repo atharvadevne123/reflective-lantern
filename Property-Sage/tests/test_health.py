@@ -1,6 +1,5 @@
 """Tests for the health check endpoints."""
 
-import pytest
 
 from app.health import deep_health_check
 

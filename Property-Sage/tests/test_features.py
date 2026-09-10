@@ -1,6 +1,5 @@
 """Feature engineering tests."""
 
-import numpy as np
 import pandas as pd
 import pytest
 
@@ -39,7 +38,7 @@ def test_feature_names_match_output(sample_df):
 
 def test_property_age_computed(sample_df):
     eng = PropertyFeatureEngineer()
-    result = eng.fit(sample_df).transform(sample_df)
+    eng.fit(sample_df).transform(sample_df)
     # property_age col is index 3 after scaler — check via raw transform
     raw = eng.transform(sample_df)
     assert "property_age" in raw.columns

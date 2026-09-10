@@ -17,7 +17,7 @@ import uuid
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from app.database import SessionLocal, init_db
-from app.features import NEIGHBORHOODS, PROPERTY_TYPES, generate_synthetic_data
+from app.features import generate_synthetic_data
 from app.model import load_models, predict
 from app.monitoring import log_prediction
 

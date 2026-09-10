@@ -12,9 +12,7 @@ import os
 from typing import Any
 
 from fastapi import APIRouter, Header, HTTPException, status
-from sqlalchemy.orm import Session
 
-from app.monitoring import check_prediction_drift
 from pipelines.retrain_dag import get_retrain_history, run_retrain_pipeline
 
 logger = logging.getLogger(__name__)

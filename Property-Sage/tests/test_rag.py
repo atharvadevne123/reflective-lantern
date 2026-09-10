@@ -3,7 +3,6 @@
 import pytest
 
 from rag.ingest import NEIGHBOURHOOD_DOCS, ingest_documents, load_documents
-from rag.index import build_index
 from rag.retriever import neighbourhood_summary, retrieve
 
 

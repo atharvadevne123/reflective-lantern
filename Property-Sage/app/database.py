@@ -2,8 +2,8 @@
 
 import logging
 import os
+from collections.abc import Generator
 from datetime import datetime
-from typing import Generator
 
 from sqlalchemy import Column, DateTime, Float, Integer, String, Text, create_engine
 from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker

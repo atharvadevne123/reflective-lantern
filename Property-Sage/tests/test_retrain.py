@@ -62,8 +62,8 @@ def test_get_retrain_history_empty(tmp_path, monkeypatch):
 
 @pytest.mark.parametrize("n_samples", [100, 200, 500])
 def test_retrain_accepts_various_sample_sizes(tmp_path, monkeypatch, n_samples):
-    import pipelines.retrain_dag as dag
     import app.model as m
+    import pipelines.retrain_dag as dag
     monkeypatch.setattr(dag, "RETRAIN_LOG", tmp_path / "log.json")
     monkeypatch.setattr(m, "MODEL_DIR", tmp_path)
     monkeypatch.setattr(m, "PRICE_MODEL_PATH", tmp_path / "price_model.joblib")
