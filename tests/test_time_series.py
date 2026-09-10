@@ -1661,3 +1661,59 @@ def test_load_factor_known_cases(values, expected_load_factor) -> None:
 
     result = load_factor(values)
     assert result == expected_load_factor
+
+
+@pytest.mark.parametrize("n", [24, 48, 72])
+def test_cumulative_sum_length_matches_input(n: int) -> None:
+    """cumulative_sum returns a series of the same length as the input."""
+    from app.time_series import cumulative_sum
+
+    values = [1.0] * n
+    result = cumulative_sum(values)
+    assert len(result) == n
+
+
+@pytest.mark.parametrize("window", [2, 3, 5])
+def test_simple_moving_average_length_matches_input(window: int) -> None:
+    """simple_moving_average returns a series of the same length as the input."""
+    from app.time_series import simple_moving_average
+
+    values = list(range(20))
+    result = simple_moving_average([float(v) for v in values], window=window)
+    assert len(result) == len(values)
+
+
+@pytest.mark.parametrize("n", [5, 10, 20])
+def test_moving_max_is_at_least_moving_min(n: int) -> None:
+    """Every element of moving_max is >= the corresponding element of moving_min."""
+    from app.time_series import moving_max, moving_min
+
+    values = [float(i % 5) for i in range(n)]
+    mx = moving_max(values, window=3)
+    mn = moving_min(values, window=3)
+    assert all(hi >= lo for hi, lo in zip(mx, mn, strict=False))
+
+
+class TestClipOutliersEdgeCases:
+    def test_clipping_constant_series_unchanged(self) -> None:
+        from app.time_series import clip_outliers
+
+        values = [5.0] * 20
+        result = clip_outliers(values)
+        assert result == pytest.approx(values)
+
+    @pytest.mark.parametrize("n", [10, 20, 50])
+    def test_clip_output_length_matches_input(self, n: int) -> None:
+        from app.time_series import clip_outliers
+
+        values = list(range(n))
+        result = clip_outliers([float(v) for v in values])
+        assert len(result) == n
+
+    def test_no_values_outside_percentile_range(self) -> None:
+        from app.time_series import clip_outliers
+
+        values = list(range(100))
+        result = clip_outliers([float(v) for v in values], lower_pct=10.0, upper_pct=90.0)
+        assert min(result) >= 9.0
+        assert max(result) <= 90.0
