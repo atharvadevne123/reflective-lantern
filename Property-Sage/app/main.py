@@ -18,6 +18,7 @@ from sqlalchemy.orm import Session
 
 from app.database import get_db, init_db
 from app.features import NEIGHBORHOODS, PROPERTY_TYPES, property_to_dataframe
+from app.health import deep_health_check
 from app.model import get_metrics, load_models, predict
 from app.monitoring import check_prediction_drift, get_prediction_stats, log_prediction
 from rag.retriever import neighbourhood_summary, retrieve
@@ -164,6 +165,27 @@ async def health() -> dict[str, str]:
         Dict with status, service name, and version string.
     """
     return {"status": "ok", "service": "property-sage", "version": "1.0.0"}
+
+
+@app.get(
+    "/api/v1/health/deep",
+    tags=["System"],
+    summary="Deep health check with DB and model diagnostics",
+)
+async def health_deep(db: Session = Depends(get_db)) -> dict[str, Any]:
+    """Run a deep health check inspecting DB, model files, and in-memory state.
+
+    Args:
+        db: Injected database session.
+
+    Returns:
+        Dict with per-component health statuses and an overall status field.
+    """
+    return deep_health_check(
+        db=db,
+        price_model_loaded=_price_model is not None,
+        rental_model_loaded=_rental_model is not None,
+    )
 
 
 @app.post(
