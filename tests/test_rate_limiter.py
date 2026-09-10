@@ -387,3 +387,49 @@ def test_distinct_clients_have_independent_buckets(client_id: str) -> None:
     limiter.is_allowed("other-client")
     limiter.is_allowed("other-client")
     assert limiter.is_allowed(client_id) is True
+
+
+@pytest.mark.parametrize("n_clients", [1, 3, 5])
+def test_active_client_count_matches_distinct_clients(n_clients: int) -> None:
+    """active_client_count reflects the number of distinct clients that have made requests."""
+    from app.rate_limiter import active_client_count, make_rate_limiter
+
+    limiter = make_rate_limiter(capacity=10.0, refill_rate=0.0)
+    for i in range(n_clients):
+        limiter.is_allowed(f"client-{i}")
+    assert active_client_count(limiter) == n_clients
+
+
+@pytest.mark.parametrize("capacity", [1.0, 5.0, 10.0])
+def test_bulk_allow_all_permitted_on_fresh_limiter(capacity: float) -> None:
+    """bulk_allow returns True for all clients when buckets are full."""
+    from app.rate_limiter import bulk_allow, make_rate_limiter
+
+    limiter = make_rate_limiter(capacity=capacity, refill_rate=0.0)
+    keys = ["a", "b", "c"]
+    result = bulk_allow(limiter, keys)
+    assert all(result[k] for k in keys)
+
+
+class TestRateLimiterClientOps:
+    def test_client_exists_after_request(self) -> None:
+        from app.rate_limiter import client_exists, make_rate_limiter
+
+        limiter = make_rate_limiter(capacity=5.0, refill_rate=0.0)
+        limiter.is_allowed("alice")
+        assert client_exists(limiter, "alice") is True
+
+    def test_client_not_exist_before_request(self) -> None:
+        from app.rate_limiter import client_exists, make_rate_limiter
+
+        limiter = make_rate_limiter(capacity=5.0, refill_rate=0.0)
+        assert client_exists(limiter, "ghost") is False
+
+    @pytest.mark.parametrize("n", [1, 3, 5])
+    def test_total_consumed_tokens_increases_with_requests(self, n: int) -> None:
+        from app.rate_limiter import make_rate_limiter, total_consumed_tokens
+
+        limiter = make_rate_limiter(capacity=20.0, refill_rate=0.0)
+        for _ in range(n):
+            limiter.is_allowed("tester")
+        assert total_consumed_tokens(limiter, "tester") == pytest.approx(float(n))
