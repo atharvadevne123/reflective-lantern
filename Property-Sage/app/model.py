@@ -21,6 +21,7 @@ from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 from xgboost import XGBRegressor
 
+from app.experiment_tracking import log_run
 from app.features import PropertyFeatureEngineer, generate_synthetic_data
 
 logger = logging.getLogger(__name__)
@@ -135,6 +136,17 @@ def train_model(
     logger.info(
         "Models saved — price R²=%.4f rental R²=%.4f",
         price_cv.mean(), rental_cv.mean(),
+    )
+
+    log_run(
+        experiment_name="property_price",
+        params={"n_estimators": 200, "ensemble": "xgb+lgbm+rf", "n_train": len(X)},
+        metrics={k: v for k, v in metrics.items() if "price" in k},
+    )
+    log_run(
+        experiment_name="rental_yield",
+        params={"n_estimators": 200, "ensemble": "xgb+lgbm+rf", "n_train": len(X)},
+        metrics={k: v for k, v in metrics.items() if "rental" in k},
     )
     return metrics
 
