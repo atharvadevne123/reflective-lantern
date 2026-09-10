@@ -287,3 +287,24 @@ class TestRetryOnNetworkError:
         with pytest.raises(ValueError):
             bad_input()
         assert calls[0] == 1
+
+
+def test_retry_succeeds_on_first_attempt(monkeypatch):
+    monkeypatch.setattr("time.sleep", lambda _: None)
+
+    @retry(exceptions=(_Boom,), max_attempts=3, base_delay=0)
+    def always_succeed():
+        return 42
+
+    assert always_succeed() == 42
+
+
+@pytest.mark.parametrize("return_val", [0, "ok", [], {"k": "v"}])
+def test_retry_returns_correct_value(return_val, monkeypatch):
+    monkeypatch.setattr("time.sleep", lambda _: None)
+
+    @retry(exceptions=(_Boom,), max_attempts=1, base_delay=0)
+    def fn():
+        return return_val
+
+    assert fn() == return_val

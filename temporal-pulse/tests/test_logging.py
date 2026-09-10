@@ -64,3 +64,21 @@ class TestConfigureLogging:
         configure_logging(level="DEBUG", json_format=False)
         assert logging.getLogger("sqlalchemy.engine").level == logging.WARNING
         configure_logging(level="INFO", json_format=False)
+
+    import pytest
+
+    @pytest.mark.parametrize("level", ["DEBUG", "INFO", "WARNING", "ERROR"])
+    def test_all_valid_levels_accepted(self, level: str):
+        from app.logging_config import configure_logging
+
+        configure_logging(level=level, json_format=False)
+        assert logging.getLogger().level == getattr(logging, level)
+        configure_logging(level="INFO", json_format=False)
+
+    def test_reconfigure_does_not_duplicate_handlers(self):
+        from app.logging_config import configure_logging
+
+        configure_logging(level="INFO", json_format=False)
+        initial_count = len(logging.getLogger().handlers)
+        configure_logging(level="INFO", json_format=False)
+        assert len(logging.getLogger().handlers) <= initial_count + 1

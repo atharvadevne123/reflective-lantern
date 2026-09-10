@@ -46,3 +46,25 @@ class TestSaveLoad:
         target = tmp_path / "nested" / "models"
         save_models(target)
         assert target.exists()
+
+    def test_saved_files_are_nonempty(self, trained_models, tmp_path):
+        from app.model import save_models
+
+        saved = save_models(tmp_path)
+        for path in saved.values():
+            assert Path(path).stat().st_size > 0
+
+    def test_save_returns_dict_with_string_values(self, trained_models, tmp_path):
+        from app.model import save_models
+
+        saved = save_models(tmp_path)
+        assert all(isinstance(v, str) for v in saved.values())
+
+    import pytest
+
+    @pytest.mark.parametrize("key", ["isolation_forest", "scaler"])
+    def test_saved_keys_present(self, trained_models, tmp_path, key: str) -> None:
+        from app.model import save_models
+
+        saved = save_models(tmp_path)
+        assert key in saved

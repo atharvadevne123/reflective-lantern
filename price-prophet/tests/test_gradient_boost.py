@@ -65,3 +65,23 @@ def test_gradient_boost_fit_different_estimators(n_estimators: int) -> None:
     y = [float(i) * 2 for i in range(20)]
     m.fit(X, y)
     assert m.is_fitted()
+
+
+@pytest.mark.parametrize("max_depth", [2, 4, 6])
+def test_gradient_boost_predict_returns_list(max_depth: int) -> None:
+    from app.models.gradient_boost import GradientBoostPricingModel
+
+    m = GradientBoostPricingModel(n_estimators=10, max_depth=max_depth)
+    X = [[float(i)] for i in range(20)]
+    y = [float(i) * 1.5 for i in range(20)]
+    m.fit(X, y)
+    preds = m.predict([[5.0], [10.0]])
+    assert isinstance(preds, list)
+    assert len(preds) == 2
+
+
+def test_gradient_boost_not_fitted_initially() -> None:
+    from app.models.gradient_boost import GradientBoostPricingModel
+
+    m = GradientBoostPricingModel()
+    assert m.is_fitted() is False

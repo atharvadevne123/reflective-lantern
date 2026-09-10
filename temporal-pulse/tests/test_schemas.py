@@ -125,3 +125,25 @@ class TestTrainRequest:
         ] * 50
         with pytest.raises(ValidationError):
             TrainRequest(readings=readings, contamination=0.6)
+
+
+class TestSensorReadingEdgeCases:
+    @pytest.mark.parametrize("sensor_id", ["a", "sensor-001", "X" * 50])
+    def test_various_sensor_ids_accepted(self, sensor_id: str) -> None:
+        from app.schemas import SensorReading
+
+        r = SensorReading(sensor_id=sensor_id, timestamp="2026-01-01T00:00:00", values={"t": 1.0})
+        assert r.sensor_id == sensor_id
+
+    def test_empty_values_accepted(self) -> None:
+        from app.schemas import SensorReading
+
+        r = SensorReading(sensor_id="s1", timestamp="2026-01-01T00:00:00", values={})
+        assert r.values == {}
+
+    def test_multiple_channels_in_values(self) -> None:
+        from app.schemas import SensorReading
+
+        vals = {"temperature": 20.0, "vibration": 1.5, "rpm": 1200.0}
+        r = SensorReading(sensor_id="s1", timestamp="2026-01-01T00:00:00", values=vals)
+        assert r.values == vals

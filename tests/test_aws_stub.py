@@ -111,3 +111,25 @@ class TestUploadDictAsJson:
 
         result = upload_dict_as_json({}, key="empty.json")
         assert isinstance(result, str)
+
+    @pytest.mark.parametrize("payload", [{"x": 1}, {"a": [1, 2], "b": "c"}, {}])
+    def test_various_payloads_return_string(self, payload: dict) -> None:
+        from app.aws_stub import upload_dict_as_json
+
+        result = upload_dict_as_json(payload, key="test.json")
+        assert isinstance(result, str)
+
+
+class TestBuildS3UriParametrized:
+    @pytest.mark.parametrize(
+        "bucket,key",
+        [
+            ("bucket-a", "path/key.pkl"),
+            ("my-bucket", "nested/deep/file.joblib"),
+        ],
+    )
+    def test_uri_format(self, bucket: str, key: str) -> None:
+        from app.aws_stub import build_s3_uri
+
+        uri = build_s3_uri(bucket, key)
+        assert uri == f"s3://{bucket}/{key}"

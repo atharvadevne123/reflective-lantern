@@ -66,7 +66,9 @@ def customer_baseline_load(
     hours = len(window[0])
     for index, day in enumerate(window):
         if len(day) != hours:
-            raise ValueError(f"all historical days must have the same length; day {index} has {len(day)}, expected {hours}")
+            raise ValueError(
+                f"all historical days must have the same length; day {index} has {len(day)}, expected {hours}"
+            )
 
     baseline = [round(statistics.fmean(day[hour] for day in window), 4) for hour in range(hours)]
     logger.debug("Baseline built from %d day(s) across %d hour(s)", len(window), hours)
@@ -143,9 +145,7 @@ def evaluate_event(
             negative, or either rate is negative.
     """
     if incentive_per_kwh < 0 or penalty_per_kwh < 0:
-        raise ValueError(
-            f"rates must be non-negative, got incentive={incentive_per_kwh} penalty={penalty_per_kwh}"
-        )
+        raise ValueError(f"rates must be non-negative, got incentive={incentive_per_kwh} penalty={penalty_per_kwh}")
 
     curtailed = curtailment(baseline_hourly_kwh, actual_hourly_kwh)
     baseline_total = round(sum(baseline_hourly_kwh), 4)

@@ -107,3 +107,29 @@ class TestSpikeSeverity:
 
         result = spike_severity(value, mean=5.0, std=1.0, z_threshold=2.5)
         assert result == expected
+
+
+class TestPSIEdgeCases:
+    def test_constant_reference_and_current_stable(self) -> None:
+        from app.psi import compute_psi
+
+        result = compute_psi([5.0] * 50, [5.0] * 50)
+        assert result["drift_level"] in ("stable", "minor")
+
+    @pytest.mark.parametrize("bins", [5, 10, 20])
+    def test_custom_bins_accepted(self, bins: int) -> None:
+        from app.psi import compute_psi
+
+        result = compute_psi(list(range(50)), list(range(50)), bins=bins)
+        assert result["bins_used"] <= bins
+
+    def test_psi_report_max_psi_is_max_of_features(self) -> None:
+        from app.psi import psi_report
+
+        data = {
+            "a": (list(range(50)), list(range(50))),
+            "b": (list(range(50)), list(range(100, 150))),
+        }
+        result = psi_report(data)
+        max_feature_psi = max(result["a"]["psi"], result["b"]["psi"])
+        assert result["summary"]["max_psi"] == pytest.approx(max_feature_psi, rel=0.01)

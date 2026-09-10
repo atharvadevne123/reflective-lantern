@@ -93,3 +93,14 @@ def test_history_file_email_status_if_present_is_valid(history_file: Path) -> No
             status = entry["email_status"]
             valid = status in VALID_EMAIL_STATUSES or any(status.startswith(p) for p in VALID_EMAIL_STATUS_PREFIXES)
             assert valid, f"{history_file.name}[{i}]: unrecognised email_status={status!r}"
+
+
+@pytest.mark.parametrize("history_file", HISTORY_FILES, ids=lambda p: p.stem)
+def test_history_file_commit_count_non_negative(history_file: Path) -> None:
+    """commit_count must be a non-negative integer when present."""
+    data = json.loads(history_file.read_text())
+    entries = data if isinstance(data, list) else [data]
+    for entry in entries:
+        if "commit_count" in entry:
+            assert isinstance(entry["commit_count"], int)
+            assert entry["commit_count"] >= 0

@@ -175,7 +175,7 @@ def test_generate_sample_data_row_count(n: int) -> None:
 
 @pytest.mark.parametrize(
     "key",
-    ["demand_score", "demand_tier", "confidence"],
+    ["demand_score", "demand_tier", "suggested_rate"],
 )
 def test_predict_demand_output_keys(key: str) -> None:
     from unittest.mock import patch
@@ -194,3 +194,42 @@ def test_predict_demand_output_keys(key: str) -> None:
     ):
         result = predict_demand(xgb_pipe, lgbm_pipe, pd.DataFrame([{"a": 1}]))
     assert key in result
+
+
+@pytest.mark.parametrize("prob", [0.0, 0.5, 1.0])
+def test_predict_demand_score_in_unit_interval(prob: float) -> None:
+    from unittest.mock import patch
+
+    import numpy as np
+    import pandas as pd
+
+    from app.model import _make_lgbm_pipe, _make_xgb_pipe, predict_demand
+
+    xgb_pipe = _make_xgb_pipe()
+    lgbm_pipe = _make_lgbm_pipe()
+    probs = np.array([prob])
+    with (
+        patch.object(xgb_pipe, "predict_proba", return_value=np.column_stack([1 - probs, probs])),
+        patch.object(lgbm_pipe, "predict_proba", return_value=np.column_stack([1 - probs, probs])),
+    ):
+        result = predict_demand(xgb_pipe, lgbm_pipe, pd.DataFrame([{"a": 1}]))
+    assert 0.0 <= result["demand_score"] <= 1.0
+
+
+def test_predict_demand_tier_is_string() -> None:
+    from unittest.mock import patch
+
+    import numpy as np
+    import pandas as pd
+
+    from app.model import _make_lgbm_pipe, _make_xgb_pipe, predict_demand
+
+    xgb_pipe = _make_xgb_pipe()
+    lgbm_pipe = _make_lgbm_pipe()
+    probs = np.array([0.6])
+    with (
+        patch.object(xgb_pipe, "predict_proba", return_value=np.column_stack([1 - probs, probs])),
+        patch.object(lgbm_pipe, "predict_proba", return_value=np.column_stack([1 - probs, probs])),
+    ):
+        result = predict_demand(xgb_pipe, lgbm_pipe, pd.DataFrame([{"a": 1}]))
+    assert isinstance(result["demand_tier"], str)

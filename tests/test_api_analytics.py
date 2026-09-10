@@ -97,8 +97,7 @@ class TestWeatherNormalizeEndpoint:
 
     def test_zero_baseline_rejected(self, client: TestClient) -> None:
         r = client.post(
-            "/api/v1/weather-normalize"
-            "?baseline_kwh=0&current_kwh=900&baseline_degree_days=500&current_degree_days=500"
+            "/api/v1/weather-normalize?baseline_kwh=0&current_kwh=900&baseline_degree_days=500&current_degree_days=500"
         )
         assert r.status_code == 422
 
@@ -191,8 +190,7 @@ class TestPowerQualityEndpoint:
 
     def test_correction_invalid_target_rejected(self, client: TestClient) -> None:
         r = client.get(
-            "/api/v1/power-quality/correction"
-            "?real_power_kw=100&current_power_factor=0.8&target_power_factor=1.5"
+            "/api/v1/power-quality/correction?real_power_kw=100&current_power_factor=0.8&target_power_factor=1.5"
         )
         assert r.status_code == 422
 

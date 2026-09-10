@@ -100,3 +100,18 @@ def test_main_timing_summary_in_output(capsys: pytest.CaptureFixture) -> None:
             rac.main()
     out = capsys.readouterr().out
     assert "total" in out.lower() or "s]" in out
+
+
+@pytest.mark.parametrize("cmd", ["pass", "import sys; sys.exit(0)"])
+def test_run_check_zero_exit_codes_succeed(cmd: str) -> None:
+    from scripts.run_all_checks import run_check
+
+    ok, _ = run_check("test", [sys.executable, "-c", cmd])
+    assert ok is True
+
+
+def test_run_check_nonzero_always_fails() -> None:
+    from scripts.run_all_checks import run_check
+
+    ok, _ = run_check("fail", [sys.executable, "-c", "raise SystemExit(2)"])
+    assert ok is False
