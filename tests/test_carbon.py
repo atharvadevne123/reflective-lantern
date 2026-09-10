@@ -1508,3 +1508,36 @@ class TestPeakEmissionHour:
         from app.carbon import peak_emission_hour
 
         assert peak_emission_hour([5.0] * 24) == 0
+
+
+@pytest.mark.parametrize("kwh", [0.0, 1.0, 50.0, 100.0])
+def test_kwh_to_co2_kg_non_negative_for_positive_kwh(kwh: float) -> None:
+    """kwh_to_co2_kg returns non-negative values for non-negative energy."""
+    from app.carbon import kwh_to_co2_kg
+
+    assert kwh_to_co2_kg(kwh) >= 0.0
+
+
+@pytest.mark.parametrize("kg", [0.0, 1.0, 1000.0])
+def test_co2_kg_to_tonnes_is_kg_divided_by_1000(kg: float) -> None:
+    from app.carbon import co2_kg_to_tonnes
+
+    assert co2_kg_to_tonnes(kg) == pytest.approx(kg / 1000.0)
+
+
+class TestCarbonScoreEdgeCases:
+    def test_zero_co2_is_max_score(self) -> None:
+        from app.carbon import carbon_score
+
+        assert carbon_score(0.0, 100.0) == pytest.approx(100.0)
+
+    def test_at_max_co2_is_zero_score(self) -> None:
+        from app.carbon import carbon_score
+
+        assert carbon_score(100.0, 100.0) == pytest.approx(0.0)
+
+    def test_midpoint_score(self) -> None:
+        from app.carbon import carbon_score
+
+        score = carbon_score(50.0, 100.0)
+        assert 0.0 < score < 100.0
