@@ -312,3 +312,29 @@ class TestCircuitBreakerReset:
     def test_opened_at_is_none_when_closed(self) -> None:
         cb = CircuitBreaker()
         assert cb._opened_at is None
+
+
+class TestCircuitBreakerSuccessPath:
+    @pytest.mark.parametrize("n", [1, 5, 10])
+    def test_call_returns_value_when_closed(self, n: int) -> None:
+        cb = CircuitBreaker()
+        for i in range(n):
+            expected = i
+            result = cb.call(lambda v=expected: v)
+            assert result == expected
+
+    def test_failure_count_resets_after_success(self) -> None:
+        cb = CircuitBreaker(failure_threshold=3, expected_exceptions=(ValueError,))
+        with pytest.raises(ValueError):
+            cb.call(_always_fail)
+        cb.call(_always_succeed)
+        assert cb._failure_count == 0
+
+    @pytest.mark.parametrize("threshold", [1, 3, 5])
+    def test_call_raises_circuit_open_error_when_open(self, threshold: int) -> None:
+        cb = CircuitBreaker(failure_threshold=threshold, expected_exceptions=(ValueError,))
+        for _ in range(threshold):
+            with pytest.raises(ValueError):
+                cb.call(_always_fail)
+        with pytest.raises(CircuitOpenError):
+            cb.call(_always_succeed)
