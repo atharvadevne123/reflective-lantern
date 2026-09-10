@@ -904,3 +904,29 @@ def test_manhattan_distance_symmetric(dim: int) -> None:
     a = rng.uniform(-5, 5, dim).tolist()
     b = rng.uniform(-5, 5, dim).tolist()
     assert manhattan_distance(a, b) == pytest.approx(manhattan_distance(b, a))
+
+
+@pytest.mark.parametrize("dim", [2, 4, 8])
+def test_chebyshev_distance_symmetric(dim: int) -> None:
+    """chebyshev_distance is symmetric."""
+    import numpy as np
+
+    from app.similarity import chebyshev_distance
+
+    rng = np.random.default_rng(42)
+    a = rng.uniform(0, 10, dim).tolist()
+    b = rng.uniform(0, 10, dim).tolist()
+    assert chebyshev_distance(a, b) == pytest.approx(chebyshev_distance(b, a))
+
+
+def test_chebyshev_distance_zero_for_equal_vectors() -> None:
+    from app.similarity import chebyshev_distance
+
+    assert chebyshev_distance([1.0, 2.0, 3.0], [1.0, 2.0, 3.0]) == pytest.approx(0.0)
+
+
+@pytest.mark.parametrize("n", [2, 5, 10])
+def test_pearson_similarity_self_is_one(n: int) -> None:
+    """pearson_similarity of a vector with itself is 1.0."""
+    v = [float(i + 1) for i in range(n)]
+    assert pearson_similarity(v, v) == pytest.approx(1.0, abs=1e-6)
