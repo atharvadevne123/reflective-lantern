@@ -1236,3 +1236,29 @@ class TestEffectiveDaysOnMarket:
 
         with pytest.raises(ValueError):
             effective_days_on_market(-1)
+
+
+@pytest.mark.parametrize("sqft", [500.0, 1000.0, 2000.0])
+def test_price_per_sqft_scales_linearly(sqft: float) -> None:
+    """price_per_sqft is proportional to price for fixed area."""
+    result = price_per_sqft(price=100_000.0 * sqft, sqft=sqft)
+    assert result == pytest.approx(100_000.0)
+
+
+@pytest.mark.parametrize("bedrooms", [1, 2, 3, 4])
+def test_price_per_bedroom_scales_with_count(bedrooms: int) -> None:
+    """price_per_bedroom is price/bedrooms."""
+    result = price_per_bedroom(price=400_000.0, bedrooms=bedrooms)
+    assert result == pytest.approx(400_000.0 / bedrooms)
+
+
+class TestDomClassification:
+    @pytest.mark.parametrize("dom,expected_class", [
+        (7, "fast"),
+        (30, "normal"),
+        (90, "slow"),
+    ])
+    def test_dom_class_categories(self, dom: int, expected_class: str) -> None:
+        result = dom_classification(dom)
+        assert isinstance(result, str)
+        assert len(result) > 0
