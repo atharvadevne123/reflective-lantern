@@ -229,3 +229,28 @@ class TestPaginateInfoField:
     def test_info_per_page_matches_requested(self):
         page = paginate(ITEMS, page=1, per_page=15)
         assert page.info.per_page == 15
+
+
+@pytest.mark.parametrize("per_page", [1, 5, 10, 25, 50])
+def test_paginate_first_page_length_at_most_per_page(per_page: int) -> None:
+    """The first page never returns more items than per_page."""
+    page = paginate(ITEMS, page=1, per_page=per_page)
+    assert len(page.items) <= per_page
+
+
+@pytest.mark.parametrize("total", [0, 1, 9, 10, 11])
+def test_page_info_total_pages_ceiling_division(total: int) -> None:
+    """total_pages is ceil(total / per_page)."""
+    import math
+    info = PageInfo(total=total, page=1, per_page=10)
+    assert info.total_pages == math.ceil(total / 10) if total > 0 else 0
+
+
+class TestCursorPaginateFirstPage:
+    def test_first_page_cursor_is_none(self) -> None:
+        result = cursor_paginate(ITEMS, cursor=None, per_page=10)
+        assert result.prev_cursor is None
+
+    def test_items_count_equals_per_page_when_enough(self) -> None:
+        result = cursor_paginate(ITEMS, cursor=None, per_page=7)
+        assert len(result.items) == 7
