@@ -137,3 +137,37 @@ class TestAuditLog:
         results = log.search(outcome=outcome)
         assert len(results) == 1
         assert results[0].outcome == outcome
+
+
+@pytest.mark.parametrize("n", [1, 5, 10])
+def test_audit_log_len_matches_records_added(n: int) -> None:
+    """AuditLog length equals the number of records added."""
+    log = AuditLog()
+    for i in range(n):
+        log.record("user", "action", f"resource/{i}")
+    assert len(log) == n
+
+
+@pytest.mark.parametrize("actor", ["alice", "bob", "service_account"])
+def test_audit_log_search_by_actor(actor: str) -> None:
+    """search() by actor returns only that actor's entries."""
+    log = AuditLog()
+    log.record(actor, "login", "/session")
+    log.record("other", "logout", "/session")
+    results = log.search(actor=actor)
+    assert all(r.actor == actor for r in results)
+
+
+class TestAuditLogExportJsonl:
+    def test_each_line_is_valid_json(self) -> None:
+        log = AuditLog()
+        log.record("alice", "read", "file/1")
+        log.record("bob", "write", "file/2")
+        for line in log.export_jsonl().strip().split("\n"):
+            parsed = json.loads(line)
+            assert "action" in parsed
+
+    def test_empty_export_is_empty_string_or_newline(self) -> None:
+        log = AuditLog()
+        export = log.export_jsonl().strip()
+        assert export == ""
