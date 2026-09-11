@@ -207,3 +207,12 @@ def model_prediction_summary(db: Session, model_version: str) -> dict[str, Any]:
         "defect_rate": round(defects / total, 4),
         "avg_defect_probability": round(avg_prob, 4),
     }
+
+__all__ = [
+    "compute_drift",
+    "compute_zscore_outliers",
+    "defect_rate",
+    "log_prediction",
+    "model_prediction_summary",
+    "run_drift_check",
+]
