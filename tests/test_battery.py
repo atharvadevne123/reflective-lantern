@@ -245,3 +245,70 @@ class TestRequiredCapacityEdgeCases:
 
     def test_flat_load_at_target_requires_no_capacity(self) -> None:
         assert required_capacity_kwh([10.0] * 8, target_peak_kw=10.0) == pytest.approx(0.0)
+
+
+class TestRoundTripLosses:
+    def test_100_percent_efficiency_no_losses(self) -> None:
+        from app.battery import round_trip_losses_kwh
+        assert round_trip_losses_kwh(charged_kwh=10.0, efficiency=1.0) == pytest.approx(0.0)
+
+    def test_80_percent_efficiency_20_percent_loss(self) -> None:
+        from app.battery import round_trip_losses_kwh
+        losses = round_trip_losses_kwh(charged_kwh=10.0, efficiency=0.8)
+        assert losses == pytest.approx(2.0)
+
+    @pytest.mark.parametrize("eff", [0.7, 0.8, 0.9, 1.0])
+    def test_losses_non_negative(self, eff: float) -> None:
+        from app.battery import round_trip_losses_kwh
+        assert round_trip_losses_kwh(charged_kwh=5.0, efficiency=eff) >= 0.0
+
+
+class TestBreakEvenCycles:
+    def test_basic_break_even(self) -> None:
+        from app.battery import break_even_cycles
+        result = break_even_cycles(capex=10000.0, saving_per_cycle=100.0)
+        assert result == pytest.approx(100.0)
+
+    def test_higher_capex_more_cycles(self) -> None:
+        from app.battery import break_even_cycles
+        c1 = break_even_cycles(capex=10000.0, saving_per_cycle=100.0)
+        c2 = break_even_cycles(capex=20000.0, saving_per_cycle=100.0)
+        assert c2 > c1
+
+    @pytest.mark.parametrize("capex", [5000.0, 10000.0, 20000.0])
+    def test_break_even_positive(self, capex: float) -> None:
+        from app.battery import break_even_cycles
+        result = break_even_cycles(capex=capex, saving_per_cycle=50.0)
+        assert result > 0.0
+
+
+class TestDemandChargeSaving:
+    def test_no_peak_reduction_no_saving(self) -> None:
+        from app.battery import DispatchResult, demand_charge_saving
+        dr = DispatchResult(
+            peak_before_kw=10.0, peak_after_kw=10.0, peak_reduction_kw=0.0,
+            peak_reduction_pct=0.0, energy_discharged_kwh=0.0, energy_charged_kwh=0.0,
+            equivalent_cycles=0.0, capacity_lost_pct=0.0, grid_hourly_kw=[]
+        )
+        assert demand_charge_saving(dr, demand_charge_per_kw=15.0) == pytest.approx(0.0)
+
+    def test_positive_reduction_positive_saving(self) -> None:
+        from app.battery import DispatchResult, demand_charge_saving
+        dr = DispatchResult(
+            peak_before_kw=15.0, peak_after_kw=10.0, peak_reduction_kw=5.0,
+            peak_reduction_pct=33.3, energy_discharged_kwh=5.0, energy_charged_kwh=6.0,
+            equivalent_cycles=0.05, capacity_lost_pct=0.01, grid_hourly_kw=[]
+        )
+        saving = demand_charge_saving(dr, demand_charge_per_kw=10.0)
+        assert saving > 0.0
+
+    @pytest.mark.parametrize("rate", [10.0, 15.0, 20.0])
+    def test_saving_scales_with_rate(self, rate: float) -> None:
+        from app.battery import DispatchResult, demand_charge_saving
+        dr = DispatchResult(
+            peak_before_kw=15.0, peak_after_kw=10.0, peak_reduction_kw=5.0,
+            peak_reduction_pct=33.3, energy_discharged_kwh=5.0, energy_charged_kwh=6.0,
+            equivalent_cycles=0.05, capacity_lost_pct=0.01, grid_hourly_kw=[]
+        )
+        saving = demand_charge_saving(dr, demand_charge_per_kw=rate)
+        assert saving == pytest.approx(5.0 * rate)
