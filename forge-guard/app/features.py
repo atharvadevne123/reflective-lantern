@@ -217,3 +217,16 @@ def defect_risk_index(
         + 0.15 * float(pressure > 58)
     )
     return round(min(1.0, score), 6)
+
+__all__ = [
+    "DataFrameToArray",
+    "LagFeatureTransformer",
+    "PolynomialSensorTransformer",
+    "RatioFeatureTransformer",
+    "RollingStatsTransformer",
+    "build_feature_pipeline",
+    "defect_risk_index",
+    "engineer_single",
+    "generate_synthetic_data",
+    "sensor_range_feature",
+]
