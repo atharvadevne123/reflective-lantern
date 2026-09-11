@@ -254,3 +254,56 @@ class TestCursorPaginateFirstPage:
     def test_items_count_equals_per_page_when_enough(self) -> None:
         result = cursor_paginate(ITEMS, cursor=None, per_page=7)
         assert len(result.items) == 7
+
+
+class TestPageRange:
+    def test_single_page_result(self) -> None:
+        from app.pagination import page_range
+        info = PageInfo(total=5, page=1, per_page=10)
+        result = page_range(info)
+        assert 1 in result
+
+    def test_range_contains_current_page(self) -> None:
+        from app.pagination import page_range
+        info = PageInfo(total=100, page=5, per_page=10)
+        result = page_range(info)
+        assert 5 in result
+
+    @pytest.mark.parametrize("window", [3, 5, 7])
+    def test_range_not_larger_than_window(self, window: int) -> None:
+        from app.pagination import page_range
+        info = PageInfo(total=200, page=5, per_page=10)
+        result = page_range(info, window=window)
+        assert len(result) <= window
+
+
+class TestLastPageItems:
+    def test_even_division(self) -> None:
+        from app.pagination import last_page_items
+        assert last_page_items(list(range(20)), per_page=5) == 5
+
+    def test_remainder_on_last_page(self) -> None:
+        from app.pagination import last_page_items
+        assert last_page_items(list(range(23)), per_page=5) == 3
+
+    @pytest.mark.parametrize("n,per_page", [(10, 3), (15, 4), (20, 7)])
+    def test_last_page_items_positive(self, n: int, per_page: int) -> None:
+        from app.pagination import last_page_items
+        result = last_page_items(list(range(n)), per_page=per_page)
+        assert 0 < result <= per_page
+
+
+class TestEncodeDecode:
+    def test_roundtrip_preserves_data(self) -> None:
+        data = {"offset": 42, "key": "abc"}
+        encoded = encode_cursor(data)
+        decoded = decode_cursor(encoded)
+        assert decoded == data
+
+    def test_encoded_is_string(self) -> None:
+        assert isinstance(encode_cursor({"page": 1}), str)
+
+    @pytest.mark.parametrize("offset", [0, 10, 99])
+    def test_offset_preserved(self, offset: int) -> None:
+        data = {"offset": offset}
+        assert decode_cursor(encode_cursor(data))["offset"] == offset
