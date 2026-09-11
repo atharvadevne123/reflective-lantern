@@ -930,3 +930,56 @@ def test_pearson_similarity_self_is_one(n: int) -> None:
     """pearson_similarity of a vector with itself is 1.0."""
     v = [float(i + 1) for i in range(n)]
     assert pearson_similarity(v, v) == pytest.approx(1.0, abs=1e-6)
+
+
+class TestManhattanDistance:
+    def test_zero_for_equal_vectors(self) -> None:
+        from app.similarity import manhattan_distance
+        assert manhattan_distance([1.0, 2.0, 3.0], [1.0, 2.0, 3.0]) == pytest.approx(0.0)
+
+    def test_positive_for_distinct_vectors(self) -> None:
+        from app.similarity import manhattan_distance
+        assert manhattan_distance([0.0, 0.0], [1.0, 1.0]) == pytest.approx(2.0)
+
+    @pytest.mark.parametrize("shift", [1.0, 2.0, 5.0])
+    def test_uniform_shift(self, shift: float) -> None:
+        from app.similarity import manhattan_distance
+        a = [0.0] * 4
+        b = [shift] * 4
+        assert manhattan_distance(a, b) == pytest.approx(4 * shift)
+
+
+class TestJaccardSimilarity:
+    def test_identical_sets_give_one(self) -> None:
+        from app.similarity import jaccard_similarity
+        s = {"a", "b", "c"}
+        assert jaccard_similarity(s, s) == pytest.approx(1.0)
+
+    def test_disjoint_sets_give_zero(self) -> None:
+        from app.similarity import jaccard_similarity
+        assert jaccard_similarity({"a", "b"}, {"c", "d"}) == pytest.approx(0.0)
+
+    def test_partial_overlap(self) -> None:
+        from app.similarity import jaccard_similarity
+        result = jaccard_similarity({"a", "b", "c"}, {"b", "c", "d"})
+        assert 0.0 < result < 1.0
+
+
+class TestNormalizeDistances:
+    def test_single_value_returns_zero(self) -> None:
+        from app.similarity import normalize_distances
+        result = normalize_distances([5.0])
+        assert result == pytest.approx([0.0])
+
+    def test_min_is_zero_max_is_one(self) -> None:
+        from app.similarity import normalize_distances
+        result = normalize_distances([0.0, 5.0, 10.0])
+        assert min(result) == pytest.approx(0.0)
+        assert max(result) == pytest.approx(1.0)
+
+    @pytest.mark.parametrize("n", [3, 5, 10])
+    def test_output_length_matches_input(self, n: int) -> None:
+        from app.similarity import normalize_distances
+        distances = [float(i) for i in range(n)]
+        result = normalize_distances(distances)
+        assert len(result) == n
