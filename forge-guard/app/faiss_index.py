@@ -76,3 +76,5 @@ def is_anomalous(query: np.ndarray, k: int = 5, threshold: float = 50.0) -> dict
         "nn_distance": round(avg_dist, 4),
         "nn_k": k,
     }
+
+__all__ = ["build_index", "is_anomalous", "load_index"]
