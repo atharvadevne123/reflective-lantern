@@ -355,3 +355,5 @@ async def export_drift(
     from app.reporting import export_drift_reports_json
 
     return export_drift_reports_json(db, hours=hours)
+
+__all__ = ["HealthResponse", "MetricsResponse", "PredictionResponse", "SensorInput", "app"]
