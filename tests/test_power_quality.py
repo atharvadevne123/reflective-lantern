@@ -217,7 +217,7 @@ def test_power_factor_accepted_valid_range(pf: float) -> None:
 @pytest.mark.parametrize("kvar", [10.0, 50.0, 100.0])
 def test_correction_kvar_reduces_reactive_power(kvar: float) -> None:
     """correction_kvar provides non-negative correction for lagging load."""
-    result = correction_kvar(real_kw=100.0, current_pf=0.8, target_pf=0.95)
+    result = correction_kvar(real_kw=100.0, current_power_factor=0.8, target_power_factor=0.95)
     assert result >= 0.0
 
 
@@ -229,3 +229,51 @@ class TestReactivePowerEdgeCases:
     def test_reactive_non_negative_for_valid_inputs(self, apparent: float) -> None:
         result = reactive_power(apparent=apparent, real=apparent * 0.8)
         assert result >= 0.0
+
+
+class TestVoltageImbalance:
+    def test_balanced_voltages_give_zero(self) -> None:
+        assert voltage_imbalance([240.0, 240.0, 240.0]) == pytest.approx(0.0)
+
+    def test_imbalanced_gives_positive(self) -> None:
+        assert voltage_imbalance([240.0, 230.0, 250.0]) > 0.0
+
+    @pytest.mark.parametrize("voltages", [
+        [240.0, 240.0, 240.0],
+        [230.0, 240.0, 250.0],
+        [220.0, 240.0, 260.0],
+    ])
+    def test_result_non_negative(self, voltages: list) -> None:
+        assert voltage_imbalance(voltages) >= 0.0
+
+
+class TestCorrectionKvar:
+    def test_already_at_target_needs_no_correction(self) -> None:
+        result = correction_kvar(real_power_kw=100.0, current_power_factor=0.95, target_power_factor=0.95)
+        assert result == pytest.approx(0.0, abs=0.01)
+
+    def test_low_pf_needs_positive_correction(self) -> None:
+        result = correction_kvar(real_power_kw=100.0, current_power_factor=0.7, target_power_factor=0.95)
+        assert result > 0.0
+
+    @pytest.mark.parametrize("current_pf", [0.6, 0.7, 0.8])
+    def test_correction_positive_for_low_pf(self, current_pf: float) -> None:
+        result = correction_kvar(real_power_kw=100.0, current_power_factor=current_pf, target_power_factor=0.95)
+        assert result >= 0.0
+
+
+class TestRatePowerFactor:
+    def test_good_factor_rated_well(self) -> None:
+        rating = rate_power_factor(GOOD_POWER_FACTOR)
+        assert isinstance(rating, str)
+        assert len(rating) > 0
+
+    def test_low_factor_rated_poorly(self) -> None:
+        low_rating = rate_power_factor(0.5)
+        high_rating = rate_power_factor(0.99)
+        assert low_rating != high_rating
+
+    @pytest.mark.parametrize("pf", [0.5, 0.8, 0.95, 1.0])
+    def test_any_valid_pf_returns_string(self, pf: float) -> None:
+        result = rate_power_factor(pf)
+        assert isinstance(result, str)
