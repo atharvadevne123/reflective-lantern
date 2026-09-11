@@ -224,3 +224,5 @@ def get_runbook_index(runbooks_path: str = "data/runbooks/sample_runbooks.json")
         except Exception:
             logger.exception("Failed to load runbooks from %s — index empty", runbooks_path)
     return _index_singleton
+
+__all__ = ["Runbook", "RunbookIndex", "get_runbook_index"]
