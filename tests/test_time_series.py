@@ -1717,3 +1717,58 @@ class TestClipOutliersEdgeCases:
         result = clip_outliers([float(v) for v in values], lower_pct=10.0, upper_pct=90.0)
         assert min(result) >= 9.0
         assert max(result) <= 90.0
+
+
+class TestLoadFactor:
+    def test_constant_series_gives_one(self) -> None:
+        from app.time_series import load_factor
+        assert load_factor([5.0] * 10) == pytest.approx(1.0)
+
+    def test_mixed_series_less_than_one(self) -> None:
+        from app.time_series import load_factor
+        assert load_factor([1.0, 1.0, 1.0, 10.0]) < 1.0
+
+    @pytest.mark.parametrize("n", [5, 10, 24])
+    def test_result_in_valid_range(self, n: int) -> None:
+        from app.time_series import load_factor
+        values = [float(i % 3 + 1) for i in range(n)]
+        lf = load_factor(values)
+        assert 0.0 <= lf <= 1.0
+
+
+class TestPeakToValleyRatio:
+    def test_constant_series_gives_one(self) -> None:
+        from app.time_series import peak_to_valley_ratio
+        assert peak_to_valley_ratio([4.0] * 8) == pytest.approx(1.0)
+
+    def test_larger_spike_higher_ratio(self) -> None:
+        from app.time_series import peak_to_valley_ratio
+        ratio_low = peak_to_valley_ratio([1.0, 1.0, 5.0])
+        ratio_high = peak_to_valley_ratio([1.0, 1.0, 10.0])
+        assert ratio_high > ratio_low
+
+    @pytest.mark.parametrize("peak", [5.0, 10.0, 20.0])
+    def test_ratio_positive_for_positive_series(self, peak: float) -> None:
+        from app.time_series import peak_to_valley_ratio
+        assert peak_to_valley_ratio([1.0, peak]) > 0.0
+
+
+class TestMovingMedian:
+    def test_output_length_matches_input(self) -> None:
+        from app.time_series import moving_median
+        values = list(range(10))
+        result = moving_median([float(v) for v in values], window=3)
+        assert len(result) == len(values)
+
+    def test_constant_series_unchanged(self) -> None:
+        from app.time_series import moving_median
+        values = [7.0] * 8
+        result = moving_median(values, window=3)
+        assert all(v == pytest.approx(7.0) for v in result)
+
+    @pytest.mark.parametrize("window", [2, 3, 5])
+    def test_various_windows_correct_length(self, window: int) -> None:
+        from app.time_series import moving_median
+        values = [float(i) for i in range(20)]
+        result = moving_median(values, window=window)
+        assert len(result) == len(values)
