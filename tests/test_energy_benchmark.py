@@ -201,7 +201,7 @@ class TestPercentileRankEdgeCases:
         assert rank >= percentile_rank(110.0, COHORT)
 
 
-class TestSavingsPotential:
+class TestSavingsPotentialExtended:
     def test_at_target_no_savings(self) -> None:
         result = savings_potential(annual_kwh=10000.0, eui=100.0, target_eui=100.0)
         assert result == pytest.approx(0.0)
@@ -221,7 +221,7 @@ class TestSavingsPotential:
             assert result >= 0.0
 
 
-class TestEnergyUseIntensity:
+class TestEnergyUseIntensityExtended:
     def test_basic_calculation(self) -> None:
         eui = energy_use_intensity(annual_kwh=10000.0, floor_area_m2=100.0)
         assert eui == pytest.approx(100.0)

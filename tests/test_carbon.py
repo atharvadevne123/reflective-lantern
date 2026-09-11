@@ -1543,7 +1543,7 @@ class TestCarbonScoreEdgeCases:
         assert 0.0 < score < 100.0
 
 
-class TestCompareRegions:
+class TestCompareRegionsExtended:
     def test_returns_list_with_region_entries(self) -> None:
         from app.carbon import compare_regions
         results = compare_regions(100.0)

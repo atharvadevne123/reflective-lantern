@@ -177,22 +177,22 @@ class TestAlertManagerMultipleRules:
 class TestAlertRuleEdgeCases:
     def test_rule_name_preserved_in_alert(self) -> None:
         rule = _make_rule(name="my_rule", threshold=10.0)
-        alert = rule.evaluate({"cpu": 20.0}, now=BASE_NOW)
+        alert = rule.evaluate(20.0, now=BASE_NOW)
         assert alert is not None
-        assert alert.rule_name == "my_rule"
+        assert alert.name == "my_rule"
 
     def test_alert_has_metric_value(self) -> None:
         rule = _make_rule(threshold=5.0)
-        alert = rule.evaluate({"cpu": 9.0}, now=BASE_NOW)
+        alert = rule.evaluate(9.0, now=BASE_NOW)
         assert alert is not None
         assert alert.value == 9.0
 
-    @pytest.mark.parametrize("severity", ["info", "warning", "critical"])
-    def test_severity_stored_on_alert(self, severity: str) -> None:
+    @pytest.mark.parametrize("severity", [Severity.INFO, Severity.WARNING, Severity.CRITICAL])
+    def test_severity_stored_on_alert(self, severity: Severity) -> None:
         rule = _make_rule(severity=severity, threshold=1.0)
-        alert = rule.evaluate({"cpu": 2.0}, now=BASE_NOW)
+        alert = rule.evaluate(2.0, now=BASE_NOW)
         assert alert is not None
-        assert alert.severity == Severity(severity)
+        assert alert.severity == severity
 
     def test_manager_history_length_matches_fires(self) -> None:
         mgr = AlertManager()

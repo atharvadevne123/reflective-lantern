@@ -629,7 +629,7 @@ class TestComputeDrift:
         assert "p_value" in result
 
 
-class TestDriftSeverity:
+class TestDriftSeverityExtended:
     def test_low_p_value_high_severity(self) -> None:
         from app.monitoring import drift_severity
         sev = drift_severity(p_value=0.001)
@@ -648,7 +648,7 @@ class TestDriftSeverity:
         assert isinstance(result, str)
 
 
-class TestZscoreAlert:
+class TestZscoreAlertExtended:
     def test_constant_series_no_alerts(self) -> None:
         from app.monitoring import zscore_alert
         values = [1.0] * 20

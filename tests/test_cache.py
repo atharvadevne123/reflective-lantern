@@ -735,7 +735,7 @@ class TestCacheIsEmptyEdgeCases:
         assert is_cache_empty(c) is True
 
 
-class TestCacheHitRate:
+class TestCacheHitRateExtended:
     def test_all_hits_gives_one(self) -> None:
         from app.cache import cache_hit_rate
         assert cache_hit_rate(hits=10, misses=0) == pytest.approx(1.0)
@@ -752,7 +752,7 @@ class TestCacheHitRate:
         assert rate == pytest.approx(expected)
 
 
-class TestCacheRemainingCapacity:
+class TestCacheRemainingCapacityExtended:
     def test_empty_cache_full_capacity(self) -> None:
         from app.cache import TTLCache, cache_remaining_capacity
         c = TTLCache(ttl_seconds=60, max_size=10)
@@ -772,7 +772,7 @@ class TestCacheRemainingCapacity:
         assert cache_remaining_capacity(c) == capacity
 
 
-class TestWarmCache:
+class TestWarmCacheExtended:
     def test_items_count_matches_warmed(self) -> None:
         from app.cache import TTLCache, warm_cache
         c = TTLCache(ttl_seconds=60, max_size=10)

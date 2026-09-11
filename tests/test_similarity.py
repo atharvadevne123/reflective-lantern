@@ -932,7 +932,7 @@ def test_pearson_similarity_self_is_one(n: int) -> None:
     assert pearson_similarity(v, v) == pytest.approx(1.0, abs=1e-6)
 
 
-class TestManhattanDistance:
+class TestManhattanDistanceExtended:
     def test_zero_for_equal_vectors(self) -> None:
         from app.similarity import manhattan_distance
         assert manhattan_distance([1.0, 2.0, 3.0], [1.0, 2.0, 3.0]) == pytest.approx(0.0)
@@ -949,7 +949,7 @@ class TestManhattanDistance:
         assert manhattan_distance(a, b) == pytest.approx(4 * shift)
 
 
-class TestJaccardSimilarity:
+class TestJaccardSimilarityExtended:
     def test_identical_sets_give_one(self) -> None:
         from app.similarity import jaccard_similarity
         s = {"a", "b", "c"}
@@ -965,7 +965,7 @@ class TestJaccardSimilarity:
         assert 0.0 < result < 1.0
 
 
-class TestNormalizeDistances:
+class TestNormalizeDistancesExtended:
     def test_single_value_returns_zero(self) -> None:
         from app.similarity import normalize_distances
         result = normalize_distances([5.0])

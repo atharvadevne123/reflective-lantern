@@ -1319,50 +1319,46 @@ class TestInterAnomalyGap:
     ],
 )
 def test_anomaly_rate_fraction_correct(flags, expected_rate: float) -> None:
-    """anomaly_rate returns the fraction of True values in the sequence."""
-    assert anomaly_rate(flags) == pytest.approx(expected_rate)
+    """flag_anomaly_rate returns the fraction of True values in the sequence."""
+    assert flag_anomaly_rate(flags) == pytest.approx(expected_rate)
 
 
 @pytest.mark.parametrize("n_anomalies", [0, 1, 5, 10])
 def test_anomaly_rate_for_known_count(n_anomalies: int) -> None:
-    """anomaly_rate equals n_anomalies / total when total is fixed."""
+    """flag_anomaly_rate equals n_anomalies / total when total is fixed."""
     total = 20
     flags = [True] * n_anomalies + [False] * (total - n_anomalies)
-    assert anomaly_rate(flags) == pytest.approx(n_anomalies / total)
+    assert flag_anomaly_rate(flags) == pytest.approx(n_anomalies / total)
 
 
 @pytest.mark.parametrize("n", [10, 20, 50])
 def test_zscore_flag_output_length_matches_input(n: int) -> None:
-    """zscore_flag returns same number of booleans as input readings."""
-    readings = [float(i % 5) for i in range(n)]
-    flags = zscore_flag(readings)
-    assert len(flags) == n
+    """zscore_flag returns a bool for each individual reading."""
+    results = [zscore_flag(float(i % 5), mean=2.0, std=1.5) for i in range(n)]
+    assert len(results) == n
+    assert all(isinstance(r, bool) for r in results)
 
 
 @pytest.mark.parametrize("n", [5, 10, 20])
 def test_iqr_flag_output_length_matches_input(n: int) -> None:
-    """iqr_flag returns same number of booleans as input readings."""
-    readings = [float(i % 3) for i in range(n)]
-    flags = iqr_flag(readings)
-    assert len(flags) == n
+    """iqr_flag returns a bool for each individual reading."""
+    results = [iqr_flag(float(i % 3), q1=0.0, q3=2.0) for i in range(n)]
+    assert len(results) == n
+    assert all(isinstance(r, bool) for r in results)
 
 
 def test_zscore_flag_constant_series_no_anomalies() -> None:
-    """A constant series has zscore 0 everywhere — no anomalies."""
-    readings = [5.0] * 20
-    flags = zscore_flag(readings)
-    assert not any(flags)
+    """A value equal to the mean has z-score 0 — not flagged."""
+    assert not zscore_flag(5.0, mean=5.0, std=1.0, threshold=3.0)
 
 
 @pytest.mark.parametrize("threshold", [1.5, 2.0, 3.0])
 def test_zscore_flag_detects_spike_at_lower_threshold(threshold: float) -> None:
-    """A large spike is flagged at any reasonable threshold."""
-    readings = [1.0] * 19 + [1000.0]
-    flags = zscore_flag(readings, threshold=threshold)
-    assert flags[-1] is True
+    """A value many std-devs above the mean is always flagged."""
+    assert zscore_flag(1000.0, mean=1.0, std=1.0, threshold=threshold)
 
 
-class TestFlagAnomalyRate:
+class TestFlagAnomalyRateExtended:
     def test_all_normal_gives_zero(self) -> None:
         assert flag_anomaly_rate([False] * 10) == pytest.approx(0.0)
 
@@ -1379,7 +1375,7 @@ class TestFlagAnomalyRate:
         assert rate == pytest.approx(n_true / n_total)
 
 
-class TestConsecutiveAnomalyRuns:
+class TestConsecutiveAnomalyRunsExtended:
     def test_no_anomalies_empty_result(self) -> None:
         runs = consecutive_anomaly_runs([False] * 10)
         assert runs == []

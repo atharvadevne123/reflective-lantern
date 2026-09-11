@@ -631,7 +631,7 @@ class TestRegionSummaryEdgeCases:
         assert 0.0 < share <= 1.0
 
 
-class TestRegionsByPeakLoad:
+class TestRegionsByPeakLoadExtended:
     def test_returns_list(self) -> None:
         from app.regions import regions_by_peak_load
         result = regions_by_peak_load()

@@ -210,28 +210,28 @@ class TestVoltageImbalanceEdgeCases:
 @pytest.mark.parametrize("pf", [0.7, 0.8, 0.9, 0.95, 1.0])
 def test_power_factor_accepted_valid_range(pf: float) -> None:
     """power_factor returns a value in [0, 1] for valid inputs."""
-    result = power_factor(real=pf * 100.0, apparent=100.0)
+    result = power_factor(real_power_kw=pf * 100.0, apparent_power_kva=100.0)
     assert 0.0 <= result <= 1.0
 
 
 @pytest.mark.parametrize("kvar", [10.0, 50.0, 100.0])
 def test_correction_kvar_reduces_reactive_power(kvar: float) -> None:
     """correction_kvar provides non-negative correction for lagging load."""
-    result = correction_kvar(real_kw=100.0, current_power_factor=0.8, target_power_factor=0.95)
+    result = correction_kvar(real_power_kw=100.0, current_power_factor=0.8, target_power_factor=0.95)
     assert result >= 0.0
 
 
 class TestReactivePowerEdgeCases:
     def test_zero_reactive_power_for_unity_pf(self) -> None:
-        assert reactive_power(apparent=100.0, real=100.0) == pytest.approx(0.0)
+        assert reactive_power(real_power_kw=100.0, power_factor_value=1.0) == pytest.approx(0.0)
 
-    @pytest.mark.parametrize("apparent", [10.0, 100.0, 1000.0])
-    def test_reactive_non_negative_for_valid_inputs(self, apparent: float) -> None:
-        result = reactive_power(apparent=apparent, real=apparent * 0.8)
+    @pytest.mark.parametrize("real_kw", [10.0, 100.0, 1000.0])
+    def test_reactive_non_negative_for_valid_inputs(self, real_kw: float) -> None:
+        result = reactive_power(real_power_kw=real_kw, power_factor_value=0.8)
         assert result >= 0.0
 
 
-class TestVoltageImbalance:
+class TestVoltageImbalanceExtended:
     def test_balanced_voltages_give_zero(self) -> None:
         assert voltage_imbalance([240.0, 240.0, 240.0]) == pytest.approx(0.0)
 
@@ -247,7 +247,7 @@ class TestVoltageImbalance:
         assert voltage_imbalance(voltages) >= 0.0
 
 
-class TestCorrectionKvar:
+class TestCorrectionKvarExtended:
     def test_already_at_target_needs_no_correction(self) -> None:
         result = correction_kvar(real_power_kw=100.0, current_power_factor=0.95, target_power_factor=0.95)
         assert result == pytest.approx(0.0, abs=0.01)
@@ -262,7 +262,7 @@ class TestCorrectionKvar:
         assert result >= 0.0
 
 
-class TestRatePowerFactor:
+class TestRatePowerFactorExtended:
     def test_good_factor_rated_well(self) -> None:
         rating = rate_power_factor(GOOD_POWER_FACTOR)
         assert isinstance(rating, str)

@@ -209,7 +209,7 @@ class TestComparePeriodsSameWeather:
             assert result.normalized_change_pct > 0
 
 
-class TestNormalizationFactor:
+class TestNormalizationFactorExtended:
     def test_equal_degree_days_gives_factor_one(self) -> None:
         assert normalization_factor(100.0, 100.0) == pytest.approx(1.0)
 
@@ -227,7 +227,7 @@ class TestNormalizationFactor:
         assert f1 > f2
 
 
-class TestNormalizeConsumption:
+class TestNormalizeConsumptionExtended:
     def test_no_temperature_change_unchanged(self) -> None:
         result = normalize_consumption(1000.0, 300.0, 300.0)
         assert result == pytest.approx(1000.0)

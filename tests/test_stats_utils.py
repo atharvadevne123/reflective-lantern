@@ -1536,7 +1536,7 @@ class TestWinsorizeEdgeCases:
         assert max(result) <= 95.0
 
 
-class TestComputeEntropy:
+class TestComputeEntropyExtended:
     def test_uniform_distribution_has_max_entropy(self) -> None:
         from app.stats_utils import compute_entropy
         equal = [1.0, 1.0, 1.0, 1.0]
@@ -1555,7 +1555,7 @@ class TestComputeEntropy:
         assert compute_entropy(values) >= 0.0
 
 
-class TestComputeCorrelation:
+class TestComputeCorrelationExtended:
     def test_perfect_positive_correlation(self) -> None:
         from app.stats_utils import compute_correlation
         x = [1.0, 2.0, 3.0, 4.0, 5.0]
@@ -1575,7 +1575,7 @@ class TestComputeCorrelation:
         assert -1.0 <= r <= 1.0
 
 
-class TestComputeSkewness:
+class TestComputeSkewnessExtended:
     def test_symmetric_data_near_zero(self) -> None:
         from app.stats_utils import compute_skewness
         symmetric = [1.0, 2.0, 3.0, 4.0, 5.0]
@@ -1588,14 +1588,15 @@ class TestComputeSkewness:
 
     @pytest.mark.parametrize("n", [5, 10, 20])
     def test_skewness_finite_for_valid_data(self, n: int) -> None:
-        from app.stats_utils import compute_skewness
         import math
+
+        from app.stats_utils import compute_skewness
         values = list(range(1, n + 1))
         result = compute_skewness([float(v) for v in values])
         assert math.isfinite(result)
 
 
-class TestGeometricMean:
+class TestGeometricMeanExtended:
     def test_unit_values_give_one(self) -> None:
         from app.stats_utils import geometric_mean
         assert geometric_mean([1.0] * 5) == pytest.approx(1.0)
@@ -1634,7 +1635,7 @@ class TestWeightedAverage:
         assert min(values) <= result <= max(values)
 
 
-class TestInterquartileRange:
+class TestInterquartileRangeExtended:
     def test_constant_series_gives_zero(self) -> None:
         from app.stats_utils import interquartile_range
         assert interquartile_range([5.0] * 10) == pytest.approx(0.0)

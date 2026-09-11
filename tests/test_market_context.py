@@ -1264,7 +1264,7 @@ class TestDomClassification:
         assert len(result) > 0
 
 
-class TestPriceGrowthRate:
+class TestPriceGrowthRateExtended:
     def test_no_change_is_zero(self) -> None:
         from app.market_context import price_growth_rate
         assert price_growth_rate(100_000.0, 100_000.0) == pytest.approx(0.0)

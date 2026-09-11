@@ -224,7 +224,7 @@ def test_peak_shave_grid_series_length(n: int) -> None:
     """Grid series in result has same length as input load series."""
     load = [30.0] * n
     result = peak_shave(load, make_spec(), target_peak_kw=20.0)
-    assert len(result.grid_kw) == n
+    assert len(result.grid_hourly_kw) == n
 
 
 @pytest.mark.parametrize("eff", [0.8, 0.9, 1.0])
@@ -282,7 +282,7 @@ class TestBreakEvenCycles:
         assert result > 0.0
 
 
-class TestDemandChargeSaving:
+class TestDemandChargeSavingExtended:
     def test_no_peak_reduction_no_saving(self) -> None:
         from app.battery import DispatchResult, demand_charge_saving
         dr = DispatchResult(

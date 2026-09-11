@@ -1267,7 +1267,7 @@ def test_validate_positive_float_rejects_zero() -> None:
     assert len(validate_positive_float(0.0)) > 0
 
 
-class TestValidateCoordinate:
+class TestValidateCoordinateExtended:
     def test_valid_coordinate_no_errors(self) -> None:
         from app.validation import validate_coordinate
         assert validate_coordinate(51.5, -0.1) == []
@@ -1288,7 +1288,7 @@ class TestValidateCoordinate:
         assert validate_coordinate(lat, lon) == []
 
 
-class TestValidatePercentage:
+class TestValidatePercentageExtended:
     def test_valid_percentage_no_errors(self) -> None:
         from app.validation import validate_percentage
         assert validate_percentage(50.0) == []

@@ -12,6 +12,7 @@ from app.investment import (
     debt_service_coverage_ratio,
     discounted_cash_flow,
     equity_multiple,
+    irr_estimate,
     margin_of_safety,
     operating_expense_ratio,
     payback_period,
@@ -580,7 +581,6 @@ class TestMarginOfSafety:
 
 class TestIrrEstimate:
     def test_simple_positive_irr(self) -> None:
-        from app.investment import irr_estimate
 
         irr = irr_estimate(1000.0, [200.0] * 8)
         assert irr > 0.0
@@ -588,32 +588,27 @@ class TestIrrEstimate:
     def test_negative_investment_raises(self) -> None:
         import pytest
 
-        from app.investment import irr_estimate
 
         with pytest.raises(ValueError, match="positive"):
             irr_estimate(-100.0, [50.0])
 
     def test_no_return_gives_zero(self) -> None:
-        from app.investment import irr_estimate
 
         irr = irr_estimate(1000.0, [0.0] * 5)
         assert irr == 0.0
 
     def test_with_terminal_value(self) -> None:
-        from app.investment import irr_estimate
 
         irr = irr_estimate(1000.0, [50.0] * 5, terminal_value=1200.0)
         assert irr > 0.0
 
     def test_returns_float(self) -> None:
-        from app.investment import irr_estimate
 
         result = irr_estimate(500.0, [100.0, 200.0, 300.0])
         assert isinstance(result, float)
 
     @pytest.mark.parametrize("flows", [[100.0, 200.0, 300.0], [50.0] * 10, [500.0, -100.0, 300.0]])
     def test_irr_returns_numeric(self, flows: list) -> None:
-        from app.investment import irr_estimate
 
         result = irr_estimate(500.0, flows)
         assert isinstance(result, float)
@@ -1311,32 +1306,31 @@ def test_discounted_cash_flow_length_matches_cash_flows(n_years: int) -> None:
 
 @pytest.mark.parametrize("rate", [0.05, 0.10, 0.15, 0.20])
 def test_cash_on_cash_return_scales_with_equity(rate: float) -> None:
-    """cash_on_cash_return equals annual_income / equity_invested."""
-    result = cash_on_cash_return(annual_income=10000.0, equity_invested=10000.0 / rate)
-    assert result == pytest.approx(rate, rel=1e-3)
+    """cash_on_cash_return equals annual_pre_tax_cash_flow / total_cash_invested."""
+    result = cash_on_cash_return(annual_pre_tax_cash_flow=10000.0, total_cash_invested=10000.0 / rate)
+    assert result == pytest.approx(rate * 100.0, rel=1e-3)
 
 
 class TestPaybackPeriodEdgeCases:
     def test_immediate_payback_when_benefit_exceeds_cost(self) -> None:
-        result = payback_period(cost=1000.0, annual_benefit=2000.0)
+        result = payback_period(purchase_price=1000.0, annual_cash_flow=2000.0)
         assert result == pytest.approx(0.5)
 
     @pytest.mark.parametrize("cost", [500.0, 1000.0, 5000.0])
     def test_payback_proportional_to_cost(self, cost: float) -> None:
-        result = payback_period(cost=cost, annual_benefit=500.0)
+        result = payback_period(purchase_price=cost, annual_cash_flow=500.0)
         assert result == pytest.approx(cost / 500.0, rel=1e-3)
 
 
 from app.investment import (
     annualized_return,
     gross_rent_multiplier,
-    irr_estimate,
     loan_to_value_ratio,
     net_present_value,
 )
 
 
-class TestAnnualizedReturn:
+class TestAnnualizedReturnExtended:
     def test_positive_return_over_multiple_years(self) -> None:
         result = annualized_return(total_return=0.5, years=5.0)
         assert result > 0.0
@@ -1352,7 +1346,7 @@ class TestAnnualizedReturn:
         assert math.isfinite(result)
 
 
-class TestNetPresentValue:
+class TestNetPresentValueExtended:
     def test_zero_discount_sums_cash_flows(self) -> None:
         cash_flows = [100.0, 200.0, 300.0]
         npv = net_present_value(cash_flows, discount_rate=0.0)
@@ -1371,7 +1365,7 @@ class TestNetPresentValue:
         assert math.isfinite(net_present_value(flows, discount_rate=rate))
 
 
-class TestGrossRentMultiplier:
+class TestGrossRentMultiplierExtended:
     def test_basic_calculation(self) -> None:
         grm = gross_rent_multiplier(property_price=300000.0, annual_gross_rent=30000.0)
         assert grm == pytest.approx(10.0)
@@ -1382,7 +1376,7 @@ class TestGrossRentMultiplier:
         assert grm == pytest.approx(price / rent)
 
 
-class TestLoanToValueRatio:
+class TestLoanToValueRatioExtended:
     def test_full_loan_gives_100_pct(self) -> None:
         ltv = loan_to_value_ratio(loan_amount=200000.0, property_value=200000.0)
         assert ltv == pytest.approx(100.0)

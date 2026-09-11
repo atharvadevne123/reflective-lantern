@@ -1719,7 +1719,7 @@ class TestClipOutliersEdgeCases:
         assert max(result) <= 90.0
 
 
-class TestLoadFactor:
+class TestLoadFactorExtended:
     def test_constant_series_gives_one(self) -> None:
         from app.time_series import load_factor
         assert load_factor([5.0] * 10) == pytest.approx(1.0)

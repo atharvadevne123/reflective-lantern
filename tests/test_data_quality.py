@@ -1162,7 +1162,7 @@ class TestBatchScoreEdgeCases:
         assert all(s >= 0.9 for s in scores)
 
 
-class TestNullRate:
+class TestNullRateExtended:
     def test_no_nulls_gives_zero(self) -> None:
         from app.data_quality import null_rate
         records = [{"x": 1}, {"x": 2}, {"x": 3}]
@@ -1186,7 +1186,7 @@ class TestNullRate:
         assert null_rate(records, "val") == pytest.approx(n_null / n_total)
 
 
-class TestDuplicateRate:
+class TestDuplicateRateExtended:
     def test_no_duplicates_gives_zero(self) -> None:
         from app.data_quality import duplicate_rate
         records = [{"id": 1}, {"id": 2}, {"id": 3}]

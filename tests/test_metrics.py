@@ -332,7 +332,7 @@ class TestMaxAbsoluteErrorExtended:
         assert result == pytest.approx(99.0)
 
 
-class TestSymmetricMape:
+class TestSymmetricMapeExtended:
     def test_perfect_forecast_gives_zero(self) -> None:
         from app.metrics import symmetric_mape
         values = [1.0, 2.0, 3.0]
@@ -351,7 +351,7 @@ class TestSymmetricMape:
         assert symmetric_mape(values, values) == pytest.approx(0.0)
 
 
-class TestNormalisedRmse:
+class TestNormalisedRmseExtended:
     def test_perfect_prediction_gives_zero(self) -> None:
         from app.metrics import normalised_rmse
         values = [1.0, 2.0, 3.0, 4.0]
@@ -372,7 +372,7 @@ class TestNormalisedRmse:
         assert nrmse >= 0.0
 
 
-class TestRSquared:
+class TestRSquaredExtended:
     def test_perfect_prediction_gives_one(self) -> None:
         from app.metrics import r_squared
         values = [1.0, 2.0, 3.0, 4.0]

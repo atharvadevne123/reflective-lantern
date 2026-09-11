@@ -1109,7 +1109,7 @@ class TestRollingMean:
         assert len(result) == len(values)
 
 
-class TestTrendStrength:
+class TestTrendStrengthExtended:
     def test_perfect_linear_trend_near_one(self) -> None:
         from app.trend_analysis import trend_strength
         values = [float(i) for i in range(20)]
@@ -1130,7 +1130,7 @@ class TestTrendStrength:
         assert 0.0 <= strength <= 1.0
 
 
-class TestCumulativeSum:
+class TestCumulativeSumExtended:
     def test_zeros_stay_zero(self) -> None:
         from app.trend_analysis import cumulative_sum
         result = cumulative_sum([0.0] * 5)
