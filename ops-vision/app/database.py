@@ -187,3 +187,15 @@ def ping_db() -> bool:
     except Exception:
         logger.exception("Database ping failed")
         return False
+
+__all__ = [
+    "Base",
+    "DriftAlert",
+    "Incident",
+    "Prediction",
+    "create_tables",
+    "get_db",
+    "get_engine",
+    "get_session_factory",
+    "ping_db",
+]
