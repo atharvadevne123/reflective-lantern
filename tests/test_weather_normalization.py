@@ -207,3 +207,37 @@ class TestComparePeriodsSameWeather:
             assert result.normalized_change_pct < 0
         elif current_kwh > 1000.0:
             assert result.normalized_change_pct > 0
+
+
+class TestNormalizationFactor:
+    def test_equal_degree_days_gives_factor_one(self) -> None:
+        assert normalization_factor(100.0, 100.0) == pytest.approx(1.0)
+
+    def test_twice_baseline_gives_factor_half(self) -> None:
+        assert normalization_factor(100.0, 200.0) == pytest.approx(0.5)
+
+    def test_zero_current_degree_days_returns_one(self) -> None:
+        result = normalization_factor(0.0, 0.0)
+        assert result == pytest.approx(1.0)
+
+    @pytest.mark.parametrize("baseline", [100.0, 200.0, 500.0])
+    def test_factor_inversely_proportional_to_current(self, baseline: float) -> None:
+        f1 = normalization_factor(baseline, baseline)
+        f2 = normalization_factor(baseline, baseline * 2)
+        assert f1 > f2
+
+
+class TestNormalizeConsumption:
+    def test_no_temperature_change_unchanged(self) -> None:
+        result = normalize_consumption(1000.0, 300.0, 300.0)
+        assert result == pytest.approx(1000.0)
+
+    def test_fewer_degree_days_reduces_normalized_consumption(self) -> None:
+        # baseline=200, current=300 (more degree days than baseline) → lower normalized
+        result = normalize_consumption(1000.0, 200.0, 300.0)
+        assert result < 1000.0
+
+    @pytest.mark.parametrize("consumption", [500.0, 1000.0, 2000.0])
+    def test_normalized_consumption_positive(self, consumption: float) -> None:
+        result = normalize_consumption(consumption, 300.0, 300.0)
+        assert result > 0.0
