@@ -199,3 +199,39 @@ class TestPercentileRankEdgeCases:
     def test_highest_value_in_cohort_has_highest_rank(self) -> None:
         rank = percentile_rank(150.0, COHORT)
         assert rank >= percentile_rank(110.0, COHORT)
+
+
+class TestSavingsPotential:
+    def test_at_target_no_savings(self) -> None:
+        result = savings_potential(annual_kwh=10000.0, eui=100.0, target_eui=100.0)
+        assert result == pytest.approx(0.0)
+
+    def test_above_target_positive_savings(self) -> None:
+        result = savings_potential(annual_kwh=10000.0, eui=150.0, target_eui=100.0)
+        assert result > 0.0
+
+    def test_below_target_zero_savings(self) -> None:
+        result = savings_potential(annual_kwh=10000.0, eui=80.0, target_eui=100.0)
+        assert result <= 0.0
+
+    @pytest.mark.parametrize("eui", [100.0, 150.0, 200.0])
+    def test_savings_non_negative_when_above_target(self, eui: float) -> None:
+        result = savings_potential(annual_kwh=5000.0, eui=eui, target_eui=90.0)
+        if eui >= 90.0:
+            assert result >= 0.0
+
+
+class TestEnergyUseIntensity:
+    def test_basic_calculation(self) -> None:
+        eui = energy_use_intensity(annual_kwh=10000.0, floor_area_m2=100.0)
+        assert eui == pytest.approx(100.0)
+
+    def test_scales_inversely_with_area(self) -> None:
+        eui_small = energy_use_intensity(annual_kwh=10000.0, floor_area_m2=100.0)
+        eui_large = energy_use_intensity(annual_kwh=10000.0, floor_area_m2=200.0)
+        assert eui_small > eui_large
+
+    @pytest.mark.parametrize("area", [50.0, 100.0, 500.0])
+    def test_eui_positive_for_valid_area(self, area: float) -> None:
+        eui = energy_use_intensity(annual_kwh=10000.0, floor_area_m2=area)
+        assert eui > 0.0
