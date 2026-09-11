@@ -604,3 +604,66 @@ class TestErrorBudgetEdgeCases:
         r1 = error_budget_remaining(total_requests=1000, error_count=5, slo_target=0.9)
         r2 = error_budget_remaining(total_requests=1000, error_count=5, slo_target=0.999)
         assert r1 >= r2
+
+
+class TestComputeDrift:
+    def test_identical_distributions_low_drift(self) -> None:
+        from app.monitoring import compute_drift
+        values = [1.0, 2.0, 3.0, 4.0, 5.0] * 4
+        result = compute_drift(values, values)
+        assert isinstance(result, dict)
+        assert "drift_detected" in result
+
+    def test_very_different_distributions_drift_detected(self) -> None:
+        from app.monitoring import compute_drift
+        ref = [1.0] * 20
+        curr = [100.0] * 20
+        result = compute_drift(ref, curr)
+        assert result.get("drift_detected") is True
+
+    def test_drift_result_has_p_value(self) -> None:
+        from app.monitoring import compute_drift
+        ref = [float(i) for i in range(20)]
+        curr = [float(i) + 0.1 for i in range(20)]
+        result = compute_drift(ref, curr)
+        assert "p_value" in result
+
+
+class TestDriftSeverity:
+    def test_low_p_value_high_severity(self) -> None:
+        from app.monitoring import drift_severity
+        sev = drift_severity(p_value=0.001)
+        assert isinstance(sev, str)
+        assert len(sev) > 0
+
+    def test_high_p_value_no_drift(self) -> None:
+        from app.monitoring import drift_severity
+        sev = drift_severity(p_value=0.9)
+        assert sev in ("none", "low", "normal")
+
+    @pytest.mark.parametrize("p_val", [0.001, 0.01, 0.05, 0.5])
+    def test_severity_is_string(self, p_val: float) -> None:
+        from app.monitoring import drift_severity
+        result = drift_severity(p_value=p_val)
+        assert isinstance(result, str)
+
+
+class TestZscoreAlert:
+    def test_constant_series_no_alerts(self) -> None:
+        from app.monitoring import zscore_alert
+        values = [1.0] * 20
+        indices = zscore_alert(values)
+        assert indices == []
+
+    def test_spike_index_returned(self) -> None:
+        from app.monitoring import zscore_alert
+        values = [1.0] * 19 + [1000.0]
+        indices = zscore_alert(values)
+        assert 19 in indices
+
+    @pytest.mark.parametrize("threshold", [2.0, 3.0, 4.0])
+    def test_returns_list(self, threshold: float) -> None:
+        from app.monitoring import zscore_alert
+        values = [float(i % 5) for i in range(20)]
+        result = zscore_alert(values, threshold=threshold)
+        assert isinstance(result, list)
