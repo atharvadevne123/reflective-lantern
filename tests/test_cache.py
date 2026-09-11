@@ -733,3 +733,62 @@ class TestCacheIsEmptyEdgeCases:
             c.set(k, 1)
         batch_delete(c, keys)
         assert is_cache_empty(c) is True
+
+
+class TestCacheHitRate:
+    def test_all_hits_gives_one(self) -> None:
+        from app.cache import cache_hit_rate
+        assert cache_hit_rate(hits=10, misses=0) == pytest.approx(1.0)
+
+    def test_all_misses_gives_zero(self) -> None:
+        from app.cache import cache_hit_rate
+        assert cache_hit_rate(hits=0, misses=10) == pytest.approx(0.0)
+
+    @pytest.mark.parametrize("hits,misses", [(5, 5), (3, 7), (8, 2)])
+    def test_partial_hit_rate(self, hits: int, misses: int) -> None:
+        from app.cache import cache_hit_rate
+        rate = cache_hit_rate(hits=hits, misses=misses)
+        expected = hits / (hits + misses)
+        assert rate == pytest.approx(expected)
+
+
+class TestCacheRemainingCapacity:
+    def test_empty_cache_full_capacity(self) -> None:
+        from app.cache import TTLCache, cache_remaining_capacity
+        c = TTLCache(ttl_seconds=60, max_size=10)
+        assert cache_remaining_capacity(c) == 10
+
+    def test_decreases_as_items_added(self) -> None:
+        from app.cache import TTLCache, cache_remaining_capacity
+        c = TTLCache(ttl_seconds=60, max_size=10)
+        c.set("a", 1)
+        c.set("b", 2)
+        assert cache_remaining_capacity(c) == 8
+
+    @pytest.mark.parametrize("capacity", [5, 10, 20])
+    def test_capacity_matches_max_size_on_empty(self, capacity: int) -> None:
+        from app.cache import TTLCache, cache_remaining_capacity
+        c = TTLCache(ttl_seconds=60, max_size=capacity)
+        assert cache_remaining_capacity(c) == capacity
+
+
+class TestWarmCache:
+    def test_items_count_matches_warmed(self) -> None:
+        from app.cache import TTLCache, warm_cache
+        c = TTLCache(ttl_seconds=60, max_size=10)
+        count = warm_cache(c, {"a": 1, "b": 2, "c": 3})
+        assert count == 3
+
+    def test_warmed_items_retrievable(self) -> None:
+        from app.cache import TTLCache, warm_cache
+        c = TTLCache(ttl_seconds=60, max_size=10)
+        warm_cache(c, {"x": 42})
+        assert c.get("x") == 42
+
+    @pytest.mark.parametrize("n", [1, 3, 5])
+    def test_warm_count_matches_dict_size(self, n: int) -> None:
+        from app.cache import TTLCache, warm_cache
+        c = TTLCache(ttl_seconds=60, max_size=20)
+        items = {f"k{i}": i for i in range(n)}
+        count = warm_cache(c, items)
+        assert count == n
