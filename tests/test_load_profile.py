@@ -206,3 +206,44 @@ class TestMaxRampRateEdgeCases:
     def test_linear_ramp_equals_step(self, step: float) -> None:
         series = [0.0, step, 2 * step, 3 * step]
         assert max_ramp_rate(series) == pytest.approx(step)
+
+
+from app.load_profile import demand_variability, night_load_fraction
+
+
+class TestDemandVariability:
+    def test_constant_series_zero_variability(self) -> None:
+        assert demand_variability([5.0] * 24) == pytest.approx(0.0)
+
+    def test_varying_series_positive_variability(self) -> None:
+        assert demand_variability([1.0, 10.0] * 12) > 0.0
+
+    @pytest.mark.parametrize("n", [4, 12, 24])
+    def test_variability_non_negative(self, n: int) -> None:
+        series = list(range(1, n + 1))
+        assert demand_variability([float(v) for v in series]) >= 0.0
+
+
+class TestNightLoadFraction:
+    def test_all_night_usage_gives_high_fraction(self) -> None:
+        # Load only between 22:00-5:59 (night hours)
+        night = [0.0] * 6 + [0.0] * 16 + [1.0] * 2
+        frac = night_load_fraction(night)
+        assert frac > 0.0
+
+    def test_all_day_usage_gives_low_fraction(self) -> None:
+        day = [1.0] * 6 + [1.0] * 16 + [0.0] * 2
+        frac = night_load_fraction(day)
+        assert 0.0 <= frac <= 1.0
+
+    def test_fraction_between_zero_and_one(self) -> None:
+        frac = night_load_fraction([1.0] * 24)
+        assert 0.0 <= frac <= 1.0
+
+    def test_zero_total_consumption_gives_zero(self) -> None:
+        assert night_load_fraction([0.0] * 24) == pytest.approx(0.0)
+
+    @pytest.mark.parametrize("n", [8, 16, 24])
+    def test_fraction_valid_for_various_lengths(self, n: int) -> None:
+        frac = night_load_fraction([1.0] * n)
+        assert 0.0 <= frac <= 1.0
