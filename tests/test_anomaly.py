@@ -1360,3 +1360,42 @@ def test_zscore_flag_detects_spike_at_lower_threshold(threshold: float) -> None:
     readings = [1.0] * 19 + [1000.0]
     flags = zscore_flag(readings, threshold=threshold)
     assert flags[-1] is True
+
+
+class TestFlagAnomalyRate:
+    def test_all_normal_gives_zero(self) -> None:
+        assert flag_anomaly_rate([False] * 10) == pytest.approx(0.0)
+
+    def test_all_anomalous_gives_one(self) -> None:
+        assert flag_anomaly_rate([True] * 10) == pytest.approx(1.0)
+
+    def test_empty_list_gives_zero(self) -> None:
+        assert flag_anomaly_rate([]) == pytest.approx(0.0)
+
+    @pytest.mark.parametrize("n_true,n_total", [(1, 10), (5, 10), (3, 6)])
+    def test_partial_anomaly_rate(self, n_true: int, n_total: int) -> None:
+        flags = [True] * n_true + [False] * (n_total - n_true)
+        rate = flag_anomaly_rate(flags)
+        assert rate == pytest.approx(n_true / n_total)
+
+
+class TestConsecutiveAnomalyRuns:
+    def test_no_anomalies_empty_result(self) -> None:
+        runs = consecutive_anomaly_runs([False] * 10)
+        assert runs == []
+
+    def test_single_anomaly_one_run(self) -> None:
+        flags = [False, True, False]
+        runs = consecutive_anomaly_runs(flags)
+        assert len(runs) == 1
+
+    def test_two_separate_runs_detected(self) -> None:
+        flags = [True, True, False, True, True]
+        runs = consecutive_anomaly_runs(flags)
+        assert len(runs) == 2
+
+    @pytest.mark.parametrize("n", [1, 3, 5])
+    def test_run_count_bounded_by_anomalies(self, n: int) -> None:
+        flags = [True, False] * n
+        runs = consecutive_anomaly_runs(flags)
+        assert len(runs) <= n
