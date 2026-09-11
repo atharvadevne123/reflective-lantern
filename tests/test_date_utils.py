@@ -1127,3 +1127,85 @@ class TestIsLeapYearEdgeCases:
         from app.date_utils import is_leap_year
 
         assert is_leap_year(year) is False
+
+
+class TestNextBusinessDay:
+    def test_monday_gives_tuesday(self) -> None:
+        from datetime import UTC
+        from app.date_utils import next_business_day
+        monday = datetime(2026, 9, 7, 12, 0, tzinfo=UTC)
+        result = next_business_day(monday)
+        assert result.weekday() == 1
+
+    def test_friday_gives_monday(self) -> None:
+        from datetime import UTC
+        from app.date_utils import next_business_day
+        friday = datetime(2026, 9, 11, 12, 0, tzinfo=UTC)
+        result = next_business_day(friday)
+        assert result.weekday() == 0
+
+    def test_saturday_gives_monday(self) -> None:
+        from datetime import UTC
+        from app.date_utils import next_business_day
+        saturday = datetime(2026, 9, 12, 12, 0, tzinfo=UTC)
+        result = next_business_day(saturday)
+        assert result.weekday() == 0
+
+
+class TestDaysUntil:
+    def test_future_date_positive(self) -> None:
+        from datetime import UTC
+        from app.date_utils import days_until
+        start = datetime(2026, 9, 1, tzinfo=UTC)
+        target = datetime(2026, 9, 11, tzinfo=UTC)
+        assert days_until(start, target) == 10
+
+    def test_same_date_zero(self) -> None:
+        from datetime import UTC
+        from app.date_utils import days_until
+        dt = datetime(2026, 9, 11, tzinfo=UTC)
+        assert days_until(dt, dt) == 0
+
+    def test_past_date_non_positive(self) -> None:
+        from datetime import UTC
+        from app.date_utils import days_until
+        start = datetime(2026, 9, 11, tzinfo=UTC)
+        target = datetime(2026, 9, 1, tzinfo=UTC)
+        assert days_until(start, target) <= 0
+
+
+class TestClampToRange:
+    def test_within_range_unchanged(self) -> None:
+        from datetime import UTC
+        from app.date_utils import clamp_to_range
+        start = datetime(2026, 1, 1, tzinfo=UTC)
+        end = datetime(2026, 12, 31, tzinfo=UTC)
+        mid = datetime(2026, 6, 15, tzinfo=UTC)
+        assert clamp_to_range(mid, start, end) == mid
+
+    def test_before_start_clamped_to_start(self) -> None:
+        from datetime import UTC
+        from app.date_utils import clamp_to_range
+        start = datetime(2026, 6, 1, tzinfo=UTC)
+        end = datetime(2026, 12, 31, tzinfo=UTC)
+        early = datetime(2026, 1, 1, tzinfo=UTC)
+        assert clamp_to_range(early, start, end) == start
+
+    def test_after_end_clamped_to_end(self) -> None:
+        from datetime import UTC
+        from app.date_utils import clamp_to_range
+        start = datetime(2026, 1, 1, tzinfo=UTC)
+        end = datetime(2026, 6, 1, tzinfo=UTC)
+        late = datetime(2026, 12, 31, tzinfo=UTC)
+        assert clamp_to_range(late, start, end) == end
+
+    @pytest.mark.parametrize("offset_days", [-30, 0, 30])
+    def test_various_offsets_stay_in_range(self, offset_days: int) -> None:
+        from datetime import UTC, timedelta
+        from app.date_utils import clamp_to_range
+        start = datetime(2026, 1, 1, tzinfo=UTC)
+        end = datetime(2026, 12, 31, tzinfo=UTC)
+        mid = datetime(2026, 6, 15, tzinfo=UTC)
+        dt = mid + timedelta(days=offset_days)
+        result = clamp_to_range(dt, start, end)
+        assert start <= result <= end
