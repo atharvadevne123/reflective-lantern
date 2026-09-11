@@ -183,3 +183,11 @@ def feature_importance(model: Pipeline) -> dict[str, float]:
     if FEATURE_NAMES and len(FEATURE_NAMES) == len(scores):
         return {name: round(float(s), 4) for name, s in zip(FEATURE_NAMES, scores, strict=False)}
     return {f"f{i}": round(float(s), 4) for i, s in enumerate(scores)}
+
+__all__ = [
+    "feature_importance",
+    "get_metrics",
+    "load_model",
+    "predict",
+    "train_model",
+]
