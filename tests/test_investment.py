@@ -1325,3 +1325,73 @@ class TestPaybackPeriodEdgeCases:
     def test_payback_proportional_to_cost(self, cost: float) -> None:
         result = payback_period(cost=cost, annual_benefit=500.0)
         assert result == pytest.approx(cost / 500.0, rel=1e-3)
+
+
+from app.investment import (
+    annualized_return,
+    gross_rent_multiplier,
+    irr_estimate,
+    loan_to_value_ratio,
+    net_present_value,
+)
+
+
+class TestAnnualizedReturn:
+    def test_positive_return_over_multiple_years(self) -> None:
+        result = annualized_return(total_return=0.5, years=5.0)
+        assert result > 0.0
+
+    def test_zero_return_gives_zero(self) -> None:
+        result = annualized_return(total_return=0.0, years=5.0)
+        assert result == pytest.approx(0.0)
+
+    @pytest.mark.parametrize("years", [1.0, 5.0, 10.0, 20.0])
+    def test_annualized_return_finite_for_valid_inputs(self, years: float) -> None:
+        import math
+        result = annualized_return(total_return=1.0, years=years)
+        assert math.isfinite(result)
+
+
+class TestNetPresentValue:
+    def test_zero_discount_sums_cash_flows(self) -> None:
+        cash_flows = [100.0, 200.0, 300.0]
+        npv = net_present_value(cash_flows, discount_rate=0.0)
+        assert npv == pytest.approx(sum(cash_flows))
+
+    def test_higher_discount_lowers_npv(self) -> None:
+        cash_flows = [100.0, 200.0, 300.0]
+        npv_low = net_present_value(cash_flows, discount_rate=0.05)
+        npv_high = net_present_value(cash_flows, discount_rate=0.20)
+        assert npv_low > npv_high
+
+    @pytest.mark.parametrize("rate", [0.05, 0.10, 0.15])
+    def test_npv_finite_for_valid_inputs(self, rate: float) -> None:
+        import math
+        flows = [50.0, 100.0, 150.0]
+        assert math.isfinite(net_present_value(flows, discount_rate=rate))
+
+
+class TestGrossRentMultiplier:
+    def test_basic_calculation(self) -> None:
+        grm = gross_rent_multiplier(property_price=300000.0, annual_gross_rent=30000.0)
+        assert grm == pytest.approx(10.0)
+
+    @pytest.mark.parametrize(("price", "rent"), [(200000, 20000), (500000, 25000)])
+    def test_grm_matches_ratio(self, price: float, rent: float) -> None:
+        grm = gross_rent_multiplier(property_price=price, annual_gross_rent=rent)
+        assert grm == pytest.approx(price / rent)
+
+
+class TestLoanToValueRatio:
+    def test_full_loan_gives_100_pct(self) -> None:
+        ltv = loan_to_value_ratio(loan_amount=200000.0, property_value=200000.0)
+        assert ltv == pytest.approx(100.0)
+
+    def test_half_financed_gives_50_pct(self) -> None:
+        ltv = loan_to_value_ratio(loan_amount=100000.0, property_value=200000.0)
+        assert ltv == pytest.approx(50.0)
+
+    @pytest.mark.parametrize("pct", [0.5, 0.75, 0.9])
+    def test_ltv_matches_fraction(self, pct: float) -> None:
+        ltv = loan_to_value_ratio(loan_amount=pct * 200000.0, property_value=200000.0)
+        assert ltv == pytest.approx(pct * 100.0)
