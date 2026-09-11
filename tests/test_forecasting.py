@@ -1072,3 +1072,59 @@ class TestForecastSummaryEdgeCases:
 
         result = forecast_summary([float(i) for i in range(1, n + 1)])
         assert "min" in result and "max" in result
+
+
+class TestForecastBias:
+    def test_perfect_forecast_zero_bias(self) -> None:
+        from app.forecasting import forecast_bias
+        values = [1.0, 2.0, 3.0]
+        assert forecast_bias(values, values) == pytest.approx(0.0)
+
+    def test_overforecast_positive_bias(self) -> None:
+        from app.forecasting import forecast_bias
+        actual = [1.0, 1.0, 1.0]
+        predicted = [2.0, 2.0, 2.0]
+        assert forecast_bias(actual, predicted) > 0.0
+
+    @pytest.mark.parametrize("n", [3, 5, 10])
+    def test_equal_inputs_give_zero(self, n: int) -> None:
+        from app.forecasting import forecast_bias
+        values = [float(i + 1) for i in range(n)]
+        assert forecast_bias(values, values) == pytest.approx(0.0)
+
+
+class TestNaiveForecast:
+    def test_repeats_last_value(self) -> None:
+        from app.forecasting import naive_forecast
+        result = naive_forecast(last_value=5.0, steps=3)
+        assert result == [5.0, 5.0, 5.0]
+
+    def test_zero_steps_gives_empty(self) -> None:
+        from app.forecasting import naive_forecast
+        assert naive_forecast(last_value=10.0, steps=0) == []
+
+    @pytest.mark.parametrize("steps", [1, 5, 10])
+    def test_output_length_matches_steps(self, steps: int) -> None:
+        from app.forecasting import naive_forecast
+        result = naive_forecast(last_value=3.0, steps=steps)
+        assert len(result) == steps
+
+
+class TestMaeScore:
+    def test_perfect_prediction_is_zero(self) -> None:
+        from app.forecasting import mae_score
+        values = [1.0, 2.0, 3.0]
+        assert mae_score(values, values) == pytest.approx(0.0)
+
+    def test_constant_error_matches_error(self) -> None:
+        from app.forecasting import mae_score
+        actual = [1.0, 1.0, 1.0]
+        predicted = [2.0, 2.0, 2.0]
+        assert mae_score(actual, predicted) == pytest.approx(1.0)
+
+    @pytest.mark.parametrize("n", [3, 5, 10])
+    def test_non_negative_result(self, n: int) -> None:
+        from app.forecasting import mae_score
+        actual = [float(i) for i in range(n)]
+        predicted = [float(i) + 0.5 for i in range(n)]
+        assert mae_score(actual, predicted) >= 0.0
