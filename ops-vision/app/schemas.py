@@ -191,3 +191,23 @@ class ModelInfoResponse(BaseModel):
     model_version: str
     model_loaded: bool
     estimators: list[str] | None = None
+
+__all__ = [
+    "BatchPredictRequest",
+    "BatchPredictResponse",
+    "DriftAlertRecord",
+    "DriftStatusResponse",
+    "ErrorResponse",
+    "ForecastPoint",
+    "HealthResponse",
+    "IncidentRecord",
+    "MetricsPayload",
+    "MetricsResponse",
+    "ModelInfoResponse",
+    "PredictionResponse",
+    "PredictionStats",
+    "RunbookResult",
+    "RunbookSearchRequest",
+    "ServiceHealthStatus",
+    "SeverityLevel",
+]
