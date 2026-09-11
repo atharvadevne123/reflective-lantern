@@ -1593,3 +1593,61 @@ class TestComputeSkewness:
         values = list(range(1, n + 1))
         result = compute_skewness([float(v) for v in values])
         assert math.isfinite(result)
+
+
+class TestGeometricMean:
+    def test_unit_values_give_one(self) -> None:
+        from app.stats_utils import geometric_mean
+        assert geometric_mean([1.0] * 5) == pytest.approx(1.0)
+
+    def test_single_value_returns_itself(self) -> None:
+        from app.stats_utils import geometric_mean
+        assert geometric_mean([4.0]) == pytest.approx(4.0)
+
+    @pytest.mark.parametrize("n", [2, 5, 10])
+    def test_positive_values_give_positive_mean(self, n: int) -> None:
+        from app.stats_utils import geometric_mean
+        values = [float(i + 1) for i in range(n)]
+        assert geometric_mean(values) > 0.0
+
+
+class TestWeightedAverage:
+    def test_equal_weights_matches_mean(self) -> None:
+        from app.stats_utils import weighted_average
+        values = [1.0, 2.0, 3.0, 4.0]
+        weights = [1.0] * 4
+        assert weighted_average(values, weights) == pytest.approx(2.5)
+
+    def test_zero_weight_item_excluded(self) -> None:
+        from app.stats_utils import weighted_average
+        values = [1.0, 10.0, 1.0]
+        weights = [1.0, 0.0, 1.0]
+        result = weighted_average(values, weights)
+        assert result == pytest.approx(1.0)
+
+    @pytest.mark.parametrize("n", [3, 5, 7])
+    def test_result_within_value_range(self, n: int) -> None:
+        from app.stats_utils import weighted_average
+        values = [float(i + 1) for i in range(n)]
+        weights = [1.0] * n
+        result = weighted_average(values, weights)
+        assert min(values) <= result <= max(values)
+
+
+class TestInterquartileRange:
+    def test_constant_series_gives_zero(self) -> None:
+        from app.stats_utils import interquartile_range
+        assert interquartile_range([5.0] * 10) == pytest.approx(0.0)
+
+    def test_non_negative_result(self) -> None:
+        from app.stats_utils import interquartile_range
+        values = [1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0]
+        assert interquartile_range(values) >= 0.0
+
+    @pytest.mark.parametrize("n", [8, 12, 20])
+    def test_iqr_less_than_range(self, n: int) -> None:
+        from app.stats_utils import interquartile_range
+        values = [float(i) for i in range(n)]
+        iqr = interquartile_range(values)
+        full_range = values[-1] - values[0]
+        assert iqr <= full_range
