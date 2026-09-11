@@ -90,3 +90,5 @@ class TTLCache:
 
 # Module-level singleton used by the prediction endpoints.
 prediction_cache = TTLCache(ttl_seconds=30, max_size=2048)
+
+__all__ = ["TTLCache"]
