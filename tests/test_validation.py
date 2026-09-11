@@ -1265,3 +1265,60 @@ def test_validate_positive_float_rejects_zero() -> None:
     from app.validation import validate_positive_float
 
     assert len(validate_positive_float(0.0)) > 0
+
+
+class TestValidateCoordinate:
+    def test_valid_coordinate_no_errors(self) -> None:
+        from app.validation import validate_coordinate
+        assert validate_coordinate(51.5, -0.1) == []
+
+    def test_invalid_lat_returns_error(self) -> None:
+        from app.validation import validate_coordinate
+        errors = validate_coordinate(91.0, 0.0)
+        assert len(errors) > 0
+
+    def test_invalid_lon_returns_error(self) -> None:
+        from app.validation import validate_coordinate
+        errors = validate_coordinate(0.0, 181.0)
+        assert len(errors) > 0
+
+    @pytest.mark.parametrize("lat,lon", [(-90, -180), (90, 180), (0, 0)])
+    def test_boundary_values_valid(self, lat: float, lon: float) -> None:
+        from app.validation import validate_coordinate
+        assert validate_coordinate(lat, lon) == []
+
+
+class TestValidatePercentage:
+    def test_valid_percentage_no_errors(self) -> None:
+        from app.validation import validate_percentage
+        assert validate_percentage(50.0) == []
+
+    def test_over_100_returns_error(self) -> None:
+        from app.validation import validate_percentage
+        errors = validate_percentage(101.0)
+        assert len(errors) > 0
+
+    def test_negative_returns_error(self) -> None:
+        from app.validation import validate_percentage
+        errors = validate_percentage(-1.0)
+        assert len(errors) > 0
+
+    @pytest.mark.parametrize("pct", [0.0, 50.0, 100.0])
+    def test_boundary_values_no_errors(self, pct: float) -> None:
+        from app.validation import validate_percentage
+        assert validate_percentage(pct) == []
+
+
+class TestIsValidTemporalInput:
+    def test_valid_input_returns_true(self) -> None:
+        from app.validation import is_valid_temporal_input
+        assert is_valid_temporal_input(hour=12, day_of_week=3, month=6) is True
+
+    def test_invalid_hour_returns_false(self) -> None:
+        from app.validation import is_valid_temporal_input
+        assert is_valid_temporal_input(hour=25, day_of_week=0, month=1) is False
+
+    @pytest.mark.parametrize("hour,dow,month", [(0, 0, 1), (23, 6, 12)])
+    def test_boundary_values_valid(self, hour: int, dow: int, month: int) -> None:
+        from app.validation import is_valid_temporal_input
+        assert is_valid_temporal_input(hour=hour, day_of_week=dow, month=month) is True
