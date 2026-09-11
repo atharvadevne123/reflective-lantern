@@ -66,3 +66,5 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         response.headers["Referrer-Policy"] = "no-referrer"
         response.headers["X-XSS-Protection"] = "1; mode=block"
         return response
+
+__all__ = ["RequestTimingMiddleware", "SecurityHeadersMiddleware"]
