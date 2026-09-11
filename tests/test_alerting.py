@@ -198,5 +198,53 @@ class TestAlertRuleEdgeCases:
         mgr = AlertManager()
         mgr.add_rule(_make_rule(cooldown_s=0))
         for i in range(3):
-            mgr.check({"cpu": 100.0}, now=float(i * 1000))
+            mgr.evaluate_all({"cpu": 100.0}, now=float(i * 1000))
         assert len(mgr.history) == 3
+
+
+class TestAlertManagerRuleManagement:
+    def test_remove_rule_returns_true(self) -> None:
+        mgr = AlertManager()
+        mgr.add_rule(_make_rule(name="r1"))
+        assert mgr.remove_rule("r1") is True
+
+    def test_remove_nonexistent_rule_returns_false(self) -> None:
+        mgr = AlertManager()
+        assert mgr.remove_rule("nonexistent") is False
+
+    def test_rule_names_sorted(self) -> None:
+        mgr = AlertManager()
+        mgr.add_rule(_make_rule(name="cpu_alert"))
+        mgr.add_rule(_make_rule(name="mem_alert"))
+        names = mgr.rule_names()
+        assert names == sorted(names)
+
+    @pytest.mark.parametrize("n", [1, 3, 5])
+    def test_rule_count_after_adds(self, n: int) -> None:
+        mgr = AlertManager()
+        for i in range(n):
+            mgr.add_rule(_make_rule(name=f"rule_{i}"))
+        assert len(mgr.rule_names()) == n
+
+
+class TestAlertManagerHistory:
+    def test_clear_history_empties_list(self) -> None:
+        mgr = AlertManager()
+        mgr.add_rule(_make_rule(cooldown_s=0))
+        mgr.evaluate_all({"cpu": 100.0}, now=BASE_NOW)
+        assert len(mgr.history) > 0
+        mgr.clear_history()
+        assert len(mgr.history) == 0
+
+    def test_history_for_metric_filters_correctly(self) -> None:
+        mgr = AlertManager()
+        mgr.add_rule(_make_rule(name="cpu_rule", metric="cpu", cooldown_s=0))
+        mgr.evaluate_all({"cpu": 100.0}, now=BASE_NOW)
+        cpu_alerts = mgr.history_for_metric("cpu")
+        assert len(cpu_alerts) == len(mgr.history)
+
+    def test_history_for_unknown_metric_empty(self) -> None:
+        mgr = AlertManager()
+        mgr.add_rule(_make_rule(cooldown_s=0))
+        mgr.evaluate_all({"cpu": 100.0}, now=BASE_NOW)
+        assert mgr.history_for_metric("memory") == []
