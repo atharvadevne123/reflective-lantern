@@ -88,3 +88,12 @@ def get_db() -> Generator[Session, None, None]:
 def init_db() -> None:
     """Create all tables if they do not yet exist."""
     Base.metadata.create_all(bind=engine)
+
+__all__ = [
+    "Base",
+    "DriftReport",
+    "PredictionLog",
+    "RetrainingRun",
+    "get_db",
+    "init_db",
+]
