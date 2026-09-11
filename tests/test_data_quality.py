@@ -1160,3 +1160,44 @@ class TestBatchScoreEdgeCases:
         records = [{"a": 1, "b": 2, "c": 3}] * 5
         scores = batch_score(records, required_fields=["a", "b", "c"])
         assert all(s >= 0.9 for s in scores)
+
+
+class TestNullRate:
+    def test_no_nulls_gives_zero(self) -> None:
+        from app.data_quality import null_rate
+        records = [{"x": 1}, {"x": 2}, {"x": 3}]
+        assert null_rate(records, "x") == pytest.approx(0.0)
+
+    def test_all_nulls_gives_one(self) -> None:
+        from app.data_quality import null_rate
+        records = [{"x": None}, {"x": None}]
+        assert null_rate(records, "x") == pytest.approx(1.0)
+
+    def test_missing_field_counted_as_null(self) -> None:
+        from app.data_quality import null_rate
+        records = [{"x": 1}, {"y": 2}]
+        rate = null_rate(records, "x")
+        assert rate == pytest.approx(0.5)
+
+    @pytest.mark.parametrize("n_null,n_total", [(0, 5), (3, 5), (5, 5)])
+    def test_partial_null_rates(self, n_null: int, n_total: int) -> None:
+        from app.data_quality import null_rate
+        records = [{"val": None}] * n_null + [{"val": 1}] * (n_total - n_null)
+        assert null_rate(records, "val") == pytest.approx(n_null / n_total)
+
+
+class TestDuplicateRate:
+    def test_no_duplicates_gives_zero(self) -> None:
+        from app.data_quality import duplicate_rate
+        records = [{"id": 1}, {"id": 2}, {"id": 3}]
+        assert duplicate_rate(records, ["id"]) == pytest.approx(0.0)
+
+    def test_all_duplicates_gives_high_rate(self) -> None:
+        from app.data_quality import duplicate_rate
+        records = [{"id": 1}] * 5
+        rate = duplicate_rate(records, ["id"])
+        assert rate > 0.0
+
+    def test_empty_records_gives_zero(self) -> None:
+        from app.data_quality import duplicate_rate
+        assert duplicate_rate([], ["id"]) == pytest.approx(0.0)
