@@ -1534,3 +1534,62 @@ class TestWinsorizeEdgeCases:
         values = list(range(100))
         result = winsorize([float(v) for v in values], lower_pct=5.0, upper_pct=95.0)
         assert max(result) <= 95.0
+
+
+class TestComputeEntropy:
+    def test_uniform_distribution_has_max_entropy(self) -> None:
+        from app.stats_utils import compute_entropy
+        equal = [1.0, 1.0, 1.0, 1.0]
+        skewed = [4.0, 0.1, 0.1, 0.1]
+        assert compute_entropy(equal) > compute_entropy(skewed)
+
+    def test_zero_values_are_ignored(self) -> None:
+        from app.stats_utils import compute_entropy
+        result = compute_entropy([1.0, 0.0, 1.0, 0.0])
+        assert result >= 0.0
+
+    @pytest.mark.parametrize("n", [2, 4, 8])
+    def test_entropy_non_negative(self, n: int) -> None:
+        from app.stats_utils import compute_entropy
+        values = [1.0] * n
+        assert compute_entropy(values) >= 0.0
+
+
+class TestComputeCorrelation:
+    def test_perfect_positive_correlation(self) -> None:
+        from app.stats_utils import compute_correlation
+        x = [1.0, 2.0, 3.0, 4.0, 5.0]
+        assert compute_correlation(x, x) == pytest.approx(1.0)
+
+    def test_perfect_negative_correlation(self) -> None:
+        from app.stats_utils import compute_correlation
+        x = [1.0, 2.0, 3.0, 4.0, 5.0]
+        neg = [-v for v in x]
+        assert compute_correlation(x, neg) == pytest.approx(-1.0)
+
+    def test_correlation_in_minus_one_to_one(self) -> None:
+        from app.stats_utils import compute_correlation
+        x = [1.0, 3.0, 2.0, 5.0, 4.0]
+        y = [2.0, 1.0, 4.0, 3.0, 5.0]
+        r = compute_correlation(x, y)
+        assert -1.0 <= r <= 1.0
+
+
+class TestComputeSkewness:
+    def test_symmetric_data_near_zero(self) -> None:
+        from app.stats_utils import compute_skewness
+        symmetric = [1.0, 2.0, 3.0, 4.0, 5.0]
+        assert abs(compute_skewness(symmetric)) < 0.1
+
+    def test_right_skewed_positive(self) -> None:
+        from app.stats_utils import compute_skewness
+        right_skewed = [1.0, 1.0, 1.0, 1.0, 10.0]
+        assert compute_skewness(right_skewed) > 0.0
+
+    @pytest.mark.parametrize("n", [5, 10, 20])
+    def test_skewness_finite_for_valid_data(self, n: int) -> None:
+        from app.stats_utils import compute_skewness
+        import math
+        values = list(range(1, n + 1))
+        result = compute_skewness([float(v) for v in values])
+        assert math.isfinite(result)
