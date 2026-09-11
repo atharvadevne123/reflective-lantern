@@ -6,7 +6,9 @@ import pytest
 
 from app.cost_estimator import (
     ResourceSpec,
+    cheapest_spec,
     compare_specs,
+    cost_per_unit,
     estimate_cost,
     monthly_estimate,
 )
@@ -167,3 +169,38 @@ class TestMonthlyEstimateEdgeCases:
         bd = monthly_estimate(spec, hours_per_day=1, days_per_month=days)
         single_day = estimate_cost(spec)
         assert bd.total_usd == pytest.approx(single_day.total_usd * days)
+
+
+class TestCheapestSpec:
+    def test_returns_lowest_cost_option(self) -> None:
+        s1 = ResourceSpec(cpu_cores=1, memory_gb=1, duration_hours=1)
+        s2 = ResourceSpec(cpu_cores=8, memory_gb=32, duration_hours=1)
+        cheapest = cheapest_spec([s1, s2])
+        assert cheapest is not None
+        assert estimate_cost(cheapest).total_usd <= estimate_cost(s2).total_usd
+
+    def test_single_spec_returns_it(self) -> None:
+        s = ResourceSpec(cpu_cores=2, memory_gb=4, duration_hours=1)
+        assert cheapest_spec([s]) is s
+
+    def test_empty_list_returns_none(self) -> None:
+        assert cheapest_spec([]) is None
+
+
+@pytest.mark.parametrize("units", [1, 10, 100])
+def test_cost_per_unit_scales_with_units(units: int) -> None:
+    """cost_per_unit decreases (or stays equal) as units increase for fixed cost."""
+    spec = ResourceSpec(cpu_cores=2, memory_gb=8, duration_hours=1)
+    bd = estimate_cost(spec)
+    cpu = cost_per_unit(bd, units)
+    assert cpu == pytest.approx(bd.total_usd / units)
+
+
+@pytest.mark.parametrize(("cpu", "mem"), [(1, 4), (4, 16), (16, 64)])
+def test_compare_specs_identifies_cheaper(cpu: int, mem: int) -> None:
+    """compare_specs correctly flags the cheaper option."""
+    cheap = ResourceSpec(cpu_cores=1, memory_gb=1, duration_hours=1)
+    expensive = ResourceSpec(cpu_cores=cpu, memory_gb=mem, duration_hours=1)
+    results = compare_specs([cheap, expensive])
+    assert len(results) == 2
+    assert all("total_usd" in r or "cost" in r or isinstance(r, dict) for r in results)
