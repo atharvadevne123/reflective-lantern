@@ -317,3 +317,20 @@ def count_predictions_by_service(db: Session, service_name: str) -> int:
     except Exception:
         logger.exception("Failed to count predictions for service=%s", service_name)
         raise
+
+__all__ = [
+    "avg_confidence",
+    "bulk_create_predictions",
+    "count_drift_alerts_last_24h",
+    "count_incidents_predicted",
+    "count_predictions",
+    "count_predictions_by_service",
+    "create_drift_alert",
+    "create_incident",
+    "create_prediction",
+    "delete_old_predictions",
+    "get_incident",
+    "get_incidents_by_service",
+    "get_prediction_by_id",
+    "list_incidents",
+]
