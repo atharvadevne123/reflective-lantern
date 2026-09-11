@@ -192,3 +192,50 @@ def test_midpoint_is_between_endpoints() -> None:
     """midpoint coordinate lies between the two input points."""
     mid = midpoint(LONDON, PARIS)
     assert min(LONDON.lat, PARIS.lat) <= mid.lat <= max(LONDON.lat, PARIS.lat)
+
+
+from app.geo_utils import bearing, within_radius
+
+TOKYO = Coordinate(35.6762, 139.6503)
+
+
+class TestBearing:
+    def test_bearing_east_is_near_90(self) -> None:
+        west = Coordinate(51.5, -1.0)
+        east = Coordinate(51.5, 1.0)
+        b = bearing(west, east)
+        assert 80.0 < b < 100.0
+
+    def test_bearing_is_in_valid_range(self) -> None:
+        b = bearing(LONDON, PARIS)
+        assert 0.0 <= b < 360.0
+
+    @pytest.mark.parametrize("coord_pair", [
+        (LONDON, PARIS),
+        (NEW_YORK, SYDNEY),
+        (LONDON, TOKYO),
+    ])
+    def test_bearing_nonnegative_for_city_pairs(self, coord_pair) -> None:
+        a, b = coord_pair
+        result = bearing(a, b)
+        assert 0.0 <= result < 360.0
+
+
+class TestWithinRadius:
+    def test_point_inside_radius_included(self) -> None:
+        result = within_radius(LONDON, 500.0, [LONDON, PARIS])
+        assert PARIS in result
+
+    def test_point_far_outside_radius_excluded(self) -> None:
+        result = within_radius(LONDON, 10.0, [SYDNEY, NEW_YORK])
+        assert len(result) == 0
+
+    def test_zero_radius_excludes_far_points(self) -> None:
+        result = within_radius(LONDON, 0.0, [PARIS, NEW_YORK])
+        assert len(result) == 0
+
+    @pytest.mark.parametrize("radius", [100.0, 500.0, 10000.0])
+    def test_larger_radius_includes_more_points(self, radius: float) -> None:
+        candidates = [PARIS, NEW_YORK, SYDNEY]
+        result = within_radius(LONDON, radius, candidates)
+        assert len(result) <= len(candidates)
