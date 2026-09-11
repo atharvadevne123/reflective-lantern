@@ -400,3 +400,66 @@ class TestRetryNetworkError:
 
         with pytest.raises(ConnectionError):
             always_fail()
+
+
+class TestRetrySucceedsOnFirstAttempt:
+    def test_successful_function_not_retried(self, monkeypatch) -> None:
+        from app.retry import retry
+        call_count = [0]
+        monkeypatch.setattr("time.sleep", lambda _: None)
+
+        @retry(max_attempts=3)
+        def succeed():
+            call_count[0] += 1
+            return "ok"
+
+        result = succeed()
+        assert result == "ok"
+        assert call_count[0] == 1
+
+    def test_retry_respects_max_attempts(self, monkeypatch) -> None:
+        from app.retry import retry
+        call_count = [0]
+        monkeypatch.setattr("time.sleep", lambda _: None)
+
+        @retry(exceptions=(ValueError,), max_attempts=3)
+        def always_fail():
+            call_count[0] += 1
+            raise ValueError("nope")
+
+        with pytest.raises(ValueError):
+            always_fail()
+        assert call_count[0] == 3
+
+    @pytest.mark.parametrize("max_attempts", [1, 2, 4])
+    def test_call_count_matches_max_attempts(self, monkeypatch, max_attempts: int) -> None:
+        from app.retry import retry
+        call_count = [0]
+        monkeypatch.setattr("time.sleep", lambda _: None)
+
+        @retry(exceptions=(RuntimeError,), max_attempts=max_attempts)
+        def fail():
+            call_count[0] += 1
+            raise RuntimeError("always fails")
+
+        with pytest.raises(RuntimeError):
+            fail()
+        assert call_count[0] == max_attempts
+
+
+class TestRetrySucceedsEventually:
+    def test_succeeds_after_one_failure(self, monkeypatch) -> None:
+        from app.retry import retry
+        attempts = [0]
+        monkeypatch.setattr("time.sleep", lambda _: None)
+
+        @retry(exceptions=(OSError,), max_attempts=3)
+        def fail_once():
+            attempts[0] += 1
+            if attempts[0] < 2:
+                raise OSError("temporary")
+            return "success"
+
+        result = fail_once()
+        assert result == "success"
+        assert attempts[0] == 2
