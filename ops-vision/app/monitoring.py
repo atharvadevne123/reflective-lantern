@@ -230,3 +230,10 @@ def get_monitor() -> DriftMonitor:
         _monitor_singleton = DriftMonitor()
         logger.info("DriftMonitor singleton initialised")
     return _monitor_singleton
+
+__all__ = [
+    "DriftMonitor",
+    "DriftResult",
+    "MetricSample",
+    "get_monitor",
+]
