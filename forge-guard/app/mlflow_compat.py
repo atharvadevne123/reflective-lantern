@@ -43,3 +43,5 @@ def log_run(metrics: dict[str, Any], params: dict[str, Any] | None = None) -> st
     (run_dir / "manifest.json").write_text(json.dumps(manifest, indent=2))
     logger.info("Fallback MLflow run written to %s", run_dir)
     return run_id
+
+__all__ = ["log_run"]
