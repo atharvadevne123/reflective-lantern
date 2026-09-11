@@ -223,3 +223,43 @@ class TestTimeOfUseCostEdgeCases:
         cost_low = time_of_use_cost(flat_consumption, peak_rate=0.10, off_peak_rate=0.05)
         cost_high = time_of_use_cost(flat_consumption, peak_rate=0.30, off_peak_rate=0.05)
         assert cost_high > cost_low
+
+
+from app.tariff import annual_cost_estimate, peak_hour_fraction
+
+
+class TestAnnualCostEstimate:
+    def test_twelve_months_of_equal_usage(self) -> None:
+        monthly = [100.0] * 12
+        annual = annual_cost_estimate(monthly, rate=0.10)
+        assert annual == pytest.approx(0.10 * 1200.0)
+
+    def test_zero_usage_is_free(self) -> None:
+        assert annual_cost_estimate([0.0] * 12) == pytest.approx(0.0)
+
+    @pytest.mark.parametrize("rate", [0.05, 0.15, 0.30])
+    def test_scales_linearly_with_rate(self, rate: float) -> None:
+        monthly = [50.0] * 12
+        cost = annual_cost_estimate(monthly, rate=rate)
+        assert cost == pytest.approx(rate * 600.0)
+
+
+class TestPeakHourFraction:
+    def test_fraction_between_zero_and_one(self) -> None:
+        frac = peak_hour_fraction([1.0] * 24)
+        assert 0.0 <= frac <= 1.0
+
+    def test_zero_total_consumption_gives_zero_fraction(self) -> None:
+        frac = peak_hour_fraction([0.0] * 24)
+        assert frac == pytest.approx(0.0)
+
+    def test_off_peak_only_gives_zero(self) -> None:
+        # All consumption in hours 0-11; peak_hours are 16-20 (default)
+        hours = [1.0] * 12 + [0.0] * 12
+        frac = peak_hour_fraction(hours, start_hour=0)
+        assert frac == pytest.approx(0.0)
+
+    @pytest.mark.parametrize("start_hour", [0, 6, 12, 18])
+    def test_fraction_valid_for_various_start_hours(self, start_hour: int) -> None:
+        frac = peak_hour_fraction([1.0] * 24, start_hour=start_hour)
+        assert 0.0 <= frac <= 1.0
