@@ -162,3 +162,41 @@ class TestBatchProcessorEdgeCases:
         bp = BatchProcessor(_failing, batch_size=5, on_error="collect")
         summary = bp.run(list(range(10)))
         assert summary.total_results == 0
+
+
+class TestBatchProcessorBatchSize:
+    def test_single_item_batch_processes_all(self) -> None:
+        bp = BatchProcessor(_identity, batch_size=1)
+        summary = bp.run(list(range(5)))
+        assert summary.total_items == 5
+
+    def test_batch_count_ceiling_division(self) -> None:
+        bp = BatchProcessor(_identity, batch_size=3)
+        summary = bp.run(list(range(7)))
+        assert summary.total_batches == 3
+
+    @pytest.mark.parametrize("size,n_items", [(5, 10), (10, 25), (7, 21)])
+    def test_batch_count_matches_expected(self, size: int, n_items: int) -> None:
+        import math
+        bp = BatchProcessor(_identity, batch_size=size)
+        summary = bp.run(list(range(n_items)))
+        assert summary.total_batches == math.ceil(n_items / size)
+
+
+class TestBatchProcessorDoubler:
+    def test_result_count_matches_input(self) -> None:
+        bp = BatchProcessor(_double, batch_size=5)
+        summary = bp.run([1, 2, 3])
+        assert summary.total_results == 3
+
+    def test_empty_input_gives_zero_results(self) -> None:
+        bp = BatchProcessor(_double, batch_size=5)
+        summary = bp.run([])
+        assert summary.total_items == 0
+        assert summary.total_results == 0
+
+    @pytest.mark.parametrize("n", [1, 5, 10])
+    def test_result_count_parametrized(self, n: int) -> None:
+        bp = BatchProcessor(_double, batch_size=3)
+        summary = bp.run(list(range(n)))
+        assert summary.total_results == n
