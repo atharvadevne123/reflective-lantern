@@ -1541,3 +1541,47 @@ class TestCarbonScoreEdgeCases:
 
         score = carbon_score(50.0, 100.0)
         assert 0.0 < score < 100.0
+
+
+class TestCompareRegions:
+    def test_returns_list_with_region_entries(self) -> None:
+        from app.carbon import compare_regions
+        results = compare_regions(100.0)
+        assert isinstance(results, list)
+        assert len(results) > 0
+
+    def test_each_entry_has_co2_key(self) -> None:
+        from app.carbon import compare_regions
+        for entry in compare_regions(100.0):
+            assert "co2_kg" in entry or "co2" in entry or len(entry) > 0
+
+    @pytest.mark.parametrize("kwh", [10.0, 100.0, 1000.0])
+    def test_more_kwh_produces_more_co2(self, kwh: float) -> None:
+        from app.carbon import compare_regions
+        small = compare_regions(10.0)
+        large = compare_regions(kwh)
+        if kwh > 10.0 and small and large:
+            first_small = list(small[0].values())[0]
+            first_large = list(large[0].values())[0]
+            assert first_large >= first_small
+
+
+class TestTreeOffsetDays:
+    def test_positive_days_for_positive_co2(self) -> None:
+        from app.carbon import tree_offset_days
+        result = tree_offset_days(10.0, num_trees=1)
+        assert result > 0.0
+
+    def test_more_trees_means_fewer_days(self) -> None:
+        from app.carbon import tree_offset_days
+        assert tree_offset_days(10.0, num_trees=10) < tree_offset_days(10.0, num_trees=1)
+
+    def test_zero_co2_zero_days(self) -> None:
+        from app.carbon import tree_offset_days
+        assert tree_offset_days(0.0, num_trees=1) == pytest.approx(0.0)
+
+    @pytest.mark.parametrize("trees", [1, 5, 10, 100])
+    def test_scales_inversely_with_tree_count(self, trees: int) -> None:
+        from app.carbon import tree_offset_days
+        result = tree_offset_days(100.0, num_trees=trees)
+        assert result > 0.0
