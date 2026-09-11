@@ -241,3 +241,14 @@ def generate_synthetic_data(
     labels = pd.Series([0] * n_normal + [1] * n_incident, name="is_incident")
     idx = rng.permutation(len(df))
     return df.iloc[idx].reset_index(drop=True), labels.iloc[idx].reset_index(drop=True)
+
+__all__ = [
+    "build_model",
+    "evaluate",
+    "generate_synthetic_data",
+    "load_model",
+    "model_summary",
+    "predict",
+    "save_model",
+    "train",
+]
