@@ -196,3 +196,11 @@ def format_defect_rate_pct(rate: float) -> str:
         Formatted string like '12.34%'.
     """
     return f"{rate * 100:.2f}%"
+
+__all__ = [
+    "export_drift_reports_json",
+    "export_predictions_csv",
+    "format_defect_rate_pct",
+    "prediction_summary_json",
+    "prediction_trend",
+]
