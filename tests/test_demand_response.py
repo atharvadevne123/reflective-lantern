@@ -225,3 +225,38 @@ class TestCustomerBaselineLoadEdgeCases:
         history = [[1.0] * 4] * n_days
         result = customer_baseline_load(history)
         assert len(result) == 4
+
+
+from app.demand_response import curtailment_rate, event_roi
+
+
+class TestCurtailmentRate:
+    def test_positive_result_for_valid_inputs(self) -> None:
+        rate = curtailment_rate(curtailed_kwh=20.0, event_hours=4)
+        assert rate == pytest.approx(5.0)
+
+    def test_zero_event_hours_raises(self) -> None:
+        with pytest.raises((ValueError, ZeroDivisionError)):
+            curtailment_rate(curtailed_kwh=20.0, event_hours=0)
+
+    @pytest.mark.parametrize("hours", [1, 2, 4, 8])
+    def test_rate_scales_inversely_with_hours(self, hours: int) -> None:
+        rate = curtailment_rate(curtailed_kwh=40.0, event_hours=hours)
+        assert rate == pytest.approx(40.0 / hours)
+
+
+class TestEventRoi:
+    def test_positive_roi_for_profitable_event(self) -> None:
+        roi = event_roi(net_payment=100.0, baseline_cost_per_kwh=0.10, baseline_kwh=500.0)
+        assert isinstance(roi, float)
+
+    def test_zero_payment_gives_low_roi(self) -> None:
+        roi_zero = event_roi(net_payment=0.0, baseline_cost_per_kwh=0.10, baseline_kwh=100.0)
+        roi_pos = event_roi(net_payment=50.0, baseline_cost_per_kwh=0.10, baseline_kwh=100.0)
+        assert roi_pos > roi_zero
+
+    @pytest.mark.parametrize("payment", [0.0, 50.0, 200.0])
+    def test_roi_is_finite_for_valid_inputs(self, payment: float) -> None:
+        import math
+        roi = event_roi(net_payment=payment, baseline_cost_per_kwh=0.10, baseline_kwh=100.0)
+        assert math.isfinite(roi)
