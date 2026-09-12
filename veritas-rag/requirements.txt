@@ -2,7 +2,7 @@ fastapi==0.141.1
 uvicorn[standard]==0.52.1
 pydantic==2.13.4
 numpy==2.4.6
-faiss-cpu==1.14.3
+faiss-cpu==1.15.0
 pypdf==5.1.0
 anthropic>=1.1.0
 pytest==8.3.3
