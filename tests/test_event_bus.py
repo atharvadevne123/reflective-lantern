@@ -7,24 +7,24 @@ import pytest
 from app.event_bus import EventBus, get_bus
 
 
-def _make_recorder():
+def _make_recorder() -> None:
     calls = []
 
-    def handler(event, payload):
+    def handler(event, payload) -> None:
         calls.append((event, payload))
 
     return handler, calls
 
 
 class TestEventBusSubscribePublish:
-    def test_published_event_reaches_handler(self):
+    def test_published_event_reaches_handler(self) -> None:
         bus = EventBus()
         handler, calls = _make_recorder()
         bus.subscribe("user.created", handler)
         bus.publish("user.created", {"id": 1})
         assert calls == [("user.created", {"id": 1})]
 
-    def test_multiple_handlers_called_in_order(self):
+    def test_multiple_handlers_called_in_order(self) -> None:
         bus = EventBus()
         order = []
         bus.subscribe("evt", lambda e, p: order.append(1))
@@ -32,24 +32,24 @@ class TestEventBusSubscribePublish:
         bus.publish("evt")
         assert order == [1, 2]
 
-    def test_returns_handler_count(self):
+    def test_returns_handler_count(self) -> None:
         bus = EventBus()
         bus.subscribe("x", lambda e, p: None)
         bus.subscribe("x", lambda e, p: None)
         assert bus.publish("x") == 2
 
-    def test_no_handlers_returns_zero(self):
+    def test_no_handlers_returns_zero(self) -> None:
         bus = EventBus()
         assert bus.publish("unknown") == 0
 
-    def test_handler_exception_does_not_block_others(self):
+    def test_handler_exception_does_not_block_others(self) -> None:
         bus = EventBus()
         results = []
 
-        def bad(e, p):
+        def bad(e, p) -> None:
             raise RuntimeError("bad")
 
-        def good(e, p):
+        def good(e, p) -> None:
             results.append("good")
 
         bus.subscribe("x", bad)
@@ -59,7 +59,7 @@ class TestEventBusSubscribePublish:
 
 
 class TestWildcardHandler:
-    def test_wildcard_receives_all_events(self):
+    def test_wildcard_receives_all_events(self) -> None:
         bus = EventBus()
         handler, calls = _make_recorder()
         bus.subscribe("*", handler)
@@ -67,7 +67,7 @@ class TestWildcardHandler:
         bus.publish("b")
         assert len(calls) == 2
 
-    def test_wildcard_and_specific_both_called(self):
+    def test_wildcard_and_specific_both_called(self) -> None:
         bus = EventBus()
         specific, s_calls = _make_recorder()
         wildcard, w_calls = _make_recorder()
@@ -79,18 +79,18 @@ class TestWildcardHandler:
 
 
 class TestUnsubscribe:
-    def test_unsubscribe_returns_true_when_found(self):
+    def test_unsubscribe_returns_true_when_found(self) -> None:
         bus = EventBus()
         handler, _ = _make_recorder()
         bus.subscribe("x", handler)
         assert bus.unsubscribe("x", handler) is True
 
-    def test_unsubscribe_returns_false_when_missing(self):
+    def test_unsubscribe_returns_false_when_missing(self) -> None:
         bus = EventBus()
         handler, _ = _make_recorder()
         assert bus.unsubscribe("x", handler) is False
 
-    def test_unsubscribed_handler_not_called(self):
+    def test_unsubscribed_handler_not_called(self) -> None:
         bus = EventBus()
         handler, calls = _make_recorder()
         bus.subscribe("x", handler)
@@ -100,7 +100,7 @@ class TestUnsubscribe:
 
 
 class TestClear:
-    def test_clear_specific_event(self):
+    def test_clear_specific_event(self) -> None:
         bus = EventBus()
         handler, calls = _make_recorder()
         bus.subscribe("x", handler)
@@ -108,7 +108,7 @@ class TestClear:
         bus.publish("x")
         assert calls == []
 
-    def test_clear_all(self):
+    def test_clear_all(self) -> None:
         bus = EventBus()
         h1, c1 = _make_recorder()
         h2, c2 = _make_recorder()
@@ -119,7 +119,7 @@ class TestClear:
         assert c1 == [] and c2 == []
 
 
-def test_listener_count():
+def test_listener_count() -> None:
     bus = EventBus()
     bus.subscribe("ev", lambda e, p: None)
     bus.subscribe("ev", lambda e, p: None)
@@ -127,7 +127,7 @@ def test_listener_count():
     assert bus.listener_count("other") == 0
 
 
-def test_get_bus_returns_singleton():
+def test_get_bus_returns_singleton() -> None:
     assert get_bus() is get_bus()
 
 

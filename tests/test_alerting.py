@@ -29,12 +29,12 @@ class TestAlertRuleEvaluate:
             ("==", 81, 80, False),
         ],
     )
-    def test_comparison_operators(self, op, value, threshold, fires):
+    def test_comparison_operators(self, op, value, threshold, fires) -> None:
         rule = _make_rule(comparison=op, threshold=threshold)
         result = rule.evaluate(value, BASE_NOW)
         assert (result is not None) == fires
 
-    def test_alert_fields_populated(self):
+    def test_alert_fields_populated(self) -> None:
         rule = _make_rule()
         alert = rule.evaluate(90, BASE_NOW)
         assert alert.name == "r1"
@@ -43,73 +43,73 @@ class TestAlertRuleEvaluate:
         assert alert.threshold == 80.0
         assert isinstance(alert.severity, Severity)
 
-    def test_cooldown_prevents_refiring(self):
+    def test_cooldown_prevents_refiring(self) -> None:
         rule = _make_rule(cooldown_s=60)
         rule.evaluate(90, BASE_NOW)
         result = rule.evaluate(90, BASE_NOW + 30)  # within cooldown
         assert result is None
 
-    def test_fires_again_after_cooldown(self):
+    def test_fires_again_after_cooldown(self) -> None:
         rule = _make_rule(cooldown_s=60)
         rule.evaluate(90, BASE_NOW)
         result = rule.evaluate(90, BASE_NOW + 61)  # past cooldown
         assert result is not None
 
-    def test_unknown_operator_returns_none(self):
+    def test_unknown_operator_returns_none(self) -> None:
         rule = _make_rule(comparison="??")
         result = rule.evaluate(90, BASE_NOW)
         assert result is None
 
 
 class TestAlertManager:
-    def _manager(self):
+    def _manager(self) -> None:
         return AlertManager()
 
-    def test_add_and_fire_rule(self):
+    def test_add_and_fire_rule(self) -> None:
         mgr = self._manager()
         mgr.add_rule(_make_rule())
         alerts = mgr.evaluate_all({"cpu": 90}, now=BASE_NOW)
         assert len(alerts) == 1
 
-    def test_no_alert_when_below_threshold(self):
+    def test_no_alert_when_below_threshold(self) -> None:
         mgr = self._manager()
         mgr.add_rule(_make_rule())
         alerts = mgr.evaluate_all({"cpu": 70}, now=BASE_NOW)
         assert alerts == []
 
-    def test_missing_metric_skipped(self):
+    def test_missing_metric_skipped(self) -> None:
         mgr = self._manager()
         mgr.add_rule(_make_rule(metric="missing"))
         alerts = mgr.evaluate_all({"cpu": 90}, now=BASE_NOW)
         assert alerts == []
 
-    def test_remove_rule(self):
+    def test_remove_rule(self) -> None:
         mgr = self._manager()
         mgr.add_rule(_make_rule())
         assert mgr.remove_rule("r1") is True
         alerts = mgr.evaluate_all({"cpu": 90}, now=BASE_NOW)
         assert alerts == []
 
-    def test_remove_nonexistent_returns_false(self):
+    def test_remove_nonexistent_returns_false(self) -> None:
         mgr = self._manager()
         assert mgr.remove_rule("ghost") is False
 
-    def test_history_accumulates(self):
+    def test_history_accumulates(self) -> None:
         mgr = self._manager()
         mgr.add_rule(_make_rule(cooldown_s=0))
         mgr.evaluate_all({"cpu": 90}, now=BASE_NOW)
         mgr.evaluate_all({"cpu": 90}, now=BASE_NOW + 1)
         assert len(mgr.history) == 2
 
-    def test_handler_called_on_alert(self):
+    def test_handler_called_on_alert(self) -> None:
         received = []
         mgr = AlertManager(handlers=[lambda a: received.append(a)])
         mgr.add_rule(_make_rule())
         mgr.evaluate_all({"cpu": 90}, now=BASE_NOW)
         assert len(received) == 1 and isinstance(received[0], Alert)
 
-    def test_handler_exception_does_not_block(self):
-        def bad_handler(a):
+    def test_handler_exception_does_not_block(self) -> None:
+        def bad_handler(a) -> None:
             raise RuntimeError("oops")
 
         mgr = AlertManager(handlers=[bad_handler])
@@ -118,21 +118,21 @@ class TestAlertManager:
         assert len(alerts) == 1
 
     @pytest.mark.parametrize("severity", list(Severity))
-    def test_severity_variants(self, severity):
+    def test_severity_variants(self, severity) -> None:
         rule = _make_rule(severity=severity)
         alert = rule.evaluate(90, BASE_NOW)
         assert alert.severity == severity
 
 
 class TestAlertManagerMultipleRules:
-    def test_two_rules_both_fire(self):
+    def test_two_rules_both_fire(self) -> None:
         mgr = AlertManager()
         mgr.add_rule(_make_rule(name="r1", metric="cpu"))
         mgr.add_rule(_make_rule(name="r2", metric="mem"))
         alerts = mgr.evaluate_all({"cpu": 90, "mem": 90}, now=BASE_NOW)
         assert len(alerts) == 2
 
-    def test_only_matching_rule_fires(self):
+    def test_only_matching_rule_fires(self) -> None:
         mgr = AlertManager()
         mgr.add_rule(_make_rule(name="r1", metric="cpu"))
         mgr.add_rule(_make_rule(name="r2", metric="mem"))
@@ -140,7 +140,7 @@ class TestAlertManagerMultipleRules:
         assert len(alerts) == 1
         assert alerts[0].name == "r1"
 
-    def test_replace_existing_rule(self):
+    def test_replace_existing_rule(self) -> None:
         mgr = AlertManager()
         mgr.add_rule(_make_rule(name="r1", threshold=80.0))
         mgr.add_rule(_make_rule(name="r1", threshold=95.0))
@@ -148,26 +148,26 @@ class TestAlertManagerMultipleRules:
         assert alerts == []
 
     @pytest.mark.parametrize("n", [1, 3, 5])
-    def test_n_rules_all_fire(self, n):
+    def test_n_rules_all_fire(self, n) -> None:
         mgr = AlertManager()
         for i in range(n):
             mgr.add_rule(_make_rule(name=f"r{i}", metric=f"m{i}"))
         metrics = {f"m{i}": 90 for i in range(n)}
         assert len(mgr.evaluate_all(metrics, now=BASE_NOW)) == n
 
-    def test_clear_history_via_new_manager(self):
+    def test_clear_history_via_new_manager(self) -> None:
         mgr = AlertManager()
         mgr.add_rule(_make_rule(cooldown_s=0))
         mgr.evaluate_all({"cpu": 90}, now=BASE_NOW)
         mgr.evaluate_all({"cpu": 90}, now=BASE_NOW + 1)
         assert len(mgr.history) == 2
 
-    def test_add_rule_returns_none(self):
+    def test_add_rule_returns_none(self) -> None:
         mgr = AlertManager()
         result = mgr.add_rule(_make_rule())
         assert result is None
 
-    def test_remove_rule_idempotent(self):
+    def test_remove_rule_idempotent(self) -> None:
         mgr = AlertManager()
         mgr.add_rule(_make_rule())
         assert mgr.remove_rule("r1") is True

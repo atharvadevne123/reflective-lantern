@@ -10,10 +10,10 @@ from app.notification_dispatcher import (
 )
 
 
-def make_channel(name="email", min_severity=Severity.INFO, enabled=True):
+def make_channel(name="email", min_severity=Severity.INFO, enabled=True) -> None:
     received = []
 
-    def send(n):
+    def send(n) -> None:
         received.append(n)
 
     ch = Channel(name=name, send=send, min_severity=min_severity, enabled=enabled)
@@ -21,7 +21,7 @@ def make_channel(name="email", min_severity=Severity.INFO, enabled=True):
 
 
 class TestDispatch:
-    def test_delivers_to_matching_channel(self):
+    def test_delivers_to_matching_channel(self) -> None:
         ch, received = make_channel()
         d = NotificationDispatcher()
         d.register(ch)
@@ -30,7 +30,7 @@ class TestDispatch:
         assert results["email"] is True
         assert len(received) == 1
 
-    def test_skips_below_min_severity(self):
+    def test_skips_below_min_severity(self) -> None:
         ch, received = make_channel(min_severity=Severity.ERROR)
         d = NotificationDispatcher()
         d.register(ch)
@@ -39,7 +39,7 @@ class TestDispatch:
         assert "email" not in results
         assert len(received) == 0
 
-    def test_delivers_above_min_severity(self):
+    def test_delivers_above_min_severity(self) -> None:
         ch, _received = make_channel(min_severity=Severity.WARNING)
         d = NotificationDispatcher()
         d.register(ch)
@@ -47,7 +47,7 @@ class TestDispatch:
         results = d.dispatch(n)
         assert results["email"] is True
 
-    def test_disabled_channel_skipped(self):
+    def test_disabled_channel_skipped(self) -> None:
         ch, _received = make_channel(enabled=False)
         d = NotificationDispatcher()
         d.register(ch)
@@ -55,7 +55,7 @@ class TestDispatch:
         results = d.dispatch(n)
         assert "email" not in results
 
-    def test_set_enabled_toggles(self):
+    def test_set_enabled_toggles(self) -> None:
         ch, received = make_channel(enabled=False)
         d = NotificationDispatcher()
         d.register(ch)
@@ -63,8 +63,8 @@ class TestDispatch:
         d.dispatch(Notification(title="t", body=""))
         assert len(received) == 1
 
-    def test_channel_exception_captured(self):
-        def bad_send(n):
+    def test_channel_exception_captured(self) -> None:
+        def bad_send(n) -> None:
             raise RuntimeError("no network")
 
         ch = Channel(name="slack", send=bad_send)
@@ -73,7 +73,7 @@ class TestDispatch:
         results = d.dispatch(Notification(title="t", body=""))
         assert results["slack"] is False
 
-    def test_unregister(self):
+    def test_unregister(self) -> None:
         ch, _received = make_channel()
         d = NotificationDispatcher()
         d.register(ch)
@@ -81,7 +81,7 @@ class TestDispatch:
         results = d.dispatch(Notification(title="t", body=""))
         assert "email" not in results
 
-    def test_multiple_channels(self):
+    def test_multiple_channels(self) -> None:
         ch1, r1 = make_channel("a")
         ch2, r2 = make_channel("b")
         d = NotificationDispatcher()
@@ -91,8 +91,8 @@ class TestDispatch:
         assert len(r1) == 1
         assert len(r2) == 1
 
-    def test_dispatch_returns_false_on_failure(self):
-        def explode(n):
+    def test_dispatch_returns_false_on_failure(self) -> None:
+        def explode(n) -> None:
             raise ValueError("boom")
 
         ch = Channel(name="pager", send=explode)
@@ -101,23 +101,23 @@ class TestDispatch:
         results = d.dispatch(Notification(title="x", body="y"))
         assert results["pager"] is False
 
-    def test_notification_default_severity_is_info(self):
+    def test_notification_default_severity_is_info(self) -> None:
         n = Notification(title="t", body="b")
         assert n.severity == Severity.INFO
 
-    def test_notification_body_preserved(self):
+    def test_notification_body_preserved(self) -> None:
         ch, received = make_channel()
         d = NotificationDispatcher()
         d.register(ch)
         d.dispatch(Notification(title="Alert", body="Memory at 95%"))
         assert received[0].body == "Memory at 95%"
 
-    def test_empty_dispatcher_dispatch_returns_empty(self):
+    def test_empty_dispatcher_dispatch_returns_empty(self) -> None:
         d = NotificationDispatcher()
         results = d.dispatch(Notification(title="t", body=""))
         assert results == {}
 
-    def test_reregister_overwrites_channel(self):
+    def test_reregister_overwrites_channel(self) -> None:
         _, r1 = make_channel("x")
         ch2, r2 = make_channel("x")
         d = NotificationDispatcher()
@@ -128,7 +128,7 @@ class TestDispatch:
         assert len(r2) == 1
 
     @pytest.mark.parametrize("severity", [Severity.INFO, Severity.WARNING, Severity.ERROR, Severity.CRITICAL])
-    def test_all_severities_accepted(self, severity):
+    def test_all_severities_accepted(self, severity) -> None:
         ch, received = make_channel(min_severity=Severity.INFO)
         d = NotificationDispatcher()
         d.register(ch)
