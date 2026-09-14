@@ -5,21 +5,21 @@ from __future__ import annotations
 import pytest
 
 
-def test_generate_synthetic_data_default():
+def test_generate_synthetic_data_default() -> None:
     from app.data.loader import generate_synthetic_data
 
     records = generate_synthetic_data()
     assert len(records) == 500
 
 
-def test_generate_synthetic_data_custom_n():
+def test_generate_synthetic_data_custom_n() -> None:
     from app.data.loader import generate_synthetic_data
 
     records = generate_synthetic_data(n_samples=10, seed=1)
     assert len(records) == 10
 
 
-def test_generate_synthetic_data_fields():
+def test_generate_synthetic_data_fields() -> None:
     from app.data.loader import generate_synthetic_data
 
     records = generate_synthetic_data(n_samples=3, seed=7)
@@ -37,7 +37,7 @@ def test_generate_synthetic_data_fields():
         assert required.issubset(rec.keys())
 
 
-def test_generate_synthetic_data_prices_positive():
+def test_generate_synthetic_data_prices_positive() -> None:
     from app.data.loader import generate_synthetic_data
 
     records = generate_synthetic_data(n_samples=50, seed=42)
@@ -45,7 +45,7 @@ def test_generate_synthetic_data_prices_positive():
         assert rec["base_price"] > 0
 
 
-def test_load_csv_missing_file():
+def test_load_csv_missing_file() -> None:
     import pytest
 
     from app.data.loader import load_csv
@@ -54,7 +54,7 @@ def test_load_csv_missing_file():
         load_csv("/nonexistent/path/data.csv")
 
 
-def test_load_json_missing_file():
+def test_load_json_missing_file() -> None:
     import pytest
 
     from app.data.loader import load_json

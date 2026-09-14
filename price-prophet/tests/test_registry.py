@@ -5,7 +5,7 @@ from __future__ import annotations
 import pytest
 
 
-def test_registry_register_get():
+def test_registry_register_get() -> None:
     from app.models.registry import ModelRegistry
 
     reg = ModelRegistry()
@@ -13,7 +13,7 @@ def test_registry_register_get():
     assert reg.get("m1") is not None
 
 
-def test_registry_get_missing():
+def test_registry_get_missing() -> None:
     from app.models.registry import ModelRegistry
 
     reg = ModelRegistry()
@@ -21,7 +21,7 @@ def test_registry_get_missing():
         reg.get("missing")
 
 
-def test_registry_list_models():
+def test_registry_list_models() -> None:
     from app.models.registry import ModelRegistry
 
     reg = ModelRegistry()
@@ -30,7 +30,7 @@ def test_registry_list_models():
     assert reg.list_models() == ["a", "b"]
 
 
-def test_registry_remove():
+def test_registry_remove() -> None:
     from app.models.registry import ModelRegistry
 
     reg = ModelRegistry()
@@ -40,14 +40,14 @@ def test_registry_remove():
     assert len(reg) == 0
 
 
-def test_registry_remove_missing():
+def test_registry_remove_missing() -> None:
     from app.models.registry import ModelRegistry
 
     reg = ModelRegistry()
     assert reg.remove("nope") is False
 
 
-def test_registry_len():
+def test_registry_len() -> None:
     from app.models.registry import ModelRegistry
 
     reg = ModelRegistry()

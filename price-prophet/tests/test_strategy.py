@@ -5,42 +5,42 @@ from __future__ import annotations
 import pytest
 
 
-def test_penetration_strategy():
+def test_penetration_strategy() -> None:
     from app.pricing.strategy import PricingStrategy, apply_strategy
 
     price = apply_strategy(100.0, PricingStrategy.PENETRATION)
     assert abs(price - 85.0) < 0.01
 
 
-def test_premium_strategy():
+def test_premium_strategy() -> None:
     from app.pricing.strategy import PricingStrategy, apply_strategy
 
     price = apply_strategy(100.0, PricingStrategy.PREMIUM)
     assert abs(price - 125.0) < 0.01
 
 
-def test_competitive_strategy_with_competitor():
+def test_competitive_strategy_with_competitor() -> None:
     from app.pricing.strategy import PricingStrategy, apply_strategy
 
     price = apply_strategy(100.0, PricingStrategy.COMPETITIVE, competitor_price=90.0)
     assert abs(price - 89.10) < 0.01
 
 
-def test_competitive_strategy_no_competitor():
+def test_competitive_strategy_no_competitor() -> None:
     from app.pricing.strategy import PricingStrategy, apply_strategy
 
     price = apply_strategy(100.0, PricingStrategy.COMPETITIVE, competitor_price=None)
     assert price == 100.0
 
 
-def test_dynamic_strategy_elastic():
+def test_dynamic_strategy_elastic() -> None:
     from app.pricing.strategy import PricingStrategy, apply_strategy
 
     price = apply_strategy(100.0, PricingStrategy.DYNAMIC, elasticity=-2.0)
     assert abs(price - 95.0) < 0.01
 
 
-def test_dynamic_strategy_inelastic():
+def test_dynamic_strategy_inelastic() -> None:
     from app.pricing.strategy import PricingStrategy, apply_strategy
 
     price = apply_strategy(100.0, PricingStrategy.DYNAMIC, elasticity=-0.5)

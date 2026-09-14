@@ -5,7 +5,7 @@ from __future__ import annotations
 import pytest
 
 
-def test_estimate_elasticity_negative():
+def test_estimate_elasticity_negative() -> None:
     from app.pricing.elasticity import estimate_elasticity
 
     prices = [10.0, 12.0, 14.0, 16.0]
@@ -14,19 +14,19 @@ def test_estimate_elasticity_negative():
     assert elast < 0
 
 
-def test_estimate_elasticity_too_short():
+def test_estimate_elasticity_too_short() -> None:
     from app.pricing.elasticity import estimate_elasticity
 
     assert estimate_elasticity([10.0], [100.0]) == 0.0
 
 
-def test_estimate_elasticity_mismatched():
+def test_estimate_elasticity_mismatched() -> None:
     from app.pricing.elasticity import estimate_elasticity
 
     assert estimate_elasticity([1.0, 2.0], [1.0]) == 0.0
 
 
-def test_apply_elasticity_higher_price():
+def test_apply_elasticity_higher_price() -> None:
     from app.pricing.elasticity import apply_elasticity
 
     base_demand = 100.0
@@ -34,19 +34,19 @@ def test_apply_elasticity_higher_price():
     assert new_demand < base_demand
 
 
-def test_apply_elasticity_zero_base_price():
+def test_apply_elasticity_zero_base_price() -> None:
     from app.pricing.elasticity import apply_elasticity
 
     assert apply_elasticity(100.0, 0.0, 10.0, -1.5) == 100.0
 
 
-def test_is_elastic_true():
+def test_is_elastic_true() -> None:
     from app.pricing.elasticity import is_elastic
 
     assert is_elastic(-2.0) is True
 
 
-def test_is_elastic_false():
+def test_is_elastic_false() -> None:
     from app.pricing.elasticity import is_elastic
 
     assert is_elastic(-0.5) is False
