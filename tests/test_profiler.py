@@ -8,30 +8,30 @@ from app.profiler import get_stats, reset_stats, timed, tracked
 
 
 class TestTimed:
-    def test_returns_function_result(self):
+    def test_returns_function_result(self) -> None:
         @timed()
-        def add(a, b):
+        def add(a, b) -> None:
             return a + b
 
         assert add(2, 3) == 5
 
-    def test_preserves_function_name(self):
+    def test_preserves_function_name(self) -> None:
         @timed()
-        def my_func():
+        def my_func() -> None:
             pass
 
         assert my_func.__name__ == "my_func"
 
-    def test_custom_label_accepted(self):
+    def test_custom_label_accepted(self) -> None:
         @timed(label="custom")
-        def fn():
+        def fn() -> None:
             return 42
 
         assert fn() == 42
 
-    def test_propagates_exception(self):
+    def test_propagates_exception(self) -> None:
         @timed()
-        def bad():
+        def bad() -> None:
             raise ValueError("boom")
 
         with pytest.raises(ValueError):
@@ -39,12 +39,12 @@ class TestTimed:
 
 
 class TestTracked:
-    def setup_method(self):
+    def setup_method(self) -> None:
         reset_stats()
 
-    def test_stats_recorded_after_call(self):
+    def test_stats_recorded_after_call(self) -> None:
         @tracked(label="test_fn")
-        def fn():
+        def fn() -> None:
             return 1
 
         fn()
@@ -52,9 +52,9 @@ class TestTracked:
         assert stats["calls"] == 1
         assert stats["total_ms"] >= 0
 
-    def test_multiple_calls_accumulate(self):
+    def test_multiple_calls_accumulate(self) -> None:
         @tracked(label="multi")
-        def fn():
+        def fn() -> None:
             pass
 
         fn()
@@ -62,9 +62,9 @@ class TestTracked:
         fn()
         assert get_stats("multi")["calls"] == 3
 
-    def test_min_max_updated(self):
+    def test_min_max_updated(self) -> None:
         @tracked(label="minmax")
-        def fn():
+        def fn() -> None:
             pass
 
         fn()
@@ -72,9 +72,9 @@ class TestTracked:
         stats = get_stats("minmax")
         assert stats["min_ms"] <= stats["max_ms"]
 
-    def test_avg_ms_computed(self):
+    def test_avg_ms_computed(self) -> None:
         @tracked(label="avg")
-        def fn():
+        def fn() -> None:
             pass
 
         fn()
@@ -85,22 +85,22 @@ class TestTracked:
         # total/2 is 0.0015. Allow one rounding step of slack.
         assert stats["avg_ms"] == pytest.approx(stats["total_ms"] / 2, abs=0.001)
 
-    def test_get_all_stats(self):
+    def test_get_all_stats(self) -> None:
         @tracked(label="a_func")
-        def a():
+        def a() -> None:
             pass
 
         a()
         all_stats = get_stats()
         assert "a_func" in all_stats
 
-    def test_unknown_label_returns_empty(self):
+    def test_unknown_label_returns_empty(self) -> None:
         reset_stats()
         assert get_stats("nonexistent") == {}
 
-    def test_reset_specific_label(self):
+    def test_reset_specific_label(self) -> None:
         @tracked(label="reset_me")
-        def fn():
+        def fn() -> None:
             pass
 
         fn()
@@ -108,9 +108,9 @@ class TestTracked:
         assert get_stats("reset_me")["calls"] == 0
 
     @pytest.mark.parametrize("n", [1, 5, 10])
-    def test_call_count_matches(self, n):
+    def test_call_count_matches(self, n) -> None:
         @tracked(label=f"count_{n}")
-        def fn():
+        def fn() -> None:
             pass
 
         for _ in range(n):
@@ -124,11 +124,11 @@ class TestProfilerEdgeCases:
 
     def test_reset_all_clears_all_labels(self) -> None:
         @tracked(label="lbl_a")
-        def a():
+        def a() -> None:
             pass
 
         @tracked(label="lbl_b")
-        def b():
+        def b() -> None:
             pass
 
         a()
@@ -139,7 +139,7 @@ class TestProfilerEdgeCases:
 
     def test_timed_with_no_label_uses_function_name(self) -> None:
         @timed()
-        def named_fn():
+        def named_fn() -> None:
             return 99
 
         assert named_fn() == 99
@@ -147,14 +147,14 @@ class TestProfilerEdgeCases:
     @pytest.mark.parametrize("retval", [0, "", [], None, {"k": "v"}])
     def test_timed_preserves_various_return_types(self, retval: object) -> None:
         @timed()
-        def fn():
+        def fn() -> None:
             return retval
 
         assert fn() == retval
 
     def test_tracked_records_after_exception(self) -> None:
         @tracked(label="err_fn")
-        def bad():
+        def bad() -> None:
             raise RuntimeError("oops")
 
         with pytest.raises(RuntimeError):
@@ -164,7 +164,7 @@ class TestProfilerEdgeCases:
 
     def test_get_stats_returns_dict(self) -> None:
         @tracked(label="dict_check")
-        def fn():
+        def fn() -> None:
             pass
 
         fn()

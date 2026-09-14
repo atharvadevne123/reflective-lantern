@@ -26,59 +26,59 @@ class TestPageInfo:
             (101, 1, 10, 11),
         ],
     )
-    def test_total_pages(self, total, page, per_page, expected_pages):
+    def test_total_pages(self, total, page, per_page, expected_pages) -> None:
         info = PageInfo(total=total, page=page, per_page=per_page)
         assert info.total_pages == expected_pages
 
-    def test_has_next_and_prev(self):
+    def test_has_next_and_prev(self) -> None:
         info = PageInfo(total=30, page=2, per_page=10)
         assert info.has_next is True
         assert info.has_prev is True
 
-    def test_first_page_no_prev(self):
+    def test_first_page_no_prev(self) -> None:
         info = PageInfo(total=30, page=1, per_page=10)
         assert info.has_prev is False
 
-    def test_last_page_no_next(self):
+    def test_last_page_no_next(self) -> None:
         info = PageInfo(total=30, page=3, per_page=10)
         assert info.has_next is False
 
 
 class TestPaginate:
-    def test_first_page_returns_correct_slice(self):
+    def test_first_page_returns_correct_slice(self) -> None:
         page = paginate(ITEMS, page=1, per_page=10)
         assert page.items == list(range(10))
         assert page.info.total == 100
 
-    def test_last_page_partial(self):
+    def test_last_page_partial(self) -> None:
         page = paginate(list(range(25)), page=3, per_page=10)
         assert page.items == [20, 21, 22, 23, 24]
 
-    def test_empty_list(self):
+    def test_empty_list(self) -> None:
         page = paginate([], page=1, per_page=10)
         assert page.items == []
         assert page.info.total == 0
 
-    def test_raises_on_invalid_page(self):
+    def test_raises_on_invalid_page(self) -> None:
         with pytest.raises(ValueError, match="page must be"):
             paginate(ITEMS, page=0)
 
-    def test_raises_on_invalid_per_page(self):
+    def test_raises_on_invalid_per_page(self) -> None:
         with pytest.raises(ValueError, match="per_page must be"):
             paginate(ITEMS, per_page=0)
 
     @pytest.mark.parametrize("page,per_page", [(1, 5), (2, 5), (3, 5)])
-    def test_various_pages(self, page, per_page):
+    def test_various_pages(self, page, per_page) -> None:
         result = paginate(list(range(15)), page=page, per_page=per_page)
         assert len(result.items) == per_page
 
 
 class TestCursorEncoding:
-    def test_roundtrip(self):
+    def test_roundtrip(self) -> None:
         data = {"id": 42, "name": "test"}
         assert decode_cursor(encode_cursor(data)) == data
 
-    def test_invalid_cursor_raises(self):
+    def test_invalid_cursor_raises(self) -> None:
         with pytest.raises(ValueError, match="Invalid cursor"):
             decode_cursor("!!!not-base64!!!")
 
@@ -90,39 +90,39 @@ class TestCursorEncoding:
             {"key": "string-value"},
         ],
     )
-    def test_various_payloads(self, data):
+    def test_various_payloads(self, data) -> None:
         assert decode_cursor(encode_cursor(data)) == data
 
 
 class TestCursorPaginate:
-    def test_first_page_no_cursor(self):
+    def test_first_page_no_cursor(self) -> None:
         result = cursor_paginate(DICT_ITEMS, cursor=None, per_page=10)
         assert len(result.items) == 10
         assert result.items[0]["id"] == 0
         assert result.has_next is True
 
-    def test_subsequent_page_via_cursor(self):
+    def test_subsequent_page_via_cursor(self) -> None:
         first = cursor_paginate(DICT_ITEMS, cursor=None, per_page=5)
         second = cursor_paginate(DICT_ITEMS, cursor=first.next_cursor, per_page=5)
         assert second.items[0]["id"] == 5
 
-    def test_last_page_no_next_cursor(self):
+    def test_last_page_no_next_cursor(self) -> None:
         result = cursor_paginate(DICT_ITEMS[:5], cursor=None, per_page=10)
         assert result.has_next is False
         assert result.next_cursor is None
 
-    def test_empty_list(self):
+    def test_empty_list(self) -> None:
         result = cursor_paginate([], per_page=10)
         assert result.items == []
         assert result.has_next is False
 
 
 class TestPageInfoEdgeCases:
-    def test_total_pages_exact_multiple(self):
+    def test_total_pages_exact_multiple(self) -> None:
         info = PageInfo(total=20, page=1, per_page=5)
         assert info.total_pages == 4
 
-    def test_page_beyond_total_pages(self):
+    def test_page_beyond_total_pages(self) -> None:
         info = PageInfo(total=10, page=99, per_page=5)
         assert info.has_next is False
 
@@ -133,12 +133,12 @@ class TestPageInfoEdgeCases:
 
 
 class TestPaginateSliceAccuracy:
-    def test_page2_slice_starts_at_correct_offset(self):
+    def test_page2_slice_starts_at_correct_offset(self) -> None:
         items = list(range(20))
         result = paginate(items, page=2, per_page=5)
         assert result.items == [5, 6, 7, 8, 9]
 
-    def test_all_pages_cover_all_items(self):
+    def test_all_pages_cover_all_items(self) -> None:
         items = list(range(23))
         collected = []
         for p in range(1, 5):
@@ -146,24 +146,24 @@ class TestPaginateSliceAccuracy:
             collected.extend(result.items)
         assert collected == items
 
-    def test_single_item_list(self):
+    def test_single_item_list(self) -> None:
         result = paginate([42], page=1, per_page=10)
         assert result.items == [42]
         assert result.info.has_next is False
 
-    def test_page_info_total_always_matches_input_length(self):
+    def test_page_info_total_always_matches_input_length(self) -> None:
         for n in [0, 1, 10, 99]:
             result = paginate(list(range(n)), page=1, per_page=5)
             assert result.info.total == n
 
 
 class TestCursorPaginateEdgeCases:
-    def test_per_page_larger_than_total(self):
+    def test_per_page_larger_than_total(self) -> None:
         result = cursor_paginate(DICT_ITEMS[:3], cursor=None, per_page=100)
         assert len(result.items) == 3
         assert result.has_next is False
 
-    def test_full_traversal_via_cursors(self):
+    def test_full_traversal_via_cursors(self) -> None:
         n = 22
         per_page = 5
         items = [{"id": i} for i in range(n)]
@@ -188,45 +188,45 @@ class TestPageInfoPageBoundaries:
             (0, 1, 10, False, False),
         ],
     )
-    def test_has_next_prev_flags(self, total, page, per_page, has_next, has_prev):
+    def test_has_next_prev_flags(self, total, page, per_page, has_next, has_prev) -> None:
         info = PageInfo(total=total, page=page, per_page=per_page)
         assert info.has_next is has_next
         assert info.has_prev is has_prev
 
-    def test_empty_list_has_zero_pages(self):
+    def test_empty_list_has_zero_pages(self) -> None:
         info = PageInfo(total=0, page=1, per_page=10)
         assert info.total_pages == 0
 
     @pytest.mark.parametrize("total,per_page,expected", [(10, 3, 4), (9, 3, 3), (12, 4, 3)])
-    def test_total_pages_rounding(self, total, per_page, expected):
+    def test_total_pages_rounding(self, total, per_page, expected) -> None:
         info = PageInfo(total=total, page=1, per_page=per_page)
         assert info.total_pages == expected
 
 
 class TestEncodeCursorEdgeCases:
-    def test_empty_dict_roundtrips(self):
+    def test_empty_dict_roundtrips(self) -> None:
         assert decode_cursor(encode_cursor({})) == {}
 
-    def test_nested_dict_roundtrips(self):
+    def test_nested_dict_roundtrips(self) -> None:
         data = {"nested": {"a": 1}}
         assert decode_cursor(encode_cursor(data)) == data
 
     @pytest.mark.parametrize("key,val", [("id", 0), ("name", ""), ("flag", True)])
-    def test_various_value_types(self, key, val):
+    def test_various_value_types(self, key, val) -> None:
         data = {key: val}
         assert decode_cursor(encode_cursor(data)) == data
 
 
 class TestPaginateInfoField:
-    def test_info_is_page_info_instance(self):
+    def test_info_is_page_info_instance(self) -> None:
         page = paginate(ITEMS, page=1, per_page=10)
         assert isinstance(page.info, PageInfo)
 
-    def test_info_page_matches_requested_page(self):
+    def test_info_page_matches_requested_page(self) -> None:
         page = paginate(ITEMS, page=3, per_page=10)
         assert page.info.page == 3
 
-    def test_info_per_page_matches_requested(self):
+    def test_info_per_page_matches_requested(self) -> None:
         page = paginate(ITEMS, page=1, per_page=15)
         assert page.info.per_page == 15
 
