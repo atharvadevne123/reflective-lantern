@@ -29,31 +29,31 @@ class TestCreateIncident:
             "severity": "critical",
         }
 
-    def test_create_returns_incident_with_id(self, db_session):
+    def test_create_returns_incident_with_id(self, db_session) -> None:
         """create_incident() returns an Incident with a populated id."""
         incident = create_incident(db_session, self._make_incident_data())
         assert incident.id is not None
 
-    def test_get_incident_by_id(self, db_session):
+    def test_get_incident_by_id(self, db_session) -> None:
         """get_incident() retrieves the record by primary key."""
         created = create_incident(db_session, self._make_incident_data())
         fetched = get_incident(db_session, created.id)
         assert fetched is not None
         assert fetched.service_name == "test-svc"
 
-    def test_get_incident_returns_none_for_missing(self, db_session):
+    def test_get_incident_returns_none_for_missing(self, db_session) -> None:
         """get_incident() returns None for a non-existent id."""
         result = get_incident(db_session, 999999)
         assert result is None
 
-    def test_list_incidents_returns_all(self, db_session):
+    def test_list_incidents_returns_all(self, db_session) -> None:
         """list_incidents() returns all created incidents."""
         create_incident(db_session, self._make_incident_data("svc-a"))
         create_incident(db_session, self._make_incident_data("svc-b"))
         results = list_incidents(db_session)
         assert len(results) >= 2
 
-    def test_list_incidents_filters_by_service(self, db_session):
+    def test_list_incidents_filters_by_service(self, db_session) -> None:
         """list_incidents() filters correctly by service_name."""
         create_incident(db_session, self._make_incident_data("target-svc"))
         create_incident(db_session, self._make_incident_data("other-svc"))
@@ -75,19 +75,19 @@ class TestCreatePrediction:
             "model_version": "1.0.0",
         }
 
-    def test_create_prediction_returns_id(self, db_session):
+    def test_create_prediction_returns_id(self, db_session) -> None:
         """create_prediction() returns a Prediction with populated id."""
         pred = create_prediction(db_session, self._make_prediction_data())
         assert pred.id is not None
 
-    def test_count_predictions(self, db_session):
+    def test_count_predictions(self, db_session) -> None:
         """count_predictions() returns the correct count."""
         before = count_predictions(db_session)
         create_prediction(db_session, self._make_prediction_data())
         after = count_predictions(db_session)
         assert after == before + 1
 
-    def test_count_incidents_predicted(self, db_session):
+    def test_count_incidents_predicted(self, db_session) -> None:
         """count_incidents_predicted() only counts incident=True predictions."""
         before = count_incidents_predicted(db_session)
         create_prediction(db_session, self._make_prediction_data(is_incident=True))
@@ -95,7 +95,7 @@ class TestCreatePrediction:
         after = count_incidents_predicted(db_session)
         assert after == before + 1
 
-    def test_avg_confidence(self, db_session):
+    def test_avg_confidence(self, db_session) -> None:
         """avg_confidence() returns mean of confidence scores."""
         create_prediction(db_session, self._make_prediction_data(confidence=0.8))
         create_prediction(db_session, self._make_prediction_data(confidence=0.6))
@@ -117,19 +117,19 @@ class TestCreateDriftAlert:
             "current_window": "2026-08-25",
         }
 
-    def test_create_drift_alert_returns_id(self, db_session):
+    def test_create_drift_alert_returns_id(self, db_session) -> None:
         """create_drift_alert() returns a DriftAlert with id."""
         alert = create_drift_alert(db_session, self._make_alert_data())
         assert alert.id is not None
 
-    def test_count_drift_alerts_last_24h(self, db_session):
+    def test_count_drift_alerts_last_24h(self, db_session) -> None:
         """count_drift_alerts_last_24h() counts recent drifted alerts."""
         before = count_drift_alerts_last_24h(db_session)
         create_drift_alert(db_session, self._make_alert_data(drifted=True))
         after = count_drift_alerts_last_24h(db_session)
         assert after == before + 1
 
-    def test_non_drifted_alert_not_counted(self, db_session):
+    def test_non_drifted_alert_not_counted(self, db_session) -> None:
         """Non-drifted alerts are excluded from the 24h count."""
         before = count_drift_alerts_last_24h(db_session)
         create_drift_alert(db_session, self._make_alert_data(drifted=False))
@@ -150,7 +150,7 @@ class TestGetPredictionByIdAndCountByService:
             "model_version": "1.0.0",
         }
 
-    def test_get_prediction_by_id_returns_record(self, db_session):
+    def test_get_prediction_by_id_returns_record(self, db_session) -> None:
         """get_prediction_by_id() returns the created prediction."""
         from app.crud import create_prediction, get_prediction_by_id
 
@@ -159,13 +159,13 @@ class TestGetPredictionByIdAndCountByService:
         assert fetched is not None
         assert fetched.id == pred.id
 
-    def test_get_prediction_by_id_none_for_missing(self, db_session):
+    def test_get_prediction_by_id_none_for_missing(self, db_session) -> None:
         """get_prediction_by_id() returns None for unknown id."""
         from app.crud import get_prediction_by_id
 
         assert get_prediction_by_id(db_session, 9999999) is None
 
-    def test_count_predictions_by_service(self, db_session):
+    def test_count_predictions_by_service(self, db_session) -> None:
         """count_predictions_by_service() counts only matching service rows."""
         from app.crud import count_predictions_by_service, create_prediction
 
@@ -176,7 +176,7 @@ class TestGetPredictionByIdAndCountByService:
         after = count_predictions_by_service(db_session, "svc-unique-x")
         assert after == before + 2
 
-    def test_count_predictions_by_service_zero_for_unknown(self, db_session):
+    def test_count_predictions_by_service_zero_for_unknown(self, db_session) -> None:
         """count_predictions_by_service() returns 0 for an unknown service."""
         from app.crud import count_predictions_by_service
 
@@ -196,7 +196,7 @@ class TestBulkCreateAndDeleteOld:
             "model_version": "1.0.0",
         }
 
-    def test_bulk_create_returns_count(self, db_session):
+    def test_bulk_create_returns_count(self, db_session) -> None:
         """bulk_create_predictions() returns the number of inserted rows."""
         from app.crud import bulk_create_predictions
 
@@ -204,7 +204,7 @@ class TestBulkCreateAndDeleteOld:
         result = bulk_create_predictions(db_session, items)
         assert result == 5
 
-    def test_bulk_create_persists_rows(self, db_session):
+    def test_bulk_create_persists_rows(self, db_session) -> None:
         """Rows inserted by bulk_create_predictions are retrievable."""
         from app.crud import bulk_create_predictions, count_predictions_by_service
 
@@ -214,7 +214,7 @@ class TestBulkCreateAndDeleteOld:
         after = count_predictions_by_service(db_session, "bulk-target")
         assert after == before + 3
 
-    def test_delete_old_predictions_returns_count(self, db_session):
+    def test_delete_old_predictions_returns_count(self, db_session) -> None:
         """delete_old_predictions() returns the number of deleted rows."""
         from app.crud import delete_old_predictions
 
