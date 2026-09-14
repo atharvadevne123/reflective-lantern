@@ -7,19 +7,19 @@ import pytest
 
 
 class TestBuildPatternVector:
-    def test_returns_float32_array(self):
+    def test_returns_float32_array(self) -> None:
         from rag.ingest import build_pattern_vector
 
         vec = build_pattern_vector({"consumption_kwh": 4.5, "temperature_c": 22.0})
         assert vec.dtype == np.float32
 
-    def test_vector_length_is_6(self):
+    def test_vector_length_is_6(self) -> None:
         from rag.ingest import build_pattern_vector
 
         vec = build_pattern_vector({})
         assert len(vec) == 6
 
-    def test_consumption_reflected_in_vector(self):
+    def test_consumption_reflected_in_vector(self) -> None:
         from rag.ingest import build_pattern_vector
 
         vec = build_pattern_vector({"consumption_kwh": 99.0})
@@ -27,7 +27,7 @@ class TestBuildPatternVector:
 
 
 class TestRetriever:
-    def test_find_similar_no_index_returns_empty(self):
+    def test_find_similar_no_index_returns_empty(self) -> None:
         from rag import retriever
 
         retriever._index = None
@@ -35,7 +35,7 @@ class TestRetriever:
         result = retriever.find_similar_patterns({"consumption_kwh": 4.5})
         assert result == []
 
-    def test_baseline_consumption_fallback(self):
+    def test_baseline_consumption_fallback(self) -> None:
         from rag import retriever
 
         retriever._index = None

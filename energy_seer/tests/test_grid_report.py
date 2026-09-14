@@ -4,7 +4,7 @@ from __future__ import annotations
 
 
 class TestGenerateGridReport:
-    def test_healthy_status_no_issues(self):
+    def test_healthy_status_no_issues(self) -> None:
         from app.grid_report import generate_grid_report
 
         result = generate_grid_report(
@@ -15,7 +15,7 @@ class TestGenerateGridReport:
         assert result["status"] == "healthy"
         assert result["alerts"] == []
 
-    def test_warning_on_drift(self):
+    def test_warning_on_drift(self) -> None:
         from app.grid_report import generate_grid_report
 
         result = generate_grid_report(
@@ -26,7 +26,7 @@ class TestGenerateGridReport:
         assert result["status"] == "warning"
         assert "consumption_kwh" in result["drifted_features"]
 
-    def test_critical_on_high_anomaly_rate(self):
+    def test_critical_on_high_anomaly_rate(self) -> None:
         from app.grid_report import generate_grid_report
 
         result = generate_grid_report(
@@ -37,14 +37,14 @@ class TestGenerateGridReport:
         )
         assert result["status"] in {"warning", "critical"}
 
-    def test_report_has_required_keys(self):
+    def test_report_has_required_keys(self) -> None:
         from app.grid_report import generate_grid_report
 
         result = generate_grid_report({}, {}, 0)
         for key in ["status", "alerts", "recommendations", "anomaly_count"]:
             assert key in result
 
-    def test_recommendations_on_drift(self):
+    def test_recommendations_on_drift(self) -> None:
         from app.grid_report import generate_grid_report
 
         result = generate_grid_report(
