@@ -8,22 +8,22 @@ from pydantic import ValidationError
 from app.schemas import BatchPredictionResponse, BatchSensorInput
 
 
-def test_batch_input_accepts_valid_readings():
+def test_batch_input_accepts_valid_readings() -> None:
     payload = BatchSensorInput(readings=[{"temperature": 75.0, "pressure": 50.0}])
     assert len(payload.readings) == 1
 
 
-def test_batch_input_rejects_empty_list():
+def test_batch_input_rejects_empty_list() -> None:
     with pytest.raises(ValidationError):
         BatchSensorInput(readings=[])
 
 
-def test_batch_input_rejects_over_100():
+def test_batch_input_rejects_over_100() -> None:
     with pytest.raises(ValidationError):
         BatchSensorInput(readings=[{"temperature": 75.0}] * 101)
 
 
-def test_batch_response_round_trip():
+def test_batch_response_round_trip() -> None:
     resp = BatchPredictionResponse(
         predictions=[{"prediction": 0, "defect_probability": 0.1}],
         count=1,
@@ -35,36 +35,36 @@ def test_batch_response_round_trip():
 
 
 @pytest.mark.parametrize("n", [1, 50, 100])
-def test_batch_input_boundary_sizes(n: int):
+def test_batch_input_boundary_sizes(n: int) -> None:
     payload = BatchSensorInput(readings=[{"temperature": 75.0}] * n)
     assert len(payload.readings) == n
 
 
-def test_batch_response_multiple_predictions():
+def test_batch_response_multiple_predictions() -> None:
     preds = [{"prediction": i % 2, "defect_probability": 0.1 * i} for i in range(5)]
     resp = BatchPredictionResponse(predictions=preds, count=5, model_version="1.0.0")
     assert resp.count == 5
     assert len(resp.predictions) == 5
 
 
-def test_batch_input_preserves_sensor_values():
+def test_batch_input_preserves_sensor_values() -> None:
     reading = {"temperature": 82.5, "pressure": 53.1, "vibration": 3.7}
     payload = BatchSensorInput(readings=[reading])
     assert payload.readings[0]["temperature"] == 82.5
 
 
-def test_batch_response_model_version_propagated():
+def test_batch_response_model_version_propagated() -> None:
     resp = BatchPredictionResponse(predictions=[], count=0, model_version="2.3.1")
     assert resp.model_version == "2.3.1"
 
 
 @pytest.mark.parametrize("version", ["1.0.0", "2.0.0", "1.1.0-beta"])
-def test_batch_response_accepts_various_version_strings(version):
+def test_batch_response_accepts_various_version_strings(version) -> None:
     resp = BatchPredictionResponse(predictions=[], count=0, model_version=version)
     assert resp.model_version == version
 
 
-def test_drift_check_result_schema():
+def test_drift_check_result_schema() -> None:
     from app.schemas import DriftCheckResult
 
     r = DriftCheckResult(
@@ -74,7 +74,7 @@ def test_drift_check_result_schema():
     assert r.drift_detected is True
 
 
-def test_model_summary_response_defaults():
+def test_model_summary_response_defaults() -> None:
     from app.schemas import ModelSummaryResponse
 
     r = ModelSummaryResponse(model_version="1.0.0", total=0)
@@ -83,7 +83,7 @@ def test_model_summary_response_defaults():
     assert r.avg_defect_probability == 0.0
 
 
-def test_model_summary_response_with_data():
+def test_model_summary_response_with_data() -> None:
     from app.schemas import ModelSummaryResponse
 
     r = ModelSummaryResponse(
@@ -97,7 +97,7 @@ def test_model_summary_response_with_data():
     assert r.defect_rate == 0.1
 
 
-def test_retraining_trigger_response():
+def test_retraining_trigger_response() -> None:
     from app.schemas import RetrainingTriggerResponse
 
     r = RetrainingTriggerResponse(status="accepted", message="Pipeline started")
@@ -105,7 +105,7 @@ def test_retraining_trigger_response():
     assert "Pipeline" in r.message
 
 
-def test_drift_check_result_no_drift():
+def test_drift_check_result_no_drift() -> None:
     from app.schemas import DriftCheckResult
 
     r = DriftCheckResult(feature="humidity", ks_statistic=0.05, p_value=0.75, drift_detected=False)
@@ -116,32 +116,32 @@ def test_drift_check_result_no_drift():
 class TestSchemaEdgeCases:
     """Edge-case tests for forge-guard Pydantic schemas."""
 
-    def test_batch_input_exactly_one_reading(self):
+    def test_batch_input_exactly_one_reading(self) -> None:
         payload = BatchSensorInput(readings=[{"temperature": 70.0}])
         assert len(payload.readings) == 1
 
-    def test_batch_response_zero_count(self):
+    def test_batch_response_zero_count(self) -> None:
         resp = BatchPredictionResponse(predictions=[], count=0, model_version="0.0.1")
         assert resp.count == 0
         assert resp.predictions == []
 
-    def test_drift_check_result_ks_statistic_stored(self):
+    def test_drift_check_result_ks_statistic_stored(self) -> None:
         from app.schemas import DriftCheckResult
 
         r = DriftCheckResult(feature="x", ks_statistic=0.88, p_value=0.01, drift_detected=True)
         assert r.ks_statistic == pytest.approx(0.88)
 
-    def test_model_summary_defect_rate_zero_when_total_zero(self):
+    def test_model_summary_defect_rate_zero_when_total_zero(self) -> None:
         from app.schemas import ModelSummaryResponse
 
         r = ModelSummaryResponse(model_version="1.0.0", total=0)
         assert r.defect_rate == 0.0
 
-    def test_batch_input_max_boundary(self):
+    def test_batch_input_max_boundary(self) -> None:
         payload = BatchSensorInput(readings=[{"temperature": 75.0}] * 100)
         assert len(payload.readings) == 100
 
-    def test_retraining_trigger_message_stored(self):
+    def test_retraining_trigger_message_stored(self) -> None:
         from app.schemas import RetrainingTriggerResponse
 
         r = RetrainingTriggerResponse(status="queued", message="Queued for run at midnight")
