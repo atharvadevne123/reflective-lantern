@@ -22,44 +22,44 @@ SYDNEY = Coordinate(-33.8688, 151.2093)
 
 
 class TestCoordinate:
-    def test_valid_coordinate(self):
+    def test_valid_coordinate(self) -> None:
         c = Coordinate(lat=45.0, lon=90.0)
         assert c.lat == 45.0 and c.lon == 90.0
 
-    def test_invalid_lat_raises(self):
+    def test_invalid_lat_raises(self) -> None:
         with pytest.raises(ValueError, match="Latitude"):
             Coordinate(lat=91, lon=0)
 
-    def test_invalid_lon_raises(self):
+    def test_invalid_lon_raises(self) -> None:
         with pytest.raises(ValueError, match="Longitude"):
             Coordinate(lat=0, lon=181)
 
     @pytest.mark.parametrize("lat,lon", [(-90, -180), (90, 180), (0, 0), (45.5, -120.3)])
-    def test_boundary_values_accepted(self, lat, lon):
+    def test_boundary_values_accepted(self, lat, lon) -> None:
         c = Coordinate(lat=lat, lon=lon)
         assert c.lat == lat and c.lon == lon
 
-    def test_str_representation(self):
+    def test_str_representation(self) -> None:
         c = Coordinate(lat=51.5074, lon=-0.1278)
         assert "51.507400" in str(c)
 
 
 class TestHaversine:
-    def test_same_point_is_zero(self):
+    def test_same_point_is_zero(self) -> None:
         assert haversine(LONDON, LONDON) == pytest.approx(0.0, abs=1e-9)
 
-    def test_london_to_paris_approx(self):
+    def test_london_to_paris_approx(self) -> None:
         dist = haversine(LONDON, PARIS)
         assert 340 < dist < 345
 
-    def test_symmetry(self):
+    def test_symmetry(self) -> None:
         assert haversine(LONDON, PARIS) == pytest.approx(haversine(PARIS, LONDON))
 
-    def test_intercontinental_distance(self):
+    def test_intercontinental_distance(self) -> None:
         dist = haversine(LONDON, NEW_YORK)
         assert 5500 < dist < 5600
 
-    def test_antipodal_max_distance(self):
+    def test_antipodal_max_distance(self) -> None:
         north = Coordinate(0, 0)
         south = Coordinate(0, 180)
         dist = haversine(north, south)
@@ -67,53 +67,53 @@ class TestHaversine:
 
 
 class TestBoundingBox:
-    def test_contains_interior_point(self):
+    def test_contains_interior_point(self) -> None:
         bbox = BoundingBox(min_lat=40, max_lat=50, min_lon=-5, max_lon=5)
         assert bbox.contains(Coordinate(45, 0))
 
-    def test_rejects_exterior_point(self):
+    def test_rejects_exterior_point(self) -> None:
         bbox = BoundingBox(min_lat=40, max_lat=50, min_lon=-5, max_lon=5)
         assert not bbox.contains(Coordinate(60, 0))
 
-    def test_center(self):
+    def test_center(self) -> None:
         bbox = BoundingBox(min_lat=40, max_lat=50, min_lon=-10, max_lon=10)
         center = bbox.center
         assert center.lat == pytest.approx(45.0)
         assert center.lon == pytest.approx(0.0)
 
-    def test_bounding_box_of_list(self):
+    def test_bounding_box_of_list(self) -> None:
         coords = [LONDON, PARIS, NEW_YORK]
         bbox = bounding_box_of(coords)
         assert bbox.min_lat == min(c.lat for c in coords)
         assert bbox.max_lon == max(c.lon for c in coords)
 
-    def test_bounding_box_empty_raises(self):
+    def test_bounding_box_empty_raises(self) -> None:
         with pytest.raises(ValueError, match="empty"):
             bounding_box_of([])
 
 
 class TestNearestNeighbor:
-    def test_finds_closest(self):
+    def test_finds_closest(self) -> None:
         result = nearest_neighbor(LONDON, [PARIS, NEW_YORK, SYDNEY])
         assert result == PARIS
 
-    def test_empty_candidates_raises(self):
+    def test_empty_candidates_raises(self) -> None:
         with pytest.raises(ValueError, match="empty"):
             nearest_neighbor(LONDON, [])
 
-    def test_single_candidate(self):
+    def test_single_candidate(self) -> None:
         assert nearest_neighbor(LONDON, [PARIS]) == PARIS
 
 
 class TestMidpoint:
-    def test_midpoint_near_equator(self):
+    def test_midpoint_near_equator(self) -> None:
         a = Coordinate(0, -10)
         b = Coordinate(0, 10)
         mid = midpoint(a, b)
         assert mid.lat == pytest.approx(0.0, abs=0.01)
         assert mid.lon == pytest.approx(0.0, abs=0.01)
 
-    def test_midpoint_london_paris_is_between(self):
+    def test_midpoint_london_paris_is_between(self) -> None:
         mid = midpoint(LONDON, PARIS)
         assert LONDON.lat > mid.lat > PARIS.lat
 

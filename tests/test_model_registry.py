@@ -12,46 +12,46 @@ def _mv(name="price-model", version="1.0.0", path="s3://models/v1") -> ModelVers
 
 
 class TestModelVersionRegistration:
-    def test_register_succeeds(self):
+    def test_register_succeeds(self) -> None:
         reg = ModelRegistry()
         reg.register(_mv())
         assert "price-model" in reg.list_models()
 
-    def test_duplicate_version_raises(self):
+    def test_duplicate_version_raises(self) -> None:
         reg = ModelRegistry()
         reg.register(_mv())
         with pytest.raises(ValueError, match="already registered"):
             reg.register(_mv())
 
-    def test_different_versions_accepted(self):
+    def test_different_versions_accepted(self) -> None:
         reg = ModelRegistry()
         reg.register(_mv(version="1.0.0"))
         reg.register(_mv(version="2.0.0"))
         assert len(reg.list_versions("price-model")) == 2
 
-    def test_default_stage_is_staging(self):
+    def test_default_stage_is_staging(self) -> None:
         reg = ModelRegistry()
         reg.register(_mv())
         assert reg.get_latest("price-model").stage is ModelStage.STAGING
 
 
 class TestStageTransitions:
-    def test_transition_to_production(self):
+    def test_transition_to_production(self) -> None:
         reg = ModelRegistry()
         reg.register(_mv())
         assert reg.transition_stage("price-model", "1.0.0", ModelStage.PRODUCTION)
         assert reg.get_production("price-model").version == "1.0.0"
 
-    def test_transition_nonexistent_returns_false(self):
+    def test_transition_nonexistent_returns_false(self) -> None:
         reg = ModelRegistry()
         assert reg.transition_stage("ghost", "1.0.0", ModelStage.PRODUCTION) is False
 
-    def test_get_production_none_when_none(self):
+    def test_get_production_none_when_none(self) -> None:
         reg = ModelRegistry()
         reg.register(_mv())
         assert reg.get_production("price-model") is None
 
-    def test_archive_removes_from_production(self):
+    def test_archive_removes_from_production(self) -> None:
         reg = ModelRegistry()
         reg.register(_mv())
         reg.transition_stage("price-model", "1.0.0", ModelStage.PRODUCTION)
@@ -59,36 +59,36 @@ class TestStageTransitions:
         assert reg.get_production("price-model") is None
 
     @pytest.mark.parametrize("stage", list(ModelStage))
-    def test_all_stage_values_accepted(self, stage):
+    def test_all_stage_values_accepted(self, stage) -> None:
         reg = ModelRegistry()
         reg.register(_mv())
         assert reg.transition_stage("price-model", "1.0.0", stage) is True
 
 
 class TestGetLatest:
-    def test_latest_returns_last_registered(self):
+    def test_latest_returns_last_registered(self) -> None:
         reg = ModelRegistry()
         reg.register(_mv(version="1.0.0"))
         reg.register(_mv(version="2.0.0"))
         assert reg.get_latest("price-model").version == "2.0.0"
 
-    def test_get_latest_unknown_model_returns_none(self):
+    def test_get_latest_unknown_model_returns_none(self) -> None:
         assert ModelRegistry().get_latest("ghost") is None
 
 
 class TestTagging:
-    def test_add_tag_succeeds(self):
+    def test_add_tag_succeeds(self) -> None:
         reg = ModelRegistry()
         reg.register(_mv())
         assert reg.add_tag("price-model", "1.0.0", "team", "ml") is True
         mv = reg.get_latest("price-model")
         assert mv.tags["team"] == "ml"
 
-    def test_add_tag_nonexistent_returns_false(self):
+    def test_add_tag_nonexistent_returns_false(self) -> None:
         reg = ModelRegistry()
         assert reg.add_tag("ghost", "1.0.0", "k", "v") is False
 
-    def test_metrics_stored(self):
+    def test_metrics_stored(self) -> None:
         mv = _mv()
         mv.metrics = {"rmse": 0.05, "mae": 0.03}
         reg = ModelRegistry()
@@ -97,23 +97,23 @@ class TestTagging:
 
 
 class TestListModels:
-    def test_empty_registry_list_empty(self):
+    def test_empty_registry_list_empty(self) -> None:
         reg = ModelRegistry()
         assert reg.list_models() == []
 
-    def test_multiple_model_names(self):
+    def test_multiple_model_names(self) -> None:
         reg = ModelRegistry()
         reg.register(_mv("model-a"))
         reg.register(_mv("model-b"))
         assert set(reg.list_models()) == {"model-a", "model-b"}
 
-    def test_list_versions_empty_for_unknown_model(self):
+    def test_list_versions_empty_for_unknown_model(self) -> None:
         reg = ModelRegistry()
         assert reg.list_versions("no-such-model") == []
 
 
 class TestProductionPromotion:
-    def test_only_one_production_at_a_time(self):
+    def test_only_one_production_at_a_time(self) -> None:
         reg = ModelRegistry()
         reg.register(_mv(version="1.0.0"))
         reg.register(_mv(version="2.0.0"))
@@ -122,7 +122,7 @@ class TestProductionPromotion:
         prod = reg.get_production("price-model")
         assert prod.version == "2.0.0"
 
-    def test_multiple_tags_per_version(self):
+    def test_multiple_tags_per_version(self) -> None:
         reg = ModelRegistry()
         reg.register(_mv())
         reg.add_tag("price-model", "1.0.0", "env", "prod")
