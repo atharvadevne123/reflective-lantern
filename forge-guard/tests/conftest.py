@@ -17,7 +17,7 @@ engine = create_engine(TEST_DATABASE_URL, connect_args={"check_same_thread": Fal
 TestSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 
-def override_get_db():
+def override_get_db() -> None:
     db = TestSessionLocal()
     try:
         yield db
@@ -26,7 +26,7 @@ def override_get_db():
 
 
 @pytest.fixture(scope="session", autouse=True)
-def setup_test_db():
+def setup_test_db() -> None:
     """Create all tables in the test SQLite database once per session."""
     Base.metadata.create_all(bind=engine)
     yield
@@ -34,7 +34,7 @@ def setup_test_db():
 
 
 @pytest.fixture
-def db_session():
+def db_session() -> None:
     """Return a fresh database session per test, truncating all tables after.
 
     Creates a new session, yields it, then deletes all rows from shared tables
@@ -61,7 +61,7 @@ def db_session():
 
 
 @pytest.fixture(scope="module")
-def client():
+def client() -> None:
     """Return a TestClient with the test DB injected."""
     app.dependency_overrides[get_db] = override_get_db
     Base.metadata.create_all(bind=engine)
@@ -105,7 +105,7 @@ def synthetic_df() -> pd.DataFrame:
 
 
 @pytest.fixture
-def feature_arrays(synthetic_df: pd.DataFrame):
+def feature_arrays(synthetic_df: pd.DataFrame) -> None:
     from app.features import build_feature_pipeline
 
     feat_cols = [c for c in synthetic_df.columns if c != "defect"]
