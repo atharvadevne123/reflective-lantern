@@ -19,7 +19,7 @@ def make_sine_series(n: int = 100) -> np.ndarray:
 
 
 class TestPrepareSupervisedData:
-    def test_shapes_match(self):
+    def test_shapes_match(self) -> None:
         from app.forecaster import prepare_supervised_data
 
         series = make_sine_series(100)
@@ -27,14 +27,14 @@ class TestPrepareSupervisedData:
         assert X.shape[0] == y.shape[0]
         assert X.shape[1] == 20
 
-    def test_too_short_series_raises(self):
+    def test_too_short_series_raises(self) -> None:
         from app.forecaster import prepare_supervised_data
 
         with pytest.raises(ValueError):
             prepare_supervised_data(np.array([1.0, 2.0]), lookback=20, horizon=5)
 
     @pytest.mark.parametrize("lookback,horizon", [(10, 1), (20, 5), (30, 10)])
-    def test_various_configs(self, lookback, horizon):
+    def test_various_configs(self, lookback, horizon) -> None:
         from app.forecaster import prepare_supervised_data
 
         series = make_sine_series(200)
@@ -43,7 +43,7 @@ class TestPrepareSupervisedData:
 
 
 class TestFitChannelForecaster:
-    def test_returns_model_and_metrics(self):
+    def test_returns_model_and_metrics(self) -> None:
         from app.forecaster import fit_channel_forecaster
 
         series = make_sine_series()
@@ -52,7 +52,7 @@ class TestFitChannelForecaster:
         assert "mae" in metrics
         assert "mse" in metrics
 
-    def test_fits_sine_wave_well(self):
+    def test_fits_sine_wave_well(self) -> None:
         from app.forecaster import fit_channel_forecaster
 
         series = make_sine_series(300)
@@ -61,7 +61,7 @@ class TestFitChannelForecaster:
 
 
 class TestForecastWithConfidence:
-    def test_point_and_bounds_lengths(self):
+    def test_point_and_bounds_lengths(self) -> None:
         from app.forecaster import fit_channel_forecaster, forecast_with_confidence
 
         series = make_sine_series()
@@ -71,7 +71,7 @@ class TestForecastWithConfidence:
         assert len(fc["lower"]) == 5
         assert len(fc["upper"]) == 5
 
-    def test_bounds_bracket_point(self):
+    def test_bounds_bracket_point(self) -> None:
         from app.forecaster import fit_channel_forecaster, forecast_with_confidence
 
         series = make_sine_series()
@@ -82,14 +82,14 @@ class TestForecastWithConfidence:
 
 
 class TestMultiChannelForecast:
-    def test_forecasts_all_channels(self):
+    def test_forecasts_all_channels(self) -> None:
         from app.forecaster import multi_channel_forecast
 
         channels = {"temp": make_sine_series(), "pressure": make_sine_series() * 100}
         results = multi_channel_forecast(channels, horizon=3)
         assert set(results.keys()) == {"temp", "pressure"}
 
-    def test_short_channel_reports_error(self):
+    def test_short_channel_reports_error(self) -> None:
         from app.forecaster import multi_channel_forecast
 
         results = multi_channel_forecast({"tiny": np.array([1.0, 2.0], dtype=np.float32)})

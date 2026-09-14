@@ -16,7 +16,7 @@ TEST_DATABASE_URL = "sqlite:///:memory:"
 
 
 @pytest.fixture(scope="session")
-def engine():
+def engine() -> None:
     """Create a test SQLAlchemy engine."""
     import os
     import sys
@@ -38,7 +38,7 @@ def engine():
 
 
 @pytest.fixture()
-def db_session(engine):
+def db_session(engine) -> None:
     """Return a transactional database session that rolls back after each test."""
     TestSession = sessionmaker(bind=engine)
     session = TestSession()
@@ -65,7 +65,7 @@ def client(engine) -> Generator:
     Base.metadata.create_all(engine)
     TestSession = sessionmaker(bind=engine, autocommit=False, autoflush=False)
 
-    def override_get_db():
+    def override_get_db() -> None:
         db = TestSession()
         try:
             yield db
@@ -136,7 +136,7 @@ def feature_matrix(sample_readings) -> tuple:
 
 
 @pytest.fixture()
-def trained_models(feature_matrix):
+def trained_models(feature_matrix) -> None:
     """Train anomaly detector and forecaster on sample data and return both."""
     import os
     import sys

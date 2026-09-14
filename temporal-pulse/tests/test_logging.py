@@ -11,7 +11,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
 
 class TestJsonFormatter:
-    def test_output_is_valid_json(self):
+    def test_output_is_valid_json(self) -> None:
         from app.logging_config import JsonFormatter
 
         record = logging.LogRecord("test", logging.INFO, "f.py", 1, "hello", None, None)
@@ -20,7 +20,7 @@ class TestJsonFormatter:
         assert payload["message"] == "hello"
         assert payload["level"] == "INFO"
 
-    def test_includes_exception(self):
+    def test_includes_exception(self) -> None:
         from app.logging_config import JsonFormatter
 
         try:
@@ -33,7 +33,7 @@ class TestJsonFormatter:
         assert "exception" in payload
         assert "boom" in payload["exception"]
 
-    def test_includes_correlation_id_extra(self):
+    def test_includes_correlation_id_extra(self) -> None:
         from app.logging_config import JsonFormatter
 
         record = logging.LogRecord("test", logging.INFO, "f.py", 1, "msg", None, None)
@@ -43,14 +43,14 @@ class TestJsonFormatter:
 
 
 class TestConfigureLogging:
-    def test_sets_level(self):
+    def test_sets_level(self) -> None:
         from app.logging_config import configure_logging
 
         configure_logging(level="DEBUG", json_format=False)
         assert logging.getLogger().level == logging.DEBUG
         configure_logging(level="INFO", json_format=False)
 
-    def test_json_format_flag(self):
+    def test_json_format_flag(self) -> None:
         from app.logging_config import JsonFormatter, configure_logging
 
         configure_logging(level="INFO", json_format=True)
@@ -58,7 +58,7 @@ class TestConfigureLogging:
         assert isinstance(handler.formatter, JsonFormatter)
         configure_logging(level="INFO", json_format=False)
 
-    def test_quiets_noisy_loggers(self):
+    def test_quiets_noisy_loggers(self) -> None:
         from app.logging_config import configure_logging
 
         configure_logging(level="DEBUG", json_format=False)
@@ -68,14 +68,14 @@ class TestConfigureLogging:
     import pytest
 
     @pytest.mark.parametrize("level", ["DEBUG", "INFO", "WARNING", "ERROR"])
-    def test_all_valid_levels_accepted(self, level: str):
+    def test_all_valid_levels_accepted(self, level: str) -> None:
         from app.logging_config import configure_logging
 
         configure_logging(level=level, json_format=False)
         assert logging.getLogger().level == getattr(logging, level)
         configure_logging(level="INFO", json_format=False)
 
-    def test_reconfigure_does_not_duplicate_handlers(self):
+    def test_reconfigure_does_not_duplicate_handlers(self) -> None:
         from app.logging_config import configure_logging
 
         configure_logging(level="INFO", json_format=False)

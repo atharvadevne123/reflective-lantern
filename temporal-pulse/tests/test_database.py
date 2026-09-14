@@ -10,7 +10,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
 
 class TestSensorReading:
-    def test_insert_and_query(self, db_session):
+    def test_insert_and_query(self, db_session) -> None:
         from app.database import SensorReading
 
         reading = SensorReading(
@@ -24,7 +24,7 @@ class TestSensorReading:
         assert found is not None
         assert found.values["temp"] == 21.5
 
-    def test_created_at_auto_set(self, db_session):
+    def test_created_at_auto_set(self, db_session) -> None:
         from app.database import SensorReading
 
         reading = SensorReading(sensor_id="s2", timestamp=datetime(2026, 1, 1), values={"x": 1.0})
@@ -34,7 +34,7 @@ class TestSensorReading:
 
 
 class TestAnomalyEvent:
-    def test_insert_anomaly_event(self, db_session):
+    def test_insert_anomaly_event(self, db_session) -> None:
         from app.database import AnomalyEvent
 
         event = AnomalyEvent(
@@ -49,7 +49,7 @@ class TestAnomalyEvent:
         found = db_session.query(AnomalyEvent).filter_by(sensor_id="s1").first()
         assert found.anomaly_score == 0.95
 
-    def test_query_by_score_threshold(self, db_session):
+    def test_query_by_score_threshold(self, db_session) -> None:
         from app.database import AnomalyEvent
 
         for score in [0.3, 0.8, 0.9]:
@@ -66,7 +66,7 @@ class TestAnomalyEvent:
 
 
 class TestPrediction:
-    def test_insert_prediction(self, db_session):
+    def test_insert_prediction(self, db_session) -> None:
         from app.database import Prediction
 
         pred = Prediction(
@@ -83,7 +83,7 @@ class TestPrediction:
 
 
 class TestDriftLog:
-    def test_insert_drift_log(self, db_session):
+    def test_insert_drift_log(self, db_session) -> None:
         from app.database import DriftLog
 
         log = DriftLog(
@@ -100,7 +100,7 @@ class TestDriftLog:
 
 
 class TestInitDb:
-    def test_init_db_creates_tables(self):
+    def test_init_db_creates_tables(self) -> None:
         from app.database import init_db
 
         init_db()

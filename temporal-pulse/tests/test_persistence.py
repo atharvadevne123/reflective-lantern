@@ -12,7 +12,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
 
 class TestSaveLoad:
-    def test_save_after_training(self, trained_models, tmp_path):
+    def test_save_after_training(self, trained_models, tmp_path) -> None:
         from app.model import save_models
 
         saved = save_models(tmp_path)
@@ -20,7 +20,7 @@ class TestSaveLoad:
         assert "scaler" in saved
         assert Path(saved["isolation_forest"]).exists()
 
-    def test_load_restores_scoring(self, trained_models, tmp_path):
+    def test_load_restores_scoring(self, trained_models, tmp_path) -> None:
         from app import model as m
         from app.model import load_models, save_models, score_anomaly
 
@@ -35,26 +35,26 @@ class TestSaveLoad:
         scores_after = score_anomaly(X)
         np.testing.assert_allclose(scores_before, scores_after, rtol=1e-5)
 
-    def test_load_from_empty_dir_returns_false(self, tmp_path):
+    def test_load_from_empty_dir_returns_false(self, tmp_path) -> None:
         from app.model import load_models
 
         assert load_models(tmp_path / "nonexistent") is False
 
-    def test_save_creates_directory(self, trained_models, tmp_path):
+    def test_save_creates_directory(self, trained_models, tmp_path) -> None:
         from app.model import save_models
 
         target = tmp_path / "nested" / "models"
         save_models(target)
         assert target.exists()
 
-    def test_saved_files_are_nonempty(self, trained_models, tmp_path):
+    def test_saved_files_are_nonempty(self, trained_models, tmp_path) -> None:
         from app.model import save_models
 
         saved = save_models(tmp_path)
         for path in saved.values():
             assert Path(path).stat().st_size > 0
 
-    def test_save_returns_dict_with_string_values(self, trained_models, tmp_path):
+    def test_save_returns_dict_with_string_values(self, trained_models, tmp_path) -> None:
         from app.model import save_models
 
         saved = save_models(tmp_path)
