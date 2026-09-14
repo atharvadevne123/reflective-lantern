@@ -7,86 +7,86 @@ import pytest
 from app.batch_processor import BatchProcessor
 
 
-def _identity(items):
+def _identity(items) -> None:
     return items
 
 
-def _double(items):
+def _double(items) -> None:
     return [x * 2 for x in items]
 
 
-def _failing(items):
+def _failing(items) -> None:
     raise RuntimeError("intentional failure")
 
 
 class TestBatchProcessorBasic:
-    def test_processes_all_items(self):
+    def test_processes_all_items(self) -> None:
         bp = BatchProcessor(_identity, batch_size=10)
         summary = bp.run(list(range(25)))
         assert summary.total_items == 25
         assert summary.total_results == 25
 
-    def test_batch_count_correct(self):
+    def test_batch_count_correct(self) -> None:
         bp = BatchProcessor(_identity, batch_size=10)
         summary = bp.run(list(range(25)))
         assert summary.total_batches == 3
 
-    def test_empty_input(self):
+    def test_empty_input(self) -> None:
         bp = BatchProcessor(_identity, batch_size=10)
         summary = bp.run([])
         assert summary.total_items == 0
         assert summary.total_batches == 0
         assert summary.total_results == 0
 
-    def test_single_batch(self):
+    def test_single_batch(self) -> None:
         bp = BatchProcessor(_double, batch_size=100)
         summary = bp.run([1, 2, 3])
         assert summary.total_results == 3
         assert summary.total_errors == 0
 
     @pytest.mark.parametrize("size", [1, 5, 100])
-    def test_various_batch_sizes(self, size):
+    def test_various_batch_sizes(self, size) -> None:
         bp = BatchProcessor(_identity, batch_size=size)
         summary = bp.run(list(range(50)))
         assert summary.total_results == 50
 
 
 class TestBatchProcessorErrors:
-    def test_error_handling_raise_propagates(self):
+    def test_error_handling_raise_propagates(self) -> None:
         bp = BatchProcessor(_failing, batch_size=5, error_handling="raise")
         with pytest.raises(RuntimeError, match="intentional"):
             bp.run(list(range(10)))
 
-    def test_error_handling_collect_continues(self):
+    def test_error_handling_collect_continues(self) -> None:
         bp = BatchProcessor(_failing, batch_size=5, error_handling="collect")
         summary = bp.run(list(range(10)))
         assert summary.total_errors == 2
         assert summary.total_results == 0
 
-    def test_invalid_error_handling_raises(self):
+    def test_invalid_error_handling_raises(self) -> None:
         with pytest.raises(ValueError, match="error_handling"):
             BatchProcessor(_identity, error_handling="ignore")
 
-    def test_invalid_batch_size_raises(self):
+    def test_invalid_batch_size_raises(self) -> None:
         with pytest.raises(ValueError, match="batch_size"):
             BatchProcessor(_identity, batch_size=0)
 
 
 class TestBatchProcessorCallbacks:
-    def test_on_batch_done_called_per_batch(self):
+    def test_on_batch_done_called_per_batch(self) -> None:
         called = []
         bp = BatchProcessor(_identity, batch_size=5, on_batch_done=lambda br: called.append(br.batch_index))
         bp.run(list(range(15)))
         assert called == [0, 1, 2]
 
-    def test_callback_receives_batch_result(self):
+    def test_callback_receives_batch_result(self) -> None:
         results_seen = []
         bp = BatchProcessor(_double, batch_size=3, on_batch_done=lambda br: results_seen.extend(br.results))
         bp.run([1, 2, 3])
         assert results_seen == [2, 4, 6]
 
-    def test_callback_exception_does_not_abort(self):
-        def bad_cb(br):
+    def test_callback_exception_does_not_abort(self) -> None:
+        def bad_cb(br) -> None:
             raise RuntimeError("cb fail")
 
         bp = BatchProcessor(_identity, batch_size=5, on_batch_done=bad_cb)
@@ -95,23 +95,23 @@ class TestBatchProcessorCallbacks:
 
 
 class TestBatchProcessorSummary:
-    def test_summary_total_items_matches_input(self):
+    def test_summary_total_items_matches_input(self) -> None:
         bp = BatchProcessor(_identity, batch_size=7)
         summary = bp.run(list(range(21)))
         assert summary.total_items == 21
 
-    def test_summary_no_errors_on_clean_run(self):
+    def test_summary_no_errors_on_clean_run(self) -> None:
         bp = BatchProcessor(_identity, batch_size=5)
         summary = bp.run(list(range(20)))
         assert summary.total_errors == 0
 
-    def test_batch_size_one_creates_n_batches(self):
+    def test_batch_size_one_creates_n_batches(self) -> None:
         n = 10
         bp = BatchProcessor(_identity, batch_size=1)
         summary = bp.run(list(range(n)))
         assert summary.total_batches == n
 
-    def test_results_count_equals_input_on_identity(self):
+    def test_results_count_equals_input_on_identity(self) -> None:
         bp = BatchProcessor(_identity, batch_size=4)
         items = list(range(13))
         summary = bp.run(items)
@@ -133,12 +133,12 @@ class TestBatchProcessorSummary:
 
 
 class TestBatchProcessorEdgeCases:
-    def test_transform_result_values_doubled(self):
+    def test_transform_result_values_doubled(self) -> None:
         bp = BatchProcessor(_double, batch_size=5)
         summary = bp.run([1, 2, 3])
         assert summary.results == [2, 4, 6]
 
-    def test_large_batch_size_single_pass(self):
+    def test_large_batch_size_single_pass(self) -> None:
         items = list(range(7))
         bp = BatchProcessor(_identity, batch_size=1000)
         summary = bp.run(items)
@@ -152,13 +152,13 @@ class TestBatchProcessorEdgeCases:
         summary = bp.run(items)
         assert summary.results == items
 
-    def test_error_count_matches_failing_batches(self):
+    def test_error_count_matches_failing_batches(self) -> None:
         items = list(range(10))
         bp = BatchProcessor(_failing, batch_size=3, on_error="collect")
         summary = bp.run(items)
         assert summary.total_errors > 0
 
-    def test_collect_mode_results_empty_on_all_failure(self):
+    def test_collect_mode_results_empty_on_all_failure(self) -> None:
         bp = BatchProcessor(_failing, batch_size=5, on_error="collect")
         summary = bp.run(list(range(10)))
         assert summary.total_results == 0
