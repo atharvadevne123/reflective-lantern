@@ -33,7 +33,7 @@ def is_s3_enabled() -> bool:
     return _BOTO_AVAILABLE and bool(S3_BUCKET)
 
 
-def _client():
+def _client() -> object:
     """Build an S3 client for the configured region."""
     return boto3.client("s3", region_name=AWS_REGION)
 

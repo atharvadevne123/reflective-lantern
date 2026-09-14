@@ -32,7 +32,7 @@ def is_tracking_enabled() -> bool:
 
 
 @contextmanager
-def track_run(run_name: str):
+def track_run(run_name: str):  # type: ignore[return]
     """Open an MLflow run, or a no-op context when tracking is unavailable.
 
     Args:

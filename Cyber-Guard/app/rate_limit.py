@@ -10,6 +10,7 @@ from __future__ import annotations
 import logging
 import time
 from collections import defaultdict, deque
+from typing import Any
 
 from fastapi import Request
 from fastapi.responses import JSONResponse
@@ -64,7 +65,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         super().__init__(app)
         self.limit = limit_per_minute
 
-    async def dispatch(self, request: Request, call_next):
+    async def dispatch(self, request: Request, call_next: Any) -> JSONResponse:
         """Count the request and either pass it through or return HTTP 429.
 
         Args:
