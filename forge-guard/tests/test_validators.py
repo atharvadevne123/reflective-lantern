@@ -359,3 +359,85 @@ class TestFieldStatistics:
         result = field_statistics(records, "v")
         assert result["min"] == pytest.approx(1.0)
         assert result["max"] == pytest.approx(4.0)
+
+
+class TestSensorDriftDetected:
+    """Tests for sensor_drift_detected function."""
+
+    def test_no_drift_same_values(self) -> None:
+        from app.validators import sensor_drift_detected
+
+        baseline = [50.0] * 20
+        current = [50.0] * 10
+        result = sensor_drift_detected(baseline, current)
+        assert result["drift_detected"] is False
+
+    def test_drift_detected_on_large_shift(self) -> None:
+        from app.validators import sensor_drift_detected
+
+        baseline = [10.0] * 20
+        current = [100.0] * 20
+        result = sensor_drift_detected(baseline, current)
+        assert result["drift_detected"] is True
+
+    def test_result_has_required_keys(self) -> None:
+        from app.validators import sensor_drift_detected
+
+        baseline = [1.0] * 15
+        current = [2.0] * 15
+        result = sensor_drift_detected(baseline, current)
+        assert "drift_detected" in result
+        assert "ks_statistic" in result
+        assert "p_value" in result
+
+    def test_insufficient_data_returns_no_drift(self) -> None:
+        from app.validators import sensor_drift_detected
+
+        result = sensor_drift_detected([1.0], [2.0])
+        assert result["drift_detected"] is False
+
+
+class TestZscoreOutlier:
+    """Tests for zscore_outlier function."""
+
+    def test_no_outliers_in_uniform_data(self) -> None:
+        from app.validators import zscore_outlier
+
+        values = [5.0] * 10
+        flags = zscore_outlier(values)
+        assert all(not f for f in flags)
+
+    def test_detects_extreme_outlier(self) -> None:
+        from app.validators import zscore_outlier
+
+        values = [5.0] * 20 + [1000.0]
+        flags = zscore_outlier(values)
+        assert flags[-1] is True
+
+    def test_output_length_matches_input(self) -> None:
+        from app.validators import zscore_outlier
+
+        values = [1.0, 2.0, 3.0, 4.0, 5.0]
+        assert len(zscore_outlier(values)) == len(values)
+
+
+class TestMissingRate:
+    """Tests for missing_rate function."""
+
+    def test_all_present(self) -> None:
+        from app.validators import missing_rate
+
+        records = [{"temp": 1.0}, {"temp": 2.0}]
+        assert missing_rate(records, "temp") == 0.0
+
+    def test_all_missing(self) -> None:
+        from app.validators import missing_rate
+
+        records = [{"x": 1.0}, {"x": 2.0}]
+        assert missing_rate(records, "temp") == 1.0
+
+    def test_half_missing(self) -> None:
+        from app.validators import missing_rate
+
+        records = [{"temp": 1.0}, {}]
+        assert missing_rate(records, "temp") == pytest.approx(0.5)
