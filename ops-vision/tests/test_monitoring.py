@@ -62,13 +62,13 @@ def _drifted_batch(n: int = 200, rng=None) -> list[dict]:
 class TestDriftMonitorInit:
     """Tests for DriftMonitor initialisation."""
 
-    def test_initial_window_sizes_are_zero(self):
+    def test_initial_window_sizes_are_zero(self) -> None:
         """New monitor has empty reference and current windows."""
         monitor = DriftMonitor()
         assert monitor.reference_size == 0
         assert monitor.current_size == 0
 
-    def test_custom_threshold(self):
+    def test_custom_threshold(self) -> None:
         """Monitor stores custom threshold."""
         monitor = DriftMonitor(threshold=0.01)
         assert monitor.threshold == 0.01
@@ -77,13 +77,13 @@ class TestDriftMonitorInit:
 class TestUpdateReference:
     """Tests for update_reference()."""
 
-    def test_reference_size_increases(self):
+    def test_reference_size_increases(self) -> None:
         """Reference window grows after update_reference call."""
         monitor = DriftMonitor()
         monitor.update_reference(_normal_batch(50))
         assert monitor.reference_size == 50
 
-    def test_reference_capped_at_max(self):
+    def test_reference_capped_at_max(self) -> None:
         """Reference window is capped at reference_window_size."""
         monitor = DriftMonitor(reference_window_size=100)
         monitor.update_reference(_normal_batch(200))
@@ -93,14 +93,14 @@ class TestUpdateReference:
 class TestRecord:
     """Tests for the record() streaming interface."""
 
-    def test_record_returns_none_before_window_full(self):
+    def test_record_returns_none_before_window_full(self) -> None:
         """record() returns None while current window is not full."""
         monitor = DriftMonitor(current_window_size=10)
         monitor.update_reference(_normal_batch(50))
         result = monitor.record(_make_sample())
         assert result is None
 
-    def test_record_returns_results_when_window_full(self):
+    def test_record_returns_results_when_window_full(self) -> None:
         """record() triggers a drift check when current window reaches capacity."""
         monitor = DriftMonitor(current_window_size=5)
         monitor.update_reference(_normal_batch(50))
@@ -111,7 +111,7 @@ class TestRecord:
         assert isinstance(result, list)
         assert len(result) == len(FEATURE_COLS)
 
-    def test_record_clears_window_after_check(self):
+    def test_record_clears_window_after_check(self) -> None:
         """Current window is cleared after a drift check is triggered."""
         monitor = DriftMonitor(current_window_size=5)
         monitor.update_reference(_normal_batch(50))
@@ -123,7 +123,7 @@ class TestRecord:
 class TestCheckDrift:
     """Tests for explicit check_drift() calls."""
 
-    def test_drift_detected_on_shifted_distribution(self):
+    def test_drift_detected_on_shifted_distribution(self) -> None:
         """Drifted distribution should trigger at least one KS failure."""
         monitor = DriftMonitor(current_window_size=200)
         monitor.update_reference(_normal_batch(500))
@@ -133,7 +133,7 @@ class TestCheckDrift:
         drifted = [r for r in results if r.drifted]
         assert len(drifted) > 0
 
-    def test_no_drift_on_same_distribution(self):
+    def test_no_drift_on_same_distribution(self) -> None:
         """Identical distribution should not trigger drift."""
         rng = np.random.default_rng(42)
         monitor = DriftMonitor(current_window_size=200)
@@ -144,14 +144,14 @@ class TestCheckDrift:
         drifted = [r for r in results if r.drifted]
         assert len(drifted) == 0
 
-    def test_check_drift_raises_if_reference_empty(self):
+    def test_check_drift_raises_if_reference_empty(self) -> None:
         """check_drift raises ValueError when reference window is empty."""
         monitor = DriftMonitor()
         monitor._current.append(_make_sample())
         with pytest.raises(ValueError, match="Reference window is empty"):
             monitor.check_drift()
 
-    def test_drift_result_fields(self):
+    def test_drift_result_fields(self) -> None:
         """DriftResult objects have the expected fields."""
         monitor = DriftMonitor(current_window_size=50)
         monitor.update_reference(_normal_batch(200))
@@ -166,7 +166,7 @@ class TestCheckDrift:
             assert isinstance(r.drifted, bool)
 
     @pytest.mark.parametrize("feature", FEATURE_COLS)
-    def test_all_features_are_tested(self, feature):
+    def test_all_features_are_tested(self, feature) -> None:
         """check_drift returns one result per feature column."""
         monitor = DriftMonitor(current_window_size=50)
         monitor.update_reference(_normal_batch(200))
@@ -180,14 +180,14 @@ class TestCheckDrift:
 class TestGetMonitorSingleton:
     """Tests for the module-level singleton helper."""
 
-    def test_get_monitor_returns_drift_monitor(self):
+    def test_get_monitor_returns_drift_monitor(self) -> None:
         """get_monitor() returns a DriftMonitor instance."""
         from app.monitoring import get_monitor
 
         monitor = get_monitor()
         assert isinstance(monitor, DriftMonitor)
 
-    def test_get_monitor_returns_same_instance(self):
+    def test_get_monitor_returns_same_instance(self) -> None:
         """get_monitor() returns the same singleton on repeated calls."""
         from app.monitoring import get_monitor
 
@@ -199,7 +199,7 @@ class TestGetMonitorSingleton:
 class TestDriftMonitorReset:
     """Tests for DriftMonitor.reset() and drifted_features()."""
 
-    def test_reset_clears_reference_window(self):
+    def test_reset_clears_reference_window(self) -> None:
         """reset() empties the reference window."""
         monitor = DriftMonitor()
         monitor.update_reference(_normal_batch(100))
@@ -207,7 +207,7 @@ class TestDriftMonitorReset:
         monitor.reset()
         assert monitor.reference_size == 0
 
-    def test_reset_clears_current_window(self):
+    def test_reset_clears_current_window(self) -> None:
         """reset() empties the current window."""
         monitor = DriftMonitor(current_window_size=50)
         monitor.update_reference(_normal_batch(50))
@@ -216,7 +216,7 @@ class TestDriftMonitorReset:
         monitor.reset()
         assert monitor.current_size == 0
 
-    def test_drifted_features_returns_correct_names(self):
+    def test_drifted_features_returns_correct_names(self) -> None:
         """drifted_features() filters DriftResult list to drifted names."""
         monitor = DriftMonitor(current_window_size=50)
         monitor.update_reference(_normal_batch(200))
@@ -227,7 +227,7 @@ class TestDriftMonitorReset:
         assert isinstance(drifted, list)
         assert all(name in FEATURE_COLS for name in drifted)
 
-    def test_drifted_features_empty_when_no_drift(self):
+    def test_drifted_features_empty_when_no_drift(self) -> None:
         """drifted_features() returns [] when no features drifted."""
         monitor = DriftMonitor(current_window_size=50)
         rng = np.random.default_rng(7)
@@ -242,7 +242,7 @@ class TestDriftMonitorReset:
 class TestDriftResultRepr:
     """Tests for DriftResult.__repr__."""
 
-    def test_repr_contains_feature_name(self):
+    def test_repr_contains_feature_name(self) -> None:
         """DriftResult repr includes the feature name."""
         r = DriftResult(
             feature_name="cpu_usage_pct",
@@ -252,7 +252,7 @@ class TestDriftResultRepr:
         )
         assert "cpu_usage_pct" in repr(r)
 
-    def test_repr_contains_drifted_status(self):
+    def test_repr_contains_drifted_status(self) -> None:
         """DriftResult repr says DRIFTED for a drifted result."""
         r = DriftResult(
             feature_name="latency_p99_ms",
@@ -262,7 +262,7 @@ class TestDriftResultRepr:
         )
         assert "DRIFTED" in repr(r)
 
-    def test_repr_contains_stable_status(self):
+    def test_repr_contains_stable_status(self) -> None:
         """DriftResult repr says stable for a non-drifted result."""
         r = DriftResult(
             feature_name="memory_usage_pct",
@@ -276,34 +276,34 @@ class TestDriftResultRepr:
 class TestDriftMonitorSummary:
     """Tests for DriftMonitor.summary()."""
 
-    def test_summary_returns_dict(self):
+    def test_summary_returns_dict(self) -> None:
         """summary() returns a dict."""
         monitor = DriftMonitor()
         result = monitor.summary()
         assert isinstance(result, dict)
 
-    def test_summary_has_reference_size(self):
+    def test_summary_has_reference_size(self) -> None:
         """summary() dict contains reference_size key."""
         monitor = DriftMonitor()
         assert "reference_size" in monitor.summary()
 
-    def test_summary_has_current_size(self):
+    def test_summary_has_current_size(self) -> None:
         """summary() dict contains current_size key."""
         monitor = DriftMonitor()
         assert "current_size" in monitor.summary()
 
-    def test_summary_reference_size_matches(self):
+    def test_summary_reference_size_matches(self) -> None:
         """summary reference_size matches actual reference window size."""
         monitor = DriftMonitor()
         monitor.update_reference(_normal_batch(50))
         assert monitor.summary()["reference_size"] == 50
 
-    def test_summary_feature_count_correct(self):
+    def test_summary_feature_count_correct(self) -> None:
         """summary feature_count equals FEATURE_COLS length."""
         monitor = DriftMonitor()
         assert monitor.summary()["feature_count"] == len(FEATURE_COLS)
 
-    def test_summary_threshold_matches_init(self):
+    def test_summary_threshold_matches_init(self) -> None:
         """summary threshold matches the value passed at construction."""
         monitor = DriftMonitor(threshold=0.01)
         assert monitor.summary()["threshold"] == 0.01
@@ -312,7 +312,7 @@ class TestDriftMonitorSummary:
 class TestDriftMonitorStableAndRate:
     """Tests for stable_features() and drift_rate()."""
 
-    def test_stable_features_complement_of_drifted(self):
+    def test_stable_features_complement_of_drifted(self) -> None:
         """stable_features() returns features not in drifted_features()."""
         monitor = DriftMonitor(current_window_size=50)
         rng = np.random.default_rng(42)
@@ -325,7 +325,7 @@ class TestDriftMonitorStableAndRate:
         assert drifted | stable == set(FEATURE_COLS)
         assert drifted & stable == set()
 
-    def test_drift_rate_between_zero_and_one(self):
+    def test_drift_rate_between_zero_and_one(self) -> None:
         """drift_rate() is always in [0.0, 1.0]."""
         monitor = DriftMonitor(current_window_size=50)
         rng = np.random.default_rng(10)
@@ -336,12 +336,12 @@ class TestDriftMonitorStableAndRate:
         rate = monitor.drift_rate(results)
         assert 0.0 <= rate <= 1.0
 
-    def test_drift_rate_zero_for_empty_results(self):
+    def test_drift_rate_zero_for_empty_results(self) -> None:
         """drift_rate() returns 0.0 for an empty results list."""
         monitor = DriftMonitor()
         assert monitor.drift_rate([]) == 0.0
 
-    def test_drift_rate_one_when_all_drifted(self):
+    def test_drift_rate_one_when_all_drifted(self) -> None:
         """drift_rate() returns 1.0 when all features drifted."""
         monitor = DriftMonitor()
         all_drifted = [DriftResult(f, 0.9, 0.0001, True) for f in FEATURE_COLS]
@@ -351,24 +351,24 @@ class TestDriftMonitorStableAndRate:
 class TestDriftMonitorToDict:
     """Tests for DriftMonitor.to_dict()."""
 
-    def test_to_dict_returns_dict(self):
+    def test_to_dict_returns_dict(self) -> None:
         """to_dict() returns a dict."""
         monitor = DriftMonitor()
         assert isinstance(monitor.to_dict(), dict)
 
-    def test_to_dict_has_feature_cols(self):
+    def test_to_dict_has_feature_cols(self) -> None:
         """to_dict() includes feature_cols key with all feature names."""
         monitor = DriftMonitor()
         d = monitor.to_dict()
         assert "feature_cols" in d
         assert set(d["feature_cols"]) == set(FEATURE_COLS)
 
-    def test_to_dict_feature_count_correct(self):
+    def test_to_dict_feature_count_correct(self) -> None:
         """to_dict() feature_count matches FEATURE_COLS length."""
         monitor = DriftMonitor()
         assert monitor.to_dict()["feature_count"] == len(FEATURE_COLS)
 
-    def test_to_dict_threshold_matches(self):
+    def test_to_dict_threshold_matches(self) -> None:
         """to_dict() threshold matches the value at construction."""
         monitor = DriftMonitor(threshold=0.02)
         assert monitor.to_dict()["threshold"] == 0.02
