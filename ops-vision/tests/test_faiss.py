@@ -36,19 +36,19 @@ SAMPLE_RUNBOOKS = [
 class TestRunbookIndexBuild:
     """Tests for RunbookIndex.build()."""
 
-    def test_build_stores_runbooks(self):
+    def test_build_stores_runbooks(self) -> None:
         """After build(), the index holds all provided runbooks."""
         index = RunbookIndex()
         index.build(SAMPLE_RUNBOOKS)
         assert len(index.runbooks) == len(SAMPLE_RUNBOOKS)
 
-    def test_build_creates_vocab(self):
+    def test_build_creates_vocab(self) -> None:
         """build() populates the vocabulary."""
         index = RunbookIndex()
         index.build(SAMPLE_RUNBOOKS)
         assert len(index._vocab) > 0
 
-    def test_build_creates_embeddings(self):
+    def test_build_creates_embeddings(self) -> None:
         """build() creates embedding matrix."""
         index = RunbookIndex()
         index.build(SAMPLE_RUNBOOKS)
@@ -66,17 +66,17 @@ class TestRunbookIndexSearch:
         index.build(SAMPLE_RUNBOOKS)
         return index
 
-    def test_search_returns_list(self, built_index):
+    def test_search_returns_list(self, built_index) -> None:
         """search() returns a list."""
         results = built_index.search("high cpu usage", top_k=3)
         assert isinstance(results, list)
 
-    def test_search_returns_top_k(self, built_index):
+    def test_search_returns_top_k(self, built_index) -> None:
         """search() returns at most top_k results."""
         results = built_index.search("memory leak", top_k=2)
         assert len(results) <= 2
 
-    def test_search_result_is_runbook_score_tuple(self, built_index):
+    def test_search_result_is_runbook_score_tuple(self, built_index) -> None:
         """Each result is a (Runbook, float) tuple."""
         results = built_index.search("disk io", top_k=1)
         assert len(results) >= 1
@@ -84,13 +84,13 @@ class TestRunbookIndexSearch:
         assert isinstance(runbook, Runbook)
         assert isinstance(score, float)
 
-    def test_search_empty_index(self):
+    def test_search_empty_index(self) -> None:
         """search() on an empty index returns empty list."""
         index = RunbookIndex()
         results = index.search("cpu", top_k=3)
         assert results == []
 
-    def test_search_cpu_returns_cpu_runbook(self, built_index):
+    def test_search_cpu_returns_cpu_runbook(self, built_index) -> None:
         """Searching 'cpu usage high' should surface the CPU runbook."""
         results = built_index.search("cpu usage high", top_k=3)
         titles = [r.title for r, _ in results]
@@ -106,7 +106,7 @@ class TestRunbookIndexSearch:
             ("database pool connection", "database"),
         ],
     )
-    def test_search_category_relevance(self, built_index, query, category):
+    def test_search_category_relevance(self, built_index, query, category) -> None:
         """Top result for each query should match the expected category."""
         results = built_index.search(query, top_k=1)
         if results:
@@ -117,7 +117,7 @@ class TestRunbookIndexSearch:
 class TestRunbookIndexPersistence:
     """Tests for RunbookIndex save/load roundtrip."""
 
-    def test_save_and_load_roundtrip(self, tmp_path):
+    def test_save_and_load_roundtrip(self, tmp_path) -> None:
         """Saved index can be reloaded and produces search results."""
         index = RunbookIndex()
         index.build(SAMPLE_RUNBOOKS)
@@ -129,7 +129,7 @@ class TestRunbookIndexPersistence:
         assert isinstance(results, list)
         assert len(results) > 0
 
-    def test_saved_runbooks_preserved(self, tmp_path):
+    def test_saved_runbooks_preserved(self, tmp_path) -> None:
         """Loaded index has the same number of runbooks as original."""
         index = RunbookIndex()
         index.build(SAMPLE_RUNBOOKS)
@@ -148,33 +148,33 @@ class TestRunbookIndexProperties:
         index.build(SAMPLE_RUNBOOKS)
         return index
 
-    def test_size_matches_runbook_count(self, built_index):
+    def test_size_matches_runbook_count(self, built_index) -> None:
         """size property equals number of indexed runbooks."""
         assert built_index.size == len(SAMPLE_RUNBOOKS)
 
-    def test_size_zero_for_empty_index(self):
+    def test_size_zero_for_empty_index(self) -> None:
         """size is 0 for an empty (un-built) index."""
         assert RunbookIndex().size == 0
 
-    def test_is_built_true_after_build(self, built_index):
+    def test_is_built_true_after_build(self, built_index) -> None:
         """is_built is True after calling build()."""
         assert built_index.is_built is True
 
-    def test_is_built_false_before_build(self):
+    def test_is_built_false_before_build(self) -> None:
         """is_built is False before any build() call."""
         assert RunbookIndex().is_built is False
 
-    def test_categories_returns_sorted_list(self, built_index):
+    def test_categories_returns_sorted_list(self, built_index) -> None:
         """categories() returns a sorted list of unique categories."""
         cats = built_index.categories()
         assert cats == sorted(cats)
 
-    def test_categories_contains_all_runbook_categories(self, built_index):
+    def test_categories_contains_all_runbook_categories(self, built_index) -> None:
         """categories() includes every category present in the runbooks."""
         expected = {r.category for r in SAMPLE_RUNBOOKS}
         assert set(built_index.categories()) == expected
 
-    def test_categories_empty_for_unbuilt_index(self):
+    def test_categories_empty_for_unbuilt_index(self) -> None:
         """categories() returns [] for an empty index."""
         assert RunbookIndex().categories() == []
 
@@ -188,24 +188,24 @@ class TestRunbookIndexSearchByCategory:
         index.build(SAMPLE_RUNBOOKS)
         return index
 
-    def test_search_by_category_returns_matching_category(self, built_index):
+    def test_search_by_category_returns_matching_category(self, built_index) -> None:
         """Results from search_by_category all belong to the requested category."""
         results = built_index.search_by_category("cpu usage high", "cpu", top_k=3)
         for rb, _ in results:
             assert rb.category == "cpu"
 
-    def test_search_by_category_empty_for_wrong_category(self, built_index):
+    def test_search_by_category_empty_for_wrong_category(self, built_index) -> None:
         """Query for an irrelevant category returns an empty list (or fewer hits)."""
         results = built_index.search_by_category("cpu process", "network", top_k=3)
         for rb, _ in results:
             assert rb.category == "network"
 
-    def test_search_by_category_respects_top_k(self, built_index):
+    def test_search_by_category_respects_top_k(self, built_index) -> None:
         """search_by_category returns at most top_k results."""
         results = built_index.search_by_category("query", "cpu", top_k=1)
         assert len(results) <= 1
 
-    def test_search_by_category_empty_index(self):
+    def test_search_by_category_empty_index(self) -> None:
         """search_by_category on empty index returns empty list."""
         index = RunbookIndex()
         results = index.search_by_category("cpu", "cpu", top_k=3)
