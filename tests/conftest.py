@@ -30,7 +30,7 @@ def create_test_db() -> None:
 
 
 @pytest.fixture
-def db_session():
+def db_session() -> None:
     """Yield a fresh SQLAlchemy session for each test, wiping tables afterwards."""
     session = TestingSessionLocal()
     try:
@@ -44,10 +44,10 @@ def db_session():
 
 
 @pytest.fixture
-def client(db_session):
+def client(db_session) -> None:
     """FastAPI TestClient wired to the in-memory test database."""
 
-    def override_get_db():
+    def override_get_db() -> None:
         try:
             yield db_session
         finally:
@@ -84,7 +84,7 @@ def sample_y(sample_df: pd.DataFrame) -> pd.Series:
 
 
 @pytest.fixture
-def trained_model(sample_df, sample_y):
+def trained_model(sample_df, sample_y) -> None:
     from app.model import train_model
 
     bundle, metrics = train_model(sample_df, sample_y)
@@ -92,14 +92,14 @@ def trained_model(sample_df, sample_y):
 
 
 @pytest.fixture
-def trained_anomaly_model(sample_df):
+def trained_anomaly_model(sample_df) -> None:
     from app.model import train_anomaly_model
 
     return train_anomaly_model(sample_df)
 
 
 @pytest.fixture
-def energy_payload():
+def energy_payload() -> None:
     return {
         "building_id": "bldg-001",
         "timestamp": "2025-06-01T14:00:00",
@@ -257,7 +257,7 @@ def single_row() -> pd.DataFrame:
 
 
 @pytest.fixture(autouse=True)
-def restore_root_logging():
+def restore_root_logging() -> None:
     """Snapshot and restore root logger state around every test.
 
     ``configure_logging`` clears the root logger's handlers, which would
