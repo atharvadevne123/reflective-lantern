@@ -6,7 +6,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 
-def test_health_endpoint(client: TestClient):
+def test_health_endpoint(client: TestClient) -> None:
     resp = client.get("/api/v1/health")
     assert resp.status_code == 200
     body = resp.json()
@@ -14,7 +14,7 @@ def test_health_endpoint(client: TestClient):
     assert body["version"] == "1.0.0"
 
 
-def test_health_reports_all_dependencies(client: TestClient):
+def test_health_reports_all_dependencies(client: TestClient) -> None:
     """Readiness must cover the database, not just that the process is up."""
     body = client.get("/api/v1/health").json()
     assert body["model_loaded"] is True
@@ -22,14 +22,14 @@ def test_health_reports_all_dependencies(client: TestClient):
     assert body["database_reachable"] is True
 
 
-def test_health_degrades_when_database_down(client: TestClient, monkeypatch):
+def test_health_degrades_when_database_down(client: TestClient, monkeypatch) -> None:
     """A dead database must surface as degraded, not healthy."""
     from sqlalchemy.exc import OperationalError
 
     from app import main
 
     class _DeadSession:
-        def execute(self, *a, **k):
+        def execute(self, *a, **k) -> None:
             raise OperationalError("SELECT 1", {}, Exception("connection refused"))
 
     main.app.dependency_overrides[main.get_db] = lambda: _DeadSession()
@@ -42,7 +42,7 @@ def test_health_degrades_when_database_down(client: TestClient, monkeypatch):
     assert body["database_reachable"] is False
 
 
-def test_predict_valid_payload(client: TestClient, sample_request_payload: dict):
+def test_predict_valid_payload(client: TestClient, sample_request_payload: dict) -> None:
     resp = client.post("/api/v1/predict", json=sample_request_payload)
     assert resp.status_code == 200
     body = resp.json()
@@ -53,26 +53,26 @@ def test_predict_valid_payload(client: TestClient, sample_request_payload: dict)
     assert isinstance(body["class_probabilities"], dict)
 
 
-def test_predict_unknown_protocol(client: TestClient, sample_request_payload: dict):
+def test_predict_unknown_protocol(client: TestClient, sample_request_payload: dict) -> None:
     payload = {**sample_request_payload, "protocol_type": "unknown_xyz"}
     resp = client.post("/api/v1/predict", json=payload)
     assert resp.status_code == 422
 
 
-def test_predict_negative_bytes_rejected(client: TestClient, sample_request_payload: dict):
+def test_predict_negative_bytes_rejected(client: TestClient, sample_request_payload: dict) -> None:
     payload = {**sample_request_payload, "src_bytes": -1}
     resp = client.post("/api/v1/predict", json=payload)
     assert resp.status_code == 422
 
 
 @pytest.mark.parametrize("protocol", ["tcp", "udp", "icmp"])
-def test_predict_all_protocols(client: TestClient, sample_request_payload: dict, protocol: str):
+def test_predict_all_protocols(client: TestClient, sample_request_payload: dict, protocol: str) -> None:
     payload = {**sample_request_payload, "protocol_type": protocol}
     resp = client.post("/api/v1/predict", json=payload)
     assert resp.status_code == 200
 
 
-def test_metrics_endpoint(client: TestClient):
+def test_metrics_endpoint(client: TestClient) -> None:
     resp = client.get("/api/v1/metrics")
     assert resp.status_code == 200
     body = resp.json()
@@ -81,7 +81,7 @@ def test_metrics_endpoint(client: TestClient):
     assert "class_counts" in body
 
 
-def test_drift_endpoint(client: TestClient):
+def test_drift_endpoint(client: TestClient) -> None:
     resp = client.get("/api/v1/drift")
     assert resp.status_code == 200
     body = resp.json()
@@ -90,7 +90,7 @@ def test_drift_endpoint(client: TestClient):
     assert "drift_detected" in body
 
 
-def test_correlation_id_header_forwarded(client: TestClient, sample_request_payload: dict):
+def test_correlation_id_header_forwarded(client: TestClient, sample_request_payload: dict) -> None:
     cid = "test-correlation-id-123"
     resp = client.post(
         "/api/v1/predict", json=sample_request_payload, headers={"X-Correlation-ID": cid}
@@ -99,6 +99,6 @@ def test_correlation_id_header_forwarded(client: TestClient, sample_request_payl
     assert resp.headers.get("X-Correlation-ID") == cid
 
 
-def test_response_time_header_present(client: TestClient):
+def test_response_time_header_present(client: TestClient) -> None:
     resp = client.get("/api/v1/health")
     assert "X-Response-Time-Ms" in resp.headers

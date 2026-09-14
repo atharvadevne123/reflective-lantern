@@ -15,7 +15,7 @@ from app.features import (
 
 
 @pytest.fixture
-def basic_df():
+def basic_df() -> None:
     return pd.DataFrame(
         [
             {
@@ -30,28 +30,28 @@ def basic_df():
     )
 
 
-def test_feature_engineer_fit_transform_shape(basic_df: pd.DataFrame):
+def test_feature_engineer_fit_transform_shape(basic_df: pd.DataFrame) -> None:
     eng = NetworkFeatureEngineer()
     eng.fit(basic_df)
     out = eng.transform(basic_df)
     assert out.shape == (1, len(FEATURE_NAMES))
 
 
-def test_feature_engineer_output_is_numeric(basic_df: pd.DataFrame):
+def test_feature_engineer_output_is_numeric(basic_df: pd.DataFrame) -> None:
     eng = NetworkFeatureEngineer()
     eng.fit(basic_df)
     out = eng.transform(basic_df)
     assert np.isfinite(out).all(), "output contains NaN or Inf"
 
 
-def test_make_sample_df_defaults():
+def test_make_sample_df_defaults() -> None:
     df = make_sample_df()
     assert isinstance(df, pd.DataFrame)
     assert len(df) == 1
     assert "src_bytes" in df.columns
 
 
-def test_build_feature_pipeline_transform(basic_df: pd.DataFrame):
+def test_build_feature_pipeline_transform(basic_df: pd.DataFrame) -> None:
     pipe = build_feature_pipeline()
     pipe.fit(basic_df)
     out = pipe.transform(basic_df)
@@ -59,7 +59,7 @@ def test_build_feature_pipeline_transform(basic_df: pd.DataFrame):
     assert out.shape[1] == len(FEATURE_NAMES)
 
 
-def test_byte_ratio_feature():
+def test_byte_ratio_feature() -> None:
     df = make_sample_df(src_bytes=100.0, dst_bytes=50.0)
     eng = NetworkFeatureEngineer()
     eng.fit(df)
@@ -70,7 +70,7 @@ def test_byte_ratio_feature():
 
 
 @pytest.mark.parametrize("protocol", ["tcp", "udp", "icmp"])
-def test_protocol_encoding_valid(protocol: str):
+def test_protocol_encoding_valid(protocol: str) -> None:
     df = make_sample_df(protocol_type=protocol)
     eng = NetworkFeatureEngineer()
     eng.fit(df)
@@ -78,7 +78,7 @@ def test_protocol_encoding_valid(protocol: str):
     assert np.isfinite(out).all()
 
 
-def test_unknown_service_doesnt_crash():
+def test_unknown_service_doesnt_crash() -> None:
     df = make_sample_df(service="unknown_service_xyz")
     eng = NetworkFeatureEngineer()
     eng.fit(df)
@@ -86,7 +86,7 @@ def test_unknown_service_doesnt_crash():
     assert out.shape == (1, len(FEATURE_NAMES))
 
 
-def test_zero_bytes_handled():
+def test_zero_bytes_handled() -> None:
     df = make_sample_df(src_bytes=0.0, dst_bytes=0.0, duration=0.0)
     eng = NetworkFeatureEngineer()
     eng.fit(df)
