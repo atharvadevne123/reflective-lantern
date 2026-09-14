@@ -6,7 +6,7 @@ import pytest
 
 
 class TestComputeDrift:
-    def test_no_drift_same_distribution(self):
+    def test_no_drift_same_distribution(self) -> None:
         from app.monitoring import compute_drift
 
         ref = [3.0 + i * 0.1 for i in range(50)]
@@ -15,7 +15,7 @@ class TestComputeDrift:
         assert result["drift_detected"] is False
         assert result["ks_statistic"] < 0.1
 
-    def test_drift_detected_different_distribution(self):
+    def test_drift_detected_different_distribution(self) -> None:
         from app.monitoring import compute_drift
 
         ref = [1.0] * 50
@@ -24,14 +24,14 @@ class TestComputeDrift:
         assert result["drift_detected"] is True
         assert result["ks_statistic"] > 0.5
 
-    def test_insufficient_data_returns_no_drift(self):
+    def test_insufficient_data_returns_no_drift(self) -> None:
         from app.monitoring import compute_drift
 
         result = compute_drift([1.0, 2.0], [3.0, 4.0])
         assert result["drift_detected"] is False
         assert "error" in result
 
-    def test_result_has_required_keys(self):
+    def test_result_has_required_keys(self) -> None:
         from app.monitoring import compute_drift
 
         result = compute_drift(list(range(20)), list(range(20, 40)))
@@ -40,7 +40,7 @@ class TestComputeDrift:
         assert "drift_detected" in result
 
     @pytest.mark.parametrize("n", [10, 50, 100])
-    def test_drift_various_sample_sizes(self, n):
+    def test_drift_various_sample_sizes(self, n) -> None:
         from app.monitoring import compute_drift
 
         ref = list(range(n))
@@ -50,14 +50,14 @@ class TestComputeDrift:
 
 
 class TestCheckAllFeatures:
-    def test_returns_dict_per_feature(self):
+    def test_returns_dict_per_feature(self) -> None:
         from app.monitoring import check_all_features, set_reference_distributions
 
         set_reference_distributions({"consumption_kwh": list(range(50))})
         results = check_all_features({"consumption_kwh": list(range(50, 100))})
         assert "consumption_kwh" in results
 
-    def test_handles_missing_reference(self):
+    def test_handles_missing_reference(self) -> None:
         from app.monitoring import check_all_features
 
         results = check_all_features({"unknown_feature": [1.0, 2.0, 3.0]})
@@ -66,7 +66,7 @@ class TestCheckAllFeatures:
 
 
 class TestDetectAnomaly:
-    def test_normal_consumption_not_anomaly(self):
+    def test_normal_consumption_not_anomaly(self) -> None:
         from app.monitoring import (
             detect_anomaly,
             set_reference_distributions,
@@ -80,7 +80,7 @@ class TestDetectAnomaly:
         assert "is_anomaly" in result
         assert "severity" in result
 
-    def test_extreme_spike_flagged(self):
+    def test_extreme_spike_flagged(self) -> None:
         from app.monitoring import (
             detect_anomaly,
             set_reference_distributions,
@@ -93,7 +93,7 @@ class TestDetectAnomaly:
         result = detect_anomaly(999.9)
         assert result["is_anomaly"] is True
 
-    def test_anomaly_type_spike_for_high_value(self):
+    def test_anomaly_type_spike_for_high_value(self) -> None:
         from app.monitoring import (
             detect_anomaly,
             set_reference_distributions,
@@ -106,13 +106,13 @@ class TestDetectAnomaly:
         result = detect_anomaly(500.0)
         assert result["anomaly_type"] == "spike"
 
-    def test_severity_levels_valid(self):
+    def test_severity_levels_valid(self) -> None:
         from app.monitoring import detect_anomaly
 
         result = detect_anomaly(4.0)
         assert result["severity"] in {"none", "low", "medium", "high", "critical"}
 
-    def test_result_has_z_score(self):
+    def test_result_has_z_score(self) -> None:
         from app.monitoring import detect_anomaly
 
         result = detect_anomaly(3.0)
@@ -121,7 +121,7 @@ class TestDetectAnomaly:
 
 
 class TestTrainAnomalyDetector:
-    def test_returns_isolation_forest(self):
+    def test_returns_isolation_forest(self) -> None:
         from sklearn.ensemble import IsolationForest
 
         from app.monitoring import train_anomaly_detector
@@ -131,7 +131,7 @@ class TestTrainAnomalyDetector:
 
 
 class TestComputePredictionStats:
-    def test_returns_count_zero_when_empty(self, setup_test_db):
+    def test_returns_count_zero_when_empty(self, setup_test_db) -> None:
         from sqlalchemy import create_engine
         from sqlalchemy.orm import sessionmaker
 
@@ -149,14 +149,14 @@ class TestComputePredictionStats:
 
 
 class TestPSIIntegration:
-    def test_psi_stable_same_data(self):
+    def test_psi_stable_same_data(self) -> None:
         from app.psi import compute_psi
 
         ref = [3.0 + i * 0.01 for i in range(100)]
         result = compute_psi(ref, ref)
         assert result["drift_level"] == "stable"
 
-    def test_psi_significant_large_shift(self):
+    def test_psi_significant_large_shift(self) -> None:
         from app.psi import compute_psi
 
         ref = [1.0] * 100
@@ -196,31 +196,31 @@ def test_compute_drift_returns_required_keys(n: int) -> None:
 class TestMonitoringEdgeCases:
     """Edge-case tests for energy_seer monitoring utilities."""
 
-    def test_compute_drift_result_is_dict(self):
+    def test_compute_drift_result_is_dict(self) -> None:
         from app.monitoring import compute_drift
 
         result = compute_drift(list(range(30)), list(range(30, 60)))
         assert isinstance(result, dict)
 
-    def test_drift_detected_is_bool(self):
+    def test_drift_detected_is_bool(self) -> None:
         from app.monitoring import compute_drift
 
         result = compute_drift(list(range(50)), [x + 200 for x in range(50)])
         assert isinstance(result["drift_detected"], bool)
 
-    def test_ks_statistic_between_zero_and_one(self):
+    def test_ks_statistic_between_zero_and_one(self) -> None:
         from app.monitoring import compute_drift
 
         result = compute_drift(list(range(50)), list(range(50)))
         assert 0.0 <= result["ks_statistic"] <= 1.0
 
-    def test_p_value_between_zero_and_one(self):
+    def test_p_value_between_zero_and_one(self) -> None:
         from app.monitoring import compute_drift
 
         result = compute_drift(list(range(50)), list(range(50)))
         assert 0.0 <= result["p_value"] <= 1.0
 
-    def test_check_all_features_returns_dict(self):
+    def test_check_all_features_returns_dict(self) -> None:
         from app.monitoring import check_all_features, set_reference_distributions
 
         set_reference_distributions({"feat_a": list(range(30))})
