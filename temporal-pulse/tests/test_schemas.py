@@ -13,7 +13,7 @@ from pydantic import ValidationError
 
 
 class TestSensorReadingSchema:
-    def test_valid_reading_accepted(self):
+    def test_valid_reading_accepted(self) -> None:
         from app.schemas import SensorReading
 
         r = SensorReading(
@@ -23,13 +23,13 @@ class TestSensorReadingSchema:
         )
         assert r.sensor_id == "s1"
 
-    def test_empty_sensor_id_rejected(self):
+    def test_empty_sensor_id_rejected(self) -> None:
         from app.schemas import SensorReading
 
         with pytest.raises(ValidationError):
             SensorReading(sensor_id="", timestamp="2026-01-01T00:00:00", values={"t": 1.0})
 
-    def test_nan_value_rejected(self):
+    def test_nan_value_rejected(self) -> None:
         from app.schemas import SensorReading
 
         with pytest.raises(ValidationError):
@@ -39,7 +39,7 @@ class TestSensorReadingSchema:
                 values={"temp": float("nan")},
             )
 
-    def test_inf_value_rejected(self):
+    def test_inf_value_rejected(self) -> None:
         from app.schemas import SensorReading
 
         with pytest.raises(ValidationError):
@@ -49,13 +49,13 @@ class TestSensorReadingSchema:
                 values={"temp": float("inf")},
             )
 
-    def test_empty_values_rejected(self):
+    def test_empty_values_rejected(self) -> None:
         from app.schemas import SensorReading
 
         with pytest.raises(ValidationError):
             SensorReading(sensor_id="s1", timestamp="2026-01-01T00:00:00", values={})
 
-    def test_long_sensor_id_rejected(self):
+    def test_long_sensor_id_rejected(self) -> None:
         from app.schemas import SensorReading
 
         with pytest.raises(ValidationError):
@@ -63,7 +63,7 @@ class TestSensorReadingSchema:
 
 
 class TestBatchSensorReadings:
-    def test_horizon_bounds(self):
+    def test_horizon_bounds(self) -> None:
         from app.schemas import BatchSensorReadings, SensorReading
 
         reading = SensorReading(sensor_id="s1", timestamp="2026-01-01T00:00:00", values={"t": 1.0})
@@ -72,7 +72,7 @@ class TestBatchSensorReadings:
         with pytest.raises(ValidationError):
             BatchSensorReadings(readings=[reading], horizon=101)
 
-    def test_default_horizon(self):
+    def test_default_horizon(self) -> None:
         from app.schemas import BatchSensorReadings, SensorReading
 
         reading = SensorReading(sensor_id="s1", timestamp="2026-01-01T00:00:00", values={"t": 1.0})
@@ -81,7 +81,7 @@ class TestBatchSensorReadings:
 
 
 class TestAnomalyResultSchema:
-    def test_score_out_of_range_rejected(self):
+    def test_score_out_of_range_rejected(self) -> None:
         from app.schemas import AnomalyResult
 
         with pytest.raises(ValidationError):
@@ -94,7 +94,7 @@ class TestAnomalyResultSchema:
             )
 
     @pytest.mark.parametrize("score", [0.0, 0.5, 1.0])
-    def test_valid_scores(self, score):
+    def test_valid_scores(self, score) -> None:
         from app.schemas import AnomalyResult
 
         r = AnomalyResult(
@@ -108,7 +108,7 @@ class TestAnomalyResultSchema:
 
 
 class TestTrainRequest:
-    def test_too_few_readings_rejected(self):
+    def test_too_few_readings_rejected(self) -> None:
         from app.schemas import SensorReading, TrainRequest
 
         readings = [
@@ -117,7 +117,7 @@ class TestTrainRequest:
         with pytest.raises(ValidationError):
             TrainRequest(readings=readings)
 
-    def test_contamination_bounds(self):
+    def test_contamination_bounds(self) -> None:
         from app.schemas import SensorReading, TrainRequest
 
         readings = [

@@ -28,7 +28,7 @@ def make_series(n: int = 30) -> pd.DataFrame:
 
 
 class TestRollingStatistics:
-    def test_adds_rolling_mean_columns(self):
+    def test_adds_rolling_mean_columns(self) -> None:
         from app.features import add_rolling_statistics
 
         df = make_series()
@@ -36,21 +36,21 @@ class TestRollingStatistics:
         assert "temp_roll_mean_5" in result.columns
         assert "temp_roll_mean_10" in result.columns
 
-    def test_adds_rolling_std_columns(self):
+    def test_adds_rolling_std_columns(self) -> None:
         from app.features import add_rolling_statistics
 
         df = make_series()
         result = add_rolling_statistics(df, ["temp"])
         assert "temp_roll_std_5" in result.columns
 
-    def test_no_nan_in_rolling_mean(self):
+    def test_no_nan_in_rolling_mean(self) -> None:
         from app.features import add_rolling_statistics
 
         df = make_series()
         result = add_rolling_statistics(df, ["temp"])
         assert not result["temp_roll_mean_5"].isna().any()
 
-    def test_original_columns_preserved(self):
+    def test_original_columns_preserved(self) -> None:
         from app.features import add_rolling_statistics
 
         df = make_series()
@@ -59,7 +59,7 @@ class TestRollingStatistics:
 
 
 class TestLagFeatures:
-    def test_adds_lag_columns(self):
+    def test_adds_lag_columns(self) -> None:
         from app.features import add_lag_features
 
         df = make_series()
@@ -67,7 +67,7 @@ class TestLagFeatures:
         assert "temp_lag_1" in result.columns
         assert "temp_lag_3" in result.columns
 
-    def test_no_nan_after_lag_fill(self):
+    def test_no_nan_after_lag_fill(self) -> None:
         from app.features import add_lag_features
 
         df = make_series()
@@ -75,7 +75,7 @@ class TestLagFeatures:
         assert not result["temp_lag_1"].isna().any()
 
     @pytest.mark.parametrize("lag", [1, 2, 3, 5])
-    def test_each_lag_present(self, lag):
+    def test_each_lag_present(self, lag) -> None:
         from app.features import add_lag_features
 
         df = make_series()
@@ -84,14 +84,14 @@ class TestLagFeatures:
 
 
 class TestRateOfChange:
-    def test_adds_roc_column(self):
+    def test_adds_roc_column(self) -> None:
         from app.features import add_rate_of_change
 
         df = make_series()
         result = add_rate_of_change(df, ["temp"])
         assert "temp_roc" in result.columns
 
-    def test_adds_second_order_roc(self):
+    def test_adds_second_order_roc(self) -> None:
         from app.features import add_rate_of_change
 
         df = make_series()
@@ -100,7 +100,7 @@ class TestRateOfChange:
 
 
 class TestTimeFeatures:
-    def test_adds_hour_sin_cos(self):
+    def test_adds_hour_sin_cos(self) -> None:
         from app.features import add_time_features
 
         df = make_series()
@@ -108,7 +108,7 @@ class TestTimeFeatures:
         assert "hour_sin" in result.columns
         assert "hour_cos" in result.columns
 
-    def test_adds_day_of_week_features(self):
+    def test_adds_day_of_week_features(self) -> None:
         from app.features import add_time_features
 
         df = make_series()
@@ -116,7 +116,7 @@ class TestTimeFeatures:
         assert "dow_sin" in result.columns
         assert "dow_cos" in result.columns
 
-    def test_time_features_bounded(self):
+    def test_time_features_bounded(self) -> None:
         from app.features import add_time_features
 
         df = make_series()
@@ -126,7 +126,7 @@ class TestTimeFeatures:
 
 
 class TestBuildFeatureMatrix:
-    def test_returns_dataframe_and_cols(self, sample_readings):
+    def test_returns_dataframe_and_cols(self, sample_readings) -> None:
         from app.features import build_feature_matrix
 
         raw = [
@@ -137,7 +137,7 @@ class TestBuildFeatureMatrix:
         assert isinstance(df, pd.DataFrame)
         assert isinstance(feature_cols, list)
 
-    def test_feature_cols_non_empty(self, sample_readings):
+    def test_feature_cols_non_empty(self, sample_readings) -> None:
         from app.features import build_feature_matrix
 
         raw = [
@@ -147,7 +147,7 @@ class TestBuildFeatureMatrix:
         _, feature_cols = build_feature_matrix(raw)
         assert len(feature_cols) > 0
 
-    def test_no_nan_in_feature_matrix(self, sample_readings):
+    def test_no_nan_in_feature_matrix(self, sample_readings) -> None:
         from app.features import build_feature_matrix
 
         raw = [
@@ -157,7 +157,7 @@ class TestBuildFeatureMatrix:
         df, feature_cols = build_feature_matrix(raw)
         assert not df[feature_cols].isna().any().any()
 
-    def test_sklearn_pipeline_fits(self, feature_matrix):
+    def test_sklearn_pipeline_fits(self, feature_matrix) -> None:
         import numpy as np
 
         from app.features import build_sklearn_pipeline
