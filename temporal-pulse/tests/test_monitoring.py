@@ -12,7 +12,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
 
 @pytest.fixture(autouse=True)
-def reset_state():
+def reset_state() -> None:
     """Reset monitoring state before each test."""
     from app.monitoring import reset_monitoring
 
@@ -22,13 +22,13 @@ def reset_state():
 
 
 class TestDistributionUpdates:
-    def test_update_reference_stores_values(self):
+    def test_update_reference_stores_values(self) -> None:
         from app.monitoring import _REFERENCE_DISTRIBUTIONS, update_reference_distribution
 
         update_reference_distribution("temp", [1.0, 2.0, 3.0])
         assert len(_REFERENCE_DISTRIBUTIONS["temp"]) == 3
 
-    def test_update_current_stores_values(self):
+    def test_update_current_stores_values(self) -> None:
         from app.monitoring import _CURRENT_DISTRIBUTIONS, update_current_distribution
 
         update_current_distribution("temp", [4.0, 5.0, 6.0])
@@ -36,7 +36,7 @@ class TestDistributionUpdates:
 
 
 class TestKSDriftTest:
-    def test_insufficient_data_returns_no_drift(self):
+    def test_insufficient_data_returns_no_drift(self) -> None:
         from app.monitoring import (
             run_ks_drift_test,
             update_current_distribution,
@@ -49,7 +49,7 @@ class TestKSDriftTest:
         assert result["drift_detected"] is False
         assert "insufficient_data" in result.get("reason", "")
 
-    def test_identical_distributions_no_drift(self):
+    def test_identical_distributions_no_drift(self) -> None:
         from app.monitoring import (
             run_ks_drift_test,
             update_current_distribution,
@@ -63,7 +63,7 @@ class TestKSDriftTest:
         result = run_ks_drift_test("feat")
         assert "ks_statistic" in result
 
-    def test_very_different_distributions_detected(self):
+    def test_very_different_distributions_detected(self) -> None:
         from app.monitoring import (
             run_ks_drift_test,
             update_current_distribution,
@@ -75,7 +75,7 @@ class TestKSDriftTest:
         result = run_ks_drift_test("feat")
         assert result["drift_detected"] is True
 
-    def test_run_all_drift_tests_returns_list(self):
+    def test_run_all_drift_tests_returns_list(self) -> None:
         from app.monitoring import (
             run_all_drift_tests,
             update_current_distribution,
@@ -88,7 +88,7 @@ class TestKSDriftTest:
         assert isinstance(results, list)
 
     @pytest.mark.parametrize("n_features", [1, 3, 5])
-    def test_run_all_tests_count(self, n_features):
+    def test_run_all_tests_count(self, n_features) -> None:
         from app.monitoring import (
             run_all_drift_tests,
             update_current_distribution,
@@ -103,14 +103,14 @@ class TestKSDriftTest:
 
 
 class TestPredictionLogging:
-    def test_log_prediction_increments_count(self):
+    def test_log_prediction_increments_count(self) -> None:
         from app.monitoring import get_metrics_summary, log_prediction
 
         log_prediction("s1", 0.5, [1.0, 2.0], 10.0)
         summary = get_metrics_summary()
         assert summary["total_predictions"] >= 1
 
-    def test_metrics_includes_score_stats(self):
+    def test_metrics_includes_score_stats(self) -> None:
         from app.monitoring import get_metrics_summary, log_prediction
 
         log_prediction("s1", 0.8, [], 20.0)
@@ -118,14 +118,14 @@ class TestPredictionLogging:
         summary = get_metrics_summary()
         assert "anomaly_score_mean" in summary
 
-    def test_metrics_latency_tracked(self):
+    def test_metrics_latency_tracked(self) -> None:
         from app.monitoring import get_metrics_summary, log_prediction
 
         log_prediction("s1", 0.3, [], 50.0)
         summary = get_metrics_summary()
         assert summary.get("latency_mean_ms", 0) > 0
 
-    def test_empty_log_returns_zero_count(self):
+    def test_empty_log_returns_zero_count(self) -> None:
         from app.monitoring import get_metrics_summary
 
         summary = get_metrics_summary()
@@ -135,13 +135,13 @@ class TestPredictionLogging:
 class TestMonitoringEdgeCases:
     """Edge-case tests for temporal-pulse monitoring utilities."""
 
-    def test_metrics_summary_is_dict(self):
+    def test_metrics_summary_is_dict(self) -> None:
         from app.monitoring import get_metrics_summary
 
         result = get_metrics_summary()
         assert isinstance(result, dict)
 
-    def test_ks_drift_result_has_ks_statistic_key(self):
+    def test_ks_drift_result_has_ks_statistic_key(self) -> None:
         from app.monitoring import (
             run_ks_drift_test,
             update_current_distribution,
@@ -153,14 +153,14 @@ class TestMonitoringEdgeCases:
         result = run_ks_drift_test("ch")
         assert "drift_detected" in result
 
-    def test_run_all_drift_tests_empty_returns_list(self):
+    def test_run_all_drift_tests_empty_returns_list(self) -> None:
         from app.monitoring import reset_monitoring, run_all_drift_tests
 
         reset_monitoring()
         results = run_all_drift_tests()
         assert isinstance(results, list)
 
-    def test_multiple_log_predictions_aggregate(self):
+    def test_multiple_log_predictions_aggregate(self) -> None:
         from app.monitoring import get_metrics_summary, log_prediction
 
         for i in range(5):
@@ -168,7 +168,7 @@ class TestMonitoringEdgeCases:
         summary = get_metrics_summary()
         assert summary["total_predictions"] >= 5
 
-    def test_update_reference_then_current_allows_ks_test(self):
+    def test_update_reference_then_current_allows_ks_test(self) -> None:
         import numpy as np
 
         from app.monitoring import (
