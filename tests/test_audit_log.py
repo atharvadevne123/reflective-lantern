@@ -9,24 +9,24 @@ from app.audit_log import AuditEntry, AuditLog
 
 
 class TestAuditEntry:
-    def test_frozen(self):
+    def test_frozen(self) -> None:
         entry = AuditEntry(actor="alice", action="read", resource="doc/1")
         with pytest.raises((TypeError, AttributeError)):
             entry.actor = "bob"  # type: ignore[misc]
 
-    def test_default_outcome(self):
+    def test_default_outcome(self) -> None:
         entry = AuditEntry(actor="a", action="b", resource="c")
         assert entry.outcome == "success"
 
 
 class TestAuditLog:
-    def test_len(self):
+    def test_len(self) -> None:
         log = AuditLog()
         log.record("alice", "login", "/session")
         log.record("bob", "logout", "/session")
         assert len(log) == 2
 
-    def test_search_by_actor(self):
+    def test_search_by_actor(self) -> None:
         log = AuditLog()
         log.record("alice", "read", "doc/1")
         log.record("bob", "write", "doc/2")
@@ -34,14 +34,14 @@ class TestAuditLog:
         assert len(results) == 1
         assert results[0].actor == "alice"
 
-    def test_search_by_outcome(self):
+    def test_search_by_outcome(self) -> None:
         log = AuditLog()
         log.record("alice", "delete", "doc/3", outcome="failure")
         log.record("alice", "read", "doc/4")
         failures = log.search(outcome="failure")
         assert len(failures) == 1
 
-    def test_search_by_time_range(self):
+    def test_search_by_time_range(self) -> None:
         log = AuditLog()
         t0 = time.time()
         log.record("x", "a", "r")
@@ -49,7 +49,7 @@ class TestAuditLog:
         results = log.search(since=t0, until=t1)
         assert len(results) == 1
 
-    def test_search_combined_filters(self):
+    def test_search_combined_filters(self) -> None:
         log = AuditLog()
         log.record("alice", "write", "doc/1")
         log.record("alice", "read", "doc/2")
@@ -58,7 +58,7 @@ class TestAuditLog:
         assert len(results) == 1
         assert results[0].resource == "doc/1"
 
-    def test_export_jsonl(self):
+    def test_export_jsonl(self) -> None:
         log = AuditLog()
         log.record("alice", "login", "/session", ip="127.0.0.1")
         jsonl = log.export_jsonl()
@@ -66,33 +66,33 @@ class TestAuditLog:
         assert parsed["actor"] == "alice"
         assert parsed["metadata"]["ip"] == "127.0.0.1"
 
-    def test_empty_search_returns_all(self):
+    def test_empty_search_returns_all(self) -> None:
         log = AuditLog()
         log.record("a", "b", "c")
         log.record("d", "e", "f")
         assert len(log.search()) == 2
 
-    def test_record_returns_entry(self):
+    def test_record_returns_entry(self) -> None:
         log = AuditLog()
         entry = log.record("alice", "login", "/session")
         assert isinstance(entry, AuditEntry)
         assert entry.actor == "alice"
 
-    def test_metadata_stored_correctly(self):
+    def test_metadata_stored_correctly(self) -> None:
         log = AuditLog()
         log.record("alice", "api_call", "/predict", model="xgb", latency_ms=42.5)
         results = log.search(actor="alice")
         assert results[0].metadata["model"] == "xgb"
         assert results[0].metadata["latency_ms"] == 42.5
 
-    def test_search_by_resource(self):
+    def test_search_by_resource(self) -> None:
         log = AuditLog()
         log.record("alice", "read", "doc/1")
         log.record("alice", "read", "doc/2")
         results = log.search(resource="doc/1")
         assert len(results) == 1
 
-    def test_search_by_action(self):
+    def test_search_by_action(self) -> None:
         log = AuditLog()
         log.record("alice", "read", "doc/1")
         log.record("alice", "write", "doc/1")
@@ -100,13 +100,13 @@ class TestAuditLog:
         results = log.search(action="read")
         assert len(results) == 2
 
-    def test_search_since_excludes_earlier(self):
+    def test_search_since_excludes_earlier(self) -> None:
         log = AuditLog()
         log.record("x", "a", "r")
         results = log.search(since=time.time())  # future bound
         assert len(results) == 0
 
-    def test_export_jsonl_multiple_lines(self):
+    def test_export_jsonl_multiple_lines(self) -> None:
         log = AuditLog()
         log.record("alice", "login", "/session")
         log.record("bob", "logout", "/session")
@@ -118,11 +118,11 @@ class TestAuditLog:
             assert "actor" in parsed
             assert "timestamp" in parsed
 
-    def test_empty_log_len_is_zero(self):
+    def test_empty_log_len_is_zero(self) -> None:
         log = AuditLog()
         assert len(log) == 0
 
-    def test_multiple_failures_searchable(self):
+    def test_multiple_failures_searchable(self) -> None:
         log = AuditLog()
         for i in range(5):
             log.record("bot", "brute_force", f"login/{i}", outcome="failure")

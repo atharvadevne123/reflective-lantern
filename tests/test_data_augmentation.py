@@ -21,19 +21,19 @@ def make_rng(seed: int = 42) -> random.Random:
 
 
 class TestSynonymReplace:
-    def test_replaces_known_token(self):
+    def test_replaces_known_token(self) -> None:
         rng = make_rng(0)
         synonyms = {"quick": ["fast"]}
         # force replace by patching prob to 1
         result = synonym_replace(["quick"], synonyms, prob=1.0, rng=rng)
         assert result == ["fast"]
 
-    def test_keeps_unknown_token(self):
+    def test_keeps_unknown_token(self) -> None:
         rng = make_rng(0)
         result = synonym_replace(["hello"], {}, prob=1.0, rng=rng)
         assert result == ["hello"]
 
-    def test_zero_prob_no_change(self):
+    def test_zero_prob_no_change(self) -> None:
         rng = make_rng(0)
         synonyms = {"a": ["b"]}
         result = synonym_replace(["a", "a"], synonyms, prob=0.0, rng=rng)
@@ -41,18 +41,18 @@ class TestSynonymReplace:
 
 
 class TestRandomDeletion:
-    def test_deletes_some_tokens(self):
+    def test_deletes_some_tokens(self) -> None:
         rng = make_rng(42)
         tokens = ["a", "b", "c", "d", "e"]
         result = random_deletion(tokens, prob=0.9, rng=rng)
         assert len(result) >= 1
 
-    def test_single_token_preserved(self):
+    def test_single_token_preserved(self) -> None:
         rng = make_rng(0)
         result = random_deletion(["only"], prob=1.0, rng=rng)
         assert result == ["only"]
 
-    def test_zero_prob_no_deletion(self):
+    def test_zero_prob_no_deletion(self) -> None:
         rng = make_rng(0)
         tokens = ["x", "y", "z"]
         result = random_deletion(tokens, prob=0.0, rng=rng)
@@ -60,14 +60,14 @@ class TestRandomDeletion:
 
 
 class TestRandomSwap:
-    def test_length_preserved(self):
+    def test_length_preserved(self) -> None:
         rng = make_rng(7)
         tokens = ["a", "b", "c", "d"]
         result = random_swap(tokens, prob=1.0, rng=rng)
         assert len(result) == 4
         assert sorted(result) == sorted(tokens)
 
-    def test_zero_prob_no_swap(self):
+    def test_zero_prob_no_swap(self) -> None:
         rng = make_rng(0)
         tokens = ["x", "y"]
         result = random_swap(tokens, prob=0.0, rng=rng)
@@ -75,33 +75,33 @@ class TestRandomSwap:
 
 
 class TestJitterNumerics:
-    def test_numeric_changed(self):
+    def test_numeric_changed(self) -> None:
         rng = make_rng(1)
         text = "value is 100"
         out = jitter_numerics(text, pct=0.1, rng=rng)
         nums = re.findall(r"-?\d+(?:\.\d+)?", out)
         assert float(nums[-1]) != 100.0
 
-    def test_zero_value_jitter(self):
+    def test_zero_value_jitter(self) -> None:
         rng = make_rng(1)
         out = jitter_numerics("zero is 0", pct=0.05, rng=rng)
         # should not raise, output still contains a number
         assert re.search(r"-?\d+(?:\.\d+)?", out) is not None
 
-    def test_no_numbers_unchanged(self):
+    def test_no_numbers_unchanged(self) -> None:
         rng = make_rng(0)
         out = jitter_numerics("no numbers here", pct=0.1, rng=rng)
         assert out == "no numbers here"
 
 
 class TestAugmentText:
-    def test_returns_string(self):
+    def test_returns_string(self) -> None:
         cfg = AugmentationConfig(seed=0)
         out = augment_text("hello world", cfg)
         assert isinstance(out, str)
         assert len(out) > 0
 
-    def test_synonym_applied(self):
+    def test_synonym_applied(self) -> None:
         cfg = AugmentationConfig(
             synonym_prob=1.0,
             deletion_prob=0.0,
@@ -115,13 +115,13 @@ class TestAugmentText:
 
 
 class TestAugmentBatch:
-    def test_output_size(self):
+    def test_output_size(self) -> None:
         cfg = AugmentationConfig(seed=0)
         samples = ["a b", "c d", "e f"]
         out = augment_batch(samples, cfg, n_augments=2)
         assert len(out) == 6
 
-    def test_custom_transform(self):
+    def test_custom_transform(self) -> None:
         cfg = AugmentationConfig(seed=0)
         out = augment_batch(["hello"], cfg, n_augments=1, transform=lambda t, c: t.upper())
         assert out == ["HELLO"]
