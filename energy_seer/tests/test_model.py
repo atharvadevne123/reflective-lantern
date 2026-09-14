@@ -6,20 +6,20 @@ import pytest
 
 
 class TestGenerateSyntheticData:
-    def test_generates_correct_shape(self):
+    def test_generates_correct_shape(self) -> None:
         from app.model import generate_synthetic_data
 
         X, y = generate_synthetic_data(500)
         assert len(X) == 500
         assert len(y) == 500
 
-    def test_consumption_non_negative(self):
+    def test_consumption_non_negative(self) -> None:
         from app.model import generate_synthetic_data
 
         _, y = generate_synthetic_data(200)
         assert (y >= 0).all()
 
-    def test_has_expected_columns(self):
+    def test_has_expected_columns(self) -> None:
         from app.model import generate_synthetic_data
 
         X, _ = generate_synthetic_data(100)
@@ -34,7 +34,7 @@ class TestGenerateSyntheticData:
 
 
 class TestTrainModel:
-    def test_train_returns_bundle_and_metrics(self):
+    def test_train_returns_bundle_and_metrics(self) -> None:
         from app.model import generate_synthetic_data, train_model
 
         X, y = generate_synthetic_data(300)
@@ -44,14 +44,14 @@ class TestTrainModel:
         assert "r2_mean" in metrics
         assert "rmse_mean" in metrics
 
-    def test_r2_positive(self):
+    def test_r2_positive(self) -> None:
         from app.model import generate_synthetic_data, train_model
 
         X, y = generate_synthetic_data(300)
         _, metrics = train_model(X, y)
         assert metrics["r2_mean"] > 0.0
 
-    def test_metrics_file_written(self, tmp_path, monkeypatch):
+    def test_metrics_file_written(self, tmp_path, monkeypatch) -> None:
         import app.model as m
 
         monkeypatch.setattr(m, "MODEL_PATH", tmp_path / "model.joblib")
@@ -62,7 +62,7 @@ class TestTrainModel:
         train_model(X, y)
         assert (tmp_path / "metrics.json").exists()
 
-    def test_model_file_written(self, tmp_path, monkeypatch):
+    def test_model_file_written(self, tmp_path, monkeypatch) -> None:
         import app.model as m
 
         monkeypatch.setattr(m, "MODEL_PATH", tmp_path / "model.joblib")
@@ -75,7 +75,7 @@ class TestTrainModel:
 
 
 class TestPredict:
-    def test_predict_returns_list(self):
+    def test_predict_returns_list(self) -> None:
         from app.model import generate_synthetic_data, predict, train_model
 
         X, y = generate_synthetic_data(300)
@@ -85,7 +85,7 @@ class TestPredict:
         assert isinstance(preds, list)
         assert len(preds) == 5
 
-    def test_predict_non_negative(self):
+    def test_predict_non_negative(self) -> None:
         from app.model import generate_synthetic_data, predict, train_model
 
         X, y = generate_synthetic_data(200)
@@ -93,7 +93,7 @@ class TestPredict:
         preds = predict(bundle, X.head(10).to_dict(orient="records"))
         assert all(p >= 0 for p in preds)
 
-    def test_predict_horizon_scales_output(self):
+    def test_predict_horizon_scales_output(self) -> None:
         from app.model import generate_synthetic_data, predict, train_model
 
         X, y = generate_synthetic_data(200)
@@ -104,7 +104,7 @@ class TestPredict:
         assert p6 >= p1
 
     @pytest.mark.parametrize("n_readings", [1, 3, 10])
-    def test_predict_batch_sizes(self, n_readings):
+    def test_predict_batch_sizes(self, n_readings) -> None:
         from app.model import generate_synthetic_data, predict, train_model
 
         X, y = generate_synthetic_data(200)
@@ -114,13 +114,13 @@ class TestPredict:
 
 
 class TestBuildEnsemble:
-    def test_ensemble_has_three_estimators(self):
+    def test_ensemble_has_three_estimators(self) -> None:
         from app.model import build_ensemble
 
         ens = build_ensemble()
         assert len(ens.estimators) == 3
 
-    def test_ensemble_estimator_names(self):
+    def test_ensemble_estimator_names(self) -> None:
         from app.model import build_ensemble
 
         ens = build_ensemble()

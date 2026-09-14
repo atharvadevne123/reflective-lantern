@@ -6,14 +6,14 @@ import pytest
 
 
 class TestComputePSI:
-    def test_same_distribution_psi_near_zero(self):
+    def test_same_distribution_psi_near_zero(self) -> None:
         from app.psi import compute_psi
 
         ref = list(range(50))
         result = compute_psi(ref, list(range(50)))
         assert result["psi"] < 0.1
 
-    def test_very_different_distributions_psi_high(self):
+    def test_very_different_distributions_psi_high(self) -> None:
         from app.psi import compute_psi
 
         ref = [1.0] * 50
@@ -21,21 +21,21 @@ class TestComputePSI:
         result = compute_psi(ref, cur)
         assert result["drift_level"] == "significant"
 
-    def test_result_has_psi_and_level(self):
+    def test_result_has_psi_and_level(self) -> None:
         from app.psi import compute_psi
 
         result = compute_psi(list(range(20)), list(range(20, 40)))
         assert "psi" in result
         assert "drift_level" in result
 
-    def test_insufficient_data(self):
+    def test_insufficient_data(self) -> None:
         from app.psi import compute_psi
 
         result = compute_psi([1.0, 2.0], [3.0])
         assert result["drift_level"] == "insufficient_data"
 
     @pytest.mark.parametrize("n", [10, 50, 200])
-    def test_psi_non_negative(self, n):
+    def test_psi_non_negative(self, n) -> None:
         from app.psi import compute_psi
 
         result = compute_psi(list(range(n)), list(range(n // 2, n + n // 2)))
@@ -43,7 +43,7 @@ class TestComputePSI:
 
 
 class TestPsiReport:
-    def test_returns_dict_per_feature(self):
+    def test_returns_dict_per_feature(self) -> None:
         from app.psi import psi_report
 
         data = {
@@ -54,7 +54,7 @@ class TestPsiReport:
         assert "consumption" in result
         assert "temperature" in result
 
-    def test_summary_key_present(self):
+    def test_summary_key_present(self) -> None:
         from app.psi import psi_report
 
         data = {"feat": (list(range(50)), list(range(50)))}
@@ -62,20 +62,20 @@ class TestPsiReport:
         assert "summary" in result
         assert "max_psi" in result["summary"]
 
-    def test_identical_distributions_stable(self):
+    def test_identical_distributions_stable(self) -> None:
         from app.psi import psi_report
 
         ref = list(range(100))
         result = psi_report({"x": (ref, list(ref))})
         assert result["x"]["drift_level"] == "stable"
 
-    def test_empty_report_has_summary(self):
+    def test_empty_report_has_summary(self) -> None:
         from app.psi import psi_report
 
         result = psi_report({})
         assert isinstance(result, dict)
 
-    def test_psi_returns_bins_used(self):
+    def test_psi_returns_bins_used(self) -> None:
         from app.psi import compute_psi
 
         result = compute_psi(list(range(20)), list(range(20)))
@@ -83,18 +83,18 @@ class TestPsiReport:
 
 
 class TestSpikeSeverity:
-    def test_normal_value(self):
+    def test_normal_value(self) -> None:
         from app.demand_spike import spike_severity
 
         assert spike_severity(5.0, 5.0, 1.0) == "normal"
 
-    def test_moderate_spike(self):
+    def test_moderate_spike(self) -> None:
         from app.demand_spike import spike_severity
 
         # z=3.0 > threshold=2.5
         assert spike_severity(8.0, 5.0, 1.0, z_threshold=2.5) == "moderate"
 
-    def test_zero_std_returns_normal(self):
+    def test_zero_std_returns_normal(self) -> None:
         from app.demand_spike import spike_severity
 
         assert spike_severity(100.0, 5.0, 0.0) == "normal"
@@ -102,7 +102,7 @@ class TestSpikeSeverity:
     @pytest.mark.parametrize(
         "value,expected", [(5.5, "normal"), (8.0, "moderate"), (15.0, "high"), (30.0, "critical")]
     )
-    def test_severity_levels(self, value, expected):
+    def test_severity_levels(self, value, expected) -> None:
         from app.demand_spike import spike_severity
 
         result = spike_severity(value, mean=5.0, std=1.0, z_threshold=2.5)
