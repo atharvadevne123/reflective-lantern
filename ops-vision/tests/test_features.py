@@ -26,14 +26,14 @@ class TestResourcePressureTransformer:
         """Create a minimal DataFrame for pressure tests."""
         return pd.DataFrame([{"cpu_usage_pct": cpu, "memory_usage_pct": mem}])
 
-    def test_adds_resource_pressure_column(self):
+    def test_adds_resource_pressure_column(self) -> None:
         """Transformer adds resource_pressure column."""
         t = ResourcePressureTransformer()
         df = self.make_df(60.0, 40.0)
         out = t.fit_transform(df)
         assert "resource_pressure" in out.columns
 
-    def test_pressure_range(self):
+    def test_pressure_range(self) -> None:
         """resource_pressure is between 0 and 1 for valid inputs."""
         t = ResourcePressureTransformer()
         df = self.make_df(80.0, 80.0)
@@ -48,7 +48,7 @@ class TestResourcePressureTransformer:
             (60.0, 0.0, 0.36),
         ],
     )
-    def test_pressure_calculation(self, cpu, mem, expected):
+    def test_pressure_calculation(self, cpu, mem, expected) -> None:
         """resource_pressure matches the 0.6*cpu + 0.4*mem / 100 formula."""
         t = ResourcePressureTransformer()
         df = self.make_df(cpu, mem)
@@ -62,21 +62,21 @@ class TestLatencyErrRatioTransformer:
     def make_df(self, latency: float, error_rate: float) -> pd.DataFrame:
         return pd.DataFrame([{"latency_p99_ms": latency, "error_rate_per_min": error_rate}])
 
-    def test_adds_latency_err_ratio(self):
+    def test_adds_latency_err_ratio(self) -> None:
         """Transformer adds latency_err_ratio column."""
         t = LatencyErrRatioTransformer()
         df = self.make_df(500.0, 10.0)
         out = t.fit_transform(df)
         assert "latency_err_ratio" in out.columns
 
-    def test_zero_error_rate_no_division_error(self):
+    def test_zero_error_rate_no_division_error(self) -> None:
         """Zero error rate is clamped to 0.001, preventing ZeroDivisionError."""
         t = LatencyErrRatioTransformer()
         df = self.make_df(500.0, 0.0)
         out = t.fit_transform(df)
         assert np.isfinite(out["latency_err_ratio"].iloc[0])
 
-    def test_ratio_correct(self):
+    def test_ratio_correct(self) -> None:
         """Ratio should equal latency / error_rate."""
         t = LatencyErrRatioTransformer()
         df = self.make_df(500.0, 5.0)
@@ -87,14 +87,14 @@ class TestLatencyErrRatioTransformer:
 class TestLogLatencyTransformer:
     """Tests for LogLatencyTransformer."""
 
-    def test_adds_log_latency_column(self):
+    def test_adds_log_latency_column(self) -> None:
         """Transformer adds log_latency_p99 column."""
         t = LogLatencyTransformer()
         df = pd.DataFrame([{"latency_p99_ms": 200.0}])
         out = t.fit_transform(df)
         assert "log_latency_p99" in out.columns
 
-    def test_log_latency_is_finite_for_zero(self):
+    def test_log_latency_is_finite_for_zero(self) -> None:
         """log1p(0) = 0, not -inf."""
         t = LogLatencyTransformer()
         df = pd.DataFrame([{"latency_p99_ms": 0.0}])
@@ -105,14 +105,14 @@ class TestLogLatencyTransformer:
 class TestThroughputPressureTransformer:
     """Tests for ThroughputPressureTransformer."""
 
-    def test_adds_throughput_pressure(self):
+    def test_adds_throughput_pressure(self) -> None:
         """Transformer adds throughput_pressure column."""
         t = ThroughputPressureTransformer()
         df = pd.DataFrame([{"request_rate_per_sec": 200.0, "disk_io_util_pct": 50.0}])
         out = t.fit_transform(df)
         assert "throughput_pressure" in out.columns
 
-    def test_throughput_value_correct(self):
+    def test_throughput_value_correct(self) -> None:
         """throughput_pressure = request_rate * (1 + disk_io/100)."""
         t = ThroughputPressureTransformer()
         df = pd.DataFrame([{"request_rate_per_sec": 100.0, "disk_io_util_pct": 0.0}])
@@ -123,14 +123,14 @@ class TestThroughputPressureTransformer:
 class TestColumnSelector:
     """Tests for ColumnSelector."""
 
-    def test_selects_correct_columns(self, synthetic_dataframe):
+    def test_selects_correct_columns(self, synthetic_dataframe) -> None:
         """ColumnSelector returns only the specified columns as array."""
         cols = ["cpu_usage_pct", "memory_usage_pct"]
         selector = ColumnSelector(cols)
         result = selector.fit_transform(synthetic_dataframe)
         assert result.shape[1] == 2
 
-    def test_output_is_numpy_array(self, synthetic_dataframe):
+    def test_output_is_numpy_array(self, synthetic_dataframe) -> None:
         """ColumnSelector output type is np.ndarray."""
         selector = ColumnSelector(["cpu_usage_pct"])
         result = selector.fit_transform(synthetic_dataframe)
@@ -140,20 +140,20 @@ class TestColumnSelector:
 class TestBuildFeaturePipeline:
     """Tests for the full feature pipeline."""
 
-    def test_pipeline_fit_transform(self, synthetic_dataframe):
+    def test_pipeline_fit_transform(self, synthetic_dataframe) -> None:
         """Pipeline fit_transform produces a numeric array."""
         pipeline = build_feature_pipeline()
         X = pipeline.fit_transform(synthetic_dataframe)
         assert isinstance(X, np.ndarray)
         assert X.shape[0] == len(synthetic_dataframe)
 
-    def test_pipeline_output_is_finite(self, synthetic_dataframe):
+    def test_pipeline_output_is_finite(self, synthetic_dataframe) -> None:
         """All pipeline output values are finite."""
         pipeline = build_feature_pipeline()
         X = pipeline.fit_transform(synthetic_dataframe)
         assert np.isfinite(X).all()
 
-    def test_pipeline_output_columns(self, synthetic_dataframe):
+    def test_pipeline_output_columns(self, synthetic_dataframe) -> None:
         """Pipeline output has the expected number of feature columns."""
         pipeline = build_feature_pipeline()
         X = pipeline.fit_transform(synthetic_dataframe)
@@ -163,19 +163,19 @@ class TestBuildFeaturePipeline:
 class TestDataframeFromDict:
     """Tests for the dataframe_from_dict helper."""
 
-    def test_returns_one_row_dataframe(self):
+    def test_returns_one_row_dataframe(self) -> None:
         """Returns a DataFrame with one row."""
         payload = {col: 50.0 for col in FEATURE_COLS}
         df = dataframe_from_dict(payload)
         assert len(df) == 1
 
-    def test_missing_keys_default_to_zero(self):
+    def test_missing_keys_default_to_zero(self) -> None:
         """Missing metric keys default to 0.0."""
         df = dataframe_from_dict({"service_name": "svc"})
         assert df["cpu_usage_pct"].iloc[0] == 0.0
 
     @pytest.mark.parametrize("col", FEATURE_COLS)
-    def test_all_feature_cols_present(self, col):
+    def test_all_feature_cols_present(self, col) -> None:
         """All FEATURE_COLS should appear in the output DataFrame."""
         payload = {c: 42.0 for c in FEATURE_COLS}
         df = dataframe_from_dict(payload)
@@ -185,30 +185,30 @@ class TestDataframeFromDict:
 class TestValidatePositiveFloat:
     """Tests for validate_positive_float()."""
 
-    def test_valid_positive_value_passes(self):
+    def test_valid_positive_value_passes(self) -> None:
         """Positive float is returned unchanged."""
         assert validate_positive_float(5.0, "cpu") == 5.0
 
-    def test_zero_is_valid(self):
+    def test_zero_is_valid(self) -> None:
         """Zero is accepted as a non-negative float."""
         assert validate_positive_float(0.0, "cpu") == 0.0
 
-    def test_negative_raises_value_error(self):
+    def test_negative_raises_value_error(self) -> None:
         """Negative value raises ValueError."""
         with pytest.raises(ValueError, match="must be >= 0"):
             validate_positive_float(-1.0, "cpu")
 
-    def test_nan_raises_value_error(self):
+    def test_nan_raises_value_error(self) -> None:
         """NaN raises ValueError as it is not finite."""
         with pytest.raises(ValueError, match="must be finite"):
             validate_positive_float(float("nan"), "cpu")
 
-    def test_inf_raises_value_error(self):
+    def test_inf_raises_value_error(self) -> None:
         """Infinity raises ValueError as it is not finite."""
         with pytest.raises(ValueError, match="must be finite"):
             validate_positive_float(float("inf"), "cpu")
 
-    def test_error_message_contains_field_name(self):
+    def test_error_message_contains_field_name(self) -> None:
         """Error message includes the field name for diagnostics."""
         with pytest.raises(ValueError, match="latency_p99_ms"):
             validate_positive_float(-0.1, "latency_p99_ms")
@@ -220,30 +220,30 @@ class TestSafeDataframeFromDict:
     def _valid(self) -> dict:
         return {col: 10.0 for col in FEATURE_COLS}
 
-    def test_valid_payload_returns_dataframe(self):
+    def test_valid_payload_returns_dataframe(self) -> None:
         """Valid payload produces a single-row DataFrame."""
         df = safe_dataframe_from_dict(self._valid())
         assert len(df) == 1
 
-    def test_all_feature_cols_present(self):
+    def test_all_feature_cols_present(self) -> None:
         """All FEATURE_COLS appear in the returned DataFrame."""
         df = safe_dataframe_from_dict(self._valid())
         for col in FEATURE_COLS:
             assert col in df.columns
 
-    def test_negative_value_raises_value_error(self):
+    def test_negative_value_raises_value_error(self) -> None:
         """Negative metric raises ValueError."""
         data = self._valid()
         data["cpu_usage_pct"] = -5.0
         with pytest.raises(ValueError):
             safe_dataframe_from_dict(data)
 
-    def test_missing_keys_default_to_zero(self):
+    def test_missing_keys_default_to_zero(self) -> None:
         """Missing keys default to 0.0."""
         df = safe_dataframe_from_dict({})
         assert df["cpu_usage_pct"].iloc[0] == 0.0
 
-    def test_string_coercion_to_float(self):
+    def test_string_coercion_to_float(self) -> None:
         """String numeric values are coerced to float."""
         data = self._valid()
         data["cpu_usage_pct"] = "75.0"
