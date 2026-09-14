@@ -190,3 +190,78 @@ def test_validate_tariff_returns_exact_value(tariff: float) -> None:
 
     result = validate_tariff(tariff)
     assert result == tariff
+
+
+class TestValidateFeatureWindow:
+    def test_valid_window(self) -> None:
+        from energy_seer.app.validators import validate_feature_window
+
+        values = [1.0, 2.0, 3.0, 4.0, 5.0]
+        assert validate_feature_window(values) == values
+
+    def test_too_short_raises(self) -> None:
+        from energy_seer.app.validators import validate_feature_window
+
+        with pytest.raises(ValueError, match="at least"):
+            validate_feature_window([1.0, 2.0], min_length=5)
+
+    def test_custom_min_length(self) -> None:
+        from energy_seer.app.validators import validate_feature_window
+
+        assert validate_feature_window([1.0, 2.0], min_length=2) == [1.0, 2.0]
+
+    def test_empty_raises(self) -> None:
+        from energy_seer.app.validators import validate_feature_window
+
+        with pytest.raises(ValueError):
+            validate_feature_window([], min_length=1)
+
+
+class TestValidateForecastLength:
+    def test_valid_length(self) -> None:
+        from energy_seer.app.validators import validate_forecast_length
+
+        assert validate_forecast_length(24) == 24
+
+    def test_zero_raises(self) -> None:
+        from energy_seer.app.validators import validate_forecast_length
+
+        with pytest.raises(ValueError):
+            validate_forecast_length(0)
+
+    def test_exceeds_max_raises(self) -> None:
+        from energy_seer.app.validators import validate_forecast_length
+
+        with pytest.raises(ValueError):
+            validate_forecast_length(9000)
+
+    def test_max_boundary_accepted(self) -> None:
+        from energy_seer.app.validators import validate_forecast_length
+
+        assert validate_forecast_length(8760) == 8760
+
+
+class TestValidateReadingsList:
+    def test_valid_readings(self) -> None:
+        from energy_seer.app.validators import validate_readings_list
+
+        readings = [0.5, 1.0, 2.5]
+        assert validate_readings_list(readings) == readings
+
+    def test_negative_not_allowed_raises(self) -> None:
+        from energy_seer.app.validators import validate_readings_list
+
+        with pytest.raises(ValueError, match="negative"):
+            validate_readings_list([-1.0, 2.0])
+
+    def test_negative_allowed(self) -> None:
+        from energy_seer.app.validators import validate_readings_list
+
+        readings = [-1.0, 0.0, 1.0]
+        assert validate_readings_list(readings, allow_negative=True) == readings
+
+    def test_empty_list_raises(self) -> None:
+        from energy_seer.app.validators import validate_readings_list
+
+        with pytest.raises(ValueError):
+            validate_readings_list([])
