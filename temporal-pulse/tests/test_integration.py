@@ -61,3 +61,31 @@ class TestEndToEnd:
         client.post("/api/v1/detect", json=payload)
         drift = client.get("/api/v1/drift")
         assert drift.status_code == 200
+
+    def test_health_returns_model_loaded_after_train(self, client) -> None:
+        """Health endpoint should report model_loaded=True after training."""
+        clean = generate_readings(n=100, anomaly_rate=0.0, seed=42)
+        train_payload = {
+            "readings": [{k: v for k, v in r.items() if not k.startswith("_")} for r in clean],
+        }
+        client.post("/api/v1/train", json=train_payload)
+        resp = client.get("/api/v1/health")
+        assert resp.status_code == 200
+        body = resp.json()
+        assert "model_loaded" in body
+
+    def test_detect_returns_results_list(self, client) -> None:
+        """Detect endpoint returns a results list even for small input."""
+        clean = generate_readings(n=100, anomaly_rate=0.0, seed=77)
+        train_payload = {
+            "readings": [{k: v for k, v in r.items() if not k.startswith("_")} for r in clean],
+        }
+        client.post("/api/v1/train", json=train_payload)
+        detect_payload = {
+            "readings": [{k: v for k, v in r.items() if not k.startswith("_")} for r in clean[:10]],
+        }
+        resp = client.post("/api/v1/detect", json=detect_payload)
+        assert resp.status_code == 200
+        body = resp.json()
+        assert "results" in body
+        assert isinstance(body["results"], list)
