@@ -42,51 +42,51 @@ def make_scored(text: str = "some chunk text", **kwargs) -> ScoredChunk:
 
 
 class TestFreshness:
-    def test_new_document_near_one(self):
+    def test_new_document_near_one(self) -> None:
         assert freshness_score(NOW.isoformat(), now=NOW) == pytest.approx(1.0, abs=0.01)
 
-    def test_half_life(self):
+    def test_half_life(self) -> None:
         old = (NOW - timedelta(days=365)).isoformat()
         assert freshness_score(old, half_life_days=365, now=NOW) == pytest.approx(0.5, abs=0.01)
 
-    def test_unparseable_timestamp_neutral(self):
+    def test_unparseable_timestamp_neutral(self) -> None:
         assert freshness_score("not-a-date") == 0.5
 
 
 class TestSourceQuality:
-    def test_pdf_above_email(self):
+    def test_pdf_above_email(self) -> None:
         assert source_quality_score("pdf") > source_quality_score("email")
 
-    def test_unknown_type_gets_default(self):
+    def test_unknown_type_gets_default(self) -> None:
         assert source_quality_score("carrier_pigeon") == 0.70
 
 
 class TestConsistency:
-    def test_both_retrievers_beats_one(self):
+    def test_both_retrievers_beats_one(self) -> None:
         both = consistency_score(1, 1, 0.5, top_k=50)
         one = consistency_score(1, None, 0.5, top_k=50)
         assert both > one
 
-    def test_rerank_contributes(self):
+    def test_rerank_contributes(self) -> None:
         high = consistency_score(1, 1, 1.0, top_k=50)
         low = consistency_score(1, 1, 0.0, top_k=50)
         assert high > low
 
 
 class TestScoreChunk:
-    def test_components_recorded(self):
+    def test_components_recorded(self) -> None:
         scored = score_chunk(make_scored(bm25_rank=1, vector_rank=2, rerank_score=0.8), now=NOW)
         assert set(scored.trust_components) == {"freshness", "source_quality", "consistency"}
         assert 0.0 <= scored.trust <= 1.0
 
-    def test_fresh_agreeing_chunk_trusted(self):
+    def test_fresh_agreeing_chunk_trusted(self) -> None:
         scored = score_chunk(
             make_scored(bm25_rank=1, vector_rank=1, rerank_score=0.9, source_type="pdf"),
             now=NOW,
         )
         assert scored.trust > 0.7
 
-    def test_stale_single_retriever_chunk_less_trusted(self):
+    def test_stale_single_retriever_chunk_less_trusted(self) -> None:
         stale = (NOW - timedelta(days=3000)).isoformat()
         scored = score_chunk(
             make_scored(
@@ -102,35 +102,35 @@ class TestScoreChunk:
 
 
 class TestEvidenceGate:
-    def test_no_chunks_blocks(self):
+    def test_no_chunks_blocks(self) -> None:
         decision = evaluate_evidence([])
         assert not decision.allowed
         assert decision.reason == "no_chunks_retrieved"
 
-    def test_low_trust_blocks(self):
+    def test_low_trust_blocks(self) -> None:
         chunks = [make_scored(trust=0.1), make_scored(trust=0.2)]
         decision = evaluate_evidence(chunks, chunk_trust_floor=0.35)
         assert not decision.allowed
         assert decision.reason == "too_few_supporting_chunks"
 
-    def test_confidence_threshold_blocks(self):
+    def test_confidence_threshold_blocks(self) -> None:
         chunks = [make_scored(trust=0.40)]
         decision = evaluate_evidence(chunks, confidence_threshold=0.60, chunk_trust_floor=0.35)
         assert not decision.allowed
         assert decision.reason == "confidence_below_threshold"
 
-    def test_strong_evidence_allows(self):
+    def test_strong_evidence_allows(self) -> None:
         chunks = [make_scored(trust=0.8), make_scored(trust=0.7)]
         decision = evaluate_evidence(chunks)
         assert decision.allowed
         assert decision.confidence == pytest.approx(0.75)
 
-    def test_answer_confidence_empty(self):
+    def test_answer_confidence_empty(self) -> None:
         assert answer_confidence([]) == 0.0
 
 
 class TestExtractiveGenerator:
-    def test_answer_sentences_verbatim_from_evidence(self):
+    def test_answer_sentences_verbatim_from_evidence(self) -> None:
         gen = ExtractiveGenerator()
         chunk = make_scored(
             "The rebate pays 900 dollars per kilowatt. Applications close in June.",
@@ -141,7 +141,7 @@ class TestExtractiveGenerator:
         for cite in citations:
             assert cite.quote in chunk.chunk.text  # zero-hallucination property
 
-    def test_every_claim_cited(self):
+    def test_every_claim_cited(self) -> None:
         gen = ExtractiveGenerator()
         chunk = make_scored("Solar exports are capped at five kilowatts.", trust=0.9)
         answer, citations = gen.generate("What is the solar export cap?", [chunk])
@@ -150,7 +150,7 @@ class TestExtractiveGenerator:
         assert citations[0].page == 1
         assert citations[0].source == "doc.txt"
 
-    def test_irrelevant_evidence_yields_empty(self):
+    def test_irrelevant_evidence_yields_empty(self) -> None:
         gen = ExtractiveGenerator()
         chunk = make_scored("Bananas are yellow fruit.", trust=0.9)
         answer, citations = gen.generate("What is the tax rate on diesel?", [chunk])
@@ -159,7 +159,7 @@ class TestExtractiveGenerator:
 
 
 class TestPipelineEndToEnd:
-    def test_answer_carries_citations_with_pages(self, pipeline):
+    def test_answer_carries_citations_with_pages(self, pipeline) -> None:
         answer = pipeline.query("What is the maximum rebate per household?")
         assert answer.answered
         assert answer.citations
@@ -168,18 +168,18 @@ class TestPipelineEndToEnd:
             assert cite.page >= 1
             assert cite.quote
 
-    def test_unanswerable_query_falls_back(self, pipeline):
+    def test_unanswerable_query_falls_back(self, pipeline) -> None:
         answer = pipeline.query("What is the average rainfall in the Amazon basin?")
         assert not answer.answered
         assert answer.text == INSUFFICIENT_EVIDENCE_MESSAGE
         assert answer.citations == []
 
-    def test_empty_corpus_falls_back(self, empty_pipeline):
+    def test_empty_corpus_falls_back(self, empty_pipeline) -> None:
         answer = empty_pipeline.query("Anything at all?")
         assert not answer.answered
         assert answer.text == INSUFFICIENT_EVIDENCE_MESSAGE
 
-    def test_confidence_reported(self, pipeline):
+    def test_confidence_reported(self, pipeline) -> None:
         answer = pipeline.query("How much is the rooftop solar rebate per kilowatt?")
         assert answer.answered
         assert 0.0 < answer.confidence <= 1.0
@@ -199,26 +199,26 @@ class TestTrustTier:
             (0.0, "minimal"),
         ],
     )
-    def test_tier_boundaries(self, score, expected):
+    def test_tier_boundaries(self, score, expected) -> None:
         from app.scoring.trust import trust_tier
 
         assert trust_tier(score) == expected
 
 
 class TestWeightedAnswerConfidence:
-    def test_empty_returns_zero(self):
+    def test_empty_returns_zero(self) -> None:
         from app.scoring.trust import weighted_answer_confidence
 
         assert weighted_answer_confidence([]) == pytest.approx(0.0)
 
-    def test_single_chunk(self):
+    def test_single_chunk(self) -> None:
         from app.scoring.trust import weighted_answer_confidence
 
         chunk = make_scored(trust=0.8, rerank_score=1.0)
         result = weighted_answer_confidence([chunk])
         assert 0.0 <= result <= 1.0
 
-    def test_higher_rerank_weighs_more(self):
+    def test_higher_rerank_weighs_more(self) -> None:
         from app.scoring.trust import weighted_answer_confidence
 
         low_rerank = make_scored(trust=0.5, rerank_score=0.1)
@@ -228,18 +228,18 @@ class TestWeightedAnswerConfidence:
 
 
 class TestMinTrustGate:
-    def test_empty_returns_empty(self):
+    def test_empty_returns_empty(self) -> None:
         from app.scoring.trust import min_trust_gate
 
         assert min_trust_gate([]) == []
 
-    def test_all_above_threshold_pass(self):
+    def test_all_above_threshold_pass(self) -> None:
         from app.scoring.trust import min_trust_gate
 
         chunks = [make_scored(trust=0.8), make_scored(trust=0.9)]
         assert len(min_trust_gate(chunks, threshold=0.5)) == 2
 
-    def test_below_threshold_filtered(self):
+    def test_below_threshold_filtered(self) -> None:
         from app.scoring.trust import min_trust_gate
 
         chunks = [make_scored(trust=0.2), make_scored(trust=0.8)]
@@ -255,7 +255,7 @@ class TestMinTrustGate:
             ([0.7, 0.8, 0.9], 0.4, 3),
         ],
     )
-    def test_parametrized_gate(self, trusts, threshold, expected_count):
+    def test_parametrized_gate(self, trusts, threshold, expected_count) -> None:
         from app.scoring.trust import min_trust_gate
 
         chunks = [make_scored(trust=t) for t in trusts]

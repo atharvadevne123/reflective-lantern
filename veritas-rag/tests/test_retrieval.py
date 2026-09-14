@@ -13,11 +13,11 @@ from app.retrieval.rerank import LexicalReranker
 
 
 class TestBM25:
-    def test_tokenize_strips_stopwords(self):
+    def test_tokenize_strips_stopwords(self) -> None:
         assert "the" not in tokenize("the quick fox")
         assert tokenize("Quick FOX!") == ["quick", "fox"]
 
-    def test_exact_term_match_ranks_first(self):
+    def test_exact_term_match_ranks_first(self) -> None:
         index = BM25Index()
         index.add("c1", "solar rebate program for households")
         index.add("c2", "battery storage incentive details")
@@ -25,19 +25,19 @@ class TestBM25:
         results = index.search("solar rebate")
         assert results[0][0] == "c1"
 
-    def test_remove_drops_chunk(self):
+    def test_remove_drops_chunk(self) -> None:
         index = BM25Index()
         index.add("c1", "unique zebra content")
         index.remove("c1")
         assert index.search("zebra") == []
         assert len(index) == 0
 
-    def test_empty_query_returns_nothing(self):
+    def test_empty_query_returns_nothing(self) -> None:
         index = BM25Index()
         index.add("c1", "text")
         assert index.search("the of and") == []
 
-    def test_top_k_respected(self):
+    def test_top_k_respected(self) -> None:
         index = BM25Index()
         for i in range(20):
             index.add(f"c{i}", f"solar document number {i}")
@@ -45,19 +45,19 @@ class TestBM25:
 
 
 class TestEmbedder:
-    def test_deterministic(self):
+    def test_deterministic(self) -> None:
         emb = HashingEmbedder(dim=64)
         a = emb.embed(["hello world"])
         b = emb.embed(["hello world"])
         np.testing.assert_array_equal(a, b)
 
-    def test_normalized(self):
+    def test_normalized(self) -> None:
         emb = HashingEmbedder(dim=64)
         vecs = emb.embed(["some text here", "other content entirely"])
         norms = np.linalg.norm(vecs, axis=1)
         np.testing.assert_allclose(norms, 1.0, rtol=1e-5)
 
-    def test_similar_texts_closer_than_dissimilar(self):
+    def test_similar_texts_closer_than_dissimilar(self) -> None:
         emb = HashingEmbedder(dim=384)
         vecs = emb.embed(
             [
@@ -72,7 +72,7 @@ class TestEmbedder:
 
 
 class TestVectorIndex:
-    def test_nearest_neighbour_found(self):
+    def test_nearest_neighbour_found(self) -> None:
         emb = HashingEmbedder(dim=128)
         texts = ["solar rebates", "battery storage", "grid limits"]
         index = VectorIndex(dim=128)
@@ -81,7 +81,7 @@ class TestVectorIndex:
         results = index.search(query, top_k=1)
         assert results[0][0] == "c1"
 
-    def test_deleted_ids_filtered(self):
+    def test_deleted_ids_filtered(self) -> None:
         emb = HashingEmbedder(dim=128)
         index = VectorIndex(dim=128)
         index.add(["c1", "c2"], emb.embed(["alpha text", "beta text"]))
@@ -89,7 +89,7 @@ class TestVectorIndex:
         results = index.search(emb.embed(["alpha text"])[0], top_k=5)
         assert all(cid != "c1" for cid, _ in results)
 
-    def test_ivf_path_over_threshold(self):
+    def test_ivf_path_over_threshold(self) -> None:
         emb = HashingEmbedder(dim=32)
         n = 600
         texts = [f"document about topic {i} with words {i % 7} {i % 13}" for i in range(n)]
@@ -98,30 +98,30 @@ class TestVectorIndex:
         results = index.search(emb.embed(["document about topic 5"])[0], top_k=10)
         assert len(results) == 10
 
-    def test_empty_index(self):
+    def test_empty_index(self) -> None:
         index = VectorIndex(dim=8)
         assert index.search(np.zeros(8, dtype=np.float32)) == []
 
 
 class TestFusion:
-    def test_agreement_ranks_highest(self):
+    def test_agreement_ranks_highest(self) -> None:
         bm25 = [("shared", 5.0), ("bm_only", 4.0)]
         vec = [("shared", 0.9), ("vec_only", 0.8)]
         fused = reciprocal_rank_fusion(bm25, vec)
         assert fused[0][0] == "shared"
 
-    def test_ranks_recorded(self):
+    def test_ranks_recorded(self) -> None:
         fused = reciprocal_rank_fusion([("a", 1.0)], [("b", 1.0)])
         by_id = {cid: (b, v) for cid, _, b, v in fused}
         assert by_id["a"] == (1, None)
         assert by_id["b"] == (None, 1)
 
-    def test_empty_inputs(self):
+    def test_empty_inputs(self) -> None:
         assert reciprocal_rank_fusion([], []) == []
 
 
 class TestReranker:
-    def test_relevant_text_scores_higher(self):
+    def test_relevant_text_scores_higher(self) -> None:
         rr = LexicalReranker()
         scores = rr.score(
             "solar rebate amount",
@@ -132,12 +132,12 @@ class TestReranker:
         )
         assert scores[0] > scores[1]
 
-    def test_scores_bounded(self):
+    def test_scores_bounded(self) -> None:
         rr = LexicalReranker()
         scores = rr.score("query terms", ["query terms appear here", "nothing relevant"])
         assert all(0.0 <= s <= 1.0 for s in scores)
 
-    def test_proximity_rewarded(self):
+    def test_proximity_rewarded(self) -> None:
         rr = LexicalReranker()
         tight = "export limit five kilowatts single phase"
         loose = (
@@ -148,18 +148,18 @@ class TestReranker:
         assert scores[0] > scores[1]
 
     @pytest.mark.parametrize("query", ["", "the of and"])
-    def test_stopword_only_query(self, query):
+    def test_stopword_only_query(self, query) -> None:
         rr = LexicalReranker()
         assert rr.score(query, ["some text"]) == [0.0]
 
 
 class TestPipelineRetrieval:
-    def test_hybrid_finds_expected_document(self, pipeline):
+    def test_hybrid_finds_expected_document(self, pipeline) -> None:
         answer = pipeline.query("How much is the rooftop solar rebate per kilowatt?")
         assert answer.answered
         assert any("solar-policy" in c.source for c in answer.citations)
 
-    def test_semantic_match_without_exact_terms(self, pipeline):
+    def test_semantic_match_without_exact_terms(self, pipeline) -> None:
         # "power storage" is not verbatim in the corpus; "battery storage" is
         answer = pipeline.query("What incentive exists for home power storage batteries?")
         assert answer.answered
