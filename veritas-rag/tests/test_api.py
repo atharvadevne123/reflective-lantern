@@ -9,7 +9,7 @@ from fastapi.testclient import TestClient
 
 
 @pytest.fixture
-def client(monkeypatch, empty_pipeline):
+def client(monkeypatch, empty_pipeline) -> None:
     import app.main as main_mod
 
     monkeypatch.setattr(main_mod, "pipeline", empty_pipeline)
@@ -20,17 +20,17 @@ def b64(text: str) -> str:
     return base64.b64encode(text.encode("utf-8")).decode("ascii")
 
 
-def test_health(client):
+def test_health(client) -> None:
     resp = client.get("/api/v1/health")
     assert resp.status_code == 200
     assert resp.json()["status"] == "healthy"
 
 
-def test_root_banner(client):
+def test_root_banner(client) -> None:
     assert client.get("/").json()["service"] == "Veritas-Rag"
 
 
-def test_ingest_then_query_with_citations(client):
+def test_ingest_then_query_with_citations(client) -> None:
     resp = client.post(
         "/api/v1/ingest",
         json={
@@ -52,26 +52,26 @@ def test_ingest_then_query_with_citations(client):
     assert body["citations"][0]["source"] == "facts.txt"
 
 
-def test_query_insufficient_evidence(client):
+def test_query_insufficient_evidence(client) -> None:
     resp = client.post("/api/v1/query", json={"question": "What is the airspeed of a swallow?"})
     body = resp.json()
     assert body["answered"] is False
     assert "Insufficient evidence" in body["answer"]
 
 
-def test_invalid_base64_rejected(client):
+def test_invalid_base64_rejected(client) -> None:
     resp = client.post(
         "/api/v1/ingest", json={"source": "x.txt", "content_base64": "!!!not-base64!!!"}
     )
     assert resp.status_code == 422
 
 
-def test_short_question_rejected(client):
+def test_short_question_rejected(client) -> None:
     resp = client.post("/api/v1/query", json={"question": "hi"})
     assert resp.status_code == 422
 
 
-def test_invalid_source_type_rejected(client):
+def test_invalid_source_type_rejected(client) -> None:
     resp = client.post(
         "/api/v1/ingest",
         json={"source": "x.bin", "content_base64": b64("data"), "source_type": "binary"},
@@ -79,7 +79,7 @@ def test_invalid_source_type_rejected(client):
     assert resp.status_code == 422
 
 
-def test_metrics_endpoint(client):
+def test_metrics_endpoint(client) -> None:
     client.post(
         "/api/v1/ingest", json={"source": "m.txt", "content_base64": b64("metric content here")}
     )
@@ -88,7 +88,7 @@ def test_metrics_endpoint(client):
     assert "cache" in body
 
 
-def test_trace_endpoint_roundtrip(client):
+def test_trace_endpoint_roundtrip(client) -> None:
     client.post(
         "/api/v1/ingest",
         json={"source": "t.txt", "content_base64": b64("Tracing target sentence lives here.")},
@@ -101,11 +101,11 @@ def test_trace_endpoint_roundtrip(client):
     assert trace.json()["query"]
 
 
-def test_trace_not_found(client):
+def test_trace_not_found(client) -> None:
     assert client.get("/api/v1/trace/nonexistent").status_code == 404
 
 
-def test_traces_listing(client):
+def test_traces_listing(client) -> None:
     client.post("/api/v1/query", json={"question": "list me in traces"})
     body = client.get("/api/v1/traces?limit=5").json()
     assert len(body["traces"]) >= 1

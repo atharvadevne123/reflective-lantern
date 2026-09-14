@@ -9,26 +9,26 @@ from app.observability import TraceRecorder, TraceStore
 
 
 class TestCache:
-    def test_hit_after_put(self):
+    def test_hit_after_put(self) -> None:
         cache = RetrievalCache()
         cache.put("What is X?", ["result"])
         assert cache.get("What is X?") == ["result"]
         assert cache.stats()["hits"] == 1
 
-    def test_normalized_variants_share_entry(self):
+    def test_normalized_variants_share_entry(self) -> None:
         cache = RetrievalCache()
         cache.put("What is the Rebate?", "value")
         assert cache.get("what is the rebate") == "value"
         assert normalize_query("What IS   the rebate??") == "what is the rebate"
 
-    def test_ttl_expiry(self):
+    def test_ttl_expiry(self) -> None:
         cache = RetrievalCache(ttl_seconds=0.01)
         cache.put("q", "v")
         time.sleep(0.02)
         assert cache.get("q") is None
         assert cache.stats()["misses"] == 1
 
-    def test_lru_eviction(self):
+    def test_lru_eviction(self) -> None:
         cache = RetrievalCache(max_size=2)
         cache.put("a", 1)
         cache.put("b", 2)
@@ -38,18 +38,18 @@ class TestCache:
         assert cache.get("a") == 1
         assert cache.get("c") == 3
 
-    def test_invalidate_all(self):
+    def test_invalidate_all(self) -> None:
         cache = RetrievalCache()
         cache.put("a", 1)
         cache.invalidate_all()
         assert cache.get("a") is None
 
-    def test_key_stability(self):
+    def test_key_stability(self) -> None:
         assert cache_key("Query!") == cache_key("query")
 
 
 class TestTraceRecorder:
-    def test_stages_and_timings_recorded(self):
+    def test_stages_and_timings_recorded(self) -> None:
         rec = TraceRecorder("test query")
         rec.start_stage("bm25")
         rec.end_stage("bm25", top=["c1"])
@@ -59,13 +59,13 @@ class TestTraceRecorder:
         assert trace.outcome["answered"] is True
         assert "total_ms" in trace.outcome
 
-    def test_request_ids_unique(self):
+    def test_request_ids_unique(self) -> None:
         ids = {TraceRecorder("q").trace.request_id for _ in range(50)}
         assert len(ids) == 50
 
 
 class TestTraceStore:
-    def test_ring_buffer_eviction(self):
+    def test_ring_buffer_eviction(self) -> None:
         store = TraceStore(max_size=2)
         traces = [TraceRecorder(f"q{i}").finish() for i in range(3)]
         for t in traces:
@@ -74,7 +74,7 @@ class TestTraceStore:
         assert store.get(traces[2].request_id) is not None
         assert len(store) == 2
 
-    def test_recent_order(self):
+    def test_recent_order(self) -> None:
         store = TraceStore()
         traces = [TraceRecorder(f"q{i}").finish() for i in range(3)]
         for t in traces:
@@ -84,7 +84,7 @@ class TestTraceStore:
 
 
 class TestPipelineTracing:
-    def test_query_produces_full_trace(self, pipeline):
+    def test_query_produces_full_trace(self, pipeline) -> None:
         answer = pipeline.query("What is the maximum rebate per household?")
         trace = pipeline.traces.get(answer.request_id)
         assert trace is not None
@@ -99,13 +99,13 @@ class TestPipelineTracing:
             "evidence_gate",
         } <= stage_names
 
-    def test_trace_explains_fallback(self, pipeline):
+    def test_trace_explains_fallback(self, pipeline) -> None:
         answer = pipeline.query("What is the melting point of osmium?")
         trace = pipeline.traces.get(answer.request_id)
         assert trace.outcome["answered"] is False
         assert trace.outcome["reason"]
 
-    def test_cache_hit_recorded_in_trace(self, pipeline):
+    def test_cache_hit_recorded_in_trace(self, pipeline) -> None:
         q = "How much is the rooftop solar rebate per kilowatt?"
         pipeline.query(q)
         answer2 = pipeline.query(q)
@@ -113,14 +113,14 @@ class TestPipelineTracing:
         cache_stage = next(s for s in trace.stages if s["stage"] == "cache")
         assert cache_stage["hit"] is True
 
-    def test_attribution_present_for_answers(self, pipeline):
+    def test_attribution_present_for_answers(self, pipeline) -> None:
         answer = pipeline.query("What is the maximum rebate per household?")
         trace = pipeline.traces.get(answer.request_id)
         gen_stage = next(s for s in trace.stages if s["stage"] == "generation")
         assert gen_stage["attribution"]
         assert all("chunk_id" in a for a in gen_stage["attribution"])
 
-    def test_cached_second_query_faster_path(self, pipeline):
+    def test_cached_second_query_faster_path(self, pipeline) -> None:
         q = "What are the grid export limits for single phase connections?"
         pipeline.query(q)
         answer = pipeline.query(q)

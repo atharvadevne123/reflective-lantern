@@ -45,7 +45,7 @@ UNANSWERABLE = [
 
 
 class TestRecallEval:
-    def test_perfect_recall_on_gold_corpus(self, pipeline):
+    def test_perfect_recall_on_gold_corpus(self, pipeline) -> None:
         recall, accuracy, details = run_recall_eval(pipeline, gold_cases())
         assert recall == 1.0
         assert accuracy == 1.0
@@ -53,19 +53,19 @@ class TestRecallEval:
 
 
 class TestHallucinationEval:
-    def test_zero_hallucinations_on_unanswerable(self, pipeline):
+    def test_zero_hallucinations_on_unanswerable(self, pipeline) -> None:
         rate, details = run_hallucination_eval(pipeline, UNANSWERABLE)
         assert rate == 0.0
         assert all(not d["hallucinated"] for d in details)
 
 
 class TestAdversarialEval:
-    def test_full_suite_passes(self, pipeline):
+    def test_full_suite_passes(self, pipeline) -> None:
         rate, details = run_adversarial_eval(pipeline)
         assert rate == 1.0
         assert all(d["passed"] for d in details)
 
-    def test_injection_document_data_used_but_instructions_ignored(self, pipeline):
+    def test_injection_document_data_used_but_instructions_ignored(self, pipeline) -> None:
         # The malicious document's FACT should be retrievable...
         pipeline.ingest(INJECTION_DOCUMENT.encode(), "injected.txt")
         answer = pipeline.query(INJECTION_DOCUMENT_QUERY)
@@ -77,7 +77,7 @@ class TestAdversarialEval:
 
 
 class TestFullEval:
-    def test_report_aggregates_all_modes(self, pipeline):
+    def test_report_aggregates_all_modes(self, pipeline) -> None:
         report = run_full_eval(pipeline, gold_cases(), UNANSWERABLE)
         assert report.recall_at_k == 1.0
         assert report.answer_accuracy == 1.0
@@ -86,7 +86,7 @@ class TestFullEval:
         kinds = {d["kind"] for d in report.details}
         assert kinds == {"recall", "hallucination", "adversarial"}
 
-    def test_report_serializable(self, pipeline):
+    def test_report_serializable(self, pipeline) -> None:
         import json
 
         report = run_full_eval(pipeline, gold_cases()[:1], UNANSWERABLE[:1])
