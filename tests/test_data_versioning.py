@@ -12,22 +12,22 @@ def _snap(name="energy", version="1.0.0", **kwargs) -> DataSnapshot:
 
 
 class TestDataSnapshot:
-    def test_compute_checksum_returns_hex(self):
+    def test_compute_checksum_returns_hex(self) -> None:
         checksum = DataSnapshot.compute_checksum({"a": 1})
         assert len(checksum) == 64
         assert all(c in "0123456789abcdef" for c in checksum)
 
-    def test_same_data_same_checksum(self):
+    def test_same_data_same_checksum(self) -> None:
         c1 = DataSnapshot.compute_checksum([1, 2, 3])
         c2 = DataSnapshot.compute_checksum([1, 2, 3])
         assert c1 == c2
 
-    def test_different_data_different_checksum(self):
+    def test_different_data_different_checksum(self) -> None:
         c1 = DataSnapshot.compute_checksum({"a": 1})
         c2 = DataSnapshot.compute_checksum({"a": 2})
         assert c1 != c2
 
-    def test_defaults_populated(self):
+    def test_defaults_populated(self) -> None:
         snap = _snap()
         assert snap.row_count == 0
         assert snap.schema == {}
@@ -36,102 +36,102 @@ class TestDataSnapshot:
 
 
 class TestDataLineage:
-    def test_record_and_retrieve(self):
+    def test_record_and_retrieve(self) -> None:
         dl = DataLineage()
         dl.record(_snap())
         result = dl.get("energy")
         assert result.version == "1.0.0"
 
-    def test_get_latest_returns_last(self):
+    def test_get_latest_returns_last(self) -> None:
         dl = DataLineage()
         dl.record(_snap(version="1.0.0"))
         dl.record(_snap(version="2.0.0"))
         assert dl.get("energy").version == "2.0.0"
 
-    def test_get_specific_version(self):
+    def test_get_specific_version(self) -> None:
         dl = DataLineage()
         dl.record(_snap(version="1.0.0"))
         dl.record(_snap(version="2.0.0"))
         assert dl.get("energy", "1.0.0").version == "1.0.0"
 
-    def test_duplicate_version_raises(self):
+    def test_duplicate_version_raises(self) -> None:
         dl = DataLineage()
         dl.record(_snap())
         with pytest.raises(ValueError, match="already recorded"):
             dl.record(_snap())
 
-    def test_unknown_name_returns_none(self):
+    def test_unknown_name_returns_none(self) -> None:
         dl = DataLineage()
         assert dl.get("ghost") is None
 
-    def test_unknown_version_returns_none(self):
+    def test_unknown_version_returns_none(self) -> None:
         dl = DataLineage()
         dl.record(_snap())
         assert dl.get("energy", "9.9.9") is None
 
-    def test_lineage_traces_parents(self):
+    def test_lineage_traces_parents(self) -> None:
         dl = DataLineage()
         dl.record(_snap(version="1.0.0"))
         dl.record(_snap(version="2.0.0", parent_versions=["1.0.0"]))
         ancestors = dl.lineage("energy", "2.0.0")
         assert any(a.version == "1.0.0" for a in ancestors)
 
-    def test_lineage_empty_for_root(self):
+    def test_lineage_empty_for_root(self) -> None:
         dl = DataLineage()
         dl.record(_snap(version="1.0.0"))
         assert dl.lineage("energy", "1.0.0") == []
 
-    def test_list_versions(self):
+    def test_list_versions(self) -> None:
         dl = DataLineage()
         dl.record(_snap(version="1.0.0"))
         dl.record(_snap(version="1.1.0"))
         assert dl.list_versions("energy") == ["1.0.0", "1.1.0"]
 
-    def test_list_datasets(self):
+    def test_list_datasets(self) -> None:
         dl = DataLineage()
         dl.record(_snap(name="a"))
         dl.record(_snap(name="b"))
         assert set(dl.list_datasets()) == {"a", "b"}
 
     @pytest.mark.parametrize("rows", [0, 100, 1_000_000])
-    def test_row_count_stored(self, rows):
+    def test_row_count_stored(self, rows) -> None:
         dl = DataLineage()
         dl.record(_snap(row_count=rows))
         assert dl.get("energy").row_count == rows
 
 
 class TestDataSnapshotChecksum:
-    def test_checksum_is_deterministic_across_runs(self):
+    def test_checksum_is_deterministic_across_runs(self) -> None:
         data = {"key": "value", "num": 42}
         c1 = DataSnapshot.compute_checksum(data)
         c2 = DataSnapshot.compute_checksum(data)
         assert c1 == c2
 
-    def test_empty_dict_checksum_differs_from_empty_list(self):
+    def test_empty_dict_checksum_differs_from_empty_list(self) -> None:
         c1 = DataSnapshot.compute_checksum({})
         c2 = DataSnapshot.compute_checksum([])
         assert c1 != c2
 
     @pytest.mark.parametrize("data", [None, 0, "", False, [], {}])
-    def test_checksum_of_falsy_values_is_string(self, data):
+    def test_checksum_of_falsy_values_is_string(self, data) -> None:
         result = DataSnapshot.compute_checksum(data)
         assert isinstance(result, str)
         assert len(result) == 64
 
 
 class TestDataLineageEdgeCases:
-    def test_schema_tags_stored_and_retrieved(self):
+    def test_schema_tags_stored_and_retrieved(self) -> None:
         dl = DataLineage()
         dl.record(_snap(schema={"col_a": "float64"}, tags={"source": "sensor"}))
         snap = dl.get("energy")
         assert snap.schema["col_a"] == "float64"
         assert snap.tags["source"] == "sensor"
 
-    def test_empty_lineage_datasets_empty(self):
+    def test_empty_lineage_datasets_empty(self) -> None:
         dl = DataLineage()
         assert dl.list_datasets() == []
 
-    def test_deep_parent_chain_lineage(self):
+    def test_deep_parent_chain_lineage(self) -> None:
         dl = DataLineage()
         dl.record(_snap(version="1.0.0"))
         dl.record(_snap(version="2.0.0", parent_versions=["1.0.0"]))
@@ -140,7 +140,7 @@ class TestDataLineageEdgeCases:
         versions = {a.version for a in ancestors}
         assert "2.0.0" in versions
 
-    def test_source_url_stored(self):
+    def test_source_url_stored(self) -> None:
         dl = DataLineage()
         dl.record(DataSnapshot(name="energy", version="1.0.0", source="s3://bucket/path"))
         assert dl.get("energy").source == "s3://bucket/path"

@@ -12,100 +12,100 @@ def _fs(name="energy", version="1.0.0", features=None) -> FeatureSet:
 
 
 class TestFeatureSet:
-    def test_get_returns_value(self):
+    def test_get_returns_value(self) -> None:
         fs = _fs(features={"x": 42})
         assert fs.get("x") == 42
 
-    def test_get_returns_default(self):
+    def test_get_returns_default(self) -> None:
         fs = _fs(features={})
         assert fs.get("missing", "default") == "default"
 
-    def test_keys_returns_all_names(self):
+    def test_keys_returns_all_names(self) -> None:
         fs = _fs(features={"a": 1, "b": 2})
         assert set(fs.keys()) == {"a", "b"}
 
 
 class TestFeatureStore:
-    def test_publish_and_get_latest(self):
+    def test_publish_and_get_latest(self) -> None:
         store = FeatureStore()
         store.publish(_fs())
         result = store.get_latest("energy")
         assert result is not None
         assert result.version == "1.0.0"
 
-    def test_latest_returns_most_recent(self):
+    def test_latest_returns_most_recent(self) -> None:
         store = FeatureStore()
         store.publish(_fs(version="1.0.0"))
         store.publish(_fs(version="2.0.0"))
         assert store.get_latest("energy").version == "2.0.0"
 
-    def test_duplicate_version_raises(self):
+    def test_duplicate_version_raises(self) -> None:
         store = FeatureStore()
         store.publish(_fs(version="1.0.0"))
         with pytest.raises(ValueError, match="already exists"):
             store.publish(_fs(version="1.0.0"))
 
-    def test_get_version_specific(self):
+    def test_get_version_specific(self) -> None:
         store = FeatureStore()
         store.publish(_fs(version="1.0.0"))
         store.publish(_fs(version="2.0.0"))
         result = store.get_version("energy", "1.0.0")
         assert result.version == "1.0.0"
 
-    def test_get_version_not_found_returns_none(self):
+    def test_get_version_not_found_returns_none(self) -> None:
         store = FeatureStore()
         assert store.get_version("energy", "9.9.9") is None
 
-    def test_get_latest_unknown_returns_none(self):
+    def test_get_latest_unknown_returns_none(self) -> None:
         store = FeatureStore()
         assert store.get_latest("unknown") is None
 
-    def test_list_versions(self):
+    def test_list_versions(self) -> None:
         store = FeatureStore()
         store.publish(_fs(version="1.0.0"))
         store.publish(_fs(version="1.1.0"))
         assert store.list_versions("energy") == ["1.0.0", "1.1.0"]
 
-    def test_list_names(self):
+    def test_list_names(self) -> None:
         store = FeatureStore()
         store.publish(_fs(name="a"))
         store.publish(_fs(name="b"))
         assert set(store.list_names()) == {"a", "b"}
 
-    def test_delete_all_versions(self):
+    def test_delete_all_versions(self) -> None:
         store = FeatureStore()
         store.publish(_fs())
         assert store.delete("energy") is True
         assert store.get_latest("energy") is None
 
-    def test_delete_specific_version(self):
+    def test_delete_specific_version(self) -> None:
         store = FeatureStore()
         store.publish(_fs(version="1.0.0"))
         store.publish(_fs(version="2.0.0"))
         store.delete("energy", "1.0.0")
         assert store.list_versions("energy") == ["2.0.0"]
 
-    def test_delete_nonexistent_returns_false(self):
+    def test_delete_nonexistent_returns_false(self) -> None:
         store = FeatureStore()
         assert store.delete("ghost") is False
 
     @pytest.mark.parametrize("version", ["1.0.0", "2.0.0", "3.0.0"])
-    def test_multiple_versions_retrievable(self, version):
+    def test_multiple_versions_retrievable(self, version) -> None:
         store = FeatureStore()
         for v in ["1.0.0", "2.0.0", "3.0.0"]:
             store.publish(_fs(version=v, features={"v": v}))
         result = store.get_version("energy", version)
         assert result.features["v"] == version
 
-    def test_empty_store_list_names_empty(self):
+    def test_empty_store_list_names_empty(self) -> None:
         store = FeatureStore()
         assert store.list_names() == []
 
-    def test_empty_store_list_versions_empty(self):
+    def test_empty_store_list_versions_empty(self) -> None:
         store = FeatureStore()
         assert store.list_versions("energy") == []
 
-    def test_feature_values_preserved_exactly(self):
+    def test_feature_values_preserved_exactly(self) -> None:
         features = {"a": 1.5, "b": "text", "c": [1, 2, 3], "d": True}
         store = FeatureStore()
         store.publish(_fs(features=features))
@@ -114,7 +114,7 @@ class TestFeatureStore:
         assert result.get("b") == "text"
         assert result.get("d") is True
 
-    def test_delete_specific_version_leaves_others(self):
+    def test_delete_specific_version_leaves_others(self) -> None:
         store = FeatureStore()
         for v in ["1.0.0", "2.0.0", "3.0.0"]:
             store.publish(_fs(version=v))
@@ -123,7 +123,7 @@ class TestFeatureStore:
         assert "2.0.0" not in remaining
         assert len(remaining) == 2
 
-    def test_publish_multiple_feature_sets_same_version_different_name(self):
+    def test_publish_multiple_feature_sets_same_version_different_name(self) -> None:
         store = FeatureStore()
         store.publish(_fs(name="setA", version="1.0.0"))
         store.publish(_fs(name="setB", version="1.0.0"))
