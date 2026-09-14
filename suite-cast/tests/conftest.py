@@ -25,7 +25,7 @@ from app.database import Base  # noqa: E402
 
 
 @pytest.fixture(scope="session")
-def db_engine():
+def db_engine() -> None:
     """In-memory SQLite engine for the test session."""
     engine = create_engine(
         "sqlite:///:memory:",
@@ -38,7 +38,7 @@ def db_engine():
 
 
 @pytest.fixture
-def db_session(db_engine):
+def db_session(db_engine) -> None:
     """Transactional database session — rolls back after each test."""
     connection = db_engine.connect()
     transaction = connection.begin()
@@ -95,7 +95,7 @@ def sample_booking_dict() -> dict:
 
 
 @pytest.fixture(scope="module")
-def trained_models():
+def trained_models() -> None:
     """Train a small XGBoost + LightGBM ensemble once per module."""
     from app.model import generate_sample_data, train_model
 

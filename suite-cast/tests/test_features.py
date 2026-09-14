@@ -35,80 +35,80 @@ def _minimal_df(**overrides) -> pd.DataFrame:
 
 
 class TestHotelFeatureEngineer:
-    def test_fit_returns_self(self):
+    def test_fit_returns_self(self) -> None:
         eng = HotelFeatureEngineer()
         result = eng.fit(_minimal_df())
         assert result is eng
 
-    def test_output_columns_match_feature_cols(self):
+    def test_output_columns_match_feature_cols(self) -> None:
         df = HotelFeatureEngineer().transform(_minimal_df())
         assert list(df.columns) == FEATURE_COLS
 
-    def test_output_is_float_dtype(self):
+    def test_output_is_float_dtype(self) -> None:
         df = HotelFeatureEngineer().transform(_minimal_df())
         assert all(np.issubdtype(dt, np.floating) for dt in df.dtypes)
 
-    def test_lead_time_bucket_last_minute(self):
+    def test_lead_time_bucket_last_minute(self) -> None:
         df = HotelFeatureEngineer().transform(_minimal_df(lead_time=1))
         assert df["lead_time_bucket"].iloc[0] == 0
 
-    def test_lead_time_bucket_short(self):
+    def test_lead_time_bucket_short(self) -> None:
         df = HotelFeatureEngineer().transform(_minimal_df(lead_time=10))
         assert df["lead_time_bucket"].iloc[0] == 1
 
-    def test_lead_time_bucket_medium(self):
+    def test_lead_time_bucket_medium(self) -> None:
         df = HotelFeatureEngineer().transform(_minimal_df(lead_time=30))
         assert df["lead_time_bucket"].iloc[0] == 2
 
-    def test_lead_time_bucket_early(self):
+    def test_lead_time_bucket_early(self) -> None:
         df = HotelFeatureEngineer().transform(_minimal_df(lead_time=90))
         assert df["lead_time_bucket"].iloc[0] == 3
 
-    def test_seasonality_score_summer(self):
+    def test_seasonality_score_summer(self) -> None:
         df = HotelFeatureEngineer().transform(_minimal_df(checkin_month=7))
         assert df["seasonality_score"].iloc[0] == pytest.approx(1.4)
 
-    def test_seasonality_score_winter(self):
+    def test_seasonality_score_winter(self) -> None:
         df = HotelFeatureEngineer().transform(_minimal_df(checkin_month=1))
         assert df["seasonality_score"].iloc[0] == pytest.approx(0.7)
 
-    def test_seasonality_score_spring(self):
+    def test_seasonality_score_spring(self) -> None:
         df = HotelFeatureEngineer().transform(_minimal_df(checkin_month=4))
         assert df["seasonality_score"].iloc[0] == pytest.approx(1.0)
 
-    def test_competitor_rate_ratio_clipped(self):
+    def test_competitor_rate_ratio_clipped(self) -> None:
         # rate = 500, competitor = 100 → ratio 5 but should clip to 3
         df = HotelFeatureEngineer().transform(
             _minimal_df(room_rate=500.0, competitor_avg_rate=100.0)
         )
         assert df["competitor_rate_ratio"].iloc[0] == pytest.approx(3.0)
 
-    def test_competitor_rate_ratio_zero_safe(self):
+    def test_competitor_rate_ratio_zero_safe(self) -> None:
         # competitor_avg_rate = 0 should not raise division error
         df = HotelFeatureEngineer().transform(_minimal_df(competitor_avg_rate=0.0, room_rate=150.0))
         assert np.isfinite(df["competitor_rate_ratio"].iloc[0])
 
-    def test_weekend_summer_flag_true(self):
+    def test_weekend_summer_flag_true(self) -> None:
         df = HotelFeatureEngineer().transform(_minimal_df(is_weekend=1, checkin_month=7))
         assert df["weekend_summer_flag"].iloc[0] == 1
 
-    def test_weekend_summer_flag_false_in_winter(self):
+    def test_weekend_summer_flag_false_in_winter(self) -> None:
         df = HotelFeatureEngineer().transform(_minimal_df(is_weekend=1, checkin_month=1))
         assert df["weekend_summer_flag"].iloc[0] == 0
 
-    def test_yoy_occ_delta_positive(self):
+    def test_yoy_occ_delta_positive(self) -> None:
         df = HotelFeatureEngineer().transform(
             _minimal_df(current_occ_rate=0.80, prev_year_occ_rate=0.60)
         )
         assert df["yoy_occ_delta"].iloc[0] == pytest.approx(0.20)
 
-    def test_yoy_occ_delta_clipped(self):
+    def test_yoy_occ_delta_clipped(self) -> None:
         df = HotelFeatureEngineer().transform(
             _minimal_df(current_occ_rate=1.0, prev_year_occ_rate=0.0)
         )
         assert df["yoy_occ_delta"].iloc[0] == pytest.approx(1.0)
 
-    def test_advance_efficiency_increases_with_lead_time(self):
+    def test_advance_efficiency_increases_with_lead_time(self) -> None:
         df_short = HotelFeatureEngineer().transform(_minimal_df(lead_time=1, checkin_month=7))
         df_long = HotelFeatureEngineer().transform(_minimal_df(lead_time=180, checkin_month=7))
         assert df_long["advance_efficiency"].iloc[0] > df_short["advance_efficiency"].iloc[0]
@@ -121,7 +121,7 @@ class TestHotelFeatureEngineer:
             ("suite", 2),
         ],
     )
-    def test_room_type_encoding(self, room_type, expected_code):
+    def test_room_type_encoding(self, room_type, expected_code) -> None:
         df = HotelFeatureEngineer().transform(_minimal_df(room_type=room_type))
         assert df["room_type_enc"].iloc[0] == expected_code
 
@@ -133,26 +133,26 @@ class TestHotelFeatureEngineer:
             ("ota", 2),
         ],
     )
-    def test_channel_encoding(self, channel, expected_code):
+    def test_channel_encoding(self, channel, expected_code) -> None:
         df = HotelFeatureEngineer().transform(_minimal_df(booking_channel=channel))
         assert df["channel_enc"].iloc[0] == expected_code
 
-    def test_batch_transform_preserves_row_count(self):
+    def test_batch_transform_preserves_row_count(self) -> None:
         batch = pd.concat([_minimal_df() for _ in range(5)], ignore_index=True)
         df = HotelFeatureEngineer().transform(batch)
         assert len(df) == 5
 
 
 class TestBuildFeaturePipeline:
-    def test_pipeline_has_engineer_step(self):
+    def test_pipeline_has_engineer_step(self) -> None:
         pipe = build_feature_pipeline()
         assert "engineer" in pipe.named_steps
 
-    def test_pipeline_has_scaler_step(self):
+    def test_pipeline_has_scaler_step(self) -> None:
         pipe = build_feature_pipeline()
         assert "scaler" in pipe.named_steps
 
-    def test_pipeline_fit_transform_returns_array(self):
+    def test_pipeline_fit_transform_returns_array(self) -> None:
         from app.model import generate_sample_data
 
         X, _ = generate_sample_data(50)
@@ -178,30 +178,30 @@ class TestLeadTimeBucket:
             (400, 3),
         ],
     )
-    def test_bucket_boundaries(self, lead_days, expected):
+    def test_bucket_boundaries(self, lead_days, expected) -> None:
         from app.features import lead_time_bucket
 
         assert lead_time_bucket(lead_days) == expected
 
 
 class TestCompetitorRateRatio:
-    def test_ratio_equal_rates(self):
+    def test_ratio_equal_rates(self) -> None:
         from app.features import competitor_rate_ratio
 
         assert competitor_rate_ratio(100.0, 100.0) == pytest.approx(1.0)
 
-    def test_zero_competitor_uses_fallback(self):
+    def test_zero_competitor_uses_fallback(self) -> None:
         from app.features import competitor_rate_ratio
 
         result = competitor_rate_ratio(150.0, 0.0)
         assert result == pytest.approx(1.0)
 
-    def test_clamped_above(self):
+    def test_clamped_above(self) -> None:
         from app.features import competitor_rate_ratio
 
         assert competitor_rate_ratio(9999.0, 1.0) == pytest.approx(3.0)
 
-    def test_clamped_below(self):
+    def test_clamped_below(self) -> None:
         from app.features import competitor_rate_ratio
 
         assert competitor_rate_ratio(1.0, 9999.0) == pytest.approx(0.5)
@@ -214,29 +214,29 @@ class TestCompetitorRateRatio:
             (100.0, 200.0, 0.5),
         ],
     )
-    def test_parametrized(self, room, comp, expected):
+    def test_parametrized(self, room, comp, expected) -> None:
         from app.features import competitor_rate_ratio
 
         assert competitor_rate_ratio(room, comp) == pytest.approx(expected)
 
 
 class TestOccupancyYoyDelta:
-    def test_no_change(self):
+    def test_no_change(self) -> None:
         from app.features import occupancy_yoy_delta
 
         assert occupancy_yoy_delta(0.8, 0.8) == pytest.approx(0.0)
 
-    def test_positive_delta(self):
+    def test_positive_delta(self) -> None:
         from app.features import occupancy_yoy_delta
 
         assert occupancy_yoy_delta(0.9, 0.7) == pytest.approx(0.2)
 
-    def test_clamped_to_minus_one(self):
+    def test_clamped_to_minus_one(self) -> None:
         from app.features import occupancy_yoy_delta
 
         assert occupancy_yoy_delta(0.0, 1.0) == pytest.approx(-1.0)
 
-    def test_clamped_to_one(self):
+    def test_clamped_to_one(self) -> None:
         from app.features import occupancy_yoy_delta
 
         assert occupancy_yoy_delta(1.0, 0.0) == pytest.approx(1.0)

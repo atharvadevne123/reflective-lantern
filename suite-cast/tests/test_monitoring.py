@@ -8,33 +8,33 @@ from app.monitoring import compute_drift, get_prediction_stats, log_prediction
 
 
 class TestComputeDrift:
-    def test_no_drift_identical_distributions(self):
+    def test_no_drift_identical_distributions(self) -> None:
         ref = [0.5] * 50
         cur = [0.5] * 50
         result = compute_drift(ref, cur)
         assert result["drift_detected"] is False
 
-    def test_drift_detected_on_shift(self):
+    def test_drift_detected_on_shift(self) -> None:
         ref = [0.2] * 100
         cur = [0.8] * 100
         result = compute_drift(ref, cur)
         assert result["drift_detected"] is True
         assert result["p_value"] < 0.05
 
-    def test_ks_statistic_is_float(self):
+    def test_ks_statistic_is_float(self) -> None:
         result = compute_drift([0.3] * 30, [0.7] * 30)
         assert isinstance(result["ks_statistic"], float)
 
-    def test_p_value_in_range(self):
+    def test_p_value_in_range(self) -> None:
         result = compute_drift([0.5] * 30, [0.5] * 30)
         assert 0.0 <= result["p_value"] <= 1.0
 
-    def test_insufficient_reference_returns_no_drift(self):
+    def test_insufficient_reference_returns_no_drift(self) -> None:
         result = compute_drift([0.5] * 3, [0.5] * 30)
         assert result["drift_detected"] is False
         assert result["reason"] == "insufficient_data"
 
-    def test_insufficient_current_returns_no_drift(self):
+    def test_insufficient_current_returns_no_drift(self) -> None:
         result = compute_drift([0.5] * 30, [0.5] * 2)
         assert result["drift_detected"] is False
 
@@ -46,7 +46,7 @@ class TestComputeDrift:
             (0.3, 0.31, False),
         ],
     )
-    def test_drift_parametrized(self, ref_mean, cur_mean, expected_drift):
+    def test_drift_parametrized(self, ref_mean, cur_mean, expected_drift) -> None:
         import numpy as np
 
         rng = np.random.default_rng(0)
@@ -57,33 +57,33 @@ class TestComputeDrift:
 
 
 class TestLogPrediction:
-    def test_log_returns_uuid_string(self, db_session):
+    def test_log_returns_uuid_string(self, db_session) -> None:
         rid = log_prediction(db_session, {"lead_time": 5}, 0.65, 180.0, "1.0.0")
         assert isinstance(rid, str)
         assert len(rid) == 36
 
-    def test_log_prediction_persisted(self, db_session):
+    def test_log_prediction_persisted(self, db_session) -> None:
         from app.database import Prediction
 
         log_prediction(db_session, {"lead_time": 5}, 0.65, 180.0, "1.0.0")
         count = db_session.query(Prediction).count()
         assert count >= 1
 
-    def test_log_stores_correct_demand_score(self, db_session):
+    def test_log_stores_correct_demand_score(self, db_session) -> None:
         from app.database import Prediction
 
         log_prediction(db_session, {"lead_time": 5}, 0.72, 200.0, "1.0.0")
         pred = db_session.query(Prediction).order_by(Prediction.id.desc()).first()
         assert pred.demand_score == pytest.approx(0.72)
 
-    def test_log_stores_correct_rate(self, db_session):
+    def test_log_stores_correct_rate(self, db_session) -> None:
         from app.database import Prediction
 
         log_prediction(db_session, {"guests_count": 2}, 0.50, 165.5, "1.0.0")
         pred = db_session.query(Prediction).order_by(Prediction.id.desc()).first()
         assert pred.suggested_rate == pytest.approx(165.5)
 
-    def test_log_stores_model_version(self, db_session):
+    def test_log_stores_model_version(self, db_session) -> None:
         from app.database import Prediction
 
         log_prediction(db_session, {}, 0.4, 120.0, "test-2.0.0")
@@ -92,26 +92,26 @@ class TestLogPrediction:
 
 
 class TestGetPredictionStats:
-    def test_empty_db_returns_zero_count(self, db_session):
+    def test_empty_db_returns_zero_count(self, db_session) -> None:
         stats = get_prediction_stats(db_session)
         assert stats["count"] == 0
         assert stats["avg_demand_score"] is None
 
-    def test_stats_after_predictions(self, db_session):
+    def test_stats_after_predictions(self, db_session) -> None:
         for score in [0.3, 0.5, 0.7]:
             log_prediction(db_session, {}, score, 150.0, "1.0.0")
         stats = get_prediction_stats(db_session)
         assert stats["count"] == 3
         assert stats["avg_demand_score"] == pytest.approx(0.5, abs=0.01)
 
-    def test_stats_min_max_correct(self, db_session):
+    def test_stats_min_max_correct(self, db_session) -> None:
         for score in [0.2, 0.5, 0.9]:
             log_prediction(db_session, {}, score, 150.0, "1.0.0")
         stats = get_prediction_stats(db_session)
         assert stats["min_demand_score"] <= stats["avg_demand_score"]
         assert stats["max_demand_score"] >= stats["avg_demand_score"]
 
-    def test_stats_respects_limit(self, db_session):
+    def test_stats_respects_limit(self, db_session) -> None:
         for _ in range(10):
             log_prediction(db_session, {}, 0.5, 150.0, "1.0.0")
         stats = get_prediction_stats(db_session, limit=5)

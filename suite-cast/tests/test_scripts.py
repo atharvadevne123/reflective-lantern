@@ -9,7 +9,7 @@ from pathlib import Path
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 
 
-def test_train_cli_produces_artifacts(tmp_path, monkeypatch):
+def test_train_cli_produces_artifacts(tmp_path, monkeypatch) -> None:
     """Running the train CLI writes model artifacts and exits 0."""
     result = subprocess.run(
         [sys.executable, str(PROJECT_ROOT / "scripts" / "train.py"), "--samples", "200"],
@@ -24,7 +24,7 @@ def test_train_cli_produces_artifacts(tmp_path, monkeypatch):
     assert (tmp_path / "metrics.json").exists()
 
 
-def test_train_cli_help_exits_zero():
+def test_train_cli_help_exits_zero() -> None:
     """--help prints usage and exits 0."""
     result = subprocess.run(
         [sys.executable, str(PROJECT_ROOT / "scripts" / "train.py"), "--help"],
@@ -36,7 +36,7 @@ def test_train_cli_help_exits_zero():
     assert "--samples" in result.stdout
 
 
-def test_demo_client_help_exits_zero():
+def test_demo_client_help_exits_zero() -> None:
     """Demo client --help works without a running server."""
     result = subprocess.run(
         [sys.executable, str(PROJECT_ROOT / "scripts" / "demo_request.py"), "--help"],
@@ -48,7 +48,7 @@ def test_demo_client_help_exits_zero():
     assert "--host" in result.stdout
 
 
-def test_train_cli_default_samples_succeeds():
+def test_train_cli_default_samples_succeeds() -> None:
     """Running train without --samples uses the default and exits 0."""
     import tempfile
 
@@ -63,7 +63,7 @@ def test_train_cli_default_samples_succeeds():
         assert result.returncode == 0
 
 
-def test_train_cli_metrics_json_has_required_keys(tmp_path):
+def test_train_cli_metrics_json_has_required_keys(tmp_path) -> None:
     """metrics.json produced by train CLI must contain key model metrics."""
     import json
 
