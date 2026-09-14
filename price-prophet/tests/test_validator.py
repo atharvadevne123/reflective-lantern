@@ -5,56 +5,56 @@ from __future__ import annotations
 import pytest
 
 
-def test_validate_price_positive():
+def test_validate_price_positive() -> None:
     from app.data.validator import validate_price
 
     result = validate_price(100.0)
     assert result.valid is True
 
 
-def test_validate_price_zero():
+def test_validate_price_zero() -> None:
     from app.data.validator import validate_price
 
     result = validate_price(0.0)
     assert result.valid is False
 
 
-def test_validate_price_negative():
+def test_validate_price_negative() -> None:
     from app.data.validator import validate_price
 
     result = validate_price(-5.0)
     assert result.valid is False
 
 
-def test_validate_record_valid(sample_records):
+def test_validate_record_valid(sample_records) -> None:
     from app.data.validator import validate_record
 
     result = validate_record(sample_records[0])
     assert result.valid is True
 
 
-def test_validate_record_missing_key():
+def test_validate_record_missing_key() -> None:
     from app.data.validator import validate_record
 
     result = validate_record({"base_price": 10.0})
     assert result.valid is False
 
 
-def test_validate_record_negative_base_price():
+def test_validate_record_negative_base_price() -> None:
     from app.data.validator import validate_record
 
     result = validate_record({"product_id": "X", "base_price": -1.0, "demand": 10.0})
     assert result.valid is False
 
 
-def test_validate_dataset_empty():
+def test_validate_dataset_empty() -> None:
     from app.data.validator import validate_dataset
 
     result = validate_dataset([])
     assert result.valid is False
 
 
-def test_validate_dataset_valid(sample_records):
+def test_validate_dataset_valid(sample_records) -> None:
     from app.data.validator import validate_dataset
 
     result = validate_dataset(sample_records)

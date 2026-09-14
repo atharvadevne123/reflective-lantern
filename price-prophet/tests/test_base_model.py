@@ -10,43 +10,43 @@ class ConcreteModel:
 
     _fitted: bool = False
 
-    def fit(self, X, y):
+    def fit(self, X, y) -> None:
         self._fitted = True
 
-    def predict(self, X):
+    def predict(self, X) -> None:
         return [1.0] * len(X)
 
-    def is_fitted(self):
+    def is_fitted(self) -> None:
         return bool(self._fitted)
 
-    def __repr__(self):
+    def __repr__(self) -> None:
         return f"ConcreteModel({'fitted' if self._fitted else 'not fitted'})"
 
 
-def test_is_fitted_initially_false():
+def test_is_fitted_initially_false() -> None:
     m = ConcreteModel()
     assert m.is_fitted() is False
 
 
-def test_is_fitted_after_fit():
+def test_is_fitted_after_fit() -> None:
     m = ConcreteModel()
     m.fit([[1.0]], [2.0])
     assert m.is_fitted() is True
 
 
-def test_predict_returns_list():
+def test_predict_returns_list() -> None:
     m = ConcreteModel()
     result = m.predict([[1.0, 2.0], [3.0, 4.0]])
     assert isinstance(result, list)
     assert len(result) == 2
 
 
-def test_repr_not_fitted():
+def test_repr_not_fitted() -> None:
     m = ConcreteModel()
     assert "not fitted" in repr(m)
 
 
-def test_repr_fitted():
+def test_repr_fitted() -> None:
     m = ConcreteModel()
     m.fit([], [])
     assert "fitted" in repr(m)
@@ -56,10 +56,10 @@ def test_base_model_repr_shows_fitted_state() -> None:
     from app.models.base import BasePricingModel
 
     class _Impl(BasePricingModel):
-        def fit(self, X, y):
+        def fit(self, X, y) -> None:
             self._fitted = True
 
-        def predict(self, X):
+        def predict(self, X) -> None:
             return [1.0] * len(X)
 
     m = _Impl()
@@ -72,10 +72,10 @@ def test_base_model_is_fitted_false_before_fit() -> None:
     from app.models.base import BasePricingModel
 
     class _Impl(BasePricingModel):
-        def fit(self, X, y):
+        def fit(self, X, y) -> None:
             self._fitted = True
 
-        def predict(self, X):
+        def predict(self, X) -> None:
             return [1.0] * len(X)
 
     m = _Impl()
@@ -86,10 +86,10 @@ def test_base_model_is_fitted_true_after_fit() -> None:
     from app.models.base import BasePricingModel
 
     class _Impl(BasePricingModel):
-        def fit(self, X, y):
+        def fit(self, X, y) -> None:
             self._fitted = True
 
-        def predict(self, X):
+        def predict(self, X) -> None:
             return [1.0] * len(X)
 
     m = _Impl()
@@ -102,10 +102,10 @@ def test_base_predict_count_matches_input(n_preds: int) -> None:
     from app.models.base import BasePricingModel
 
     class _Impl(BasePricingModel):
-        def fit(self, X, y):
+        def fit(self, X, y) -> None:
             self._fitted = True
 
-        def predict(self, X):
+        def predict(self, X) -> None:
             return [1.0] * len(X)
 
     m = _Impl()
@@ -118,10 +118,10 @@ def test_base_model_predict_raises_when_not_fitted() -> None:
     from app.models.base import BasePricingModel
 
     class _Impl(BasePricingModel):
-        def fit(self, X, y):
+        def fit(self, X, y) -> None:
             self._fitted = True
 
-        def predict(self, X):
+        def predict(self, X) -> None:
             if not self.is_fitted():
                 raise RuntimeError("not fitted")
             return [1.0] * len(X)
