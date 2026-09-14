@@ -206,7 +206,7 @@ class TestValidateEvent:
             assert set(result) == {"valid", "missing", "out_of_range", "warnings"}
 
 
-class TestAmplitudesCoherence:
+class TestAmplitudesCoherenceExtended:
     """Tests for amplitudes_are_coherent helper."""
 
     def test_coherent_amplitudes(self) -> None:
@@ -225,7 +225,7 @@ class TestAmplitudesCoherence:
         assert amplitudes_are_coherent(p_wave=0.0, s_wave=0.0) is True
 
 
-class TestNormaliseFaultType:
+class TestNormaliseFaultTypeExtended:
     """Tests for normalise_fault_type function."""
 
     def test_lowercases_and_strips(self) -> None:
@@ -244,7 +244,7 @@ class TestNormaliseFaultType:
         assert normalise_fault_type("") == ""
 
 
-class TestMissingFields:
+class TestMissingFieldsExtended:
     """Tests for missing_fields function."""
 
     def test_all_present_returns_empty(self) -> None:

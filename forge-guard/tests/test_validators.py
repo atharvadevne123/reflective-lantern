@@ -361,7 +361,7 @@ class TestFieldStatistics:
         assert result["max"] == pytest.approx(4.0)
 
 
-class TestSensorDriftDetected:
+class TestSensorDriftDetectedExtended:
     """Tests for sensor_drift_detected function."""
 
     def test_no_drift_same_values(self) -> None:
@@ -397,7 +397,7 @@ class TestSensorDriftDetected:
         assert result["drift_detected"] is False
 
 
-class TestZscoreOutlier:
+class TestZscoreOutlierExtended:
     """Tests for zscore_outlier function."""
 
     def test_no_outliers_in_uniform_data(self) -> None:
@@ -421,7 +421,7 @@ class TestZscoreOutlier:
         assert len(zscore_outlier(values)) == len(values)
 
 
-class TestMissingRate:
+class TestMissingRateExtended:
     """Tests for missing_rate function."""
 
     def test_all_present(self) -> None:

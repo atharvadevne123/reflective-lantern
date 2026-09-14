@@ -217,7 +217,7 @@ class TestValidateFeatureWindow:
             validate_feature_window([], min_length=1)
 
 
-class TestValidateForecastLength:
+class TestValidateForecastLengthExtended:
     def test_valid_length(self) -> None:
         from energy_seer.app.validators import validate_forecast_length
 
@@ -241,7 +241,7 @@ class TestValidateForecastLength:
         assert validate_forecast_length(8760) == 8760
 
 
-class TestValidateReadingsList:
+class TestValidateReadingsListExtended:
     def test_valid_readings(self) -> None:
         from energy_seer.app.validators import validate_readings_list
 

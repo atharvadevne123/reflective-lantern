@@ -251,8 +251,8 @@ def test_cache_round_trips_various_value_types(value: object) -> None:
     assert c.get("k") == value
 
 
-class TestCacheHitRate:
-    """Tests for cache_hit_rate function."""
+class TestCacheHitRateExtended:
+    """Additional tests for cache_hit_rate function."""
 
     def test_all_hits(self) -> None:
         from app.cache import TTLCache, cache_hit_rate
@@ -281,7 +281,7 @@ class TestCacheHitRate:
         assert 0.0 <= rate <= 1.0
 
 
-class TestEvictExpired:
+class TestEvictExpiredExtended:
     """Tests for evict_expired function."""
 
     def test_evict_returns_zero_for_fresh_cache(self) -> None:
