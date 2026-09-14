@@ -33,7 +33,7 @@ def bench_retry(runs: int) -> None:
     from app.retry import retry
 
     @retry(max_attempts=1)
-    def noop():
+    def noop() -> None:
         return 42
 
     times = _timeit(noop, runs)
