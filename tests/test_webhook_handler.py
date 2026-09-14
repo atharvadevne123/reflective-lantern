@@ -17,26 +17,26 @@ def make_sig(body: bytes, secret: str = SECRET) -> str:
 
 
 class TestVerifySignature:
-    def test_valid_signature(self):
+    def test_valid_signature(self) -> None:
         handler = WebhookHandler(SECRET)
         body = b'{"a": 1}'
         sig = make_sig(body)
         handler.verify_signature(body, sig)  # should not raise
 
-    def test_invalid_signature_raises(self):
+    def test_invalid_signature_raises(self) -> None:
         handler = WebhookHandler(SECRET)
         body = b'{"a": 1}'
         with pytest.raises(SignatureError):
             handler.verify_signature(body, "sha256=deadbeef")
 
-    def test_malformed_signature_raises(self):
+    def test_malformed_signature_raises(self) -> None:
         handler = WebhookHandler(SECRET)
         with pytest.raises(SignatureError):
             handler.verify_signature(b"body", "noseparator")
 
 
 class TestProcess:
-    def test_dispatches_to_handler(self):
+    def test_dispatches_to_handler(self) -> None:
         wh = WebhookHandler(SECRET)
         received = []
         wh.on("push", received.append)
@@ -46,7 +46,7 @@ class TestProcess:
         assert len(received) == 1
         assert received[0].payload["ref"] == "main"
 
-    def test_catch_all_handler(self):
+    def test_catch_all_handler(self) -> None:
         wh = WebhookHandler(SECRET)
         received = []
         wh.on_any(received.append)
@@ -54,19 +54,19 @@ class TestProcess:
         wh.process(body, "any_event", signature=make_sig(body))
         assert len(received) == 1
 
-    def test_no_signature_skips_verification(self):
+    def test_no_signature_skips_verification(self) -> None:
         wh = WebhookHandler(SECRET)
         body = b'{"k": "v"}'
         event = wh.process(body, "test")
         assert event.payload["k"] == "v"
 
-    def test_wrong_signature_raises(self):
+    def test_wrong_signature_raises(self) -> None:
         wh = WebhookHandler(SECRET)
         body = b'{"k": "v"}'
         with pytest.raises(SignatureError):
             wh.process(body, "test", signature="sha256=wrong")
 
-    def test_handler_exception_does_not_propagate(self):
+    def test_handler_exception_does_not_propagate(self) -> None:
         wh = WebhookHandler(SECRET)
         wh.on("ev", lambda e: (_ for _ in ()).throw(RuntimeError("boom")))
         body = b'{"a": 1}'
@@ -74,7 +74,7 @@ class TestProcess:
         event = wh.process(body, "ev", signature=make_sig(body))
         assert event.event_type == "ev"
 
-    def test_multiple_handlers_same_event(self):
+    def test_multiple_handlers_same_event(self) -> None:
         wh = WebhookHandler(SECRET)
         calls = []
         wh.on("ping", lambda e: calls.append(1))
@@ -85,19 +85,19 @@ class TestProcess:
 
 
 class TestWebhookHandlerEdgeCases:
-    def test_event_type_stored_on_event(self):
+    def test_event_type_stored_on_event(self) -> None:
         wh = WebhookHandler(SECRET)
         body = b'{"x": 1}'
         event = wh.process(body, "my_event", signature=make_sig(body))
         assert event.event_type == "my_event"
 
-    def test_empty_payload_accepted(self):
+    def test_empty_payload_accepted(self) -> None:
         wh = WebhookHandler(SECRET)
         body = b"{}"
         event = wh.process(body, "ping", signature=make_sig(body))
         assert event.payload == {}
 
-    def test_on_any_receives_all_events(self):
+    def test_on_any_receives_all_events(self) -> None:
         wh = WebhookHandler(SECRET)
         received_types = []
         wh.on_any(lambda e: received_types.append(e.event_type))
@@ -116,14 +116,14 @@ class TestWebhookHandlerEdgeCases:
         assert len(received) == 1
         assert received[0].payload["type"] == event_type
 
-    def test_signature_with_wrong_secret_raises(self):
+    def test_signature_with_wrong_secret_raises(self) -> None:
         wh = WebhookHandler(SECRET)
         body = b'{"a": 1}'
         bad_sig = make_sig(body, secret="wrong-secret")
         with pytest.raises(SignatureError):
             wh.process(body, "push", signature=bad_sig)
 
-    def test_unregistered_event_no_crash(self):
+    def test_unregistered_event_no_crash(self) -> None:
         wh = WebhookHandler(SECRET)
         body = b'{"k": "v"}'
         event = wh.process(body, "unknown_event", signature=make_sig(body))

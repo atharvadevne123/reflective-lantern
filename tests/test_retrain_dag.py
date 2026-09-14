@@ -40,7 +40,7 @@ def test_check_drift_no_reference_returns_true(tmp_path) -> None:
     ref_mock = MagicMock()
     ref_mock.exists.return_value = False
 
-    def path_factory(p):
+    def path_factory(p) -> None:
         return train_mock if "wg_train" in str(p) else ref_mock
 
     with (
@@ -63,7 +63,7 @@ def test_check_drift_similar_distributions_returns_false(tmp_path) -> None:
     ref_mock = MagicMock()
     ref_mock.exists.return_value = True
 
-    def path_factory(p):
+    def path_factory(p) -> None:
         return train_mock if "wg_train" in str(p) else ref_mock
 
     with (
@@ -88,7 +88,7 @@ def test_check_drift_large_offset_returns_true(tmp_path, mean_offset: float) -> 
     ref_mock.exists.return_value = True
     call_count = [0]
 
-    def fake_read(p, **kw):
+    def fake_read(p, **kw) -> None:
         call_count[0] += 1
         return df_new if call_count[0] == 1 else df_ref
 
@@ -115,11 +115,11 @@ def test_check_drift_different_distributions_returns_true(tmp_path) -> None:
 
     call_count = [0]
 
-    def fake_read_parquet(p, **kwargs):
+    def fake_read_parquet(p, **kwargs) -> None:
         call_count[0] += 1
         return df_new if call_count[0] == 1 else df_ref
 
-    def path_factory(p):
+    def path_factory(p) -> None:
         return train_mock if "wg_train" in str(p) else ref_mock
 
     with (

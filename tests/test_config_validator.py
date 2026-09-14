@@ -30,51 +30,51 @@ def make_schema() -> ConfigSchema:
 
 
 class TestValidate:
-    def test_valid_config(self):
+    def test_valid_config(self) -> None:
         schema = make_schema()
         result = validate({"host": "localhost", "port": 8080, "env": "dev"}, schema)
         assert result["host"] == "localhost"
         assert result["port"] == 8080
         assert result["debug"] is False
 
-    def test_missing_required_raises(self):
+    def test_missing_required_raises(self) -> None:
         schema = make_schema()
         with pytest.raises(ValidationError) as exc_info:
             validate({"host": "localhost", "port": 8080}, schema)
         assert "'env'" in str(exc_info.value)
 
-    def test_wrong_type_raises(self):
+    def test_wrong_type_raises(self) -> None:
         schema = make_schema()
         with pytest.raises(ValidationError) as exc_info:
             validate({"host": 123, "port": 8080, "env": "dev"}, schema)
         assert "'host'" in str(exc_info.value)
 
-    def test_invalid_choice_raises(self):
+    def test_invalid_choice_raises(self) -> None:
         schema = make_schema()
         with pytest.raises(ValidationError) as exc_info:
             validate({"host": "x", "port": 8080, "env": "staging"}, schema)
         assert "'env'" in str(exc_info.value)
 
-    def test_below_min_raises(self):
+    def test_below_min_raises(self) -> None:
         schema = make_schema()
         with pytest.raises(ValidationError) as exc_info:
             validate({"host": "x", "port": 0, "env": "dev"}, schema)
         assert "'port'" in str(exc_info.value)
 
-    def test_above_max_raises(self):
+    def test_above_max_raises(self) -> None:
         schema = make_schema()
         with pytest.raises(ValidationError) as exc_info:
             validate({"host": "x", "port": 99999, "env": "dev"}, schema)
         assert "'port'" in str(exc_info.value)
 
-    def test_multiple_violations_collected(self):
+    def test_multiple_violations_collected(self) -> None:
         schema = make_schema()
         with pytest.raises(ValidationError) as exc_info:
             validate({}, schema)
         # host, port, env are all required
         assert len(exc_info.value.violations) >= 3
 
-    def test_default_applied_for_optional(self):
+    def test_default_applied_for_optional(self) -> None:
         schema = make_schema()
         result = validate({"host": "h", "port": 80, "env": "prod"}, schema)
         assert result["debug"] is False
