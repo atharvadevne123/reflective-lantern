@@ -12,62 +12,62 @@ from app.correlation_id import (
 
 
 class TestNewCorrelationId:
-    def test_is_string(self):
+    def test_is_string(self) -> None:
         assert isinstance(new_correlation_id(), str)
 
-    def test_unique(self):
+    def test_unique(self) -> None:
         ids = {new_correlation_id() for _ in range(100)}
         assert len(ids) == 100
 
 
 class TestGetSet:
-    def setup_method(self):
+    def setup_method(self) -> None:
         clear_correlation_id()
 
-    def teardown_method(self):
+    def teardown_method(self) -> None:
         clear_correlation_id()
 
-    def test_none_by_default(self):
+    def test_none_by_default(self) -> None:
         assert get_correlation_id() is None
 
-    def test_set_and_get(self):
+    def test_set_and_get(self) -> None:
         set_correlation_id("abc-123")
         assert get_correlation_id() == "abc-123"
 
-    def test_clear(self):
+    def test_clear(self) -> None:
         set_correlation_id("xyz")
         clear_correlation_id()
         assert get_correlation_id() is None
 
 
 class TestCorrelationContext:
-    def setup_method(self):
+    def setup_method(self) -> None:
         clear_correlation_id()
 
-    def teardown_method(self):
+    def teardown_method(self) -> None:
         clear_correlation_id()
 
-    def test_yields_cid(self):
+    def test_yields_cid(self) -> None:
         with correlation_context("req-1") as cid:
             assert cid == "req-1"
             assert get_correlation_id() == "req-1"
 
-    def test_restores_none_after(self):
+    def test_restores_none_after(self) -> None:
         with correlation_context("req-2"):
             pass
         assert get_correlation_id() is None
 
-    def test_restores_previous_cid(self):
+    def test_restores_previous_cid(self) -> None:
         set_correlation_id("outer")
         with correlation_context("inner") as cid:
             assert cid == "inner"
         assert get_correlation_id() == "outer"
 
-    def test_auto_generates_cid(self):
+    def test_auto_generates_cid(self) -> None:
         with correlation_context() as cid:
             assert len(cid) == 36  # UUID4 format
 
-    def test_restores_on_exception(self):
+    def test_restores_on_exception(self) -> None:
         set_correlation_id("before")
         try:
             with correlation_context("during"):
@@ -78,10 +78,10 @@ class TestCorrelationContext:
 
 
 class TestThreadIsolation:
-    def test_threads_have_independent_ids(self):
+    def test_threads_have_independent_ids(self) -> None:
         results = {}
 
-        def worker(name, cid):
+        def worker(name, cid) -> None:
             with correlation_context(cid):
                 import time
 
@@ -97,11 +97,11 @@ class TestThreadIsolation:
         for i in range(5):
             assert results[f"t{i}"] == f"id-{i}"
 
-    def test_main_thread_unaffected_by_worker(self):
+    def test_main_thread_unaffected_by_worker(self) -> None:
         set_correlation_id("main-cid")
         results = []
 
-        def worker():
+        def worker() -> None:
             set_correlation_id("worker-cid")
             results.append(get_correlation_id())
 
@@ -114,36 +114,36 @@ class TestThreadIsolation:
 
 
 class TestNewCorrelationIdFormat:
-    def test_uuid_format(self):
+    def test_uuid_format(self) -> None:
         import re
 
         cid = new_correlation_id()
         assert re.match(r"^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$", cid)
 
-    def test_length_36_chars(self):
+    def test_length_36_chars(self) -> None:
         assert len(new_correlation_id()) == 36
 
-    def test_contains_hyphens(self):
+    def test_contains_hyphens(self) -> None:
         cid = new_correlation_id()
         assert cid.count("-") == 4
 
-    def test_generated_ids_all_unique_in_bulk(self):
+    def test_generated_ids_all_unique_in_bulk(self) -> None:
         ids = [new_correlation_id() for _ in range(500)]
         assert len(set(ids)) == 500
 
 
 class TestSetCorrelationIdEdgeCases:
-    def setup_method(self):
+    def setup_method(self) -> None:
         clear_correlation_id()
 
-    def teardown_method(self):
+    def teardown_method(self) -> None:
         clear_correlation_id()
 
-    def test_set_empty_string(self):
+    def test_set_empty_string(self) -> None:
         set_correlation_id("")
         assert get_correlation_id() == ""
 
-    def test_set_overwrite_existing(self):
+    def test_set_overwrite_existing(self) -> None:
         set_correlation_id("first")
         set_correlation_id("second")
         assert get_correlation_id() == "second"
