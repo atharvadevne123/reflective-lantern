@@ -16,7 +16,7 @@ import pytest
 from app.model import generate_synthetic_data, train_model
 
 
-def _train(tmp_path, n_samples, seed=42):
+def _train(tmp_path, n_samples, seed=42) -> None:
     mp = tmp_path / "m.joblib"
     metp = tmp_path / "metrics.json"
     X, y = generate_synthetic_data(n_samples, seed=seed)
@@ -25,7 +25,7 @@ def _train(tmp_path, n_samples, seed=42):
 
 
 @pytest.mark.parametrize("n_samples", [80, 200, 500])
-def test_metrics_json_is_strict_parseable(tmp_path, n_samples):
+def test_metrics_json_is_strict_parseable(tmp_path, n_samples) -> None:
     """metrics.json must never contain NaN or Infinity at any sample size."""
     _, metp = _train(tmp_path, n_samples)
     raw = metp.read_text()
@@ -34,7 +34,7 @@ def test_metrics_json_is_strict_parseable(tmp_path, n_samples):
     json.loads(raw)  # must parse
 
 
-def test_auc_is_none_or_float_never_nan(tmp_path):
+def test_auc_is_none_or_float_never_nan(tmp_path) -> None:
     metrics, _ = _train(tmp_path, 100)
     auc = metrics["auc_mean"]
     assert auc is None or isinstance(auc, float)
@@ -42,13 +42,13 @@ def test_auc_is_none_or_float_never_nan(tmp_path):
         assert auc == auc, "auc_mean is NaN"
 
 
-def test_scored_folds_reported(tmp_path):
+def test_scored_folds_reported(tmp_path) -> None:
     """The metrics record how many folds actually produced an AUC."""
     metrics, _ = _train(tmp_path, 400)
     assert 0 <= metrics["auc_scored_folds"] <= metrics["cv_folds"]
 
 
-def test_model_learns_real_signal(tmp_path):
+def test_model_learns_real_signal(tmp_path) -> None:
     """Class-conditional generation must yield a genuinely learnable task.
 
     Guards the regression where features and labels were sampled
