@@ -118,7 +118,7 @@ def _get_pipeline() -> object:
 
 
 @router.post("/predict", response_model=PredictionResponse, summary="Predict incident probability")
-def predict_endpoint(payload: MetricsPayload, db: Session = Depends(get_db)):
+def predict_endpoint(payload: MetricsPayload, db: Session = Depends(get_db)) -> PredictionResponse:
     """Run the ML ensemble on incoming SRE metrics and return incident probability.
 
     Also records the sample in the drift monitor and persists the prediction.
@@ -182,7 +182,7 @@ def predict_endpoint(payload: MetricsPayload, db: Session = Depends(get_db)):
 
 
 @router.get("/health", response_model=HealthResponse, summary="Service health check")
-def health(db: Session = Depends(get_db)):
+def health(db: Session = Depends(get_db)) -> HealthResponse:
     """Return service health including model load status and window sizes.
 
     Args:
@@ -208,7 +208,7 @@ def health(db: Session = Depends(get_db)):
 
 
 @router.get("/metrics", response_model=MetricsResponse, summary="Aggregate operational metrics")
-def metrics(db: Session = Depends(get_db)):
+def metrics(db: Session = Depends(get_db)) -> MetricsResponse:
     """Return aggregate prediction and drift metrics for dashboarding.
 
     Args:
@@ -232,7 +232,7 @@ def metrics(db: Session = Depends(get_db)):
 
 
 @router.post("/runbooks/search", response_model=list[RunbookResult], summary="Search SRE runbooks")
-def search_runbooks(request: RunbookSearchRequest):
+def search_runbooks(request: RunbookSearchRequest) -> list[RunbookResult]:
     """Search the FAISS runbook index for relevant remediation steps.
 
     Args:
@@ -256,7 +256,7 @@ def search_runbooks(request: RunbookSearchRequest):
 
 
 @router.get("/forecast", response_model=list[ForecastPoint], summary="Forecast incident rate")
-def forecast_incident_rate():
+def forecast_incident_rate() -> list[ForecastPoint]:
     """Forecast the next 24-hour incident rate using exponential smoothing.
 
     Returns:
@@ -289,7 +289,7 @@ def forecast_incident_rate():
     response_model=list[PredictionResponse],
     summary="Score a batch of observations",
 )
-def predict_batch(request: BatchPredictRequest, db: Session = Depends(get_db)):
+def predict_batch(request: BatchPredictRequest, db: Session = Depends(get_db)) -> list[PredictionResponse]:
     """Score up to 500 telemetry observations in a single call.
 
     Batching amortises the model and pipeline lookup across the whole request
@@ -347,7 +347,7 @@ def get_incidents(
     offset: int = Query(default=0, ge=0),
     service_name: str | None = Query(default=None),
     db: Session = Depends(get_db),
-):
+) -> list[IncidentRecord]:
     """List persisted incidents, most recent first.
 
     Args:
@@ -366,7 +366,7 @@ def get_incidents(
 @router.get(
     "/drift/status", response_model=DriftStatusResponse, summary="Latest drift check status"
 )
-def drift_status():
+def drift_status() -> DriftStatusResponse:
     """Return the drift monitor's last check results.
 
     Returns:
