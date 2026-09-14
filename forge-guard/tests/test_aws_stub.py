@@ -5,7 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 
 
-def test_upload_model_returns_false_when_no_bucket(monkeypatch, tmp_path):
+def test_upload_model_returns_false_when_no_bucket(monkeypatch, tmp_path) -> None:
     monkeypatch.setenv("S3_BUCKET", "")
     from app import aws_stub
 
@@ -14,7 +14,7 @@ def test_upload_model_returns_false_when_no_bucket(monkeypatch, tmp_path):
     assert result is False
 
 
-def test_download_model_returns_false_when_no_bucket(monkeypatch, tmp_path):
+def test_download_model_returns_false_when_no_bucket(monkeypatch, tmp_path) -> None:
     from app import aws_stub
 
     monkeypatch.setattr(aws_stub, "S3_BUCKET", "")
@@ -22,7 +22,7 @@ def test_download_model_returns_false_when_no_bucket(monkeypatch, tmp_path):
     assert result is False
 
 
-def test_upload_model_returns_false_when_boto3_missing(monkeypatch, tmp_path):
+def test_upload_model_returns_false_when_boto3_missing(monkeypatch, tmp_path) -> None:
     from app import aws_stub
 
     monkeypatch.setattr(aws_stub, "S3_BUCKET", "my-test-bucket")
@@ -30,7 +30,7 @@ def test_upload_model_returns_false_when_boto3_missing(monkeypatch, tmp_path):
 
     real_import = builtins.__import__
 
-    def mock_import(name, *args, **kwargs):
+    def mock_import(name, *args, **kwargs) -> None:
         if name == "boto3":
             raise ImportError("boto3 not installed")
         return real_import(name, *args, **kwargs)
@@ -40,7 +40,7 @@ def test_upload_model_returns_false_when_boto3_missing(monkeypatch, tmp_path):
     assert result is False
 
 
-def test_download_model_returns_false_when_boto3_missing(monkeypatch, tmp_path):
+def test_download_model_returns_false_when_boto3_missing(monkeypatch, tmp_path) -> None:
     from app import aws_stub
 
     monkeypatch.setattr(aws_stub, "S3_BUCKET", "my-test-bucket")
@@ -48,7 +48,7 @@ def test_download_model_returns_false_when_boto3_missing(monkeypatch, tmp_path):
 
     real_import = builtins.__import__
 
-    def mock_import(name, *args, **kwargs):
+    def mock_import(name, *args, **kwargs) -> None:
         if name == "boto3":
             raise ImportError("boto3 not installed")
         return real_import(name, *args, **kwargs)
@@ -58,7 +58,7 @@ def test_download_model_returns_false_when_boto3_missing(monkeypatch, tmp_path):
     assert result is False
 
 
-def test_upload_model_uses_version_in_key(monkeypatch, tmp_path):
+def test_upload_model_uses_version_in_key(monkeypatch, tmp_path) -> None:
     """Ensure the S3 key includes the version string."""
     from app import aws_stub
 

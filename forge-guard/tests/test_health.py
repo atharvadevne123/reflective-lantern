@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 
-def test_check_model_loaded_returns_false_when_missing(tmp_path, monkeypatch):
+def test_check_model_loaded_returns_false_when_missing(tmp_path, monkeypatch) -> None:
     monkeypatch.setenv("MODEL_PATH", str(tmp_path / "nonexistent.joblib"))
     from app import health
 
@@ -12,7 +12,7 @@ def test_check_model_loaded_returns_false_when_missing(tmp_path, monkeypatch):
     assert result["ok"] is False
 
 
-def test_check_model_loaded_returns_true_when_present(tmp_path, monkeypatch):
+def test_check_model_loaded_returns_true_when_present(tmp_path, monkeypatch) -> None:
     model_file = tmp_path / "model.joblib"
     model_file.write_bytes(b"fake model content")
     monkeypatch.setenv("MODEL_PATH", str(model_file))
@@ -24,7 +24,7 @@ def test_check_model_loaded_returns_true_when_present(tmp_path, monkeypatch):
     assert result["ok"] is True
 
 
-def test_check_model_loaded_false_for_empty_file(tmp_path, monkeypatch):
+def test_check_model_loaded_false_for_empty_file(tmp_path, monkeypatch) -> None:
     model_file = tmp_path / "model.joblib"
     model_file.write_bytes(b"")
     monkeypatch.setenv("MODEL_PATH", str(model_file))
@@ -34,7 +34,7 @@ def test_check_model_loaded_false_for_empty_file(tmp_path, monkeypatch):
     assert result["ok"] is False
 
 
-def test_check_database_reachable_sqlite():
+def test_check_database_reachable_sqlite() -> None:
     from app import health
 
     result = health.check_database_reachable("sqlite:///:memory:")
@@ -42,7 +42,7 @@ def test_check_database_reachable_sqlite():
     assert result["url_scheme"] == "sqlite"
 
 
-def test_check_database_reachable_bad_url():
+def test_check_database_reachable_bad_url() -> None:
     from app import health
 
     result = health.check_database_reachable("postgresql://bad:bad@localhost:9999/nonexistent")
@@ -50,7 +50,7 @@ def test_check_database_reachable_bad_url():
     assert "error" in result
 
 
-def test_composite_health_returns_degraded_with_bad_db(tmp_path, monkeypatch):
+def test_composite_health_returns_degraded_with_bad_db(tmp_path, monkeypatch) -> None:
     model_file = tmp_path / "model.joblib"
     model_file.write_bytes(b"content")
     monkeypatch.setenv("MODEL_PATH", str(model_file))
@@ -63,7 +63,7 @@ def test_composite_health_returns_degraded_with_bad_db(tmp_path, monkeypatch):
     assert result["database"]["reachable"] is False
 
 
-def test_composite_health_keys_present(monkeypatch):
+def test_composite_health_keys_present(monkeypatch) -> None:
     monkeypatch.setenv("DATABASE_URL", "sqlite:///:memory:")
     from app import health
 
@@ -73,7 +73,7 @@ def test_composite_health_keys_present(monkeypatch):
     assert "database" in result
 
 
-def test_check_database_reachable_returns_url_scheme():
+def test_check_database_reachable_returns_url_scheme() -> None:
     from app import health
 
     result = health.check_database_reachable("sqlite:///:memory:")

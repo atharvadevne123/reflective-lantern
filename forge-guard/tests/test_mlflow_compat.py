@@ -5,7 +5,7 @@ from __future__ import annotations
 import pytest
 
 
-def test_log_run_returns_string(tmp_path, monkeypatch):
+def test_log_run_returns_string(tmp_path, monkeypatch) -> None:
     from app import mlflow_compat
 
     monkeypatch.setattr(mlflow_compat, "MLFLOW_DIR", tmp_path / "mlruns" / "0")
@@ -14,7 +14,7 @@ def test_log_run_returns_string(tmp_path, monkeypatch):
     assert len(run_id) > 0
 
 
-def test_log_run_writes_manifest(tmp_path, monkeypatch):
+def test_log_run_writes_manifest(tmp_path, monkeypatch) -> None:
     from app import mlflow_compat
 
     mlflow_dir = tmp_path / "mlruns" / "0"
@@ -24,7 +24,7 @@ def test_log_run_writes_manifest(tmp_path, monkeypatch):
     assert run_file.exists()
 
 
-def test_log_run_manifest_contains_metrics(tmp_path, monkeypatch):
+def test_log_run_manifest_contains_metrics(tmp_path, monkeypatch) -> None:
     import json
 
     from app import mlflow_compat
@@ -38,7 +38,7 @@ def test_log_run_manifest_contains_metrics(tmp_path, monkeypatch):
     assert manifest["params"]["model_version"] == "1.1.0"
 
 
-def test_log_run_no_params(tmp_path, monkeypatch):
+def test_log_run_no_params(tmp_path, monkeypatch) -> None:
     from app import mlflow_compat
 
     monkeypatch.setattr(mlflow_compat, "MLFLOW_DIR", tmp_path / "mlruns" / "0")
@@ -46,7 +46,7 @@ def test_log_run_no_params(tmp_path, monkeypatch):
     assert isinstance(run_id, str)
 
 
-def test_log_run_unique_ids(tmp_path, monkeypatch):
+def test_log_run_unique_ids(tmp_path, monkeypatch) -> None:
     import time
 
     from app import mlflow_compat

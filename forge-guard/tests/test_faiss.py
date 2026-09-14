@@ -6,7 +6,7 @@ import numpy as np
 import pytest
 
 
-def test_is_anomalous_no_index_returns_false():
+def test_is_anomalous_no_index_returns_false() -> None:
     from app import faiss_index
 
     faiss_index._index = None
@@ -19,7 +19,7 @@ def test_is_anomalous_no_index_returns_false():
     not __import__("importlib").util.find_spec("faiss"),
     reason="faiss-cpu not installed",
 )
-def test_build_and_query_index(tmp_path, monkeypatch):
+def test_build_and_query_index(tmp_path, monkeypatch) -> None:
     from app import faiss_index
 
     monkeypatch.setattr(faiss_index, "INDEX_PATH", tmp_path / "idx.bin")
@@ -41,7 +41,7 @@ def test_build_and_query_index(tmp_path, monkeypatch):
     assert far_result["anomalous"] is True
 
 
-def test_is_anomalous_result_keys():
+def test_is_anomalous_result_keys() -> None:
     from app import faiss_index
 
     faiss_index._index = None
@@ -51,7 +51,7 @@ def test_is_anomalous_result_keys():
     assert "nn_k" in result
 
 
-def test_load_index_missing_files_returns_false(tmp_path, monkeypatch):
+def test_load_index_missing_files_returns_false(tmp_path, monkeypatch) -> None:
     from app import faiss_index
 
     monkeypatch.setattr(faiss_index, "INDEX_PATH", tmp_path / "nonexistent.bin")
@@ -66,7 +66,7 @@ def test_load_index_missing_files_returns_false(tmp_path, monkeypatch):
     not __import__("importlib").util.find_spec("faiss"),
     reason="faiss-cpu not installed",
 )
-def test_is_anomalous_k_parameter(tmp_path, monkeypatch, k):
+def test_is_anomalous_k_parameter(tmp_path, monkeypatch, k) -> None:
     from app import faiss_index
 
     monkeypatch.setattr(faiss_index, "INDEX_PATH", tmp_path / "idx.bin")

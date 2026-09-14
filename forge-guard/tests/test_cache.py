@@ -8,7 +8,7 @@ import pytest
 
 
 @pytest.fixture
-def cache():
+def cache() -> None:
     from app.cache import TTLCache
 
     return TTLCache(ttl_seconds=1, max_size=5)
@@ -25,17 +25,17 @@ SAMPLE = {
 }
 
 
-def test_cache_miss_returns_none(cache):
+def test_cache_miss_returns_none(cache) -> None:
     assert cache.get(SAMPLE) is None
 
 
-def test_cache_hit_returns_value(cache):
+def test_cache_hit_returns_value(cache) -> None:
     cache.set(SAMPLE, (1, 0.9))
     result = cache.get(SAMPLE)
     assert result == (1, 0.9)
 
 
-def test_cache_different_readings_stored_separately(cache):
+def test_cache_different_readings_stored_separately(cache) -> None:
     reading_a = {**SAMPLE, "temperature": 80.0}
     reading_b = {**SAMPLE, "temperature": 90.0}
     cache.set(reading_a, (0, 0.1))
@@ -44,27 +44,27 @@ def test_cache_different_readings_stored_separately(cache):
     assert cache.get(reading_b) == (1, 0.9)
 
 
-def test_cache_expiry(cache):
+def test_cache_expiry(cache) -> None:
     cache.set(SAMPLE, (1, 0.8))
     assert cache.get(SAMPLE) == (1, 0.8)
     time.sleep(1.1)
     assert cache.get(SAMPLE) is None
 
 
-def test_cache_size(cache):
+def test_cache_size(cache) -> None:
     assert cache.size() == 0
     cache.set(SAMPLE, (0, 0.2))
     assert cache.size() == 1
 
 
-def test_cache_clear(cache):
+def test_cache_clear(cache) -> None:
     cache.set(SAMPLE, (0, 0.3))
     cache.clear()
     assert cache.size() == 0
     assert cache.get(SAMPLE) is None
 
 
-def test_cache_purge_removes_expired(cache):
+def test_cache_purge_removes_expired(cache) -> None:
     cache.set(SAMPLE, (1, 0.7))
     time.sleep(1.1)
     removed = cache.purge()
@@ -72,7 +72,7 @@ def test_cache_purge_removes_expired(cache):
     assert cache.size() == 0
 
 
-def test_cache_max_size_eviction():
+def test_cache_max_size_eviction() -> None:
     from app.cache import TTLCache
 
     c = TTLCache(ttl_seconds=60, max_size=3)
@@ -82,7 +82,7 @@ def test_cache_max_size_eviction():
     assert c.size() <= 3
 
 
-def test_cache_thread_safety():
+def test_cache_thread_safety() -> None:
     import threading
 
     from app.cache import TTLCache
@@ -107,13 +107,13 @@ def test_cache_thread_safety():
     assert c.size() <= 50
 
 
-def test_cache_overwrite_same_key(cache):
+def test_cache_overwrite_same_key(cache) -> None:
     cache.set(SAMPLE, (0, 0.1))
     cache.set(SAMPLE, (1, 0.9))
     assert cache.get(SAMPLE) == (1, 0.9)
 
 
-def test_cache_purge_returns_zero_when_none_expired(cache):
+def test_cache_purge_returns_zero_when_none_expired(cache) -> None:
     cache.set(SAMPLE, (0, 0.5))
     removed = cache.purge()
     assert removed == 0
