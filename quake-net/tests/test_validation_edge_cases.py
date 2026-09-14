@@ -204,3 +204,64 @@ class TestValidateEvent:
         for payload in ({}, valid_payload(), valid_payload(latitude=999.0)):
             result = validate_event(payload)
             assert set(result) == {"valid", "missing", "out_of_range", "warnings"}
+
+
+class TestAmplitudesCoherence:
+    """Tests for amplitudes_are_coherent helper."""
+
+    def test_coherent_amplitudes(self) -> None:
+        from app.validation import amplitudes_are_coherent
+
+        assert amplitudes_are_coherent(p_wave=100.0, s_wave=300.0) is True
+
+    def test_incoherent_amplitudes(self) -> None:
+        from app.validation import amplitudes_are_coherent
+
+        assert amplitudes_are_coherent(p_wave=300.0, s_wave=10.0) is False
+
+    def test_zero_p_wave_is_coherent(self) -> None:
+        from app.validation import amplitudes_are_coherent
+
+        assert amplitudes_are_coherent(p_wave=0.0, s_wave=0.0) is True
+
+
+class TestNormaliseFaultType:
+    """Tests for normalise_fault_type function."""
+
+    def test_lowercases_and_strips(self) -> None:
+        from app.validation import normalise_fault_type
+
+        assert normalise_fault_type("  Strike-Slip  ") == "strike-slip"
+
+    def test_already_normalised(self) -> None:
+        from app.validation import normalise_fault_type
+
+        assert normalise_fault_type("thrust") == "thrust"
+
+    def test_empty_string(self) -> None:
+        from app.validation import normalise_fault_type
+
+        assert normalise_fault_type("") == ""
+
+
+class TestMissingFields:
+    """Tests for missing_fields function."""
+
+    def test_all_present_returns_empty(self) -> None:
+        from app.validation import missing_fields
+
+        payload = valid_payload()
+        assert missing_fields(payload) == []
+
+    def test_one_missing(self) -> None:
+        from app.validation import missing_fields
+
+        payload = {k: v for k, v in valid_payload().items() if k != "latitude"}
+        result = missing_fields(payload)
+        assert "latitude" in result
+
+    def test_all_missing(self) -> None:
+        from app.validation import missing_fields
+
+        result = missing_fields({})
+        assert set(result) == set(REQUIRED_FIELDS)
