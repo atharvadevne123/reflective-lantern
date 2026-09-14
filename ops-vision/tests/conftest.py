@@ -19,7 +19,7 @@ TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=test_
 
 
 @pytest.fixture(scope="session", autouse=True)
-def setup_test_db():
+def setup_test_db() -> None:
     """Create all tables in the SQLite test database."""
     Base.metadata.create_all(bind=test_engine)
     yield
@@ -27,7 +27,7 @@ def setup_test_db():
 
 
 @pytest.fixture
-def db_session():
+def db_session() -> None:
     """Yield a test database session, rolling back after each test."""
     connection = test_engine.connect()
     transaction = connection.begin()
@@ -41,10 +41,10 @@ def db_session():
 
 
 @pytest.fixture
-def client(db_session):
+def client(db_session) -> None:
     """Return a TestClient with the DB dependency overridden."""
 
-    def override_get_db():
+    def override_get_db() -> None:
         try:
             yield db_session
         finally:
@@ -99,7 +99,7 @@ def synthetic_labels(synthetic_dataframe) -> np.ndarray:
 
 
 @pytest.fixture
-def fitted_pipeline(synthetic_dataframe):
+def fitted_pipeline(synthetic_dataframe) -> None:
     """Return a pipeline fitted on synthetic data."""
     pipeline = build_feature_pipeline()
     pipeline.fit(synthetic_dataframe)
@@ -113,7 +113,7 @@ def transformed_X(fitted_pipeline, synthetic_dataframe) -> np.ndarray:
 
 
 @pytest.fixture
-def trained_model(transformed_X, synthetic_labels):
+def trained_model(transformed_X, synthetic_labels) -> None:
     """Return a trained VotingClassifier on synthetic data."""
     from app.model import train
 
