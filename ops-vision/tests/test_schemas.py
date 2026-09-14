@@ -28,12 +28,12 @@ class TestMetricsPayload:
             "disk_io_util_pct": 80.0,
         }
 
-    def test_valid_payload_parses(self):
+    def test_valid_payload_parses(self) -> None:
         """Valid payload is accepted without error."""
         payload = MetricsPayload(**self._valid())
         assert payload.service_name == "payments-api"
 
-    def test_service_name_stripped(self):
+    def test_service_name_stripped(self) -> None:
         """Whitespace is stripped from service_name."""
         data = self._valid()
         data["service_name"] = "  my-service  "
@@ -54,21 +54,21 @@ class TestMetricsPayload:
             ("request_rate_per_sec", -1.0),
         ],
     )
-    def test_out_of_range_values_rejected(self, field, bad_value):
+    def test_out_of_range_values_rejected(self, field, bad_value) -> None:
         """Values outside the allowed range raise ValidationError."""
         data = self._valid()
         data[field] = bad_value
         with pytest.raises(ValidationError):
             MetricsPayload(**data)
 
-    def test_empty_service_name_rejected(self):
+    def test_empty_service_name_rejected(self) -> None:
         """Empty service_name raises ValidationError."""
         data = self._valid()
         data["service_name"] = ""
         with pytest.raises(ValidationError):
             MetricsPayload(**data)
 
-    def test_missing_field_raises(self):
+    def test_missing_field_raises(self) -> None:
         """Missing required field raises ValidationError."""
         data = self._valid()
         del data["cpu_usage_pct"]
@@ -76,7 +76,7 @@ class TestMetricsPayload:
             MetricsPayload(**data)
 
     @pytest.mark.parametrize("cpu", [0.0, 50.0, 100.0])
-    def test_valid_cpu_boundary_values(self, cpu):
+    def test_valid_cpu_boundary_values(self, cpu) -> None:
         """CPU at the boundaries 0 and 100 are valid."""
         data = self._valid()
         data["cpu_usage_pct"] = cpu
@@ -87,33 +87,33 @@ class TestMetricsPayload:
 class TestRunbookSearchRequest:
     """Tests for the RunbookSearchRequest schema."""
 
-    def test_valid_request_parses(self):
+    def test_valid_request_parses(self) -> None:
         """Valid search request is accepted."""
         req = RunbookSearchRequest(query="high cpu usage", top_k=3)
         assert req.top_k == 3
 
-    def test_query_too_short_rejected(self):
+    def test_query_too_short_rejected(self) -> None:
         """Query shorter than 3 chars raises ValidationError."""
         with pytest.raises(ValidationError):
             RunbookSearchRequest(query="ab", top_k=3)
 
-    def test_top_k_zero_rejected(self):
+    def test_top_k_zero_rejected(self) -> None:
         """top_k=0 raises ValidationError."""
         with pytest.raises(ValidationError):
             RunbookSearchRequest(query="valid query", top_k=0)
 
-    def test_top_k_too_large_rejected(self):
+    def test_top_k_too_large_rejected(self) -> None:
         """top_k > 10 raises ValidationError."""
         with pytest.raises(ValidationError):
             RunbookSearchRequest(query="valid query", top_k=11)
 
-    def test_default_top_k(self):
+    def test_default_top_k(self) -> None:
         """Default top_k is 3."""
         req = RunbookSearchRequest(query="network issue")
         assert req.top_k == 3
 
     @pytest.mark.parametrize("top_k", [1, 5, 10])
-    def test_valid_top_k_values(self, top_k):
+    def test_valid_top_k_values(self, top_k) -> None:
         """top_k values 1–10 are all valid."""
         req = RunbookSearchRequest(query="disk io saturation", top_k=top_k)
         assert req.top_k == top_k
@@ -123,12 +123,12 @@ class TestSeverityLevel:
     """Tests for the SeverityLevel enum."""
 
     @pytest.mark.parametrize("val", ["low", "medium", "high", "critical"])
-    def test_valid_severity_levels(self, val):
+    def test_valid_severity_levels(self, val) -> None:
         """All four severity strings are valid enum members."""
         level = SeverityLevel(val)
         assert level.value == val
 
-    def test_invalid_severity_raises(self):
+    def test_invalid_severity_raises(self) -> None:
         """An unknown severity string raises ValueError."""
         with pytest.raises(ValueError):
             SeverityLevel("extreme")
@@ -137,13 +137,13 @@ class TestSeverityLevel:
 class TestErrorResponse:
     """Tests for the ErrorResponse schema."""
 
-    def test_minimal_error_response(self):
+    def test_minimal_error_response(self) -> None:
         """ErrorResponse with only detail parses correctly."""
         resp = ErrorResponse(detail="Something went wrong")
         assert resp.detail == "Something went wrong"
         assert resp.error_code is None
 
-    def test_full_error_response(self):
+    def test_full_error_response(self) -> None:
         """ErrorResponse with all fields parses correctly."""
         resp = ErrorResponse(detail="Not found", error_code="E404", request_id="abc-123")
         assert resp.error_code == "E404"
@@ -164,17 +164,17 @@ class TestBatchPredictRequest:
             "disk_io_util_pct": 30.0,
         }
 
-    def test_single_item_accepted(self):
+    def test_single_item_accepted(self) -> None:
         """A batch of 1 item is valid."""
         req = BatchPredictRequest(items=[self._item()])
         assert len(req.items) == 1
 
-    def test_empty_items_rejected(self):
+    def test_empty_items_rejected(self) -> None:
         """An empty items list raises ValidationError."""
         with pytest.raises(ValidationError):
             BatchPredictRequest(items=[])
 
-    def test_over_limit_rejected(self):
+    def test_over_limit_rejected(self) -> None:
         """More than 100 items raises ValidationError."""
         with pytest.raises(ValidationError):
             BatchPredictRequest(items=[self._item()] * 101)
@@ -183,7 +183,7 @@ class TestBatchPredictRequest:
 class TestServiceHealthStatus:
     """Tests for the ServiceHealthStatus schema."""
 
-    def test_valid_health_status_parses(self):
+    def test_valid_health_status_parses(self) -> None:
         """Valid ServiceHealthStatus is accepted."""
         status = ServiceHealthStatus(
             service_name="payments-api",
@@ -194,7 +194,7 @@ class TestServiceHealthStatus:
         )
         assert status.service_name == "payments-api"
 
-    def test_incident_rate_out_of_range_rejected(self):
+    def test_incident_rate_out_of_range_rejected(self) -> None:
         """incident_rate > 1 raises ValidationError."""
         from pydantic import ValidationError
 
@@ -211,14 +211,14 @@ class TestServiceHealthStatus:
 class TestModelInfoResponse:
     """Tests for the ModelInfoResponse schema."""
 
-    def test_minimal_model_info(self):
+    def test_minimal_model_info(self) -> None:
         """ModelInfoResponse with only required fields parses correctly."""
         resp = ModelInfoResponse(model_version="1.0.0", model_loaded=True)
         assert resp.model_version == "1.0.0"
         assert resp.model_loaded is True
         assert resp.estimators is None
 
-    def test_full_model_info(self):
+    def test_full_model_info(self) -> None:
         """ModelInfoResponse with estimators list parses correctly."""
         resp = ModelInfoResponse(
             model_version="1.0.0",
