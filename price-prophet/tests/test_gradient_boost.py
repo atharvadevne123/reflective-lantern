@@ -5,14 +5,14 @@ from __future__ import annotations
 import pytest
 
 
-def test_gradient_boost_not_fitted():
+def test_gradient_boost_not_fitted() -> None:
     from app.models.gradient_boost import GradientBoostPricingModel
 
     m = GradientBoostPricingModel()
     assert m.is_fitted() is False
 
 
-def test_gradient_boost_fit_predict(feature_matrix):
+def test_gradient_boost_fit_predict(feature_matrix) -> None:
     from app.models.gradient_boost import GradientBoostPricingModel
 
     m = GradientBoostPricingModel(n_estimators=5)
@@ -23,7 +23,7 @@ def test_gradient_boost_fit_predict(feature_matrix):
     assert len(preds) == len(feature_matrix)
 
 
-def test_gradient_boost_repr():
+def test_gradient_boost_repr() -> None:
     from app.models.gradient_boost import GradientBoostPricingModel
 
     m = GradientBoostPricingModel()

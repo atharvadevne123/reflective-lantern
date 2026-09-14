@@ -5,14 +5,14 @@ from __future__ import annotations
 import pytest
 
 
-def test_format_metrics_report_contains_title():
+def test_format_metrics_report_contains_title() -> None:
     from app.evaluation.report import format_metrics_report
 
     report = format_metrics_report({"mae": 1.5, "rmse": 2.1}, title="Test Report")
     assert "Test Report" in report
 
 
-def test_format_metrics_report_contains_values():
+def test_format_metrics_report_contains_values() -> None:
     from app.evaluation.report import format_metrics_report
 
     report = format_metrics_report({"mae": 1.5})
@@ -20,7 +20,7 @@ def test_format_metrics_report_contains_values():
     assert "1.5" in report
 
 
-def test_build_backtest_report_contains_uplift():
+def test_build_backtest_report_contains_uplift() -> None:
     from app.evaluation.report import build_backtest_report
 
     result = {
@@ -35,7 +35,7 @@ def test_build_backtest_report_contains_uplift():
     assert "5" in report
 
 
-def test_build_backtest_report_zero_uplift():
+def test_build_backtest_report_zero_uplift() -> None:
     from app.evaluation.report import build_backtest_report
 
     result = {

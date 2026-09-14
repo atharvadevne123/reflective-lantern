@@ -5,14 +5,14 @@ from __future__ import annotations
 import pytest
 
 
-def test_linear_model_not_fitted():
+def test_linear_model_not_fitted() -> None:
     from app.models.linear import LinearPricingModel
 
     m = LinearPricingModel()
     assert m.is_fitted() is False
 
 
-def test_linear_model_fit_predict(feature_matrix):
+def test_linear_model_fit_predict(feature_matrix) -> None:
     from app.models.linear import LinearPricingModel
 
     m = LinearPricingModel()
@@ -24,7 +24,7 @@ def test_linear_model_fit_predict(feature_matrix):
     assert all(isinstance(p, float) for p in preds)
 
 
-def test_linear_model_predict_not_fitted(feature_matrix):
+def test_linear_model_predict_not_fitted(feature_matrix) -> None:
     from app.models.linear import LinearPricingModel
 
     m = LinearPricingModel()
@@ -32,7 +32,7 @@ def test_linear_model_predict_not_fitted(feature_matrix):
         m.predict(feature_matrix)
 
 
-def test_linear_model_repr():
+def test_linear_model_repr() -> None:
     from app.models.linear import LinearPricingModel
 
     m = LinearPricingModel()

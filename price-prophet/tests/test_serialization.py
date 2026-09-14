@@ -8,7 +8,7 @@ import tempfile
 import pytest
 
 
-def test_save_and_load_model():
+def test_save_and_load_model() -> None:
     from app.utils.serialization import load_model, save_model
 
     obj = {"key": "value", "number": 42}
@@ -22,14 +22,14 @@ def test_save_and_load_model():
         os.unlink(path)
 
 
-def test_load_model_missing_file():
+def test_load_model_missing_file() -> None:
     from app.utils.serialization import load_model
 
     with pytest.raises(FileNotFoundError):
         load_model("/nonexistent/model.joblib")
 
 
-def test_save_model_creates_dirs():
+def test_save_model_creates_dirs() -> None:
     import tempfile
 
     from app.utils.serialization import save_model

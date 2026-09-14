@@ -5,14 +5,14 @@ from __future__ import annotations
 import pytest
 
 
-def test_build_parser_returns_parser():
+def test_build_parser_returns_parser() -> None:
     from app.cli import build_parser
 
     parser = build_parser()
     assert parser is not None
 
 
-def test_parser_train_subcommand():
+def test_parser_train_subcommand() -> None:
     from app.cli import build_parser
 
     parser = build_parser()
@@ -21,7 +21,7 @@ def test_parser_train_subcommand():
     assert args.data == "/tmp/data.csv"
 
 
-def test_parser_serve_subcommand():
+def test_parser_serve_subcommand() -> None:
     from app.cli import build_parser
 
     parser = build_parser()
@@ -30,7 +30,7 @@ def test_parser_serve_subcommand():
     assert args.port == 9000
 
 
-def test_parser_no_subcommand_fails():
+def test_parser_no_subcommand_fails() -> None:
     from app.cli import build_parser
 
     parser = build_parser()

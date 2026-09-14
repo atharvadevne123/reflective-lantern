@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 
-def test_health_endpoint():
+def test_health_endpoint() -> None:
     from fastapi.testclient import TestClient
 
     from app.api.main import app
@@ -15,7 +15,7 @@ def test_health_endpoint():
     assert data.get("status") == "ok"
 
 
-def test_price_endpoint_valid():
+def test_price_endpoint_valid() -> None:
     from fastapi.testclient import TestClient
 
     from app.api.main import app
@@ -33,14 +33,14 @@ def test_price_endpoint_valid():
     assert data["optimal_price"] > 0
 
 
-def test_price_schema_product_id():
+def test_price_schema_product_id() -> None:
     from app.api.schemas import PriceRequest
 
     req = PriceRequest(product_id="X1", base_price=50.0, demand=100.0)
     assert req.product_id == "X1"
 
 
-def test_price_response_schema():
+def test_price_response_schema() -> None:
     from app.api.schemas import PriceResponse
 
     resp = PriceResponse(
