@@ -164,3 +164,48 @@ class TestDriftResultKeys:
 def test_drift_severity_label_parametrized(statistic: float, valid_label: str) -> None:
     """drift_severity maps each boundary value to the correct label."""
     assert drift_severity(statistic) == valid_label
+
+
+class TestDriftSeverityEdgeCases:
+    """Additional tests for drift_severity boundary conditions."""
+
+    def test_exactly_zero_is_none(self) -> None:
+        """A KS statistic of 0.0 is 'none'."""
+        assert drift_severity(0.0) == "none"
+
+    def test_exactly_point_five_is_severe(self) -> None:
+        """A KS statistic of 0.5 is 'severe'."""
+        assert drift_severity(0.5) == "severe"
+
+    def test_one_is_severe(self) -> None:
+        """A KS statistic of 1.0 (maximum) is 'severe'."""
+        assert drift_severity(1.0) == "severe"
+
+
+class TestComputeDriftAdditional:
+    """Additional tests for compute_drift function."""
+
+    def test_small_samples_return_no_drift(self) -> None:
+        """Samples smaller than minimum threshold return no drift."""
+        result = compute_drift([0.5] * 3, [0.9] * 3)
+        assert result["drift_detected"] is False
+
+    def test_result_contains_all_keys(self) -> None:
+        """compute_drift result always contains required keys."""
+        result = compute_drift([0.5] * 50, [0.5] * 50)
+        for key in ("ks_statistic", "p_value", "drift_detected"):
+            assert key in result
+
+    def test_large_drift_has_high_ks_statistic(self) -> None:
+        """Extreme distribution shift produces high KS statistic."""
+        reference = [0.0] * 100
+        current = [1.0] * 100
+        result = compute_drift(reference, current)
+        assert result["ks_statistic"] > 0.5
+
+    def test_return_types_are_native_python(self) -> None:
+        """All values in the result are native Python types for JSON serialisation."""
+        result = compute_drift([0.5] * 50, [0.6] * 50)
+        assert isinstance(result["ks_statistic"], float)
+        assert isinstance(result["p_value"], float)
+        assert isinstance(result["drift_detected"], bool)
