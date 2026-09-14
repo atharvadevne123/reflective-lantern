@@ -16,7 +16,7 @@ from app.monitoring import run_drift_check
 from scripts.seed_data import seed
 
 
-def test_drift_detected_on_shifted_window(db_session):
+def test_drift_detected_on_shifted_window(db_session) -> None:
     """A tenfold volume shift must be flagged."""
     seed(db_session, n_reference=200, n_recent=60, drift=True)
     result = run_drift_check(db_session)
@@ -25,14 +25,14 @@ def test_drift_detected_on_shifted_window(db_session):
     assert result["p_value"] < 0.05
 
 
-def test_no_drift_on_stable_traffic(db_session):
+def test_no_drift_on_stable_traffic(db_session) -> None:
     """Two windows from the same distribution must not raise an alert."""
     seed(db_session, n_reference=200, n_recent=200, drift=False)
     result = run_drift_check(db_session)
     assert result["drift_detected"] is False
 
 
-def test_drift_result_types_are_native_python(db_session):
+def test_drift_result_types_are_native_python(db_session) -> None:
     """scipy returns numpy scalars; the result must carry native floats."""
     seed(db_session, n_reference=100, n_recent=50, drift=True)
     result = run_drift_check(db_session)
@@ -41,14 +41,14 @@ def test_drift_result_types_are_native_python(db_session):
     assert type(result["drift_detected"]) is bool
 
 
-def test_drift_result_is_json_serialisable(db_session):
+def test_drift_result_is_json_serialisable(db_session) -> None:
     """The dict is returned straight from the endpoint, so it must serialise."""
     seed(db_session, n_reference=100, n_recent=50, drift=True)
     result = run_drift_check(db_session)
     assert json.loads(json.dumps(result)) == result
 
 
-def test_drift_check_records_a_row(db_session):
+def test_drift_check_records_a_row(db_session) -> None:
     """Every check is persisted for later audit."""
     from app.database import DriftLog
 
@@ -58,7 +58,7 @@ def test_drift_check_records_a_row(db_session):
     assert db_session.query(DriftLog).count() == before + 1
 
 
-def test_empty_database_reports_insufficient_data(db_session):
+def test_empty_database_reports_insufficient_data(db_session) -> None:
     """With no history the check must degrade, not raise."""
     result = run_drift_check(db_session)
     assert result["drift_detected"] is False
@@ -66,7 +66,7 @@ def test_empty_database_reports_insufficient_data(db_session):
 
 
 @pytest.mark.parametrize("drift", [True, False])
-def test_drift_endpoint_returns_200(client, db_session, drift):
+def test_drift_endpoint_returns_200(client, db_session, drift) -> None:
     seed(db_session, n_reference=150, n_recent=60, drift=drift)
     resp = client.get("/api/v1/drift")
     assert resp.status_code == 200

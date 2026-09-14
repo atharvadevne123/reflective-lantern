@@ -7,7 +7,7 @@ import pytest
 from app.monitoring import compute_drift, get_prediction_stats, log_prediction
 
 
-def test_compute_drift_no_drift():
+def test_compute_drift_no_drift() -> None:
     ref = list(range(50))
     cur = list(range(50))
     result = compute_drift(ref, cur)
@@ -15,7 +15,7 @@ def test_compute_drift_no_drift():
     assert result["ks_statistic"] == 0.0
 
 
-def test_compute_drift_detects_shift():
+def test_compute_drift_detects_shift() -> None:
     ref = [float(i) for i in range(100)]
     cur = [float(i + 500) for i in range(100)]
     result = compute_drift(ref, cur)
@@ -23,20 +23,20 @@ def test_compute_drift_detects_shift():
     assert result["ks_statistic"] > 0.0
 
 
-def test_compute_drift_insufficient_data():
+def test_compute_drift_insufficient_data() -> None:
     result = compute_drift([], [])
     assert "error" in result
     assert result["drift_detected"] is False
 
 
-def test_compute_drift_p_value_range():
+def test_compute_drift_p_value_range() -> None:
     ref = [float(i) for i in range(200)]
     cur = [float(i) * 2 for i in range(200)]
     result = compute_drift(ref, cur)
     assert 0.0 <= result["p_value"] <= 1.0
 
 
-def test_log_prediction(db_session):
+def test_log_prediction(db_session) -> None:
     features = {
         "src_bytes": 100.0,
         "dst_bytes": 50.0,
@@ -51,13 +51,13 @@ def test_log_prediction(db_session):
     assert record.confidence == 0.95
 
 
-def test_get_prediction_stats_empty(db_session):
+def test_get_prediction_stats_empty(db_session) -> None:
     stats = get_prediction_stats(db_session, hours=1)
     assert stats["total"] == 0
     assert stats["class_counts"] == {}
 
 
-def test_get_prediction_stats_with_data(db_session):
+def test_get_prediction_stats_with_data(db_session) -> None:
     features = {
         "src_bytes": 200.0,
         "dst_bytes": 100.0,
@@ -82,7 +82,7 @@ def test_get_prediction_stats_with_data(db_session):
         ("u2r", 0.91),
     ],
 )
-def test_log_prediction_all_labels(db_session, label: str, conf: float):
+def test_log_prediction_all_labels(db_session, label: str, conf: float) -> None:
     features = {
         "src_bytes": 50.0,
         "dst_bytes": 25.0,
