@@ -12,7 +12,7 @@ from seed_data import generate_readings
 
 
 class TestEndToEnd:
-    def test_train_then_detect_flags_injected_anomalies(self, client):
+    def test_train_then_detect_flags_injected_anomalies(self, client) -> None:
         # 1. Train on clean data
         clean = generate_readings(n=200, anomaly_rate=0.0, seed=11)
         train_payload = {
@@ -44,7 +44,7 @@ class TestEndToEnd:
         anomalies = client.get("/api/v1/anomalies").json()
         assert anomalies["total"] >= 0
 
-    def test_train_rejects_too_few_readings(self, client):
+    def test_train_rejects_too_few_readings(self, client) -> None:
         clean = generate_readings(n=10, anomaly_rate=0.0)
         payload = {
             "readings": [{k: v for k, v in r.items() if not k.startswith("_")} for r in clean],
@@ -52,7 +52,7 @@ class TestEndToEnd:
         resp = client.post("/api/v1/train", json=payload)
         assert resp.status_code == 422
 
-    def test_drift_endpoint_after_detection(self, client):
+    def test_drift_endpoint_after_detection(self, client) -> None:
         readings = generate_readings(n=60, anomaly_rate=0.0, seed=5)
         payload = {
             "readings": [{k: v for k, v in r.items() if not k.startswith("_")} for r in readings],
