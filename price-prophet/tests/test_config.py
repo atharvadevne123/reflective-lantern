@@ -5,7 +5,7 @@ from __future__ import annotations
 import pytest
 
 
-def test_settings_defaults():
+def test_settings_defaults() -> None:
     from app.config import Settings
 
     s = Settings()
@@ -14,34 +14,34 @@ def test_settings_defaults():
     assert s.cache_ttl_seconds == 300
 
 
-def test_settings_min_price_multiplier():
+def test_settings_min_price_multiplier() -> None:
     from app.config import Settings
 
     s = Settings()
     assert 0 < s.min_price_multiplier < 1.0
 
 
-def test_settings_max_price_multiplier():
+def test_settings_max_price_multiplier() -> None:
     from app.config import Settings
 
     s = Settings()
     assert s.max_price_multiplier > 1.0
 
 
-def test_settings_singleton_importable():
+def test_settings_singleton_importable() -> None:
     from app.config import settings
 
     assert settings is not None
     assert settings.app_name == "Price-Prophet"
 
 
-def test_settings_log_level():
+def test_settings_log_level() -> None:
     from app.config import settings
 
     assert settings.log_level in ("DEBUG", "INFO", "WARNING", "ERROR")
 
 
-def test_settings_default_elasticity_negative():
+def test_settings_default_elasticity_negative() -> None:
     from app.config import settings
 
     assert settings.default_elasticity < 0
