@@ -23,7 +23,7 @@ TestSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=test_eng
 Base.metadata.create_all(bind=test_engine)
 
 
-def override_get_db():
+def override_get_db() -> None:
     db = TestSessionLocal()
     try:
         yield db
@@ -36,13 +36,13 @@ _FEATURE_COLS = USER_COLS + ITEM_COLS + INTERACTION_COLS
 
 
 @pytest.fixture(scope="session")
-def client():
+def client() -> None:
     with TestClient(app) as c:
         yield c
 
 
 @pytest.fixture()
-def db_session():
+def db_session() -> None:
     db = TestSessionLocal()
     yield db
     db.close()
@@ -65,7 +65,7 @@ def binary_labels(sample_df: pd.DataFrame) -> pd.Series:
 
 
 @pytest.fixture()
-def trained_pipeline(feature_df, binary_labels):
+def trained_pipeline(feature_df, binary_labels) -> None:
     from app.model import train_model
 
     pipe, _ = train_model(feature_df, binary_labels)
@@ -125,7 +125,7 @@ def similar_payload() -> dict:
 
 
 @pytest.fixture(autouse=True)
-def _isolate_caches():
+def _isolate_caches() -> None:
     """Clear the module-level TTL caches between tests.
 
     The recommendation and similarity caches are process-global singletons, so
