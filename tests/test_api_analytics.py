@@ -245,7 +245,7 @@ class TestSolarEndpoints:
 class TestBatteryEndpoints:
     SPIKY = [10.0, 10.0, 50.0, 60.0, 55.0, 10.0, 10.0]
 
-    def _shave(self, client: TestClient, **params: float):
+    def _shave(self, client: TestClient, **params: float) -> None:
         query = {
             "capacity_kwh": 200.0,
             "max_charge_kw": 100.0,

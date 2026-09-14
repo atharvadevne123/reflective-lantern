@@ -181,7 +181,7 @@ def test_send_via_smtp_raises_on_all_failures(monkeypatch) -> None:
 
     from scripts.email_report import build_message, send_via_smtp
 
-    def boom(*args, **kwargs):
+    def boom(*args, **kwargs) -> None:
         raise smtplib.SMTPException("connection refused")
 
     monkeypatch.setattr(smtplib, "SMTP_SSL", boom)

@@ -266,7 +266,7 @@ def test_repo_flag_filters_to_single_repo(monkeypatch: pytest.MonkeyPatch, capsy
 
         call_urls: list[str] = []
 
-        def fake_urlopen(req, timeout=15):
+        def fake_urlopen(req, timeout=15) -> None:
             call_urls.append(req.full_url)
             mock = MagicMock()
             mock.__enter__ = lambda s: s

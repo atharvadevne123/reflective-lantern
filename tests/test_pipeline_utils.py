@@ -320,7 +320,7 @@ class TestFirstStep:
 
 
 class _FakePipeline:
-    def __init__(self, steps):
+    def __init__(self, steps) -> None:
         self.steps = steps
 
 

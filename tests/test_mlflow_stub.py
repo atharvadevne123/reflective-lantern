@@ -129,7 +129,7 @@ def test_download_with_client_success(tmp_path) -> None:
 
     mock_client = MagicMock()
 
-    def fake_download(bucket, key, local_path):
+    def fake_download(bucket, key, local_path) -> None:
         open(local_path, "w").close()
 
     mock_client.download_file.side_effect = fake_download
