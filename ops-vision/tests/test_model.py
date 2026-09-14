@@ -8,7 +8,7 @@ from sklearn.ensemble import VotingClassifier
 class TestGenerateSyntheticData:
     """Tests for the synthetic data generator."""
 
-    def test_returns_dataframe_and_series(self):
+    def test_returns_dataframe_and_series(self) -> None:
         """generate_synthetic_data returns (DataFrame, Series)."""
         from app.model import generate_synthetic_data
 
@@ -16,7 +16,7 @@ class TestGenerateSyntheticData:
         assert len(df) == 100
         assert len(labels) == 100
 
-    def test_incident_rate_approximately_correct(self):
+    def test_incident_rate_approximately_correct(self) -> None:
         """Generated data has approximately the requested incident rate."""
         from app.model import generate_synthetic_data
 
@@ -25,14 +25,14 @@ class TestGenerateSyntheticData:
         assert abs(actual_rate - 0.3) < 0.05
 
     @pytest.mark.parametrize("n_samples", [50, 200, 500])
-    def test_various_sample_sizes(self, n_samples):
+    def test_various_sample_sizes(self, n_samples) -> None:
         """Synthetic data generator works for multiple sample sizes."""
         from app.model import generate_synthetic_data
 
         df, labels = generate_synthetic_data(n_samples=n_samples)
         assert len(df) == n_samples
 
-    def test_feature_columns_present(self):
+    def test_feature_columns_present(self) -> None:
         """All six metric columns appear in the generated DataFrame."""
         from app.model import generate_synthetic_data
 
@@ -48,7 +48,7 @@ class TestGenerateSyntheticData:
         for col in expected:
             assert col in df.columns
 
-    def test_cpu_usage_in_valid_range(self):
+    def test_cpu_usage_in_valid_range(self) -> None:
         """CPU usage values must be in [0, 100]."""
         from app.model import generate_synthetic_data
 
@@ -59,21 +59,21 @@ class TestGenerateSyntheticData:
 class TestBuildModel:
     """Tests for build_model ensemble construction."""
 
-    def test_build_model_returns_voting_classifier(self):
+    def test_build_model_returns_voting_classifier(self) -> None:
         """build_model() returns a VotingClassifier."""
         from app.model import build_model
 
         model = build_model()
         assert isinstance(model, VotingClassifier)
 
-    def test_voting_is_soft(self):
+    def test_voting_is_soft(self) -> None:
         """Ensemble uses soft voting."""
         from app.model import build_model
 
         model = build_model()
         assert model.voting == "soft"
 
-    def test_ensemble_has_rf(self):
+    def test_ensemble_has_rf(self) -> None:
         """Ensemble includes a RandomForest estimator."""
         from app.model import build_model
 
@@ -85,7 +85,7 @@ class TestBuildModel:
 class TestTrainAndEvaluate:
     """Tests for the train() and evaluate() functions."""
 
-    def test_train_returns_model_and_metrics(self, transformed_X, synthetic_labels):
+    def test_train_returns_model_and_metrics(self, transformed_X, synthetic_labels) -> None:
         """train() returns (VotingClassifier, dict) tuple."""
         from app.model import train
 
@@ -94,14 +94,14 @@ class TestTrainAndEvaluate:
         assert "cv_auc_mean" in metrics
         assert "cv_auc_std" in metrics
 
-    def test_cv_auc_in_valid_range(self, transformed_X, synthetic_labels):
+    def test_cv_auc_in_valid_range(self, transformed_X, synthetic_labels) -> None:
         """Cross-validation AUC-ROC must be in [0, 1]."""
         from app.model import train
 
         _, metrics = train(transformed_X, synthetic_labels, cv_folds=2)
         assert 0.0 <= metrics["cv_auc_mean"] <= 1.0
 
-    def test_evaluate_returns_test_auc(self, trained_model, transformed_X, synthetic_labels):
+    def test_evaluate_returns_test_auc(self, trained_model, transformed_X, synthetic_labels) -> None:
         """evaluate() returns test_auc_roc key."""
         from app.model import evaluate
 
@@ -110,7 +110,7 @@ class TestTrainAndEvaluate:
         assert 0.0 <= metrics["test_auc_roc"] <= 1.0
 
     @pytest.mark.parametrize("cv_folds", [2, 3])
-    def test_train_with_different_cv_folds(self, transformed_X, synthetic_labels, cv_folds):
+    def test_train_with_different_cv_folds(self, transformed_X, synthetic_labels, cv_folds) -> None:
         """train() should work with different numbers of CV folds."""
         from app.model import train
 
@@ -121,7 +121,7 @@ class TestTrainAndEvaluate:
 class TestPredict:
     """Tests for the predict() function."""
 
-    def test_predict_returns_predictions_and_proba(self, trained_model, transformed_X):
+    def test_predict_returns_predictions_and_proba(self, trained_model, transformed_X) -> None:
         """predict() returns (preds array, proba array)."""
         from app.model import predict
 
@@ -129,14 +129,14 @@ class TestPredict:
         assert len(preds) == len(transformed_X)
         assert len(proba) == len(transformed_X)
 
-    def test_predictions_are_binary(self, trained_model, transformed_X):
+    def test_predictions_are_binary(self, trained_model, transformed_X) -> None:
         """Predictions should be 0 or 1."""
         from app.model import predict
 
         preds, _ = predict(trained_model, transformed_X)
         assert set(np.unique(preds)).issubset({0, 1})
 
-    def test_probabilities_in_range(self, trained_model, transformed_X):
+    def test_probabilities_in_range(self, trained_model, transformed_X) -> None:
         """All probabilities must be in [0, 1]."""
         from app.model import predict
 
@@ -148,7 +148,7 @@ class TestPredict:
 class TestModelPersistence:
     """Tests for save_model() and load_model()."""
 
-    def test_save_and_load_roundtrip(self, trained_model, tmp_path):
+    def test_save_and_load_roundtrip(self, trained_model, tmp_path) -> None:
         """Saved model can be loaded and produces identical predictions."""
         from app.model import load_model, save_model
 
@@ -157,7 +157,7 @@ class TestModelPersistence:
         loaded = load_model(model_path)
         assert isinstance(loaded, VotingClassifier)
 
-    def test_load_raises_if_file_missing(self, tmp_path):
+    def test_load_raises_if_file_missing(self, tmp_path) -> None:
         """load_model raises FileNotFoundError for missing path."""
         from app.model import load_model
 
@@ -168,20 +168,20 @@ class TestModelPersistence:
 class TestModelSummary:
     """Tests for model_summary() helper."""
 
-    def test_model_summary_returns_dict(self, trained_model):
+    def test_model_summary_returns_dict(self, trained_model) -> None:
         """model_summary() returns a dict."""
         from app.model import model_summary
 
         result = model_summary(trained_model)
         assert isinstance(result, dict)
 
-    def test_model_summary_has_model_version(self, trained_model):
+    def test_model_summary_has_model_version(self, trained_model) -> None:
         """model_summary() includes model_version key."""
         from app.model import model_summary
 
         assert "model_version" in model_summary(trained_model)
 
-    def test_model_summary_has_estimators(self, trained_model):
+    def test_model_summary_has_estimators(self, trained_model) -> None:
         """model_summary() includes estimators list."""
         from app.model import model_summary
 
@@ -189,13 +189,13 @@ class TestModelSummary:
         assert "estimators" in result
         assert isinstance(result["estimators"], list)
 
-    def test_model_summary_n_estimators_positive(self, trained_model):
+    def test_model_summary_n_estimators_positive(self, trained_model) -> None:
         """model_summary() n_estimators is at least 1."""
         from app.model import model_summary
 
         assert model_summary(trained_model)["n_estimators"] >= 1
 
-    def test_model_summary_voting_is_soft(self, trained_model):
+    def test_model_summary_voting_is_soft(self, trained_model) -> None:
         """The ensemble uses soft voting."""
         from app.model import model_summary
 
