@@ -249,3 +249,63 @@ def test_cache_round_trips_various_value_types(value: object) -> None:
     c = TTLCache()
     c.set("k", value)
     assert c.get("k") == value
+
+
+class TestCacheHitRate:
+    """Tests for cache_hit_rate function."""
+
+    def test_all_hits(self) -> None:
+        from app.cache import TTLCache, cache_hit_rate
+
+        c = TTLCache()
+        c.set("k", "v")
+        c.get("k")
+        c.get("k")
+        rate = cache_hit_rate(c)
+        assert 0.0 <= rate <= 1.0
+
+    def test_no_accesses_returns_zero(self) -> None:
+        from app.cache import TTLCache, cache_hit_rate
+
+        c = TTLCache()
+        assert cache_hit_rate(c) == 0.0
+
+    def test_rate_between_zero_and_one(self) -> None:
+        from app.cache import TTLCache, cache_hit_rate
+
+        c = TTLCache()
+        c.set("x", 1)
+        c.get("x")
+        c.get("missing")
+        rate = cache_hit_rate(c)
+        assert 0.0 <= rate <= 1.0
+
+
+class TestEvictExpired:
+    """Tests for evict_expired function."""
+
+    def test_evict_returns_zero_for_fresh_cache(self) -> None:
+        from app.cache import TTLCache, evict_expired
+
+        c = TTLCache(ttl_seconds=3600)
+        c.set("k", "v")
+        evicted = evict_expired(c)
+        assert evicted == 0
+
+    def test_evict_removes_expired_keys(self) -> None:
+        from app.cache import TTLCache, evict_expired
+
+        c = TTLCache(ttl_seconds=-1)
+        c.set("k1", "v1")
+        c.set("k2", "v2")
+        evicted = evict_expired(c)
+        assert evicted == 2
+        assert c.get("k1") is None
+
+    def test_evict_leaves_fresh_keys(self) -> None:
+        from app.cache import TTLCache, evict_expired
+
+        c = TTLCache(ttl_seconds=3600)
+        c.set("fresh", "value")
+        evict_expired(c)
+        assert c.get("fresh") == "value"
