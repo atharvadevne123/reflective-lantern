@@ -329,6 +329,24 @@ def summarise_feature_stats(df: pd.DataFrame) -> pd.DataFrame:
     return pd.DataFrame(rows).T
 
 
+def feature_importance_report(
+    feature_names: list[str], importances: list[float]
+) -> pd.DataFrame:
+    """Return a tidy importance table sorted by descending importance.
+
+    Args:
+        feature_names: Names of the features in the same order as *importances*.
+        importances: Importance scores (e.g. from ``feature_importances_``).
+
+    Returns:
+        DataFrame with ``feature`` and ``importance`` columns, sorted descending.
+    """
+    if len(feature_names) != len(importances):
+        raise ValueError("feature_names and importances must have the same length")
+    df = pd.DataFrame({"feature": feature_names, "importance": importances})
+    return df.sort_values("importance", ascending=False).reset_index(drop=True)
+
+
 def clip_outlier_features(df: pd.DataFrame, z_threshold: float = 4.0) -> pd.DataFrame:
     """Return a copy of *df* with extreme numeric values clamped to z-score bounds.
 
@@ -367,4 +385,5 @@ __all__ = [
     "drop_low_variance_features",
     "clip_outlier_features",
     "summarise_feature_stats",
+    "feature_importance_report",
 ]
