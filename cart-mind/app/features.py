@@ -296,3 +296,16 @@ def drop_low_variance_features(df: pd.DataFrame, threshold: float = 0.01) -> pd.
     if low_var:
         logger.debug("drop_low_variance_features: dropping %d columns: %s", len(low_var), low_var)
     return df.drop(columns=low_var)
+
+__all__ = [
+    "RatioFeatures",
+    "InteractionFeatures",
+    "LagRollingFeatures",
+    "DiscountEncoder",
+    "build_feature_pipeline",
+    "get_feature_names",
+    "make_sample_dataframe",
+    "make_purchase_labels",
+    "feature_correlation_matrix",
+    "drop_low_variance_features",
+]
