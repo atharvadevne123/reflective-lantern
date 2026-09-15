@@ -533,3 +533,34 @@ class TestDriftSummary:
         results = {f"feat_{i}": {"drift_detected": False, "psi_severity": "stable"} for i in range(5)}
         summary = drift_summary(results)
         assert summary["total_features"] == 5
+
+
+class TestUpdateReferenceWindowExtended:
+    def test_window_bounded_by_max_size(self) -> None:
+        from app.monitoring import (
+            REFERENCE_WINDOW_SIZE,
+            get_reference_window,
+            reset_reference_window,
+            update_reference_window,
+        )
+
+        reset_reference_window("bounded_feat")
+        big_list = [float(i) for i in range(REFERENCE_WINDOW_SIZE + 100)]
+        update_reference_window("bounded_feat", big_list)
+        window = get_reference_window("bounded_feat")
+        assert len(window) <= REFERENCE_WINDOW_SIZE
+        reset_reference_window("bounded_feat")
+
+    def test_multiple_updates_accumulate(self) -> None:
+        from app.monitoring import (
+            get_reference_window,
+            reset_reference_window,
+            update_reference_window,
+        )
+
+        reset_reference_window("acc_feat")
+        update_reference_window("acc_feat", [1.0, 2.0])
+        update_reference_window("acc_feat", [3.0, 4.0])
+        window = get_reference_window("acc_feat")
+        assert len(window) == 4
+        reset_reference_window("acc_feat")
