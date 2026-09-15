@@ -691,3 +691,46 @@ class TestCrossFieldPenaltyScoreExtended:
 
         for n in range(0, 25):
             assert cross_field_penalty_score(["x"] * n) <= 1.0
+
+
+class TestValidatePayloadWithQuantityCoherence:
+    def test_quantity_incoherence_included_in_warnings(self) -> None:
+        from app.validation import validate_payload
+
+        payload = {"cart_item_count": 0, "cart_value": 150.0}
+        warnings = validate_payload(payload)
+        assert any("cart_item_count is zero" in w for w in warnings)
+
+    def test_multiple_coherence_failures_all_reported(self) -> None:
+        from app.validation import validate_payload
+
+        payload = {
+            "days_since_registration": 5,
+            "days_since_last_purchase": 100,
+            "view_count": 1,
+            "click_count": 10,
+            "cart_item_count": 0,
+            "cart_value": 99.0,
+        }
+        warnings = validate_payload(payload)
+        assert len(warnings) >= 3
+
+    def test_fully_coherent_payload_no_warnings(self) -> None:
+        from app.validation import validate_payload
+
+        payload = {
+            "days_since_registration": 365,
+            "days_since_last_purchase": 30,
+            "view_count": 10,
+            "click_count": 3,
+            "item_avg_rating": 4.2,
+            "item_review_count": 200,
+            "item_discount_pct": 15.0,
+            "item_price": 49.99,
+            "avg_order_value": 75.0,
+            "cart_item_count": 2,
+            "cart_value": 99.98,
+            "purchase_count": 5,
+        }
+        warnings = validate_payload(payload)
+        assert warnings == []
