@@ -513,3 +513,32 @@ class TestMakePurchaseLabelsExtended:
 
         y = make_purchase_labels(sample_df, noise=0.0)
         assert len(y) == len(sample_df)
+
+
+class TestDropLowVarianceFeaturesExtended:
+    def test_returns_dataframe(self) -> None:
+        import pandas as pd
+
+        from app.features import drop_low_variance_features
+
+        df = pd.DataFrame({"a": [1.0, 2.0, 3.0]})
+        assert isinstance(drop_low_variance_features(df), pd.DataFrame)
+
+    def test_all_constant_returns_no_columns(self) -> None:
+        import pandas as pd
+
+        from app.features import drop_low_variance_features
+
+        df = pd.DataFrame({"x": [5.0, 5.0, 5.0], "y": [2.0, 2.0, 2.0]})
+        result = drop_low_variance_features(df, threshold=0.01)
+        assert len(result.select_dtypes(include="number").columns) == 0
+
+    @pytest.mark.parametrize("threshold", [0.001, 0.01, 0.5])
+    def test_high_variance_col_survives(self, threshold: float) -> None:
+        import pandas as pd
+
+        from app.features import drop_low_variance_features
+
+        df = pd.DataFrame({"high": [0.0, 50.0, 100.0], "const": [1.0, 1.0, 1.0]})
+        result = drop_low_variance_features(df, threshold=threshold)
+        assert "high" in result.columns
