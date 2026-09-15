@@ -327,6 +327,41 @@ def compute_psi(reference: list[float], current: list[float], bins: int = 10) ->
         "n_bins": len(edges) - 1,
     }
 
+def alert_on_drift(
+    feature_results: dict[str, dict[str, Any]],
+    psi_threshold: float = PSI_MAJOR_THRESHOLD,
+) -> list[str]:
+    """Return a list of alert messages for features that have drifted.
+
+    Combines KS and PSI signals to produce actionable alerts. A feature is
+    flagged when its KS p-value is below the drift threshold **or** its PSI
+    meets the supplied severity threshold.
+
+    Args:
+        feature_results: Per-feature drift result dicts, as returned by
+            :func:`check_all_features`.
+        psi_threshold: Minimum PSI to include in alerts (default: major).
+
+    Returns:
+        List of human-readable alert strings; empty when no features are drifting.
+    """
+    alerts: list[str] = []
+    for feat, result in feature_results.items():
+        ks_flag = result.get("drift_detected", False)
+        psi = result.get("psi")
+        psi_flag = psi is not None and psi >= psi_threshold
+        if ks_flag or psi_flag:
+            parts = []
+            if ks_flag:
+                parts.append(f"KS p={result.get('p_value')}")
+            if psi_flag:
+                parts.append(f"PSI={psi} ({result.get('psi_severity', 'unknown')})")
+            alerts.append(f"Drift in '{feat}': {', '.join(parts)}")
+    if alerts:
+        logger.warning("Drift alerts: %s", alerts)
+    return alerts
+
+
 def rolling_mean(values: list[float], window: int) -> list[float]:
     """Compute a trailing rolling mean over *values* with the given window size.
 
@@ -359,4 +394,5 @@ __all__ = [
     "log_prediction",
     "compute_psi",
     "rolling_mean",
+    "alert_on_drift",
 ]
