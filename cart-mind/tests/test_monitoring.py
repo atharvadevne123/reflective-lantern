@@ -413,3 +413,45 @@ class TestRollingMeanExtended:
         values = list(range(n))
         result = rolling_mean([float(v) for v in values], window=3)
         assert len(result) == n
+
+
+class TestComputePsiExtended:
+    def test_identical_distributions_low_psi(self) -> None:
+        import numpy as np
+
+        from app.monitoring import compute_psi
+
+        rng = np.random.default_rng(0)
+        data = rng.normal(0, 1, 300).tolist()
+        result = compute_psi(data, data)
+        assert result["psi"] is not None
+        assert result["psi"] < 0.10
+
+    def test_very_different_distributions_high_psi(self) -> None:
+        import numpy as np
+
+        from app.monitoring import compute_psi
+
+        rng = np.random.default_rng(1)
+        ref = rng.normal(0, 1, 300).tolist()
+        cur = rng.normal(10, 1, 300).tolist()
+        result = compute_psi(ref, cur)
+        assert result["psi"] is not None
+        assert result["psi"] > 0.10
+
+    def test_insufficient_data_returns_none_psi(self) -> None:
+        from app.monitoring import compute_psi
+
+        result = compute_psi([1.0, 2.0], [3.0, 4.0])
+        assert result["psi"] is None
+
+    @pytest.mark.parametrize("severity", ["stable", "moderate", "major"])
+    def test_severity_field_present(self, severity: str) -> None:
+        import numpy as np
+
+        from app.monitoring import compute_psi
+
+        rng = np.random.default_rng(0)
+        ref = rng.normal(0, 1, 300).tolist()
+        result = compute_psi(ref, ref)
+        assert "severity" in result
