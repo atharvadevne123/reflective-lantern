@@ -161,3 +161,9 @@ try:
 
 except ImportError:
     logger.info("Airflow not installed — DAG definition skipped (use standalone functions).")
+
+__all__ = [
+    "retrain_task",
+    "drift_report_task",
+    "read_champion_auc",
+]
