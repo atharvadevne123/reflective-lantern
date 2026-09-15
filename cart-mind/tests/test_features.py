@@ -493,3 +493,23 @@ class TestFeatureImportanceReport:
         imps = [float(i) / n for i in range(n)]
         result = feature_importance_report(names, imps)
         assert len(result) == n
+
+
+class TestMakePurchaseLabelsExtended:
+    def test_series_name_is_purchased(self, sample_df) -> None:
+        from app.features import make_purchase_labels
+
+        y = make_purchase_labels(sample_df)
+        assert y.name == "purchased"
+
+    def test_index_matches_df_index(self, sample_df) -> None:
+        from app.features import make_purchase_labels
+
+        y = make_purchase_labels(sample_df)
+        assert list(y.index) == list(sample_df.index)
+
+    def test_noise_parameter_accepted(self, sample_df) -> None:
+        from app.features import make_purchase_labels
+
+        y = make_purchase_labels(sample_df, noise=0.0)
+        assert len(y) == len(sample_df)
