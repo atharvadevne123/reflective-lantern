@@ -263,3 +263,46 @@ def test_high_variance_columns_all_kept(n_cols: int) -> None:
     df = pd.DataFrame(data)
     result = drop_low_variance_features(df, threshold=0.01)
     assert len(result.columns) == n_cols
+
+
+class TestClipOutlierFeatures:
+    def test_returns_copy(self) -> None:
+        from app.features import clip_outlier_features, make_sample_dataframe
+
+        df = make_sample_dataframe(n=50, seed=1)
+        result = clip_outlier_features(df)
+        assert result is not df
+
+    def test_no_infs_in_output(self) -> None:
+        from app.features import clip_outlier_features, make_sample_dataframe
+
+        df = make_sample_dataframe(n=50, seed=2)
+        result = clip_outlier_features(df)
+        assert not result.isin([float("inf"), float("-inf")]).any().any()
+
+    def test_extreme_values_are_reduced(self) -> None:
+        import pandas as pd
+
+        from app.features import clip_outlier_features
+
+        df = pd.DataFrame({"x": [0.0, 0.0, 0.0, 0.0, 1000.0]})
+        result = clip_outlier_features(df, z_threshold=2.0)
+        assert result["x"].max() < 1000.0
+
+    def test_normal_values_unchanged(self) -> None:
+        import pandas as pd
+
+        from app.features import clip_outlier_features
+
+        df = pd.DataFrame({"x": [1.0, 2.0, 3.0, 4.0, 5.0]})
+        original_max = df["x"].max()
+        result = clip_outlier_features(df, z_threshold=10.0)
+        assert result["x"].max() == original_max
+
+    @pytest.mark.parametrize("threshold", [1.5, 3.0, 5.0])
+    def test_different_thresholds(self, threshold: float) -> None:
+        from app.features import clip_outlier_features, make_sample_dataframe
+
+        df = make_sample_dataframe(n=100, seed=42)
+        result = clip_outlier_features(df, z_threshold=threshold)
+        assert len(result) == len(df)
