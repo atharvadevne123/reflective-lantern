@@ -169,3 +169,34 @@ class TestDriftEndpoint:
         }
         data = client.post("/api/v1/drift", json=payload).json()
         assert data["total_checked"] == 2
+
+
+class TestHealthEndpointExtended:
+    def test_health_returns_status_ok(self, client) -> None:
+        r = client.get("/health")
+        assert r.status_code == 200
+        data = r.json()
+        assert data.get("status") == "ok"
+
+    def test_health_response_is_json(self, client) -> None:
+        r = client.get("/health")
+        assert r.headers["content-type"].startswith("application/json")
+
+    def test_health_has_model_loaded_field(self, client) -> None:
+        r = client.get("/health")
+        data = r.json()
+        assert "model_loaded" in data
+
+
+class TestPredictEndpointExtended:
+    def test_predict_score_in_range(self, client, intent_payload) -> None:
+        data = client.post("/api/v1/predict", json=intent_payload).json()
+        assert 0.0 <= data["purchase_probability"] <= 1.0
+
+    def test_predict_response_has_confidence(self, client, intent_payload) -> None:
+        data = client.post("/api/v1/predict", json=intent_payload).json()
+        assert data["confidence"] in ("low", "medium", "high")
+
+    def test_predict_response_has_warnings(self, client, intent_payload) -> None:
+        data = client.post("/api/v1/predict", json=intent_payload).json()
+        assert isinstance(data["warnings"], list)
