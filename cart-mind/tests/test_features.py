@@ -400,3 +400,27 @@ class TestInteractionFeaturesExtended:
         df = make_sample_dataframe(n=n)
         out = InteractionFeatures().fit_transform(df)
         assert len(out) == n
+
+
+class TestLagRollingFeaturesExtended:
+    def test_order_norm_non_negative(self, sample_df) -> None:
+        from app.features import LagRollingFeatures
+
+        out = LagRollingFeatures().fit_transform(sample_df)
+        assert (out["order_norm"] >= 0).all()
+
+    def test_fit_transform_returns_dataframe(self, sample_df) -> None:
+        import pandas as pd
+
+        from app.features import LagRollingFeatures
+
+        out = LagRollingFeatures().fit_transform(sample_df)
+        assert isinstance(out, pd.DataFrame)
+
+    @pytest.mark.parametrize("n", [10, 50])
+    def test_output_row_count_matches(self, n: int) -> None:
+        from app.features import LagRollingFeatures, make_sample_dataframe
+
+        df = make_sample_dataframe(n=n)
+        out = LagRollingFeatures().fit_transform(df)
+        assert len(out) == n
