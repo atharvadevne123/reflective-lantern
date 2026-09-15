@@ -414,3 +414,44 @@ class TestTTLCacheConcurrencyBasics:
             t.join()
         stats = cache.stats()
         assert stats["hits"] + stats["misses"] > 0
+
+
+class TestWarmCache:
+    def test_warm_populates_entries(self) -> None:
+        from app.cache import TTLCache, warm_cache
+
+        cache = TTLCache()
+        warm_cache(cache, {"a": 1, "b": 2, "c": 3})
+        assert cache.size() == 3
+
+    def test_warm_returns_count(self) -> None:
+        from app.cache import TTLCache, warm_cache
+
+        cache = TTLCache()
+        count = warm_cache(cache, {"x": 1, "y": 2})
+        assert count == 2
+
+    def test_warm_values_retrievable(self) -> None:
+        from app.cache import TTLCache, warm_cache
+
+        cache = TTLCache()
+        warm_cache(cache, {"key": "value"})
+        assert cache.get("key") == "value"
+
+    def test_warm_empty_dict_returns_zero(self) -> None:
+        from app.cache import TTLCache, warm_cache
+
+        cache = TTLCache()
+        count = warm_cache(cache, {})
+        assert count == 0
+        assert cache.size() == 0
+
+    @pytest.mark.parametrize("n_items", [1, 5, 20])
+    def test_warm_n_items(self, n_items: int) -> None:
+        from app.cache import TTLCache, warm_cache
+
+        cache = TTLCache(max_entries=100)
+        items = {f"k{i}": i for i in range(n_items)}
+        count = warm_cache(cache, items)
+        assert count == n_items
+        assert cache.size() == n_items
