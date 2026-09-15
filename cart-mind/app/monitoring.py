@@ -326,3 +326,13 @@ def compute_psi(reference: list[float], current: list[float], bins: int = 10) ->
         "drift_detected": psi >= PSI_MODERATE_THRESHOLD,
         "n_bins": len(edges) - 1,
     }
+
+__all__ = [
+    "compute_drift",
+    "update_reference_window",
+    "get_reference_window",
+    "reset_reference_window",
+    "check_all_features",
+    "log_prediction",
+    "compute_psi",
+]
