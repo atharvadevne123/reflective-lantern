@@ -298,3 +298,12 @@ class _BruteForceIndex:
 
     def add(self, vectors: np.ndarray) -> None:
         self._vecs = np.vstack([self._vecs, vectors.astype(np.float32)])
+
+__all__ = [
+    "train_model",
+    "load_model",
+    "predict_intent",
+    "build_faiss_index",
+    "load_faiss_index",
+    "search_similar_items",
+]
