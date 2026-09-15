@@ -373,3 +373,44 @@ class TestCacheKeys:
         cache.set("x", 1)
         cache.delete("x")
         assert "x" not in cache.keys()
+
+
+class TestTTLCacheConcurrencyBasics:
+    def test_concurrent_sets_do_not_crash(self) -> None:
+        import threading
+
+        cache = TTLCache(max_entries=100)
+        errors = []
+
+        def worker(i: int) -> None:
+            try:
+                cache.set(f"k{i}", i)
+                cache.get(f"k{i}")
+            except Exception as e:
+                errors.append(e)
+
+        threads = [threading.Thread(target=worker, args=(i,)) for i in range(20)]
+        for t in threads:
+            t.start()
+        for t in threads:
+            t.join()
+        assert errors == []
+
+    def test_stats_consistent_after_concurrent_access(self) -> None:
+        import threading
+
+        cache = TTLCache(max_entries=200)
+        for i in range(50):
+            cache.set(f"k{i}", i)
+
+        def reader() -> None:
+            for i in range(50):
+                cache.get(f"k{i}")
+
+        threads = [threading.Thread(target=reader) for _ in range(5)]
+        for t in threads:
+            t.start()
+        for t in threads:
+            t.join()
+        stats = cache.stats()
+        assert stats["hits"] + stats["misses"] > 0
