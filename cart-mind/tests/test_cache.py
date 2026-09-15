@@ -340,3 +340,36 @@ class TestCacheContains:
         cache = TTLCache()
         cache.set(key, 1)
         assert cache.contains(key) is True
+
+
+class TestCacheKeys:
+    def test_empty_cache_returns_empty_keys(self) -> None:
+        cache = TTLCache()
+        assert cache.keys() == []
+
+    def test_keys_includes_set_key(self) -> None:
+        cache = TTLCache()
+        cache.set("alpha", 1)
+        assert "alpha" in cache.keys()
+
+    def test_expired_keys_excluded(self) -> None:
+        import time
+
+        cache = TTLCache(ttl_seconds=0.05)
+        cache.set("live", 1)
+        cache.set("dead", 2)
+        time.sleep(0.08)
+        assert "dead" not in cache.keys()
+        assert "live" not in cache.keys()
+
+    def test_key_count_matches_entries(self) -> None:
+        cache = TTLCache()
+        for i in range(5):
+            cache.set(f"k{i}", i)
+        assert len(cache.keys()) == 5
+
+    def test_deleted_key_not_in_keys(self) -> None:
+        cache = TTLCache()
+        cache.set("x", 1)
+        cache.delete("x")
+        assert "x" not in cache.keys()
