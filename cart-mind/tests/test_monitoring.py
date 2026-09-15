@@ -298,3 +298,46 @@ class TestResetReferenceWindow:
         reset_reference_window("fresh")
         update_reference_window("fresh", [9.0, 8.0])
         assert get_reference_window("fresh") == [9.0, 8.0]
+
+
+class TestRollingMean:
+    def test_single_value_returns_itself(self) -> None:
+        from app.monitoring import rolling_mean
+
+        result = rolling_mean([5.0], window=3)
+        assert result == [5.0]
+
+    def test_empty_list_returns_empty(self) -> None:
+        from app.monitoring import rolling_mean
+
+        assert rolling_mean([], window=3) == []
+
+    def test_output_same_length_as_input(self) -> None:
+        from app.monitoring import rolling_mean
+
+        values = [1.0, 2.0, 3.0, 4.0, 5.0]
+        result = rolling_mean(values, window=3)
+        assert len(result) == len(values)
+
+    def test_first_value_equals_input(self) -> None:
+        from app.monitoring import rolling_mean
+
+        values = [7.0, 8.0, 9.0]
+        result = rolling_mean(values, window=3)
+        assert result[0] == 7.0
+
+    def test_full_window_average_correct(self) -> None:
+        from app.monitoring import rolling_mean
+
+        values = [1.0, 2.0, 3.0, 4.0]
+        result = rolling_mean(values, window=3)
+        assert result[2] == pytest.approx(2.0, abs=1e-4)
+
+    @pytest.mark.parametrize("window", [1, 2, 5])
+    def test_window_1_returns_original_values(self, window: int) -> None:
+        from app.monitoring import rolling_mean
+
+        if window == 1:
+            values = [3.0, 1.0, 4.0, 1.0, 5.0]
+            result = rolling_mean(values, window=1)
+            assert result == pytest.approx(values)
