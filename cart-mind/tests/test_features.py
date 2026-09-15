@@ -424,3 +424,27 @@ class TestLagRollingFeaturesExtended:
         df = make_sample_dataframe(n=n)
         out = LagRollingFeatures().fit_transform(df)
         assert len(out) == n
+
+
+class TestDiscountEncoderExtended:
+    def test_fit_returns_self(self, sample_df) -> None:
+        from app.features import DiscountEncoder
+
+        tf = DiscountEncoder()
+        assert tf.fit(sample_df) is tf
+
+    def test_no_nans_in_output(self, sample_df) -> None:
+        import numpy as np
+
+        from app.features import DiscountEncoder
+
+        out = DiscountEncoder().fit_transform(sample_df)
+        assert not out.isnull().any().any()
+
+    @pytest.mark.parametrize("n", [10, 50])
+    def test_row_count_preserved(self, n: int) -> None:
+        from app.features import DiscountEncoder, make_sample_dataframe
+
+        df = make_sample_dataframe(n=n)
+        out = DiscountEncoder().fit_transform(df)
+        assert len(out) == n
