@@ -673,3 +673,21 @@ class TestRevenueImpactScore:
         from app.validation import revenue_impact_score
 
         assert revenue_impact_score(cart, prob, discount_pct=discount) == pytest.approx(expected, abs=0.01)
+
+
+class TestCrossFieldPenaltyScoreExtended:
+    def test_ten_warnings_is_one(self) -> None:
+        from app.validation import cross_field_penalty_score
+
+        assert cross_field_penalty_score(["w"] * 10) == pytest.approx(1.0)
+
+    def test_two_warnings_is_02(self) -> None:
+        from app.validation import cross_field_penalty_score
+
+        assert cross_field_penalty_score(["a", "b"]) == pytest.approx(0.2)
+
+    def test_penalty_never_exceeds_one(self) -> None:
+        from app.validation import cross_field_penalty_score
+
+        for n in range(0, 25):
+            assert cross_field_penalty_score(["x"] * n) <= 1.0
