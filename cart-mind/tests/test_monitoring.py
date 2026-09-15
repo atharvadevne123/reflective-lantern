@@ -486,3 +486,50 @@ class TestComputeDriftExtended:
         result = compute_drift([1.0] * n, [2.0] * n)
         assert result["drift_detected"] is False
         assert result.get("reason") == "insufficient_data"
+
+
+class TestDriftSummary:
+    def test_empty_results_returns_zeros(self) -> None:
+        from app.monitoring import drift_summary
+
+        summary = drift_summary({})
+        assert summary["total_features"] == 0
+        assert summary["drift_rate"] == 0.0
+
+    def test_all_drifted_rate_is_one(self) -> None:
+        from app.monitoring import drift_summary
+
+        results = {
+            "feat_a": {"drift_detected": True, "psi_severity": "major"},
+            "feat_b": {"drift_detected": True, "psi_severity": "moderate"},
+        }
+        summary = drift_summary(results)
+        assert summary["drift_rate"] == pytest.approx(1.0)
+        assert summary["drifted_features"] == 2
+
+    def test_no_drift_rate_is_zero(self) -> None:
+        from app.monitoring import drift_summary
+
+        results = {
+            "feat_a": {"drift_detected": False, "psi_severity": "stable"},
+        }
+        summary = drift_summary(results)
+        assert summary["drift_rate"] == 0.0
+        assert summary["drifted_features"] == 0
+
+    def test_major_psi_count(self) -> None:
+        from app.monitoring import drift_summary
+
+        results = {
+            "feat_a": {"drift_detected": True, "psi_severity": "major"},
+            "feat_b": {"drift_detected": False, "psi_severity": "stable"},
+        }
+        summary = drift_summary(results)
+        assert summary["features_with_major_psi"] == 1
+
+    def test_total_features_matches_input(self) -> None:
+        from app.monitoring import drift_summary
+
+        results = {f"feat_{i}": {"drift_detected": False, "psi_severity": "stable"} for i in range(5)}
+        summary = drift_summary(results)
+        assert summary["total_features"] == 5
