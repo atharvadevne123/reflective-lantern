@@ -5,6 +5,9 @@ cross-field coherence — a shopper who registered 30 days ago cannot have last
 purchased 200 days ago — and those contradictions are exactly the ones that
 produce confidently wrong predictions, because the model was never trained on
 states that cannot physically occur.
+
+All check_* functions return a list of human-readable warning strings.
+An empty list means the payload passed that check.
 """
 
 from __future__ import annotations
@@ -292,3 +295,20 @@ def normalise_payload(
     result = dict(defaults)
     result.update(payload)
     return result
+
+__all__ = [
+    "ValidationIssue",
+    "check_temporal_coherence",
+    "check_engagement_coherence",
+    "check_catalog_coherence",
+    "check_price_coherence",
+    "validate_payload",
+    "validate_batch",
+    "sanitise_payload",
+    "normalise_payload",
+    "validation_summary",
+    "price_discount_pct",
+    "cart_value_tier",
+    "item_count_flag",
+    "cross_field_penalty_score",
+]
