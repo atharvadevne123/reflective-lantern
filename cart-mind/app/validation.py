@@ -218,6 +218,31 @@ def validation_summary(results: dict[str, list[str]]) -> dict[str, Any]:
     }
 
 
+def revenue_impact_score(
+    cart_value: float,
+    purchase_probability: float,
+    discount_pct: float = 0.0,
+) -> float:
+    """Estimate the expected revenue contribution of a user session.
+
+    Multiplies the expected purchase value (cart value adjusted for discount)
+    by the purchase probability. Useful for prioritising recommendations that
+    maximise expected revenue rather than raw purchase likelihood.
+
+    Args:
+        cart_value: Total value of items in the cart.
+        purchase_probability: Predicted probability of purchase (0-1).
+        discount_pct: Applied discount percentage (0-100).
+
+    Returns:
+        Expected revenue in the same currency units as *cart_value*.
+    """
+    if cart_value < 0 or not (0.0 <= purchase_probability <= 1.0):
+        return 0.0
+    discount_factor = 1.0 - max(0.0, min(100.0, discount_pct)) / 100.0
+    return round(cart_value * discount_factor * purchase_probability, 4)
+
+
 def price_discount_pct(original_price: float, discounted_price: float) -> float:
     """Return percentage discount from original to discounted price.
 
@@ -344,4 +369,5 @@ __all__ = [
     "cart_value_tier",
     "item_count_flag",
     "cross_field_penalty_score",
+    "revenue_impact_score",
 ]
