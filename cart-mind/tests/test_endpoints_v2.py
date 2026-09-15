@@ -117,3 +117,22 @@ class TestCacheStats:
         for _cache_name, stats in data.items():
             if isinstance(stats, dict) and "entries" in stats:
                 assert stats["entries"] >= 0
+
+
+class TestBatchPredictExtended:
+    def test_batch_all_valid_no_warnings(self, client, intent_payload) -> None:
+        payload = {"items": [intent_payload]}
+        r = client.post("/api/v1/predict/batch", json=payload)
+        assert r.status_code == 200
+
+    def test_batch_result_count_matches_input(self, client, intent_payload) -> None:
+        payload = {"items": [intent_payload, intent_payload, intent_payload]}
+        r = client.post("/api/v1/predict/batch", json=payload)
+        data = r.json()
+        assert len(data["predictions"]) == 3
+
+    def test_batch_scores_in_valid_range(self, client, intent_payload) -> None:
+        payload = {"items": [intent_payload, intent_payload]}
+        r = client.post("/api/v1/predict/batch", json=payload)
+        for pred in r.json()["predictions"]:
+            assert 0.0 <= pred["purchase_probability"] <= 1.0
