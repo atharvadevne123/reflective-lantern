@@ -211,3 +211,31 @@ class TestReadChampionAuc:
         path.write_text(json.dumps({"other_key": 1}))
         monkeypatch.setattr("pipelines.retrain_dag.METRICS_PATH", path)
         assert read_champion_auc() == 0.0
+
+
+class TestRetrainTaskExtended:
+    def test_retrain_task_returns_dict(self, monkeypatch, tmp_path) -> None:
+        import json
+
+        import pandas as pd
+        from pipelines.retrain_dag import retrain_task
+        from app.features import make_sample_dataframe, make_purchase_labels
+
+        monkeypatch.setattr("pipelines.retrain_dag.MODEL_PATH", tmp_path / "model.joblib")
+        monkeypatch.setattr("pipelines.retrain_dag.METRICS_PATH", tmp_path / "metrics.json")
+        df = make_sample_dataframe(n=200, seed=42)
+        y = make_purchase_labels(df, seed=42)
+        result = retrain_task(df, y)
+        assert isinstance(result, dict)
+
+    def test_retrain_task_creates_metrics_file(self, monkeypatch, tmp_path) -> None:
+        from pipelines.retrain_dag import retrain_task
+        from app.features import make_sample_dataframe, make_purchase_labels
+
+        metrics_path = tmp_path / "metrics.json"
+        monkeypatch.setattr("pipelines.retrain_dag.MODEL_PATH", tmp_path / "model.joblib")
+        monkeypatch.setattr("pipelines.retrain_dag.METRICS_PATH", metrics_path)
+        df = make_sample_dataframe(n=200, seed=1)
+        y = make_purchase_labels(df, seed=1)
+        retrain_task(df, y)
+        assert metrics_path.exists()
