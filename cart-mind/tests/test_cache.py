@@ -487,3 +487,28 @@ class TestTTLCacheStatsExtended:
             cache.get("missing")
         stats = cache.stats()
         assert stats["hit_rate"] == pytest.approx(0.75, abs=0.01)
+
+
+class TestTTLCacheEdgeCases:
+    def test_set_none_value(self) -> None:
+        cache = TTLCache()
+        cache.set("null_key", None)
+        assert cache.get("null_key") is None
+
+    def test_set_false_value_not_treated_as_miss(self) -> None:
+        cache = TTLCache()
+        cache.set("bool_key", False)
+        result = cache.get("bool_key")
+        assert result is False
+
+    def test_set_zero_value_not_treated_as_miss(self) -> None:
+        cache = TTLCache()
+        cache.set("zero_key", 0)
+        result = cache.get("zero_key")
+        assert result == 0
+
+    def test_overwrite_increments_no_size(self) -> None:
+        cache = TTLCache()
+        cache.set("k", 1)
+        cache.set("k", 2)
+        assert cache.size() == 1
