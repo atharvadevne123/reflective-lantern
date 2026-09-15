@@ -110,6 +110,30 @@ class TTLCache:
             self._hits = 0
             self._misses = 0
 
+    def contains(self, key: str) -> bool:
+        """Return True if *key* exists and has not yet expired.
+
+        Args:
+            key: Cache key to probe.
+
+        Returns:
+            True when the key is live; False when absent or expired.
+        """
+        return self.get(key) is not None
+
+    def keys(self) -> list[str]:
+        """Return a snapshot of all live (non-expired) keys.
+
+        Args:
+            None.
+
+        Returns:
+            List of live cache keys at the moment of the call.
+        """
+        now = time.monotonic()
+        with self._lock:
+            return [k for k, (ts, _) in self._store.items() if now - ts <= self._ttl]
+
     def stats(self) -> dict[str, Any]:
         """Return cache size and hit-rate statistics.
 
