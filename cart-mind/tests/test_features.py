@@ -448,3 +448,48 @@ class TestDiscountEncoderExtended:
         df = make_sample_dataframe(n=n)
         out = DiscountEncoder().fit_transform(df)
         assert len(out) == n
+
+
+class TestFeatureImportanceReport:
+    def test_returns_dataframe(self) -> None:
+        import pandas as pd
+
+        from app.features import feature_importance_report
+
+        result = feature_importance_report(["a", "b", "c"], [0.5, 0.3, 0.2])
+        assert isinstance(result, pd.DataFrame)
+
+    def test_sorted_descending(self) -> None:
+        from app.features import feature_importance_report
+
+        result = feature_importance_report(["x", "y", "z"], [0.1, 0.5, 0.3])
+        importances = result["importance"].tolist()
+        assert importances == sorted(importances, reverse=True)
+
+    def test_has_feature_and_importance_columns(self) -> None:
+        from app.features import feature_importance_report
+
+        result = feature_importance_report(["a", "b"], [0.6, 0.4])
+        assert "feature" in result.columns
+        assert "importance" in result.columns
+
+    def test_row_count_matches_input(self) -> None:
+        from app.features import feature_importance_report
+
+        result = feature_importance_report(["a", "b", "c", "d"], [0.1, 0.2, 0.3, 0.4])
+        assert len(result) == 4
+
+    def test_mismatched_lengths_raises(self) -> None:
+        from app.features import feature_importance_report
+
+        with pytest.raises(ValueError):
+            feature_importance_report(["a", "b"], [0.5])
+
+    @pytest.mark.parametrize("n", [1, 5, 16])
+    def test_works_for_various_sizes(self, n: int) -> None:
+        from app.features import feature_importance_report
+
+        names = [f"f{i}" for i in range(n)]
+        imps = [float(i) / n for i in range(n)]
+        result = feature_importance_report(names, imps)
+        assert len(result) == n
