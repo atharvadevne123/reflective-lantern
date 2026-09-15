@@ -349,3 +349,32 @@ class TestSummariseFeatureStats:
         numeric_cols = df.select_dtypes(include="number").columns.tolist()
         for col in numeric_cols:
             assert col in result.index
+
+
+class TestRatioFeaturesExtended:
+    def test_value_score_non_negative(self, sample_df) -> None:
+        from app.features import RatioFeatures
+
+        out = RatioFeatures().fit_transform(sample_df)
+        assert (out["value_score"] >= 0).all()
+
+    def test_price_per_rating_non_negative(self, sample_df) -> None:
+        from app.features import RatioFeatures
+
+        out = RatioFeatures().fit_transform(sample_df)
+        assert (out["price_per_rating"] >= 0).all()
+
+    def test_engagement_rate_between_0_and_1(self, sample_df) -> None:
+        from app.features import RatioFeatures
+
+        out = RatioFeatures().fit_transform(sample_df)
+        assert (out["engagement_rate"] >= 0).all()
+        assert (out["engagement_rate"] <= 1).all()
+
+    @pytest.mark.parametrize("n", [10, 50, 100])
+    def test_output_row_count_matches(self, n) -> None:
+        from app.features import RatioFeatures, make_sample_dataframe
+
+        df = make_sample_dataframe(n=n)
+        out = RatioFeatures().fit_transform(df)
+        assert len(out) == n
