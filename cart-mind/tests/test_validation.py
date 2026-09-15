@@ -629,3 +629,47 @@ class TestItemCountFlagExtended:
         from app.validation import item_count_flag
 
         assert item_count_flag(count, bulk_threshold=threshold) == expected
+
+
+class TestRevenueImpactScore:
+    def test_zero_cart_value_returns_zero(self) -> None:
+        from app.validation import revenue_impact_score
+
+        assert revenue_impact_score(0.0, 0.8) == 0.0
+
+    def test_zero_probability_returns_zero(self) -> None:
+        from app.validation import revenue_impact_score
+
+        assert revenue_impact_score(100.0, 0.0) == 0.0
+
+    def test_no_discount_full_probability(self) -> None:
+        from app.validation import revenue_impact_score
+
+        result = revenue_impact_score(100.0, 1.0, discount_pct=0.0)
+        assert result == pytest.approx(100.0, abs=0.01)
+
+    def test_50_percent_discount(self) -> None:
+        from app.validation import revenue_impact_score
+
+        result = revenue_impact_score(100.0, 1.0, discount_pct=50.0)
+        assert result == pytest.approx(50.0, abs=0.01)
+
+    def test_negative_cart_value_returns_zero(self) -> None:
+        from app.validation import revenue_impact_score
+
+        assert revenue_impact_score(-10.0, 0.5) == 0.0
+
+    def test_invalid_probability_returns_zero(self) -> None:
+        from app.validation import revenue_impact_score
+
+        assert revenue_impact_score(100.0, 1.5) == 0.0
+
+    @pytest.mark.parametrize("cart,prob,discount,expected", [
+        (200.0, 0.5, 0.0, 100.0),
+        (100.0, 0.5, 50.0, 25.0),
+        (50.0, 1.0, 100.0, 0.0),
+    ])
+    def test_parametrized_cases(self, cart, prob, discount, expected) -> None:
+        from app.validation import revenue_impact_score
+
+        assert revenue_impact_score(cart, prob, discount_pct=discount) == pytest.approx(expected, abs=0.01)
