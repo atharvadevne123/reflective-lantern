@@ -323,6 +323,7 @@ def normalise_payload(
     result.update(payload)
     return result
 
+
 def check_quantity_coherence(payload: dict[str, Any]) -> list[str]:
     """Check that quantity-related fields are mutually consistent.
 
@@ -340,9 +341,7 @@ def check_quantity_coherence(payload: dict[str, Any]) -> list[str]:
     cart_val = payload.get("cart_value")
     if cart_items is not None and cart_val is not None:
         if cart_items == 0 and cart_val > 0:
-            warnings.append(
-                f"cart_value is positive ({cart_val}) but cart_item_count is zero"
-            )
+            warnings.append(f"cart_value is positive ({cart_val}) but cart_item_count is zero")
     purchase_count = payload.get("purchase_count")
     avg_order = payload.get("avg_order_value")
     if purchase_count is not None and avg_order is not None:

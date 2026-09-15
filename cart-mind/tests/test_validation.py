@@ -494,8 +494,24 @@ class TestCheckQuantityCoherence:
     @pytest.mark.parametrize(
         "payload,expected_count",
         [
-            ({"cart_item_count": 0, "cart_value": 10.0, "purchase_count": 0, "avg_order_value": 50.0}, 2),
-            ({"cart_item_count": 1, "cart_value": 10.0, "purchase_count": 1, "avg_order_value": 10.0}, 0),
+            (
+                {
+                    "cart_item_count": 0,
+                    "cart_value": 10.0,
+                    "purchase_count": 0,
+                    "avg_order_value": 50.0,
+                },
+                2,
+            ),
+            (
+                {
+                    "cart_item_count": 1,
+                    "cart_value": 10.0,
+                    "purchase_count": 1,
+                    "avg_order_value": 10.0,
+                },
+                0,
+            ),
             ({}, 0),
         ],
     )
@@ -507,25 +523,37 @@ class TestCheckQuantityCoherence:
 
 class TestTemporalCoherenceEdgeCases:
     def test_zero_days_registration_and_purchase_passes(self) -> None:
-        assert check_temporal_coherence(
-            {"days_since_registration": 0, "days_since_last_purchase": 0}
-        ) == []
+        assert (
+            check_temporal_coherence({"days_since_registration": 0, "days_since_last_purchase": 0})
+            == []
+        )
 
     def test_exactly_one_day_difference_passes(self) -> None:
-        assert check_temporal_coherence(
-            {"days_since_registration": 10, "days_since_last_purchase": 9}
-        ) == []
+        assert (
+            check_temporal_coherence(
+                {"days_since_registration": 10, "days_since_last_purchase": 9}
+            )
+            == []
+        )
 
     def test_purchase_count_zero_with_old_purchase_no_warning(self) -> None:
         warnings = check_temporal_coherence(
-            {"days_since_registration": 5000, "days_since_last_purchase": 4000, "purchase_count": 0}
+            {
+                "days_since_registration": 5000,
+                "days_since_last_purchase": 4000,
+                "purchase_count": 0,
+            }
         )
         assert not any("decade" in w for w in warnings)
 
     @pytest.mark.parametrize("count", [1, 10, 100])
     def test_decade_warning_fires_for_any_positive_count(self, count: int) -> None:
         warnings = check_temporal_coherence(
-            {"days_since_registration": 5000, "days_since_last_purchase": 4000, "purchase_count": count}
+            {
+                "days_since_registration": 5000,
+                "days_since_last_purchase": 4000,
+                "purchase_count": count,
+            }
         )
         assert any("decade" in w for w in warnings)
 
@@ -560,7 +588,9 @@ class TestCatalogCoherenceExtended:
     def test_positive_rating_no_reviews_flagged(self, rating: float, reviews: int) -> None:
         from app.validation import check_catalog_coherence
 
-        warnings = check_catalog_coherence({"item_avg_rating": rating, "item_review_count": reviews})
+        warnings = check_catalog_coherence(
+            {"item_avg_rating": rating, "item_review_count": reviews}
+        )
         assert len(warnings) == 1
 
     def test_only_rating_no_warning(self) -> None:
@@ -580,16 +610,19 @@ class TestCatalogCoherenceExtended:
 
 
 class TestCartValueTierExtended:
-    @pytest.mark.parametrize("value,tier", [
-        (0.0, "low"),
-        (24.99, "low"),
-        (25.0, "medium"),
-        (99.99, "medium"),
-        (100.0, "high"),
-        (499.99, "high"),
-        (500.0, "premium"),
-        (9999.0, "premium"),
-    ])
+    @pytest.mark.parametrize(
+        "value,tier",
+        [
+            (0.0, "low"),
+            (24.99, "low"),
+            (25.0, "medium"),
+            (99.99, "medium"),
+            (100.0, "high"),
+            (499.99, "high"),
+            (500.0, "premium"),
+            (9999.0, "premium"),
+        ],
+    )
     def test_boundary_values(self, value: float, tier: str) -> None:
         from app.validation import cart_value_tier
 
@@ -597,12 +630,15 @@ class TestCartValueTierExtended:
 
 
 class TestPriceDiscountPctExtended:
-    @pytest.mark.parametrize("original,discounted,expected", [
-        (200.0, 150.0, 25.0),
-        (10.0, 10.0, 0.0),
-        (100.0, 0.0, 100.0),
-        (50.0, 25.0, 50.0),
-    ])
+    @pytest.mark.parametrize(
+        "original,discounted,expected",
+        [
+            (200.0, 150.0, 25.0),
+            (10.0, 10.0, 0.0),
+            (100.0, 0.0, 100.0),
+            (50.0, 25.0, 50.0),
+        ],
+    )
     def test_known_values(self, original: float, discounted: float, expected: float) -> None:
         from app.validation import price_discount_pct
 
@@ -617,14 +653,17 @@ class TestPriceDiscountPctExtended:
 
 
 class TestItemCountFlagExtended:
-    @pytest.mark.parametrize("count,threshold,expected", [
-        (0, 10, False),
-        (9, 10, False),
-        (10, 10, True),
-        (100, 10, True),
-        (1, 1, True),
-        (0, 1, False),
-    ])
+    @pytest.mark.parametrize(
+        "count,threshold,expected",
+        [
+            (0, 10, False),
+            (9, 10, False),
+            (10, 10, True),
+            (100, 10, True),
+            (1, 1, True),
+            (0, 1, False),
+        ],
+    )
     def test_boundary_values(self, count: int, threshold: int, expected: bool) -> None:
         from app.validation import item_count_flag
 
@@ -664,15 +703,19 @@ class TestRevenueImpactScore:
 
         assert revenue_impact_score(100.0, 1.5) == 0.0
 
-    @pytest.mark.parametrize("cart,prob,discount,expected", [
-        (200.0, 0.5, 0.0, 100.0),
-        (100.0, 0.5, 50.0, 25.0),
-        (50.0, 1.0, 100.0, 0.0),
-    ])
+    @pytest.mark.parametrize(
+        "cart,prob,discount,expected",
+        [
+            (200.0, 0.5, 0.0, 100.0),
+            (100.0, 0.5, 50.0, 25.0),
+            (50.0, 1.0, 100.0, 0.0),
+        ],
+    )
     def test_parametrized_cases(self, cart, prob, discount, expected) -> None:
         from app.validation import revenue_impact_score
 
-        assert revenue_impact_score(cart, prob, discount_pct=discount) == pytest.approx(expected, abs=0.01)
+        result = revenue_impact_score(cart, prob, discount_pct=discount)
+        assert result == pytest.approx(expected, abs=0.01)
 
 
 class TestCrossFieldPenaltyScoreExtended:

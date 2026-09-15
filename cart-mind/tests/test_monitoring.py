@@ -343,9 +343,6 @@ class TestRollingMean:
             assert result == pytest.approx(values)
 
 
-import pytest  # noqa: F811
-
-
 class TestAlertOnDrift:
     def test_empty_results_returns_no_alerts(self) -> None:
         from app.monitoring import alert_on_drift
@@ -355,16 +352,19 @@ class TestAlertOnDrift:
     def test_no_drift_returns_no_alerts(self) -> None:
         from app.monitoring import alert_on_drift
 
-        results = {
-            "feat_a": {"drift_detected": False, "p_value": 0.5, "psi": 0.02}
-        }
+        results = {"feat_a": {"drift_detected": False, "p_value": 0.5, "psi": 0.02}}
         assert alert_on_drift(results) == []
 
     def test_ks_drift_triggers_alert(self) -> None:
         from app.monitoring import alert_on_drift
 
         results = {
-            "feat_a": {"drift_detected": True, "p_value": 0.01, "psi": 0.02, "psi_severity": "stable"}
+            "feat_a": {
+                "drift_detected": True,
+                "p_value": 0.01,
+                "psi": 0.02,
+                "psi_severity": "stable",
+            }
         }
         alerts = alert_on_drift(results)
         assert len(alerts) == 1
@@ -374,7 +374,12 @@ class TestAlertOnDrift:
         from app.monitoring import alert_on_drift
 
         results = {
-            "feat_b": {"drift_detected": False, "p_value": 0.3, "psi": 0.5, "psi_severity": "major"}
+            "feat_b": {
+                "drift_detected": False,
+                "p_value": 0.3,
+                "psi": 0.5,
+                "psi_severity": "major",
+            }
         }
         alerts = alert_on_drift(results, psi_threshold=0.25)
         assert len(alerts) == 1
@@ -384,8 +389,18 @@ class TestAlertOnDrift:
         from app.monitoring import alert_on_drift
 
         results = {
-            "feat_a": {"drift_detected": True, "p_value": 0.01, "psi": 0.05, "psi_severity": "stable"},
-            "feat_b": {"drift_detected": True, "p_value": 0.02, "psi": 0.03, "psi_severity": "stable"},
+            "feat_a": {
+                "drift_detected": True,
+                "p_value": 0.01,
+                "psi": 0.05,
+                "psi_severity": "stable",
+            },
+            "feat_b": {
+                "drift_detected": True,
+                "p_value": 0.02,
+                "psi": 0.03,
+                "psi_severity": "stable",
+            },
         }
         alerts = alert_on_drift(results)
         assert len(alerts) == 2
@@ -530,7 +545,9 @@ class TestDriftSummary:
     def test_total_features_matches_input(self) -> None:
         from app.monitoring import drift_summary
 
-        results = {f"feat_{i}": {"drift_detected": False, "psi_severity": "stable"} for i in range(5)}
+        results = {
+            f"feat_{i}": {"drift_detected": False, "psi_severity": "stable"} for i in range(5)
+        }
         summary = drift_summary(results)
         assert summary["total_features"] == 5
 

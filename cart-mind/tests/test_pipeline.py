@@ -215,9 +215,7 @@ class TestReadChampionAuc:
 
 class TestRetrainTaskExtended:
     def test_retrain_task_returns_dict(self, monkeypatch, tmp_path) -> None:
-        import json
 
-        import pandas as pd
         from pipelines.retrain_dag import retrain_task
         from app.features import make_sample_dataframe, make_purchase_labels
 

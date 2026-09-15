@@ -134,6 +134,7 @@ def get_db() -> Generator[Session, None, None]:
     finally:
         db.close()
 
+
 __all__ = [
     "Base",
     "SessionLocal",

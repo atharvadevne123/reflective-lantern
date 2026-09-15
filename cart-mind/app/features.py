@@ -329,9 +329,7 @@ def summarise_feature_stats(df: pd.DataFrame) -> pd.DataFrame:
     return pd.DataFrame(rows).T
 
 
-def feature_importance_report(
-    feature_names: list[str], importances: list[float]
-) -> pd.DataFrame:
+def feature_importance_report(feature_names: list[str], importances: list[float]) -> pd.DataFrame:
     """Return a tidy importance table sorted by descending importance.
 
     Args:

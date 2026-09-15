@@ -327,6 +327,7 @@ def compute_psi(reference: list[float], current: list[float], bins: int = 10) ->
         "n_bins": len(edges) - 1,
     }
 
+
 def alert_on_drift(
     feature_results: dict[str, dict[str, Any]],
     psi_threshold: float = PSI_MAJOR_THRESHOLD,
@@ -375,9 +376,7 @@ def drift_summary(feature_results: dict[str, dict[str, Any]]) -> dict[str, Any]:
     """
     total = len(feature_results)
     drifted = sum(1 for r in feature_results.values() if r.get("drift_detected"))
-    major_psi = sum(
-        1 for r in feature_results.values() if r.get("psi_severity") == "major"
-    )
+    major_psi = sum(1 for r in feature_results.values() if r.get("psi_severity") == "major")
     return {
         "total_features": total,
         "drifted_features": drifted,

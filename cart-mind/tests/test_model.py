@@ -192,7 +192,7 @@ class TestPredictIntentExtended:
         from app.model import predict_intent
 
         _, labels = predict_intent(fitted_pipeline, sample_features)
-        assert all(l in (0, 1) for l in labels)
+        assert all(lbl in (0, 1) for lbl in labels)
 
     def test_output_lengths_match_input(self, fitted_pipeline, sample_features) -> None:
         from app.model import predict_intent
@@ -207,11 +207,22 @@ class TestPredictIntentExtended:
         from app.model import predict_intent
 
         _FEATURE_COLS = (
-            ["user_age", "purchase_count", "avg_order_value",
-             "days_since_last_purchase", "days_since_registration",
-             "session_count_7d", "cart_abandon_rate"]
-            + ["item_price", "item_avg_rating", "item_review_count",
-               "item_inventory_level", "item_discount_pct"]
+            [
+                "user_age",
+                "purchase_count",
+                "avg_order_value",
+                "days_since_last_purchase",
+                "days_since_registration",
+                "session_count_7d",
+                "cart_abandon_rate",
+            ]
+            + [
+                "item_price",
+                "item_avg_rating",
+                "item_review_count",
+                "item_inventory_level",
+                "item_discount_pct",
+            ]
             + ["view_count", "click_count", "wishlist_flag", "same_category_purchases"]
         )
         df = make_sample_dataframe(n=n_rows, seed=7)[_FEATURE_COLS]

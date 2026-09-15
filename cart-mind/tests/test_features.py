@@ -434,7 +434,6 @@ class TestDiscountEncoderExtended:
         assert tf.fit(sample_df) is tf
 
     def test_no_nans_in_output(self, sample_df) -> None:
-        import numpy as np
 
         from app.features import DiscountEncoder
 

@@ -142,6 +142,7 @@ class CacheStatsResponse(BaseModel):
     recommendation_cache: dict
     similarity_cache: dict
 
+
 __all__ = [
     "UserItemFeatures",
     "RecommendRequest",
