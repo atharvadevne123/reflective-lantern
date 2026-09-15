@@ -327,6 +327,29 @@ def compute_psi(reference: list[float], current: list[float], bins: int = 10) ->
         "n_bins": len(edges) - 1,
     }
 
+def rolling_mean(values: list[float], window: int) -> list[float]:
+    """Compute a trailing rolling mean over *values* with the given window size.
+
+    For positions where fewer than *window* values are available, the mean is
+    computed over however many values exist (expanding window at the start).
+
+    Args:
+        values: Sequence of numeric observations in time order.
+        window: Trailing window size.
+
+    Returns:
+        List of rolling means, same length as *values*.
+    """
+    if not values:
+        return []
+    result: list[float] = []
+    for i, _ in enumerate(values):
+        start = max(0, i - window + 1)
+        chunk = values[start : i + 1]
+        result.append(round(sum(chunk) / len(chunk), 6))
+    return result
+
+
 __all__ = [
     "compute_drift",
     "update_reference_window",
@@ -335,4 +358,5 @@ __all__ = [
     "check_all_features",
     "log_prediction",
     "compute_psi",
+    "rolling_mean",
 ]
