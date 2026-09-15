@@ -577,3 +577,20 @@ class TestCatalogCoherenceExtended:
         from app.validation import check_catalog_coherence
 
         assert check_catalog_coherence({"item_avg_rating": 4.9, "item_review_count": 1000}) == []
+
+
+class TestCartValueTierExtended:
+    @pytest.mark.parametrize("value,tier", [
+        (0.0, "low"),
+        (24.99, "low"),
+        (25.0, "medium"),
+        (99.99, "medium"),
+        (100.0, "high"),
+        (499.99, "high"),
+        (500.0, "premium"),
+        (9999.0, "premium"),
+    ])
+    def test_boundary_values(self, value: float, tier: str) -> None:
+        from app.validation import cart_value_tier
+
+        assert cart_value_tier(value) == tier
