@@ -306,3 +306,46 @@ class TestClipOutlierFeatures:
         df = make_sample_dataframe(n=100, seed=42)
         result = clip_outlier_features(df, z_threshold=threshold)
         assert len(result) == len(df)
+
+
+class TestSummariseFeatureStats:
+    def test_returns_dataframe(self) -> None:
+        from app.features import make_sample_dataframe, summarise_feature_stats
+
+        df = make_sample_dataframe(n=50)
+        result = summarise_feature_stats(df)
+        assert isinstance(result, pd.DataFrame)
+
+    def test_has_expected_columns(self) -> None:
+        from app.features import make_sample_dataframe, summarise_feature_stats
+
+        df = make_sample_dataframe(n=50)
+        result = summarise_feature_stats(df)
+        for col in ("mean", "std", "min", "max", "skew", "zero_frac"):
+            assert col in result.columns
+
+    def test_zero_frac_between_0_and_1(self) -> None:
+        from app.features import make_sample_dataframe, summarise_feature_stats
+
+        df = make_sample_dataframe(n=100)
+        result = summarise_feature_stats(df)
+        assert (result["zero_frac"] >= 0).all()
+        assert (result["zero_frac"] <= 1).all()
+
+    def test_empty_numeric_returns_empty(self) -> None:
+        import pandas as pd
+
+        from app.features import summarise_feature_stats
+
+        df = pd.DataFrame({"cat": ["a", "b", "c"]})
+        result = summarise_feature_stats(df)
+        assert result.empty
+
+    def test_indexed_by_column_name(self) -> None:
+        from app.features import make_sample_dataframe, summarise_feature_stats
+
+        df = make_sample_dataframe(n=30)
+        result = summarise_feature_stats(df)
+        numeric_cols = df.select_dtypes(include="number").columns.tolist()
+        for col in numeric_cols:
+            assert col in result.index
