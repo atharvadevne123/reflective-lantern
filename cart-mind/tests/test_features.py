@@ -378,3 +378,25 @@ class TestRatioFeaturesExtended:
         df = make_sample_dataframe(n=n)
         out = RatioFeatures().fit_transform(df)
         assert len(out) == n
+
+
+class TestInteractionFeaturesExtended:
+    def test_affinity_score_non_negative(self, sample_df) -> None:
+        from app.features import InteractionFeatures
+
+        out = InteractionFeatures().fit_transform(sample_df)
+        assert (out["affinity_score"] >= 0).all()
+
+    def test_fit_returns_self(self, sample_df) -> None:
+        from app.features import InteractionFeatures
+
+        tf = InteractionFeatures()
+        assert tf.fit(sample_df) is tf
+
+    @pytest.mark.parametrize("n", [20, 100])
+    def test_output_row_count_matches(self, n: int) -> None:
+        from app.features import InteractionFeatures, make_sample_dataframe
+
+        df = make_sample_dataframe(n=n)
+        out = InteractionFeatures().fit_transform(df)
+        assert len(out) == n
