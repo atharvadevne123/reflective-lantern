@@ -179,3 +179,41 @@ class TestModelFingerprint:
         fp = model_fingerprint(fitted_pipeline)
         assert isinstance(fp["steps"], list)
         assert all(isinstance(s, str) for s in fp["steps"])
+
+
+class TestPredictIntentExtended:
+    def test_scores_are_between_0_and_1(self, fitted_pipeline, sample_features) -> None:
+        from app.model import predict_intent
+
+        proba, _ = predict_intent(fitted_pipeline, sample_features)
+        assert all(0.0 <= p <= 1.0 for p in proba)
+
+    def test_labels_are_binary(self, fitted_pipeline, sample_features) -> None:
+        from app.model import predict_intent
+
+        _, labels = predict_intent(fitted_pipeline, sample_features)
+        assert all(l in (0, 1) for l in labels)
+
+    def test_output_lengths_match_input(self, fitted_pipeline, sample_features) -> None:
+        from app.model import predict_intent
+
+        proba, labels = predict_intent(fitted_pipeline, sample_features)
+        assert len(proba) == len(sample_features)
+        assert len(labels) == len(sample_features)
+
+    @pytest.mark.parametrize("n_rows", [1, 5, 10])
+    def test_varies_with_row_count(self, fitted_pipeline, n_rows: int) -> None:
+        from app.features import make_sample_dataframe
+        from app.model import predict_intent
+
+        _FEATURE_COLS = (
+            ["user_age", "purchase_count", "avg_order_value",
+             "days_since_last_purchase", "days_since_registration",
+             "session_count_7d", "cart_abandon_rate"]
+            + ["item_price", "item_avg_rating", "item_review_count",
+               "item_inventory_level", "item_discount_pct"]
+            + ["view_count", "click_count", "wishlist_flag", "same_category_purchases"]
+        )
+        df = make_sample_dataframe(n=n_rows, seed=7)[_FEATURE_COLS]
+        proba, labels = predict_intent(fitted_pipeline, df)
+        assert len(proba) == n_rows
