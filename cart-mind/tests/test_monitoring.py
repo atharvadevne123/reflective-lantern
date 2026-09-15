@@ -455,3 +455,34 @@ class TestComputePsiExtended:
         ref = rng.normal(0, 1, 300).tolist()
         result = compute_psi(ref, ref)
         assert "severity" in result
+
+
+class TestComputeDriftExtended:
+    def test_large_shift_detected(self) -> None:
+        import numpy as np
+
+        from app.monitoring import compute_drift
+
+        rng = np.random.default_rng(0)
+        ref = rng.normal(0, 1, 200).tolist()
+        cur = rng.normal(5, 1, 200).tolist()
+        result = compute_drift(ref, cur)
+        assert result["drift_detected"] is True
+
+    def test_identical_distributions_no_drift(self) -> None:
+        import numpy as np
+
+        from app.monitoring import compute_drift
+
+        rng = np.random.default_rng(1)
+        data = rng.normal(0, 1, 300).tolist()
+        result = compute_drift(data, data)
+        assert result["drift_detected"] is False
+
+    @pytest.mark.parametrize("n", [5, 15, 19])
+    def test_insufficient_sample_size(self, n: int) -> None:
+        from app.monitoring import compute_drift
+
+        result = compute_drift([1.0] * n, [2.0] * n)
+        assert result["drift_detected"] is False
+        assert result.get("reason") == "insufficient_data"
