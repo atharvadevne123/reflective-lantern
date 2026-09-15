@@ -131,6 +131,16 @@ class TTLCache:
 RECOMMENDATION_CACHE = TTLCache()
 SIMILARITY_CACHE = TTLCache()
 
+__all__ = [
+    "TTLCache",
+    "RECOMMENDATION_CACHE",
+    "SIMILARITY_CACHE",
+    "DEFAULT_TTL_SECONDS",
+    "DEFAULT_MAX_ENTRIES",
+    "cache_hit_rate",
+    "evict_expired",
+]
+
 
 def cache_hit_rate(cache: TTLCache) -> float:
     """Return the current hit rate of *cache* as a fraction in [0, 1].
