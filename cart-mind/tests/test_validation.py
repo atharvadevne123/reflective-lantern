@@ -503,3 +503,28 @@ class TestCheckQuantityCoherence:
         from app.validation import check_quantity_coherence
 
         assert len(check_quantity_coherence(payload)) == expected_count
+
+
+class TestTemporalCoherenceEdgeCases:
+    def test_zero_days_registration_and_purchase_passes(self) -> None:
+        assert check_temporal_coherence(
+            {"days_since_registration": 0, "days_since_last_purchase": 0}
+        ) == []
+
+    def test_exactly_one_day_difference_passes(self) -> None:
+        assert check_temporal_coherence(
+            {"days_since_registration": 10, "days_since_last_purchase": 9}
+        ) == []
+
+    def test_purchase_count_zero_with_old_purchase_no_warning(self) -> None:
+        warnings = check_temporal_coherence(
+            {"days_since_registration": 5000, "days_since_last_purchase": 4000, "purchase_count": 0}
+        )
+        assert not any("decade" in w for w in warnings)
+
+    @pytest.mark.parametrize("count", [1, 10, 100])
+    def test_decade_warning_fires_for_any_positive_count(self, count: int) -> None:
+        warnings = check_temporal_coherence(
+            {"days_since_registration": 5000, "days_since_last_purchase": 4000, "purchase_count": count}
+        )
+        assert any("decade" in w for w in warnings)
