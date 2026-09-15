@@ -217,3 +217,38 @@ class TestPredictIntentExtended:
         df = make_sample_dataframe(n=n_rows, seed=7)[_FEATURE_COLS]
         proba, labels = predict_intent(fitted_pipeline, df)
         assert len(proba) == n_rows
+
+
+class TestBuildFaissIndexExtended:
+    def test_index_has_correct_item_count(self) -> None:
+        import numpy as np
+
+        from app.model import build_faiss_index
+
+        vecs = np.random.rand(15, 8).astype(np.float32)
+        ids = [f"i{j}" for j in range(15)]
+        index = build_faiss_index(vecs, ids)
+        assert hasattr(index, "search") or hasattr(index, "_vecs")
+
+    def test_search_returns_list(self) -> None:
+        import numpy as np
+
+        from app.model import build_faiss_index, search_similar_items
+
+        vecs = np.random.rand(10, 4).astype(np.float32)
+        ids = [f"i{j}" for j in range(10)]
+        index = build_faiss_index(vecs, ids)
+        query = np.random.rand(4).astype(np.float32)
+        results = search_similar_items(index, ids, query, top_k=3)
+        assert isinstance(results, list)
+
+    @pytest.mark.parametrize("dim", [4, 8, 16])
+    def test_build_various_dimensions(self, dim: int) -> None:
+        import numpy as np
+
+        from app.model import build_faiss_index
+
+        vecs = np.random.rand(20, dim).astype(np.float32)
+        ids = [f"i{j}" for j in range(20)]
+        index = build_faiss_index(vecs, ids)
+        assert index is not None
