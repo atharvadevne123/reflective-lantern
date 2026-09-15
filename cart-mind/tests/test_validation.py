@@ -454,3 +454,52 @@ class TestNormalisePayload:
         result = normalise_payload({"extra": 42}, defaults={"base": 0})
         assert result["extra"] == 42
         assert result["base"] == 0
+
+
+class TestCheckQuantityCoherence:
+    def test_cart_value_with_zero_items_flagged(self) -> None:
+        from app.validation import check_quantity_coherence
+
+        warnings = check_quantity_coherence({"cart_item_count": 0, "cart_value": 50.0})
+        assert len(warnings) == 1
+        assert "cart_item_count is zero" in warnings[0]
+
+    def test_positive_items_with_value_passes(self) -> None:
+        from app.validation import check_quantity_coherence
+
+        assert check_quantity_coherence({"cart_item_count": 3, "cart_value": 50.0}) == []
+
+    def test_zero_items_zero_value_passes(self) -> None:
+        from app.validation import check_quantity_coherence
+
+        assert check_quantity_coherence({"cart_item_count": 0, "cart_value": 0.0}) == []
+
+    def test_avg_order_with_zero_purchases_flagged(self) -> None:
+        from app.validation import check_quantity_coherence
+
+        warnings = check_quantity_coherence({"purchase_count": 0, "avg_order_value": 99.0})
+        assert len(warnings) == 1
+        assert "purchase_count is zero" in warnings[0]
+
+    def test_positive_purchases_with_avg_order_passes(self) -> None:
+        from app.validation import check_quantity_coherence
+
+        assert check_quantity_coherence({"purchase_count": 5, "avg_order_value": 30.0}) == []
+
+    def test_missing_fields_no_warnings(self) -> None:
+        from app.validation import check_quantity_coherence
+
+        assert check_quantity_coherence({}) == []
+
+    @pytest.mark.parametrize(
+        "payload,expected_count",
+        [
+            ({"cart_item_count": 0, "cart_value": 10.0, "purchase_count": 0, "avg_order_value": 50.0}, 2),
+            ({"cart_item_count": 1, "cart_value": 10.0, "purchase_count": 1, "avg_order_value": 10.0}, 0),
+            ({}, 0),
+        ],
+    )
+    def test_parametrized_quantity_checks(self, payload: dict, expected_count: int) -> None:
+        from app.validation import check_quantity_coherence
+
+        assert len(check_quantity_coherence(payload)) == expected_count
