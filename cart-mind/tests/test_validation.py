@@ -553,3 +553,27 @@ class TestEngagementCoherenceExtended:
         from app.validation import check_engagement_coherence
 
         assert check_engagement_coherence({"click_count": 5}) == []
+
+
+class TestCatalogCoherenceExtended:
+    @pytest.mark.parametrize("rating,reviews", [(1.0, 0), (5.0, 0), (3.5, 0)])
+    def test_positive_rating_no_reviews_flagged(self, rating: float, reviews: int) -> None:
+        from app.validation import check_catalog_coherence
+
+        warnings = check_catalog_coherence({"item_avg_rating": rating, "item_review_count": reviews})
+        assert len(warnings) == 1
+
+    def test_only_rating_no_warning(self) -> None:
+        from app.validation import check_catalog_coherence
+
+        assert check_catalog_coherence({"item_avg_rating": 4.5}) == []
+
+    def test_only_review_count_no_warning(self) -> None:
+        from app.validation import check_catalog_coherence
+
+        assert check_catalog_coherence({"item_review_count": 10}) == []
+
+    def test_high_reviews_no_warning(self) -> None:
+        from app.validation import check_catalog_coherence
+
+        assert check_catalog_coherence({"item_avg_rating": 4.9, "item_review_count": 1000}) == []
