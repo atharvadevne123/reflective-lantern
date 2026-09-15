@@ -137,3 +137,45 @@ class TestFaissIndex:
         query = np.random.rand(8).astype(np.float32)
         results = search_similar_items(index, ids, query, top_k=1)
         assert "item_id" in results[0]
+
+
+class TestModelFingerprint:
+    def test_returns_dict(self, fitted_pipeline) -> None:
+        from app.model import model_fingerprint
+
+        fp = model_fingerprint(fitted_pipeline)
+        assert isinstance(fp, dict)
+
+    def test_has_required_keys(self, fitted_pipeline) -> None:
+        from app.model import model_fingerprint
+
+        fp = model_fingerprint(fitted_pipeline)
+        assert "steps" in fp
+        assert "n_steps" in fp
+        assert "param_hash" in fp
+
+    def test_step_count_positive(self, fitted_pipeline) -> None:
+        from app.model import model_fingerprint
+
+        fp = model_fingerprint(fitted_pipeline)
+        assert fp["n_steps"] > 0
+
+    def test_param_hash_is_16_chars(self, fitted_pipeline) -> None:
+        from app.model import model_fingerprint
+
+        fp = model_fingerprint(fitted_pipeline)
+        assert len(fp["param_hash"]) == 16
+
+    def test_same_pipeline_same_fingerprint(self, fitted_pipeline) -> None:
+        from app.model import model_fingerprint
+
+        fp1 = model_fingerprint(fitted_pipeline)
+        fp2 = model_fingerprint(fitted_pipeline)
+        assert fp1["param_hash"] == fp2["param_hash"]
+
+    def test_steps_is_list_of_strings(self, fitted_pipeline) -> None:
+        from app.model import model_fingerprint
+
+        fp = model_fingerprint(fitted_pipeline)
+        assert isinstance(fp["steps"], list)
+        assert all(isinstance(s, str) for s in fp["steps"])
