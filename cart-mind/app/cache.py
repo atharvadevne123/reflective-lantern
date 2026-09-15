@@ -163,6 +163,7 @@ __all__ = [
     "DEFAULT_MAX_ENTRIES",
     "cache_hit_rate",
     "evict_expired",
+    "warm_cache",
 ]
 
 
@@ -177,6 +178,25 @@ def cache_hit_rate(cache: TTLCache) -> float:
     """
     s = cache.stats()
     return s["hit_rate"]
+
+
+def warm_cache(cache: TTLCache, items: dict[str, Any]) -> int:
+    """Pre-populate *cache* with a batch of key-value pairs.
+
+    Useful at startup to seed the cache with recently retrieved results so
+    the first wave of requests hits hot entries rather than computing from scratch.
+
+    Args:
+        cache: A TTLCache instance to warm.
+        items: Mapping of cache keys to their values.
+
+    Returns:
+        Number of entries inserted.
+    """
+    for key, value in items.items():
+        cache.set(key, value)
+    logger.debug("Cache warmed with %d entries", len(items))
+    return len(items)
 
 
 def evict_expired(cache: TTLCache) -> int:
