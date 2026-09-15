@@ -389,3 +389,27 @@ class TestAlertOnDrift:
         }
         alerts = alert_on_drift(results)
         assert len(alerts) == 2
+
+
+class TestRollingMeanExtended:
+    def test_constant_series_returns_same_value(self) -> None:
+        from app.monitoring import rolling_mean
+
+        values = [5.0] * 10
+        result = rolling_mean(values, window=4)
+        assert all(abs(v - 5.0) < 1e-9 for v in result)
+
+    def test_window_larger_than_series(self) -> None:
+        from app.monitoring import rolling_mean
+
+        values = [1.0, 2.0]
+        result = rolling_mean(values, window=10)
+        assert len(result) == 2
+
+    @pytest.mark.parametrize("n", [1, 5, 20])
+    def test_output_length_matches_input(self, n: int) -> None:
+        from app.monitoring import rolling_mean
+
+        values = list(range(n))
+        result = rolling_mean([float(v) for v in values], window=3)
+        assert len(result) == n
