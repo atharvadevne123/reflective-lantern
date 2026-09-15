@@ -362,6 +362,30 @@ def alert_on_drift(
     return alerts
 
 
+def drift_summary(feature_results: dict[str, dict[str, Any]]) -> dict[str, Any]:
+    """Summarise per-feature drift results into aggregate statistics.
+
+    Args:
+        feature_results: Per-feature result dicts, as returned by
+            :func:`check_all_features`.
+
+    Returns:
+        Dict with ``total_features``, ``drifted_features``, ``drift_rate``,
+        and ``features_with_major_psi`` counts.
+    """
+    total = len(feature_results)
+    drifted = sum(1 for r in feature_results.values() if r.get("drift_detected"))
+    major_psi = sum(
+        1 for r in feature_results.values() if r.get("psi_severity") == "major"
+    )
+    return {
+        "total_features": total,
+        "drifted_features": drifted,
+        "drift_rate": round(drifted / total, 4) if total else 0.0,
+        "features_with_major_psi": major_psi,
+    }
+
+
 def rolling_mean(values: list[float], window: int) -> list[float]:
     """Compute a trailing rolling mean over *values* with the given window size.
 
@@ -395,4 +419,5 @@ __all__ = [
     "compute_psi",
     "rolling_mean",
     "alert_on_drift",
+    "drift_summary",
 ]
