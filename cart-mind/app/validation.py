@@ -120,6 +120,7 @@ def validate_payload(payload: dict[str, Any]) -> list[str]:
         check_temporal_coherence(payload)
         + check_engagement_coherence(payload)
         + check_catalog_coherence(payload)
+        + check_price_coherence(payload)
     )
     if warnings:
         logger.warning("Payload coherence warnings: %s", "; ".join(warnings))
