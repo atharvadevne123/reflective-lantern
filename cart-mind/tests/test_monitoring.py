@@ -341,3 +341,51 @@ class TestRollingMean:
             values = [3.0, 1.0, 4.0, 1.0, 5.0]
             result = rolling_mean(values, window=1)
             assert result == pytest.approx(values)
+
+
+import pytest  # noqa: F811
+
+
+class TestAlertOnDrift:
+    def test_empty_results_returns_no_alerts(self) -> None:
+        from app.monitoring import alert_on_drift
+
+        assert alert_on_drift({}) == []
+
+    def test_no_drift_returns_no_alerts(self) -> None:
+        from app.monitoring import alert_on_drift
+
+        results = {
+            "feat_a": {"drift_detected": False, "p_value": 0.5, "psi": 0.02}
+        }
+        assert alert_on_drift(results) == []
+
+    def test_ks_drift_triggers_alert(self) -> None:
+        from app.monitoring import alert_on_drift
+
+        results = {
+            "feat_a": {"drift_detected": True, "p_value": 0.01, "psi": 0.02, "psi_severity": "stable"}
+        }
+        alerts = alert_on_drift(results)
+        assert len(alerts) == 1
+        assert "feat_a" in alerts[0]
+
+    def test_psi_drift_triggers_alert(self) -> None:
+        from app.monitoring import alert_on_drift
+
+        results = {
+            "feat_b": {"drift_detected": False, "p_value": 0.3, "psi": 0.5, "psi_severity": "major"}
+        }
+        alerts = alert_on_drift(results, psi_threshold=0.25)
+        assert len(alerts) == 1
+        assert "feat_b" in alerts[0]
+
+    def test_multiple_drifted_features_all_alerted(self) -> None:
+        from app.monitoring import alert_on_drift
+
+        results = {
+            "feat_a": {"drift_detected": True, "p_value": 0.01, "psi": 0.05, "psi_severity": "stable"},
+            "feat_b": {"drift_detected": True, "p_value": 0.02, "psi": 0.03, "psi_severity": "stable"},
+        }
+        alerts = alert_on_drift(results)
+        assert len(alerts) == 2
