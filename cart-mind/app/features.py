@@ -297,6 +297,32 @@ def drop_low_variance_features(df: pd.DataFrame, threshold: float = 0.01) -> pd.
         logger.debug("drop_low_variance_features: dropping %d columns: %s", len(low_var), low_var)
     return df.drop(columns=low_var)
 
+
+def clip_outlier_features(df: pd.DataFrame, z_threshold: float = 4.0) -> pd.DataFrame:
+    """Return a copy of *df* with extreme numeric values clamped to z-score bounds.
+
+    Values beyond *z_threshold* standard deviations from the column mean are
+    clipped to the nearest boundary. This is applied before feature engineering
+    to prevent a single pathological request from dominating normalised features.
+
+    Args:
+        df: Input feature frame.
+        z_threshold: Number of standard deviations beyond which a value is clipped.
+
+    Returns:
+        Clipped DataFrame (copy).
+    """
+    out = df.copy()
+    for col in out.select_dtypes(include="number").columns:
+        mean = out[col].mean()
+        std = out[col].std()
+        if std > 0:
+            lo = mean - z_threshold * std
+            hi = mean + z_threshold * std
+            out[col] = out[col].clip(lower=lo, upper=hi)
+    return out
+
+
 __all__ = [
     "RatioFeatures",
     "InteractionFeatures",
@@ -308,4 +334,5 @@ __all__ = [
     "make_purchase_labels",
     "feature_correlation_matrix",
     "drop_low_variance_features",
+    "clip_outlier_features",
 ]
