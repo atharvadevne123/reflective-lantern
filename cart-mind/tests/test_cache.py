@@ -309,3 +309,34 @@ class TestEvictExpiredExtended:
         c.set("fresh", "value")
         evict_expired(c)
         assert c.get("fresh") == "value"
+
+
+class TestCacheContains:
+    def test_contains_existing_key(self) -> None:
+        cache = TTLCache()
+        cache.set("k", "v")
+        assert cache.contains("k") is True
+
+    def test_contains_missing_key_returns_false(self) -> None:
+        cache = TTLCache()
+        assert cache.contains("absent") is False
+
+    def test_contains_expired_key_returns_false(self) -> None:
+        import time
+
+        cache = TTLCache(ttl_seconds=0.05)
+        cache.set("k", "v")
+        time.sleep(0.08)
+        assert cache.contains("k") is False
+
+    def test_contains_after_delete_returns_false(self) -> None:
+        cache = TTLCache()
+        cache.set("k", "v")
+        cache.delete("k")
+        assert cache.contains("k") is False
+
+    @pytest.mark.parametrize("key", ["a", "b", "c"])
+    def test_contains_after_set(self, key: str) -> None:
+        cache = TTLCache()
+        cache.set(key, 1)
+        assert cache.contains(key) is True
