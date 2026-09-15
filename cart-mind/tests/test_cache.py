@@ -455,3 +455,35 @@ class TestWarmCache:
         count = warm_cache(cache, items)
         assert count == n_items
         assert cache.size() == n_items
+
+
+class TestTTLCacheStatsExtended:
+    def test_stats_ttl_field(self) -> None:
+        cache = TTLCache(ttl_seconds=120.0)
+        stats = cache.stats()
+        assert stats["ttl_seconds"] == 120.0
+
+    def test_stats_max_entries_field(self) -> None:
+        cache = TTLCache(max_entries=50)
+        stats = cache.stats()
+        assert stats["max_entries"] == 50
+
+    def test_stats_after_clear(self) -> None:
+        cache = TTLCache()
+        cache.set("k", 1)
+        cache.get("k")
+        cache.clear()
+        stats = cache.stats()
+        assert stats["hits"] == 0
+        assert stats["misses"] == 0
+        assert stats["entries"] == 0
+
+    def test_hit_rate_precision(self) -> None:
+        cache = TTLCache()
+        cache.set("k", 1)
+        for _ in range(3):
+            cache.get("k")
+        for _ in range(1):
+            cache.get("missing")
+        stats = cache.stats()
+        assert stats["hit_rate"] == pytest.approx(0.75, abs=0.01)
