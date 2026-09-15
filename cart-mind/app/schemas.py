@@ -141,3 +141,20 @@ class ModelInfoResponse(BaseModel):
 class CacheStatsResponse(BaseModel):
     recommendation_cache: dict
     similarity_cache: dict
+
+__all__ = [
+    "UserItemFeatures",
+    "RecommendRequest",
+    "SimilarItemsRequest",
+    "IntentResponse",
+    "RecommendResponse",
+    "SimilarItemsResponse",
+    "HealthResponse",
+    "MetricsResponse",
+    "DriftRequest",
+    "DriftResponse",
+    "BatchPredictRequest",
+    "BatchPredictResponse",
+    "ModelInfoResponse",
+    "CacheStatsResponse",
+]
