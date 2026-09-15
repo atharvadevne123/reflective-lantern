@@ -298,6 +298,37 @@ def drop_low_variance_features(df: pd.DataFrame, threshold: float = 0.01) -> pd.
     return df.drop(columns=low_var)
 
 
+def summarise_feature_stats(df: pd.DataFrame) -> pd.DataFrame:
+    """Return a descriptive stats table for numeric columns in *df*.
+
+    Supplements ``pd.DataFrame.describe`` with skewness and the fraction of
+    zeros, which together flag features likely to need transformation or
+    special handling before model training.
+
+    Args:
+        df: Feature frame to summarise.
+
+    Returns:
+        DataFrame indexed by column name with ``mean``, ``std``, ``min``,
+        ``max``, ``skew``, and ``zero_frac`` columns.
+    """
+    numeric = df.select_dtypes(include="number")
+    if numeric.empty:
+        return pd.DataFrame()
+    rows = {}
+    for col in numeric.columns:
+        s = numeric[col]
+        rows[col] = {
+            "mean": round(float(s.mean()), 4),
+            "std": round(float(s.std()), 4),
+            "min": round(float(s.min()), 4),
+            "max": round(float(s.max()), 4),
+            "skew": round(float(s.skew()), 4),
+            "zero_frac": round(float((s == 0).mean()), 4),
+        }
+    return pd.DataFrame(rows).T
+
+
 def clip_outlier_features(df: pd.DataFrame, z_threshold: float = 4.0) -> pd.DataFrame:
     """Return a copy of *df* with extreme numeric values clamped to z-score bounds.
 
@@ -335,4 +366,5 @@ __all__ = [
     "feature_correlation_matrix",
     "drop_low_variance_features",
     "clip_outlier_features",
+    "summarise_feature_stats",
 ]
