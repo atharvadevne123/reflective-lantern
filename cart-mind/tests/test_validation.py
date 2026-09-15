@@ -614,3 +614,18 @@ class TestPriceDiscountPctExtended:
         for orig, disc in [(100, 50), (10, 200), (0, 5), (5, 0)]:
             result = price_discount_pct(float(orig), float(disc))
             assert 0.0 <= result <= 100.0
+
+
+class TestItemCountFlagExtended:
+    @pytest.mark.parametrize("count,threshold,expected", [
+        (0, 10, False),
+        (9, 10, False),
+        (10, 10, True),
+        (100, 10, True),
+        (1, 1, True),
+        (0, 1, False),
+    ])
+    def test_boundary_values(self, count: int, threshold: int, expected: bool) -> None:
+        from app.validation import item_count_flag
+
+        assert item_count_flag(count, bulk_threshold=threshold) == expected
