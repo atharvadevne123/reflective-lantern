@@ -297,12 +297,43 @@ def normalise_payload(
     result.update(payload)
     return result
 
+def check_quantity_coherence(payload: dict[str, Any]) -> list[str]:
+    """Check that quantity-related fields are mutually consistent.
+
+    A cart with zero items cannot have a positive cart value, and a purchase
+    count of zero is inconsistent with a non-zero avg_order_value.
+
+    Args:
+        payload: Raw request payload as a mapping.
+
+    Returns:
+        List of human-readable warnings; empty when coherent.
+    """
+    warnings: list[str] = []
+    cart_items = payload.get("cart_item_count")
+    cart_val = payload.get("cart_value")
+    if cart_items is not None and cart_val is not None:
+        if cart_items == 0 and cart_val > 0:
+            warnings.append(
+                f"cart_value is positive ({cart_val}) but cart_item_count is zero"
+            )
+    purchase_count = payload.get("purchase_count")
+    avg_order = payload.get("avg_order_value")
+    if purchase_count is not None and avg_order is not None:
+        if purchase_count == 0 and avg_order > 0:
+            warnings.append(
+                f"avg_order_value is positive ({avg_order}) but purchase_count is zero"
+            )
+    return warnings
+
+
 __all__ = [
     "ValidationIssue",
     "check_temporal_coherence",
     "check_engagement_coherence",
     "check_catalog_coherence",
     "check_price_coherence",
+    "check_quantity_coherence",
     "validate_payload",
     "validate_batch",
     "sanitise_payload",
