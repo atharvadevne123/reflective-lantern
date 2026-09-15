@@ -528,3 +528,28 @@ class TestTemporalCoherenceEdgeCases:
             {"days_since_registration": 5000, "days_since_last_purchase": 4000, "purchase_count": count}
         )
         assert any("decade" in w for w in warnings)
+
+
+class TestEngagementCoherenceExtended:
+    @pytest.mark.parametrize("views,clicks", [(0, 1), (3, 10), (1, 2)])
+    def test_clicks_exceed_views_parametrized(self, views: int, clicks: int) -> None:
+        from app.validation import check_engagement_coherence
+
+        warnings = check_engagement_coherence({"view_count": views, "click_count": clicks})
+        assert len(warnings) == 1
+
+    @pytest.mark.parametrize("views,clicks", [(10, 10), (5, 0), (100, 99)])
+    def test_valid_engagement_parametrized(self, views: int, clicks: int) -> None:
+        from app.validation import check_engagement_coherence
+
+        assert check_engagement_coherence({"view_count": views, "click_count": clicks}) == []
+
+    def test_only_views_field_no_warning(self) -> None:
+        from app.validation import check_engagement_coherence
+
+        assert check_engagement_coherence({"view_count": 5}) == []
+
+    def test_only_clicks_field_no_warning(self) -> None:
+        from app.validation import check_engagement_coherence
+
+        assert check_engagement_coherence({"click_count": 5}) == []
