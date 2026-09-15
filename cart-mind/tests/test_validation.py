@@ -594,3 +594,23 @@ class TestCartValueTierExtended:
         from app.validation import cart_value_tier
 
         assert cart_value_tier(value) == tier
+
+
+class TestPriceDiscountPctExtended:
+    @pytest.mark.parametrize("original,discounted,expected", [
+        (200.0, 150.0, 25.0),
+        (10.0, 10.0, 0.0),
+        (100.0, 0.0, 100.0),
+        (50.0, 25.0, 50.0),
+    ])
+    def test_known_values(self, original: float, discounted: float, expected: float) -> None:
+        from app.validation import price_discount_pct
+
+        assert price_discount_pct(original, discounted) == pytest.approx(expected, abs=0.01)
+
+    def test_result_always_between_0_and_100(self) -> None:
+        from app.validation import price_discount_pct
+
+        for orig, disc in [(100, 50), (10, 200), (0, 5), (5, 0)]:
+            result = price_discount_pct(float(orig), float(disc))
+            assert 0.0 <= result <= 100.0
