@@ -60,4 +60,5 @@ def download_model(dest: Path = Path("model.joblib"), version: str = "1.0.0") ->
         logger.warning("S3 download failed: %s", exc)
     return False
 
+
 __all__ = ["download_model", "upload_model"]

@@ -289,7 +289,9 @@ def forecast_incident_rate() -> list[ForecastPoint]:
     response_model=list[PredictionResponse],
     summary="Score a batch of observations",
 )
-def predict_batch(request: BatchPredictRequest, db: Session = Depends(get_db)) -> list[PredictionResponse]:
+def predict_batch(
+    request: BatchPredictRequest, db: Session = Depends(get_db)
+) -> list[PredictionResponse]:
     """Score up to 500 telemetry observations in a single call.
 
     Batching amortises the model and pipeline lookup across the whole request

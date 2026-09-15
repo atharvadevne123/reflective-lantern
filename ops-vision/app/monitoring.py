@@ -231,6 +231,7 @@ def get_monitor() -> DriftMonitor:
         logger.info("DriftMonitor singleton initialised")
     return _monitor_singleton
 
+
 __all__ = [
     "DriftMonitor",
     "DriftResult",

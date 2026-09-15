@@ -188,7 +188,7 @@ def test_token_bucket_first_consume_allowed(capacity: int) -> None:
     """A fresh bucket always allows the first single-token consume."""
     from app.token_bucket import TokenBucket
 
-    tb = TokenBucket(capacity=capacity, rate=0.0)
+    tb = TokenBucket(capacity=capacity, rate=0.001)
     assert tb.consume() is True
 
 
@@ -197,7 +197,7 @@ def test_token_bucket_exhausted_after_capacity_consumes(capacity: int) -> None:
     """After consuming exactly capacity tokens, the next consume is denied."""
     from app.token_bucket import TokenBucket
 
-    tb = TokenBucket(capacity=capacity, rate=0.0)
+    tb = TokenBucket(capacity=capacity, rate=0.001)
     for _ in range(capacity):
         tb.consume()
     assert tb.consume() is False
@@ -208,14 +208,14 @@ class TestPerKeyTokenBucketIsolation:
     def test_keys_are_independent(self, n_keys: int) -> None:
         from app.token_bucket import PerKeyTokenBucket
 
-        pkb = PerKeyTokenBucket(capacity=1, rate=0.0)
+        pkb = PerKeyTokenBucket(capacity=1, rate=0.001)
         results = [pkb.consume(f"key-{i}") for i in range(n_keys)]
         assert all(results)
 
     def test_key_exhausted_does_not_affect_other_key(self) -> None:
         from app.token_bucket import PerKeyTokenBucket
 
-        pkb = PerKeyTokenBucket(capacity=1, rate=0.0)
+        pkb = PerKeyTokenBucket(capacity=1, rate=0.001)
         pkb.consume("a")
         pkb.consume("a")
         assert pkb.consume("b") is True

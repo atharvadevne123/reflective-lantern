@@ -111,4 +111,5 @@ def ready() -> dict[str, str]:
         raise HTTPException(status_code=503, detail="Model not yet loaded")
     return {"status": "ready", "version": __version__}
 
+
 __all__ = ["app", "ready", "root_health", "version"]

@@ -242,6 +242,7 @@ def generate_synthetic_data(
     idx = rng.permutation(len(df))
     return df.iloc[idx].reset_index(drop=True), labels.iloc[idx].reset_index(drop=True)
 
+
 __all__ = [
     "build_model",
     "evaluate",

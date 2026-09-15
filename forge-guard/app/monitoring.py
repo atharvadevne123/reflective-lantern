@@ -208,6 +208,7 @@ def model_prediction_summary(db: Session, model_version: str) -> dict[str, Any]:
         "avg_defect_probability": round(avg_prob, 4),
     }
 
+
 __all__ = [
     "compute_drift",
     "compute_zscore_outliers",

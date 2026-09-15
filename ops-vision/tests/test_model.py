@@ -101,7 +101,9 @@ class TestTrainAndEvaluate:
         _, metrics = train(transformed_X, synthetic_labels, cv_folds=2)
         assert 0.0 <= metrics["cv_auc_mean"] <= 1.0
 
-    def test_evaluate_returns_test_auc(self, trained_model, transformed_X, synthetic_labels) -> None:
+    def test_evaluate_returns_test_auc(
+        self, trained_model, transformed_X, synthetic_labels
+    ) -> None:
         """evaluate() returns test_auc_roc key."""
         from app.model import evaluate
 
@@ -110,7 +112,9 @@ class TestTrainAndEvaluate:
         assert 0.0 <= metrics["test_auc_roc"] <= 1.0
 
     @pytest.mark.parametrize("cv_folds", [2, 3])
-    def test_train_with_different_cv_folds(self, transformed_X, synthetic_labels, cv_folds) -> None:
+    def test_train_with_different_cv_folds(
+        self, transformed_X, synthetic_labels, cv_folds
+    ) -> None:
         """train() should work with different numbers of CV folds."""
         from app.model import train
 

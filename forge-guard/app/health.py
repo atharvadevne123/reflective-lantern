@@ -66,4 +66,5 @@ def composite_health() -> dict[str, Any]:
         "database": db_status,
     }
 
+
 __all__ = ["check_database_reachable", "check_model_loaded", "composite_health"]

@@ -263,6 +263,7 @@ def field_statistics(records: list[dict[str, float]], field: str) -> dict[str, f
         "std": round(variance**0.5, 4),
     }
 
+
 __all__ = [
     "clamp_reading",
     "clamp_to_range",

@@ -35,6 +35,7 @@ class RunbookIndexError(OpsVisionError):
         self.reason = reason
         super().__init__(f"Runbook index error: {reason}")
 
+
 __all__ = [
     "DriftMonitorError",
     "FeatureEngineeringError",

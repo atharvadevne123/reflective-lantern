@@ -181,10 +181,10 @@ class TestNormalizationFactorEdgeCases:
 @pytest.mark.parametrize("n_days", [1, 7, 30])
 def test_normalize_consumption_same_period_is_unchanged(n_days: int) -> None:
     """Normalizing with equal HDD/CDD returns original consumption."""
-    consumption = [10.0] * n_days
-    hdd = [5.0] * n_days
-    result = normalize_consumption(consumption, hdd, hdd)
-    assert result == pytest.approx(consumption)
+    total_consumption = 10.0 * n_days
+    hdd = 5.0 * n_days
+    result = normalize_consumption(total_consumption, hdd, hdd)
+    assert result == pytest.approx(total_consumption)
 
 
 @pytest.mark.parametrize("base", [15.0, 18.0, 21.0])

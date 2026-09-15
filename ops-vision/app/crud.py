@@ -318,6 +318,7 @@ def count_predictions_by_service(db: Session, service_name: str) -> int:
         logger.exception("Failed to count predictions for service=%s", service_name)
         raise
 
+
 __all__ = [
     "avg_confidence",
     "bulk_create_predictions",

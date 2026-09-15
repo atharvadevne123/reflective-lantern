@@ -23,7 +23,9 @@ def _incident_row(service: str = "batch-svc", is_incident: bool = True) -> dict:
 class TestBatchPredict:
     """Tests for POST /api/v1/predict/batch."""
 
-    def test_batch_returns_one_result_per_item(self, client, sample_metrics, normal_metrics) -> None:
+    def test_batch_returns_one_result_per_item(
+        self, client, sample_metrics, normal_metrics
+    ) -> None:
         """The response length matches the request length."""
         resp = client.post(
             "/api/v1/predict/batch",

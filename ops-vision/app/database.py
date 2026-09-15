@@ -188,6 +188,7 @@ def ping_db() -> bool:
         logger.exception("Database ping failed")
         return False
 
+
 __all__ = [
     "Base",
     "DriftAlert",

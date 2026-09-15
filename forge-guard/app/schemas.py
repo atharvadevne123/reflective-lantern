@@ -84,6 +84,7 @@ class ModelSummaryResponse(BaseModel):
     defect_rate: float = 0.0
     avg_defect_probability: float = 0.0
 
+
 __all__ = [
     "BatchPredictionResponse",
     "BatchSensorInput",

@@ -210,6 +210,7 @@ def get_rate_buffer() -> IncidentRateBuffer:
         _buffer_singleton = IncidentRateBuffer()
     return _buffer_singleton
 
+
 __all__ = [
     "ExponentialSmoothingForecaster",
     "ForecastPoint",

@@ -44,4 +44,5 @@ def log_run(metrics: dict[str, Any], params: dict[str, Any] | None = None) -> st
     logger.info("Fallback MLflow run written to %s", run_dir)
     return run_id
 
+
 __all__ = ["log_run"]

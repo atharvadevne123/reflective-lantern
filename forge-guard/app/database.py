@@ -89,6 +89,7 @@ def init_db() -> None:
     """Create all tables if they do not yet exist."""
     Base.metadata.create_all(bind=engine)
 
+
 __all__ = [
     "Base",
     "DriftReport",

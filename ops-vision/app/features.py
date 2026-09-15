@@ -184,6 +184,7 @@ def safe_dataframe_from_dict(payload: dict) -> pd.DataFrame:
             raise ValueError(f"Invalid value for {col}: {raw!r}") from exc
     return pd.DataFrame([row])
 
+
 __all__ = [
     "ColumnSelector",
     "LatencyErrRatioTransformer",

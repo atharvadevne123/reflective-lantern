@@ -218,6 +218,7 @@ def defect_risk_index(
     )
     return round(min(1.0, score), 6)
 
+
 __all__ = [
     "DataFrameToArray",
     "LagFeatureTransformer",

@@ -192,6 +192,7 @@ class ModelInfoResponse(BaseModel):
     model_loaded: bool
     estimators: list[str] | None = None
 
+
 __all__ = [
     "BatchPredictRequest",
     "BatchPredictResponse",
