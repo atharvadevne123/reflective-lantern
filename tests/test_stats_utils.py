@@ -1539,18 +1539,21 @@ class TestWinsorizeEdgeCases:
 class TestComputeEntropyExtended:
     def test_uniform_distribution_has_max_entropy(self) -> None:
         from app.stats_utils import compute_entropy
+
         equal = [1.0, 1.0, 1.0, 1.0]
         skewed = [4.0, 0.1, 0.1, 0.1]
         assert compute_entropy(equal) > compute_entropy(skewed)
 
     def test_zero_values_are_ignored(self) -> None:
         from app.stats_utils import compute_entropy
+
         result = compute_entropy([1.0, 0.0, 1.0, 0.0])
         assert result >= 0.0
 
     @pytest.mark.parametrize("n", [2, 4, 8])
     def test_entropy_non_negative(self, n: int) -> None:
         from app.stats_utils import compute_entropy
+
         values = [1.0] * n
         assert compute_entropy(values) >= 0.0
 
@@ -1558,17 +1561,20 @@ class TestComputeEntropyExtended:
 class TestComputeCorrelationExtended:
     def test_perfect_positive_correlation(self) -> None:
         from app.stats_utils import compute_correlation
+
         x = [1.0, 2.0, 3.0, 4.0, 5.0]
         assert compute_correlation(x, x) == pytest.approx(1.0)
 
     def test_perfect_negative_correlation(self) -> None:
         from app.stats_utils import compute_correlation
+
         x = [1.0, 2.0, 3.0, 4.0, 5.0]
         neg = [-v for v in x]
         assert compute_correlation(x, neg) == pytest.approx(-1.0)
 
     def test_correlation_in_minus_one_to_one(self) -> None:
         from app.stats_utils import compute_correlation
+
         x = [1.0, 3.0, 2.0, 5.0, 4.0]
         y = [2.0, 1.0, 4.0, 3.0, 5.0]
         r = compute_correlation(x, y)
@@ -1578,11 +1584,13 @@ class TestComputeCorrelationExtended:
 class TestComputeSkewnessExtended:
     def test_symmetric_data_near_zero(self) -> None:
         from app.stats_utils import compute_skewness
+
         symmetric = [1.0, 2.0, 3.0, 4.0, 5.0]
         assert abs(compute_skewness(symmetric)) < 0.1
 
     def test_right_skewed_positive(self) -> None:
         from app.stats_utils import compute_skewness
+
         right_skewed = [1.0, 1.0, 1.0, 1.0, 10.0]
         assert compute_skewness(right_skewed) > 0.0
 
@@ -1591,6 +1599,7 @@ class TestComputeSkewnessExtended:
         import math
 
         from app.stats_utils import compute_skewness
+
         values = list(range(1, n + 1))
         result = compute_skewness([float(v) for v in values])
         assert math.isfinite(result)
@@ -1599,15 +1608,18 @@ class TestComputeSkewnessExtended:
 class TestGeometricMeanExtended:
     def test_unit_values_give_one(self) -> None:
         from app.stats_utils import geometric_mean
+
         assert geometric_mean([1.0] * 5) == pytest.approx(1.0)
 
     def test_single_value_returns_itself(self) -> None:
         from app.stats_utils import geometric_mean
+
         assert geometric_mean([4.0]) == pytest.approx(4.0)
 
     @pytest.mark.parametrize("n", [2, 5, 10])
     def test_positive_values_give_positive_mean(self, n: int) -> None:
         from app.stats_utils import geometric_mean
+
         values = [float(i + 1) for i in range(n)]
         assert geometric_mean(values) > 0.0
 
@@ -1615,12 +1627,14 @@ class TestGeometricMeanExtended:
 class TestWeightedAverage:
     def test_equal_weights_matches_mean(self) -> None:
         from app.stats_utils import weighted_average
+
         values = [1.0, 2.0, 3.0, 4.0]
         weights = [1.0] * 4
         assert weighted_average(values, weights) == pytest.approx(2.5)
 
     def test_zero_weight_item_excluded(self) -> None:
         from app.stats_utils import weighted_average
+
         values = [1.0, 10.0, 1.0]
         weights = [1.0, 0.0, 1.0]
         result = weighted_average(values, weights)
@@ -1629,6 +1643,7 @@ class TestWeightedAverage:
     @pytest.mark.parametrize("n", [3, 5, 7])
     def test_result_within_value_range(self, n: int) -> None:
         from app.stats_utils import weighted_average
+
         values = [float(i + 1) for i in range(n)]
         weights = [1.0] * n
         result = weighted_average(values, weights)
@@ -1638,16 +1653,19 @@ class TestWeightedAverage:
 class TestInterquartileRangeExtended:
     def test_constant_series_gives_zero(self) -> None:
         from app.stats_utils import interquartile_range
+
         assert interquartile_range([5.0] * 10) == pytest.approx(0.0)
 
     def test_non_negative_result(self) -> None:
         from app.stats_utils import interquartile_range
+
         values = [1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0]
         assert interquartile_range(values) >= 0.0
 
     @pytest.mark.parametrize("n", [8, 12, 20])
     def test_iqr_less_than_range(self, n: int) -> None:
         from app.stats_utils import interquartile_range
+
         values = [float(i) for i in range(n)]
         iqr = interquartile_range(values)
         full_range = values[-1] - values[0]

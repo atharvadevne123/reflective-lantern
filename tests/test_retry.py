@@ -405,6 +405,7 @@ class TestRetryNetworkError:
 class TestRetrySucceedsOnFirstAttempt:
     def test_successful_function_not_retried(self, monkeypatch) -> None:
         from app.retry import retry
+
         call_count = [0]
         monkeypatch.setattr("time.sleep", lambda _: None)
 
@@ -419,6 +420,7 @@ class TestRetrySucceedsOnFirstAttempt:
 
     def test_retry_respects_max_attempts(self, monkeypatch) -> None:
         from app.retry import retry
+
         call_count = [0]
         monkeypatch.setattr("time.sleep", lambda _: None)
 
@@ -434,6 +436,7 @@ class TestRetrySucceedsOnFirstAttempt:
     @pytest.mark.parametrize("max_attempts", [1, 2, 4])
     def test_call_count_matches_max_attempts(self, monkeypatch, max_attempts: int) -> None:
         from app.retry import retry
+
         call_count = [0]
         monkeypatch.setattr("time.sleep", lambda _: None)
 
@@ -450,6 +453,7 @@ class TestRetrySucceedsOnFirstAttempt:
 class TestRetrySucceedsEventually:
     def test_succeeds_after_one_failure(self, monkeypatch) -> None:
         from app.retry import retry
+
         attempts = [0]
         monkeypatch.setattr("time.sleep", lambda _: None)
 

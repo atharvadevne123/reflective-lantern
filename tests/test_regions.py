@@ -634,17 +634,20 @@ class TestRegionSummaryEdgeCases:
 class TestRegionsByPeakLoadExtended:
     def test_returns_list(self) -> None:
         from app.regions import regions_by_peak_load
+
         result = regions_by_peak_load()
         assert isinstance(result, list)
 
     def test_descending_order(self) -> None:
         from app.regions import get_peak_load, regions_by_peak_load
+
         ids = regions_by_peak_load(descending=True)
         loads = [get_peak_load(r) for r in ids if get_peak_load(r) is not None]
         assert loads == sorted(loads, reverse=True)
 
     def test_ascending_order(self) -> None:
         from app.regions import get_peak_load, regions_by_peak_load
+
         ids = regions_by_peak_load(descending=False)
         loads = [get_peak_load(r) for r in ids if get_peak_load(r) is not None]
         assert loads == sorted(loads)
@@ -653,10 +656,12 @@ class TestRegionsByPeakLoadExtended:
 class TestTotalPeakLoad:
     def test_total_is_positive(self) -> None:
         from app.regions import total_peak_load_mw
+
         assert total_peak_load_mw() > 0.0
 
     def test_above_any_individual_region(self) -> None:
         from app.regions import get_all_region_ids, get_peak_load, total_peak_load_mw
+
         total = total_peak_load_mw()
         for rid in get_all_region_ids():
             pl = get_peak_load(rid)
@@ -666,6 +671,7 @@ class TestTotalPeakLoad:
     @pytest.mark.parametrize("threshold", [0.0, 100.0, 5000.0])
     def test_regions_above_threshold_is_subset(self, threshold: float) -> None:
         from app.regions import get_all_region_ids, regions_above_peak
+
         all_ids = set(get_all_region_ids())
         above = regions_above_peak(threshold)
         assert set(above).issubset(all_ids)
