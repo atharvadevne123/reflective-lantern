@@ -218,6 +218,11 @@ class PropertyAgeTransformer(BaseEstimator, TransformerMixin):
     """Compute property age from year_built relative to a reference year."""
 
     def __init__(self, reference_year: int = 2026) -> None:
+        """Set the reference year used to compute property age.
+
+        Args:
+            reference_year: The year subtracted from year_built to derive age.
+        """
         self.reference_year = reference_year
 
     def fit(self, X: pd.DataFrame, y: object = None) -> PropertyAgeTransformer:
