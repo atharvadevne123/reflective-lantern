@@ -921,5 +921,74 @@
     "tests_passed": true,
     "server_verified": true,
     "ruff_clean": true
+  },
+  {
+    "date": "2026-09-16",
+    "mode": "innovation",
+    "project": "Ticket-Oracle",
+    "description": "IT helpdesk ticket priority classification (P1-P4) and SLA breach prediction API using XGBoost+LightGBM+RandomForest soft-voting ensemble, FAISS similarity search, time-series volume forecasting, and Airflow-based weekly retraining with champion/challenger AUC gate.",
+    "inspired_by": "IT operations/ITSM tooling; HN/GitHub trending scrape blocked by session egress policy; topic selected via dedup elimination against 31 repos + 27 prior innovations",
+    "chosen_keywords": "ticket helpdesk priority SLA breach prediction classification",
+    "archetype": "Multi-output Prediction API + Similarity Search + Drift Monitoring",
+    "repo_url": "https://github.com/atharvadevne123/reflective-lantern/pull/83",
+    "repo_note": "Built as subdirectory of reflective-lantern on branch innovation/ticket-oracle; standalone repo creation blocked by session GitHub API scoping.",
+    "file_count": 45,
+    "test_count": 200,
+    "commits": 61,
+    "coverage_pct": 100,
+    "metrics": {
+      "model": "VotingClassifier(XGBoost+LightGBM+RandomForest)",
+      "tasks": [
+        "priority_classification_P1-P4",
+        "sla_breach_binary"
+      ],
+      "cv_folds": 5,
+      "auc_type": "weighted_OvR",
+      "sla_model": "XGBClassifier_binary"
+    },
+    "stack": [
+      "Python",
+      "FastAPI",
+      "XGBoost",
+      "LightGBM",
+      "RandomForest",
+      "VotingClassifier",
+      "sklearn Pipeline + ColumnTransformer",
+      "TF-IDF bigrams",
+      "FAISS similarity search",
+      "KS-test + PSI drift detection",
+      "SQLAlchemy + Alembic",
+      "slowapi rate limiting",
+      "Docker + PostgreSQL",
+      "Airflow DAG (weekly retrain)",
+      "pydantic-settings",
+      "pytest",
+      "GitHub Actions CI",
+      "ruff"
+    ],
+    "optional_enhancements": [
+      "FAISS vector similarity search",
+      "time-series SMA + spike detection forecasting",
+      "deterministic priority override rules",
+      "circuit breaker + exponential backoff retry",
+      "structured JSON logging",
+      "feature importance explainer",
+      "SLA deadline calculator with tier multipliers",
+      "TTL/LRU prediction cache",
+      "correlation ID middleware",
+      "latency p50/p95/p99 metrics collector"
+    ],
+    "bugs_found_and_fixed": [
+      "ruff F811: duplicate test function name in test_schemas.py (walrus operator syntax error)",
+      "ruff B905: zip() missing strict= in features.py and model.py",
+      "ruff F841: unused variable in features.py engineer_features",
+      "ruff C408: dict() calls in generate_diagram.py replaced with literals",
+      "pytest: pandas StringDtype vs object dtype for categorical columns",
+      "pytest: PSI test flaky at n=200 samples (increased to n=1000)"
+    ],
+    "tests_passed": true,
+    "ruff_clean": true,
+    "wheel_built": true,
+    "wheel_path": "ticket-oracle/dist/ticket_oracle-1.0.0-py3-none-any.whl"
   }
 ]
