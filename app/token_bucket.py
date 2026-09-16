@@ -30,6 +30,7 @@ class TokenBucket:
     _lock: threading.Lock = field(init=False, repr=False)
 
     def __post_init__(self) -> None:
+        """Validate parameters and initialise mutable state fields."""
         if self.capacity <= 0:
             raise ValueError("capacity must be positive")
         if self.rate <= 0:
@@ -105,6 +106,12 @@ class PerKeyTokenBucket:
     """
 
     def __init__(self, capacity: float, rate: float) -> None:
+        """Initialise the keyed limiter with shared capacity and rate.
+
+        Args:
+            capacity: Bucket capacity (burst size) applied to every key.
+            rate: Refill rate in tokens per second applied to every key.
+        """
         self.capacity = capacity
         self.rate = rate
         self._buckets: dict[str, TokenBucket] = {}
