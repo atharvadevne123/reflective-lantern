@@ -258,5 +258,6 @@ class TestEventRoi:
     @pytest.mark.parametrize("payment", [0.0, 50.0, 200.0])
     def test_roi_is_finite_for_valid_inputs(self, payment: float) -> None:
         import math
+
         roi = event_roi(net_payment=payment, baseline_cost_per_kwh=0.10, baseline_kwh=100.0)
         assert math.isfinite(roi)
