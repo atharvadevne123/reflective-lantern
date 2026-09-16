@@ -164,6 +164,7 @@ class RagPipeline:
         }
 
     def _index_chunks(self, new_chunks: list[Chunk]) -> None:
+        """Add new chunks to BM25 and vector indices; no-op for empty lists."""
         if not new_chunks:
             return
         for chunk in new_chunks:
@@ -173,6 +174,7 @@ class RagPipeline:
         self.vectors.add([c.chunk_id for c in new_chunks], vectors)
 
     def _remove_document_chunks(self, doc_id: str) -> None:
+        """Evict all chunks belonging to *doc_id* from in-memory and index stores."""
         stale = [cid for cid, chunk in self.chunks.items() if chunk.doc_id == doc_id]
         for cid in stale:
             del self.chunks[cid]
