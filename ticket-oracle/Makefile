@@ -1,24 +1,40 @@
-.PHONY: install test lint format run train clean
+.PHONY: install lint test test-fast build clean seed run
 
 install:
-	pip install -r requirements.txt
-
-test:
-	pytest tests/ -v --tb=short 2>&1 | tail -60
+	pip install -e ".[dev]"
 
 lint:
-	ruff check .
+	ruff check ticket-oracle/
 
 format:
-	ruff format .
+	ruff format ticket-oracle/
 
-run:
-	uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+test:
+	python -m pytest ticket-oracle/tests/ -v --tb=short
 
-train:
-	python -c "from app.features import make_synthetic_dataset; from app.model import train_models; X,yp,ys=make_synthetic_dataset(); m=train_models(X,yp,ys); print(m)"
+test-fast:
+	python -m pytest ticket-oracle/tests/ -v --tb=short -x -q \
+		--ignore=ticket-oracle/tests/test_model.py
+
+build:
+	python -m build --sdist --wheel ticket-oracle/
 
 clean:
-	find . -type d -name __pycache__ -exec rm -rf {} + 2>/dev/null || true
-	find . -name "*.pyc" -delete 2>/dev/null || true
-	rm -rf dist build *.egg-info
+	rm -rf ticket-oracle/dist/ ticket-oracle/*.egg-info ticket-oracle/__pycache__ \
+		ticket-oracle/app/__pycache__ ticket-oracle/tests/__pycache__ \
+		ticket-oracle/models/ ticket_oracle.db .pytest_cache
+
+seed:
+	cd ticket-oracle && python scripts/seed_db.py --n 500
+
+run:
+	cd ticket-oracle && uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+
+run-prod:
+	cd ticket-oracle && uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 4
+
+diagram:
+	cd ticket-oracle && python scripts/generate_diagram.py
+
+benchmark:
+	cd ticket-oracle && python scripts/benchmark.py --n 50
