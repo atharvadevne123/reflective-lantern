@@ -42,6 +42,7 @@ class FeatureStore:
     """
 
     def __init__(self) -> None:
+        """Initialise an empty feature store."""
         self._store: dict[str, list[FeatureSet]] = {}
 
     def publish(self, feature_set: FeatureSet) -> None:
@@ -123,6 +124,7 @@ class FeatureStore:
         return len(self._store.get(name, []))
 
     def __len__(self) -> int:
+        """Return the number of distinct feature set names in the store."""
         return len(self._store)
 
     def total_versions(self) -> int:
