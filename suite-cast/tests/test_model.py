@@ -114,7 +114,9 @@ class TestPredictDemand:
         assert "demand_score" in result
 
     @pytest.mark.parametrize("base_rate", [80.0, 150.0, 300.0])
-    def test_suggested_rate_scales_with_base(self, trained_models, sample_booking_df, base_rate) -> None:
+    def test_suggested_rate_scales_with_base(
+        self, trained_models, sample_booking_df, base_rate
+    ) -> None:
         xgb_pipe, lgbm_pipe, _ = trained_models
         result = predict_demand(xgb_pipe, lgbm_pipe, sample_booking_df, base_rate=base_rate)
         # Rate must be in [0.7×base, 1.6×base]
