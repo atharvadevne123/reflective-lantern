@@ -65,6 +65,14 @@ class BatchProcessor(Generic[T, R]):
         error_handling: str = "raise",
         on_batch_done: Callable[[BatchResult[R]], None] | None = None,
     ) -> None:
+        """Configure the batch processor with size, error-handling, and callback.
+
+        Args:
+            processor: Callable that transforms a list of input items into results.
+            batch_size: Maximum items per batch (must be >= 1).
+            error_handling: ``'raise'`` re-raises on first error; ``'collect'`` captures.
+            on_batch_done: Optional callback invoked with each completed BatchResult.
+        """
         if batch_size < 1:
             raise ValueError("batch_size must be >= 1")
         if error_handling not in ("raise", "collect"):
