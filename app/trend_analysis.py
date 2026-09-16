@@ -518,10 +518,7 @@ def trend_summary(values: list[float]) -> dict[str, object]:
     strength = trend_strength(values) if len(values) >= 4 else 0.0
     change_pts = detect_change_points(values) if len(values) >= 4 else []
     first, last = values[0], values[-1]
-    if first == 0.0:
-        pct_change = 0.0
-    else:
-        pct_change = round((last - first) / abs(first) * 100.0, 4)
+    pct_change = 0.0 if first == 0.0 else round((last - first) / abs(first) * 100.0, 4)
     return {
         "direction": direction,
         "strength": round(strength, 4),

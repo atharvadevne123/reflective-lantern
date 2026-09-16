@@ -261,10 +261,7 @@ def prediction_confidence(
         return {"mean": 0.0, "std": 0.0, "lower_95": 0.0, "upper_95": 0.0}
 
     X_feat = pipeline.transform(X)
-    if hasattr(X_feat, "values"):
-        X_arr = X_feat.values.astype(float)
-    else:
-        X_arr = np.array(X_feat, dtype=float)
+    X_arr = X_feat.values.astype(float) if hasattr(X_feat, "values") else np.array(X_feat, dtype=float)
 
     estimates = []
     estimators = getattr(model, "estimators_", None)

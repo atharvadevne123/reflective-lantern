@@ -143,10 +143,7 @@ def tiered_cost(hourly_kwh: list[float], bands: list[TieredBand] | None = None) 
     for band in bands:
         if remaining <= 0:
             break
-        if band.limit_kwh is None:
-            band_capacity = remaining
-        else:
-            band_capacity = max(0.0, band.limit_kwh - consumed)
+        band_capacity = remaining if band.limit_kwh is None else max(0.0, band.limit_kwh - consumed)
         charged = min(remaining, band_capacity)
         cost += charged * band.rate
         consumed += charged

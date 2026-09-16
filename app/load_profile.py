@@ -205,10 +205,7 @@ def night_load_fraction(hourly_kwh: list[float], night_hours: tuple[int, int] = 
     if total <= 0:
         return 0.0
     start, end = night_hours
-    if start > end:
-        night = sum(hourly_kwh[start:24]) + sum(hourly_kwh[:end])
-    else:
-        night = sum(hourly_kwh[start:end])
+    night = sum(hourly_kwh[start:24]) + sum(hourly_kwh[:end]) if start > end else sum(hourly_kwh[start:end])
     return round(night / total, 4)
 
 

@@ -188,10 +188,7 @@ def detect_duplicates(
     seen: set[tuple] = set()
     duplicates: list[int] = []
     for i, record in enumerate(records):
-        if key_fields is None:
-            key = tuple(sorted(record.items()))
-        else:
-            key = tuple(record.get(f) for f in key_fields)
+        key = tuple(sorted(record.items())) if key_fields is None else tuple(record.get(f) for f in key_fields)
         if key in seen:
             duplicates.append(i)
         else:
