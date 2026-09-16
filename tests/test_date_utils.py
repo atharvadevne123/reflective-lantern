@@ -1134,6 +1134,7 @@ class TestNextBusinessDayExtended:
         from datetime import UTC
 
         from app.date_utils import next_business_day
+
         monday = datetime(2026, 9, 7, 12, 0, tzinfo=UTC)
         result = next_business_day(monday)
         assert result.weekday() == 1
@@ -1142,6 +1143,7 @@ class TestNextBusinessDayExtended:
         from datetime import UTC
 
         from app.date_utils import next_business_day
+
         friday = datetime(2026, 9, 11, 12, 0, tzinfo=UTC)
         result = next_business_day(friday)
         assert result.weekday() == 0
@@ -1150,6 +1152,7 @@ class TestNextBusinessDayExtended:
         from datetime import UTC
 
         from app.date_utils import next_business_day
+
         saturday = datetime(2026, 9, 12, 12, 0, tzinfo=UTC)
         result = next_business_day(saturday)
         assert result.weekday() == 0
@@ -1160,6 +1163,7 @@ class TestDaysUntil:
         from datetime import UTC
 
         from app.date_utils import days_until
+
         start = datetime(2026, 9, 1, tzinfo=UTC)
         target = datetime(2026, 9, 11, tzinfo=UTC)
         assert days_until(start, target) == 10
@@ -1168,6 +1172,7 @@ class TestDaysUntil:
         from datetime import UTC
 
         from app.date_utils import days_until
+
         dt = datetime(2026, 9, 11, tzinfo=UTC)
         assert days_until(dt, dt) == 0
 
@@ -1175,6 +1180,7 @@ class TestDaysUntil:
         from datetime import UTC
 
         from app.date_utils import days_until
+
         start = datetime(2026, 9, 11, tzinfo=UTC)
         target = datetime(2026, 9, 1, tzinfo=UTC)
         assert days_until(start, target) <= 0
@@ -1185,6 +1191,7 @@ class TestClampToRange:
         from datetime import UTC
 
         from app.date_utils import clamp_to_range
+
         start = datetime(2026, 1, 1, tzinfo=UTC)
         end = datetime(2026, 12, 31, tzinfo=UTC)
         mid = datetime(2026, 6, 15, tzinfo=UTC)
@@ -1194,6 +1201,7 @@ class TestClampToRange:
         from datetime import UTC
 
         from app.date_utils import clamp_to_range
+
         start = datetime(2026, 6, 1, tzinfo=UTC)
         end = datetime(2026, 12, 31, tzinfo=UTC)
         early = datetime(2026, 1, 1, tzinfo=UTC)
@@ -1203,6 +1211,7 @@ class TestClampToRange:
         from datetime import UTC
 
         from app.date_utils import clamp_to_range
+
         start = datetime(2026, 1, 1, tzinfo=UTC)
         end = datetime(2026, 6, 1, tzinfo=UTC)
         late = datetime(2026, 12, 31, tzinfo=UTC)
@@ -1213,6 +1222,7 @@ class TestClampToRange:
         from datetime import UTC, timedelta
 
         from app.date_utils import clamp_to_range
+
         start = datetime(2026, 1, 1, tzinfo=UTC)
         end = datetime(2026, 12, 31, tzinfo=UTC)
         mid = datetime(2026, 6, 15, tzinfo=UTC)

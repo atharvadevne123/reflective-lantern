@@ -161,10 +161,7 @@ def test_build_message_body_contains_text() -> None:
 
     msg = build_message("S", "my body text", "a@b.com", "c@d.com")
     payload = msg.get_payload()
-    if isinstance(payload, list):
-        combined = " ".join(p.get_payload() or "" for p in payload)
-    else:
-        combined = payload or ""
+    combined = " ".join(p.get_payload() or "" for p in payload) if isinstance(payload, list) else payload or ""
     assert "my body text" in combined
 
 
