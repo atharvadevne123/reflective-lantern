@@ -1654,7 +1654,7 @@ import pytest
     [
         ([5.0, 5.0, 5.0], 1.0),
         ([0.0, 0.0, 0.0], 0.0),
-        ([1.0, 2.0, 3.0, 4.0], pytest.approx(0.5, rel=0.01)),
+        ([1.0, 2.0, 3.0, 4.0], pytest.approx(0.625, rel=0.01)),
     ],
 )
 def test_load_factor_known_cases(values, expected_load_factor) -> None:
