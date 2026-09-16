@@ -33,6 +33,12 @@ class RagPipeline:
     """In-process implementation of the ten-stage architecture."""
 
     def __init__(self, config: Settings | None = None, generator: Any | None = None) -> None:
+        """Initialise all ten pipeline stages from *config*.
+
+        Args:
+            config: Runtime settings; uses module defaults when None.
+            generator: Pre-built answer generator; auto-selected from config when None.
+        """
         self.config = config or default_settings
 
         # Stage 1 state
