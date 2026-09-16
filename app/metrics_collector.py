@@ -23,6 +23,12 @@ class Counter:
     """Monotonically increasing counter."""
 
     def __init__(self, name: str, description: str = "") -> None:
+        """Initialise a counter with a name and optional description.
+
+        Args:
+            name: Unique metric name.
+            description: Human-readable description.
+        """
         self.name = name
         self.description = description
         self._value: float = 0.0
@@ -58,6 +64,12 @@ class Gauge:
     """Gauge that can go up or down."""
 
     def __init__(self, name: str, description: str = "") -> None:
+        """Initialise a gauge with a name and optional description.
+
+        Args:
+            name: Unique metric name.
+            description: Human-readable description.
+        """
         self.name = name
         self.description = description
         self._value: float = 0.0
@@ -106,6 +118,7 @@ class Histogram:
     buckets: list[float] = field(default_factory=lambda: [0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1.0, 2.5, 5.0])
 
     def __post_init__(self) -> None:
+        """Initialise per-bucket counters and running-sum accumulators."""
         self._lock = threading.Lock()
         self._counts: list[int] = [0] * len(self.buckets)
         self._sum: float = 0.0
@@ -154,6 +167,7 @@ class MetricsRegistry:
     """Central registry for named metrics."""
 
     def __init__(self) -> None:
+        """Initialise an empty metrics registry."""
         self._metrics: dict[str, object] = {}
 
     def counter(self, name: str, description: str = "") -> Counter:
@@ -215,6 +229,7 @@ class MetricsRegistry:
         return self._metrics.pop(name, None) is not None
 
     def __len__(self) -> int:
+        """Return the number of registered metrics."""
         return len(self._metrics)
 
 
