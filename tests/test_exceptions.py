@@ -160,15 +160,18 @@ def test_prediction_error_various_lengths(msg: str) -> None:
     assert msg in str(err)
 
 
-@pytest.mark.parametrize("exc_class", [
-    WattGuardError,
-    ModelNotLoadedError,
-    FeatureValidationError,
-    DriftDetectionError,
-    DatabaseError,
-    ConfigurationError,
-    PredictionError,
-])
+@pytest.mark.parametrize(
+    "exc_class",
+    [
+        WattGuardError,
+        ModelNotLoadedError,
+        FeatureValidationError,
+        DriftDetectionError,
+        DatabaseError,
+        ConfigurationError,
+        PredictionError,
+    ],
+)
 def test_all_exceptions_inherit_watt_guard_error(exc_class: type) -> None:
     """Every domain exception is a WattGuardError."""
     assert issubclass(exc_class, WattGuardError)

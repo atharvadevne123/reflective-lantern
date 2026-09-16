@@ -178,13 +178,16 @@ def test_eui_scales_inversely_with_area(area: float) -> None:
     assert pytest.approx(eui_half, rel=1e-6) == 2 * eui_full
 
 
-@pytest.mark.parametrize("rank,expected_grade", [
-    (0.95, "A"),
-    (0.75, "B"),
-    (0.55, "C"),
-    (0.35, "D"),
-    (0.10, "F"),
-])
+@pytest.mark.parametrize(
+    "rank,expected_grade",
+    [
+        (0.95, "A"),
+        (0.75, "B"),
+        (0.55, "C"),
+        (0.35, "D"),
+        (0.10, "F"),
+    ],
+)
 def test_grade_from_percentile_rank(rank: float, expected_grade: str) -> None:
     """grade_from_score maps known score ranges to expected letter grades."""
     score = score_from_percentile(rank)
