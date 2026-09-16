@@ -20,6 +20,7 @@ _SUFFIXES = ("ment", "ing", "ed", "es", "ly", "s")
 
 
 def _sentences(text: str) -> list[str]:
+    """Split *text* into non-empty sentences using terminal punctuation."""
     return [s.strip() for s in _SENTENCE_END.split(text) if s.strip()]
 
 
