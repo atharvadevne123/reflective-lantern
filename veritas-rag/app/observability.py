@@ -57,6 +57,7 @@ class TraceRecorder:
         self._stage_started = time.monotonic()
 
     def end_stage(self, name: str, **data: Any) -> None:
+        """Record stage completion with elapsed time and arbitrary stage data."""
         elapsed = 0.0
         if self._stage_started is not None and self._stage_name == name:
             elapsed = (time.monotonic() - self._stage_started) * 1000.0
