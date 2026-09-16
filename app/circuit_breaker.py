@@ -38,6 +38,13 @@ class CircuitBreaker:
         recovery_timeout: float = 30.0,
         expected_exceptions: Sequence[type[Exception]] = (Exception,),
     ) -> None:
+        """Initialise the circuit breaker.
+
+        Args:
+            failure_threshold: Consecutive failures before opening the circuit.
+            recovery_timeout: Seconds to wait in OPEN state before probing.
+            expected_exceptions: Exception types that count as failures.
+        """
         self.failure_threshold = failure_threshold
         self.recovery_timeout = recovery_timeout
         self.expected_exceptions = tuple(expected_exceptions)
@@ -81,6 +88,7 @@ class CircuitBreaker:
             raise exc
 
     def _on_success(self) -> None:
+        """Record a successful call and close the circuit if half-open."""
         if self._state is CircuitState.HALF_OPEN:
             logger.info("Circuit CLOSED after successful probe")
         self._state = CircuitState.CLOSED
@@ -88,6 +96,7 @@ class CircuitBreaker:
         self._opened_at = None
 
     def _on_failure(self) -> None:
+        """Record a failed call and open the circuit if threshold reached."""
         self._failure_count += 1
         if self._state is CircuitState.HALF_OPEN or self._failure_count >= self.failure_threshold:
             logger.warning("Circuit OPEN after %d failures", self._failure_count)
@@ -114,6 +123,7 @@ class CircuitBreaker:
 
         @functools.wraps(func)
         def wrapper(*args, **kwargs) -> object:
+            """Forward call through the circuit breaker."""
             return self.call(func, *args, **kwargs)
 
         return wrapper
