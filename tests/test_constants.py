@@ -194,7 +194,9 @@ class TestGradeThresholdOrdering:
 
         assert c.EFFICIENCY_GRADE_C_THRESHOLD < c.EFFICIENCY_GRADE_B_THRESHOLD < c.EFFICIENCY_GRADE_A_THRESHOLD
 
-    @pytest.mark.parametrize("attr", ["EFFICIENCY_GRADE_A_THRESHOLD", "EFFICIENCY_GRADE_B_THRESHOLD", "EFFICIENCY_GRADE_C_THRESHOLD"])
+    @pytest.mark.parametrize(
+        "attr", ["EFFICIENCY_GRADE_A_THRESHOLD", "EFFICIENCY_GRADE_B_THRESHOLD", "EFFICIENCY_GRADE_C_THRESHOLD"]
+    )
     def test_grade_thresholds_between_zero_and_one(self, attr: str) -> None:
         import app.constants as c
 

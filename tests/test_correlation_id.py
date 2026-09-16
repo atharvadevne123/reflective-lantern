@@ -173,6 +173,7 @@ def test_is_valid_uuid_or_returns_bool(value: str) -> None:
 class TestCorrelationContextManager:
     def setup_method(self) -> None:
         from app.correlation_id import clear_correlation_id
+
         clear_correlation_id()
 
     def test_context_manager_sets_id(self) -> None:
