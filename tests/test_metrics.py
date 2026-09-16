@@ -335,11 +335,13 @@ class TestMaxAbsoluteErrorExtended:
 class TestSymmetricMapeExtended:
     def test_perfect_forecast_gives_zero(self) -> None:
         from app.metrics import symmetric_mape
+
         values = [1.0, 2.0, 3.0]
         assert symmetric_mape(values, values) == pytest.approx(0.0)
 
     def test_result_non_negative(self) -> None:
         from app.metrics import symmetric_mape
+
         actual = [1.0, 2.0, 3.0]
         predicted = [1.5, 2.5, 3.5]
         assert symmetric_mape(actual, predicted) >= 0.0
@@ -347,6 +349,7 @@ class TestSymmetricMapeExtended:
     @pytest.mark.parametrize("n", [3, 5, 10])
     def test_equal_inputs_give_zero(self, n: int) -> None:
         from app.metrics import symmetric_mape
+
         values = [float(i + 1) for i in range(n)]
         assert symmetric_mape(values, values) == pytest.approx(0.0)
 
@@ -354,11 +357,13 @@ class TestSymmetricMapeExtended:
 class TestNormalisedRmseExtended:
     def test_perfect_prediction_gives_zero(self) -> None:
         from app.metrics import normalised_rmse
+
         values = [1.0, 2.0, 3.0, 4.0]
         assert normalised_rmse(values, values) == pytest.approx(0.0)
 
     def test_result_non_negative(self) -> None:
         from app.metrics import normalised_rmse
+
         actual = [1.0, 2.0, 3.0, 4.0]
         predicted = [1.1, 2.1, 3.1, 4.1]
         assert normalised_rmse(actual, predicted) >= 0.0
@@ -366,6 +371,7 @@ class TestNormalisedRmseExtended:
     @pytest.mark.parametrize("shift", [0.5, 1.0, 2.0])
     def test_larger_error_larger_nrmse(self, shift: float) -> None:
         from app.metrics import normalised_rmse
+
         actual = [10.0] * 10
         predicted = [10.0 + shift] * 10
         nrmse = normalised_rmse(actual, predicted)
@@ -375,11 +381,13 @@ class TestNormalisedRmseExtended:
 class TestRSquaredExtended:
     def test_perfect_prediction_gives_one(self) -> None:
         from app.metrics import r_squared
+
         values = [1.0, 2.0, 3.0, 4.0]
         assert r_squared(values, values) == pytest.approx(1.0)
 
     def test_constant_prediction_low_r_squared(self) -> None:
         from app.metrics import r_squared
+
         actual = [1.0, 2.0, 3.0, 4.0]
         predicted = [2.5, 2.5, 2.5, 2.5]
         result = r_squared(actual, predicted)
@@ -388,5 +396,6 @@ class TestRSquaredExtended:
     @pytest.mark.parametrize("n", [4, 6, 10])
     def test_self_prediction_is_one(self, n: int) -> None:
         from app.metrics import r_squared
+
         values = [float(i + 1) for i in range(n)]
         assert r_squared(values, values) == pytest.approx(1.0)

@@ -1253,11 +1253,14 @@ def test_price_per_bedroom_scales_with_count(bedrooms: int) -> None:
 
 
 class TestDomClassification:
-    @pytest.mark.parametrize("dom,expected_class", [
-        (7, "fast"),
-        (30, "normal"),
-        (90, "slow"),
-    ])
+    @pytest.mark.parametrize(
+        "dom,expected_class",
+        [
+            (7, "fast"),
+            (30, "normal"),
+            (90, "slow"),
+        ],
+    )
     def test_dom_class_categories(self, dom: int, expected_class: str) -> None:
         result = dom_classification(dom)
         assert isinstance(result, str)
@@ -1267,16 +1270,19 @@ class TestDomClassification:
 class TestPriceGrowthRateExtended:
     def test_no_change_is_zero(self) -> None:
         from app.market_context import price_growth_rate
+
         assert price_growth_rate(100_000.0, 100_000.0) == pytest.approx(0.0)
 
     def test_positive_growth(self) -> None:
         from app.market_context import price_growth_rate
+
         rate = price_growth_rate(100_000.0, 121_000.0, years=2.0)
         assert rate == pytest.approx(10.0, rel=0.01)
 
     @pytest.mark.parametrize("years", [1.0, 2.0, 5.0])
     def test_growth_rate_is_finite(self, years: float) -> None:
         from app.market_context import price_growth_rate
+
         rate = price_growth_rate(100_000.0, 120_000.0, years=years)
         assert isinstance(rate, float)
 
@@ -1284,19 +1290,23 @@ class TestPriceGrowthRateExtended:
 class TestValueGap:
     def test_listed_at_value_gives_zero(self) -> None:
         from app.market_context import value_gap
+
         assert value_gap(300_000.0, 300_000.0) == pytest.approx(0.0)
 
     def test_underpriced_gives_positive_gap(self) -> None:
         from app.market_context import value_gap
+
         assert value_gap(300_000.0, 250_000.0) > 0.0
 
     def test_overpriced_gives_negative_gap(self) -> None:
         from app.market_context import value_gap
+
         assert value_gap(300_000.0, 350_000.0) < 0.0
 
     @pytest.mark.parametrize("list_price", [200_000.0, 300_000.0, 400_000.0])
     def test_gap_direction_consistent(self, list_price: float) -> None:
         from app.market_context import value_gap
+
         estimated = 300_000.0
         gap = value_gap(estimated, list_price)
         if list_price < estimated:
@@ -1308,11 +1318,13 @@ class TestValueGap:
 class TestMarketHeatScore:
     def test_score_in_valid_range(self) -> None:
         from app.market_context import market_heat_score
+
         score = market_heat_score(days_on_market=15, list_to_sale_ratio=1.02, inventory_months=2.0)
         assert 0.0 <= score <= 10.0
 
     def test_low_dom_hotter_market(self) -> None:
         from app.market_context import market_heat_score
+
         hot = market_heat_score(days_on_market=5, list_to_sale_ratio=1.05, inventory_months=1.0)
         cold = market_heat_score(days_on_market=120, list_to_sale_ratio=0.95, inventory_months=8.0)
         assert hot > cold
@@ -1320,5 +1332,6 @@ class TestMarketHeatScore:
     @pytest.mark.parametrize("dom", [7, 30, 90])
     def test_various_dom_stay_in_range(self, dom: int) -> None:
         from app.market_context import market_heat_score
+
         score = market_heat_score(days_on_market=dom, list_to_sale_ratio=1.0, inventory_months=3.0)
         assert 0.0 <= score <= 10.0
