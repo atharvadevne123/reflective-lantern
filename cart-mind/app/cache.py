@@ -38,6 +38,12 @@ class TTLCache:
         ttl_seconds: float = DEFAULT_TTL_SECONDS,
         max_entries: int = DEFAULT_MAX_ENTRIES,
     ) -> None:
+        """Initialise the LRU-TTL cache with the given lifetime and capacity.
+
+        Args:
+            ttl_seconds: Entry lifetime in seconds from insertion time.
+            max_entries: Hard capacity; least-recently-used entries are evicted first.
+        """
         self._ttl = ttl_seconds
         self._max = max_entries
         self._store: OrderedDict[str, tuple[float, Any]] = OrderedDict()
