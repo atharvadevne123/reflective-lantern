@@ -28,6 +28,7 @@ class Trace:
     outcome: dict[str, Any] = field(default_factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
+        """Serialise this trace to a plain dictionary for logging or storage."""
         return {
             "request_id": self.request_id,
             "query": self.query,
@@ -41,11 +42,17 @@ class TraceRecorder:
     """Builds one trace across pipeline stages."""
 
     def __init__(self, query: str) -> None:
+        """Create a new trace for the given query with a fresh UUID.
+
+        Args:
+            query: The query text this trace tracks.
+        """
         self.trace = Trace(request_id=str(uuid.uuid4()), query=query, started_at=time.monotonic())
         self._stage_started: float | None = None
         self._stage_name: str | None = None
 
     def start_stage(self, name: str) -> None:
+        """Mark the start of a named pipeline stage for timing purposes."""
         self._stage_name = name
         self._stage_started = time.monotonic()
 
