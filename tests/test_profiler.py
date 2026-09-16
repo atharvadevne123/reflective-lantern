@@ -176,16 +176,19 @@ class TestProfilerEdgeCases:
 class TestProfilerExtended:
     def setup_method(self) -> None:
         from app.profiler import reset_stats
+
         reset_stats()
 
     def test_tracked_names_sorted(self) -> None:
         from app.profiler import tracked, tracked_names
 
         @tracked(label="z_func")
-        def z(): pass
+        def z():
+            pass
 
         @tracked(label="a_func")
-        def a(): pass
+        def a():
+            pass
 
         z()
         a()
@@ -196,10 +199,12 @@ class TestProfilerExtended:
         from app.profiler import total_calls, tracked
 
         @tracked(label="tc_a")
-        def fa(): pass
+        def fa():
+            pass
 
         @tracked(label="tc_b")
-        def fb(): pass
+        def fb():
+            pass
 
         fa()
         fa()
@@ -208,6 +213,7 @@ class TestProfilerExtended:
 
     def test_call_count_unknown_label_returns_zero(self) -> None:
         from app.profiler import call_count
+
         assert call_count("nonexistent_label_xyz") == 0
 
     @pytest.mark.parametrize("n", [1, 3, 5])
@@ -217,7 +223,8 @@ class TestProfilerExtended:
         label = f"param_count_{n}"
 
         @tracked(label=label)
-        def fn(): pass
+        def fn():
+            pass
 
         for _ in range(n):
             fn()
@@ -227,7 +234,8 @@ class TestProfilerExtended:
         from app.profiler import get_stats, reset_stats, tracked
 
         @tracked(label="to_reset")
-        def fn(): pass
+        def fn():
+            pass
 
         fn()
         reset_stats("to_reset")

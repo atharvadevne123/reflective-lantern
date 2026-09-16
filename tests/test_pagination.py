@@ -242,6 +242,7 @@ def test_paginate_first_page_length_at_most_per_page(per_page: int) -> None:
 def test_page_info_total_pages_ceiling_division(total: int) -> None:
     """total_pages is ceil(total / per_page)."""
     import math
+
     info = PageInfo(total=total, page=1, per_page=10)
     assert info.total_pages == math.ceil(total / 10) if total > 0 else 0
 
@@ -259,12 +260,14 @@ class TestCursorPaginateFirstPage:
 class TestPageRange:
     def test_single_page_result(self) -> None:
         from app.pagination import page_range
+
         info = PageInfo(total=5, page=1, per_page=10)
         result = page_range(info)
         assert 1 in result
 
     def test_range_contains_current_page(self) -> None:
         from app.pagination import page_range
+
         info = PageInfo(total=100, page=5, per_page=10)
         result = page_range(info)
         assert 5 in result
@@ -272,6 +275,7 @@ class TestPageRange:
     @pytest.mark.parametrize("window", [3, 5, 7])
     def test_range_not_larger_than_window(self, window: int) -> None:
         from app.pagination import page_range
+
         info = PageInfo(total=200, page=5, per_page=10)
         result = page_range(info, window=window)
         assert len(result) <= window
@@ -280,15 +284,18 @@ class TestPageRange:
 class TestLastPageItems:
     def test_even_division(self) -> None:
         from app.pagination import last_page_items
+
         assert last_page_items(list(range(20)), per_page=5) == 5
 
     def test_remainder_on_last_page(self) -> None:
         from app.pagination import last_page_items
+
         assert last_page_items(list(range(23)), per_page=5) == 3
 
     @pytest.mark.parametrize("n,per_page", [(10, 3), (15, 4), (20, 7)])
     def test_last_page_items_positive(self, n: int, per_page: int) -> None:
         from app.pagination import last_page_items
+
         result = last_page_items(list(range(n)), per_page=per_page)
         assert 0 < result <= per_page
 

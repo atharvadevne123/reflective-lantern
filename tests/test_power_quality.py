@@ -238,11 +238,14 @@ class TestVoltageImbalanceExtended:
     def test_imbalanced_gives_positive(self) -> None:
         assert voltage_imbalance([240.0, 230.0, 250.0]) > 0.0
 
-    @pytest.mark.parametrize("voltages", [
-        [240.0, 240.0, 240.0],
-        [230.0, 240.0, 250.0],
-        [220.0, 240.0, 260.0],
-    ])
+    @pytest.mark.parametrize(
+        "voltages",
+        [
+            [240.0, 240.0, 240.0],
+            [230.0, 240.0, 250.0],
+            [220.0, 240.0, 260.0],
+        ],
+    )
     def test_result_non_negative(self, voltages: list) -> None:
         assert voltage_imbalance(voltages) >= 0.0
 
