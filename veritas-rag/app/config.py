@@ -7,10 +7,12 @@ from dataclasses import dataclass, field
 
 
 def _env_float(name: str, default: float) -> float:
+    """Read an environment variable as a float, returning *default* if unset."""
     return float(os.getenv(name, str(default)))
 
 
 def _env_int(name: str, default: int) -> int:
+    """Read an environment variable as an int, returning *default* if unset."""
     return int(os.getenv(name, str(default)))
 
 
