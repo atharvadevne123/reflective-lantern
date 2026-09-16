@@ -588,7 +588,6 @@ class TestIrrEstimate:
     def test_negative_investment_raises(self) -> None:
         import pytest
 
-
         with pytest.raises(ValueError, match="positive"):
             irr_estimate(-100.0, [50.0])
 
@@ -1342,6 +1341,7 @@ class TestAnnualizedReturnExtended:
     @pytest.mark.parametrize("years", [1.0, 5.0, 10.0, 20.0])
     def test_annualized_return_finite_for_valid_inputs(self, years: float) -> None:
         import math
+
         result = annualized_return(total_return=1.0, years=years)
         assert math.isfinite(result)
 
@@ -1361,6 +1361,7 @@ class TestNetPresentValueExtended:
     @pytest.mark.parametrize("rate", [0.05, 0.10, 0.15])
     def test_npv_finite_for_valid_inputs(self, rate: float) -> None:
         import math
+
         flows = [50.0, 100.0, 150.0]
         assert math.isfinite(net_present_value(flows, discount_rate=rate))
 

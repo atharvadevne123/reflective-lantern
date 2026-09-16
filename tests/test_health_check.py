@@ -1,6 +1,5 @@
 """Tests for app.health_check."""
 
-
 from app.health_check import CheckResult, HealthRegistry, check
 
 

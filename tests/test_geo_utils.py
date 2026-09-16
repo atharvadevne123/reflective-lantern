@@ -177,11 +177,14 @@ def test_coordinate_boundary_lat_lon_accepted(lat: float, lon: float) -> None:
     assert c.lon == lon
 
 
-@pytest.mark.parametrize("city_pair", [
-    (LONDON, PARIS),
-    (NEW_YORK, SYDNEY),
-    (LONDON, NEW_YORK),
-])
+@pytest.mark.parametrize(
+    "city_pair",
+    [
+        (LONDON, PARIS),
+        (NEW_YORK, SYDNEY),
+        (LONDON, NEW_YORK),
+    ],
+)
 def test_haversine_is_positive_for_distinct_cities(city_pair) -> None:
     """haversine returns a positive distance for any pair of distinct cities."""
     a, b = city_pair
@@ -210,11 +213,14 @@ class TestBearing:
         b = bearing(LONDON, PARIS)
         assert 0.0 <= b < 360.0
 
-    @pytest.mark.parametrize("coord_pair", [
-        (LONDON, PARIS),
-        (NEW_YORK, SYDNEY),
-        (LONDON, TOKYO),
-    ])
+    @pytest.mark.parametrize(
+        "coord_pair",
+        [
+            (LONDON, PARIS),
+            (NEW_YORK, SYDNEY),
+            (LONDON, TOKYO),
+        ],
+    )
     def test_bearing_nonnegative_for_city_pairs(self, coord_pair) -> None:
         a, b = coord_pair
         result = bearing(a, b)
