@@ -66,7 +66,9 @@ def test_predict_negative_bytes_rejected(client: TestClient, sample_request_payl
 
 
 @pytest.mark.parametrize("protocol", ["tcp", "udp", "icmp"])
-def test_predict_all_protocols(client: TestClient, sample_request_payload: dict, protocol: str) -> None:
+def test_predict_all_protocols(
+    client: TestClient, sample_request_payload: dict, protocol: str
+) -> None:
     payload = {**sample_request_payload, "protocol_type": protocol}
     resp = client.post("/api/v1/predict", json=payload)
     assert resp.status_code == 200

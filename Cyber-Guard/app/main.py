@@ -220,7 +220,9 @@ async def anomaly_check(payload: NetworkConnectionRequest) -> AnomalyResponse:
 
 
 @app.get("/api/v1/metrics", response_model=MetricsResponse, tags=["monitoring"])
-async def metrics(hours: int = 24, run_drift: bool = False, db: Session = Depends(get_db)) -> MetricsResponse:
+async def metrics(
+    hours: int = 24, run_drift: bool = False, db: Session = Depends(get_db)
+) -> MetricsResponse:
     """Return prediction statistics and optional drift check for the last N hours."""
     stats = get_prediction_stats(db, hours=hours)
     drift = run_drift_check(db) if run_drift else None
