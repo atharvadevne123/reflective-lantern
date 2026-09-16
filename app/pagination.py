@@ -32,6 +32,7 @@ class PageInfo:
     has_prev: bool = field(init=False)
 
     def __post_init__(self) -> None:
+        """Compute derived pagination fields from total, page, and per_page."""
         self.total_pages = math.ceil(self.total / self.per_page) if self.per_page > 0 else 0
         self.has_next = self.page < self.total_pages
         self.has_prev = self.page > 1
