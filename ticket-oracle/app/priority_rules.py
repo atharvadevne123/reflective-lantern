@@ -8,8 +8,6 @@ model's probability scores.
 
 from __future__ import annotations
 
-import re
-
 P1_KEYWORDS = frozenset([
     "production down", "outage", "data loss", "security breach",
     "ransomware", "all users affected", "complete failure",

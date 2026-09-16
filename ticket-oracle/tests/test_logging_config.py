@@ -5,8 +5,6 @@ from __future__ import annotations
 import json
 import logging
 
-import pytest
-
 from app.logging_config import _JsonFormatter, configure_logging
 
 

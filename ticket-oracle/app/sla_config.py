@@ -6,7 +6,7 @@ deadlines and remaining time given ticket metadata.
 
 from __future__ import annotations
 
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 SLA_HOURS: dict[str, float] = {
@@ -42,9 +42,9 @@ def sla_deadline(
     base_hours = SLA_HOURS.get(priority, 24.0)
     multiplier = TIER_MULTIPLIERS.get(customer_tier, 1.0)
     window = timedelta(hours=base_hours * multiplier)
-    origin = created_at or datetime.now(tz=timezone.utc)
+    origin = created_at or datetime.now(tz=UTC)
     if origin.tzinfo is None:
-        origin = origin.replace(tzinfo=timezone.utc)
+        origin = origin.replace(tzinfo=UTC)
     return origin + window
 
 

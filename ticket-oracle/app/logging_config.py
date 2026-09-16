@@ -10,7 +10,7 @@ import json
 import logging
 import os
 import traceback
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 
 class _JsonFormatter(logging.Formatter):
@@ -18,7 +18,7 @@ class _JsonFormatter(logging.Formatter):
 
     def format(self, record: logging.LogRecord) -> str:
         doc: dict = {
-            "ts": datetime.now(tz=timezone.utc).isoformat(),
+            "ts": datetime.now(tz=UTC).isoformat(),
             "level": record.levelname,
             "logger": record.name,
             "msg": record.getMessage(),

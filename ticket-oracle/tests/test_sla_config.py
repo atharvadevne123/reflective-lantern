@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import pytest
 
@@ -10,23 +10,23 @@ from app.sla_config import SLA_HOURS, sla_deadline, sla_summary, time_to_breach
 
 
 def test_sla_deadline_p1_gold():
-    created = datetime(2024, 1, 1, 10, 0, tzinfo=timezone.utc)
+    created = datetime(2024, 1, 1, 10, 0, tzinfo=UTC)
     deadline = sla_deadline("P1", "Gold", created_at=created)
     delta_minutes = (deadline - created).total_seconds() / 60
     assert delta_minutes == pytest.approx(30.0)  # 1h * 0.5 Gold multiplier
 
 
 def test_sla_deadline_p4_bronze():
-    created = datetime(2024, 1, 1, 0, 0, tzinfo=timezone.utc)
+    created = datetime(2024, 1, 1, 0, 0, tzinfo=UTC)
     deadline = sla_deadline("P4", "Bronze", created_at=created)
     delta_hours = (deadline - created).total_seconds() / 3600
     assert delta_hours == pytest.approx(72.0 * 1.25)
 
 
 def test_sla_deadline_defaults_to_now():
-    before = datetime.now(tz=timezone.utc)
+    before = datetime.now(tz=UTC)
     deadline = sla_deadline("P3", "Standard")
-    after = datetime.now(tz=timezone.utc)
+    after = datetime.now(tz=UTC)
     assert before < deadline < after + __import__("datetime").timedelta(hours=25)
 
 

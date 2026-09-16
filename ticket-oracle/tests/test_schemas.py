@@ -7,7 +7,6 @@ from pydantic import ValidationError
 
 from app.schemas import BatchTicketPayload, TicketPayload
 
-
 VALID_PAYLOAD = {
     "ticket_id": "T-001",
     "description": "Server is down and users cannot log in to the system",
@@ -28,11 +27,6 @@ VALID_PAYLOAD = {
 def test_valid_payload_parses():
     p = TicketPayload(**VALID_PAYLOAD)
     assert p.ticket_id == "T-001"
-    assert p.priority_field_absent_ok := True  # noqa: F841
-
-
-def test_valid_payload_parses():  # noqa: F811
-    p = TicketPayload(**VALID_PAYLOAD)
     assert p.channel == "email"
 
 

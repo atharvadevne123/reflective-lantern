@@ -3,11 +3,7 @@
 from __future__ import annotations
 
 import os
-import tempfile
-from pathlib import Path
 from unittest.mock import patch
-
-import pytest
 
 
 def test_check_model_ready_false_when_no_files(tmp_path):
@@ -34,7 +30,6 @@ def test_check_db_reachable_sqlite(tmp_path):
     db_url = f"sqlite:///{db_path}"
 
     with patch.dict(os.environ, {"DATABASE_URL": db_url}):
-        import importlib
         import app.database as db_mod
         # Reset engine so it picks up new URL
         db_mod._engine = None

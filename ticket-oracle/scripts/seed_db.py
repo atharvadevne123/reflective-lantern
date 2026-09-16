@@ -17,8 +17,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from app.database import PredictionLog, init_db, _get_session_factory
-
+from app.database import PredictionLog, _get_session_factory, init_db
 
 PRIORITIES = ["P1", "P2", "P3", "P4"]
 DEPARTMENTS = ["IT", "HR", "Finance", "Operations", "Sales"]
