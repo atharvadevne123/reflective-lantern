@@ -115,10 +115,7 @@ def main() -> int:
     args = parser.parse_args()
 
     target = date.fromisoformat(args.date)
-    if args.mode == "weekly":
-        content = weekly_report(target)
-    else:
-        content = daily_report(target)
+    content = weekly_report(target) if args.mode == "weekly" else daily_report(target)
 
     if args.output:
         Path(args.output).write_text(content)
