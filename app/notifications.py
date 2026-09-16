@@ -45,6 +45,11 @@ class AlertQueue:
     """In-memory queue of recent alerts with a configurable max size."""
 
     def __init__(self, max_size: int = 200) -> None:
+        """Initialise the alert queue with a maximum capacity.
+
+        Args:
+            max_size: Maximum number of alerts to retain; oldest are evicted first.
+        """
         self._max = max_size
         self._alerts: list[Alert] = []
 
