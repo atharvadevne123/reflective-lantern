@@ -25,12 +25,19 @@ class LagFeatureTransformer(BaseEstimator, TransformerMixin):
     """Appends lag-1 and lag-2 features for each sensor column."""
 
     def __init__(self, lags: int = 2) -> None:
+        """Set the number of lag steps to append per sensor column.
+
+        Args:
+            lags: How many lag steps to generate (e.g. 2 → lag1, lag2).
+        """
         self.lags = lags
 
     def fit(self, X: pd.DataFrame, y: object = None) -> LagFeatureTransformer:
+        """No fitting required; returns self."""
         return self
 
     def transform(self, X: pd.DataFrame) -> pd.DataFrame:
+        """Append lag features to each sensor column in X."""
         df = X.copy()
         for col in SENSOR_COLS:
             if col in df.columns:
@@ -43,12 +50,19 @@ class RollingStatsTransformer(BaseEstimator, TransformerMixin):
     """Adds rolling mean and std over a configurable window."""
 
     def __init__(self, window: int = 5) -> None:
+        """Set the rolling window size for mean and std features.
+
+        Args:
+            window: Number of rows to include in the rolling calculation.
+        """
         self.window = window
 
     def fit(self, X: pd.DataFrame, y: object = None) -> RollingStatsTransformer:
+        """No fitting required; returns self."""
         return self
 
     def transform(self, X: pd.DataFrame) -> pd.DataFrame:
+        """Add rolling mean and std columns for each sensor column."""
         df = X.copy()
         for col in SENSOR_COLS:
             if col in df.columns:
