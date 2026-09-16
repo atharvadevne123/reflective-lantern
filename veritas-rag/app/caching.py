@@ -32,6 +32,12 @@ class RetrievalCache:
     """LRU cache with per-entry TTL and hit/miss accounting."""
 
     def __init__(self, max_size: int = 2048, ttl_seconds: float = 300.0) -> None:
+        """Initialise the LRU-TTL cache with capacity and entry lifetime.
+
+        Args:
+            max_size: Maximum number of entries before LRU eviction.
+            ttl_seconds: Entry lifetime in seconds from insertion time.
+        """
         self.max_size = max_size
         self.ttl_seconds = ttl_seconds
         self._store: OrderedDict[str, tuple[float, Any]] = OrderedDict()
@@ -78,6 +84,7 @@ class RetrievalCache:
         }
 
     def __len__(self) -> int:
+        """Return the number of currently cached entries."""
         return len(self._store)
 
 
