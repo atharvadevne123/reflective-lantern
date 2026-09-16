@@ -53,6 +53,7 @@ class DataLineage:
     """Tracks dataset snapshots and their lineage graph."""
 
     def __init__(self) -> None:
+        """Initialise an empty lineage store."""
         self._snapshots: dict[str, list[DataSnapshot]] = {}
 
     def record(self, snapshot: DataSnapshot) -> None:
