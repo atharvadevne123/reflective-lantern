@@ -54,9 +54,11 @@ class RatioFeatures(BaseEstimator, TransformerMixin):
     """
 
     def fit(self, X: pd.DataFrame, y: Any = None) -> RatioFeatures:
+        """No fitting required; returns self."""
         return self
 
     def transform(self, X: pd.DataFrame) -> pd.DataFrame:
+        """Add cross-column ratio features to X."""
         X = X.copy()
         eps = 1e-6
         X["price_per_rating"] = X["item_price"] / (X["item_avg_rating"] + eps)
@@ -75,9 +77,11 @@ class InteractionFeatures(BaseEstimator, TransformerMixin):
     """
 
     def fit(self, X: pd.DataFrame, y: Any = None) -> InteractionFeatures:
+        """No fitting required; returns self."""
         return self
 
     def transform(self, X: pd.DataFrame) -> pd.DataFrame:
+        """Add affinity, recency-decay, and price-sensitivity features to X."""
         X = X.copy()
         X["affinity_score"] = (
             X["same_category_purchases"] * 2.0 + X["wishlist_flag"] * 3.0 + X["click_count"] * 0.5
