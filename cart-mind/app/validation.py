@@ -339,16 +339,17 @@ def check_quantity_coherence(payload: dict[str, Any]) -> list[str]:
     warnings: list[str] = []
     cart_items = payload.get("cart_item_count")
     cart_val = payload.get("cart_value")
-    if cart_items is not None and cart_val is not None:
-        if cart_items == 0 and cart_val > 0:
-            warnings.append(f"cart_value is positive ({cart_val}) but cart_item_count is zero")
+    if cart_items is not None and cart_val is not None and cart_items == 0 and cart_val > 0:
+        warnings.append(f"cart_value is positive ({cart_val}) but cart_item_count is zero")
     purchase_count = payload.get("purchase_count")
     avg_order = payload.get("avg_order_value")
-    if purchase_count is not None and avg_order is not None:
-        if purchase_count == 0 and avg_order > 0:
-            warnings.append(
-                f"avg_order_value is positive ({avg_order}) but purchase_count is zero"
-            )
+    if (
+        purchase_count is not None
+        and avg_order is not None
+        and purchase_count == 0
+        and avg_order > 0
+    ):
+        warnings.append(f"avg_order_value is positive ({avg_order}) but purchase_count is zero")
     return warnings
 
 
