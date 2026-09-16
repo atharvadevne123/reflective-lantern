@@ -27,6 +27,12 @@ class TTLCache:
     """
 
     def __init__(self, ttl_seconds: int = 60, max_size: int = 1024) -> None:
+        """Initialise the cache with per-entry TTL and capacity limit.
+
+        Args:
+            ttl_seconds: Seconds before a cached entry expires.
+            max_size: Maximum number of entries; oldest are evicted when exceeded.
+        """
         self.ttl_seconds = ttl_seconds
         self.max_size = max_size
         self._store: dict[str, tuple[Any, float]] = {}
