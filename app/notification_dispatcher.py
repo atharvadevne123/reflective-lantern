@@ -58,6 +58,7 @@ class NotificationDispatcher:
     """Dispatches notifications to all eligible registered channels."""
 
     def __init__(self) -> None:
+        """Initialise the dispatcher with an empty channel registry."""
         self._channels: dict[str, Channel] = {}
 
     def register(self, channel: Channel) -> None:
@@ -129,4 +130,5 @@ class NotificationDispatcher:
         return [name for name, ch in self._channels.items() if ch.enabled]
 
     def __len__(self) -> int:
+        """Return the number of registered channels."""
         return len(self._channels)
