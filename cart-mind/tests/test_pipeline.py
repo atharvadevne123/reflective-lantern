@@ -216,8 +216,8 @@ class TestReadChampionAuc:
 class TestRetrainTaskExtended:
     def test_retrain_task_returns_dict(self, monkeypatch, tmp_path) -> None:
 
+        from app.features import make_purchase_labels, make_sample_dataframe
         from pipelines.retrain_dag import retrain_task
-        from app.features import make_sample_dataframe, make_purchase_labels
 
         monkeypatch.setattr("pipelines.retrain_dag.MODEL_PATH", tmp_path / "model.joblib")
         monkeypatch.setattr("pipelines.retrain_dag.METRICS_PATH", tmp_path / "metrics.json")
@@ -227,8 +227,8 @@ class TestRetrainTaskExtended:
         assert isinstance(result, dict)
 
     def test_retrain_task_creates_metrics_file(self, monkeypatch, tmp_path) -> None:
+        from app.features import make_purchase_labels, make_sample_dataframe
         from pipelines.retrain_dag import retrain_task
-        from app.features import make_sample_dataframe, make_purchase_labels
 
         metrics_path = tmp_path / "metrics.json"
         monkeypatch.setattr("pipelines.retrain_dag.MODEL_PATH", tmp_path / "model.joblib")
