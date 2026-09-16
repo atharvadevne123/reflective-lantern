@@ -46,6 +46,7 @@ class ModelRegistry:
     """
 
     def __init__(self) -> None:
+        """Initialise an empty registry."""
         self._models: dict[str, list[ModelVersion]] = {}
 
     def register(self, model: ModelVersion) -> None:
@@ -94,6 +95,7 @@ class ModelRegistry:
         return versions[-1] if versions else None
 
     def _get(self, name: str, version: str) -> ModelVersion | None:
+        """Look up a specific version by name and version string."""
         for mv in self._models.get(name, []):
             if mv.version == version:
                 return mv
