@@ -350,7 +350,7 @@ class TestCacheKeys:
     def test_keys_includes_set_key(self) -> None:
         cache = TTLCache()
         cache.set("alpha", 1)
-        assert "alpha" in cache.keys()
+        assert "alpha" in cache
 
     def test_expired_keys_excluded(self) -> None:
         import time
@@ -359,8 +359,8 @@ class TestCacheKeys:
         cache.set("live", 1)
         cache.set("dead", 2)
         time.sleep(0.08)
-        assert "dead" not in cache.keys()
-        assert "live" not in cache.keys()
+        assert "dead" not in cache
+        assert "live" not in cache
 
     def test_key_count_matches_entries(self) -> None:
         cache = TTLCache()
@@ -372,7 +372,7 @@ class TestCacheKeys:
         cache = TTLCache()
         cache.set("x", 1)
         cache.delete("x")
-        assert "x" not in cache.keys()
+        assert "x" not in cache
 
 
 class TestTTLCacheConcurrencyBasics:
