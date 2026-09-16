@@ -43,6 +43,7 @@ class _Stats:
     """Running statistics for call durations."""
 
     def __init__(self) -> None:
+        """Initialise all running-statistics accumulators to zero."""
         self.calls: int = 0
         self.total_ms: float = 0.0
         self.min_ms: float = float("inf")
@@ -82,6 +83,7 @@ def tracked(label: str | None = None) -> Callable:
     """
 
     def decorator(func: Callable) -> Callable:
+        """Wrap *func* to record per-call timing into the global registry."""
         name = label or func.__qualname__
         _registry[name] = _Stats()
 
