@@ -130,12 +130,15 @@ class TestWebhookHandlerEdgeCases:
         assert event.event_type == "unknown_event"
 
 
-@pytest.mark.parametrize("payload", [
-    {"key": "value"},
-    {"list": [1, 2, 3]},
-    {"nested": {"a": 1}},
-    {},
-])
+@pytest.mark.parametrize(
+    "payload",
+    [
+        {"key": "value"},
+        {"list": [1, 2, 3]},
+        {"nested": {"a": 1}},
+        {},
+    ],
+)
 def test_webhook_event_payload_preserved(payload: dict) -> None:
     """WebhookEvent preserves arbitrary JSON payload fields."""
     body = json.dumps(payload).encode()

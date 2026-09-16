@@ -129,10 +129,7 @@ def test_seasonal_decompose_short_input() -> None:
 
 @pytest.mark.parametrize("n,expected_dir", [(5, "rising"), (0, "stable")])
 def test_linear_trend_direction_parametrize(n, expected_dir) -> None:
-    if n > 0:
-        values = list(range(1, n + 1))
-    else:
-        values = [5.0] * 5
+    values = list(range(1, n + 1)) if n > 0 else [5.0] * 5
     result = linear_trend(values)
     assert result.direction == expected_dir
 
@@ -1091,12 +1088,14 @@ def test_rate_of_change_unit_step_length(n: int) -> None:
 class TestRollingMean:
     def test_output_length_matches_input(self) -> None:
         from app.trend_analysis import rolling_mean
+
         values = [1.0, 2.0, 3.0, 4.0, 5.0]
         result = rolling_mean(values, window=3)
         assert len(result) == len(values)
 
     def test_constant_series_unchanged(self) -> None:
         from app.trend_analysis import rolling_mean
+
         values = [5.0] * 10
         result = rolling_mean(values, window=3)
         assert all(v == pytest.approx(5.0) for v in result)
@@ -1104,6 +1103,7 @@ class TestRollingMean:
     @pytest.mark.parametrize("window", [2, 3, 5])
     def test_various_windows_return_correct_length(self, window: int) -> None:
         from app.trend_analysis import rolling_mean
+
         values = [float(i) for i in range(20)]
         result = rolling_mean(values, window=window)
         assert len(result) == len(values)
@@ -1112,12 +1112,14 @@ class TestRollingMean:
 class TestTrendStrengthExtended:
     def test_perfect_linear_trend_near_one(self) -> None:
         from app.trend_analysis import trend_strength
+
         values = [float(i) for i in range(20)]
         strength = trend_strength(values)
         assert strength > 0.99
 
     def test_constant_series_returns_one(self) -> None:
         from app.trend_analysis import trend_strength
+
         values = [3.0] * 20
         strength = trend_strength(values)
         assert strength == pytest.approx(1.0)
@@ -1125,6 +1127,7 @@ class TestTrendStrengthExtended:
     @pytest.mark.parametrize("n", [5, 10, 50])
     def test_strength_in_valid_range(self, n: int) -> None:
         from app.trend_analysis import trend_strength
+
         values = [float(i) + (i % 3) for i in range(n)]
         strength = trend_strength(values)
         assert 0.0 <= strength <= 1.0
@@ -1133,15 +1136,18 @@ class TestTrendStrengthExtended:
 class TestCumulativeSumExtended:
     def test_zeros_stay_zero(self) -> None:
         from app.trend_analysis import cumulative_sum
+
         result = cumulative_sum([0.0] * 5)
         assert all(v == pytest.approx(0.0) for v in result)
 
     def test_unit_step_increments(self) -> None:
         from app.trend_analysis import cumulative_sum
+
         result = cumulative_sum([1.0] * 5)
         assert result[-1] == pytest.approx(5.0)
 
     def test_length_matches_input(self) -> None:
         from app.trend_analysis import cumulative_sum
+
         values = [1.0, 2.0, 3.0, 4.0]
         assert len(cumulative_sum(values)) == len(values)
