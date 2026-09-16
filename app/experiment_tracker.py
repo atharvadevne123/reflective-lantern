@@ -57,6 +57,13 @@ class Experiment:
         variants: list[Variant],
         enabled: bool = True,
     ) -> None:
+        """Initialise the experiment with its name, variants, and enabled state.
+
+        Args:
+            name: Unique experiment name.
+            variants: Non-empty list of variants to assign from.
+            enabled: When False, all entities receive the first variant.
+        """
         if not variants:
             raise ValueError("At least one variant is required")
         self.name = name
@@ -116,6 +123,7 @@ class ExperimentRegistry:
     """Registry of named experiments."""
 
     def __init__(self) -> None:
+        """Initialise an empty experiment registry."""
         self._experiments: dict[str, Experiment] = {}
 
     def register(self, experiment: Experiment) -> None:
@@ -151,6 +159,7 @@ class ExperimentRegistry:
         return [name for name, exp in self._experiments.items() if exp.enabled]
 
     def __len__(self) -> int:
+        """Return the number of registered experiments."""
         return len(self._experiments)
 
 
