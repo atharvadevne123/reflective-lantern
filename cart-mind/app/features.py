@@ -248,6 +248,7 @@ def make_purchase_labels(df: pd.DataFrame, seed: int = 42, noise: float = 0.35) 
     rng = np.random.default_rng(seed)
 
     def _z(col: str) -> np.ndarray:
+        """Return the z-score of *col* in *df*, epsilon-guarded against zero std."""
         v = df[col].to_numpy(dtype=float)
         return (v - v.mean()) / (v.std() + 1e-6)
 
