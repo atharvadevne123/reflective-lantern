@@ -66,6 +66,7 @@ class TraceRecorder:
         self._stage_name = None
 
     def finish(self, **outcome: Any) -> Trace:
+        """Finalise the trace with outcome data and total elapsed time."""
         outcome["total_ms"] = round((time.monotonic() - self.trace.started_at) * 1000.0, 3)
         self.trace.outcome = outcome
         return self.trace
@@ -75,21 +76,30 @@ class TraceStore:
     """Ring buffer of recent traces, addressable by request id."""
 
     def __init__(self, max_size: int = 1000) -> None:
+        """Initialise the trace store with a maximum number of retained traces.
+
+        Args:
+            max_size: Oldest traces are dropped when this capacity is exceeded.
+        """
         self.max_size = max_size
         self._traces: OrderedDict[str, Trace] = OrderedDict()
 
     def add(self, trace: Trace) -> None:
+        """Append a trace and evict the oldest when over capacity."""
         self._traces[trace.request_id] = trace
         while len(self._traces) > self.max_size:
             self._traces.popitem(last=False)
 
     def get(self, request_id: str) -> Trace | None:
+        """Retrieve a trace by its request ID, or None if not found."""
         return self._traces.get(request_id)
 
     def recent(self, limit: int = 20) -> list[Trace]:
+        """Return the most recent traces up to *limit* in insertion order."""
         return list(self._traces.values())[-limit:]
 
     def __len__(self) -> int:
+        """Return the number of stored traces."""
         return len(self._traces)
 
 
