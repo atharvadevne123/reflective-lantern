@@ -83,10 +83,7 @@ def extract_email(data: bytes) -> tuple[list[str], dict[str, Any]]:
     body = ""
     if body_part is not None:
         content = body_part.get_content()
-        if body_part.get_content_type() == "text/html":
-            body = extract_html(content)
-        else:
-            body = content
+        body = extract_html(content) if body_part.get_content_type() == "text/html" else content
 
     # Prepend subject so retrieval can match on it
     text = f"{meta['subject']}\n\n{body}".strip()
