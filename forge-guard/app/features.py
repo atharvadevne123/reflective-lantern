@@ -75,9 +75,11 @@ class RatioFeatureTransformer(BaseEstimator, TransformerMixin):
     """Computes domain-informed ratio features from sensor readings."""
 
     def fit(self, X: pd.DataFrame, y: object = None) -> RatioFeatureTransformer:
+        """No fitting required; returns self."""
         return self
 
     def transform(self, X: pd.DataFrame) -> pd.DataFrame:
+        """Add domain-informed ratio columns derived from sensor readings."""
         df = X.copy()
         eps = 1e-9
         if "temperature" in df.columns and "pressure" in df.columns:
@@ -97,9 +99,11 @@ class PolynomialSensorTransformer(BaseEstimator, TransformerMixin):
     HIGH_SIGNAL = ["vibration", "tool_wear", "temperature"]
 
     def fit(self, X: pd.DataFrame, y: object = None) -> PolynomialSensorTransformer:
+        """No fitting required; returns self."""
         return self
 
     def transform(self, X: pd.DataFrame) -> pd.DataFrame:
+        """Add squared terms for high-signal sensor columns."""
         df = X.copy()
         for col in self.HIGH_SIGNAL:
             if col in df.columns:
@@ -111,11 +115,13 @@ class DataFrameToArray(BaseEstimator, TransformerMixin):
     """Converts a DataFrame to a NumPy array and records feature names."""
 
     def fit(self, X: pd.DataFrame, y: object = None) -> DataFrameToArray:
+        """Record feature column names from the training DataFrame."""
         global FEATURE_NAMES
         FEATURE_NAMES = list(X.columns)
         return self
 
     def transform(self, X: pd.DataFrame) -> np.ndarray:
+        """Convert DataFrame to a float64 NumPy array."""
         return X.values.astype(np.float64)
 
 
