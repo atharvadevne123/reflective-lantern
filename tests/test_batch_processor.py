@@ -178,6 +178,7 @@ class TestBatchProcessorBatchSize:
     @pytest.mark.parametrize("size,n_items", [(5, 10), (10, 25), (7, 21)])
     def test_batch_count_matches_expected(self, size: int, n_items: int) -> None:
         import math
+
         bp = BatchProcessor(_identity, batch_size=size)
         summary = bp.run(list(range(n_items)))
         assert summary.total_batches == math.ceil(n_items / size)
