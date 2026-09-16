@@ -103,11 +103,13 @@ class LagRollingFeatures(BaseEstimator, TransformerMixin):
     """
 
     def fit(self, X: pd.DataFrame, y: Any = None) -> LagRollingFeatures:
+        """Learn per-column means from training data for normalisation."""
         self.session_mean_ = float(X["session_count_7d"].mean())
         self.order_mean_ = float(X["avg_order_value"].mean())
         return self
 
     def transform(self, X: pd.DataFrame) -> pd.DataFrame:
+        """Apply learned means to produce normalised velocity features."""
         X = X.copy()
         X["session_norm"] = X["session_count_7d"] / (self.session_mean_ + 1e-6)
         X["order_value_norm"] = X["avg_order_value"] / (self.order_mean_ + 1e-6)
@@ -129,9 +131,11 @@ class DiscountEncoder(BaseEstimator, TransformerMixin):
     DISCOUNT_LABELS = [0, 1, 2, 3, 4]
 
     def fit(self, X: pd.DataFrame, y: Any = None) -> DiscountEncoder:
+        """No fitting required; returns self."""
         return self
 
     def transform(self, X: pd.DataFrame) -> pd.DataFrame:
+        """Bucket discount percentage and add inventory pressure flag."""
         X = X.copy()
         X["discount_bucket"] = pd.cut(
             X["item_discount_pct"],
