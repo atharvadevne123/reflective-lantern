@@ -184,3 +184,26 @@ class TestCompressionRatioEdgeCases:
     def test_ratio_unicode_string(self) -> None:
         ratio = compression_ratio("hello world " * 200)
         assert ratio < 1.0
+
+
+class TestIsGzip:
+    def test_gzip_data_returns_true(self) -> None:
+        from app.compression import gzip_compress, is_gzip
+
+        data = gzip_compress(b"hello world")
+        assert is_gzip(data) is True
+
+    def test_raw_bytes_returns_false(self) -> None:
+        from app.compression import is_gzip
+
+        assert is_gzip(b"not gzip data") is False
+
+    def test_empty_bytes_returns_false(self) -> None:
+        from app.compression import is_gzip
+
+        assert is_gzip(b"") is False
+
+    def test_magic_prefix_returns_true(self) -> None:
+        from app.compression import is_gzip
+
+        assert is_gzip(b"\x1f\x8b\x00") is True
