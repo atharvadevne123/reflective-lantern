@@ -1401,19 +1401,19 @@ class TestAnomalyDensity:
     def test_all_anomalies(self) -> None:
         from app.anomaly import anomaly_density
 
-        result = anomaly_density([True, True, True], window=3)
+        result = anomaly_density([1, 1, 1], window_size=3)
         assert result == pytest.approx([1.0, 1.0, 1.0])
 
     def test_no_anomalies(self) -> None:
         from app.anomaly import anomaly_density
 
-        result = anomaly_density([False, False, False], window=2)
+        result = anomaly_density([0, 0, 0], window_size=2)
         assert result == pytest.approx([0.0, 0.0, 0.0])
 
     def test_mixed(self) -> None:
         from app.anomaly import anomaly_density
 
-        result = anomaly_density([True, False, True, False], window=2)
+        result = anomaly_density([1, 0, 1, 0], window_size=2)
         assert result[0] == pytest.approx(1.0)
         assert result[1] == pytest.approx(0.5)
 
@@ -1427,4 +1427,4 @@ class TestAnomalyDensity:
         from app.anomaly import anomaly_density
 
         with pytest.raises(ValueError):
-            anomaly_density([True], window=0)
+            anomaly_density([1], window_size=0)

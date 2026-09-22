@@ -213,32 +213,6 @@ __all__ = [
 ]
 
 
-def anomaly_density(flags: list[bool], window: int = 10) -> list[float]:
-    """Return the rolling fraction of anomalies within a sliding window.
-
-    Args:
-        flags: Boolean anomaly flags for each observation.
-        window: Number of observations in the rolling window (>= 1).
-
-    Returns:
-        List of anomaly densities in [0, 1], one per observation. The first
-        ``window - 1`` entries use an expanding window.
-
-    Raises:
-        ValueError: If *flags* is empty or *window* is less than 1.
-    """
-    if not flags:
-        raise ValueError("flags must not be empty")
-    if window < 1:
-        raise ValueError(f"window must be >= 1, got {window}")
-    result = []
-    for i in range(len(flags)):
-        start = max(0, i - window + 1)
-        chunk = flags[start : i + 1]
-        result.append(round(sum(chunk) / len(chunk), 6))
-    return result
-
-
 def top_anomalies(
     severities: list[dict[str, object]],
     n: int = 10,
