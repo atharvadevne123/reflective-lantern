@@ -1564,8 +1564,8 @@ class TestCompareRegionsExtended:
         small = compare_regions(10.0)
         large = compare_regions(kwh)
         if kwh > 10.0 and small and large:
-            first_small = list(small[0].values())[0]
-            first_large = list(large[0].values())[0]
+            first_small = next(iter(small[0].values()))
+            first_large = next(iter(large[0].values()))
             assert first_large >= first_small
 
 
