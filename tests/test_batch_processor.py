@@ -135,8 +135,10 @@ class TestBatchProcessorSummary:
 class TestBatchProcessorEdgeCases:
     def test_transform_result_values_doubled(self) -> None:
         bp = BatchProcessor(_double, batch_size=5)
-        summary = bp.run([1, 2, 3])
-        assert summary.results == [2, 4, 6]
+        all_results: list[int] = []
+        for br in bp.run_stream([1, 2, 3]):
+            all_results.extend(br.results)
+        assert all_results == [2, 4, 6]
 
     def test_large_batch_size_single_pass(self) -> None:
         items = list(range(7))
@@ -149,17 +151,19 @@ class TestBatchProcessorEdgeCases:
     def test_results_order_preserved(self, size: int) -> None:
         items = list(range(20))
         bp = BatchProcessor(_identity, batch_size=size)
-        summary = bp.run(items)
-        assert summary.results == items
+        all_results: list[int] = []
+        for br in bp.run_stream(items):
+            all_results.extend(br.results)
+        assert all_results == items
 
     def test_error_count_matches_failing_batches(self) -> None:
         items = list(range(10))
-        bp = BatchProcessor(_failing, batch_size=3, on_error="collect")
+        bp = BatchProcessor(_failing, batch_size=3, error_handling="collect")
         summary = bp.run(items)
         assert summary.total_errors > 0
 
     def test_collect_mode_results_empty_on_all_failure(self) -> None:
-        bp = BatchProcessor(_failing, batch_size=5, on_error="collect")
+        bp = BatchProcessor(_failing, batch_size=5, error_handling="collect")
         summary = bp.run(list(range(10)))
         assert summary.total_results == 0
 
