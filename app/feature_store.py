@@ -98,6 +98,10 @@ class FeatureStore:
         """Return all registered feature set names."""
         return list(self._store.keys())
 
+    def list_datasets(self) -> list[str]:
+        """Alias for :meth:`list_names`; return all registered feature set names."""
+        return self.list_names()
+
     def delete(self, name: str, version: str | None = None) -> bool:
         """Delete a feature set or a specific version.
 
