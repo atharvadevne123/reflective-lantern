@@ -1783,3 +1783,30 @@ class TestMovingMedian:
         values = [float(i) for i in range(20)]
         result = moving_median(values, window=window)
         assert len(result) == len(values)
+
+
+class TestRangeOfSeries:
+    def test_basic_range(self) -> None:
+        from app.time_series import range_of_series
+        assert range_of_series([1.0, 5.0, 3.0]) == pytest.approx(4.0)
+
+    def test_single_element(self) -> None:
+        from app.time_series import range_of_series
+        assert range_of_series([7.0]) == pytest.approx(0.0)
+
+    def test_all_same(self) -> None:
+        from app.time_series import range_of_series
+        assert range_of_series([2.0, 2.0, 2.0]) == pytest.approx(0.0)
+
+    def test_empty_raises(self) -> None:
+        from app.time_series import range_of_series
+        with pytest.raises(ValueError):
+            range_of_series([])
+
+    @pytest.mark.parametrize("values,expected", [
+        ([0.0, 10.0], 10.0),
+        ([-5.0, 5.0], 10.0),
+    ])
+    def test_parametrized_range(self, values, expected) -> None:
+        from app.time_series import range_of_series
+        assert range_of_series(values) == pytest.approx(expected)
