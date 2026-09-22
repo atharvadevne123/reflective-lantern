@@ -200,18 +200,18 @@ class TestEvaluateEventFields:
 
 
 @pytest.mark.parametrize("n_hours", [1, 4, 8, 24])
-def test_curtailment_output_length_matches_input(n_hours: int) -> None:
-    """curtailment result has same number of elements as input."""
+def test_curtailment_total_scales_with_hours(n_hours: int) -> None:
+    """curtailment total equals per-hour saving * n_hours."""
     baseline = [5.0] * n_hours
     actual = [3.0] * n_hours
     result = curtailment(baseline, actual)
-    assert len(result) == n_hours
+    assert result == pytest.approx(2.0 * n_hours)
 
 
 @pytest.mark.parametrize("reduction", [0.0, 0.25, 0.5, 1.0])
 def test_performance_score_for_known_fractions(reduction: float) -> None:
     """performance_score returns reduction fraction when committed > 0."""
-    score = performance_score(curtailed=reduction * 10.0, committed_kwh=10.0)
+    score = performance_score(curtailed_kwh=reduction * 10.0, committed_kwh=10.0)
     assert score == pytest.approx(min(1.0, reduction))
 
 
