@@ -179,29 +179,33 @@ def test_eui_scales_inversely_with_area(area: float) -> None:
 
 
 @pytest.mark.parametrize(
-    "rank,expected_grade",
+    "percentile,expected_grade",
     [
-        (0.95, "A"),
-        (0.75, "B"),
-        (0.55, "C"),
-        (0.35, "D"),
-        (0.10, "F"),
+        (95.0, "A"),
+        (75.0, "B"),
+        (55.0, "C"),
+        (35.0, "D"),
+        (10.0, "F"),
     ],
 )
-def test_grade_from_percentile_rank(rank: float, expected_grade: str) -> None:
-    """grade_from_score maps known score ranges to expected letter grades."""
-    score = score_from_percentile(rank)
+def test_grade_from_percentile_rank(percentile: float, expected_grade: str) -> None:
+    """grade_from_score maps known percentile ranges to expected letter grades."""
+    score = score_from_percentile(percentile)
     assert grade_from_score(score) == expected_grade
 
 
 class TestPercentileRankEdgeCases:
-    def test_lowest_value_in_cohort_has_lowest_rank(self) -> None:
-        rank = percentile_rank(80.0, COHORT)
-        assert rank <= percentile_rank(100.0, COHORT)
+    def test_lower_eui_has_higher_rank(self) -> None:
+        """Lower EUI = better efficiency = higher percentile rank."""
+        rank_low = percentile_rank(80.0, COHORT)
+        rank_high = percentile_rank(100.0, COHORT)
+        assert rank_low >= rank_high
 
-    def test_highest_value_in_cohort_has_highest_rank(self) -> None:
-        rank = percentile_rank(150.0, COHORT)
-        assert rank >= percentile_rank(110.0, COHORT)
+    def test_higher_eui_has_lower_rank(self) -> None:
+        """Higher EUI = worse efficiency = lower percentile rank."""
+        rank_worst = percentile_rank(150.0, COHORT)
+        rank_mid = percentile_rank(110.0, COHORT)
+        assert rank_worst <= rank_mid
 
 
 class TestSavingsPotentialExtended:
