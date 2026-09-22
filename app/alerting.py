@@ -198,4 +198,21 @@ class AlertManager:
         self._handlers.append(handler)
 
 
-__all__ = ["Alert", "AlertManager", "AlertRule", "Severity"]
+def count_by_severity(alerts: list[Alert]) -> dict[str, int]:
+    """Count alerts grouped by severity level.
+
+    Args:
+        alerts: List of Alert objects to summarise.
+
+    Returns:
+        Dict mapping each severity value string to its count.
+        Only severities present in *alerts* are included.
+    """
+    counts: dict[str, int] = {}
+    for alert in alerts:
+        key = alert.severity.value
+        counts[key] = counts.get(key, 0) + 1
+    return counts
+
+
+__all__ = ["Alert", "AlertManager", "AlertRule", "Severity", "count_by_severity"]
