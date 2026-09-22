@@ -248,3 +248,29 @@ class TestAlertManagerHistory:
         mgr.add_rule(_make_rule(cooldown_s=0))
         mgr.evaluate_all({"cpu": 100.0}, now=BASE_NOW)
         assert mgr.history_for_metric("memory") == []
+
+
+class TestCountBySeverity:
+    def test_mixed_severities(self) -> None:
+        from app.alerting import Alert, Severity, count_by_severity
+
+        alerts = [
+            Alert(name="a", metric="x", value=1.0, threshold=0.5, severity=Severity.CRITICAL, message=""),
+            Alert(name="b", metric="y", value=2.0, threshold=1.0, severity=Severity.WARNING, message=""),
+            Alert(name="c", metric="z", value=3.0, threshold=2.0, severity=Severity.CRITICAL, message=""),
+        ]
+        result = count_by_severity(alerts)
+        assert result["critical"] == 2
+        assert result["warning"] == 1
+
+    def test_empty_list(self) -> None:
+        from app.alerting import count_by_severity
+
+        assert count_by_severity([]) == {}
+
+    def test_single_info(self) -> None:
+        from app.alerting import Alert, Severity, count_by_severity
+
+        alerts = [Alert(name="a", metric="x", value=0.5, threshold=1.0, severity=Severity.INFO, message="")]
+        result = count_by_severity(alerts)
+        assert result == {"info": 1}
