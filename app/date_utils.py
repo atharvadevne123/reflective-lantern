@@ -132,6 +132,9 @@ __all__ = [
     "week_number",
     "week_of_month",
     "week_of_year",
+    "is_same_day",
+    "end_of_day",
+    "minutes_between",
 ]
 
 
