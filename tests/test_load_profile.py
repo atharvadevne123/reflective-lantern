@@ -247,3 +247,30 @@ class TestNightLoadFraction:
     def test_fraction_valid_for_various_lengths(self, n: int) -> None:
         frac = night_load_fraction([1.0] * n)
         assert 0.0 <= frac <= 1.0
+
+
+class TestOffPeakLoadFraction:
+    def test_all_off_peak(self) -> None:
+        from app.load_profile import off_peak_load_fraction
+        hourly = [0.0] * 9 + [1.0] * 3 + [0.0] * 12  # only hours 9-11 have load
+        # Wait, peak is 9-21, so hours 9-20 are peak. Let me make hours 0-8 have load.
+        hourly = [1.0] * 9 + [0.0] * 12 + [1.0] * 3  # hours 0-8 and 21-23 are off-peak
+        result = off_peak_load_fraction(hourly)
+        assert result == pytest.approx(1.0)
+
+    def test_zero_consumption(self) -> None:
+        from app.load_profile import off_peak_load_fraction
+        assert off_peak_load_fraction([0.0] * 24) == 0.0
+
+    def test_empty_raises(self) -> None:
+        from app.load_profile import off_peak_load_fraction
+        with pytest.raises(ValueError):
+            off_peak_load_fraction([])
+
+    def test_fraction_between_0_and_1(self) -> None:
+        from app.load_profile import off_peak_load_fraction
+        import random
+        rng = random.Random(42)
+        hourly = [rng.uniform(0, 10) for _ in range(48)]
+        result = off_peak_load_fraction(hourly)
+        assert 0.0 <= result <= 1.0
