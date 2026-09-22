@@ -163,3 +163,30 @@ class TestGenerationKwhEdgeCases:
     def test_generation_positive_for_positive_area(self, area: float) -> None:
         g = generation_kwh(area, 4.5)
         assert g > 0
+
+
+class TestCapacityFactor:
+    def test_full_capacity(self) -> None:
+        from app.solar import capacity_factor
+        assert capacity_factor(8760.0, 1.0, 8760.0) == pytest.approx(1.0)
+
+    def test_zero_generation(self) -> None:
+        from app.solar import capacity_factor
+        assert capacity_factor(0.0, 10.0, 8760.0) == pytest.approx(0.0)
+
+    def test_zero_installed_kw(self) -> None:
+        from app.solar import capacity_factor
+        assert capacity_factor(100.0, 0.0, 8760.0) == pytest.approx(0.0)
+
+    def test_negative_raises(self) -> None:
+        from app.solar import capacity_factor
+        with pytest.raises(ValueError):
+            capacity_factor(-100.0, 5.0, 8760.0)
+
+    @pytest.mark.parametrize("actual,kw,hours,expected", [
+        (4380.0, 1.0, 8760.0, 0.5),
+        (2000.0, 1.0, 8000.0, 0.25),
+    ])
+    def test_typical_values(self, actual, kw, hours, expected) -> None:
+        from app.solar import capacity_factor
+        assert capacity_factor(actual, kw, hours) == pytest.approx(expected, rel=1e-4)
