@@ -188,6 +188,18 @@ def last_page_items(items: list, per_page: int) -> int:
     return remainder if remainder else per_page
 
 
+def is_last_page(info: PageInfo) -> bool:
+    """Return True when *info* describes the final page of results.
+
+    Args:
+        info: PageInfo from a paginated response.
+
+    Returns:
+        True if this is the last page, False otherwise.
+    """
+    return not info.has_next
+
+
 __all__ = [
     "CursorPage",
     "Page",
@@ -195,6 +207,7 @@ __all__ = [
     "cursor_paginate",
     "decode_cursor",
     "encode_cursor",
+    "is_last_page",
     "last_page_items",
     "page_range",
     "paginate",
