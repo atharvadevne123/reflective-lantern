@@ -467,3 +467,35 @@ class TestRetrySucceedsEventually:
         result = fail_once()
         assert result == "success"
         assert attempts[0] == 2
+
+
+class TestWithRetryHelper:
+    def test_with_retry_success(self, monkeypatch) -> None:
+        from app.retry import with_retry
+
+        monkeypatch.setattr("time.sleep", lambda _: None)
+        result = with_retry(lambda: 42)
+        assert result == 42
+
+    def test_with_retry_retries_on_failure(self, monkeypatch) -> None:
+        from app.retry import with_retry
+
+        monkeypatch.setattr("time.sleep", lambda _: None)
+        calls = [0]
+
+        def flaky():
+            calls[0] += 1
+            if calls[0] < 2:
+                raise ValueError("temporary")
+            return "ok"
+
+        result = with_retry(flaky, max_attempts=3)
+        assert result == "ok"
+        assert calls[0] == 2
+
+    def test_with_retry_exhausted_raises(self, monkeypatch) -> None:
+        from app.retry import with_retry
+
+        monkeypatch.setattr("time.sleep", lambda _: None)
+        with pytest.raises(RuntimeError):
+            with_retry(lambda: (_ for _ in ()).throw(RuntimeError("boom")), max_attempts=2)
