@@ -269,6 +269,7 @@ __all__ = [
     "operating_expense_ratio",
     "payback_period",
     "portfolio_weighted_score",
+    "annualized_return",
     "price_to_income_ratio",
     "projected_value",
     "risk_adjusted_return",
@@ -1006,3 +1007,30 @@ def risk_adjusted_return(
         return 0.0
     excess = annual_return_pct - risk_free_rate_pct
     return round(excess / volatility_pct, 4)
+
+
+def annualized_return(
+    initial_value: float,
+    final_value: float,
+    years: float,
+) -> float:
+    """Compute the compound annual growth rate (CAGR) between two values.
+
+    Args:
+        initial_value: Starting value (must be positive).
+        final_value: Ending value (must be non-negative).
+        years: Investment horizon in years (must be positive).
+
+    Returns:
+        CAGR as a decimal (e.g. 0.08 for 8%); rounded to 6 decimal places.
+
+    Raises:
+        ValueError: If initial_value <= 0 or years <= 0 or final_value < 0.
+    """
+    if initial_value <= 0:
+        raise ValueError("initial_value must be positive")
+    if final_value < 0:
+        raise ValueError("final_value must be non-negative")
+    if years <= 0:
+        raise ValueError("years must be positive")
+    return round((final_value / initial_value) ** (1.0 / years) - 1.0, 6)
