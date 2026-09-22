@@ -214,7 +214,37 @@ __all__ = [
     "DEFAULT_PERFORMANCE_RATIO",
     "SolarEconomics",
     "analyze_economics",
+    "capacity_factor",
     "generation_kwh",
     "payback_years",
     "self_consumption",
 ]
+
+
+def capacity_factor(
+    actual_kwh: float,
+    installed_kw: float,
+    hours: float = 8760.0,
+) -> float:
+    """Compute the capacity factor of a solar installation.
+
+    Capacity factor is the ratio of actual energy output to the maximum
+    possible output if the plant ran at full capacity continuously.
+
+    Args:
+        actual_kwh: Actual energy generated in kWh over the period.
+        installed_kw: Installed peak capacity in kilowatts.
+        hours: Duration of the period in hours (default 8760 for one year).
+
+    Returns:
+        Capacity factor in [0, 1]; 0.0 if installed_kw or hours is zero.
+
+    Raises:
+        ValueError: If any argument is negative.
+    """
+    if actual_kwh < 0 or installed_kw < 0 or hours < 0:
+        raise ValueError("All arguments must be non-negative")
+    max_kwh = installed_kw * hours
+    if max_kwh == 0.0:
+        return 0.0
+    return round(actual_kwh / max_kwh, 6)
