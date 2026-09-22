@@ -50,6 +50,7 @@ class _Stats:
         self.max_ms: float = 0.0
 
     def record(self, ms: float) -> None:
+        """Update running stats with a new observation of *ms* milliseconds."""
         self.calls += 1
         self.total_ms += ms
         self.min_ms = min(self.min_ms, ms)
@@ -57,9 +58,11 @@ class _Stats:
 
     @property
     def avg_ms(self) -> float:
+        """Return the mean call duration in milliseconds, or 0.0 when no calls recorded."""
         return self.total_ms / self.calls if self.calls else 0.0
 
     def to_dict(self) -> dict[str, float | int]:
+        """Serialise current stats to a plain dict with values rounded to 3dp."""
         return {
             "calls": self.calls,
             "total_ms": round(self.total_ms, 3),
