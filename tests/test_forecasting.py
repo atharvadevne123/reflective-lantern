@@ -1051,11 +1051,11 @@ def test_naive_forecast_all_equal_last_value(steps: int) -> None:
 
 @pytest.mark.parametrize("alpha", [0.1, 0.3, 0.5, 0.9])
 def test_exponential_smoothing_length_matches_input(alpha: float) -> None:
-    """exponential_smoothing_forecast returns the same number of steps as the input."""
+    """exponential_smoothing_forecast returns the requested number of steps."""
     from app.forecasting import exponential_smoothing_forecast
 
     values = [1.0, 2.0, 3.0, 4.0, 5.0]
-    result = exponential_smoothing_forecast(values, alpha=alpha)
+    result = exponential_smoothing_forecast(values, steps=len(values), alpha=alpha)
     assert len(result) == len(values)
 
 
