@@ -246,6 +246,26 @@ def break_even_cycles(capex: float, saving_per_cycle: float) -> float:
     return round(capex / saving_per_cycle, 2)
 
 
+def usable_capacity_kwh(nameplate_kwh: float, max_dod: float = DEFAULT_MAX_DEPTH_OF_DISCHARGE) -> float:
+    """Return the usable energy capacity after applying depth-of-discharge.
+
+    Args:
+        nameplate_kwh: Nameplate (total) capacity in kWh.
+        max_dod: Maximum depth of discharge in (0, 1].
+
+    Returns:
+        Usable capacity in kWh rounded to 4 decimal places.
+
+    Raises:
+        ValueError: If *nameplate_kwh* is negative or *max_dod* is outside (0, 1].
+    """
+    if nameplate_kwh < 0:
+        raise ValueError(f"nameplate_kwh must be non-negative, got {nameplate_kwh}")
+    if not 0.0 < max_dod <= 1.0:
+        raise ValueError(f"max_dod must be in (0, 1], got {max_dod}")
+    return round(nameplate_kwh * max_dod, 4)
+
+
 __all__ = [
     "DEFAULT_DEGRADATION_PER_CYCLE",
     "DEFAULT_MAX_DEPTH_OF_DISCHARGE",
@@ -257,4 +277,5 @@ __all__ = [
     "peak_shave",
     "required_capacity_kwh",
     "round_trip_losses_kwh",
+    "usable_capacity_kwh",
 ]
