@@ -263,3 +263,34 @@ class TestPeakHourFraction:
     def test_fraction_valid_for_various_start_hours(self, start_hour: int) -> None:
         frac = peak_hour_fraction([1.0] * 24, start_hour=start_hour)
         assert 0.0 <= frac <= 1.0
+
+
+class TestDailyCostSummary:
+    def test_returns_expected_keys(self) -> None:
+        from app.tariff import daily_cost_summary
+        result = daily_cost_summary([10.0] * 24, rate=0.10)
+        assert "total_cost" in result
+        assert "hourly_mean_cost" in result
+        assert "peak_hour_cost" in result
+        assert "off_peak_cost" in result
+
+    def test_flat_consumption_peak_equals_mean(self) -> None:
+        from app.tariff import daily_cost_summary
+        result = daily_cost_summary([5.0] * 24, rate=0.20)
+        assert result["peak_hour_cost"] == pytest.approx(result["hourly_mean_cost"])
+
+    def test_total_cost_correct(self) -> None:
+        from app.tariff import daily_cost_summary
+        result = daily_cost_summary([2.0] * 24, rate=0.15)
+        assert result["total_cost"] == pytest.approx(24 * 2.0 * 0.15)
+
+    def test_empty_raises(self) -> None:
+        from app.tariff import daily_cost_summary
+        with pytest.raises(ValueError):
+            daily_cost_summary([])
+
+    @pytest.mark.parametrize("rate", [0.05, 0.15, 0.30])
+    def test_various_rates(self, rate: float) -> None:
+        from app.tariff import daily_cost_summary
+        result = daily_cost_summary([1.0] * 24, rate=rate)
+        assert result["total_cost"] == pytest.approx(24 * rate)
