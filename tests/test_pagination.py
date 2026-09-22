@@ -314,3 +314,29 @@ class TestEncodeDecode:
     def test_offset_preserved(self, offset: int) -> None:
         data = {"offset": offset}
         assert decode_cursor(encode_cursor(data))["offset"] == offset
+
+
+class TestIsLastPage:
+    def test_last_page_true(self) -> None:
+        from app.pagination import PageInfo, is_last_page
+
+        info = PageInfo(total=10, page=2, per_page=5)
+        assert is_last_page(info) is True
+
+    def test_not_last_page(self) -> None:
+        from app.pagination import PageInfo, is_last_page
+
+        info = PageInfo(total=20, page=1, per_page=5)
+        assert is_last_page(info) is False
+
+    def test_single_page_is_last(self) -> None:
+        from app.pagination import PageInfo, is_last_page
+
+        info = PageInfo(total=3, page=1, per_page=10)
+        assert is_last_page(info) is True
+
+    def test_middle_page_not_last(self) -> None:
+        from app.pagination import PageInfo, is_last_page
+
+        info = PageInfo(total=30, page=2, per_page=5)
+        assert is_last_page(info) is False
