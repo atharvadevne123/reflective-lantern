@@ -178,12 +178,41 @@ def within_radius(center: Coordinate, radius_km: float, candidates: list[Coordin
     return [c for c in candidates if haversine(center, c) <= radius_km]
 
 
+def distance_km(a: Coordinate, b: Coordinate) -> float:
+    """Alias for :func:`haversine` — return great-circle distance in kilometres.
+
+    Args:
+        a: First coordinate.
+        b: Second coordinate.
+
+    Returns:
+        Distance in kilometres.
+    """
+    return haversine(a, b)
+
+
+def k_nearest(query: Coordinate, candidates: list[Coordinate], k: int = 5) -> list[Coordinate]:
+    """Return the *k* nearest candidates to *query*, ordered nearest first.
+
+    Args:
+        query: The reference coordinate.
+        candidates: List of coordinates to rank.
+        k: Maximum number of neighbours to return.
+
+    Returns:
+        Up to *k* closest coordinates sorted by ascending distance.
+    """
+    return sorted(candidates, key=lambda c: haversine(query, c))[:k]
+
+
 __all__ = [
     "BoundingBox",
     "Coordinate",
     "bearing",
     "bounding_box_of",
+    "distance_km",
     "haversine",
+    "k_nearest",
     "midpoint",
     "nearest_neighbor",
     "within_radius",
