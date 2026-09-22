@@ -423,8 +423,10 @@ __all__ = [
     "normalize_series",
     "pair_difference",
     "peak_hours",
+    "peak_to_trough_ratio",
     "peak_to_valley_ratio",
     "percent_change",
+    "range_of_series",
     "resample_hourly_to_daily",
     "rolling_zscore",
     "seasonal_baseline",
@@ -1342,3 +1344,20 @@ def peak_to_trough_ratio(values: list[float]) -> float:
     if trough == 0.0:
         return 0.0
     return round(peak / trough, 6)
+
+
+def range_of_series(values: list[float]) -> float:
+    """Return the range (max minus min) of *values*.
+
+    Args:
+        values: Non-empty list of floats.
+
+    Returns:
+        Difference between maximum and minimum values; 0.0 for a single-element list.
+
+    Raises:
+        ValueError: If *values* is empty.
+    """
+    if not values:
+        raise ValueError("values must not be empty")
+    return max(values) - min(values)
