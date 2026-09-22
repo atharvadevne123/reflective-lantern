@@ -118,6 +118,11 @@ class CircuitBreaker:
         """Current consecutive failure count."""
         return self._failure_count
 
+    @property
+    def is_open(self) -> bool:
+        """Return True when the circuit is currently open (rejecting calls)."""
+        return self.state == CircuitState.OPEN
+
     def __call__(self, func: Callable) -> Callable:
         """Use as a decorator."""
 
