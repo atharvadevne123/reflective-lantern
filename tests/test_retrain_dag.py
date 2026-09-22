@@ -129,3 +129,48 @@ def test_check_drift_different_distributions_returns_true(tmp_path) -> None:
     ):
         result = check_drift_before_retrain(reference_path=ref_path)
     assert bool(result) is True
+
+
+class TestRetainDagEdgeCases:
+    """Additional edge-case tests for check_drift_before_retrain."""
+
+    def test_empty_train_returns_false(self, tmp_path) -> None:
+        """An empty training DataFrame should not trigger drift."""
+        from pipelines.retrain_dag import check_drift_before_retrain
+
+        df_empty = pd.DataFrame({"consumption_kwh": []})
+        ref_path = str(tmp_path / "ref.parquet")
+
+        train_mock = MagicMock()
+        train_mock.exists.return_value = True
+        ref_mock = MagicMock()
+        ref_mock.exists.return_value = False
+
+        with (
+            patch("pathlib.Path", side_effect=lambda p: train_mock if "wg_train" in str(p) else ref_mock),
+            patch("pandas.read_parquet", return_value=df_empty),
+            patch("pandas.DataFrame.to_parquet"),
+        ):
+            result = check_drift_before_retrain(reference_path=ref_path)
+        assert bool(result) is True  # no reference → treated as drift
+
+    @pytest.mark.parametrize("n_samples", [100, 300, 500])
+    def test_similar_distributions_no_drift_various_sizes(self, tmp_path, n_samples: int) -> None:
+        """Same distribution with various sample sizes should not detect drift."""
+        from pipelines.retrain_dag import check_drift_before_retrain
+
+        rng = np.random.default_rng(0)
+        df = pd.DataFrame({"consumption_kwh": rng.normal(10.0, 1.0, n_samples)})
+        ref_path = str(tmp_path / "ref.parquet")
+
+        train_mock = MagicMock()
+        train_mock.exists.return_value = True
+        ref_mock = MagicMock()
+        ref_mock.exists.return_value = True
+
+        with (
+            patch("pathlib.Path", side_effect=lambda p: train_mock if "wg_train" in str(p) else ref_mock),
+            patch("pandas.read_parquet", return_value=df),
+        ):
+            result = check_drift_before_retrain(reference_path=ref_path)
+        assert result == False  # noqa: E712
