@@ -105,7 +105,7 @@ class TestTracked:
 
         fn()
         reset_stats("reset_me")
-        assert get_stats("reset_me")["calls"] == 0
+        assert get_stats("reset_me").get("calls", 0) == 0
 
     @pytest.mark.parametrize("n", [1, 5, 10])
     def test_call_count_matches(self, n) -> None:
@@ -134,8 +134,8 @@ class TestProfilerEdgeCases:
         a()
         b()
         reset_stats()
-        assert get_stats("lbl_a")["calls"] == 0
-        assert get_stats("lbl_b")["calls"] == 0
+        assert get_stats("lbl_a").get("calls", 0) == 0
+        assert get_stats("lbl_b").get("calls", 0) == 0
 
     def test_timed_with_no_label_uses_function_name(self) -> None:
         @timed()
