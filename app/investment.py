@@ -1009,28 +1009,25 @@ def risk_adjusted_return(
     return round(excess / volatility_pct, 4)
 
 
-def annualized_return(
-    initial_value: float,
-    final_value: float,
-    years: float,
-) -> float:
-    """Compute the compound annual growth rate (CAGR) between two values.
+def annualized_return(total_return: float, years: float) -> float:
+    """Compute the compound annual growth rate from a total return.
+
+    Converts a multi-year total return to the equivalent per-year rate using
+    the compound-interest formula: ``(1 + total_return) ** (1/years) - 1``.
 
     Args:
-        initial_value: Starting value (must be positive).
-        final_value: Ending value (must be non-negative).
-        years: Investment horizon in years (must be positive).
+        total_return: Fractional total return over the holding period
+            (e.g. 0.5 for 50% gain, -0.2 for 20% loss). Must be > -1.
+        years: Holding-period length in years. Must be positive.
 
     Returns:
-        CAGR as a decimal (e.g. 0.08 for 8%); rounded to 6 decimal places.
+        Annualized return as a decimal, rounded to 6 decimal places.
 
     Raises:
-        ValueError: If initial_value <= 0 or years <= 0 or final_value < 0.
+        ValueError: If *years* is not positive or *total_return* <= -1.
     """
-    if initial_value <= 0:
-        raise ValueError("initial_value must be positive")
-    if final_value < 0:
-        raise ValueError("final_value must be non-negative")
     if years <= 0:
         raise ValueError("years must be positive")
-    return round((final_value / initial_value) ** (1.0 / years) - 1.0, 6)
+    if total_return <= -1:
+        raise ValueError("total_return must be > -1")
+    return round((1.0 + total_return) ** (1.0 / years) - 1.0, 6)
