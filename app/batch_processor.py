@@ -186,4 +186,20 @@ class BatchProcessor(Generic[T, R]):
         return (total_items + self.batch_size - 1) // self.batch_size
 
 
-__all__ = ["BatchProcessor", "BatchResult", "RunSummary"]
+def success_rate(summary: RunSummary) -> float:
+    """Return the fraction of items that produced a result (not an error).
+
+    Args:
+        summary: RunSummary from a completed batch run.
+
+    Returns:
+        Success rate in [0.0, 1.0] rounded to 4 decimal places.
+        Returns 0.0 when *total_items* is zero.
+    """
+    if summary.total_items <= 0:
+        return 0.0
+    ok = summary.total_items - summary.total_errors
+    return round(max(0.0, ok) / summary.total_items, 4)
+
+
+__all__ = ["BatchProcessor", "BatchResult", "RunSummary", "success_rate"]
