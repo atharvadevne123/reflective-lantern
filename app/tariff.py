@@ -309,6 +309,36 @@ __all__ = [
     "flat_rate_cost",
     "peak_hour_fraction",
     "peak_shift_saving",
+    "daily_cost_summary",
     "tiered_cost",
     "time_of_use_cost",
 ]
+
+
+def daily_cost_summary(hourly_kwh: list[float], rate: float = DEFAULT_FLAT_RATE) -> dict[str, float]:
+    """Return a summary dict of cost statistics for a daily load profile.
+
+    Args:
+        hourly_kwh: Exactly 24 hourly kWh readings.
+        rate: Price per kWh (default flat rate).
+
+    Returns:
+        Dict with ``total_cost``, ``hourly_mean_cost``, ``peak_hour_cost``
+        (cost of the highest-consumption hour), and ``off_peak_cost``
+        (cost of the lowest-consumption hour).
+
+    Raises:
+        ValueError: If *hourly_kwh* is empty.
+    """
+    if not hourly_kwh:
+        raise ValueError("hourly_kwh must not be empty")
+    total = round(sum(hourly_kwh) * rate, 4)
+    mean_h = round((sum(hourly_kwh) / len(hourly_kwh)) * rate, 4)
+    peak_h = round(max(hourly_kwh) * rate, 4)
+    off_peak_h = round(min(hourly_kwh) * rate, 4)
+    return {
+        "total_cost": total,
+        "hourly_mean_cost": mean_h,
+        "peak_hour_cost": peak_h,
+        "off_peak_cost": off_peak_h,
+    }
