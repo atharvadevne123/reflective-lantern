@@ -1240,15 +1240,15 @@ class TestEffectiveDaysOnMarket:
 
 @pytest.mark.parametrize("sqft", [500.0, 1000.0, 2000.0])
 def test_price_per_sqft_scales_linearly(sqft: float) -> None:
-    """price_per_sqft is proportional to price for fixed area."""
-    result = price_per_sqft(price=100_000.0 * sqft, sqft=sqft)
+    """price_per_sqft is proportional to predicted_value for fixed area."""
+    result = price_per_sqft(predicted_value=100_000.0 * sqft, sqft=sqft)
     assert result == pytest.approx(100_000.0)
 
 
 @pytest.mark.parametrize("bedrooms", [1, 2, 3, 4])
 def test_price_per_bedroom_scales_with_count(bedrooms: int) -> None:
-    """price_per_bedroom is price/bedrooms."""
-    result = price_per_bedroom(price=400_000.0, bedrooms=bedrooms)
+    """price_per_bedroom is predicted_value/bedrooms."""
+    result = price_per_bedroom(predicted_value=400_000.0, bedrooms=bedrooms)
     assert result == pytest.approx(400_000.0 / bedrooms)
 
 
