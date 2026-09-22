@@ -201,6 +201,7 @@ __all__ = [
     "lifetime_carbon_savings",
     "monthly_co2_breakdown",
     "renewable_offset_factor",
+    "carbon_neutral_kwh",
     "tree_offset_days",
     "trees_equivalent",
     "weighted_carbon_factor",
@@ -1161,3 +1162,36 @@ def peak_emission_hour(hourly_kwh: list[float], region: str = "default") -> int:
         return 0
     intensities = carbon_intensity_by_hour(hourly_kwh, region)
     return int(max(range(len(intensities)), key=lambda i: intensities[i]))
+
+
+def carbon_neutral_kwh(
+    kwh: float,
+    region: str = "default",
+    offset_factor: float = 1.0,
+) -> float:
+    """Return the net kWh that would result in zero carbon emissions after offsetting.
+
+    Args:
+        kwh: Energy consumption in kWh (must be non-negative).
+        region: Grid region for intensity lookup.
+        offset_factor: Fraction of emissions actually offset (0-1, default 1.0 = fully offset).
+
+    Returns:
+        kWh that remain carbon-positive after offsetting (0.0 when fully offset).
+
+    Raises:
+        ValueError: If *kwh* is negative or *offset_factor* is outside [0, 1].
+    """
+    if kwh < 0:
+        raise ValueError("kwh must be non-negative")
+    if not 0.0 <= offset_factor <= 1.0:
+        raise ValueError("offset_factor must be in [0, 1]")
+    co2_kg = kwh_to_co2_kg(kwh, region)
+    offset_kg = co2_kg * offset_factor
+    remaining_co2 = co2_kg - offset_kg
+    if remaining_co2 <= 0.0:
+        return 0.0
+    intensity = _grid_intensity(region.lower())
+    if intensity == 0.0:
+        return 0.0
+    return round(remaining_co2 / intensity, 4)
