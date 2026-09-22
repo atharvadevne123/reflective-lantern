@@ -170,6 +170,18 @@ def compress_and_measure(data: bytes, method: str = "gzip", level: int = 6) -> d
     }
 
 
+def is_gzip(data: bytes) -> bool:
+    """Return True if *data* starts with the gzip magic number.
+
+    Args:
+        data: Bytes to inspect.
+
+    Returns:
+        True when the first two bytes match the gzip magic ``\\x1f\\x8b``.
+    """
+    return len(data) >= 2 and data[:2] == b"\x1f\x8b"
+
+
 __all__ = [
     "compress_and_measure",
     "compress_json",
@@ -177,6 +189,7 @@ __all__ = [
     "decompress_json",
     "gzip_compress",
     "gzip_decompress",
+    "is_gzip",
     "zlib_compress",
     "zlib_decompress",
 ]
