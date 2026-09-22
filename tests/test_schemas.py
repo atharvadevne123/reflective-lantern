@@ -199,3 +199,84 @@ def test_energy_reading_valid_hours(hour) -> None:
         hvac_state=0,
     )
     assert r.hour == hour
+
+
+class TestEnergyReadingBoundaryValues:
+    """Test EnergyReadingIn with valid boundary values."""
+
+    @pytest.mark.parametrize("temp", [-40.0, 0.0, 20.0, 60.0])
+    def test_valid_temperature_boundaries(self, temp: float) -> None:
+        r = EnergyReadingIn(
+            building_id="bldg-001",
+            timestamp="2025-06-01T14:00:00",
+            hour=12,
+            day_of_week=1,
+            month=6,
+            temperature_c=temp,
+            humidity_pct=50.0,
+            occupancy=0,
+            hvac_state=0,
+        )
+        assert r.temperature_c == temp
+
+    @pytest.mark.parametrize("hum", [0.0, 50.0, 100.0])
+    def test_valid_humidity_boundaries(self, hum: float) -> None:
+        r = EnergyReadingIn(
+            building_id="bldg-001",
+            timestamp="2025-06-01T14:00:00",
+            hour=12,
+            day_of_week=1,
+            month=6,
+            temperature_c=20.0,
+            humidity_pct=hum,
+            occupancy=0,
+            hvac_state=0,
+        )
+        assert r.humidity_pct == hum
+
+    @pytest.mark.parametrize("month", [1, 6, 12])
+    def test_valid_month_boundaries(self, month: int) -> None:
+        r = EnergyReadingIn(
+            building_id="bldg-001",
+            timestamp="2025-06-01T14:00:00",
+            hour=12,
+            day_of_week=1,
+            month=month,
+            temperature_c=20.0,
+            humidity_pct=50.0,
+            occupancy=0,
+            hvac_state=0,
+        )
+        assert r.month == month
+
+    @pytest.mark.parametrize("dow", [0, 3, 6])
+    def test_valid_day_of_week_boundaries(self, dow: int) -> None:
+        r = EnergyReadingIn(
+            building_id="bldg-001",
+            timestamp="2025-06-01T14:00:00",
+            hour=12,
+            day_of_week=dow,
+            month=6,
+            temperature_c=20.0,
+            humidity_pct=50.0,
+            occupancy=0,
+            hvac_state=0,
+        )
+        assert r.day_of_week == dow
+
+
+class TestDriftRequestBoundary:
+    """Test DriftRequest boundary conditions."""
+
+    def test_exactly_ten_values_accepted(self) -> None:
+        r = DriftRequest(current_values=[float(i) for i in range(10)])
+        assert len(r.current_values) == 10
+
+    def test_nine_values_rejected(self) -> None:
+        with pytest.raises(ValidationError):
+            DriftRequest(current_values=[float(i) for i in range(9)])
+
+    @pytest.mark.parametrize("n", [10, 50, 100])
+    def test_min_length_parametrized(self, n: int) -> None:
+        r = DriftRequest(current_values=[1.0] * n)
+        assert len(r.current_values) == n
