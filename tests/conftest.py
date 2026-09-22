@@ -38,7 +38,10 @@ def db_session() -> None:
     finally:
         session.rollback()
         for table in reversed(Base.metadata.sorted_tables):
-            session.execute(table.delete())
+            try:
+                session.execute(table.delete())
+            except Exception:
+                session.rollback()
         session.commit()
         session.close()
 
