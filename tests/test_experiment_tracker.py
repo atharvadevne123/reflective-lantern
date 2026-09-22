@@ -160,7 +160,7 @@ def test_experiment_result_variant_name_preserved(variant_name: str) -> None:
     """ExperimentResult stores the variant name it was created with."""
     from app.experiment_tracker import ExperimentResult
 
-    result = ExperimentResult(subject_id="user-1", variant=variant_name)
+    result = ExperimentResult(experiment="test_exp", entity_id="user-1", variant=variant_name)
     assert result.variant == variant_name
 
 
