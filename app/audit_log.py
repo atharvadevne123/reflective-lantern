@@ -119,6 +119,10 @@ class AuditLog:
         """Return sorted list of distinct actor names in the log."""
         return sorted({e.actor for e in self._entries})
 
+    def actions(self) -> list[str]:
+        """Return sorted list of distinct action names in the log."""
+        return sorted({e.action for e in self._entries})
+
     def __len__(self) -> int:
         """Return the total number of audit entries stored."""
         return len(self._entries)
