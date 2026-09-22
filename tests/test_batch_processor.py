@@ -205,3 +205,29 @@ class TestBatchProcessorDoubler:
         bp = BatchProcessor(_double, batch_size=3)
         summary = bp.run(list(range(n)))
         assert summary.total_results == n
+
+
+class TestSuccessRate:
+    def test_all_success(self) -> None:
+        from app.batch_processor import RunSummary, success_rate
+
+        s = RunSummary(total_items=10, total_batches=2, total_results=10, total_errors=0)
+        assert success_rate(s) == pytest.approx(1.0)
+
+    def test_half_errors(self) -> None:
+        from app.batch_processor import RunSummary, success_rate
+
+        s = RunSummary(total_items=10, total_batches=2, total_results=5, total_errors=5)
+        assert success_rate(s) == pytest.approx(0.5)
+
+    def test_all_errors(self) -> None:
+        from app.batch_processor import RunSummary, success_rate
+
+        s = RunSummary(total_items=4, total_batches=1, total_results=0, total_errors=4)
+        assert success_rate(s) == pytest.approx(0.0)
+
+    def test_zero_items_returns_zero(self) -> None:
+        from app.batch_processor import RunSummary, success_rate
+
+        s = RunSummary(total_items=0, total_batches=0, total_results=0, total_errors=0)
+        assert success_rate(s) == 0.0
