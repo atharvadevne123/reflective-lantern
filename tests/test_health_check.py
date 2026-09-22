@@ -143,3 +143,51 @@ class TestCheckResultDetails:
         reg = HealthRegistry()
         reg.unregister("not_there")  # should not raise
         assert len(reg) == 0
+
+
+import pytest
+
+
+@pytest.mark.parametrize("n_healthy", [0, 1, 5, 10])
+def test_registry_all_healthy_various_sizes(n_healthy: int) -> None:
+    """A registry of n_healthy passing checks is always healthy."""
+    from app.health_check import CheckResult, HealthRegistry
+
+    reg = HealthRegistry()
+    for i in range(n_healthy):
+        reg.register(f"svc_{i}", lambda i=i: CheckResult(name=f"svc_{i}", healthy=True))
+    status = reg.run()
+    assert status.healthy is True
+    assert len(status.failed) == 0
+
+
+@pytest.mark.parametrize("n_fail", [1, 2, 3])
+def test_registry_multiple_failures_all_collected(n_fail: int) -> None:
+    """All failing checks are collected; healthy is False."""
+    from app.health_check import CheckResult, HealthRegistry
+
+    reg = HealthRegistry()
+    for i in range(n_fail):
+        reg.register(f"bad_{i}", lambda i=i: CheckResult(name=f"bad_{i}", healthy=False))
+    status = reg.run()
+    assert status.healthy is False
+    assert len(status.failed) == n_fail
+
+
+class TestHealthRegistryLengthTracking:
+    def test_register_increases_len(self) -> None:
+        from app.health_check import CheckResult, HealthRegistry
+
+        reg = HealthRegistry()
+        for i in range(3):
+            reg.register(f"svc{i}", lambda: CheckResult(name="x", healthy=True))
+        assert len(reg) == 3
+
+    def test_unregister_decreases_len(self) -> None:
+        from app.health_check import CheckResult, HealthRegistry
+
+        reg = HealthRegistry()
+        reg.register("a", lambda: CheckResult(name="a", healthy=True))
+        reg.register("b", lambda: CheckResult(name="b", healthy=True))
+        reg.unregister("a")
+        assert len(reg) == 1
