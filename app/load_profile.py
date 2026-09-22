@@ -219,5 +219,35 @@ __all__ = [
     "load_factor",
     "max_ramp_rate",
     "night_load_fraction",
+    "off_peak_load_fraction",
     "peak_to_average_ratio",
 ]
+
+
+def off_peak_load_fraction(
+    hourly_kwh: list[float],
+    peak_start: int = 9,
+    peak_end: int = 21,
+) -> float:
+    """Return the fraction of total consumption that falls outside peak hours.
+
+    "Off-peak" is defined as any hour NOT in the range [*peak_start*, *peak_end*).
+
+    Args:
+        hourly_kwh: Hourly consumption list (length 24 for one day, but any length accepted).
+        peak_start: Hour (inclusive) when peak period starts (0-23, default 9).
+        peak_end: Hour (exclusive) when peak period ends (0-23, default 21).
+
+    Returns:
+        Off-peak fraction in [0, 1]; 0.0 if total consumption is zero.
+
+    Raises:
+        ValueError: If *hourly_kwh* is empty.
+    """
+    if not hourly_kwh:
+        raise ValueError("hourly_kwh must not be empty")
+    total = sum(hourly_kwh)
+    if total == 0.0:
+        return 0.0
+    off_peak = sum(v for i, v in enumerate(hourly_kwh) if not (peak_start <= (i % 24) < peak_end))
+    return round(off_peak / total, 6)
