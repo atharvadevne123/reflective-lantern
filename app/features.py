@@ -315,10 +315,27 @@ class InteractionFeatureExtractor(BaseEstimator, TransformerMixin):
     ]
 
     def fit(self, X: pd.DataFrame, y: object = None) -> InteractionFeatureExtractor:
+        """Identify which interaction pairs are present in *X*.
+
+        Args:
+            X: Input DataFrame; only pairs whose both columns exist are kept.
+            y: Ignored; present for sklearn pipeline compatibility.
+
+        Returns:
+            self
+        """
         self.available_pairs_ = [(a, b) for a, b in self.PAIRS if a in X.columns and b in X.columns]
         return self
 
     def transform(self, X: pd.DataFrame) -> pd.DataFrame:
+        """Add pairwise product columns for every available pair.
+
+        Args:
+            X: Input DataFrame containing sensor feature columns.
+
+        Returns:
+            Copy of *X* with additional ``<a>_x_<b>`` interaction columns.
+        """
         df = X.copy()
         for a, b in self.available_pairs_:
             df[f"{a}_x_{b}"] = df[a] * df[b]
