@@ -203,7 +203,7 @@ def test_task_priority_preserved(priority: int) -> None:
 
     q = TaskQueue(workers=0)
     q.submit(lambda: None, priority=priority)
-    task: Task = q._queue.get()
+    task: Task = q._heap[0]
     assert task.priority == priority
 
 
@@ -231,6 +231,6 @@ class TestTaskQueueStartStop:
         q = TaskQueue(workers=n_workers)
         q.start()
         for i in range(5):
-            q.submit(work, i)
+            q.submit(work, 5, i)
         q.stop(timeout=5.0)
         assert sorted(results) == list(range(5))
