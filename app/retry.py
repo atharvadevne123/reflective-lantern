@@ -87,4 +87,23 @@ def retry_on_network_error(max_attempts: int = 3, base_delay: float = 2.0) -> Ca
     )
 
 
-__all__ = ["retry", "retry_on_network_error"]
+def with_retry(func: Callable, *args, max_attempts: int = 3, **kwargs) -> object:
+    """Call *func* with retry logic applied inline (no decorator needed).
+
+    Args:
+        func: Callable to invoke.
+        *args: Positional arguments forwarded to func.
+        max_attempts: Maximum number of total attempts.
+        **kwargs: Keyword arguments forwarded to func.
+
+    Returns:
+        Whatever func returns on success.
+
+    Raises:
+        Exception: Last exception raised after all attempts are exhausted.
+    """
+    wrapped = retry(max_attempts=max_attempts)(func)
+    return wrapped(*args, **kwargs)
+
+
+__all__ = ["retry", "retry_on_network_error", "with_retry"]
