@@ -183,11 +183,11 @@ class TestProfilerExtended:
         from app.profiler import tracked, tracked_names
 
         @tracked(label="z_func")
-        def z():
+        def z() -> None:
             pass
 
         @tracked(label="a_func")
-        def a():
+        def a() -> None:
             pass
 
         z()
@@ -199,11 +199,11 @@ class TestProfilerExtended:
         from app.profiler import total_calls, tracked
 
         @tracked(label="tc_a")
-        def fa():
+        def fa() -> None:
             pass
 
         @tracked(label="tc_b")
-        def fb():
+        def fb() -> None:
             pass
 
         fa()
@@ -223,7 +223,7 @@ class TestProfilerExtended:
         label = f"param_count_{n}"
 
         @tracked(label=label)
-        def fn():
+        def fn() -> None:
             pass
 
         for _ in range(n):
@@ -234,7 +234,7 @@ class TestProfilerExtended:
         from app.profiler import get_stats, reset_stats, tracked
 
         @tracked(label="to_reset")
-        def fn():
+        def fn() -> None:
             pass
 
         fn()
