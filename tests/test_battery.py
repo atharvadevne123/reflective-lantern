@@ -339,3 +339,37 @@ class TestDemandChargeSavingExtended:
         )
         saving = demand_charge_saving(dr, demand_charge_per_kw=rate)
         assert saving == pytest.approx(5.0 * rate)
+
+
+class TestUsableCapacityKwh:
+    def test_default_dod(self) -> None:
+        from app.battery import usable_capacity_kwh
+
+        assert usable_capacity_kwh(100.0) == pytest.approx(80.0, rel=1e-4)
+
+    def test_full_dod(self) -> None:
+        from app.battery import usable_capacity_kwh
+
+        assert usable_capacity_kwh(50.0, max_dod=1.0) == pytest.approx(50.0)
+
+    def test_half_dod(self) -> None:
+        from app.battery import usable_capacity_kwh
+
+        assert usable_capacity_kwh(200.0, max_dod=0.5) == pytest.approx(100.0)
+
+    def test_zero_nameplate(self) -> None:
+        from app.battery import usable_capacity_kwh
+
+        assert usable_capacity_kwh(0.0) == 0.0
+
+    def test_negative_nameplate_raises(self) -> None:
+        from app.battery import usable_capacity_kwh
+
+        with pytest.raises(ValueError):
+            usable_capacity_kwh(-10.0)
+
+    def test_bad_dod_raises(self) -> None:
+        from app.battery import usable_capacity_kwh
+
+        with pytest.raises(ValueError):
+            usable_capacity_kwh(100.0, max_dod=0.0)
