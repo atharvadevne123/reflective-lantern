@@ -338,3 +338,24 @@ class TestCircuitBreakerSuccessPath:
                 cb.call(_always_fail)
         with pytest.raises(CircuitOpenError):
             cb.call(_always_succeed)
+
+
+class TestIsOpenProperty:
+    def test_initially_closed(self) -> None:
+        cb = CircuitBreaker(failure_threshold=3, expected_exceptions=(ValueError,))
+        assert cb.is_open is False
+
+    def test_open_after_threshold(self) -> None:
+        cb = CircuitBreaker(failure_threshold=2, expected_exceptions=(ValueError,))
+        for _ in range(2):
+            with pytest.raises(ValueError):
+                cb.call(_always_fail)
+        assert cb.is_open is True
+
+    def test_not_open_when_closed_after_reset(self) -> None:
+        cb = CircuitBreaker(failure_threshold=2, expected_exceptions=(ValueError,))
+        for _ in range(2):
+            with pytest.raises(ValueError):
+                cb.call(_always_fail)
+        cb.reset()
+        assert cb.is_open is False
