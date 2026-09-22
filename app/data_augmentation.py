@@ -15,10 +15,23 @@ __all__ = [
     "augment_batch",
     "augment_text",
     "jitter_numerics",
+    "make_rng",
     "random_deletion",
     "random_swap",
     "synonym_replace",
 ]
+
+
+def make_rng(seed: int = 42) -> random.Random:
+    """Return a seeded ``random.Random`` instance for reproducible augmentation.
+
+    Args:
+        seed: Integer seed for the RNG (default 42).
+
+    Returns:
+        A new :class:`random.Random` initialised with *seed*.
+    """
+    return random.Random(seed)
 
 
 @dataclass
