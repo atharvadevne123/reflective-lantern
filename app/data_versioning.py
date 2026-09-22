@@ -28,7 +28,7 @@ class DataSnapshot:
 
     name: str
     version: str
-    source: str
+    source: str = ""
     schema: dict[str, str] = field(default_factory=dict)
     row_count: int = 0
     checksum: str = ""
