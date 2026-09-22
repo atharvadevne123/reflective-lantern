@@ -135,11 +135,18 @@ def classification_metrics(
     }
 
 
+mae = mean_absolute_error
+mape = mean_absolute_percentage_error
+rmse = root_mean_squared_error
+
 __all__ = [
     "classification_metrics",
+    "mae",
+    "mape",
     "mean_absolute_error",
     "mean_absolute_percentage_error",
     "r_squared",
+    "rmse",
     "root_mean_squared_error",
 ]
 
