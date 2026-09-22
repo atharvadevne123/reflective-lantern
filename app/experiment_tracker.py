@@ -163,9 +163,14 @@ class ExperimentRegistry:
         return len(self._experiments)
 
 
+CONTROL: Variant = Variant(name="control", weight=0.5)
+TREATMENT: Variant = Variant(name="treatment", weight=0.5)
+
 __all__ = [
+    "CONTROL",
     "Experiment",
     "ExperimentRegistry",
     "ExperimentResult",
+    "TREATMENT",
     "Variant",
 ]
