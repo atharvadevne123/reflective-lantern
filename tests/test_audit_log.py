@@ -171,3 +171,21 @@ class TestAuditLogExportJsonl:
         log = AuditLog()
         export = log.export_jsonl().strip()
         assert export == ""
+
+
+class TestAuditLogActions:
+    def test_returns_sorted_distinct_actions(self) -> None:
+        log = AuditLog()
+        log.record(actor="alice", action="delete", resource="x")
+        log.record(actor="bob", action="create", resource="y")
+        log.record(actor="alice", action="delete", resource="z")
+        assert log.actions() == ["create", "delete"]
+
+    def test_empty_log_returns_empty(self) -> None:
+        log = AuditLog()
+        assert log.actions() == []
+
+    def test_single_action(self) -> None:
+        log = AuditLog()
+        log.record(actor="alice", action="read", resource="doc")
+        assert log.actions() == ["read"]
