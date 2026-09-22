@@ -812,6 +812,9 @@ class TestTopKFeatures:
 @pytest.mark.parametrize("n_rows", [1, 5, 10])
 def test_extract_feature_array_row_count(n_rows: int) -> None:
     """extract_feature_array returns a numpy array with n_rows rows."""
+    from sklearn.pipeline import Pipeline
+    from sklearn.preprocessing import StandardScaler
+
     df = pd.DataFrame(
         {
             "hour": [8] * n_rows,
@@ -824,7 +827,8 @@ def test_extract_feature_array_row_count(n_rows: int) -> None:
             "consumption_kwh": [10.0] * n_rows,
         }
     )
-    arr = extract_feature_array(df)
+    pipeline = Pipeline([("scaler", StandardScaler())])
+    arr = extract_feature_array(df, pipeline)
     assert arr.shape[0] == n_rows
 
 
