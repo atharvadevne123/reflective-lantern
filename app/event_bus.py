@@ -126,4 +126,13 @@ def get_bus() -> EventBus:
     return _default_bus
 
 
-__all__ = ["EventBus", "Handler", "get_bus"]
+def reset_bus() -> None:
+    """Reset the process-wide default bus, clearing all subscriptions.
+
+    Useful in test teardown to prevent handler state from leaking between tests.
+    """
+    global _default_bus
+    _default_bus = EventBus()
+
+
+__all__ = ["EventBus", "Handler", "get_bus", "reset_bus"]
