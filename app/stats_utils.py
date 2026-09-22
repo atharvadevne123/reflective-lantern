@@ -154,7 +154,37 @@ __all__ = [
     "weighted_average",
     "weighted_median",
     "zscore",
+    "clamp",
+    "safe_divide",
 ]
+
+
+def clamp(value: float, low: float, high: float) -> float:
+    """Return *value* clamped to the inclusive range [*low*, *high*].
+
+    Args:
+        value: Input value.
+        low: Minimum allowed value.
+        high: Maximum allowed value.
+
+    Returns:
+        *value* if already in range; *low* or *high* at the boundary.
+    """
+    return max(low, min(high, value))
+
+
+def safe_divide(numerator: float, denominator: float, default: float = 0.0) -> float:
+    """Divide *numerator* by *denominator*, returning *default* when denominator is zero.
+
+    Args:
+        numerator: Dividend.
+        denominator: Divisor.
+        default: Value returned on division by zero (default 0.0).
+
+    Returns:
+        Quotient or *default*.
+    """
+    return numerator / denominator if denominator != 0.0 else default
 
 
 def geometric_mean(values: list[float]) -> float:
