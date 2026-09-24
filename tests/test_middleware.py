@@ -1,163 +1,59 @@
-"""Tests for the rate limiting middleware."""
-
+"""Tests for rate limiting and correlation-ID middleware."""
 from __future__ import annotations
 
-import pytest
+from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
-from app.middleware import _requests, reset_rate_limiter
+from app.middleware import RateLimitMiddleware
 
 
-@pytest.fixture(autouse=True)
-def clean_rate_limiter() -> None:
-    reset_rate_limiter()
+def _app(limit: int) -> FastAPI:
+    app = FastAPI()
+    app.add_middleware(RateLimitMiddleware, limit=limit)
+
+    @app.get("/ping")
+    async def ping():
+        return {"ok": True}
+
+    return app
 
 
-def test_requests_under_limit_pass(client: TestClient) -> None:
-    for _ in range(5):
-        assert client.get("/health").status_code == 200
+def test_requests_under_limit_pass():
+    with TestClient(_app(limit=5)) as c:
+        for _ in range(5):
+            assert c.get("/ping").status_code == 200
 
 
-def test_rate_limit_returns_429_when_exceeded(client: TestClient, monkeypatch) -> None:
-    from types import SimpleNamespace
-
-    from app import middleware
-
-    monkeypatch.setattr(middleware, "settings", SimpleNamespace(rate_limit_per_minute=3))
-    codes = [client.get("/health").status_code for _ in range(5)]
-    assert 429 in codes
-
-
-def test_rate_limit_response_has_retry_after(client: TestClient, monkeypatch) -> None:
-    from types import SimpleNamespace
-
-    from app import middleware
-
-    monkeypatch.setattr(middleware, "settings", SimpleNamespace(rate_limit_per_minute=1))
-    client.get("/health")
-    resp = client.get("/health")
-    assert resp.status_code == 429
-    assert resp.headers.get("retry-after") == "60"
+def test_request_over_limit_rejected():
+    with TestClient(_app(limit=3)) as c:
+        for _ in range(3):
+            assert c.get("/ping").status_code == 200
+        resp = c.get("/ping")
+        assert resp.status_code == 429
+        assert resp.json()["error"] == "RateLimitExceeded"
 
 
-def test_reset_clears_windows(client: TestClient) -> None:
-    client.get("/health")
-    assert len(_requests) >= 0
-    reset_rate_limiter()
-    assert len(_requests) == 0
+def test_rate_limit_headers_present():
+    with TestClient(_app(limit=10)) as c:
+        resp = c.get("/ping")
+        assert resp.headers["X-RateLimit-Limit"] == "10"
+        assert int(resp.headers["X-RateLimit-Remaining"]) == 9
 
 
-def test_correlation_id_header_propagated(client: TestClient) -> None:
-    cid = "test-correlation-123"
-    resp = client.get("/health", headers={"X-Correlation-ID": cid})
-    assert resp.headers.get("x-correlation-id") == cid
+def test_retry_after_header_on_429():
+    with TestClient(_app(limit=1)) as c:
+        c.get("/ping")
+        resp = c.get("/ping")
+        assert resp.status_code == 429
+        assert int(resp.headers["Retry-After"]) >= 1
 
 
-def test_correlation_id_generated_when_absent(client: TestClient) -> None:
-    resp = client.get("/health")
-    assert "x-correlation-id" in resp.headers
-    assert len(resp.headers["x-correlation-id"]) > 0
+def test_correlation_id_header_returned(client):
+    resp = client.get("/api/v1/health")
+    assert "X-Request-ID" in resp.headers
+    assert "X-Response-Time-Ms" in resp.headers
 
 
-def test_correlation_id_is_uuid_when_not_provided(client: TestClient) -> None:
-    import uuid
-
-    resp = client.get("/health")
-    cid = resp.headers.get("x-correlation-id", "")
-    try:
-        uuid.UUID(cid)
-        is_uuid = True
-    except ValueError:
-        is_uuid = False
-    assert is_uuid
-
-
-def test_rate_limit_resets_after_window(client: TestClient, monkeypatch) -> None:
-    from types import SimpleNamespace
-
-    from app import middleware
-
-    monkeypatch.setattr(middleware, "settings", SimpleNamespace(rate_limit_per_minute=1))
-    reset_rate_limiter()
-    resp1 = client.get("/health")
-    assert resp1.status_code == 200
-
-
-def test_multiple_resets_are_idempotent(client: TestClient) -> None:
-    client.get("/health")
-    reset_rate_limiter()
-    reset_rate_limiter()
-    assert len(_requests) == 0
-
-
-def test_rate_limit_applied_per_ip(client: TestClient, monkeypatch) -> None:
-    """Different client IPs should have independent rate-limit windows."""
-    from types import SimpleNamespace
-
-    from app import middleware
-
-    monkeypatch.setattr(middleware, "settings", SimpleNamespace(rate_limit_per_minute=1))
-    reset_rate_limiter()
-    r1 = client.get("/health", headers={"X-Forwarded-For": "1.1.1.1"})
-    r2 = client.get("/health", headers={"X-Forwarded-For": "2.2.2.2"})
-    assert r1.status_code == 200
-    assert r2.status_code == 200
-
-
-def test_correlation_id_max_length_accepted(client: TestClient) -> None:
-    cid = "a" * 64
-    resp = client.get("/health", headers={"X-Correlation-ID": cid})
-    assert resp.headers.get("x-correlation-id") == cid
-
-
-def test_health_endpoint_response_body_structure(client: TestClient) -> None:
-    resp = client.get("/health")
-    assert resp.status_code == 200
-    body = resp.json()
-    assert "status" in body
-
-
-def test_reset_before_any_requests_is_safe(client: TestClient) -> None:
-    reset_rate_limiter()
-    reset_rate_limiter()
-    assert len(_requests) == 0
-
-
-@pytest.mark.parametrize("path", ["/health", "/metrics", "/version"])
-def test_correlation_header_on_all_endpoints(client: TestClient, path: str) -> None:
-    resp = client.get(path)
-    assert "x-correlation-id" in resp.headers
-
-
-def test_rate_limit_header_present_on_429(client: TestClient, monkeypatch) -> None:
-    """429 response must include Retry-After header."""
-    from types import SimpleNamespace
-
-    from app import middleware
-
-    monkeypatch.setattr(middleware, "settings", SimpleNamespace(rate_limit_per_minute=1))
-    reset_rate_limiter()
-    client.get("/health")
-    resp = client.get("/health")
-    if resp.status_code == 429:
-        assert "retry-after" in resp.headers
-
-
-@pytest.mark.parametrize("cid", ["abc-123", "x" * 64, "short"])
-def test_correlation_id_echoed_back(client: TestClient, cid: str) -> None:
-    """Provided X-Correlation-ID is echoed back unchanged."""
-    resp = client.get("/health", headers={"X-Correlation-ID": cid})
-    assert resp.headers.get("x-correlation-id") == cid
-
-
-def test_auto_correlation_id_is_uuid(client: TestClient) -> None:
-    """When no X-Correlation-ID is supplied, a UUID4 is generated."""
-    import re
-
-    resp = client.get("/health")
-    cid = resp.headers.get("x-correlation-id", "")
-    uuid_pattern = re.compile(
-        r"^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
-        re.IGNORECASE,
-    )
-    assert uuid_pattern.match(cid), f"Expected UUID4, got {cid!r}"
+def test_correlation_id_is_echoed(client):
+    resp = client.get("/api/v1/health", headers={"X-Request-ID": "trace-123"})
+    assert resp.headers["X-Request-ID"] == "trace-123"

@@ -1,48 +1,35 @@
-.PHONY: help install test test-cov test-fast lint lint-fix format typecheck check serve benchmark seed clean
+.PHONY: install test lint format run docker clean diagram
 
-PYTHON ?= python
-PIP    ?= pip
+install:
+	pip install -r requirements.txt
 
-help:  ## Show available targets
-	@grep -E '^[a-zA-Z_-]+:.*##' $(MAKEFILE_LIST) | \
-	  awk 'BEGIN{FS=":.*##"}; {printf "  %-18s %s\n", $$1, $$2}'
+test:
+	pytest tests/ -v --tb=short
 
-install:  ## Install package and dev dependencies
-	$(PIP) install -e ".[dev]"
+lint:
+	python -m ruff check .
 
-test:  ## Run the full test suite
-	pytest -q --tb=short
+format:
+	python -m ruff format .
 
-test-cov:  ## Run tests with coverage report
-	pytest -q --tb=short --cov=app --cov-report=term-missing
-
-test-fast:  ## Run tests, stopping at the first failure
-	pytest -q --tb=short -x
-
-lint:  ## Run ruff linter
-	ruff check app/ tests/
-
-lint-fix:  ## Run ruff linter and apply safe autofixes
-	ruff check app/ tests/ --select E,F,W,I --ignore E501 --fix
-
-format:  ## Auto-format with ruff
-	ruff format app/ tests/
-
-typecheck:  ## Run mypy static type checker
-	mypy app/ --ignore-missing-imports
-
-check: lint typecheck test  ## Run lint, typecheck, and tests (what CI runs)
-
-serve:  ## Run the API locally with auto-reload
+run:
 	uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 
-benchmark:  ## Run micro-benchmarks
-	$(PYTHON) scripts/benchmark.py --runs 500
+docker:
+	docker compose up --build
 
-seed:  ## Seed development data
-	$(PYTHON) scripts/seed_data.py --verbose
+diagram:
+	python scripts/generate_diagram.py
 
-clean:  ## Remove compiled Python files and caches
+clean:
+	rm -rf __pycache__ .pytest_cache *.joblib metrics.json *.db dist build
 	find . -type d -name __pycache__ -exec rm -rf {} + 2>/dev/null || true
-	find . -name '*.pyc' -delete
-	rm -rf .pytest_cache .mypy_cache .ruff_cache htmlcov .coverage
+
+smoke:
+	python scripts/smoke_test.py --base-url $${BASE_URL:-http://localhost:8000}
+
+benchmark:
+	python scripts/benchmark.py
+
+migrate:
+	alembic upgrade head

@@ -1,211 +1,111 @@
-"""Airflow DAG: automated weekly retraining with data-volume and R2 quality gates."""
-
+"""Airflow DAG for automated model retraining on new delivery data."""
 from __future__ import annotations
 
 from datetime import datetime, timedelta
 
-try:
-    from airflow import DAG
-    from airflow.operators.python import PythonOperator
+from airflow import DAG
+from airflow.operators.python import PythonOperator
 
-    _AIRFLOW = True
-except ImportError:
-    _AIRFLOW = False
-
-OWNER = "watt-guard"
-R2_GATE = 0.70
-MIN_ROWS = 500
-DAG_ID = "cart_mind_weekly_retrain"
-
-_DRIFT_FEATURES = ["consumption_kwh", "temperature_c", "occupancy"]
-
-default_args = {
-    "owner": OWNER,
+DEFAULT_ARGS = {
+    "owner": "logistics-flow",
+    "depends_on_past": False,
+    "email_on_failure": True,
+    "email_on_retry": False,
     "retries": 2,
     "retry_delay": timedelta(minutes=5),
-    "email_on_failure": False,
 }
 
 
-def _fetch_training_data(**ctx: object) -> int:
-    """Pull recent readings from the DB and save to /tmp/wg_train.parquet.
+def _load_training_data(**ctx) -> None:
+    """Pull the last 30 days of predictions from PostgreSQL for retraining."""
+    import logging
+    import os
 
-    Args:
-        **ctx: Airflow task context; uses ctx["ti"] for XCom.
-
-    Returns:
-        Number of rows fetched.
-    """
-    import numpy as np
     import pandas as pd
+    from sqlalchemy import create_engine, text
 
-    rng = np.random.default_rng(int(datetime.utcnow().timestamp()))
-    n = 3000
-    df = pd.DataFrame(
-        {
-            "hour": rng.integers(0, 24, n),
-            "day_of_week": rng.integers(0, 7, n),
-            "month": rng.integers(1, 13, n),
-            "temperature_c": rng.uniform(-5, 38, n),
-            "humidity_pct": rng.uniform(20, 90, n),
-            "occupancy": rng.integers(0, 200, n),
-            "hvac_state": rng.integers(0, 2, n),
-            "consumption_kwh": 10 + rng.normal(0, 5, n),
-        }
-    )
-    df["consumption_kwh"] = df["consumption_kwh"].clip(lower=0)
-    df.to_parquet("/tmp/wg_train.parquet", index=False)
+    logger = logging.getLogger(__name__)
+    db_url = os.environ["DATABASE_URL"]
+    engine = create_engine(db_url)
+    with engine.connect() as conn:
+        df = pd.read_sql(
+            text(
+                "SELECT * FROM predictions "
+                "WHERE created_at >= NOW() - INTERVAL '30 days'"
+            ),
+            conn,
+        )
+    logger.info("Loaded %d training rows", len(df))
     ctx["ti"].xcom_push(key="row_count", value=len(df))
-    return len(df)
+    df.to_parquet("/tmp/retrain_data.parquet", index=False)
 
 
-def _validate_data_volume(**ctx: object) -> None:
-    """Gate: abort if fewer than MIN_ROWS rows available.
+def _retrain(**ctx) -> None:
+    """Re-fit the ensemble on fresh data if enough rows are available."""
+    import logging
 
-    Args:
-        **ctx: Airflow task context; reads row_count XCom from fetch_data.
-
-    Raises:
-        ValueError: When the row count is below MIN_ROWS.
-    """
-    rows: int = ctx["ti"].xcom_pull(task_ids="fetch_data", key="row_count")
-    if rows < MIN_ROWS:
-        raise ValueError(f"Insufficient data: {rows} < {MIN_ROWS} rows required.")
-
-
-def _train(**ctx: object) -> None:
-    """Retrain and persist the model; push R2 to XCom.
-
-    Args:
-        **ctx: Airflow task context; uses ctx["ti"] for XCom.
-    """
+    import joblib
     import pandas as pd
 
+    from app.features import build_feature_pipeline, prepare_X
     from app.model import train_model
 
-    df = pd.read_parquet("/tmp/wg_train.parquet")
-    y = df.pop("consumption_kwh")
-    _, metrics = train_model(df, y)
-    ctx["ti"].xcom_push(key="r2", value=metrics["r2_mean"])
+    logger = logging.getLogger(__name__)
+    row_count = ctx["ti"].xcom_pull(key="row_count")
+    if row_count < 200:
+        logger.warning("Only %d rows — skipping retrain (need >=200)", row_count)
+        return
+
+    df = pd.read_parquet("/tmp/retrain_data.parquet")
+    feat_pipe = build_feature_pipeline()
+    X = prepare_X(df, feat_pipe, fit=True)
+    y = df["delivery_minutes"].values
+    _, metrics = train_model(X, y)
+    joblib.dump(feat_pipe, "feature_pipeline.joblib")
+    logger.info("Retrain complete — RMSE=%.2f R²=%.4f", metrics["rmse_mean"], metrics["r2_mean"])
 
 
-def _validate_quality(**ctx: object) -> None:
-    """Gate: abort if R2 below threshold to prevent degraded model deployment.
-
-    Args:
-        **ctx: Airflow task context; reads r2 XCom from train task.
-
-    Raises:
-        ValueError: When R2 is below R2_GATE.
-    """
-    r2: float = ctx["ti"].xcom_pull(task_ids="train", key="r2")
-    if r2 < R2_GATE:
-        raise ValueError(f"Model quality gate failed: R2={r2:.4f} < {R2_GATE}")
-
-
-def _deploy(**ctx: object) -> None:
-    """Copy the newly trained model artefact to the production path.
-
-    Args:
-        **ctx: Airflow task context (unused but required by Airflow).
-    """
-    import shutil
-
-    shutil.copy("model.joblib", "model_prod.joblib")
-
-
-if _AIRFLOW:
-    with DAG(
-        dag_id="watt_guard_weekly_retrain",
-        default_args=default_args,
-        schedule="@weekly",
-        start_date=datetime(2025, 1, 1),
-        catchup=False,
-        tags=["watt-guard", "ml", "energy"],
-    ) as dag:
-        fetch = PythonOperator(task_id="fetch_data", python_callable=_fetch_training_data)
-        validate_vol = PythonOperator(task_id="validate_volume", python_callable=_validate_data_volume)
-        train = PythonOperator(task_id="train", python_callable=_train)
-        validate_q = PythonOperator(task_id="validate_quality", python_callable=_validate_quality)
-        deploy = PythonOperator(task_id="deploy", python_callable=_deploy)
-
-        fetch >> validate_vol >> train >> validate_q >> deploy
-
-
-def retrain_task() -> dict[str, object]:
-    """Public task wrapper: run the full retrain pipeline and return a status dict."""
-    _fetch_training_data(ti=type("_TI", (), {"xcom_push": lambda *a, **kw: None})())
-    _validate_data_volume(ti=type("_TI", (), {"xcom_pull": lambda *a, **kw: 3000})())
-    _train(ti=type("_TI", (), {"xcom_pull": lambda *a, **kw: 3000})())
-    return {"status": "ok", "dag_id": DAG_ID}
-
-
-def drift_report_task() -> dict[str, object]:
-    """Check for data drift across tracked features and write a report.
-
-    Returns:
-        Dict with keys ``drifted`` (bool), ``total_checked`` (int), and ``results`` (list).
-    """
-    import json
+def _check_drift(**ctx) -> None:
+    """Run a KS-test drift check and log results."""
+    import logging
     import os
-    import time
 
-    results = []
-    for feature in _DRIFT_FEATURES:
-        results.append({"feature": feature, "drifted": False, "p_value": 1.0})
+    from sqlalchemy import create_engine
+    from sqlalchemy.orm import Session
 
-    report = {
-        "drifted": any(r["drifted"] for r in results),
-        "total_checked": len(_DRIFT_FEATURES),
-        "results": results,
-        "generated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-    }
+    from app.monitoring import run_drift_check
 
-    report_dir = os.path.join("history", "reports")
-    os.makedirs(report_dir, exist_ok=True)
-    fname = f"cart_mind_drift_{time.strftime('%Y%m%d_%H%M%S', time.gmtime())}.json"
-    with open(os.path.join(report_dir, fname), "w") as fh:
-        json.dump(report, fh, indent=2)
-
-    return report
+    logger = logging.getLogger(__name__)
+    engine = create_engine(os.environ["DATABASE_URL"])
+    with Session(engine) as db:
+        result = run_drift_check(db)
+    drifted = [f for f, r in result.get("features", {}).items() if r.get("drift_detected")]
+    if drifted:
+        logger.warning("Drift detected in features: %s", drifted)
+    else:
+        logger.info("No drift detected")
 
 
-def check_drift_before_retrain(reference_path: str = "/tmp/wg_reference.parquet") -> bool:
-    """Return True when feature drift is detected, signalling a retrain is warranted.
+with DAG(
+    dag_id="logistics_flow_retrain",
+    default_args=DEFAULT_ARGS,
+    description="Weekly retraining for Logistics-Flow delivery-time model",
+    schedule="@weekly",
+    start_date=datetime(2025, 1, 1),
+    catchup=False,
+    tags=["ml", "logistics", "retrain"],
+) as dag:
+    load_data = PythonOperator(
+        task_id="load_training_data",
+        python_callable=_load_training_data,
+    )
+    retrain = PythonOperator(
+        task_id="retrain_model",
+        python_callable=_retrain,
+    )
+    check_drift = PythonOperator(
+        task_id="check_drift",
+        python_callable=_check_drift,
+    )
 
-    Compares the current training batch (read from /tmp/wg_train.parquet) against
-    a reference distribution saved at *reference_path* using a KS-test on the
-    consumption_kwh column.
-
-    Args:
-        reference_path: Path to the reference Parquet file.
-
-    Returns:
-        True when drift is detected (p-value < 0.05) or when no reference exists
-        (first-run bootstrap), False when distributions are statistically similar.
-    """
-    from pathlib import Path
-
-    import pandas as pd
-    from scipy.stats import ks_2samp
-
-    train_path = Path("/tmp/wg_train.parquet")
-    if not train_path.exists():
-        return False
-
-    df_new = pd.read_parquet(train_path)
-    ref = Path(reference_path)
-    if not ref.exists():
-        df_new.to_parquet(reference_path, index=False)
-        return True  # first run — always retrain
-
-    df_ref = pd.read_parquet(reference_path)
-    col = "consumption_kwh"
-    if col not in df_new.columns or col not in df_ref.columns:
-        return True
-
-    _, p_value = ks_2samp(df_ref[col].dropna().values, df_new[col].dropna().values)
-    drift_detected = p_value < 0.05
-    if drift_detected:
-        df_new.to_parquet(reference_path, index=False)
-    return drift_detected
+    load_data >> retrain >> check_drift

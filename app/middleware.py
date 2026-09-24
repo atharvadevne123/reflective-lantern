@@ -1,93 +1,56 @@
-"""Rate limiting and correlation-ID middleware."""
-
+"""Rate limiting middleware backed by an in-process sliding window."""
 from __future__ import annotations
 
+import logging
 import time
-import uuid
 from collections import defaultdict, deque
-from types import SimpleNamespace
-from typing import Any
 
-from fastapi import Request, Response
 from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.requests import Request
+from starlette.responses import JSONResponse
 
-settings = SimpleNamespace(rate_limit_per_minute=200)
+logger = logging.getLogger(__name__)
 
-_request_counts: dict[str, list[float]] = defaultdict(list)
-_rate_buckets: dict[str, deque[float]] = defaultdict(deque)
-_requests = _request_counts
-
-
-def reset_rate_limiter() -> None:
-    """Clear all rate-limit tracking state (useful in tests).
-
-    Resets both the sliding-window request counts and the token-bucket state
-    so that each test starts with a clean slate.
-    """
-    _request_counts.clear()
-    _rate_buckets.clear()
+WINDOW_SECONDS = 60.0
 
 
 class RateLimitMiddleware(BaseHTTPMiddleware):
-    """Reject requests exceeding settings.rate_limit_per_minute per IP per minute."""
+    """Reject clients exceeding `limit` requests per rolling minute.
 
-    async def dispatch(self, request: Request, call_next: Any) -> Response:
-        """Apply per-IP sliding-window rate limiting.
+    The window is per-process and in-memory, which is sufficient for a single
+    replica. Multi-replica deployments should move this to Redis.
+    """
 
-        Args:
-            request: Incoming HTTP request.
-            call_next: ASGI callable to forward compliant requests.
+    def __init__(self, app, limit: int = 120) -> None:
+        super().__init__(app)
+        self.limit = limit
+        self._hits: dict[str, deque[float]] = defaultdict(deque)
 
-        Returns:
-            The downstream response, or a 429 JSON response when the client
-            has exceeded the configured rate limit.
-        """
-        forwarded = request.headers.get("x-forwarded-for", "").split(",")[0].strip()
-        ip = forwarded or (request.client.host if request.client else "unknown")
-        now = time.time()
-        limit = settings.rate_limit_per_minute
-        window = [t for t in _request_counts[ip] if now - t < 60]
-        _request_counts[ip] = window
-        if len(window) >= limit:
-            from fastapi.responses import JSONResponse
+    def _client_key(self, request: Request) -> str:
+        forwarded = request.headers.get("X-Forwarded-For")
+        if forwarded:
+            return forwarded.split(",")[0].strip()
+        return request.client.host if request.client else "unknown"
 
+    async def dispatch(self, request: Request, call_next):
+        key = self._client_key(request)
+        now = time.monotonic()
+        bucket = self._hits[key]
+
+        while bucket and now - bucket[0] > WINDOW_SECONDS:
+            bucket.popleft()
+
+        if len(bucket) >= self.limit:
+            retry_after = int(WINDOW_SECONDS - (now - bucket[0])) + 1
+            logger.warning("Rate limit exceeded for %s (%d hits)", key, len(bucket))
             return JSONResponse(
-                {"detail": f"Rate limit exceeded. Max {limit} req/min."},
                 status_code=429,
-                headers={"Retry-After": "60"},
+                content={"error": "RateLimitExceeded", "detail": "Too many requests"},
+                headers={"Retry-After": str(retry_after)},
             )
-        _request_counts[ip].append(now)
-        return await call_next(request)
 
-
-class CorrelationIDMiddleware(BaseHTTPMiddleware):
-    """Attach X-Correlation-ID to every request/response."""
-
-    async def dispatch(self, request: Request, call_next: Any) -> Response:
-        """Echo or generate an X-Correlation-ID header.
-
-        Reads ``X-Correlation-ID`` from the incoming headers if present;
-        otherwise generates a new UUID4 string. The chosen ID is stored on
-        ``request.state.correlation_id`` and echoed back in the response
-        headers.
-
-        Args:
-            request: Incoming HTTP request.
-            call_next: ASGI callable to forward the request downstream.
-
-        Returns:
-            The downstream response with the correlation-id header attached.
-        """
-        correlation_id = request.headers.get("X-Correlation-ID", str(uuid.uuid4()))
-        request.state.correlation_id = correlation_id
+        bucket.append(now)
         response = await call_next(request)
-        response.headers["X-Correlation-ID"] = correlation_id
+        response.headers["X-RateLimit-Limit"] = str(self.limit)
+        response.headers["X-RateLimit-Remaining"] = str(max(0, self.limit - len(bucket)))
         return response
-
-
-__all__ = [
-    "CorrelationIDMiddleware",
-    "RateLimitMiddleware",
-    "reset_rate_limiter",
-    "settings",
-]

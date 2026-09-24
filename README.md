@@ -1,137 +1,200 @@
-# Reflective Lantern
+# Logistics-Flow
 
-A growing collection of production-quality Python utility modules for
-ML-serving platforms, API services, and data pipelines.
+![CI](https://github.com/atharvadevne123/Logistics-Flow/actions/workflows/ci.yml/badge.svg)
+![Python](https://img.shields.io/badge/python-3.11-blue.svg)
+![License](https://img.shields.io/badge/license-MIT-green.svg)
 
-## Modules
+Last-mile delivery time prediction and logistics optimization API using an
+XGBoost + LightGBM + RandomForest ensemble, with route risk scoring, carrier
+performance analytics, KS-test drift monitoring, and Airflow retraining.
 
-### Infrastructure
-| Module | Description |
-|--------|-------------|
-| `app/retry.py` | Exponential-backoff retry decorator with jitter |
-| `app/circuit_breaker.py` | CLOSED / OPEN / HALF_OPEN state machine |
-| `app/token_bucket.py` | Thread-safe per-key rate limiter |
-| `app/task_queue.py` | Priority task queue with worker threads |
-| `app/webhook_handler.py` | HMAC-verified inbound webhook dispatcher |
-| `app/config_validator.py` | Schema-based configuration validation |
+![Architecture](screenshots/architecture.png)
 
-### Observability
-| Module | Description |
-|--------|-------------|
-| `app/metrics_collector.py` | Counters, gauges, and histograms |
-| `app/alerting.py` | Threshold alert rules with cooldown |
-| `app/profiler.py` | Wall-clock timing and call-stats decorators |
-| `app/health_check.py` | Composable readiness/liveness probe registry |
-| `app/audit_log.py` | Immutable append-only structured audit trail |
-| `app/notification_dispatcher.py` | Multi-channel severity-routed notifications |
-| `app/correlation_id.py` | Thread-local request trace identifiers |
+---
 
-### Data & ML
-| Module | Description |
-|--------|-------------|
-| `app/feature_store.py` | Versioned feature set storage |
-| `app/model_registry.py` | ML model lifecycle (staging / production / archived) |
-| `app/data_versioning.py` | SHA-256 checksummed snapshot lineage |
-| `app/data_augmentation.py` | Text and numeric training data augmentation |
-| `app/experiment_tracker.py` | Deterministic A/B variant assignment |
-| `app/batch_processor.py` | Chunked batch execution with callbacks |
-| `app/shadow_mode.py` | Parallel shadow traffic comparison |
-| `app/cost_estimator.py` | USD cost projection from resource specs |
+## Overview
 
-### Energy Analytics
-| Module | Description |
-|--------|-------------|
-| `app/tariff.py` | Flat, time-of-use and tiered electricity pricing |
-| `app/load_profile.py` | Base load, load factor, ramp rate, profile class |
-| `app/weather_normalization.py` | Degree-day adjustment separating weather from efficiency |
-| `app/demand_response.py` | Baseline load, curtailment and event settlement |
-| `app/power_quality.py` | Power factor, reactive power, voltage imbalance |
-| `app/solar.py` | PV generation, self-consumption split, payback |
-| `app/battery.py` | Storage dispatch, peak shaving, capacity sizing |
+Logistics-Flow estimates how long a parcel will take to reach its destination,
+given carrier, distance, weight, route type, and dispatch time. It is built as
+a production service rather than a notebook: every prediction is validated,
+logged, and monitored for distribution drift, and the model retrains itself on
+a weekly Airflow schedule.
 
-See [docs/energy_analytics.md](docs/energy_analytics.md) for the full reference.
+**What it does**
 
-### Utilities
-| Module | Description |
-|--------|-------------|
-| `app/pagination.py` | Offset and cursor-based pagination helpers |
-| `app/event_bus.py` | Synchronous pub/sub with wildcard subscriptions |
-| `app/geo_utils.py` | Haversine distance, bounding boxes, nearest neighbour |
-| `app/compression.py` | zlib / gzip compress/decompress with JSON helpers |
+- Predicts delivery duration in minutes with an ensemble confidence score
+- Scores carrier-specific delay risk (DHL, FedEx, UPS, USPS, Amazon)
+- Engineers 13 features including cyclical time encoding and distance buckets
+- Detects feature drift with a two-sample Kolmogorov–Smirnov test
+- Logs every inference to SQLite (dev) or PostgreSQL (prod) for auditing
+- Retrains automatically when 30 days of fresh data accumulate
 
-## Quick Start
+---
+
+## Setup
+
+### Local
 
 ```bash
-pip install -e ".[dev]"
-pytest -q
+git clone https://github.com/atharvadevne123/Logistics-Flow
+cd Logistics-Flow
+
+python -m venv .venv && source .venv/bin/activate
+pip install -r requirements.txt
+
+cp .env.example .env
+
+uvicorn app.main:app --reload
 ```
 
-## Common Patterns
+The API is then available at `http://localhost:8000`, with interactive
+OpenAPI docs at `http://localhost:8000/docs`.
 
-```python
-# Retry with exponential backoff
-from app.retry import retry
+On first start the service trains a model on synthetic data and writes
+`model.joblib`, `feature_pipeline.joblib`, and `metrics.json`.
 
-
-@retry(max_attempts=3, delay=0.5)
-def fetch_data(url: str) -> dict: ...
-
-
-# Circuit breaker
-from app.circuit_breaker import CircuitBreaker
-
-cb = CircuitBreaker(failure_threshold=5, recovery_timeout=30)
-result = cb.call(fetch_data, url)
-
-# Per-request correlation IDs
-from app.correlation_id import correlation_context
-
-with correlation_context() as cid:
-    process_request()  # all logs carry cid
-
-# Rate limiting
-from app.token_bucket import PerKeyTokenBucket
-
-bucket = PerKeyTokenBucket(capacity=100, refill_rate=10)
-if bucket.consume(client_id):
-    handle_request()
-```
-
-## Developer Scripts
+### Docker
 
 ```bash
-make benchmark   # micro-benchmark all modules
-make seed        # seed dev data fixtures
-make test-cov    # tests with coverage report
+docker compose up --build
 ```
+
+This starts the API on port 8000 alongside a PostgreSQL 15 instance, with the
+model baked into the image at build time.
+
+---
+
+## API Reference
+
+All endpoints are versioned under `/api/v1`.
+
+### `POST /api/v1/predict`
+
+Predict delivery time for a single shipment.
+
+**Request**
+
+```json
+{
+  "carrier": "DHL",
+  "distance_km": 42.5,
+  "weight_kg": 3.2,
+  "route_type": "urban",
+  "hour_of_day": 14,
+  "day_of_week": 2
+}
+```
+
+| Field | Type | Constraint |
+|---|---|---|
+| `carrier` | string | one of `DHL`, `FedEx`, `UPS`, `USPS`, `Amazon` |
+| `distance_km` | float | `0 < x <= 5000` |
+| `weight_kg` | float | `0 < x <= 100` |
+| `route_type` | string | one of `urban`, `suburban`, `rural`, `highway` |
+| `hour_of_day` | int | `0–23` |
+| `day_of_week` | int | `0` (Mon) – `6` (Sun) |
+
+**Response**
+
+```json
+{
+  "predicted_minutes": 87.34,
+  "predicted_hours": 1.456,
+  "confidence": 0.9127,
+  "model_version": "1.0.0",
+  "request_id": "a3f9c1e2"
+}
+```
+
+Invalid carriers, route types, or out-of-range numerics return `422`.
+
+### `POST /api/v1/predict/batch`
+
+Scores between 1 and 100 shipments in a single request:
+
+```json
+{ "shipments": [ { "carrier": "DHL", "distance_km": 42.5, "weight_kg": 3.2,
+                   "route_type": "urban", "hour_of_day": 14, "day_of_week": 2 } ] }
+```
+
+Responds with `{ "predictions": [...], "count": n }`. One invalid member
+rejects the whole batch with `422`.
+
+### `GET /api/v1/health`
+
+Liveness probe. Returns `healthy` when the model is loaded, `degraded` otherwise.
+
+### `GET /api/v1/metrics`
+
+Returns the most recent 5-fold cross-validation metrics: `rmse_mean`,
+`r2_mean`, `n_features`, `n_samples`, `model_version`.
+
+### `GET /api/v1/drift`
+
+Runs a KS test comparing the last 100 predictions against the reference
+window for `distance_km`, `weight_kg`, and `predicted_minutes`. Drift is
+flagged when `p < 0.05`.
+
+Every response carries `X-Request-ID` and `X-Response-Time-Ms` headers.
+
+---
+
+## Architecture
+
+```
+Client → FastAPI → Pydantic validation → Feature pipeline
+                                              ↓
+                        Ensemble (XGBoost + LightGBM + RandomForest)
+                                              ↓
+                        SQLAlchemy persistence → KS drift monitor
+                                              ↓
+                              Airflow weekly retrain DAG
+```
+
+### Feature engineering
+
+Thirteen features are derived from six raw inputs:
+
+- **Cyclical time** — `hour_sin`, `hour_cos`, `dow_sin`, `dow_cos` so that
+  hour 23 sits adjacent to hour 0 rather than 23 units away
+- **Flags** — `is_weekend`, `is_peak` (07–09 and 16–19)
+- **Route** — `distance_bucket` (local/regional/long-haul/extreme),
+  `weight_per_km`, `carrier_risk`, `route_code`
+- **Encoding** — `carrier_enc` via label encoding
+
+### Model
+
+A `VotingRegressor` over XGBoost (200 trees, depth 5), LightGBM (200 trees),
+and RandomForest (150 trees, depth 8), wrapped in a `StandardScaler` pipeline.
+Confidence is derived from the standard deviation across sub-estimator
+predictions — tight agreement yields high confidence.
+
+### Monitoring
+
+Every prediction is written to the `predictions` table. A rolling 500-sample
+reference buffer feeds the KS test; detected drift is recorded in `drift_logs`
+and surfaced through `/api/v1/drift`.
+
+---
 
 ## Testing
 
 ```bash
-make test          # full suite
-make test-cov      # with coverage report
-make check         # lint + typecheck + tests, as CI runs them
+pytest tests/ -v
 ```
 
-The root suite holds 5767 tests and is green. Sub-project suites live under
-their own directories (`quake-net/tests/`, `veritas-rag/tests/`, and so on)
-and are run from within each project:
+The suite covers API contracts (including all carriers and route types via
+parametrization), feature-pipeline invariants, model training and CV metrics,
+and drift detection under known distribution shifts.
+
+## Development
 
 ```bash
-cd quake-net && pytest tests/ -q
+make install    # install dependencies
+make test       # run pytest
+make lint       # ruff check
+make run        # start dev server
 ```
-
-Some sub-project suites have pre-existing failures — see
-[Known Issues](docs/known_issues.md) for the cause and suggested fix of each.
-
-## Docs
-
-- [Architecture](docs/architecture.md)
-- [API Reference](docs/api_reference.md)
-- [Energy Analytics](docs/energy_analytics.md)
-- [Deployment](docs/deployment.md)
-- [Monitoring](docs/monitoring.md)
-- [Known Issues](docs/known_issues.md)
 
 ## License
 

@@ -1,87 +1,58 @@
-"""Custom exception hierarchy for Watt-Guard."""
-
+"""Domain exceptions and FastAPI exception handlers."""
 from __future__ import annotations
 
+import logging
 
-class WattGuardError(Exception):
-    """Base exception for all Watt-Guard application errors."""
+from fastapi import FastAPI, Request
+from fastapi.responses import JSONResponse
 
-
-class ModelNotLoadedError(WattGuardError):
-    """Raised when a prediction is requested but no model is loaded."""
-
-
-class FeatureValidationError(WattGuardError):
-    """Raised when input features fail schema or range validation."""
-
-    def __init__(self, field: str, reason: str) -> None:
-        """Attach field/reason metadata and format a human-readable message.
-
-        Args:
-            field: Name of the feature field that failed validation.
-            reason: Human-readable explanation of the validation failure.
-        """
-        self.field = field
-        self.reason = reason
-        super().__init__(f"Feature validation failed for '{field}': {reason}")
+logger = logging.getLogger(__name__)
 
 
-class DriftDetectionError(WattGuardError):
-    """Raised when drift detection cannot complete due to insufficient data."""
+class LogisticsFlowError(Exception):
+    """Base class for all application errors."""
+
+    status_code: int = 500
+    detail: str = "Internal error"
+
+    def __init__(self, detail: str | None = None) -> None:
+        self.detail = detail or self.detail
+        super().__init__(self.detail)
 
 
-class DatabaseError(WattGuardError):
-    """Raised for unrecoverable database operation failures."""
+class ModelNotLoadedError(LogisticsFlowError):
+    """Raised when inference is attempted before the model is available."""
+
+    status_code = 503
+    detail = "Model not loaded"
 
 
-class ConfigurationError(WattGuardError):
-    """Raised when required configuration is missing or invalid."""
+class FeatureExtractionError(LogisticsFlowError):
+    """Raised when the feature pipeline cannot transform a request."""
+
+    status_code = 422
+    detail = "Feature extraction failed"
 
 
-class PredictionError(WattGuardError):
-    """Raised when the model pipeline fails to produce a prediction."""
+class RateLimitExceededError(LogisticsFlowError):
+    """Raised when a client exceeds the configured request rate."""
+
+    status_code = 429
+    detail = "Rate limit exceeded"
 
 
-class RateLimitExceededError(WattGuardError):
-    """Raised when a client exceeds the configured request rate limit."""
+def register_exception_handlers(app: FastAPI) -> None:
+    """Attach a JSON handler for every LogisticsFlowError subclass."""
 
-    def __init__(self, limit: int, retry_after_seconds: int = 60) -> None:
-        """Store limit/retry metadata and format the exception message.
-
-        Args:
-            limit: The rate limit that was exceeded (requests per minute).
-            retry_after_seconds: Suggested wait time before retrying (default 60).
-        """
-        self.limit = limit
-        self.retry_after_seconds = retry_after_seconds
-        super().__init__(
-            f"Rate limit of {limit} req/min exceeded; retry after {retry_after_seconds}s",
+    @app.exception_handler(LogisticsFlowError)
+    async def _handle(request: Request, exc: LogisticsFlowError) -> JSONResponse:
+        request_id = getattr(request.state, "request_id", "n/a")
+        logger.warning("[%s] %s: %s", request_id, type(exc).__name__, exc.detail)
+        return JSONResponse(
+            status_code=exc.status_code,
+            content={
+                "error": type(exc).__name__,
+                "detail": exc.detail,
+                "request_id": request_id,
+            },
         )
-
-
-class ExternalServiceError(WattGuardError):
-    """Raised when a downstream/external service is unreachable or errors out."""
-
-    def __init__(self, service: str, reason: str) -> None:
-        """Store service/reason metadata and format the exception message.
-
-        Args:
-            service: Identifier or name of the external service that failed.
-            reason: Description of the failure (status code, error message, etc.).
-        """
-        self.service = service
-        self.reason = reason
-        super().__init__(f"External service {service!r} failed: {reason}")
-
-
-__all__ = [
-    "ConfigurationError",
-    "DatabaseError",
-    "DriftDetectionError",
-    "ExternalServiceError",
-    "FeatureValidationError",
-    "ModelNotLoadedError",
-    "PredictionError",
-    "RateLimitExceededError",
-    "WattGuardError",
-]
