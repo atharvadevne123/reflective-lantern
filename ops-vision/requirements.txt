@@ -13,4 +13,4 @@ pandas==2.2.3
 scipy==1.14.1
 httpx==0.28.1
 python-dotenv==1.2.3
-starlette==0.38.4
+starlette==1.6.0
