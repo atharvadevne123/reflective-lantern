@@ -59,6 +59,15 @@ class CircuitBreaker:
         expected_exceptions: Exception types that count as failures.
     """
 
+    __slots__ = (
+        "failure_threshold",
+        "recovery_timeout",
+        "expected_exceptions",
+        "_state",
+        "_failure_count",
+        "_opened_at",
+    )
+
     def __init__(
         self,
         failure_threshold: int = 5,
