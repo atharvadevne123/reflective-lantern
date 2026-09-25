@@ -72,6 +72,11 @@ class AlertRule:
         compare=False,
     )
 
+    def __post_init__(self) -> None:
+        """Validate alert rule configuration after dataclass initialisation."""
+        if self.cooldown_s < 0:
+            raise ValueError(f"cooldown_s must be non-negative, got {self.cooldown_s}")
+
     def evaluate(self, value: float, now: float) -> Alert | None:
         """Evaluate the rule against a metric value.
 
