@@ -478,11 +478,15 @@ def validate_date_range(start: str, end: str) -> tuple[str, str]:
     return start, end
 
 
+MAX_REGION_ID_LEN = 64
+
+
 def validate_region_id(region_id: str) -> list[str]:
     """Return validation errors for a grid region identifier.
 
     Checks that *region_id* is a non-empty string consisting only of
-    lowercase alphanumeric characters and underscores.
+    lowercase alphanumeric characters and underscores, and is at most
+    ``MAX_REGION_ID_LEN`` characters long.
 
     Args:
         region_id: Grid region identifier string to validate.
@@ -494,6 +498,10 @@ def validate_region_id(region_id: str) -> list[str]:
     if not region_id:
         errors.append("region_id must not be empty")
         return errors
+    if len(region_id) > MAX_REGION_ID_LEN:
+        errors.append(
+            f"region_id must be at most {MAX_REGION_ID_LEN} characters, got {len(region_id)}"
+        )
     if not region_id.replace("_", "").isalnum():
         errors.append(f"region_id must be alphanumeric with underscores only, got {region_id!r}")
     if not region_id.islower():
@@ -581,11 +589,15 @@ def validate_range(
     return errors
 
 
+MAX_EMAIL_LEN = 254  # RFC 5321 limit
+
+
 def validate_email(value: str, field_name: str = "email") -> list[str]:
     """Basic validation that *value* looks like an email address.
 
     Checks for a single '@' character with non-empty local and domain parts,
-    and at least one '.' in the domain.  Not RFC 5322 complete.
+    at least one '.' in the domain, and a total length within the RFC 5321
+    limit of ``MAX_EMAIL_LEN`` characters.  Not RFC 5322 complete.
 
     Args:
         value: String to validate.
@@ -598,6 +610,10 @@ def validate_email(value: str, field_name: str = "email") -> list[str]:
     if not value or "@" not in value:
         errors.append(f"{field_name} must contain '@'")
         return errors
+    if len(value) > MAX_EMAIL_LEN:
+        errors.append(
+            f"{field_name} must be at most {MAX_EMAIL_LEN} characters, got {len(value)}"
+        )
     parts = value.split("@")
     if len(parts) != 2 or not parts[0] or not parts[1]:
         errors.append(f"{field_name} must have non-empty local and domain parts")
