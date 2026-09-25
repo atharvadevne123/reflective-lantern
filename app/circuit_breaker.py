@@ -1,4 +1,31 @@
-"""Circuit breaker implementation for protecting downstream calls."""
+"""Circuit breaker implementation for protecting downstream calls.
+
+Implements the classic three-state circuit breaker pattern:
+
+- **CLOSED** — calls pass through; consecutive failures are counted.
+- **OPEN** — calls are rejected immediately with :class:`CircuitOpenError`
+  after the failure threshold is reached.
+- **HALF_OPEN** — after the recovery timeout, one probe call is allowed;
+  success closes the circuit, failure re-opens it.
+
+Public API:
+
+- :class:`CircuitBreaker` — the breaker itself; can be used directly via
+  :meth:`~CircuitBreaker.call` or as a decorator (``@cb``).
+- :class:`CircuitOpenError` — raised when calls are blocked.
+- :class:`CircuitState` — enum of the three circuit states.
+
+Example::
+
+    from app.circuit_breaker import CircuitBreaker, CircuitOpenError
+
+    cb = CircuitBreaker(failure_threshold=3, recovery_timeout=30.0)
+
+    try:
+        result = cb.call(my_downstream_fn, arg1, arg2)
+    except CircuitOpenError:
+        result = fallback_value
+"""
 
 from __future__ import annotations
 
