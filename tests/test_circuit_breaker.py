@@ -359,3 +359,33 @@ class TestIsOpenProperty:
                 cb.call(_always_fail)
         cb.reset()
         assert cb.is_open is False
+
+
+class TestIsClosedAndIsHalfOpenProperties:
+    """Parametrized tests for is_closed and is_half_open properties."""
+
+    @pytest.mark.parametrize("threshold", [1, 2, 5])
+    def test_is_closed_true_initially(self, threshold: int) -> None:
+        cb = CircuitBreaker(failure_threshold=threshold, expected_exceptions=(ValueError,))
+        assert cb.is_closed is True
+        assert cb.is_half_open is False
+
+    @pytest.mark.parametrize("threshold", [1, 3])
+    def test_is_closed_false_when_open(self, threshold: int) -> None:
+        cb = CircuitBreaker(failure_threshold=threshold, expected_exceptions=(ValueError,))
+        for _ in range(threshold):
+            with pytest.raises(ValueError):
+                cb.call(_always_fail)
+        assert cb.is_closed is False
+        assert cb.is_open is True
+
+    @pytest.mark.parametrize("recovery_timeout", [0.01, 0.02])
+    def test_is_half_open_after_timeout(self, recovery_timeout: float) -> None:
+        cb = CircuitBreaker(failure_threshold=1, recovery_timeout=recovery_timeout)
+        with pytest.raises(RuntimeError):
+            cb.call(_always_fails)
+        import time as _time
+        _time.sleep(recovery_timeout + 0.01)
+        assert cb.is_half_open is True
+        assert cb.is_closed is False
+        assert cb.is_open is False
