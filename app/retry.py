@@ -6,6 +6,7 @@ import functools
 import logging
 import time
 from collections.abc import Callable, Sequence
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -17,7 +18,7 @@ def retry(
     max_delay: float = 60.0,
     backoff: float = 2.0,
     jitter: float = 0.1,
-) -> Callable:
+) -> Callable[..., Any]:
     """Decorator that retries a function on failure with exponential backoff.
 
     Args:
@@ -32,7 +33,7 @@ def retry(
         Decorated function that retries on the specified exceptions.
     """
 
-    def decorator(func: Callable) -> Callable:
+    def decorator(func: Callable[..., Any]) -> Callable[..., Any]:
         @functools.wraps(func)
         def wrapper(*args, **kwargs) -> object:
             delay = base_delay
@@ -67,7 +68,7 @@ def retry(
     return decorator
 
 
-def retry_on_network_error(max_attempts: int = 3, base_delay: float = 2.0) -> Callable:
+def retry_on_network_error(max_attempts: int = 3, base_delay: float = 2.0) -> Callable[..., Any]:
     """Convenience wrapper for retrying on common network-related exceptions.
 
     Args:
