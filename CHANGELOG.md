@@ -19,6 +19,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Responsible disclosure policy section to `SECURITY.md`
 - Parametrized edge-case tests in `test_health_check.py`,
   `test_correlation_id.py`, and `test_middleware.py`
+- `AlertRule.__post_init__` validation that rejects negative `cooldown_s`
+- `CircuitBreaker.is_closed` and `is_half_open` properties for state queries
+- `Page.item_count` property returning the number of items on a page
+- `TTLCache.__bool__` and `TTLCache.get_or_set` convenience methods
+- `TokenBucket.fill_ratio` property exposing fractional capacity remaining
+- `EventBus.__len__` reporting total handler count (specific + wildcard)
+- `TaskQueue.is_empty` property for empty-queue checks
+- `add_file_handler()` helper in `logging_config` using `pathlib.Path.mkdir`
+- `export_lineage_json()` helper in `data_versioning` serialising to JSON
+- `buffer_stats()` in `monitoring` exposing reference-buffer fill levels
+- Input-validation and circuit-breaker constant groups in `app/constants.py`
+- `.python-version` file pinning the runtime to Python 3.11
+- Max-length enforcement (`MAX_REGION_ID_LENGTH=64`, `MAX_EMAIL_LENGTH=254`)
+  in `validate_region_id` and `validate_email`
+- `__slots__` on `CircuitBreaker` and `slots=True` on `TokenBucket` dataclass
+- Parametrized test suites for `retry`, `circuit_breaker`, `cache`,
+  `pagination`, `token_bucket`, `event_bus`, `alerting`, and `validation`
 
 ### Changed
 
@@ -26,6 +43,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   group
 - Improved Google-style docstrings across `webhook_handler.py`,
   `notification_dispatcher.py`, and `shadow_mode.py`
+- Expanded module-level docstrings in `retry`, `circuit_breaker`, `cache`,
+  `token_bucket`, `event_bus`, and `task_queue`
 
 ### Fixed
 
