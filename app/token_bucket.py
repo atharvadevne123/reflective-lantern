@@ -1,4 +1,27 @@
-"""Token-bucket rate limiter for fine-grained throughput control."""
+"""Token-bucket rate limiter for fine-grained throughput control.
+
+Implements the token-bucket algorithm for smooth rate limiting:
+
+- Tokens accumulate at a fixed ``rate`` per second up to ``capacity``.
+- Each :meth:`~TokenBucket.consume` call removes tokens non-blockingly;
+  callers that need blocking behaviour can use
+  :meth:`~TokenBucket.wait_and_consume`.
+- :class:`PerKeyTokenBucket` maintains an independent bucket per key (e.g.
+  per client IP or user ID), useful for per-tenant rate limiting.
+
+Both classes are thread-safe via :class:`threading.Lock`.
+
+Example::
+
+    from app.token_bucket import TokenBucket
+
+    limiter = TokenBucket(capacity=10, rate=5.0)  # 5 req/s, burst of 10
+
+    if limiter.consume():
+        process_request()
+    else:
+        raise RateLimitExceeded()
+"""
 
 from __future__ import annotations
 
