@@ -50,6 +50,11 @@ class Page(Generic[T]):
     items: list[T]
     info: PageInfo
 
+    @property
+    def item_count(self) -> int:
+        """Return the number of items on this page."""
+        return len(self.items)
+
 
 def paginate(items: list, page: int = 1, per_page: int = 20) -> Page:
     """Slice a list into a page.
