@@ -96,6 +96,11 @@ class TokenBucket:
             self._refill()
             return self._tokens
 
+    @property
+    def fill_ratio(self) -> float:
+        """Return the fraction of capacity currently available (0.0–1.0)."""
+        return self.available / self.capacity
+
 
 class PerKeyTokenBucket:
     """Maintains a separate TokenBucket per key (e.g. per client IP).
