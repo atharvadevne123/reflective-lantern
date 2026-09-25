@@ -123,6 +123,16 @@ class CircuitBreaker:
         """Return True when the circuit is currently open (rejecting calls)."""
         return self.state == CircuitState.OPEN
 
+    @property
+    def is_closed(self) -> bool:
+        """Return True when the circuit is CLOSED (normal operation)."""
+        return self.state == CircuitState.CLOSED
+
+    @property
+    def is_half_open(self) -> bool:
+        """Return True when the circuit is in HALF_OPEN (probe) state."""
+        return self.state == CircuitState.HALF_OPEN
+
     def __call__(self, func: Callable) -> Callable:
         """Use as a decorator."""
 
