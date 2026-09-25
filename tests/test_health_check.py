@@ -145,7 +145,7 @@ class TestCheckResultDetails:
         assert len(reg) == 0
 
 
-import pytest
+import pytest  # noqa: E402
 
 
 @pytest.mark.parametrize("n_healthy", [0, 1, 5, 10])
@@ -191,3 +191,38 @@ class TestHealthRegistryLengthTracking:
         reg.register("b", lambda: CheckResult(name="b", healthy=True))
         reg.unregister("a")
         assert len(reg) == 1
+
+
+@pytest.mark.parametrize("message", ["ok", "connected", "pool ready", ""])
+def test_check_result_message_stored(message: str) -> None:
+    """CheckResult preserves the message string exactly as given."""
+    from app.health_check import CheckResult
+
+    r = CheckResult(name="svc", healthy=True, message=message)
+    assert r.message == message
+
+
+@pytest.mark.parametrize(
+    "healthy,expected_failed",
+    [(True, 0), (False, 1)],
+)
+def test_single_check_healthy_flag(healthy: bool, expected_failed: int) -> None:
+    """A registry with one check reflects its healthy flag correctly."""
+    from app.health_check import CheckResult, HealthRegistry
+
+    reg = HealthRegistry()
+    reg.register("svc", lambda: CheckResult(name="svc", healthy=healthy))
+    status = reg.run()
+    assert status.healthy is healthy
+    assert len(status.failed) == expected_failed
+
+
+@pytest.mark.parametrize(
+    "detail_key,detail_val", [("latency_ms", 42), ("connections", 10), ("version", 3)]
+)
+def test_check_result_details_arbitrary_keys(detail_key: str, detail_val: int) -> None:
+    """CheckResult details dict accepts arbitrary string keys."""
+    from app.health_check import CheckResult
+
+    r = CheckResult(name="svc", healthy=True, details={detail_key: detail_val})
+    assert r.details[detail_key] == detail_val

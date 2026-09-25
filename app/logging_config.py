@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import logging
 import sys
+from pathlib import Path
 from typing import Any
 
 
@@ -215,3 +216,38 @@ def clear_handlers(logger_name: str = "root") -> int:
     for handler in list(logger_obj.handlers):
         logger_obj.removeHandler(handler)
     return count
+
+
+def add_file_handler(
+    logger_name: str,
+    log_path: Path | str,
+    level: int = logging.DEBUG,
+    formatter: logging.Formatter | None = None,
+) -> logging.FileHandler:
+    """Attach a :class:`~logging.FileHandler` writing to *log_path*.
+
+    Parent directories of *log_path* are created automatically using
+    :func:`pathlib.Path.mkdir`.
+
+    Args:
+        logger_name: Name of the logger to attach the handler to; ``"root"``
+            targets the root logger.
+        log_path: Filesystem path for the log file (string or
+            :class:`~pathlib.Path`).
+        level: Logging level for the new handler (default ``DEBUG``).
+        formatter: Optional :class:`~logging.Formatter` to apply; uses a
+            plain :class:`~logging.Formatter` with ISO timestamp when omitted.
+
+    Returns:
+        The newly created and attached :class:`~logging.FileHandler`.
+    """
+    path = Path(log_path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    handler = logging.FileHandler(path)
+    handler.setLevel(level)
+    if formatter is None:
+        formatter = logging.Formatter("%(asctime)s %(name)s %(levelname)s %(message)s")
+    handler.setFormatter(formatter)
+    logger_obj = logging.getLogger() if logger_name == "root" else logging.getLogger(logger_name)
+    logger_obj.addHandler(handler)
+    return handler

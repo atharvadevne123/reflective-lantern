@@ -102,7 +102,9 @@ class Capabilities:
         return "\n".join(lines)
 
 
-def _request(path: str, token: str | None = None, method: str = "GET", payload: dict | None = None) -> tuple[int, str]:
+def _request(
+    path: str, token: str | None = None, method: str = "GET", payload: dict | None = None
+) -> tuple[int, str]:
     """Issue a GitHub API request and return (status_code, body).
 
     Args:
@@ -203,7 +205,9 @@ def can_create_repo() -> tuple[bool, str]:
     if status in (401, 404):
         return False, f"Repository creation unavailable (HTTP {status})."
     if "bound to their configured repositories" in body:
-        return False, ("Repository creation BLOCKED: the session is bound to its configured repositories.")
+        return False, (
+            "Repository creation BLOCKED: the session is bound to its configured repositories."
+        )
     return False, f"Repository creation unavailable (HTTP {status})."
 
 
@@ -269,7 +273,9 @@ def detect(use_cache: bool = True, cache_path: str | None = None) -> Capabilitie
     Returns:
         A populated Capabilities instance.
     """
-    path = Path(cache_path or os.environ.get("LANTERN_CAPS_CACHE", "/tmp/lantern_capabilities.json"))
+    path = Path(
+        cache_path or os.environ.get("LANTERN_CAPS_CACHE", "/tmp/lantern_capabilities.json")
+    )
 
     if use_cache and path.exists():
         try:

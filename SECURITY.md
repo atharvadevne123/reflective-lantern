@@ -13,6 +13,26 @@ Open a [security advisory](https://github.com/atharvadevne123/Logistics-Flow/sec
 with reproduction steps and the affected version. Expect an initial response
 within 72 hours.
 
+### Responsible disclosure policy
+
+We ask that you:
+
+1. **Do not** publicly disclose the vulnerability before a fix is available.
+2. Provide sufficient detail to reproduce the issue (steps, environment,
+   payload, and expected vs actual behaviour).
+3. Allow us a reasonable time (up to 90 days) to investigate, confirm, and
+   deploy a fix before any public disclosure.
+4. Avoid accessing or modifying data that does not belong to you while
+   researching the issue.
+
+In return we commit to:
+
+- Acknowledge your report within 72 hours.
+- Keep you informed of our progress.
+- Credit you in the release notes unless you prefer to remain anonymous.
+- Not pursue legal action against researchers acting in good faith under this
+  policy.
+
 ## Operational notes
 
 - The rate limiter in `app/middleware.py` is per-process and in-memory. Behind

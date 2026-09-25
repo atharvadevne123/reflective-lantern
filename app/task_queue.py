@@ -1,7 +1,31 @@
 """Priority task queue with worker-thread execution.
 
-Provides a simple in-process task queue backed by Python's ``heapq``
-module. Tasks are consumed by a configurable number of daemon threads.
+Provides a simple in-process task queue backed by Python's :mod:`heapq`
+module.  Tasks are consumed by a configurable number of daemon threads.
+
+Key components:
+
+- :class:`Task` — a dataclass wrapping a callable, its arguments, and a
+  numeric priority (lower value = higher urgency).
+- :class:`TaskQueue` — thread-safe priority queue that spawns worker threads
+  via :meth:`~TaskQueue.start` and shuts them down via :meth:`~TaskQueue.stop`.
+
+Operational notes:
+
+- Worker threads are daemon threads and will not block process exit.
+- Exceptions inside a task are caught, logged, and stored in
+  :attr:`~TaskQueue.errors`; they do not stop other tasks.
+- :meth:`~TaskQueue.drain` removes and returns all pending tasks without
+  executing them — useful for graceful shutdown logging.
+
+Example::
+
+    from app.task_queue import TaskQueue
+
+    q = TaskQueue(workers=4)
+    q.start()
+    q.submit(lambda: print("hello"), priority=1)
+    q.stop()
 """
 
 from __future__ import annotations
@@ -148,3 +172,8 @@ class TaskQueue:
         """Return the number of tasks currently waiting in the queue."""
         with self._lock:
             return len(self._heap)
+
+    @property
+    def is_empty(self) -> bool:
+        """Return True when no tasks are waiting in the queue."""
+        return len(self) == 0

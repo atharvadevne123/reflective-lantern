@@ -94,7 +94,9 @@ def affordability_index(
         if monthly_rate == 0.0:
             monthly_payment = loan / n
         else:
-            monthly_payment = loan * monthly_rate * (1 + monthly_rate) ** n / ((1 + monthly_rate) ** n - 1)
+            monthly_payment = (
+                loan * monthly_rate * (1 + monthly_rate) ** n / ((1 + monthly_rate) ** n - 1)
+            )
         qualifying_income = monthly_payment * 12 / 0.28
         return round(median_household_income / qualifying_income * 100, 2)
     loan = predicted_value * (1 - down_payment_pct)
@@ -311,7 +313,9 @@ def price_trend_consistency(
     deltas = [price_series[i + 1] - price_series[i] for i in range(len(price_series) - 1)]
     rises = sum(1 for d in deltas if d > 0)
     falls = sum(1 for d in deltas if d < 0)
-    direction_changes = sum(1 for i in range(len(deltas) - 1) if (deltas[i] > 0) != (deltas[i + 1] > 0))
+    direction_changes = sum(
+        1 for i in range(len(deltas) - 1) if (deltas[i] > 0) != (deltas[i + 1] > 0)
+    )
     total = len(deltas)
     majority = max(rises, falls)
     consistency_score = round(majority / total, 4) if total else 0.0
@@ -403,7 +407,9 @@ def neighbourhood_score(
         "safety": max(0.0, min(10.0, safety_score)),
     }
     composite = sum(components[k] * w.get(k, 0.0) for k in components)
-    grade = "A" if composite >= 8.0 else "B" if composite >= 6.0 else "C" if composite >= 4.0 else "D"
+    grade = (
+        "A" if composite >= 8.0 else "B" if composite >= 6.0 else "C" if composite >= 4.0 else "D"
+    )
     return {
         "composite_score": round(composite, 2),
         "grade": grade,
@@ -892,7 +898,9 @@ def price_deviation_from_median(price: float, median_price: float) -> float:
     return round((price - median_price) / median_price * 100.0, 4)
 
 
-def effective_days_on_market(original_dom: int, relisted: bool = False, relist_penalty: int = 30) -> int:
+def effective_days_on_market(
+    original_dom: int, relisted: bool = False, relist_penalty: int = 30
+) -> int:
     """Return effective days-on-market, optionally adding a relist penalty.
 
     Args:

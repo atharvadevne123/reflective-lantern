@@ -56,7 +56,9 @@ class FeatureStore:
         versions = self._store[feature_set.name]
         existing_versions = {fs.version for fs in versions}
         if feature_set.version in existing_versions:
-            raise ValueError(f"Version '{feature_set.version}' already exists for '{feature_set.name}'")
+            raise ValueError(
+                f"Version '{feature_set.version}' already exists for '{feature_set.name}'"
+            )
         versions.append(feature_set)
         logger.info("Published feature set '%s' v%s", feature_set.name, feature_set.version)
 

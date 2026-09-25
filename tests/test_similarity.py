@@ -4,7 +4,12 @@ from __future__ import annotations
 
 import pytest
 
-from app.similarity import BuildingSimilarityIndex, chebyshev_distance, manhattan_distance, pearson_similarity
+from app.similarity import (
+    BuildingSimilarityIndex,
+    chebyshev_distance,
+    manhattan_distance,
+    pearson_similarity,
+)
 
 
 def test_empty_index_returns_empty() -> None:
@@ -416,7 +421,9 @@ class TestManhattanDistance:
         with pytest.raises(ValueError, match="same length"):
             manhattan_distance([1.0, 2.0], [1.0])
 
-    @pytest.mark.parametrize("a,b,expected", [([1.0], [4.0], 3.0), ([0.0, 0.0, 0.0], [1.0, 1.0, 1.0], 3.0)])
+    @pytest.mark.parametrize(
+        "a,b,expected", [([1.0], [4.0], 3.0), ([0.0, 0.0, 0.0], [1.0, 1.0, 1.0], 3.0)]
+    )
     def test_parametrized(self, a: list, b: list, expected: float) -> None:
         from app.similarity import manhattan_distance
 
@@ -874,7 +881,7 @@ def test_manhattan_distance_non_negative(a: list, b: list) -> None:
     assert manhattan_distance(a, b) >= 0.0
 
 
-import pytest
+import pytest  # noqa: E402
 
 
 @pytest.mark.parametrize(

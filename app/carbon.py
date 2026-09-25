@@ -722,7 +722,9 @@ def annual_carbon_budget(
         raise ValueError("year_fraction_elapsed must be between 0 and 1")
     budget_kg = target_co2_tonnes * 1000.0
     remaining_kg = max(0.0, budget_kg - current_co2_kg)
-    projected = (current_co2_kg / year_fraction_elapsed) if year_fraction_elapsed > 0 else current_co2_kg
+    projected = (
+        (current_co2_kg / year_fraction_elapsed) if year_fraction_elapsed > 0 else current_co2_kg
+    )
     on_track = projected <= budget_kg
     return {
         "budget_kg": round(budget_kg, 2),

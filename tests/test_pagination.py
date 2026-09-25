@@ -340,3 +340,30 @@ class TestIsLastPage:
 
         info = PageInfo(total=30, page=2, per_page=5)
         assert is_last_page(info) is False
+
+
+class TestPageItemCount:
+    """Parametrized tests for Page.item_count property."""
+
+    @pytest.mark.parametrize(
+        "items,expected",
+        [
+            ([], 0),
+            ([1], 1),
+            ([1, 2, 3], 3),
+        ],
+    )
+    def test_item_count(self, items: list, expected: int) -> None:
+        from app.pagination import Page, PageInfo
+
+        info = PageInfo(total=expected, page=1, per_page=10)
+        page = Page(items=items, info=info)
+        assert page.item_count == expected
+
+    @pytest.mark.parametrize("per_page", [5, 10, 25])
+    def test_paginate_items_count_per_page(self, per_page: int) -> None:
+        from app.pagination import paginate_items
+
+        items = list(range(per_page * 2))
+        result = paginate_items(items, page=1, per_page=per_page)
+        assert result.item_count == per_page

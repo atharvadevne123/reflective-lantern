@@ -288,7 +288,14 @@ def test_batch_validate_readings_all_valid() -> None:
             "humidity_pct": 60.0,
             "consumption_kwh": 15.0,
         },
-        {"hour": 8, "day_of_week": 0, "month": 3, "temperature_c": 5.0, "humidity_pct": 40.0, "consumption_kwh": 10.0},
+        {
+            "hour": 8,
+            "day_of_week": 0,
+            "month": 3,
+            "temperature_c": 5.0,
+            "humidity_pct": 40.0,
+            "consumption_kwh": 10.0,
+        },
     ]
     results = batch_validate_readings(readings)
     assert all(r["valid"] for r in results)
@@ -299,7 +306,14 @@ def test_batch_validate_readings_detects_errors() -> None:
     from app.validation import batch_validate_readings
 
     readings = [
-        {"hour": 25, "day_of_week": 1, "month": 6, "temperature_c": 22.0, "humidity_pct": 60.0, "consumption_kwh": 5.0},
+        {
+            "hour": 25,
+            "day_of_week": 1,
+            "month": 6,
+            "temperature_c": 22.0,
+            "humidity_pct": 60.0,
+            "consumption_kwh": 5.0,
+        },
     ]
     results = batch_validate_readings(readings)
     assert not results[0]["valid"]
@@ -310,7 +324,14 @@ def test_batch_validate_readings_preserves_index() -> None:
     from app.validation import batch_validate_readings
 
     readings = [
-        {"hour": 0, "day_of_week": 0, "month": 1, "temperature_c": 10.0, "humidity_pct": 50.0, "consumption_kwh": 5.0}
+        {
+            "hour": 0,
+            "day_of_week": 0,
+            "month": 1,
+            "temperature_c": 10.0,
+            "humidity_pct": 50.0,
+            "consumption_kwh": 5.0,
+        }
     ] * 5
     results = batch_validate_readings(readings)
     assert [r["index"] for r in results] == list(range(5))
@@ -910,7 +931,9 @@ class TestValidateListLength:
             (6, 1, 5, True),
         ],
     )
-    def test_parametrized(self, length: int, min_len: int, max_len: int, expect_errors: bool) -> None:
+    def test_parametrized(
+        self, length: int, min_len: int, max_len: int, expect_errors: bool
+    ) -> None:
         from app.validation import validate_list_length
 
         errors = validate_list_length(list(range(length)), min_len=min_len, max_len=max_len)
@@ -1013,7 +1036,7 @@ class TestValidateUniqueIds:
         assert validate_unique_ids([]) == []
 
 
-import pytest as _pytest
+import pytest as _pytest  # noqa: E402
 
 
 @_pytest.mark.parametrize(
@@ -1028,7 +1051,9 @@ import pytest as _pytest
         (0, 0, 13, False),
     ],
 )
-def test_validate_temporal_fields_parametrized(hour: int, dow: int, month: int, expect_valid: bool) -> None:
+def test_validate_temporal_fields_parametrized(
+    hour: int, dow: int, month: int, expect_valid: bool
+) -> None:
     from app.validation import validate_temporal_fields
 
     errors = validate_temporal_fields(hour, dow, month)
@@ -1045,7 +1070,9 @@ def test_validate_temporal_fields_parametrized(hour: int, dow: int, month: int, 
         (20.0, 101.0, False),
     ],
 )
-def test_validate_weather_fields_parametrized(temp: float, humidity: float, expect_valid: bool) -> None:
+def test_validate_weather_fields_parametrized(
+    temp: float, humidity: float, expect_valid: bool
+) -> None:
     from app.validation import validate_weather_fields
 
     errors = validate_weather_fields(temp, humidity)
@@ -1333,3 +1360,47 @@ class TestIsValidTemporalInput:
         from app.validation import is_valid_temporal_input
 
         assert is_valid_temporal_input(hour=hour, day_of_week=dow, month=month) is True
+
+
+class TestValidateEmailParametrized:
+    """Parametrized tests for validate_email."""
+
+    @pytest.mark.parametrize(
+        "email",
+        [
+            "a@b.co",
+            "user@example.com",
+            "test.name+tag@domain.org",
+        ],
+    )
+    def test_valid_emails_pass(self, email: str) -> None:
+        from app.validation import validate_email
+
+        assert validate_email(email) == []
+
+    @pytest.mark.parametrize(
+        "bad_email",
+        [
+            "notanemail",
+            "missingatsign",
+            "nodomain@",
+        ],
+    )
+    def test_invalid_emails_return_errors(self, bad_email: str) -> None:
+        from app.validation import validate_email
+
+        errors = validate_email(bad_email)
+        assert len(errors) > 0
+
+
+class TestValidateRegionIdParametrized:
+    """Parametrized tests for validate_region_id."""
+
+    @pytest.mark.parametrize("region_id", ["us_east_1", "eu_west", "ap"])
+    def test_valid_region_ids_pass(self, region_id: str) -> None:
+        assert validate_region_id(region_id) == []
+
+    @pytest.mark.parametrize("bad_id", ["", "us-east-1", "region name"])
+    def test_invalid_region_ids_return_errors(self, bad_id: str) -> None:
+        errors = validate_region_id(bad_id)
+        assert len(errors) > 0

@@ -130,7 +130,9 @@ def test_kwh_to_co2_kg_known_regions_parametrized(region: str, factor: float) ->
 def test_kwh_to_co2_kg_case_insensitive() -> None:
     from app.carbon import kwh_to_co2_kg
 
-    assert kwh_to_co2_kg(100.0, region="PACIFIC_NW") == pytest.approx(kwh_to_co2_kg(100.0, region="pacific_nw"))
+    assert kwh_to_co2_kg(100.0, region="PACIFIC_NW") == pytest.approx(
+        kwh_to_co2_kg(100.0, region="pacific_nw")
+    )
 
 
 def test_kwh_to_co2_kg_unknown_region_uses_default() -> None:
@@ -802,7 +804,9 @@ def test_fleet_emission_factor_mean(n_assets) -> None:
 
     fleet = [{"annual_kwh": 1000.0} for _ in range(n_assets)]
     result = fleet_emission_factor(fleet)
-    assert result["mean_co2_kg_per_asset"] == pytest.approx(result["total_co2_kg"] / n_assets, rel=1e-4)
+    assert result["mean_co2_kg_per_asset"] == pytest.approx(
+        result["total_co2_kg"] / n_assets, rel=1e-4
+    )
 
 
 def test_carbon_per_sqm_basic() -> None:
@@ -1137,7 +1141,7 @@ class TestCarbonSavingsVsBaseline:
         assert result["savings_pct"] == 0.0
 
 
-import pytest as _pytest
+import pytest as _pytest  # noqa: E402
 
 
 @_pytest.mark.parametrize(
@@ -1597,25 +1601,30 @@ class TestTreeOffsetDays:
 class TestCarbonNeutralKwh:
     def test_fully_offset_returns_zero(self) -> None:
         from app.carbon import carbon_neutral_kwh
+
         assert carbon_neutral_kwh(100.0, offset_factor=1.0) == 0.0
 
     def test_no_offset_returns_input_kwh(self) -> None:
         from app.carbon import carbon_neutral_kwh
+
         result = carbon_neutral_kwh(100.0, offset_factor=0.0)
         assert result == pytest.approx(100.0, rel=1e-3)
 
     def test_negative_kwh_raises(self) -> None:
         from app.carbon import carbon_neutral_kwh
+
         with pytest.raises(ValueError):
             carbon_neutral_kwh(-1.0)
 
     def test_invalid_offset_factor_raises(self) -> None:
         from app.carbon import carbon_neutral_kwh
+
         with pytest.raises(ValueError):
             carbon_neutral_kwh(100.0, offset_factor=1.5)
 
     @pytest.mark.parametrize("factor", [0.0, 0.25, 0.5, 0.75, 1.0])
     def test_partial_offset_decreases_with_factor(self, factor: float) -> None:
         from app.carbon import carbon_neutral_kwh
+
         result = carbon_neutral_kwh(1000.0, offset_factor=factor)
         assert result >= 0.0

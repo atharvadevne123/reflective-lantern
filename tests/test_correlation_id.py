@@ -118,7 +118,9 @@ class TestNewCorrelationIdFormat:
         import re
 
         cid = new_correlation_id()
-        assert re.match(r"^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$", cid)
+        assert re.match(
+            r"^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$", cid
+        )
 
     def test_length_36_chars(self) -> None:
         assert len(new_correlation_id()) == 36
@@ -149,7 +151,7 @@ class TestSetCorrelationIdEdgeCases:
         assert get_correlation_id() == "second"
 
 
-import pytest
+import pytest  # noqa: E402
 
 
 @pytest.mark.parametrize("n", [1, 5, 10])
@@ -197,3 +199,30 @@ class TestCorrelationContextManager:
 
         with correlation_context(cid):
             assert get_correlation_id() == cid
+
+
+@pytest.mark.parametrize("cid", ["id-1", "request-abc", "00000000-0000-4000-8000-000000000000"])
+def test_set_get_roundtrip(cid: str) -> None:
+    """set_correlation_id followed by get_correlation_id returns the same value."""
+    from app.correlation_id import clear_correlation_id, get_correlation_id, set_correlation_id
+
+    set_correlation_id(cid)
+    assert get_correlation_id() == cid
+    clear_correlation_id()
+
+
+@pytest.mark.parametrize("n", [2, 5, 20])
+def test_bulk_unique_ids(n: int) -> None:
+    """n calls to new_correlation_id all return distinct values."""
+    from app.correlation_id import new_correlation_id
+
+    ids = [new_correlation_id() for _ in range(n)]
+    assert len(set(ids)) == n
+
+
+@pytest.mark.parametrize("invalid", ["not-a-uuid", "1234", ""])
+def test_is_valid_uuid_rejects_non_uuids(invalid: str) -> None:
+    """is_valid_uuid returns False for strings that are not UUID4."""
+    from app.correlation_id import is_valid_uuid
+
+    assert is_valid_uuid(invalid) is False

@@ -56,7 +56,9 @@ def describe_pipeline(pipeline: Any) -> dict[str, Any]:
                 {
                     "name": name,
                     "class": type(estimator).__name__,
-                    "n_params": len(estimator.get_params()) if hasattr(estimator, "get_params") else 0,
+                    "n_params": len(estimator.get_params())
+                    if hasattr(estimator, "get_params")
+                    else 0,
                 }
             )
         return {
@@ -409,7 +411,9 @@ def is_pipeline_fitted(pipeline: Any) -> bool:
     """
     fitted_attrs = ("classes_", "n_features_in_", "feature_importances_", "coef_", "numeric_cols_")
     try:
-        steps = list(pipeline.named_steps.values()) if hasattr(pipeline, "named_steps") else [pipeline]
+        steps = (
+            list(pipeline.named_steps.values()) if hasattr(pipeline, "named_steps") else [pipeline]
+        )
     except Exception:
         steps = [pipeline]
     return any(hasattr(step, attr) for step in steps for attr in fitted_attrs)

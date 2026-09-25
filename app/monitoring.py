@@ -1,4 +1,5 @@
 """Prediction logging and KS-test drift detection."""
+
 from __future__ import annotations
 
 import logging
@@ -78,12 +79,7 @@ def compute_drift(reference: list[float], current: list[float]) -> dict[str, Any
 
 def run_drift_check(db: Session, current_window: int = 100) -> dict[str, Any]:
     """Compare latest predictions against reference buffer; log results."""
-    recent = (
-        db.query(Prediction)
-        .order_by(Prediction.created_at.desc())
-        .limit(current_window)
-        .all()
-    )
+    recent = db.query(Prediction).order_by(Prediction.created_at.desc()).limit(current_window).all()
     if not recent:
         return {"status": "no_predictions", "features": {}}
 
@@ -102,7 +98,12 @@ def run_drift_check(db: Session, current_window: int = 100) -> dict[str, Any]:
                 drift_detected=1,
             )
             db.add(log)
-            logger.warning("Drift detected in '%s': KS=%.4f p=%.4f", feature, drift["ks_statistic"], drift["p_value"])
+            logger.warning(
+                "Drift detected in '%s': KS=%.4f p=%.4f",
+                feature,
+                drift["ks_statistic"],
+                drift["p_value"],
+            )
 
     db.commit()
     return {"status": "ok", "features": results}
@@ -115,3 +116,25 @@ def seed_reference_buffer(samples: list[dict]) -> None:
             if k in s:
                 _REFERENCE_BUFFER[k].append(s[k])
     logger.info("Reference buffer seeded with %d samples", len(samples))
+
+
+def buffer_stats() -> dict[str, dict[str, Any]]:
+    """Return snapshot statistics for each reference buffer.
+
+    Provides the current fill level and capacity of every rolling deque so
+    callers can determine whether the buffer has enough data for a reliable
+    drift check without accessing private internals.
+
+    Returns:
+        Dict mapping each feature name to a stats sub-dict with keys
+        ``size`` (current fill), ``maxlen`` (capacity), and
+        ``full`` (whether the buffer has reached capacity).
+    """
+    return {
+        feature: {
+            "size": len(buf),
+            "maxlen": buf.maxlen,
+            "full": len(buf) == buf.maxlen,
+        }
+        for feature, buf in _REFERENCE_BUFFER.items()
+    }

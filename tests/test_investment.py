@@ -230,8 +230,12 @@ def test_investment_score_never_below_min() -> None:
 
 @pytest.mark.parametrize("expense_ratio", [0.25, 0.35, 0.45])
 def test_cap_rate_decreases_with_expense_ratio(expense_ratio: float) -> None:
-    result = compute_investment_analysis(500_000, 0.08, 5, 5, 5, 0.2, operating_expense_ratio=expense_ratio)
-    assert result.cap_rate == pytest.approx((500_000 * 0.08 * (1 - expense_ratio)) / 500_000, rel=1e-4)
+    result = compute_investment_analysis(
+        500_000, 0.08, 5, 5, 5, 0.2, operating_expense_ratio=expense_ratio
+    )
+    assert result.cap_rate == pytest.approx(
+        (500_000 * 0.08 * (1 - expense_ratio)) / 500_000, rel=1e-4
+    )
 
 
 def test_mortgage_payment_positive() -> None:
@@ -321,7 +325,9 @@ def test_mortgage_payment_with_down_payment() -> None:
 def test_roi_percentage_positive_income() -> None:
     from app.investment import roi_percentage
 
-    roi = roi_percentage(300_000, 250_000, annual_income=20_000, annual_expenses=5_000, hold_years=5)
+    roi = roi_percentage(
+        300_000, 250_000, annual_income=20_000, annual_expenses=5_000, hold_years=5
+    )
     assert roi > 0
 
 
@@ -745,7 +751,12 @@ class TestPropertyYieldAnalysis:
         from app.investment import property_yield_analysis
 
         result = property_yield_analysis(300_000.0, 18_000.0)
-        assert set(result.keys()) >= {"gross_yield_pct", "net_yield_pct", "net_operating_income", "expense_ratio_pct"}
+        assert set(result.keys()) >= {
+            "gross_yield_pct",
+            "net_yield_pct",
+            "net_operating_income",
+            "expense_ratio_pct",
+        }
 
 
 class TestEquityRatio:
@@ -914,7 +925,9 @@ class TestMarginOfSafetyAdditional:
         (100_000.0, 0.0, float("inf")),
     ],
 )
-def test_payback_period_new_parametrized(purchase_price: float, annual_cash_flow: float, expected_years: float) -> None:
+def test_payback_period_new_parametrized(
+    purchase_price: float, annual_cash_flow: float, expected_years: float
+) -> None:
     result = payback_period(purchase_price=purchase_price, annual_cash_flow=annual_cash_flow)
     if math.isinf(expected_years):
         assert math.isinf(result)
@@ -955,7 +968,9 @@ class TestHoldingPeriodReturn:
     def test_with_income(self) -> None:
         from app.investment import holding_period_return
 
-        assert holding_period_return(100_000.0, 100_000.0, total_income=10_000.0) == pytest.approx(10.0)
+        assert holding_period_return(100_000.0, 100_000.0, total_income=10_000.0) == pytest.approx(
+            10.0
+        )
 
     def test_loss(self) -> None:
         from app.investment import holding_period_return
@@ -1143,7 +1158,7 @@ class TestEquityMultipleNew:
         assert result < 1.0
 
 
-import pytest as _pytest
+import pytest as _pytest  # noqa: E402
 
 
 @_pytest.mark.parametrize(
@@ -1154,7 +1169,9 @@ import pytest as _pytest
         (100000.0, 100000.0, True),
     ],
 )
-def test_debt_service_coverage_ratio_parametrized(noi: float, debt_service: float, expect_healthy: bool) -> None:
+def test_debt_service_coverage_ratio_parametrized(
+    noi: float, debt_service: float, expect_healthy: bool
+) -> None:
     from app.investment import debt_service_coverage_ratio
 
     result = debt_service_coverage_ratio(noi, debt_service)
@@ -1169,7 +1186,9 @@ def test_debt_service_coverage_ratio_parametrized(noi: float, debt_service: floa
         (500000.0, 500000.0, _pytest.approx(100.0, abs=0.001)),
     ],
 )
-def test_loan_to_value_ratio_parametrized(loan: float, market_value: float, expected: float) -> None:
+def test_loan_to_value_ratio_parametrized(
+    loan: float, market_value: float, expected: float
+) -> None:
     from app.investment import loan_to_value_ratio
 
     assert loan_to_value_ratio(loan, market_value) == expected
@@ -1184,7 +1203,9 @@ def test_net_present_value_positive_for_positive_flows(rate: float) -> None:
     assert isinstance(npv, float)
 
 
-@_pytest.mark.parametrize("score,expected_label", [(90.0, "Excellent"), (70.0, "Good"), (50.0, "Fair"), (30.0, "Poor")])
+@_pytest.mark.parametrize(
+    "score,expected_label", [(90.0, "Excellent"), (70.0, "Good"), (50.0, "Fair"), (30.0, "Poor")]
+)
 def test_investment_label_thresholds(score: float, expected_label: str) -> None:
     from app.investment import investment_score_label
 
@@ -1198,7 +1219,9 @@ def test_investment_label_thresholds(score: float, expected_label: str) -> None:
         (500000.0, 2000.0, (5.0, 500.0)),
     ],
 )
-def test_price_to_rent_ratio_in_range(property_price: float, rent: float, expected_range: tuple) -> None:
+def test_price_to_rent_ratio_in_range(
+    property_price: float, rent: float, expected_range: tuple
+) -> None:
     from app.investment import price_to_rent_ratio
 
     result = price_to_rent_ratio(property_price, rent)
@@ -1306,7 +1329,9 @@ def test_discounted_cash_flow_length_matches_cash_flows(n_years: int) -> None:
 @pytest.mark.parametrize("rate", [0.05, 0.10, 0.15, 0.20])
 def test_cash_on_cash_return_scales_with_equity(rate: float) -> None:
     """cash_on_cash_return equals annual_pre_tax_cash_flow / total_cash_invested."""
-    result = cash_on_cash_return(annual_pre_tax_cash_flow=10000.0, total_cash_invested=10000.0 / rate)
+    result = cash_on_cash_return(
+        annual_pre_tax_cash_flow=10000.0, total_cash_invested=10000.0 / rate
+    )
     assert result == pytest.approx(rate * 100.0, rel=1e-3)
 
 
@@ -1321,7 +1346,7 @@ class TestPaybackPeriodEdgeCases:
         assert result == pytest.approx(cost / 500.0, rel=1e-3)
 
 
-from app.investment import (
+from app.investment import (  # noqa: E402
     annualized_return,
     gross_rent_multiplier,
     loan_to_value_ratio,

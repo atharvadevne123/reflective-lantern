@@ -127,7 +127,9 @@ class TestCompareTariffs:
             "time_of_use": result.time_of_use_cost,
             "tiered": result.tiered_cost,
         }
-        assert result.saving_vs_flat == pytest.approx(round(result.flat_cost - costs[result.cheapest_scheme], 2))
+        assert result.saving_vs_flat == pytest.approx(
+            round(result.flat_cost - costs[result.cheapest_scheme], 2)
+        )
 
     def test_saving_is_never_negative(self) -> None:
         assert compare_tariffs(FLAT_DAY).saving_vs_flat >= 0.0
@@ -143,7 +145,9 @@ class TestPeakShiftSaving:
         assert full > partial
 
     def test_no_saving_when_off_peak_not_cheaper(self) -> None:
-        saving = peak_shift_saving(FLAT_DAY, shiftable_fraction=1.0, peak_rate=0.10, off_peak_rate=0.10)
+        saving = peak_shift_saving(
+            FLAT_DAY, shiftable_fraction=1.0, peak_rate=0.10, off_peak_rate=0.10
+        )
         assert saving == 0.0
 
     def test_off_peak_only_profile_has_no_saving(self) -> None:
@@ -225,7 +229,7 @@ class TestTimeOfUseCostEdgeCases:
         assert cost_high > cost_low
 
 
-from app.tariff import annual_cost_estimate, peak_hour_fraction
+from app.tariff import annual_cost_estimate, peak_hour_fraction  # noqa: E402
 
 
 class TestAnnualCostEstimate:
@@ -268,6 +272,7 @@ class TestPeakHourFraction:
 class TestDailyCostSummary:
     def test_returns_expected_keys(self) -> None:
         from app.tariff import daily_cost_summary
+
         result = daily_cost_summary([10.0] * 24, rate=0.10)
         assert "total_cost" in result
         assert "hourly_mean_cost" in result
@@ -276,21 +281,25 @@ class TestDailyCostSummary:
 
     def test_flat_consumption_peak_equals_mean(self) -> None:
         from app.tariff import daily_cost_summary
+
         result = daily_cost_summary([5.0] * 24, rate=0.20)
         assert result["peak_hour_cost"] == pytest.approx(result["hourly_mean_cost"])
 
     def test_total_cost_correct(self) -> None:
         from app.tariff import daily_cost_summary
+
         result = daily_cost_summary([2.0] * 24, rate=0.15)
         assert result["total_cost"] == pytest.approx(24 * 2.0 * 0.15)
 
     def test_empty_raises(self) -> None:
         from app.tariff import daily_cost_summary
+
         with pytest.raises(ValueError):
             daily_cost_summary([])
 
     @pytest.mark.parametrize("rate", [0.05, 0.15, 0.30])
     def test_various_rates(self, rate: float) -> None:
         from app.tariff import daily_cost_summary
+
         result = daily_cost_summary([1.0] * 24, rate=rate)
         assert result["total_cost"] == pytest.approx(24 * rate)

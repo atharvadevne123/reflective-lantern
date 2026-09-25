@@ -255,9 +255,30 @@ class TestCountBySeverity:
         from app.alerting import Alert, Severity, count_by_severity
 
         alerts = [
-            Alert(name="a", metric="x", value=1.0, threshold=0.5, severity=Severity.CRITICAL, message=""),
-            Alert(name="b", metric="y", value=2.0, threshold=1.0, severity=Severity.WARNING, message=""),
-            Alert(name="c", metric="z", value=3.0, threshold=2.0, severity=Severity.CRITICAL, message=""),
+            Alert(
+                name="a",
+                metric="x",
+                value=1.0,
+                threshold=0.5,
+                severity=Severity.CRITICAL,
+                message="",
+            ),
+            Alert(
+                name="b",
+                metric="y",
+                value=2.0,
+                threshold=1.0,
+                severity=Severity.WARNING,
+                message="",
+            ),
+            Alert(
+                name="c",
+                metric="z",
+                value=3.0,
+                threshold=2.0,
+                severity=Severity.CRITICAL,
+                message="",
+            ),
         ]
         result = count_by_severity(alerts)
         assert result["critical"] == 2
@@ -271,6 +292,40 @@ class TestCountBySeverity:
     def test_single_info(self) -> None:
         from app.alerting import Alert, Severity, count_by_severity
 
-        alerts = [Alert(name="a", metric="x", value=0.5, threshold=1.0, severity=Severity.INFO, message="")]
+        alerts = [
+            Alert(
+                name="a", metric="x", value=0.5, threshold=1.0, severity=Severity.INFO, message=""
+            )
+        ]
         result = count_by_severity(alerts)
         assert result == {"info": 1}
+
+
+class TestAlertRulePostInit:
+    """Parametrized tests for AlertRule __post_init__ validation."""
+
+    @pytest.mark.parametrize("cooldown_s", [0, 1, 60, 3600])
+    def test_valid_cooldown_s_accepted(self, cooldown_s: int) -> None:
+        from app.alerting import AlertRule, Severity
+
+        rule = AlertRule(
+            name="r",
+            metric="cpu",
+            threshold=80.0,
+            severity=Severity.WARNING,
+            cooldown_s=cooldown_s,
+        )
+        assert rule.cooldown_s == cooldown_s
+
+    @pytest.mark.parametrize("cooldown_s", [-1, -10, -100])
+    def test_negative_cooldown_raises(self, cooldown_s: int) -> None:
+        from app.alerting import AlertRule, Severity
+
+        with pytest.raises(ValueError, match="cooldown_s"):
+            AlertRule(
+                name="r",
+                metric="cpu",
+                threshold=80.0,
+                severity=Severity.WARNING,
+                cooldown_s=cooldown_s,
+            )

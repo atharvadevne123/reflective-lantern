@@ -1,4 +1,5 @@
 """FastAPI application with /predict, /health, and /metrics endpoints."""
+
 from __future__ import annotations
 
 import json
@@ -53,6 +54,7 @@ _feat_pipe = None
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    """Manage startup (model load) and shutdown (cleanup) lifecycle."""
     global _model, _feat_pipe
     init_db()
 
@@ -123,6 +125,7 @@ class PredictRequest(BaseModel):
     @field_validator("carrier")
     @classmethod
     def carrier_must_be_known(cls, v: str) -> str:
+        """Reject unknown carrier codes at validation time."""
         if v not in CARRIERS:
             raise ValueError(f"carrier must be one of {CARRIERS}")
         return v
@@ -130,6 +133,7 @@ class PredictRequest(BaseModel):
     @field_validator("route_type")
     @classmethod
     def route_must_be_known(cls, v: str) -> str:
+        """Reject unknown route type values at validation time."""
         if v not in ROUTE_TYPES:
             raise ValueError(f"route_type must be one of {ROUTE_TYPES}")
         return v
@@ -207,7 +211,8 @@ async def predict(
     payload: PredictRequest,
     request: Request,
     db: Annotated[Session, Depends(get_db)],
-):
+) -> PredictResponse:
+    """Score a single shipment and persist the prediction to the database."""
     if _model is None or _feat_pipe is None:
         raise ModelNotLoadedError
 
@@ -250,7 +255,8 @@ async def predict(
     response_model=HealthResponse,
     summary="Health check",
 )
-async def health():
+async def health() -> HealthResponse:
+    """Return current service health and whether the model is loaded."""
     return HealthResponse(
         status="healthy" if _model is not None else "degraded",
         model_version=MODEL_VERSION,
@@ -264,7 +270,8 @@ async def health():
     summary="Model performance metrics",
     description="Returns last-computed cross-validation metrics.",
 )
-async def metrics():
+async def metrics() -> MetricsResponse:
+    """Return last-computed cross-validation metrics from disk."""
     data = json.loads(Path(METRICS_PATH).read_text()) if Path(METRICS_PATH).exists() else {}
     return MetricsResponse(
         rmse_mean=data.get("rmse_mean"),
@@ -280,7 +287,8 @@ async def metrics():
     summary="Run drift check",
     description="Compares recent predictions against reference distribution.",
 )
-async def drift(db: Annotated[Session, Depends(get_db)]):
+async def drift(db: Annotated[Session, Depends(get_db)]) -> dict:
+    """Run Kolmogorov-Smirnov drift check and return the result."""
     return run_drift_check(db)
 
 
@@ -294,7 +302,8 @@ async def predict_batch(
     payload: BatchPredictRequest,
     request: Request,
     db: Annotated[Session, Depends(get_db)],
-):
+) -> BatchPredictResponse:
+    """Score multiple shipments in one call and persist all predictions."""
     if _model is None or _feat_pipe is None:
         raise ModelNotLoadedError
 

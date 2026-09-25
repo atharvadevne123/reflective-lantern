@@ -220,8 +220,14 @@ def forecast_with_uncertainty(
     for _ in range(n_boot):
         sample = [last + random.choice(residuals) for _ in range(horizon)]
         draws.append(sample)
-    lower = [round(sorted(draws[j][i] for j in range(n_boot))[int(0.10 * n_boot)], 4) for i in range(horizon)]
-    upper = [round(sorted(draws[j][i] for j in range(n_boot))[int(0.90 * n_boot)], 4) for i in range(horizon)]
+    lower = [
+        round(sorted(draws[j][i] for j in range(n_boot))[int(0.10 * n_boot)], 4)
+        for i in range(horizon)
+    ]
+    upper = [
+        round(sorted(draws[j][i] for j in range(n_boot))[int(0.90 * n_boot)], 4)
+        for i in range(horizon)
+    ]
     return {"point": [round(v, 4) for v in point], "lower_80": lower, "upper_80": upper}
 
 
@@ -788,7 +794,9 @@ def mean_percentage_error(actual: list[float], predicted: list[float]) -> float:
         raise ValueError("actual and predicted must have the same length")
     if any(a == 0.0 for a in actual):
         raise ValueError("actual must not contain zeros (division by zero)")
-    return round(sum((p - a) / a * 100.0 for a, p in zip(actual, predicted, strict=False)) / len(actual), 6)
+    return round(
+        sum((p - a) / a * 100.0 for a, p in zip(actual, predicted, strict=False)) / len(actual), 6
+    )
 
 
 def peak_forecast_hour(forecasts: list[float]) -> int:

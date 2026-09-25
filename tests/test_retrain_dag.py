@@ -93,7 +93,9 @@ def test_check_drift_large_offset_returns_true(tmp_path, mean_offset: float) -> 
         return df_new if call_count[0] == 1 else df_ref
 
     with (
-        patch("pathlib.Path", side_effect=lambda p: train_mock if "wg_train" in str(p) else ref_mock),
+        patch(
+            "pathlib.Path", side_effect=lambda p: train_mock if "wg_train" in str(p) else ref_mock
+        ),
         patch("pandas.read_parquet", side_effect=fake_read),
         patch("pandas.DataFrame.to_parquet"),
     ):
@@ -147,7 +149,10 @@ class TestRetainDagEdgeCases:
         ref_mock.exists.return_value = False
 
         with (
-            patch("pathlib.Path", side_effect=lambda p: train_mock if "wg_train" in str(p) else ref_mock),
+            patch(
+                "pathlib.Path",
+                side_effect=lambda p: train_mock if "wg_train" in str(p) else ref_mock,
+            ),
             patch("pandas.read_parquet", return_value=df_empty),
             patch("pandas.DataFrame.to_parquet"),
         ):
@@ -169,7 +174,10 @@ class TestRetainDagEdgeCases:
         ref_mock.exists.return_value = True
 
         with (
-            patch("pathlib.Path", side_effect=lambda p: train_mock if "wg_train" in str(p) else ref_mock),
+            patch(
+                "pathlib.Path",
+                side_effect=lambda p: train_mock if "wg_train" in str(p) else ref_mock,
+            ),
             patch("pandas.read_parquet", return_value=df),
         ):
             result = check_drift_before_retrain(reference_path=ref_path)

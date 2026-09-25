@@ -139,7 +139,9 @@ class TestEvaluateEvent:
     )
     def test_negative_rates_rejected(self, incentive: float, penalty: float) -> None:
         with pytest.raises(ValueError, match="rates must be non-negative"):
-            evaluate_event(BASELINE, CURTAILED, 16.0, incentive_per_kwh=incentive, penalty_per_kwh=penalty)
+            evaluate_event(
+                BASELINE, CURTAILED, 16.0, incentive_per_kwh=incentive, penalty_per_kwh=penalty
+            )
 
 
 class TestCurtailmentEdgeCases:
@@ -151,7 +153,9 @@ class TestCurtailmentEdgeCases:
             ([5.0], [5.0], 0.0),
         ],
     )
-    def test_various_curtailment_values(self, baseline: list, actual: list, expected: float) -> None:
+    def test_various_curtailment_values(
+        self, baseline: list, actual: list, expected: float
+    ) -> None:
         assert curtailment(baseline, actual) == pytest.approx(expected)
 
     def test_single_hour_curtailment(self) -> None:
@@ -227,7 +231,7 @@ class TestCustomerBaselineLoadEdgeCases:
         assert len(result) == 4
 
 
-from app.demand_response import curtailment_rate, event_roi
+from app.demand_response import curtailment_rate, event_roi  # noqa: E402
 
 
 class TestCurtailmentRate:

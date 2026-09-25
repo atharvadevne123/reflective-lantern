@@ -59,7 +59,10 @@ class AlertQueue:
             self._alerts.pop(0)
         self._alerts.append(alert)
         logger.debug(
-            "AlertQueue.push: severity=%s source=%s queue_size=%d", alert.severity, alert.source, len(self._alerts)
+            "AlertQueue.push: severity=%s source=%s queue_size=%d",
+            alert.severity,
+            alert.source,
+            len(self._alerts),
         )
 
     def filter_by_severity(self, min_severity: str) -> list[Alert]:

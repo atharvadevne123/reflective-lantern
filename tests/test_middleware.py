@@ -1,4 +1,5 @@
 """Tests for rate limiting and correlation-ID middleware."""
+
 from __future__ import annotations
 
 from fastapi import FastAPI
@@ -57,3 +58,33 @@ def test_correlation_id_header_returned(client):
 def test_correlation_id_is_echoed(client):
     resp = client.get("/api/v1/health", headers={"X-Request-ID": "trace-123"})
     assert resp.headers["X-Request-ID"] == "trace-123"
+
+
+import pytest  # noqa: E402
+
+
+@pytest.mark.parametrize("limit", [1, 5, 10])
+def test_exactly_limit_requests_allowed(limit: int) -> None:
+    """Exactly `limit` requests succeed; the (limit+1)-th is rejected with 429."""
+    with TestClient(_app(limit=limit)) as c:
+        for _ in range(limit):
+            assert c.get("/ping").status_code == 200
+        assert c.get("/ping").status_code == 429
+
+
+@pytest.mark.parametrize("limit,n_ok", [(3, 2), (5, 4), (10, 9)])
+def test_remaining_header_decrements(limit: int, n_ok: int) -> None:
+    """X-RateLimit-Remaining decrements correctly after successive requests."""
+    with TestClient(_app(limit=limit)) as c:
+        for i in range(n_ok):
+            resp = c.get("/ping")
+            assert int(resp.headers["X-RateLimit-Remaining"]) == limit - i - 1
+
+
+@pytest.mark.parametrize("limit", [2, 4, 8])
+def test_limit_header_is_constant(limit: int) -> None:
+    """X-RateLimit-Limit always reflects the configured limit."""
+    with TestClient(_app(limit=limit)) as c:
+        for _ in range(min(limit, 3)):
+            resp = c.get("/ping")
+            assert resp.headers["X-RateLimit-Limit"] == str(limit)

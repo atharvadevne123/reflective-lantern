@@ -51,12 +51,13 @@ class ShadowRunner:
         shadow: Callable,
         comparer: Callable[[Any, Any], bool] | None = None,
     ) -> None:
+        """Set up shadow comparator with candidate callable, optional comparison function, and sample rate."""
         self.primary = primary
         self.shadow = shadow
         self.comparer = comparer or (lambda a, b: a == b)
         self._results: list[ShadowResult] = []
 
-    def call(self, *args, **kwargs) -> Any:
+    def call(self, *args: Any, **kwargs: Any) -> Any:
         """Execute primary and shadow handlers, return primary result.
 
         Args:

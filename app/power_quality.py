@@ -53,11 +53,15 @@ def power_factor(real_power_kw: float, apparent_power_kva: float) -> float:
             apparent power (physically impossible).
     """
     if real_power_kw < 0 or apparent_power_kva < 0:
-        raise ValueError(f"power must be non-negative, got real={real_power_kw} apparent={apparent_power_kva}")
+        raise ValueError(
+            f"power must be non-negative, got real={real_power_kw} apparent={apparent_power_kva}"
+        )
     if apparent_power_kva == 0:
         return 0.0
     if real_power_kw > apparent_power_kva:
-        raise ValueError(f"real power ({real_power_kw} kW) cannot exceed apparent power ({apparent_power_kva} kVA)")
+        raise ValueError(
+            f"real power ({real_power_kw} kW) cannot exceed apparent power ({apparent_power_kva} kVA)"
+        )
     return round(real_power_kw / apparent_power_kva, 4)
 
 
@@ -212,7 +216,11 @@ def build_report(
     if report.power_factor_rating == "poor":
         logger.warning("Poor power factor %.3f — utility penalties likely", pf)
     if not report.imbalance_within_limit:
-        logger.warning("Voltage imbalance %.2f%% exceeds the %.1f%% limit", imbalance, MAX_VOLTAGE_IMBALANCE_PCT)
+        logger.warning(
+            "Voltage imbalance %.2f%% exceeds the %.1f%% limit",
+            imbalance,
+            MAX_VOLTAGE_IMBALANCE_PCT,
+        )
     return report
 
 

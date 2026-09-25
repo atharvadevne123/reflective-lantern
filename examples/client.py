@@ -1,4 +1,5 @@
 """Minimal Python client for the Logistics-Flow API."""
+
 from __future__ import annotations
 
 import argparse
@@ -60,9 +61,11 @@ def main() -> None:
         hour_of_day=args.hour_of_day,
         day_of_week=args.day_of_week,
     )
-    print(f"{result['predicted_minutes']:.1f} min "
-          f"({result['predicted_hours']:.2f} h), "
-          f"confidence {result['confidence']:.2%}")
+    print(
+        f"{result['predicted_minutes']:.1f} min "
+        f"({result['predicted_hours']:.2f} h), "
+        f"confidence {result['confidence']:.2%}"
+    )
 
 
 if __name__ == "__main__":

@@ -70,7 +70,13 @@ def test_invalid_humidity_deducts_points() -> None:
 
 
 def test_score_never_negative() -> None:
-    rec = {"hour": 99, "month": 99, "day_of_week": 99, "consumption_kwh": -100.0, "humidity_pct": 200.0}
+    rec = {
+        "hour": 99,
+        "month": 99,
+        "day_of_week": 99,
+        "consumption_kwh": -100.0,
+        "humidity_pct": 200.0,
+    }
     result = score_record(rec)
     assert result["dq_score"] >= 0
 
@@ -347,7 +353,9 @@ class TestNormalizeRecord:
 
         assert normalize_record({}) == {}
 
-    @pytest.mark.parametrize("input_val,expected", [("Hello", "hello"), ("  Test  ", "test"), ("ok", "ok")])
+    @pytest.mark.parametrize(
+        "input_val,expected", [("Hello", "hello"), ("  Test  ", "test"), ("ok", "ok")]
+    )
     def test_various_strings(self, input_val: str, expected: str) -> None:
         from app.data_quality import normalize_record
 
@@ -566,7 +574,12 @@ class TestDataFreshnessScore:
 
         records = [{"ts": time.time()}]
         result = data_freshness_score(records, "ts")
-        assert set(result.keys()) >= {"total_records", "fresh_count", "stale_count", "freshness_rate"}
+        assert set(result.keys()) >= {
+            "total_records",
+            "fresh_count",
+            "stale_count",
+            "freshness_rate",
+        }
 
 
 def test_field_type_consistency_all_match() -> None:
@@ -927,7 +940,7 @@ class TestFieldEntropy:
         assert result > 0.0
 
 
-import pytest as _pytest
+import pytest as _pytest  # noqa: E402
 
 
 @_pytest.mark.parametrize(
@@ -938,7 +951,9 @@ import pytest as _pytest
         ([], ["a"], 0.0),
     ],
 )
-def test_completeness_score_parametrized(records: list, required: list, expected_score: float) -> None:
+def test_completeness_score_parametrized(
+    records: list, required: list, expected_score: float
+) -> None:
     from app.data_quality import completeness_score
 
     assert completeness_score(records, required) == _pytest.approx(expected_score, abs=0.001)
@@ -985,7 +1000,9 @@ def test_null_rate_with_mixed_records(null_count: int, total: int) -> None:
         ([-1.0, 5.0, 10.0], 0.0, 10.0, 1),
     ],
 )
-def test_range_violation_count_parametrized(values: list, lo: float, hi: float, expected_violations: int) -> None:
+def test_range_violation_count_parametrized(
+    values: list, lo: float, hi: float, expected_violations: int
+) -> None:
     from app.data_quality import range_violation_count
 
     field = "x"

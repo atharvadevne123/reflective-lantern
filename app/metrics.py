@@ -122,9 +122,21 @@ def classification_metrics(
         raise ValueError("actual must not be empty")
     if len(actual) != len(predicted):
         raise ValueError("actual and predicted must have the same length")
-    tp = sum(1 for a, p in zip(actual, predicted, strict=False) if a == positive_label and p == positive_label)
-    fp = sum(1 for a, p in zip(actual, predicted, strict=False) if a != positive_label and p == positive_label)
-    fn = sum(1 for a, p in zip(actual, predicted, strict=False) if a == positive_label and p != positive_label)
+    tp = sum(
+        1
+        for a, p in zip(actual, predicted, strict=False)
+        if a == positive_label and p == positive_label
+    )
+    fp = sum(
+        1
+        for a, p in zip(actual, predicted, strict=False)
+        if a != positive_label and p == positive_label
+    )
+    fn = sum(
+        1
+        for a, p in zip(actual, predicted, strict=False)
+        if a == positive_label and p != positive_label
+    )
     precision = tp / (tp + fp) if (tp + fp) > 0 else 0.0
     recall = tp / (tp + fn) if (tp + fn) > 0 else 0.0
     f1 = 2 * precision * recall / (precision + recall) if (precision + recall) > 0 else 0.0

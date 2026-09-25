@@ -79,11 +79,17 @@ def compute_investment_analysis(
     cap_rate = noi / predicted_value
 
     amenity_composite = (
-        school_score * _SCHOOL_WEIGHT + transit_score * _TRANSIT_WEIGHT + walkability_score * _WALK_WEIGHT
+        school_score * _SCHOOL_WEIGHT
+        + transit_score * _TRANSIT_WEIGHT
+        + walkability_score * _WALK_WEIGHT
     ) / 10.0
     risk_score = float(min(max(crime_rate, 0.0), 1.0))
 
-    raw_score = cap_rate * _CAP_RATE_WEIGHT + amenity_composite * _AMENITY_WEIGHT - risk_score * _RISK_PENALTY
+    raw_score = (
+        cap_rate * _CAP_RATE_WEIGHT
+        + amenity_composite * _AMENITY_WEIGHT
+        - risk_score * _RISK_PENALTY
+    )
     investment_score = float(min(max(raw_score, INVESTMENT_SCORE_MIN), INVESTMENT_SCORE_MAX))
 
     break_even = predicted_value / noi if noi > 0 else float("inf")
@@ -685,7 +691,9 @@ def price_to_rent_ratio(property_price: float, rent: float) -> float:
     return round(property_price / annual_rent, 2)
 
 
-def holding_period_return(purchase_price: float, sale_price: float, total_income: float = 0.0) -> float:
+def holding_period_return(
+    purchase_price: float, sale_price: float, total_income: float = 0.0
+) -> float:
     """Compute the total Holding Period Return (HPR) as a percentage.
 
     HPR = (sale_price - purchase_price + total_income) / purchase_price * 100.
@@ -940,7 +948,9 @@ def rental_yield_after_tax(
     return round(after_tax_rent / property_value * 100.0, 4)
 
 
-def net_operating_income(gross_rent: float, vacancy_rate_pct: float, operating_expenses: float) -> float:
+def net_operating_income(
+    gross_rent: float, vacancy_rate_pct: float, operating_expenses: float
+) -> float:
     """Compute Net Operating Income (NOI) for a rental property.
 
     Args:
@@ -1007,27 +1017,3 @@ def risk_adjusted_return(
         return 0.0
     excess = annual_return_pct - risk_free_rate_pct
     return round(excess / volatility_pct, 4)
-
-
-def annualized_return(total_return: float, years: float) -> float:
-    """Compute the compound annual growth rate from a total return.
-
-    Converts a multi-year total return to the equivalent per-year rate using
-    the compound-interest formula: ``(1 + total_return) ** (1/years) - 1``.
-
-    Args:
-        total_return: Fractional total return over the holding period
-            (e.g. 0.5 for 50% gain, -0.2 for 20% loss). Must be > -1.
-        years: Holding-period length in years. Must be positive.
-
-    Returns:
-        Annualized return as a decimal, rounded to 6 decimal places.
-
-    Raises:
-        ValueError: If *years* is not positive or *total_return* <= -1.
-    """
-    if years <= 0:
-        raise ValueError("years must be positive")
-    if total_return <= -1:
-        raise ValueError("total_return must be > -1")
-    return round((1.0 + total_return) ** (1.0 / years) - 1.0, 6)

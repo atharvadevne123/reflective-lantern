@@ -1,4 +1,4 @@
-.PHONY: install test lint format run docker clean diagram
+.PHONY: install test lint typecheck format run docker clean diagram
 
 install:
 	pip install -r requirements.txt
@@ -8,6 +8,9 @@ test:
 
 lint:
 	python -m ruff check .
+
+typecheck:
+	python -m mypy app/ --ignore-missing-imports
 
 format:
 	python -m ruff format .

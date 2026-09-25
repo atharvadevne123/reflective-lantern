@@ -4,7 +4,12 @@ from __future__ import annotations
 
 import pytest
 
-from app.reporting import estimate_savings, peak_demand_report, rolling_savings_summary, top_consumption_hours
+from app.reporting import (
+    estimate_savings,
+    peak_demand_report,
+    rolling_savings_summary,
+    top_consumption_hours,
+)
 
 
 def test_savings_positive() -> None:
@@ -521,7 +526,9 @@ def test_daily_average_consumption_empty_result() -> None:
         (100.0, 130.0, "D"),
     ],
 )
-def test_energy_efficiency_grade_simple_cases(baseline: float, actual: float, expected_grade: str) -> None:
+def test_energy_efficiency_grade_simple_cases(
+    baseline: float, actual: float, expected_grade: str
+) -> None:
     from app.reporting import energy_efficiency_grade
 
     grade = energy_efficiency_grade(actual, baseline)
@@ -1017,7 +1024,7 @@ class TestSavingsSummary:
         assert result["reduction_pct"] == 0.0
 
 
-import pytest as _pytest
+import pytest as _pytest  # noqa: E402
 
 
 @_pytest.mark.parametrize(
@@ -1028,7 +1035,9 @@ import pytest as _pytest
         (100.0, 100.0, "B"),
     ],
 )
-def test_energy_efficiency_grade_boundary_values(before: float, after: float, expected_grade: str) -> None:
+def test_energy_efficiency_grade_boundary_values(
+    before: float, after: float, expected_grade: str
+) -> None:
     from app.reporting import energy_efficiency_grade
 
     assert energy_efficiency_grade(after, before) == expected_grade

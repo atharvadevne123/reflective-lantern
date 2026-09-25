@@ -27,7 +27,9 @@ def determine_mode(target_date: date | None = None) -> RunMode:
     All other weekdays are IMPROVEMENT.
     """
     d = target_date or date.today()
-    if d.isoweekday() == INNOVATION_WEEKDAY and any(lo <= d.day <= hi for lo, hi in INNOVATION_DAY_RANGES):
+    if d.isoweekday() == INNOVATION_WEEKDAY and any(
+        lo <= d.day <= hi for lo, hi in INNOVATION_DAY_RANGES
+    ):
         return RunMode.INNOVATION
     return RunMode.IMPROVEMENT
 

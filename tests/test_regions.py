@@ -4,7 +4,14 @@ from __future__ import annotations
 
 import pytest
 
-from app.regions import compare_peak_loads, get_region, get_region_name, list_regions, region_count, validate_region
+from app.regions import (
+    compare_peak_loads,
+    get_region,
+    get_region_name,
+    list_regions,
+    region_count,
+    validate_region,
+)
 
 
 class TestRegionRegistry:
@@ -85,7 +92,9 @@ def test_get_peak_load_unknown() -> None:
     assert get_peak_load("atlantis") is None
 
 
-@pytest.mark.parametrize("region_id", ["northeast", "midwest", "south", "west", "texas", "pacific_nw"])
+@pytest.mark.parametrize(
+    "region_id", ["northeast", "midwest", "south", "west", "texas", "pacific_nw"]
+)
 def test_validate_region_known(region_id) -> None:
     from app.regions import validate_region
 
@@ -117,7 +126,9 @@ def test_get_region_timezone_new_regions() -> None:
     assert get_region_timezone("florida") == "America/New_York"
 
 
-@pytest.mark.parametrize("region_id", ["pacific_nw", "new_england", "mountain", "southeast", "florida"])
+@pytest.mark.parametrize(
+    "region_id", ["pacific_nw", "new_england", "mountain", "southeast", "florida"]
+)
 def test_get_peak_load_new_regions(region_id) -> None:
     from app.regions import get_peak_load
 
@@ -224,7 +235,9 @@ def test_get_all_region_ids_is_sorted() -> None:
     assert ids == sorted(ids)
 
 
-@pytest.mark.parametrize("region_id", ["pacific_nw", "new_england", "mountain", "southeast", "florida"])
+@pytest.mark.parametrize(
+    "region_id", ["pacific_nw", "new_england", "mountain", "southeast", "florida"]
+)
 def test_additional_regions_valid(region_id: str) -> None:
     assert validate_region(region_id) is True
 

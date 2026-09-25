@@ -98,7 +98,9 @@ def time_of_use_cost(
     if not 0 <= start_hour <= 23:
         raise ValueError(f"start_hour must be in 0-23, got {start_hour}")
     if peak_rate < 0 or off_peak_rate < 0:
-        raise ValueError(f"rates must be non-negative, got peak={peak_rate} off_peak={off_peak_rate}")
+        raise ValueError(
+            f"rates must be non-negative, got peak={peak_rate} off_peak={off_peak_rate}"
+        )
     _validated_total(hourly_kwh)
 
     peak_set = set(peak_hours)
@@ -149,7 +151,9 @@ def tiered_cost(hourly_kwh: list[float], bands: list[TieredBand] | None = None) 
         consumed += charged
         remaining -= charged
     if remaining > 0:
-        logger.warning("Tiered tariff bands did not cover %.3f kWh; add an unbounded band", remaining)
+        logger.warning(
+            "Tiered tariff bands did not cover %.3f kWh; add an unbounded band", remaining
+        )
     return round(cost, 2)
 
 
@@ -176,7 +180,9 @@ def compare_tariffs(
     options = {"flat": flat, "time_of_use": tou, "tiered": tiered}
     cheapest = min(options, key=lambda name: options[name])
     saving = round(flat - options[cheapest], 2)
-    logger.info("Cheapest tariff: %s at %.2f (saves %.2f vs flat)", cheapest, options[cheapest], saving)
+    logger.info(
+        "Cheapest tariff: %s at %.2f (saves %.2f vs flat)", cheapest, options[cheapest], saving
+    )
     return TariffComparison(
         flat_cost=flat,
         time_of_use_cost=tou,
@@ -218,7 +224,9 @@ def peak_shift_saving(
         return 0.0
 
     peak_set = set(peak_hours)
-    peak_kwh = sum(kwh for offset, kwh in enumerate(hourly_kwh) if (start_hour + offset) % 24 in peak_set)
+    peak_kwh = sum(
+        kwh for offset, kwh in enumerate(hourly_kwh) if (start_hour + offset) % 24 in peak_set
+    )
     shifted = peak_kwh * shiftable_fraction
     return round(shifted * (peak_rate - off_peak_rate), 2)
 
@@ -293,7 +301,9 @@ def peak_hour_fraction(
     if total <= 0:
         return 0.0
     peak_set = set(peak_hours)
-    peak_kwh = sum(kwh for offset, kwh in enumerate(hourly_kwh) if (start_hour + offset) % 24 in peak_set)
+    peak_kwh = sum(
+        kwh for offset, kwh in enumerate(hourly_kwh) if (start_hour + offset) % 24 in peak_set
+    )
     return round(peak_kwh / total, 4)
 
 
@@ -315,7 +325,9 @@ __all__ = [
 ]
 
 
-def daily_cost_summary(hourly_kwh: list[float], rate: float = DEFAULT_FLAT_RATE) -> dict[str, float]:
+def daily_cost_summary(
+    hourly_kwh: list[float], rate: float = DEFAULT_FLAT_RATE
+) -> dict[str, float]:
     """Return a summary dict of cost statistics for a daily load profile.
 
     Args:

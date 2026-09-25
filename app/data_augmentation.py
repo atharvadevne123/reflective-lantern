@@ -46,7 +46,9 @@ class AugmentationConfig:
     synonyms: dict = field(default_factory=dict)
 
 
-def synonym_replace(tokens: list[str], synonyms: dict, prob: float, rng: random.Random) -> list[str]:
+def synonym_replace(
+    tokens: list[str], synonyms: dict, prob: float, rng: random.Random
+) -> list[str]:
     """Replace tokens with synonyms at random.
 
     Args:

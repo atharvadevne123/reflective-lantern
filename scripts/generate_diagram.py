@@ -1,4 +1,5 @@
 """Generate the Logistics-Flow system architecture diagram."""
+
 from __future__ import annotations
 
 import sys
@@ -24,8 +25,24 @@ LAYERS = [
     (3.6, 5.4, 3.0, 1.0, "FastAPI\n/api/v1/predict\n/health /metrics /drift", "#e8f5e9", "#2e7d32"),
     (7.2, 5.4, 2.6, 1.0, "Pydantic\nValidation +\nCorrelation ID", "#fff8e1", "#f9a825"),
     (10.4, 5.4, 3.0, 1.0, "Rate Limiting\n& OpenAPI Docs", "#f3e5f5", "#6a1b9a"),
-    (0.4, 3.4, 3.0, 1.2, "Feature Pipeline\ncyclical time, distance\nbuckets, carrier risk", "#e0f7fa", "#00838f"),
-    (4.0, 3.4, 3.2, 1.2, "Ensemble Model\nXGBoost + LightGBM\n+ RandomForest", "#fce4ec", "#c2185b"),
+    (
+        0.4,
+        3.4,
+        3.0,
+        1.2,
+        "Feature Pipeline\ncyclical time, distance\nbuckets, carrier risk",
+        "#e0f7fa",
+        "#00838f",
+    ),
+    (
+        4.0,
+        3.4,
+        3.2,
+        1.2,
+        "Ensemble Model\nXGBoost + LightGBM\n+ RandomForest",
+        "#fce4ec",
+        "#c2185b",
+    ),
     (7.8, 3.4, 2.6, 1.2, "5-Fold CV\nRMSE / R²", "#ede7f6", "#4527a0"),
     (11.0, 3.4, 2.4, 1.2, "Ensemble\nConfidence", "#e8eaf6", "#283593"),
     (0.4, 1.4, 3.2, 1.2, "Monitoring\nKS-test drift\nprediction logging", "#fff3e0", "#ef6c00"),
@@ -57,9 +74,7 @@ def main() -> None:
     ax.axis("off")
 
     for x, y, w, h, label, fc, ec in LAYERS:
-        box = mpatches.FancyBboxPatch(
-            (x, y), w, h, facecolor=fc, edgecolor=ec, **BOX_STYLE
-        )
+        box = mpatches.FancyBboxPatch((x, y), w, h, facecolor=fc, edgecolor=ec, **BOX_STYLE)
         ax.add_patch(box)
         ax.text(
             x + w / 2,
@@ -81,9 +96,14 @@ def main() -> None:
         )
 
     ax.text(
-        7, 0.55,
+        7,
+        0.55,
         "API Layer  →  Feature Engineering  →  Ensemble Inference  →  Persistence & Drift Monitoring",
-        ha="center", va="center", fontsize=10, style="italic", color="#455a64",
+        ha="center",
+        va="center",
+        fontsize=10,
+        style="italic",
+        color="#455a64",
     )
 
     plt.title(

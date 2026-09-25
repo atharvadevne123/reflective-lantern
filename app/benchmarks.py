@@ -85,7 +85,9 @@ def benchmark_eui(
     }
 
 
-def annual_to_monthly_estimate(annual_kwh: float, profile: list[float] | None = None) -> list[float]:
+def annual_to_monthly_estimate(
+    annual_kwh: float, profile: list[float] | None = None
+) -> list[float]:
     """Distribute annual kWh across 12 months using an optional seasonal profile.
 
     Args:
@@ -410,7 +412,9 @@ def multi_building_benchmark(
         except ValueError:
             eui = 0.0
         bench = benchmark_eui(eui, btype)
-        results.append({**bldg, "eui": eui, "rating": bench["rating"], "benchmark_eui": bench["benchmark_eui"]})
+        results.append(
+            {**bldg, "eui": eui, "rating": bench["rating"], "benchmark_eui": bench["benchmark_eui"]}
+        )
     return results
 
 
@@ -687,7 +691,9 @@ def normalised_eui(annual_kwh: float, floor_area_sqm: float, occupancy_hours: fl
     return round(annual_kwh / floor_area_sqm / occupancy_hours, 6)
 
 
-def savings_to_investment_ratio(annual_savings_kwh: float, tariff_per_kwh: float, investment_cost: float) -> float:
+def savings_to_investment_ratio(
+    annual_savings_kwh: float, tariff_per_kwh: float, investment_cost: float
+) -> float:
     """Compute the ratio of annual monetary savings to upfront investment cost.
 
     Args:

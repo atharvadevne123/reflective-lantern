@@ -1,4 +1,23 @@
-"""Threshold-based alerting engine for metric monitoring."""
+"""Threshold-based alerting engine for metric monitoring.
+
+This module provides:
+
+- :class:`AlertRule` — configurable rule evaluated against a named metric with
+  support for six comparison operators and a per-rule cooldown period.
+- :class:`AlertManager` — registry of rules that evaluates them against a
+  metrics snapshot, dispatches fired alerts to registered handlers, and
+  maintains a firing history.
+- :class:`Alert` — immutable record of a single triggered alert.
+- :func:`count_by_severity` — convenience aggregation helper.
+
+Typical usage::
+
+    from app.alerting import AlertManager, AlertRule, Severity
+
+    manager = AlertManager(handlers=[print])
+    manager.add_rule(AlertRule("cpu_high", metric="cpu_pct", threshold=90.0))
+    alerts = manager.evaluate_all({"cpu_pct": 95.0})
+"""
 
 from __future__ import annotations
 
@@ -71,6 +90,11 @@ class AlertRule:
         repr=False,
         compare=False,
     )
+
+    def __post_init__(self) -> None:
+        """Validate alert rule configuration after dataclass initialisation."""
+        if self.cooldown_s < 0:
+            raise ValueError(f"cooldown_s must be non-negative, got {self.cooldown_s}")
 
     def evaluate(self, value: float, now: float) -> Alert | None:
         """Evaluate the rule against a metric value.
