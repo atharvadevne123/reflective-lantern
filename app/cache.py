@@ -116,6 +116,11 @@ class TTLCache:
         total = self.hits + self.misses
         return self.hits / total if total > 0 else 0.0
 
+    def __bool__(self) -> bool:
+        """Return True when the cache holds at least one entry."""
+        with self._lock:
+            return bool(self._store)
+
     def get_or_set(self, key: str, default: Any) -> Any:
         """Return cached value; if absent or expired, store *default* and return it."""
         value = self.get(key)
