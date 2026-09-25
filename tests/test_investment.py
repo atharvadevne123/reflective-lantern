@@ -1143,7 +1143,7 @@ class TestEquityMultipleNew:
         assert result < 1.0
 
 
-import pytest as _pytest
+import pytest as _pytest  # noqa: E402
 
 
 @_pytest.mark.parametrize(
@@ -1321,7 +1321,7 @@ class TestPaybackPeriodEdgeCases:
         assert result == pytest.approx(cost / 500.0, rel=1e-3)
 
 
-from app.investment import (
+from app.investment import (  # noqa: E402
     annualized_return,
     gross_rent_multiplier,
     loan_to_value_ratio,

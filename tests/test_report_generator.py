@@ -181,9 +181,8 @@ def test_report_generator_main_weekly_stdout(sample_history: Path, capsys: pytes
 
     from scripts import report_generator as rg
 
-    with patch.object(rg, "HISTORY_DIR", sample_history):
-        with patch.object(sys, "argv", ["report_generator.py", "--mode", "weekly", "--date", "2026-06-30"]):
-            rg.main()
+    with patch.object(rg, "HISTORY_DIR", sample_history), patch.object(sys, "argv", ["report_generator.py", "--mode", "weekly", "--date", "2026-06-30"]):
+        rg.main()
     out = capsys.readouterr().out
     assert "Weekly Summary" in out
 

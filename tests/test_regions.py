@@ -4,7 +4,14 @@ from __future__ import annotations
 
 import pytest
 
-from app.regions import compare_peak_loads, get_region, get_region_name, list_regions, region_count, validate_region
+from app.regions import (
+    compare_peak_loads,
+    get_region,
+    get_region_name,
+    list_regions,
+    region_count,
+    validate_region,
+)
 
 
 class TestRegionRegistry:

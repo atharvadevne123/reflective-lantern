@@ -1013,7 +1013,7 @@ class TestValidateUniqueIds:
         assert validate_unique_ids([]) == []
 
 
-import pytest as _pytest
+import pytest as _pytest  # noqa: E402
 
 
 @_pytest.mark.parametrize(

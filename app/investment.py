@@ -1009,25 +1009,3 @@ def risk_adjusted_return(
     return round(excess / volatility_pct, 4)
 
 
-def annualized_return(total_return: float, years: float) -> float:
-    """Compute the compound annual growth rate from a total return.
-
-    Converts a multi-year total return to the equivalent per-year rate using
-    the compound-interest formula: ``(1 + total_return) ** (1/years) - 1``.
-
-    Args:
-        total_return: Fractional total return over the holding period
-            (e.g. 0.5 for 50% gain, -0.2 for 20% loss). Must be > -1.
-        years: Holding-period length in years. Must be positive.
-
-    Returns:
-        Annualized return as a decimal, rounded to 6 decimal places.
-
-    Raises:
-        ValueError: If *years* is not positive or *total_return* <= -1.
-    """
-    if years <= 0:
-        raise ValueError("years must be positive")
-    if total_return <= -1:
-        raise ValueError("total_return must be > -1")
-    return round((1.0 + total_return) ** (1.0 / years) - 1.0, 6)

@@ -69,9 +69,8 @@ def test_create_transaction_returns_rid() -> None:
 
 def test_create_transaction_raises_without_rid() -> None:
     client = make_client()
-    with patch.object(urllib.request, "urlopen", lambda req, timeout: FakeResponse({"nope": 1})):
-        with pytest.raises(FoundryAPIError, match="No transaction RID"):
-            client.create_transaction("ri.x")
+    with patch.object(urllib.request, "urlopen", lambda req, timeout: FakeResponse({"nope": 1})), pytest.raises(FoundryAPIError, match="No transaction RID"):
+        client.create_transaction("ri.x")
 
 
 def test_upload_file_hits_upload_endpoint() -> None:
@@ -143,9 +142,8 @@ def test_upload_dataset_file_aborts_on_failure(tmp_path: Path) -> None:
 
     import urllib.error
 
-    with patch.object(urllib.request, "urlopen", fake_urlopen):
-        with pytest.raises(FoundryAPIError):
-            client.upload_dataset_file("ri.ds", local)
+    with patch.object(urllib.request, "urlopen", fake_urlopen), pytest.raises(FoundryAPIError):
+        client.upload_dataset_file("ri.ds", local)
 
     assert any(u.endswith("/abort") for u in calls)
 
@@ -312,8 +310,7 @@ def test_upload_dataset_files_aborts_on_failure() -> None:
             raise urllib.error.URLError("boom")
         return FakeResponse()
 
-    with patch.object(urllib.request, "urlopen", fake_urlopen):
-        with pytest.raises(FoundryAPIError):
-            client.upload_dataset_files("ri.ds", {"first.csv": b"1", "second.csv": b"2"})
+    with patch.object(urllib.request, "urlopen", fake_urlopen), pytest.raises(FoundryAPIError):
+        client.upload_dataset_files("ri.ds", {"first.csv": b"1", "second.csv": b"2"})
 
     assert any(u.endswith("/abort") for u in calls)

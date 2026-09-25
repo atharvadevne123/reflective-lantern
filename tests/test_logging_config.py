@@ -495,7 +495,7 @@ class TestLogLevelName:
         assert log_level_name(99) == "UNKNOWN"
 
 
-import pytest
+import pytest  # noqa: E402
 
 
 @pytest.mark.parametrize(

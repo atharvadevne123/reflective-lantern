@@ -197,7 +197,7 @@ def test_midpoint_is_between_endpoints() -> None:
     assert min(LONDON.lat, PARIS.lat) <= mid.lat <= max(LONDON.lat, PARIS.lat)
 
 
-from app.geo_utils import bearing, within_radius
+from app.geo_utils import bearing, within_radius  # noqa: E402
 
 TOKYO = Coordinate(35.6762, 139.6503)
 

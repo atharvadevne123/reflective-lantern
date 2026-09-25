@@ -145,7 +145,7 @@ class TestCheckResultDetails:
         assert len(reg) == 0
 
 
-import pytest
+import pytest  # noqa: E402
 
 
 @pytest.mark.parametrize("n_healthy", [0, 1, 5, 10])
