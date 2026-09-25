@@ -1,4 +1,16 @@
-"""Shared constants for the Watt-Guard application."""
+"""Shared constants for the Logistics-Flow application.
+
+Constant groups:
+- Anomaly Detection: Z-score and IQR thresholds used by the anomaly detector.
+- Drift Monitoring: Reference window size and KS-test p-value threshold.
+- Energy / Building: Physical bounds for consumption, temperature, humidity,
+  occupancy, and forecast horizon validation.
+- Carbon Emission Factors: Regional grid intensity values (kg CO2 per kWh).
+- Cache: Default TTL and maximum entry count for in-memory caches.
+- API Rate Limiting: Default per-minute request cap enforced by middleware.
+- Reporting Thresholds: Efficiency grade cut-offs (A/B/C) for reports.
+- HTTP / API Defaults: Request timeout, batch size, and pagination page sizes.
+"""
 
 from __future__ import annotations
 
