@@ -66,6 +66,15 @@ DEFAULT_MAX_BATCH_SIZE: int = 100
 DEFAULT_PAGE_SIZE: int = 50
 MAX_PAGE_SIZE: int = 500
 
+# ── Input Validation ─────────────────────────────────────────────────────────
+MAX_REGION_ID_LENGTH: int = 64
+MAX_EMAIL_LENGTH: int = 254  # RFC 5321
+MAX_STRING_INPUT_LENGTH: int = 1_000
+
+# ── Circuit Breaker Defaults ──────────────────────────────────────────────────
+DEFAULT_CB_FAILURE_THRESHOLD: int = 5
+DEFAULT_CB_RECOVERY_TIMEOUT: float = 30.0
+
 __all__ = [
     "DEFAULT_CACHE_MAX_SIZE",
     "DEFAULT_CACHE_TTL_SECONDS",
@@ -91,4 +100,9 @@ __all__ = [
     "MIN_TEMPERATURE_C",
     "REFERENCE_WINDOW_SIZE",
     "ZSCORE_THRESHOLD",
+    "DEFAULT_CB_FAILURE_THRESHOLD",
+    "DEFAULT_CB_RECOVERY_TIMEOUT",
+    "MAX_EMAIL_LENGTH",
+    "MAX_REGION_ID_LENGTH",
+    "MAX_STRING_INPUT_LENGTH",
 ]
