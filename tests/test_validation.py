@@ -1333,3 +1333,41 @@ class TestIsValidTemporalInput:
         from app.validation import is_valid_temporal_input
 
         assert is_valid_temporal_input(hour=hour, day_of_week=dow, month=month) is True
+
+
+class TestValidateEmailParametrized:
+    """Parametrized tests for validate_email."""
+
+    @pytest.mark.parametrize("email", [
+        "a@b.co",
+        "user@example.com",
+        "test.name+tag@domain.org",
+    ])
+    def test_valid_emails_pass(self, email: str) -> None:
+        from app.validation import validate_email
+
+        assert validate_email(email) == []
+
+    @pytest.mark.parametrize("bad_email", [
+        "notanemail",
+        "missingatsign",
+        "nodomain@",
+    ])
+    def test_invalid_emails_return_errors(self, bad_email: str) -> None:
+        from app.validation import validate_email
+
+        errors = validate_email(bad_email)
+        assert len(errors) > 0
+
+
+class TestValidateRegionIdParametrized:
+    """Parametrized tests for validate_region_id."""
+
+    @pytest.mark.parametrize("region_id", ["us_east_1", "eu_west", "ap"])
+    def test_valid_region_ids_pass(self, region_id: str) -> None:
+        assert validate_region_id(region_id) == []
+
+    @pytest.mark.parametrize("bad_id", ["", "us-east-1", "region name"])
+    def test_invalid_region_ids_return_errors(self, bad_id: str) -> None:
+        errors = validate_region_id(bad_id)
+        assert len(errors) > 0
