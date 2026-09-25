@@ -1,4 +1,26 @@
-"""Lightweight synchronous event bus for decoupled internal messaging."""
+"""Lightweight synchronous event bus for decoupled internal messaging.
+
+Provides a simple publish/subscribe mechanism for in-process communication
+without introducing external message-broker dependencies.
+
+Key features:
+
+- **Named events** — subscribe to specific event strings.
+- **Wildcard subscriptions** — use ``"*"`` to receive every published event.
+- **Error isolation** — a handler exception is logged but does not prevent
+  subsequent handlers from running.
+- **Process-global default bus** — :func:`get_bus` returns a singleton
+  :class:`EventBus`; :func:`reset_bus` replaces it with a fresh instance
+  (useful in test teardown).
+
+Example::
+
+    from app.event_bus import get_bus
+
+    bus = get_bus()
+    bus.subscribe("order.shipped", lambda e, p: print(f"Shipped: {p}"))
+    bus.publish("order.shipped", {"order_id": "ORD-001"})
+"""
 
 from __future__ import annotations
 
