@@ -1,4 +1,29 @@
-"""Simple in-memory TTL cache for prediction results."""
+"""Simple in-memory TTL cache for prediction results.
+
+Provides a thread-safe TTL cache and a collection of standalone helper
+functions for common cache operations.
+
+Core class:
+
+- :class:`TTLCache` — thread-safe cache with per-entry time-to-live,
+  LRU-style capacity eviction, and hit/miss/eviction counters.
+
+Standalone helpers:
+
+- :func:`build_cache_key` — build a ``:``-delimited string key from parts.
+- :func:`cache_key_from_dict` — deterministic key from a parameter dict.
+- :func:`warm_cache` — bulk-populate a cache from a mapping.
+- :func:`batch_get` / :func:`batch_set` / :func:`batch_delete` — vectorised
+  cache operations.
+- :func:`peek` — inspect a value without incrementing hit/miss counters.
+- :func:`cache_hit_rate` / :func:`cache_miss_rate` — compute rates from raw
+  counters.
+- :func:`cache_fill_rate` / :func:`cache_remaining_capacity` — capacity
+  utilisation helpers.
+
+The module also exposes a process-level singleton ``prediction_cache``
+pre-configured with a 30-second TTL and a 500-entry capacity.
+"""
 
 from __future__ import annotations
 
