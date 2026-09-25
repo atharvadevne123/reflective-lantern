@@ -115,3 +115,25 @@ def seed_reference_buffer(samples: list[dict]) -> None:
             if k in s:
                 _REFERENCE_BUFFER[k].append(s[k])
     logger.info("Reference buffer seeded with %d samples", len(samples))
+
+
+def buffer_stats() -> dict[str, dict[str, Any]]:
+    """Return snapshot statistics for each reference buffer.
+
+    Provides the current fill level and capacity of every rolling deque so
+    callers can determine whether the buffer has enough data for a reliable
+    drift check without accessing private internals.
+
+    Returns:
+        Dict mapping each feature name to a stats sub-dict with keys
+        ``size`` (current fill), ``maxlen`` (capacity), and
+        ``full`` (whether the buffer has reached capacity).
+    """
+    return {
+        feature: {
+            "size": len(buf),
+            "maxlen": buf.maxlen,
+            "full": len(buf) == buf.maxlen,
+        }
+        for feature, buf in _REFERENCE_BUFFER.items()
+    }
