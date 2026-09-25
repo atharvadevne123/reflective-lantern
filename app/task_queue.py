@@ -148,3 +148,8 @@ class TaskQueue:
         """Return the number of tasks currently waiting in the queue."""
         with self._lock:
             return len(self._heap)
+
+    @property
+    def is_empty(self) -> bool:
+        """Return True when no tasks are waiting in the queue."""
+        return len(self) == 0
