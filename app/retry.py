@@ -1,4 +1,21 @@
-"""Retry utilities with exponential backoff and jitter."""
+"""Retry utilities with exponential backoff and jitter.
+
+This module provides decorator and helper utilities for retrying functions
+on transient failures without coupling the caller to retry logic.
+
+Key components:
+
+- :func:`retry` — configurable decorator with exponential backoff, a jitter
+  fraction to spread retries, a per-exception filter, and a ``max_delay`` cap.
+- :func:`retry_on_network_error` — convenience wrapper pre-configured for
+  :class:`ConnectionError`, :class:`TimeoutError`, :class:`OSError`, and
+  :class:`urllib.error.URLError`.
+- :func:`with_retry` — inline retry without decorator syntax; useful for
+  lambdas and one-off calls.
+
+All sleep calls go through :func:`time.sleep`, making them easy to monkeypatch
+in tests without touching wall-clock time.
+"""
 
 from __future__ import annotations
 
