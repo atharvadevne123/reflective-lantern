@@ -127,7 +127,9 @@ class TestDispatch:
         d.dispatch(Notification(title="t", body=""))
         assert len(r2) == 1
 
-    @pytest.mark.parametrize("severity", [Severity.INFO, Severity.WARNING, Severity.ERROR, Severity.CRITICAL])
+    @pytest.mark.parametrize(
+        "severity", [Severity.INFO, Severity.WARNING, Severity.ERROR, Severity.CRITICAL]
+    )
     def test_all_severities_accepted(self, severity) -> None:
         ch, received = make_channel(min_severity=Severity.INFO)
         d = NotificationDispatcher()

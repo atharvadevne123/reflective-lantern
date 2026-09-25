@@ -47,7 +47,9 @@ def validate_load_series(loads: list[float]) -> list[str]:
     errors = []
     if not loads:
         return errors
-    out_of_range = [v for v in loads if not math.isfinite(v) or not (MIN_LOAD_MW <= v <= MAX_LOAD_MW)]
+    out_of_range = [
+        v for v in loads if not math.isfinite(v) or not (MIN_LOAD_MW <= v <= MAX_LOAD_MW)
+    ]
     if out_of_range:
         errors.append(f"{len(out_of_range)} load values out of range or non-finite [0, 50000 MW]")
     nans = [i for i, v in enumerate(loads) if math.isnan(v)]
@@ -113,7 +115,9 @@ def validate_consumption_kwh(value: float) -> list[str]:
     if not math.isfinite(value):
         errors.append(f"consumption_kwh must be finite, got {value}")
     elif not (MIN_CONSUMPTION_KWH <= value <= MAX_CONSUMPTION_KWH):
-        errors.append(f"consumption_kwh must be {MIN_CONSUMPTION_KWH}..{MAX_CONSUMPTION_KWH}, got {value}")
+        errors.append(
+            f"consumption_kwh must be {MIN_CONSUMPTION_KWH}..{MAX_CONSUMPTION_KWH}, got {value}"
+        )
     return errors
 
 
@@ -611,9 +615,7 @@ def validate_email(value: str, field_name: str = "email") -> list[str]:
         errors.append(f"{field_name} must contain '@'")
         return errors
     if len(value) > MAX_EMAIL_LEN:
-        errors.append(
-            f"{field_name} must be at most {MAX_EMAIL_LEN} characters, got {len(value)}"
-        )
+        errors.append(f"{field_name} must be at most {MAX_EMAIL_LEN} characters, got {len(value)}")
     parts = value.split("@")
     if len(parts) != 2 or not parts[0] or not parts[1]:
         errors.append(f"{field_name} must have non-empty local and domain parts")
@@ -716,7 +718,10 @@ def validate_unique_ids(
             duplicates[rid] = duplicates.get(rid, 1) + 1
         else:
             seen[rid] = 1
-    return [f"{id_field} {rid!r} appears more than once ({count + 1} times)" for rid, count in duplicates.items()]
+    return [
+        f"{id_field} {rid!r} appears more than once ({count + 1} times)"
+        for rid, count in duplicates.items()
+    ]
 
 
 def validate_url(

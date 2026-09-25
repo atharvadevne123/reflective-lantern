@@ -971,7 +971,12 @@ def train_model(X, y):
     pipeline = Pipeline(
         [
             ("scaler", StandardScaler()),
-            ("model", XGBClassifier(n_estimators=100, max_depth=4, use_label_encoder=False, eval_metric="logloss")),
+            (
+                "model",
+                XGBClassifier(
+                    n_estimators=100, max_depth=4, use_label_encoder=False, eval_metric="logloss"
+                ),
+            ),
         ]
     )
     cv_scores = cross_val_score(pipeline, X, y, cv=5, scoring="roc_auc")

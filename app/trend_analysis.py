@@ -23,7 +23,9 @@ def linear_trend(values: list[float]) -> TrendResult:
     """
     n = len(values)
     if n < 2:
-        return TrendResult(slope=0.0, intercept=values[0] if values else 0.0, direction="stable", r_squared=0.0)
+        return TrendResult(
+            slope=0.0, intercept=values[0] if values else 0.0, direction="stable", r_squared=0.0
+        )
     xs = list(range(n))
     mean_x = sum(xs) / n
     mean_y = sum(values) / n
@@ -45,7 +47,10 @@ def linear_trend(values: list[float]) -> TrendResult:
     else:
         direction = "stable"
     return TrendResult(
-        slope=round(slope, 6), intercept=round(intercept, 6), direction=direction, r_squared=round(r_sq, 6)
+        slope=round(slope, 6),
+        intercept=round(intercept, 6),
+        direction=direction,
+        r_squared=round(r_sq, 6),
     )
 
 
@@ -86,7 +91,11 @@ def detect_change_points(values: list[float], threshold: float = 2.0) -> list[in
         return []
     cps = [i + 1 for i, d in enumerate(diffs) if abs((d - mean_d) / std_d) > threshold]
     if cps:
-        logger.debug("detect_change_points: found %d change point(s) in series of length %d", len(cps), len(values))
+        logger.debug(
+            "detect_change_points: found %d change point(s) in series of length %d",
+            len(cps),
+            len(values),
+        )
     return cps
 
 
@@ -96,7 +105,11 @@ def seasonal_decompose_naive(values: list[float], period: int) -> dict[str, list
     Uses a rolling mean of length *period* as the trend component.
     """
     if len(values) < period * 2:
-        return {"trend": list(values), "seasonal": [0.0] * len(values), "residual": [0.0] * len(values)}
+        return {
+            "trend": list(values),
+            "seasonal": [0.0] * len(values),
+            "residual": [0.0] * len(values),
+        }
     trend = rolling_mean(values, period)
     detrended = [v - t for v, t in zip(values, trend, strict=False)]
     seasonal: list[float] = [0.0] * len(values)
@@ -178,7 +191,9 @@ def momentum_score(
     if short_window < 1 or long_window < 1:
         raise ValueError("Window sizes must be >= 1")
     if short_window >= long_window:
-        raise ValueError(f"short_window ({short_window}) must be less than long_window ({long_window})")
+        raise ValueError(
+            f"short_window ({short_window}) must be less than long_window ({long_window})"
+        )
     if len(values) < long_window:
         raise ValueError(f"Need at least {long_window} values, got {len(values)}")
     short_ma = sum(values[-short_window:]) / short_window
@@ -359,7 +374,9 @@ def autocorrelation(values: list[float], lag: int = 1) -> float:
     return round(numer / denom, 6)
 
 
-def double_exponential_smoothing(values: list[float], alpha: float = 0.3, beta: float = 0.1) -> list[float]:
+def double_exponential_smoothing(
+    values: list[float], alpha: float = 0.3, beta: float = 0.1
+) -> list[float]:
     """Apply Holt's double exponential smoothing (level + trend).
 
     Args:
@@ -574,7 +591,11 @@ def linear_regression_trend(values: list[float]) -> dict[str, float]:
     ss_tot = sum((v - y_mean) ** 2 for v in values)
     ss_res = sum((v - p) ** 2 for v, p in zip(values, y_pred, strict=False))
     r_squared = 1.0 - ss_res / ss_tot if ss_tot != 0 else 0.0
-    return {"slope": round(slope, 6), "intercept": round(intercept, 6), "r_squared": round(r_squared, 6)}
+    return {
+        "slope": round(slope, 6),
+        "intercept": round(intercept, 6),
+        "r_squared": round(r_squared, 6),
+    }
 
 
 def cumulative_return(values: list[float]) -> float:

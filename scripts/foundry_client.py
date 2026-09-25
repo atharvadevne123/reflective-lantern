@@ -102,7 +102,9 @@ class FoundryClient:
         except Exception as exc:
             logger.warning("Failed to abort transaction %s: %s", transaction_rid, exc)
 
-    def upload_file(self, dataset_rid: str, transaction_rid: str, filename: str, content: bytes) -> None:
+    def upload_file(
+        self, dataset_rid: str, transaction_rid: str, filename: str, content: bytes
+    ) -> None:
         """Upload a file into an open transaction.
 
         Args:
@@ -245,7 +247,9 @@ class FoundryClient:
         Returns:
             Raw response bytes.
         """
-        url = f"{self.base_url}/datasets/{dataset_rid}/readTable?format={format}&branchName={branch}"
+        url = (
+            f"{self.base_url}/datasets/{dataset_rid}/readTable?format={format}&branchName={branch}"
+        )
         return self._raw_request("GET", url)
 
 
@@ -285,7 +289,9 @@ def main() -> int:
 
     if args.verify:
         if not settings.foundry_configured():
-            print("Foundry is not configured (missing hostname/token/dataset_rid).", file=sys.stderr)
+            print(
+                "Foundry is not configured (missing hostname/token/dataset_rid).", file=sys.stderr
+            )
             return 1
         try:
             client = client_from_settings(settings)

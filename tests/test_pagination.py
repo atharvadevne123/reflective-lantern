@@ -345,11 +345,14 @@ class TestIsLastPage:
 class TestPageItemCount:
     """Parametrized tests for Page.item_count property."""
 
-    @pytest.mark.parametrize("items,expected", [
-        ([], 0),
-        ([1], 1),
-        ([1, 2, 3], 3),
-    ])
+    @pytest.mark.parametrize(
+        "items,expected",
+        [
+            ([], 0),
+            ([1], 1),
+            ([1, 2, 3], 3),
+        ],
+    )
     def test_item_count(self, items: list, expected: int) -> None:
         from app.pagination import Page, PageInfo
 

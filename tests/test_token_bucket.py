@@ -116,7 +116,9 @@ class TestTokenBucketRefill:
     def test_refill_does_not_exceed_capacity(self) -> None:
         tb = TokenBucket(capacity=5, rate=1000)
         tb._tokens = 0  # type: ignore[attr-defined]
-        tb._last_refill = time.monotonic() - 100  # 100s of refill available  # type: ignore[attr-defined]
+        tb._last_refill = (
+            time.monotonic() - 100
+        )  # 100s of refill available  # type: ignore[attr-defined]
         # available is capped at capacity
         assert tb.available <= 5
 
@@ -231,11 +233,14 @@ class TestFillRatioProperty:
         tb = TokenBucket(capacity=capacity, rate=1.0)
         assert tb.fill_ratio == pytest.approx(1.0)
 
-    @pytest.mark.parametrize("capacity,consume,expected_ratio", [
-        (10.0, 5.0, 0.5),
-        (4.0, 1.0, 0.75),
-        (8.0, 8.0, 0.0),
-    ])
+    @pytest.mark.parametrize(
+        "capacity,consume,expected_ratio",
+        [
+            (10.0, 5.0, 0.5),
+            (4.0, 1.0, 0.75),
+            (8.0, 8.0, 0.0),
+        ],
+    )
     def test_fill_ratio_after_consume(
         self, capacity: float, consume: float, expected_ratio: float
     ) -> None:

@@ -385,6 +385,7 @@ class TestIsClosedAndIsHalfOpenProperties:
         with pytest.raises(RuntimeError):
             cb.call(_always_fails)
         import time as _time
+
         _time.sleep(recovery_timeout + 0.01)
         assert cb.is_half_open is True
         assert cb.is_closed is False

@@ -974,7 +974,9 @@ class TestKurtosis:
         from app.stats_utils import kurtosis
 
         values = [1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0]
-        assert kurtosis(values, excess=False) == pytest.approx(kurtosis(values, excess=True) + 3.0, abs=1e-4)
+        assert kurtosis(values, excess=False) == pytest.approx(
+            kurtosis(values, excess=True) + 3.0, abs=1e-4
+        )
 
     def test_too_few_values_raises(self) -> None:
         from app.stats_utils import kurtosis
@@ -1675,29 +1677,36 @@ class TestInterquartileRangeExtended:
 class TestClampAndSafeDivide:
     def test_clamp_within_range(self) -> None:
         from app.stats_utils import clamp
+
         assert clamp(5.0, 0.0, 10.0) == 5.0
 
     def test_clamp_below_low(self) -> None:
         from app.stats_utils import clamp
+
         assert clamp(-1.0, 0.0, 10.0) == 0.0
 
     def test_clamp_above_high(self) -> None:
         from app.stats_utils import clamp
+
         assert clamp(15.0, 0.0, 10.0) == 10.0
 
     @pytest.mark.parametrize("v,lo,hi,expected", [(0.0, 0.0, 1.0, 0.0), (1.0, 0.0, 1.0, 1.0)])
     def test_clamp_at_boundaries(self, v, lo, hi, expected) -> None:
         from app.stats_utils import clamp
+
         assert clamp(v, lo, hi) == expected
 
     def test_safe_divide_normal(self) -> None:
         from app.stats_utils import safe_divide
+
         assert safe_divide(10.0, 2.0) == pytest.approx(5.0)
 
     def test_safe_divide_by_zero_returns_default(self) -> None:
         from app.stats_utils import safe_divide
+
         assert safe_divide(10.0, 0.0) == 0.0
 
     def test_safe_divide_custom_default(self) -> None:
         from app.stats_utils import safe_divide
+
         assert safe_divide(10.0, 0.0, default=-1.0) == -1.0

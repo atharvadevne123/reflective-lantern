@@ -118,7 +118,9 @@ class TestNewCorrelationIdFormat:
         import re
 
         cid = new_correlation_id()
-        assert re.match(r"^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$", cid)
+        assert re.match(
+            r"^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$", cid
+        )
 
     def test_length_36_chars(self) -> None:
         assert len(new_correlation_id()) == 36

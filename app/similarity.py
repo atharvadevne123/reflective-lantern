@@ -84,7 +84,9 @@ def get_global_index() -> BuildingSimilarityIndex:
     return _global_index
 
 
-def search_comparable(query_vec: list[float] | np.ndarray, top_k: int = 5) -> list[dict[str, object]]:
+def search_comparable(
+    query_vec: list[float] | np.ndarray, top_k: int = 5
+) -> list[dict[str, object]]:
     """Search the global index for comparable properties.
 
     Args:
@@ -219,7 +221,9 @@ def hourly_pattern_distance(profile_a: list[float], profile_b: list[float]) -> f
     if not profile_a or not profile_b:
         raise ValueError("profiles must not be empty")
     if len(profile_a) != len(profile_b):
-        raise ValueError(f"profiles must have the same length: {len(profile_a)} != {len(profile_b)}")
+        raise ValueError(
+            f"profiles must have the same length: {len(profile_a)} != {len(profile_b)}"
+        )
     return sum(abs(a - b) for a, b in zip(profile_a, profile_b, strict=False)) / len(profile_a)
 
 

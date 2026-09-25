@@ -1693,7 +1693,9 @@ def test_moving_max_is_at_least_moving_min(n: int) -> None:
     values = [float(i % 5) for i in range(n)]
     mx = moving_max(values, window=3)
     mn = moving_min(values, window=3)
-    assert all(hi >= lo for hi, lo in zip(mx, mn, strict=False) if not (math.isnan(hi) or math.isnan(lo)))
+    assert all(
+        hi >= lo for hi, lo in zip(mx, mn, strict=False) if not (math.isnan(hi) or math.isnan(lo))
+    )
 
 
 class TestClipOutliersEdgeCases:
@@ -1788,25 +1790,33 @@ class TestMovingMedian:
 class TestRangeOfSeries:
     def test_basic_range(self) -> None:
         from app.time_series import range_of_series
+
         assert range_of_series([1.0, 5.0, 3.0]) == pytest.approx(4.0)
 
     def test_single_element(self) -> None:
         from app.time_series import range_of_series
+
         assert range_of_series([7.0]) == pytest.approx(0.0)
 
     def test_all_same(self) -> None:
         from app.time_series import range_of_series
+
         assert range_of_series([2.0, 2.0, 2.0]) == pytest.approx(0.0)
 
     def test_empty_raises(self) -> None:
         from app.time_series import range_of_series
+
         with pytest.raises(ValueError):
             range_of_series([])
 
-    @pytest.mark.parametrize("values,expected", [
-        ([0.0, 10.0], 10.0),
-        ([-5.0, 5.0], 10.0),
-    ])
+    @pytest.mark.parametrize(
+        "values,expected",
+        [
+            ([0.0, 10.0], 10.0),
+            ([-5.0, 5.0], 10.0),
+        ],
+    )
     def test_parametrized_range(self, values, expected) -> None:
         from app.time_series import range_of_series
+
         assert range_of_series(values) == pytest.approx(expected)

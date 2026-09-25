@@ -206,7 +206,9 @@ def index_is_empty() -> bool:
     return index_size() == 0
 
 
-def batch_add_properties(vectors: list[list[float]], metadata_list: list[dict | None] | None = None) -> int:
+def batch_add_properties(
+    vectors: list[list[float]], metadata_list: list[dict | None] | None = None
+) -> int:
     """Add multiple property vectors to the index in one call.
 
     Args:

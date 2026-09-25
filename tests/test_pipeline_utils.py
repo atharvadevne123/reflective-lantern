@@ -268,7 +268,10 @@ class TestIsAndStepFitted:
 
         from app.pipeline_utils import describe_pipeline
 
-        steps = [(f"step{i}", StandardScaler() if i < n_steps - 1 else LinearRegression()) for i in range(n_steps)]
+        steps = [
+            (f"step{i}", StandardScaler() if i < n_steps - 1 else LinearRegression())
+            for i in range(n_steps)
+        ]
         pipe = Pipeline(steps)
         info = describe_pipeline(pipe)
         assert info["n_steps"] == n_steps

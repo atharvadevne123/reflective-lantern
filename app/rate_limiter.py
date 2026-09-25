@@ -174,7 +174,9 @@ def reset_limiter(limiter: TokenBucketRateLimiter, client_key: str = "default") 
     limiter.reset(client_key)
 
 
-def is_rate_limited(limiter: TokenBucketRateLimiter, client_key: str = "default", cost: float = 1.0) -> bool:
+def is_rate_limited(
+    limiter: TokenBucketRateLimiter, client_key: str = "default", cost: float = 1.0
+) -> bool:
     """Check whether a client's next request would be rate-limited WITHOUT consuming tokens.
 
     Args:
@@ -236,7 +238,9 @@ def prune_idle_clients(limiter: TokenBucketRateLimiter, max_idle_seconds: float)
     now = time.monotonic()
     removed = 0
     with limiter._lock:
-        idle_keys = [k for k, b in limiter._buckets.items() if now - b.last_refill > max_idle_seconds]
+        idle_keys = [
+            k for k, b in limiter._buckets.items() if now - b.last_refill > max_idle_seconds
+        ]
         for k in idle_keys:
             del limiter._buckets[k]
             removed += 1

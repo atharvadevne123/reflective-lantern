@@ -19,7 +19,10 @@ LINES = [
     ("body", f"  Commits pushed:  {COMMITS} ({NUMBERED} improvement + 1 ruff cleanup)"),
     ("body", f"  Ruff status:     {RUFF}"),
     ("body", "  Pushed to:       main"),
-    ("body", "  Sub-projects:    energy_seer, temporal-pulse, price-prophet, suite-cast, forge-guard"),
+    (
+        "body",
+        "  Sub-projects:    energy_seer, temporal-pulse, price-prophet, suite-cast, forge-guard",
+    ),
     ("", ""),
     ("h", "Improvement Focus"),
     ("body", "  Test parametrization and coverage expansion across 30 test files."),
@@ -135,11 +138,19 @@ def generate_pdf() -> bytes:
     raw_stream = "".join(stream_parts).encode("latin-1", errors="replace")
 
     content_id = add_obj(
-        b"<< /Length " + str(len(raw_stream)).encode() + b" >>\nstream\n" + raw_stream + b"\nendstream"
+        b"<< /Length "
+        + str(len(raw_stream)).encode()
+        + b" >>\nstream\n"
+        + raw_stream
+        + b"\nendstream"
     )
 
     resources_id = add_obj(
-        b"<< /Font << /F1 " + str(font_id).encode() + b" 0 R /F2 " + str(font_bold_id).encode() + b" 0 R >> >>"
+        b"<< /Font << /F1 "
+        + str(font_id).encode()
+        + b" 0 R /F2 "
+        + str(font_bold_id).encode()
+        + b" 0 R >> >>"
     )
 
     page_id = add_obj(
@@ -175,7 +186,9 @@ def generate_pdf() -> bytes:
     for off in offsets:
         buf.write(f"{off:010d} 00000 n \n".encode())
 
-    buf.write(f"trailer\n<< /Size {n + 1} /Root {catalog_id} 0 R >>\nstartxref\n{xref_offset}\n%%EOF\n".encode())
+    buf.write(
+        f"trailer\n<< /Size {n + 1} /Root {catalog_id} 0 R >>\nstartxref\n{xref_offset}\n%%EOF\n".encode()
+    )
 
     return buf.getvalue()
 

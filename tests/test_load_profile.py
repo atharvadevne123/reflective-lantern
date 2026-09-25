@@ -170,7 +170,14 @@ class TestBaseLoadEdgeCases:
 class TestBuildLoadProfileFields:
     def test_profile_fields_present(self) -> None:
         profile = build_load_profile(FLAT)
-        for attr in ("profile_class", "load_factor", "peak_kwh", "mean_kwh", "base_load_kwh", "max_ramp_kwh"):
+        for attr in (
+            "profile_class",
+            "load_factor",
+            "peak_kwh",
+            "mean_kwh",
+            "base_load_kwh",
+            "max_ramp_kwh",
+        ):
             assert hasattr(profile, attr)
 
     def test_single_value_series(self) -> None:
@@ -252,6 +259,7 @@ class TestNightLoadFraction:
 class TestOffPeakLoadFraction:
     def test_all_off_peak(self) -> None:
         from app.load_profile import off_peak_load_fraction
+
         hourly = [0.0] * 9 + [1.0] * 3 + [0.0] * 12  # only hours 9-11 have load
         # Wait, peak is 9-21, so hours 9-20 are peak. Let me make hours 0-8 have load.
         hourly = [1.0] * 9 + [0.0] * 12 + [1.0] * 3  # hours 0-8 and 21-23 are off-peak
@@ -260,10 +268,12 @@ class TestOffPeakLoadFraction:
 
     def test_zero_consumption(self) -> None:
         from app.load_profile import off_peak_load_fraction
+
         assert off_peak_load_fraction([0.0] * 24) == 0.0
 
     def test_empty_raises(self) -> None:
         from app.load_profile import off_peak_load_fraction
+
         with pytest.raises(ValueError):
             off_peak_load_fraction([])
 
@@ -271,6 +281,7 @@ class TestOffPeakLoadFraction:
         import random
 
         from app.load_profile import off_peak_load_fraction
+
         rng = random.Random(42)
         hourly = [rng.uniform(0, 10) for _ in range(48)]
         result = off_peak_load_fraction(hourly)

@@ -152,7 +152,14 @@ class TestBackoffTiming:
     def test_delay_is_capped_by_max_delay(self, monkeypatch: pytest.MonkeyPatch) -> None:
         sleeps = self._record_sleeps(monkeypatch)
 
-        @retry(exceptions=(_Boom,), max_attempts=6, base_delay=1.0, max_delay=3.0, backoff=10.0, jitter=0.0)
+        @retry(
+            exceptions=(_Boom,),
+            max_attempts=6,
+            base_delay=1.0,
+            max_delay=3.0,
+            backoff=10.0,
+            jitter=0.0,
+        )
         def always_fails() -> None:
             raise _Boom("down")
 
@@ -389,7 +396,9 @@ class TestRetryNetworkError:
         assert fetch() == "data"
 
     @pytest.mark.parametrize("attempts", [1, 2, 3])
-    def test_retry_on_network_error_propagates_after_exhaustion(self, attempts: int, monkeypatch) -> None:
+    def test_retry_on_network_error_propagates_after_exhaustion(
+        self, attempts: int, monkeypatch
+    ) -> None:
         from app.retry import retry_on_network_error
 
         monkeypatch.setattr("time.sleep", lambda _: None)
@@ -485,11 +494,14 @@ def test_retry_zero_or_few_attempts(max_retries: int, monkeypatch) -> None:
     assert calls[0] == max(max_retries, 1)
 
 
-@pytest.mark.parametrize("backoff,base,expected_min_second_sleep", [
-    (2.0, 1.0, 2.0),
-    (3.0, 1.0, 3.0),
-    (1.5, 2.0, 3.0),
-])
+@pytest.mark.parametrize(
+    "backoff,base,expected_min_second_sleep",
+    [
+        (2.0, 1.0, 2.0),
+        (3.0, 1.0, 3.0),
+        (1.5, 2.0, 3.0),
+    ],
+)
 def test_retry_exponential_backoff_values(
     backoff: float, base: float, expected_min_second_sleep: float, monkeypatch
 ) -> None:

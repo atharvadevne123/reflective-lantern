@@ -145,7 +145,9 @@ def evaluate_event(
             negative, or either rate is negative.
     """
     if incentive_per_kwh < 0 or penalty_per_kwh < 0:
-        raise ValueError(f"rates must be non-negative, got incentive={incentive_per_kwh} penalty={penalty_per_kwh}")
+        raise ValueError(
+            f"rates must be non-negative, got incentive={incentive_per_kwh} penalty={penalty_per_kwh}"
+        )
 
     curtailed = curtailment(baseline_hourly_kwh, actual_hourly_kwh)
     baseline_total = round(sum(baseline_hourly_kwh), 4)

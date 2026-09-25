@@ -217,7 +217,9 @@ def test_single_check_healthy_flag(healthy: bool, expected_failed: int) -> None:
     assert len(status.failed) == expected_failed
 
 
-@pytest.mark.parametrize("detail_key,detail_val", [("latency_ms", 42), ("connections", 10), ("version", 3)])
+@pytest.mark.parametrize(
+    "detail_key,detail_val", [("latency_ms", 42), ("connections", 10), ("version", 3)]
+)
 def test_check_result_details_arbitrary_keys(detail_key: str, detail_val: int) -> None:
     """CheckResult details dict accepts arbitrary string keys."""
     from app.health_check import CheckResult

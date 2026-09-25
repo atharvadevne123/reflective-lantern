@@ -111,7 +111,9 @@ def rows_to_csv(rows: list[dict[str, Any]]) -> str:
         CSV text with a header row and one data row per element.
     """
     out = io.StringIO()
-    writer = csv.DictWriter(out, fieldnames=DATASET_COLUMNS, extrasaction="ignore", lineterminator="\n")
+    writer = csv.DictWriter(
+        out, fieldnames=DATASET_COLUMNS, extrasaction="ignore", lineterminator="\n"
+    )
     writer.writeheader()
     writer.writerows(rows)
     return out.getvalue()
