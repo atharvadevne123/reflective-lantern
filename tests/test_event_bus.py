@@ -435,3 +435,35 @@ class TestEventBusSubscribeMany:
         bus.unsubscribe("done", handler)
         bus.publish("done")
         assert received == []
+
+
+class TestEventBusLen:
+    """Parametrized tests for EventBus.__len__ method."""
+
+    @pytest.mark.parametrize("n_handlers", [0, 1, 3, 5])
+    def test_len_equals_registered_handlers(self, n_handlers: int) -> None:
+        from app.event_bus import EventBus
+
+        bus = EventBus()
+        for i in range(n_handlers):
+            bus.subscribe(f"event{i}", lambda e, p: None)
+        assert len(bus) == n_handlers
+
+    @pytest.mark.parametrize("n_wildcard", [1, 2, 4])
+    def test_len_includes_wildcard_handlers(self, n_wildcard: int) -> None:
+        from app.event_bus import EventBus
+
+        bus = EventBus()
+        for _ in range(n_wildcard):
+            bus.subscribe("*", lambda e, p: None)
+        assert len(bus) == n_wildcard
+
+    def test_len_decreases_after_unsubscribe(self) -> None:
+        from app.event_bus import EventBus
+
+        bus = EventBus()
+        handler = lambda e, p: None
+        bus.subscribe("x", handler)
+        assert len(bus) == 1
+        bus.unsubscribe("x", handler)
+        assert len(bus) == 0
