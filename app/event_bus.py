@@ -117,6 +117,10 @@ class EventBus:
         """Return True if any handlers are registered for *event*."""
         return bool(self._handlers.get(event)) or bool(self._wildcard_handlers)
 
+    def __len__(self) -> int:
+        """Return the total number of registered handlers (specific + wildcard)."""
+        return self.total_listeners()
+
 
 _default_bus: EventBus = EventBus()
 
