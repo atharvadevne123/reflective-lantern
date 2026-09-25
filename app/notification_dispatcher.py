@@ -122,11 +122,21 @@ class NotificationDispatcher:
             self._channels[name].enabled = enabled
 
     def channel_names(self) -> list[str]:
-        """Return sorted list of all registered channel names."""
+        """Return sorted list of all registered channel names.
+
+        Returns:
+            Alphabetically sorted list of every channel name in the registry,
+            regardless of enabled state.
+        """
         return sorted(self._channels)
 
     def enabled_channels(self) -> list[str]:
-        """Return names of all currently enabled channels."""
+        """Return names of all currently enabled channels.
+
+        Returns:
+            List of channel names whose :attr:`~Channel.enabled` flag is
+            ``True``, in insertion order.
+        """
         return [name for name, ch in self._channels.items() if ch.enabled]
 
     def __len__(self) -> int:
