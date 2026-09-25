@@ -42,6 +42,7 @@ testpaths = ["tests"]
 asyncio_mode = "auto"
 log_cli = true
 log_cli_level = "WARNING"
+filterwarnings = ["ignore::DeprecationWarning"]
 
 [tool.setuptools.packages.find]
 where = ["."]
