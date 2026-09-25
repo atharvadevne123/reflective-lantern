@@ -5,6 +5,32 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] - 2026-09-25
+
+### Added
+
+- mypy integration: `[tool.mypy]` config in `pyproject.toml`, `mypy>=1.10.0`
+  in dev extras, and a `continue-on-error` type-check step in CI
+- `pytest-cov>=5.0.0` in dev extras; CI now reports per-module coverage with
+  `--cov=app --cov-report=term-missing`
+- `functools.lru_cache` on `get_settings()` to avoid redundant env reads
+- `__version__`, `__author__`, and `__description__` module-level metadata to
+  `app/__init__.py`
+- Responsible disclosure policy section to `SECURITY.md`
+- Parametrized edge-case tests in `test_health_check.py`,
+  `test_correlation_id.py`, and `test_middleware.py`
+
+### Changed
+
+- Expanded module docstring in `app/constants.py` to describe each constant
+  group
+- Improved Google-style docstrings across `webhook_handler.py`,
+  `notification_dispatcher.py`, and `shadow_mode.py`
+
+### Fixed
+
+- Resolved all ruff lint and format errors blocking CI
+
 ## [1.0.0] - 2026-08-20
 
 ### Added
