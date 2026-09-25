@@ -33,7 +33,7 @@ from dataclasses import dataclass, field
 logger = logging.getLogger(__name__)
 
 
-@dataclass
+@dataclass(slots=True)
 class TokenBucket:
     """Thread-safe token bucket rate limiter.
 
