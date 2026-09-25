@@ -462,7 +462,10 @@ class TestEventBusLen:
         from app.event_bus import EventBus
 
         bus = EventBus()
-        handler = lambda e, p: None
+
+        def handler(e, p):
+            pass
+
         bus.subscribe("x", handler)
         assert len(bus) == 1
         bus.unsubscribe("x", handler)
