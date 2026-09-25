@@ -801,3 +801,27 @@ class TestWarmCacheExtended:
         items = {f"k{i}": i for i in range(n)}
         count = warm_cache(c, items)
         assert count == n
+
+
+class TestTTLCacheBoolAndGetOrSet:
+    """Parametrized tests for __bool__ and get_or_set methods."""
+
+    @pytest.mark.parametrize("n_items", [0, 1, 5])
+    def test_bool_reflects_cache_content(self, n_items: int) -> None:
+        c = TTLCache(ttl_seconds=60, max_size=20)
+        for i in range(n_items):
+            c.set(f"k{i}", i)
+        assert bool(c) is (n_items > 0)
+
+    @pytest.mark.parametrize("default", [42, "hello", None])
+    def test_get_or_set_returns_default_on_miss(self, default: object) -> None:
+        c = TTLCache(ttl_seconds=60, max_size=10)
+        result = c.get_or_set("missing", default)
+        assert result == default
+
+    @pytest.mark.parametrize("stored,default", [(1, 99), ("a", "b")])
+    def test_get_or_set_returns_existing_on_hit(self, stored: object, default: object) -> None:
+        c = TTLCache(ttl_seconds=60, max_size=10)
+        c.set("key", stored)
+        result = c.get_or_set("key", default)
+        assert result == stored
