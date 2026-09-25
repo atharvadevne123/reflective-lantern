@@ -56,7 +56,7 @@ jobs:
         run: python -m ruff format --check .
 
       - name: Run tests
-        run: pytest tests/ -v --tb=short 2>&1 | tail -60
+        run: python -m pytest tests/ -v --tb=short --cov=app --cov-report=term-missing 2>&1 | tail -80
 
       - name: Upload coverage
         if: always()
