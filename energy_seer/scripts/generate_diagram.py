@@ -32,7 +32,7 @@ COLORS = {
 }
 
 
-def box(ax, x, y, w, h, color, label, sublabel=""):
+def box(ax, x: float, y: float, w: float, h: float, color: str, label: str, sublabel: str = "") -> None:
     rect = FancyBboxPatch(
         (x, y),
         w,
@@ -65,7 +65,7 @@ def box(ax, x, y, w, h, color, label, sublabel=""):
         )
 
 
-def arrow(ax, x1, y1, x2, y2):
+def arrow(ax, x1: float, y1: float, x2: float, y2: float) -> None:
     ax.annotate(
         "",
         xy=(x2, y2),
