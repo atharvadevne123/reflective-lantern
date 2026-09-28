@@ -1,4 +1,5 @@
 """Tests for rate limiting and correlation-ID middleware."""
+
 from __future__ import annotations
 
 from fastapi import FastAPI
@@ -18,13 +19,13 @@ def _app(limit: int) -> FastAPI:
     return app
 
 
-def test_requests_under_limit_pass():
+def test_requests_under_limit_pass() -> None:
     with TestClient(_app(limit=5)) as c:
         for _ in range(5):
             assert c.get("/ping").status_code == 200
 
 
-def test_request_over_limit_rejected():
+def test_request_over_limit_rejected() -> None:
     with TestClient(_app(limit=3)) as c:
         for _ in range(3):
             assert c.get("/ping").status_code == 200
@@ -33,14 +34,14 @@ def test_request_over_limit_rejected():
         assert resp.json()["error"] == "RateLimitExceeded"
 
 
-def test_rate_limit_headers_present():
+def test_rate_limit_headers_present() -> None:
     with TestClient(_app(limit=10)) as c:
         resp = c.get("/ping")
         assert resp.headers["X-RateLimit-Limit"] == "10"
         assert int(resp.headers["X-RateLimit-Remaining"]) == 9
 
 
-def test_retry_after_header_on_429():
+def test_retry_after_header_on_429() -> None:
     with TestClient(_app(limit=1)) as c:
         c.get("/ping")
         resp = c.get("/ping")
@@ -48,12 +49,12 @@ def test_retry_after_header_on_429():
         assert int(resp.headers["Retry-After"]) >= 1
 
 
-def test_correlation_id_header_returned(client):
+def test_correlation_id_header_returned(client) -> None:
     resp = client.get("/api/v1/health")
     assert "X-Request-ID" in resp.headers
     assert "X-Response-Time-Ms" in resp.headers
 
 
-def test_correlation_id_is_echoed(client):
+def test_correlation_id_is_echoed(client) -> None:
     resp = client.get("/api/v1/health", headers={"X-Request-ID": "trace-123"})
     assert resp.headers["X-Request-ID"] == "trace-123"

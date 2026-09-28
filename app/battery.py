@@ -55,9 +55,13 @@ class BatterySpec:
                 f"power limits must be positive, got charge={self.max_charge_kw} discharge={self.max_discharge_kw}"
             )
         if not 0.0 < self.round_trip_efficiency <= 1.0:
-            raise ValueError(f"round_trip_efficiency must be in (0, 1], got {self.round_trip_efficiency}")
+            raise ValueError(
+                f"round_trip_efficiency must be in (0, 1], got {self.round_trip_efficiency}"
+            )
         if not 0.0 < self.max_depth_of_discharge <= 1.0:
-            raise ValueError(f"max_depth_of_discharge must be in (0, 1], got {self.max_depth_of_discharge}")
+            raise ValueError(
+                f"max_depth_of_discharge must be in (0, 1], got {self.max_depth_of_discharge}"
+            )
 
     @property
     def usable_kwh(self) -> float:
@@ -128,7 +132,11 @@ def peak_shave(
             headroom = min(target_peak_kw - load, spec.max_charge_kw)
             room_in_pack = usable - stored
             # Charging is lossy: drawing `d` from the grid stores `d * efficiency`.
-            drawn = min(headroom, room_in_pack / spec.round_trip_efficiency) if room_in_pack > 0 else 0.0
+            drawn = (
+                min(headroom, room_in_pack / spec.round_trip_efficiency)
+                if room_in_pack > 0
+                else 0.0
+            )
             stored += drawn * spec.round_trip_efficiency
             charged_total += drawn
             grid.append(round(load + drawn, 4))
@@ -139,7 +147,11 @@ def peak_shave(
     cycles = round(discharged_total / usable, 4) if usable > 0 else 0.0
 
     if peak_after > target_peak_kw:
-        logger.warning("Battery could not defend %.2f kW target; peak reached %.2f kW", target_peak_kw, peak_after)
+        logger.warning(
+            "Battery could not defend %.2f kW target; peak reached %.2f kW",
+            target_peak_kw,
+            peak_after,
+        )
     return DispatchResult(
         peak_before_kw=peak_before,
         peak_after_kw=peak_after,
@@ -246,7 +258,9 @@ def break_even_cycles(capex: float, saving_per_cycle: float) -> float:
     return round(capex / saving_per_cycle, 2)
 
 
-def usable_capacity_kwh(nameplate_kwh: float, max_dod: float = DEFAULT_MAX_DEPTH_OF_DISCHARGE) -> float:
+def usable_capacity_kwh(
+    nameplate_kwh: float, max_dod: float = DEFAULT_MAX_DEPTH_OF_DISCHARGE
+) -> float:
     """Return the usable energy capacity after applying depth-of-discharge.
 
     Args:

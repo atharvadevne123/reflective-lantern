@@ -1,4 +1,5 @@
 """Tests for drift detection and prediction logging."""
+
 from __future__ import annotations
 
 import numpy as np
@@ -7,7 +8,7 @@ import pytest
 from app.monitoring import compute_drift, log_prediction, seed_reference_buffer
 
 
-def test_compute_drift_detects_drift():
+def test_compute_drift_detects_drift() -> None:
     ref = list(np.random.default_rng(0).normal(0, 1, 200))
     cur = list(np.random.default_rng(1).normal(5, 1, 200))  # clearly shifted
     result = compute_drift(ref, cur)
@@ -15,7 +16,7 @@ def test_compute_drift_detects_drift():
     assert result["ks_statistic"] > 0
 
 
-def test_compute_drift_no_drift():
+def test_compute_drift_no_drift() -> None:
     rng = np.random.default_rng(42)
     ref = list(rng.normal(0, 1, 300))
     cur = list(rng.normal(0, 1, 300))  # same distribution
@@ -23,13 +24,13 @@ def test_compute_drift_no_drift():
     assert result["drift_detected"] is False
 
 
-def test_compute_drift_insufficient_data():
+def test_compute_drift_insufficient_data() -> None:
     result = compute_drift([1.0, 2.0], [3.0])
     assert result["drift_detected"] is False
     assert result["ks_statistic"] is None
 
 
-def test_compute_drift_returns_expected_keys():
+def test_compute_drift_returns_expected_keys() -> None:
     ref = list(range(50))
     cur = list(range(100, 150))
     result = compute_drift(ref, cur)
@@ -38,7 +39,7 @@ def test_compute_drift_returns_expected_keys():
     assert "drift_detected" in result
 
 
-def test_log_prediction_creates_record(db_session):
+def test_log_prediction_creates_record(db_session) -> None:
     pred = log_prediction(
         db_session,
         carrier="DHL",
@@ -55,7 +56,7 @@ def test_log_prediction_creates_record(db_session):
     assert pred.predicted_minutes == pytest.approx(87.3)
 
 
-def test_log_prediction_persists_to_db(db_session):
+def test_log_prediction_persists_to_db(db_session) -> None:
     from app.database import Prediction
 
     before_count = db_session.query(Prediction).count()
@@ -74,16 +75,15 @@ def test_log_prediction_persists_to_db(db_session):
     assert after_count == before_count + 1
 
 
-def test_seed_reference_buffer():
+def test_seed_reference_buffer() -> None:
     samples = [
-        {"distance_km": 50.0, "weight_kg": 5.0, "predicted_minutes": 120.0}
-        for _ in range(20)
+        {"distance_km": 50.0, "weight_kg": 5.0, "predicted_minutes": 120.0} for _ in range(20)
     ]
     seed_reference_buffer(samples)
 
 
 @pytest.mark.parametrize("shift", [0, 3, 10])
-def test_drift_scales_with_shift(shift):
+def test_drift_scales_with_shift(shift) -> None:
     ref = list(np.random.default_rng(0).normal(0, 1, 200))
     cur = list(np.random.default_rng(1).normal(shift, 1, 200))
     result = compute_drift(ref, cur)

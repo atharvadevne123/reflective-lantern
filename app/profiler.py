@@ -22,10 +22,12 @@ def timed(label: str | None = None, log_level: int = logging.DEBUG) -> Callable:
     """
 
     def decorator(func: Callable) -> Callable:
+        """Wrap *func* to log its wall-clock duration on each call."""
         name = label or func.__qualname__
 
         @functools.wraps(func)
         def wrapper(*args, **kwargs) -> object:
+            """Execute *func* and emit a timing log line."""
             start = time.perf_counter()
             try:
                 result = func(*args, **kwargs)
@@ -92,6 +94,7 @@ def tracked(label: str | None = None) -> Callable:
 
         @functools.wraps(func)
         def wrapper(*args, **kwargs) -> object:
+            """Execute *func* and record its duration in the global stats registry."""
             start = time.perf_counter()
             try:
                 return func(*args, **kwargs)
@@ -147,4 +150,12 @@ def total_calls() -> int:
     return sum(s.calls for s in _registry.values())
 
 
-__all__ = ["call_count", "get_stats", "reset_stats", "timed", "total_calls", "tracked", "tracked_names"]
+__all__ = [
+    "call_count",
+    "get_stats",
+    "reset_stats",
+    "timed",
+    "total_calls",
+    "tracked",
+    "tracked_names",
+]

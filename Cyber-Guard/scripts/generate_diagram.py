@@ -10,7 +10,16 @@ import matplotlib.pyplot as plt
 os.makedirs("screenshots", exist_ok=True)
 
 
-def draw_box(ax, x, y, w, h, label, color="#2563eb", fontsize=9):
+def draw_box(
+    ax,
+    x: float,
+    y: float,
+    w: float,
+    h: float,
+    label: str,
+    color: str = "#2563eb",
+    fontsize: int = 9,
+) -> None:
     rect = mpatches.FancyBboxPatch(
         (x, y),
         w,
@@ -35,7 +44,7 @@ def draw_box(ax, x, y, w, h, label, color="#2563eb", fontsize=9):
     )
 
 
-def draw_arrow(ax, x1, y1, x2, y2, label=""):
+def draw_arrow(ax, x1: float, y1: float, x2: float, y2: float, label: str = "") -> None:
     ax.annotate(
         label,
         xy=(x2, y2),
@@ -47,7 +56,7 @@ def draw_arrow(ax, x1, y1, x2, y2, label=""):
     )
 
 
-def main():
+def main() -> None:
     fig, ax = plt.subplots(figsize=(16, 8))
     ax.set_xlim(0, 16)
     ax.set_ylim(0, 8)
@@ -111,10 +120,13 @@ def main():
     ]
     ax.legend(handles=legend_items, loc="lower right", fontsize=8, framealpha=0.9)
 
+    import logging
+
+    logger = logging.getLogger(__name__)
     plt.tight_layout()
     out_path = "screenshots/architecture.png"
     plt.savefig(out_path, dpi=150, bbox_inches="tight", facecolor=fig.get_facecolor())
-    print(f"Architecture diagram saved: {out_path}")
+    logger.info("Architecture diagram saved: %s", out_path)
 
 
 if __name__ == "__main__":

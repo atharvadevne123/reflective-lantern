@@ -1,4 +1,5 @@
 """Rate limiting middleware backed by an in-process sliding window."""
+
 from __future__ import annotations
 
 import logging
@@ -7,7 +8,7 @@ from collections import defaultdict, deque
 
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
-from starlette.responses import JSONResponse
+from starlette.responses import JSONResponse, Response
 
 logger = logging.getLogger(__name__)
 
@@ -22,17 +23,20 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
     """
 
     def __init__(self, app, limit: int = 120) -> None:
+        """Initialise middleware with requests-per-minute *limit*."""
         super().__init__(app)
         self.limit = limit
         self._hits: dict[str, deque[float]] = defaultdict(deque)
 
     def _client_key(self, request: Request) -> str:
+        """Return the client IP, preferring the X-Forwarded-For header."""
         forwarded = request.headers.get("X-Forwarded-For")
         if forwarded:
             return forwarded.split(",")[0].strip()
         return request.client.host if request.client else "unknown"
 
-    async def dispatch(self, request: Request, call_next):
+    async def dispatch(self, request: Request, call_next) -> Response:
+        """Enforce rate limit; return 429 when the client exceeds the sliding-window budget."""
         key = self._client_key(request)
         now = time.monotonic()
         bucket = self._hits[key]

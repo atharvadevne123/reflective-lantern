@@ -42,7 +42,9 @@ class RepoHealth:
     @property
     def healthy(self) -> bool:
         """True when no issues were found."""
-        return not (self.failing_workflows or self.open_branches or not self.has_release or not self.has_ci)
+        return not (
+            self.failing_workflows or self.open_branches or not self.has_release or not self.has_ci
+        )
 
     @property
     def issues_count(self) -> int:
@@ -113,14 +115,18 @@ def check_repo(name: str, default_branch: str, token: str) -> RepoHealth:
 
     # Open branches
     try:
-        branches = _get(f"{GH_API}/repos/{owner}/{name}/branches?per_page={BRANCHES_PER_PAGE}", token)
+        branches = _get(
+            f"{GH_API}/repos/{owner}/{name}/branches?per_page={BRANCHES_PER_PAGE}", token
+        )
         health.open_branches = [b["name"] for b in branches if b["name"] != default_branch]
     except Exception as exc:
         log.warning("Could not fetch branches for %s: %s", name, exc)
 
     # Missing release
     try:
-        releases = _get(f"{GH_API}/repos/{owner}/{name}/releases?per_page={RELEASES_PER_PAGE}", token)
+        releases = _get(
+            f"{GH_API}/repos/{owner}/{name}/releases?per_page={RELEASES_PER_PAGE}", token
+        )
         health.has_release = bool(releases)
     except Exception as exc:
         log.warning("Could not fetch releases for %s: %s", name, exc)
@@ -156,20 +162,20 @@ def main() -> int:
     if args.json:
         import dataclasses
 
-        print(json.dumps([dataclasses.asdict(r) for r in results], indent=2))
+        log.info(json.dumps([dataclasses.asdict(r) for r in results], indent=2))
     else:
         for r in results:
             status = "OK" if r.healthy else "ISSUES"
-            print(f"[{status}] {r.name}")
+            log.info("[%s] %s", status, r.name)
             if r.failing_workflows:
-                print(f"  Failing workflows: {r.failing_workflows}")
+                log.warning("  Failing workflows: %s", r.failing_workflows)
             if r.open_branches:
-                print(f"  Open branches: {r.open_branches}")
+                log.info("  Open branches: %s", r.open_branches)
             if not r.has_release:
-                print("  Missing release")
+                log.warning("  Missing release")
             if not r.has_ci:
-                print("  No CI workflows found")
-        print(f"\n{len(results)} repos checked, {issues} with issues")
+                log.warning("  No CI workflows found")
+        log.info("\n%d repos checked, %d with issues", len(results), issues)
 
     return 0 if issues == 0 else 1
 

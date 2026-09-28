@@ -3,11 +3,16 @@
 from __future__ import annotations
 
 import json
+import logging
 from pathlib import Path
 
 from config.constants import HISTORY_DIR, NON_RECORD_FILES
 
-VALID_MODES: frozenset[str] = frozenset({"improvement", "IMPROVEMENT", "innovation", "INNOVATION", "user-requested"})
+logger = logging.getLogger(__name__)
+
+VALID_MODES: frozenset[str] = frozenset(
+    {"improvement", "IMPROVEMENT", "innovation", "INNOVATION", "user-requested"}
+)
 VALID_EMAIL_STATUSES: frozenset[str] = frozenset(
     {"pending", "sent", "skipped", "failed_smtp", "network_blocked", "pdf_generated_ok", ""}
 )
@@ -37,7 +42,9 @@ def validate_entry(entry: object, filename: str, index: int) -> list[str]:
     commits = entry.get("commits")
     if commits is not None:
         if not isinstance(commits, int):
-            errors.append(f"{filename}[{index}]: commits must be an int, got {type(commits).__name__}")
+            errors.append(
+                f"{filename}[{index}]: commits must be an int, got {type(commits).__name__}"
+            )
         elif commits < 0:
             errors.append(f"{filename}[{index}]: negative commits value ({commits})")
 
@@ -81,7 +88,6 @@ def validate_files(paths: list[Path]) -> dict[str, list[str]]:
 
 def main() -> int:
     import argparse
-    import sys
 
     parser = argparse.ArgumentParser(description="Validate history JSON files.")
     parser.add_argument("--verbose", action="store_true")
@@ -97,7 +103,7 @@ def main() -> int:
         for f in files:
             errs = validate_file(f)
             results.append({"file": f.name, "errors": errs})
-        print(json.dumps(results, indent=2))
+        logger.info(json.dumps(results, indent=2))
         has_errors = any(r["errors"] for r in results)
         return 1 if has_errors else 0
 
@@ -105,18 +111,18 @@ def main() -> int:
     for f in files:
         errs = validate_file(f)
         if errs:
-            print(f"  FAIL {f.name}:")
+            logger.error("  FAIL %s:", f.name)
             for e in errs:
-                print(f"    {e}")
+                logger.error("    %s", e)
             all_errors.extend(errs)
         else:
             if args.verbose:
-                print(f"  OK   {f.name}")
+                logger.info("  OK   %s", f.name)
     if all_errors:
-        print(f"\n{len(all_errors)} error(s) found.", file=sys.stderr)
+        logger.error("\n%d error(s) found.", len(all_errors))
         return 1
     if not args.verbose:
-        print(f"All {len(files)} files valid.")
+        logger.info("All %d files valid.", len(files))
     return 0
 
 

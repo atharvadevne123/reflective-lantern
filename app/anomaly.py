@@ -80,7 +80,9 @@ def compute_severity(
     either = z or iq
     severity = "critical" if both else ("warning" if either else "none")
 
-    logger.debug("Anomaly severity=%s z=%s iqr=%s value=%.2f mean=%.2f", severity, z, iq, value, mean)
+    logger.debug(
+        "Anomaly severity=%s z=%s iqr=%s value=%.2f mean=%.2f", severity, z, iq, value, mean
+    )
     return {"z_flag": z, "iqr_flag": iq, "severity": severity}
 
 
@@ -108,7 +110,9 @@ def batch_compute_severity(
             len(reference),
             MIN_REFERENCE_SIZE,
         )
-        return [{"z_flag": False, "iqr_flag": False, "severity": "none", "value": v} for v in values]
+        return [
+            {"z_flag": False, "iqr_flag": False, "severity": "none", "value": v} for v in values
+        ]
     results = []
     for v in values:
         result = compute_severity(v, reference, z_threshold, iqr_k)
@@ -153,7 +157,9 @@ def compute_percentile_bounds(
     if not reference:
         raise ValueError("reference must be non-empty")
     if not (0 <= lower_pct < upper_pct <= 100):
-        raise ValueError(f"Percentiles must satisfy 0 <= lower_pct < upper_pct <= 100, got {lower_pct}, {upper_pct}")
+        raise ValueError(
+            f"Percentiles must satisfy 0 <= lower_pct < upper_pct <= 100, got {lower_pct}, {upper_pct}"
+        )
     arr = np.array(reference, dtype=float)
     return {
         "lower": round(float(np.percentile(arr, lower_pct)), 4),
@@ -183,7 +189,9 @@ def classify_consumption(
         ValueError: If low_threshold >= high_threshold.
     """
     if low_threshold >= high_threshold:
-        raise ValueError(f"low_threshold must be less than high_threshold, got {low_threshold} >= {high_threshold}")
+        raise ValueError(
+            f"low_threshold must be less than high_threshold, got {low_threshold} >= {high_threshold}"
+        )
     if value < low_threshold:
         return "low"
     if value >= high_threshold:
@@ -424,7 +432,9 @@ def percentile_anomaly_flag(
     if not reference:
         raise ValueError("reference must not be empty")
     if not (0 <= lower_pct < upper_pct <= 100):
-        raise ValueError(f"Percentiles must satisfy 0 <= lower < upper <= 100, got {lower_pct}, {upper_pct}")
+        raise ValueError(
+            f"Percentiles must satisfy 0 <= lower < upper <= 100, got {lower_pct}, {upper_pct}"
+        )
     sorted_ref = sorted(reference)
     n = len(sorted_ref)
     lo_idx = int(lower_pct / 100.0 * (n - 1))

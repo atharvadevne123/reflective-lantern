@@ -4,11 +4,14 @@ from __future__ import annotations
 
 import argparse
 import json
+import logging
 import sys
 from pathlib import Path
 from typing import Any
 
 from config.constants import HISTORY_DIR, NON_RECORD_FILES
+
+logger = logging.getLogger(__name__)
 
 _NON_RECORD_STEMS = {s.replace(".json", "") for s in NON_RECORD_FILES}
 
@@ -81,19 +84,26 @@ def main() -> int | None:
         rows.sort(key=lambda r: r["repo"])
 
     if args.as_json:
-        print(json.dumps(rows, indent=2))
+        logger.info(json.dumps(rows, indent=2))
         return 0
 
     if not rows:
-        print("No history found.")
+        logger.info("No history found.")
         return 0
 
-    print(f"{'Repo':<30} {'Date':<12} {'Commits':>8} {'Mode':<15} {'Tests':>6}")
-    print("-" * 75)
+    logger.info("%-30s %-12s %8s %-15s %6s", "Repo", "Date", "Commits", "Mode", "Tests")
+    logger.info("-" * 75)
     for r in rows:
         tp = "✓" if r["tests_passed"] else ("✗" if r["tests_passed"] is False else "?")
-        print(f"{r['repo']:<30} {r['date']:<12} {r['commits']:>8} {r['mode']:<15} {tp:>6}")
-    print(f"\n{len(rows)} repos shown.")
+        logger.info(
+            "%-30s %-12s %8d %-15s %6s",
+            r["repo"],
+            r["date"],
+            r["commits"],
+            r["mode"],
+            tp,
+        )
+    logger.info("\n%d repos shown.", len(rows))
     return 0
 
 

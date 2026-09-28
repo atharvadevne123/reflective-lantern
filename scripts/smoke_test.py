@@ -1,11 +1,15 @@
 """Post-deploy smoke test: exercises every endpoint against a live server."""
+
 from __future__ import annotations
 
 import argparse
 import json
+import logging
 import sys
 import urllib.error
 import urllib.request
+
+logger = logging.getLogger(__name__)
 
 SAMPLE = {
     "carrier": "DHL",
@@ -64,13 +68,16 @@ def main() -> int:
         failures.append(f"drift returned {status}")
 
     if failures:
-        print("SMOKE TEST FAILED")
+        logger.error("SMOKE TEST FAILED")
         for f in failures:
-            print(f"  - {f}")
+            logger.error("  - %s", f)
         return 1
 
-    print(f"SMOKE TEST PASSED — predicted {pred['predicted_minutes']:.1f} min "
-          f"at {pred['confidence']:.2%} confidence")
+    logger.info(
+        "SMOKE TEST PASSED — predicted %.1f min at %.2f%% confidence",
+        pred["predicted_minutes"],
+        pred["confidence"] * 100,
+    )
     return 0
 
 

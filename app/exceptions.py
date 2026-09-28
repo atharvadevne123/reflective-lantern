@@ -1,4 +1,5 @@
 """Domain exceptions and FastAPI exception handlers."""
+
 from __future__ import annotations
 
 import logging
@@ -16,6 +17,7 @@ class LogisticsFlowError(Exception):
     detail: str = "Internal error"
 
     def __init__(self, detail: str | None = None) -> None:
+        """Initialise with an optional *detail* override, falling back to the class default."""
         self.detail = detail or self.detail
         super().__init__(self.detail)
 
@@ -45,7 +47,8 @@ def register_exception_handlers(app: FastAPI) -> None:
     """Attach a JSON handler for every LogisticsFlowError subclass."""
 
     @app.exception_handler(LogisticsFlowError)
-    async def _handle(request: Request, exc: LogisticsFlowError) -> JSONResponse:
+    async def _handle(request: Request, exc: LogisticsFlowError) -> JSONResponse:  # noqa: RUF029
+        """Return a structured JSON error response for any LogisticsFlowError."""
         request_id = getattr(request.state, "request_id", "n/a")
         logger.warning("[%s] %s: %s", request_id, type(exc).__name__, exc.detail)
         return JSONResponse(

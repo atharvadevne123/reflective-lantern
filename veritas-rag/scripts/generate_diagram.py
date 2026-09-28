@@ -2,13 +2,18 @@
 
 from __future__ import annotations
 
+import logging
 import os
 
 import matplotlib.patches as mpatches
 import matplotlib.pyplot as plt
 
+logger = logging.getLogger(__name__)
 
-def draw_box(ax, x, y, w, h, label, color, fontsize=9):
+
+def draw_box(
+    ax, x: float, y: float, w: float, h: float, label: str, color: str, fontsize: int = 9
+) -> None:
     """Draw a rounded box with a centered label."""
     box = mpatches.FancyBboxPatch(
         (x, y),
@@ -32,7 +37,7 @@ def draw_box(ax, x, y, w, h, label, color, fontsize=9):
     )
 
 
-def draw_arrow(ax, x1, y1, x2, y2, label=""):
+def draw_arrow(ax, x1: float, y1: float, x2: float, y2: float, label: str = "") -> None:
     """Draw an arrow with an optional midpoint label."""
     ax.annotate(
         "",
@@ -114,7 +119,7 @@ def main() -> None:
     draw_arrow(ax, 5.9, 2.55, 5.1, 2.55)
 
     plt.savefig("screenshots/architecture.png", dpi=150, bbox_inches="tight")
-    print("Wrote screenshots/architecture.png")
+    logger.info("Wrote screenshots/architecture.png")
 
 
 if __name__ == "__main__":

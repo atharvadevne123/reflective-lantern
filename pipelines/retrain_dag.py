@@ -1,4 +1,5 @@
 """Airflow DAG for automated model retraining on new delivery data."""
+
 from __future__ import annotations
 
 from datetime import datetime, timedelta
@@ -29,10 +30,7 @@ def _load_training_data(**ctx) -> None:
     engine = create_engine(db_url)
     with engine.connect() as conn:
         df = pd.read_sql(
-            text(
-                "SELECT * FROM predictions "
-                "WHERE created_at >= NOW() - INTERVAL '30 days'"
-            ),
+            text("SELECT * FROM predictions WHERE created_at >= NOW() - INTERVAL '30 days'"),
             conn,
         )
     logger.info("Loaded %d training rows", len(df))
