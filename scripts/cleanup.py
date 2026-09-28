@@ -3,9 +3,12 @@
 from __future__ import annotations
 
 import json
+import logging
 from datetime import date
 from pathlib import Path
 from typing import Any
+
+logger = logging.getLogger(__name__)
 
 from config.constants import CLEANUP_DEFAULT_DAYS, HISTORY_DIR, NON_RECORD_FILES
 
@@ -111,9 +114,9 @@ def main() -> int:
             continue
         removed = clean_file(f, cutoff, dry_run=args.dry_run)
         if removed:
-            print(f"  {f.name}: removed {removed} entries")
+            logger.info("  %s: removed %d entries", f.name, removed)
         total += removed
-    print(f"Total removed: {total}")
+    logger.info("Total removed: %d", total)
     return 0
 
 
