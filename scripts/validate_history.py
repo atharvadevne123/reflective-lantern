@@ -6,9 +6,9 @@ import json
 import logging
 from pathlib import Path
 
-logger = logging.getLogger(__name__)
-
 from config.constants import HISTORY_DIR, NON_RECORD_FILES
+
+logger = logging.getLogger(__name__)
 
 VALID_MODES: frozenset[str] = frozenset({"improvement", "IMPROVEMENT", "innovation", "INNOVATION", "user-requested"})
 VALID_EMAIL_STATUSES: frozenset[str] = frozenset(

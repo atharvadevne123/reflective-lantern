@@ -8,9 +8,9 @@ from datetime import date
 from pathlib import Path
 from typing import Any
 
-logger = logging.getLogger(__name__)
-
 from config.constants import CLEANUP_DEFAULT_DAYS, HISTORY_DIR, NON_RECORD_FILES
+
+logger = logging.getLogger(__name__)
 
 
 def _entry_date(entry: dict) -> date | None:

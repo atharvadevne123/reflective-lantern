@@ -5,10 +5,10 @@ from __future__ import annotations
 import logging
 import os
 
-logger = logging.getLogger(__name__)
-
 import matplotlib.patches as mpatches
 import matplotlib.pyplot as plt
+
+logger = logging.getLogger(__name__)
 
 
 def draw_box(ax, x: float, y: float, w: float, h: float, label: str, color: str, fontsize: int = 9) -> None:

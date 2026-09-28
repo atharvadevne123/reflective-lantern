@@ -9,9 +9,9 @@ import sys
 from pathlib import Path
 from typing import Any
 
-logger = logging.getLogger(__name__)
-
 from config.constants import HISTORY_DIR, NON_RECORD_FILES
+
+logger = logging.getLogger(__name__)
 
 _NON_RECORD_STEMS = {s.replace(".json", "") for s in NON_RECORD_FILES}
 

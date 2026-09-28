@@ -10,12 +10,12 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 import statistics
 import time
 
-logger = logging.getLogger(__name__)
-
 import pandas as pd
 
 from app.features import build_feature_pipeline, generate_synthetic_data, prepare_X
 from app.model import train_model
+
+logger = logging.getLogger(__name__)
 
 N_WARMUP = 20
 N_RUNS = 200

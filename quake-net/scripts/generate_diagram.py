@@ -5,14 +5,14 @@ from __future__ import annotations
 import logging
 import os
 
-logger = logging.getLogger(__name__)
-
 import matplotlib
 
 matplotlib.use("Agg")
 
 import matplotlib.patches as mpatches  # noqa: E402
 import matplotlib.pyplot as plt  # noqa: E402
+
+logger = logging.getLogger(__name__)
 
 INK = "#1b2430"
 MUTED = "#5a6b7d"
