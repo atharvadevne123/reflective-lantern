@@ -111,10 +111,13 @@ def main():
     ]
     ax.legend(handles=legend_items, loc="lower right", fontsize=8, framealpha=0.9)
 
+    import logging
+
+    logger = logging.getLogger(__name__)
     plt.tight_layout()
     out_path = "screenshots/architecture.png"
     plt.savefig(out_path, dpi=150, bbox_inches="tight", facecolor=fig.get_facecolor())
-    print(f"Architecture diagram saved: {out_path}")
+    logger.info("Architecture diagram saved: %s", out_path)
 
 
 if __name__ == "__main__":
