@@ -1,12 +1,15 @@
 """Generate the Logistics-Flow system architecture diagram."""
 from __future__ import annotations
 
+import logging
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 import os
+
+logger = logging.getLogger(__name__)
 
 import matplotlib
 
@@ -93,7 +96,7 @@ def main() -> None:
         pad=16,
     )
     plt.savefig("screenshots/architecture.png", dpi=150, bbox_inches="tight")
-    print("Wrote screenshots/architecture.png")
+    logger.info("Wrote screenshots/architecture.png")
 
 
 if __name__ == "__main__":
