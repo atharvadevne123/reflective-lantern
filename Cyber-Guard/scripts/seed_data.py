@@ -96,8 +96,12 @@ def main() -> None:
     create_tables()
     with SessionLocal() as db:
         counts = seed(db, args.reference, args.recent, args.drift)
-    print(f"Seeded {counts['reference']} reference and {counts['recent']} recent rows.")
-    print("Now call GET /api/v1/drift to see the KS result.")
+    logger.info(
+        "Seeded %d reference and %d recent rows.",
+        counts["reference"],
+        counts["recent"],
+    )
+    logger.info("Now call GET /api/v1/drift to see the KS result.")
 
 
 if __name__ == "__main__":
