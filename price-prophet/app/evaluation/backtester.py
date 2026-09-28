@@ -87,7 +87,7 @@ class Backtester:
         records: list[dict[str, Any]],
         price_col: str,
         demand_col: str,
-    ):
+    ) -> tuple[list[list[float]], list[float]]:
         """Extract feature matrix X and target vector y from *records*.
 
         Features used: price (price_col), demand (demand_col), day_of_week,
