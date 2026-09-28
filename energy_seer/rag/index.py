@@ -10,7 +10,7 @@ from rag.ingest import INDEX_PATH, META_PATH
 logger = logging.getLogger(__name__)
 
 
-def load_index():
+def load_index() -> tuple:
     """Load the FAISS index from disk, returns (index, metadata) or (None, [])."""
     try:
         import faiss
