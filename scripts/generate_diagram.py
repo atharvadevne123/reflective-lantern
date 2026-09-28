@@ -9,13 +9,13 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 import os
 
-logger = logging.getLogger(__name__)
-
 import matplotlib
 
 matplotlib.use("Agg")
 import matplotlib.patches as mpatches  # noqa: E402
 import matplotlib.pyplot as plt  # noqa: E402
+
+logger = logging.getLogger(__name__)
 
 PROJECT_NAME = "Logistics-Flow"
 
