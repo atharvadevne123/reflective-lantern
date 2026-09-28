@@ -8,6 +8,9 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
+from sqlalchemy.engine import Engine
+from sqlalchemy.orm import Session
+
 from app.database import Base, get_db
 from app.main import app
 
@@ -29,7 +32,7 @@ def sample_df() -> pd.DataFrame:
 
 
 @pytest.fixture(scope="session")
-def test_engine():
+def test_engine() -> Engine:
     """Shared in-memory SQLite engine for tests.
 
     StaticPool keeps every session on the same connection, so the schema
@@ -45,7 +48,7 @@ def test_engine():
 
 
 @pytest.fixture()
-def db_session(test_engine):
+def db_session(test_engine: Engine) -> Session:
     """Yield an isolated test DB session."""
     TestSession = sessionmaker(autocommit=False, autoflush=False, bind=test_engine)
     session = TestSession()
