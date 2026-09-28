@@ -74,6 +74,11 @@ ax.text(
     style="italic",
 )
 
+import logging
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
 plt.tight_layout()
 plt.savefig("screenshots/architecture.png", dpi=150, bbox_inches="tight")
-print("Saved screenshots/architecture.png")
+logger.info("Saved screenshots/architecture.png")
