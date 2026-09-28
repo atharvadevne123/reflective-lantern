@@ -94,6 +94,7 @@ def tracked(label: str | None = None) -> Callable:
 
         @functools.wraps(func)
         def wrapper(*args, **kwargs) -> object:
+            """Execute *func* and record its duration in the global stats registry."""
             start = time.perf_counter()
             try:
                 return func(*args, **kwargs)
