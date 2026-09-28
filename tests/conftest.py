@@ -1,15 +1,15 @@
 """Shared pytest fixtures for Logistics-Flow tests."""
 from __future__ import annotations
 
+from collections.abc import Generator
+
 import pandas as pd
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
-from sqlalchemy.pool import StaticPool
-
 from sqlalchemy.engine import Engine
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, sessionmaker
+from sqlalchemy.pool import StaticPool
 
 from app.database import Base, get_db
 from app.main import app
@@ -60,11 +60,11 @@ def db_session(test_engine: Engine) -> Session:
 
 
 @pytest.fixture()
-def client(test_engine):
+def client(test_engine: Engine) -> Generator[TestClient, None, None]:
     """TestClient that overrides the DB dependency."""
     TestSession = sessionmaker(autocommit=False, autoflush=False, bind=test_engine)
 
-    def _override_get_db():
+    def _override_get_db() -> Generator[Session, None, None]:
         db = TestSession()
         try:
             yield db
