@@ -84,7 +84,6 @@ def validate_files(paths: list[Path]) -> dict[str, list[str]]:
 
 def main() -> int:
     import argparse
-    import sys
 
     parser = argparse.ArgumentParser(description="Validate history JSON files.")
     parser.add_argument("--verbose", action="store_true")
