@@ -35,6 +35,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         return request.client.host if request.client else "unknown"
 
     async def dispatch(self, request: Request, call_next) -> Response:
+        """Enforce rate limit; return 429 when the client exceeds the sliding-window budget."""
         key = self._client_key(request)
         now = time.monotonic()
         bucket = self._hits[key]
