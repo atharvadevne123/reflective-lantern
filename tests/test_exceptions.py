@@ -19,19 +19,19 @@ from app.exceptions import (
         (RateLimitExceededError, 429),
     ],
 )
-def test_status_codes(exc_cls, status):
+def test_status_codes(exc_cls, status) -> None:
     assert exc_cls().status_code == status
 
 
-def test_custom_detail_overrides_default():
+def test_custom_detail_overrides_default() -> None:
     exc = ModelNotLoadedError("model file missing")
     assert exc.detail == "model file missing"
 
 
-def test_default_detail_used_when_omitted():
+def test_default_detail_used_when_omitted() -> None:
     assert ModelNotLoadedError().detail == "Model not loaded"
 
 
-def test_all_inherit_base():
+def test_all_inherit_base() -> None:
     for cls in (ModelNotLoadedError, FeatureExtractionError, RateLimitExceededError):
         assert issubclass(cls, LogisticsFlowError)
