@@ -8,7 +8,7 @@ import pytest
 from app.config import Settings, get_settings
 
 
-def test_defaults_present(monkeypatch):
+def test_defaults_present(monkeypatch) -> None:
     for var in ("DATABASE_URL", "MODEL_PATH", "LOG_LEVEL", "RATE_LIMIT_PER_MINUTE"):
         monkeypatch.delenv(var, raising=False)
     s = Settings()
@@ -17,7 +17,7 @@ def test_defaults_present(monkeypatch):
     assert s.rate_limit_per_minute == 120
 
 
-def test_env_override(monkeypatch):
+def test_env_override(monkeypatch) -> None:
     monkeypatch.setenv("LOG_LEVEL", "DEBUG")
     monkeypatch.setenv("RATE_LIMIT_PER_MINUTE", "5")
     s = Settings()
@@ -32,16 +32,16 @@ def test_env_override(monkeypatch):
         ("sqlite:///./x.db", False),
     ],
 )
-def test_is_postgres(monkeypatch, url, expected):
+def test_is_postgres(monkeypatch, url, expected) -> None:
     monkeypatch.setenv("DATABASE_URL", url)
     assert Settings().is_postgres is expected
 
 
-def test_get_settings_returns_settings():
+def test_get_settings_returns_settings() -> None:
     assert isinstance(get_settings(), Settings)
 
 
-def test_settings_frozen():
+def test_settings_frozen() -> None:
     s = Settings()
     with pytest.raises(dataclasses.FrozenInstanceError):
         s.log_level = "TRACE"  # type: ignore[misc]
