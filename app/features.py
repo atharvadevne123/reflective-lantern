@@ -20,10 +20,12 @@ class TemporalFeatureExtractor(BaseEstimator, TransformerMixin):
     """Adds lag, rolling, and cyclical time features."""
 
     def fit(self, X: pd.DataFrame, y: Any = None) -> TemporalFeatureExtractor:
+        """Mark transformer as fitted; no statistics to learn."""
         self.fitted_ = True
         return self
 
     def transform(self, X: pd.DataFrame) -> pd.DataFrame:
+        """Add cyclical time, weekend, and peak-hour features to *X*."""
         df = X.copy()
         # Cyclical encoding so hour 0 and 23 are adjacent
         df["hour_sin"] = np.sin(2 * np.pi * df["hour_of_day"] / 24)
@@ -52,10 +54,12 @@ class RouteFeatureEngineer(BaseEstimator, TransformerMixin):
     }
 
     def fit(self, X: pd.DataFrame, y: Any = None) -> RouteFeatureEngineer:
+        """Mark transformer as fitted; no statistics to learn."""
         self.fitted_ = True
         return self
 
     def transform(self, X: pd.DataFrame) -> pd.DataFrame:
+        """Add distance bucket, weight ratio, carrier risk, and route code features."""
         df = X.copy()
         # Distance buckets: local, regional, long-haul
         df["distance_bucket"] = pd.cut(
