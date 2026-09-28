@@ -156,20 +156,20 @@ def main() -> int:
     if args.json:
         import dataclasses
 
-        print(json.dumps([dataclasses.asdict(r) for r in results], indent=2))
+        log.info(json.dumps([dataclasses.asdict(r) for r in results], indent=2))
     else:
         for r in results:
             status = "OK" if r.healthy else "ISSUES"
-            print(f"[{status}] {r.name}")
+            log.info("[%s] %s", status, r.name)
             if r.failing_workflows:
-                print(f"  Failing workflows: {r.failing_workflows}")
+                log.warning("  Failing workflows: %s", r.failing_workflows)
             if r.open_branches:
-                print(f"  Open branches: {r.open_branches}")
+                log.info("  Open branches: %s", r.open_branches)
             if not r.has_release:
-                print("  Missing release")
+                log.warning("  Missing release")
             if not r.has_ci:
-                print("  No CI workflows found")
-        print(f"\n{len(results)} repos checked, {issues} with issues")
+                log.warning("  No CI workflows found")
+        log.info("\n%d repos checked, %d with issues", len(results), issues)
 
     return 0 if issues == 0 else 1
 
