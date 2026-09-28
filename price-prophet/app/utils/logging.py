@@ -12,6 +12,7 @@ import functools
 import logging
 import sys
 from collections.abc import Callable
+from typing import Any
 
 _DEFAULT_FMT = "%(asctime)s %(levelname)-8s %(name)s  %(message)s"
 _DEFAULT_DATE_FMT = "%Y-%m-%dT%H:%M:%S"
@@ -92,7 +93,7 @@ def log_call(func: Callable) -> Callable:
     _logger = logging.getLogger(func.__module__)
 
     @functools.wraps(func)
-    def wrapper(*args, **kwargs):
+    def wrapper(*args, **kwargs) -> Any:
         _logger.debug(
             "CALL %s args=%r kwargs=%r",
             func.__qualname__,
