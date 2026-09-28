@@ -90,8 +90,11 @@ def main() -> None:
     draw_arrow(ax, 4.9, 5.0, 4.9, 4.3, "")
     draw_arrow(ax, 4.9, 3.3, 4.9, 2.7, "")
 
+    import logging
+
+    logger = logging.getLogger(__name__)
     plt.savefig("screenshots/architecture.png", dpi=150, bbox_inches="tight")
-    print("Wrote screenshots/architecture.png")
+    logger.info("Wrote screenshots/architecture.png")
 
 
 if __name__ == "__main__":
