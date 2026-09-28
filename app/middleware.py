@@ -22,11 +22,13 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
     """
 
     def __init__(self, app, limit: int = 120) -> None:
+        """Initialise middleware with requests-per-minute *limit*."""
         super().__init__(app)
         self.limit = limit
         self._hits: dict[str, deque[float]] = defaultdict(deque)
 
     def _client_key(self, request: Request) -> str:
+        """Return the client IP, preferring the X-Forwarded-For header."""
         forwarded = request.headers.get("X-Forwarded-For")
         if forwarded:
             return forwarded.split(",")[0].strip()
