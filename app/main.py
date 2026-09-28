@@ -281,7 +281,7 @@ async def metrics() -> MetricsResponse:
     summary="Run drift check",
     description="Compares recent predictions against reference distribution.",
 )
-async def drift(db: Annotated[Session, Depends(get_db)]):
+async def drift(db: Annotated[Session, Depends(get_db)]) -> dict:
     return run_drift_check(db)
 
 
@@ -295,7 +295,7 @@ async def predict_batch(
     payload: BatchPredictRequest,
     request: Request,
     db: Annotated[Session, Depends(get_db)],
-):
+) -> BatchPredictResponse:
     if _model is None or _feat_pipe is None:
         raise ModelNotLoadedError
 
