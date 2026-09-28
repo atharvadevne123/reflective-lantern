@@ -1,6 +1,9 @@
 """Generate Energy-Seer system architecture diagram."""
 
+import logging
 import os
+
+logger = logging.getLogger(__name__)
 
 import matplotlib.patches as mpatches
 import matplotlib.pyplot as plt
@@ -215,4 +218,4 @@ ax.legend(
 
 plt.tight_layout()
 plt.savefig("screenshots/architecture.png", dpi=150, bbox_inches="tight", facecolor="#0d1117")
-print("Architecture diagram saved to screenshots/architecture.png")
+logger.info("Architecture diagram saved to screenshots/architecture.png")
