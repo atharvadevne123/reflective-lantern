@@ -2,7 +2,10 @@
 
 from __future__ import annotations
 
+import logging
 import os
+
+logger = logging.getLogger(__name__)
 
 import matplotlib.patches as mpatches
 import matplotlib.pyplot as plt
@@ -114,7 +117,7 @@ def main() -> None:
     draw_arrow(ax, 5.9, 2.55, 5.1, 2.55)
 
     plt.savefig("screenshots/architecture.png", dpi=150, bbox_inches="tight")
-    print("Wrote screenshots/architecture.png")
+    logger.info("Wrote screenshots/architecture.png")
 
 
 if __name__ == "__main__":
