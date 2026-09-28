@@ -56,17 +56,19 @@ Temporal-Pulse — Architecture Diagram
 
 def main() -> None:
     """Print the architecture diagram."""
+    import logging
+    import os
+
+    logger = logging.getLogger(__name__)
     print(DIAGRAM)
     output_path = "screenshots/architecture.txt"
     try:
-        import os
-
         os.makedirs("screenshots", exist_ok=True)
         with open(output_path, "w") as f:
             f.write(DIAGRAM)
-        print(f"Diagram written to {output_path}")
+        logger.info("Diagram written to %s", output_path)
     except Exception as e:
-        print(f"Could not write file: {e}")
+        logger.error("Could not write file: %s", e)
 
 
 if __name__ == "__main__":
