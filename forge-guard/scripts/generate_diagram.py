@@ -2,7 +2,10 @@
 
 from __future__ import annotations
 
+import logging
 import os
+
+logger = logging.getLogger(__name__)
 
 import matplotlib.pyplot as plt
 from matplotlib.patches import FancyBboxPatch
@@ -223,4 +226,4 @@ plt.tight_layout(pad=0.3)
 plt.savefig(
     "screenshots/architecture.png", dpi=150, bbox_inches="tight", facecolor=fig.get_facecolor()
 )
-print("Architecture diagram saved to screenshots/architecture.png")
+logger.info("Architecture diagram saved to screenshots/architecture.png")
