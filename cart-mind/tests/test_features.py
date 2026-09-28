@@ -407,7 +407,7 @@ class TestLagRollingFeaturesExtended:
         from app.features import LagRollingFeatures
 
         out = LagRollingFeatures().fit_transform(sample_df)
-        assert (out["order_norm"] >= 0).all()
+        assert (out["order_value_norm"] >= 0).all()
 
     def test_fit_transform_returns_dataframe(self, sample_df) -> None:
         import pandas as pd

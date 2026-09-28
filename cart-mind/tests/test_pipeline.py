@@ -219,7 +219,7 @@ class TestRetrainTaskExtended:
         from app.features import make_purchase_labels, make_sample_dataframe
         from pipelines.retrain_dag import retrain_task
 
-        monkeypatch.setattr("pipelines.retrain_dag.MODEL_PATH", tmp_path / "model.joblib")
+        monkeypatch.setattr("app.model.MODEL_PATH", str(tmp_path / "model.joblib"))
         monkeypatch.setattr("pipelines.retrain_dag.METRICS_PATH", tmp_path / "metrics.json")
         df = make_sample_dataframe(n=200, seed=42)
         y = make_purchase_labels(df, seed=42)
@@ -231,7 +231,7 @@ class TestRetrainTaskExtended:
         from pipelines.retrain_dag import retrain_task
 
         metrics_path = tmp_path / "metrics.json"
-        monkeypatch.setattr("pipelines.retrain_dag.MODEL_PATH", tmp_path / "model.joblib")
+        monkeypatch.setattr("app.model.MODEL_PATH", str(tmp_path / "model.joblib"))
         monkeypatch.setattr("pipelines.retrain_dag.METRICS_PATH", metrics_path)
         df = make_sample_dataframe(n=200, seed=1)
         y = make_purchase_labels(df, seed=1)
