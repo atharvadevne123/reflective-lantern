@@ -208,7 +208,7 @@ async def predict(
     payload: PredictRequest,
     request: Request,
     db: Annotated[Session, Depends(get_db)],
-):
+) -> PredictResponse:
     if _model is None or _feat_pipe is None:
         raise ModelNotLoadedError
 
@@ -251,7 +251,7 @@ async def predict(
     response_model=HealthResponse,
     summary="Health check",
 )
-async def health():
+async def health() -> HealthResponse:
     return HealthResponse(
         status="healthy" if _model is not None else "degraded",
         model_version=MODEL_VERSION,
@@ -265,7 +265,7 @@ async def health():
     summary="Model performance metrics",
     description="Returns last-computed cross-validation metrics.",
 )
-async def metrics():
+async def metrics() -> MetricsResponse:
     data = json.loads(Path(METRICS_PATH).read_text()) if Path(METRICS_PATH).exists() else {}
     return MetricsResponse(
         rmse_mean=data.get("rmse_mean"),
