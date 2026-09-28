@@ -173,17 +173,17 @@ class TestDriftEndpoint:
 
 class TestHealthEndpointExtended:
     def test_health_returns_status_ok(self, client) -> None:
-        r = client.get("/health")
+        r = client.get("/api/v1/health")
         assert r.status_code == 200
         data = r.json()
-        assert data.get("status") == "ok"
+        assert data.get("status") == "healthy"
 
     def test_health_response_is_json(self, client) -> None:
-        r = client.get("/health")
+        r = client.get("/api/v1/health")
         assert r.headers["content-type"].startswith("application/json")
 
     def test_health_has_model_loaded_field(self, client) -> None:
-        r = client.get("/health")
+        r = client.get("/api/v1/health")
         data = r.json()
         assert "model_loaded" in data
 

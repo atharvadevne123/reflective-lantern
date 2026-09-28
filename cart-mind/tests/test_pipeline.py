@@ -215,25 +215,26 @@ class TestReadChampionAuc:
 
 class TestRetrainTaskExtended:
     def test_retrain_task_returns_dict(self, monkeypatch, tmp_path) -> None:
-
-        from app.features import make_purchase_labels, make_sample_dataframe
         from pipelines.retrain_dag import retrain_task
 
-        monkeypatch.setattr("app.model.MODEL_PATH", str(tmp_path / "model.joblib"))
+        monkeypatch.setattr("pipelines.retrain_dag.MIN_ROWS", 10)
+        monkeypatch.setattr("pipelines.retrain_dag.TRAIN_ROWS", 120)
+        monkeypatch.setattr("pipelines.retrain_dag.AUC_GATE", 0.0)
         monkeypatch.setattr("pipelines.retrain_dag.METRICS_PATH", tmp_path / "metrics.json")
-        df = make_sample_dataframe(n=200, seed=42)
-        y = make_purchase_labels(df, seed=42)
-        result = retrain_task(df, y)
+        monkeypatch.setattr("app.model.MODEL_PATH", str(tmp_path / "model.joblib"))
+        monkeypatch.setattr("app.model.METRICS_PATH", tmp_path / "challenger.json")
+        result = retrain_task()
         assert isinstance(result, dict)
 
     def test_retrain_task_creates_metrics_file(self, monkeypatch, tmp_path) -> None:
-        from app.features import make_purchase_labels, make_sample_dataframe
         from pipelines.retrain_dag import retrain_task
 
         metrics_path = tmp_path / "metrics.json"
-        monkeypatch.setattr("app.model.MODEL_PATH", str(tmp_path / "model.joblib"))
+        monkeypatch.setattr("pipelines.retrain_dag.MIN_ROWS", 10)
+        monkeypatch.setattr("pipelines.retrain_dag.TRAIN_ROWS", 120)
+        monkeypatch.setattr("pipelines.retrain_dag.AUC_GATE", 0.0)
         monkeypatch.setattr("pipelines.retrain_dag.METRICS_PATH", metrics_path)
-        df = make_sample_dataframe(n=200, seed=1)
-        y = make_purchase_labels(df, seed=1)
-        retrain_task(df, y)
+        monkeypatch.setattr("app.model.MODEL_PATH", str(tmp_path / "model.joblib"))
+        monkeypatch.setattr("app.model.METRICS_PATH", tmp_path / "challenger.json")
+        retrain_task()
         assert metrics_path.exists()
