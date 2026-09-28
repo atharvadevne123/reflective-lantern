@@ -2,7 +2,10 @@
 
 from __future__ import annotations
 
+import logging
 import os
+
+logger = logging.getLogger(__name__)
 
 import matplotlib
 
@@ -128,7 +131,7 @@ def main(output: str = "screenshots/architecture.png") -> str:
     fig = build_figure()
     fig.savefig(output, dpi=150, bbox_inches="tight")
     plt.close(fig)
-    print(f"Architecture diagram written to {output}")
+    logger.info("Architecture diagram written to %s", output)
     return output
 
 
