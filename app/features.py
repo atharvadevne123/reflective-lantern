@@ -81,6 +81,7 @@ class CategoricalEncoder(BaseEstimator, TransformerMixin):
     """Ordinal-encodes carrier column."""
 
     def fit(self, X: pd.DataFrame, y: Any = None) -> CategoricalEncoder:
+        """Fit a LabelEncoder on known carrier values from *X* plus the canonical list."""
         # Trailing underscore matters: sklearn's check_is_fitted only treats
         # attributes ending in "_" as evidence the estimator has been fitted.
         self.le_ = LabelEncoder()
@@ -88,6 +89,7 @@ class CategoricalEncoder(BaseEstimator, TransformerMixin):
         return self
 
     def transform(self, X: pd.DataFrame) -> pd.DataFrame:
+        """Encode the carrier column as an integer; unknown values fall back to the first class."""
         df = X.copy()
         known = set(self.le_.classes_)
         carriers = df["carrier"].fillna("Unknown").apply(
