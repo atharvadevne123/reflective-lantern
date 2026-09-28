@@ -11,7 +11,9 @@ import matplotlib.pyplot as plt
 logger = logging.getLogger(__name__)
 
 
-def draw_box(ax, x: float, y: float, w: float, h: float, label: str, color: str, fontsize: int = 9) -> None:
+def draw_box(
+    ax, x: float, y: float, w: float, h: float, label: str, color: str, fontsize: int = 9
+) -> None:
     """Draw a rounded box with a centered label."""
     box = mpatches.FancyBboxPatch(
         (x, y),

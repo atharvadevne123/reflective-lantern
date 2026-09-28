@@ -84,7 +84,13 @@ class TestReactivePower:
 class TestRatePowerFactor:
     @pytest.mark.parametrize(
         ("value", "expected"),
-        [(1.0, "good"), (GOOD_POWER_FACTOR, "good"), (0.90, "acceptable"), (0.85, "acceptable"), (0.70, "poor")],
+        [
+            (1.0, "good"),
+            (GOOD_POWER_FACTOR, "good"),
+            (0.90, "acceptable"),
+            (0.85, "acceptable"),
+            (0.70, "poor"),
+        ],
     )
     def test_buckets(self, value: float, expected: str) -> None:
         assert rate_power_factor(value) == expected
@@ -217,7 +223,9 @@ def test_power_factor_accepted_valid_range(pf: float) -> None:
 @pytest.mark.parametrize("kvar", [10.0, 50.0, 100.0])
 def test_correction_kvar_reduces_reactive_power(kvar: float) -> None:
     """correction_kvar provides non-negative correction for lagging load."""
-    result = correction_kvar(real_power_kw=100.0, current_power_factor=0.8, target_power_factor=0.95)
+    result = correction_kvar(
+        real_power_kw=100.0, current_power_factor=0.8, target_power_factor=0.95
+    )
     assert result >= 0.0
 
 
@@ -252,16 +260,22 @@ class TestVoltageImbalanceExtended:
 
 class TestCorrectionKvarExtended:
     def test_already_at_target_needs_no_correction(self) -> None:
-        result = correction_kvar(real_power_kw=100.0, current_power_factor=0.95, target_power_factor=0.95)
+        result = correction_kvar(
+            real_power_kw=100.0, current_power_factor=0.95, target_power_factor=0.95
+        )
         assert result == pytest.approx(0.0, abs=0.01)
 
     def test_low_pf_needs_positive_correction(self) -> None:
-        result = correction_kvar(real_power_kw=100.0, current_power_factor=0.7, target_power_factor=0.95)
+        result = correction_kvar(
+            real_power_kw=100.0, current_power_factor=0.7, target_power_factor=0.95
+        )
         assert result > 0.0
 
     @pytest.mark.parametrize("current_pf", [0.6, 0.7, 0.8])
     def test_correction_positive_for_low_pf(self, current_pf: float) -> None:
-        result = correction_kvar(real_power_kw=100.0, current_power_factor=current_pf, target_power_factor=0.95)
+        result = correction_kvar(
+            real_power_kw=100.0, current_power_factor=current_pf, target_power_factor=0.95
+        )
         assert result >= 0.0
 
 

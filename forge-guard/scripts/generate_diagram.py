@@ -33,7 +33,17 @@ COLORS = {
 }
 
 
-def box(ax, x: float, y: float, w: float, h: float, color: str, label: str, sublabel: str = "", fontsize: int = 9) -> None:
+def box(
+    ax,
+    x: float,
+    y: float,
+    w: float,
+    h: float,
+    color: str,
+    label: str,
+    sublabel: str = "",
+    fontsize: int = 9,
+) -> None:
     rect = FancyBboxPatch(
         (x, y),
         w,

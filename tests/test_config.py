@@ -1,4 +1,5 @@
 """Tests for environment-driven settings."""
+
 from __future__ import annotations
 
 import dataclasses

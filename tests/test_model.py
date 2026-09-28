@@ -1,4 +1,5 @@
 """Tests for model training and inference."""
+
 from __future__ import annotations
 
 import numpy as np

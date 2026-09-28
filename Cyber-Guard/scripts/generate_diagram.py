@@ -10,7 +10,16 @@ import matplotlib.pyplot as plt
 os.makedirs("screenshots", exist_ok=True)
 
 
-def draw_box(ax, x: float, y: float, w: float, h: float, label: str, color: str = "#2563eb", fontsize: int = 9) -> None:
+def draw_box(
+    ax,
+    x: float,
+    y: float,
+    w: float,
+    h: float,
+    label: str,
+    color: str = "#2563eb",
+    fontsize: int = 9,
+) -> None:
     rect = mpatches.FancyBboxPatch(
         (x, y),
         w,

@@ -1,4 +1,5 @@
 """Post-deploy smoke test: exercises every endpoint against a live server."""
+
 from __future__ import annotations
 
 import argparse

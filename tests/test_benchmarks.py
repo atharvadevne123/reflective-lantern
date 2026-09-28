@@ -504,7 +504,9 @@ class TestEuiImprovementNeeded:
 
         benchmark = ASHRAE_EUI_BENCHMARKS["office"]
         target = benchmark * 0.5
-        assert eui_improvement_needed(target, "office", target_percentile=50.0) == pytest.approx(0.0)
+        assert eui_improvement_needed(target, "office", target_percentile=50.0) == pytest.approx(
+            0.0
+        )
 
     def test_above_target_returns_positive(self) -> None:
         from app.benchmarks import ASHRAE_EUI_BENCHMARKS, eui_improvement_needed
@@ -636,7 +638,9 @@ class TestPortfolioEuiSummary:
         (20000.0, 200.0, 100.0),
     ],
 )
-def test_compute_eui_scales_linearly(annual_kwh: float, floor_area: float, expected_eui: float) -> None:
+def test_compute_eui_scales_linearly(
+    annual_kwh: float, floor_area: float, expected_eui: float
+) -> None:
     from app.benchmarks import compute_eui
 
     assert compute_eui(annual_kwh, floor_area) == pytest.approx(expected_eui, abs=0.1)
@@ -650,7 +654,9 @@ def test_compute_eui_scales_linearly(annual_kwh: float, floor_area: float, expec
         (100.0, 100.0, "zero"),
     ],
 )
-def test_percentage_below_benchmark_sign(actual_eui: float, benchmark: float, expected_sign: str) -> None:
+def test_percentage_below_benchmark_sign(
+    actual_eui: float, benchmark: float, expected_sign: str
+) -> None:
     from app.benchmarks import percentage_below_benchmark
 
     result = percentage_below_benchmark(actual_eui, benchmark)

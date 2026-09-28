@@ -8,7 +8,9 @@ import matplotlib.patches as mpatches
 import matplotlib.pyplot as plt
 
 
-def draw_box(ax, x: float, y: float, w: float, h: float, label: str, color: str, fontsize: int = 10) -> None:
+def draw_box(
+    ax, x: float, y: float, w: float, h: float, label: str, color: str, fontsize: int = 10
+) -> None:
     """Draw a rounded box with centered label."""
     box = mpatches.FancyBboxPatch(
         (x, y),
