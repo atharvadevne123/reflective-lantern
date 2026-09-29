@@ -64,3 +64,27 @@ def get_db() -> Session:
         yield db
     finally:
         db.close()
+
+
+def db_session() -> Session:
+    """Return a one-shot session for use outside of FastAPI dependency injection.
+
+    The caller is responsible for closing the session.  Prefer :func:`get_db`
+    inside route handlers; use this only in scripts and background tasks.
+    """
+    return SessionLocal()
+
+
+def prediction_count(db: Session) -> int:
+    """Return the total number of predictions stored in the database."""
+    return db.query(Prediction).count()
+
+
+def recent_predictions(db: Session, limit: int = 50) -> list[Prediction]:
+    """Return the most recent *limit* predictions ordered by creation time."""
+    return (
+        db.query(Prediction)
+        .order_by(Prediction.created_at.desc())
+        .limit(limit)
+        .all()
+    )
