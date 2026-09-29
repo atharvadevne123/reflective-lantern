@@ -77,3 +77,67 @@ def test_drift_endpoint_returns_200(client):
     resp = client.get("/api/v1/drift")
     assert resp.status_code == 200
     assert "status" in resp.json()
+
+
+def test_predict_confidence_range(client, predict_payload):
+    resp = client.post("/api/v1/predict", json=predict_payload)
+    data = resp.json()
+    assert 0.0 <= data["confidence"] <= 1.0
+
+
+def test_predict_request_id_header(client, predict_payload):
+    resp = client.post("/api/v1/predict", json=predict_payload)
+    assert "x-request-id" in resp.headers
+
+
+def test_predict_response_time_header(client, predict_payload):
+    resp = client.post("/api/v1/predict", json=predict_payload)
+    assert "x-response-time-ms" in resp.headers
+    assert float(resp.headers["x-response-time-ms"]) >= 0
+
+
+def test_predict_custom_request_id_echoed(client, predict_payload):
+    custom_id = "test-abc-123"
+    resp = client.post(
+        "/api/v1/predict",
+        json=predict_payload,
+        headers={"X-Request-ID": custom_id},
+    )
+    assert resp.headers.get("x-request-id") == custom_id
+
+
+def test_batch_predict_single_item(client, predict_payload):
+    resp = client.post("/api/v1/predict/batch", json={"shipments": [predict_payload]})
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["count"] == 1
+    assert len(data["predictions"]) == 1
+    assert data["predictions"][0]["predicted_minutes"] > 0
+
+
+def test_batch_predict_multiple_items(client, predict_payload):
+    shipments = [predict_payload] * 3
+    resp = client.post("/api/v1/predict/batch", json={"shipments": shipments})
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["count"] == 3
+    assert len(data["predictions"]) == 3
+
+
+def test_batch_predict_empty_list_rejected(client):
+    resp = client.post("/api/v1/predict/batch", json={"shipments": []})
+    assert resp.status_code == 422
+
+
+def test_health_model_loaded_field(client):
+    resp = client.get("/api/v1/health")
+    data = resp.json()
+    assert isinstance(data["model_loaded"], bool)
+
+
+def test_metrics_fields_present(client):
+    resp = client.get("/api/v1/metrics")
+    data = resp.json()
+    assert "model_version" in data
+    assert "rmse_mean" in data
+    assert "r2_mean" in data
