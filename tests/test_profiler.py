@@ -240,3 +240,61 @@ class TestProfilerExtended:
         fn()
         reset_stats("to_reset")
         assert get_stats("to_reset") == {}
+
+
+class TestTopN:
+    """Tests for the top_n() helper."""
+
+    def test_top_n_returns_list(self) -> None:
+        from app.profiler import reset_stats, top_n, tracked
+
+        reset_stats()
+
+        @tracked(label="tn_fn_a")
+        def fn_a() -> None:
+            pass
+
+        fn_a()
+        result = top_n()
+        assert isinstance(result, list)
+
+    def test_top_n_sorted_by_total_ms(self) -> None:
+        import time
+
+        from app.profiler import reset_stats, top_n, tracked
+
+        reset_stats()
+
+        @tracked(label="fast_tn")
+        def fast() -> None:
+            pass
+
+        @tracked(label="slow_tn")
+        def slow() -> None:
+            time.sleep(0.01)
+
+        fast()
+        slow()
+        result = top_n(2)
+        assert result[0]["label"] == "slow_tn"
+
+    def test_top_n_respects_limit(self) -> None:
+        from app.profiler import reset_stats, top_n, tracked
+
+        reset_stats()
+        for i in range(5):
+            label = f"limit_fn_{i}"
+
+            @tracked(label=label)
+            def fn() -> None:
+                pass
+
+            fn()
+
+        assert len(top_n(n=3)) <= 3
+
+    def test_top_n_empty_when_no_tracked_calls(self) -> None:
+        from app.profiler import reset_stats, top_n
+
+        reset_stats()
+        assert top_n() == []
