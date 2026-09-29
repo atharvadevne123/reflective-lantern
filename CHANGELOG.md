@@ -5,6 +5,22 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] - 2026-09-29
+
+### Improved
+
+- Fixed LightGBM Docker build failure by installing `libgomp1` in the
+  `python:3.11-slim` image before `pip install`
+- Resolved 62 ruff lint errors (E402, F811, SIM117, I001) that were
+  blocking CI across `app/` and `tests/`
+- Added return type annotations to all FastAPI endpoint functions and the
+  `lifespan` context manager in `app/main.py`
+- Documented all previously undocumented `fit`/`transform` methods on
+  sklearn transformer classes in `app/features.py`
+- Added missing docstrings to inner helper functions across `app/retry.py`,
+  `app/profiler.py`, `app/exceptions.py`, `app/model.py`, and seven
+  additional modules
+
 ## [1.0.0] - 2026-08-20
 
 ### Added
