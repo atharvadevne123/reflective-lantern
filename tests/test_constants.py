@@ -88,7 +88,11 @@ class TestEfficiencyGradeThresholds:
         assert EFFICIENCY_GRADE_B_THRESHOLD > EFFICIENCY_GRADE_C_THRESHOLD
 
     def test_all_in_unit_interval(self) -> None:
-        for val in [EFFICIENCY_GRADE_A_THRESHOLD, EFFICIENCY_GRADE_B_THRESHOLD, EFFICIENCY_GRADE_C_THRESHOLD]:
+        for val in [
+            EFFICIENCY_GRADE_A_THRESHOLD,
+            EFFICIENCY_GRADE_B_THRESHOLD,
+            EFFICIENCY_GRADE_C_THRESHOLD,
+        ]:
             assert 0.0 < val < 1.0
 
 
@@ -132,7 +136,9 @@ def test_range_constants_lo_less_than_hi(lo: float, hi: float) -> None:
 
 
 def test_efficiency_grade_thresholds_decreasing() -> None:
-    assert EFFICIENCY_GRADE_A_THRESHOLD > EFFICIENCY_GRADE_B_THRESHOLD > EFFICIENCY_GRADE_C_THRESHOLD
+    assert (
+        EFFICIENCY_GRADE_A_THRESHOLD > EFFICIENCY_GRADE_B_THRESHOLD > EFFICIENCY_GRADE_C_THRESHOLD
+    )
 
 
 def test_grid_intensity_dict_is_nonempty() -> None:
@@ -192,13 +198,62 @@ class TestGradeThresholdOrdering:
     def test_grade_thresholds_ordered(self) -> None:
         import app.constants as c
 
-        assert c.EFFICIENCY_GRADE_C_THRESHOLD < c.EFFICIENCY_GRADE_B_THRESHOLD < c.EFFICIENCY_GRADE_A_THRESHOLD
+        assert (
+            c.EFFICIENCY_GRADE_C_THRESHOLD
+            < c.EFFICIENCY_GRADE_B_THRESHOLD
+            < c.EFFICIENCY_GRADE_A_THRESHOLD
+        )
 
     @pytest.mark.parametrize(
-        "attr", ["EFFICIENCY_GRADE_A_THRESHOLD", "EFFICIENCY_GRADE_B_THRESHOLD", "EFFICIENCY_GRADE_C_THRESHOLD"]
+        "attr",
+        [
+            "EFFICIENCY_GRADE_A_THRESHOLD",
+            "EFFICIENCY_GRADE_B_THRESHOLD",
+            "EFFICIENCY_GRADE_C_THRESHOLD",
+        ],
     )
     def test_grade_thresholds_between_zero_and_one(self, attr: str) -> None:
         import app.constants as c
 
         value = getattr(c, attr)
         assert 0.0 < value < 1.0
+
+
+class TestLogisticsConstants:
+    def test_max_distance_km_positive(self) -> None:
+        from app.constants import MAX_DISTANCE_KM
+
+        assert MAX_DISTANCE_KM > 0
+
+    def test_max_weight_kg_positive(self) -> None:
+        from app.constants import MAX_WEIGHT_KG
+
+        assert MAX_WEIGHT_KG > 0
+
+    def test_delivery_minutes_ordered(self) -> None:
+        from app.constants import MAX_DELIVERY_MINUTES, MIN_DELIVERY_MINUTES
+
+        assert MIN_DELIVERY_MINUTES < MAX_DELIVERY_MINUTES
+
+    def test_min_delivery_minutes_positive(self) -> None:
+        from app.constants import MIN_DELIVERY_MINUTES
+
+        assert MIN_DELIVERY_MINUTES > 0
+
+    def test_confidence_score_default_in_unit_range(self) -> None:
+        from app.constants import CONFIDENCE_SCORE_DEFAULT
+
+        assert 0.0 <= CONFIDENCE_SCORE_DEFAULT <= 1.0
+
+    def test_model_version_is_string(self) -> None:
+        from app.constants import MODEL_VERSION
+
+        assert isinstance(MODEL_VERSION, str)
+        assert len(MODEL_VERSION) > 0
+
+    def test_model_version_semver_format(self) -> None:
+        import re
+
+        from app.constants import MODEL_VERSION
+
+        assert re.match(r"^\d+\.\d+\.\d+$", MODEL_VERSION)

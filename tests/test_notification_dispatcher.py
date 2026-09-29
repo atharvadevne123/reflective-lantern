@@ -127,7 +127,9 @@ class TestDispatch:
         d.dispatch(Notification(title="t", body=""))
         assert len(r2) == 1
 
-    @pytest.mark.parametrize("severity", [Severity.INFO, Severity.WARNING, Severity.ERROR, Severity.CRITICAL])
+    @pytest.mark.parametrize(
+        "severity", [Severity.INFO, Severity.WARNING, Severity.ERROR, Severity.CRITICAL]
+    )
     def test_all_severities_accepted(self, severity) -> None:
         ch, received = make_channel(min_severity=Severity.INFO)
         d = NotificationDispatcher()
@@ -167,3 +169,50 @@ class TestDispatcherUnregister:
         d.unregister("email")
         d.dispatch(Notification(title="t", body=""))
         assert received == []
+
+
+class TestBroadcastAndBulkToggle:
+    """Tests for broadcast(), disable_all(), and enable_all()."""
+
+    def test_broadcast_delivers_to_channel(self) -> None:
+        ch, received = make_channel()
+        d = NotificationDispatcher()
+        d.register(ch)
+        result = d.broadcast("title", "body text")
+        assert result["email"] is True
+        assert received[0].title == "title"
+
+    def test_broadcast_uses_given_severity(self) -> None:
+        from app.notification_dispatcher import Severity
+
+        ch, received = make_channel()
+        d = NotificationDispatcher()
+        d.register(ch)
+        d.broadcast("t", "b", severity=Severity.ERROR)
+        assert received[0].severity == Severity.ERROR
+
+    def test_disable_all_prevents_delivery(self) -> None:
+        ch, received = make_channel()
+        d = NotificationDispatcher()
+        d.register(ch)
+        d.disable_all()
+        d.broadcast("t", "b")
+        assert received == []
+
+    def test_enable_all_restores_delivery(self) -> None:
+        ch, received = make_channel()
+        d = NotificationDispatcher()
+        d.register(ch)
+        d.disable_all()
+        d.enable_all()
+        d.broadcast("t", "b")
+        assert len(received) == 1
+
+    def test_disable_all_disables_multiple_channels(self) -> None:
+        ch1, r1 = make_channel("ch1")
+        ch2, r2 = make_channel("ch2")
+        d = NotificationDispatcher()
+        d.register(ch1)
+        d.register(ch2)
+        d.disable_all()
+        assert d.enabled_channels() == []

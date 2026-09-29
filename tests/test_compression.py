@@ -207,3 +207,48 @@ class TestIsGzip:
         from app.compression import is_gzip
 
         assert is_gzip(b"\x1f\x8b\x00") is True
+
+
+class TestCompressAndMeasure:
+    def test_returns_expected_keys(self) -> None:
+        from app.compression import compress_and_measure
+
+        result = compress_and_measure(b"hello " * 100)
+        assert set(result.keys()) == {"original_bytes", "compressed_bytes", "ratio", "savings_pct"}
+
+    def test_original_bytes_correct(self) -> None:
+        from app.compression import compress_and_measure
+
+        data = b"a" * 200
+        result = compress_and_measure(data)
+        assert result["original_bytes"] == 200
+
+    def test_compressed_smaller_for_repetitive_data(self) -> None:
+        from app.compression import compress_and_measure
+
+        result = compress_and_measure(b"x" * 1000)
+        assert result["compressed_bytes"] < result["original_bytes"]
+
+    def test_ratio_between_zero_and_one(self) -> None:
+        from app.compression import compress_and_measure
+
+        result = compress_and_measure(b"abc" * 500)
+        assert 0.0 < result["ratio"] <= 1.0
+
+    def test_savings_pct_positive_for_compressible_data(self) -> None:
+        from app.compression import compress_and_measure
+
+        result = compress_and_measure(b"z" * 2000)
+        assert result["savings_pct"] > 0
+
+    def test_zlib_method(self) -> None:
+        from app.compression import compress_and_measure
+
+        result = compress_and_measure(b"hello " * 100, method="zlib")
+        assert result["original_bytes"] == 600
+
+    def test_invalid_method_raises(self) -> None:
+        from app.compression import compress_and_measure
+
+        with pytest.raises(ValueError, match="Unknown compression method"):
+            compress_and_measure(b"data", method="bz2")

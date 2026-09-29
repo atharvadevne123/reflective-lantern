@@ -393,7 +393,13 @@ def test_json_formatter_produces_json() -> None:
 
     formatter = JsonFormatter()
     record = logging.LogRecord(
-        name="test", level=logging.INFO, pathname="", lineno=0, msg="Hello JSON", args=(), exc_info=None
+        name="test",
+        level=logging.INFO,
+        pathname="",
+        lineno=0,
+        msg="Hello JSON",
+        args=(),
+        exc_info=None,
     )
     output = formatter.format(record)
     parsed = json.loads(output)
@@ -495,7 +501,7 @@ class TestLogLevelName:
         assert log_level_name(99) == "UNKNOWN"
 
 
-import pytest
+import pytest  # noqa: E402
 
 
 @pytest.mark.parametrize(

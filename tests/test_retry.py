@@ -152,7 +152,14 @@ class TestBackoffTiming:
     def test_delay_is_capped_by_max_delay(self, monkeypatch: pytest.MonkeyPatch) -> None:
         sleeps = self._record_sleeps(monkeypatch)
 
-        @retry(exceptions=(_Boom,), max_attempts=6, base_delay=1.0, max_delay=3.0, backoff=10.0, jitter=0.0)
+        @retry(
+            exceptions=(_Boom,),
+            max_attempts=6,
+            base_delay=1.0,
+            max_delay=3.0,
+            backoff=10.0,
+            jitter=0.0,
+        )
         def always_fails() -> None:
             raise _Boom("down")
 
@@ -389,7 +396,9 @@ class TestRetryNetworkError:
         assert fetch() == "data"
 
     @pytest.mark.parametrize("attempts", [1, 2, 3])
-    def test_retry_on_network_error_propagates_after_exhaustion(self, attempts: int, monkeypatch) -> None:
+    def test_retry_on_network_error_propagates_after_exhaustion(
+        self, attempts: int, monkeypatch
+    ) -> None:
         from app.retry import retry_on_network_error
 
         monkeypatch.setattr("time.sleep", lambda _: None)
@@ -499,3 +508,37 @@ class TestWithRetryHelper:
         monkeypatch.setattr("time.sleep", lambda _: None)
         with pytest.raises(RuntimeError):
             with_retry(lambda: (_ for _ in ()).throw(RuntimeError("boom")), max_attempts=2)
+
+
+class TestIsTransient:
+    """Tests for the is_transient() helper."""
+
+    def test_connection_error_is_transient(self) -> None:
+        from app.retry import is_transient
+
+        assert is_transient(ConnectionError("refused")) is True
+
+    def test_timeout_error_is_transient(self) -> None:
+        from app.retry import is_transient
+
+        assert is_transient(TimeoutError("timed out")) is True
+
+    def test_os_error_is_transient(self) -> None:
+        from app.retry import is_transient
+
+        assert is_transient(OSError("io error")) is True
+
+    def test_value_error_not_transient(self) -> None:
+        from app.retry import is_transient
+
+        assert is_transient(ValueError("bad value")) is False
+
+    def test_runtime_error_not_transient(self) -> None:
+        from app.retry import is_transient
+
+        assert is_transient(RuntimeError("crash")) is False
+
+    def test_key_error_not_transient(self) -> None:
+        from app.retry import is_transient
+
+        assert is_transient(KeyError("key")) is False

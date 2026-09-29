@@ -359,7 +359,9 @@ class TestFormatDuration:
         with pytest.raises(ValueError, match="non-negative"):
             format_duration(-1.0)
 
-    @pytest.mark.parametrize("seconds,expected", [(60.0, "1m 0s"), (3600.0, "1h 0m 0s"), (86400.0, "24h 0m 0s")])
+    @pytest.mark.parametrize(
+        "seconds,expected", [(60.0, "1m 0s"), (3600.0, "1h 0m 0s"), (86400.0, "24h 0m 0s")]
+    )
     def test_boundary_values(self, seconds: float, expected: str) -> None:
         from app.date_utils import format_duration
 
@@ -393,7 +395,9 @@ class TestIsLeapYear:
         with pytest.raises(ValueError, match="positive"):
             is_leap_year(0)
 
-    @pytest.mark.parametrize("year,expected", [(2020, True), (2100, False), (2000, True), (1999, False)])
+    @pytest.mark.parametrize(
+        "year,expected", [(2020, True), (2100, False), (2000, True), (1999, False)]
+    )
     def test_parametrized(self, year: int, expected: bool) -> None:
         from app.date_utils import is_leap_year
 
@@ -491,7 +495,9 @@ def test_quarter_of_year_q4() -> None:
     assert quarter_of_year(datetime(2026, 12, 31)) == 4
 
 
-@pytest.mark.parametrize("month,expected_q", [(1, 1), (3, 1), (4, 2), (6, 2), (7, 3), (9, 3), (10, 4), (12, 4)])
+@pytest.mark.parametrize(
+    "month,expected_q", [(1, 1), (3, 1), (4, 2), (6, 2), (7, 3), (9, 3), (10, 4), (12, 4)]
+)
 def test_quarter_parametrize(month, expected_q) -> None:
     from app.date_utils import quarter_of_year
 
@@ -711,7 +717,9 @@ class TestDaysInMonthExtended:
 
 
 class TestIsLeapYearExtended:
-    @pytest.mark.parametrize("year,expected", [(2024, True), (2023, False), (1900, False), (2000, True)])
+    @pytest.mark.parametrize(
+        "year,expected", [(2024, True), (2023, False), (1900, False), (2000, True)]
+    )
     def test_parametrized(self, year: int, expected: bool) -> None:
         from app.date_utils import is_leap_year
 
@@ -855,7 +863,7 @@ class TestNextWeekday:
             next_weekday(datetime.date(2026, 8, 11), weekday=8)
 
 
-import pytest as _pytest
+import pytest as _pytest  # noqa: E402
 
 
 @_pytest.mark.parametrize(
@@ -1103,7 +1111,9 @@ def test_days_between_round_trip(days: int) -> None:
     assert days_between(start, end) == days
 
 
-@pytest.mark.parametrize("quarter,months", [(1, [1, 2, 3]), (2, [4, 5, 6]), (3, [7, 8, 9]), (4, [10, 11, 12])])
+@pytest.mark.parametrize(
+    "quarter,months", [(1, [1, 2, 3]), (2, [4, 5, 6]), (3, [7, 8, 9]), (4, [10, 11, 12])]
+)
 def test_quarter_of_year_by_month(quarter: int, months: list[int]) -> None:
     """quarter_of_year returns the correct quarter for each month."""
     from datetime import UTC, datetime
@@ -1231,26 +1241,32 @@ class TestClampToRange:
         assert start <= result <= end
 
 
-class TestIsSameDay:
+class TestIsSameDayExtended:
     def test_same_day(self) -> None:
-        from app.date_utils import is_same_day
         from datetime import datetime
+
+        from app.date_utils import is_same_day
+
         a = datetime(2026, 6, 15, 10, 0)
         b = datetime(2026, 6, 15, 22, 30)
         assert is_same_day(a, b)
 
     def test_different_day(self) -> None:
-        from app.date_utils import is_same_day
         from datetime import datetime
+
+        from app.date_utils import is_same_day
+
         a = datetime(2026, 6, 15)
         b = datetime(2026, 6, 16)
         assert not is_same_day(a, b)
 
 
-class TestEndOfDay:
+class TestEndOfDayExtended:
     def test_end_of_day_time(self) -> None:
-        from app.date_utils import end_of_day
         from datetime import datetime
+
+        from app.date_utils import end_of_day
+
         dt = datetime(2026, 6, 15, 10, 0)
         eod = end_of_day(dt)
         assert eod.hour == 23
@@ -1258,16 +1274,20 @@ class TestEndOfDay:
         assert eod.second == 59
 
 
-class TestMinutesBetween:
+class TestMinutesBetweenExtended:
     def test_one_hour_apart(self) -> None:
-        from app.date_utils import minutes_between
         from datetime import datetime
+
+        from app.date_utils import minutes_between
+
         a = datetime(2026, 6, 15, 10, 0)
         b = datetime(2026, 6, 15, 11, 0)
         assert minutes_between(a, b) == 60
 
     def test_zero_minutes(self) -> None:
-        from app.date_utils import minutes_between
         from datetime import datetime
+
+        from app.date_utils import minutes_between
+
         a = datetime(2026, 6, 15)
         assert minutes_between(a, a) == 0

@@ -1,4 +1,5 @@
 """Tests for drift detection and prediction logging."""
+
 from __future__ import annotations
 
 import numpy as np
@@ -76,8 +77,7 @@ def test_log_prediction_persists_to_db(db_session):
 
 def test_seed_reference_buffer():
     samples = [
-        {"distance_km": 50.0, "weight_kg": 5.0, "predicted_minutes": 120.0}
-        for _ in range(20)
+        {"distance_km": 50.0, "weight_kg": 5.0, "predicted_minutes": 120.0} for _ in range(20)
     ]
     seed_reference_buffer(samples)
 
@@ -91,3 +91,45 @@ def test_drift_scales_with_shift(shift):
         assert result["drift_detected"] is False
     elif shift >= 10:
         assert result["drift_detected"] is True
+
+
+def test_compute_drift_ks_statistic_range():
+    ref = list(np.arange(100, dtype=float))
+    cur = list(np.arange(200, 300, dtype=float))
+    result = compute_drift(ref, cur)
+    assert 0.0 < result["ks_statistic"] <= 1.0
+
+
+def test_compute_drift_p_value_range():
+    ref = list(np.random.default_rng(5).normal(0, 1, 100))
+    cur = list(np.random.default_rng(6).normal(0, 1, 100))
+    result = compute_drift(ref, cur)
+    assert 0.0 <= result["p_value"] <= 1.0
+
+
+def test_log_prediction_with_model_version(db_session):
+    pred = log_prediction(
+        db_session,
+        carrier="UPS",
+        distance_km=75.0,
+        weight_kg=2.0,
+        route_type="suburban",
+        hour_of_day=10,
+        day_of_week=3,
+        predicted_minutes=95.0,
+        confidence=0.88,
+        model_version="2.0.0",
+    )
+    assert pred.model_version == "2.0.0"
+
+
+def test_seed_reference_buffer_with_empty_list():
+    """Seeding with an empty list should not raise."""
+    seed_reference_buffer([])
+
+
+def test_run_drift_check_returns_status_key(db_session):
+    from app.monitoring import run_drift_check
+
+    result = run_drift_check(db_session)
+    assert "status" in result

@@ -1,4 +1,5 @@
 """Tests for model training and inference."""
+
 from __future__ import annotations
 
 import numpy as np
@@ -73,3 +74,43 @@ def test_model_scales_with_data(n_samples):
     y = df["delivery_minutes"].values
     pipe, metrics = train_model(X, y)
     assert metrics["n_samples"] == n_samples
+
+
+def test_model_single_row_prediction(trained_model):
+    """Model must predict on a single-row input without error."""
+    pipe, _, X, _ = trained_model
+    from app.model import predict
+
+    preds = predict(pipe, X[:1])
+    assert preds.shape == (1,)
+    assert preds[0] > 0
+
+
+def test_metrics_saved_to_disk(tmp_path, monkeypatch):
+    """train_model should write metrics.json when METRICS_PATH is set."""
+    import json
+
+    from app.model import train_model
+
+    metrics_file = tmp_path / "metrics.json"
+    monkeypatch.setenv("METRICS_PATH", str(metrics_file))
+
+    df = generate_synthetic_data(n=200, seed=3)
+    feat_pipe = build_feature_pipeline()
+    X = prepare_X(df, feat_pipe, fit=True)
+    y = df["delivery_minutes"].values
+    train_model(X, y)
+
+    assert metrics_file.exists()
+    data = json.loads(metrics_file.read_text())
+    assert "rmse_mean" in data
+    assert "r2_mean" in data
+
+
+def test_predict_no_nan_output(trained_model):
+    """Prediction array must contain no NaN values."""
+    pipe, _, X, _ = trained_model
+    from app.model import predict
+
+    preds = predict(pipe, X)
+    assert not np.isnan(preds).any()

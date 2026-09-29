@@ -1,4 +1,5 @@
 """Feature engineering pipeline for delivery-time prediction."""
+
 from __future__ import annotations
 
 import logging
@@ -20,10 +21,12 @@ class TemporalFeatureExtractor(BaseEstimator, TransformerMixin):
     """Adds lag, rolling, and cyclical time features."""
 
     def fit(self, X: pd.DataFrame, y: Any = None) -> TemporalFeatureExtractor:
+        """No-op fit; marks the transformer as fitted."""
         self.fitted_ = True
         return self
 
     def transform(self, X: pd.DataFrame) -> pd.DataFrame:
+        """Compute and append temporal features to a copy of X."""
         df = X.copy()
         # Cyclical encoding so hour 0 and 23 are adjacent
         df["hour_sin"] = np.sin(2 * np.pi * df["hour_of_day"] / 24)
@@ -52,10 +55,12 @@ class RouteFeatureEngineer(BaseEstimator, TransformerMixin):
     }
 
     def fit(self, X: pd.DataFrame, y: Any = None) -> RouteFeatureEngineer:
+        """No-op fit; marks the transformer as fitted."""
         self.fitted_ = True
         return self
 
     def transform(self, X: pd.DataFrame) -> pd.DataFrame:
+        """Engineer route, distance-bucket, and carrier-risk features."""
         df = X.copy()
         # Distance buckets: local, regional, long-haul
         df["distance_bucket"] = pd.cut(
@@ -77,6 +82,7 @@ class CategoricalEncoder(BaseEstimator, TransformerMixin):
     """Ordinal-encodes carrier column."""
 
     def fit(self, X: pd.DataFrame, y: Any = None) -> CategoricalEncoder:
+        """Fit the label encoder on observed carriers plus all known carriers."""
         # Trailing underscore matters: sklearn's check_is_fitted only treats
         # attributes ending in "_" as evidence the estimator has been fitted.
         self.le_ = LabelEncoder()
@@ -84,10 +90,13 @@ class CategoricalEncoder(BaseEstimator, TransformerMixin):
         return self
 
     def transform(self, X: pd.DataFrame) -> pd.DataFrame:
+        """Ordinal-encode the carrier column, mapping unknowns to class 0."""
         df = X.copy()
         known = set(self.le_.classes_)
-        carriers = df["carrier"].fillna("Unknown").apply(
-            lambda c: c if c in known else self.le_.classes_[0]
+        carriers = (
+            df["carrier"]
+            .fillna("Unknown")
+            .apply(lambda c: c if c in known else self.le_.classes_[0])
         )
         df["carrier_enc"] = self.le_.transform(carriers)
         return df
@@ -141,10 +150,10 @@ def generate_synthetic_data(n: int = 2000, seed: int = 42) -> pd.DataFrame:
     carrier_delay = np.where(np.isin(carriers, ["USPS"]), 1.3, 1.0)
     route_factor = np.where(np.isin(route_types, ["rural"]), 1.4, 1.0)
     target = (
-        distance_km * 1.5
-        + weight_kg * 2
-        + rng.normal(0, 20, size=n)
-    ) * carrier_delay * route_factor
+        (distance_km * 1.5 + weight_kg * 2 + rng.normal(0, 20, size=n))
+        * carrier_delay
+        * route_factor
+    )
     target = np.clip(target, 10, 2000)
 
     return pd.DataFrame(

@@ -191,3 +191,67 @@ class TestDataSnapshotEdgeCases:
 
         snap = DataSnapshot(name="ds", version="1.0.0")
         assert snap.parent_versions == []
+
+
+class TestSnapshotCount:
+    def test_zero_for_unknown_dataset(self) -> None:
+        from app.data_versioning import DataLineage
+
+        dl = DataLineage()
+        assert dl.snapshot_count("missing") == 0
+
+    def test_increments_with_each_record(self) -> None:
+        from app.data_versioning import DataLineage, DataSnapshot
+
+        dl = DataLineage()
+        dl.record(DataSnapshot(name="ds", version="1.0.0"))
+        dl.record(DataSnapshot(name="ds", version="2.0.0"))
+        assert dl.snapshot_count("ds") == 2
+
+
+class TestTotalRows:
+    def test_zero_for_unknown_dataset(self) -> None:
+        from app.data_versioning import DataLineage
+
+        dl = DataLineage()
+        assert dl.total_rows("missing") == 0
+
+    def test_sums_row_counts(self) -> None:
+        from app.data_versioning import DataLineage, DataSnapshot
+
+        dl = DataLineage()
+        dl.record(DataSnapshot(name="ds", version="1.0.0", row_count=100))
+        dl.record(DataSnapshot(name="ds", version="2.0.0", row_count=200))
+        assert dl.total_rows("ds") == 300
+
+
+class TestDelete:
+    def test_delete_all_versions(self) -> None:
+        from app.data_versioning import DataLineage, DataSnapshot
+
+        dl = DataLineage()
+        dl.record(DataSnapshot(name="ds", version="1.0.0"))
+        assert dl.delete("ds") is True
+        assert dl.snapshot_count("ds") == 0
+
+    def test_delete_specific_version(self) -> None:
+        from app.data_versioning import DataLineage, DataSnapshot
+
+        dl = DataLineage()
+        dl.record(DataSnapshot(name="ds", version="1.0.0"))
+        dl.record(DataSnapshot(name="ds", version="2.0.0"))
+        assert dl.delete("ds", version="1.0.0") is True
+        assert dl.snapshot_count("ds") == 1
+
+    def test_delete_nonexistent_returns_false(self) -> None:
+        from app.data_versioning import DataLineage
+
+        dl = DataLineage()
+        assert dl.delete("nonexistent") is False
+
+    def test_delete_nonexistent_version_returns_false(self) -> None:
+        from app.data_versioning import DataLineage, DataSnapshot
+
+        dl = DataLineage()
+        dl.record(DataSnapshot(name="ds", version="1.0.0"))
+        assert dl.delete("ds", version="9.9.9") is False

@@ -1,4 +1,4 @@
-"""Structured JSON logging configuration for Watt-Guard."""
+"""Structured JSON logging configuration for Logistics-Flow."""
 
 from __future__ import annotations
 

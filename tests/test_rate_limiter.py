@@ -433,3 +433,53 @@ class TestRateLimiterClientOps:
         for _ in range(n):
             limiter.is_allowed("tester")
         assert total_consumed_tokens(limiter, "tester") == pytest.approx(float(n))
+
+
+class TestClientStatsAllowBurst:
+    def test_client_stats_returns_dict_with_keys(self) -> None:
+        from app.rate_limiter import client_stats, make_rate_limiter
+
+        limiter = make_rate_limiter(capacity=10.0, refill_rate=0.0)
+        stats = client_stats(limiter)
+        assert "client_count" in stats
+        assert "clients" in stats
+
+    def test_client_stats_empty_initially(self) -> None:
+        from app.rate_limiter import client_stats, make_rate_limiter
+
+        limiter = make_rate_limiter(capacity=10.0, refill_rate=0.0)
+        stats = client_stats(limiter)
+        assert stats["client_count"] == 0
+
+    def test_client_stats_count_increments(self) -> None:
+        from app.rate_limiter import client_stats, make_rate_limiter
+
+        limiter = make_rate_limiter(capacity=10.0, refill_rate=0.0)
+        limiter.is_allowed("user_a")
+        limiter.is_allowed("user_b")
+        stats = client_stats(limiter)
+        assert stats["client_count"] == 2
+
+    def test_allow_burst_succeeds_when_sufficient(self) -> None:
+        from app.rate_limiter import allow_burst, make_rate_limiter
+
+        limiter = make_rate_limiter(capacity=10.0, refill_rate=0.0)
+        assert allow_burst(limiter, "user", n=5) is True
+
+    def test_allow_burst_fails_when_insufficient(self) -> None:
+        from app.rate_limiter import allow_burst, make_rate_limiter
+
+        limiter = make_rate_limiter(capacity=5.0, refill_rate=0.0)
+        # exhaust the bucket
+        for _ in range(5):
+            limiter.is_allowed("user")
+        assert allow_burst(limiter, "user", n=3) is False
+
+    def test_allow_burst_invalid_n_raises(self) -> None:
+        import pytest
+
+        from app.rate_limiter import allow_burst, make_rate_limiter
+
+        limiter = make_rate_limiter(capacity=10.0, refill_rate=0.0)
+        with pytest.raises(ValueError):
+            allow_burst(limiter, "user", n=0)

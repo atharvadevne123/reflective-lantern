@@ -118,7 +118,9 @@ class TestNewCorrelationIdFormat:
         import re
 
         cid = new_correlation_id()
-        assert re.match(r"^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$", cid)
+        assert re.match(
+            r"^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$", cid
+        )
 
     def test_length_36_chars(self) -> None:
         assert len(new_correlation_id()) == 36
@@ -149,7 +151,7 @@ class TestSetCorrelationIdEdgeCases:
         assert get_correlation_id() == "second"
 
 
-import pytest
+import pytest  # noqa: E402
 
 
 @pytest.mark.parametrize("n", [1, 5, 10])
@@ -197,3 +199,55 @@ class TestCorrelationContextManager:
 
         with correlation_context(cid):
             assert get_correlation_id() == cid
+
+
+class TestRequireCorrelationId:
+    def setup_method(self) -> None:
+        from app.correlation_id import clear_correlation_id
+
+        clear_correlation_id()
+
+    def teardown_method(self) -> None:
+        from app.correlation_id import clear_correlation_id
+
+        clear_correlation_id()
+
+    def test_raises_when_unset(self) -> None:
+        from app.correlation_id import require_correlation_id
+
+        with pytest.raises(RuntimeError, match="No correlation ID"):
+            require_correlation_id()
+
+    def test_returns_set_id(self) -> None:
+        from app.correlation_id import require_correlation_id, set_correlation_id
+
+        set_correlation_id("req-abc")
+        assert require_correlation_id() == "req-abc"
+
+    def test_returns_context_id(self) -> None:
+        from app.correlation_id import correlation_context, require_correlation_id
+
+        with correlation_context("ctx-xyz"):
+            assert require_correlation_id() == "ctx-xyz"
+
+
+class TestIsValidUuid:
+    def test_valid_uuid4_returns_true(self) -> None:
+        from app.correlation_id import is_valid_uuid, new_correlation_id
+
+        assert is_valid_uuid(new_correlation_id()) is True
+
+    def test_invalid_string_returns_false(self) -> None:
+        from app.correlation_id import is_valid_uuid
+
+        assert is_valid_uuid("not-a-uuid") is False
+
+    def test_empty_string_returns_false(self) -> None:
+        from app.correlation_id import is_valid_uuid
+
+        assert is_valid_uuid("") is False
+
+    def test_nil_uuid_returns_true(self) -> None:
+        from app.correlation_id import is_valid_uuid
+
+        assert is_valid_uuid("00000000-0000-0000-0000-000000000000") is True

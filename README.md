@@ -193,8 +193,38 @@ and drift detection under known distribution shifts.
 make install    # install dependencies
 make test       # run pytest
 make lint       # ruff check
-make run        # start dev server
+make format     # ruff format
+make typecheck  # mypy static analysis
+make coverage   # pytest with coverage report
+make run        # start dev server with hot reload
+make smoke      # run smoke test against a running server
 ```
+
+### Pre-commit hooks
+
+Install hooks with:
+
+```bash
+pip install pre-commit
+pre-commit install
+```
+
+Hooks run ruff, mypy, trailing-whitespace, and merge-conflict checks
+automatically on every commit.
+
+### Environment variables
+
+| Variable | Default | Description |
+|---|---|---|
+| `DATABASE_URL` | `sqlite:///./logistics_flow.db` | SQLAlchemy connection string |
+| `FEATURE_PIPELINE_PATH` | `feature_pipeline.joblib` | Serialised feature pipeline |
+| `MODEL_PATH` | `model.joblib` | Serialised model |
+| `METRICS_PATH` | `metrics.json` | Last CV metrics |
+| `LOG_LEVEL` | `INFO` | Python logging level |
+| `RATE_LIMIT_PER_MINUTE` | `120` | Per-client request cap |
+| `DRIFT_WINDOW` | `100` | Recent predictions used in drift check |
+| `CORS_ORIGINS` | `*` | Comma-separated CORS allow-list |
+| `ENABLE_JSON_LOGS` | `false` | Emit structured JSON log lines |
 
 ## License
 

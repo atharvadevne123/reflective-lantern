@@ -22,10 +22,12 @@ def timed(label: str | None = None, log_level: int = logging.DEBUG) -> Callable:
     """
 
     def decorator(func: Callable) -> Callable:
+        """Wrap func to emit a timing log entry on each call."""
         name = label or func.__qualname__
 
         @functools.wraps(func)
         def wrapper(*args, **kwargs) -> object:
+            """Invoke the original function and log its wall-clock duration."""
             start = time.perf_counter()
             try:
                 result = func(*args, **kwargs)
@@ -92,6 +94,7 @@ def tracked(label: str | None = None) -> Callable:
 
         @functools.wraps(func)
         def wrapper(*args, **kwargs) -> object:
+            """Call the original function and record its duration in the registry."""
             start = time.perf_counter()
             try:
                 return func(*args, **kwargs)
@@ -147,4 +150,27 @@ def total_calls() -> int:
     return sum(s.calls for s in _registry.values())
 
 
-__all__ = ["call_count", "get_stats", "reset_stats", "timed", "total_calls", "tracked", "tracked_names"]
+def top_n(n: int = 5) -> list[dict]:
+    """Return the top *n* tracked functions by total time spent.
+
+    Args:
+        n: Maximum number of results to return.
+
+    Returns:
+        List of dicts with keys ``label``, ``total_ms``, ``calls``, and
+        ``avg_ms``, sorted by descending total_ms.
+    """
+    entries = [{"label": k, **v.to_dict()} for k, v in _registry.items() if v.calls > 0]
+    return sorted(entries, key=lambda e: e["total_ms"], reverse=True)[:n]
+
+
+__all__ = [
+    "call_count",
+    "get_stats",
+    "reset_stats",
+    "timed",
+    "top_n",
+    "total_calls",
+    "tracked",
+    "tracked_names",
+]

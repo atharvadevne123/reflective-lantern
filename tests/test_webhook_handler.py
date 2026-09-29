@@ -158,3 +158,35 @@ def test_multiple_handlers_all_called(n_handlers: int) -> None:
     body = b'{"x": 1}'
     wh.process(body, "push", signature=make_sig(body))
     assert all(len(c) == 1 for c in counts)
+
+
+def test_webhook_handler_catch_all(SECRET=SECRET) -> None:
+    """A catch-all handler registered with '*' should fire for any event."""
+    from app.webhook_handler import WebhookHandler
+
+    fired = []
+    wh = WebhookHandler(SECRET)
+    wh.on("*", fired.append)
+    body = b'{"z": 99}'
+    wh.process(body, "custom_event", signature=make_sig(body))
+    assert len(fired) == 1
+
+
+def test_webhook_handler_no_handlers_does_not_raise(SECRET=SECRET) -> None:
+    """Processing an event with no registered handlers must not raise."""
+    from app.webhook_handler import WebhookHandler
+
+    wh = WebhookHandler(SECRET)
+    body = b'{"k": "v"}'
+    event = wh.process(body, "unknown", signature=make_sig(body))
+    assert event.event_type == "unknown"
+
+
+def test_webhook_event_str_representation(SECRET=SECRET) -> None:
+    """WebhookEvent has a readable string representation."""
+    from app.webhook_handler import WebhookHandler
+
+    wh = WebhookHandler(SECRET)
+    body = b'{"msg": "hello"}'
+    event = wh.process(body, "greet", signature=make_sig(body))
+    assert "greet" in str(event)

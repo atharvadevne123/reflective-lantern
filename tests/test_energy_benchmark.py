@@ -86,7 +86,18 @@ class TestScoreFromPercentile:
 class TestGradeFromScore:
     @pytest.mark.parametrize(
         ("score", "expected"),
-        [(100, "A"), (90, "A"), (89, "B"), (75, "B"), (74, "C"), (50, "C"), (49, "D"), (25, "D"), (24, "F"), (1, "F")],
+        [
+            (100, "A"),
+            (90, "A"),
+            (89, "B"),
+            (75, "B"),
+            (74, "C"),
+            (50, "C"),
+            (49, "D"),
+            (25, "D"),
+            (24, "F"),
+            (1, "F"),
+        ],
     )
     def test_grade_boundaries(self, score: int, expected: str) -> None:
         assert grade_from_score(score) == expected
@@ -242,3 +253,34 @@ class TestEnergyUseIntensityExtended:
     def test_eui_positive_for_valid_area(self, area: float) -> None:
         eui = energy_use_intensity(annual_kwh=10000.0, floor_area_m2=area)
         assert eui > 0.0
+
+
+class TestBenchmarkResultFields:
+    COHORT = [80.0, 100.0, 120.0, 140.0, 160.0, 180.0, 200.0, 220.0, 240.0, 260.0]
+
+    def test_result_has_all_fields(self) -> None:
+        result = benchmark(100_000.0, 1_000.0, self.COHORT)
+        assert hasattr(result, "eui")
+        assert hasattr(result, "cohort_size")
+        assert hasattr(result, "cohort_median_eui")
+        assert hasattr(result, "percentile_rank")
+        assert hasattr(result, "score")
+        assert hasattr(result, "grade")
+        assert hasattr(result, "savings_potential_kwh")
+
+    def test_cohort_size_matches_input(self) -> None:
+        result = benchmark(100_000.0, 1_000.0, self.COHORT)
+        assert result.cohort_size == len(self.COHORT)
+
+    def test_grade_is_string(self) -> None:
+        result = benchmark(100_000.0, 1_000.0, self.COHORT)
+        assert isinstance(result.grade, str)
+        assert len(result.grade) > 0
+
+    def test_score_in_valid_range(self) -> None:
+        result = benchmark(100_000.0, 1_000.0, self.COHORT)
+        assert 1 <= result.score <= 100
+
+    def test_percentile_rank_in_unit_range(self) -> None:
+        result = benchmark(100_000.0, 1_000.0, self.COHORT)
+        assert 0.0 <= result.percentile_rank <= 100.0

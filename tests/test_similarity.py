@@ -4,7 +4,12 @@ from __future__ import annotations
 
 import pytest
 
-from app.similarity import BuildingSimilarityIndex, chebyshev_distance, manhattan_distance, pearson_similarity
+from app.similarity import (
+    BuildingSimilarityIndex,
+    chebyshev_distance,
+    manhattan_distance,
+    pearson_similarity,
+)
 
 
 def test_empty_index_returns_empty() -> None:
@@ -416,7 +421,9 @@ class TestManhattanDistance:
         with pytest.raises(ValueError, match="same length"):
             manhattan_distance([1.0, 2.0], [1.0])
 
-    @pytest.mark.parametrize("a,b,expected", [([1.0], [4.0], 3.0), ([0.0, 0.0, 0.0], [1.0, 1.0, 1.0], 3.0)])
+    @pytest.mark.parametrize(
+        "a,b,expected", [([1.0], [4.0], 3.0), ([0.0, 0.0, 0.0], [1.0, 1.0, 1.0], 3.0)]
+    )
     def test_parametrized(self, a: list, b: list, expected: float) -> None:
         from app.similarity import manhattan_distance
 
@@ -874,7 +881,7 @@ def test_manhattan_distance_non_negative(a: list, b: list) -> None:
     assert manhattan_distance(a, b) >= 0.0
 
 
-import pytest
+import pytest  # noqa: E402
 
 
 @pytest.mark.parametrize(
@@ -992,3 +999,53 @@ class TestNormalizeDistancesExtended:
         distances = [float(i) for i in range(n)]
         result = normalize_distances(distances)
         assert len(result) == n
+
+
+class TestBatchSimilarityMatrix:
+    def test_empty_input_returns_empty(self) -> None:
+        from app.similarity import batch_similarity_matrix
+
+        assert batch_similarity_matrix([]) == []
+
+    def test_single_profile_returns_one_by_one(self) -> None:
+        from app.similarity import batch_similarity_matrix
+
+        result = batch_similarity_matrix([[1.0, 0.0]])
+        assert len(result) == 1
+        assert len(result[0]) == 1
+
+    def test_diagonal_is_one(self) -> None:
+        import pytest
+
+        from app.similarity import batch_similarity_matrix
+
+        profiles = [[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]]
+        matrix = batch_similarity_matrix(profiles)
+        for i in range(3):
+            assert matrix[i][i] == pytest.approx(1.0, abs=1e-5)
+
+    def test_orthogonal_profiles_similarity_zero(self) -> None:
+        import pytest
+
+        from app.similarity import batch_similarity_matrix
+
+        profiles = [[1.0, 0.0], [0.0, 1.0]]
+        matrix = batch_similarity_matrix(profiles)
+        assert matrix[0][1] == pytest.approx(0.0, abs=1e-5)
+
+    def test_identical_profiles_similarity_one(self) -> None:
+        import pytest
+
+        from app.similarity import batch_similarity_matrix
+
+        profiles = [[1.0, 2.0, 3.0], [1.0, 2.0, 3.0]]
+        matrix = batch_similarity_matrix(profiles)
+        assert matrix[0][1] == pytest.approx(1.0, abs=1e-5)
+
+    def test_inconsistent_lengths_raise(self) -> None:
+        import pytest
+
+        from app.similarity import batch_similarity_matrix
+
+        with pytest.raises(ValueError):
+            batch_similarity_matrix([[1.0, 2.0], [1.0]])

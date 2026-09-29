@@ -1,4 +1,4 @@
-"""Example client for the Watt-Guard energy forecasting API."""
+"""Example client for the Logistics-Flow API."""
 
 from __future__ import annotations
 
@@ -23,7 +23,7 @@ def predict(
     occupancy: int,
     hvac_state: int,
 ) -> dict:
-    """Send a single prediction request to the Watt-Guard API.
+    """Send a single prediction request to the Logistics-Flow API.
 
     Args:
         building_id: Unique building identifier.
@@ -66,7 +66,14 @@ def main() -> None:
     """Run a sample prediction and print the result."""
     logging.basicConfig(level=logging.INFO, format="%(levelname)s %(message)s")
     result = predict(
-        "bldg-001", hour=8, day_of_week=1, month=7, temperature_c=24.5, humidity_pct=55.0, occupancy=120, hvac_state=1
+        "bldg-001",
+        hour=8,
+        day_of_week=1,
+        month=7,
+        temperature_c=24.5,
+        humidity_pct=55.0,
+        occupancy=120,
+        hvac_state=1,
     )
     logger.info("Prediction result:\n%s", json.dumps(result, indent=2))
 

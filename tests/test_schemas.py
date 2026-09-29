@@ -280,3 +280,64 @@ class TestDriftRequestBoundary:
     def test_min_length_parametrized(self, n: int) -> None:
         r = DriftRequest(current_values=[1.0] * n)
         assert len(r.current_values) == n
+
+
+class TestPropertyIn:
+    def test_valid_property(self) -> None:
+        from app.schemas import PropertyIn
+
+        prop = PropertyIn(sqft=1500.0, bedrooms=3, bathrooms=2.0, condition_score=8.0)
+        assert prop.sqft == 1500.0
+        assert prop.bedrooms == 3
+
+    def test_sqft_must_be_positive(self) -> None:
+        from app.schemas import PropertyIn
+
+        with pytest.raises(ValidationError):
+            PropertyIn(sqft=0.0, bedrooms=3, bathrooms=2.0, condition_score=8.0)
+
+    def test_bedrooms_max_enforced(self) -> None:
+        from app.schemas import PropertyIn
+
+        with pytest.raises(ValidationError):
+            PropertyIn(sqft=1000.0, bedrooms=21, bathrooms=2.0, condition_score=5.0)
+
+    def test_condition_score_max_enforced(self) -> None:
+        from app.schemas import PropertyIn
+
+        with pytest.raises(ValidationError):
+            PropertyIn(sqft=1000.0, bedrooms=2, bathrooms=1.0, condition_score=11.0)
+
+    def test_defaults_applied(self) -> None:
+        from app.schemas import PropertyIn
+
+        prop = PropertyIn(sqft=1000.0, bedrooms=2, bathrooms=1.0, condition_score=5.0)
+        assert prop.school_score == 5.0
+        assert prop.year_built == 2000
+
+
+class TestDriftReport:
+    def test_valid_drift_report(self) -> None:
+        from app.schemas import DriftReport
+
+        report = DriftReport(
+            feature_name="carrier",
+            ks_statistic=0.12,
+            p_value=0.04,
+            drift_detected=True,
+            checked_at="2026-09-29T12:00:00",
+        )
+        assert report.drift_detected is True
+        assert report.feature_name == "carrier"
+
+    def test_drift_not_detected(self) -> None:
+        from app.schemas import DriftReport
+
+        report = DriftReport(
+            feature_name="distance_km",
+            ks_statistic=0.02,
+            p_value=0.80,
+            drift_detected=False,
+            checked_at="2026-09-29T12:00:00",
+        )
+        assert report.drift_detected is False

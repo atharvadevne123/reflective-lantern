@@ -134,4 +134,27 @@ class CircuitBreaker:
         return wrapper
 
 
-__all__ = ["CircuitBreaker", "CircuitOpenError", "CircuitState"]
+def protected(
+    failure_threshold: int = 5,
+    recovery_timeout: float = 30.0,
+    expected_exceptions: tuple[type[Exception], ...] = (Exception,),
+) -> Callable[[Callable], Callable]:
+    """Convenience decorator that wraps a function with a new CircuitBreaker.
+
+    Args:
+        failure_threshold: Consecutive failures before opening the circuit.
+        recovery_timeout: Seconds to wait in OPEN state before probing.
+        expected_exceptions: Exception types that count as failures.
+
+    Returns:
+        Decorator that attaches a CircuitBreaker to the wrapped function.
+    """
+    cb = CircuitBreaker(
+        failure_threshold=failure_threshold,
+        recovery_timeout=recovery_timeout,
+        expected_exceptions=expected_exceptions,
+    )
+    return cb
+
+
+__all__ = ["CircuitBreaker", "CircuitOpenError", "CircuitState", "protected"]

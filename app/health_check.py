@@ -121,3 +121,21 @@ def check(name: str, registry: HealthRegistry | None = None) -> Callable[[CheckF
         return fn
 
     return decorator
+
+
+def run_default() -> HealthStatus:
+    """Run all checks registered in the module-level default registry.
+
+    Returns:
+        :class:`HealthStatus` aggregating every check in :data:`_default_registry`.
+    """
+    return _default_registry.run()
+
+
+def registered_check_names() -> list[str]:
+    """Return sorted names of all checks in the default registry.
+
+    Returns:
+        List of check names in alphabetical order.
+    """
+    return sorted(_default_registry._checks)
