@@ -340,3 +340,60 @@ class TestIsLastPage:
 
         info = PageInfo(total=30, page=2, per_page=5)
         assert is_last_page(info) is False
+
+
+class TestPagesRemainingAndSliceForPage:
+    def test_pages_remaining_on_last_page(self) -> None:
+        from app.pagination import PageInfo, pages_remaining
+
+        info = PageInfo(total=30, page=3, per_page=10)
+        assert pages_remaining(info) == 0
+
+    def test_pages_remaining_on_first_page(self) -> None:
+        from app.pagination import PageInfo, pages_remaining
+
+        info = PageInfo(total=30, page=1, per_page=10)
+        assert pages_remaining(info) == 2
+
+    def test_pages_remaining_single_page(self) -> None:
+        from app.pagination import PageInfo, pages_remaining
+
+        info = PageInfo(total=5, page=1, per_page=10)
+        assert pages_remaining(info) == 0
+
+    def test_slice_for_page_first_page(self) -> None:
+        from app.pagination import slice_for_page
+
+        start, end = slice_for_page(total=100, page=1, per_page=10)
+        assert start == 0
+        assert end == 10
+
+    def test_slice_for_page_second_page(self) -> None:
+        from app.pagination import slice_for_page
+
+        start, end = slice_for_page(total=100, page=2, per_page=10)
+        assert start == 10
+        assert end == 20
+
+    def test_slice_for_page_partial_last_page(self) -> None:
+        from app.pagination import slice_for_page
+
+        start, end = slice_for_page(total=25, page=3, per_page=10)
+        assert start == 20
+        assert end == 25
+
+    def test_slice_for_page_invalid_page_raises(self) -> None:
+        import pytest
+
+        from app.pagination import slice_for_page
+
+        with pytest.raises(ValueError):
+            slice_for_page(total=100, page=0, per_page=10)
+
+    def test_slice_for_page_invalid_per_page_raises(self) -> None:
+        import pytest
+
+        from app.pagination import slice_for_page
+
+        with pytest.raises(ValueError):
+            slice_for_page(total=100, page=1, per_page=0)

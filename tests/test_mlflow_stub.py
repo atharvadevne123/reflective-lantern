@@ -458,7 +458,7 @@ class TestRunsWithMetricAboveAndLatestRun:
         log_metrics("second", {"v": 2.0})
         run = latest_run()
         assert run is not None
-        assert run["run_name"] == "second"
+        assert run["run"] == "second"
 
     def test_latest_run_none_when_empty(self) -> None:
         from app.mlflow_stub import latest_run
@@ -471,4 +471,4 @@ class TestRunsWithMetricAboveAndLatestRun:
         log_metrics("only_run", {"v": 1.0})
         run = latest_run()
         assert run is not None
-        assert run["run_name"] == "only_run"
+        assert run["run"] == "only_run"

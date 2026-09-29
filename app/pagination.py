@@ -200,6 +200,41 @@ def is_last_page(info: PageInfo) -> bool:
     return not info.has_next
 
 
+def pages_remaining(info: PageInfo) -> int:
+    """Return the number of pages remaining after the current page.
+
+    Args:
+        info: PageInfo from a paginated response.
+
+    Returns:
+        Non-negative integer count of pages that follow the current one.
+    """
+    return max(0, info.total_pages - info.page)
+
+
+def slice_for_page(total: int, page: int, per_page: int) -> tuple[int, int]:
+    """Return the (start, end) slice indices for a given page.
+
+    Args:
+        total: Total number of items in the full list.
+        page: 1-based page number.
+        per_page: Items per page.
+
+    Returns:
+        Tuple (start, end) suitable for ``items[start:end]``.
+
+    Raises:
+        ValueError: If *page* < 1 or *per_page* < 1.
+    """
+    if page < 1:
+        raise ValueError(f"page must be >= 1, got {page}")
+    if per_page < 1:
+        raise ValueError(f"per_page must be >= 1, got {per_page}")
+    start = (page - 1) * per_page
+    end = min(start + per_page, total)
+    return start, end
+
+
 __all__ = [
     "CursorPage",
     "Page",
@@ -210,5 +245,7 @@ __all__ = [
     "is_last_page",
     "last_page_items",
     "page_range",
+    "pages_remaining",
     "paginate",
+    "slice_for_page",
 ]
