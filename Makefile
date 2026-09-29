@@ -1,4 +1,4 @@
-.PHONY: install test lint format run docker clean diagram
+.PHONY: install test lint format typecheck coverage watch run docker clean diagram
 
 install:
 	pip install -r requirements.txt
@@ -30,6 +30,15 @@ smoke:
 
 benchmark:
 	python scripts/benchmark.py
+
+typecheck:
+	python -m mypy app
+
+coverage:
+	pytest tests/ --cov=app --cov-report=term-missing --cov-report=html
+
+watch:
+	pytest-watch tests/ -- -v --tb=short
 
 migrate:
 	alembic upgrade head
