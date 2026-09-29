@@ -406,3 +406,71 @@ def test_anomaly_log_severity_field(db_session, severity) -> None:
     db_session.add(log)
     db_session.commit()
     assert log.severity == severity
+
+
+def test_prediction_count_empty(db_session) -> None:
+    from app.database import prediction_count
+
+    count = prediction_count(db_session)
+    assert isinstance(count, int)
+    assert count >= 0
+
+
+def test_prediction_count_increments(db_session) -> None:
+    from datetime import datetime
+
+    from app.database import Prediction, prediction_count
+
+    before = prediction_count(db_session)
+    pred = Prediction(
+        created_at=datetime.utcnow(),
+        carrier="DHL",
+        distance_km=50.0,
+        weight_kg=5.0,
+        route_type="urban",
+        hour_of_day=10,
+        day_of_week=1,
+        predicted_minutes=90.0,
+        confidence=0.9,
+        model_version="1.0.0",
+    )
+    db_session.add(pred)
+    db_session.commit()
+    assert prediction_count(db_session) == before + 1
+
+
+def test_recent_predictions_limit(db_session) -> None:
+    from datetime import datetime
+
+    from app.database import Prediction, recent_predictions
+
+    for i in range(5):
+        pred = Prediction(
+            created_at=datetime.utcnow(),
+            carrier="UPS",
+            distance_km=float(i * 10 + 10),
+            weight_kg=1.0,
+            route_type="highway",
+            hour_of_day=i,
+            day_of_week=0,
+            predicted_minutes=float(60 + i),
+            confidence=0.8,
+            model_version="1.0.0",
+        )
+        db_session.add(pred)
+    db_session.commit()
+
+    results = recent_predictions(db_session, limit=3)
+    assert len(results) <= 3
+
+
+def test_db_session_returns_session() -> None:
+    from sqlalchemy.orm import Session
+
+    from app.database import db_session
+
+    sess = db_session()
+    try:
+        assert isinstance(sess, Session)
+    finally:
+        sess.close()
