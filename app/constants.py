@@ -1,4 +1,4 @@
-"""Shared constants for the Watt-Guard application."""
+"""Shared constants for the Logistics-Flow application."""
 
 from __future__ import annotations
 
@@ -54,6 +54,14 @@ DEFAULT_MAX_BATCH_SIZE: int = 100
 DEFAULT_PAGE_SIZE: int = 50
 MAX_PAGE_SIZE: int = 500
 
+# ── Logistics / Delivery ─────────────────────────────────────────────────────
+MAX_DISTANCE_KM: float = 5_000.0
+MAX_WEIGHT_KG: float = 100.0
+MIN_DELIVERY_MINUTES: float = 1.0
+MAX_DELIVERY_MINUTES: float = 10_080.0  # one week
+CONFIDENCE_SCORE_DEFAULT: float = 0.5
+MODEL_VERSION: str = "1.0.0"
+
 __all__ = [
     "DEFAULT_CACHE_MAX_SIZE",
     "DEFAULT_CACHE_TTL_SECONDS",
@@ -77,6 +85,12 @@ __all__ = [
     "MIN_HUMIDITY_PCT",
     "MIN_REFERENCE_SIZE",
     "MIN_TEMPERATURE_C",
+    "CONFIDENCE_SCORE_DEFAULT",
+    "MAX_DELIVERY_MINUTES",
+    "MAX_DISTANCE_KM",
+    "MAX_WEIGHT_KG",
+    "MIN_DELIVERY_MINUTES",
+    "MODEL_VERSION",
     "REFERENCE_WINDOW_SIZE",
     "ZSCORE_THRESHOLD",
 ]
