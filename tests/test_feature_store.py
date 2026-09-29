@@ -168,3 +168,43 @@ class TestFeatureSetEdgeCases:
 
         fs = FeatureSet(name="v_test", version=version, features={})
         assert fs.version == version
+
+
+class TestVersionCountAndTotal:
+    def test_version_count_zero_for_unknown(self) -> None:
+        from app.feature_store import FeatureStore
+
+        store = FeatureStore()
+        assert store.version_count("missing") == 0
+
+    def test_version_count_increments(self) -> None:
+        from app.feature_store import FeatureSet, FeatureStore
+
+        store = FeatureStore()
+        store.publish(FeatureSet(name="ds", version="1.0.0", features={}))
+        store.publish(FeatureSet(name="ds", version="2.0.0", features={}))
+        assert store.version_count("ds") == 2
+
+    def test_total_versions_zero_when_empty(self) -> None:
+        from app.feature_store import FeatureStore
+
+        store = FeatureStore()
+        assert store.total_versions() == 0
+
+    def test_total_versions_sums_across_names(self) -> None:
+        from app.feature_store import FeatureSet, FeatureStore
+
+        store = FeatureStore()
+        store.publish(FeatureSet(name="a", version="1.0.0", features={}))
+        store.publish(FeatureSet(name="a", version="2.0.0", features={}))
+        store.publish(FeatureSet(name="b", version="1.0.0", features={}))
+        assert store.total_versions() == 3
+
+    def test_len_returns_distinct_names(self) -> None:
+        from app.feature_store import FeatureSet, FeatureStore
+
+        store = FeatureStore()
+        store.publish(FeatureSet(name="x", version="1.0.0", features={}))
+        store.publish(FeatureSet(name="x", version="2.0.0", features={}))
+        store.publish(FeatureSet(name="y", version="1.0.0", features={}))
+        assert len(store) == 2
