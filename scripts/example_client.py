@@ -1,4 +1,4 @@
-"""Example client for the Watt-Guard energy forecasting API."""
+"""Example client for the Logistics-Flow API."""
 
 from __future__ import annotations
 
@@ -23,7 +23,7 @@ def predict(
     occupancy: int,
     hvac_state: int,
 ) -> dict:
-    """Send a single prediction request to the Watt-Guard API.
+    """Send a single prediction request to the Logistics-Flow API.
 
     Args:
         building_id: Unique building identifier.
