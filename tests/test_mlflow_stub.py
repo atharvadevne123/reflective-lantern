@@ -420,3 +420,55 @@ class TestRunCount:
 
         clear_runs()
         assert run_count() == 0
+
+
+class TestRunsWithMetricAboveAndLatestRun:
+    def setup_method(self) -> None:
+        from app.mlflow_stub import clear_runs
+
+        clear_runs()
+
+    def test_runs_with_metric_above_returns_matching(self) -> None:
+        from app.mlflow_stub import log_metrics, runs_with_metric_above
+
+        log_metrics("run_a", {"r2": 0.90})
+        log_metrics("run_b", {"r2": 0.75})
+        log_metrics("run_c", {"r2": 0.85})
+        result = runs_with_metric_above("r2", 0.80)
+        assert len(result) == 2
+
+    def test_runs_with_metric_above_empty_when_none_qualify(self) -> None:
+        from app.mlflow_stub import log_metrics, runs_with_metric_above
+
+        log_metrics("run_a", {"r2": 0.50})
+        result = runs_with_metric_above("r2", 0.80)
+        assert result == []
+
+    def test_runs_with_metric_above_missing_metric_excluded(self) -> None:
+        from app.mlflow_stub import log_metrics, runs_with_metric_above
+
+        log_metrics("run_a", {"mae": 5.0})
+        result = runs_with_metric_above("r2", 0.0)
+        assert result == []
+
+    def test_latest_run_returns_last_logged(self) -> None:
+        from app.mlflow_stub import latest_run, log_metrics
+
+        log_metrics("first", {"v": 1.0})
+        log_metrics("second", {"v": 2.0})
+        run = latest_run()
+        assert run is not None
+        assert run["run_name"] == "second"
+
+    def test_latest_run_none_when_empty(self) -> None:
+        from app.mlflow_stub import latest_run
+
+        assert latest_run() is None
+
+    def test_latest_run_single_run(self) -> None:
+        from app.mlflow_stub import latest_run, log_metrics
+
+        log_metrics("only_run", {"v": 1.0})
+        run = latest_run()
+        assert run is not None
+        assert run["run_name"] == "only_run"
