@@ -103,3 +103,49 @@ def test_generate_synthetic_data_shape():
     df = generate_synthetic_data(n=300, seed=0)
     assert df.shape[0] == 300
     assert "delivery_minutes" in df.columns
+
+
+def test_synthetic_data_delivery_minutes_positive():
+    df = generate_synthetic_data(n=200, seed=1)
+    assert (df["delivery_minutes"] > 0).all()
+
+
+def test_prepare_X_fit_false_after_fit(sample_df):
+    """transform-only pass must not crash after the pipeline is fitted."""
+    pipe = build_feature_pipeline()
+    prepare_X(sample_df, pipe, fit=True)
+    X2 = prepare_X(sample_df.head(5), pipe, fit=False)
+    assert X2.shape[1] == len(FEATURE_COLS)
+
+
+def test_unknown_carrier_falls_back(sample_df):
+    """Unknown carrier should not raise during transform."""
+    pipe = build_feature_pipeline()
+    prepare_X(sample_df, pipe, fit=True)
+    row = sample_df.head(1).copy()
+    row["carrier"] = "UNKNOWN_XYZ"
+    X = prepare_X(row, pipe, fit=False)
+    assert X.shape[1] == len(FEATURE_COLS)
+
+
+def test_is_peak_hour_flag():
+    from app.features import TemporalFeatureExtractor
+
+    df = pd.DataFrame({"hour_of_day": [8, 12, 17, 20], "day_of_week": [1, 1, 1, 1]})
+    tfe = TemporalFeatureExtractor()
+    out = tfe.fit_transform(df)
+    assert out.loc[0, "is_peak"] == 1  # 8 AM peak
+    assert out.loc[1, "is_peak"] == 0  # 12 PM non-peak
+    assert out.loc[2, "is_peak"] == 1  # 5 PM peak
+    assert out.loc[3, "is_peak"] == 0  # 8 PM non-peak
+
+
+def test_cyclical_encoding_symmetry():
+    """hour_sin for hour 0 and hour 24 (mod 24 = 0) should be the same."""
+    from app.features import TemporalFeatureExtractor
+
+    df = pd.DataFrame({"hour_of_day": [0, 12], "day_of_week": [0, 0]})
+    tfe = TemporalFeatureExtractor()
+    out = tfe.fit_transform(df)
+    assert abs(out.loc[0, "hour_cos"] - 1.0) < 1e-9
+    assert abs(out.loc[1, "hour_cos"] - (-1.0)) < 1e-9
