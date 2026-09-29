@@ -7,7 +7,7 @@ from collections import defaultdict, deque
 
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
-from starlette.responses import JSONResponse
+from starlette.responses import JSONResponse, Response
 
 logger = logging.getLogger(__name__)
 
@@ -22,17 +22,19 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
     """
 
     def __init__(self, app, limit: int = 120) -> None:
+        """Initialise middleware with the wrapped ASGI app and request cap."""
         super().__init__(app)
         self.limit = limit
         self._hits: dict[str, deque[float]] = defaultdict(deque)
 
     def _client_key(self, request: Request) -> str:
+        """Return the most-specific client identifier for rate-limit bucketing."""
         forwarded = request.headers.get("X-Forwarded-For")
         if forwarded:
             return forwarded.split(",")[0].strip()
         return request.client.host if request.client else "unknown"
 
-    async def dispatch(self, request: Request, call_next):
+    async def dispatch(self, request: Request, call_next) -> Response:
         key = self._client_key(request)
         now = time.monotonic()
         bucket = self._hits[key]
