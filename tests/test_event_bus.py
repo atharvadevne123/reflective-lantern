@@ -435,3 +435,67 @@ class TestEventBusSubscribeMany:
         bus.unsubscribe("done", handler)
         bus.publish("done")
         assert received == []
+
+
+class TestHasListeners:
+    def test_returns_false_when_empty(self) -> None:
+        bus = EventBus()
+        assert bus.has_listeners("evt") is False
+
+    def test_returns_true_after_subscribe(self) -> None:
+        bus = EventBus()
+        bus.subscribe("evt", lambda e, p: None)
+        assert bus.has_listeners("evt") is True
+
+    def test_wildcard_makes_all_events_have_listeners(self) -> None:
+        bus = EventBus()
+        bus.subscribe("*", lambda e, p: None)
+        assert bus.has_listeners("any_event") is True
+
+    def test_returns_false_after_clear(self) -> None:
+        bus = EventBus()
+        bus.subscribe("evt", lambda e, p: None)
+        bus.clear("evt")
+        assert bus.has_listeners("evt") is False
+
+
+class TestTotalListeners:
+    def test_empty_bus_is_zero(self) -> None:
+        bus = EventBus()
+        assert bus.total_listeners() == 0
+
+    def test_counts_specific_handlers(self) -> None:
+        bus = EventBus()
+        bus.subscribe("a", lambda e, p: None)
+        bus.subscribe("b", lambda e, p: None)
+        assert bus.total_listeners() == 2
+
+    def test_counts_wildcard_handlers(self) -> None:
+        bus = EventBus()
+        bus.subscribe("*", lambda e, p: None)
+        bus.subscribe("*", lambda e, p: None)
+        assert bus.total_listeners() == 2
+
+    def test_counts_mixed_handlers(self) -> None:
+        bus = EventBus()
+        bus.subscribe("evt", lambda e, p: None)
+        bus.subscribe("*", lambda e, p: None)
+        assert bus.total_listeners() == 2
+
+
+class TestResetBus:
+    def test_reset_clears_default_bus(self) -> None:
+        from app.event_bus import get_bus, reset_bus
+
+        bus_before = get_bus()
+        bus_before.subscribe("test", lambda e, p: None)
+        reset_bus()
+        bus_after = get_bus()
+        assert bus_after is not bus_before
+        assert bus_after.total_listeners() == 0
+
+    def test_reset_returns_fresh_bus(self) -> None:
+        from app.event_bus import get_bus, reset_bus
+
+        reset_bus()
+        assert get_bus().total_listeners() == 0
