@@ -181,3 +181,70 @@ class TestExperimentRegistryEdgeCases:
             exp = Experiment(f"exp_{i}", [CONTROL, treatment])
             reg.register(exp)
         assert len(reg.list_experiments()) == n
+
+
+class TestExperimentResetAndTotals:
+    def _make_exp(self, name: str = "test_exp") -> "Experiment":
+        from app.experiment_tracker import CONTROL, Experiment, Variant
+
+        return Experiment(name, [CONTROL, Variant("treatment", 0.5)])
+
+    def test_total_assignments_zero_initially(self) -> None:
+        exp = self._make_exp()
+        assert exp.total_assignments() == 0
+
+    def test_total_assignments_increments(self) -> None:
+        exp = self._make_exp()
+        exp.assign("user_1")
+        exp.assign("user_2")
+        assert exp.total_assignments() == 2
+
+    def test_reset_counts_zeroes_all(self) -> None:
+        exp = self._make_exp()
+        for i in range(5):
+            exp.assign(f"user_{i}")
+        exp.reset_counts()
+        assert exp.total_assignments() == 0
+
+    def test_reset_counts_preserves_variant_keys(self) -> None:
+        exp = self._make_exp()
+        exp.assign("u1")
+        exp.reset_counts()
+        dist = exp.assignment_distribution()
+        assert all(v == 0 for v in dist.values())
+
+
+class TestExperimentRegistryDeregister:
+    def test_deregister_existing_returns_true(self) -> None:
+        from app.experiment_tracker import CONTROL, Experiment, ExperimentRegistry, Variant
+
+        reg = ExperimentRegistry()
+        exp = Experiment("exp_a", [CONTROL, Variant("treatment", 0.5)])
+        reg.register(exp)
+        assert reg.deregister("exp_a") is True
+        assert reg.get("exp_a") is None
+
+    def test_deregister_nonexistent_returns_false(self) -> None:
+        from app.experiment_tracker import ExperimentRegistry
+
+        reg = ExperimentRegistry()
+        assert reg.deregister("no_such_exp") is False
+
+    def test_active_experiments_only_enabled(self) -> None:
+        from app.experiment_tracker import CONTROL, Experiment, ExperimentRegistry, Variant
+
+        reg = ExperimentRegistry()
+        enabled_exp = Experiment("enabled", [CONTROL, Variant("t", 0.5)], enabled=True)
+        disabled_exp = Experiment("disabled", [CONTROL, Variant("t", 0.5)], enabled=False)
+        reg.register(enabled_exp)
+        reg.register(disabled_exp)
+        active = reg.active_experiments()
+        assert "enabled" in active
+        assert "disabled" not in active
+
+    def test_active_experiments_empty_when_all_disabled(self) -> None:
+        from app.experiment_tracker import CONTROL, Experiment, ExperimentRegistry, Variant
+
+        reg = ExperimentRegistry()
+        reg.register(Experiment("e1", [CONTROL, Variant("t", 0.5)], enabled=False))
+        assert reg.active_experiments() == []
