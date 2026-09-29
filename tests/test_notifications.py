@@ -520,3 +520,41 @@ class TestAlertsContainSeverity:
 
         alerts = [Alert(severity="WARNING", message="m")]
         assert alerts_contain_severity(alerts, "warning") is True
+
+
+class TestMuteAlert:
+    def test_muted_tag_added(self) -> None:
+        from app.notifications import Alert, mute_alert
+
+        alert = Alert(severity="warning", message="too much CPU")
+        muted = mute_alert(alert)
+        assert "muted" in muted.tags
+
+    def test_original_tags_preserved(self) -> None:
+        from app.notifications import Alert, mute_alert
+
+        alert = Alert(severity="info", message="ok", tags=["existing_tag"])
+        muted = mute_alert(alert)
+        assert "existing_tag" in muted.tags
+        assert "muted" in muted.tags
+
+    def test_reason_stored_in_metadata(self) -> None:
+        from app.notifications import Alert, mute_alert
+
+        alert = Alert(severity="warning", message="spam")
+        muted = mute_alert(alert, reason="noise reduction")
+        assert muted.metadata.get("mute_reason") == "noise reduction"
+
+    def test_no_reason_no_mute_reason_key(self) -> None:
+        from app.notifications import Alert, mute_alert
+
+        alert = Alert(severity="info", message="test")
+        muted = mute_alert(alert)
+        assert "mute_reason" not in muted.metadata
+
+    def test_original_alert_unchanged(self) -> None:
+        from app.notifications import Alert, mute_alert
+
+        alert = Alert(severity="critical", message="danger")
+        mute_alert(alert, reason="suppressed")
+        assert "muted" not in alert.tags
