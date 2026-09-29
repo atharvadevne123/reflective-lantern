@@ -108,4 +108,18 @@ def with_retry(func: Callable, *args, max_attempts: int = 3, **kwargs) -> object
     return wrapped(*args, **kwargs)
 
 
-__all__ = ["retry", "retry_on_network_error", "with_retry"]
+def is_transient(exc: Exception) -> bool:
+    """Return True if *exc* is likely a transient error worth retrying.
+
+    Args:
+        exc: The exception to classify.
+
+    Returns:
+        True for connection, timeout, OS I/O, and general network errors.
+    """
+    import urllib.error
+
+    return isinstance(exc, (ConnectionError, TimeoutError, urllib.error.URLError, OSError))
+
+
+__all__ = ["is_transient", "retry", "retry_on_network_error", "with_retry"]
