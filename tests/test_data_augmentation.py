@@ -149,7 +149,7 @@ class TestRandomSwapEdgeCases:
         assert random_swap([], prob=1.0, rng=rng) == []
 
 
-import pytest
+import pytest  # noqa: E402
 
 
 @pytest.mark.parametrize("n_tokens", [2, 5, 10])

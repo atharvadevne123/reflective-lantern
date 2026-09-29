@@ -1397,7 +1397,7 @@ class TestConsecutiveAnomalyRunsExtended:
         assert len(runs) <= n
 
 
-class TestAnomalyDensity:
+class TestAnomalyDensityExtended:
     def test_all_anomalies(self) -> None:
         from app.anomaly import anomaly_density
 

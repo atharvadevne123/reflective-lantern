@@ -855,7 +855,7 @@ class TestNextWeekday:
             next_weekday(datetime.date(2026, 8, 11), weekday=8)
 
 
-import pytest as _pytest
+import pytest as _pytest  # noqa: E402
 
 
 @_pytest.mark.parametrize(
@@ -1231,26 +1231,29 @@ class TestClampToRange:
         assert start <= result <= end
 
 
-class TestIsSameDay:
+class TestIsSameDayExtended:
     def test_same_day(self) -> None:
-        from app.date_utils import is_same_day
         from datetime import datetime
+
+        from app.date_utils import is_same_day
         a = datetime(2026, 6, 15, 10, 0)
         b = datetime(2026, 6, 15, 22, 30)
         assert is_same_day(a, b)
 
     def test_different_day(self) -> None:
-        from app.date_utils import is_same_day
         from datetime import datetime
+
+        from app.date_utils import is_same_day
         a = datetime(2026, 6, 15)
         b = datetime(2026, 6, 16)
         assert not is_same_day(a, b)
 
 
-class TestEndOfDay:
+class TestEndOfDayExtended:
     def test_end_of_day_time(self) -> None:
-        from app.date_utils import end_of_day
         from datetime import datetime
+
+        from app.date_utils import end_of_day
         dt = datetime(2026, 6, 15, 10, 0)
         eod = end_of_day(dt)
         assert eod.hour == 23
@@ -1258,16 +1261,18 @@ class TestEndOfDay:
         assert eod.second == 59
 
 
-class TestMinutesBetween:
+class TestMinutesBetweenExtended:
     def test_one_hour_apart(self) -> None:
-        from app.date_utils import minutes_between
         from datetime import datetime
+
+        from app.date_utils import minutes_between
         a = datetime(2026, 6, 15, 10, 0)
         b = datetime(2026, 6, 15, 11, 0)
         assert minutes_between(a, b) == 60
 
     def test_zero_minutes(self) -> None:
-        from app.date_utils import minutes_between
         from datetime import datetime
+
+        from app.date_utils import minutes_between
         a = datetime(2026, 6, 15)
         assert minutes_between(a, a) == 0

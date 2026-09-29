@@ -1137,7 +1137,7 @@ class TestCarbonSavingsVsBaseline:
         assert result["savings_pct"] == 0.0
 
 
-import pytest as _pytest
+import pytest as _pytest  # noqa: E402
 
 
 @_pytest.mark.parametrize(

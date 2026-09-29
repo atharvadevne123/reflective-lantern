@@ -4,7 +4,12 @@ from __future__ import annotations
 
 import pytest
 
-from app.similarity import BuildingSimilarityIndex, chebyshev_distance, manhattan_distance, pearson_similarity
+from app.similarity import (
+    BuildingSimilarityIndex,
+    chebyshev_distance,
+    manhattan_distance,
+    pearson_similarity,
+)
 
 
 def test_empty_index_returns_empty() -> None:
@@ -874,7 +879,7 @@ def test_manhattan_distance_non_negative(a: list, b: list) -> None:
     assert manhattan_distance(a, b) >= 0.0
 
 
-import pytest
+import pytest  # noqa: E402
 
 
 @pytest.mark.parametrize(

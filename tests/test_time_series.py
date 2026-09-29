@@ -1646,7 +1646,7 @@ class TestLoadFactor:
         assert load_factor([]) == pytest.approx(0.0)
 
 
-import pytest
+import pytest  # noqa: E402
 
 
 @pytest.mark.parametrize(

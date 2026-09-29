@@ -149,7 +149,7 @@ class TestSetCorrelationIdEdgeCases:
         assert get_correlation_id() == "second"
 
 
-import pytest
+import pytest  # noqa: E402
 
 
 @pytest.mark.parametrize("n", [1, 5, 10])

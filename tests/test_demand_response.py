@@ -227,7 +227,7 @@ class TestCustomerBaselineLoadEdgeCases:
         assert len(result) == 4
 
 
-from app.demand_response import curtailment_rate, event_roi
+from app.demand_response import curtailment_rate, event_roi  # noqa: E402
 
 
 class TestCurtailmentRate:
