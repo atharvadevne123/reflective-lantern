@@ -499,3 +499,37 @@ class TestWithRetryHelper:
         monkeypatch.setattr("time.sleep", lambda _: None)
         with pytest.raises(RuntimeError):
             with_retry(lambda: (_ for _ in ()).throw(RuntimeError("boom")), max_attempts=2)
+
+
+class TestIsTransient:
+    """Tests for the is_transient() helper."""
+
+    def test_connection_error_is_transient(self) -> None:
+        from app.retry import is_transient
+
+        assert is_transient(ConnectionError("refused")) is True
+
+    def test_timeout_error_is_transient(self) -> None:
+        from app.retry import is_transient
+
+        assert is_transient(TimeoutError("timed out")) is True
+
+    def test_os_error_is_transient(self) -> None:
+        from app.retry import is_transient
+
+        assert is_transient(OSError("io error")) is True
+
+    def test_value_error_not_transient(self) -> None:
+        from app.retry import is_transient
+
+        assert is_transient(ValueError("bad value")) is False
+
+    def test_runtime_error_not_transient(self) -> None:
+        from app.retry import is_transient
+
+        assert is_transient(RuntimeError("crash")) is False
+
+    def test_key_error_not_transient(self) -> None:
+        from app.retry import is_transient
+
+        assert is_transient(KeyError("key")) is False
