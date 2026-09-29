@@ -30,6 +30,7 @@ MODEL_VERSION = "1.0.0"
 
 
 def _build_ensemble() -> VotingRegressor:
+    """Construct an XGBoost + RandomForest + LightGBM voting ensemble."""
     estimators: list[tuple[str, Any]] = [
         (
             "xgb",
