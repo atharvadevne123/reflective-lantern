@@ -202,3 +202,43 @@ class TestGradeThresholdOrdering:
 
         value = getattr(c, attr)
         assert 0.0 < value < 1.0
+
+
+class TestLogisticsConstants:
+    def test_max_distance_km_positive(self) -> None:
+        from app.constants import MAX_DISTANCE_KM
+
+        assert MAX_DISTANCE_KM > 0
+
+    def test_max_weight_kg_positive(self) -> None:
+        from app.constants import MAX_WEIGHT_KG
+
+        assert MAX_WEIGHT_KG > 0
+
+    def test_delivery_minutes_ordered(self) -> None:
+        from app.constants import MAX_DELIVERY_MINUTES, MIN_DELIVERY_MINUTES
+
+        assert MIN_DELIVERY_MINUTES < MAX_DELIVERY_MINUTES
+
+    def test_min_delivery_minutes_positive(self) -> None:
+        from app.constants import MIN_DELIVERY_MINUTES
+
+        assert MIN_DELIVERY_MINUTES > 0
+
+    def test_confidence_score_default_in_unit_range(self) -> None:
+        from app.constants import CONFIDENCE_SCORE_DEFAULT
+
+        assert 0.0 <= CONFIDENCE_SCORE_DEFAULT <= 1.0
+
+    def test_model_version_is_string(self) -> None:
+        from app.constants import MODEL_VERSION
+
+        assert isinstance(MODEL_VERSION, str)
+        assert len(MODEL_VERSION) > 0
+
+    def test_model_version_semver_format(self) -> None:
+        import re
+
+        from app.constants import MODEL_VERSION
+
+        assert re.match(r"^\d+\.\d+\.\d+$", MODEL_VERSION)
