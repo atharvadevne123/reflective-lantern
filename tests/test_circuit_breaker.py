@@ -359,3 +359,47 @@ class TestIsOpenProperty:
                 cb.call(_always_fail)
         cb.reset()
         assert cb.is_open is False
+
+
+class TestProtectedDecorator:
+    """Tests for the protected() convenience decorator."""
+
+    def test_protected_wraps_function(self) -> None:
+        from app.circuit_breaker import protected
+
+        @protected(failure_threshold=3)
+        def always_ok() -> str:
+            return "ok"
+
+        assert always_ok() == "ok"
+
+    def test_protected_opens_on_failures(self) -> None:
+        from app.circuit_breaker import CircuitOpenError, protected
+
+        call_count = 0
+
+        @protected(failure_threshold=2, expected_exceptions=(RuntimeError,))
+        def flaky() -> None:
+            nonlocal call_count
+            call_count += 1
+            raise RuntimeError("boom")
+
+        for _ in range(2):
+            with pytest.raises(RuntimeError):
+                flaky()
+
+        with pytest.raises(CircuitOpenError):
+            flaky()
+
+    def test_protected_does_not_open_on_unexpected_exceptions(self) -> None:
+        from app.circuit_breaker import CircuitOpenError, protected
+
+        @protected(failure_threshold=1, expected_exceptions=(ValueError,))
+        def type_err() -> None:
+            raise TypeError("wrong type")
+
+        with pytest.raises(TypeError):
+            type_err()
+        # Circuit should still be closed because TypeError is not in expected_exceptions
+        with pytest.raises(TypeError):
+            type_err()
