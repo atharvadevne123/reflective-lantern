@@ -181,3 +181,47 @@ class TestModelVersionEdgeCases:
         reg.transition_stage("staged_model", "1.0.0", target)
         stored = reg.get_latest("staged_model")
         assert stored.stage == target
+
+
+class TestDeleteVersionGetByStageVersionCount:
+    def test_delete_version_removes_entry(self) -> None:
+        reg = ModelRegistry()
+        reg.register(_mv(version="1.0.0"))
+        assert reg.delete_version("price-model", "1.0.0") is True
+        assert reg.version_count("price-model") == 0
+
+    def test_delete_version_nonexistent_returns_false(self) -> None:
+        reg = ModelRegistry()
+        assert reg.delete_version("ghost", "9.9.9") is False
+
+    def test_delete_specific_version_leaves_others(self) -> None:
+        reg = ModelRegistry()
+        reg.register(_mv(version="1.0.0"))
+        reg.register(_mv(version="2.0.0"))
+        reg.delete_version("price-model", "1.0.0")
+        assert reg.version_count("price-model") == 1
+        assert reg.get_latest("price-model").version == "2.0.0"
+
+    def test_get_by_stage_returns_matching(self) -> None:
+        reg = ModelRegistry()
+        reg.register(_mv(version="1.0.0"))
+        reg.transition_stage("price-model", "1.0.0", ModelStage.PRODUCTION)
+        results = reg.get_by_stage("price-model", ModelStage.PRODUCTION)
+        assert len(results) == 1
+        assert results[0].stage is ModelStage.PRODUCTION
+
+    def test_get_by_stage_empty_when_none_match(self) -> None:
+        reg = ModelRegistry()
+        reg.register(_mv(version="1.0.0"))
+        results = reg.get_by_stage("price-model", ModelStage.ARCHIVED)
+        assert results == []
+
+    def test_version_count_zero_for_unknown(self) -> None:
+        reg = ModelRegistry()
+        assert reg.version_count("unknown_model") == 0
+
+    def test_version_count_increments(self) -> None:
+        reg = ModelRegistry()
+        reg.register(_mv(version="1.0.0"))
+        reg.register(_mv(version="2.0.0"))
+        assert reg.version_count("price-model") == 2
