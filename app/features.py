@@ -20,10 +20,12 @@ class TemporalFeatureExtractor(BaseEstimator, TransformerMixin):
     """Adds lag, rolling, and cyclical time features."""
 
     def fit(self, X: pd.DataFrame, y: Any = None) -> TemporalFeatureExtractor:
+        """No-op fit; marks the transformer as fitted."""
         self.fitted_ = True
         return self
 
     def transform(self, X: pd.DataFrame) -> pd.DataFrame:
+        """Compute and append temporal features to a copy of X."""
         df = X.copy()
         # Cyclical encoding so hour 0 and 23 are adjacent
         df["hour_sin"] = np.sin(2 * np.pi * df["hour_of_day"] / 24)
@@ -52,10 +54,12 @@ class RouteFeatureEngineer(BaseEstimator, TransformerMixin):
     }
 
     def fit(self, X: pd.DataFrame, y: Any = None) -> RouteFeatureEngineer:
+        """No-op fit; marks the transformer as fitted."""
         self.fitted_ = True
         return self
 
     def transform(self, X: pd.DataFrame) -> pd.DataFrame:
+        """Engineer route, distance-bucket, and carrier-risk features."""
         df = X.copy()
         # Distance buckets: local, regional, long-haul
         df["distance_bucket"] = pd.cut(
@@ -77,6 +81,7 @@ class CategoricalEncoder(BaseEstimator, TransformerMixin):
     """Ordinal-encodes carrier column."""
 
     def fit(self, X: pd.DataFrame, y: Any = None) -> CategoricalEncoder:
+        """Fit the label encoder on observed carriers plus all known carriers."""
         # Trailing underscore matters: sklearn's check_is_fitted only treats
         # attributes ending in "_" as evidence the estimator has been fitted.
         self.le_ = LabelEncoder()
@@ -84,6 +89,7 @@ class CategoricalEncoder(BaseEstimator, TransformerMixin):
         return self
 
     def transform(self, X: pd.DataFrame) -> pd.DataFrame:
+        """Ordinal-encode the carrier column, mapping unknowns to class 0."""
         df = X.copy()
         known = set(self.le_.classes_)
         carriers = df["carrier"].fillna("Unknown").apply(
