@@ -209,3 +209,45 @@ class TestMetricsRegistryEdgeCases:
         for i in range(n):
             reg.register(Counter(f"metric_{i}"))
         assert len(reg.names()) == n
+
+
+class TestMetricNamesRemoveGetRegistry:
+    def test_metric_names_sorted(self) -> None:
+        reg = MetricsRegistry()
+        reg.counter("z_metric")
+        reg.counter("a_metric")
+        names = reg.metric_names()
+        assert names == sorted(names)
+
+    def test_metric_names_returns_all(self) -> None:
+        reg = MetricsRegistry()
+        reg.counter("alpha")
+        reg.counter("beta")
+        assert set(reg.metric_names()) == {"alpha", "beta"}
+
+    def test_remove_existing_returns_true(self) -> None:
+        reg = MetricsRegistry()
+        reg.counter("to_remove")
+        assert reg.remove("to_remove") is True
+        assert "to_remove" not in reg.metric_names()
+
+    def test_remove_nonexistent_returns_false(self) -> None:
+        reg = MetricsRegistry()
+        assert reg.remove("no_such_metric") is False
+
+    def test_len_decrements_after_remove(self) -> None:
+        reg = MetricsRegistry()
+        reg.counter("a")
+        reg.counter("b")
+        reg.remove("a")
+        assert len(reg) == 1
+
+    def test_get_registry_returns_same_instance(self) -> None:
+        from app.metrics_collector import get_registry
+
+        assert get_registry() is get_registry()
+
+    def test_get_registry_returns_metrics_registry(self) -> None:
+        from app.metrics_collector import MetricsRegistry, get_registry
+
+        assert isinstance(get_registry(), MetricsRegistry)
