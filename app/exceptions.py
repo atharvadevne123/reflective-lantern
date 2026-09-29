@@ -16,6 +16,7 @@ class LogisticsFlowError(Exception):
     detail: str = "Internal error"
 
     def __init__(self, detail: str | None = None) -> None:
+        """Override default detail message when a specific reason is provided."""
         self.detail = detail or self.detail
         super().__init__(self.detail)
 
@@ -46,6 +47,7 @@ def register_exception_handlers(app: FastAPI) -> None:
 
     @app.exception_handler(LogisticsFlowError)
     async def _handle(request: Request, exc: LogisticsFlowError) -> JSONResponse:
+        """Serialise any LogisticsFlowError to a structured JSON 4xx/5xx response."""
         request_id = getattr(request.state, "request_id", "n/a")
         logger.warning("[%s] %s: %s", request_id, type(exc).__name__, exc.detail)
         return JSONResponse(
