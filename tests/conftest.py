@@ -84,3 +84,35 @@ def predict_payload() -> dict:
         "hour_of_day": 14,
         "day_of_week": 2,
     }
+
+
+@pytest.fixture()
+def highway_payload() -> dict:
+    """Long-haul highway shipment payload."""
+    return {
+        "carrier": "FedEx",
+        "distance_km": 800.0,
+        "weight_kg": 25.0,
+        "route_type": "highway",
+        "hour_of_day": 6,
+        "day_of_week": 1,
+    }
+
+
+@pytest.fixture()
+def weekend_payload() -> dict:
+    """Weekend shipment payload (day_of_week=6 = Sunday)."""
+    return {
+        "carrier": "USPS",
+        "distance_km": 15.0,
+        "weight_kg": 0.5,
+        "route_type": "suburban",
+        "hour_of_day": 10,
+        "day_of_week": 6,
+    }
+
+
+@pytest.fixture()
+def batch_payload(predict_payload) -> dict:
+    """Batch predict request with three identical shipments."""
+    return {"shipments": [predict_payload, predict_payload, predict_payload]}
