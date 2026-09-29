@@ -132,3 +132,26 @@ class NotificationDispatcher:
     def __len__(self) -> int:
         """Return the number of registered channels."""
         return len(self._channels)
+
+    def broadcast(self, title: str, body: str, severity: Severity = Severity.INFO) -> dict[str, bool]:
+        """Send a notification to all channels without constructing a Notification manually.
+
+        Args:
+            title: Short heading for the notification.
+            body: Full notification body text.
+            severity: Severity level; defaults to INFO.
+
+        Returns:
+            Mapping of channel name → delivery success, same as :meth:`dispatch`.
+        """
+        return self.dispatch(Notification(title=title, body=body, severity=severity))
+
+    def disable_all(self) -> None:
+        """Disable every registered channel at once."""
+        for name in self._channels:
+            self._channels[name].enabled = False
+
+    def enable_all(self) -> None:
+        """Enable every registered channel at once."""
+        for name in self._channels:
+            self._channels[name].enabled = True
