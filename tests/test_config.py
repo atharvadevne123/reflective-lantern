@@ -45,3 +45,33 @@ def test_settings_frozen():
     s = Settings()
     with pytest.raises(dataclasses.FrozenInstanceError):
         s.log_level = "TRACE"  # type: ignore[misc]
+
+
+def test_drift_window_default(monkeypatch):
+    monkeypatch.delenv("DRIFT_WINDOW", raising=False)
+    s = Settings()
+    assert s.drift_window == 100
+
+
+def test_model_version_default(monkeypatch):
+    monkeypatch.delenv("MODEL_VERSION", raising=False)
+    s = Settings()
+    assert s.model_version == "1.0.0"
+
+
+def test_rate_limit_from_env(monkeypatch):
+    monkeypatch.setenv("RATE_LIMIT_PER_MINUTE", "30")
+    s = Settings()
+    assert s.rate_limit_per_minute == 30
+
+
+def test_feature_pipeline_path_from_env(monkeypatch):
+    monkeypatch.setenv("FEATURE_PIPELINE_PATH", "/tmp/test_pipe.joblib")
+    s = Settings()
+    assert s.feature_pipeline_path == "/tmp/test_pipe.joblib"
+
+
+def test_get_settings_returns_fresh_instance():
+    s1 = get_settings()
+    s2 = get_settings()
+    assert s1 == s2
