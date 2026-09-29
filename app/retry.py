@@ -34,6 +34,7 @@ def retry(
 
     def decorator(func: Callable) -> Callable:
         """Wrap func with retry-on-exception logic."""
+
         @functools.wraps(func)
         def wrapper(*args, **kwargs) -> object:
             """Attempt func up to max_attempts times with exponential backoff."""

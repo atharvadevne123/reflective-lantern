@@ -1,4 +1,5 @@
 """SQLAlchemy models and session management."""
+
 from __future__ import annotations
 
 import logging
@@ -82,9 +83,4 @@ def prediction_count(db: Session) -> int:
 
 def recent_predictions(db: Session, limit: int = 50) -> list[Prediction]:
     """Return the most recent *limit* predictions ordered by creation time."""
-    return (
-        db.query(Prediction)
-        .order_by(Prediction.created_at.desc())
-        .limit(limit)
-        .all()
-    )
+    return db.query(Prediction).order_by(Prediction.created_at.desc()).limit(limit).all()

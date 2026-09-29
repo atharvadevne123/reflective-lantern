@@ -1,4 +1,5 @@
 """Tests for drift detection and prediction logging."""
+
 from __future__ import annotations
 
 import numpy as np
@@ -76,8 +77,7 @@ def test_log_prediction_persists_to_db(db_session):
 
 def test_seed_reference_buffer():
     samples = [
-        {"distance_km": 50.0, "weight_kg": 5.0, "predicted_minutes": 120.0}
-        for _ in range(20)
+        {"distance_km": 50.0, "weight_kg": 5.0, "predicted_minutes": 120.0} for _ in range(20)
     ]
     seed_reference_buffer(samples)
 

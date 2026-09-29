@@ -1,4 +1,5 @@
 """Ensemble ML model training, persistence, and inference."""
+
 from __future__ import annotations
 
 import json

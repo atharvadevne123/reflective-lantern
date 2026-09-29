@@ -184,7 +184,7 @@ class TestExperimentRegistryEdgeCases:
 
 
 class TestExperimentResetAndTotals:
-    def _make_exp(self, name: str = "test_exp") -> "Experiment":
+    def _make_exp(self, name: str = "test_exp") -> Experiment:
         from app.experiment_tracker import CONTROL, Experiment, Variant
 
         return Experiment(name, [CONTROL, Variant("treatment", 0.5)])

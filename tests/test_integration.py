@@ -42,8 +42,11 @@ def test_cleanup_main_dry_run_exits_zero(tmp_path: Path) -> None:
     (h / "OldRepo.json").write_text(json.dumps([{"date": "2020-01-01", "commits": 10}]))
     import scripts.cleanup as cl
 
-    with patch.object(cl, "HISTORY_DIR", h), patch.object(sys, "argv", ["cleanup.py", "--dry-run", "--days", "30"]):
-            result = cl.main()
+    with (
+        patch.object(cl, "HISTORY_DIR", h),
+        patch.object(sys, "argv", ["cleanup.py", "--dry-run", "--days", "30"]),
+    ):
+        result = cl.main()
     assert result == 0
 
 
@@ -53,7 +56,9 @@ def test_report_generator_daily_returns_string(tmp_path: Path) -> None:
 
     h = tmp_path / "history"
     h.mkdir()
-    (h / "MyRepo.json").write_text(json.dumps([{"date": "2026-07-01", "commits": 60, "improvements": ["added tests"]}]))
+    (h / "MyRepo.json").write_text(
+        json.dumps([{"date": "2026-07-01", "commits": 60, "improvements": ["added tests"]}])
+    )
     import scripts.report_generator as rg
 
     with patch.object(rg, "HISTORY_DIR", h):
@@ -71,7 +76,7 @@ def test_summarize_history_main_prints_table(tmp_path: Path, capsys: pytest.Capt
     import scripts.summarize_history as sh
 
     with patch.object(sh, "HISTORY_DIR", h), patch.object(sys, "argv", ["summarize_history.py"]):
-            sh.main()
+        sh.main()
     out = capsys.readouterr().out
     assert "Alpha" in out
 
@@ -116,8 +121,11 @@ def test_cleanup_main_removes_old_entries(tmp_path: Path) -> None:
     )
     import scripts.cleanup as cl
 
-    with patch.object(cl, "HISTORY_DIR", h), patch.object(sys, "argv", ["cleanup.py", "--days", "30"]):
-            result = cl.main()
+    with (
+        patch.object(cl, "HISTORY_DIR", h),
+        patch.object(sys, "argv", ["cleanup.py", "--days", "30"]),
+    ):
+        result = cl.main()
     assert result == 0
     kept = json.loads(f.read_text())
     assert len(kept) == 1
@@ -131,8 +139,11 @@ def test_summarize_history_sort_by_commits(tmp_path: Path, capsys: pytest.Captur
     (h / "Beta.json").write_text(json.dumps([{"date": "2026-06-02", "commits": 99}]))
     import scripts.summarize_history as sh
 
-    with patch.object(sh, "HISTORY_DIR", h), patch.object(sys, "argv", ["summarize_history.py", "--sort-by", "commits"]):
-            sh.main()
+    with (
+        patch.object(sh, "HISTORY_DIR", h),
+        patch.object(sys, "argv", ["summarize_history.py", "--sort-by", "commits"]),
+    ):
+        sh.main()
     out = capsys.readouterr().out
     beta_pos = out.index("Beta")
     alpha_pos = out.index("Alpha")
@@ -146,8 +157,11 @@ def test_validate_history_verbose_flag(tmp_path: Path, capsys: pytest.CaptureFix
     (h / "GoodRepo.json").write_text(json.dumps([{"date": "2026-06-30", "commits": 60}]))
     import scripts.validate_history as vh
 
-    with patch.object(vh, "HISTORY_DIR", h), patch.object(sys, "argv", ["validate_history.py", "--verbose"]):
-            result = vh.main()
+    with (
+        patch.object(vh, "HISTORY_DIR", h),
+        patch.object(sys, "argv", ["validate_history.py", "--verbose"]),
+    ):
+        result = vh.main()
     assert result == 0
     out = capsys.readouterr().out
     assert "GoodRepo.json" in out
@@ -161,18 +175,21 @@ def test_report_generator_output_to_file(tmp_path: Path) -> None:
     out_file = tmp_path / "report.md"
     import scripts.report_generator as rg
 
-    with patch.object(rg, "HISTORY_DIR", h), patch.object(
-        sys,
-        "argv",
-        [
-            "report_generator.py",
-            "--mode",
-            "daily",
-            "--date",
-            "2026-07-03",
-            "--output",
-            str(out_file),
-        ],
+    with (
+        patch.object(rg, "HISTORY_DIR", h),
+        patch.object(
+            sys,
+            "argv",
+            [
+                "report_generator.py",
+                "--mode",
+                "daily",
+                "--date",
+                "2026-07-03",
+                "--output",
+                str(out_file),
+            ],
+        ),
     ):
         rg.main()
     assert out_file.exists()
@@ -187,8 +204,11 @@ def test_validate_history_json_flag(tmp_path: Path, capsys: pytest.CaptureFixtur
     (h / "Good.json").write_text(json.dumps([{"date": "2026-07-01", "commits": 60}]))
     import scripts.validate_history as vh
 
-    with patch.object(vh, "HISTORY_DIR", h), patch.object(sys, "argv", ["validate_history.py", "--json"]):
-            result = vh.main()
+    with (
+        patch.object(vh, "HISTORY_DIR", h),
+        patch.object(sys, "argv", ["validate_history.py", "--json"]),
+    ):
+        result = vh.main()
     assert result == 0
     out = capsys.readouterr().out
     parsed = json.loads(out)

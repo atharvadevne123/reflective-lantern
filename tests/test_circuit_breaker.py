@@ -392,7 +392,7 @@ class TestProtectedDecorator:
             flaky()
 
     def test_protected_does_not_open_on_unexpected_exceptions(self) -> None:
-        from app.circuit_breaker import CircuitOpenError, protected
+        from app.circuit_breaker import protected
 
         @protected(failure_threshold=1, expected_exceptions=(ValueError,))
         def type_err() -> None:

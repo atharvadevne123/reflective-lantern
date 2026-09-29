@@ -133,7 +133,9 @@ class NotificationDispatcher:
         """Return the number of registered channels."""
         return len(self._channels)
 
-    def broadcast(self, title: str, body: str, severity: Severity = Severity.INFO) -> dict[str, bool]:
+    def broadcast(
+        self, title: str, body: str, severity: Severity = Severity.INFO
+    ) -> dict[str, bool]:
         """Send a notification to all channels without constructing a Notification manually.
 
         Args:

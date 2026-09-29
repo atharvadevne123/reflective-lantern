@@ -220,7 +220,7 @@ class TestDefaultRegistry:
         assert unique_name in registered_check_names()
 
     def test_run_default_includes_registered_check(self) -> None:
-        from app.health_check import CheckResult, HealthRegistry, check, run_default
+        from app.health_check import CheckResult, check, run_default
 
         unique = "test_run_default_check"
 

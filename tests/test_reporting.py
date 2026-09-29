@@ -526,7 +526,9 @@ def test_daily_average_consumption_empty_result() -> None:
         (100.0, 130.0, "D"),
     ],
 )
-def test_energy_efficiency_grade_simple_cases(baseline: float, actual: float, expected_grade: str) -> None:
+def test_energy_efficiency_grade_simple_cases(
+    baseline: float, actual: float, expected_grade: str
+) -> None:
     from app.reporting import energy_efficiency_grade
 
     grade = energy_efficiency_grade(actual, baseline)
@@ -1033,7 +1035,9 @@ import pytest as _pytest  # noqa: E402
         (100.0, 100.0, "B"),
     ],
 )
-def test_energy_efficiency_grade_boundary_values(before: float, after: float, expected_grade: str) -> None:
+def test_energy_efficiency_grade_boundary_values(
+    before: float, after: float, expected_grade: str
+) -> None:
     from app.reporting import energy_efficiency_grade
 
     assert energy_efficiency_grade(after, before) == expected_grade

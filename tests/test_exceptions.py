@@ -1,4 +1,5 @@
 """Tests for domain exceptions."""
+
 from __future__ import annotations
 
 import pytest
@@ -57,7 +58,12 @@ def test_rate_limit_default_detail():
 
 
 def test_exception_is_exception_subclass():
-    for cls in (LogisticsFlowError, ModelNotLoadedError, FeatureExtractionError, RateLimitExceededError):
+    for cls in (
+        LogisticsFlowError,
+        ModelNotLoadedError,
+        FeatureExtractionError,
+        RateLimitExceededError,
+    ):
         assert issubclass(cls, Exception)
 
 
@@ -71,8 +77,9 @@ def test_custom_detail_preserved_in_message(exc_cls):
 
 
 def test_register_exception_handlers_is_callable():
-    from app.exceptions import register_exception_handlers
     from fastapi import FastAPI
+
+    from app.exceptions import register_exception_handlers
 
     test_app = FastAPI()
     register_exception_handlers(test_app)  # should not raise

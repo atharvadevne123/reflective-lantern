@@ -1,4 +1,5 @@
 """Centralised application settings loaded from the environment."""
+
 from __future__ import annotations
 
 import os
@@ -26,9 +27,7 @@ class Settings:
     min_reference_samples: int = field(
         default_factory=lambda: int(os.getenv("MIN_REFERENCE_SAMPLES", "10"))
     )
-    cors_origins: str = field(
-        default_factory=lambda: os.getenv("CORS_ORIGINS", "*")
-    )
+    cors_origins: str = field(default_factory=lambda: os.getenv("CORS_ORIGINS", "*"))
     enable_json_logs: bool = field(
         default_factory=lambda: os.getenv("ENABLE_JSON_LOGS", "false").lower() == "true"
     )

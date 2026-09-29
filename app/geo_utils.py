@@ -68,7 +68,9 @@ class BoundingBox:
 
     def contains(self, coord: Coordinate) -> bool:
         """Return True if coord falls within this bounding box."""
-        return self.min_lat <= coord.lat <= self.max_lat and self.min_lon <= coord.lon <= self.max_lon
+        return (
+            self.min_lat <= coord.lat <= self.max_lat and self.min_lon <= coord.lon <= self.max_lon
+        )
 
     @property
     def center(self) -> Coordinate:
@@ -164,7 +166,9 @@ def bearing(a: Coordinate, b: Coordinate) -> float:
     return (math.degrees(math.atan2(x, y)) + 360) % 360
 
 
-def within_radius(center: Coordinate, radius_km: float, candidates: list[Coordinate]) -> list[Coordinate]:
+def within_radius(
+    center: Coordinate, radius_km: float, candidates: list[Coordinate]
+) -> list[Coordinate]:
     """Return all candidates within *radius_km* of *center*.
 
     Args:

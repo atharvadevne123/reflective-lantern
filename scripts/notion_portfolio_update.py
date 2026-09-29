@@ -130,7 +130,11 @@ PROJECTS: list[dict[str, object]] = [
 
 def generate_description(client: object, project: dict[str, object]) -> str:
     """Ask Claude for a 2-sentence portfolio description for *project*."""
-    github_hint = f"GitHub repo: github.com/atharvadevne123/{project['github']}" if project.get("github") else ""
+    github_hint = (
+        f"GitHub repo: github.com/atharvadevne123/{project['github']}"
+        if project.get("github")
+        else ""
+    )
     tags_str = ", ".join(str(t) for t in (project.get("tags") or []))
     prompt = (
         f'Write a concise 2-sentence portfolio description for the project "{project["name"]}". '
@@ -155,7 +159,9 @@ def update_notion_page(
     """Patch a Notion page: cover image, Tags multi-select, and Description."""
     properties: dict[str, object] = {"Tags": {"multi_select": [{"name": t} for t in tags]}}
     if description:
-        properties["Description"] = {"rich_text": [{"type": "text", "text": {"content": description}}]}
+        properties["Description"] = {
+            "rich_text": [{"type": "text", "text": {"content": description}}]
+        }
     notion.pages.update(
         page_id=page_id,
         cover={"type": "external", "external": {"url": cover_url}},

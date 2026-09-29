@@ -160,12 +160,17 @@ def top_n(n: int = 5) -> list[dict]:
         List of dicts with keys ``label``, ``total_ms``, ``calls``, and
         ``avg_ms``, sorted by descending total_ms.
     """
-    entries = [
-        {"label": k, **v.to_dict()}
-        for k, v in _registry.items()
-        if v.calls > 0
-    ]
+    entries = [{"label": k, **v.to_dict()} for k, v in _registry.items() if v.calls > 0]
     return sorted(entries, key=lambda e: e["total_ms"], reverse=True)[:n]
 
 
-__all__ = ["call_count", "get_stats", "reset_stats", "timed", "top_n", "total_calls", "tracked", "tracked_names"]
+__all__ = [
+    "call_count",
+    "get_stats",
+    "reset_stats",
+    "timed",
+    "top_n",
+    "total_calls",
+    "tracked",
+    "tracked_names",
+]

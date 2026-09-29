@@ -86,7 +86,18 @@ class TestScoreFromPercentile:
 class TestGradeFromScore:
     @pytest.mark.parametrize(
         ("score", "expected"),
-        [(100, "A"), (90, "A"), (89, "B"), (75, "B"), (74, "C"), (50, "C"), (49, "D"), (25, "D"), (24, "F"), (1, "F")],
+        [
+            (100, "A"),
+            (90, "A"),
+            (89, "B"),
+            (75, "B"),
+            (74, "C"),
+            (50, "C"),
+            (49, "D"),
+            (25, "D"),
+            (24, "F"),
+            (1, "F"),
+        ],
     )
     def test_grade_boundaries(self, score: int, expected: str) -> None:
         assert grade_from_score(score) == expected
