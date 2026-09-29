@@ -75,3 +75,35 @@ def test_get_settings_returns_fresh_instance():
     s1 = get_settings()
     s2 = get_settings()
     assert s1 == s2
+
+
+def test_is_debug_false_by_default(monkeypatch):
+    monkeypatch.delenv("LOG_LEVEL", raising=False)
+    assert Settings().is_debug is False
+
+
+def test_is_debug_true_when_debug(monkeypatch):
+    monkeypatch.setenv("LOG_LEVEL", "DEBUG")
+    assert Settings().is_debug is True
+
+
+def test_cors_origins_list_single(monkeypatch):
+    monkeypatch.setenv("CORS_ORIGINS", "https://example.com")
+    s = Settings()
+    assert s.cors_origins_list == ["https://example.com"]
+
+
+def test_cors_origins_list_multiple(monkeypatch):
+    monkeypatch.setenv("CORS_ORIGINS", "https://a.com, https://b.com")
+    s = Settings()
+    assert len(s.cors_origins_list) == 2
+
+
+def test_enable_json_logs_default(monkeypatch):
+    monkeypatch.delenv("ENABLE_JSON_LOGS", raising=False)
+    assert Settings().enable_json_logs is False
+
+
+def test_enable_json_logs_true(monkeypatch):
+    monkeypatch.setenv("ENABLE_JSON_LOGS", "true")
+    assert Settings().enable_json_logs is True
