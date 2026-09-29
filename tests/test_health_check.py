@@ -191,3 +191,43 @@ class TestHealthRegistryLengthTracking:
         reg.register("b", lambda: CheckResult(name="b", healthy=True))
         reg.unregister("a")
         assert len(reg) == 1
+
+
+class TestDefaultRegistry:
+    """Tests for run_default() and registered_check_names() module helpers."""
+
+    def test_run_default_returns_health_status(self) -> None:
+        from app.health_check import HealthStatus, run_default
+
+        result = run_default()
+        assert isinstance(result, HealthStatus)
+
+    def test_registered_check_names_returns_list(self) -> None:
+        from app.health_check import registered_check_names
+
+        names = registered_check_names()
+        assert isinstance(names, list)
+
+    def test_check_decorator_registers_in_default_registry(self) -> None:
+        from app.health_check import CheckResult, check, registered_check_names
+
+        unique_name = "test_default_fn_xyz"
+
+        @check(unique_name)
+        def _chk() -> CheckResult:
+            return CheckResult(name=unique_name, healthy=True)
+
+        assert unique_name in registered_check_names()
+
+    def test_run_default_includes_registered_check(self) -> None:
+        from app.health_check import CheckResult, HealthRegistry, check, run_default
+
+        unique = "test_run_default_check"
+
+        @check(unique)
+        def _fn() -> CheckResult:
+            return CheckResult(name=unique, healthy=True)
+
+        status = run_default()
+        names = [r.name for r in status.results]
+        assert unique in names
