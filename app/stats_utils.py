@@ -289,6 +289,7 @@ def interquartile_range(values: list[float]) -> float:
     n = len(sorted_vals)
 
     def _pct(p: float) -> float:
+        """Linearly interpolate the p-th quantile from the sorted values."""
         idx = p * (n - 1)
         lo, hi = int(idx), min(int(idx) + 1, n - 1)
         return sorted_vals[lo] + (sorted_vals[hi] - sorted_vals[lo]) * (idx - lo)

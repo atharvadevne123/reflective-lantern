@@ -41,6 +41,7 @@ class TaskQueue:
     """Thread-safe priority queue that executes tasks on worker threads."""
 
     def __init__(self, workers: int = 2) -> None:
+        """Initialise the queue and spawn the requested number of worker threads."""
         self._heap: list[Task] = []
         self._lock = threading.Lock()
         self._not_empty = threading.Condition(self._lock)

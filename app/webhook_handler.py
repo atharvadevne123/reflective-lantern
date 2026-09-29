@@ -42,6 +42,7 @@ class WebhookHandler:
     """Verifies and dispatches inbound webhook requests."""
 
     def __init__(self, secret: str, algorithm: str = "sha256") -> None:
+        """Initialise the handler with the HMAC secret and digest algorithm."""
         self._secret = secret.encode() if isinstance(secret, str) else secret
         self._algorithm = algorithm
         self._handlers: dict[str, list[EventHandler]] = {}

@@ -272,6 +272,7 @@ def clip_outliers(values: list[float], lower_pct: float = 5.0, upper_pct: float 
     n = len(sorted_vals)
 
     def percentile(p: float) -> float:
+        """Linearly interpolate the p-th percentile (0–100) from sorted values."""
         idx = (p / 100) * (n - 1)
         lo, hi = int(idx), min(int(idx) + 1, n - 1)
         return sorted_vals[lo] + (sorted_vals[hi] - sorted_vals[lo]) * (idx - lo)
