@@ -123,3 +123,16 @@ def test_text_feature_transformer_new_unseen_text():
     result = t.transform(df_new)
     assert result.shape[0] == 1
     assert not np.isnan(result).any()
+
+
+def test_after_hours_feature_present():
+    df = _make_df(10)
+    feats = extract_structured_features(df)
+    assert "is_after_hours" in feats.columns
+    assert feats["is_after_hours"].isin([0, 1]).all()
+
+
+def test_weekend_feature_present():
+    df = _make_df(10)
+    feats = extract_structured_features(df)
+    assert "is_weekend" in feats.columns
