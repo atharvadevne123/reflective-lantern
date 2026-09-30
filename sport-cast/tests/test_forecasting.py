@@ -1,7 +1,10 @@
 """Forecasting utility tests."""
 from __future__ import annotations
+
 import pytest
+
 from app.forecasting import detect_form_trend, linear_trend, rolling_average
+
 
 def test_linear_trend_increasing():
     values = [1.0, 2.0, 3.0, 4.0, 5.0]
