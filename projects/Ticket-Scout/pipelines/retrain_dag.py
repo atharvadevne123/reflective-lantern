@@ -80,6 +80,14 @@ def task_retrain_models(**context) -> dict:
     df = pd.read_parquet(data_path) if data_path.exists() else None
     metrics = train_models(df)
     logger.info("Retrain metrics: %s", metrics)
+    # Optionally upload artifacts to S3
+    try:
+        from app.aws_stub import upload_model_artifact
+        import pathlib
+        for fname in ["category_model.joblib", "breach_model.joblib", "resolution_model.joblib"]:
+            upload_model_artifact(MODEL_DIR / fname, f"models/{fname}")
+    except Exception as exc:
+        logger.warning("S3 upload skipped: %s", exc)
     return metrics
 
 
