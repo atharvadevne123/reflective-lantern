@@ -1151,3 +1151,55 @@ class TestCumulativeSumExtended:
 
         values = [1.0, 2.0, 3.0, 4.0]
         assert len(cumulative_sum(values)) == len(values)
+
+
+class TestTrendSummary:
+    def test_raises_on_single_value(self) -> None:
+        from app.trend_analysis import trend_summary
+
+        with pytest.raises(ValueError):
+            trend_summary([1.0])
+
+    def test_direction_up_for_rising(self) -> None:
+        from app.trend_analysis import trend_summary
+
+        result = trend_summary([1.0, 2.0, 3.0, 4.0])
+        assert result["direction"] == "up"
+
+    def test_direction_down_for_falling(self) -> None:
+        from app.trend_analysis import trend_summary
+
+        result = trend_summary([4.0, 3.0, 2.0, 1.0])
+        assert result["direction"] == "down"
+
+    def test_keys_present(self) -> None:
+        from app.trend_analysis import trend_summary
+
+        result = trend_summary([1.0, 2.0, 3.0, 4.0])
+        for key in ("direction", "strength", "change_points", "pct_change_overall"):
+            assert key in result
+
+    @pytest.mark.parametrize("values", [[1.0, 2.0], [1.0, 2.0, 3.0, 4.0, 5.0]])
+    def test_returns_dict(self, values: list) -> None:
+        from app.trend_analysis import trend_summary
+
+        assert isinstance(trend_summary(values), dict)
+
+
+class TestExponentialGrowthRate:
+    def test_flat_series_returns_near_zero(self) -> None:
+        from app.trend_analysis import exponential_growth_rate
+
+        result = exponential_growth_rate([5.0, 5.0, 5.0, 5.0])
+        assert abs(result) < 0.01
+
+    def test_growing_series_positive(self) -> None:
+        from app.trend_analysis import exponential_growth_rate
+
+        result = exponential_growth_rate([1.0, 2.0, 4.0, 8.0])
+        assert result > 0.0
+
+    def test_returns_float(self) -> None:
+        from app.trend_analysis import exponential_growth_rate
+
+        assert isinstance(exponential_growth_rate([1.0, 2.0, 3.0]), float)
