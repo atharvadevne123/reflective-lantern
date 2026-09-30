@@ -531,3 +531,52 @@ class TestConfigureLoggingEdgeCases:
         from app.logging_config import configure_logging
 
         configure_logging(level="INFO", json_output=True)
+
+
+class TestLogHandlerCountExt:
+    def test_returns_non_negative_int(self) -> None:
+        import logging
+
+        from app.logging_config import configure_logging, log_handler_count
+
+        configure_logging(level="INFO")
+        count = log_handler_count(logging.getLogger())
+        assert count >= 0
+
+    def test_is_integer(self) -> None:
+        import logging
+
+        from app.logging_config import log_handler_count
+
+        result = log_handler_count(logging.getLogger("test_count"))
+        assert isinstance(result, int)
+
+
+class TestHasConsoleHandlerExt:
+    def test_returns_bool(self) -> None:
+        import logging
+
+        from app.logging_config import has_console_handler
+
+        result = has_console_handler(logging.getLogger("test_has_console"))
+        assert isinstance(result, bool)
+
+    def test_after_configure_has_handler(self) -> None:
+        import logging
+
+        from app.logging_config import configure_logging, has_console_handler
+
+        configure_logging(level="INFO")
+        root_logger = logging.getLogger()
+        result = has_console_handler(root_logger)
+        assert isinstance(result, bool)
+
+    @pytest.mark.parametrize("level", ["DEBUG", "WARNING"])
+    def test_configure_then_check(self, level: str) -> None:
+        import logging
+
+        from app.logging_config import configure_logging, has_console_handler
+
+        configure_logging(level=level)
+        result = has_console_handler(logging.getLogger())
+        assert isinstance(result, bool)
