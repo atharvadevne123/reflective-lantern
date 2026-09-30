@@ -280,3 +280,46 @@ class TestRatePowerFactorExtended:
     def test_any_valid_pf_returns_string(self, pf: float) -> None:
         result = rate_power_factor(pf)
         assert isinstance(result, str)
+
+
+class TestApparentPowerExt:
+    def test_positive_result(self) -> None:
+        from app.power_quality import apparent_power
+
+        result = apparent_power(real_kw=80.0, reactive_kvar=60.0)
+        assert result == pytest.approx(100.0)
+
+    def test_zero_reactive_equals_real(self) -> None:
+        from app.power_quality import apparent_power
+
+        result = apparent_power(real_kw=50.0, reactive_kvar=0.0)
+        assert result == pytest.approx(50.0)
+
+    @pytest.mark.parametrize("kw,kvar", [(3.0, 4.0), (6.0, 8.0)])
+    def test_pythagorean_triple(self, kw: float, kvar: float) -> None:
+        from app.power_quality import apparent_power
+
+        result = apparent_power(real_kw=kw, reactive_kvar=kvar)
+        expected = (kw**2 + kvar**2) ** 0.5
+        assert result == pytest.approx(expected)
+
+
+class TestVoltageImbalanceExt:
+    def test_balanced_voltages_returns_zero(self) -> None:
+        from app.power_quality import voltage_imbalance
+
+        result = voltage_imbalance([230.0, 230.0, 230.0])
+        assert result == pytest.approx(0.0, abs=0.01)
+
+    def test_imbalanced_voltages_returns_positive(self) -> None:
+        from app.power_quality import voltage_imbalance
+
+        result = voltage_imbalance([230.0, 240.0, 220.0])
+        assert result > 0.0
+
+    @pytest.mark.parametrize("voltages", [[220.0, 220.0, 220.0], [240.0, 240.0, 240.0]])
+    def test_uniform_voltages_no_imbalance(self, voltages: list) -> None:
+        from app.power_quality import voltage_imbalance
+
+        result = voltage_imbalance(voltages)
+        assert result == pytest.approx(0.0, abs=0.01)
