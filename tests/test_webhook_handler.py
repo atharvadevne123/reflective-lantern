@@ -158,3 +158,80 @@ def test_multiple_handlers_all_called(n_handlers: int) -> None:
     body = b'{"x": 1}'
     wh.process(body, "push", signature=make_sig(body))
     assert all(len(c) == 1 for c in counts)
+
+
+class TestEventTypes:
+    def test_no_handlers_returns_empty(self) -> None:
+        wh = WebhookHandler(SECRET)
+        assert wh.event_types() == []
+
+    def test_returns_sorted_list(self) -> None:
+        wh = WebhookHandler(SECRET)
+        wh.on("push", lambda e: None)
+        wh.on("issue", lambda e: None)
+        wh.on("release", lambda e: None)
+        result = wh.event_types()
+        assert result == sorted(result)
+
+    def test_contains_registered_types(self) -> None:
+        wh = WebhookHandler(SECRET)
+        wh.on("push", lambda e: None)
+        wh.on("pr", lambda e: None)
+        assert "push" in wh.event_types()
+        assert "pr" in wh.event_types()
+
+    def test_duplicate_handlers_single_entry(self) -> None:
+        wh = WebhookHandler(SECRET)
+        wh.on("push", lambda e: None)
+        wh.on("push", lambda e: None)
+        assert wh.event_types().count("push") == 1
+
+
+class TestHandlerCount:
+    def test_zero_when_empty(self) -> None:
+        wh = WebhookHandler(SECRET)
+        assert wh.handler_count() == 0
+
+    def test_counts_specific_event(self) -> None:
+        wh = WebhookHandler(SECRET)
+        wh.on("push", lambda e: None)
+        wh.on("push", lambda e: None)
+        assert wh.handler_count("push") == 2
+
+    def test_total_includes_catch_all(self) -> None:
+        wh = WebhookHandler(SECRET)
+        wh.on("push", lambda e: None)
+        wh.on_any(lambda e: None)
+        assert wh.handler_count() == 2
+
+    def test_unknown_event_returns_zero(self) -> None:
+        wh = WebhookHandler(SECRET)
+        assert wh.handler_count("nonexistent") == 0
+
+
+class TestClearHandlers:
+    def test_clear_specific_event(self) -> None:
+        wh = WebhookHandler(SECRET)
+        wh.on("push", lambda e: None)
+        wh.clear_handlers("push")
+        assert wh.handler_count("push") == 0
+
+    def test_clear_all(self) -> None:
+        wh = WebhookHandler(SECRET)
+        wh.on("push", lambda e: None)
+        wh.on("pr", lambda e: None)
+        wh.on_any(lambda e: None)
+        wh.clear_handlers()
+        assert wh.handler_count() == 0
+
+    def test_clear_nonexistent_does_not_raise(self) -> None:
+        wh = WebhookHandler(SECRET)
+        wh.clear_handlers("unknown_event")  # should not raise
+
+    def test_clear_keeps_other_handlers(self) -> None:
+        wh = WebhookHandler(SECRET)
+        wh.on("push", lambda e: None)
+        wh.on("pr", lambda e: None)
+        wh.clear_handlers("push")
+        assert wh.handler_count("pr") == 1
+        assert wh.handler_count("push") == 0
