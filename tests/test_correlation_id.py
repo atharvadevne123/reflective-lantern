@@ -197,3 +197,58 @@ class TestCorrelationContextManager:
 
         with correlation_context(cid):
             assert get_correlation_id() == cid
+
+
+class TestRequireCorrelationId:
+    def setup_method(self) -> None:
+        from app.correlation_id import clear_correlation_id
+
+        clear_correlation_id()
+
+    def teardown_method(self) -> None:
+        from app.correlation_id import clear_correlation_id
+
+        clear_correlation_id()
+
+    def test_raises_when_unset(self) -> None:
+        from app.correlation_id import require_correlation_id
+
+        import pytest
+
+        with pytest.raises(RuntimeError, match="No correlation ID"):
+            require_correlation_id()
+
+    def test_returns_current_id_when_set(self) -> None:
+        from app.correlation_id import require_correlation_id, set_correlation_id
+
+        set_correlation_id("req-id-1")
+        assert require_correlation_id() == "req-id-1"
+
+    @pytest.mark.parametrize("cid", ["id-a", "id-b", "id-c"])
+    def test_returns_expected_id(self, cid: str) -> None:
+        from app.correlation_id import require_correlation_id, set_correlation_id
+
+        set_correlation_id(cid)
+        assert require_correlation_id() == cid
+
+
+class TestIsValidUuid:
+    @pytest.mark.parametrize(
+        "value,expected",
+        [
+            ("00000000-0000-0000-0000-000000000000", True),
+            ("550e8400-e29b-41d4-a716-446655440000", True),
+            ("not-a-uuid", False),
+            ("", False),
+            ("1234", False),
+        ],
+    )
+    def test_valid_and_invalid_uuids(self, value: str, expected: bool) -> None:
+        from app.correlation_id import is_valid_uuid
+
+        assert is_valid_uuid(value) is expected
+
+    def test_new_correlation_id_is_valid_uuid(self) -> None:
+        from app.correlation_id import is_valid_uuid, new_correlation_id
+
+        assert is_valid_uuid(new_correlation_id()) is True
