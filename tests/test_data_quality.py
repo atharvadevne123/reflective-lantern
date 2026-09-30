@@ -1208,3 +1208,56 @@ class TestDuplicateRateExtended:
         from app.data_quality import duplicate_rate
 
         assert duplicate_rate([], ["id"]) == pytest.approx(0.0)
+
+
+class TestUniqueValues:
+    def test_empty_records_returns_empty(self) -> None:
+        from app.data_quality import unique_values
+
+        assert unique_values([], "field") == []
+
+    def test_returns_unique_sorted(self) -> None:
+        from app.data_quality import unique_values
+
+        records = [{"x": 3}, {"x": 1}, {"x": 2}, {"x": 1}]
+        assert unique_values(records, "x") == [1, 2, 3]
+
+    def test_excludes_none_values(self) -> None:
+        from app.data_quality import unique_values
+
+        records = [{"x": 1}, {"x": None}, {"x": 2}]
+        result = unique_values(records, "x")
+        assert None not in result
+
+    @pytest.mark.parametrize("n", [1, 3, 5])
+    def test_n_distinct_values(self, n: int) -> None:
+        from app.data_quality import unique_values
+
+        records = [{"v": i} for i in range(n)]
+        assert len(unique_values(records, "v")) == n
+
+
+class TestRecordsMissingField:
+    def test_empty_records_returns_empty(self) -> None:
+        from app.data_quality import records_missing_field
+
+        assert records_missing_field([], "field") == []
+
+    def test_all_present_returns_empty(self) -> None:
+        from app.data_quality import records_missing_field
+
+        records = [{"f": 1}, {"f": 2}]
+        assert records_missing_field(records, "f") == []
+
+    def test_missing_field_index_returned(self) -> None:
+        from app.data_quality import records_missing_field
+
+        records = [{"f": 1}, {"g": 2}, {"f": 3}]
+        result = records_missing_field(records, "f")
+        assert 1 in result
+
+    def test_none_value_treated_as_missing(self) -> None:
+        from app.data_quality import records_missing_field
+
+        records = [{"f": None}]
+        assert records_missing_field(records, "f") == [0]
