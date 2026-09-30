@@ -359,3 +359,68 @@ class TestIsOpenProperty:
                 cb.call(_always_fail)
         cb.reset()
         assert cb.is_open is False
+
+
+class TestCircuitBreakerCallDecorator:
+    def test_decorator_wraps_function(self) -> None:
+        cb = CircuitBreaker(failure_threshold=3, expected_exceptions=(ValueError,))
+
+        @cb
+        def my_func() -> str:
+            return "ok"
+
+        assert my_func() == "ok"
+
+    def test_decorator_trips_on_failures(self) -> None:
+        cb = CircuitBreaker(failure_threshold=2, expected_exceptions=(ValueError,))
+
+        @cb
+        def failing() -> None:
+            raise ValueError("boom")
+
+        for _ in range(2):
+            with pytest.raises(ValueError):
+                failing()
+        assert cb.is_open is True
+
+    def test_decorator_allows_success_when_closed(self) -> None:
+        cb = CircuitBreaker(failure_threshold=3, expected_exceptions=(ValueError,))
+        counter = [0]
+
+        @cb
+        def succeeding() -> int:
+            counter[0] += 1
+            return counter[0]
+
+        for _ in range(5):
+            succeeding()
+        assert counter[0] == 5
+
+
+class TestCircuitBreakerFailureCount:
+    def test_zero_initially(self) -> None:
+        cb = CircuitBreaker(failure_threshold=3, expected_exceptions=(ValueError,))
+        assert cb.failure_count == 0
+
+    def test_increments_on_each_failure(self) -> None:
+        cb = CircuitBreaker(failure_threshold=5, expected_exceptions=(ValueError,))
+        for i in range(3):
+            with pytest.raises(ValueError):
+                cb.call(_always_fail)
+        assert cb.failure_count == 3
+
+    def test_reset_to_zero_on_reset(self) -> None:
+        cb = CircuitBreaker(failure_threshold=5, expected_exceptions=(ValueError,))
+        for _ in range(3):
+            with pytest.raises(ValueError):
+                cb.call(_always_fail)
+        cb.reset()
+        assert cb.failure_count == 0
+
+    @pytest.mark.parametrize("n_failures", [1, 2, 3])
+    def test_failure_count_matches_calls(self, n_failures: int) -> None:
+        cb = CircuitBreaker(failure_threshold=10, expected_exceptions=(ValueError,))
+        for _ in range(n_failures):
+            with pytest.raises(ValueError):
+                cb.call(_always_fail)
+        assert cb.failure_count == n_failures
