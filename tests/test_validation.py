@@ -1333,3 +1333,49 @@ class TestIsValidTemporalInput:
         from app.validation import is_valid_temporal_input
 
         assert is_valid_temporal_input(hour=hour, day_of_week=dow, month=month) is True
+
+
+class TestValidatePositiveExtended:
+    def test_positive_value_no_errors(self) -> None:
+        from app.validation import validate_positive
+
+        assert validate_positive(1.0) == []
+
+    def test_zero_returns_error(self) -> None:
+        from app.validation import validate_positive
+
+        assert len(validate_positive(0.0)) > 0
+
+    def test_negative_returns_error(self) -> None:
+        from app.validation import validate_positive
+
+        assert len(validate_positive(-1.0)) > 0
+
+    @pytest.mark.parametrize("value", [0.001, 1.0, 100.0])
+    def test_strictly_positive_values(self, value: float) -> None:
+        from app.validation import validate_positive
+
+        assert validate_positive(value) == []
+
+
+class TestValidateCoordinateExtended2:
+    def test_valid_coord_no_errors(self) -> None:
+        from app.validation import validate_coordinate
+
+        assert validate_coordinate(51.5, -0.1) == []
+
+    def test_invalid_lat_returns_error(self) -> None:
+        from app.validation import validate_coordinate
+
+        assert len(validate_coordinate(95.0, 0.0)) > 0
+
+    def test_invalid_lon_returns_error(self) -> None:
+        from app.validation import validate_coordinate
+
+        assert len(validate_coordinate(0.0, 200.0)) > 0
+
+    @pytest.mark.parametrize("lat,lon", [(0.0, 0.0), (-90.0, 180.0), (90.0, -180.0)])
+    def test_boundary_coords_valid(self, lat: float, lon: float) -> None:
+        from app.validation import validate_coordinate
+
+        assert validate_coordinate(lat, lon) == []
