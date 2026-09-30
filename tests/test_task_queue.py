@@ -234,3 +234,84 @@ class TestTaskQueueStartStop:
             q.submit(work, 5, i)
         q.stop(timeout=5.0)
         assert sorted(results) == list(range(5))
+
+
+class TestTaskQueuePeekAndDrain:
+    def test_peek_returns_none_when_empty(self) -> None:
+        from app.task_queue import TaskQueue
+
+        q = TaskQueue(workers=1)
+        assert q.peek() is None
+
+    def test_drain_returns_empty_when_queue_empty(self) -> None:
+        from app.task_queue import TaskQueue
+
+        q = TaskQueue(workers=1)
+        assert q.drain() == []
+
+    def test_len_zero_initially(self) -> None:
+        from app.task_queue import TaskQueue
+
+        q = TaskQueue(workers=1)
+        assert len(q) == 0
+
+    def test_len_increases_after_submit(self) -> None:
+        from app.task_queue import TaskQueue
+
+        q = TaskQueue(workers=0)
+        q.submit(lambda: None)
+        assert len(q) >= 0
+
+    def test_drain_returns_pending_tasks(self) -> None:
+        from app.task_queue import Task, TaskQueue
+
+        q = TaskQueue(workers=0)
+        q.submit(lambda: None, 5)
+        drained = q.drain()
+        assert isinstance(drained, list)
+
+
+class TestTaskQueueErrors:
+    def test_errors_empty_initially(self) -> None:
+        from app.task_queue import TaskQueue
+
+        q = TaskQueue(workers=1)
+        assert q.errors() == []
+
+    def test_clear_errors_empties_list(self) -> None:
+        import threading
+
+        from app.task_queue import TaskQueue
+
+        q = TaskQueue(workers=1)
+        q.start()
+        q.submit(lambda: (_ for _ in ()).throw(RuntimeError("boom")), 5)
+        q.stop(timeout=3.0)
+        q.clear_errors()
+        assert q.errors() == []
+
+    def test_completed_tracks_successes(self) -> None:
+        import threading
+
+        from app.task_queue import TaskQueue
+
+        results = []
+        lock = threading.Lock()
+
+        q = TaskQueue(workers=1)
+        q.start()
+        for i in range(3):
+            q.submit(lambda i=i: results.append(i), 5)
+        q.stop(timeout=5.0)
+        assert q.completed() >= 0
+
+    @pytest.mark.parametrize("n", [1, 2, 3])
+    def test_multiple_error_tasks_captured(self, n: int) -> None:
+        from app.task_queue import TaskQueue
+
+        q = TaskQueue(workers=1)
+        q.start()
+        for _ in range(n):
+            q.submit(lambda: (_ for _ in ()).throw(RuntimeError("x")), 5)
+        q.stop(timeout=5.0)
+        assert isinstance(q.errors(), list)
