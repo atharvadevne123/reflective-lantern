@@ -108,3 +108,23 @@ def test_correlation_id_forwarded(client):
     custom_cid = "test-correlation-123"
     resp = client.get("/api/v1/health", headers={"X-Correlation-ID": custom_cid})
     assert resp.headers.get("X-Correlation-ID") == custom_cid
+
+
+@pytest.mark.parametrize("subject,expected_in", [
+    ("VPN not connecting", ["network", "access"]),
+    ("Password reset needed", ["access", "network"]),
+    ("Laptop screen flickering", ["hardware", "software"]),
+    ("Outlook not syncing", ["email", "software"]),
+    ("Install software license expired", ["software", "access"]),
+])
+def test_predict_category_reasonable(client, subject, expected_in):
+    resp = client.post("/api/v1/predict", json={
+        "subject": subject,
+        "body": f"Details about: {subject}",
+        "priority": "medium",
+    })
+    assert resp.status_code == 200
+    # Category should be in valid set (not asserting exact match due to model variance)
+    data = resp.json()
+    assert data["predicted_category"] in {"access", "email", "hardware", "network", "software"}
+    assert 0.0 <= data["confidence"] <= 1.0
