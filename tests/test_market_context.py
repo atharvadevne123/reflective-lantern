@@ -1335,3 +1335,52 @@ class TestMarketHeatScore:
 
         score = market_heat_score(days_on_market=dom, list_to_sale_ratio=1.0, inventory_months=3.0)
         assert 0.0 <= score <= 10.0
+
+
+class TestValueGapExtended:
+    def test_zero_list_price_returns_zero(self) -> None:
+        from app.market_context import value_gap
+
+        assert value_gap(500000.0, 0.0) == pytest.approx(0.0)
+
+    def test_underpriced_positive_gap(self) -> None:
+        from app.market_context import value_gap
+
+        assert value_gap(600000.0, 500000.0) > 0.0
+
+    def test_overpriced_negative_gap(self) -> None:
+        from app.market_context import value_gap
+
+        assert value_gap(400000.0, 500000.0) < 0.0
+
+    def test_equal_prices_zero_gap(self) -> None:
+        from app.market_context import value_gap
+
+        assert value_gap(500000.0, 500000.0) == pytest.approx(0.0)
+
+
+class TestComparableValueAdjustment:
+    def test_larger_subject_increases_value(self) -> None:
+        from app.market_context import comparable_value_adjustment
+
+        result = comparable_value_adjustment(1200, 1000, 300000.0, 150.0)
+        assert result > 300000.0
+
+    def test_smaller_subject_decreases_value(self) -> None:
+        from app.market_context import comparable_value_adjustment
+
+        result = comparable_value_adjustment(800, 1000, 300000.0, 150.0)
+        assert result < 300000.0
+
+    def test_equal_sqft_returns_comp_price(self) -> None:
+        from app.market_context import comparable_value_adjustment
+
+        result = comparable_value_adjustment(1000, 1000, 300000.0)
+        assert result == pytest.approx(300000.0)
+
+    @pytest.mark.parametrize("subject_sqft", [500, 1000, 2000])
+    def test_returns_float(self, subject_sqft: int) -> None:
+        from app.market_context import comparable_value_adjustment
+
+        result = comparable_value_adjustment(subject_sqft, 1000, 300000.0)
+        assert isinstance(result, float)
