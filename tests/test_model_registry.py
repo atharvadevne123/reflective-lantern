@@ -181,3 +181,80 @@ class TestModelVersionEdgeCases:
         reg.transition_stage("staged_model", "1.0.0", target)
         stored = reg.get_latest("staged_model")
         assert stored.stage == target
+
+
+class TestDeleteVersion:
+    def test_delete_existing_version(self) -> None:
+        from app.model_registry import ModelRegistry, ModelVersion
+
+        reg = ModelRegistry()
+        reg.register(ModelVersion(name="m", version="1.0.0", metrics={}))
+        assert reg.delete_version("m", "1.0.0") is True
+        assert reg.get_latest("m") is None
+
+    def test_delete_nonexistent_returns_false(self) -> None:
+        from app.model_registry import ModelRegistry
+
+        reg = ModelRegistry()
+        assert reg.delete_version("ghost", "1.0.0") is False
+
+    def test_delete_leaves_other_versions(self) -> None:
+        from app.model_registry import ModelRegistry, ModelVersion
+
+        reg = ModelRegistry()
+        reg.register(ModelVersion(name="m", version="1.0.0", metrics={}))
+        reg.register(ModelVersion(name="m", version="2.0.0", metrics={}))
+        reg.delete_version("m", "1.0.0")
+        assert len(reg.list_versions("m")) == 1
+        assert reg.list_versions("m")[0].version == "2.0.0"
+
+
+class TestGetByStage:
+    def test_empty_result_when_no_production(self) -> None:
+        from app.model_registry import ModelRegistry, ModelStage, ModelVersion
+
+        reg = ModelRegistry()
+        reg.register(ModelVersion(name="m", version="1.0.0", metrics={}))
+        result = reg.get_by_stage("m", ModelStage.PRODUCTION)
+        assert result == []
+
+    def test_returns_production_versions(self) -> None:
+        from app.model_registry import ModelRegistry, ModelStage, ModelVersion
+
+        reg = ModelRegistry()
+        reg.register(ModelVersion(name="m", version="1.0.0", metrics={}))
+        reg.transition_stage("m", "1.0.0", ModelStage.PRODUCTION)
+        result = reg.get_by_stage("m", ModelStage.PRODUCTION)
+        assert len(result) == 1
+        assert result[0].version == "1.0.0"
+
+    def test_returns_empty_for_unknown_model(self) -> None:
+        from app.model_registry import ModelRegistry, ModelStage
+
+        reg = ModelRegistry()
+        assert reg.get_by_stage("unknown", ModelStage.STAGING) == []
+
+
+class TestVersionCount:
+    def test_zero_for_unknown_model(self) -> None:
+        from app.model_registry import ModelRegistry
+
+        reg = ModelRegistry()
+        assert reg.version_count("unknown") == 0
+
+    def test_counts_registered_versions(self) -> None:
+        from app.model_registry import ModelRegistry, ModelVersion
+
+        reg = ModelRegistry()
+        reg.register(ModelVersion(name="m", version="1.0.0", metrics={}))
+        reg.register(ModelVersion(name="m", version="2.0.0", metrics={}))
+        assert reg.version_count("m") == 2
+
+    @pytest.mark.parametrize("n", [1, 3, 5])
+    def test_count_matches_registers(self, n: int) -> None:
+        from app.model_registry import ModelRegistry, ModelVersion
+
+        reg = ModelRegistry()
+        for i in range(n):
+            reg.register(ModelVersion(name="m", version=f"{i}.0.0", metrics={}))
+        assert reg.version_count("m") == n
