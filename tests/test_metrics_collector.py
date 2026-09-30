@@ -283,3 +283,54 @@ class TestMetricsRegistryRemove:
         reg.register(Counter("temp"))
         reg.remove("temp")
         assert len(reg) == 0
+
+
+class TestCounterIncrement:
+    def test_inc_large_value(self) -> None:
+        from app.metrics_collector import Counter
+
+        c = Counter("big")
+        c.inc(1_000_000)
+        assert c.value == pytest.approx(1_000_000.0)
+
+    def test_sequential_increments(self) -> None:
+        from app.metrics_collector import Counter
+
+        c = Counter("seq")
+        for i in range(1, 6):
+            c.inc(i)
+        assert c.value == pytest.approx(15.0)
+
+    @pytest.mark.parametrize("n", [10, 50, 100])
+    def test_inc_n_times_by_one(self, n: int) -> None:
+        from app.metrics_collector import Counter
+
+        c = Counter("cnt")
+        for _ in range(n):
+            c.inc()
+        assert c.value == pytest.approx(float(n))
+
+
+class TestHistogramBuckets:
+    def test_observation_lands_in_correct_bucket(self) -> None:
+        from app.metrics_collector import Histogram
+
+        h = Histogram("lat", buckets=[0.1, 0.5, 1.0])
+        h.observe(0.05)
+        assert h.count == 1
+
+    def test_large_observation_counted(self) -> None:
+        from app.metrics_collector import Histogram
+
+        h = Histogram("lat", buckets=[0.1, 1.0])
+        h.observe(9999.0)
+        assert h.count == 1
+        assert h.sum == pytest.approx(9999.0)
+
+    @pytest.mark.parametrize("value", [0.01, 0.5, 2.0])
+    def test_observe_increments_sum(self, value: float) -> None:
+        from app.metrics_collector import Histogram
+
+        h = Histogram("lat", buckets=[1.0, 5.0])
+        h.observe(value)
+        assert h.sum == pytest.approx(value)
