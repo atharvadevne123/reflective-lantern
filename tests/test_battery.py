@@ -373,3 +373,53 @@ class TestUsableCapacityKwh:
 
         with pytest.raises(ValueError):
             usable_capacity_kwh(100.0, max_dod=0.0)
+
+
+class TestRoundTripLossesKwh:
+    def test_perfect_efficiency_zero_loss(self) -> None:
+        from app.battery import round_trip_losses_kwh
+
+        assert round_trip_losses_kwh(10.0, efficiency=1.0) == pytest.approx(0.0)
+
+    def test_half_efficiency_half_loss(self) -> None:
+        from app.battery import round_trip_losses_kwh
+
+        assert round_trip_losses_kwh(10.0, efficiency=0.5) == pytest.approx(5.0)
+
+    def test_negative_charged_raises(self) -> None:
+        from app.battery import round_trip_losses_kwh
+
+        with pytest.raises(ValueError):
+            round_trip_losses_kwh(-1.0, efficiency=0.9)
+
+    def test_bad_efficiency_raises(self) -> None:
+        from app.battery import round_trip_losses_kwh
+
+        with pytest.raises(ValueError):
+            round_trip_losses_kwh(10.0, efficiency=0.0)
+
+
+class TestBreakEvenCyclesExtended:
+    def test_zero_saving_returns_inf(self) -> None:
+        from app.battery import break_even_cycles
+
+        assert break_even_cycles(10000.0, 0.0) == float("inf")
+
+    def test_positive_saving_finite(self) -> None:
+        from app.battery import break_even_cycles
+
+        result = break_even_cycles(10000.0, 100.0)
+        assert result == pytest.approx(100.0)
+
+    def test_negative_capex_raises(self) -> None:
+        from app.battery import break_even_cycles
+
+        with pytest.raises(ValueError):
+            break_even_cycles(-100.0, 10.0)
+
+    @pytest.mark.parametrize("capex,saving", [(5000.0, 50.0), (20000.0, 200.0)])
+    def test_various_values(self, capex: float, saving: float) -> None:
+        from app.battery import break_even_cycles
+
+        result = break_even_cycles(capex, saving)
+        assert result > 0.0
