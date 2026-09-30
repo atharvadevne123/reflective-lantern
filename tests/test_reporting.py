@@ -1124,3 +1124,42 @@ class TestRollingSavingsSummaryEdgeCases:
         optimised = [8.0] * 20
         result = rolling_savings_summary(optimised, baseline, window=5)
         assert len(result) == len(baseline)
+
+
+class TestDailyAverageConsumption:
+    def test_simple_average(self) -> None:
+        from app.reporting import daily_average_consumption
+
+        result = daily_average_consumption([10.0, 20.0, 30.0])
+        assert result == pytest.approx(20.0)
+
+    def test_single_day(self) -> None:
+        from app.reporting import daily_average_consumption
+
+        result = daily_average_consumption([42.0])
+        assert result == pytest.approx(42.0)
+
+    @pytest.mark.parametrize("n", [1, 7, 30])
+    def test_uniform_returns_same(self, n: int) -> None:
+        from app.reporting import daily_average_consumption
+
+        result = daily_average_consumption([5.0] * n)
+        assert result == pytest.approx(5.0)
+
+
+class TestKwhConversions:
+    def test_kwh_to_wh(self) -> None:
+        from app.reporting import kwh_to_wh
+
+        assert kwh_to_wh(1.0) == pytest.approx(1000.0)
+
+    def test_wh_to_kwh(self) -> None:
+        from app.reporting import wh_to_kwh
+
+        assert wh_to_kwh(1000.0) == pytest.approx(1.0)
+
+    @pytest.mark.parametrize("kwh", [0.5, 1.0, 10.0])
+    def test_roundtrip(self, kwh: float) -> None:
+        from app.reporting import kwh_to_wh, wh_to_kwh
+
+        assert wh_to_kwh(kwh_to_wh(kwh)) == pytest.approx(kwh)
