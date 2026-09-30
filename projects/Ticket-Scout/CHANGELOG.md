@@ -15,3 +15,14 @@
 - Correlation ID middleware for request tracing
 - Pydantic v2 input validation on all endpoints
 - API versioning under `/api/v1/`
+
+### Additional features
+- FAISS-based similar ticket retrieval with numpy fallback
+- Token-bucket rate limiting middleware (60 req/min default)
+- After-hours and weekend time-series features
+- Volume anomaly detection
+- MLflow experiment tracking stub
+- AWS/boto3 S3 artifact upload stub
+- Alembic database migrations
+- Structured JSON logging configuration
+- Standalone training/evaluation script
