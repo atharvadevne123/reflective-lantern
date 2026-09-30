@@ -101,3 +101,15 @@ def test_build_current_window_keys(db_session):
     assert "sla_breach_prob" in window
     assert "resolution_hours_pred" in window
     assert "confidence" in window
+
+
+def test_volume_anomaly_empty_returns_false():
+    from app.monitoring import detect_volume_anomaly
+    result = detect_volume_anomaly([])
+    assert result["is_anomaly"] is False
+
+
+def test_volume_anomaly_normal_rate():
+    from app.monitoring import detect_volume_anomaly
+    result = detect_volume_anomaly([], baseline_hourly_rate=10.0)
+    assert result["is_anomaly"] is False
