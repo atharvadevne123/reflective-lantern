@@ -163,3 +163,32 @@ def build_current_window(predictions: list[PredictionLog]) -> dict[str, list[flo
         "resolution_hours_pred": [p.resolution_hours_pred for p in predictions],
         "confidence": [p.confidence for p in predictions],
     }
+
+
+def detect_volume_anomaly(predictions: list, baseline_hourly_rate: float = 10.0) -> dict:
+    """Flag if the current prediction volume is anomalously high.
+
+    Args:
+        predictions: Recent prediction records.
+        baseline_hourly_rate: Expected predictions per hour at normal load.
+
+    Returns:
+        Dict with is_anomaly flag and observed_rate.
+    """
+    if not predictions:
+        return {"is_anomaly": False, "observed_rate": 0.0, "baseline": baseline_hourly_rate}
+    from datetime import datetime
+    times = [p.created_at for p in predictions if p.created_at]
+    if len(times) < 2:
+        return {"is_anomaly": False, "observed_rate": 0.0, "baseline": baseline_hourly_rate}
+    span_hours = max(
+        (max(times) - min(times)).total_seconds() / 3600, 0.017
+    )  # min 1 minute
+    rate = len(predictions) / span_hours
+    threshold = baseline_hourly_rate * 5.0
+    return {
+        "is_anomaly": rate > threshold,
+        "observed_rate": round(rate, 2),
+        "baseline": baseline_hourly_rate,
+        "threshold": threshold,
+    }
