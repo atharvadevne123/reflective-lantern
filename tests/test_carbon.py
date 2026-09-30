@@ -1619,3 +1619,55 @@ class TestCarbonNeutralKwh:
         from app.carbon import carbon_neutral_kwh
         result = carbon_neutral_kwh(1000.0, offset_factor=factor)
         assert result >= 0.0
+
+
+class TestCarbonScoreExtended:
+    def test_zero_emissions_is_100(self) -> None:
+        from app.carbon import carbon_score
+
+        assert carbon_score(0.0, max_kg=100.0) == pytest.approx(100.0)
+
+    def test_max_emissions_is_zero(self) -> None:
+        from app.carbon import carbon_score
+
+        assert carbon_score(100.0, max_kg=100.0) == pytest.approx(0.0)
+
+    def test_invalid_max_raises(self) -> None:
+        from app.carbon import carbon_score
+
+        with pytest.raises(ValueError):
+            carbon_score(50.0, max_kg=0.0)
+
+    @pytest.mark.parametrize("co2,max_kg", [(25.0, 100.0), (50.0, 100.0)])
+    def test_score_in_range(self, co2: float, max_kg: float) -> None:
+        from app.carbon import carbon_score
+
+        assert 0.0 <= carbon_score(co2, max_kg=max_kg) <= 100.0
+
+
+class TestAnnualEmissionEstimateExtended:
+    def test_empty_raises(self) -> None:
+        from app.carbon import annual_emission_estimate
+
+        with pytest.raises(ValueError):
+            annual_emission_estimate([], emission_factor=0.3)
+
+    def test_twelve_months_direct_sum(self) -> None:
+        from app.carbon import annual_emission_estimate
+
+        monthly = [100.0] * 12
+        result = annual_emission_estimate(monthly, emission_factor=0.5)
+        assert result == pytest.approx(1200.0 * 0.5)
+
+    def test_invalid_factor_raises(self) -> None:
+        from app.carbon import annual_emission_estimate
+
+        with pytest.raises(ValueError):
+            annual_emission_estimate([100.0] * 12, emission_factor=0.0)
+
+    @pytest.mark.parametrize("factor", [0.1, 0.3, 0.5])
+    def test_various_factors(self, factor: float) -> None:
+        from app.carbon import annual_emission_estimate
+
+        result = annual_emission_estimate([100.0] * 12, emission_factor=factor)
+        assert result > 0.0
