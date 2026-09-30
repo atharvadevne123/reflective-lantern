@@ -177,7 +177,6 @@ def detect_volume_anomaly(predictions: list, baseline_hourly_rate: float = 10.0)
     """
     if not predictions:
         return {"is_anomaly": False, "observed_rate": 0.0, "baseline": baseline_hourly_rate}
-    from datetime import datetime
     times = [p.created_at for p in predictions if p.created_at]
     if len(times) < 2:
         return {"is_anomaly": False, "observed_rate": 0.0, "baseline": baseline_hourly_rate}

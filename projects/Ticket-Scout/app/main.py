@@ -15,10 +15,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field, field_validator
 from sqlalchemy.orm import Session
 
-from app.retriever import TicketRetriever
 from app.database import create_tables, get_db
 from app.model import MODEL_DIR, MODEL_VERSION, load_models, predict, train_models
-from app.rate_limit import RateLimitMiddleware
 from app.monitoring import (
     build_current_window,
     check_all_drift,
@@ -26,6 +24,8 @@ from app.monitoring import (
     log_prediction,
     set_reference_distribution,
 )
+from app.rate_limit import RateLimitMiddleware
+from app.retriever import TicketRetriever
 
 logging.basicConfig(
     level=logging.INFO,

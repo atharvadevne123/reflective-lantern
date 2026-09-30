@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 import os
-import pytest
 
 os.environ.setdefault("MODEL_DIR", "./test_models")
 

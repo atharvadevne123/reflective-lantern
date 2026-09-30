@@ -82,8 +82,8 @@ def task_retrain_models(**context) -> dict:
     logger.info("Retrain metrics: %s", metrics)
     # Optionally upload artifacts to S3
     try:
+
         from app.aws_stub import upload_model_artifact
-        import pathlib
         for fname in ["category_model.joblib", "breach_model.joblib", "resolution_model.joblib"]:
             upload_model_artifact(MODEL_DIR / fname, f"models/{fname}")
     except Exception as exc:
