@@ -80,6 +80,13 @@ def extract_structured_features(df: pd.DataFrame) -> pd.DataFrame:
     feats["created_dow"] = df.get("created_dow", pd.Series(0, index=df.index))
     feats["org_size_log"] = np.log1p(df.get("org_size", pd.Series(500, index=df.index)))
 
+    # After-hours flag: tickets after 5pm or before 8am have higher breach risk
+    feats["is_after_hours"] = (
+        (feats["created_hour"] >= 17) | (feats["created_hour"] < 8)
+    ).astype(int)
+    feats["is_weekend"] = (feats["created_dow"] >= 5).astype(int)
+    feats["after_hours_x_priority"] = feats["is_after_hours"] * feats["priority_num"]
+
     # Interaction features
     feats["urgency_x_priority"] = feats["urgency_score"] * feats["priority_num"]
     feats["text_x_urgency"] = feats["text_length"] * feats["urgency_score"]
