@@ -921,5 +921,34 @@
     "tests_passed": true,
     "server_verified": true,
     "ruff_clean": true
+  },
+  {
+    "date": "2026-09-30",
+    "project": "sport-cast",
+    "description": "Sports match outcome prediction (home_win/draw/away_win) and player performance scoring API. XGBoost + LightGBM + RandomForest soft-voting ensemble, 7-stage sklearn feature pipeline, KS-test + PSI drift detection, champion/challenger retraining gate, PostgreSQL-backed prediction logging, Airflow DAG weekly retraining, FAISS similarity search.",
+    "inspired_by": "sports analytics and match prediction trending on GitHub",
+    "repo_url": "https://github.com/atharvadevne123/reflective-lantern/tree/innovation/sport-cast/sport-cast",
+    "pr_url": "https://github.com/atharvadevne123/reflective-lantern/pull/101",
+    "file_count": 60,
+    "test_count": 104,
+    "coverage_pct": 85,
+    "tech_stack": [
+      "FastAPI",
+      "XGBoost",
+      "LightGBM",
+      "RandomForest",
+      "sklearn Pipeline",
+      "KS-drift",
+      "PSI",
+      "SQLAlchemy",
+      "PostgreSQL",
+      "Alembic",
+      "Airflow",
+      "FAISS",
+      "Docker",
+      "pytest",
+      "ruff",
+      "GitHub Actions"
+    ]
   }
 ]
