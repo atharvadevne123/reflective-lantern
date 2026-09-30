@@ -128,3 +128,11 @@ def test_predict_category_reasonable(client, subject, expected_in):
     data = resp.json()
     assert data["predicted_category"] in {"access", "email", "hardware", "network", "software"}
     assert 0.0 <= data["confidence"] <= 1.0
+
+
+def test_similar_endpoint_returns_200(client):
+    resp = client.get("/api/v1/similar/ticket-123")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert "ticket_id" in data
+    assert "similar_count" in data
