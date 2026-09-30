@@ -207,3 +207,78 @@ class TestShadowResultEdgeCases:
 
         result = ShadowResult(primary=value, shadow=value, matched=True)
         assert result.primary == value
+
+
+class TestShadowRunnerMismatches:
+    def test_empty_initially(self) -> None:
+        from app.shadow_mode import ShadowRunner
+
+        runner = ShadowRunner(lambda x: x, lambda x: x + 1)
+        assert runner.mismatches() == []
+
+    def test_mismatch_recorded_on_divergence(self) -> None:
+        from app.shadow_mode import ShadowRunner
+
+        runner = ShadowRunner(lambda x: x, lambda x: x + 1)
+        runner.call(5)
+        assert len(runner.mismatches()) == 1
+
+    def test_no_mismatch_when_results_equal(self) -> None:
+        from app.shadow_mode import ShadowRunner
+
+        runner = ShadowRunner(lambda x: x, lambda x: x)
+        runner.call(5)
+        assert runner.mismatches() == []
+
+
+class TestShadowRunnerLastResult:
+    def test_none_before_first_call(self) -> None:
+        from app.shadow_mode import ShadowRunner
+
+        runner = ShadowRunner(lambda: 1, lambda: 1)
+        assert runner.last_result() is None
+
+    def test_stores_last_call_result(self) -> None:
+        from app.shadow_mode import ShadowRunner
+
+        runner = ShadowRunner(lambda x: x, lambda x: x)
+        runner.call(42)
+        result = runner.last_result()
+        assert result.primary == 42
+
+    def test_updates_on_each_call(self) -> None:
+        from app.shadow_mode import ShadowRunner
+
+        runner = ShadowRunner(lambda x: x, lambda x: x)
+        runner.call(1)
+        runner.call(2)
+        assert runner.last_result().primary == 2
+
+
+class TestShadowRunnerClear:
+    def test_clear_resets_stats(self) -> None:
+        from app.shadow_mode import ShadowRunner
+
+        runner = ShadowRunner(lambda x: x, lambda x: x)
+        runner.call(5)
+        runner.clear()
+        assert runner.last_result() is None
+
+    def test_clear_resets_mismatches(self) -> None:
+        from app.shadow_mode import ShadowRunner
+
+        runner = ShadowRunner(lambda x: x, lambda x: x + 1)
+        runner.call(5)
+        runner.clear()
+        assert runner.mismatches() == []
+
+    @pytest.mark.parametrize("n", [1, 3, 5])
+    def test_stats_reset_after_clear(self, n: int) -> None:
+        from app.shadow_mode import ShadowRunner
+
+        runner = ShadowRunner(lambda x: x, lambda x: x)
+        for i in range(n):
+            runner.call(i)
+        runner.clear()
+        stats = runner.stats()
+        assert stats.get("total_calls", 0) == 0
