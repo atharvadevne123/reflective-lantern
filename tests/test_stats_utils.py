@@ -1701,3 +1701,57 @@ class TestClampAndSafeDivide:
     def test_safe_divide_custom_default(self) -> None:
         from app.stats_utils import safe_divide
         assert safe_divide(10.0, 0.0, default=-1.0) == -1.0
+
+
+class TestRunningMeanExtended:
+    def test_empty_returns_empty(self) -> None:
+        from app.stats_utils import running_mean
+
+        assert running_mean([]) == []
+
+    def test_single_value(self) -> None:
+        from app.stats_utils import running_mean
+
+        assert running_mean([5.0]) == pytest.approx([5.0])
+
+    def test_increasing_series(self) -> None:
+        from app.stats_utils import running_mean
+
+        result = running_mean([1.0, 2.0, 3.0])
+        assert result[0] == pytest.approx(1.0)
+        assert result[-1] == pytest.approx(2.0)
+
+    def test_same_length_as_input(self) -> None:
+        from app.stats_utils import running_mean
+
+        values = [1.0, 2.0, 3.0, 4.0]
+        assert len(running_mean(values)) == len(values)
+
+
+class TestTrimmedMeanExtended:
+    def test_empty_raises(self) -> None:
+        from app.stats_utils import trimmed_mean
+
+        with pytest.raises(ValueError):
+            trimmed_mean([])
+
+    def test_no_trim_equals_mean(self) -> None:
+        from app.stats_utils import trimmed_mean
+
+        values = [1.0, 2.0, 3.0, 4.0, 5.0]
+        result = trimmed_mean(values, trim_pct=0.0)
+        assert result == pytest.approx(3.0)
+
+    def test_trim_removes_extremes(self) -> None:
+        from app.stats_utils import trimmed_mean
+
+        values = [0.0, 1.0, 2.0, 3.0, 100.0]
+        trimmed = trimmed_mean(values, trim_pct=0.2)
+        assert trimmed < 100.0
+
+    @pytest.mark.parametrize("trim_pct", [0.0, 0.1, 0.2])
+    def test_valid_trim_pcts(self, trim_pct: float) -> None:
+        from app.stats_utils import trimmed_mean
+
+        result = trimmed_mean([1.0, 2.0, 3.0, 4.0, 5.0], trim_pct=trim_pct)
+        assert isinstance(result, float)
