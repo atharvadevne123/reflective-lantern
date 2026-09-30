@@ -190,3 +190,56 @@ class TestCapacityFactor:
     def test_typical_values(self, actual, kw, hours, expected) -> None:
         from app.solar import capacity_factor
         assert capacity_factor(actual, kw, hours) == pytest.approx(expected, rel=1e-4)
+
+
+class TestPaybackYearsExtended:
+    def test_zero_benefit_returns_inf(self) -> None:
+        from app.solar import payback_years
+
+        assert payback_years(10000.0, 0.0) == float("inf")
+
+    def test_negative_cost_raises(self) -> None:
+        from app.solar import payback_years
+
+        with pytest.raises(ValueError):
+            payback_years(-100.0, 500.0)
+
+    def test_negative_benefit_raises(self) -> None:
+        from app.solar import payback_years
+
+        with pytest.raises(ValueError):
+            payback_years(10000.0, -100.0)
+
+    def test_positive_benefit_finite_payback(self) -> None:
+        from app.solar import payback_years
+
+        result = payback_years(10000.0, 2000.0)
+        assert result < float("inf")
+        assert result > 0.0
+
+    @pytest.mark.parametrize("cost,benefit", [(5000.0, 1000.0), (20000.0, 5000.0)])
+    def test_various_scenarios(self, cost: float, benefit: float) -> None:
+        from app.solar import payback_years
+
+        result = payback_years(cost, benefit)
+        assert result > 0.0
+
+
+class TestGenerationKwhExtended:
+    def test_returns_positive(self) -> None:
+        from app.solar import generation_kwh
+
+        result = generation_kwh(peak_kw=5.0, irradiance_kwh_per_sqm=4.5)
+        assert result > 0.0
+
+    def test_more_irradiance_more_generation(self) -> None:
+        from app.solar import generation_kwh
+
+        low = generation_kwh(peak_kw=5.0, irradiance_kwh_per_sqm=3.0)
+        high = generation_kwh(peak_kw=5.0, irradiance_kwh_per_sqm=6.0)
+        assert high > low
+
+    def test_returns_float(self) -> None:
+        from app.solar import generation_kwh
+
+        assert isinstance(generation_kwh(peak_kw=3.0, irradiance_kwh_per_sqm=4.0), float)
