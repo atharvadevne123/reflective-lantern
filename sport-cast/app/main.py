@@ -212,3 +212,28 @@ def prediction_history_endpoint(limit: int = 20, db: Session = Depends(get_db)) 
             for r in rows
         ]
     }
+
+
+class BatchMatchRequest(BaseModel):
+    matches: list[MatchFeatures] = Field(min_length=1, max_length=50)
+
+
+@app.post("/api/v1/predict/batch", tags=["prediction"], summary="Batch predict match outcomes")
+def batch_predict_endpoint(request: BatchMatchRequest, db: Session = Depends(get_db)) -> dict:
+    """Predict outcomes for up to 50 matches in a single request."""
+    if _model is None or _pipeline is None:
+        raise HTTPException(status_code=503, detail="Model not loaded")
+    results = []
+    for match in request.matches:
+        features = pd.DataFrame([match.model_dump(exclude={"match_id", "home_team", "away_team"})])
+        result = predict_match(features, _model, _pipeline)
+        log_prediction(
+            db,
+            match_id=match.match_id,
+            home_team=match.home_team,
+            away_team=match.away_team,
+            **result,
+            model_version=MODEL_VERSION,
+        )
+        results.append({"match_id": match.match_id, "home_team": match.home_team, "away_team": match.away_team, **result})
+    return {"count": len(results), "results": results}
