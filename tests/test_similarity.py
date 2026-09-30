@@ -992,3 +992,58 @@ class TestNormalizeDistancesExtended:
         distances = [float(i) for i in range(n)]
         result = normalize_distances(distances)
         assert len(result) == n
+
+
+class TestWeightedJaccardSimilarityExtended:
+    def test_identical_dicts_returns_one(self) -> None:
+        from app.similarity import weighted_jaccard_similarity
+
+        d = {"a": 1.0, "b": 2.0}
+        assert weighted_jaccard_similarity(d, d) == pytest.approx(1.0)
+
+    def test_empty_dicts_returns_zero(self) -> None:
+        from app.similarity import weighted_jaccard_similarity
+
+        assert weighted_jaccard_similarity({}, {}) == pytest.approx(0.0)
+
+    def test_disjoint_dicts_returns_zero(self) -> None:
+        from app.similarity import weighted_jaccard_similarity
+
+        a = {"x": 1.0}
+        b = {"y": 1.0}
+        assert weighted_jaccard_similarity(a, b) == pytest.approx(0.0)
+
+    def test_partial_overlap(self) -> None:
+        from app.similarity import weighted_jaccard_similarity
+
+        a = {"x": 1.0, "y": 0.0}
+        b = {"x": 1.0, "z": 0.0}
+        result = weighted_jaccard_similarity(a, b)
+        assert 0.0 <= result <= 1.0
+
+
+class TestPearsonSimilarity:
+    def test_identical_series_returns_one(self) -> None:
+        from app.similarity import pearson_similarity
+
+        series = [1.0, 2.0, 3.0, 4.0, 5.0]
+        assert pearson_similarity(series, series) == pytest.approx(1.0)
+
+    def test_opposite_series_returns_minus_one(self) -> None:
+        from app.similarity import pearson_similarity
+
+        a = [1.0, 2.0, 3.0]
+        b = [3.0, 2.0, 1.0]
+        assert pearson_similarity(a, b) == pytest.approx(-1.0)
+
+    def test_empty_raises(self) -> None:
+        from app.similarity import pearson_similarity
+
+        with pytest.raises(ValueError):
+            pearson_similarity([], [])
+
+    def test_different_lengths_raise(self) -> None:
+        from app.similarity import pearson_similarity
+
+        with pytest.raises(ValueError):
+            pearson_similarity([1.0], [1.0, 2.0])
