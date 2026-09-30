@@ -204,3 +204,55 @@ def test_compare_specs_identifies_cheaper(cpu: int, mem: int) -> None:
     results = compare_specs([cheap, expensive])
     assert len(results) == 2
     assert all("total_usd" in r or "cost" in r or isinstance(r, dict) for r in results)
+
+
+class TestCheapestSpecExtended:
+    def test_empty_returns_none(self) -> None:
+        from app.cost_estimator import cheapest_spec
+
+        assert cheapest_spec([]) is None
+
+    def test_single_spec_returned(self) -> None:
+        from app.cost_estimator import ResourceSpec, cheapest_spec
+
+        spec = ResourceSpec(cpu_cores=1, memory_gb=2, duration_hours=1)
+        result = cheapest_spec([spec])
+        assert result is spec
+
+    def test_returns_cheapest(self) -> None:
+        from app.cost_estimator import ResourceSpec, cheapest_spec
+
+        cheap = ResourceSpec(cpu_cores=1, memory_gb=1, duration_hours=1)
+        expensive = ResourceSpec(cpu_cores=16, memory_gb=64, duration_hours=100)
+        result = cheapest_spec([expensive, cheap])
+        assert result is cheap
+
+    @pytest.mark.parametrize("n", [2, 3, 5])
+    def test_n_specs_returns_cheapest(self, n: int) -> None:
+        from app.cost_estimator import ResourceSpec, cheapest_spec
+
+        specs = [ResourceSpec(cpu_cores=i, memory_gb=i * 2, duration_hours=1) for i in range(1, n + 1)]
+        result = cheapest_spec(specs)
+        assert result is not None
+
+
+class TestMonthlyEstimateExtended:
+    def test_returns_positive(self) -> None:
+        from app.cost_estimator import ResourceSpec, monthly_estimate
+
+        spec = ResourceSpec(cpu_cores=2, memory_gb=4, duration_hours=1)
+        result = monthly_estimate(spec)
+        assert result > 0.0
+
+    def test_proportional_to_hours(self) -> None:
+        from app.cost_estimator import ResourceSpec, monthly_estimate
+
+        spec1 = ResourceSpec(cpu_cores=1, memory_gb=1, duration_hours=1)
+        spec2 = ResourceSpec(cpu_cores=1, memory_gb=1, duration_hours=2)
+        assert monthly_estimate(spec2) > monthly_estimate(spec1)
+
+    def test_returns_float(self) -> None:
+        from app.cost_estimator import ResourceSpec, monthly_estimate
+
+        spec = ResourceSpec(cpu_cores=1, memory_gb=2, duration_hours=1)
+        assert isinstance(monthly_estimate(spec), float)
