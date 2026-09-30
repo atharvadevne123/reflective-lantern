@@ -369,3 +369,57 @@ def test_daily_report_contains_date_string(history_dir: Path) -> None:
     with patch.object(rg, "HISTORY_DIR", history_dir):
         report = rg.daily_report(date(2026, 6, 15))
     assert "2026-06-15" in report
+
+
+class TestTotalCommits:
+    def test_empty_history_returns_zero(self) -> None:
+        from scripts.report_generator import total_commits
+
+        assert total_commits({}) == 0
+
+    def test_single_repo_single_entry(self) -> None:
+        from scripts.report_generator import total_commits
+
+        history = {"repo": [{"commits": 5}]}
+        assert total_commits(history) == 5
+
+    def test_multiple_repos_summed(self) -> None:
+        from scripts.report_generator import total_commits
+
+        history = {
+            "a": [{"commits": 3}, {"commits": 2}],
+            "b": [{"commits": 10}],
+        }
+        assert total_commits(history) == 15
+
+    @pytest.mark.parametrize("n", [0, 5, 60])
+    def test_single_entry_matches_n(self, n: int) -> None:
+        from scripts.report_generator import total_commits
+
+        assert total_commits({"r": [{"commits": n}]}) == n
+
+
+class TestLoadAllHistory:
+    def test_returns_dict(self, tmp_path: Path) -> None:
+        from scripts import report_generator as rg
+
+        with patch.object(rg, "HISTORY_DIR", tmp_path):
+            result = rg.load_all_history()
+        assert isinstance(result, dict)
+
+    def test_empty_dir_returns_empty_dict(self, tmp_path: Path) -> None:
+        from scripts import report_generator as rg
+
+        with patch.object(rg, "HISTORY_DIR", tmp_path):
+            result = rg.load_all_history()
+        assert result == {}
+
+    def test_json_file_loaded(self, tmp_path: Path) -> None:
+        import json
+
+        from scripts import report_generator as rg
+
+        (tmp_path / "myrepo.json").write_text(json.dumps([{"commits": 3}]))
+        with patch.object(rg, "HISTORY_DIR", tmp_path):
+            result = rg.load_all_history()
+        assert "myrepo" in result
