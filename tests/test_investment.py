@@ -1390,3 +1390,47 @@ class TestLoanToValueRatioExtended:
     def test_ltv_matches_fraction(self, pct: float) -> None:
         ltv = loan_to_value_ratio(loan_amount=pct * 200000.0, property_value=200000.0)
         assert ltv == pytest.approx(pct * 100.0)
+
+
+class TestRentToValueRatioExt:
+    def test_basic_calculation(self) -> None:
+        from app.investment import rent_to_value_ratio
+
+        result = rent_to_value_ratio(monthly_rent=1500.0, property_value=300000.0)
+        assert isinstance(result, float)
+        assert result > 0.0
+
+    def test_higher_rent_gives_higher_ratio(self) -> None:
+        from app.investment import rent_to_value_ratio
+
+        low = rent_to_value_ratio(monthly_rent=1000.0, property_value=300000.0)
+        high = rent_to_value_ratio(monthly_rent=2000.0, property_value=300000.0)
+        assert high > low
+
+    @pytest.mark.parametrize("rent", [500.0, 1500.0, 3000.0])
+    def test_positive_result(self, rent: float) -> None:
+        from app.investment import rent_to_value_ratio
+
+        result = rent_to_value_ratio(monthly_rent=rent, property_value=300000.0)
+        assert result > 0.0
+
+
+class TestEquityMultipleExt:
+    def test_basic_calculation(self) -> None:
+        from app.investment import equity_multiple
+
+        result = equity_multiple(total_distributions=200000.0, equity_invested=100000.0)
+        assert result == pytest.approx(2.0)
+
+    def test_no_return_gives_zero(self) -> None:
+        from app.investment import equity_multiple
+
+        result = equity_multiple(total_distributions=0.0, equity_invested=100000.0)
+        assert result == pytest.approx(0.0)
+
+    @pytest.mark.parametrize("mult", [1.0, 2.0, 3.0])
+    def test_known_multiples(self, mult: float) -> None:
+        from app.investment import equity_multiple
+
+        result = equity_multiple(total_distributions=mult * 100000.0, equity_invested=100000.0)
+        assert result == pytest.approx(mult)
