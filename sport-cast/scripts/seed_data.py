@@ -6,9 +6,11 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from app.database import MatchRecord, init_db, _get_session_factory
-from datetime import datetime, timedelta
 import random
+from datetime import datetime, timedelta
+
+from app.database import MatchRecord, _get_session_factory, init_db
+
 
 def seed(n: int = 20) -> None:
     init_db()

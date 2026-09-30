@@ -61,6 +61,8 @@ def search_similar_matches(
     if idx is None:
         return []
     query_2d = query.reshape(1, -1).astype(np.float32)
+    if isinstance(idx, _BruteForceIndex):
+        return idx.search(query_2d, top_k)
     try:
         distances, indices = idx.search(query_2d, top_k)
         return [
@@ -68,7 +70,7 @@ def search_similar_matches(
             for i in range(top_k)
             if indices[0][i] >= 0
         ]
-    except AttributeError:
+    except (AttributeError, ValueError):
         return idx.search(query_2d, top_k)
 
 

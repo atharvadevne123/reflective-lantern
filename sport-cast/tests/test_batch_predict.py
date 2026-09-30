@@ -1,8 +1,6 @@
 """Batch prediction endpoint tests."""
 from __future__ import annotations
 
-import pytest
-
 
 def test_batch_predict_single(client, sample_match_payload):
     resp = client.post("/api/v1/predict/batch", json={"matches": [sample_match_payload]})
