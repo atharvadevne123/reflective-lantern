@@ -1137,3 +1137,55 @@ class TestMaeScore:
         actual = [float(i) for i in range(n)]
         predicted = [float(i) + 0.5 for i in range(n)]
         assert mae_score(actual, predicted) >= 0.0
+
+
+class TestConsecutiveMissCountExtended:
+    def test_no_misses_returns_zero(self) -> None:
+        from app.forecasting import consecutive_miss_count
+
+        actual = [1.0, 2.0, 3.0]
+        predicted = [1.0, 2.0, 3.0]
+        assert consecutive_miss_count(actual, predicted, threshold=0.1) == 0
+
+    def test_all_misses_returns_length(self) -> None:
+        from app.forecasting import consecutive_miss_count
+
+        actual = [1.0, 1.0, 1.0]
+        predicted = [5.0, 5.0, 5.0]
+        assert consecutive_miss_count(actual, predicted, threshold=0.1) == 3
+
+    def test_empty_raises(self) -> None:
+        from app.forecasting import consecutive_miss_count
+
+        with pytest.raises(ValueError):
+            consecutive_miss_count([], [], threshold=0.1)
+
+    @pytest.mark.parametrize("threshold", [0.0, 1.0, 5.0])
+    def test_various_thresholds(self, threshold: float) -> None:
+        from app.forecasting import consecutive_miss_count
+
+        actual = [1.0, 2.0, 3.0]
+        predicted = [1.5, 2.5, 3.5]
+        result = consecutive_miss_count(actual, predicted, threshold=threshold)
+        assert isinstance(result, int)
+
+
+class TestForecastBiasExtended:
+    def test_no_bias_when_perfect(self) -> None:
+        from app.forecasting import forecast_bias
+
+        actual = [1.0, 2.0, 3.0]
+        assert forecast_bias(actual, actual) == pytest.approx(0.0)
+
+    def test_positive_bias_when_over_forecast(self) -> None:
+        from app.forecasting import forecast_bias
+
+        actual = [1.0, 2.0, 3.0]
+        predicted = [2.0, 3.0, 4.0]
+        assert forecast_bias(actual, predicted) > 0.0
+
+    def test_empty_raises(self) -> None:
+        from app.forecasting import forecast_bias
+
+        with pytest.raises(ValueError):
+            forecast_bias([], [])
