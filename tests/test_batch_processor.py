@@ -231,3 +231,56 @@ class TestSuccessRate:
 
         s = RunSummary(total_items=0, total_batches=0, total_results=0, total_errors=0)
         assert success_rate(s) == 0.0
+
+
+class TestBatchProcessorBatchCount:
+    def test_zero_items_returns_zero(self) -> None:
+        from app.batch_processor import BatchProcessor
+
+        p = BatchProcessor(fn=lambda x: x, batch_size=5)
+        assert p.batch_count(0) == 0
+
+    def test_exact_multiple(self) -> None:
+        from app.batch_processor import BatchProcessor
+
+        p = BatchProcessor(fn=lambda x: x, batch_size=5)
+        assert p.batch_count(10) == 2
+
+    def test_partial_batch(self) -> None:
+        from app.batch_processor import BatchProcessor
+
+        p = BatchProcessor(fn=lambda x: x, batch_size=5)
+        assert p.batch_count(11) == 3
+
+    @pytest.mark.parametrize("total,size,expected", [(1, 1, 1), (7, 3, 3), (9, 4, 3)])
+    def test_parametrized(self, total: int, size: int, expected: int) -> None:
+        from app.batch_processor import BatchProcessor
+
+        p = BatchProcessor(fn=lambda x: x, batch_size=size)
+        assert p.batch_count(total) == expected
+
+
+class TestBatchProcessorRunStream:
+    def test_stream_yields_batch_results(self) -> None:
+        from app.batch_processor import BatchProcessor
+
+        p = BatchProcessor(fn=lambda x: x * 2, batch_size=3)
+        results = list(p.run_stream(list(range(6))))
+        assert len(results) == 2
+
+    def test_stream_all_items_processed(self) -> None:
+        from app.batch_processor import BatchProcessor
+
+        items = list(range(5))
+        p = BatchProcessor(fn=lambda x: x, batch_size=2)
+        collected = []
+        for br in p.run_stream(items):
+            collected.extend(br.results)
+        assert sorted(collected) == items
+
+    def test_stream_empty_input(self) -> None:
+        from app.batch_processor import BatchProcessor
+
+        p = BatchProcessor(fn=lambda x: x, batch_size=5)
+        results = list(p.run_stream([]))
+        assert results == []
