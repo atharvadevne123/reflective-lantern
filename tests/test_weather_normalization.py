@@ -241,3 +241,50 @@ class TestNormalizeConsumptionExtended:
     def test_normalized_consumption_positive(self, consumption: float) -> None:
         result = normalize_consumption(consumption, 300.0, 300.0)
         assert result > 0.0
+
+
+class TestComparePeriodsExtended:
+    def test_same_periods_no_change(self) -> None:
+        from app.weather_normalization import compare_periods
+
+        result = compare_periods(1000.0, 1000.0, 300.0, 300.0)
+        assert result.raw_change_pct == pytest.approx(0.0)
+
+    def test_invalid_baseline_raises(self) -> None:
+        from app.weather_normalization import compare_periods
+
+        with pytest.raises(ValueError):
+            compare_periods(0.0, 1000.0, 300.0, 300.0)
+
+    def test_result_has_expected_fields(self) -> None:
+        from app.weather_normalization import compare_periods
+
+        result = compare_periods(1000.0, 1100.0, 300.0, 350.0)
+        assert hasattr(result, "raw_change_pct")
+        assert hasattr(result, "normalized_change_pct")
+
+    @pytest.mark.parametrize("current", [800.0, 1000.0, 1200.0])
+    def test_various_currents(self, current: float) -> None:
+        from app.weather_normalization import compare_periods
+
+        result = compare_periods(1000.0, current, 300.0, 300.0)
+        assert result is not None
+
+
+class TestNormalizationFactorExtended2:
+    def test_same_degree_days_returns_one(self) -> None:
+        from app.weather_normalization import normalization_factor
+
+        assert normalization_factor(300.0, 300.0) == pytest.approx(1.0)
+
+    def test_higher_current_returns_less_than_one(self) -> None:
+        from app.weather_normalization import normalization_factor
+
+        result = normalization_factor(200.0, 400.0)
+        assert result < 1.0
+
+    def test_lower_current_returns_more_than_one(self) -> None:
+        from app.weather_normalization import normalization_factor
+
+        result = normalization_factor(400.0, 200.0)
+        assert result > 1.0
