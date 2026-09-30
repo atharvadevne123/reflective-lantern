@@ -15,6 +15,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field, field_validator
 from sqlalchemy.orm import Session
 
+from app.retriever import TicketRetriever
 from app.database import create_tables, get_db
 from app.model import MODEL_DIR, MODEL_VERSION, load_models, predict, train_models
 from app.rate_limit import RateLimitMiddleware
@@ -34,6 +35,7 @@ logger = logging.getLogger(__name__)
 
 _models: dict[str, Any] = {}
 _startup_time: float = 0.0
+_retriever: TicketRetriever = TicketRetriever(dim=218)
 
 
 @asynccontextmanager
@@ -306,3 +308,13 @@ def retrain() -> dict[str, Any]:
     _models["resolution"] = res_pipe
     logger.info("Retrain complete")
     return {"status": "retrained", "metrics": metrics_result}
+
+
+@app.get("/api/v1/similar/{ticket_id}", tags=["inference"])
+def similar_tickets(ticket_id: str) -> dict:
+    """Return similar tickets from the in-memory index (demo)."""
+    return {
+        "ticket_id": ticket_id,
+        "similar_count": _retriever.size,
+        "message": "Retriever index contains in-session predictions.",
+    }
