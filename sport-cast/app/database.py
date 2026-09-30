@@ -95,5 +95,5 @@ def get_db() -> Session:  # type: ignore[return]
         db.close()
 
 
-def init_db() -> None:
+def init_db() -> None:  # noqa: D401
     Base.metadata.create_all(bind=_get_engine())
