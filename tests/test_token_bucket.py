@@ -219,3 +219,73 @@ class TestPerKeyTokenBucketIsolation:
         pkb.consume("a")
         pkb.consume("a")
         assert pkb.consume("b") is True
+
+
+class TestTokenBucketAvailable:
+    def test_full_initially(self) -> None:
+        from app.token_bucket import TokenBucket
+
+        tb = TokenBucket(capacity=10.0, rate=0.001)
+        assert tb.available() == pytest.approx(10.0)
+
+    def test_decreases_after_consume(self) -> None:
+        from app.token_bucket import TokenBucket
+
+        tb = TokenBucket(capacity=5.0, rate=0.001)
+        tb.consume()
+        assert tb.available() < 5.0
+
+    @pytest.mark.parametrize("capacity", [1.0, 5.0, 10.0])
+    def test_available_never_exceeds_capacity(self, capacity: float) -> None:
+        from app.token_bucket import TokenBucket
+
+        tb = TokenBucket(capacity=capacity, rate=100.0)
+        assert tb.available() <= capacity
+
+
+class TestPerKeyTokenBucketBucketCount:
+    def test_zero_initially(self) -> None:
+        from app.token_bucket import PerKeyTokenBucket
+
+        pkb = PerKeyTokenBucket(capacity=5, rate=1.0)
+        assert pkb.bucket_count() == 0
+
+    def test_increments_on_first_access(self) -> None:
+        from app.token_bucket import PerKeyTokenBucket
+
+        pkb = PerKeyTokenBucket(capacity=5, rate=1.0)
+        pkb.consume("key_a")
+        assert pkb.bucket_count() == 1
+
+    def test_same_key_doesnt_increase_count(self) -> None:
+        from app.token_bucket import PerKeyTokenBucket
+
+        pkb = PerKeyTokenBucket(capacity=5, rate=1.0)
+        pkb.consume("same")
+        pkb.consume("same")
+        assert pkb.bucket_count() == 1
+
+    @pytest.mark.parametrize("n", [1, 3, 5])
+    def test_bucket_count_matches_unique_keys(self, n: int) -> None:
+        from app.token_bucket import PerKeyTokenBucket
+
+        pkb = PerKeyTokenBucket(capacity=5, rate=1.0)
+        for i in range(n):
+            pkb.consume(f"key_{i}")
+        assert pkb.bucket_count() == n
+
+
+class TestTokenBucketWaitAndConsume:
+    def test_immediate_success_when_tokens_available(self) -> None:
+        from app.token_bucket import TokenBucket
+
+        tb = TokenBucket(capacity=5.0, rate=1.0)
+        assert tb.wait_and_consume(tokens=1.0, timeout=0.1) is True
+
+    def test_returns_false_when_timeout_exceeded(self) -> None:
+        from app.token_bucket import TokenBucket
+
+        tb = TokenBucket(capacity=1.0, rate=0.0001)
+        tb.consume()
+        result = tb.wait_and_consume(tokens=1.0, timeout=0.01)
+        assert isinstance(result, bool)
