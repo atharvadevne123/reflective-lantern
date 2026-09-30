@@ -168,3 +168,61 @@ class TestFeatureSetEdgeCases:
 
         fs = FeatureSet(name="v_test", version=version, features={})
         assert fs.version == version
+
+
+class TestFeatureStoreVersionCount:
+    def test_zero_for_unknown_name(self) -> None:
+        store = FeatureStore()
+        assert store.version_count("unknown") == 0
+
+    def test_counts_published_versions(self) -> None:
+        store = FeatureStore()
+        store.publish(_fs(version="1.0.0"))
+        store.publish(_fs(version="2.0.0"))
+        assert store.version_count("energy") == 2
+
+    @pytest.mark.parametrize("n", [1, 3, 5])
+    def test_count_matches_publishes(self, n: int) -> None:
+        store = FeatureStore()
+        for i in range(n):
+            store.publish(_fs(version=f"{i}.0.0"))
+        assert store.version_count("energy") == n
+
+
+class TestFeatureStoreLen:
+    def test_empty_store_len_zero(self) -> None:
+        store = FeatureStore()
+        assert len(store) == 0
+
+    def test_len_counts_all_feature_sets(self) -> None:
+        store = FeatureStore()
+        store.publish(_fs(name="a", version="1.0.0"))
+        store.publish(_fs(name="b", version="1.0.0"))
+        assert len(store) == 2
+
+    def test_len_after_delete_decreases(self) -> None:
+        store = FeatureStore()
+        store.publish(_fs(version="1.0.0"))
+        store.publish(_fs(version="2.0.0"))
+        store.delete("energy", "1.0.0")
+        assert len(store) == 1
+
+
+class TestFeatureStoreTotalVersions:
+    def test_zero_when_empty(self) -> None:
+        store = FeatureStore()
+        assert store.total_versions() == 0
+
+    def test_counts_across_all_names(self) -> None:
+        store = FeatureStore()
+        store.publish(_fs(name="a", version="1.0.0"))
+        store.publish(_fs(name="a", version="2.0.0"))
+        store.publish(_fs(name="b", version="1.0.0"))
+        assert store.total_versions() == 3
+
+    @pytest.mark.parametrize("n", [1, 4, 6])
+    def test_total_matches_published(self, n: int) -> None:
+        store = FeatureStore()
+        for i in range(n):
+            store.publish(_fs(name=f"ds{i}", version="1.0.0"))
+        assert store.total_versions() == n
