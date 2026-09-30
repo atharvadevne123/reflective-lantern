@@ -499,3 +499,52 @@ class TestWithRetryHelper:
         monkeypatch.setattr("time.sleep", lambda _: None)
         with pytest.raises(RuntimeError):
             with_retry(lambda: (_ for _ in ()).throw(RuntimeError("boom")), max_attempts=2)
+
+
+class TestRetryOnNetworkError:
+    def test_returns_callable_decorator(self) -> None:
+        from app.retry import retry_on_network_error
+
+        decorator = retry_on_network_error(max_attempts=2)
+        assert callable(decorator)
+
+    def test_decorated_function_succeeds(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        from app.retry import retry_on_network_error
+
+        monkeypatch.setattr("app.retry.time.sleep", lambda _: None)
+
+        @retry_on_network_error(max_attempts=3)
+        def succeed() -> str:
+            return "done"
+
+        assert succeed() == "done"
+
+    def test_raises_after_exhaustion(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        from app.retry import retry_on_network_error
+
+        monkeypatch.setattr("app.retry.time.sleep", lambda _: None)
+
+        @retry_on_network_error(max_attempts=2)
+        def always_fail() -> None:
+            raise ConnectionError("network down")
+
+        with pytest.raises(ConnectionError):
+            always_fail()
+
+    @pytest.mark.parametrize("max_attempts", [1, 2, 3])
+    def test_call_count_bounded_by_max_attempts(
+        self, max_attempts: int, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        from app.retry import retry_on_network_error
+
+        monkeypatch.setattr("app.retry.time.sleep", lambda _: None)
+        calls = [0]
+
+        @retry_on_network_error(max_attempts=max_attempts)
+        def counter() -> None:
+            calls[0] += 1
+            raise ConnectionError("boom")
+
+        with pytest.raises(ConnectionError):
+            counter()
+        assert calls[0] == max_attempts
