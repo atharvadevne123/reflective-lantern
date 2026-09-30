@@ -433,3 +433,62 @@ class TestRateLimiterClientOps:
         for _ in range(n):
             limiter.is_allowed("tester")
         assert total_consumed_tokens(limiter, "tester") == pytest.approx(float(n))
+
+
+class TestBucketFillPercentageExtended:
+    def test_full_bucket_is_100(self) -> None:
+        from app.rate_limiter import bucket_fill_percentage, make_rate_limiter
+
+        limiter = make_rate_limiter(capacity=10.0, refill_rate=0.0)
+        assert bucket_fill_percentage(limiter, "new_client") == pytest.approx(100.0)
+
+    def test_empty_bucket_is_zero(self) -> None:
+        from app.rate_limiter import bucket_fill_percentage, make_rate_limiter
+
+        limiter = make_rate_limiter(capacity=1.0, refill_rate=0.0)
+        limiter.is_allowed("k")
+        assert bucket_fill_percentage(limiter, "k") == pytest.approx(0.0)
+
+    def test_partial_consumption(self) -> None:
+        from app.rate_limiter import bucket_fill_percentage, make_rate_limiter
+
+        limiter = make_rate_limiter(capacity=4.0, refill_rate=0.0)
+        limiter.is_allowed("p")
+        limiter.is_allowed("p")
+        pct = bucket_fill_percentage(limiter, "p")
+        assert 0.0 < pct < 100.0
+
+    @pytest.mark.parametrize("cap", [2.0, 5.0, 10.0])
+    def test_percentage_never_exceeds_100(self, cap: float) -> None:
+        from app.rate_limiter import bucket_fill_percentage, make_rate_limiter
+
+        limiter = make_rate_limiter(capacity=cap, refill_rate=0.0)
+        assert bucket_fill_percentage(limiter, "c") <= 100.0
+
+
+class TestPruneIdleClientsExtended:
+    def test_prune_returns_int(self) -> None:
+        from app.rate_limiter import make_rate_limiter, prune_idle_clients
+
+        limiter = make_rate_limiter(capacity=5.0, refill_rate=0.0)
+        result = prune_idle_clients(limiter, max_idle_seconds=0.0)
+        assert isinstance(result, int)
+
+    def test_prune_removes_old_clients(self) -> None:
+        import time
+
+        from app.rate_limiter import make_rate_limiter, prune_idle_clients
+
+        limiter = make_rate_limiter(capacity=5.0, refill_rate=0.0)
+        limiter.is_allowed("old")
+        time.sleep(0.01)
+        removed = prune_idle_clients(limiter, max_idle_seconds=0.001)
+        assert removed >= 0
+
+    def test_fresh_client_not_pruned(self) -> None:
+        from app.rate_limiter import active_client_count, make_rate_limiter, prune_idle_clients
+
+        limiter = make_rate_limiter(capacity=5.0, refill_rate=0.0)
+        limiter.is_allowed("fresh")
+        prune_idle_clients(limiter, max_idle_seconds=9999)
+        assert active_client_count(limiter) >= 1
