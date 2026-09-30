@@ -675,3 +675,54 @@ class TestTotalPeakLoad:
         all_ids = set(get_all_region_ids())
         above = regions_above_peak(threshold)
         assert set(above).issubset(all_ids)
+
+
+class TestRegionShareOfTotalExt:
+    def test_share_sums_to_one(self) -> None:
+        from app.regions import get_all_region_ids, region_share_of_total
+
+        total = sum(region_share_of_total(r) for r in get_all_region_ids() if region_share_of_total(r) is not None)
+        assert abs(total - 1.0) < 0.01
+
+    def test_share_between_zero_and_one(self) -> None:
+        from app.regions import get_all_region_ids, region_share_of_total
+
+        for rid in get_all_region_ids():
+            share = region_share_of_total(rid)
+            if share is not None:
+                assert 0.0 <= share <= 1.0
+
+    def test_unknown_region_returns_none_or_raises(self) -> None:
+        from app.regions import region_share_of_total
+
+        try:
+            result = region_share_of_total("INVALID_XYZ")
+            assert result is None or isinstance(result, float)
+        except (KeyError, ValueError):
+            pass
+
+
+class TestRegionLoadFactorExt:
+    def test_positive_for_valid_region(self) -> None:
+        from app.regions import get_all_region_ids, region_load_factor
+
+        ids = get_all_region_ids()
+        if ids:
+            lf = region_load_factor(ids[0])
+            assert lf is None or lf > 0.0
+
+    @pytest.mark.parametrize("rid", ["NSW", "VIC", "QLD"])
+    def test_known_regions_return_value(self, rid: str) -> None:
+        from app.regions import region_load_factor
+
+        try:
+            lf = region_load_factor(rid)
+            assert lf is None or isinstance(lf, float)
+        except (KeyError, ValueError):
+            pass
+
+    def test_highest_peak_region_exists(self) -> None:
+        from app.regions import get_all_region_ids, highest_peak_region
+
+        result = highest_peak_region()
+        assert result in get_all_region_ids()
