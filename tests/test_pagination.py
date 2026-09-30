@@ -340,3 +340,68 @@ class TestIsLastPage:
 
         info = PageInfo(total=30, page=2, per_page=5)
         assert is_last_page(info) is False
+
+
+class TestPageRange:
+    def test_first_page_starts_at_one(self) -> None:
+        from app.pagination import PageInfo, page_range
+
+        info = PageInfo(total=100, page=1, per_page=10)
+        rng = page_range(info, window=5)
+        assert 1 in rng
+
+    def test_window_length_at_most_window(self) -> None:
+        from app.pagination import PageInfo, page_range
+
+        info = PageInfo(total=100, page=5, per_page=10)
+        rng = page_range(info, window=5)
+        assert len(rng) <= 5
+
+    def test_contains_current_page(self) -> None:
+        from app.pagination import PageInfo, page_range
+
+        info = PageInfo(total=100, page=5, per_page=10)
+        rng = page_range(info, window=5)
+        assert 5 in rng
+
+    def test_sorted_ascending(self) -> None:
+        from app.pagination import PageInfo, page_range
+
+        info = PageInfo(total=100, page=5, per_page=10)
+        rng = page_range(info, window=5)
+        assert rng == sorted(rng)
+
+    @pytest.mark.parametrize("page", [1, 5, 10])
+    def test_range_always_within_total_pages(self, page: int) -> None:
+        from app.pagination import PageInfo, page_range
+
+        info = PageInfo(total=100, page=page, per_page=10)
+        rng = page_range(info, window=5)
+        assert all(1 <= p <= info.total_pages for p in rng)
+
+
+class TestLastPageItems:
+    def test_empty_list_returns_zero(self) -> None:
+        from app.pagination import last_page_items
+
+        assert last_page_items([], per_page=10) == 0
+
+    def test_exact_multiple(self) -> None:
+        from app.pagination import last_page_items
+
+        assert last_page_items(list(range(20)), per_page=5) == 5
+
+    def test_remainder(self) -> None:
+        from app.pagination import last_page_items
+
+        assert last_page_items(list(range(13)), per_page=5) == 3
+
+    @pytest.mark.parametrize("total,per_page,expected", [
+        (10, 3, 1),
+        (9, 3, 3),
+        (12, 4, 4),
+    ])
+    def test_various_combos(self, total: int, per_page: int, expected: int) -> None:
+        from app.pagination import last_page_items
+
+        assert last_page_items(list(range(total)), per_page=per_page) == expected
