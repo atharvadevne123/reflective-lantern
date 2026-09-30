@@ -59,9 +59,9 @@ def task_generate_training_data(**context) -> int:
     from app.model import generate_synthetic_data
 
     df = generate_synthetic_data(n_samples=3000)
-    data_path = MODEL_DIR / "train_data.parquet"
+    data_path = MODEL_DIR / "train_data.csv"
     MODEL_DIR.mkdir(parents=True, exist_ok=True)
-    df.to_parquet(data_path, index=False)
+    df.to_csv(data_path, index=False)
     logger.info("Training data written to %s (%d rows)", data_path, len(df))
     return len(df)
 
@@ -76,8 +76,8 @@ def task_retrain_models(**context) -> dict:
 
     from app.model import train_models
 
-    data_path = MODEL_DIR / "train_data.parquet"
-    df = pd.read_parquet(data_path) if data_path.exists() else None
+    data_path = MODEL_DIR / "train_data.csv"
+    df = pd.read_csv(data_path) if data_path.exists() else None
     metrics = train_models(df)
     logger.info("Retrain metrics: %s", metrics)
     # Optionally upload artifacts to S3
