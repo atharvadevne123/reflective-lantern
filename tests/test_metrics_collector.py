@@ -209,3 +209,77 @@ class TestMetricsRegistryEdgeCases:
         for i in range(n):
             reg.register(Counter(f"metric_{i}"))
         assert len(reg.names()) == n
+
+
+class TestMetricsRegistryAllMetrics:
+    def test_empty_registry_returns_empty_dict(self) -> None:
+        from app.metrics_collector import MetricsRegistry
+
+        reg = MetricsRegistry()
+        assert reg.all_metrics() == {}
+
+    def test_registered_metric_in_all(self) -> None:
+        from app.metrics_collector import Counter, MetricsRegistry
+
+        reg = MetricsRegistry()
+        c = Counter("total_requests")
+        reg.register(c)
+        assert "total_requests" in reg.all_metrics()
+
+    def test_all_metrics_is_copy(self) -> None:
+        from app.metrics_collector import Counter, MetricsRegistry
+
+        reg = MetricsRegistry()
+        c = Counter("metric_a")
+        reg.register(c)
+        snapshot = reg.all_metrics()
+        reg.remove("metric_a")
+        assert "metric_a" in snapshot
+
+
+class TestMetricsRegistryLen:
+    def test_zero_initially(self) -> None:
+        from app.metrics_collector import MetricsRegistry
+
+        reg = MetricsRegistry()
+        assert len(reg) == 0
+
+    def test_increments_on_register(self) -> None:
+        from app.metrics_collector import Counter, MetricsRegistry
+
+        reg = MetricsRegistry()
+        reg.register(Counter("m1"))
+        reg.register(Counter("m2"))
+        assert len(reg) == 2
+
+    @pytest.mark.parametrize("n", [1, 3, 5])
+    def test_len_matches_count(self, n: int) -> None:
+        from app.metrics_collector import Counter, MetricsRegistry
+
+        reg = MetricsRegistry()
+        for i in range(n):
+            reg.register(Counter(f"c_{i}"))
+        assert len(reg) == n
+
+
+class TestMetricsRegistryRemove:
+    def test_remove_existing_returns_true(self) -> None:
+        from app.metrics_collector import Counter, MetricsRegistry
+
+        reg = MetricsRegistry()
+        reg.register(Counter("removable"))
+        assert reg.remove("removable") is True
+
+    def test_remove_nonexistent_returns_false(self) -> None:
+        from app.metrics_collector import MetricsRegistry
+
+        reg = MetricsRegistry()
+        assert reg.remove("ghost") is False
+
+    def test_remove_decreases_len(self) -> None:
+        from app.metrics_collector import Counter, MetricsRegistry
+
+        reg = MetricsRegistry()
+        reg.register(Counter("temp"))
+        reg.remove("temp")
+        assert len(reg) == 0
