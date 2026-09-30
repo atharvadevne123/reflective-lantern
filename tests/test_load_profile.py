@@ -268,8 +268,10 @@ class TestOffPeakLoadFraction:
             off_peak_load_fraction([])
 
     def test_fraction_between_0_and_1(self) -> None:
-        from app.load_profile import off_peak_load_fraction
         import random
+
+        from app.load_profile import off_peak_load_fraction
+
         rng = random.Random(42)
         hourly = [rng.uniform(0, 10) for _ in range(48)]
         result = off_peak_load_fraction(hourly)
