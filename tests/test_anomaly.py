@@ -1397,20 +1397,20 @@ class TestConsecutiveAnomalyRunsExtended:
         assert len(runs) <= n
 
 
-class TestAnomalyDensity:
-    def test_all_anomalies(self) -> None:
+class TestAnomalyDensityExtended:
+    def test_all_anomalies_small(self) -> None:
         from app.anomaly import anomaly_density
 
         result = anomaly_density([1, 1, 1], window_size=3)
         assert result == pytest.approx([1.0, 1.0, 1.0])
 
-    def test_no_anomalies(self) -> None:
+    def test_no_anomalies_small(self) -> None:
         from app.anomaly import anomaly_density
 
         result = anomaly_density([0, 0, 0], window_size=2)
         assert result == pytest.approx([0.0, 0.0, 0.0])
 
-    def test_mixed(self) -> None:
+    def test_mixed_flags(self) -> None:
         from app.anomaly import anomaly_density
 
         result = anomaly_density([1, 0, 1, 0], window_size=2)
