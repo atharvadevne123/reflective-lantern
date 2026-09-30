@@ -1810,3 +1810,60 @@ class TestRangeOfSeries:
     def test_parametrized_range(self, values, expected) -> None:
         from app.time_series import range_of_series
         assert range_of_series(values) == pytest.approx(expected)
+
+
+class TestMovingMin:
+    def test_empty_returns_empty(self) -> None:
+        from app.time_series import moving_min
+
+        assert moving_min([]) == []
+
+    def test_output_length_matches_input(self) -> None:
+        from app.time_series import moving_min
+
+        values = [1.0, 2.0, 3.0, 4.0, 5.0]
+        assert len(moving_min(values, window=3)) == len(values)
+
+    def test_minimum_values(self) -> None:
+        from app.time_series import moving_min
+
+        values = [3.0, 1.0, 2.0, 5.0, 4.0]
+        result = moving_min(values, window=2)
+        assert result[1] == pytest.approx(1.0)
+
+    @pytest.mark.parametrize("window", [2, 3, 4])
+    def test_various_windows(self, window: int) -> None:
+        from app.time_series import moving_min
+
+        values = list(range(1, 11, 1))
+        values = [float(v) for v in values]
+        result = moving_min(values, window=window)
+        assert len(result) == len(values)
+
+
+class TestMovingMedianExtended:
+    def test_empty_returns_empty(self) -> None:
+        from app.time_series import moving_median
+
+        assert moving_median([]) == []
+
+    def test_output_length_matches_input(self) -> None:
+        from app.time_series import moving_median
+
+        values = [1.0, 2.0, 3.0, 4.0]
+        assert len(moving_median(values, window=3)) == len(values)
+
+    def test_median_of_sorted_is_middle(self) -> None:
+        from app.time_series import moving_median
+
+        values = [1.0, 2.0, 3.0, 4.0, 5.0]
+        result = moving_median(values, window=3)
+        assert result[2] == pytest.approx(2.0)
+
+    @pytest.mark.parametrize("window", [2, 3])
+    def test_parametrized_window(self, window: int) -> None:
+        from app.time_series import moving_median
+
+        values = [5.0, 3.0, 1.0, 4.0, 2.0]
+        result = moving_median(values, window=window)
+        assert isinstance(result, list)
