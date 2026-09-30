@@ -27,7 +27,7 @@ class FormEncoder(BaseEstimator, TransformerMixin):
         TransformerMixin: sklearn mixin for fit_transform shorthand.
     """
 
-    def fit(self, X: pd.DataFrame, y: object = None) -> "FormEncoder":
+    def fit(self, X: pd.DataFrame, y: object = None) -> FormEncoder:
         """No-op fit (stateless transformer).
 
         Args:
@@ -68,7 +68,7 @@ class LagRollingTransformer(BaseEstimator, TransformerMixin):
         TransformerMixin: sklearn mixin.
     """
 
-    def fit(self, X: pd.DataFrame, y: object = None) -> "LagRollingTransformer":
+    def fit(self, X: pd.DataFrame, y: object = None) -> LagRollingTransformer:
         """No-op fit.
 
         Args:
@@ -107,7 +107,7 @@ class HeadToHeadTransformer(BaseEstimator, TransformerMixin):
         TransformerMixin: sklearn mixin.
     """
 
-    def fit(self, X: pd.DataFrame, y: object = None) -> "HeadToHeadTransformer":
+    def fit(self, X: pd.DataFrame, y: object = None) -> HeadToHeadTransformer:
         """No-op fit.
 
         Args:
@@ -148,7 +148,7 @@ class RatioFeatureTransformer(BaseEstimator, TransformerMixin):
         TransformerMixin: sklearn mixin.
     """
 
-    def fit(self, X: pd.DataFrame, y: object = None) -> "RatioFeatureTransformer":
+    def fit(self, X: pd.DataFrame, y: object = None) -> RatioFeatureTransformer:
         """No-op fit.
 
         Args:
@@ -189,7 +189,7 @@ class FatigueTransformer(BaseEstimator, TransformerMixin):
         TransformerMixin: sklearn mixin.
     """
 
-    def fit(self, X: pd.DataFrame, y: object = None) -> "FatigueTransformer":
+    def fit(self, X: pd.DataFrame, y: object = None) -> FatigueTransformer:
         """No-op fit.
 
         Args:
@@ -226,7 +226,7 @@ class DropCategoricalTransformer(BaseEstimator, TransformerMixin):
         TransformerMixin: sklearn mixin.
     """
 
-    def fit(self, X: pd.DataFrame, y: object = None) -> "DropCategoricalTransformer":
+    def fit(self, X: pd.DataFrame, y: object = None) -> DropCategoricalTransformer:
         """Identify numeric columns to retain.
 
         Args:
@@ -341,5 +341,6 @@ def make_synthetic_dataset(n: int = 2000, seed: int = 42) -> tuple[pd.DataFrame,
     )
 
     labels = np.where(latent > 0.3, 2, np.where(latent < -0.3, 0, 1))
-    logger.debug("Synthetic dataset: n=%d, class distribution=%s", n, dict(zip(*np.unique(labels, return_counts=True))))
+    uniq, counts = np.unique(labels, return_counts=True)
+    logger.debug("Synthetic dataset: n=%d, class distribution=%s", n, dict(zip(uniq, counts, strict=True)))
     return df, labels
