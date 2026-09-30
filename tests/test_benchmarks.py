@@ -745,3 +745,58 @@ class TestSavingsToInvestmentRatio:
 
         with pytest.raises(ValueError):
             savings_to_investment_ratio(5000.0, 0.15, 0.0)
+
+
+class TestPercentileRank:
+    def test_empty_population_returns_zero(self) -> None:
+        from app.benchmarks import percentile_rank
+
+        assert percentile_rank(50.0, []) == pytest.approx(0.0)
+
+    def test_value_in_middle(self) -> None:
+        from app.benchmarks import percentile_rank
+
+        result = percentile_rank(5.0, [1.0, 3.0, 5.0, 7.0, 9.0])
+        assert 0.0 < result < 100.0
+
+    def test_highest_value_is_100(self) -> None:
+        from app.benchmarks import percentile_rank
+
+        result = percentile_rank(10.0, [1.0, 5.0, 10.0])
+        assert result == pytest.approx(100.0)
+
+    @pytest.mark.parametrize("value,pop,expected", [
+        (1.0, [1.0, 2.0, 3.0], pytest.approx(33.33, abs=0.1)),
+        (3.0, [1.0, 2.0, 3.0], pytest.approx(100.0)),
+    ])
+    def test_parametrized(self, value: float, pop: list, expected: object) -> None:
+        from app.benchmarks import percentile_rank
+
+        assert percentile_rank(value, pop) == expected
+
+
+class TestBenchmarkScoreLabel:
+    def test_poor_below_25(self) -> None:
+        from app.benchmarks import benchmark_score_label
+
+        assert benchmark_score_label(10.0) == "poor"
+
+    def test_below_average(self) -> None:
+        from app.benchmarks import benchmark_score_label
+
+        assert benchmark_score_label(40.0) == "below_average"
+
+    def test_average(self) -> None:
+        from app.benchmarks import benchmark_score_label
+
+        assert benchmark_score_label(60.0) == "average"
+
+    def test_good(self) -> None:
+        from app.benchmarks import benchmark_score_label
+
+        assert benchmark_score_label(80.0) == "good"
+
+    def test_excellent_at_90(self) -> None:
+        from app.benchmarks import benchmark_score_label
+
+        assert benchmark_score_label(95.0) == "excellent"
