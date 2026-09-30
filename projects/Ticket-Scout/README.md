@@ -95,6 +95,11 @@ Model performance metrics and 24h prediction stats.
 
 Trigger a KS-test drift check against the 24h prediction window.
 
+
+### `GET /api/v1/similar/{ticket_id}`
+
+Retrieve similar historical tickets from the in-memory FAISS index.
+
 ### `POST /api/v1/retrain`
 
 Trigger model retraining (demo endpoint).
