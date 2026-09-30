@@ -435,3 +435,75 @@ class TestEventBusSubscribeMany:
         bus.unsubscribe("done", handler)
         bus.publish("done")
         assert received == []
+
+
+class TestEventBusEventNames:
+    def test_empty_when_no_subscribers(self) -> None:
+        from app.event_bus import EventBus
+
+        bus = EventBus()
+        assert bus.event_names() == []
+
+    def test_event_appears_after_subscribe(self) -> None:
+        from app.event_bus import EventBus
+
+        bus = EventBus()
+        bus.subscribe("my_event", lambda e, p: None)
+        assert "my_event" in bus.event_names()
+
+    def test_sorted_order(self) -> None:
+        from app.event_bus import EventBus
+
+        bus = EventBus()
+        bus.subscribe("zzz", lambda e, p: None)
+        bus.subscribe("aaa", lambda e, p: None)
+        names = bus.event_names()
+        assert names == sorted(names)
+
+
+class TestEventBusTotalListeners:
+    def test_zero_initially(self) -> None:
+        from app.event_bus import EventBus
+
+        bus = EventBus()
+        assert bus.total_listeners() == 0
+
+    def test_increases_after_subscribe(self) -> None:
+        from app.event_bus import EventBus
+
+        bus = EventBus()
+        bus.subscribe("e1", lambda e, p: None)
+        bus.subscribe("e2", lambda e, p: None)
+        assert bus.total_listeners() >= 2
+
+    @pytest.mark.parametrize("n", [1, 2, 3])
+    def test_total_matches_subscriptions(self, n: int) -> None:
+        from app.event_bus import EventBus
+
+        bus = EventBus()
+        for i in range(n):
+            bus.subscribe(f"event_{i}", lambda e, p: None)
+        assert bus.total_listeners() >= n
+
+
+class TestEventBusHasListeners:
+    def test_false_when_no_subscribers(self) -> None:
+        from app.event_bus import EventBus
+
+        bus = EventBus()
+        assert bus.has_listeners("no_one") is False
+
+    def test_true_after_subscribe(self) -> None:
+        from app.event_bus import EventBus
+
+        bus = EventBus()
+        bus.subscribe("available", lambda e, p: None)
+        assert bus.has_listeners("available") is True
+
+    def test_false_after_clear(self) -> None:
+        from app.event_bus import EventBus
+
+        bus = EventBus()
+        bus.subscribe("temp", lambda e, p: None)
+        bus.clear("temp")
+        assert bus.has_listeners("temp") is False
