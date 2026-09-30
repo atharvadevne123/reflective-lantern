@@ -17,6 +17,7 @@ from sqlalchemy.orm import Session
 
 from app.database import create_tables, get_db
 from app.model import MODEL_DIR, MODEL_VERSION, load_models, predict, train_models
+from app.rate_limit import RateLimitMiddleware
 from app.monitoring import (
     build_current_window,
     check_all_drift,
@@ -76,6 +77,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
+app.add_middleware(RateLimitMiddleware, requests_per_minute=60)
 
 @app.middleware("http")
 async def correlation_id_middleware(request: Request, call_next):
