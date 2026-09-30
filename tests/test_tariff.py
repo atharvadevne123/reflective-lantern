@@ -294,3 +294,57 @@ class TestDailyCostSummary:
         from app.tariff import daily_cost_summary
         result = daily_cost_summary([1.0] * 24, rate=rate)
         assert result["total_cost"] == pytest.approx(24 * rate)
+
+
+class TestPeakShiftSavingExtended:
+    def test_zero_fraction_returns_zero(self) -> None:
+        from app.tariff import peak_shift_saving
+
+        result = peak_shift_saving([1.0] * 24, shiftable_fraction=0.0)
+        assert result == pytest.approx(0.0)
+
+    def test_invalid_fraction_raises(self) -> None:
+        from app.tariff import peak_shift_saving
+
+        with pytest.raises(ValueError):
+            peak_shift_saving([1.0] * 24, shiftable_fraction=1.5)
+
+    def test_off_peak_cheaper_gives_positive(self) -> None:
+        from app.tariff import peak_shift_saving
+
+        result = peak_shift_saving(
+            [1.0] * 24,
+            shiftable_fraction=0.5,
+            peak_rate=0.30,
+            off_peak_rate=0.10,
+        )
+        assert result > 0.0
+
+    @pytest.mark.parametrize("fraction", [0.0, 0.5, 1.0])
+    def test_various_fractions(self, fraction: float) -> None:
+        from app.tariff import peak_shift_saving
+
+        result = peak_shift_saving([1.0] * 24, shiftable_fraction=fraction)
+        assert isinstance(result, float)
+
+
+class TestAnnualCostEstimateExtended:
+    def test_twelve_months_summed(self) -> None:
+        from app.tariff import annual_cost_estimate
+
+        monthly = [100.0] * 12
+        result = annual_cost_estimate(monthly, rate=0.15)
+        assert result == pytest.approx(12 * 100.0 * 0.15)
+
+    def test_empty_monthly_raises_or_zero(self) -> None:
+        from app.tariff import annual_cost_estimate
+
+        result = annual_cost_estimate([], rate=0.15)
+        assert result == pytest.approx(0.0)
+
+    @pytest.mark.parametrize("rate", [0.10, 0.20, 0.30])
+    def test_various_rates(self, rate: float) -> None:
+        from app.tariff import annual_cost_estimate
+
+        result = annual_cost_estimate([100.0] * 12, rate=rate)
+        assert result > 0.0
