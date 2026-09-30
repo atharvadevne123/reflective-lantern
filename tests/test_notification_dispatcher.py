@@ -167,3 +167,68 @@ class TestDispatcherUnregister:
         d.unregister("email")
         d.dispatch(Notification(title="t", body=""))
         assert received == []
+
+
+class TestDispatcherChannelNames:
+    def test_empty_dispatcher_has_no_names(self) -> None:
+        d = NotificationDispatcher()
+        assert d.channel_names() == []
+
+    def test_returns_registered_names(self) -> None:
+        d = NotificationDispatcher()
+        ch1, _ = make_channel("alpha")
+        ch2, _ = make_channel("beta")
+        d.register(ch1)
+        d.register(ch2)
+        names = d.channel_names()
+        assert "alpha" in names
+        assert "beta" in names
+
+    def test_unregister_removes_name(self) -> None:
+        d = NotificationDispatcher()
+        ch, _ = make_channel("to_remove")
+        d.register(ch)
+        d.unregister("to_remove")
+        assert "to_remove" not in d.channel_names()
+
+
+class TestDispatcherEnabledChannels:
+    def test_disabled_channel_not_in_enabled(self) -> None:
+        d = NotificationDispatcher()
+        ch, _ = make_channel("off", enabled=False)
+        d.register(ch)
+        assert "off" not in d.enabled_channels()
+
+    def test_enabled_channel_in_enabled(self) -> None:
+        d = NotificationDispatcher()
+        ch, _ = make_channel("on", enabled=True)
+        d.register(ch)
+        assert "on" in d.enabled_channels()
+
+    def test_toggle_enabled_updates_list(self) -> None:
+        d = NotificationDispatcher()
+        ch, _ = make_channel("toggle", enabled=False)
+        d.register(ch)
+        assert "toggle" not in d.enabled_channels()
+        d.set_enabled("toggle", True)
+        assert "toggle" in d.enabled_channels()
+
+
+class TestDispatcherLen:
+    def test_empty_len_zero(self) -> None:
+        d = NotificationDispatcher()
+        assert len(d) == 0
+
+    def test_len_increments_on_register(self) -> None:
+        d = NotificationDispatcher()
+        ch, _ = make_channel("ch1")
+        d.register(ch)
+        assert len(d) == 1
+
+    @pytest.mark.parametrize("n", [1, 3, 5])
+    def test_len_matches_registered_count(self, n: int) -> None:
+        d = NotificationDispatcher()
+        for i in range(n):
+            ch, _ = make_channel(f"ch{i}")
+            d.register(ch)
+        assert len(d) == n
