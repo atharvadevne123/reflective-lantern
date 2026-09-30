@@ -207,3 +207,58 @@ class TestIsGzip:
         from app.compression import is_gzip
 
         assert is_gzip(b"\x1f\x8b\x00") is True
+
+
+class TestCompressionRatioExtended:
+    def test_returns_float(self) -> None:
+        from app.compression import compression_ratio
+
+        result = compression_ratio(b"hello world hello world")
+        assert isinstance(result, float)
+
+    def test_empty_bytes_returns_one(self) -> None:
+        from app.compression import compression_ratio
+
+        assert compression_ratio(b"") == pytest.approx(1.0)
+
+    def test_string_input_accepted(self) -> None:
+        from app.compression import compression_ratio
+
+        result = compression_ratio("some text data")
+        assert result > 0.0
+
+    @pytest.mark.parametrize("method", ["gzip", "zlib"])
+    def test_both_methods_work(self, method: str) -> None:
+        from app.compression import compression_ratio
+
+        result = compression_ratio(b"repeated data " * 10, method=method)
+        assert 0.0 < result <= 1.0
+
+
+class TestCompressAndMeasure:
+    def test_returns_dict_with_keys(self) -> None:
+        from app.compression import compress_and_measure
+
+        result = compress_and_measure(b"test data")
+        for key in ("original_bytes", "compressed_bytes", "ratio", "savings_pct"):
+            assert key in result
+
+    def test_original_bytes_matches_input(self) -> None:
+        from app.compression import compress_and_measure
+
+        data = b"abc" * 20
+        result = compress_and_measure(data)
+        assert result["original_bytes"] == len(data)
+
+    def test_invalid_method_raises(self) -> None:
+        from app.compression import compress_and_measure
+
+        with pytest.raises(ValueError):
+            compress_and_measure(b"data", method="unknown")
+
+    @pytest.mark.parametrize("method", ["gzip", "zlib"])
+    def test_both_methods_return_compressed_bytes(self, method: str) -> None:
+        from app.compression import compress_and_measure
+
+        result = compress_and_measure(b"hello " * 100, method=method)
+        assert result["compressed_bytes"] > 0
