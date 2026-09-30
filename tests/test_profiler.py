@@ -240,3 +240,73 @@ class TestProfilerExtended:
         fn()
         reset_stats("to_reset")
         assert get_stats("to_reset") == {}
+
+
+class TestTrackedNames:
+    def test_empty_when_no_tracked(self) -> None:
+        from app.profiler import reset_stats, tracked_names
+
+        reset_stats()
+        assert isinstance(tracked_names(), list)
+
+    def test_label_appears_after_call(self) -> None:
+        from app.profiler import tracked, tracked_names
+
+        @tracked(label="tn_label_test")
+        def fn() -> None:
+            pass
+
+        fn()
+        assert "tn_label_test" in tracked_names()
+
+    def test_sorted_order(self) -> None:
+        from app.profiler import tracked, tracked_names
+
+        @tracked(label="zzz_last")
+        def fn1() -> None:
+            pass
+
+        @tracked(label="aaa_first")
+        def fn2() -> None:
+            pass
+
+        fn1()
+        fn2()
+        names = tracked_names()
+        assert names == sorted(names)
+
+
+class TestTotalCalls:
+    def test_zero_when_none_tracked(self) -> None:
+        from app.profiler import reset_stats, total_calls
+
+        reset_stats()
+        assert total_calls() == 0
+
+    def test_increases_with_calls(self) -> None:
+        from app.profiler import reset_stats, total_calls, tracked
+
+        reset_stats()
+
+        @tracked(label="tc_test")
+        def fn() -> None:
+            pass
+
+        for _ in range(3):
+            fn()
+        assert total_calls() >= 3
+
+    @pytest.mark.parametrize("n", [1, 2, 4])
+    def test_total_matches_sum_of_labels(self, n: int) -> None:
+        from app.profiler import reset_stats, total_calls, tracked
+
+        reset_stats()
+        label = f"tc_param_{n}"
+
+        @tracked(label=label)
+        def fn() -> None:
+            pass
+
+        for _ in range(n):
+            fn()
+        assert total_calls() >= n
