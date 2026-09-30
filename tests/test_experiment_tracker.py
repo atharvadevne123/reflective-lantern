@@ -181,3 +181,76 @@ class TestExperimentRegistryEdgeCases:
             exp = Experiment(f"exp_{i}", [CONTROL, treatment])
             reg.register(exp)
         assert len(reg.list_experiments()) == n
+
+
+class TestExperimentResetCounts:
+    def test_reset_counts_zeros_all_variants(self) -> None:
+        from app.experiment_tracker import CONTROL, TREATMENT, Experiment
+
+        exp = Experiment("reset_test", [CONTROL, TREATMENT])
+        for i in range(10):
+            exp.assign(str(i))
+        exp.reset_counts()
+        dist = exp.assignment_distribution()
+        assert all(v == 0 for v in dist.values())
+
+    def test_total_assignments_zero_after_reset(self) -> None:
+        from app.experiment_tracker import CONTROL, TREATMENT, Experiment
+
+        exp = Experiment("total_test", [CONTROL, TREATMENT])
+        for i in range(5):
+            exp.assign(str(i))
+        exp.reset_counts()
+        assert exp.total_assignments() == 0
+
+    def test_can_assign_after_reset(self) -> None:
+        from app.experiment_tracker import CONTROL, TREATMENT, Experiment
+
+        exp = Experiment("post_reset", [CONTROL, TREATMENT])
+        for i in range(5):
+            exp.assign(str(i))
+        exp.reset_counts()
+        result = exp.assign("user-new")
+        assert result is not None
+
+
+class TestExperimentRegistryDeregister:
+    def test_deregister_existing_returns_true(self) -> None:
+        from app.experiment_tracker import CONTROL, TREATMENT, Experiment, ExperimentRegistry
+
+        reg = ExperimentRegistry()
+        reg.register(Experiment("exp1", [CONTROL, TREATMENT]))
+        assert reg.deregister("exp1") is True
+        assert reg.get("exp1") is None
+
+    def test_deregister_nonexistent_returns_false(self) -> None:
+        from app.experiment_tracker import ExperimentRegistry
+
+        reg = ExperimentRegistry()
+        assert reg.deregister("ghost") is False
+
+    def test_registry_len_decreases_after_deregister(self) -> None:
+        from app.experiment_tracker import CONTROL, TREATMENT, Experiment, ExperimentRegistry
+
+        reg = ExperimentRegistry()
+        reg.register(Experiment("e1", [CONTROL, TREATMENT]))
+        reg.register(Experiment("e2", [CONTROL, TREATMENT]))
+        reg.deregister("e1")
+        assert len(reg) == 1
+
+
+class TestExperimentTotalAssignments:
+    def test_zero_when_no_assignments(self) -> None:
+        from app.experiment_tracker import CONTROL, TREATMENT, Experiment
+
+        exp = Experiment("zero", [CONTROL, TREATMENT])
+        assert exp.total_assignments() == 0
+
+    @pytest.mark.parametrize("n", [1, 5, 10])
+    def test_total_equals_assign_count(self, n: int) -> None:
+        from app.experiment_tracker import CONTROL, TREATMENT, Experiment
+
+        exp = Experiment("count_test", [CONTROL, TREATMENT])
+        for i in range(n):
+            exp.assign(str(i))
+        assert exp.total_assignments() == n
