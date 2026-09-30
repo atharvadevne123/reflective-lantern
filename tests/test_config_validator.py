@@ -139,3 +139,55 @@ class TestValidate:
         schema = make_schema()
         result = validate({"host": "h", "port": 65535, "env": "prod"}, schema)
         assert result["port"] == 65535
+
+
+class TestSchemaFieldNames:
+    def test_empty_schema_returns_empty(self) -> None:
+        from app.config_validator import schema_field_names
+
+        schema = ConfigSchema()
+        assert schema_field_names(schema) == []
+
+    def test_returns_sorted(self) -> None:
+        from app.config_validator import schema_field_names
+
+        schema = ConfigSchema()
+        schema.add(FieldSpec("z_field", str))
+        schema.add(FieldSpec("a_field", str))
+        names = schema_field_names(schema)
+        assert names == sorted(names)
+
+    def test_returns_all_field_names(self) -> None:
+        from app.config_validator import schema_field_names
+
+        schema = make_schema()
+        names = schema_field_names(schema)
+        assert set(names) == {"host", "port", "debug", "env"}
+
+
+class TestHasRequiredFields:
+    def test_schema_with_required_returns_true(self) -> None:
+        from app.config_validator import has_required_fields
+
+        schema = make_schema()
+        assert has_required_fields(schema) is True
+
+    def test_schema_with_no_required_returns_false(self) -> None:
+        from app.config_validator import has_required_fields
+
+        schema = ConfigSchema()
+        schema.add(FieldSpec("opt", str, required=False, default="x"))
+        assert has_required_fields(schema) is False
+
+    def test_empty_schema_returns_false(self) -> None:
+        from app.config_validator import has_required_fields
+
+        assert has_required_fields(ConfigSchema()) is False
+
+    @pytest.mark.parametrize("required", [True, False])
+    def test_single_field_required_flag(self, required: bool) -> None:
+        from app.config_validator import has_required_fields
+
+        schema = ConfigSchema()
+        schema.add(FieldSpec("field", str, required=required))
+        assert has_required_fields(schema) is required
