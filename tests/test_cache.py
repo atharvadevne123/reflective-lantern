@@ -801,3 +801,73 @@ class TestWarmCacheExtended:
         items = {f"k{i}": i for i in range(n)}
         count = warm_cache(c, items)
         assert count == n
+
+
+class TestCacheKeyCountExtended:
+    def test_zero_on_empty_cache(self) -> None:
+        from app.cache import TTLCache, cache_key_count
+
+        c = TTLCache(ttl_seconds=60, max_size=10)
+        assert cache_key_count(c) == 0
+
+    def test_increases_after_set(self) -> None:
+        from app.cache import TTLCache, cache_key_count
+
+        c = TTLCache(ttl_seconds=60, max_size=10)
+        c.set("k1", 1)
+        c.set("k2", 2)
+        assert cache_key_count(c) == 2
+
+    @pytest.mark.parametrize("n", [1, 3, 5])
+    def test_count_matches_inserts(self, n: int) -> None:
+        from app.cache import TTLCache, cache_key_count
+
+        c = TTLCache(ttl_seconds=60, max_size=20)
+        for i in range(n):
+            c.set(f"key_{i}", i)
+        assert cache_key_count(c) == n
+
+
+class TestCacheFillRateExtended:
+    def test_empty_cache_fill_rate_zero(self) -> None:
+        from app.cache import TTLCache, cache_fill_rate
+
+        c = TTLCache(ttl_seconds=60, max_size=10)
+        assert cache_fill_rate(c) == pytest.approx(0.0)
+
+    def test_full_cache_fill_rate_one(self) -> None:
+        from app.cache import TTLCache, cache_fill_rate
+
+        c = TTLCache(ttl_seconds=60, max_size=3)
+        for i in range(3):
+            c.set(f"k{i}", i)
+        assert cache_fill_rate(c) == pytest.approx(1.0)
+
+    def test_half_full_cache(self) -> None:
+        from app.cache import TTLCache, cache_fill_rate
+
+        c = TTLCache(ttl_seconds=60, max_size=4)
+        c.set("a", 1)
+        c.set("b", 2)
+        assert cache_fill_rate(c) == pytest.approx(0.5)
+
+
+class TestGetOrDefaultExtended:
+    def test_returns_value_when_present(self) -> None:
+        from app.cache import TTLCache, get_or_default
+
+        c = TTLCache(ttl_seconds=60, max_size=10)
+        c.set("mykey", 99)
+        assert get_or_default(c, "mykey") == 99
+
+    def test_returns_default_when_absent(self) -> None:
+        from app.cache import TTLCache, get_or_default
+
+        c = TTLCache(ttl_seconds=60, max_size=10)
+        assert get_or_default(c, "missing", default="fallback") == "fallback"
+
+    def test_returns_none_when_absent_no_default(self) -> None:
+        from app.cache import TTLCache, get_or_default
+
+        c = TTLCache(ttl_seconds=60, max_size=10)
+        assert get_or_default(c, "ghost") is None
