@@ -201,3 +201,53 @@ class TestAugmentBatchEdgeCases:
         cfg = AugmentationConfig(seed=42)
         result = augment_batch(["hello world", "foo bar"], cfg)
         assert all(isinstance(r, str) for r in result)
+
+
+class TestJitterNumericsExt:
+    def test_length_preserved(self) -> None:
+        from app.data_augmentation import AugmentationConfig, jitter_numerics
+
+        cfg = AugmentationConfig(seed=0)
+        data = [1.0, 2.0, 3.0, 4.0]
+        result = jitter_numerics(data, cfg)
+        assert len(result) == len(data)
+
+    def test_values_change_slightly(self) -> None:
+        from app.data_augmentation import AugmentationConfig, jitter_numerics
+
+        cfg = AugmentationConfig(seed=1, numeric_noise_std=1.0)
+        data = [100.0] * 10
+        result = jitter_numerics(data, cfg)
+        assert not all(v == 100.0 for v in result)
+
+    @pytest.mark.parametrize("n", [1, 5, 20])
+    def test_output_length_parametrized(self, n: int) -> None:
+        from app.data_augmentation import AugmentationConfig, jitter_numerics
+
+        cfg = AugmentationConfig(seed=0)
+        result = jitter_numerics([1.0] * n, cfg)
+        assert len(result) == n
+
+
+class TestAugmentTextExt:
+    def test_returns_string(self) -> None:
+        from app.data_augmentation import AugmentationConfig, augment_text
+
+        cfg = AugmentationConfig(seed=0)
+        result = augment_text("hello world", cfg)
+        assert isinstance(result, str)
+
+    def test_empty_string_returns_string(self) -> None:
+        from app.data_augmentation import AugmentationConfig, augment_text
+
+        cfg = AugmentationConfig(seed=0)
+        result = augment_text("", cfg)
+        assert isinstance(result, str)
+
+    @pytest.mark.parametrize("text", ["hello", "foo bar baz", "one two three four"])
+    def test_various_inputs(self, text: str) -> None:
+        from app.data_augmentation import AugmentationConfig, augment_text
+
+        cfg = AugmentationConfig(seed=42)
+        result = augment_text(text, cfg)
+        assert isinstance(result, str)
