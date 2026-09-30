@@ -261,3 +261,46 @@ class TestEventRoi:
 
         roi = event_roi(net_payment=payment, baseline_cost_per_kwh=0.10, baseline_kwh=100.0)
         assert math.isfinite(roi)
+
+
+class TestCustomerBaselineLoadExt:
+    def test_returns_positive_float(self) -> None:
+        from app.demand_response import customer_baseline_load
+
+        result = customer_baseline_load(daily_usage_kwh=30.0, days=10)
+        assert result > 0.0
+
+    def test_scales_with_usage(self) -> None:
+        from app.demand_response import customer_baseline_load
+
+        low = customer_baseline_load(daily_usage_kwh=10.0, days=10)
+        high = customer_baseline_load(daily_usage_kwh=50.0, days=10)
+        assert high > low
+
+    @pytest.mark.parametrize("days", [1, 7, 30])
+    def test_various_day_windows(self, days: int) -> None:
+        from app.demand_response import customer_baseline_load
+
+        result = customer_baseline_load(daily_usage_kwh=20.0, days=days)
+        assert isinstance(result, float)
+
+
+class TestPerformanceScoreExt:
+    def test_full_curtailment_scores_high(self) -> None:
+        from app.demand_response import performance_score
+
+        score = performance_score(requested_kwh=100.0, delivered_kwh=100.0)
+        assert score >= 0.9
+
+    def test_no_curtailment_scores_zero(self) -> None:
+        from app.demand_response import performance_score
+
+        score = performance_score(requested_kwh=100.0, delivered_kwh=0.0)
+        assert score <= 0.1
+
+    @pytest.mark.parametrize("delivered", [0.0, 50.0, 100.0])
+    def test_score_between_zero_and_one(self, delivered: float) -> None:
+        from app.demand_response import performance_score
+
+        score = performance_score(requested_kwh=100.0, delivered_kwh=delivered)
+        assert 0.0 <= score <= 1.0
