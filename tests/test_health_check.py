@@ -191,3 +191,62 @@ class TestHealthRegistryLengthTracking:
         reg.register("b", lambda: CheckResult(name="b", healthy=True))
         reg.unregister("a")
         assert len(reg) == 1
+
+
+class TestHealthRegistryCheckDecorator:
+    def test_decorator_registers_function(self) -> None:
+        from app.health_check import CheckResult, HealthRegistry, check
+
+        reg = HealthRegistry()
+
+        @check("my_check", registry=reg)
+        def my_check() -> CheckResult:
+            return CheckResult(name="my_check", healthy=True)
+
+        assert len(reg) == 1
+
+    def test_decorator_function_still_callable(self) -> None:
+        from app.health_check import CheckResult, HealthRegistry, check
+
+        reg = HealthRegistry()
+
+        @check("callable_check", registry=reg)
+        def callable_check() -> CheckResult:
+            return CheckResult(name="callable_check", healthy=True)
+
+        result = callable_check()
+        assert result.healthy is True
+
+    def test_decorator_result_included_in_run(self) -> None:
+        from app.health_check import CheckResult, HealthRegistry, check
+
+        reg = HealthRegistry()
+
+        @check("run_check", registry=reg)
+        def run_check() -> CheckResult:
+            return CheckResult(name="run_check", healthy=True)
+
+        status = reg.run()
+        names = [r.name for r in status.checks]
+        assert "run_check" in names
+
+
+class TestCheckResultDetails:
+    def test_details_preserved(self) -> None:
+        from app.health_check import CheckResult
+
+        result = CheckResult(name="db", healthy=True, details={"latency_ms": 5.0})
+        assert result.details["latency_ms"] == 5.0
+
+    def test_empty_details_by_default(self) -> None:
+        from app.health_check import CheckResult
+
+        result = CheckResult(name="db", healthy=True)
+        assert result.details == {}
+
+    @pytest.mark.parametrize("healthy", [True, False])
+    def test_healthy_flag_preserved(self, healthy: bool) -> None:
+        from app.health_check import CheckResult
+
+        result = CheckResult(name="svc", healthy=healthy)
+        assert result.healthy is healthy
