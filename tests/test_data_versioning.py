@@ -191,3 +191,65 @@ class TestDataSnapshotEdgeCases:
 
         snap = DataSnapshot(name="ds", version="1.0.0")
         assert snap.parent_versions == []
+
+
+class TestDataLineageSnapshotCount:
+    def test_zero_for_unknown_dataset(self) -> None:
+        dl = DataLineage()
+        assert dl.snapshot_count("nonexistent") == 0
+
+    def test_counts_recorded_snapshots(self) -> None:
+        dl = DataLineage()
+        dl.record(_snap(version="1.0.0"))
+        dl.record(_snap(version="2.0.0"))
+        assert dl.snapshot_count("energy") == 2
+
+    @pytest.mark.parametrize("n", [1, 3, 5])
+    def test_count_matches_records(self, n: int) -> None:
+        dl = DataLineage()
+        for i in range(n):
+            dl.record(_snap(version=f"{i}.0.0"))
+        assert dl.snapshot_count("energy") == n
+
+
+class TestDataLineageTotalRows:
+    def test_zero_for_unknown_dataset(self) -> None:
+        dl = DataLineage()
+        assert dl.total_rows("nonexistent") == 0
+
+    def test_sums_row_counts(self) -> None:
+        dl = DataLineage()
+        dl.record(_snap(version="1.0.0", row_count=100))
+        dl.record(_snap(version="2.0.0", row_count=200))
+        assert dl.total_rows("energy") == 300
+
+    def test_all_zero_rows(self) -> None:
+        dl = DataLineage()
+        dl.record(_snap(version="1.0.0", row_count=0))
+        assert dl.total_rows("energy") == 0
+
+
+class TestDataLineageDelete:
+    def test_delete_specific_version(self) -> None:
+        dl = DataLineage()
+        dl.record(_snap(version="1.0.0"))
+        dl.record(_snap(version="2.0.0"))
+        assert dl.delete("energy", "1.0.0") is True
+        assert dl.get("energy", "1.0.0") is None
+        assert dl.get("energy", "2.0.0") is not None
+
+    def test_delete_all_versions(self) -> None:
+        dl = DataLineage()
+        dl.record(_snap(version="1.0.0"))
+        dl.record(_snap(version="2.0.0"))
+        assert dl.delete("energy") is True
+        assert dl.list_versions("energy") == []
+
+    def test_delete_nonexistent_dataset_returns_false(self) -> None:
+        dl = DataLineage()
+        assert dl.delete("ghost") is False
+
+    def test_delete_nonexistent_version_returns_false(self) -> None:
+        dl = DataLineage()
+        dl.record(_snap(version="1.0.0"))
+        assert dl.delete("energy", "9.9.9") is False
