@@ -1,0 +1,1 @@
+"""Ticket-Scout application package."""
