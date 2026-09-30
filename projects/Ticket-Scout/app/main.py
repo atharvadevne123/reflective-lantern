@@ -156,7 +156,7 @@ def _risk_level(breach_prob: float) -> str:
 # Endpoints
 # ---------------------------------------------------------------------------
 
-@app.get("/api/v1/health", tags=["ops"])
+@app.get("/api/v1/health", tags=["ops"], summary="Check service health", response_description="Health status and uptime")
 def health() -> dict[str, Any]:
     """Return service health status and uptime."""
     return {
