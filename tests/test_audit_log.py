@@ -189,3 +189,76 @@ class TestAuditLogActions:
         log = AuditLog()
         log.record(actor="alice", action="read", resource="doc")
         assert log.actions() == ["read"]
+
+
+class TestAuditLogActors:
+    def test_empty_log_returns_empty(self) -> None:
+        log = AuditLog()
+        assert log.actors() == []
+
+    def test_returns_sorted_distinct_actors(self) -> None:
+        log = AuditLog()
+        log.record(actor="charlie", action="read", resource="x")
+        log.record(actor="alice", action="write", resource="y")
+        log.record(actor="charlie", action="delete", resource="z")
+        assert log.actors() == ["alice", "charlie"]
+
+    def test_single_actor(self) -> None:
+        log = AuditLog()
+        log.record(actor="bob", action="read", resource="doc")
+        assert log.actors() == ["bob"]
+
+
+class TestAuditLogCount:
+    def test_count_all(self) -> None:
+        log = AuditLog()
+        log.record("alice", "read", "doc/1")
+        log.record("bob", "write", "doc/2")
+        assert log.count() == 2
+
+    def test_count_by_actor(self) -> None:
+        log = AuditLog()
+        log.record("alice", "read", "doc/1")
+        log.record("alice", "write", "doc/2")
+        log.record("bob", "read", "doc/3")
+        assert log.count(actor="alice") == 2
+        assert log.count(actor="bob") == 1
+
+    def test_count_by_action(self) -> None:
+        log = AuditLog()
+        log.record("alice", "read", "doc/1")
+        log.record("bob", "read", "doc/2")
+        log.record("alice", "write", "doc/3")
+        assert log.count(action="read") == 2
+
+    def test_count_combined(self) -> None:
+        log = AuditLog()
+        log.record("alice", "read", "doc/1")
+        log.record("alice", "write", "doc/2")
+        log.record("bob", "read", "doc/3")
+        assert log.count(actor="alice", action="read") == 1
+
+    def test_count_empty_log(self) -> None:
+        log = AuditLog()
+        assert log.count() == 0
+
+
+class TestAuditLogClear:
+    def test_clear_removes_all_entries(self) -> None:
+        log = AuditLog()
+        log.record("alice", "read", "doc/1")
+        log.record("bob", "write", "doc/2")
+        log.clear()
+        assert len(log) == 0
+
+    def test_clear_empty_log_does_not_raise(self) -> None:
+        log = AuditLog()
+        log.clear()  # should not raise
+
+    def test_can_record_after_clear(self) -> None:
+        log = AuditLog()
+        log.record("alice", "read", "doc/1")
+        log.clear()
+        log.record("bob", "write", "doc/2")
+        assert len(log) == 1
+        assert log.actors() == ["bob"]
