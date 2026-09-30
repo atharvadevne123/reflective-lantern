@@ -242,6 +242,12 @@ def train_models(df: pd.DataFrame | None = None) -> dict[str, Any]:
     with open(MODEL_DIR / "metrics.json", "w") as f:
         json.dump(metrics, f, indent=2)
 
+    try:
+        from app.mlflow_tracker import log_training_run
+        log_training_run(metrics, params={"n_estimators": 200, "max_depth": 6})
+    except Exception as _exc:
+        logger.debug("MLflow logging skipped: %s", _exc)
+
     logger.info(
         "Training complete: cat_acc=%.3f breach_auc=%.3f res_r2=%.3f",
         metrics["category_accuracy_mean"],
