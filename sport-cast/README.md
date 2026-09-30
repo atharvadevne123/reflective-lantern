@@ -128,3 +128,15 @@ The Airflow DAG `sport_cast_retrain` runs every Monday at 03:00 UTC:
 2. Trains a challenger model (5-fold CV)
 3. Promotes only if AUC ≥ champion AUC (champion/challenger gate)
 4. Validates AUC ≥ 0.60 before deployment
+
+## Optional Enhancements Included
+
+- FAISS match similarity search (brute-force fallback)
+- Time-series trend and form forecasting
+- Batch prediction endpoint (up to 50 matches)
+- Thread-safe TTL/LRU prediction cache
+- MLflow experiment tracking stub
+- AWS/boto3 model artifact upload stub
+- Metrics counters and timing (p50/p95/p99)
+- Alembic database migrations
+- Champion/challenger retraining gate
