@@ -274,3 +274,76 @@ class TestCountBySeverity:
         alerts = [Alert(name="a", metric="x", value=0.5, threshold=1.0, severity=Severity.INFO, message="")]
         result = count_by_severity(alerts)
         assert result == {"info": 1}
+
+
+class TestAlertManagerRuleNames:
+    def test_empty_when_no_rules(self) -> None:
+        from app.alerting import AlertManager
+
+        mgr = AlertManager()
+        assert mgr.rule_names() == []
+
+    def test_rule_name_appears_after_add(self) -> None:
+        from app.alerting import AlertManager, AlertRule, Severity
+
+        mgr = AlertManager()
+        mgr.add_rule(AlertRule(name="cpu", metric="cpu_pct", threshold=90.0, severity=Severity.WARNING))
+        assert "cpu" in mgr.rule_names()
+
+    def test_sorted_order(self) -> None:
+        from app.alerting import AlertManager, AlertRule, Severity
+
+        mgr = AlertManager()
+        mgr.add_rule(AlertRule(name="zzz", metric="z", threshold=1.0, severity=Severity.INFO))
+        mgr.add_rule(AlertRule(name="aaa", metric="a", threshold=1.0, severity=Severity.INFO))
+        names = mgr.rule_names()
+        assert names == sorted(names)
+
+
+class TestAlertManagerHistoryForMetric:
+    def test_empty_when_no_alerts_fired(self) -> None:
+        from app.alerting import AlertManager
+
+        mgr = AlertManager()
+        assert mgr.history_for_metric("cpu") == []
+
+    def test_returns_matching_alerts(self) -> None:
+        from app.alerting import AlertManager, AlertRule, Severity
+
+        mgr = AlertManager()
+        mgr.add_rule(AlertRule(name="cpu", metric="cpu_pct", threshold=50.0, severity=Severity.WARNING))
+        mgr.evaluate_all({"cpu_pct": 80.0})
+        history = mgr.history_for_metric("cpu_pct")
+        assert len(history) >= 1
+
+    def test_filters_by_metric(self) -> None:
+        from app.alerting import AlertManager, AlertRule, Severity
+
+        mgr = AlertManager()
+        mgr.add_rule(AlertRule(name="mem", metric="mem_pct", threshold=50.0, severity=Severity.WARNING))
+        mgr.evaluate_all({"mem_pct": 80.0})
+        assert mgr.history_for_metric("cpu_pct") == []
+
+
+class TestAlertManagerAddHandler:
+    def test_handler_called_on_alert(self) -> None:
+        from app.alerting import AlertManager, AlertRule, Severity
+
+        fired = []
+        mgr = AlertManager()
+        mgr.add_handler(lambda a: fired.append(a))
+        mgr.add_rule(AlertRule(name="cpu", metric="cpu", threshold=50.0, severity=Severity.WARNING))
+        mgr.evaluate_all({"cpu": 80.0})
+        assert len(fired) >= 1
+
+    def test_multiple_handlers_all_called(self) -> None:
+        from app.alerting import AlertManager, AlertRule, Severity
+
+        counts = [0, 0]
+        mgr = AlertManager()
+        mgr.add_handler(lambda a: counts.__setitem__(0, counts[0] + 1))
+        mgr.add_handler(lambda a: counts.__setitem__(1, counts[1] + 1))
+        mgr.add_rule(AlertRule(name="m", metric="m", threshold=1.0, severity=Severity.INFO))
+        mgr.evaluate_all({"m": 5.0})
+        assert counts[0] >= 1
+        assert counts[1] >= 1
