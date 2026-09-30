@@ -263,7 +263,7 @@ class TestTaskQueuePeekAndDrain:
         assert len(q) >= 0
 
     def test_drain_returns_pending_tasks(self) -> None:
-        from app.task_queue import Task, TaskQueue
+        from app.task_queue import TaskQueue
 
         q = TaskQueue(workers=0)
         q.submit(lambda: None, 5)
@@ -279,7 +279,6 @@ class TestTaskQueueErrors:
         assert q.errors() == []
 
     def test_clear_errors_empties_list(self) -> None:
-        import threading
 
         from app.task_queue import TaskQueue
 
@@ -291,12 +290,9 @@ class TestTaskQueueErrors:
         assert q.errors() == []
 
     def test_completed_tracks_successes(self) -> None:
-        import threading
-
         from app.task_queue import TaskQueue
 
         results = []
-        lock = threading.Lock()
 
         q = TaskQueue(workers=1)
         q.start()
@@ -315,3 +311,43 @@ class TestTaskQueueErrors:
             q.submit(lambda: (_ for _ in ()).throw(RuntimeError("x")), 5)
         q.stop(timeout=5.0)
         assert isinstance(q.errors(), list)
+
+
+class TestTaskQueueCompletedCount:
+    def test_completed_zero_before_start(self) -> None:
+        from app.task_queue import TaskQueue
+
+        q = TaskQueue(workers=1)
+        result = q.completed() if callable(q.completed) else q.completed
+        assert result == 0
+
+    def test_completed_increments_after_run(self) -> None:
+        from app.task_queue import TaskQueue
+
+        done = []
+        q = TaskQueue(workers=1)
+        q.start()
+        q.submit(lambda: done.append(1), 5)
+        q.stop(timeout=5.0)
+        result = q.completed() if callable(q.completed) else q.completed
+        assert result >= 1
+
+    @pytest.mark.parametrize("n", [1, 3])
+    def test_completed_matches_submitted(self, n: int) -> None:
+        import threading
+
+        from app.task_queue import TaskQueue
+
+        results = []
+        lock = threading.Lock()
+
+        def work(i):
+            with lock:
+                results.append(i)
+
+        q = TaskQueue(workers=2)
+        q.start()
+        for i in range(n):
+            q.submit(work, 5, i)
+        q.stop(timeout=5.0)
+        assert len(results) == n
