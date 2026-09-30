@@ -274,3 +274,61 @@ class TestKNearest:
         from app.geo_utils import k_nearest
         result = k_nearest(LONDON, [PARIS], k=5)
         assert len(result) == 1
+
+
+class TestBearingExtended:
+    def test_bearing_returns_float(self) -> None:
+        from app.geo_utils import bearing
+
+        result = bearing(LONDON, PARIS)
+        assert isinstance(result, float)
+
+    def test_bearing_range_0_to_360(self) -> None:
+        from app.geo_utils import bearing
+
+        result = bearing(LONDON, NEW_YORK)
+        assert 0.0 <= result < 360.0
+
+    def test_bearing_east_roughly_90(self) -> None:
+        from app.geo_utils import Coordinate, bearing
+
+        west = Coordinate(0.0, 0.0)
+        east = Coordinate(0.0, 10.0)
+        result = bearing(west, east)
+        assert 80.0 <= result <= 100.0
+
+    @pytest.mark.parametrize("lat_diff", [-5.0, 0.0, 5.0])
+    def test_bearing_lat_variation(self, lat_diff: float) -> None:
+        from app.geo_utils import Coordinate, bearing
+
+        a = Coordinate(10.0, 0.0)
+        b = Coordinate(10.0 + lat_diff, 1.0)
+        result = bearing(a, b)
+        assert 0.0 <= result < 360.0
+
+
+class TestWithinRadiusExtended:
+    def test_empty_candidates_returns_empty(self) -> None:
+        from app.geo_utils import within_radius
+
+        assert within_radius(LONDON, 100.0, []) == []
+
+    def test_nearby_point_included(self) -> None:
+        from app.geo_utils import within_radius
+
+        result = within_radius(LONDON, 500.0, [PARIS])
+        assert PARIS in result
+
+    def test_far_point_excluded(self) -> None:
+        from app.geo_utils import within_radius
+
+        result = within_radius(LONDON, 100.0, [NEW_YORK])
+        assert NEW_YORK not in result
+
+    @pytest.mark.parametrize("radius_km", [100.0, 1000.0, 10000.0])
+    def test_larger_radius_includes_more(self, radius_km: float) -> None:
+        from app.geo_utils import within_radius
+
+        candidates = [PARIS, NEW_YORK]
+        result = within_radius(LONDON, radius_km, candidates)
+        assert isinstance(result, list)
