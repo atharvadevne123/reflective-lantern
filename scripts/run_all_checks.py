@@ -3,10 +3,13 @@
 from __future__ import annotations
 
 import argparse
+import logging
 import subprocess
 import sys
 import time
 from typing import Any
+
+logger = logging.getLogger(__name__)
 
 CHECKS: list[tuple[str, list[Any]]] = [
     ("ruff", ["ruff", "check", "."]),
@@ -36,14 +39,14 @@ def main() -> int:
         ok, elapsed = run_check(name, cmd)
         results.append((name, ok, elapsed))
         status = "PASS" if ok else "FAIL"
-        print(f"  [{status}] {name}  ({elapsed:.2f}s)")
+        logger.info("  [%s] %s  (%.2fs)", status, name, elapsed)
         if not ok and args.stop_on_failure:
             break
 
     total = sum(e for _, _, e in results)
     passed = sum(1 for _, ok, _ in results if ok)
     failed = len(results) - passed
-    print(f"\nTotal: {passed} passed, {failed} failed  [{total:.2f}s]")
+    logger.info("\nTotal: %d passed, %d failed  [%.2fs]", passed, failed, total)
 
     return 0 if all(ok for _, ok, _ in results) else 1
 
