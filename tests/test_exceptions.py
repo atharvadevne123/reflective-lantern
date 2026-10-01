@@ -250,3 +250,38 @@ class TestExternalServiceError:
         err = ExternalServiceError(service, reason)
         assert err.service == service
         assert err.reason == reason
+
+
+def test_model_not_loaded_error_str_is_non_empty() -> None:
+    """ModelNotLoadedError str representation is non-empty."""
+    err = ModelNotLoadedError("no model found")
+    assert len(str(err)) > 0
+
+
+def test_drift_detection_error_message() -> None:
+    """DriftDetectionError message is preserved in str()."""
+    msg = "feature drift detected in temperature_c"
+    err = DriftDetectionError(msg)
+    assert msg in str(err)
+
+
+def test_prediction_error_is_not_model_not_loaded() -> None:
+    """PredictionError and ModelNotLoadedError are distinct exception types."""
+    assert PredictionError is not ModelNotLoadedError
+    assert not issubclass(PredictionError, ModelNotLoadedError)
+
+
+@pytest.mark.parametrize("exc_class", [DatabaseError, ConfigurationError, PredictionError])
+def test_exception_can_be_raised_and_caught_by_type(exc_class) -> None:
+    """Each exception subclass can be raised and caught by its own type."""
+    with pytest.raises(exc_class):
+        raise exc_class("test message")
+
+
+def test_feature_validation_error_both_attrs_accessible() -> None:
+    """FeatureValidationError exposes both field and reason without error."""
+    err = FeatureValidationError("humidity_pct", "value out of [0, 100]")
+    assert isinstance(err.field, str)
+    assert isinstance(err.reason, str)
+    assert err.field == "humidity_pct"
+    assert err.reason == "value out of [0, 100]"
