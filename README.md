@@ -29,6 +29,23 @@ a weekly Airflow schedule.
 - Logs every inference to SQLite (dev) or PostgreSQL (prod) for auditing
 - Retrains automatically when 30 days of fresh data accumulate
 
+## Features
+
+- **REST API** — versioned `/api/v1` endpoints with OpenAPI docs at `/docs`
+- **Ensemble model** — XGBoost + LightGBM + RandomForest with confidence scoring
+- **Feature engineering** — 13 features derived from 6 raw inputs, including cyclical time encoding
+- **Drift monitoring** — Kolmogorov–Smirnov test comparing live predictions to a reference window
+- **Rate limiting** — sliding-window rate limiter with `X-RateLimit-*` response headers
+- **Structured logging** — all scripts use `logging` instead of `print()` for consistent log levels
+- **Type annotations** — full return-type annotations on all async endpoints and middleware
+- **Version endpoint** — `GET /api/v1/version` returns build metadata and environment info
+- **In-memory caches** — TTL-based caches with hit/miss counters and eviction tracking
+- **Circuit breaker** — configurable failure threshold and recovery timeout
+- **Experiment tracking** — A/B test assignment with deterministic hashing and weighted variants
+- **Feature store** — versioned feature sets with publish/get/delete lifecycle management
+- **Shadow mode** — run a shadow function alongside primary to compare outputs without risk
+- **Cost estimation** — compute resource cost breakdown for CPU, memory, and GPU workloads
+
 ---
 
 ## Setup
