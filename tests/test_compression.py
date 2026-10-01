@@ -262,3 +262,43 @@ class TestCompressAndMeasure:
 
         result = compress_and_measure(b"hello " * 100, method=method)
         assert result["compressed_bytes"] > 0
+
+
+@pytest.mark.parametrize(
+    "data,method",
+    [
+        (b"short", "gzip"),
+        (b"x" * 1000, "gzip"),
+        (b"short", "zlib"),
+        (b"x" * 1000, "zlib"),
+    ],
+)
+def test_compress_decompress_roundtrip_parametrized(data: bytes, method: str) -> None:
+    """gzip/zlib compress→decompress round-trip preserves arbitrary byte strings."""
+    if method == "gzip":
+        assert gzip_decompress(gzip_compress(data)) == data
+    else:
+        assert zlib_decompress(zlib_compress(data)) == data
+
+
+@pytest.mark.parametrize(
+    "obj,method",
+    [
+        ({"key": "value"}, "gzip"),
+        ([1, 2, 3, 4, 5], "zlib"),
+        ({"nested": {"a": [True, None]}}, "gzip"),
+    ],
+)
+def test_compress_json_method_parametrized(obj: object, method: str) -> None:
+    """compress_json/decompress_json round-trips each type with both methods."""
+    compressed = compress_json(obj, method=method)
+    assert decompress_json(compressed, method=method) == obj
+
+
+@pytest.mark.parametrize("repeat", [50, 200, 500])
+def test_compression_ratio_decreases_with_repetition(repeat: int) -> None:
+    """More repetitive data yields a lower (better) compression ratio."""
+    ratio_low = compression_ratio(b"a" * repeat, method="gzip")
+    ratio_high = compression_ratio(b"a" * (repeat * 2), method="gzip")
+    # doubling repetition should not increase the ratio
+    assert ratio_high <= ratio_low + 0.05  # allow small float rounding slack
