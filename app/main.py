@@ -55,6 +55,18 @@ _feat_pipe = None
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
+    """Manage application startup and shutdown lifecycle.
+
+    On startup: initialises the database, loads or trains the feature pipeline,
+    and loads the prediction model into memory.  On shutdown: logs a graceful
+    stop message.
+
+    Args:
+        app: The FastAPI application instance.
+
+    Yields:
+        Control to the running application between startup and shutdown.
+    """
     global _model, _feat_pipe
     init_db()
 
