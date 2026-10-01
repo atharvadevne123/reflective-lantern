@@ -284,3 +284,51 @@ class TestShadowRunnerClear:
         runner.clear()
         stats = runner.stats()
         assert stats.get("total_calls", 0) == 0
+
+
+class TestShadowRunnerAdditionalEdgeCases:
+    def test_primary_exception_propagates(self) -> None:
+        from app.shadow_mode import ShadowRunner
+
+        def failing_primary(x):
+            raise RuntimeError("primary failed")
+
+        runner = ShadowRunner(failing_primary, lambda x: x)
+        with pytest.raises(RuntimeError, match="primary failed"):
+            runner.call(1)
+
+    def test_errors_count_increments_on_shadow_exception(self) -> None:
+        from app.shadow_mode import ShadowRunner
+
+        def bad_shadow(x):
+            raise ValueError("shadow crash")
+
+        runner = ShadowRunner(lambda x: x * 2, bad_shadow)
+        runner.call(3)
+        assert runner.stats()["errors"] == 1
+
+    def test_matched_count_zero_when_all_mismatch(self) -> None:
+        from app.shadow_mode import ShadowRunner
+
+        runner = ShadowRunner(lambda x: x, lambda x: x + 100)
+        for i in range(1, 6):
+            runner.call(i)
+        assert runner.stats()["matched"] == 0
+
+    def test_mismatched_count_zero_when_all_match(self) -> None:
+        from app.shadow_mode import ShadowRunner
+
+        runner = ShadowRunner(lambda x: x, lambda x: x)
+        for i in range(5):
+            runner.call(i)
+        assert runner.stats()["mismatched"] == 0
+
+    def test_total_stats_match_calls_after_mix(self) -> None:
+        from app.shadow_mode import ShadowRunner
+
+        runner = ShadowRunner(lambda x: x, lambda x: x if x % 2 == 0 else x + 1)
+        for i in range(6):
+            runner.call(i)
+        stats = runner.stats()
+        assert stats["total"] == 6
+        assert stats["matched"] + stats["mismatched"] + stats["errors"] == 6
