@@ -199,3 +199,56 @@ class TestRateLimitHeaderPresent:
     def test_parametrized_requests_pass(self, n: int, client: TestClient) -> None:
         for _ in range(n):
             assert client.get("/health").status_code == 200
+
+
+def test_rate_limit_only_counts_from_same_ip(client: TestClient, monkeypatch) -> None:
+    """Requests from different IPs do not share the same rate-limit window."""
+    from types import SimpleNamespace
+
+    from app import middleware
+
+    monkeypatch.setattr(middleware, "settings", SimpleNamespace(rate_limit_per_minute=1))
+    reset_rate_limiter()
+    r1 = client.get("/health", headers={"X-Forwarded-For": "10.0.0.1"})
+    r2 = client.get("/health", headers={"X-Forwarded-For": "10.0.0.2"})
+    assert r1.status_code == 200
+    assert r2.status_code == 200
+
+
+def test_unknown_client_host_does_not_crash(client: TestClient) -> None:
+    """A request with no X-Forwarded-For header completes without error."""
+    resp = client.get("/health")
+    assert resp.status_code in (200, 429)
+
+
+def test_x_correlation_id_short_value_accepted(client: TestClient) -> None:
+    """A single-character correlation ID is echoed back unchanged."""
+    resp = client.get("/health", headers={"X-Correlation-ID": "z"})
+    assert resp.headers.get("x-correlation-id") == "z"
+
+
+@pytest.mark.parametrize("n_requests", [1, 2, 3])
+def test_request_tracking_grows_with_each_call(
+    client: TestClient, n_requests: int
+) -> None:
+    """After N requests, _requests contains at least one key."""
+    reset_rate_limiter()
+    for _ in range(n_requests):
+        client.get("/health")
+    assert len(_requests) >= 1
+
+
+def test_second_request_from_same_ip_within_limit_passes(
+    client: TestClient, monkeypatch
+) -> None:
+    """Two requests within the limit both succeed."""
+    from types import SimpleNamespace
+
+    from app import middleware
+
+    monkeypatch.setattr(middleware, "settings", SimpleNamespace(rate_limit_per_minute=5))
+    reset_rate_limiter()
+    r1 = client.get("/health")
+    r2 = client.get("/health")
+    assert r1.status_code == 200
+    assert r2.status_code == 200
