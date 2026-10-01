@@ -1,4 +1,9 @@
-"""Simple in-memory TTL cache for prediction results."""
+"""Simple in-memory TTL cache for prediction results.
+
+Provides a thread-safe TTL (time-to-live) cache backed by a plain Python dict.
+Suitable for single-process use; entries expire after a configurable number of
+seconds and the cache evicts the earliest-expiring entry when at capacity.
+"""
 
 from __future__ import annotations
 
@@ -11,7 +16,12 @@ logger = logging.getLogger(__name__)
 
 
 class TTLCache:
-    """Thread-safe TTL cache for single-process use."""
+    """Thread-safe TTL cache for single-process use.
+
+    All public methods are protected by a reentrant lock so that concurrent
+    callers share the same store safely.  Expired entries are lazily removed
+    on ``get()`` and can also be purged in bulk via ``evict_expired()``.
+    """
 
     def __init__(self, ttl_seconds: int = 60, max_size: int = 1000) -> None:
         """Initialise cache with TTL and maximum entry count.
