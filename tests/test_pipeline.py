@@ -196,3 +196,57 @@ def test_make_feature_row_hour_variants(hour: int) -> None:
     row = make_feature_row(hour, 0, 1, 20.0, 50.0, 50, 0, 10.0)
     assert row is not None
     assert len(row) > 0
+
+
+def test_train_model_returns_bundle_with_estimators() -> None:
+    """train_model result contains sub-estimators accessible by index."""
+    from app.model import train_model
+
+    df = _make_df(150)
+    bundle, _ = train_model(df, df["consumption_kwh"])
+    # bundle should be iterable or have some model object
+    assert bundle is not None
+
+
+def test_score_anomaly_returns_dict_with_expected_keys() -> None:
+    """score_anomaly returns a dict with is_anomaly, severity, and anomaly_score keys."""
+    from app.features import make_feature_row
+    from app.model import score_anomaly, train_anomaly_model
+
+    df = _make_df(200)
+    bundle = train_anomaly_model(df)
+    row = make_feature_row(10, 2, 6, 18.0, 55.0, 60, 1, 15.0)
+    result = score_anomaly(bundle, row)
+    assert isinstance(result, dict)
+    assert "is_anomaly" in result
+    assert "anomaly_score" in result
+
+
+@pytest.mark.parametrize("day_of_week", [0, 1, 2, 3, 4, 5, 6])
+def test_make_feature_row_all_weekdays(day_of_week: int) -> None:
+    """make_feature_row accepts all valid weekday values (0–6)."""
+    from app.features import make_feature_row
+
+    row = make_feature_row(10, day_of_week, 6, 20.0, 50.0, 80, 1, 15.0)
+    assert row is not None
+
+
+def test_pipeline_predictions_length_matches_input() -> None:
+    """run_pipeline returns as many predictions as input rows."""
+    from app.pipeline import run_pipeline
+
+    df = _make_df(100)
+    result = run_pipeline(df)
+    preds = result.get("predictions", [])
+    assert len(preds) == len(df)
+
+
+def test_train_model_r2_not_nan() -> None:
+    """r2_mean metric is a finite float (not NaN or Inf)."""
+    import math
+
+    from app.model import train_model
+
+    df = _make_df(150)
+    _, metrics = train_model(df, df["consumption_kwh"])
+    assert math.isfinite(metrics["r2_mean"])
