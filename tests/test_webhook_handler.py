@@ -235,3 +235,40 @@ class TestClearHandlers:
         wh.clear_handlers("push")
         assert wh.handler_count("pr") == 1
         assert wh.handler_count("push") == 0
+
+
+class TestWebhookHandlerAdditionalEdgeCases:
+    def test_process_returns_webhook_event_instance(self) -> None:
+        wh = WebhookHandler(SECRET)
+        body = b'{"z": 99}'
+        result = wh.process(body, "test_ev", signature=make_sig(body))
+        assert isinstance(result, WebhookEvent)
+
+    def test_handler_receives_correct_event_type(self) -> None:
+        wh = WebhookHandler(SECRET)
+        received = []
+        wh.on("deploy", received.append)
+        body = b'{"action": "deploy"}'
+        wh.process(body, "deploy", signature=make_sig(body))
+        assert received[0].event_type == "deploy"
+
+    def test_on_any_not_triggered_for_specific_handler_only(self) -> None:
+        wh = WebhookHandler(SECRET)
+        specific = []
+        wh.on("push", specific.append)
+        body = b'{"branch": "main"}'
+        wh.process(body, "push", signature=make_sig(body))
+        assert len(specific) == 1
+
+    def test_empty_body_json_object(self) -> None:
+        wh = WebhookHandler(SECRET)
+        body = b"{}"
+        event = wh.process(body, "empty", signature=make_sig(body))
+        assert event.payload == {}
+
+    def test_verify_signature_correct_hex_format(self) -> None:
+        wh = WebhookHandler(SECRET)
+        body = b"data"
+        sig = make_sig(body)
+        assert sig.startswith("sha256=")
+        wh.verify_signature(body, sig)  # should not raise
