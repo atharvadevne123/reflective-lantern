@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 import sys
 from pathlib import Path
 
@@ -14,6 +15,8 @@ import pandas as pd
 
 from app.features import build_feature_pipeline, generate_synthetic_data, prepare_X
 from app.model import train_model
+
+logger = logging.getLogger(__name__)
 
 N_WARMUP = 20
 N_RUNS = 200
@@ -52,13 +55,13 @@ def main() -> None:
         latencies.append((time.perf_counter() - t) * 1000)
 
     latencies.sort()
-    print(f"Training       : {train_s:.2f} s on {len(df)} rows")
-    print(f"CV RMSE        : {metrics['rmse_mean']:.2f} (±{metrics['rmse_std']:.2f})")
-    print(f"CV R²          : {metrics['r2_mean']:.4f}")
-    print(f"Latency mean   : {statistics.mean(latencies):.2f} ms")
-    print(f"Latency p50    : {latencies[len(latencies) // 2]:.2f} ms")
-    print(f"Latency p95    : {latencies[int(len(latencies) * 0.95)]:.2f} ms")
-    print(f"Latency p99    : {latencies[int(len(latencies) * 0.99)]:.2f} ms")
+    logger.info("Training       : %.2f s on %d rows", train_s, len(df))
+    logger.info("CV RMSE        : %.2f (±%.2f)", metrics["rmse_mean"], metrics["rmse_std"])
+    logger.info("CV R²          : %.4f", metrics["r2_mean"])
+    logger.info("Latency mean   : %.2f ms", statistics.mean(latencies))
+    logger.info("Latency p50    : %.2f ms", latencies[len(latencies) // 2])
+    logger.info("Latency p95    : %.2f ms", latencies[int(len(latencies) * 0.95)])
+    logger.info("Latency p99    : %.2f ms", latencies[int(len(latencies) * 0.99)])
 
 
 if __name__ == "__main__":
