@@ -122,3 +122,40 @@ def test_run_check_nonzero_always_fails() -> None:
 
     ok, _ = run_check("fail", [sys.executable, "-c", "raise SystemExit(2)"])
     assert ok is False
+
+
+def test_main_empty_checks_passes() -> None:
+    """When there are no checks, main() should succeed with exit code 0."""
+    from scripts import run_all_checks as rac
+
+    with (
+        patch.object(rac, "CHECKS", []),
+        patch.object(sys, "argv", ["run_all_checks.py"]),
+    ):
+        result = rac.main()
+    assert result == 0
+
+
+def test_run_check_invalid_command_returns_false() -> None:
+    """A command that cannot be found should return ok=False without raising."""
+    from scripts.run_all_checks import run_check
+
+    ok, elapsed = run_check("bad", ["__no_such_command__"])
+    assert ok is False
+    assert elapsed >= 0.0
+
+
+def test_main_all_fail_returns_one() -> None:
+    """When every check fails, main() should return exit code 1."""
+    from scripts import run_all_checks as rac
+
+    failing = [
+        ("f1", [sys.executable, "-c", "raise SystemExit(1)"]),
+        ("f2", [sys.executable, "-c", "raise SystemExit(1)"]),
+    ]
+    with (
+        patch.object(rac, "CHECKS", failing),
+        patch.object(sys, "argv", ["run_all_checks.py"]),
+    ):
+        result = rac.main()
+    assert result == 1
