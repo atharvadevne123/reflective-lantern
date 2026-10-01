@@ -424,3 +424,43 @@ class TestCircuitBreakerFailureCount:
             with pytest.raises(ValueError):
                 cb.call(_always_fail)
         assert cb.failure_count == n_failures
+
+
+@pytest.mark.parametrize(
+    "threshold,n_failures,expected_state",
+    [
+        (3, 2, CircuitState.CLOSED),
+        (3, 3, CircuitState.OPEN),
+        (5, 4, CircuitState.CLOSED),
+        (5, 5, CircuitState.OPEN),
+    ],
+)
+def test_state_after_n_failures_parametrized(
+    threshold: int, n_failures: int, expected_state: CircuitState
+) -> None:
+    """Circuit state after N failures matches the expected CLOSED or OPEN state."""
+    cb = CircuitBreaker(failure_threshold=threshold, expected_exceptions=(ValueError,))
+    for _ in range(n_failures):
+        with pytest.raises(ValueError):
+            cb.call(_always_fail)
+    assert cb.state is expected_state
+
+
+@pytest.mark.parametrize("return_value", [0, "ok", 3.14, [], {"a": 1}])
+def test_call_returns_various_types(return_value: object) -> None:
+    """cb.call passes through any return value from the wrapped function."""
+    cb = CircuitBreaker(failure_threshold=3)
+    result = cb.call(lambda: return_value)
+    assert result == return_value
+
+
+@pytest.mark.parametrize("threshold", [1, 2, 5, 10])
+def test_reset_closes_circuit_after_open(threshold: int) -> None:
+    """reset() always returns the circuit to CLOSED state regardless of threshold."""
+    cb = CircuitBreaker(failure_threshold=threshold, expected_exceptions=(ValueError,))
+    for _ in range(threshold):
+        with pytest.raises(ValueError):
+            cb.call(_always_fail)
+    assert cb.state is CircuitState.OPEN
+    cb.reset()
+    assert cb.state is CircuitState.CLOSED
