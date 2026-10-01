@@ -2,6 +2,10 @@
 
 from __future__ import annotations
 
+import json
+import tempfile
+from pathlib import Path
+
 import pandas as pd
 import pytest
 from fastapi.testclient import TestClient
@@ -85,3 +89,52 @@ def predict_payload() -> dict:
         "hour_of_day": 14,
         "day_of_week": 2,
     }
+
+
+@pytest.fixture(scope="session")
+def tmp_path_session(tmp_path_factory: pytest.TempPathFactory) -> Path:
+    """Return a session-scoped temporary directory shared across all test files.
+
+    Unlike the built-in ``tmp_path`` fixture (function-scoped), this directory
+    persists for the entire test session, making it suitable for expensive
+    artefacts such as trained models or feature pipelines that should be
+    generated once and reused.
+
+    Example::
+
+        def test_something(tmp_path_session):
+            model_path = tmp_path_session / "model.joblib"
+            ...
+    """
+    return tmp_path_factory.mktemp("shared")
+
+
+@pytest.fixture()
+def tmp_json_file(tmp_path: Path):
+    """Return a helper that writes a dict to a temp JSON file and returns the path.
+
+    Example::
+
+        def test_something(tmp_json_file):
+            path = tmp_json_file({"key": "value"})
+            assert path.exists()
+    """
+
+    def _write(data: dict | list, filename: str = "data.json") -> Path:
+        p = tmp_path / filename
+        p.write_text(json.dumps(data))
+        return p
+
+    return _write
+
+
+@pytest.fixture()
+def isolated_tmp_dir():
+    """Yield a fresh temporary directory as a Path, cleaned up after the test.
+
+    Provides an alternative to ``tmp_path`` that uses :mod:`tempfile` directly,
+    useful when the test itself needs to create sub-directories or files at
+    arbitrary paths without relying on pytest's tmp_path numbering.
+    """
+    with tempfile.TemporaryDirectory() as d:
+        yield Path(d)
