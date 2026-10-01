@@ -343,3 +343,68 @@ def test_export_to_csv_empty_history_returns_zero(tmp_path: Path) -> None:
     count = export_to_csv(history_dir=empty_dir, output_path=out)
     assert count == 0
     assert not out.exists()
+
+
+def test_load_latest_entry_missing_file_returns_none(tmp_path: Path) -> None:
+    from scripts.summarize_history import load_latest_entry
+
+    missing = tmp_path / "nonexistent.json"
+    entry = load_latest_entry(missing)
+    assert entry is None
+
+
+def test_main_no_repos_outputs_empty_or_zero(tmp_path: Path, capsys: pytest.CaptureFixture) -> None:
+    import sys
+    from unittest.mock import patch
+
+    import scripts.summarize_history as sh
+
+    empty = tmp_path / "history"
+    empty.mkdir()
+    with (
+        patch.object(sh, "HISTORY_DIR", empty),
+        patch.object(sys, "argv", ["summarize_history.py"]),
+    ):
+        rc = sh.main()
+    assert rc in (0, None)
+
+
+def test_load_all_entries_dict_single_entry(tmp_path: Path) -> None:
+    import scripts.summarize_history as sh
+
+    f = tmp_path / "single.json"
+    f.write_text('{"date": "2026-07-01", "commits": 42}')
+    result = sh.load_all_entries(f)
+    assert len(result) == 1
+    assert result[0]["commits"] == 42
+
+
+def test_load_latest_entry_first_when_single(tmp_path: Path) -> None:
+    from scripts.summarize_history import load_latest_entry
+
+    f = tmp_path / "one.json"
+    f.write_text('[{"date": "2026-07-01", "commits": 30}]')
+    entry = load_latest_entry(f)
+    assert entry is not None
+    assert entry["commits"] == 30
+
+
+@pytest.mark.parametrize("flag", ["--json", "--sort-by", "commits"])
+def test_main_accepts_common_flags_without_crash(
+    tmp_path: Path, flag: str, capsys: pytest.CaptureFixture
+) -> None:
+    import sys
+    from unittest.mock import patch
+
+    import scripts.summarize_history as sh
+
+    h = tmp_path / "history"
+    h.mkdir()
+    (h / "R.json").write_text('[{"date": "2026-07-01", "commits": 60}]')
+    argv = ["summarize_history.py", flag] if flag.startswith("--") else ["summarize_history.py"]
+    with (
+        patch.object(sh, "HISTORY_DIR", h),
+        patch.object(sys, "argv", argv),
+    ):
+        rc = sh.main()
+    assert rc in (0, None)
