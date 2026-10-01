@@ -1,4 +1,9 @@
-"""Data compression and decompression utilities using zlib and gzip."""
+"""Data compression and decompression utilities using zlib and gzip.
+
+Provides symmetric compress/decompress helpers for both raw bytes and
+JSON-serialisable objects, plus measurement utilities that report
+compression ratio and savings percentage.
+"""
 
 from __future__ import annotations
 
@@ -173,13 +178,14 @@ def compress_and_measure(data: bytes, method: str = "gzip", level: int = 6) -> d
 
 
 def is_gzip(data: bytes) -> bool:
-    """Return True if *data* starts with the gzip magic number.
+    """Return True if *data* starts with the gzip magic number (``\\x1f\\x8b``).
 
     Args:
         data: Bytes to inspect.
 
     Returns:
-        True when the first two bytes match the gzip magic ``\\x1f\\x8b``.
+        True when the first two bytes match the gzip magic ``\\x1f\\x8b``;
+        False for empty or non-gzip data.
     """
     return len(data) >= 2 and data[:2] == b"\x1f\x8b"
 
