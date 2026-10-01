@@ -218,10 +218,13 @@ def test_build_message_with_none_pdf_path() -> None:
     assert len(pdf_parts) == 0
 
 
-@pytest.mark.parametrize("sender,recipient", [
-    ("alice@example.com", "bob@example.com"),
-    ("no-reply@company.org", "user@client.net"),
-])
+@pytest.mark.parametrize(
+    "sender,recipient",
+    [
+        ("alice@example.com", "bob@example.com"),
+        ("no-reply@company.org", "user@client.net"),
+    ],
+)
 def test_build_message_from_to_parametrized(sender: str, recipient: str) -> None:
     """From and To headers match the arguments passed to build_message."""
     from scripts.email_report import build_message

@@ -228,9 +228,7 @@ def test_x_correlation_id_short_value_accepted(client: TestClient) -> None:
 
 
 @pytest.mark.parametrize("n_requests", [1, 2, 3])
-def test_request_tracking_grows_with_each_call(
-    client: TestClient, n_requests: int
-) -> None:
+def test_request_tracking_grows_with_each_call(client: TestClient, n_requests: int) -> None:
     """After N requests, _requests contains at least one key."""
     reset_rate_limiter()
     for _ in range(n_requests):
@@ -238,9 +236,7 @@ def test_request_tracking_grows_with_each_call(
     assert len(_requests) >= 1
 
 
-def test_second_request_from_same_ip_within_limit_passes(
-    client: TestClient, monkeypatch
-) -> None:
+def test_second_request_from_same_ip_within_limit_passes(client: TestClient, monkeypatch) -> None:
     """Two requests within the limit both succeed."""
     from types import SimpleNamespace
 
