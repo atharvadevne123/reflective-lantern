@@ -1,4 +1,5 @@
 """Shared pytest fixtures for Logistics-Flow tests."""
+
 from __future__ import annotations
 
 import pandas as pd

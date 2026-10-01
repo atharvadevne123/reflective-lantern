@@ -288,7 +288,14 @@ def test_batch_validate_readings_all_valid() -> None:
             "humidity_pct": 60.0,
             "consumption_kwh": 15.0,
         },
-        {"hour": 8, "day_of_week": 0, "month": 3, "temperature_c": 5.0, "humidity_pct": 40.0, "consumption_kwh": 10.0},
+        {
+            "hour": 8,
+            "day_of_week": 0,
+            "month": 3,
+            "temperature_c": 5.0,
+            "humidity_pct": 40.0,
+            "consumption_kwh": 10.0,
+        },
     ]
     results = batch_validate_readings(readings)
     assert all(r["valid"] for r in results)
@@ -299,7 +306,14 @@ def test_batch_validate_readings_detects_errors() -> None:
     from app.validation import batch_validate_readings
 
     readings = [
-        {"hour": 25, "day_of_week": 1, "month": 6, "temperature_c": 22.0, "humidity_pct": 60.0, "consumption_kwh": 5.0},
+        {
+            "hour": 25,
+            "day_of_week": 1,
+            "month": 6,
+            "temperature_c": 22.0,
+            "humidity_pct": 60.0,
+            "consumption_kwh": 5.0,
+        },
     ]
     results = batch_validate_readings(readings)
     assert not results[0]["valid"]
@@ -310,7 +324,14 @@ def test_batch_validate_readings_preserves_index() -> None:
     from app.validation import batch_validate_readings
 
     readings = [
-        {"hour": 0, "day_of_week": 0, "month": 1, "temperature_c": 10.0, "humidity_pct": 50.0, "consumption_kwh": 5.0}
+        {
+            "hour": 0,
+            "day_of_week": 0,
+            "month": 1,
+            "temperature_c": 10.0,
+            "humidity_pct": 50.0,
+            "consumption_kwh": 5.0,
+        }
     ] * 5
     results = batch_validate_readings(readings)
     assert [r["index"] for r in results] == list(range(5))
@@ -910,7 +931,9 @@ class TestValidateListLength:
             (6, 1, 5, True),
         ],
     )
-    def test_parametrized(self, length: int, min_len: int, max_len: int, expect_errors: bool) -> None:
+    def test_parametrized(
+        self, length: int, min_len: int, max_len: int, expect_errors: bool
+    ) -> None:
         from app.validation import validate_list_length
 
         errors = validate_list_length(list(range(length)), min_len=min_len, max_len=max_len)
@@ -1013,10 +1036,7 @@ class TestValidateUniqueIds:
         assert validate_unique_ids([]) == []
 
 
-import pytest as _pytest
-
-
-@_pytest.mark.parametrize(
+@pytest.mark.parametrize(
     "hour,dow,month,expect_valid",
     [
         (0, 0, 1, True),
@@ -1028,14 +1048,16 @@ import pytest as _pytest
         (0, 0, 13, False),
     ],
 )
-def test_validate_temporal_fields_parametrized(hour: int, dow: int, month: int, expect_valid: bool) -> None:
+def test_validate_temporal_fields_parametrized(
+    hour: int, dow: int, month: int, expect_valid: bool
+) -> None:
     from app.validation import validate_temporal_fields
 
     errors = validate_temporal_fields(hour, dow, month)
     assert (len(errors) == 0) == expect_valid
 
 
-@_pytest.mark.parametrize(
+@pytest.mark.parametrize(
     "temp,humidity,expect_valid",
     [
         (20.0, 50.0, True),
@@ -1045,28 +1067,30 @@ def test_validate_temporal_fields_parametrized(hour: int, dow: int, month: int, 
         (20.0, 101.0, False),
     ],
 )
-def test_validate_weather_fields_parametrized(temp: float, humidity: float, expect_valid: bool) -> None:
+def test_validate_weather_fields_parametrized(
+    temp: float, humidity: float, expect_valid: bool
+) -> None:
     from app.validation import validate_weather_fields
 
     errors = validate_weather_fields(temp, humidity)
     assert (len(errors) == 0) == expect_valid
 
 
-@_pytest.mark.parametrize("consumption", [0.0, 1.0, 100.0, 9999.0])
+@pytest.mark.parametrize("consumption", [0.0, 1.0, 100.0, 9999.0])
 def test_validate_consumption_valid_values(consumption: float) -> None:
     from app.validation import validate_consumption_kwh
 
     assert validate_consumption_kwh(consumption) == []
 
 
-@_pytest.mark.parametrize("consumption", [-1.0, -0.001])
+@pytest.mark.parametrize("consumption", [-1.0, -0.001])
 def test_validate_consumption_negative_invalid(consumption: float) -> None:
     from app.validation import validate_consumption_kwh
 
     assert len(validate_consumption_kwh(consumption)) > 0
 
 
-@_pytest.mark.parametrize(
+@pytest.mark.parametrize(
     "building_id,expect_valid",
     [
         ("building_001", True),
@@ -1082,7 +1106,7 @@ def test_validate_building_id_parametrized(building_id: str, expect_valid: bool)
     assert (len(errors) == 0) == expect_valid
 
 
-@_pytest.mark.parametrize("price", [0.01, 1.0, 999.99])
+@pytest.mark.parametrize("price", [0.01, 1.0, 999.99])
 def test_validate_price_positive_no_errors(price: float) -> None:
     from app.validation import validate_price
 
@@ -1090,7 +1114,7 @@ def test_validate_price_positive_no_errors(price: float) -> None:
     assert len(errors) == 0
 
 
-@_pytest.mark.parametrize("price", [-1.0, -100.0])
+@pytest.mark.parametrize("price", [-1.0, -100.0])
 def test_validate_price_non_positive_has_errors(price: float) -> None:
     from app.validation import validate_price
 
@@ -1098,7 +1122,7 @@ def test_validate_price_non_positive_has_errors(price: float) -> None:
     assert len(errors) > 0
 
 
-@_pytest.mark.parametrize(
+@pytest.mark.parametrize(
     "lat,lon,expect_valid",
     [
         (0.0, 0.0, True),
@@ -1114,7 +1138,7 @@ def test_validate_coordinate_parametrized(lat: float, lon: float, expect_valid: 
     assert (len(errors) == 0) == expect_valid
 
 
-@_pytest.mark.parametrize("pct", [0.0, 50.0, 100.0])
+@pytest.mark.parametrize("pct", [0.0, 50.0, 100.0])
 def test_validate_percentage_valid_range(pct: float) -> None:
     from app.validation import validate_percentage
 
@@ -1122,7 +1146,7 @@ def test_validate_percentage_valid_range(pct: float) -> None:
     assert len(errors) == 0
 
 
-@_pytest.mark.parametrize("pct", [-1.0, 101.0, 200.0])
+@pytest.mark.parametrize("pct", [-1.0, 101.0, 200.0])
 def test_validate_percentage_out_of_range(pct: float) -> None:
     from app.validation import validate_percentage
 

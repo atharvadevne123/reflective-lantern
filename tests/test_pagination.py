@@ -342,7 +342,7 @@ class TestIsLastPage:
         assert is_last_page(info) is False
 
 
-class TestPageRange:
+class TestPageRangeExtra:
     def test_first_page_starts_at_one(self) -> None:
         from app.pagination import PageInfo, page_range
 
@@ -380,7 +380,7 @@ class TestPageRange:
         assert all(1 <= p <= info.total_pages for p in rng)
 
 
-class TestLastPageItems:
+class TestLastPageItemsExtra:
     def test_empty_list_returns_zero(self) -> None:
         from app.pagination import last_page_items
 
@@ -396,11 +396,14 @@ class TestLastPageItems:
 
         assert last_page_items(list(range(13)), per_page=5) == 3
 
-    @pytest.mark.parametrize("total,per_page,expected", [
-        (10, 3, 1),
-        (9, 3, 3),
-        (12, 4, 4),
-    ])
+    @pytest.mark.parametrize(
+        "total,per_page,expected",
+        [
+            (10, 3, 1),
+            (9, 3, 3),
+            (12, 4, 4),
+        ],
+    )
     def test_various_combos(self, total: int, per_page: int, expected: int) -> None:
         from app.pagination import last_page_items
 

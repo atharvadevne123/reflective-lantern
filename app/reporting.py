@@ -609,7 +609,8 @@ def hourly_cost_breakdown(
     if tariff_per_kwh < 0:
         raise ValueError("tariff_per_kwh must be non-negative")
     return [
-        {"hour": i, "kwh": round(kwh, 4), "cost": round(kwh * tariff_per_kwh, 4)} for i, kwh in enumerate(hourly_kwh)
+        {"hour": i, "kwh": round(kwh, 4), "cost": round(kwh * tariff_per_kwh, 4)}
+        for i, kwh in enumerate(hourly_kwh)
     ]
 
 
@@ -687,7 +688,9 @@ def peak_usage_window(hourly_kwh: list[float], window_size: int = 3) -> dict[str
     }
 
 
-def emission_report(kwh_values: list[float], carbon_intensity_kg_per_kwh: float = 0.35) -> dict[str, float]:
+def emission_report(
+    kwh_values: list[float], carbon_intensity_kg_per_kwh: float = 0.35
+) -> dict[str, float]:
     """Compute CO2 emission totals from a list of kWh readings.
 
     Args:
@@ -704,7 +707,12 @@ def emission_report(kwh_values: list[float], carbon_intensity_kg_per_kwh: float 
     if carbon_intensity_kg_per_kwh < 0:
         raise ValueError("carbon_intensity_kg_per_kwh must be non-negative")
     if not kwh_values:
-        return {"total_kwh": 0.0, "total_co2_kg": 0.0, "avg_co2_kg_per_period": 0.0, "max_co2_kg": 0.0}
+        return {
+            "total_kwh": 0.0,
+            "total_co2_kg": 0.0,
+            "avg_co2_kg_per_period": 0.0,
+            "max_co2_kg": 0.0,
+        }
     total_kwh = sum(kwh_values)
     total_co2 = total_kwh * carbon_intensity_kg_per_kwh
     avg_co2 = total_co2 / len(kwh_values)
@@ -866,7 +874,9 @@ def consumption_heatmap_data(
         dkey = str(dow)
         hkey = str(hour)
         buckets.setdefault(dkey, {}).setdefault(hkey, []).append(float(kwh))
-    return {d: {h: round(sum(v) / len(v), 4) for h, v in hours.items()} for d, hours in buckets.items()}
+    return {
+        d: {h: round(sum(v) / len(v), 4) for h, v in hours.items()} for d, hours in buckets.items()
+    }
 
 
 def savings_summary(

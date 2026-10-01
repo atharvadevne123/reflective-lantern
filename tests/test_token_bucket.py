@@ -116,7 +116,9 @@ class TestTokenBucketRefill:
     def test_refill_does_not_exceed_capacity(self) -> None:
         tb = TokenBucket(capacity=5, rate=1000)
         tb._tokens = 0  # type: ignore[attr-defined]
-        tb._last_refill = time.monotonic() - 100  # 100s of refill available  # type: ignore[attr-defined]
+        tb._last_refill = (
+            time.monotonic() - 100
+        )  # 100s of refill available  # type: ignore[attr-defined]
         # available is capped at capacity
         assert tb.available <= 5
 
@@ -221,7 +223,7 @@ class TestPerKeyTokenBucketIsolation:
         assert pkb.consume("b") is True
 
 
-class TestTokenBucketAvailable:
+class TestTokenBucketAvailableExtra:
     def test_full_initially(self) -> None:
         from app.token_bucket import TokenBucket
 

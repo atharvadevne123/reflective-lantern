@@ -1,4 +1,5 @@
 """Feature engineering pipeline for delivery-time prediction."""
+
 from __future__ import annotations
 
 import logging
@@ -86,8 +87,10 @@ class CategoricalEncoder(BaseEstimator, TransformerMixin):
     def transform(self, X: pd.DataFrame) -> pd.DataFrame:
         df = X.copy()
         known = set(self.le_.classes_)
-        carriers = df["carrier"].fillna("Unknown").apply(
-            lambda c: c if c in known else self.le_.classes_[0]
+        carriers = (
+            df["carrier"]
+            .fillna("Unknown")
+            .apply(lambda c: c if c in known else self.le_.classes_[0])
         )
         df["carrier_enc"] = self.le_.transform(carriers)
         return df
@@ -141,10 +144,10 @@ def generate_synthetic_data(n: int = 2000, seed: int = 42) -> pd.DataFrame:
     carrier_delay = np.where(np.isin(carriers, ["USPS"]), 1.3, 1.0)
     route_factor = np.where(np.isin(route_types, ["rural"]), 1.4, 1.0)
     target = (
-        distance_km * 1.5
-        + weight_kg * 2
-        + rng.normal(0, 20, size=n)
-    ) * carrier_delay * route_factor
+        (distance_km * 1.5 + weight_kg * 2 + rng.normal(0, 20, size=n))
+        * carrier_delay
+        * route_factor
+    )
     target = np.clip(target, 10, 2000)
 
     return pd.DataFrame(

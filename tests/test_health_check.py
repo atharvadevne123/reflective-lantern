@@ -1,5 +1,7 @@
 """Tests for app.health_check."""
 
+import pytest
+
 from app.health_check import CheckResult, HealthRegistry, check
 
 
@@ -145,9 +147,6 @@ class TestCheckResultDetails:
         assert len(reg) == 0
 
 
-import pytest
-
-
 @pytest.mark.parametrize("n_healthy", [0, 1, 5, 10])
 def test_registry_all_healthy_various_sizes(n_healthy: int) -> None:
     """A registry of n_healthy passing checks is always healthy."""
@@ -231,7 +230,7 @@ class TestHealthRegistryCheckDecorator:
         assert "run_check" in names
 
 
-class TestCheckResultDetails:
+class TestCheckResultDetailsExtra:
     def test_details_preserved(self) -> None:
         from app.health_check import CheckResult
 

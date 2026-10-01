@@ -147,4 +147,12 @@ def total_calls() -> int:
     return sum(s.calls for s in _registry.values())
 
 
-__all__ = ["call_count", "get_stats", "reset_stats", "timed", "total_calls", "tracked", "tracked_names"]
+__all__ = [
+    "call_count",
+    "get_stats",
+    "reset_stats",
+    "timed",
+    "total_calls",
+    "tracked",
+    "tracked_names",
+]

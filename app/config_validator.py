@@ -92,7 +92,9 @@ def validate(config: dict[str, Any], schema: ConfigSchema) -> dict[str, Any]:
         val = config[spec.name]
 
         if not isinstance(val, spec.type):
-            violations.append(f"'{spec.name}' expected {spec.type.__name__}, got {type(val).__name__}")
+            violations.append(
+                f"'{spec.name}' expected {spec.type.__name__}, got {type(val).__name__}"
+            )
             continue
 
         if spec.choices is not None and val not in spec.choices:

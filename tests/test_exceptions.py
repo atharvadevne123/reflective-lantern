@@ -125,7 +125,8 @@ def test_exception_message_preserved(exc_class, args: tuple) -> None:
 
 
 @pytest.mark.parametrize(
-    "field,reason", [("temperature", "out of range"), ("pressure", "negative"), ("vibration", "nan")]
+    "field,reason",
+    [("temperature", "out of range"), ("pressure", "negative"), ("vibration", "nan")],
 )
 def test_feature_validation_error_contains_field(field: str, reason: str) -> None:
     exc = FeatureValidationError(field, reason)
@@ -235,11 +236,14 @@ class TestExternalServiceError:
         err = ExternalServiceError("weather-api", "timeout")
         assert "weather-api" in str(err)
 
-    @pytest.mark.parametrize("service,reason", [
-        ("db", "connection refused"),
-        ("cache", "eviction error"),
-        ("ml-server", "model not found"),
-    ])
+    @pytest.mark.parametrize(
+        "service,reason",
+        [
+            ("db", "connection refused"),
+            ("cache", "eviction error"),
+            ("ml-server", "model not found"),
+        ],
+    )
     def test_various_services(self, service: str, reason: str) -> None:
         from app.exceptions import ExternalServiceError
 
