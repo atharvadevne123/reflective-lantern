@@ -154,6 +154,22 @@ flagged when `p < 0.05`.
 
 Every response carries `X-Request-ID` and `X-Response-Time-Ms` headers.
 
+### `GET /api/v1/version`
+
+Returns build metadata and runtime environment information.
+
+**Response**
+
+```json
+{
+  "version": "1.0.0",
+  "build_date": "2026-10-01",
+  "python_version": "3.11.0",
+  "environment": "production",
+  "service": "reflective-lantern"
+}
+```
+
 ---
 
 ## Architecture
