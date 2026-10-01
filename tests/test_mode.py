@@ -266,3 +266,45 @@ def test_upcoming_innovation_days_all_innovation() -> None:
 
     days = upcoming_innovation_days(count=5)
     assert all(is_innovation_day(d) for d in days)
+
+
+def test_run_mode_members_are_two() -> None:
+    """RunMode enum has exactly two members: IMPROVEMENT and INNOVATION."""
+    assert len(RunMode) == 2
+    assert RunMode.IMPROVEMENT in RunMode
+    assert RunMode.INNOVATION in RunMode
+
+
+def test_determine_mode_sunday_is_improvement() -> None:
+    """A Sunday date always maps to IMPROVEMENT mode."""
+    from datetime import date
+
+    sunday = date(2026, 7, 26)  # Sunday
+    assert sunday.isoweekday() == 7
+    assert determine_mode(sunday) == RunMode.IMPROVEMENT
+
+
+def test_mode_schedule_entries_have_date_and_mode_keys() -> None:
+    """Each entry in mode_schedule has both 'date' and 'mode' keys."""
+    from config.mode import mode_schedule
+
+    schedule = mode_schedule(weeks=1)
+    for entry in schedule:
+        assert "date" in entry
+        assert "mode" in entry
+
+
+def test_upcoming_innovation_days_no_duplicates() -> None:
+    """upcoming_innovation_days returns a list with no duplicate dates."""
+    from config.mode import upcoming_innovation_days
+
+    days = upcoming_innovation_days(count=6)
+    assert len(days) == len(set(days))
+
+
+def test_is_innovation_day_returns_bool_type() -> None:
+    """is_innovation_day always returns a plain bool."""
+    from config.mode import is_innovation_day
+
+    result = is_innovation_day(date(2026, 7, 8))
+    assert type(result) is bool  # noqa: E721
