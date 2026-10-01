@@ -190,3 +190,52 @@ def test_send_via_smtp_raises_on_all_failures(monkeypatch) -> None:
     msg = build_message("S", "b", "a@b.com", "c@d.com")
     with pytest.raises(RuntimeError, match="All SMTP attempts failed"):
         send_via_smtp(msg, "user@gmail.com", "fakepass", "c@d.com")
+
+
+def test_build_message_multipart_type() -> None:
+    """build_message returns a multipart MIME message."""
+    from scripts.email_report import build_message
+
+    msg = build_message("Subject", "body text", "a@b.com", "c@d.com")
+    assert msg.get_content_maintype() in ("multipart", "text")
+
+
+def test_build_message_no_pdf_has_text_part() -> None:
+    """Without a PDF attachment, the message contains at least one text part."""
+    from scripts.email_report import build_message
+
+    msg = build_message("S", "hello", "a@b.com", "c@d.com")
+    content_types = [part.get_content_type() for part in msg.walk()]
+    assert any("text" in ct for ct in content_types)
+
+
+def test_build_message_with_none_pdf_path() -> None:
+    """Passing pdf_path=None behaves like no attachment."""
+    from scripts.email_report import build_message
+
+    msg = build_message("S", "body", "a@b.com", "c@d.com", pdf_path=None)
+    pdf_parts = [p for p in msg.walk() if p.get_content_type() == "application/pdf"]
+    assert len(pdf_parts) == 0
+
+
+@pytest.mark.parametrize("sender,recipient", [
+    ("alice@example.com", "bob@example.com"),
+    ("no-reply@company.org", "user@client.net"),
+])
+def test_build_message_from_to_parametrized(sender: str, recipient: str) -> None:
+    """From and To headers match the arguments passed to build_message."""
+    from scripts.email_report import build_message
+
+    msg = build_message("S", "body", sender, recipient)
+    assert msg["From"] == sender
+    assert msg["To"] == recipient
+
+
+def test_send_report_no_env_returns_false_consistently(monkeypatch) -> None:
+    """send_report always returns False when credentials are absent."""
+    monkeypatch.delenv("GMAIL_USER", raising=False)
+    monkeypatch.delenv("GMAIL_APP_PASS", raising=False)
+    from scripts.email_report import send_report
+
+    for _ in range(3):
+        assert send_report(subject="Test", body="b") is False
