@@ -21,10 +21,28 @@ class TemporalFeatureExtractor(BaseEstimator, TransformerMixin):
     """Adds lag, rolling, and cyclical time features."""
 
     def fit(self, X: pd.DataFrame, y: Any = None) -> TemporalFeatureExtractor:
+        """Fit the transformer (no-op; marks the instance as fitted).
+
+        Args:
+            X: Input DataFrame with delivery features.
+            y: Ignored; present for sklearn API compatibility.
+
+        Returns:
+            self
+        """
         self.fitted_ = True
         return self
 
     def transform(self, X: pd.DataFrame) -> pd.DataFrame:
+        """Add cyclical and flag-based temporal features to *X*.
+
+        Args:
+            X: Input DataFrame containing ``hour_of_day`` and ``day_of_week``.
+
+        Returns:
+            A copy of *X* with ``hour_sin``, ``hour_cos``, ``dow_sin``,
+            ``dow_cos``, ``is_weekend``, and ``is_peak`` columns appended.
+        """
         df = X.copy()
         # Cyclical encoding so hour 0 and 23 are adjacent
         df["hour_sin"] = np.sin(2 * np.pi * df["hour_of_day"] / 24)
@@ -53,10 +71,29 @@ class RouteFeatureEngineer(BaseEstimator, TransformerMixin):
     }
 
     def fit(self, X: pd.DataFrame, y: Any = None) -> RouteFeatureEngineer:
+        """Fit the transformer (no-op; marks the instance as fitted).
+
+        Args:
+            X: Input DataFrame with delivery features.
+            y: Ignored; present for sklearn API compatibility.
+
+        Returns:
+            self
+        """
         self.fitted_ = True
         return self
 
     def transform(self, X: pd.DataFrame) -> pd.DataFrame:
+        """Derive distance buckets, weight ratios, and carrier risk scores.
+
+        Args:
+            X: Input DataFrame containing ``distance_km``, ``weight_kg``,
+               ``carrier``, and ``route_type`` columns.
+
+        Returns:
+            A copy of *X* with ``distance_bucket``, ``weight_per_km``,
+            ``carrier_risk``, and ``route_code`` columns appended.
+        """
         df = X.copy()
         # Distance buckets: local, regional, long-haul
         df["distance_bucket"] = pd.cut(
@@ -78,6 +115,15 @@ class CategoricalEncoder(BaseEstimator, TransformerMixin):
     """Ordinal-encodes carrier column."""
 
     def fit(self, X: pd.DataFrame, y: Any = None) -> CategoricalEncoder:
+        """Fit the label encoder on the carrier column.
+
+        Args:
+            X: Input DataFrame containing a ``carrier`` column.
+            y: Ignored; present for sklearn API compatibility.
+
+        Returns:
+            self
+        """
         # Trailing underscore matters: sklearn's check_is_fitted only treats
         # attributes ending in "_" as evidence the estimator has been fitted.
         self.le_ = LabelEncoder()
@@ -85,6 +131,14 @@ class CategoricalEncoder(BaseEstimator, TransformerMixin):
         return self
 
     def transform(self, X: pd.DataFrame) -> pd.DataFrame:
+        """Ordinal-encode the carrier column and append it as ``carrier_enc``.
+
+        Args:
+            X: Input DataFrame containing a ``carrier`` column.
+
+        Returns:
+            A copy of *X* with a ``carrier_enc`` integer column appended.
+        """
         df = X.copy()
         known = set(self.le_.classes_)
         carriers = (
