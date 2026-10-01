@@ -28,6 +28,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   and coverage command
 - `pyproject.toml` mypy configuration block
 - `.github/CODEOWNERS` file
+- `app/__init__.py` explicit `__all__` list exporting main public symbols
+- `DispatchResult` dataclass field-level docstrings in `app/battery.py`
+- Expanded Args/Returns/Note sections in `app/forecasting.py`, `app/carbon.py`,
+  `app/anomaly.py`, and `app/alerting.py` for previously one-liner docstrings
+- Edge-case tests to `test_foundry_sync.py`, `test_pipeline.py`,
+  `test_email_report.py`, `test_middleware.py`, `test_notification_dispatcher.py`,
+  `test_exceptions.py`, `test_profiler.py`, `test_mode.py`,
+  `test_monitoring_extended.py`, `test_compression.py`, and `test_circuit_breaker.py`
 
 ### Changed
 
