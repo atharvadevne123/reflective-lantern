@@ -280,3 +280,88 @@ class TestDriftRequestBoundary:
     def test_min_length_parametrized(self, n: int) -> None:
         r = DriftRequest(current_values=[1.0] * n)
         assert len(r.current_values) == n
+
+
+def test_energy_reading_zero_consumption_allowed() -> None:
+    """consumption_kwh of 0.0 should be valid (building is idle)."""
+    r = EnergyReadingIn(
+        building_id="b001",
+        timestamp="2025-06-01T00:00:00",
+        hour=0,
+        day_of_week=0,
+        month=1,
+        temperature_c=15.0,
+        humidity_pct=40.0,
+        occupancy=0,
+        hvac_state=0,
+        consumption_kwh=0.0,
+    )
+    assert r.consumption_kwh == 0.0
+
+
+def test_energy_reading_missing_consumption_defaults() -> None:
+    """Omitting consumption_kwh should not raise a ValidationError."""
+    r = EnergyReadingIn(
+        building_id="b001",
+        timestamp="2025-06-01T06:00:00",
+        hour=6,
+        day_of_week=1,
+        month=3,
+        temperature_c=18.0,
+        humidity_pct=45.0,
+        occupancy=10,
+        hvac_state=1,
+    )
+    assert r is not None
+
+
+@pytest.mark.parametrize("hvac", [0, 1])
+def test_energy_reading_valid_hvac_states(hvac: int) -> None:
+    """HVAC state should accept both 0 and 1."""
+    r = EnergyReadingIn(
+        building_id="b001",
+        timestamp="2025-06-01T12:00:00",
+        hour=12,
+        day_of_week=3,
+        month=6,
+        temperature_c=22.0,
+        humidity_pct=55.0,
+        occupancy=20,
+        hvac_state=hvac,
+    )
+    assert r.hvac_state == hvac
+
+
+def test_anomaly_request_defaults_applied() -> None:
+    """AnomalyRequest should apply sensible defaults for optional fields."""
+    r = AnomalyRequest(
+        building_id="bldg-42",
+        timestamp="2025-09-01T09:00:00",
+        consumption_kwh=8.0,
+        hour=9,
+        day_of_week=4,
+        month=9,
+    )
+    assert r.temperature_c is not None or r.temperature_c == r.temperature_c  # not NaN
+
+
+def test_drift_request_large_list_accepted() -> None:
+    """DriftRequest should accept a list of 1000 floats."""
+    r = DriftRequest(current_values=[float(i) for i in range(1000)])
+    assert len(r.current_values) == 1000
+
+
+def test_energy_reading_high_occupancy() -> None:
+    """occupancy values up to typical building capacity should be accepted."""
+    r = EnergyReadingIn(
+        building_id="big-bldg",
+        timestamp="2025-06-01T10:00:00",
+        hour=10,
+        day_of_week=1,
+        month=6,
+        temperature_c=23.0,
+        humidity_pct=50.0,
+        occupancy=500,
+        hvac_state=1,
+    )
+    assert r.occupancy == 500

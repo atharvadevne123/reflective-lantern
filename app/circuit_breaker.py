@@ -1,4 +1,9 @@
-"""Circuit breaker implementation for protecting downstream calls."""
+"""Circuit breaker implementation for protecting downstream calls.
+
+The circuit breaker pattern prevents cascading failures by fast-failing
+callers when a downstream service is unreliable.  Transitions follow:
+CLOSED → OPEN (on threshold failures) → HALF_OPEN (after timeout) → CLOSED.
+"""
 
 from __future__ import annotations
 
@@ -15,8 +20,13 @@ class CircuitState(Enum):
     """Possible states of a circuit breaker."""
 
     CLOSED = "closed"
+    """Normal operating state; calls are forwarded to the protected function."""
+
     OPEN = "open"
+    """Tripped state; all calls are rejected immediately with CircuitOpenError."""
+
     HALF_OPEN = "half_open"
+    """Probe state; a single call is allowed through to test service recovery."""
 
 
 class CircuitOpenError(Exception):

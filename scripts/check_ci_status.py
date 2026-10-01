@@ -83,7 +83,7 @@ def main() -> int:
         runs = get_latest_runs(owner, name, token)
         if not runs:
             if not args.failing_only:
-                print(f"  {name}: no CI")
+                log.info("  %s: no CI", name)
             continue
         for run in runs:
             conclusion = run.get("conclusion") or run.get("status", "unknown")

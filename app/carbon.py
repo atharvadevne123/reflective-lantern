@@ -57,10 +57,13 @@ def co2_kg_to_tonnes(kg: float) -> float:
     """Convert kilograms of CO2 to metric tonnes.
 
     Args:
-        kg: CO2 equivalent in kilograms.
+        kg: CO2 equivalent in kilograms (may be negative for savings).
 
     Returns:
         CO2 equivalent in metric tonnes, rounded to 6 decimal places.
+
+    Note:
+        Uses the constant KG_TO_TONNES = 0.001 (1 tonne = 1 000 kg).
     """
     return round(kg * KG_TO_TONNES, 6)
 
@@ -72,10 +75,11 @@ def trees_equivalent(co2_kg: float) -> float:
     which equals 50 trees per metric tonne.
 
     Args:
-        co2_kg: CO2 equivalent in kilograms.
+        co2_kg: CO2 equivalent in kilograms (non-negative expected).
 
     Returns:
-        Estimated number of trees, rounded to 1 decimal place.
+        Estimated number of trees rounded to 1 decimal place.
+        Returns 0.0 when *co2_kg* is 0.
     """
     tonnes = co2_kg_to_tonnes(co2_kg)
     return round(tonnes * TREES_PER_TONNE_CO2_PER_YEAR, 1)
@@ -722,7 +726,9 @@ def annual_carbon_budget(
         raise ValueError("year_fraction_elapsed must be between 0 and 1")
     budget_kg = target_co2_tonnes * 1000.0
     remaining_kg = max(0.0, budget_kg - current_co2_kg)
-    projected = (current_co2_kg / year_fraction_elapsed) if year_fraction_elapsed > 0 else current_co2_kg
+    projected = (
+        (current_co2_kg / year_fraction_elapsed) if year_fraction_elapsed > 0 else current_co2_kg
+    )
     on_track = projected <= budget_kg
     return {
         "budget_kg": round(budget_kg, 2),

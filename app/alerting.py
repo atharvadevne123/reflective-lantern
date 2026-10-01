@@ -182,19 +182,39 @@ class AlertManager:
         return list(self._fired)
 
     def clear_history(self) -> None:
-        """Remove all previously fired alerts from the history list."""
+        """Remove all previously fired alerts from the history list.
+
+        Returns:
+            None. Mutates the internal fired-alerts buffer in place.
+        """
         self._fired.clear()
 
     def rule_names(self) -> list[str]:
-        """Return sorted list of registered rule names."""
+        """Return sorted list of registered rule names.
+
+        Returns:
+            Alphabetically sorted list of every rule name currently registered.
+        """
         return sorted(self._rules)
 
     def history_for_metric(self, metric: str) -> list[Alert]:
-        """Return all historical alerts for a specific metric name."""
+        """Return all historical alerts for a specific metric name.
+
+        Args:
+            metric: The metric name to filter on.
+
+        Returns:
+            Ordered list of alerts whose metric field equals *metric*.
+        """
         return [a for a in self._fired if a.metric == metric]
 
     def add_handler(self, handler: Callable[[Alert], None]) -> None:
-        """Register an additional alert handler."""
+        """Register an additional alert handler.
+
+        Args:
+            handler: Callable that accepts a single :class:`Alert` and performs
+                a side-effect such as sending a notification or writing to a log.
+        """
         self._handlers.append(handler)
 
 

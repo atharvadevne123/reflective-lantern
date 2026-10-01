@@ -31,9 +31,11 @@ def test_main_all_pass() -> None:
         ("check1", [sys.executable, "-c", "pass"]),
         ("check2", [sys.executable, "-c", "pass"]),
     ]
-    with patch.object(rac, "CHECKS", passing_checks):
-        with patch.object(sys, "argv", ["run_all_checks.py"]):
-            result = rac.main()
+    with (
+        patch.object(rac, "CHECKS", passing_checks),
+        patch.object(sys, "argv", ["run_all_checks.py"]),
+    ):
+        result = rac.main()
     assert result == 0
 
 
@@ -44,9 +46,11 @@ def test_main_one_fails() -> None:
         ("pass", [sys.executable, "-c", "pass"]),
         ("fail", [sys.executable, "-c", "raise SystemExit(1)"]),
     ]
-    with patch.object(rac, "CHECKS", mixed_checks):
-        with patch.object(sys, "argv", ["run_all_checks.py"]):
-            result = rac.main()
+    with (
+        patch.object(rac, "CHECKS", mixed_checks),
+        patch.object(sys, "argv", ["run_all_checks.py"]),
+    ):
+        result = rac.main()
     assert result == 1
 
 
@@ -60,10 +64,12 @@ def test_main_stop_on_failure() -> None:
         return name == "ok", 0.0
 
     checks = [("ok", []), ("bad", []), ("never", [])]
-    with patch.object(rac, "CHECKS", checks):
-        with patch.object(rac, "run_check", mock_run_check):
-            with patch.object(sys, "argv", ["run_all_checks.py", "--stop-on-failure"]):
-                result = rac.main()
+    with (
+        patch.object(rac, "CHECKS", checks),
+        patch.object(rac, "run_check", mock_run_check),
+        patch.object(sys, "argv", ["run_all_checks.py", "--stop-on-failure"]),
+    ):
+        result = rac.main()
     assert result == 1
     assert "never" not in calls
 
@@ -79,7 +85,9 @@ def test_main_stop_on_failure() -> None:
 def test_run_check_exit_codes(exit_code: int, expected_ok: bool) -> None:
     from scripts.run_all_checks import run_check
 
-    ok, elapsed = run_check("parametrized", [sys.executable, "-c", f"raise SystemExit({exit_code})"])
+    ok, elapsed = run_check(
+        "parametrized", [sys.executable, "-c", f"raise SystemExit({exit_code})"]
+    )
     assert ok is expected_ok
     assert elapsed >= 0.0
 
@@ -95,9 +103,8 @@ def test_main_timing_summary_in_output(capsys: pytest.CaptureFixture) -> None:
     from scripts import run_all_checks as rac
 
     checks = [("ok", [sys.executable, "-c", "pass"])]
-    with patch.object(rac, "CHECKS", checks):
-        with patch.object(sys, "argv", ["run_all_checks.py"]):
-            rac.main()
+    with patch.object(rac, "CHECKS", checks), patch.object(sys, "argv", ["run_all_checks.py"]):
+        rac.main()
     out = capsys.readouterr().out
     assert "total" in out.lower() or "s]" in out
 
@@ -115,3 +122,40 @@ def test_run_check_nonzero_always_fails() -> None:
 
     ok, _ = run_check("fail", [sys.executable, "-c", "raise SystemExit(2)"])
     assert ok is False
+
+
+def test_main_empty_checks_passes() -> None:
+    """When there are no checks, main() should succeed with exit code 0."""
+    from scripts import run_all_checks as rac
+
+    with (
+        patch.object(rac, "CHECKS", []),
+        patch.object(sys, "argv", ["run_all_checks.py"]),
+    ):
+        result = rac.main()
+    assert result == 0
+
+
+def test_run_check_invalid_command_returns_false() -> None:
+    """A command that cannot be found should return ok=False without raising."""
+    from scripts.run_all_checks import run_check
+
+    ok, elapsed = run_check("bad", ["__no_such_command__"])
+    assert ok is False
+    assert elapsed >= 0.0
+
+
+def test_main_all_fail_returns_one() -> None:
+    """When every check fails, main() should return exit code 1."""
+    from scripts import run_all_checks as rac
+
+    failing = [
+        ("f1", [sys.executable, "-c", "raise SystemExit(1)"]),
+        ("f2", [sys.executable, "-c", "raise SystemExit(1)"]),
+    ]
+    with (
+        patch.object(rac, "CHECKS", failing),
+        patch.object(sys, "argv", ["run_all_checks.py"]),
+    ):
+        result = rac.main()
+    assert result == 1

@@ -73,7 +73,9 @@ def test_query_by_building_id(db_session) -> None:
             )
         )
     db_session.commit()
-    rows = db_session.query(EnergyReading).filter(EnergyReading.building_id == "query-test-bldg").all()
+    rows = (
+        db_session.query(EnergyReading).filter(EnergyReading.building_id == "query-test-bldg").all()
+    )
     assert len(rows) >= 3
 
 
@@ -190,7 +192,9 @@ def test_anomaly_log_stored_and_retrieved(db_session) -> None:
     )
     db_session.add(entry)
     db_session.commit()
-    retrieved = db_session.query(AnomalyLog).filter(AnomalyLog.building_id == "bldg-anomaly").first()
+    retrieved = (
+        db_session.query(AnomalyLog).filter(AnomalyLog.building_id == "bldg-anomaly").first()
+    )
     assert retrieved is not None
     assert retrieved.severity == "critical"
 
@@ -209,7 +213,9 @@ def test_drift_log_stored_and_retrieved(db_session) -> None:
     )
     db_session.add(entry)
     db_session.commit()
-    retrieved = db_session.query(DriftLog).filter(DriftLog.feature_name == "consumption_kwh").first()
+    retrieved = (
+        db_session.query(DriftLog).filter(DriftLog.feature_name == "consumption_kwh").first()
+    )
     assert retrieved is not None
     assert bool(retrieved.drift_detected) is True
 

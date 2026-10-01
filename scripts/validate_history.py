@@ -7,7 +7,9 @@ from pathlib import Path
 
 from config.constants import HISTORY_DIR, NON_RECORD_FILES
 
-VALID_MODES: frozenset[str] = frozenset({"improvement", "IMPROVEMENT", "innovation", "INNOVATION", "user-requested"})
+VALID_MODES: frozenset[str] = frozenset(
+    {"improvement", "IMPROVEMENT", "innovation", "INNOVATION", "user-requested"}
+)
 VALID_EMAIL_STATUSES: frozenset[str] = frozenset(
     {"pending", "sent", "skipped", "failed_smtp", "network_blocked", "pdf_generated_ok", ""}
 )
@@ -37,7 +39,9 @@ def validate_entry(entry: object, filename: str, index: int) -> list[str]:
     commits = entry.get("commits")
     if commits is not None:
         if not isinstance(commits, int):
-            errors.append(f"{filename}[{index}]: commits must be an int, got {type(commits).__name__}")
+            errors.append(
+                f"{filename}[{index}]: commits must be an int, got {type(commits).__name__}"
+            )
         elif commits < 0:
             errors.append(f"{filename}[{index}]: negative commits value ({commits})")
 

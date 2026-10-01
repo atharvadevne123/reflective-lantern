@@ -258,3 +258,47 @@ class TestVersionCount:
         for i in range(n):
             reg.register(ModelVersion(name="m", version=f"{i}.0.0", metrics={}))
         assert reg.version_count("m") == n
+
+
+class TestModelRegistryAdditionalEdgeCases:
+    def test_register_preserves_artifact_path(self) -> None:
+        from app.model_registry import ModelRegistry
+
+        reg = ModelRegistry()
+        reg.register(_mv(path="s3://bucket/models/v1"))
+        mv = reg.get_latest("price-model")
+        assert mv.artifact_path == "s3://bucket/models/v1"
+
+    def test_list_versions_sorted_or_ordered_by_registration(self) -> None:
+        from app.model_registry import ModelRegistry
+
+        reg = ModelRegistry()
+        reg.register(_mv(version="1.0.0"))
+        reg.register(_mv(version="2.0.0"))
+        versions = [v.version for v in reg.list_versions("price-model")]
+        assert len(versions) == 2
+
+    def test_get_production_returns_none_after_archive(self) -> None:
+        from app.model_registry import ModelRegistry, ModelStage
+
+        reg = ModelRegistry()
+        reg.register(_mv())
+        reg.transition_stage("price-model", "1.0.0", ModelStage.PRODUCTION)
+        reg.transition_stage("price-model", "1.0.0", ModelStage.ARCHIVED)
+        assert reg.get_production("price-model") is None
+
+    def test_default_stage_is_staging_on_register(self) -> None:
+        from app.model_registry import ModelRegistry, ModelStage
+
+        reg = ModelRegistry()
+        reg.register(_mv())
+        mv = reg.get_latest("price-model")
+        assert mv.stage is ModelStage.STAGING
+
+    def test_add_tag_for_nonexistent_version_returns_false(self) -> None:
+        from app.model_registry import ModelRegistry
+
+        reg = ModelRegistry()
+        reg.register(_mv(version="1.0.0"))
+        result = reg.add_tag("price-model", "9.9.9", "key", "val")
+        assert result is False

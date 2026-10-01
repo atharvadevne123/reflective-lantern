@@ -193,14 +193,22 @@ def test_amenity_scale_constant() -> None:
     ],
 )
 def test_amenity_composite_uses_weights(school, transit, walk, single_row) -> None:
-    from app.features import _AMENITY_SCALE, _SCHOOL_WEIGHT, _TRANSIT_WEIGHT, _WALK_WEIGHT, AmenityCompositeTransformer
+    from app.features import (
+        _AMENITY_SCALE,
+        _SCHOOL_WEIGHT,
+        _TRANSIT_WEIGHT,
+        _WALK_WEIGHT,
+        AmenityCompositeTransformer,
+    )
 
     row = single_row.copy()
     row["school_score"] = school
     row["transit_score"] = transit
     row["walkability_score"] = walk
     result = AmenityCompositeTransformer().fit_transform(row)
-    expected = (school * _SCHOOL_WEIGHT + transit * _TRANSIT_WEIGHT + walk * _WALK_WEIGHT) / _AMENITY_SCALE
+    expected = (
+        school * _SCHOOL_WEIGHT + transit * _TRANSIT_WEIGHT + walk * _WALK_WEIGHT
+    ) / _AMENITY_SCALE
     import pytest as _pytest
 
     assert result["amenity_composite"].iloc[0] == _pytest.approx(expected, rel=1e-3)
@@ -332,7 +340,12 @@ def test_demand_response_potential_keys() -> None:
     from app.features import demand_response_potential
 
     result = demand_response_potential([1.0, 5.0, 10.0], peak_threshold_pct=0.9)
-    assert set(result.keys()) >= {"peak_hours_count", "sheddable_kwh", "potential_pct", "peak_threshold_kwh"}
+    assert set(result.keys()) >= {
+        "peak_hours_count",
+        "sheddable_kwh",
+        "potential_pct",
+        "peak_threshold_kwh",
+    }
 
 
 def test_demand_response_potential_potential_pct_bounded() -> None:

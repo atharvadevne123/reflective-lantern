@@ -1,4 +1,9 @@
-"""ML inference and training cost estimation utilities."""
+"""ML inference and training cost estimation utilities.
+
+Provides dataclasses and helper functions for estimating the monetary cost
+of running ML workloads on cloud compute, broken down by CPU, memory, and GPU.
+Default rates are illustrative and should be overridden for production use.
+"""
 
 from __future__ import annotations
 
@@ -29,7 +34,11 @@ class ResourceSpec:
     duration_hours: float = 1.0
 
     def __post_init__(self) -> None:
-        """Validate that all resource quantities are within acceptable ranges."""
+        """Validate that all resource quantities are within acceptable ranges.
+
+        Raises:
+            ValueError: If any resource quantity is out of range.
+        """
         if self.cpu_cores <= 0:
             raise ValueError("cpu_cores must be positive")
         if self.memory_gb <= 0:

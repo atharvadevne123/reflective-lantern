@@ -1,4 +1,5 @@
 """Tests for model training and inference."""
+
 from __future__ import annotations
 
 import numpy as np
@@ -73,3 +74,55 @@ def test_model_scales_with_data(n_samples):
     y = df["delivery_minutes"].values
     pipe, metrics = train_model(X, y)
     assert metrics["n_samples"] == n_samples
+
+
+def test_model_version_string_format():
+    """MODEL_VERSION in main.py should follow SemVer X.Y.Z."""
+    import re
+
+    from app.main import MODEL_VERSION
+
+    assert re.match(r"^\d+\.\d+\.\d+$", MODEL_VERSION), f"Bad version: {MODEL_VERSION}"
+
+
+def test_predict_single_row(trained_model):
+    """Predict on a single row should return a 1-element array."""
+    from app.model import predict
+
+    pipe, _, X, _ = trained_model
+    single = X[:1]
+    preds = predict(pipe, single)
+    assert preds.shape == (1,)
+    assert preds[0] > 0
+
+
+def test_train_with_minimal_data():
+    """Model should train on the minimum viable dataset without error."""
+    from app.model import train_model
+
+    df = generate_synthetic_data(n=20, seed=99)
+    feat_pipe = build_feature_pipeline()
+    X = prepare_X(df, feat_pipe, fit=True)
+    y = df["delivery_minutes"].values
+    pipe, metrics = train_model(X, y)
+    assert pipe is not None
+    assert metrics["n_samples"] == 20
+
+
+def test_metrics_n_samples_matches_input(trained_model):
+    """Reported n_samples should equal the number of training rows."""
+    pipe, metrics, X, y = trained_model
+    assert metrics["n_samples"] == len(y)
+
+
+def test_predict_all_positive_on_large_batch():
+    """All predictions across a larger synthetic batch should be positive."""
+    from app.model import predict, train_model
+
+    df = generate_synthetic_data(n=800, seed=3)
+    feat_pipe = build_feature_pipeline()
+    X = prepare_X(df, feat_pipe, fit=True)
+    y = df["delivery_minutes"].values
+    pipe, _ = train_model(X, y)
+    preds = predict(pipe, X)
+    assert np.all(preds > 0), "Some predictions are non-positive"

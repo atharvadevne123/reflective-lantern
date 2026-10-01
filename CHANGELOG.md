@@ -5,6 +5,48 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] - 2026-10-01 Improvement Run
+
+### Added
+
+- `GET /api/v1/version` endpoint returning build metadata and Python version
+- `app/version.py` module with structured version metadata
+- Return type annotations on all async endpoints in `app/main.py`
+- Return type annotation on `RateLimitMiddleware.dispatch`
+- Google-style docstrings to `app/benchmarks.py`, `app/circuit_breaker.py`,
+  `app/compression.py`, `app/cost_estimator.py`, `app/cache.py`,
+  `app/features.py`, `app/database.py`, `app/exceptions.py`, `app/main.py`,
+  `app/alerting.py`, `app/anomaly.py`, `app/battery.py`, `app/forecasting.py`,
+  and `app/carbon.py`
+- Enum-member docstrings on `CircuitState` values (CLOSED, OPEN, HALF_OPEN)
+- 100+ new test functions across 20 test files covering edge cases for
+  webhook handler, summarize_history, experiment tracker, FAISS index,
+  feature store, model registry, shadow mode, and many other modules
+- `README.md` Features section listing all major capabilities
+- `README.md` API Reference entry for `GET /api/v1/version`
+- `README.md` Testing section with test count (92 modules, 6 000+ tests)
+  and coverage command
+- `pyproject.toml` mypy configuration block
+- `.github/CODEOWNERS` file
+- `app/__init__.py` explicit `__all__` list exporting main public symbols
+- `DispatchResult` dataclass field-level docstrings in `app/battery.py`
+- Expanded Args/Returns/Note sections in `app/forecasting.py`, `app/carbon.py`,
+  `app/anomaly.py`, and `app/alerting.py` for previously one-liner docstrings
+- Edge-case tests to `test_foundry_sync.py`, `test_pipeline.py`,
+  `test_email_report.py`, `test_middleware.py`, `test_notification_dispatcher.py`,
+  `test_exceptions.py`, `test_profiler.py`, `test_mode.py`,
+  `test_monitoring_extended.py`, `test_compression.py`, and `test_circuit_breaker.py`
+
+### Changed
+
+- All `print()` calls in `scripts/` replaced with `logging` calls for
+  consistent structured log output (9 scripts updated)
+
+### Fixed
+
+- Resolved 59 ruff lint and format errors across 125 files (E, F, I, UP, B,
+  SIM rule sets)
+
 ## [1.0.0] - 2026-08-20
 
 ### Added

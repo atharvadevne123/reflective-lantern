@@ -1,4 +1,9 @@
-"""Building energy benchmarking utilities: Energy Use Intensity (EUI) calculations."""
+"""Building energy benchmarking utilities: Energy Use Intensity (EUI) calculations.
+
+This module provides functions for computing, comparing, and rating building
+energy performance using ASHRAE reference benchmarks.  All EUI values are in
+kWh per square metre per year unless otherwise noted.
+"""
 
 from __future__ import annotations
 
@@ -85,7 +90,9 @@ def benchmark_eui(
     }
 
 
-def annual_to_monthly_estimate(annual_kwh: float, profile: list[float] | None = None) -> list[float]:
+def annual_to_monthly_estimate(
+    annual_kwh: float, profile: list[float] | None = None
+) -> list[float]:
     """Distribute annual kWh across 12 months using an optional seasonal profile.
 
     Args:
@@ -233,11 +240,11 @@ def carbon_intensity_benchmark(kwh: float, emission_factor: float, floor_area_sq
 
     Args:
         kwh: Total energy consumed in kWh.
-        emission_factor: kg CO2 per kWh.
+        emission_factor: kg CO2 per kWh emission factor for the grid.
         floor_area_sqm: Floor area in square metres.
 
     Returns:
-        Carbon intensity in kg CO2 per sqm.
+        Carbon intensity in kg CO2 per sqm, rounded to 4 decimal places.
 
     Raises:
         ValueError: If any argument is non-positive.
@@ -410,7 +417,9 @@ def multi_building_benchmark(
         except ValueError:
             eui = 0.0
         bench = benchmark_eui(eui, btype)
-        results.append({**bldg, "eui": eui, "rating": bench["rating"], "benchmark_eui": bench["benchmark_eui"]})
+        results.append(
+            {**bldg, "eui": eui, "rating": bench["rating"], "benchmark_eui": bench["benchmark_eui"]}
+        )
     return results
 
 
@@ -687,7 +696,9 @@ def normalised_eui(annual_kwh: float, floor_area_sqm: float, occupancy_hours: fl
     return round(annual_kwh / floor_area_sqm / occupancy_hours, 6)
 
 
-def savings_to_investment_ratio(annual_savings_kwh: float, tariff_per_kwh: float, investment_cost: float) -> float:
+def savings_to_investment_ratio(
+    annual_savings_kwh: float, tariff_per_kwh: float, investment_cost: float
+) -> float:
     """Compute the ratio of annual monetary savings to upfront investment cost.
 
     Args:

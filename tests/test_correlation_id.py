@@ -2,6 +2,8 @@
 
 import threading
 
+import pytest
+
 from app.correlation_id import (
     clear_correlation_id,
     correlation_context,
@@ -118,7 +120,9 @@ class TestNewCorrelationIdFormat:
         import re
 
         cid = new_correlation_id()
-        assert re.match(r"^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$", cid)
+        assert re.match(
+            r"^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$", cid
+        )
 
     def test_length_36_chars(self) -> None:
         assert len(new_correlation_id()) == 36
@@ -147,9 +151,6 @@ class TestSetCorrelationIdEdgeCases:
         set_correlation_id("first")
         set_correlation_id("second")
         assert get_correlation_id() == "second"
-
-
-import pytest
 
 
 @pytest.mark.parametrize("n", [1, 5, 10])
@@ -211,9 +212,9 @@ class TestRequireCorrelationId:
         clear_correlation_id()
 
     def test_raises_when_unset(self) -> None:
-        from app.correlation_id import require_correlation_id
-
         import pytest
+
+        from app.correlation_id import require_correlation_id
 
         with pytest.raises(RuntimeError, match="No correlation ID"):
             require_correlation_id()

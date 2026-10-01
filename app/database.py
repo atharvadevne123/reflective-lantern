@@ -1,4 +1,5 @@
 """SQLAlchemy models and session management."""
+
 from __future__ import annotations
 
 import logging
@@ -17,7 +18,7 @@ SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 
 class Base(DeclarativeBase):
-    pass
+    """Declarative base class for all SQLAlchemy ORM models."""
 
 
 class Prediction(Base):

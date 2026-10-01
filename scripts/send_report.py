@@ -41,7 +41,9 @@ REPORTS_DIR = Path(__file__).resolve().parent.parent / "reports"
 SMTP_PORTS: tuple[tuple[int, bool], ...] = ((587, False), (465, True))
 
 
-def _build_message(subject: str, body: str, sender: str, recipient: str, attachment: Path | None) -> MIMEMultipart:
+def _build_message(
+    subject: str, body: str, sender: str, recipient: str, attachment: Path | None
+) -> MIMEMultipart:
     """Assemble the MIME message.
 
     Args:

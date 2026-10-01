@@ -226,3 +226,29 @@ class TestFeatureStoreTotalVersions:
         for i in range(n):
             store.publish(_fs(name=f"ds{i}", version="1.0.0"))
         assert store.total_versions() == n
+
+
+class TestFeatureStoreAdditionalEdgeCases:
+    def test_publish_returns_none_or_featureset(self) -> None:
+        store = FeatureStore()
+        result = store.publish(_fs())
+        # Should not raise; return value may be None or the FeatureSet
+        assert result is None or hasattr(result, "version")
+
+    def test_get_version_for_missing_name_returns_none(self) -> None:
+        store = FeatureStore()
+        assert store.get_version("no_such_name", "1.0.0") is None
+
+    def test_list_names_after_delete_all_reflects_removal(self) -> None:
+        store = FeatureStore()
+        store.publish(_fs(name="temp", version="1.0.0"))
+        store.delete("temp")
+        assert "temp" not in store.list_names()
+
+    def test_feature_set_keys_empty_when_no_features(self) -> None:
+        fs = _fs(features={})
+        assert list(fs.keys()) == []
+
+    def test_get_missing_key_returns_none_default(self) -> None:
+        fs = _fs(features={"a": 1})
+        assert fs.get("missing") is None

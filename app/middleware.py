@@ -1,4 +1,5 @@
 """Rate limiting middleware backed by an in-process sliding window."""
+
 from __future__ import annotations
 
 import logging
@@ -32,7 +33,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
             return forwarded.split(",")[0].strip()
         return request.client.host if request.client else "unknown"
 
-    async def dispatch(self, request: Request, call_next):
+    async def dispatch(self, request: Request, call_next) -> JSONResponse:
         key = self._client_key(request)
         now = time.monotonic()
         bucket = self._hits[key]
