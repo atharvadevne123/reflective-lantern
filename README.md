@@ -212,13 +212,32 @@ and surfaced through `/api/v1/drift`.
 
 ## Testing
 
+The test suite currently contains **92 test modules** with **6 000+ individual
+test cases** covering API contracts, feature-pipeline invariants, model
+training, drift detection, and all utility modules.
+
+### Run all tests
+
 ```bash
 pytest tests/ -v
 ```
 
+### Run with coverage
+
+```bash
+pytest tests/ --cov=app --cov-report=term-missing
+```
+
+### Run a single module
+
+```bash
+pytest tests/test_webhook_handler.py -v
+```
+
 The suite covers API contracts (including all carriers and route types via
 parametrization), feature-pipeline invariants, model training and CV metrics,
-and drift detection under known distribution shifts.
+drift detection under known distribution shifts, and edge cases for all
+utility modules added in the 2026-10 improvement run.
 
 ## Development
 
