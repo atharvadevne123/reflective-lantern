@@ -306,4 +306,4 @@ def detect(use_cache: bool = True, cache_path: str | None = None) -> Capabilitie
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.WARNING, format="%(message)s")
-    print(detect(use_cache=False).summary())
+    logger.warning(detect(use_cache=False).summary())
