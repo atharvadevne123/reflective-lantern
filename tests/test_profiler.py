@@ -310,3 +310,49 @@ class TestTotalCalls:
         for _ in range(n):
             fn()
         assert total_calls() >= n
+
+
+class TestProfilerReturnTypes:
+    def setup_method(self) -> None:
+        from app.profiler import reset_stats
+
+        reset_stats()
+
+    def test_get_stats_returns_dict_type(self) -> None:
+        """get_stats always returns a dict, even for unknown labels."""
+        assert isinstance(get_stats("totally_unknown_xyz"), dict)
+
+    def test_tracked_preserves_keyword_args(self) -> None:
+        """Decorated function receives keyword arguments correctly."""
+
+        @tracked(label="kw_test")
+        def add(x: int, y: int = 0) -> int:
+            return x + y
+
+        assert add(3, y=4) == 7
+
+    def test_timed_decorator_returns_same_value_on_repeated_calls(self) -> None:
+        """@timed returns consistent values across multiple calls."""
+
+        @timed()
+        def constant() -> int:
+            return 42
+
+        assert all(constant() == 42 for _ in range(5))
+
+    def test_reset_stats_idempotent_for_missing_label(self) -> None:
+        """reset_stats on a non-existent label does not raise."""
+        reset_stats("label_that_does_not_exist")
+
+    def test_get_stats_all_returns_dict_of_dicts(self) -> None:
+        """get_stats() with no argument returns a mapping of label to stats."""
+
+        @tracked(label="all_check_fn")
+        def fn() -> None:
+            pass
+
+        fn()
+        all_stats = get_stats()
+        assert isinstance(all_stats, dict)
+        assert "all_check_fn" in all_stats
+        assert isinstance(all_stats["all_check_fn"], dict)
