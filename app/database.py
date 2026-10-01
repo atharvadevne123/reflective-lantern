@@ -18,7 +18,7 @@ SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 
 class Base(DeclarativeBase):
-    pass
+    """Declarative base class for all SQLAlchemy ORM models."""
 
 
 class Prediction(Base):
