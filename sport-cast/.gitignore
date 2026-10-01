@@ -1,0 +1,13 @@
+__pycache__/
+*.py[cod]
+*.joblib
+*.db
+*.json
+!.env.example
+dist/
+build/
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+mlruns_local.jsonl
+match_index.faiss
