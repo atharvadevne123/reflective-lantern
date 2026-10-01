@@ -298,6 +298,21 @@ async def drift(db: Annotated[Session, Depends(get_db)]) -> dict:
     return run_drift_check(db)
 
 
+class VersionResponse(BaseModel):
+    version: str
+    api_version: str
+    description: str
+
+
+@app.get("/api/v1/version", response_model=VersionResponse, summary="API version info")
+async def version() -> VersionResponse:
+    """Return current API version metadata."""
+    from app.version import get_version_info
+
+    info = get_version_info()
+    return VersionResponse(**info)
+
+
 @app.post(
     "/api/v1/predict/batch",
     response_model=BatchPredictResponse,
