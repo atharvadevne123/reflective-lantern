@@ -1,4 +1,9 @@
-"""Building energy benchmarking utilities: Energy Use Intensity (EUI) calculations."""
+"""Building energy benchmarking utilities: Energy Use Intensity (EUI) calculations.
+
+This module provides functions for computing, comparing, and rating building
+energy performance using ASHRAE reference benchmarks.  All EUI values are in
+kWh per square metre per year unless otherwise noted.
+"""
 
 from __future__ import annotations
 
@@ -235,11 +240,11 @@ def carbon_intensity_benchmark(kwh: float, emission_factor: float, floor_area_sq
 
     Args:
         kwh: Total energy consumed in kWh.
-        emission_factor: kg CO2 per kWh.
+        emission_factor: kg CO2 per kWh emission factor for the grid.
         floor_area_sqm: Floor area in square metres.
 
     Returns:
-        Carbon intensity in kg CO2 per sqm.
+        Carbon intensity in kg CO2 per sqm, rounded to 4 decimal places.
 
     Raises:
         ValueError: If any argument is non-positive.
