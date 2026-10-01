@@ -234,3 +234,50 @@ class TestDispatcherLen:
             ch, _ = make_channel(f"ch{i}")
             d.register(ch)
         assert len(d) == n
+
+
+def test_dispatch_to_zero_channels_returns_empty_dict() -> None:
+    """Dispatching when no channels are registered yields an empty result."""
+    d = NotificationDispatcher()
+    result = d.dispatch(Notification(title="t", body="b"))
+    assert result == {}
+
+
+def test_channel_receives_correct_severity() -> None:
+    """The notification severity delivered to a channel matches the original."""
+    ch, received = make_channel(min_severity=Severity.WARNING)
+    d = NotificationDispatcher()
+    d.register(ch)
+    n = Notification(title="t", body="b", severity=Severity.ERROR)
+    d.dispatch(n)
+    assert received[0].severity == Severity.ERROR
+
+
+def test_dispatcher_len_decrements_after_unregister() -> None:
+    """len(dispatcher) decreases by one after unregistering a channel."""
+    d = NotificationDispatcher()
+    ch, _ = make_channel("tmp")
+    d.register(ch)
+    assert len(d) == 1
+    d.unregister("tmp")
+    assert len(d) == 0
+
+
+@pytest.mark.parametrize("severity", [Severity.WARNING, Severity.ERROR, Severity.CRITICAL])
+def test_channel_with_info_min_severity_receives_all(severity: Severity) -> None:
+    """A channel with min_severity=INFO receives notifications at any severity."""
+    ch, received = make_channel(min_severity=Severity.INFO)
+    d = NotificationDispatcher()
+    d.register(ch)
+    d.dispatch(Notification(title="t", body="", severity=severity))
+    assert len(received) == 1
+
+
+def test_multiple_dispatches_accumulate_in_channel() -> None:
+    """Sending multiple notifications appends each to the channel's received list."""
+    ch, received = make_channel()
+    d = NotificationDispatcher()
+    d.register(ch)
+    for i in range(4):
+        d.dispatch(Notification(title=f"msg{i}", body=""))
+    assert len(received) == 4
