@@ -492,3 +492,25 @@ class TestPruneIdleClientsExtended:
         limiter.is_allowed("fresh")
         prune_idle_clients(limiter, max_idle_seconds=9999)
         assert active_client_count(limiter) >= 1
+
+
+class TestRateLimiterBurstBehavior:
+    """Tests for burst and throttle behavior of the rate limiter."""
+
+    @pytest.mark.parametrize("limit,requests", [(1, 3), (5, 8), (10, 12)])
+    def test_requests_over_limit_are_rejected(self, limit: int, requests: int) -> None:
+        from app.rate_limiter import RateLimiter
+
+        rl = RateLimiter(limit=limit, window_seconds=60)
+        key = "client_x"
+        allowed = sum(1 for _ in range(requests) if rl.is_allowed(key))
+        assert allowed == limit
+
+    def test_different_keys_have_independent_limits(self) -> None:
+        from app.rate_limiter import RateLimiter
+
+        rl = RateLimiter(limit=2, window_seconds=60)
+        assert rl.is_allowed("a") is True
+        assert rl.is_allowed("a") is True
+        assert rl.is_allowed("a") is False
+        assert rl.is_allowed("b") is True
