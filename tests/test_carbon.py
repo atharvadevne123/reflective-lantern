@@ -1668,3 +1668,29 @@ class TestAnnualEmissionEstimateExtended:
 
         result = annual_emission_estimate([100.0] * 12, emission_factor=factor)
         assert result > 0.0
+
+
+class TestCarbonConversionParametrized:
+    """Parametrized tests for carbon conversion utilities."""
+
+    @pytest.mark.parametrize("kwh,intensity,expected_kg", [
+        (100.0, 0.5, 50.0),
+        (0.0, 0.5, 0.0),
+        (200.0, 0.3, 60.0),
+    ])
+    def test_kwh_to_co2_kg(self, kwh: float, intensity: float, expected_kg: float) -> None:
+        from app.carbon import kwh_to_co2_kg
+
+        result = kwh_to_co2_kg(kwh, intensity)
+        assert result == pytest.approx(expected_kg)
+
+    @pytest.mark.parametrize("kg,expected_tonnes", [
+        (1000.0, 1.0),
+        (500.0, 0.5),
+        (0.0, 0.0),
+    ])
+    def test_co2_kg_to_tonnes(self, kg: float, expected_tonnes: float) -> None:
+        from app.carbon import co2_kg_to_tonnes
+
+        result = co2_kg_to_tonnes(kg)
+        assert result == pytest.approx(expected_tonnes)
