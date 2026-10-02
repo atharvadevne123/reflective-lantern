@@ -855,10 +855,8 @@ class TestNextWeekday:
             next_weekday(datetime.date(2026, 8, 11), weekday=8)
 
 
-import pytest as _pytest
 
-
-@_pytest.mark.parametrize(
+@pytest.mark.parametrize(
     "year,expected_leap",
     [(2000, True), (1900, False), (2024, True), (2026, False), (2100, False)],
 )
@@ -868,7 +866,7 @@ def test_is_leap_year_parametrized(year: int, expected_leap: bool) -> None:
     assert is_leap_year(year) == expected_leap
 
 
-@_pytest.mark.parametrize(
+@pytest.mark.parametrize(
     "year,month,expected_days",
     [
         (2024, 2, 29),
@@ -883,7 +881,7 @@ def test_days_in_month_parametrized(year: int, month: int, expected_days: int) -
     assert days_in_month(year, month) == expected_days
 
 
-@_pytest.mark.parametrize(
+@pytest.mark.parametrize(
     "month,expected_quarter",
     [(1, 1), (3, 1), (4, 2), (6, 2), (7, 3), (9, 3), (10, 4), (12, 4)],
 )
@@ -894,7 +892,7 @@ def test_quarter_of_year_parametrized(month: int, expected_quarter: int) -> None
     assert quarter_of_year(dt) == expected_quarter
 
 
-@_pytest.mark.parametrize("n_hours", [1, 24, 48, 168])
+@pytest.mark.parametrize("n_hours", [1, 24, 48, 168])
 def test_generate_hourly_timestamps_count(n_hours: int) -> None:
     from app.date_utils import generate_hourly_timestamps
 
@@ -903,7 +901,7 @@ def test_generate_hourly_timestamps_count(n_hours: int) -> None:
     assert len(result) == n_hours
 
 
-@_pytest.mark.parametrize(
+@pytest.mark.parametrize(
     "dt,expected_is_weekend",
     [
         (_dt.datetime(2026, 8, 15), True),  # Saturday
@@ -917,7 +915,7 @@ def test_is_weekend_parametrized(dt, expected_is_weekend: bool) -> None:
     assert is_weekend(dt) == expected_is_weekend
 
 
-@_pytest.mark.parametrize("seconds,expected_contains", [(60.0, "1m"), (3600.0, "1h"), (90.0, "1m")])
+@pytest.mark.parametrize("seconds,expected_contains", [(60.0, "1m"), (3600.0, "1h"), (90.0, "1m")])
 def test_format_duration_parametrized(seconds: float, expected_contains: str) -> None:
     from app.date_utils import format_duration
 
@@ -926,7 +924,7 @@ def test_format_duration_parametrized(seconds: float, expected_contains: str) ->
     assert len(result) > 0
 
 
-@_pytest.mark.parametrize(
+@pytest.mark.parametrize(
     "start,end,expected",
     [
         (_dt.datetime(2026, 1, 1), _dt.datetime(2026, 1, 11), 10),
