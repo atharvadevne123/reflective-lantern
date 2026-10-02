@@ -323,3 +323,29 @@ class TestVoltageImbalanceExt:
 
         result = voltage_imbalance(voltages)
         assert result == pytest.approx(0.0, abs=0.01)
+
+
+class TestPowerFactorParametrized:
+    """Parametrized tests for power_factor and apparent_power."""
+
+    @pytest.mark.parametrize("real_kw,apparent_kva,expected", [
+        (80.0, 100.0, 0.8),
+        (100.0, 100.0, 1.0),
+        (0.0, 50.0, 0.0),
+    ])
+    def test_power_factor_values(self, real_kw: float, apparent_kva: float, expected: float) -> None:
+        from app.power_quality import power_factor
+
+        result = power_factor(real_kw, apparent_kva)
+        assert result == pytest.approx(expected)
+
+    @pytest.mark.parametrize("real_kw,reactive_kvar", [
+        (30.0, 40.0),
+        (60.0, 80.0),
+        (0.0, 100.0),
+    ])
+    def test_apparent_power_positive(self, real_kw: float, reactive_kvar: float) -> None:
+        from app.power_quality import apparent_power
+
+        result = apparent_power(real_kw, reactive_kvar)
+        assert result >= 0.0
