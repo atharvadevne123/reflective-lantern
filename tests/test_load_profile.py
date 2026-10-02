@@ -10,8 +10,10 @@ from app.load_profile import (
     base_load,
     build_load_profile,
     classify_profile,
+    demand_variability,
     load_factor,
     max_ramp_rate,
+    night_load_fraction,
     peak_to_average_ratio,
 )
 
@@ -206,9 +208,6 @@ class TestMaxRampRateEdgeCases:
     def test_linear_ramp_equals_step(self, step: float) -> None:
         series = [0.0, step, 2 * step, 3 * step]
         assert max_ramp_rate(series) == pytest.approx(step)
-
-
-from app.load_profile import demand_variability, night_load_fraction
 
 
 class TestDemandVariability:
