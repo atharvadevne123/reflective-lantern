@@ -424,3 +424,38 @@ class TestCircuitBreakerFailureCount:
             with pytest.raises(ValueError):
                 cb.call(_always_fail)
         assert cb.failure_count == n_failures
+
+
+class TestCircuitBreakerStateTransitions:
+    """Tests for circuit breaker state machine transitions."""
+
+    @pytest.mark.parametrize("fail_threshold", [1, 3, 5])
+    def test_opens_after_fail_threshold(self, fail_threshold: int) -> None:
+        from app.circuit_breaker import CircuitBreaker, CircuitBreakerOpen
+
+        cb = CircuitBreaker(fail_threshold=fail_threshold, recovery_timeout=999)
+        for _ in range(fail_threshold):
+            try:
+                with cb:
+                    raise RuntimeError("fail")
+            except RuntimeError:
+                pass
+        with pytest.raises(CircuitBreakerOpen):
+            with cb:
+                pass
+
+    def test_reset_returns_circuit_to_closed(self) -> None:
+        from app.circuit_breaker import CircuitBreaker, CircuitBreakerOpen
+
+        cb = CircuitBreaker(fail_threshold=1, recovery_timeout=999)
+        try:
+            with cb:
+                raise RuntimeError("fail")
+        except RuntimeError:
+            pass
+        cb.reset()
+        try:
+            with cb:
+                pass
+        except CircuitBreakerOpen:
+            pytest.fail("Circuit should be closed after reset")
