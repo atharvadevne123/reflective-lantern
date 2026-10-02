@@ -9,10 +9,12 @@ import pytest
 from app.geo_utils import (
     BoundingBox,
     Coordinate,
+    bearing,
     bounding_box_of,
     haversine,
     midpoint,
     nearest_neighbor,
+    within_radius,
 )
 
 LONDON = Coordinate(51.5074, -0.1278)
@@ -196,8 +198,6 @@ def test_midpoint_is_between_endpoints() -> None:
     mid = midpoint(LONDON, PARIS)
     assert min(LONDON.lat, PARIS.lat) <= mid.lat <= max(LONDON.lat, PARIS.lat)
 
-
-from app.geo_utils import bearing, within_radius
 
 TOKYO = Coordinate(35.6762, 139.6503)
 
