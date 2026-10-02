@@ -423,3 +423,25 @@ class TestBreakEvenCyclesExtended:
 
         result = break_even_cycles(capex, saving)
         assert result > 0.0
+
+
+class TestBatteryUsableCapacityParametrized:
+    """Parametrized tests for usable_capacity_kwh."""
+
+    @pytest.mark.parametrize("capacity,dod,expected", [
+        (100.0, 0.8, 80.0),
+        (50.0, 1.0, 50.0),
+        (200.0, 0.5, 100.0),
+    ])
+    def test_usable_kwh_values(self, capacity: float, dod: float, expected: float) -> None:
+        from app.battery import usable_capacity_kwh
+
+        result = usable_capacity_kwh(capacity, dod)
+        assert result == pytest.approx(expected)
+
+    @pytest.mark.parametrize("dod", [0.0, 1.0, 0.5, 0.9])
+    def test_dod_range_valid(self, dod: float) -> None:
+        from app.battery import usable_capacity_kwh
+
+        result = usable_capacity_kwh(100.0, dod)
+        assert 0.0 <= result <= 100.0
