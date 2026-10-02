@@ -1203,3 +1203,26 @@ class TestExponentialGrowthRate:
         from app.trend_analysis import exponential_growth_rate
 
         assert isinstance(exponential_growth_rate([1.0, 2.0, 3.0]), float)
+
+
+class TestTrendAnalysisParametrized:
+    """Parametrized tests for trend analysis functions."""
+
+    @pytest.mark.parametrize("values,expected_direction", [
+        ([1.0, 2.0, 3.0, 4.0, 5.0], "up"),
+        ([5.0, 4.0, 3.0, 2.0, 1.0], "down"),
+    ])
+    def test_trend_direction(self, values: list, expected_direction: str) -> None:
+        from app.trend_analysis import detect_trend
+
+        direction = detect_trend(values)
+        assert direction == expected_direction
+
+    @pytest.mark.parametrize("n", [5, 10, 20, 50])
+    def test_moving_average_length_preserved(self, n: int) -> None:
+        from app.trend_analysis import moving_average
+
+        series = list(range(n))
+        window = min(3, n)
+        result = moving_average(series, window=window)
+        assert len(result) == n - window + 1
