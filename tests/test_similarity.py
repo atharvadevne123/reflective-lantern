@@ -879,9 +879,6 @@ def test_manhattan_distance_non_negative(a: list, b: list) -> None:
     assert manhattan_distance(a, b) >= 0.0
 
 
-import pytest
-
-
 @pytest.mark.parametrize(
     "a,b,expected",
     [
