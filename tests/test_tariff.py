@@ -9,8 +9,10 @@ from app.tariff import (
     DEFAULT_PEAK_HOURS,
     DEFAULT_PEAK_RATE,
     TieredBand,
+    annual_cost_estimate,
     compare_tariffs,
     flat_rate_cost,
+    peak_hour_fraction,
     peak_shift_saving,
     tiered_cost,
     time_of_use_cost,
@@ -223,9 +225,6 @@ class TestTimeOfUseCostEdgeCases:
         cost_low = time_of_use_cost(flat_consumption, peak_rate=0.10, off_peak_rate=0.05)
         cost_high = time_of_use_cost(flat_consumption, peak_rate=0.30, off_peak_rate=0.05)
         assert cost_high > cost_low
-
-
-from app.tariff import annual_cost_estimate, peak_hour_fraction
 
 
 class TestAnnualCostEstimate:
