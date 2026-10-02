@@ -310,3 +310,37 @@ class TestTotalCalls:
         for _ in range(n):
             fn()
         assert total_calls() >= n
+
+
+class TestProfilerCallCountParametrized:
+    """Parametrized tests for profiler call counting."""
+
+    @pytest.mark.parametrize("n_calls", [1, 3, 5, 10])
+    def test_call_count_tracks_invocations(self, n_calls: int) -> None:
+        from app.profiler import tracked
+
+        @tracked("test_fn")
+        def noop() -> None:
+            pass
+
+        from app.profiler import reset_stats
+        reset_stats()
+
+        for _ in range(n_calls):
+            noop()
+
+        from app.profiler import call_count
+        assert call_count("test_fn") == n_calls
+
+    @pytest.mark.parametrize("label", ["alpha", "beta", "gamma"])
+    def test_tracked_names_contains_label(self, label: str) -> None:
+        from app.profiler import reset_stats, tracked, tracked_names
+
+        reset_stats()
+
+        @tracked(label)
+        def fn() -> None:
+            pass
+
+        fn()
+        assert label in tracked_names()
