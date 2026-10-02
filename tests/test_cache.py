@@ -871,3 +871,32 @@ class TestGetOrDefaultExtended:
 
         c = TTLCache(ttl_seconds=60, max_size=10)
         assert get_or_default(c, "ghost") is None
+
+
+class TestTTLCacheCapacityBehavior:
+    """Tests for TTLCache capacity eviction and edge cases."""
+
+    @pytest.mark.parametrize("cap", [1, 2, 5, 10])
+    def test_size_never_exceeds_capacity(self, cap: int) -> None:
+        from app.cache import TTLCache
+
+        c = TTLCache(ttl_seconds=60, max_size=cap)
+        for i in range(cap + 5):
+            c.set(str(i), i)
+        assert c.size() <= cap
+
+    def test_overwrite_same_key_keeps_capacity(self) -> None:
+        from app.cache import TTLCache
+
+        c = TTLCache(ttl_seconds=60, max_size=3)
+        c.set("a", 1)
+        c.set("a", 2)
+        c.set("a", 3)
+        assert c.size() == 1
+        assert c.get("a") == 3
+
+    def test_get_on_empty_cache_returns_none(self) -> None:
+        from app.cache import TTLCache
+
+        c = TTLCache(ttl_seconds=60, max_size=10)
+        assert c.get("missing") is None
