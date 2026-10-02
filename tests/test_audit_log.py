@@ -262,3 +262,26 @@ class TestAuditLogClear:
         log.record("bob", "write", "doc/2")
         assert len(log) == 1
         assert log.actors() == ["bob"]
+
+
+class TestAuditLogParametrized:
+    """Parametrized tests for AuditLog count and search."""
+
+    @pytest.mark.parametrize("n_records", [1, 3, 5])
+    def test_count_matches_records(self, n_records: int) -> None:
+        from app.audit_log import AuditLog
+
+        log = AuditLog()
+        for i in range(n_records):
+            log.record(actor=f"user_{i}", action="view", resource="dashboard")
+        assert log.count() == n_records
+
+    @pytest.mark.parametrize("action", ["create", "update", "delete"])
+    def test_search_by_action(self, action: str) -> None:
+        from app.audit_log import AuditLog
+
+        log = AuditLog()
+        log.record(actor="admin", action=action, resource="config")
+        results = log.search(action=action)
+        assert len(results) >= 1
+        assert all(r["action"] == action for r in results)
