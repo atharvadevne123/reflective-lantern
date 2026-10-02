@@ -8,7 +8,7 @@ import matplotlib.patches as mpatches
 import matplotlib.pyplot as plt
 
 
-def draw_box(ax, x, y, w, h, label, color, fontsize=10):
+def draw_box(ax, x, y, w, h, label, color, fontsize=10) -> None:
     """Draw a rounded box with centered label."""
     box = mpatches.FancyBboxPatch(
         (x, y),
@@ -32,7 +32,7 @@ def draw_box(ax, x, y, w, h, label, color, fontsize=10):
     )
 
 
-def draw_arrow(ax, x1, y1, x2, y2, label=""):
+def draw_arrow(ax, x1, y1, x2, y2, label="") -> None:
     """Draw an arrow between two points with an optional midpoint label."""
     ax.annotate(
         "",
