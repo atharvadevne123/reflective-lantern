@@ -681,3 +681,31 @@ class TestPipelineInputFeatures:
         pipe = Pipeline([("reg", LinearRegression())])
         result = pipeline_input_features(pipe)
         assert result is None or isinstance(result, list)
+
+
+class TestPipelineUtilsParametrized:
+    """Parametrized tests for pipeline utility functions."""
+
+    @pytest.mark.parametrize("n_steps", [1, 2, 3, 5])
+    def test_count_pipeline_steps(self, n_steps: int) -> None:
+        from sklearn.pipeline import Pipeline
+        from sklearn.preprocessing import StandardScaler
+
+        from app.pipeline_utils import count_pipeline_steps
+
+        steps = [(f"step_{i}", StandardScaler()) for i in range(n_steps)]
+        pipe = Pipeline(steps)
+        assert count_pipeline_steps(pipe) == n_steps
+
+    @pytest.mark.parametrize("step_name,expected", [
+        ("scaler", True),
+        ("missing_step", False),
+    ])
+    def test_has_step(self, step_name: str, expected: bool) -> None:
+        from sklearn.pipeline import Pipeline
+        from sklearn.preprocessing import StandardScaler
+
+        from app.pipeline_utils import has_step
+
+        pipe = Pipeline([("scaler", StandardScaler())])
+        assert has_step(pipe, step_name) == expected
