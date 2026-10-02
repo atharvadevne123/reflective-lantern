@@ -1022,10 +1022,8 @@ class TestSavingsSummary:
         assert result["reduction_pct"] == 0.0
 
 
-import pytest as _pytest
 
-
-@_pytest.mark.parametrize(
+@pytest.mark.parametrize(
     "before,after,expected_grade",
     [
         (100.0, 50.0, "A+"),
@@ -1039,7 +1037,7 @@ def test_energy_efficiency_grade_boundary_values(before: float, after: float, ex
     assert energy_efficiency_grade(after, before) == expected_grade
 
 
-@_pytest.mark.parametrize("hourly_count", [24, 48, 168])
+@pytest.mark.parametrize("hourly_count", [24, 48, 168])
 def test_aggregate_daily_report_length(hourly_count: int) -> None:
     from app.reporting import aggregate_daily_report
 
@@ -1048,11 +1046,11 @@ def test_aggregate_daily_report_length(hourly_count: int) -> None:
     assert len(result) == hourly_count // 24
 
 
-@_pytest.mark.parametrize("tariff", [0.05, 0.10, 0.15, 0.20])
+@pytest.mark.parametrize("tariff", [0.05, 0.10, 0.15, 0.20])
 def test_tariff_cost_scales_linearly(tariff: float) -> None:
     from app.reporting import tariff_cost
 
-    assert tariff_cost(100.0, tariff) == _pytest.approx(100.0 * tariff, abs=1e-6)
+    assert tariff_cost(100.0, tariff) == pytest.approx(100.0 * tariff, abs=1e-6)
 
 
 def test_report_anomaly_summary_all_normal() -> None:
@@ -1060,7 +1058,7 @@ def test_report_anomaly_summary_all_normal() -> None:
 
     result = report_anomaly_summary([False] * 10)
     assert result["anomaly_count"] == 0
-    assert result["anomaly_rate"] == _pytest.approx(0.0)
+    assert result["anomaly_rate"] == pytest.approx(0.0)
 
 
 def test_report_anomaly_summary_all_anomalous() -> None:
@@ -1068,10 +1066,10 @@ def test_report_anomaly_summary_all_anomalous() -> None:
 
     result = report_anomaly_summary([True] * 5)
     assert result["anomaly_count"] == 5
-    assert result["anomaly_rate"] == _pytest.approx(1.0)
+    assert result["anomaly_rate"] == pytest.approx(1.0)
 
 
-@_pytest.mark.parametrize("n", [24, 48, 96])
+@pytest.mark.parametrize("n", [24, 48, 96])
 def test_peak_usage_window_output_keys(n: int) -> None:
     from app.reporting import peak_usage_window
 
@@ -1081,7 +1079,7 @@ def test_peak_usage_window_output_keys(n: int) -> None:
     assert "total_kwh" in result
 
 
-@_pytest.mark.parametrize("kwh,intensity", [(100.0, 0.3), (500.0, 0.4), (1000.0, 0.5)])
+@pytest.mark.parametrize("kwh,intensity", [(100.0, 0.3), (500.0, 0.4), (1000.0, 0.5)])
 def test_emission_report_positive_total(kwh: float, intensity: float) -> None:
     from app.reporting import emission_report
 
@@ -1090,7 +1088,7 @@ def test_emission_report_positive_total(kwh: float, intensity: float) -> None:
     assert result["total_co2_kg"] > 0.0
 
 
-@_pytest.mark.parametrize("n_hours", [24, 48])
+@pytest.mark.parametrize("n_hours", [24, 48])
 def test_demand_variance_report_has_keys(n_hours: int) -> None:
     from app.reporting import demand_variance_report
 
