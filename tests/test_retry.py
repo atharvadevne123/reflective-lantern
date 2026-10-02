@@ -483,7 +483,7 @@ class TestWithRetryHelper:
         monkeypatch.setattr("time.sleep", lambda _: None)
         calls = [0]
 
-        def flaky():
+        def flaky() -> str:
             calls[0] += 1
             if calls[0] < 2:
                 raise ValueError("temporary")
