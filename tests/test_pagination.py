@@ -342,7 +342,7 @@ class TestIsLastPage:
         assert is_last_page(info) is False
 
 
-class TestPageRange:
+class TestPageRangeExtended:
     def test_first_page_starts_at_one(self) -> None:
         from app.pagination import PageInfo, page_range
 
@@ -380,7 +380,7 @@ class TestPageRange:
         assert all(1 <= p <= info.total_pages for p in rng)
 
 
-class TestLastPageItems:
+class TestLastPageItemsExtended:
     def test_empty_list_returns_zero(self) -> None:
         from app.pagination import last_page_items
 
