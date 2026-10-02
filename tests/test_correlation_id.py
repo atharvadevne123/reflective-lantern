@@ -211,9 +211,9 @@ class TestRequireCorrelationId:
         clear_correlation_id()
 
     def test_raises_when_unset(self) -> None:
-        from app.correlation_id import require_correlation_id
-
         import pytest
+
+        from app.correlation_id import require_correlation_id
 
         with pytest.raises(RuntimeError, match="No correlation ID"):
             require_correlation_id()

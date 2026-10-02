@@ -193,7 +193,13 @@ def test_amenity_scale_constant() -> None:
     ],
 )
 def test_amenity_composite_uses_weights(school, transit, walk, single_row) -> None:
-    from app.features import _AMENITY_SCALE, _SCHOOL_WEIGHT, _TRANSIT_WEIGHT, _WALK_WEIGHT, AmenityCompositeTransformer
+    from app.features import (
+        _AMENITY_SCALE,
+        _SCHOOL_WEIGHT,
+        _TRANSIT_WEIGHT,
+        _WALK_WEIGHT,
+        AmenityCompositeTransformer,
+    )
 
     row = single_row.copy()
     row["school_score"] = school
