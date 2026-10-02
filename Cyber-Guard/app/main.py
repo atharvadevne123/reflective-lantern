@@ -37,7 +37,7 @@ _anomaly_pipeline = None
 
 
 @asynccontextmanager
-async def lifespan(app: FastAPI):  # type: ignore[type-arg]
+async def lifespan(app: FastAPI) -> Any:
     """Load models and create tables on startup; log on shutdown."""
     global _pipeline, _label_encoder, _anomaly_pipeline
     create_tables()
