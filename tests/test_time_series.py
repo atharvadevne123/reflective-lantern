@@ -1646,8 +1646,6 @@ class TestLoadFactor:
         assert load_factor([]) == pytest.approx(0.0)
 
 
-import pytest
-
 
 @pytest.mark.parametrize(
     "values,expected_load_factor",
