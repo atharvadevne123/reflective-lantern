@@ -1137,10 +1137,7 @@ class TestCarbonSavingsVsBaseline:
         assert result["savings_pct"] == 0.0
 
 
-import pytest as _pytest
-
-
-@_pytest.mark.parametrize(
+@pytest.mark.parametrize(
     "kwh,region,expect_positive",
     [
         (10.0, "northeast", True),
@@ -1156,10 +1153,10 @@ def test_kwh_to_co2_kg_parametrized(kwh: float, region: str, expect_positive: bo
     if expect_positive:
         assert result > 0.0
     else:
-        assert result == _pytest.approx(0.0)
+        assert result == pytest.approx(0.0)
 
 
-@_pytest.mark.parametrize("trees,days", [(1, 365), (10, 36), (365, 1)])
+@pytest.mark.parametrize("trees,days", [(1, 365), (10, 36), (365, 1)])
 def test_tree_offset_days_scales_with_trees(trees: int, days: float) -> None:
     from app.carbon import tree_offset_days
 
@@ -1167,7 +1164,7 @@ def test_tree_offset_days_scales_with_trees(trees: int, days: float) -> None:
     assert result > 0.0
 
 
-@_pytest.mark.parametrize("region", ["northeast", "midwest", "south", "west", "texas"])
+@pytest.mark.parametrize("region", ["northeast", "midwest", "south", "west", "texas"])
 def test_compare_regions_includes_all_requested(region: str) -> None:
     from app.carbon import compare_regions
 
@@ -1176,7 +1173,7 @@ def test_compare_regions_includes_all_requested(region: str) -> None:
     assert region in names
 
 
-@_pytest.mark.parametrize("n", [1, 10, 30])
+@pytest.mark.parametrize("n", [1, 10, 30])
 def test_cumulative_co2_length(n: int) -> None:
     from app.carbon import cumulative_co2
 
@@ -1185,7 +1182,7 @@ def test_cumulative_co2_length(n: int) -> None:
     assert len(result) == n
 
 
-@_pytest.mark.parametrize("kwh,factor", [(100.0, 0.4), (500.0, 0.3), (1000.0, 0.5)])
+@pytest.mark.parametrize("kwh,factor", [(100.0, 0.4), (500.0, 0.3), (1000.0, 0.5)])
 def test_annual_emission_estimate_positive(kwh: float, factor: float) -> None:
     from app.carbon import annual_emission_estimate
 
@@ -1194,7 +1191,7 @@ def test_annual_emission_estimate_positive(kwh: float, factor: float) -> None:
     assert result > 0.0
 
 
-@_pytest.mark.parametrize(
+@pytest.mark.parametrize(
     "intensity,expected_label_partial",
     [
         (0.05, "low"),
