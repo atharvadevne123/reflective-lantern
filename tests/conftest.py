@@ -1,11 +1,13 @@
 """Shared pytest fixtures for Logistics-Flow tests."""
 from __future__ import annotations
 
+from collections.abc import Generator
+
 import pandas as pd
 import pytest
 from fastapi.testclient import TestClient
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy import Engine, create_engine
+from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.pool import StaticPool
 
 from app.database import Base, get_db
@@ -29,7 +31,7 @@ def sample_df() -> pd.DataFrame:
 
 
 @pytest.fixture(scope="session")
-def test_engine():
+def test_engine() -> Engine:
     """Shared in-memory SQLite engine for tests.
 
     StaticPool keeps every session on the same connection, so the schema
@@ -45,7 +47,7 @@ def test_engine():
 
 
 @pytest.fixture()
-def db_session(test_engine):
+def db_session(test_engine: Engine) -> Generator[Session, None, None]:
     """Yield an isolated test DB session."""
     TestSession = sessionmaker(autocommit=False, autoflush=False, bind=test_engine)
     session = TestSession()
@@ -57,7 +59,7 @@ def db_session(test_engine):
 
 
 @pytest.fixture()
-def client(test_engine):
+def client(test_engine: Engine) -> Generator[TestClient, None, None]:
     """TestClient that overrides the DB dependency."""
     TestSession = sessionmaker(autocommit=False, autoflush=False, bind=test_engine)
 
