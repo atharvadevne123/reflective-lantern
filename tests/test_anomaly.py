@@ -1428,3 +1428,21 @@ class TestAnomalyDensityExtended:
 
         with pytest.raises(ValueError):
             anomaly_density([1], window_size=0)
+
+
+class TestAnomalyModelEdgeCases:
+    """Edge case tests for anomaly detection module."""
+
+    @pytest.mark.parametrize("n_samples", [10, 50, 100])
+    def test_scores_non_empty_for_various_sample_sizes(self, n_samples: int) -> None:
+        from app.anomaly import build_anomaly_features, load_anomaly_detector, score_anomaly
+
+        records = [
+            {"distance_km": float(i), "weight_kg": 1.0, "hour_of_day": i % 24, "day_of_week": i % 7}
+            for i in range(n_samples)
+        ]
+        model = load_anomaly_detector(records)
+        assert model is not None
+        feats = build_anomaly_features(records[-1])
+        score = score_anomaly(model, feats)
+        assert isinstance(score, float)
