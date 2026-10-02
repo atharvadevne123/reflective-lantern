@@ -262,3 +262,27 @@ class TestCompressAndMeasure:
 
         result = compress_and_measure(b"hello " * 100, method=method)
         assert result["compressed_bytes"] > 0
+
+
+class TestCompressionRoundTrip:
+    """Round-trip and edge case tests for compression utilities."""
+
+    @pytest.mark.parametrize("data", [
+        b"",
+        b"hello world",
+        b"x" * 1000,
+        b"\x00\xff" * 100,
+    ])
+    def test_compress_decompress_roundtrip(self, data: bytes) -> None:
+        from app.compression import compress, decompress
+
+        compressed = compress(data)
+        result = decompress(compressed)
+        assert result == data
+
+    def test_compressed_size_smaller_for_repetitive_data(self) -> None:
+        from app.compression import compress
+
+        data = b"abc" * 1000
+        compressed = compress(data)
+        assert len(compressed) < len(data)
