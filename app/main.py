@@ -6,13 +6,14 @@ import logging
 import os
 import time
 import uuid
+from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from pathlib import Path
-from typing import Annotated
+from typing import Annotated, Any
 
 import joblib
 import numpy as np
-from fastapi import Depends, FastAPI, Request
+from fastapi import Depends, FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field, field_validator
 from sqlalchemy.orm import Session
@@ -52,7 +53,7 @@ _feat_pipe = None
 
 
 @asynccontextmanager
-async def lifespan(app: FastAPI):
+async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     global _model, _feat_pipe
     init_db()
 
@@ -95,7 +96,7 @@ app.add_middleware(
 
 
 @app.middleware("http")
-async def correlation_id_middleware(request: Request, call_next):
+async def correlation_id_middleware(request: Request, call_next: Any) -> Response:
     """Attach a unique request-id to each request for tracing."""
     request_id = request.headers.get("X-Request-ID", str(uuid.uuid4())[:8])
     request.state.request_id = request_id
@@ -207,7 +208,7 @@ async def predict(
     payload: PredictRequest,
     request: Request,
     db: Annotated[Session, Depends(get_db)],
-):
+) -> PredictResponse:
     if _model is None or _feat_pipe is None:
         raise ModelNotLoadedError
 
@@ -250,7 +251,7 @@ async def predict(
     response_model=HealthResponse,
     summary="Health check",
 )
-async def health():
+async def health() -> HealthResponse:
     return HealthResponse(
         status="healthy" if _model is not None else "degraded",
         model_version=MODEL_VERSION,
@@ -264,7 +265,7 @@ async def health():
     summary="Model performance metrics",
     description="Returns last-computed cross-validation metrics.",
 )
-async def metrics():
+async def metrics() -> MetricsResponse:
     data = json.loads(Path(METRICS_PATH).read_text()) if Path(METRICS_PATH).exists() else {}
     return MetricsResponse(
         rmse_mean=data.get("rmse_mean"),
@@ -280,7 +281,7 @@ async def metrics():
     summary="Run drift check",
     description="Compares recent predictions against reference distribution.",
 )
-async def drift(db: Annotated[Session, Depends(get_db)]):
+async def drift(db: Annotated[Session, Depends(get_db)]) -> dict[str, Any]:
     return run_drift_check(db)
 
 
@@ -294,7 +295,7 @@ async def predict_batch(
     payload: BatchPredictRequest,
     request: Request,
     db: Annotated[Session, Depends(get_db)],
-):
+) -> BatchPredictResponse:
     if _model is None or _feat_pipe is None:
         raise ModelNotLoadedError
 
