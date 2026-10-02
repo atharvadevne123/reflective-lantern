@@ -1755,3 +1755,30 @@ class TestTrimmedMeanExtended:
 
         result = trimmed_mean([1.0, 2.0, 3.0, 4.0, 5.0], trim_pct=trim_pct)
         assert isinstance(result, float)
+
+
+class TestStatsUtilsEdgeCases:
+    """Edge case tests for statistics utilities."""
+
+    @pytest.mark.parametrize("values,expected_len", [
+        ([1.0], 0),
+        ([1.0, 2.0], 2),
+        ([1.0, 2.0, 3.0, 4.0, 5.0], 5),
+    ])
+    def test_normalize_returns_correct_length(self, values: list, expected_len: int) -> None:
+        from app.stats_utils import normalize
+
+        result = normalize(values)
+        assert len(result) == expected_len
+
+    def test_normalize_single_element_returns_empty(self) -> None:
+        from app.stats_utils import normalize
+
+        assert normalize([42.0]) == []
+
+    def test_normalize_all_same_values_returns_zeros(self) -> None:
+        from app.stats_utils import normalize
+
+        result = normalize([5.0, 5.0, 5.0])
+        for v in result:
+            assert v == pytest.approx(0.0)
