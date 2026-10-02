@@ -4,10 +4,12 @@ from __future__ import annotations
 import logging
 import time
 from collections import defaultdict, deque
+from typing import Any
 
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
-from starlette.responses import JSONResponse
+from starlette.responses import JSONResponse, Response
+from starlette.types import ASGIApp
 
 logger = logging.getLogger(__name__)
 
@@ -21,7 +23,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
     replica. Multi-replica deployments should move this to Redis.
     """
 
-    def __init__(self, app, limit: int = 120) -> None:
+    def __init__(self, app: ASGIApp, limit: int = 120) -> None:
         super().__init__(app)
         self.limit = limit
         self._hits: dict[str, deque[float]] = defaultdict(deque)
@@ -32,7 +34,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
             return forwarded.split(",")[0].strip()
         return request.client.host if request.client else "unknown"
 
-    async def dispatch(self, request: Request, call_next):
+    async def dispatch(self, request: Request, call_next: Any) -> Response:
         key = self._client_key(request)
         now = time.monotonic()
         bucket = self._hits[key]
