@@ -1189,3 +1189,29 @@ class TestForecastBiasExtended:
 
         with pytest.raises(ValueError):
             forecast_bias([], [])
+
+
+class TestForecastingEdgeCases:
+    """Edge case tests for the forecasting module."""
+
+    @pytest.mark.parametrize("horizon", [1, 6, 12, 24])
+    def test_forecast_returns_correct_horizon_length(self, horizon: int) -> None:
+        from app.forecasting import simple_forecast
+
+        series = [float(i) for i in range(48)]
+        result = simple_forecast(series, horizon=horizon)
+        assert len(result) == horizon
+
+    def test_forecast_on_constant_series_is_constant(self) -> None:
+        from app.forecasting import simple_forecast
+
+        series = [5.0] * 24
+        result = simple_forecast(series, horizon=6)
+        for v in result:
+            assert v == pytest.approx(5.0, abs=1.0)
+
+    def test_empty_series_raises_value_error(self) -> None:
+        from app.forecasting import simple_forecast
+
+        with pytest.raises((ValueError, IndexError)):
+            simple_forecast([], horizon=1)
