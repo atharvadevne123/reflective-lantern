@@ -256,3 +256,25 @@ class TestMonthlyEstimateExtended:
 
         spec = ResourceSpec(cpu_cores=1, memory_gb=2, duration_hours=1)
         assert isinstance(monthly_estimate(spec), float)
+
+
+class TestCostEstimatorParametrized:
+    """Parametrized tests for cost estimation functions."""
+
+    @pytest.mark.parametrize("units,unit_cost,expected", [
+        (10.0, 5.0, 50.0),
+        (0.0, 5.0, 0.0),
+        (100.0, 0.1, 10.0),
+    ])
+    def test_cost_per_unit_values(self, units: float, unit_cost: float, expected: float) -> None:
+        from app.cost_estimator import cost_per_unit
+
+        result = cost_per_unit(units, unit_cost)
+        assert result == pytest.approx(expected)
+
+    @pytest.mark.parametrize("months", [1, 6, 12, 24])
+    def test_monthly_estimate_positive(self, months: int) -> None:
+        from app.cost_estimator import monthly_estimate
+
+        result = monthly_estimate(100.0, months)
+        assert result >= 0.0
