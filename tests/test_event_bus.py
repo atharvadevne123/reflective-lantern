@@ -507,3 +507,29 @@ class TestEventBusHasListeners:
         bus.subscribe("temp", lambda e, p: None)
         bus.clear("temp")
         assert bus.has_listeners("temp") is False
+
+
+class TestEventBusOrdering:
+    """Tests for EventBus ordering and filtering behavior."""
+
+    @pytest.mark.parametrize("n_events", [1, 5, 10, 20])
+    def test_publish_n_events_all_received(self, n_events: int) -> None:
+        from app.event_bus import EventBus
+
+        bus = EventBus()
+        received = []
+        bus.subscribe("tick", lambda e: received.append(e))
+        for i in range(n_events):
+            bus.publish("tick", {"i": i})
+        assert len(received) == n_events
+
+    def test_unsubscribed_handler_not_called(self) -> None:
+        from app.event_bus import EventBus
+
+        bus = EventBus()
+        counts = [0]
+        handler = lambda e: counts.__setitem__(0, counts[0] + 1)
+        token = bus.subscribe("ev", handler)
+        bus.unsubscribe("ev", token)
+        bus.publish("ev", {})
+        assert counts[0] == 0
