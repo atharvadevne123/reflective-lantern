@@ -347,3 +347,30 @@ class TestAlertManagerAddHandler:
         mgr.evaluate_all({"m": 5.0})
         assert counts[0] >= 1
         assert counts[1] >= 1
+
+
+class TestAlertRuleSeverityLevels:
+    """Verify all severity levels produce correctly labeled alerts."""
+
+    @pytest.mark.parametrize(
+        "severity",
+        [Severity.INFO, Severity.WARNING, Severity.CRITICAL],
+    )
+    def test_severity_label_in_message(self, severity: Severity) -> None:
+        rule = _make_rule(severity=severity)
+        alert = rule.evaluate(90.0, BASE_NOW)
+        assert alert is not None
+        assert severity.value.upper() in alert.message
+
+    def test_info_severity_fires_for_exceeded_threshold(self) -> None:
+        rule = _make_rule(severity=Severity.INFO, comparison=">=")
+        alert = rule.evaluate(80.0, BASE_NOW)
+        assert alert is not None
+        assert alert.severity == Severity.INFO
+
+    def test_critical_fires_and_stores_metric_value(self) -> None:
+        rule = _make_rule(severity=Severity.CRITICAL)
+        alert = rule.evaluate(99.9, BASE_NOW)
+        assert alert is not None
+        assert alert.value == pytest.approx(99.9)
+        assert alert.severity == Severity.CRITICAL
