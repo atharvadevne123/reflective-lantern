@@ -6,14 +6,18 @@ import pytest
 
 from app.investment import (
     InvestmentAnalysis,
+    annualized_return,
     break_even_occupancy,
     cash_on_cash_return,
     compute_investment_analysis,
     debt_service_coverage_ratio,
     discounted_cash_flow,
     equity_multiple,
+    gross_rent_multiplier,
     irr_estimate,
+    loan_to_value_ratio,
     margin_of_safety,
+    net_present_value,
     operating_expense_ratio,
     payback_period,
 )
@@ -1143,10 +1147,8 @@ class TestEquityMultipleNew:
         assert result < 1.0
 
 
-import pytest as _pytest
 
-
-@_pytest.mark.parametrize(
+@pytest.mark.parametrize(
     "noi,debt_service,expect_healthy",
     [
         (100000.0, 80000.0, True),
@@ -1161,12 +1163,12 @@ def test_debt_service_coverage_ratio_parametrized(noi: float, debt_service: floa
     assert (result >= 1.0) == expect_healthy
 
 
-@_pytest.mark.parametrize(
+@pytest.mark.parametrize(
     "loan,market_value,expected",
     [
-        (400000.0, 500000.0, _pytest.approx(80.0, abs=0.001)),
-        (0.0, 500000.0, _pytest.approx(0.0, abs=0.001)),
-        (500000.0, 500000.0, _pytest.approx(100.0, abs=0.001)),
+        (400000.0, 500000.0, pytest.approx(80.0, abs=0.001)),
+        (0.0, 500000.0, pytest.approx(0.0, abs=0.001)),
+        (500000.0, 500000.0, pytest.approx(100.0, abs=0.001)),
     ],
 )
 def test_loan_to_value_ratio_parametrized(loan: float, market_value: float, expected: float) -> None:
@@ -1175,7 +1177,7 @@ def test_loan_to_value_ratio_parametrized(loan: float, market_value: float, expe
     assert loan_to_value_ratio(loan, market_value) == expected
 
 
-@_pytest.mark.parametrize("rate", [0.05, 0.10, 0.15])
+@pytest.mark.parametrize("rate", [0.05, 0.10, 0.15])
 def test_net_present_value_positive_for_positive_flows(rate: float) -> None:
     from app.investment import net_present_value
 
@@ -1184,14 +1186,14 @@ def test_net_present_value_positive_for_positive_flows(rate: float) -> None:
     assert isinstance(npv, float)
 
 
-@_pytest.mark.parametrize("score,expected_label", [(90.0, "Excellent"), (70.0, "Good"), (50.0, "Fair"), (30.0, "Poor")])
+@pytest.mark.parametrize("score,expected_label", [(90.0, "Excellent"), (70.0, "Good"), (50.0, "Fair"), (30.0, "Poor")])
 def test_investment_label_thresholds(score: float, expected_label: str) -> None:
     from app.investment import investment_score_label
 
     assert investment_score_label(score) == expected_label
 
 
-@_pytest.mark.parametrize(
+@pytest.mark.parametrize(
     "property_price,rent,expected_range",
     [
         (100000.0, 1000.0, (5.0, 200.0)),
@@ -1205,7 +1207,7 @@ def test_price_to_rent_ratio_in_range(property_price: float, rent: float, expect
     assert expected_range[0] <= result <= expected_range[1]
 
 
-@_pytest.mark.parametrize(
+@pytest.mark.parametrize(
     "purchase_price,sale_price,income,expected_positive",
     [
         (100.0, 150.0, 10.0, True),
@@ -1224,7 +1226,7 @@ def test_holding_period_return_sign(
         assert result < 0.0
 
 
-@_pytest.mark.parametrize("annual_rent,property_value", [(12000.0, 200000.0), (24000.0, 400000.0)])
+@pytest.mark.parametrize("annual_rent,property_value", [(12000.0, 200000.0), (24000.0, 400000.0)])
 def test_gross_yield_in_range(annual_rent: float, property_value: float) -> None:
     from app.investment import gross_yield
 
@@ -1319,14 +1321,6 @@ class TestPaybackPeriodEdgeCases:
     def test_payback_proportional_to_cost(self, cost: float) -> None:
         result = payback_period(purchase_price=cost, annual_cash_flow=500.0)
         assert result == pytest.approx(cost / 500.0, rel=1e-3)
-
-
-from app.investment import (
-    annualized_return,
-    gross_rent_multiplier,
-    loan_to_value_ratio,
-    net_present_value,
-)
 
 
 class TestAnnualizedReturnExtended:
