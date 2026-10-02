@@ -6,8 +6,10 @@ import pytest
 
 from app.demand_response import (
     curtailment,
+    curtailment_rate,
     customer_baseline_load,
     evaluate_event,
+    event_roi,
     performance_score,
 )
 
@@ -225,9 +227,6 @@ class TestCustomerBaselineLoadEdgeCases:
         history = [[1.0] * 4] * n_days
         result = customer_baseline_load(history)
         assert len(result) == 4
-
-
-from app.demand_response import curtailment_rate, event_roi
 
 
 class TestCurtailmentRate:
