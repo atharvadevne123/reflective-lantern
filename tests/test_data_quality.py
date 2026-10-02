@@ -927,10 +927,8 @@ class TestFieldEntropy:
         assert result > 0.0
 
 
-import pytest as _pytest
 
-
-@_pytest.mark.parametrize(
+@pytest.mark.parametrize(
     "records,required,expected_score",
     [
         ([{"a": 1, "b": 2}], ["a", "b"], 1.0),
@@ -941,10 +939,10 @@ import pytest as _pytest
 def test_completeness_score_parametrized(records: list, required: list, expected_score: float) -> None:
     from app.data_quality import completeness_score
 
-    assert completeness_score(records, required) == _pytest.approx(expected_score, abs=0.001)
+    assert completeness_score(records, required) == pytest.approx(expected_score, abs=0.001)
 
 
-@_pytest.mark.parametrize(
+@pytest.mark.parametrize(
     "records,field,expected_null_rate",
     [
         ([{"v": 1}, {"v": 2}], "v", 0.0),
@@ -955,10 +953,10 @@ def test_completeness_score_parametrized(records: list, required: list, expected
 def test_null_rate_parametrized(records: list, field: str, expected_null_rate: float) -> None:
     from app.data_quality import null_rate
 
-    assert null_rate(records, field) == _pytest.approx(expected_null_rate, abs=0.001)
+    assert null_rate(records, field) == pytest.approx(expected_null_rate, abs=0.001)
 
 
-@_pytest.mark.parametrize("n", [0, 1, 5, 100])
+@pytest.mark.parametrize("n", [0, 1, 5, 100])
 def test_batch_score_length_matches_input(n: int) -> None:
     from app.data_quality import batch_score
 
@@ -967,17 +965,17 @@ def test_batch_score_length_matches_input(n: int) -> None:
     assert len(result) == n
 
 
-@_pytest.mark.parametrize("null_count,total", [(0, 10), (5, 10), (10, 10)])
+@pytest.mark.parametrize("null_count,total", [(0, 10), (5, 10), (10, 10)])
 def test_null_rate_with_mixed_records(null_count: int, total: int) -> None:
     from app.data_quality import null_rate
 
     field = "consumption_kwh"
     records = [{field: None}] * null_count + [{field: 10.0}] * (total - null_count)
     result = null_rate(records, field)
-    assert result == _pytest.approx(null_count / total if total > 0 else 0.0, abs=0.001)
+    assert result == pytest.approx(null_count / total if total > 0 else 0.0, abs=0.001)
 
 
-@_pytest.mark.parametrize(
+@pytest.mark.parametrize(
     "values,lo,hi,expected_violations",
     [
         ([1.0, 5.0, 10.0], 0.0, 15.0, 0),
@@ -994,7 +992,7 @@ def test_range_violation_count_parametrized(values: list, lo: float, hi: float, 
     assert count == expected_violations
 
 
-@_pytest.mark.parametrize("n_unique", [1, 5, 10])
+@pytest.mark.parametrize("n_unique", [1, 5, 10])
 def test_unique_values_count(n_unique: int) -> None:
     from app.data_quality import unique_values
 
