@@ -288,3 +288,29 @@ class TestNormalizationFactorExtended2:
 
         result = normalization_factor(400.0, 200.0)
         assert result > 1.0
+
+
+class TestWeatherNormalizationParametrized:
+    """Parametrized tests for weather normalization functions."""
+
+    @pytest.mark.parametrize("daily_temp,base_temp,expected_hdd", [
+        (5.0, 18.0, 13.0),
+        (20.0, 18.0, 0.0),
+        (18.0, 18.0, 0.0),
+    ])
+    def test_heating_degree_days(self, daily_temp: float, base_temp: float, expected_hdd: float) -> None:
+        from app.weather_normalization import heating_degree_days
+
+        result = heating_degree_days(daily_temp, base_temp)
+        assert result == pytest.approx(expected_hdd)
+
+    @pytest.mark.parametrize("daily_temp,base_temp,expected_cdd", [
+        (25.0, 18.0, 7.0),
+        (15.0, 18.0, 0.0),
+        (18.0, 18.0, 0.0),
+    ])
+    def test_cooling_degree_days(self, daily_temp: float, base_temp: float, expected_cdd: float) -> None:
+        from app.weather_normalization import cooling_degree_days
+
+        result = cooling_degree_days(daily_temp, base_temp)
+        assert result == pytest.approx(expected_cdd)
