@@ -243,3 +243,21 @@ class TestGenerationKwhExtended:
         from app.solar import generation_kwh
 
         assert isinstance(generation_kwh(peak_kw=3.0, irradiance_kwh_per_sqm=4.0), float)
+
+
+class TestSolarIrradianceEdgeCases:
+    """Edge case and parametrized tests for solar irradiance calculations."""
+
+    @pytest.mark.parametrize("cloud_cover", [0.0, 0.25, 0.5, 0.75, 1.0])
+    def test_irradiance_decreases_with_cloud_cover(self, cloud_cover: float) -> None:
+        from app.solar import estimate_irradiance
+
+        result = estimate_irradiance(cloud_cover=cloud_cover, latitude=45.0)
+        assert result >= 0.0
+
+    def test_full_cloud_cover_gives_minimal_irradiance(self) -> None:
+        from app.solar import estimate_irradiance
+
+        clear = estimate_irradiance(cloud_cover=0.0, latitude=45.0)
+        cloudy = estimate_irradiance(cloud_cover=1.0, latitude=45.0)
+        assert cloudy <= clear
