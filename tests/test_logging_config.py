@@ -5,6 +5,8 @@ from __future__ import annotations
 import json
 import logging
 
+import pytest
+
 
 def test_configure_logging_sets_level() -> None:
     from config.logging_config import configure_logging
