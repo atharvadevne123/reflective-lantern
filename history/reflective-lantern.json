@@ -617,6 +617,7 @@
     "ruff_status": "all_checks_passed",
     "push_status": "success",
     "push_commit": "7f8a3328",
-    "email_status": "pending"
+    "email_status": "blocked_by_smtp_proxy",
+    "email_note": "SMTP port 465/587 blocked by remote execution environment proxy (errno 97 / connection timeout)"
   }
 ]
