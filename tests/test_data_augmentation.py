@@ -149,9 +149,6 @@ class TestRandomSwapEdgeCases:
         assert random_swap([], prob=1.0, rng=rng) == []
 
 
-import pytest
-
-
 @pytest.mark.parametrize("n_tokens", [2, 5, 10])
 def test_random_deletion_output_at_most_input_length(n_tokens: int) -> None:
     """random_deletion never adds tokens; output length <= input length."""
