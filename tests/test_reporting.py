@@ -4,7 +4,12 @@ from __future__ import annotations
 
 import pytest
 
-from app.reporting import estimate_savings, peak_demand_report, rolling_savings_summary, top_consumption_hours
+from app.reporting import (
+    estimate_savings,
+    peak_demand_report,
+    rolling_savings_summary,
+    top_consumption_hours,
+)
 
 
 def test_savings_positive() -> None:
