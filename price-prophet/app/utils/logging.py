@@ -92,7 +92,7 @@ def log_call(func: Callable) -> Callable:
     _logger = logging.getLogger(func.__module__)
 
     @functools.wraps(func)
-    def wrapper(*args, **kwargs):
+    def wrapper(*args: object, **kwargs: object) -> object:
         _logger.debug(
             "CALL %s args=%r kwargs=%r",
             func.__qualname__,
