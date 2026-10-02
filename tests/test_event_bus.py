@@ -528,7 +528,10 @@ class TestEventBusOrdering:
 
         bus = EventBus()
         counts = [0]
-        handler = lambda e: counts.__setitem__(0, counts[0] + 1)
+
+        def handler(e: object) -> None:
+            counts[0] += 1
+
         token = bus.subscribe("ev", handler)
         bus.unsubscribe("ev", token)
         bus.publish("ev", {})
