@@ -341,7 +341,7 @@ class TestTaskQueueCompletedCount:
         results = []
         lock = threading.Lock()
 
-        def work(i):
+        def work(i: int) -> None:
             with lock:
                 results.append(i)
 
