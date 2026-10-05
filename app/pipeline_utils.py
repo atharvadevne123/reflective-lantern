@@ -407,7 +407,7 @@ def is_pipeline_fitted(pipeline: Any) -> bool:
     Returns:
         True if fitted, False otherwise.
     """
-    fitted_attrs = ("classes_", "n_features_in_", "feature_importances_", "coef_", "numeric_cols_")
+    fitted_attrs = ("classes_", "n_features_in_", "feature_importances_", "coef_", "numeric_cols_", "fitted_")
     try:
         steps = list(pipeline.named_steps.values()) if hasattr(pipeline, "named_steps") else [pipeline]
     except Exception:

@@ -36,6 +36,11 @@ class HealthStatus:
     results: list[CheckResult]
 
     @property
+    def checks(self) -> list[CheckResult]:
+        """Alias for :attr:`results` for backward compatibility."""
+        return self.results
+
+    @property
     def failed(self) -> list[CheckResult]:
         """Return only the failing checks.
 

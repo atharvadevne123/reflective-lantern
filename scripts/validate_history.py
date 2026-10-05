@@ -21,6 +21,7 @@ VALID_EMAIL_STATUS_PREFIXES: tuple[str, ...] = (
     "network_blocked",
     "pdf_generated_ok",
     "smtp_",
+    "blocked_by_",
 )
 
 
@@ -31,7 +32,7 @@ def validate_entry(entry: object, filename: str, index: int) -> list[str]:
 
     errors: list[str] = []
 
-    if "date" not in entry and "last_run" not in entry:
+    if "date" not in entry and "last_run" not in entry and "run_date" not in entry:
         errors.append(f"{filename}[{index}]: missing 'date' or 'last_run' field")
 
     commits = entry.get("commits")

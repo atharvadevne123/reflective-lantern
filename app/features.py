@@ -252,8 +252,6 @@ class AmenityCompositeTransformer(BaseEstimator, TransformerMixin):
         df["amenity_composite"] = (
             school * _SCHOOL_WEIGHT + transit * _TRANSIT_WEIGHT + walk * _WALK_WEIGHT
         ) / _AMENITY_SCALE
-        if "crime_rate" in df.columns:
-            df["amenity_composite"] = df["amenity_composite"] * (1.0 - df["crime_rate"].clip(0.0, 1.0))
         return df
 
 
@@ -595,3 +593,15 @@ def make_feature_row(
     """
     import numpy as np
     return np.array([[hour, day_of_week, month, temperature_c, humidity_pct, occupancy, hvac_state, consumption_kwh]], dtype=float)
+
+
+class DropNonNumeric(BaseEstimator, TransformerMixin):
+    """Drop all non-numeric columns from a DataFrame."""
+
+    def fit(self, X: "pd.DataFrame", y: Any = None) -> "DropNonNumeric":
+        self.fitted_ = True
+        return self
+
+    def transform(self, X: "pd.DataFrame") -> "pd.DataFrame":
+        import pandas as pd
+        return X.select_dtypes(include=[float, int, "number"]).copy()

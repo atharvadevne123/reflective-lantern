@@ -9,12 +9,14 @@ import pytest
 
 def _make_df(n: int = 200, seed: int = 11) -> pd.DataFrame:
     rng = np.random.default_rng(seed)
+    temp_c = rng.uniform(0, 40, n)
     return pd.DataFrame(
         {
             "hour": rng.integers(0, 24, n),
             "day_of_week": rng.integers(0, 7, n),
             "month": rng.integers(1, 13, n),
-            "temperature_c": rng.uniform(0, 40, n),
+            "temperature_c": temp_c,
+            "temperature": temp_c,
             "humidity_pct": rng.uniform(20, 90, n),
             "occupancy": rng.integers(0, 200, n),
             "hvac_state": rng.integers(0, 2, n),
