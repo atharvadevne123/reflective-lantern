@@ -202,3 +202,47 @@ class TestGradeThresholdOrdering:
 
         value = getattr(c, attr)
         assert 0.0 < value < 1.0
+
+
+def test_grid_intensity_default_region_present() -> None:
+    from app.constants import GRID_INTENSITY_KG_PER_KWH
+
+    assert "default" in GRID_INTENSITY_KG_PER_KWH
+    assert GRID_INTENSITY_KG_PER_KWH["default"] > 0
+
+
+def test_max_forecast_horizon_is_positive() -> None:
+    from app.constants import MAX_FORECAST_HORIZON
+
+    assert MAX_FORECAST_HORIZON > 0
+
+
+def test_cache_constants_types() -> None:
+    from app.constants import DEFAULT_CACHE_MAX_SIZE, DEFAULT_CACHE_TTL_SECONDS
+
+    assert isinstance(DEFAULT_CACHE_TTL_SECONDS, int)
+    assert isinstance(DEFAULT_CACHE_MAX_SIZE, int)
+    assert DEFAULT_CACHE_TTL_SECONDS > 0
+    assert DEFAULT_CACHE_MAX_SIZE > 0
+
+
+def test_page_size_constants_ordered() -> None:
+    from app.constants import DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE
+
+    assert DEFAULT_PAGE_SIZE <= MAX_PAGE_SIZE
+
+
+@pytest.mark.parametrize("region", ["northeast", "midwest", "south", "west"])
+def test_grid_intensity_known_regions_positive(region: str) -> None:
+    from app.constants import GRID_INTENSITY_KG_PER_KWH
+
+    assert GRID_INTENSITY_KG_PER_KWH[region] > 0
+
+
+def test_all_exports_are_importable() -> None:
+    import importlib
+
+    import app.constants as c
+
+    for name in c.__all__:
+        assert hasattr(c, name), f"{name} in __all__ but not in module"
