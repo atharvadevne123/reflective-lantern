@@ -46,6 +46,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         return request.client.host if request.client else "unknown"
 
     async def dispatch(self, request: Request, call_next: Any) -> Response:
+        """Enforce per-client request rate limits using a sliding window."""
         key = self._client_key(request)
         now = time.monotonic()
 
