@@ -469,6 +469,8 @@ def report_anomaly_summary(flags: list[bool]) -> dict:
 def top_consumption_hours(
     hourly_kwh: list[float],
     n: int = 5,
+    *,
+    top_n: int | None = None,
 ) -> list[dict[str, Any]]:
     """Return the *n* hours with the highest consumption in *hourly_kwh*.
 
@@ -480,11 +482,12 @@ def top_consumption_hours(
         List of dicts with 'hour' (index) and 'kwh' keys, sorted by kwh descending.
         Empty list when *hourly_kwh* is empty.
     """
+    effective_n = top_n if top_n is not None else n
     if not hourly_kwh:
         return []
     indexed = [{"hour": i, "kwh": round(v, 4)} for i, v in enumerate(hourly_kwh)]
     indexed.sort(key=lambda x: x["kwh"], reverse=True)
-    return indexed[: min(n, len(indexed))]
+    return indexed[: min(effective_n, len(indexed))]
 
 
 def rolling_savings_summary(

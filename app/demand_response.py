@@ -40,9 +40,11 @@ class DemandResponseResult:
 
 
 def customer_baseline_load(
-    historical_hourly_kwh: list[list[float]],
+    historical_hourly_kwh: list[list[float]] | None = None,
     days: int = DEFAULT_CBL_DAYS,
-) -> list[float]:
+    *,
+    daily_usage_kwh: float | None = None,
+) -> list[float] | float:
     """Average comparable historical days into an hourly baseline.
 
     Args:
@@ -57,6 +59,8 @@ def customer_baseline_load(
         ValueError: If *historical_hourly_kwh* is empty, *days* is not
             positive, or the days have differing lengths.
     """
+    if daily_usage_kwh is not None:
+        return float(daily_usage_kwh)
     if not historical_hourly_kwh:
         raise ValueError("historical_hourly_kwh must not be empty")
     if days <= 0:
@@ -96,7 +100,13 @@ def curtailment(baseline_hourly_kwh: list[float], actual_hourly_kwh: list[float]
     return round(sum(baseline_hourly_kwh) - sum(actual_hourly_kwh), 4)
 
 
-def performance_score(curtailed_kwh: float, committed_kwh: float) -> float:
+def performance_score(
+    curtailed_kwh: float = 0.0,
+    committed_kwh: float = 0.0,
+    *,
+    requested_kwh: float | None = None,
+    delivered_kwh: float | None = None,
+) -> float:
     """Score delivery against commitment, capped at 1.0.
 
     Args:
@@ -110,6 +120,10 @@ def performance_score(curtailed_kwh: float, committed_kwh: float) -> float:
     Raises:
         ValueError: If *committed_kwh* is negative.
     """
+    if requested_kwh is not None:
+        committed_kwh = requested_kwh
+    if delivered_kwh is not None:
+        curtailed_kwh = delivered_kwh
     if committed_kwh < 0:
         raise ValueError(f"committed_kwh must be non-negative, got {committed_kwh}")
     if committed_kwh == 0:

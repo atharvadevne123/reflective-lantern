@@ -42,6 +42,7 @@ class AugmentationConfig:
     deletion_prob: float = 0.1
     swap_prob: float = 0.1
     numeric_jitter_pct: float = 0.05
+    numeric_noise_std: float = 0.05
     seed: int | None = None
     synonyms: dict = field(default_factory=dict)
 
@@ -78,7 +79,7 @@ def random_deletion(tokens: list[str], prob: float, rng: random.Random) -> list[
     Returns:
         Shortened token list with at least one element.
     """
-    if len(tokens) == 1:
+    if len(tokens) <= 1:
         return tokens[:]
     kept = [t for t in tokens if rng.random() > prob]
     return kept if kept else [rng.choice(tokens)]
@@ -102,17 +103,24 @@ def random_swap(tokens: list[str], prob: float, rng: random.Random) -> list[str]
     return result
 
 
-def jitter_numerics(text: str, pct: float, rng: random.Random) -> str:
-    """Add Gaussian jitter to every numeric value found in *text*.
+def jitter_numerics(
+    text: str | list,
+    pct: float | "AugmentationConfig | None" = None,
+    rng: "random.Random | None" = None,
+    config: "AugmentationConfig | None" = None,
+) -> "str | list":
+    """Add Gaussian jitter to numeric values.
 
-    Args:
-        text: Input string possibly containing integers or floats.
-        pct: Standard-deviation fraction of each value's magnitude.
-        rng: Seeded random source for reproducibility.
-
-    Returns:
-        Modified string with jittered numeric values.
+    Accepts two calling conventions:
+    - ``jitter_numerics(text: str, pct: float, rng: random.Random) -> str``
+    - ``jitter_numerics(data: list[float], config: AugmentationConfig) -> list[float]``
     """
+    if isinstance(text, list):
+        cfg = pct if isinstance(pct, AugmentationConfig) else config
+        seed = cfg.seed if cfg is not None else None
+        std = cfg.numeric_noise_std if cfg is not None else 0.05
+        _rng = random.Random(seed)
+        return [v + _rng.gauss(0, max(abs(v) * std, std)) for v in text]
 
     def _jitter(m: re.Match) -> str:
         """Replace the matched numeric substring with a jittered version."""
