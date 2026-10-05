@@ -3,7 +3,10 @@ from __future__ import annotations
 
 import logging
 import time
-from collections import defaultdict, deque
+import uuid
+from collections import deque
+from types import SimpleNamespace
+from typing import Any
 
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
@@ -12,6 +15,16 @@ from starlette.responses import JSONResponse
 logger = logging.getLogger(__name__)
 
 WINDOW_SECONDS = 60.0
+
+settings: Any = SimpleNamespace(rate_limit_per_minute=120)
+
+# Module-level request store: {client_key: deque[timestamp]}
+_requests: dict[str, deque[float]] = {}
+
+
+def reset_rate_limiter() -> None:
+    """Clear all recorded request windows (used in tests and on startup)."""
+    _requests.clear()
 
 
 class RateLimitMiddleware(BaseHTTPMiddleware):
@@ -24,7 +37,6 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
     def __init__(self, app, limit: int = 120) -> None:
         super().__init__(app)
         self.limit = limit
-        self._hits: dict[str, deque[float]] = defaultdict(deque)
 
     def _client_key(self, request: Request) -> str:
         forwarded = request.headers.get("X-Forwarded-For")
@@ -35,12 +47,16 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
         key = self._client_key(request)
         now = time.monotonic()
-        bucket = self._hits[key]
 
+        if key not in _requests:
+            _requests[key] = deque()
+        bucket = _requests[key]
+
+        current_limit = getattr(settings, "rate_limit_per_minute", self.limit)
         while bucket and now - bucket[0] > WINDOW_SECONDS:
             bucket.popleft()
 
-        if len(bucket) >= self.limit:
+        if len(bucket) >= current_limit:
             retry_after = int(WINDOW_SECONDS - (now - bucket[0])) + 1
             logger.warning("Rate limit exceeded for %s (%d hits)", key, len(bucket))
             return JSONResponse(
@@ -50,7 +66,9 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
             )
 
         bucket.append(now)
+        correlation_id = request.headers.get("X-Correlation-ID") or str(uuid.uuid4())
         response = await call_next(request)
-        response.headers["X-RateLimit-Limit"] = str(self.limit)
-        response.headers["X-RateLimit-Remaining"] = str(max(0, self.limit - len(bucket)))
+        response.headers["X-RateLimit-Limit"] = str(current_limit)
+        response.headers["X-RateLimit-Remaining"] = str(max(0, current_limit - len(bucket)))
+        response.headers["x-correlation-id"] = correlation_id
         return response
