@@ -60,10 +60,12 @@ class BatchProcessor(Generic[T, R]):
 
     def __init__(
         self,
-        processor: Callable[[list[T]], list[R]],
+        processor: Callable[[list[T]], list[R]] | None = None,
         batch_size: int = 100,
         error_handling: str = "raise",
         on_batch_done: Callable[[BatchResult[R]], None] | None = None,
+        *,
+        fn: Callable | None = None,
     ) -> None:
         """Configure the batch processor with size, error-handling, and callback.
 
@@ -72,12 +74,18 @@ class BatchProcessor(Generic[T, R]):
             batch_size: Maximum items per batch (must be >= 1).
             error_handling: ``'raise'`` re-raises on first error; ``'collect'`` captures.
             on_batch_done: Optional callback invoked with each completed BatchResult.
+            fn: Alias for processor; applies function to each item individually.
         """
         if batch_size < 1:
             raise ValueError("batch_size must be >= 1")
         if error_handling not in ("raise", "collect"):
             raise ValueError("error_handling must be 'raise' or 'collect'")
-        self.processor = processor
+        if fn is not None:
+            self._item_fn = fn
+            self.processor = lambda items: [fn(x) for x in items]
+        else:
+            self._item_fn = None
+            self.processor = processor  # type: ignore[assignment]
         self.batch_size = batch_size
         self.error_handling = error_handling
         self.on_batch_done = on_batch_done

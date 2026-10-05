@@ -14,6 +14,20 @@ from collections.abc import Callable
 from dataclasses import dataclass, field
 from typing import Any
 
+
+class _CallableList(list):
+    """List subclass that is also callable, returning a copy of itself."""
+
+    def __call__(self) -> list:
+        return list(self)
+
+
+class _CallableInt(int):
+    """Int subclass that is also callable, returning itself."""
+
+    def __call__(self) -> int:
+        return int(self)
+
 __all__ = [
     "Task",
     "TaskQueue",
@@ -109,16 +123,16 @@ class TaskQueue:
                     self._errors.append(exc)
 
     @property
-    def completed(self) -> int:
+    def completed(self) -> _CallableInt:
         """Number of tasks that have finished successfully (thread-safe)."""
         with self._lock:
-            return self._completed
+            return _CallableInt(self._completed)
 
     @property
-    def errors(self) -> list[Exception]:
+    def errors(self) -> _CallableList:
         """Snapshot list of exceptions raised by failed tasks (thread-safe)."""
         with self._lock:
-            return list(self._errors)
+            return _CallableList(self._errors)
 
     def clear_errors(self) -> None:
         """Remove all recorded errors."""
