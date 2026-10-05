@@ -40,6 +40,13 @@ class RateLimitExceededError(LogisticsFlowError):
     status_code = 429
     detail = "Rate limit exceeded"
 
+    def __init__(self, detail: str | None = None, *, limit: int = 0, retry_after_seconds: int = 0) -> None:
+        self.limit = limit
+        self.retry_after_seconds = retry_after_seconds
+        if limit and detail is None:
+            detail = f"Rate limit exceeded: limit={limit} retry_after_seconds={retry_after_seconds}"
+        super().__init__(detail)
+
 
 # Aliases used by WattGuard / energy-domain tests
 WattGuardError = LogisticsFlowError
@@ -57,6 +64,13 @@ class FeatureValidationError(LogisticsFlowError):
 
     status_code = 422
     detail = "Feature validation failed"
+
+    def __init__(self, field: str = "", reason: str = "") -> None:
+        self.field = field
+        self.reason = reason
+        detail = f"Feature validation failed: field={field!r} reason={reason!r}" if field else self.detail
+        super(LogisticsFlowError, self).__init__(detail)
+        self.detail = detail
 
 
 class DatabaseError(LogisticsFlowError):
@@ -78,6 +92,20 @@ class ConfigurationError(LogisticsFlowError):
 
     status_code = 500
     detail = "Configuration error"
+
+
+class ExternalServiceError(LogisticsFlowError):
+    """Raised when a call to an external service fails."""
+
+    status_code = 502
+    detail = "External service error"
+
+    def __init__(self, service: str = "", reason: str = "") -> None:
+        self.service = service
+        self.reason = reason
+        detail = f"External service error: service={service!r} reason={reason!r}" if service else self.detail
+        super(LogisticsFlowError, self).__init__(detail)
+        self.detail = detail
 
 
 def register_exception_handlers(app: FastAPI) -> None:
