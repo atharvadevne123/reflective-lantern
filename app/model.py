@@ -170,10 +170,19 @@ def train_anomaly_model(df: "pd.DataFrame") -> object:
     return pipe
 
 
-def score_anomaly(bundle: object, row: "np.ndarray") -> dict:
-    """Score a single row with an anomaly bundle; return structured result."""
-    raw_score = float(bundle.decision_function(row)[0])
-    prediction = int(bundle.predict(row)[0])
+def score_anomaly(bundle: object, row: "np.ndarray") -> dict[str, object]:
+    """Score a single row with an anomaly bundle; return structured result.
+
+    Args:
+        bundle: Fitted anomaly pipeline with ``decision_function`` and ``predict``.
+        row: 2-D numpy array with one row representing the sample to score.
+
+    Returns:
+        Dict with keys ``is_anomaly`` (bool), ``anomaly_score`` (float),
+        and ``severity`` ('none' | 'warning' | 'critical').
+    """
+    raw_score = float(bundle.decision_function(row)[0])  # type: ignore[union-attr]
+    prediction = int(bundle.predict(row)[0])  # type: ignore[union-attr]
     is_anomaly = prediction == -1
     if not is_anomaly:
         severity = "none"
@@ -186,3 +195,15 @@ def score_anomaly(bundle: object, row: "np.ndarray") -> dict:
         "anomaly_score": round(raw_score, 4),
         "severity": severity,
     }
+
+
+__all__ = [
+    "MODEL_PATH",
+    "MODEL_VERSION",
+    "METRICS_PATH",
+    "load_model",
+    "predict",
+    "score_anomaly",
+    "train_anomaly_model",
+    "train_model",
+]
