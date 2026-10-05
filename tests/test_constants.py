@@ -240,7 +240,6 @@ def test_grid_intensity_known_regions_positive(region: str) -> None:
 
 
 def test_all_exports_are_importable() -> None:
-    import importlib
 
     import app.constants as c
 
