@@ -84,3 +84,20 @@ def predict_payload() -> dict:
         "hour_of_day": 14,
         "day_of_week": 2,
     }
+
+
+@pytest.fixture()
+def single_row() -> pd.DataFrame:
+    """Return a single-row DataFrame for property/amenity feature tests."""
+    return pd.DataFrame({
+        "bedrooms": [3],
+        "bathrooms": [2.0],
+        "year_built": [1995],
+        "sqft": [1500],
+        "price": [450000],
+        "school_score": [7.0],
+        "transit_score": [6.0],
+        "walkability_score": [8.0],
+        "crime_rate": [0.05],
+        "renovation_year": [None],
+    })
