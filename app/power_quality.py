@@ -61,7 +61,13 @@ def power_factor(real_power_kw: float, apparent_power_kva: float) -> float:
     return round(real_power_kw / apparent_power_kva, 4)
 
 
-def apparent_power(real_power_kw: float, reactive_power_kvar: float) -> float:
+def apparent_power(
+    real_power_kw: float | None = None,
+    reactive_power_kvar: float = 0.0,
+    *,
+    real_kw: float | None = None,
+    reactive_kvar: float | None = None,
+) -> float:
     """Return apparent power from the real and reactive components.
 
     Args:
@@ -74,6 +80,12 @@ def apparent_power(real_power_kw: float, reactive_power_kvar: float) -> float:
     Raises:
         ValueError: If *real_power_kw* is negative.
     """
+    if real_kw is not None:
+        real_power_kw = real_kw
+    if reactive_kvar is not None:
+        reactive_power_kvar = reactive_kvar
+    if real_power_kw is None:
+        real_power_kw = 0.0
     if real_power_kw < 0:
         raise ValueError(f"real_power_kw must be non-negative, got {real_power_kw}")
     return round(math.hypot(real_power_kw, reactive_power_kvar), 4)

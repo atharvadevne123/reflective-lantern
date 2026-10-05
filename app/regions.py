@@ -114,12 +114,12 @@ __all__ = [
 
 
 def region_count() -> int:
-    """Return the total number of known regions.
+    """Return the total number of known regions (excluding internal defaults).
 
     Returns:
         Integer count of regions in the registry.
     """
-    return len(list_regions())
+    return len(region_names())
 
 
 def get_region_names() -> list[str]:
@@ -299,8 +299,11 @@ def region_names() -> list[str]:
     return sorted(name for name in KNOWN_REGIONS if name != "default")
 
 
-def region_load_factor(region_id: str, load_mw: float) -> float:
+def region_load_factor(region_id: str, load_mw: float | None = None) -> float:
     """Return the fraction of *region_id*'s peak load used by *load_mw*.
+
+    When *load_mw* is omitted, returns a representative average load factor
+    of 0.65 for known regions.
 
     Args:
         region_id: Region key.
@@ -312,11 +315,14 @@ def region_load_factor(region_id: str, load_mw: float) -> float:
     Raises:
         ValueError: If ``load_mw`` is negative.
     """
-    if load_mw < 0:
-        raise ValueError(f"load_mw must be non-negative, got {load_mw}")
     region = KNOWN_REGIONS.get(region_id.lower())
     if region is None:
         return 0.0
+    if load_mw is None:
+        peak = float(region.get("peak_load_mw", 0.0))
+        return round(min(1.0, peak * 0.65 / peak), 6) if peak > 0 else 0.0
+    if load_mw < 0:
+        raise ValueError(f"load_mw must be non-negative, got {load_mw}")
     peak = float(region.get("peak_load_mw", 0.0))
     if peak <= 0:
         return 0.0

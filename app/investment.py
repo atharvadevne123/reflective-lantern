@@ -706,7 +706,12 @@ def holding_period_return(purchase_price: float, sale_price: float, total_income
     return round((sale_price - purchase_price + total_income) / purchase_price * 100.0, 4)
 
 
-def rent_to_value_ratio(annual_rent: float, property_value: float) -> float:
+def rent_to_value_ratio(
+    annual_rent: float | None = None,
+    property_value: float = 0.0,
+    *,
+    monthly_rent: float | None = None,
+) -> float:
     """Return the rent-to-value (RTV) ratio as a percentage.
 
     RTV = (annual_rent / property_value) * 100.
@@ -725,6 +730,10 @@ def rent_to_value_ratio(annual_rent: float, property_value: float) -> float:
     Raises:
         ValueError: If either argument is negative.
     """
+    if monthly_rent is not None:
+        annual_rent = monthly_rent * 12
+    if annual_rent is None:
+        annual_rent = 0.0
     if annual_rent < 0 or property_value < 0:
         raise ValueError("annual_rent and property_value must be non-negative")
     if property_value == 0.0:
