@@ -69,8 +69,19 @@ def _build_ensemble() -> VotingRegressor:
     return VotingRegressor(estimators=estimators)
 
 
-def train_model(X: np.ndarray, y: np.ndarray) -> tuple[Pipeline, dict]:
-    """Train ensemble, run 5-fold CV, persist model, return metrics."""
+def train_model(X: "np.ndarray | pd.DataFrame", y: "np.ndarray | pd.Series") -> tuple[Pipeline, dict]:
+    """Train ensemble, run 5-fold CV, persist model, return metrics.
+
+    Accepts either raw ndarrays or a pandas DataFrame (auto-converts to ndarray).
+    """
+    try:
+        import pandas as pd
+        if isinstance(X, pd.DataFrame):
+            X = X.values
+        if hasattr(y, "values"):
+            y = y.values
+    except ImportError:
+        pass
     pipe = Pipeline(
         [
             ("scaler", StandardScaler()),
@@ -127,3 +138,37 @@ def load_model() -> Pipeline:
 def predict(model: Pipeline, X: np.ndarray) -> np.ndarray:
     """Return predicted delivery times in minutes."""
     return model.predict(X)
+
+
+def train_anomaly_model(df: "pd.DataFrame") -> object:
+    """Train an IsolationForest anomaly detector on the energy DataFrame."""
+    import pandas as pd
+    from sklearn.ensemble import IsolationForest
+    from sklearn.preprocessing import StandardScaler
+    from sklearn.pipeline import Pipeline as SKPipeline
+
+    X = df.values if isinstance(df, pd.DataFrame) else df
+    pipe = SKPipeline([
+        ("scaler", StandardScaler()),
+        ("iso", IsolationForest(n_estimators=100, contamination=0.05, random_state=42)),
+    ])
+    pipe.fit(X)
+    return pipe
+
+
+def score_anomaly(bundle: object, row: "np.ndarray") -> dict:
+    """Score a single row with an anomaly bundle; return structured result."""
+    raw_score = float(bundle.decision_function(row)[0])
+    prediction = int(bundle.predict(row)[0])
+    is_anomaly = prediction == -1
+    if not is_anomaly:
+        severity = "none"
+    elif raw_score > -0.1:
+        severity = "warning"
+    else:
+        severity = "critical"
+    return {
+        "is_anomaly": is_anomaly,
+        "anomaly_score": round(raw_score, 4),
+        "severity": severity,
+    }

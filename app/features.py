@@ -576,3 +576,22 @@ def top_k_features(importances: dict[str, float], k: int) -> list[str]:
     """Return the names of the top-*k* most important features."""
     ranked = rank_features(importances)
     return [name for name, _ in ranked[:k]]
+
+
+def make_feature_row(
+    hour: int,
+    day_of_week: int,
+    month: int,
+    temperature_c: float,
+    humidity_pct: float,
+    occupancy: int,
+    hvac_state: int,
+    consumption_kwh: float,
+) -> "np.ndarray":
+    """Build a single-row feature array for energy-domain predictions.
+
+    Column order must match the feature columns produced by train_model when
+    called with the energy DataFrame schema (all 8 raw features).
+    """
+    import numpy as np
+    return np.array([[hour, day_of_week, month, temperature_c, humidity_pct, occupancy, hvac_state, consumption_kwh]], dtype=float)
