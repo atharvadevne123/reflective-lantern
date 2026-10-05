@@ -10,6 +10,13 @@ from dataclasses import dataclass, field
 logger = logging.getLogger(__name__)
 
 
+class _CallableFloat(float):
+    """Float subclass that is also callable, returning itself."""
+
+    def __call__(self) -> float:
+        return float(self)
+
+
 @dataclass
 class TokenBucket:
     """Thread-safe token bucket rate limiter.
@@ -90,11 +97,11 @@ class TokenBucket:
         return False
 
     @property
-    def available(self) -> float:
-        """Return current token count after a refill."""
+    def available(self) -> _CallableFloat:
+        """Return current token count after a refill (also callable)."""
         with self._lock:
             self._refill()
-            return self._tokens
+            return _CallableFloat(self._tokens)
 
 
 class PerKeyTokenBucket:
