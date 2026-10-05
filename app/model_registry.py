@@ -32,7 +32,7 @@ class ModelVersion:
 
     name: str
     version: str
-    artifact_path: str
+    artifact_path: str = ""
     stage: ModelStage = ModelStage.STAGING
     metrics: dict[str, float] = field(default_factory=dict)
     tags: dict[str, str] = field(default_factory=dict)
