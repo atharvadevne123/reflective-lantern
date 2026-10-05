@@ -203,3 +203,41 @@ def test_make_feature_row_hour_variants(hour: int) -> None:
     row = make_feature_row(hour, 0, 1, 20.0, 50.0, 50, 0, 10.0)
     assert row is not None
     assert len(row) > 0
+
+
+def test_run_pipeline_missing_target_column_raises() -> None:
+    """run_pipeline must raise ValueError when consumption_kwh column is absent."""
+    import pandas as pd
+
+    from app.pipeline import run_pipeline
+
+    df = pd.DataFrame({"hour": [1, 2, 3], "other": [0.1, 0.2, 0.3]})
+    with pytest.raises(ValueError, match="consumption_kwh"):
+        run_pipeline(df)
+
+
+def test_run_pipeline_predictions_length_matches_input() -> None:
+    import pandas as pd
+
+    from app.pipeline import run_pipeline
+
+    df = pd.DataFrame({
+        "consumption_kwh": [10.0, 20.0, 15.0, 25.0, 30.0],
+        "hour": [0, 6, 12, 18, 23],
+    })
+    result = run_pipeline(df)
+    assert len(result["predictions"]) == 5
+
+
+def test_run_pipeline_returns_metrics_dict() -> None:
+    import pandas as pd
+
+    from app.pipeline import run_pipeline
+
+    df = pd.DataFrame({
+        "consumption_kwh": [float(i) for i in range(1, 21)],
+        "hour": list(range(20)),
+    })
+    result = run_pipeline(df)
+    assert "metrics" in result
+    assert isinstance(result["metrics"], dict)
