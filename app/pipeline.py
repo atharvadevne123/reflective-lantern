@@ -5,6 +5,8 @@ from typing import Any
 
 import pandas as pd
 
+__all__ = ["run_pipeline"]
+
 
 def run_pipeline(df: pd.DataFrame) -> dict[str, Any]:
     """Train a model on *df* and return predictions for every row.
