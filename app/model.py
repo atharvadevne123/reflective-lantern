@@ -69,10 +69,20 @@ def _build_ensemble() -> VotingRegressor:
     return VotingRegressor(estimators=estimators)
 
 
-def train_model(X: "np.ndarray | pd.DataFrame", y: "np.ndarray | pd.Series") -> tuple[Pipeline, dict]:
-    """Train ensemble, run 5-fold CV, persist model, return metrics.
+def train_model(
+    X: "np.ndarray | pd.DataFrame",
+    y: "np.ndarray | pd.Series",
+    *,
+    save: bool = True,
+) -> tuple[Pipeline, dict]:
+    """Train ensemble, run 5-fold CV, optionally persist model, return metrics.
 
-    Accepts either raw ndarrays or a pandas DataFrame (auto-converts to ndarray).
+    Args:
+        X: Feature matrix (ndarray or DataFrame).
+        y: Target vector.
+        save: When True (default) write the fitted pipeline to *MODEL_PATH* and
+            save metrics to *METRICS_PATH*.  Pass ``save=False`` in tests or
+            ephemeral contexts where writing to disk is undesirable.
     """
     try:
         import pandas as pd
@@ -105,9 +115,10 @@ def train_model(X: "np.ndarray | pd.DataFrame", y: "np.ndarray | pd.Series") -> 
         "model_version": MODEL_VERSION,
     }
 
-    joblib.dump(pipe, MODEL_PATH)
-    with open(METRICS_PATH, "w") as fh:
-        json.dump(metrics, fh, indent=2)
+    if save:
+        joblib.dump(pipe, MODEL_PATH)
+        with open(METRICS_PATH, "w") as fh:
+            json.dump(metrics, fh, indent=2)
 
     logger.info(
         "Model trained — RMSE=%.2f (±%.2f), R²=%.4f",

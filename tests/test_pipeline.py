@@ -9,14 +9,12 @@ import pytest
 
 def _make_df(n: int = 200, seed: int = 11) -> pd.DataFrame:
     rng = np.random.default_rng(seed)
-    temp_c = rng.uniform(0, 40, n)
     return pd.DataFrame(
         {
             "hour": rng.integers(0, 24, n),
             "day_of_week": rng.integers(0, 7, n),
             "month": rng.integers(1, 13, n),
-            "temperature_c": temp_c,
-            "temperature": temp_c,
+            "temperature_c": rng.uniform(0, 40, n),
             "humidity_pct": rng.uniform(20, 90, n),
             "occupancy": rng.integers(0, 200, n),
             "hvac_state": rng.integers(0, 2, n),
@@ -25,12 +23,19 @@ def _make_df(n: int = 200, seed: int = 11) -> pd.DataFrame:
     )
 
 
+def _make_df_with_aliases(n: int = 200, seed: int = 11) -> pd.DataFrame:
+    """Like _make_df but with extra column aliases for compatibility tests."""
+    df = _make_df(n, seed)
+    df["temperature"] = df["temperature_c"]
+    return df
+
+
 def test_train_predict_end_to_end() -> None:
     from app.features import make_feature_row
     from app.model import predict, train_model
 
     df = _make_df()
-    bundle, metrics = train_model(df, df["consumption_kwh"])
+    bundle, metrics = train_model(df, df["consumption_kwh"], save=False)
     assert metrics["r2_mean"] > -2.0
 
     row = make_feature_row(12, 0, 6, 25.0, 60.0, 80, 1, 20.0)
@@ -57,7 +62,7 @@ def test_pipeline_stable_across_calls() -> None:
     from app.model import predict, train_model
 
     df = _make_df(150, seed=77)
-    bundle, _ = train_model(df, df["consumption_kwh"])
+    bundle, _ = train_model(df, df["consumption_kwh"], save=False)
 
     row = make_feature_row(9, 2, 4, 18.0, 55.0, 40, 0, 10.0)
     p1 = predict(bundle, row)
@@ -72,7 +77,7 @@ def test_hvac_effect_on_prediction(hvac) -> None:
     from app.model import predict, train_model
 
     df = _make_df(400)
-    bundle, _ = train_model(df, df["consumption_kwh"])
+    bundle, _ = train_model(df, df["consumption_kwh"], save=False)
 
     off = float(predict(bundle, make_feature_row(14, 1, 7, 30.0, 60.0, 100, 0, 20.0))[0])
     on = float(predict(bundle, make_feature_row(14, 1, 7, 30.0, 60.0, 100, 1, 20.0))[0])
@@ -85,7 +90,7 @@ def test_train_various_sizes(n_samples) -> None:
     from app.model import train_model
 
     df = _make_df(n_samples)
-    bundle, metrics = train_model(df, df["consumption_kwh"])
+    bundle, metrics = train_model(df, df["consumption_kwh"], save=False)
     assert metrics["r2_mean"] is not None
     assert bundle is not None
 
@@ -95,7 +100,7 @@ def test_prediction_is_non_negative_for_typical_input() -> None:
     from app.model import predict, train_model
 
     df = _make_df(200)
-    bundle, _ = train_model(df, df["consumption_kwh"])
+    bundle, _ = train_model(df, df["consumption_kwh"], save=False)
     row = make_feature_row(10, 1, 5, 20.0, 55.0, 60, 0, 15.0)
     preds = predict(bundle, row)
     # Prediction may be negative for extreme inputs; just check it's a float
@@ -117,7 +122,7 @@ def test_train_model_returns_metrics_keys() -> None:
     from app.model import train_model
 
     df = _make_df(150)
-    _, metrics = train_model(df, df["consumption_kwh"])
+    _, metrics = train_model(df, df["consumption_kwh"], save=False)
     assert "r2_mean" in metrics
     assert "rmse_mean" in metrics
 
@@ -128,7 +133,7 @@ def test_train_model_metric_is_float(key: str) -> None:
     from app.model import train_model
 
     df = _make_df(150)
-    _, metrics = train_model(df, df["consumption_kwh"])
+    _, metrics = train_model(df, df["consumption_kwh"], save=False)
     assert isinstance(metrics[key], float)
 
 
@@ -155,7 +160,7 @@ def test_run_pipeline_returns_predictions_list(n_rows: int) -> None:
 @pytest.mark.parametrize("col", ["consumption_kwh", "temperature", "hour"])
 def test_feature_columns_present_in_training_df(col: str) -> None:
     """Expected feature columns are present in the synthetic training dataframe."""
-    df = _make_df(100)
+    df = _make_df_with_aliases(100)
     assert col in df.columns
 
 
@@ -165,7 +170,7 @@ def test_train_model_various_sizes(n_samples: int) -> None:
     from app.model import train_model
 
     df = _make_df(n_samples)
-    _bundle, metrics = train_model(df, df["consumption_kwh"])
+    _bundle, metrics = train_model(df, df["consumption_kwh"], save=False)
     assert "r2_mean" in metrics
     assert isinstance(metrics["r2_mean"], float)
 
@@ -186,7 +191,7 @@ def test_train_model_r2_is_numeric() -> None:
     from app.model import train_model
 
     df = _make_df(150)
-    _, metrics = train_model(df, df["consumption_kwh"])
+    _, metrics = train_model(df, df["consumption_kwh"], save=False)
     assert isinstance(metrics.get("r2_mean"), float)
     assert metrics["r2_mean"] == metrics["r2_mean"]  # not NaN
 
