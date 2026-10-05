@@ -33,6 +33,7 @@ from app.features import (
 )
 from app.middleware import RateLimitMiddleware
 from app.model import load_model, train_model
+from app.analytics_router import router as analytics_router
 from app.monitoring import log_prediction, run_drift_check, seed_reference_buffer
 
 logging.basicConfig(
@@ -84,6 +85,7 @@ app = FastAPI(
 settings = get_settings()
 
 register_exception_handlers(app)
+app.include_router(analytics_router)
 app.add_middleware(RateLimitMiddleware, limit=settings.rate_limit_per_minute)
 
 app.add_middleware(
