@@ -470,3 +470,32 @@ def seed_reference_buffer(samples: list[dict]) -> None:
             if k in s:
                 _REFERENCE_BUFFER[k].append(s[k])
     logger.info("Reference buffer seeded with %d samples", len(samples))
+
+
+__all__ = [
+    "LatencyTimer",
+    "alert_count_by_level",
+    "alert_rate",
+    "alert_suppression_window",
+    "compute_drift",
+    "compute_feature_drift_summary",
+    "degradation_severity",
+    "drift_severity",
+    "drift_trend",
+    "error_budget_remaining",
+    "get_anomaly_stats",
+    "get_reference_window_size",
+    "is_reference_window_ready",
+    "log_anomaly",
+    "log_prediction",
+    "p_value_to_confidence",
+    "reference_window_stats",
+    "reset_anomaly_flags_buffer",
+    "reset_reference_window",
+    "rolling_anomaly_rate",
+    "run_drift_check",
+    "seed_reference_buffer",
+    "set_reference_window",
+    "summarize_drift_history",
+    "zscore_alert",
+]
