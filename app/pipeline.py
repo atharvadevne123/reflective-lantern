@@ -20,7 +20,7 @@ def run_pipeline(df: pd.DataFrame) -> dict[str, Any]:
     y = df[target_col]
     X = df.drop(columns=[target_col])
 
-    bundle, metrics = train_model(X, y)
+    bundle, metrics = train_model(X, y, save=False)
     preds = predict(bundle, X.values)
     return {
         "predictions": [float(p) for p in preds],
