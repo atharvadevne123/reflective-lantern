@@ -336,3 +336,53 @@ class TestCohortBenchmarkEndpoint:
             json=self.COHORT,
         )
         assert r.status_code == 422
+
+    def test_building_eui_computed_correctly(self, client: TestClient) -> None:
+        r = client.post(
+            "/api/v1/benchmark/cohort?annual_kwh=110000&floor_area_m2=1000",
+            json=self.COHORT,
+        )
+        assert r.status_code == 200
+        assert r.json()["building_eui"] == pytest.approx(110.0)
+
+
+class TestPowerQualityCorrectionEndpoint:
+    def test_already_meets_target(self, client: TestClient) -> None:
+        r = client.get(
+            "/api/v1/power-quality/correction?real_power_kw=100&current_power_factor=0.97&target_power_factor=0.95",
+        )
+        assert r.status_code == 200
+        assert r.json()["required_kvar"] == pytest.approx(0.0)
+
+    def test_correction_positive_when_below_target(self, client: TestClient) -> None:
+        r = client.get(
+            "/api/v1/power-quality/correction?real_power_kw=100&current_power_factor=0.80&target_power_factor=0.95",
+        )
+        assert r.status_code == 200
+        assert r.json()["required_kvar"] > 0
+
+    def test_default_target_is_0_95(self, client: TestClient) -> None:
+        r = client.get(
+            "/api/v1/power-quality/correction?real_power_kw=100&current_power_factor=0.70",
+        )
+        assert r.status_code == 200
+        assert "required_kvar" in r.json()
+
+
+class TestSolarPaybackEndpoint:
+    def test_zero_benefit_never_repays(self, client: TestClient) -> None:
+        r = client.get("/api/v1/solar/payback?system_cost=10000&annual_benefit=0")
+        assert r.status_code == 200
+        assert r.json()["repays_within_lifetime"] is False
+        assert r.json()["payback_years"] is None
+
+    def test_repays_quickly(self, client: TestClient) -> None:
+        r = client.get("/api/v1/solar/payback?system_cost=5000&annual_benefit=1000")
+        assert r.status_code == 200
+        assert r.json()["repays_within_lifetime"] is True
+        assert r.json()["payback_years"] == pytest.approx(5.0)
+
+    def test_does_not_repay_within_lifetime(self, client: TestClient) -> None:
+        r = client.get("/api/v1/solar/payback?system_cost=100000&annual_benefit=100")
+        assert r.status_code == 200
+        assert r.json()["repays_within_lifetime"] is False
