@@ -41,6 +41,45 @@ class RateLimitExceededError(LogisticsFlowError):
     detail = "Rate limit exceeded"
 
 
+# Aliases used by WattGuard / energy-domain tests
+WattGuardError = LogisticsFlowError
+
+
+class PredictionError(LogisticsFlowError):
+    """Raised when model inference fails unexpectedly."""
+
+    status_code = 500
+    detail = "Prediction failed"
+
+
+class FeatureValidationError(LogisticsFlowError):
+    """Raised when feature input fails schema or range validation."""
+
+    status_code = 422
+    detail = "Feature validation failed"
+
+
+class DatabaseError(LogisticsFlowError):
+    """Raised on unrecoverable database operation failures."""
+
+    status_code = 503
+    detail = "Database error"
+
+
+class DriftDetectionError(LogisticsFlowError):
+    """Raised when the drift detection routine encounters an error."""
+
+    status_code = 500
+    detail = "Drift detection error"
+
+
+class ConfigurationError(LogisticsFlowError):
+    """Raised when a required configuration value is missing or invalid."""
+
+    status_code = 500
+    detail = "Configuration error"
+
+
 def register_exception_handlers(app: FastAPI) -> None:
     """Attach a JSON handler for every LogisticsFlowError subclass."""
 
