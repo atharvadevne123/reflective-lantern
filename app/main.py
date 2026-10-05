@@ -211,6 +211,7 @@ async def predict(
     request: Request,
     db: Annotated[Session, Depends(get_db)],
 ) -> PredictResponse:
+    """Score a single shipment and return predicted delivery minutes."""
     if _model is None or _feat_pipe is None:
         raise ModelNotLoadedError
 
@@ -254,6 +255,7 @@ async def predict(
     summary="Health check",
 )
 async def health() -> HealthResponse:
+    """Return service liveness status and loaded model version."""
     return HealthResponse(
         status="healthy" if _model is not None else "degraded",
         model_version=MODEL_VERSION,
@@ -268,6 +270,7 @@ async def health() -> HealthResponse:
     description="Returns last-computed cross-validation metrics.",
 )
 async def metrics() -> MetricsResponse:
+    """Return last-computed cross-validation metrics from the metrics JSON file."""
     data = json.loads(Path(METRICS_PATH).read_text()) if Path(METRICS_PATH).exists() else {}
     return MetricsResponse(
         rmse_mean=data.get("rmse_mean"),
@@ -284,6 +287,7 @@ async def metrics() -> MetricsResponse:
     description="Compares recent predictions against reference distribution.",
 )
 async def drift(db: Annotated[Session, Depends(get_db)]) -> dict[str, Any]:
+    """Run a KS-test drift check comparing recent predictions to the reference window."""
     return run_drift_check(db)
 
 
@@ -298,6 +302,7 @@ async def predict_batch(
     request: Request,
     db: Annotated[Session, Depends(get_db)],
 ) -> BatchPredictResponse:
+    """Score up to 100 shipments in a single request and return all predictions."""
     if _model is None or _feat_pipe is None:
         raise ModelNotLoadedError
 
