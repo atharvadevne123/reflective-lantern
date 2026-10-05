@@ -315,6 +315,8 @@ def prepare_X(df: pd.DataFrame, pipeline: Pipeline, fit: bool = False) -> np.nda
 def extract_feature_array(df: pd.DataFrame, pipeline: Pipeline, fit: bool = True) -> np.ndarray:
     """Apply *pipeline* to *df* and return all numeric columns as a 2-D array."""
     transformed = pipeline.fit_transform(df) if fit else pipeline.transform(df)
+    if isinstance(transformed, np.ndarray):
+        return np.nan_to_num(transformed.astype(float))
     numeric_cols = transformed.select_dtypes(include=[np.number]).columns.tolist()
     return transformed[numeric_cols].fillna(0.0).values.astype(float)
 
@@ -461,12 +463,104 @@ def cumulative_sum_feature(values: list[float]) -> list[float]:
 
 
 def clip_feature_values(values: list[float], low: float, high: float) -> list[float]:
-    """Clip each value in *values* to the range [*low*, *high*]."""
+    """Clip each value in *values* to the range [*low*, *high*].
+
+    Raises:
+        ValueError: If *low* > *high*.
+    """
+    if low > high:
+        raise ValueError(f"low ({low}) must be <= high ({high})")
     return [max(low, min(high, v)) for v in values]
 
 
+def lag_features(values: list[float], lags: list[int]) -> dict[str, list[float | None]]:
+    """Compute lag features for a univariate series.
+
+    Args:
+        values: Input series.
+        lags: List of positive lag integers.
+
+    Returns:
+        Dict mapping ``"lag_{k}"`` to a list with *k* leading ``None`` values.
+
+    Raises:
+        ValueError: If any lag is not positive.
+    """
+    for lag in lags:
+        if lag < 1:
+            raise ValueError(f"All lags must be >= 1, got {lag}")
+    result: dict[str, list[float | None]] = {}
+    for lag in lags:
+        lagged: list[float | None] = [None] * lag + list(values[:-lag] if lag < len(values) else [])
+        # Pad to match length
+        while len(lagged) < len(values):
+            lagged.append(None)
+        result[f"lag_{lag}"] = lagged[:len(values)]
+    return result
+
+
+def ratio_feature(numerators: list[float], denominators: list[float]) -> list[float]:
+    """Element-wise ratio of two equal-length lists.
+
+    Returns 0.0 when the denominator is zero.
+
+    Raises:
+        ValueError: If *numerators* is empty or lengths differ.
+    """
+    if not numerators:
+        raise ValueError("numerators must not be empty")
+    if len(numerators) != len(denominators):
+        raise ValueError("numerators and denominators must have the same length")
+    return [n / d if abs(d) > 1e-12 else 0.0 for n, d in zip(numerators, denominators)]
+
+
+def bin_feature(values: list[float], bins: list[float]) -> list[int]:
+    """Assign each value to a bin index.
+
+    Bin boundaries are right-exclusive: bin 0 is [−∞, bins[0]), bin 1 is
+    [bins[0], bins[1]), …, bin n is [bins[n−1], +∞).
+
+    Raises:
+        ValueError: If *bins* is not strictly monotonically increasing.
+    """
+    for i in range(len(bins) - 1):
+        if bins[i] >= bins[i + 1]:
+            raise ValueError("bins must be strictly increasing")
+    result: list[int] = []
+    for v in values:
+        idx = 0
+        for b in bins:
+            if v >= b:
+                idx += 1
+            else:
+                break
+        result.append(idx)
+    return result
+
+
+def rolling_max_feature(values: list[float], window: int = 3) -> list[float]:
+    """Compute rolling maximum with *window* size (min_periods=1).
+
+    Raises:
+        ValueError: If *window* is less than 1.
+    """
+    if window < 1:
+        raise ValueError("window must be >= 1")
+    result: list[float] = []
+    for i in range(len(values)):
+        start = max(0, i - window + 1)
+        result.append(max(values[start : i + 1]))
+    return result
+
+
 def difference_feature(values: list[float], order: int = 1) -> list[float]:
-    """Return the *order*-th order differences of *values*."""
+    """Return the *order*-th order differences of *values*.
+
+    Raises:
+        ValueError: If *order* is less than 1.
+    """
+    if order < 1:
+        raise ValueError(f"order must be >= 1, got {order}")
     result = list(values)
     for _ in range(order):
         result = [result[i + 1] - result[i] for i in range(len(result) - 1)]
