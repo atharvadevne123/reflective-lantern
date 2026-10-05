@@ -495,9 +495,6 @@ class TestLogLevelName:
         assert log_level_name(99) == "UNKNOWN"
 
 
-import pytest
-
-
 @pytest.mark.parametrize(
     "level_name,expected_int",
     [("DEBUG", 10), ("INFO", 20), ("WARNING", 30), ("ERROR", 40), ("CRITICAL", 50)],

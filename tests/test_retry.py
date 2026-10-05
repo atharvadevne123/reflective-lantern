@@ -501,7 +501,7 @@ class TestWithRetryHelper:
             with_retry(lambda: (_ for _ in ()).throw(RuntimeError("boom")), max_attempts=2)
 
 
-class TestRetryOnNetworkError:
+class TestRetryOnNetworkErrorExt:
     def test_returns_callable_decorator(self) -> None:
         from app.retry import retry_on_network_error
 

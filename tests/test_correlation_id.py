@@ -2,6 +2,8 @@
 
 import threading
 
+import pytest
+
 from app.correlation_id import (
     clear_correlation_id,
     correlation_context,
@@ -149,7 +151,6 @@ class TestSetCorrelationIdEdgeCases:
         assert get_correlation_id() == "second"
 
 
-import pytest
 
 
 @pytest.mark.parametrize("n", [1, 5, 10])

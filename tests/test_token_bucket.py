@@ -221,7 +221,7 @@ class TestPerKeyTokenBucketIsolation:
         assert pkb.consume("b") is True
 
 
-class TestTokenBucketAvailable:
+class TestTokenBucketAvailableExt:
     def test_full_initially(self) -> None:
         from app.token_bucket import TokenBucket
 

@@ -225,7 +225,7 @@ class TestTimeOfUseCostEdgeCases:
         assert cost_high > cost_low
 
 
-from app.tariff import annual_cost_estimate, peak_hour_fraction
+from app.tariff import annual_cost_estimate, peak_hour_fraction  # noqa: E402
 
 
 class TestAnnualCostEstimate:

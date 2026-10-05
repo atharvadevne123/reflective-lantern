@@ -744,7 +744,6 @@ class TestEuclideanDistance:
         assert euclidean_distance([0.0, 0.0], [3.0, 4.0]) == pytest.approx(5.0, abs=0.001)
 
     def test_empty_raises(self) -> None:
-        import pytest
 
         from app.similarity import euclidean_distance
 
@@ -877,9 +876,6 @@ def test_manhattan_distance_non_negative(a: list, b: list) -> None:
     from app.similarity import manhattan_distance
 
     assert manhattan_distance(a, b) >= 0.0
-
-
-import pytest
 
 
 @pytest.mark.parametrize(

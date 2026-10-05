@@ -390,8 +390,8 @@ def demand_response_potential(
         raise ValueError("peak_threshold_pct must be in (0, 1]")
     peak = max(loads)
     threshold = peak * peak_threshold_pct
-    peak_hours = [l for l in loads if l >= threshold]
-    sheddable = sum(l - threshold for l in peak_hours)
+    peak_hours = [load for load in loads if load >= threshold]
+    sheddable = sum(load - threshold for load in peak_hours)
     total = sum(loads)
     potential_pct = sheddable / total if total > 0 else 0.0
     return {

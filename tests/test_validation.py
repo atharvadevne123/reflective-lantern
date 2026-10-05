@@ -1013,10 +1013,9 @@ class TestValidateUniqueIds:
         assert validate_unique_ids([]) == []
 
 
-import pytest as _pytest
 
 
-@_pytest.mark.parametrize(
+@pytest.mark.parametrize(
     "hour,dow,month,expect_valid",
     [
         (0, 0, 1, True),
@@ -1035,7 +1034,7 @@ def test_validate_temporal_fields_parametrized(hour: int, dow: int, month: int, 
     assert (len(errors) == 0) == expect_valid
 
 
-@_pytest.mark.parametrize(
+@pytest.mark.parametrize(
     "temp,humidity,expect_valid",
     [
         (20.0, 50.0, True),
@@ -1052,21 +1051,21 @@ def test_validate_weather_fields_parametrized(temp: float, humidity: float, expe
     assert (len(errors) == 0) == expect_valid
 
 
-@_pytest.mark.parametrize("consumption", [0.0, 1.0, 100.0, 9999.0])
+@pytest.mark.parametrize("consumption", [0.0, 1.0, 100.0, 9999.0])
 def test_validate_consumption_valid_values(consumption: float) -> None:
     from app.validation import validate_consumption_kwh
 
     assert validate_consumption_kwh(consumption) == []
 
 
-@_pytest.mark.parametrize("consumption", [-1.0, -0.001])
+@pytest.mark.parametrize("consumption", [-1.0, -0.001])
 def test_validate_consumption_negative_invalid(consumption: float) -> None:
     from app.validation import validate_consumption_kwh
 
     assert len(validate_consumption_kwh(consumption)) > 0
 
 
-@_pytest.mark.parametrize(
+@pytest.mark.parametrize(
     "building_id,expect_valid",
     [
         ("building_001", True),
@@ -1082,7 +1081,7 @@ def test_validate_building_id_parametrized(building_id: str, expect_valid: bool)
     assert (len(errors) == 0) == expect_valid
 
 
-@_pytest.mark.parametrize("price", [0.01, 1.0, 999.99])
+@pytest.mark.parametrize("price", [0.01, 1.0, 999.99])
 def test_validate_price_positive_no_errors(price: float) -> None:
     from app.validation import validate_price
 
@@ -1090,7 +1089,7 @@ def test_validate_price_positive_no_errors(price: float) -> None:
     assert len(errors) == 0
 
 
-@_pytest.mark.parametrize("price", [-1.0, -100.0])
+@pytest.mark.parametrize("price", [-1.0, -100.0])
 def test_validate_price_non_positive_has_errors(price: float) -> None:
     from app.validation import validate_price
 
@@ -1098,7 +1097,7 @@ def test_validate_price_non_positive_has_errors(price: float) -> None:
     assert len(errors) > 0
 
 
-@_pytest.mark.parametrize(
+@pytest.mark.parametrize(
     "lat,lon,expect_valid",
     [
         (0.0, 0.0, True),
@@ -1114,7 +1113,7 @@ def test_validate_coordinate_parametrized(lat: float, lon: float, expect_valid: 
     assert (len(errors) == 0) == expect_valid
 
 
-@_pytest.mark.parametrize("pct", [0.0, 50.0, 100.0])
+@pytest.mark.parametrize("pct", [0.0, 50.0, 100.0])
 def test_validate_percentage_valid_range(pct: float) -> None:
     from app.validation import validate_percentage
 
@@ -1122,7 +1121,7 @@ def test_validate_percentage_valid_range(pct: float) -> None:
     assert len(errors) == 0
 
 
-@_pytest.mark.parametrize("pct", [-1.0, 101.0, 200.0])
+@pytest.mark.parametrize("pct", [-1.0, 101.0, 200.0])
 def test_validate_percentage_out_of_range(pct: float) -> None:
     from app.validation import validate_percentage
 
