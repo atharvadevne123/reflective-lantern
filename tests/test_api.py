@@ -77,3 +77,43 @@ def test_drift_endpoint_returns_200(client):
     resp = client.get("/api/v1/drift")
     assert resp.status_code == 200
     assert "status" in resp.json()
+
+
+def test_health_alias_returns_200(client):
+    resp = client.get("/health")
+    assert resp.status_code == 200
+    assert "status" in resp.json()
+
+
+def test_metrics_alias_returns_200(client):
+    resp = client.get("/metrics")
+    assert resp.status_code == 200
+    assert "model_version" in resp.json()
+
+
+def test_version_alias_returns_200(client):
+    resp = client.get("/version")
+    assert resp.status_code == 200
+    assert "version" in resp.json()
+
+
+def test_predict_batch_valid(client, predict_payload):
+    resp = client.post("/api/v1/predict/batch", json={"shipments": [predict_payload]})
+    assert resp.status_code == 200
+    data = resp.json()
+    assert "predictions" in data
+    assert data["count"] == 1
+    assert data["predictions"][0]["predicted_minutes"] > 0
+
+
+def test_predict_batch_multiple_shipments(client, predict_payload):
+    resp = client.post("/api/v1/predict/batch", json={"shipments": [predict_payload, predict_payload]})
+    assert resp.status_code == 200
+    assert resp.json()["count"] == 2
+
+
+def test_predict_confidence_in_range(client, predict_payload):
+    resp = client.post("/api/v1/predict", json=predict_payload)
+    assert resp.status_code == 200
+    confidence = resp.json()["confidence"]
+    assert 0.0 <= confidence <= 1.0
