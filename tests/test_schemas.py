@@ -280,3 +280,69 @@ class TestDriftRequestBoundary:
     def test_min_length_parametrized(self, n: int) -> None:
         r = DriftRequest(current_values=[1.0] * n)
         assert len(r.current_values) == n
+
+
+def test_drift_report_valid() -> None:
+    from app.schemas import DriftReport
+
+    dr = DriftReport(
+        feature_name="hour",
+        ks_statistic=0.12,
+        p_value=0.03,
+        drift_detected=True,
+        checked_at="2024-01-01T00:00:00",
+    )
+    assert dr.feature_name == "hour"
+    assert dr.drift_detected is True
+
+
+def test_feature_importance_item_valid() -> None:
+    from app.schemas import FeatureImportanceItem
+
+    item = FeatureImportanceItem(feature="distance_km", importance=0.35)
+    assert item.feature == "distance_km"
+    assert item.importance == pytest.approx(0.35)
+
+
+def test_feature_importance_response_valid() -> None:
+    from app.schemas import FeatureImportanceItem, FeatureImportanceResponse
+
+    resp = FeatureImportanceResponse(
+        features=[FeatureImportanceItem(feature="weight_kg", importance=0.2)],
+        top_n=5,
+        model_version="1.0.0",
+    )
+    assert resp.top_n == 5
+    assert len(resp.features) == 1
+
+
+def test_property_in_defaults() -> None:
+    from app.schemas import PropertyIn
+
+    p = PropertyIn(sqft=1500.0, bedrooms=3, bathrooms=2.0, condition_score=7.0)
+    assert p.school_score == 5.0
+    assert p.transit_score == 5.0
+    assert p.walkability_score == 5.0
+
+
+def test_comparable_request_valid() -> None:
+    from app.schemas import ComparableRequest, PropertyIn
+
+    prop = PropertyIn(sqft=1200.0, bedrooms=2, bathrooms=1.0, condition_score=6.0)
+    req = ComparableRequest(property=prop, top_k=3)
+    assert req.top_k == 3
+
+
+def test_drift_status_response_valid() -> None:
+    from app.schemas import DriftReport, DriftStatusResponse
+
+    report = DriftReport(
+        feature_name="weight_kg",
+        ks_statistic=0.05,
+        p_value=0.45,
+        drift_detected=False,
+        checked_at="2024-06-01T12:00:00",
+    )
+    resp = DriftStatusResponse(drift_reports=[report], total_predictions=500)
+    assert resp.total_predictions == 500
+    assert len(resp.drift_reports) == 1
