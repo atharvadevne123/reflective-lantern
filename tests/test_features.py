@@ -898,3 +898,46 @@ class TestMinmaxNormalize:
         values = list(range(n))
         result = minmax_normalize(values)
         assert all(0.0 <= v <= 1.0 for v in result)
+
+
+def test_make_feature_row_shape() -> None:
+    import numpy as np
+    from app.features import make_feature_row
+
+    row = make_feature_row(
+        hour=8, day_of_week=1, month=3, temperature_c=20.0,
+        humidity_pct=50.0, occupancy=100, hvac_state=1, consumption_kwh=15.0,
+    )
+    assert isinstance(row, np.ndarray)
+    assert row.shape == (1, 8)
+
+
+def test_make_feature_row_values() -> None:
+    from app.features import make_feature_row
+
+    row = make_feature_row(8, 1, 3, 20.0, 50.0, 100, 1, 15.0)
+    assert row[0, 0] == 8
+    assert row[0, 7] == 15.0
+
+
+def test_drop_non_numeric_removes_string_columns() -> None:
+    import pandas as pd
+    from app.features import DropNonNumeric
+
+    df = pd.DataFrame({"a": [1.0, 2.0], "b": ["x", "y"], "c": [3, 4]})
+    transformer = DropNonNumeric()
+    transformer.fit(df)
+    out = transformer.transform(df)
+    assert "b" not in out.columns
+    assert "a" in out.columns
+    assert "c" in out.columns
+
+
+def test_drop_non_numeric_fitted_attr() -> None:
+    import pandas as pd
+    from app.features import DropNonNumeric
+
+    df = pd.DataFrame({"x": [1.0]})
+    t = DropNonNumeric()
+    t.fit(df)
+    assert hasattr(t, "fitted_") and t.fitted_ is True
