@@ -28,7 +28,7 @@ TIER2_RATE = 0.22
 def tariff_compare(
     hourly_kwh: list[float],
     start_hour: Annotated[int, Query(ge=0, le=23)] = 0,
-) -> dict:
+) -> dict[str, object]:
     if not hourly_kwh:
         from fastapi import HTTPException
         raise HTTPException(status_code=422, detail="consumption series must not be empty")
@@ -76,7 +76,7 @@ def tariff_compare(
 # ---------------------------------------------------------------------------
 
 @router.post("/load-profile")
-def load_profile(hourly_kwh: list[float]) -> dict:
+def load_profile(hourly_kwh: list[float]) -> dict[str, object]:
     if not hourly_kwh:
         from fastapi import HTTPException
         raise HTTPException(status_code=422, detail="series must not be empty")
@@ -110,7 +110,7 @@ def weather_normalize(
     current_kwh: Annotated[float, Query(ge=0)],
     baseline_degree_days: Annotated[float, Query(gt=0)],
     current_degree_days: Annotated[float, Query(gt=0)],
-) -> dict:
+) -> dict[str, float]:
     raw_change_pct = (current_kwh - baseline_kwh) / baseline_kwh * 100.0
     weather_adjusted_current = current_kwh * (baseline_degree_days / current_degree_days)
     normalized_change_pct = (weather_adjusted_current - baseline_kwh) / baseline_kwh * 100.0
@@ -145,7 +145,7 @@ PENALTY_RATE = 0.15
 def demand_response_evaluate(
     payload: DRPayload,
     committed_kwh: Annotated[float, Query(gt=0)],
-) -> dict:
+) -> dict[str, float]:
     total_baseline = sum(payload.baseline_hourly_kwh)
     total_actual = sum(payload.actual_hourly_kwh)
     curtailed_kwh = max(0.0, total_baseline - total_actual)
@@ -178,7 +178,7 @@ def power_quality(
     phase_voltages: list[float],
     real_power_kw: Annotated[float, Query(gt=0)],
     reactive_power_kvar: Annotated[float, Query(ge=0)],
-) -> dict:
+) -> dict[str, object]:
     if len(phase_voltages) < 2:
         from fastapi import HTTPException
         raise HTTPException(status_code=422, detail="at least 2 phase voltages are required")
@@ -203,7 +203,7 @@ def power_quality_correction(
     real_power_kw: Annotated[float, Query(gt=0)],
     current_power_factor: Annotated[float, Query(gt=0, le=1)],
     target_power_factor: Annotated[float, Query(gt=0, le=1)] = 0.95,
-) -> dict:
+) -> dict[str, float | None]:
     if current_power_factor >= target_power_factor:
         return {"required_kvar": 0.0}
     current_angle = math.acos(current_power_factor)
@@ -232,7 +232,7 @@ EXPORT_RATE = 0.08
 
 
 @router.post("/solar/economics")
-def solar_economics(payload: SolarEconomicsPayload) -> dict:
+def solar_economics(payload: SolarEconomicsPayload) -> dict[str, float]:
     self_consumed = sum(min(g, c) for g, c in zip(payload.generation_hourly_kwh, payload.consumption_hourly_kwh))
     exported = sum(max(0.0, g - c) for g, c in zip(payload.generation_hourly_kwh, payload.consumption_hourly_kwh))
     imported = sum(max(0.0, c - g) for g, c in zip(payload.generation_hourly_kwh, payload.consumption_hourly_kwh))
@@ -260,7 +260,7 @@ SOLAR_LIFETIME_YEARS = 25.0
 def solar_payback(
     system_cost: Annotated[float, Query(gt=0)],
     annual_benefit: Annotated[float, Query(ge=0)],
-) -> dict:
+) -> dict[str, object]:
     if annual_benefit <= 0:
         return {"repays_within_lifetime": False, "payback_years": None}
     payback = system_cost / annual_benefit
@@ -280,7 +280,7 @@ def battery_peak_shave(
     max_discharge_kw: Annotated[float, Query(gt=0)],
     target_peak_kw: Annotated[float, Query(ge=0)],
     demand_charge_per_kw: Annotated[float, Query(ge=0)] = 0.0,
-) -> dict:
+) -> dict[str, object]:
     original_peak = max(hourly_load_kw) if hourly_load_kw else 0.0
     soc = capacity_kwh
     shaved = []
@@ -310,7 +310,7 @@ def battery_peak_shave(
 def battery_sizing(
     hourly_load_kw: list[float],
     target_peak_kw: Annotated[float, Query(ge=0)],
-) -> dict:
+) -> dict[str, float]:
     peak_load = max(hourly_load_kw) if hourly_load_kw else 0.0
     required = sum(max(0.0, load - target_peak_kw) for load in hourly_load_kw)
     return {
@@ -340,7 +340,7 @@ def cohort_benchmark(
     cohort_eui: list[float],
     annual_kwh: Annotated[float, Query(gt=0)],
     floor_area_m2: Annotated[float, Query(gt=0)],
-) -> dict:
+) -> dict[str, object]:
     if len(cohort_eui) < 3:
         from fastapi import HTTPException
         raise HTTPException(status_code=422, detail="cohort must have at least 3 members")
