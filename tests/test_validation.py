@@ -1378,3 +1378,82 @@ class TestValidateCoordinateExtended2:
         from app.validation import validate_coordinate
 
         assert validate_coordinate(lat, lon) == []
+
+
+class TestValidateEmail:
+    def test_valid_email(self) -> None:
+        from app.validation import validate_email
+
+        assert validate_email("user@example.com") == []
+
+    def test_missing_at_sign(self) -> None:
+        from app.validation import validate_email
+
+        errors = validate_email("userexample.com")
+        assert len(errors) > 0
+
+    def test_empty_string(self) -> None:
+        from app.validation import validate_email
+
+        assert len(validate_email("")) > 0
+
+    def test_no_dot_in_domain(self) -> None:
+        from app.validation import validate_email
+
+        errors = validate_email("user@localhost")
+        assert len(errors) > 0
+
+    def test_custom_field_name_in_error(self) -> None:
+        from app.validation import validate_email
+
+        errors = validate_email("bad", field_name="contact_email")
+        assert any("contact_email" in e for e in errors)
+
+
+class TestValidateStringLength:
+    def test_valid_length(self) -> None:
+        from app.validation import validate_string_length
+
+        assert validate_string_length("hello") == []
+
+    def test_too_short(self) -> None:
+        from app.validation import validate_string_length
+
+        errors = validate_string_length("", min_length=1)
+        assert len(errors) > 0
+
+    def test_too_long(self) -> None:
+        from app.validation import validate_string_length
+
+        errors = validate_string_length("abc", max_length=2)
+        assert len(errors) > 0
+
+    def test_exact_min_length(self) -> None:
+        from app.validation import validate_string_length
+
+        assert validate_string_length("ab", min_length=2) == []
+
+
+class TestValidateRange:
+    def test_value_in_range(self) -> None:
+        from app.validation import validate_range
+
+        assert validate_range(5.0, "score", min_value=0.0, max_value=10.0) == []
+
+    def test_value_below_min(self) -> None:
+        from app.validation import validate_range
+
+        errors = validate_range(-1.0, "score", min_value=0.0)
+        assert len(errors) > 0
+
+    def test_value_above_max(self) -> None:
+        from app.validation import validate_range
+
+        errors = validate_range(11.0, "score", max_value=10.0)
+        assert len(errors) > 0
+
+    def test_boundary_values_valid(self) -> None:
+        from app.validation import validate_range
+
+        assert validate_range(0.0, "x", min_value=0.0, max_value=1.0) == []
+        assert validate_range(1.0, "x", min_value=0.0, max_value=1.0) == []
