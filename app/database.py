@@ -153,3 +153,22 @@ def get_recent_anomalies(
 def count_anomalies_by_building(db: Session, building_id: str) -> int:
     """Return the total number of anomaly records for a building."""
     return db.query(AnomalyLog).filter(AnomalyLog.building_id == building_id).count()
+
+
+__all__ = [
+    "AnomalyLog",
+    "Base",
+    "DATABASE_URL",
+    "DriftLog",
+    "EnergyReading",
+    "ModelMetrics",
+    "Prediction",
+    "PredictionLog",
+    "SessionLocal",
+    "count_anomalies_by_building",
+    "engine",
+    "get_db",
+    "get_predictions_by_building",
+    "get_recent_anomalies",
+    "init_db",
+]
