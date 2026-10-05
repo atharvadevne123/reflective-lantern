@@ -216,14 +216,16 @@ def test_drift_log_stored_and_retrieved(db_session) -> None:
 
 @pytest.mark.parametrize("n", [1, 3, 5, 10])
 def test_prediction_log_multiple_buildings(db_session, n) -> None:
+    import uuid
     from datetime import datetime
 
     from app.database import PredictionLog, get_predictions_by_building
 
+    run_id = uuid.uuid4().hex[:8]
     for i in range(n):
         db_session.add(
             PredictionLog(
-                building_id=f"building-{i}",
+                building_id=f"multi-{run_id}-building-{i}",
                 timestamp=datetime.utcnow(),
                 predicted_kwh=float(i * 2),
                 latency_ms=float(i),
@@ -231,7 +233,7 @@ def test_prediction_log_multiple_buildings(db_session, n) -> None:
         )
     db_session.commit()
     for i in range(n):
-        results = get_predictions_by_building(db_session, f"building-{i}")
+        results = get_predictions_by_building(db_session, f"multi-{run_id}-building-{i}")
         assert len(results) == 1
         assert results[0].predicted_kwh == float(i * 2)
 
