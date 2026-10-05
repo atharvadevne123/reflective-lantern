@@ -228,6 +228,18 @@ class MetricsRegistry:
         """Unregister a metric by name. Returns True if it existed."""
         return self._metrics.pop(name, None) is not None
 
+    def get(self, name: str) -> object | None:
+        """Return a registered metric by name, or None if not found."""
+        return self._metrics.get(name)
+
+    def register(self, metric: object) -> None:
+        """Register a pre-built metric object under its .name attribute."""
+        self._metrics[metric.name] = metric  # type: ignore[attr-defined]
+
+    def names(self) -> list[str]:
+        """Return list of all registered metric names."""
+        return list(self._metrics.keys())
+
     def __len__(self) -> int:
         """Return the number of registered metrics."""
         return len(self._metrics)
