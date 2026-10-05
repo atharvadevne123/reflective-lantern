@@ -33,3 +33,6 @@ class Settings:
 def get_settings() -> Settings:
     """Return a freshly resolved Settings instance."""
     return Settings()
+
+
+__all__ = ["Settings", "get_settings"]
