@@ -155,8 +155,8 @@ def train_anomaly_model(df: "pd.DataFrame") -> object:
     """Train an IsolationForest anomaly detector on the energy DataFrame."""
     import pandas as pd
     from sklearn.ensemble import IsolationForest
-    from sklearn.preprocessing import StandardScaler
     from sklearn.pipeline import Pipeline as SKPipeline
+    from sklearn.preprocessing import StandardScaler
 
     X = df.values if isinstance(df, pd.DataFrame) else df
     pipe = SKPipeline([

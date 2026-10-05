@@ -603,5 +603,4 @@ class DropNonNumeric(BaseEstimator, TransformerMixin):
         return self
 
     def transform(self, X: "pd.DataFrame") -> "pd.DataFrame":
-        import pandas as pd
         return X.select_dtypes(include=[float, int, "number"]).copy()

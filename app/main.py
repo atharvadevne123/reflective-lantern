@@ -17,6 +17,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field, field_validator
 from sqlalchemy.orm import Session
 
+from app.analytics_router import router as analytics_router
 from app.config import get_settings
 from app.database import get_db, init_db
 from app.exceptions import (
@@ -33,7 +34,6 @@ from app.features import (
 )
 from app.middleware import RateLimitMiddleware
 from app.model import load_model, train_model
-from app.analytics_router import router as analytics_router
 from app.monitoring import log_prediction, run_drift_check, seed_reference_buffer
 
 logging.basicConfig(

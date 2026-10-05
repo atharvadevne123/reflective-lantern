@@ -5,7 +5,7 @@ import math
 from typing import Annotated
 
 from fastapi import APIRouter, Query
-from pydantic import BaseModel, field_validator, model_validator
+from pydantic import BaseModel, model_validator
 
 router = APIRouter(prefix="/api/v1")
 
