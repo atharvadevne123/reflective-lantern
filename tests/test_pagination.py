@@ -244,7 +244,7 @@ def test_page_info_total_pages_ceiling_division(total: int) -> None:
     import math
 
     info = PageInfo(total=total, page=1, per_page=10)
-    assert info.total_pages == math.ceil(total / 10) if total > 0 else 0
+    assert info.total_pages == (math.ceil(total / 10) if total > 0 else 0)
 
 
 class TestCursorPaginateFirstPage:
