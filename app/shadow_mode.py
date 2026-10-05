@@ -16,20 +16,20 @@ class ShadowResult:
     """Outcome of a shadow execution for one request.
 
     Attributes:
-        primary_result: Return value from the primary handler.
-        shadow_result: Return value from the shadow handler (None if failed).
+        primary: Return value from the primary handler.
+        shadow: Return value from the shadow handler (None if failed).
         shadow_error: Exception from shadow handler, if any.
         primary_latency_ms: Milliseconds for the primary call.
         shadow_latency_ms: Milliseconds for the shadow call (or 0 on error).
         matched: Whether primary and shadow results are equal.
     """
 
-    primary_result: Any
-    shadow_result: Any | None
-    shadow_error: Exception | None
-    primary_latency_ms: float
-    shadow_latency_ms: float
-    matched: bool
+    primary: Any
+    shadow: Any | None = None
+    shadow_error: Exception | None = None
+    primary_latency_ms: float = 0.0
+    shadow_latency_ms: float = 0.0
+    matched: bool = False
 
 
 class ShadowRunner:
@@ -87,8 +87,8 @@ class ShadowRunner:
             matched = False
 
         result = ShadowResult(
-            primary_result=primary_result,
-            shadow_result=shadow_result,
+            primary=primary_result,
+            shadow=shadow_result,
             shadow_error=shadow_error,
             primary_latency_ms=primary_ms,
             shadow_latency_ms=shadow_ms,
