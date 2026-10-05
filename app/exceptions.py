@@ -108,6 +108,22 @@ class ExternalServiceError(LogisticsFlowError):
         self.detail = detail
 
 
+__all__ = [
+    "ConfigurationError",
+    "DatabaseError",
+    "DriftDetectionError",
+    "ExternalServiceError",
+    "FeatureExtractionError",
+    "FeatureValidationError",
+    "LogisticsFlowError",
+    "ModelNotLoadedError",
+    "PredictionError",
+    "RateLimitExceededError",
+    "WattGuardError",
+    "register_exception_handlers",
+]
+
+
 def register_exception_handlers(app: FastAPI) -> None:
     """Attach a JSON handler for every LogisticsFlowError subclass."""
 
