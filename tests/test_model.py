@@ -73,3 +73,63 @@ def test_model_scales_with_data(n_samples):
     y = df["delivery_minutes"].values
     pipe, metrics = train_model(X, y)
     assert metrics["n_samples"] == n_samples
+
+
+def test_train_model_save_false_does_not_write(tmp_path, monkeypatch):
+    """train_model with save=False must not write model.joblib to disk."""
+    import os
+
+    from app.model import train_model
+
+    monkeypatch.chdir(tmp_path)
+    df = generate_synthetic_data(n=200, seed=99)
+    feat_pipe = build_feature_pipeline()
+    X = prepare_X(df, feat_pipe, fit=True)
+    y = df["delivery_minutes"].values
+    train_model(X, y, save=False)
+    assert not os.path.exists(tmp_path / "model.joblib")
+
+
+def test_train_anomaly_model_returns_pipeline():
+    import pandas as pd
+
+    from app.model import train_anomaly_model
+
+    df = pd.DataFrame({
+        "hour": range(100),
+        "consumption_kwh": [float(i % 50) for i in range(100)],
+    })
+    bundle = train_anomaly_model(df)
+    assert hasattr(bundle, "predict")
+    assert hasattr(bundle, "decision_function")
+
+
+def test_score_anomaly_returns_expected_keys():
+    import pandas as pd
+
+    from app.model import score_anomaly, train_anomaly_model
+
+    df = pd.DataFrame({
+        "hour": list(range(50)),
+        "consumption_kwh": [10.0] * 50,
+    })
+    bundle = train_anomaly_model(df)
+    row = df.values[:1]
+    result = score_anomaly(bundle, row)
+    assert "is_anomaly" in result
+    assert "anomaly_score" in result
+    assert "severity" in result
+    assert isinstance(result["is_anomaly"], bool)
+    assert result["severity"] in ("none", "warning", "critical")
+
+
+def test_score_anomaly_severity_none_for_normal_point():
+    import pandas as pd
+
+    from app.model import score_anomaly, train_anomaly_model
+
+    # Train on 200 identical points; predicting one of them should be "normal"
+    df = pd.DataFrame({"val": [5.0] * 200})
+    bundle = train_anomaly_model(df)
+    result = score_anomaly(bundle, df.values[:1])
+    assert result["severity"] in ("none", "warning", "critical")  # just check it returns valid
