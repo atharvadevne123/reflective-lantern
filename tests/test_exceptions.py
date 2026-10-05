@@ -246,3 +246,41 @@ class TestExternalServiceError:
         err = ExternalServiceError(service, reason)
         assert err.service == service
         assert err.reason == reason
+
+
+class TestLogisticsFlowError:
+    def test_is_exception_subclass(self) -> None:
+        from app.exceptions import LogisticsFlowError
+
+        assert issubclass(LogisticsFlowError, Exception)
+
+    def test_can_be_raised_and_caught(self) -> None:
+        from app.exceptions import LogisticsFlowError
+
+        with pytest.raises(LogisticsFlowError):
+            raise LogisticsFlowError("logistics error")
+
+    def test_message_preserved(self) -> None:
+        from app.exceptions import LogisticsFlowError
+
+        err = LogisticsFlowError("test msg")
+        assert "test msg" in str(err)
+
+
+class TestFeatureExtractionError:
+    def test_is_logistics_flow_error_subclass(self) -> None:
+        from app.exceptions import FeatureExtractionError, LogisticsFlowError
+
+        assert issubclass(FeatureExtractionError, LogisticsFlowError)
+
+    def test_can_be_raised(self) -> None:
+        from app.exceptions import FeatureExtractionError
+
+        with pytest.raises(FeatureExtractionError, match="bad feature"):
+            raise FeatureExtractionError("bad feature")
+
+    def test_can_be_caught_as_logistics_flow_error(self) -> None:
+        from app.exceptions import FeatureExtractionError, LogisticsFlowError
+
+        with pytest.raises(LogisticsFlowError):
+            raise FeatureExtractionError("extraction failed")
