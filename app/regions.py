@@ -114,12 +114,12 @@ __all__ = [
 
 
 def region_count() -> int:
-    """Return the total number of known regions (excluding internal defaults).
+    """Return the total number of known regions.
 
     Returns:
         Integer count of regions in the registry.
     """
-    return len(region_names())
+    return len(list_regions())
 
 
 def get_region_names() -> list[str]:
@@ -291,12 +291,12 @@ def regions_by_grid_type(grid_type: str) -> list[str]:
 
 
 def region_names() -> list[str]:
-    """Return a sorted list of known region ids (excluding ``default``).
+    """Return a sorted list of all known region ids.
 
     Returns:
         Sorted list of region identifier strings.
     """
-    return sorted(name for name in KNOWN_REGIONS if name != "default")
+    return sorted(KNOWN_REGIONS.keys())
 
 
 def region_load_factor(region_id: str, load_mw: float | None = None) -> float:
