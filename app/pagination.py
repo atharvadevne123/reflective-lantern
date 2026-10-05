@@ -113,11 +113,13 @@ class CursorPage(Generic[T]):
         items: Items on this page.
         next_cursor: Opaque token for the next page; None if no more pages.
         has_next: Whether a next page exists.
+        prev_cursor: Opaque token for the previous page; None for first page.
     """
 
     items: list[T]
     next_cursor: str | None
     has_next: bool
+    prev_cursor: str | None = None
 
 
 def cursor_paginate(

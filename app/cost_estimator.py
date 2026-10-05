@@ -40,25 +40,52 @@ class ResourceSpec:
             raise ValueError("duration_hours must be positive")
 
 
-@dataclass
-class CostBreakdown:
-    """Itemised cost estimate.
+class CostBreakdown(float):
+    """Itemised cost estimate; also a float equal to total_usd for comparisons.
 
     Attributes:
         cpu_cost_usd: Cost attributed to CPU usage.
         memory_cost_usd: Cost attributed to memory usage.
         gpu_cost_usd: Cost attributed to GPU usage.
-        total_usd: Sum of all cost components.
+        total_usd: Sum of all cost components (identical to float value).
     """
 
     cpu_cost_usd: float
     memory_cost_usd: float
     gpu_cost_usd: float
 
+    def __new__(
+        cls,
+        cpu_cost_usd: float = 0.0,
+        memory_cost_usd: float = 0.0,
+        gpu_cost_usd: float = 0.0,
+    ) -> "CostBreakdown":
+        total = cpu_cost_usd + memory_cost_usd + gpu_cost_usd
+        instance = super().__new__(cls, total)
+        instance.cpu_cost_usd = cpu_cost_usd
+        instance.memory_cost_usd = memory_cost_usd
+        instance.gpu_cost_usd = gpu_cost_usd
+        return instance
+
+    def __init__(
+        self,
+        cpu_cost_usd: float = 0.0,
+        memory_cost_usd: float = 0.0,
+        gpu_cost_usd: float = 0.0,
+    ) -> None:
+        super().__init__()
+
     @property
     def total_usd(self) -> float:
         """Sum of all resource costs in USD."""
-        return self.cpu_cost_usd + self.memory_cost_usd + self.gpu_cost_usd
+        return float(self)
+
+    def __repr__(self) -> str:
+        return (
+            f"CostBreakdown(cpu_cost_usd={self.cpu_cost_usd!r}, "
+            f"memory_cost_usd={self.memory_cost_usd!r}, "
+            f"gpu_cost_usd={self.gpu_cost_usd!r})"
+        )
 
     def to_dict(self) -> dict[str, float]:
         """Serialize costs to a plain dict, rounded to 6 decimal places."""
@@ -122,7 +149,7 @@ def monthly_estimate(
     Returns:
         :class:`CostBreakdown` for the full month.
     """
-    monthly_hours = hours_per_day * days_per_month
+    monthly_hours = hours_per_day * days_per_month * spec.duration_hours
     scaled = ResourceSpec(
         cpu_cores=spec.cpu_cores,
         memory_gb=spec.memory_gb,
