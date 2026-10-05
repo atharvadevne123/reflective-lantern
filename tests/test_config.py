@@ -45,3 +45,33 @@ def test_settings_frozen():
     s = Settings()
     with pytest.raises(dataclasses.FrozenInstanceError):
         s.log_level = "TRACE"  # type: ignore[misc]
+
+
+def test_model_path_default(monkeypatch):
+    monkeypatch.delenv("MODEL_PATH", raising=False)
+    assert Settings().model_path == "model.joblib"
+
+
+def test_model_path_override(monkeypatch):
+    monkeypatch.setenv("MODEL_PATH", "/tmp/custom.joblib")
+    assert Settings().model_path == "/tmp/custom.joblib"
+
+
+def test_metrics_path_default(monkeypatch):
+    monkeypatch.delenv("METRICS_PATH", raising=False)
+    assert Settings().metrics_path == "metrics.json"
+
+
+def test_drift_window_default(monkeypatch):
+    monkeypatch.delenv("DRIFT_WINDOW", raising=False)
+    assert Settings().drift_window == 100
+
+
+def test_drift_window_override(monkeypatch):
+    monkeypatch.setenv("DRIFT_WINDOW", "250")
+    assert Settings().drift_window == 250
+
+
+def test_model_version_default(monkeypatch):
+    monkeypatch.delenv("MODEL_VERSION", raising=False)
+    assert Settings().model_version == "1.0.0"
