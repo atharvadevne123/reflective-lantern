@@ -10,6 +10,7 @@ from sqlalchemy.pool import StaticPool
 
 from app.database import Base, get_db
 from app.main import app
+from app.monitoring import reset_anomaly_flags_buffer
 
 
 @pytest.fixture(scope="session")
@@ -46,14 +47,22 @@ def test_engine():
 
 @pytest.fixture()
 def db_session(test_engine):
-    """Yield an isolated test DB session."""
-    TestSession = sessionmaker(autocommit=False, autoflush=False, bind=test_engine)
+    """Yield a per-test DB session that cleans up after itself.
+
+    Uses a connection-level SAVEPOINT so that each test's commits are
+    visible within the test but rolled back at teardown, keeping the
+    shared in-memory database clean.
+    """
+    connection = test_engine.connect()
+    transaction = connection.begin()
+    TestSession = sessionmaker(autocommit=False, autoflush=False, bind=connection)
     session = TestSession()
     try:
         yield session
     finally:
-        session.rollback()
         session.close()
+        transaction.rollback()
+        connection.close()
 
 
 @pytest.fixture()
@@ -72,6 +81,12 @@ def client(test_engine):
     with TestClient(app) as c:
         yield c
     app.dependency_overrides.clear()
+
+
+@pytest.fixture(autouse=True)
+def _reset_monitoring_globals() -> None:
+    """Reset in-memory monitoring buffers before every test."""
+    reset_anomaly_flags_buffer()
 
 
 @pytest.fixture()

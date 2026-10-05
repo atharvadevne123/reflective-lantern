@@ -28,6 +28,12 @@ _reference_window: list[float] = []
 # Global anomaly flags buffer for no-arg rolling_anomaly_rate
 _anomaly_flags_buffer: list[bool] = []
 
+
+def reset_anomaly_flags_buffer() -> None:
+    """Clear the in-memory anomaly flags buffer (test helper)."""
+    global _anomaly_flags_buffer
+    _anomaly_flags_buffer = []
+
 # Global alert counts
 _global_alert_counts: dict[str, int] = {"warning": 0, "error": 0, "critical": 0}
 
