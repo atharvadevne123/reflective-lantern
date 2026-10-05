@@ -147,29 +147,35 @@ def suppress_noisy_loggers(*names: str, level: str = "WARNING") -> None:
         logging.getLogger(name).setLevel(int_level)
 
 
-def log_handler_count(logger_name: str = "root") -> int:
+def _resolve_logger(logger_name) -> logging.Logger:
+    """Accept either a Logger object or a name string."""
+    if isinstance(logger_name, logging.Logger):
+        return logger_name
+    return logging.getLogger() if logger_name == "root" else logging.getLogger(logger_name)
+
+
+def log_handler_count(logger_name="root") -> int:
     """Return the number of handlers attached to the named logger.
 
     Args:
-        logger_name: Logger name; 'root' returns the root logger's handler count.
+        logger_name: Logger name string or Logger instance.
 
     Returns:
         Handler count as a non-negative integer.
     """
-    log = logging.getLogger() if logger_name == "root" else logging.getLogger(logger_name)
-    return len(log.handlers)
+    return len(_resolve_logger(logger_name).handlers)
 
 
-def has_console_handler(logger_name: str = "root") -> bool:
+def has_console_handler(logger_name="root") -> bool:
     """Return True if the named logger has a StreamHandler (console) attached.
 
     Args:
-        logger_name: Logger name; 'root' checks the root logger.
+        logger_name: Logger name string or Logger instance.
 
     Returns:
         True if at least one :class:`logging.StreamHandler` is present.
     """
-    log = logging.getLogger() if logger_name == "root" else logging.getLogger(logger_name)
+    log = _resolve_logger(logger_name)
     return any(isinstance(h, logging.StreamHandler) for h in log.handlers)
 
 
