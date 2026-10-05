@@ -719,3 +719,33 @@ class TestAlertCountByLevelExt:
 
         result = alert_count_by_level()
         assert expected_key in result or isinstance(result, dict)
+
+
+def test_seed_reference_buffer_populates_keys() -> None:
+    from app.monitoring import _REFERENCE_BUFFER, seed_reference_buffer
+
+    for buf in _REFERENCE_BUFFER.values():
+        buf.clear()
+    seed_reference_buffer([
+        {"distance_km": 50.0, "weight_kg": 2.0, "predicted_minutes": 30.0},
+        {"distance_km": 80.0, "weight_kg": 5.0, "predicted_minutes": 60.0},
+    ])
+    assert len(_REFERENCE_BUFFER["distance_km"]) == 2
+    assert len(_REFERENCE_BUFFER["weight_kg"]) == 2
+
+
+def test_run_drift_check_no_predictions(db_session) -> None:
+    from app.monitoring import run_drift_check
+
+    result = run_drift_check(db_session)
+    assert result["status"] == "no_predictions"
+    assert result["features"] == {}
+
+
+def test_seed_reference_buffer_ignores_unknown_keys() -> None:
+    from app.monitoring import _REFERENCE_BUFFER, seed_reference_buffer
+
+    for buf in _REFERENCE_BUFFER.values():
+        buf.clear()
+    seed_reference_buffer([{"unknown_field": 99.0}])
+    assert all(len(buf) == 0 for buf in _REFERENCE_BUFFER.values())
