@@ -45,10 +45,68 @@ class DriftLog(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     created_at = Column(DateTime, default=datetime.utcnow)
+    checked_at = Column(DateTime, nullable=True)
     feature = Column(String(64))
+    feature_name = Column(String(64))
     ks_statistic = Column(Float)
     p_value = Column(Float)
     drift_detected = Column(Integer)  # 0/1
+
+
+class EnergyReading(Base):
+    """Raw energy consumption reading from a building sensor."""
+
+    __tablename__ = "energy_readings"
+
+    id = Column(Integer, primary_key=True, index=True)
+    building_id = Column(String(128), index=True)
+    timestamp = Column(DateTime, default=datetime.utcnow, index=True)
+    consumption_kwh = Column(Float)
+    temperature_c = Column(Float, nullable=True)
+    humidity_pct = Column(Float, nullable=True)
+    occupancy = Column(Integer, nullable=True)
+    hvac_state = Column(Integer, nullable=True)
+
+
+class PredictionLog(Base):
+    """Stores per-building energy consumption predictions."""
+
+    __tablename__ = "prediction_logs"
+
+    id = Column(Integer, primary_key=True, index=True)
+    building_id = Column(String(128), index=True)
+    timestamp = Column(DateTime, default=datetime.utcnow, index=True)
+    predicted_kwh = Column(Float)
+    actual_kwh = Column(Float, nullable=True)
+    latency_ms = Column(Float, nullable=True)
+    model_version = Column(String(32), default="1.0.0")
+
+
+class AnomalyLog(Base):
+    """Records detected anomalies in energy consumption."""
+
+    __tablename__ = "anomaly_logs"
+
+    id = Column(Integer, primary_key=True, index=True)
+    building_id = Column(String(128), index=True)
+    timestamp = Column(DateTime, default=datetime.utcnow, index=True)
+    consumption_kwh = Column(Float)
+    anomaly_score = Column(Float)
+    is_anomaly = Column(Integer)  # 0/1
+    severity = Column(String(32), nullable=True)
+
+
+class ModelMetrics(Base):
+    """Stores model evaluation metrics after each training run."""
+
+    __tablename__ = "model_metrics"
+
+    id = Column(Integer, primary_key=True, index=True)
+    recorded_at = Column(DateTime, default=datetime.utcnow)
+    model_version = Column(String(32))
+    r2_mean = Column(Float, nullable=True)
+    mae_kwh = Column(Float, nullable=True)
+    rmse_mean = Column(Float, nullable=True)
 
 
 def init_db() -> None:
@@ -64,3 +122,34 @@ def get_db() -> Session:
         yield db
     finally:
         db.close()
+
+
+def get_predictions_by_building(
+    db: Session, building_id: str, limit: int = 100
+) -> list[PredictionLog]:
+    """Return prediction log entries for a given building, newest first."""
+    return (
+        db.query(PredictionLog)
+        .filter(PredictionLog.building_id == building_id)
+        .order_by(PredictionLog.timestamp.desc())
+        .limit(limit)
+        .all()
+    )
+
+
+def get_recent_anomalies(
+    db: Session,
+    building_id: str,
+    limit: int = 50,
+    severity: str | None = None,
+) -> list[AnomalyLog]:
+    """Return recent anomaly log entries, optionally filtered by severity."""
+    q = db.query(AnomalyLog).filter(AnomalyLog.building_id == building_id)
+    if severity is not None:
+        q = q.filter(AnomalyLog.severity == severity)
+    return q.order_by(AnomalyLog.timestamp.desc()).limit(limit).all()
+
+
+def count_anomalies_by_building(db: Session, building_id: str) -> int:
+    """Return the total number of anomaly records for a building."""
+    return db.query(AnomalyLog).filter(AnomalyLog.building_id == building_id).count()
