@@ -436,7 +436,7 @@ __all__ = [
 ]
 
 
-def moving_median(values: list[float], window: int) -> list[float]:
+def moving_median(values: list[float], window: int = 3) -> list[float]:
     """Compute a rolling median over *window* periods.
 
     Each position uses the preceding *window* values (or all available

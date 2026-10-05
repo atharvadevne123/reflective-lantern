@@ -259,7 +259,7 @@ def annual_cost_estimate(monthly_kwh: list[float], rate: float = DEFAULT_FLAT_RA
             or *rate* is negative.
     """
     if not monthly_kwh:
-        raise ValueError("monthly_kwh must not be empty")
+        return 0.0
     if len(monthly_kwh) > 12:
         raise ValueError(f"monthly_kwh must have at most 12 entries, got {len(monthly_kwh)}")
     if rate < 0:

@@ -39,18 +39,27 @@ class SolarEconomics:
 
 
 def generation_kwh(
-    array_area_m2: float,
-    irradiance_kwh_per_m2: float,
+    array_area_m2: float | None = None,
+    irradiance_kwh_per_m2: float | None = None,
     panel_efficiency: float = DEFAULT_PANEL_EFFICIENCY,
     performance_ratio: float = DEFAULT_PERFORMANCE_RATIO,
+    *,
+    peak_kw: float | None = None,
+    irradiance_kwh_per_sqm: float | None = None,
 ) -> float:
     """Estimate PV generation for a period.
+
+    Accepts two calling conventions:
+    - ``generation_kwh(array_area_m2, irradiance_kwh_per_m2)`` — area-based model.
+    - ``generation_kwh(peak_kw=..., irradiance_kwh_per_sqm=...)`` — peak-power model.
 
     Args:
         array_area_m2: Total module area in square metres.
         irradiance_kwh_per_m2: Plane-of-array irradiance over the period.
         panel_efficiency: Module conversion efficiency in (0, 1].
         performance_ratio: System-level derate factor in (0, 1].
+        peak_kw: System peak power in kW (alternative to area-based inputs).
+        irradiance_kwh_per_sqm: Alias for irradiance_kwh_per_m2 in kWh/m².
 
     Returns:
         Generated energy in kWh rounded to 4 decimal places.
@@ -59,6 +68,17 @@ def generation_kwh(
         ValueError: If any argument is negative, or either efficiency term
             is outside (0, 1].
     """
+    if peak_kw is not None:
+        _irr = irradiance_kwh_per_sqm if irradiance_kwh_per_sqm is not None else (irradiance_kwh_per_m2 or 0.0)
+        if peak_kw < 0 or _irr < 0:
+            raise ValueError("peak_kw and irradiance must be non-negative")
+        return round(peak_kw * _irr * performance_ratio, 4)
+    if irradiance_kwh_per_sqm is not None and irradiance_kwh_per_m2 is None:
+        irradiance_kwh_per_m2 = irradiance_kwh_per_sqm
+    if array_area_m2 is None:
+        array_area_m2 = 0.0
+    if irradiance_kwh_per_m2 is None:
+        irradiance_kwh_per_m2 = 0.0
     if array_area_m2 < 0 or irradiance_kwh_per_m2 < 0:
         raise ValueError(
             f"area and irradiance must be non-negative, got area={array_area_m2} irradiance={irradiance_kwh_per_m2}"
