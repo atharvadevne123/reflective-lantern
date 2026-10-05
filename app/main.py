@@ -337,3 +337,20 @@ async def predict_batch(
         )
 
     return BatchPredictResponse(predictions=results, count=len(results))
+
+
+# Short-path aliases used by tests and health-check probes
+@app.get("/health", include_in_schema=False)
+async def health_alias():
+    return {"status": "healthy" if _model is not None else "degraded", "model_version": MODEL_VERSION}
+
+
+@app.get("/metrics", include_in_schema=False)
+async def metrics_alias():
+    data = json.loads(Path(METRICS_PATH).read_text()) if Path(METRICS_PATH).exists() else {}
+    return {"model_version": data.get("model_version", MODEL_VERSION)}
+
+
+@app.get("/version", include_in_schema=False)
+async def version_alias():
+    return {"version": MODEL_VERSION}
