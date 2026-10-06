@@ -150,7 +150,9 @@ def test_compute_feature_drift_summary_no_reference() -> None:
     from app.monitoring import compute_feature_drift_summary, reset_reference_window
 
     reset_reference_window()
-    result = compute_feature_drift_summary({"temp": [20.0, 21.0, 22.0, 23.0, 24.0, 25.0, 26.0, 27.0, 28.0, 29.0]})
+    result = compute_feature_drift_summary(
+        {"temp": [20.0, 21.0, 22.0, 23.0, 24.0, 25.0, 26.0, 27.0, 28.0, 29.0]}
+    )
     assert len(result) == 1
     assert result[0]["feature"] == "temp"
 
@@ -206,14 +208,22 @@ def test_summarize_drift_history_keys() -> None:
 
     checks = [{"drift_detected": False, "ks_statistic": 0.1, "p_value": 0.3}]
     result = summarize_drift_history(checks)
-    assert set(result.keys()) == {"total_checks", "drift_count", "drift_rate", "mean_ks_statistic", "min_p_value"}
+    assert set(result.keys()) == {
+        "total_checks",
+        "drift_count",
+        "drift_rate",
+        "mean_ks_statistic",
+        "min_p_value",
+    }
 
 
 @pytest.mark.parametrize("n_drift,n_total", [(0, 5), (2, 5), (5, 5)])
 def test_summarize_drift_history_parametrized(n_drift, n_total) -> None:
     from app.monitoring import summarize_drift_history
 
-    checks = [{"drift_detected": i < n_drift, "ks_statistic": 0.1, "p_value": 0.3} for i in range(n_total)]
+    checks = [
+        {"drift_detected": i < n_drift, "ks_statistic": 0.1, "p_value": 0.3} for i in range(n_total)
+    ]
     result = summarize_drift_history(checks)
     assert result["drift_count"] == n_drift
     assert result["total_checks"] == n_total
@@ -726,10 +736,12 @@ def test_seed_reference_buffer_populates_keys() -> None:
 
     for buf in _REFERENCE_BUFFER.values():
         buf.clear()
-    seed_reference_buffer([
-        {"distance_km": 50.0, "weight_kg": 2.0, "predicted_minutes": 30.0},
-        {"distance_km": 80.0, "weight_kg": 5.0, "predicted_minutes": 60.0},
-    ])
+    seed_reference_buffer(
+        [
+            {"distance_km": 50.0, "weight_kg": 2.0, "predicted_minutes": 30.0},
+            {"distance_km": 80.0, "weight_kg": 5.0, "predicted_minutes": 60.0},
+        ]
+    )
     assert len(_REFERENCE_BUFFER["distance_km"]) == 2
     assert len(_REFERENCE_BUFFER["weight_kg"]) == 2
 
