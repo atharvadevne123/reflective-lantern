@@ -262,3 +262,21 @@ class TestMonthlyEstimateExtended:
 
         spec = ResourceSpec(cpu_cores=1, memory_gb=2, duration_hours=1)
         assert isinstance(monthly_estimate(spec), float)
+
+
+@pytest.mark.parametrize(
+    "cpu_cores,memory_gb,hours",
+    [
+        (1, 1, 1),
+        (4, 8, 24),
+        (2, 4, 8),
+        (8, 16, 1),
+    ],
+)
+def test_monthly_estimate_always_positive(cpu_cores: int, memory_gb: int, hours: int) -> None:
+    from app.cost_estimator import ResourceSpec, monthly_estimate
+
+    spec = ResourceSpec(cpu_cores=cpu_cores, memory_gb=memory_gb, duration_hours=hours)
+    result = monthly_estimate(spec)
+    assert result > 0.0
+    assert isinstance(result, float)
