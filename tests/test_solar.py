@@ -255,3 +255,23 @@ class TestGenerationKwhExtended:
         from app.solar import generation_kwh
 
         assert isinstance(generation_kwh(peak_kw=3.0, irradiance_kwh_per_sqm=4.0), float)
+
+
+@pytest.mark.parametrize(
+    "peak_kw,irradiance,efficiency,expected_min",
+    [
+        (5.0, 4.5, 0.8, 0.0),
+        (10.0, 5.0, 0.9, 0.0),
+        (1.0, 1.0, 0.5, 0.0),
+    ],
+)
+def test_generation_kwh_parametrized(
+    peak_kw: float, irradiance: float, efficiency: float, expected_min: float
+) -> None:
+    from app.solar import generation_kwh
+
+    result = generation_kwh(
+        peak_kw=peak_kw, irradiance_kwh_per_sqm=irradiance, panel_efficiency=efficiency
+    )
+    assert result >= expected_min
+    assert isinstance(result, float)
