@@ -378,3 +378,34 @@ class TestAlertManagerAddHandler:
         mgr.evaluate_all({"m": 5.0})
         assert counts[0] >= 1
         assert counts[1] >= 1
+
+
+@pytest.mark.parametrize(
+    "value,threshold,comparison,should_fire",
+    [
+        (100.0, 80.0, ">", True),
+        (50.0, 80.0, ">", False),
+        (80.0, 80.0, ">=", True),
+        (79.9, 80.0, ">=", False),
+        (30.0, 50.0, "<", True),
+        (60.0, 50.0, "<=", False),
+    ],
+)
+def test_alert_rule_comparison_operators(
+    value: float, threshold: float, comparison: str, should_fire: bool
+) -> None:
+    from app.alerting import AlertRule, Severity
+
+    rule = AlertRule(
+        name="test",
+        metric="x",
+        threshold=threshold,
+        severity=Severity.WARNING,
+        comparison=comparison,
+        cooldown_s=0.0,
+    )
+    alert = rule.evaluate(value, now=0.0)
+    if should_fire:
+        assert alert is not None, f"Expected alert for {value} {comparison} {threshold}"
+    else:
+        assert alert is None, f"Did not expect alert for {value} {comparison} {threshold}"
