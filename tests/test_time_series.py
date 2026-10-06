@@ -1874,3 +1874,20 @@ class TestMovingMedianExtended:
         values = [5.0, 3.0, 1.0, 4.0, 2.0]
         result = moving_median(values, window=window)
         assert isinstance(result, list)
+
+
+@pytest.mark.parametrize(
+    "values,period,expected_len",
+    [
+        ([1.0, 2.0, 3.0, 4.0, 5.0, 6.0], 2, 6),
+        ([10.0, 20.0, 30.0, 40.0, 50.0, 60.0, 70.0, 80.0], 4, 8),
+    ],
+)
+def test_seasonal_baseline_output_length_parametrized(
+    values: list, period: int, expected_len: int
+) -> None:
+    from app.time_series import seasonal_baseline
+
+    result = seasonal_baseline(values, period=period)
+    assert isinstance(result, list)
+    assert len(result) == expected_len
