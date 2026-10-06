@@ -120,3 +120,43 @@ def test_predict_confidence_in_range(client, predict_payload):
     assert resp.status_code == 200
     confidence = resp.json()["confidence"]
     assert 0.0 <= confidence <= 1.0
+
+
+@pytest.mark.parametrize(
+    "carrier",
+    ["DHL", "FedEx", "UPS", "USPS", "Amazon"],
+)
+def test_predict_all_valid_carriers(client, predict_payload, carrier: str) -> None:
+    payload = {**predict_payload, "carrier": carrier}
+    resp = client.post("/api/v1/predict", json=payload)
+    assert resp.status_code == 200, f"Carrier {carrier} returned {resp.status_code}"
+    assert resp.json()["predicted_minutes"] > 0
+
+
+@pytest.mark.parametrize(
+    "route_type",
+    ["urban", "suburban", "rural", "highway"],
+)
+def test_predict_all_route_types(client, predict_payload, route_type: str) -> None:
+    payload = {**predict_payload, "route_type": route_type}
+    resp = client.post("/api/v1/predict", json=payload)
+    assert resp.status_code == 200, f"Route {route_type} returned {resp.status_code}"
+
+
+@pytest.mark.parametrize(
+    "field,bad_value,expected_status",
+    [
+        ("carrier", "InvalidCarrier", 422),
+        ("route_type", "underwater", 422),
+        ("distance_km", -10.0, 422),
+        ("weight_kg", 0.0, 422),
+    ],
+)
+def test_predict_invalid_inputs_rejected(
+    client, predict_payload, field: str, bad_value: object, expected_status: int
+) -> None:
+    payload = {**predict_payload, field: bad_value}
+    resp = client.post("/api/v1/predict", json=payload)
+    assert resp.status_code == expected_status, (
+        f"Expected {expected_status} for {field}={bad_value!r}"
+    )
