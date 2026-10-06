@@ -14,7 +14,7 @@ pytest>=8.2.0
 pytest-asyncio>=0.23.7
 ruff>=0.16.6
 psycopg2-binary>=2.9.9
-alembic>=1.13.1
+alembic>=1.20.0
 
 # Optional integrations -- the app degrades gracefully without these.
 # mlflow>=2.12.0
