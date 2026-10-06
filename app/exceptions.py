@@ -1,4 +1,5 @@
 """Domain exceptions and FastAPI exception handlers."""
+
 from __future__ import annotations
 
 import logging
@@ -40,7 +41,9 @@ class RateLimitExceededError(LogisticsFlowError):
     status_code = 429
     detail = "Rate limit exceeded"
 
-    def __init__(self, detail: str | None = None, *, limit: int = 0, retry_after_seconds: int = 0) -> None:
+    def __init__(
+        self, detail: str | None = None, *, limit: int = 0, retry_after_seconds: int = 0
+    ) -> None:
         self.limit = limit
         self.retry_after_seconds = retry_after_seconds
         if limit and detail is None:
@@ -68,7 +71,11 @@ class FeatureValidationError(LogisticsFlowError):
     def __init__(self, field: str = "", reason: str = "") -> None:
         self.field = field
         self.reason = reason
-        detail = f"Feature validation failed: field={field!r} reason={reason!r}" if field else self.detail
+        detail = (
+            f"Feature validation failed: field={field!r} reason={reason!r}"
+            if field
+            else self.detail
+        )
         super(LogisticsFlowError, self).__init__(detail)
         self.detail = detail
 
@@ -103,7 +110,11 @@ class ExternalServiceError(LogisticsFlowError):
     def __init__(self, service: str = "", reason: str = "") -> None:
         self.service = service
         self.reason = reason
-        detail = f"External service error: service={service!r} reason={reason!r}" if service else self.detail
+        detail = (
+            f"External service error: service={service!r} reason={reason!r}"
+            if service
+            else self.detail
+        )
         super(LogisticsFlowError, self).__init__(detail)
         self.detail = detail
 
