@@ -1,4 +1,5 @@
 """Tests for FastAPI endpoints."""
+
 from __future__ import annotations
 
 import pytest
@@ -107,7 +108,9 @@ def test_predict_batch_valid(client, predict_payload):
 
 
 def test_predict_batch_multiple_shipments(client, predict_payload):
-    resp = client.post("/api/v1/predict/batch", json={"shipments": [predict_payload, predict_payload]})
+    resp = client.post(
+        "/api/v1/predict/batch", json={"shipments": [predict_payload, predict_payload]}
+    )
     assert resp.status_code == 200
     assert resp.json()["count"] == 2
 

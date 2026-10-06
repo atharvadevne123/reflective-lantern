@@ -1,4 +1,5 @@
 """Shared pytest fixtures for Logistics-Flow tests."""
+
 from __future__ import annotations
 
 import json
@@ -109,16 +110,42 @@ def history_dir(tmp_path: Path) -> Path:
     """History directory with SampleRepo (2 entries) and AnotherRepo (1 entry)."""
     h = tmp_path / "history"
     h.mkdir()
-    (h / "SampleRepo.json").write_text(json.dumps([
-        {"date": "2026-06-10", "commits": 60, "mode": "improvement",
-         "improvements": ["fix A", "fix B"], "tests_passed": True, "email_status": "sent"},
-        {"date": "2026-06-15", "commits": 60, "mode": "improvement",
-         "improvements": ["fix C", "fix D"], "tests_passed": True, "email_status": "sent"},
-    ]))
-    (h / "AnotherRepo.json").write_text(json.dumps([
-        {"date": "2026-06-12", "commits": 45, "mode": "improvement",
-         "improvements": ["fix E"], "tests_passed": True, "email_status": ""},
-    ]))
+    (h / "SampleRepo.json").write_text(
+        json.dumps(
+            [
+                {
+                    "date": "2026-06-10",
+                    "commits": 60,
+                    "mode": "improvement",
+                    "improvements": ["fix A", "fix B"],
+                    "tests_passed": True,
+                    "email_status": "sent",
+                },
+                {
+                    "date": "2026-06-15",
+                    "commits": 60,
+                    "mode": "improvement",
+                    "improvements": ["fix C", "fix D"],
+                    "tests_passed": True,
+                    "email_status": "sent",
+                },
+            ]
+        )
+    )
+    (h / "AnotherRepo.json").write_text(
+        json.dumps(
+            [
+                {
+                    "date": "2026-06-12",
+                    "commits": 45,
+                    "mode": "improvement",
+                    "improvements": ["fix E"],
+                    "tests_passed": True,
+                    "email_status": "",
+                },
+            ]
+        )
+    )
     return h
 
 
@@ -127,10 +154,19 @@ def single_entry_history_dir(tmp_path: Path) -> Path:
     """History directory with one file having a last_run fallback date."""
     h = tmp_path / "history"
     h.mkdir()
-    (h / "MyRepo.json").write_text(json.dumps([
-        {"last_run": "2026-06-20", "commits": 60, "mode": "improvement",
-         "tests_passed": True, "email_status": ""},
-    ]))
+    (h / "MyRepo.json").write_text(
+        json.dumps(
+            [
+                {
+                    "last_run": "2026-06-20",
+                    "commits": 60,
+                    "mode": "improvement",
+                    "tests_passed": True,
+                    "email_status": "",
+                },
+            ]
+        )
+    )
     return h
 
 
@@ -148,20 +184,56 @@ def multi_repo_history_dir(tmp_path: Path) -> Path:
     """History directory with Alpha, Beta, Gamma repos for multi-repo tests."""
     h = tmp_path / "history"
     h.mkdir()
-    (h / "Alpha.json").write_text(json.dumps([
-        {"date": "2026-07-01", "commits": 60, "mode": "IMPROVEMENT",
-         "improvements": [], "tests_passed": True, "email_status": ""},
-        {"date": "2026-07-05", "commits": 60, "mode": "improvement",
-         "improvements": [], "tests_passed": True, "email_status": ""},
-    ]))
-    (h / "Beta.json").write_text(json.dumps([
-        {"date": "2026-07-03", "commits": 120, "mode": "Innovation",
-         "improvements": [], "tests_passed": True, "email_status": ""},
-    ]))
-    (h / "Gamma.json").write_text(json.dumps([
-        {"date": "2026-07-06", "commits": 60, "mode": "INNOVATION",
-         "improvements": [], "tests_passed": True, "email_status": ""},
-    ]))
+    (h / "Alpha.json").write_text(
+        json.dumps(
+            [
+                {
+                    "date": "2026-07-01",
+                    "commits": 60,
+                    "mode": "IMPROVEMENT",
+                    "improvements": [],
+                    "tests_passed": True,
+                    "email_status": "",
+                },
+                {
+                    "date": "2026-07-05",
+                    "commits": 60,
+                    "mode": "improvement",
+                    "improvements": [],
+                    "tests_passed": True,
+                    "email_status": "",
+                },
+            ]
+        )
+    )
+    (h / "Beta.json").write_text(
+        json.dumps(
+            [
+                {
+                    "date": "2026-07-03",
+                    "commits": 120,
+                    "mode": "Innovation",
+                    "improvements": [],
+                    "tests_passed": True,
+                    "email_status": "",
+                },
+            ]
+        )
+    )
+    (h / "Gamma.json").write_text(
+        json.dumps(
+            [
+                {
+                    "date": "2026-07-06",
+                    "commits": 60,
+                    "mode": "INNOVATION",
+                    "improvements": [],
+                    "tests_passed": True,
+                    "email_status": "",
+                },
+            ]
+        )
+    )
     return h
 
 
@@ -170,25 +242,37 @@ def innovation_history_dir(tmp_path: Path) -> Path:
     """History directory with a NewProject innovation entry."""
     h = tmp_path / "history"
     h.mkdir()
-    (h / "NewProject.json").write_text(json.dumps([
-        {"date": "2026-07-08", "commits": 114, "mode": "INNOVATION",
-         "improvements": [], "tests_passed": True, "email_status": "sent"},
-    ]))
+    (h / "NewProject.json").write_text(
+        json.dumps(
+            [
+                {
+                    "date": "2026-07-08",
+                    "commits": 114,
+                    "mode": "INNOVATION",
+                    "improvements": [],
+                    "tests_passed": True,
+                    "email_status": "sent",
+                },
+            ]
+        )
+    )
     return h
 
 
 @pytest.fixture()
 def single_row() -> pd.DataFrame:
     """Return a single-row DataFrame for property/amenity feature tests."""
-    return pd.DataFrame({
-        "bedrooms": [3],
-        "bathrooms": [2.0],
-        "year_built": [1995],
-        "sqft": [1500],
-        "price": [450000],
-        "school_score": [7.0],
-        "transit_score": [6.0],
-        "walkability_score": [8.0],
-        "crime_rate": [0.05],
-        "renovation_year": [None],
-    })
+    return pd.DataFrame(
+        {
+            "bedrooms": [3],
+            "bathrooms": [2.0],
+            "year_built": [1995],
+            "sqft": [1500],
+            "price": [450000],
+            "school_score": [7.0],
+            "transit_score": [6.0],
+            "walkability_score": [8.0],
+            "crime_rate": [0.05],
+            "renovation_year": [None],
+        }
+    )

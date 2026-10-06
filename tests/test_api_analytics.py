@@ -180,12 +180,16 @@ class TestPowerQualityEndpoint:
         assert r.status_code == 422
 
     def test_correction_zero_when_already_at_target(self, client: TestClient) -> None:
-        r = client.get("/api/v1/power-quality/correction?real_power_kw=100&current_power_factor=0.98")
+        r = client.get(
+            "/api/v1/power-quality/correction?real_power_kw=100&current_power_factor=0.98"
+        )
         assert r.status_code == 200
         assert r.json()["required_kvar"] == 0.0
 
     def test_correction_positive_for_poor_factor(self, client: TestClient) -> None:
-        r = client.get("/api/v1/power-quality/correction?real_power_kw=100&current_power_factor=0.75")
+        r = client.get(
+            "/api/v1/power-quality/correction?real_power_kw=100&current_power_factor=0.75"
+        )
         assert r.json()["required_kvar"] > 0
 
     def test_correction_invalid_target_rejected(self, client: TestClient) -> None:
@@ -206,8 +210,12 @@ class TestSolarEndpoints:
         )
         assert r.status_code == 200
         data = r.json()
-        assert data["self_consumed_kwh"] + data["exported_kwh"] == pytest.approx(data["generated_kwh"])
-        assert data["self_consumed_kwh"] + data["imported_kwh"] == pytest.approx(data["consumed_kwh"])
+        assert data["self_consumed_kwh"] + data["exported_kwh"] == pytest.approx(
+            data["generated_kwh"]
+        )
+        assert data["self_consumed_kwh"] + data["imported_kwh"] == pytest.approx(
+            data["consumed_kwh"]
+        )
 
     def test_economics_total_benefit_sums_components(self, client: TestClient) -> None:
         r = client.post(
@@ -215,7 +223,9 @@ class TestSolarEndpoints:
             json={"generation_hourly_kwh": [5.0] * 4, "consumption_hourly_kwh": [3.0] * 4},
         )
         data = r.json()
-        assert data["total_benefit"] == pytest.approx(round(data["bill_saving"] + data["export_revenue"], 2))
+        assert data["total_benefit"] == pytest.approx(
+            round(data["bill_saving"] + data["export_revenue"], 2)
+        )
 
     def test_economics_mismatched_series_rejected(self, client: TestClient) -> None:
         r = client.post(
@@ -270,7 +280,9 @@ class TestBatteryEndpoints:
 
     def test_saving_scales_with_reduction(self, client: TestClient) -> None:
         data = self._shave(client, demand_charge_per_kw=15.0).json()
-        assert data["demand_charge_saving"] == pytest.approx(round(data["peak_reduction_kw"] * 15.0, 2))
+        assert data["demand_charge_saving"] == pytest.approx(
+            round(data["peak_reduction_kw"] * 15.0, 2)
+        )
 
     def test_invalid_capacity_rejected(self, client: TestClient) -> None:
         assert self._shave(client, capacity_kwh=0.0).status_code == 422
