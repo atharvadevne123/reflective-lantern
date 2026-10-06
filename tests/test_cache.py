@@ -871,3 +871,20 @@ class TestGetOrDefaultExtended:
 
         c = TTLCache(ttl_seconds=60, max_size=10)
         assert get_or_default(c, "ghost") is None
+
+
+@pytest.mark.parametrize(
+    "max_size,n_inserts,expected_size",
+    [
+        (3, 5, 3),  # evicts oldest entries when full
+        (10, 3, 3),  # fits within limit
+        (1, 3, 1),  # only keeps last entry
+    ],
+)
+def test_ttl_cache_max_size_enforced(max_size: int, n_inserts: int, expected_size: int) -> None:
+    from app.cache import TTLCache
+
+    cache = TTLCache(ttl_seconds=60, max_size=max_size)
+    for i in range(n_inserts):
+        cache.set(f"k{i}", i)
+    assert len(cache) <= max_size
