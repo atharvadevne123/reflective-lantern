@@ -21,3 +21,16 @@ within 72 hours.
   repository. `.env` is gitignored; `.env.example` holds placeholders only.
 - CORS defaults to `allow_origins=["*"]` for local development. Restrict this
   before deploying to production.
+- `SECRET_KEY` in `.env.example` defaults to `change-me-in-production`; override
+  it with a strong random value before any deployment.
+- SQL queries use SQLAlchemy parameterized statements throughout; do not
+  interpolate user input into raw queries.
+- All prediction inputs are validated by Pydantic models before processing;
+  unknown carriers and route types are rejected at the API boundary.
+
+## Dependency management
+
+- Pin all production dependencies to a minor version range in `requirements.txt`
+  and review updates with `pip-audit` before merging.
+- The `ruff` linter enforces `B` (bugbear) rules to catch common security-adjacent
+  mistakes at lint time.
