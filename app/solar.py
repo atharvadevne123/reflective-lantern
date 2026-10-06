@@ -69,7 +69,11 @@ def generation_kwh(
             is outside (0, 1].
     """
     if peak_kw is not None:
-        _irr = irradiance_kwh_per_sqm if irradiance_kwh_per_sqm is not None else (irradiance_kwh_per_m2 or 0.0)
+        _irr = (
+            irradiance_kwh_per_sqm
+            if irradiance_kwh_per_sqm is not None
+            else (irradiance_kwh_per_m2 or 0.0)
+        )
         if peak_kw < 0 or _irr < 0:
             raise ValueError("peak_kw and irradiance must be non-negative")
         return round(peak_kw * _irr * performance_ratio, 4)
@@ -119,9 +123,13 @@ def self_consumption(
         )
 
     self_consumed = exported = imported = 0.0
-    for hour, (gen, load) in enumerate(zip(generation_hourly_kwh, consumption_hourly_kwh, strict=True)):
+    for hour, (gen, load) in enumerate(
+        zip(generation_hourly_kwh, consumption_hourly_kwh, strict=True)
+    ):
         if gen < 0 or load < 0:
-            raise ValueError(f"values must be non-negative, got generation={gen} consumption={load} at hour {hour}")
+            raise ValueError(
+                f"values must be non-negative, got generation={gen} consumption={load} at hour {hour}"
+            )
         matched = min(gen, load)
         self_consumed += matched
         exported += gen - matched
@@ -153,9 +161,13 @@ def analyze_economics(
             either rate is negative.
     """
     if import_rate < 0 or export_rate < 0:
-        raise ValueError(f"rates must be non-negative, got import={import_rate} export={export_rate}")
+        raise ValueError(
+            f"rates must be non-negative, got import={import_rate} export={export_rate}"
+        )
 
-    self_consumed, exported, imported = self_consumption(generation_hourly_kwh, consumption_hourly_kwh)
+    self_consumed, exported, imported = self_consumption(
+        generation_hourly_kwh, consumption_hourly_kwh
+    )
     generated = round(sum(generation_hourly_kwh), 4)
     consumed = round(sum(consumption_hourly_kwh), 4)
 
