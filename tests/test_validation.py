@@ -1482,3 +1482,25 @@ class TestValidateRange:
 
         assert validate_range(0.0, "x", min_value=0.0, max_value=1.0) == []
         assert validate_range(1.0, "x", min_value=0.0, max_value=1.0) == []
+
+
+@pytest.mark.parametrize(
+    "value,field,min_val,max_val,has_error",
+    [
+        (5.0, "score", 0.0, 10.0, False),
+        (-1.0, "score", 0.0, 10.0, True),
+        (11.0, "score", 0.0, 10.0, True),
+        (0.0, "score", 0.0, 10.0, False),
+        (10.0, "score", 0.0, 10.0, False),
+    ],
+)
+def test_validate_range_parametrized(
+    value: float, field: str, min_val: float, max_val: float, has_error: bool
+) -> None:
+    from app.validation import validate_range
+
+    errors = validate_range(value, field, min_value=min_val, max_value=max_val)
+    if has_error:
+        assert len(errors) > 0
+    else:
+        assert errors == []
