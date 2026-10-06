@@ -1774,7 +1774,7 @@ class TestTrimmedMeanExtended:
         ([1.0, 3.0], [2.0, 4.0], 1.0),
     ],
 )
-def test_mae_parametrized(actual: list, predicted: list, expected_approx: float) -> None:
+def test_mae_parametrized_new(actual: list, predicted: list, expected_approx: float) -> None:
     from app.stats_utils import mean_absolute_error
 
     result = mean_absolute_error(actual, predicted)
