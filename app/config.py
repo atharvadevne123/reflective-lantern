@@ -24,6 +24,25 @@ class Settings:
         default_factory=lambda: int(os.getenv("RATE_LIMIT_PER_MINUTE", "120"))
     )
     drift_window: int = field(default_factory=lambda: int(os.getenv("DRIFT_WINDOW", "100")))
+    secret_key: str = field(
+        default_factory=lambda: os.getenv("SECRET_KEY", "change-me-in-production")
+    )
+    max_workers: int = field(default_factory=lambda: int(os.getenv("MAX_WORKERS", "4")))
+    request_timeout_s: int = field(
+        default_factory=lambda: int(os.getenv("REQUEST_TIMEOUT_S", "30"))
+    )
+    rate_limit_requests: int = field(
+        default_factory=lambda: int(os.getenv("RATE_LIMIT_REQUESTS", "100"))
+    )
+    rate_limit_window_s: int = field(
+        default_factory=lambda: int(os.getenv("RATE_LIMIT_WINDOW_S", "60"))
+    )
+    drift_ks_threshold: float = field(
+        default_factory=lambda: float(os.getenv("DRIFT_KS_THRESHOLD", "0.05"))
+    )
+    reference_buffer_size: int = field(
+        default_factory=lambda: int(os.getenv("REFERENCE_BUFFER_SIZE", "500"))
+    )
 
     @property
     def is_postgres(self) -> bool:
