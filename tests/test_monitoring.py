@@ -761,3 +761,36 @@ def test_seed_reference_buffer_ignores_unknown_keys() -> None:
         buf.clear()
     seed_reference_buffer([{"unknown_field": 99.0}])
     assert all(len(buf) == 0 for buf in _REFERENCE_BUFFER.values())
+
+
+@pytest.mark.parametrize(
+    "ref_mean,cur_mean,should_drift",
+    [
+        (10.0, 10.5, False),  # small shift, no drift
+        (10.0, 50.0, True),  # large shift, drift
+        (0.0, 0.0, False),  # identical distributions
+    ],
+)
+def test_compute_drift_parametrized(ref_mean: float, cur_mean: float, should_drift: bool) -> None:
+    rng = np.random.default_rng(42)
+    ref = list(rng.normal(ref_mean, 1.0, 300))
+    cur = list(rng.normal(cur_mean, 1.0, 300))
+    result = compute_drift(ref, cur)
+    if should_drift:
+        assert result["drift_detected"], f"Expected drift for means {ref_mean}/{cur_mean}"
+    else:
+        assert not result["drift_detected"], f"Did not expect drift for means {ref_mean}/{cur_mean}"
+
+
+def test_latency_timer_measures_nonzero_elapsed() -> None:
+    import time
+
+    with LatencyTimer() as t:
+        time.sleep(0.01)
+    assert t.ms >= 10.0
+
+
+def test_latency_timer_zero_on_no_work() -> None:
+    with LatencyTimer() as t:
+        pass
+    assert t.ms >= 0.0
