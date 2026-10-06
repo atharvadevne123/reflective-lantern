@@ -138,3 +138,34 @@ def test_score_anomaly_severity_none_for_normal_point():
     bundle = train_anomaly_model(df)
     result = score_anomaly(bundle, df.values[:1])
     assert result["severity"] in ("none", "warning", "critical")  # just check it returns valid
+
+
+@pytest.mark.parametrize("n_samples", [200, 500, 1000])
+def test_train_model_different_sizes(n_samples: int) -> None:
+    from app.features import build_feature_pipeline, generate_synthetic_data, prepare_X
+    from app.model import train_model
+
+    df = generate_synthetic_data(n=n_samples, seed=42)
+    pipe = build_feature_pipeline()
+    X = prepare_X(df, pipe, fit=True)
+    y = df["delivery_minutes"].values
+    model, metrics = train_model(X, y)
+    assert "rmse" in metrics
+    assert "r2" in metrics
+    assert metrics["rmse"] > 0
+
+
+@pytest.mark.parametrize(
+    "metric_key",
+    ["rmse", "mae", "r2", "mape"],
+)
+def test_train_model_metrics_present(metric_key: str) -> None:
+    from app.features import build_feature_pipeline, generate_synthetic_data, prepare_X
+    from app.model import train_model
+
+    df = generate_synthetic_data(n=300, seed=99)
+    pipe = build_feature_pipeline()
+    X = prepare_X(df, pipe, fit=True)
+    y = df["delivery_minutes"].values
+    _, metrics = train_model(X, y)
+    assert metric_key in metrics, f"Expected '{metric_key}' in metrics"
