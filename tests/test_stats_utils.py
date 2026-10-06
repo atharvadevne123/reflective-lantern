@@ -1764,3 +1764,34 @@ class TestTrimmedMeanExtended:
 
         result = trimmed_mean([1.0, 2.0, 3.0, 4.0, 5.0], trim_pct=trim_pct)
         assert isinstance(result, float)
+
+
+@pytest.mark.parametrize(
+    "actual,predicted,expected_approx",
+    [
+        ([1.0, 2.0, 3.0], [1.0, 2.0, 3.0], 0.0),
+        ([0.0, 0.0, 0.0], [1.0, 1.0, 1.0], 1.0),
+        ([1.0, 3.0], [2.0, 4.0], 1.0),
+    ],
+)
+def test_mae_parametrized(actual: list, predicted: list, expected_approx: float) -> None:
+    from app.stats_utils import mean_absolute_error
+
+    result = mean_absolute_error(actual, predicted)
+    assert result == pytest.approx(expected_approx, abs=1e-4)
+
+
+@pytest.mark.parametrize(
+    "values,z_threshold,expected_fraction",
+    [
+        ([0.0] * 100, 3.0, 0.0),  # all same, std=0 -> 0.0
+        (list(range(100)), 10.0, 0.0),  # no outliers at z=10
+    ],
+)
+def test_outlier_fraction_parametrized(
+    values: list, z_threshold: float, expected_fraction: float
+) -> None:
+    from app.stats_utils import outlier_fraction
+
+    result = outlier_fraction(values, z_threshold=z_threshold)
+    assert result == pytest.approx(expected_fraction, abs=0.05)
