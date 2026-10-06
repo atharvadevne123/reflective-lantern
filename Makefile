@@ -1,4 +1,4 @@
-.PHONY: install test lint format run docker clean diagram
+.PHONY: install test lint format run docker clean diagram typecheck coverage audit
 
 install:
 	pip install -r requirements.txt
@@ -33,3 +33,18 @@ benchmark:
 
 migrate:
 	alembic upgrade head
+
+typecheck:
+	python -m mypy app/ --ignore-missing-imports --no-error-summary
+
+coverage:
+	pytest tests/ --cov=app --cov-report=term-missing --cov-report=html
+
+audit:
+	pip-audit -r requirements.txt 2>/dev/null || pip install pip-audit -q && pip-audit -r requirements.txt
+
+seed:
+	python scripts/seed_data.py
+
+validate:
+	python scripts/validate_history.py
