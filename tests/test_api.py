@@ -137,7 +137,7 @@ def test_predict_all_valid_carriers(client, predict_payload, carrier: str) -> No
     "route_type",
     ["urban", "suburban", "rural", "highway"],
 )
-def test_predict_all_route_types(client, predict_payload, route_type: str) -> None:
+def test_predict_all_route_types_typed(client, predict_payload, route_type: str) -> None:
     payload = {**predict_payload, "route_type": route_type}
     resp = client.post("/api/v1/predict", json=payload)
     assert resp.status_code == 200, f"Route {route_type} returned {resp.status_code}"
