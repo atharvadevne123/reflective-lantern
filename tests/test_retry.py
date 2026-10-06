@@ -557,3 +557,35 @@ class TestRetryOnNetworkErrorExt:
         with pytest.raises(ConnectionError):
             counter()
         assert calls[0] == max_attempts
+
+
+@pytest.mark.parametrize(
+    "max_attempts,n_failures,should_succeed",
+    [
+        (3, 2, True),  # succeeds on 3rd attempt
+        (3, 3, False),  # exhausts all attempts
+        (1, 0, True),  # succeeds first time
+        (5, 4, True),  # succeeds on 5th attempt
+    ],
+)
+def test_retry_eventual_success(
+    max_attempts: int, n_failures: int, should_succeed: bool, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from app.retry import retry
+
+    monkeypatch.setattr("app.retry.time.sleep", lambda _: None)
+    calls = [0]
+
+    @retry(exceptions=(ValueError,), max_attempts=max_attempts, base_delay=0.0)
+    def flaky() -> str:
+        calls[0] += 1
+        if calls[0] <= n_failures:
+            raise ValueError("temporary")
+        return "ok"
+
+    if should_succeed:
+        result = flaky()
+        assert result == "ok"
+    else:
+        with pytest.raises(ValueError):
+            flaky()
