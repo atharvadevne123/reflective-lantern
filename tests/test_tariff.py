@@ -357,3 +357,18 @@ class TestAnnualCostEstimateExtended:
 
         result = annual_cost_estimate([100.0] * 12, rate=rate)
         assert result > 0.0
+
+
+@pytest.mark.parametrize(
+    "monthly_kwh,rate,expected",
+    [
+        ([100.0] * 12, 0.10, 120.0),
+        ([200.0] * 12, 0.20, 480.0),
+        ([50.0] * 12, 0.15, 90.0),
+    ],
+)
+def test_annual_cost_estimate_parametrized(monthly_kwh: list, rate: float, expected: float) -> None:
+    from app.tariff import annual_cost_estimate
+
+    result = annual_cost_estimate(monthly_kwh, rate=rate)
+    assert result == pytest.approx(expected, rel=1e-3)
