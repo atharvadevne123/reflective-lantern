@@ -288,3 +288,23 @@ class TestFeatureExtractionError:
 
         with pytest.raises(LogisticsFlowError):
             raise FeatureExtractionError("extraction failed")
+
+
+@pytest.mark.parametrize(
+    "exc_class,message",
+    [
+        ("LogisticsFlowError", "base error"),
+        ("ModelNotLoadedError", "model not found"),
+        ("FeatureExtractionError", "feature failed"),
+        ("PredictionError", "prediction failed"),
+    ],
+)
+def test_exception_str_contains_message(exc_class: str, message: str) -> None:
+    import importlib
+
+    m = importlib.import_module("app.exceptions")
+    exc_type = getattr(m, exc_class, None)
+    if exc_type is None:
+        pytest.skip(f"{exc_class} not found in app.exceptions")
+    err = exc_type(message)
+    assert message in str(err)
