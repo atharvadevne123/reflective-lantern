@@ -1288,3 +1288,24 @@ class TestMinutesBetweenNaive:
 
         a = datetime(2026, 6, 15)
         assert minutes_between(a, a) == 0
+
+
+@pytest.mark.parametrize(
+    "h1,m1,h2,m2,expected_minutes",
+    [
+        (10, 0, 11, 0, 60),
+        (8, 30, 9, 0, 30),
+        (0, 0, 23, 59, 1439),
+        (12, 0, 12, 0, 0),
+    ],
+)
+def test_minutes_between_parametrized(
+    h1: int, m1: int, h2: int, m2: int, expected_minutes: int
+) -> None:
+    from datetime import datetime
+
+    from app.date_utils import minutes_between
+
+    a = datetime(2026, 1, 1, h1, m1)
+    b = datetime(2026, 1, 1, h2, m2)
+    assert minutes_between(a, b) == expected_minutes
