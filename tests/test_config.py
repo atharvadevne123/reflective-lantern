@@ -76,3 +76,38 @@ def test_drift_window_override(monkeypatch):
 def test_model_version_default(monkeypatch):
     monkeypatch.delenv("MODEL_VERSION", raising=False)
     assert Settings().model_version == "1.0.0"
+
+
+def test_new_settings_defaults(monkeypatch):
+    for var in (
+        "SECRET_KEY",
+        "MAX_WORKERS",
+        "REQUEST_TIMEOUT_S",
+        "RATE_LIMIT_REQUESTS",
+        "RATE_LIMIT_WINDOW_S",
+        "DRIFT_KS_THRESHOLD",
+        "REFERENCE_BUFFER_SIZE",
+    ):
+        monkeypatch.delenv(var, raising=False)
+    s = Settings()
+    assert s.secret_key == "change-me-in-production"
+    assert s.max_workers == 4
+    assert s.request_timeout_s == 30
+    assert s.rate_limit_requests == 100
+    assert s.rate_limit_window_s == 60
+    assert s.drift_ks_threshold == 0.05
+    assert s.reference_buffer_size == 500
+
+
+def test_new_settings_overrides(monkeypatch):
+    monkeypatch.setenv("SECRET_KEY", "super-secret")
+    monkeypatch.setenv("MAX_WORKERS", "8")
+    monkeypatch.setenv("REQUEST_TIMEOUT_S", "60")
+    monkeypatch.setenv("DRIFT_KS_THRESHOLD", "0.1")
+    monkeypatch.setenv("REFERENCE_BUFFER_SIZE", "1000")
+    s = Settings()
+    assert s.secret_key == "super-secret"
+    assert s.max_workers == 8
+    assert s.request_timeout_s == 60
+    assert s.drift_ks_threshold == 0.1
+    assert s.reference_buffer_size == 1000
