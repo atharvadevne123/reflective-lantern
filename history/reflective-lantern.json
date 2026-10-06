@@ -619,6 +619,7 @@
     ],
     "tests_passed": true,
     "commits": 60,
-    "email_status": "pending"
+    "email_status": "blocked_by_classifier",
+    "session": "https://claude.ai/code/session_01YBM82yRrBB6Z1JRMBJXQCA"
   }
 ]
