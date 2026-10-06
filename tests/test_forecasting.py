@@ -1191,3 +1191,23 @@ class TestForecastBiasExtended:
 
         with pytest.raises(ValueError):
             forecast_bias([], [])
+
+
+@pytest.mark.parametrize(
+    "actual,predicted,expected_sign",
+    [
+        ([1.0, 2.0, 3.0], [2.0, 3.0, 4.0], 1),  # over-forecast -> positive bias
+        ([3.0, 4.0, 5.0], [2.0, 3.0, 4.0], -1),  # under-forecast -> negative bias
+        ([1.0, 2.0, 3.0], [1.0, 2.0, 3.0], 0),  # perfect -> zero bias
+    ],
+)
+def test_forecast_bias_sign_parametrized(actual: list, predicted: list, expected_sign: int) -> None:
+    from app.forecasting import forecast_bias
+
+    result = forecast_bias(actual, predicted)
+    if expected_sign > 0:
+        assert result > 0.0
+    elif expected_sign < 0:
+        assert result < 0.0
+    else:
+        assert result == pytest.approx(0.0)
