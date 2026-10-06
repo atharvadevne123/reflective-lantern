@@ -404,7 +404,7 @@ class TestCircuitBreakerFailureCount:
 
     def test_increments_on_each_failure(self) -> None:
         cb = CircuitBreaker(failure_threshold=5, expected_exceptions=(ValueError,))
-        for i in range(3):
+        for _i in range(3):
             with pytest.raises(ValueError):
                 cb.call(_always_fail)
         assert cb.failure_count == 3
