@@ -957,3 +957,35 @@ def test_drop_non_numeric_fitted_attr() -> None:
     t = DropNonNumeric()
     t.fit(df)
     assert hasattr(t, "fitted_") and t.fitted_ is True
+
+
+@pytest.mark.parametrize(
+    "carrier,distance_km,weight_kg,route_type",
+    [
+        ("DHL", 10.0, 1.0, "urban"),
+        ("FedEx", 500.0, 30.0, "highway"),
+        ("UPS", 200.0, 15.0, "rural"),
+        ("USPS", 50.0, 5.0, "suburban"),
+        ("Amazon", 30.0, 0.5, "urban"),
+    ],
+)
+def test_build_feature_pipeline_all_carriers(
+    carrier: str, distance_km: float, weight_kg: float, route_type: str
+) -> None:
+    from app.features import build_feature_pipeline, generate_synthetic_data, prepare_X
+
+    df = generate_synthetic_data(n=200, seed=0)
+    pipe = build_feature_pipeline()
+    X = prepare_X(df, pipe, fit=True)
+    assert X.shape[0] == 200
+    assert X.shape[1] >= 5
+
+
+@pytest.mark.parametrize("n", [50, 100, 500])
+def test_generate_synthetic_data_sizes(n: int) -> None:
+    from app.features import generate_synthetic_data
+
+    df = generate_synthetic_data(n=n, seed=7)
+    assert len(df) == n
+    assert "carrier" in df.columns
+    assert "delivery_minutes" in df.columns
