@@ -1,4 +1,5 @@
 """Measure inference latency across the feature pipeline and ensemble."""
+
 from __future__ import annotations
 
 import sys
@@ -28,10 +29,18 @@ def main() -> None:
     model, metrics = train_model(X, y)
     train_s = time.perf_counter() - t0
 
-    row = pd.DataFrame([{
-        "carrier": "DHL", "distance_km": 42.5, "weight_kg": 3.2,
-        "route_type": "urban", "hour_of_day": 14, "day_of_week": 2,
-    }])
+    row = pd.DataFrame(
+        [
+            {
+                "carrier": "DHL",
+                "distance_km": 42.5,
+                "weight_kg": 3.2,
+                "route_type": "urban",
+                "hour_of_day": 14,
+                "day_of_week": 2,
+            }
+        ]
+    )
 
     for _ in range(N_WARMUP):
         model.predict(prepare_X(row, feat_pipe))
