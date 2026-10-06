@@ -5,6 +5,17 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Changed
+
+- Upgraded `actions/upload-artifact` from v7 to v4 in CI workflow
+- Applied ruff format and lint fixes across all Python source files
+- Expanded `.env.example` with security, performance, and rate-limit variables
+- Added `secret_key`, `max_workers`, `request_timeout_s`, `drift_ks_threshold`,
+  and `reference_buffer_size` settings to `Settings` dataclass
+- Replaced all nested `with` statements with combined form (SIM117)
+
 ## [1.0.0] - 2026-08-20
 
 ### Added
