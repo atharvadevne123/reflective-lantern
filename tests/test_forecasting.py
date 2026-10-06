@@ -824,7 +824,9 @@ def test_naive_forecast_step_count(steps: int) -> None:
         ([10.0, 10.0], [10.0, 10.0], 0),
     ],
 )
-def test_forecast_bias_sign(actual: list[float], predicted: list[float], expected_bias_sign: int) -> None:
+def test_forecast_bias_sign(
+    actual: list[float], predicted: list[float], expected_bias_sign: int
+) -> None:
     bias = forecast_bias(actual, predicted)
     if expected_bias_sign > 0:
         assert bias > 0
