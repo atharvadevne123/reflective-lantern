@@ -193,8 +193,35 @@ and drift detection under known distribution shifts.
 make install    # install dependencies
 make test       # run pytest
 make lint       # ruff check
+make format     # ruff format
+make typecheck  # mypy static analysis
+make coverage   # pytest with HTML coverage report
 make run        # start dev server
+make migrate    # run alembic migrations
+make seed       # seed database with synthetic data
+make validate   # validate history JSON files
 ```
+
+## Configuration
+
+All settings are loaded from environment variables. Copy `.env.example` to `.env` and
+update the values before running locally:
+
+```bash
+cp .env.example .env
+```
+
+Key variables:
+
+| Variable | Default | Description |
+|---|---|---|
+| `DATABASE_URL` | `sqlite:///./logistics_flow.db` | DB connection string |
+| `MODEL_PATH` | `model.joblib` | Trained model artifact path |
+| `LOG_LEVEL` | `INFO` | Logging verbosity |
+| `DRIFT_KS_THRESHOLD` | `0.05` | KS-test p-value threshold for drift alerts |
+| `REFERENCE_BUFFER_SIZE` | `500` | Rolling window size for drift reference |
+| `RATE_LIMIT_REQUESTS` | `100` | Max requests per window |
+| `SECRET_KEY` | — | Change before any deployment |
 
 ## License
 
