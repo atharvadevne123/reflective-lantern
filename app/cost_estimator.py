@@ -59,7 +59,7 @@ class CostBreakdown(float):
         cpu_cost_usd: float = 0.0,
         memory_cost_usd: float = 0.0,
         gpu_cost_usd: float = 0.0,
-    ) -> "CostBreakdown":
+    ) -> CostBreakdown:
         total = cpu_cost_usd + memory_cost_usd + gpu_cost_usd
         instance = super().__new__(cls, total)
         instance.cpu_cost_usd = cpu_cost_usd
