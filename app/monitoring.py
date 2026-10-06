@@ -1,4 +1,5 @@
 """Prediction logging, KS-test drift detection, and monitoring utilities."""
+
 from __future__ import annotations
 
 import logging
@@ -34,6 +35,7 @@ def reset_anomaly_flags_buffer() -> None:
     global _anomaly_flags_buffer
     _anomaly_flags_buffer = []
 
+
 # Global alert counts
 _global_alert_counts: dict[str, int] = {"warning": 0, "error": 0, "critical": 0}
 
@@ -41,6 +43,7 @@ _global_alert_counts: dict[str, int] = {"warning": 0, "error": 0, "critical": 0}
 # ---------------------------------------------------------------------------
 # Latency measurement
 # ---------------------------------------------------------------------------
+
 
 class LatencyTimer:
     """Context manager that records elapsed wall-clock time in milliseconds."""
@@ -57,6 +60,7 @@ class LatencyTimer:
 # ---------------------------------------------------------------------------
 # Reference window management
 # ---------------------------------------------------------------------------
+
 
 def set_reference_window(values: list[float]) -> None:
     """Replace the in-memory reference window (capped at 500 samples)."""
@@ -95,6 +99,7 @@ def reference_window_stats() -> dict[str, Any]:
 # ---------------------------------------------------------------------------
 # Drift detection
 # ---------------------------------------------------------------------------
+
 
 def compute_drift(reference: list[float], current: list[float]) -> dict[str, Any]:
     """Run KS test between reference and current distributions."""
@@ -179,6 +184,7 @@ def drift_trend(p_values: list[float]) -> str:
 # Anomaly detection helpers
 # ---------------------------------------------------------------------------
 
+
 def zscore_alert(values: list[float], threshold: float = 3.0) -> list[int]:
     """Return indices of values whose z-score exceeds *threshold*.
 
@@ -190,7 +196,7 @@ def zscore_alert(values: list[float], threshold: float = 3.0) -> list[int]:
         raise ValueError("need at least 2 values to compute z-scores")
     mean = sum(values) / len(values)
     variance = sum((v - mean) ** 2 for v in values) / len(values)
-    std = variance ** 0.5
+    std = variance**0.5
     if std < 1e-12:
         return []
     return [i for i, v in enumerate(values) if abs(v - mean) / std > threshold]
@@ -217,15 +223,13 @@ def rolling_anomaly_rate(
     n = len(flags)
     if n < window:
         return []
-    return [
-        sum(flags[i : i + window]) / window
-        for i in range(n - window + 1)
-    ]
+    return [sum(flags[i : i + window]) / window for i in range(n - window + 1)]
 
 
 # ---------------------------------------------------------------------------
 # Alerting helpers
 # ---------------------------------------------------------------------------
+
 
 def alert_count_by_level(alerts: list[dict[str, Any]] | None = None) -> dict[str, int]:
     """Count alerts by their 'level' key.
@@ -264,6 +268,7 @@ def alert_rate(values: list[float], window: int = 3) -> float:
 # ---------------------------------------------------------------------------
 # Degradation / SLO helpers
 # ---------------------------------------------------------------------------
+
 
 def degradation_severity(error_rate: float) -> str:
     """Classify service degradation from an observed error rate."""
@@ -321,6 +326,7 @@ def p_value_to_confidence(p_value: float) -> float:
 # ---------------------------------------------------------------------------
 # Prediction and anomaly logging (logistics domain)
 # ---------------------------------------------------------------------------
+
 
 def log_prediction(
     db: Session,
@@ -426,14 +432,10 @@ def get_anomaly_stats(db: Session) -> dict[str, Any]:
 # Legacy helpers (logistics domain)
 # ---------------------------------------------------------------------------
 
+
 def run_drift_check(db: Session, current_window: int = 100) -> dict[str, Any]:
     """Compare latest predictions against reference buffer; log results."""
-    recent = (
-        db.query(Prediction)
-        .order_by(Prediction.created_at.desc())
-        .limit(current_window)
-        .all()
-    )
+    recent = db.query(Prediction).order_by(Prediction.created_at.desc()).limit(current_window).all()
     if not recent:
         return {"status": "no_predictions", "features": {}}
 
