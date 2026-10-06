@@ -1,4 +1,5 @@
 """Ensemble ML model training, persistence, and inference."""
+
 from __future__ import annotations
 
 import json
@@ -73,8 +74,8 @@ def _build_ensemble() -> VotingRegressor:
 
 
 def train_model(
-    X: "np.ndarray | pd.DataFrame",
-    y: "np.ndarray | pd.Series",
+    X: np.ndarray | pd.DataFrame,
+    y: np.ndarray | pd.Series,
     *,
     save: bool = True,
 ) -> tuple[Pipeline, dict]:
@@ -89,6 +90,7 @@ def train_model(
     """
     try:
         import pandas as pd
+
         if isinstance(X, pd.DataFrame):
             X = X.values
         if hasattr(y, "values"):
@@ -154,7 +156,7 @@ def predict(model: Pipeline, X: np.ndarray) -> np.ndarray:
     return model.predict(X)
 
 
-def train_anomaly_model(df: "pd.DataFrame") -> object:
+def train_anomaly_model(df: pd.DataFrame) -> object:
     """Train an IsolationForest anomaly detector on the energy DataFrame."""
     import pandas as pd
     from sklearn.ensemble import IsolationForest
@@ -162,15 +164,17 @@ def train_anomaly_model(df: "pd.DataFrame") -> object:
     from sklearn.preprocessing import StandardScaler
 
     X = df.values if isinstance(df, pd.DataFrame) else df
-    pipe = SKPipeline([
-        ("scaler", StandardScaler()),
-        ("iso", IsolationForest(n_estimators=100, contamination=0.05, random_state=42)),
-    ])
+    pipe = SKPipeline(
+        [
+            ("scaler", StandardScaler()),
+            ("iso", IsolationForest(n_estimators=100, contamination=0.05, random_state=42)),
+        ]
+    )
     pipe.fit(X)
     return pipe
 
 
-def score_anomaly(bundle: object, row: "np.ndarray") -> dict[str, object]:
+def score_anomaly(bundle: object, row: np.ndarray) -> dict[str, object]:
     """Score a single row with an anomaly bundle; return structured result.
 
     Args:

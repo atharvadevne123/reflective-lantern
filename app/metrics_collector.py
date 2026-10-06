@@ -115,7 +115,9 @@ class Histogram:
 
     name: str
     description: str = ""
-    buckets: list[float] = field(default_factory=lambda: [0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1.0, 2.5, 5.0])
+    buckets: list[float] = field(
+        default_factory=lambda: [0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1.0, 2.5, 5.0]
+    )
 
     def __post_init__(self) -> None:
         """Initialise per-bucket counters and running-sum accumulators."""
@@ -198,7 +200,9 @@ class MetricsRegistry:
             self._metrics[name] = Gauge(name, description)
         return self._metrics[name]  # type: ignore[return-value]
 
-    def histogram(self, name: str, description: str = "", buckets: list[float] | None = None) -> Histogram:
+    def histogram(
+        self, name: str, description: str = "", buckets: list[float] | None = None
+    ) -> Histogram:
         """Return (or create) a :class:`Histogram` registered under *name*.
 
         Args:
