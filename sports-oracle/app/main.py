@@ -266,3 +266,9 @@ async def retrain(request: Request) -> dict:
     _model, metrics_out = train_model(X, y)
     logger.info("model_retrained_via_api")
     return {"status": "retrained", "metrics": metrics_out}
+
+
+@app.get("/api/v1/version", tags=["System"])
+async def version() -> dict:
+    """Return API version information."""
+    return {"version": "1.0.0", "model_version": "1.0.0", "api_version": "v1"}
