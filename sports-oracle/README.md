@@ -145,3 +145,27 @@ sports-oracle/
 ├── requirements.txt
 └── .env.example
 ```
+
+## Monitoring
+
+Predictions are logged to the `prediction_logs` table in PostgreSQL.
+Use `/api/v1/predictions/recent` to fetch the latest 20 for monitoring dashboards.
+
+The `/api/v1/drift` endpoint runs KS-test and PSI across any feature columns you provide:
+
+```bash
+curl -X POST http://localhost:8000/api/v1/drift \
+  -H "Content-Type: application/json" \
+  -d '{
+    "reference_features": [{"home_form": 0.7}, ...],
+    "current_features":   [{"home_form": 0.6}, ...]
+  }'
+```
+
+## Retraining
+
+The Airflow DAG `sports_oracle_retrain` runs every Monday:
+1. Collects training data (≥500 samples required)
+2. Trains a challenger model
+3. Runs a drift check
+4. Promotes challenger if AUC ≥ 0.65 and challenger AUC ≥ champion AUC
