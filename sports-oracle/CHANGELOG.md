@@ -18,3 +18,13 @@
 - GZip compression middleware
 - Input validation via Pydantic v2 models
 - Architecture diagram
+
+### Enhanced (post-initial)
+- Thread-safe TTL/LRU cache for predictions
+- MetricsCollector with p50/p95/p99 latency percentiles
+- Z-score + IQR anomaly detection module
+- Time-series form forecasting (SMA + linear trend)
+- FAISS match similarity search with brute-force fallback
+- MLflow tracking stub + AWS/boto3 S3 stub
+- Input validation utilities
+- 100 tests across 12 test modules
