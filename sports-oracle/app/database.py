@@ -114,3 +114,25 @@ def get_session() -> Session:
     """Return a new database session."""
     SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=get_engine())
     return SessionLocal()
+
+
+def get_all_matches(limit: int = 100) -> list[dict]:
+    """Return recent match records for retraining data."""
+    session = get_session()
+    try:
+        rows = session.query(Match).order_by(Match.created_at.desc()).limit(limit).all()
+        return [
+            {
+                "match_id": r.match_id,
+                "home_team": r.home_team,
+                "away_team": r.away_team,
+                "outcome": r.outcome,
+                "home_form": r.home_form,
+                "away_form": r.away_form,
+            }
+            for r in rows
+        ]
+    except Exception:
+        return []
+    finally:
+        session.close()
