@@ -137,3 +137,14 @@ def predict(
         "prob_away": prob_map.get("A", 0.0),
         "confidence": confidence,
     }
+
+__all__ = [
+    "build_model_pipeline",
+    "train_model",
+    "load_model",
+    "read_metrics",
+    "predict",
+    "MODEL_PATH",
+    "METRICS_PATH",
+    "OUTCOME_LABELS",
+]
