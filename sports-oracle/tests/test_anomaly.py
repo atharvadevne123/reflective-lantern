@@ -2,12 +2,10 @@
 
 from __future__ import annotations
 
-import pytest
-
 
 def test_zscore_detects_outlier():
+
     from app.anomaly import zscore_anomalies
-    import numpy as np
 
     values = [1.0] * 50 + [100.0]  # clear outlier at end
     anomalies = zscore_anomalies(values)
@@ -15,8 +13,8 @@ def test_zscore_detects_outlier():
 
 
 def test_zscore_clean_data():
+
     from app.anomaly import zscore_anomalies
-    import numpy as np
 
     values = [float(i) for i in range(50)]
     anomalies = zscore_anomalies(values, threshold=5.0)

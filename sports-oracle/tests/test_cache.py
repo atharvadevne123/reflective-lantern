@@ -4,8 +4,6 @@ from __future__ import annotations
 
 import time
 
-import pytest
-
 
 def test_cache_miss_returns_none():
     from app.cache import TTLCache

@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-import pytest
-
 
 def test_collect_training_data_returns_valid_stats():
     """collect_training_data should return n_samples >= MIN_SAMPLES."""
@@ -30,7 +28,6 @@ def test_drift_check_runs_without_error():
 
 def test_promote_champion_rejects_bad_challenger(tmp_path):
     """Challenger with AUC below MIN_AUC should not be promoted."""
-    import shutil
     from pathlib import Path
 
     from pipelines.retrain_dag import promote_champion

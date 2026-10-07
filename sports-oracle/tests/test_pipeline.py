@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import numpy as np
 import pandas as pd
 import pytest
 
@@ -64,11 +63,11 @@ def test_pipeline_batch_predict(trained_model, n_rows):
 
 def test_pipeline_home_advantage():
     """Model should favour home team when home metrics are significantly better."""
-    from app.features import make_synthetic_dataset
-    from app.model import predict, train_model
-
     import tempfile
     from pathlib import Path
+
+    from app.features import make_synthetic_dataset
+    from app.model import predict, train_model
 
     X, y = make_synthetic_dataset(n=1000)
     with tempfile.TemporaryDirectory() as tmp:

@@ -139,8 +139,9 @@ def test_pipeline_fit_transform_idempotent():
 
 @pytest.mark.parametrize("home_rest,away_rest", [(2, 7), (3, 3), (14, 14)])
 def test_rest_encoder_rest_differential(home_rest, away_rest):
-    from app.features import RestDayEncoder
     import pandas as pd
+
+    from app.features import RestDayEncoder
 
     enc = RestDayEncoder()
     df = pd.DataFrame([{"home_rest_days": home_rest, "away_rest_days": away_rest}])
