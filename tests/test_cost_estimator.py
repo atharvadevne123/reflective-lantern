@@ -60,9 +60,13 @@ class TestEstimateCost:
 
     @pytest.mark.parametrize("duration", [0.5, 1.0, 8.0, 24.0])
     def test_cost_scales_with_duration(self, duration) -> None:
-        base = estimate_cost(ResourceSpec(cpu_cores=1, memory_gb=1, duration_hours=1), cpu_rate=1.0, memory_rate=1.0)
+        base = estimate_cost(
+            ResourceSpec(cpu_cores=1, memory_gb=1, duration_hours=1), cpu_rate=1.0, memory_rate=1.0
+        )
         scaled = estimate_cost(
-            ResourceSpec(cpu_cores=1, memory_gb=1, duration_hours=duration), cpu_rate=1.0, memory_rate=1.0
+            ResourceSpec(cpu_cores=1, memory_gb=1, duration_hours=duration),
+            cpu_rate=1.0,
+            memory_rate=1.0,
         )
         assert scaled.total_usd == pytest.approx(base.total_usd * duration, rel=1e-6)
 
@@ -231,7 +235,9 @@ class TestCheapestSpecExtended:
     def test_n_specs_returns_cheapest(self, n: int) -> None:
         from app.cost_estimator import ResourceSpec, cheapest_spec
 
-        specs = [ResourceSpec(cpu_cores=i, memory_gb=i * 2, duration_hours=1) for i in range(1, n + 1)]
+        specs = [
+            ResourceSpec(cpu_cores=i, memory_gb=i * 2, duration_hours=1) for i in range(1, n + 1)
+        ]
         result = cheapest_spec(specs)
         assert result is not None
 

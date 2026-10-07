@@ -258,7 +258,9 @@ def test_stretched_threshold_constant() -> None:
         (200_000.0, 0.80),
     ],
 )
-def test_affordability_loan_equals_80pct_at_default_down_payment(income: float, expected_loan_fraction: float) -> None:
+def test_affordability_loan_equals_80pct_at_default_down_payment(
+    income: float, expected_loan_fraction: float
+) -> None:
     value = 500_000.0
     result = affordability_index(value, annual_income=income)
     assert result["loan_amount"] == pytest.approx(value * expected_loan_fraction)
@@ -467,7 +469,13 @@ def test_market_summary_keys() -> None:
     from app.market_context import market_summary
 
     result = market_summary(500_000, 30_000, 20, 1500)
-    assert set(result.keys()) >= {"price_per_sqft", "dom", "dom_classification", "price_to_rent_ratio", "affordability"}
+    assert set(result.keys()) >= {
+        "price_per_sqft",
+        "dom",
+        "dom_classification",
+        "price_to_rent_ratio",
+        "affordability",
+    }
 
 
 def test_market_summary_price_per_sqft() -> None:
@@ -605,7 +613,10 @@ class TestNeighbourhoodScore:
 
         with pytest.raises(ValueError, match=r"sum to 1\.0"):
             neighbourhood_score(
-                7.0, 7.0, 7.0, weights={"school": 0.5, "transit": 0.5, "walkability": 0.5, "safety": 0.5}
+                7.0,
+                7.0,
+                7.0,
+                weights={"school": 0.5, "transit": 0.5, "walkability": 0.5, "safety": 0.5},
             )
 
     @pytest.mark.parametrize("school,transit,walk", [(5, 5, 5), (8, 3, 6), (10, 10, 10)])
@@ -824,7 +835,9 @@ def test_comparable_value_adjustment_smaller_subject() -> None:
 
 
 def test_comparable_value_adjustment_equal_sqft() -> None:
-    result = comparable_value_adjustment(subject_sqft=1000.0, comp_sqft=1000.0, comp_price=200_000.0)
+    result = comparable_value_adjustment(
+        subject_sqft=1000.0, comp_sqft=1000.0, comp_price=200_000.0
+    )
     assert result == pytest.approx(200_000.0)
 
 
@@ -934,7 +947,9 @@ def test_housing_affordability_index_has_required_keys() -> None:
         (1_000_000.0, 50_000.0, False),  # not affordable
     ],
 )
-def test_housing_affordability_index_parametrized(price: float, income: float, expected_affordable: bool) -> None:
+def test_housing_affordability_index_parametrized(
+    price: float, income: float, expected_affordable: bool
+) -> None:
     from app.market_context import housing_affordability_index
 
     result = housing_affordability_index(median_home_price=price, median_household_income=income)

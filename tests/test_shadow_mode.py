@@ -128,7 +128,9 @@ class TestShadowRunnerStatsCompleteness:
         runner = ShadowRunner(_primary, _shadow_same)
         stats = runner.stats()
         assert stats["total"] == 0
-        assert stats["match_rate"] == pytest.approx(0.0) or stats["match_rate"] == pytest.approx(1.0)
+        assert stats["match_rate"] == pytest.approx(0.0) or stats["match_rate"] == pytest.approx(
+            1.0
+        )
 
     def test_mixed_match_mismatch_error(self) -> None:
         runner = ShadowRunner(_primary, lambda x: x * 2 if x % 2 == 0 else x * 3)

@@ -255,7 +255,9 @@ def detect_plateau(values: list[float], tolerance: float = 0.5) -> list[tuple[in
     return plateaus
 
 
-def clip_outliers(values: list[float], lower_pct: float = 5.0, upper_pct: float = 95.0) -> list[float]:
+def clip_outliers(
+    values: list[float], lower_pct: float = 5.0, upper_pct: float = 95.0
+) -> list[float]:
     """Clip series values to the given percentile bounds.
 
     Args:
@@ -676,7 +678,9 @@ def detect_trend_reversal(values: list[float], window: int = 5) -> list[int]:
     return result
 
 
-def monthly_totals(daily_values: list[float], days_per_month: list[int] | None = None) -> list[float]:
+def monthly_totals(
+    daily_values: list[float], days_per_month: list[int] | None = None
+) -> list[float]:
     """Aggregate a daily series into monthly totals.
 
     Args:
@@ -693,7 +697,9 @@ def monthly_totals(daily_values: list[float], days_per_month: list[int] | None =
         days_per_month = [30] * 12
     total = sum(days_per_month)
     if total > len(daily_values):
-        raise ValueError(f"days_per_month total ({total}) exceeds available daily values ({len(daily_values)})")
+        raise ValueError(
+            f"days_per_month total ({total}) exceeds available daily values ({len(daily_values)})"
+        )
     result = []
     idx = 0
     for n_days in days_per_month:
@@ -861,7 +867,9 @@ def hampel_filter(values: list[float], window: int = 5, n_sigma: float = 3.0) ->
     return [round(v, 6) for v in result]
 
 
-def min_max_scale(values: list[float], feature_range: tuple[float, float] = (0.0, 1.0)) -> list[float]:
+def min_max_scale(
+    values: list[float], feature_range: tuple[float, float] = (0.0, 1.0)
+) -> list[float]:
     """Scale *values* to the given *feature_range* using min-max scaling.
 
     Args:
@@ -902,7 +910,9 @@ def percent_change(values: list[float]) -> list[float]:
     for i in range(1, len(values)):
         prev = values[i - 1]
         if prev == 0.0:
-            raise ValueError(f"Cannot compute percent change when previous value is zero (index {i - 1})")
+            raise ValueError(
+                f"Cannot compute percent change when previous value is zero (index {i - 1})"
+            )
         result.append(round((values[i] - prev) / abs(prev) * 100.0, 6))
     return result
 

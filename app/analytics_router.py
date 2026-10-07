@@ -1,4 +1,5 @@
 """Analytics endpoints for tariff, load-profile, solar, battery and benchmark analysis."""
+
 from __future__ import annotations
 
 import math
@@ -34,9 +35,11 @@ def tariff_compare(
     """Compare flat-rate, time-of-use, and tiered tariff costs for a consumption series."""
     if not hourly_kwh:
         from fastapi import HTTPException
+
         raise HTTPException(status_code=422, detail="consumption series must not be empty")
     if any(v < 0 for v in hourly_kwh):
         from fastapi import HTTPException
+
         raise HTTPException(status_code=422, detail="consumption values must be non-negative")
 
     n = len(hourly_kwh)
@@ -78,11 +81,13 @@ def tariff_compare(
 # Load Profile
 # ---------------------------------------------------------------------------
 
+
 @router.post("/load-profile")
 def load_profile(hourly_kwh: list[float]) -> dict[str, object]:
     """Compute load profile statistics: peak, base, mean, load factor, and ramp."""
     if not hourly_kwh:
         from fastapi import HTTPException
+
         raise HTTPException(status_code=422, detail="series must not be empty")
 
     n = len(hourly_kwh)
@@ -108,6 +113,7 @@ def load_profile(hourly_kwh: list[float]) -> dict[str, object]:
 # Weather Normalize
 # ---------------------------------------------------------------------------
 
+
 @router.post("/weather-normalize")
 def weather_normalize(
     baseline_kwh: Annotated[float, Query(gt=0)],
@@ -131,12 +137,13 @@ def weather_normalize(
 # Demand Response
 # ---------------------------------------------------------------------------
 
+
 class DRPayload(BaseModel):
     baseline_hourly_kwh: list[float]
     actual_hourly_kwh: list[float]
 
     @model_validator(mode="after")
-    def check_lengths_match(self) -> "DRPayload":
+    def check_lengths_match(self) -> DRPayload:
         if len(self.baseline_hourly_kwh) != len(self.actual_hourly_kwh):
             raise ValueError("baseline_hourly_kwh and actual_hourly_kwh must have the same length")
         return self
@@ -174,8 +181,9 @@ def demand_response_evaluate(
 # Power Quality
 # ---------------------------------------------------------------------------
 
+
 def _power_factor(real_kw: float, reactive_kvar: float) -> float:
-    apparent = math.sqrt(real_kw ** 2 + reactive_kvar ** 2)
+    apparent = math.sqrt(real_kw**2 + reactive_kvar**2)
     return real_kw / apparent if apparent > 0 else 1.0
 
 
@@ -188,6 +196,7 @@ def power_quality(
     """Return power factor and voltage imbalance metrics for a set of phase voltages."""
     if len(phase_voltages) < 2:
         from fastapi import HTTPException
+
         raise HTTPException(status_code=422, detail="at least 2 phase voltages are required")
 
     pf = _power_factor(real_power_kw, reactive_power_kvar)
@@ -224,14 +233,17 @@ def power_quality_correction(
 # Solar
 # ---------------------------------------------------------------------------
 
+
 class SolarEconomicsPayload(BaseModel):
     generation_hourly_kwh: list[float]
     consumption_hourly_kwh: list[float]
 
     @model_validator(mode="after")
-    def check_lengths_match(self) -> "SolarEconomicsPayload":
+    def check_lengths_match(self) -> SolarEconomicsPayload:
         if len(self.generation_hourly_kwh) != len(self.consumption_hourly_kwh):
-            raise ValueError("generation_hourly_kwh and consumption_hourly_kwh must have the same length")
+            raise ValueError(
+                "generation_hourly_kwh and consumption_hourly_kwh must have the same length"
+            )
         return self
 
 
@@ -242,9 +254,18 @@ EXPORT_RATE = 0.08
 @router.post("/solar/economics")
 def solar_economics(payload: SolarEconomicsPayload) -> dict[str, float]:
     """Calculate solar self-consumption, export revenue, and total financial benefit."""
-    self_consumed = sum(min(g, c) for g, c in zip(payload.generation_hourly_kwh, payload.consumption_hourly_kwh))
-    exported = sum(max(0.0, g - c) for g, c in zip(payload.generation_hourly_kwh, payload.consumption_hourly_kwh))
-    imported = sum(max(0.0, c - g) for g, c in zip(payload.generation_hourly_kwh, payload.consumption_hourly_kwh))
+    self_consumed = sum(
+        min(g, c)
+        for g, c in zip(payload.generation_hourly_kwh, payload.consumption_hourly_kwh, strict=False)
+    )
+    exported = sum(
+        max(0.0, g - c)
+        for g, c in zip(payload.generation_hourly_kwh, payload.consumption_hourly_kwh, strict=False)
+    )
+    imported = sum(
+        max(0.0, c - g)
+        for g, c in zip(payload.generation_hourly_kwh, payload.consumption_hourly_kwh, strict=False)
+    )
     generated = sum(payload.generation_hourly_kwh)
     consumed = sum(payload.consumption_hourly_kwh)
     bill_saving = round(self_consumed * IMPORT_RATE, 2)
@@ -281,6 +302,7 @@ def solar_payback(
 # ---------------------------------------------------------------------------
 # Battery
 # ---------------------------------------------------------------------------
+
 
 @router.post("/battery/peak-shave")
 def battery_peak_shave(
@@ -335,6 +357,7 @@ def battery_sizing(
 # Cohort Benchmark
 # ---------------------------------------------------------------------------
 
+
 def _grade(percentile: float) -> str:
     if percentile >= 80:
         return "A"
@@ -356,6 +379,7 @@ def cohort_benchmark(
     """Benchmark a building's energy use intensity against a peer cohort and return a grade."""
     if len(cohort_eui) < 3:
         from fastapi import HTTPException
+
         raise HTTPException(status_code=422, detail="cohort must have at least 3 members")
 
     building_eui = annual_kwh / floor_area_m2

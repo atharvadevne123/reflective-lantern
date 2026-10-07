@@ -396,11 +396,14 @@ class TestLastPageItemsExt:
 
         assert last_page_items(list(range(13)), per_page=5) == 3
 
-    @pytest.mark.parametrize("total,per_page,expected", [
-        (10, 3, 1),
-        (9, 3, 3),
-        (12, 4, 4),
-    ])
+    @pytest.mark.parametrize(
+        "total,per_page,expected",
+        [
+            (10, 3, 1),
+            (9, 3, 3),
+            (12, 4, 4),
+        ],
+    )
     def test_various_combos(self, total: int, per_page: int, expected: int) -> None:
         from app.pagination import last_page_items
 

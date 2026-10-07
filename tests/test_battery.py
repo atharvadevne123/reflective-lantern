@@ -28,11 +28,21 @@ def make_spec(**overrides: float) -> BatterySpec:
 
 class TestBatterySpec:
     def test_usable_capacity_applies_depth_of_discharge(self) -> None:
-        spec = BatterySpec(capacity_kwh=100.0, max_charge_kw=10.0, max_discharge_kw=10.0, max_depth_of_discharge=0.8)
+        spec = BatterySpec(
+            capacity_kwh=100.0,
+            max_charge_kw=10.0,
+            max_discharge_kw=10.0,
+            max_depth_of_discharge=0.8,
+        )
         assert spec.usable_kwh == pytest.approx(80.0)
 
     def test_full_depth_of_discharge_uses_whole_pack(self) -> None:
-        spec = BatterySpec(capacity_kwh=100.0, max_charge_kw=10.0, max_discharge_kw=10.0, max_depth_of_discharge=1.0)
+        spec = BatterySpec(
+            capacity_kwh=100.0,
+            max_charge_kw=10.0,
+            max_discharge_kw=10.0,
+            max_depth_of_discharge=1.0,
+        )
         assert spec.usable_kwh == pytest.approx(100.0)
 
     @pytest.mark.parametrize("capacity", [0.0, -10.0])
@@ -48,12 +58,22 @@ class TestBatterySpec:
     @pytest.mark.parametrize("efficiency", [0.0, -0.5, 1.5])
     def test_invalid_efficiency_rejected(self, efficiency: float) -> None:
         with pytest.raises(ValueError, match=r"round_trip_efficiency must be in \(0, 1\]"):
-            BatterySpec(capacity_kwh=100.0, max_charge_kw=10.0, max_discharge_kw=10.0, round_trip_efficiency=efficiency)
+            BatterySpec(
+                capacity_kwh=100.0,
+                max_charge_kw=10.0,
+                max_discharge_kw=10.0,
+                round_trip_efficiency=efficiency,
+            )
 
     @pytest.mark.parametrize("dod", [0.0, -0.5, 1.5])
     def test_invalid_depth_of_discharge_rejected(self, dod: float) -> None:
         with pytest.raises(ValueError, match=r"max_depth_of_discharge must be in \(0, 1\]"):
-            BatterySpec(capacity_kwh=100.0, max_charge_kw=10.0, max_discharge_kw=10.0, max_depth_of_discharge=dod)
+            BatterySpec(
+                capacity_kwh=100.0,
+                max_charge_kw=10.0,
+                max_discharge_kw=10.0,
+                max_depth_of_discharge=dod,
+            )
 
 
 class TestPeakShave:
@@ -85,7 +105,9 @@ class TestPeakShave:
         # The pack starts full, so it must discharge into the spike first;
         # refilling that same energy afterwards costs more than it returned,
         # because round-trip losses land on the way in.
-        result = peak_shave([40.0, 5.0, 5.0, 5.0], make_spec(round_trip_efficiency=0.5), target_peak_kw=20.0)
+        result = peak_shave(
+            [40.0, 5.0, 5.0, 5.0], make_spec(round_trip_efficiency=0.5), target_peak_kw=20.0
+        )
         assert result.energy_discharged_kwh == pytest.approx(20.0)
         assert result.energy_charged_kwh > result.energy_discharged_kwh
 
@@ -107,7 +129,9 @@ class TestPeakShave:
     def test_cycles_track_discharged_energy(self) -> None:
         result = peak_shave(SPIKY_LOAD, make_spec(), target_peak_kw=30.0)
         spec = make_spec()
-        assert result.equivalent_cycles == pytest.approx(result.energy_discharged_kwh / spec.usable_kwh, rel=1e-3)
+        assert result.equivalent_cycles == pytest.approx(
+            result.energy_discharged_kwh / spec.usable_kwh, rel=1e-3
+        )
 
     def test_degradation_grows_with_cycling(self) -> None:
         light = peak_shave(FLAT_LOAD, make_spec(), target_peak_kw=50.0)
@@ -159,7 +183,9 @@ class TestRequiredCapacityKwh:
 class TestDemandChargeSaving:
     def test_scales_with_peak_reduction(self) -> None:
         result = peak_shave(SPIKY_LOAD, make_spec(), target_peak_kw=30.0)
-        assert demand_charge_saving(result, 15.0) == pytest.approx(round(result.peak_reduction_kw * 15.0, 2))
+        assert demand_charge_saving(result, 15.0) == pytest.approx(
+            round(result.peak_reduction_kw * 15.0, 2)
+        )
 
     def test_zero_tariff_saves_nothing(self) -> None:
         result = peak_shave(SPIKY_LOAD, make_spec(), target_peak_kw=30.0)

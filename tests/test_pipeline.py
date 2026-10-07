@@ -221,10 +221,12 @@ def test_run_pipeline_predictions_length_matches_input() -> None:
 
     from app.pipeline import run_pipeline
 
-    df = pd.DataFrame({
-        "consumption_kwh": [10.0, 20.0, 15.0, 25.0, 30.0],
-        "hour": [0, 6, 12, 18, 23],
-    })
+    df = pd.DataFrame(
+        {
+            "consumption_kwh": [10.0, 20.0, 15.0, 25.0, 30.0],
+            "hour": [0, 6, 12, 18, 23],
+        }
+    )
     result = run_pipeline(df)
     assert len(result["predictions"]) == 5
 
@@ -234,10 +236,12 @@ def test_run_pipeline_returns_metrics_dict() -> None:
 
     from app.pipeline import run_pipeline
 
-    df = pd.DataFrame({
-        "consumption_kwh": [float(i) for i in range(1, 21)],
-        "hour": list(range(20)),
-    })
+    df = pd.DataFrame(
+        {
+            "consumption_kwh": [float(i) for i in range(1, 21)],
+            "hour": list(range(20)),
+        }
+    )
     result = run_pipeline(df)
     assert "metrics" in result
     assert isinstance(result["metrics"], dict)

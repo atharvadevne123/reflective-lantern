@@ -61,7 +61,9 @@ def test_load_latest_entry_returns_none_on_empty_list(tmp_path: Path) -> None:
 
 
 @pytest.mark.parametrize("sort_by", ["commits", "date", "repo"])
-def test_main_runs_without_error(history_path: Path, sort_by: str, capsys: pytest.CaptureFixture) -> None:
+def test_main_runs_without_error(
+    history_path: Path, sort_by: str, capsys: pytest.CaptureFixture
+) -> None:
     import scripts.summarize_history as sh
 
     with patch.object(sh, "HISTORY_DIR", history_path):
@@ -93,7 +95,9 @@ def test_load_latest_entry_returns_none_on_nested_invalid(tmp_path: Path) -> Non
         (120, 120),
     ],
 )
-def test_load_latest_entry_commit_values(tmp_path: Path, commits: int, expected_commits: int) -> None:
+def test_load_latest_entry_commit_values(
+    tmp_path: Path, commits: int, expected_commits: int
+) -> None:
     from scripts.summarize_history import load_latest_entry
 
     f = tmp_path / "repo.json"
@@ -132,9 +136,11 @@ def test_main_json_flag_outputs_valid_json(tmp_path: Path, capsys: pytest.Captur
     h = tmp_path / "history"
     h.mkdir()
     (h / "AlphaRepo.json").write_text(json.dumps([{"date": "2026-06-30", "commits": 55}]))
-    with patch.object(sh, "HISTORY_DIR", h):
-        with patch.object(sys, "argv", ["summarize_history.py", "--json"]):
-            sh.main()
+    with (
+        patch.object(sh, "HISTORY_DIR", h),
+        patch.object(sys, "argv", ["summarize_history.py", "--json"]),
+    ):
+        sh.main()
     out = capsys.readouterr().out
     parsed = json.loads(out)
     assert isinstance(parsed, list)
@@ -152,9 +158,11 @@ def test_main_sort_by_repo_alphabetical(tmp_path: Path, capsys: pytest.CaptureFi
     h.mkdir()
     (h / "Zebra.json").write_text(json.dumps([{"date": "2026-06-10", "commits": 5}]))
     (h / "Apple.json").write_text(json.dumps([{"date": "2026-06-11", "commits": 10}]))
-    with patch.object(sh, "HISTORY_DIR", h):
-        with patch.object(sys, "argv", ["summarize_history.py", "--sort-by", "repo"]):
-            sh.main()
+    with (
+        patch.object(sh, "HISTORY_DIR", h),
+        patch.object(sys, "argv", ["summarize_history.py", "--sort-by", "repo"]),
+    ):
+        sh.main()
     out = capsys.readouterr().out
     assert out.index("Apple") < out.index("Zebra")
 
@@ -167,10 +175,14 @@ def test_main_json_tests_passed_field(tmp_path: Path, capsys: pytest.CaptureFixt
 
     h = tmp_path / "history"
     h.mkdir()
-    (h / "Repo.json").write_text(json.dumps([{"date": "2026-07-01", "commits": 60, "tests_passed": True}]))
-    with patch.object(sh, "HISTORY_DIR", h):
-        with patch.object(sys, "argv", ["summarize_history.py", "--json"]):
-            sh.main()
+    (h / "Repo.json").write_text(
+        json.dumps([{"date": "2026-07-01", "commits": 60, "tests_passed": True}])
+    )
+    with (
+        patch.object(sh, "HISTORY_DIR", h),
+        patch.object(sys, "argv", ["summarize_history.py", "--json"]),
+    ):
+        sh.main()
     out = capsys.readouterr().out
     parsed = json.loads(out)
     assert parsed[0]["tests_passed"] is True
@@ -184,11 +196,17 @@ def test_filter_mode_improvement(tmp_path: Path, capsys: pytest.CaptureFixture) 
 
     h = tmp_path / "history"
     h.mkdir()
-    (h / "A.json").write_text(json.dumps([{"date": "2026-07-01", "commits": 60, "mode": "improvement"}]))
-    (h / "B.json").write_text(json.dumps([{"date": "2026-07-08", "commits": 60, "mode": "innovation"}]))
-    with patch.object(sh, "HISTORY_DIR", h):
-        with patch.object(sys, "argv", ["summarize_history.py", "--filter-mode", "improvement"]):
-            sh.main()
+    (h / "A.json").write_text(
+        json.dumps([{"date": "2026-07-01", "commits": 60, "mode": "improvement"}])
+    )
+    (h / "B.json").write_text(
+        json.dumps([{"date": "2026-07-08", "commits": 60, "mode": "innovation"}])
+    )
+    with (
+        patch.object(sh, "HISTORY_DIR", h),
+        patch.object(sys, "argv", ["summarize_history.py", "--filter-mode", "improvement"]),
+    ):
+        sh.main()
     out = capsys.readouterr().out
     assert "A" in out
     assert "B" not in out.split("1 repos")[0]
@@ -202,11 +220,17 @@ def test_filter_mode_innovation(tmp_path: Path, capsys: pytest.CaptureFixture) -
 
     h = tmp_path / "history"
     h.mkdir()
-    (h / "A.json").write_text(json.dumps([{"date": "2026-07-01", "commits": 60, "mode": "improvement"}]))
-    (h / "B.json").write_text(json.dumps([{"date": "2026-07-08", "commits": 60, "mode": "innovation"}]))
-    with patch.object(sh, "HISTORY_DIR", h):
-        with patch.object(sys, "argv", ["summarize_history.py", "--filter-mode", "innovation"]):
-            sh.main()
+    (h / "A.json").write_text(
+        json.dumps([{"date": "2026-07-01", "commits": 60, "mode": "improvement"}])
+    )
+    (h / "B.json").write_text(
+        json.dumps([{"date": "2026-07-08", "commits": 60, "mode": "innovation"}])
+    )
+    with (
+        patch.object(sh, "HISTORY_DIR", h),
+        patch.object(sys, "argv", ["summarize_history.py", "--filter-mode", "innovation"]),
+    ):
+        sh.main()
     out = capsys.readouterr().out
     assert "B" in out
     assert "1 repos" in out
@@ -280,9 +304,11 @@ def test_summarize_history_returns_zero(history_dir: Path) -> None:
 
     import scripts.summarize_history as sh
 
-    with patch.object(sys, "argv", ["summarize_history.py"]):
-        with patch.object(sh, "HISTORY_DIR", history_dir):
-            rc = sh.main()
+    with (
+        patch.object(sys, "argv", ["summarize_history.py"]),
+        patch.object(sh, "HISTORY_DIR", history_dir),
+    ):
+        rc = sh.main()
     assert rc in (0, None)
 
 

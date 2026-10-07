@@ -62,7 +62,9 @@ class ModelRegistry:
             self._models[model.name] = []
         existing = {mv.version for mv in self._models[model.name]}
         if model.version in existing:
-            raise ValueError(f"Version '{model.version}' already registered for model '{model.name}'")
+            raise ValueError(
+                f"Version '{model.version}' already registered for model '{model.name}'"
+            )
         self._models[model.name].append(model)
         logger.info("Registered model '%s' v%s", model.name, model.version)
 

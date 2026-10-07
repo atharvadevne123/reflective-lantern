@@ -11,16 +11,22 @@ from pydantic import BaseModel, Field, field_validator
 class EnergyReadingIn(BaseModel):
     """Input schema for a single energy reading."""
 
-    building_id: str = Field(..., min_length=1, max_length=64, description="Unique building identifier")
+    building_id: str = Field(
+        ..., min_length=1, max_length=64, description="Unique building identifier"
+    )
     timestamp: datetime = Field(..., description="Reading timestamp (ISO-8601)")
     hour: int = Field(..., ge=0, le=23, description="Hour of day 0-23")
     day_of_week: int = Field(..., ge=0, le=6, description="Day of week 0=Mon 6=Sun")
     month: int = Field(..., ge=1, le=12, description="Month 1-12")
-    temperature_c: float = Field(..., ge=-40.0, le=60.0, description="Outside temperature in Celsius")
+    temperature_c: float = Field(
+        ..., ge=-40.0, le=60.0, description="Outside temperature in Celsius"
+    )
     humidity_pct: float = Field(..., ge=0.0, le=100.0, description="Relative humidity 0-100")
     occupancy: int = Field(..., ge=0, le=10000, description="Number of occupants")
     hvac_state: int = Field(..., ge=0, le=1, description="HVAC on=1 off=0")
-    consumption_kwh: float = Field(0.0, ge=0.0, description="Current consumption (used for lag features)")
+    consumption_kwh: float = Field(
+        0.0, ge=0.0, description="Current consumption (used for lag features)"
+    )
 
     @field_validator("building_id")
     @classmethod
@@ -70,8 +76,12 @@ class AnomalyResponse(BaseModel):
 class DriftRequest(BaseModel):
     """Request body for the /drift endpoint."""
 
-    current_values: list[float] = Field(..., min_length=10, description="Current window of consumption readings")
-    reference_values: list[float] | None = Field(None, description="Reference distribution (uses global if omitted)")
+    current_values: list[float] = Field(
+        ..., min_length=10, description="Current window of consumption readings"
+    )
+    reference_values: list[float] | None = Field(
+        None, description="Reference distribution (uses global if omitted)"
+    )
 
 
 class DriftResponse(BaseModel):
@@ -254,7 +264,9 @@ __all__ = [
 class BatchValidationRequest(BaseModel):
     """Request body for batch reading validation."""
 
-    readings: list[dict[str, Any]] = Field(..., min_length=1, description="List of energy reading dicts to validate")
+    readings: list[dict[str, Any]] = Field(
+        ..., min_length=1, description="List of energy reading dicts to validate"
+    )
 
 
 class BatchValidationResponse(BaseModel):

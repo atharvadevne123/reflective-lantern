@@ -1,4 +1,5 @@
 """Feature engineering pipeline for delivery-time and energy prediction."""
+
 from __future__ import annotations
 
 import logging
@@ -27,6 +28,7 @@ _AMENITY_SCALE: float = 10.0
 # ---------------------------------------------------------------------------
 # Logistics-domain transformers
 # ---------------------------------------------------------------------------
+
 
 class TemporalFeatureExtractor(BaseEstimator, TransformerMixin):
     """Adds cyclical and categorical time features.
@@ -67,7 +69,11 @@ class RouteFeatureEngineer(BaseEstimator, TransformerMixin):
     """Engineers distance buckets, weight ratios, and carrier risk scores."""
 
     _CARRIER_RISK: dict[str, float] = {
-        "DHL": 0.12, "FedEx": 0.10, "UPS": 0.11, "USPS": 0.18, "Amazon": 0.08,
+        "DHL": 0.12,
+        "FedEx": 0.10,
+        "UPS": 0.11,
+        "USPS": 0.18,
+        "Amazon": 0.08,
     }
 
     def fit(self, X: pd.DataFrame, y: Any = None) -> RouteFeatureEngineer:
@@ -108,8 +114,10 @@ class CategoricalEncoder(BaseEstimator, TransformerMixin):
             return X.copy()
         df = X.copy()
         known = set(self.le_.classes_)
-        carriers = df["carrier"].fillna("Unknown").apply(
-            lambda c: c if c in known else self.le_.classes_[0]
+        carriers = (
+            df["carrier"]
+            .fillna("Unknown")
+            .apply(lambda c: c if c in known else self.le_.classes_[0])
         )
         df["carrier_enc"] = self.le_.transform(carriers)
         return df
@@ -118,6 +126,7 @@ class CategoricalEncoder(BaseEstimator, TransformerMixin):
 # ---------------------------------------------------------------------------
 # Energy-domain transformers
 # ---------------------------------------------------------------------------
+
 
 class LagFeatureExtractor(BaseEstimator, TransformerMixin):
     """Adds lag features for energy consumption (fills missing with median)."""
@@ -179,7 +188,9 @@ class WeatherFeatureExtractor(BaseEstimator, TransformerMixin):
         df = X.copy()
         temp = df.get("temperature_c", pd.Series([20.0] * len(df), index=df.index))
         hum = df.get("humidity_pct", pd.Series([50.0] * len(df), index=df.index))
-        df["heat_index"] = temp + 0.33 * (hum / 100 * 6.105 * np.exp(17.27 * temp / (237.3 + temp))) - 4.0
+        df["heat_index"] = (
+            temp + 0.33 * (hum / 100 * 6.105 * np.exp(17.27 * temp / (237.3 + temp))) - 4.0
+        )
         df["cooling_deg_hours"] = (temp - self.BASE_TEMP_COOLING).clip(lower=0.0)
         df["heating_deg_hours"] = (self.BASE_TEMP_HEATING - temp).clip(lower=0.0)
         df["temp_humidity_ratio"] = temp / (hum + 1e-6)
@@ -261,9 +272,7 @@ class InteractionFeatureExtractor(BaseEstimator, TransformerMixin):
     PAIRS: list[tuple[str, str]] = [("temperature_c", "occupancy")]
 
     def fit(self, X: pd.DataFrame, y: Any = None) -> InteractionFeatureExtractor:
-        self.available_pairs_ = [
-            (a, b) for a, b in self.PAIRS if a in X.columns and b in X.columns
-        ]
+        self.available_pairs_ = [(a, b) for a, b in self.PAIRS if a in X.columns and b in X.columns]
         return self
 
     def transform(self, X: pd.DataFrame) -> pd.DataFrame:
@@ -278,9 +287,19 @@ class InteractionFeatureExtractor(BaseEstimator, TransformerMixin):
 # ---------------------------------------------------------------------------
 
 FEATURE_COLS = [
-    "distance_km", "weight_kg", "hour_sin", "hour_cos", "dow_sin", "dow_cos",
-    "is_weekend", "is_peak", "distance_bucket", "weight_per_km", "carrier_risk",
-    "route_code", "carrier_enc",
+    "distance_km",
+    "weight_kg",
+    "hour_sin",
+    "hour_cos",
+    "dow_sin",
+    "dow_cos",
+    "is_weekend",
+    "is_peak",
+    "distance_bucket",
+    "weight_per_km",
+    "carrier_risk",
+    "route_code",
+    "carrier_enc",
 ]
 
 
@@ -290,17 +309,19 @@ def build_feature_pipeline() -> Pipeline:
     Works for both logistics (carrier, distance_km, hour_of_day) and energy
     (consumption_kwh, temperature_c, occupancy, hour) domain DataFrames.
     """
-    return Pipeline([
-        ("temporal", TemporalFeatureExtractor()),
-        ("weather", WeatherFeatureExtractor()),
-        ("occupancy", OccupancyFeatureExtractor()),
-        ("lag", LagFeatureExtractor()),
-        ("rolling", RollingStatsExtractor()),
-        ("amenity", AmenityCompositeTransformer()),
-        ("interaction", InteractionFeatureExtractor()),
-        ("route", RouteFeatureEngineer()),
-        ("categorical", CategoricalEncoder()),
-    ])
+    return Pipeline(
+        [
+            ("temporal", TemporalFeatureExtractor()),
+            ("weather", WeatherFeatureExtractor()),
+            ("occupancy", OccupancyFeatureExtractor()),
+            ("lag", LagFeatureExtractor()),
+            ("rolling", RollingStatsExtractor()),
+            ("amenity", AmenityCompositeTransformer()),
+            ("interaction", InteractionFeatureExtractor()),
+            ("route", RouteFeatureEngineer()),
+            ("categorical", CategoricalEncoder()),
+        ]
+    )
 
 
 def prepare_X(df: pd.DataFrame, pipeline: Pipeline, fit: bool = False) -> np.ndarray:
@@ -330,18 +351,29 @@ def generate_synthetic_data(n: int = 2000, seed: int = 42) -> pd.DataFrame:
     day_of_week = rng.integers(0, 7, size=n)
     carrier_delay = np.where(np.isin(carriers, ["USPS"]), 1.3, 1.0)
     route_factor = np.where(np.isin(route_types, ["rural"]), 1.4, 1.0)
-    target = (distance_km * 1.5 + weight_kg * 2 + rng.normal(0, 20, size=n)) * carrier_delay * route_factor
+    target = (
+        (distance_km * 1.5 + weight_kg * 2 + rng.normal(0, 20, size=n))
+        * carrier_delay
+        * route_factor
+    )
     target = np.clip(target, 10, 2000)
-    return pd.DataFrame({
-        "carrier": carriers, "distance_km": distance_km, "weight_kg": weight_kg,
-        "route_type": route_types, "hour_of_day": hour_of_day.astype(int),
-        "day_of_week": day_of_week.astype(int), "delivery_minutes": target,
-    })
+    return pd.DataFrame(
+        {
+            "carrier": carriers,
+            "distance_km": distance_km,
+            "weight_kg": weight_kg,
+            "route_type": route_types,
+            "hour_of_day": hour_of_day.astype(int),
+            "day_of_week": day_of_week.astype(int),
+            "delivery_minutes": target,
+        }
+    )
 
 
 # ---------------------------------------------------------------------------
 # Numeric utility functions
 # ---------------------------------------------------------------------------
+
 
 def normalize_consumption(values: list[float], method: str = "minmax") -> list[float]:
     """Normalise a list of consumption values.
@@ -493,7 +525,7 @@ def lag_features(values: list[float], lags: list[int]) -> dict[str, list[float |
         # Pad to match length
         while len(lagged) < len(values):
             lagged.append(None)
-        result[f"lag_{lag}"] = lagged[:len(values)]
+        result[f"lag_{lag}"] = lagged[: len(values)]
     return result
 
 
@@ -509,7 +541,9 @@ def ratio_feature(numerators: list[float], denominators: list[float]) -> list[fl
         raise ValueError("numerators must not be empty")
     if len(numerators) != len(denominators):
         raise ValueError("numerators and denominators must have the same length")
-    return [n / d if abs(d) > 1e-12 else 0.0 for n, d in zip(numerators, denominators)]
+    return [
+        n / d if abs(d) > 1e-12 else 0.0 for n, d in zip(numerators, denominators, strict=False)
+    ]
 
 
 def bin_feature(values: list[float], bins: list[float]) -> list[int]:
@@ -585,24 +619,39 @@ def make_feature_row(
     occupancy: int,
     hvac_state: int,
     consumption_kwh: float,
-) -> "np.ndarray":
+) -> np.ndarray:
     """Build a single-row feature array for energy-domain predictions.
 
     Column order must match the feature columns produced by train_model when
     called with the energy DataFrame schema (all 8 raw features).
     """
     import numpy as np
-    return np.array([[hour, day_of_week, month, temperature_c, humidity_pct, occupancy, hvac_state, consumption_kwh]], dtype=float)
+
+    return np.array(
+        [
+            [
+                hour,
+                day_of_week,
+                month,
+                temperature_c,
+                humidity_pct,
+                occupancy,
+                hvac_state,
+                consumption_kwh,
+            ]
+        ],
+        dtype=float,
+    )
 
 
 class DropNonNumeric(BaseEstimator, TransformerMixin):
     """Drop all non-numeric columns from a DataFrame."""
 
-    def fit(self, X: "pd.DataFrame", y: Any = None) -> "DropNonNumeric":
+    def fit(self, X: pd.DataFrame, y: Any = None) -> DropNonNumeric:
         self.fitted_ = True
         return self
 
-    def transform(self, X: "pd.DataFrame") -> "pd.DataFrame":
+    def transform(self, X: pd.DataFrame) -> pd.DataFrame:
         return X.select_dtypes(include=[float, int, "number"]).copy()
 
 

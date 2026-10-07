@@ -94,7 +94,12 @@ def mape(actual: list[float], predicted: list[float]) -> float:
         raise ValueError(f"Lists must have the same length, got {len(actual)} vs {len(predicted)}")
     if any(a == 0 for a in actual):
         raise ValueError("MAPE is undefined when any actual value is zero")
-    return round(100.0 * sum(abs(a - p) / abs(a) for a, p in zip(actual, predicted, strict=False)) / len(actual), 4)
+    return round(
+        100.0
+        * sum(abs(a - p) / abs(a) for a, p in zip(actual, predicted, strict=False))
+        / len(actual),
+        4,
+    )
 
 
 def percentile(values: list[float], p: float) -> float:
@@ -425,7 +430,9 @@ def winsorize(values: list[float], lower_pct: float = 5.0, upper_pct: float = 95
     if not values:
         raise ValueError("values must not be empty")
     if not (0 <= lower_pct < upper_pct <= 100):
-        raise ValueError(f"Percentiles must satisfy 0 <= lower_pct < upper_pct <= 100, got {lower_pct}, {upper_pct}")
+        raise ValueError(
+            f"Percentiles must satisfy 0 <= lower_pct < upper_pct <= 100, got {lower_pct}, {upper_pct}"
+        )
     sorted_vals = sorted(values)
     n = len(sorted_vals)
     lo_idx = min(n - 1, int(lower_pct / 100.0 * n))
@@ -698,7 +705,9 @@ def median_absolute_deviation(values: list[float]) -> float:
     deviations = sorted(abs(v - med) for v in values)
     n2 = len(deviations)
     mid2 = n2 // 2
-    mad = (deviations[mid2 - 1] + deviations[mid2]) / 2.0 if n2 % 2 == 0 else float(deviations[mid2])
+    mad = (
+        (deviations[mid2 - 1] + deviations[mid2]) / 2.0 if n2 % 2 == 0 else float(deviations[mid2])
+    )
     return round(mad, 6)
 
 

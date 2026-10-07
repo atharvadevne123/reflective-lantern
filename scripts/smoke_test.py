@@ -1,4 +1,5 @@
 """Post-deploy smoke test: exercises every endpoint against a live server."""
+
 from __future__ import annotations
 
 import argparse
@@ -69,8 +70,10 @@ def main() -> int:
             print(f"  - {f}")
         return 1
 
-    print(f"SMOKE TEST PASSED — predicted {pred['predicted_minutes']:.1f} min "
-          f"at {pred['confidence']:.2%} confidence")
+    print(
+        f"SMOKE TEST PASSED — predicted {pred['predicted_minutes']:.1f} min "
+        f"at {pred['confidence']:.2%} confidence"
+    )
     return 0
 
 

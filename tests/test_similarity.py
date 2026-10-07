@@ -421,7 +421,9 @@ class TestManhattanDistance:
         with pytest.raises(ValueError, match="same length"):
             manhattan_distance([1.0, 2.0], [1.0])
 
-    @pytest.mark.parametrize("a,b,expected", [([1.0], [4.0], 3.0), ([0.0, 0.0, 0.0], [1.0, 1.0, 1.0], 3.0)])
+    @pytest.mark.parametrize(
+        "a,b,expected", [([1.0], [4.0], 3.0), ([0.0, 0.0, 0.0], [1.0, 1.0, 1.0], 3.0)]
+    )
     def test_parametrized(self, a: list, b: list, expected: float) -> None:
         from app.similarity import manhattan_distance
 

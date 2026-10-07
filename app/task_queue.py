@@ -28,6 +28,7 @@ class _CallableInt(int):
     def __call__(self) -> int:
         return int(self)
 
+
 __all__ = [
     "Task",
     "TaskQueue",

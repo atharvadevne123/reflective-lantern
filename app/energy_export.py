@@ -75,7 +75,10 @@ def aggregate_by_hour(records: list[dict[str, Any]]) -> list[dict[str, Any]]:
         if h is None or kwh is None:
             continue
         buckets.setdefault(int(h), []).append(float(kwh))
-    return [{"hour": h, "mean_kwh": sum(vals) / len(vals), "count": len(vals)} for h, vals in sorted(buckets.items())]
+    return [
+        {"hour": h, "mean_kwh": sum(vals) / len(vals), "count": len(vals)}
+        for h, vals in sorted(buckets.items())
+    ]
 
 
 def summarize_export(records: list[dict[str, Any]]) -> dict[str, Any]:
@@ -482,7 +485,11 @@ def records_missing_fields(records: list[dict[str, Any]], required: list[str]) -
     Returns:
         Sorted list of zero-based indices of incomplete records.
     """
-    return sorted(i for i, r in enumerate(records) if any(field not in r or r[field] is None for field in required))
+    return sorted(
+        i
+        for i, r in enumerate(records)
+        if any(field not in r or r[field] is None for field in required)
+    )
 
 
 def records_to_lookup(records: list[dict[str, Any]], key: str) -> dict[str, dict[str, Any]]:

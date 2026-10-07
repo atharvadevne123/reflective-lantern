@@ -1,4 +1,5 @@
 """FastAPI application with /predict, /health, and /metrics endpoints."""
+
 from __future__ import annotations
 
 import json
@@ -350,7 +351,10 @@ async def predict_batch(
 # Short-path aliases used by tests and health-check probes
 @app.get("/health", include_in_schema=False)
 async def health_alias() -> dict[str, str]:
-    return {"status": "healthy" if _model is not None else "degraded", "model_version": MODEL_VERSION}
+    return {
+        "status": "healthy" if _model is not None else "degraded",
+        "model_version": MODEL_VERSION,
+    }
 
 
 @app.get("/metrics", include_in_schema=False)

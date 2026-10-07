@@ -47,7 +47,9 @@ class AugmentationConfig:
     synonyms: dict = field(default_factory=dict)
 
 
-def synonym_replace(tokens: list[str], synonyms: dict, prob: float, rng: random.Random) -> list[str]:
+def synonym_replace(
+    tokens: list[str], synonyms: dict, prob: float, rng: random.Random
+) -> list[str]:
     """Replace tokens with synonyms at random.
 
     Args:
@@ -105,10 +107,10 @@ def random_swap(tokens: list[str], prob: float, rng: random.Random) -> list[str]
 
 def jitter_numerics(
     text: str | list,
-    pct: float | "AugmentationConfig | None" = None,
-    rng: "random.Random | None" = None,
-    config: "AugmentationConfig | None" = None,
-) -> "str | list":
+    pct: float | AugmentationConfig | None = None,
+    rng: random.Random | None = None,
+    config: AugmentationConfig | None = None,
+) -> str | list:
     """Add Gaussian jitter to numeric values.
 
     Accepts two calling conventions:

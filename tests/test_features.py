@@ -206,7 +206,9 @@ def test_amenity_composite_uses_weights(school, transit, walk, single_row) -> No
     row["transit_score"] = transit
     row["walkability_score"] = walk
     result = AmenityCompositeTransformer().fit_transform(row)
-    expected = (school * _SCHOOL_WEIGHT + transit * _TRANSIT_WEIGHT + walk * _WALK_WEIGHT) / _AMENITY_SCALE
+    expected = (
+        school * _SCHOOL_WEIGHT + transit * _TRANSIT_WEIGHT + walk * _WALK_WEIGHT
+    ) / _AMENITY_SCALE
     import pytest as _pytest
 
     assert result["amenity_composite"].iloc[0] == _pytest.approx(expected, rel=1e-3)
@@ -338,7 +340,12 @@ def test_demand_response_potential_keys() -> None:
     from app.features import demand_response_potential
 
     result = demand_response_potential([1.0, 5.0, 10.0], peak_threshold_pct=0.9)
-    assert set(result.keys()) >= {"peak_hours_count", "sheddable_kwh", "potential_pct", "peak_threshold_kwh"}
+    assert set(result.keys()) >= {
+        "peak_hours_count",
+        "sheddable_kwh",
+        "potential_pct",
+        "peak_threshold_kwh",
+    }
 
 
 def test_demand_response_potential_potential_pct_bounded() -> None:
@@ -902,11 +909,18 @@ class TestMinmaxNormalize:
 
 def test_make_feature_row_shape() -> None:
     import numpy as np
+
     from app.features import make_feature_row
 
     row = make_feature_row(
-        hour=8, day_of_week=1, month=3, temperature_c=20.0,
-        humidity_pct=50.0, occupancy=100, hvac_state=1, consumption_kwh=15.0,
+        hour=8,
+        day_of_week=1,
+        month=3,
+        temperature_c=20.0,
+        humidity_pct=50.0,
+        occupancy=100,
+        hvac_state=1,
+        consumption_kwh=15.0,
     )
     assert isinstance(row, np.ndarray)
     assert row.shape == (1, 8)
@@ -922,6 +936,7 @@ def test_make_feature_row_values() -> None:
 
 def test_drop_non_numeric_removes_string_columns() -> None:
     import pandas as pd
+
     from app.features import DropNonNumeric
 
     df = pd.DataFrame({"a": [1.0, 2.0], "b": ["x", "y"], "c": [3, 4]})
@@ -935,6 +950,7 @@ def test_drop_non_numeric_removes_string_columns() -> None:
 
 def test_drop_non_numeric_fitted_attr() -> None:
     import pandas as pd
+
     from app.features import DropNonNumeric
 
     df = pd.DataFrame({"x": [1.0]})

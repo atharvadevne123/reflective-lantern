@@ -1,4 +1,5 @@
 """Tests for model training and inference."""
+
 from __future__ import annotations
 
 import numpy as np
@@ -95,10 +96,12 @@ def test_train_anomaly_model_returns_pipeline():
 
     from app.model import train_anomaly_model
 
-    df = pd.DataFrame({
-        "hour": range(100),
-        "consumption_kwh": [float(i % 50) for i in range(100)],
-    })
+    df = pd.DataFrame(
+        {
+            "hour": range(100),
+            "consumption_kwh": [float(i % 50) for i in range(100)],
+        }
+    )
     bundle = train_anomaly_model(df)
     assert hasattr(bundle, "predict")
     assert hasattr(bundle, "decision_function")
@@ -109,10 +112,12 @@ def test_score_anomaly_returns_expected_keys():
 
     from app.model import score_anomaly, train_anomaly_model
 
-    df = pd.DataFrame({
-        "hour": list(range(50)),
-        "consumption_kwh": [10.0] * 50,
-    })
+    df = pd.DataFrame(
+        {
+            "hour": list(range(50)),
+            "consumption_kwh": [10.0] * 50,
+        }
+    )
     bundle = train_anomaly_model(df)
     row = df.values[:1]
     result = score_anomaly(bundle, row)
