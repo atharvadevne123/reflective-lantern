@@ -1,0 +1,144 @@
+[
+  {
+    "repo": "Energy-Scout",
+    "owner": "atharvadevne123",
+    "date": "2026-10-07",
+    "mode": "IMPROVEMENT",
+    "commits": 62,
+    "first_commit_sha": "a92bc4f",
+    "last_commit_sha": "50d59d3",
+    "tests_before": 0,
+    "tests_after": 157,
+    "tests_passed": true,
+    "push_status": "BLOCKED",
+    "push_note": "Proxy blocks GitHub access to atharvadevne123/Energy-Scout. Session scope restricted to reflective-lantern only. 62 commits were built and tested locally in /tmp/lantern-work/Energy-Scout but could not be pushed. Action needed: add Energy-Scout to the session allowed repos.",
+    "phases": {
+      "phase1_new_modules": [
+        "monitoring/drift_detector.py - KS-test + PSI drift detection (EnergyDriftDetector, DriftResult)",
+        "monitoring/__init__.py - export EnergyDriftDetector and DriftResult"
+      ],
+      "phase2_new_tests": [
+        "tests/test_model.py - 56 tests for DemandForecaster, ConsumptionAnomalyDetector, metrics",
+        "tests/test_monitoring.py - 28 tests for EnergyDriftDetector (fit/detect/summary/repr)"
+      ],
+      "phase3_new_endpoints": [
+        "GET /version - API and service version info",
+        "GET /readiness - Kubernetes readiness probe (503 if models not loaded)",
+        "POST /anomaly/batch - bulk anomaly detection (up to 200 readings)",
+        "GET /efficiency - period validation added (valid: 1d/7d/14d/30d/90d/180d/365d)"
+      ],
+      "phase4_docstrings_annotations": [
+        "Full docstrings on _predict_raw, _predict_lower, _predict_upper in demand_forecaster.py",
+        "Full docstrings on _classify_anomaly and _select_feature_cols in consumption_anomaly.py",
+        "Full docstrings on _add_rolling_features, _add_building_type_encoding, _add_solar_features, _add_occupancy_features in feature_engineering.py",
+        "Full docstrings on _load_models and _compute_demand_tier in app.py",
+        "Full docstrings on _run_forecast and _run_anomaly in app.py",
+        "Return type annotations on all api/app.py handler functions"
+      ],
+      "phase5_performance": [
+        "lru_cache on _building_one_hot() in feature_engineering.py",
+        "Narrowed bare except to specific exception types (ImportError, ValueError, RuntimeError) in SHAP init"
+      ],
+      "phase6_repr_methods": [
+        "__repr__ added to DemandForecaster (shows fitted/n_features/quantile_alpha)",
+        "__repr__ added to ConsumptionAnomalyDetector (shows fitted/building_type/n_estimators)",
+        "__repr__ added to EnergyFeatureEngineer (shows fitted/n_output_cols/lag_hours)",
+        "__repr__ added to EnergyDriftDetector (shows fitted/n_features/thresholds)"
+      ],
+      "phase7_ci_docs": [
+        "ci.yml - add coverage XML artifact upload and ruff format check",
+        ".pre-commit-config.yaml - ruff, ruff-format, file hygiene hooks",
+        "CONTRIBUTING.md - full dev workflow and PR checklist",
+        "CHANGELOG.md - unreleased + v1.0.0 sections",
+        "SECURITY.md - vulnerability reporting and threat model",
+        "CODE_OF_CONDUCT.md - Contributor Covenant",
+        "pyproject.toml - mypy config section",
+        "Makefile - type-check, coverage, validate targets",
+        ".env.example - DB pool config and drift threshold env vars",
+        "README.md - new endpoints table, drift detection section, contributing section, scripts table"
+      ],
+      "phase8_scripts": [
+        "scripts/benchmark.py - API latency benchmark (100 requests, min/median/P95/max)",
+        "scripts/validate_env.py - required/optional env var pre-flight checker"
+      ],
+      "phase9_extended_tests": [
+        "TestCostEstimate (5 tests) - flat/TOU/tiered tariffs, missing/empty list",
+        "TestCarbonFootprint (5 tests) - US/EU regions, solar offset, unknown region fallback, trees equivalent",
+        "TestVersion (1 test) - api_version=1.0.0, service=energy-scout",
+        "TestReadiness (2 tests) - 503 without models, 200 with models",
+        "TestAnomalyBatch (3 tests) - valid/too-large/missing-key",
+        "TestForecastParametrized (4x parametrize = 17 tests) - building types, horizons, holiday, solar",
+        "TestAnomalyParametrized (2x parametrize = 9 tests) - building types, consumption levels",
+        "TestEfficiency (5 tests) - default, missing params, keys, periods, invalid period",
+        "TestBatchForecastEdgeCases (4 tests) - empty/missing/single/results key"
+      ],
+      "phase10_bugfix": [
+        "fix: align feature matrix to training columns on detect/score in ConsumptionAnomalyDetector (fill missing cols with zeros instead of dimension mismatch)"
+      ]
+    },
+    "commit_log": [
+      "feat(1/60): add KS-test and PSI drift detector module",
+      "feat(2/60): expose drift detector in monitoring package __init__",
+      "test(3/60): add comprehensive model training and prediction tests",
+      "test(4/60): add comprehensive drift detection tests",
+      "feat(5/60): add /version and /readiness probe endpoints",
+      "refactor(6/60): add return type annotations to api/app.py handler functions",
+      "refactor(7/60): add return type annotation to scripts/train.py main()",
+      "chore(8/60): add pre-commit hooks for ruff and file hygiene",
+      "docs(9/60): add contributing guidelines",
+      "docs(10/60): add CHANGELOG with initial release and unreleased section",
+      "docs(11/60): add security policy and threat model",
+      "docs(12/60): add contributor code of conduct",
+      "chore(13/60): add mypy configuration to pyproject.toml",
+      "chore(14/60): add type-check and coverage targets to Makefile",
+      "docs(15/60): add docstrings to _load_models and _compute_demand_tier in app.py",
+      "feat(16/60): add /anomaly/batch endpoint for bulk anomaly detection",
+      "test(17/60): add cost-estimate, carbon-footprint, version, readiness and batch anomaly tests",
+      "test(18/60): add parametrized building-type, horizon and solar tests to test_api.py",
+      "test(19/60): add cost-estimate, carbon, and large-batch fixtures to conftest.py",
+      "test(20/60): add cyclical, building-type and solar parametrized feature tests",
+      "ci(21/60): upload coverage XML artifact in GitHub Actions",
+      "ci(22/60): add ruff format check to CI lint step",
+      "perf(23/60): cache building type one-hot encoding with lru_cache in feature_engineering",
+      "chore(24/60): add DB pool and drift threshold env vars to .env.example",
+      "refactor(25/60): expose DemandForecaster and ConsumptionAnomalyDetector in models __init__",
+      "refactor(26/60): expose EnergyFeatureEngineer in pipeline __init__",
+      "docs(27/60): add full docstring with Args/Returns/Raises to _run_forecast",
+      "docs(28/60): add full docstring to _run_anomaly in app.py",
+      "docs(29/60): log incoming requests with correlation ID in before_request hook",
+      "feat(30/60): add python version and feature_engineer flag to /health response",
+      "docs(31/60): add full docstring to ConsumptionAnomalyDetector._classify_anomaly",
+      "docs(32/60): add docstring to ConsumptionAnomalyDetector._select_feature_cols",
+      "docs(33/60): add docstrings to DemandForecaster._predict_raw and _predict_lower",
+      "docs(34/60): add docstring to DemandForecaster._predict_upper",
+      "docs(35/60): add docstring to EnergyFeatureEngineer._add_rolling_features",
+      "docs(36/60): add docstring to EnergyFeatureEngineer._add_building_type_encoding",
+      "docs(37/60): add docstring to EnergyFeatureEngineer._add_solar_features",
+      "docs(38/60): add docstring to EnergyFeatureEngineer._add_occupancy_features",
+      "test(39/60): add model metrics, feature names, scaler and SHAP tests",
+      "test(40/60): add batch detect, equipment fault and score method edge case tests",
+      "docs(41/60): add new endpoints table to README",
+      "docs(42/60): add drift detection section with usage example to README",
+      "docs(43/60): add contributing section with quick-start to README",
+      "test(44/60): add efficiency endpoint tests with period parametrization",
+      "fix(45/60): narrow bare except to specific exception types in SHAP init",
+      "fix(46/60): add period validation to /efficiency endpoint",
+      "test(47/60): add invalid period validation test for /efficiency",
+      "refactor(48/60): add __repr__ method to DemandForecaster for better debuggability",
+      "refactor(49/60): add __repr__ to ConsumptionAnomalyDetector",
+      "refactor(50/60): add __repr__ to EnergyDriftDetector",
+      "test(51/60): add __repr__ tests for DemandForecaster and ConsumptionAnomalyDetector",
+      "test(52/60): add __repr__ tests for EnergyDriftDetector",
+      "test(53/60): add output_columns, lag, rolling and occupancy interaction tests",
+      "test(54/60): add batch forecast edge case tests for empty/missing/single inputs",
+      "chore(55/60): add scripts/benchmark.py for API latency profiling",
+      "refactor(56/60): add __repr__ and docstring to output_columns property in EnergyFeatureEngineer",
+      "test(57/60): add EnergyFeatureEngineer __repr__ tests",
+      "chore(58/60): add scripts/validate_env.py to check environment variables at startup",
+      "chore(59/60): add validate target to Makefile for env var pre-flight check",
+      "docs(60/60): add scripts reference table to README",
+      "fix: move pytest import to top of test_api.py and remove inline __import__ calls",
+      "fix(anomaly): align feature matrix to training columns on detect/score"
+    ]
+  }
+]
