@@ -122,3 +122,27 @@ def test_h2h_encoder_zero_history():
     out = enc.fit_transform(df)
     # Should not divide by zero
     assert not np.isnan(out["h2h_home_rate"].iloc[0])
+
+
+def test_pipeline_fit_transform_idempotent():
+    """Pipeline fit+transform twice gives same output."""
+    from app.features import build_feature_pipeline, make_synthetic_dataset
+
+    X, _ = make_synthetic_dataset(n=50)
+    pipe1 = build_feature_pipeline()
+    out1 = pipe1.fit_transform(X)
+    pipe2 = build_feature_pipeline()
+    out2 = pipe2.fit_transform(X)
+    import numpy as np
+    np.testing.assert_array_almost_equal(out1, out2)
+
+
+@pytest.mark.parametrize("home_rest,away_rest", [(2, 7), (3, 3), (14, 14)])
+def test_rest_encoder_rest_differential(home_rest, away_rest):
+    from app.features import RestDayEncoder
+    import pandas as pd
+
+    enc = RestDayEncoder()
+    df = pd.DataFrame([{"home_rest_days": home_rest, "away_rest_days": away_rest}])
+    out = enc.fit_transform(df)
+    assert out["rest_differential"].iloc[0] == home_rest - away_rest
