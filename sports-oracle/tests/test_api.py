@@ -53,7 +53,9 @@ def test_predict_missing_required_field(api_client, sample_match_payload):
 
 
 def test_predict_batch_valid(api_client, sample_match_payload):
-    r = api_client.post("/api/v1/predict/batch", json={"matches": [sample_match_payload, sample_match_payload]})
+    r = api_client.post(
+        "/api/v1/predict/batch", json={"matches": [sample_match_payload, sample_match_payload]}
+    )
     assert r.status_code == 200
     body = r.json()
     assert len(body) == 2
@@ -77,7 +79,9 @@ def test_metrics_endpoint(api_client):
 def test_drift_endpoint(api_client):
     reference = [{"home_form": 0.7, "away_form": 0.4} for _ in range(50)]
     current = [{"home_form": 0.6, "away_form": 0.5} for _ in range(30)]
-    r = api_client.post("/api/v1/drift", json={"reference_features": reference, "current_features": current})
+    r = api_client.post(
+        "/api/v1/drift", json={"reference_features": reference, "current_features": current}
+    )
     assert r.status_code == 200
     body = r.json()
     assert "drift_detected" in body
@@ -87,7 +91,9 @@ def test_drift_endpoint(api_client):
 def test_drift_endpoint_insufficient_data(api_client):
     reference = [{"home_form": 0.7} for _ in range(3)]
     current = [{"home_form": 0.6} for _ in range(3)]
-    r = api_client.post("/api/v1/drift", json={"reference_features": reference, "current_features": current})
+    r = api_client.post(
+        "/api/v1/drift", json={"reference_features": reference, "current_features": current}
+    )
     assert r.status_code == 200
     body = r.json()
     # With insufficient samples, all features should show no drift

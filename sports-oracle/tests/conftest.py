@@ -26,6 +26,7 @@ def test_engine():
     yield engine
     Base.metadata.drop_all(bind=engine)
     import os as _os
+
     try:
         _os.remove("test_sports_oracle.db")
     except FileNotFoundError:
@@ -58,7 +59,9 @@ def trained_model(sample_features, tmp_path_factory):
 
     tmp = tmp_path_factory.mktemp("model")
     X, y = make_synthetic_dataset(n=500)
-    pipe, metrics = train_model(X, y, model_path=tmp / "model.joblib", metrics_path=tmp / "metrics.json")
+    pipe, metrics = train_model(
+        X, y, model_path=tmp / "model.joblib", metrics_path=tmp / "metrics.json"
+    )
     return pipe, metrics, tmp
 
 
@@ -66,17 +69,20 @@ def trained_model(sample_features, tmp_path_factory):
 def api_client(trained_model):
     pipe, _, model_dir = trained_model
     import shutil
+
     shutil.copy(model_dir / "model.joblib", "model.joblib")
     shutil.copy(model_dir / "metrics.json", "metrics.json")
 
     import app.main as main_module
     from app.main import app
+
     main_module._model = pipe
 
     client = TestClient(app, raise_server_exceptions=False)
     yield client
 
     import os
+
     for f in ("model.joblib", "metrics.json", "test_sports_oracle.db"):
         try:
             os.remove(f)

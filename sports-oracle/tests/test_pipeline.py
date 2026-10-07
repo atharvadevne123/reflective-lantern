@@ -39,9 +39,23 @@ def test_pipeline_consistent_predictions(trained_model):
     from app.model import predict
 
     pipe, _, _ = trained_model
-    X = pd.DataFrame([{"home_form": 0.6, "away_form": 0.4, "home_attack": 1.2, "away_attack": 1.0,
-                        "home_defense": 1.1, "away_defense": 0.9, "h2h_home_wins": 3, "h2h_draws": 2,
-                        "h2h_away_wins": 2, "home_rest_days": 7, "away_rest_days": 7}])
+    X = pd.DataFrame(
+        [
+            {
+                "home_form": 0.6,
+                "away_form": 0.4,
+                "home_attack": 1.2,
+                "away_attack": 1.0,
+                "home_defense": 1.1,
+                "away_defense": 0.9,
+                "h2h_home_wins": 3,
+                "h2h_draws": 2,
+                "h2h_away_wins": 2,
+                "home_rest_days": 7,
+                "away_rest_days": 7,
+            }
+        ]
+    )
     r1 = predict(pipe, X)
     r2 = predict(pipe, X)
     assert r1["predicted_outcome"] == r2["predicted_outcome"]
@@ -71,7 +85,9 @@ def test_pipeline_home_advantage():
 
     X, y = make_synthetic_dataset(n=1000)
     with tempfile.TemporaryDirectory() as tmp:
-        pipe, _ = train_model(X, y, model_path=Path(tmp) / "m.joblib", metrics_path=Path(tmp) / "m.json")
+        pipe, _ = train_model(
+            X, y, model_path=Path(tmp) / "m.joblib", metrics_path=Path(tmp) / "m.json"
+        )
         X_favoured = pd.DataFrame(
             [
                 {

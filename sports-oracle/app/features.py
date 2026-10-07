@@ -179,6 +179,7 @@ def make_synthetic_dataset(n: int = 2000, seed: int = 42) -> tuple[pd.DataFrame,
     y = LABEL_ENCODER.transform(labels)
     return X, y
 
+
 __all__ = [
     "FormIndexEncoder",
     "HeadToHeadEncoder",

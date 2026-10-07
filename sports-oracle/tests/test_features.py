@@ -41,7 +41,9 @@ def test_h2h_encoder_ratios_sum_to_one():
     enc = HeadToHeadEncoder()
     df = pd.DataFrame([_base_row(h2h_home_wins=5, h2h_draws=3, h2h_away_wins=2)])
     out = enc.fit_transform(df)
-    total = out["h2h_home_rate"].iloc[0] + out["h2h_draw_rate"].iloc[0] + out["h2h_away_rate"].iloc[0]
+    total = (
+        out["h2h_home_rate"].iloc[0] + out["h2h_draw_rate"].iloc[0] + out["h2h_away_rate"].iloc[0]
+    )
     assert abs(total - 1.0) < 1e-4
 
 
@@ -134,6 +136,7 @@ def test_pipeline_fit_transform_idempotent():
     pipe2 = build_feature_pipeline()
     out2 = pipe2.fit_transform(X)
     import numpy as np
+
     np.testing.assert_array_almost_equal(out1, out2)
 
 

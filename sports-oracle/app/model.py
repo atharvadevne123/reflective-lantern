@@ -138,6 +138,7 @@ def predict(
         "confidence": confidence,
     }
 
+
 __all__ = [
     "build_model_pipeline",
     "train_model",

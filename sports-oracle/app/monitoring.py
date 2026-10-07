@@ -125,12 +125,7 @@ def get_recent_predictions(n: int = 100) -> list[dict]:
     """Retrieve the most recent n predictions."""
     session = get_session()
     try:
-        rows = (
-            session.query(PredictionLog)
-            .order_by(PredictionLog.created_at.desc())
-            .limit(n)
-            .all()
-        )
+        rows = session.query(PredictionLog).order_by(PredictionLog.created_at.desc()).limit(n).all()
         return [
             {
                 "request_id": r.request_id,
@@ -150,6 +145,7 @@ def get_recent_predictions(n: int = 100) -> list[dict]:
         return []
     finally:
         session.close()
+
 
 __all__ = [
     "compute_drift",

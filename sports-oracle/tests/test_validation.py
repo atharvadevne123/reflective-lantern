@@ -54,11 +54,17 @@ def test_validate_match_features_valid():
     from app.validation import validate_match_features
 
     features = {
-        "home_form": 0.7, "away_form": 0.4,
-        "home_attack": 1.2, "away_attack": 1.0,
-        "home_defense": 1.1, "away_defense": 0.9,
-        "h2h_home_wins": 5, "h2h_draws": 3, "h2h_away_wins": 2,
-        "home_rest_days": 7, "away_rest_days": 5,
+        "home_form": 0.7,
+        "away_form": 0.4,
+        "home_attack": 1.2,
+        "away_attack": 1.0,
+        "home_defense": 1.1,
+        "away_defense": 0.9,
+        "h2h_home_wins": 5,
+        "h2h_draws": 3,
+        "h2h_away_wins": 2,
+        "home_rest_days": 7,
+        "away_rest_days": 5,
     }
     result = validate_match_features(features)
     assert result["home_form"] == 0.7

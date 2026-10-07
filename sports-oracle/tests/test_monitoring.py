@@ -71,8 +71,14 @@ def test_check_feature_drift_returns_dict():
     from app.monitoring import check_feature_drift
 
     rng = np.random.default_rng(5)
-    reference = [{"home_form": float(x), "away_form": float(y)} for x, y in zip(rng.normal(0.6, 0.1, 50), rng.normal(0.4, 0.1, 50))]
-    current = [{"home_form": float(x), "away_form": float(y)} for x, y in zip(rng.normal(0.6, 0.1, 30), rng.normal(0.4, 0.1, 30))]
+    reference = [
+        {"home_form": float(x), "away_form": float(y)}
+        for x, y in zip(rng.normal(0.6, 0.1, 50), rng.normal(0.4, 0.1, 50))
+    ]
+    current = [
+        {"home_form": float(x), "away_form": float(y)}
+        for x, y in zip(rng.normal(0.6, 0.1, 30), rng.normal(0.4, 0.1, 30))
+    ]
     results = check_feature_drift(reference, current)
     assert isinstance(results, dict)
     for v in results.values():
@@ -91,9 +97,17 @@ def test_log_prediction_does_not_raise():
     from app.monitoring import log_prediction
 
     log_prediction(
-        home_team="Arsenal", away_team="Chelsea", competition="PL",
-        features={"home_form": 0.7}, prediction={"predicted_outcome": "H", "prob_home": 0.6,
-                                                   "prob_draw": 0.2, "prob_away": 0.2, "confidence": 0.6},
+        home_team="Arsenal",
+        away_team="Chelsea",
+        competition="PL",
+        features={"home_form": 0.7},
+        prediction={
+            "predicted_outcome": "H",
+            "prob_home": 0.6,
+            "prob_draw": 0.2,
+            "prob_away": 0.2,
+            "confidence": 0.6,
+        },
     )
 
 

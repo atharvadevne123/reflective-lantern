@@ -10,7 +10,9 @@ def test_train_model_returns_pipeline_and_metrics(tmp_path):
     from app.model import train_model
 
     X, y = make_synthetic_dataset(n=300)
-    pipe, metrics = train_model(X, y, model_path=tmp_path / "m.joblib", metrics_path=tmp_path / "m.json")
+    pipe, metrics = train_model(
+        X, y, model_path=tmp_path / "m.joblib", metrics_path=tmp_path / "m.json"
+    )
     assert pipe is not None
     assert "auc_mean" in metrics
     assert metrics["auc_mean"] > 0.4
@@ -69,7 +71,10 @@ def test_train_model_various_sizes(tmp_path, n_samples):
 
     X, y = make_synthetic_dataset(n=n_samples)
     _, metrics = train_model(
-        X, y, model_path=tmp_path / f"m_{n_samples}.joblib", metrics_path=tmp_path / f"m_{n_samples}.json"
+        X,
+        y,
+        model_path=tmp_path / f"m_{n_samples}.joblib",
+        metrics_path=tmp_path / f"m_{n_samples}.json",
     )
     assert metrics["n_samples"] == n_samples
     assert metrics["auc_mean"] > 0.4
