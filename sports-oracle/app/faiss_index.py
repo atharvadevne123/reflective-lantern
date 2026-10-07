@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 FAISS_INDEX_PATH = Path("faiss_index.bin")
 
 
-def build_index(embeddings: np.ndarray, persist: bool = False) -> "faiss.IndexFlatL2":  # type: ignore[name-defined]
+def build_index(embeddings: np.ndarray, persist: bool = False) -> object:
     """Build a FAISS IndexFlatL2 from a 2D array of embeddings."""
     try:
         import faiss  # type: ignore[import-untyped]
@@ -36,13 +36,11 @@ def search_similar(
 ) -> list[int]:
     """Return indices of k most similar rows."""
     try:
-        import faiss  # type: ignore[import-untyped]
-
         if index is None:
             raise ImportError
-        distances, indices = index.search(query.astype(np.float32).reshape(1, -1), k)
+        distances, indices = index.search(query.astype(np.float32).reshape(1, -1), k)  # type: ignore[union-attr]
         return indices[0].tolist()
-    except ImportError:
+    except (ImportError, AttributeError):
         if embeddings is None:
             return []
         diffs = np.linalg.norm(embeddings - query, axis=1)
