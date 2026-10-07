@@ -84,3 +84,21 @@ def test_check_feature_drift_empty():
 
     result = check_feature_drift([], [])
     assert result == {}
+
+
+def test_log_prediction_does_not_raise():
+    """log_prediction should not raise even if DB is empty."""
+    from app.monitoring import log_prediction
+
+    log_prediction(
+        home_team="Arsenal", away_team="Chelsea", competition="PL",
+        features={"home_form": 0.7}, prediction={"predicted_outcome": "H", "prob_home": 0.6,
+                                                   "prob_draw": 0.2, "prob_away": 0.2, "confidence": 0.6},
+    )
+
+
+def test_get_recent_predictions_returns_list():
+    from app.monitoring import get_recent_predictions
+
+    result = get_recent_predictions(n=10)
+    assert isinstance(result, list)
