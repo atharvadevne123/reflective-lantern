@@ -150,3 +150,11 @@ def get_recent_predictions(n: int = 100) -> list[dict]:
         return []
     finally:
         session.close()
+
+__all__ = [
+    "compute_drift",
+    "compute_psi",
+    "check_feature_drift",
+    "log_prediction",
+    "get_recent_predictions",
+]
