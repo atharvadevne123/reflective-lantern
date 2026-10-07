@@ -272,3 +272,11 @@ async def retrain(request: Request) -> dict:
 async def version() -> dict:
     """Return API version information."""
     return {"version": "1.0.0", "model_version": "1.0.0", "api_version": "v1"}
+
+
+@app.get("/api/v1/predictions/recent", tags=["Monitoring"])
+@limiter.limit("30/minute")
+async def recent_predictions(request: Request, n: int = 20) -> list[dict]:
+    """Return the most recent n logged predictions for monitoring."""
+    n = min(max(1, n), 200)
+    return get_recent_predictions(n=n)
