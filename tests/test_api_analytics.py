@@ -10,6 +10,39 @@ FLAT_DAY = [1.0] * 24
 PEAKY_DAY = [1.0] * 20 + [20.0, 22.0, 21.0, 1.0]
 
 
+@pytest.mark.parametrize(
+    "start_hour,expected_status",
+    [
+        (0, 200),
+        (12, 200),
+        (23, 200),
+        (-1, 422),
+        (24, 422),
+    ],
+)
+def test_tariff_compare_start_hour_boundaries(
+    client: TestClient, start_hour: int, expected_status: int
+) -> None:
+    r = client.post(f"/api/v1/tariff/compare?start_hour={start_hour}", json=[1.0] * 6)
+    assert r.status_code == expected_status
+
+
+@pytest.mark.parametrize(
+    "series,expected_class",
+    [
+        ([1.0] * 24, "flat"),
+        ([1.0] * 20 + [20.0, 22.0, 21.0, 1.0], "peaky"),
+        ([5.0] * 24, "flat"),
+    ],
+)
+def test_load_profile_classification(
+    client: TestClient, series: list[float], expected_class: str
+) -> None:
+    r = client.post("/api/v1/load-profile", json=series)
+    assert r.status_code == 200
+    assert r.json()["profile_class"] == expected_class
+
+
 class TestTariffCompareEndpoint:
     def test_returns_all_three_schemes(self, client: TestClient) -> None:
         r = client.post("/api/v1/tariff/compare", json=FLAT_DAY)
