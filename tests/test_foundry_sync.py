@@ -78,6 +78,23 @@ def test_sync_summary_has_required_keys(monkeypatch: pytest.MonkeyPatch) -> None
         assert key in summary, f"Missing key: {key}"
 
 
+@pytest.mark.parametrize("fmt", ["csv", "jsonl"])
+def test_sync_export_format_recorded(monkeypatch: pytest.MonkeyPatch, fmt: str) -> None:
+    summary = sync(fmt=fmt, settings=_unconfigured_settings(monkeypatch))
+    assert summary["format"] == fmt
+
+
+@pytest.mark.parametrize(
+    "key",
+    ["rows", "format", "uploaded", "transaction_rid"],
+)
+def test_sync_summary_keys_present_for_unconfigured(
+    monkeypatch: pytest.MonkeyPatch, key: str
+) -> None:
+    summary = sync(settings=_unconfigured_settings(monkeypatch))
+    assert key in summary
+
+
 def test_sync_format_defaults_to_csv(monkeypatch: pytest.MonkeyPatch) -> None:
     summary = sync(settings=_unconfigured_settings(monkeypatch))
     assert summary["format"] == "csv"
