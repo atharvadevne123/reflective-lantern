@@ -640,6 +640,6 @@
     ],
     "tests_passed": true,
     "commits": 61,
-    "email_status": "pending"
+    "email_status": "network_blocked"
   }
 ]
