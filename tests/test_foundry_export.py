@@ -7,6 +7,8 @@ import io
 import json
 from pathlib import Path
 
+import pytest
+
 from scripts.foundry_export import (
     DATASET_COLUMNS,
     build_ontology_objects,
@@ -212,3 +214,42 @@ def test_build_ontology_objects_returns_list(history_dir) -> None:
     rows = build_run_rows(history_dir)
     objs = build_ontology_objects(rows)
     assert isinstance(objs, list)
+
+
+@pytest.mark.parametrize(
+    "mode_value,expected",
+    [
+        ("improvement", "improvement"),
+        ("IMPROVEMENT", "improvement"),
+        ("Innovation", "innovation"),
+        ("INNOVATION", "innovation"),
+    ],
+)
+def test_build_run_rows_normalises_mode(tmp_path: Path, mode_value: str, expected: str) -> None:
+    h = tmp_path / "history"
+    h.mkdir()
+    (h / "Repo.json").write_text(
+        json.dumps([{"date": "2026-08-01", "commits": 60, "mode": mode_value}])
+    )
+    rows = build_run_rows(h)
+    assert rows[0]["mode"] == expected
+
+
+@pytest.mark.parametrize(
+    "commits_value,expected_commits",
+    [
+        (60, 60),
+        (0, 0),
+        (120, 120),
+    ],
+)
+def test_build_run_rows_commits_field(
+    tmp_path: Path, commits_value: int, expected_commits: int
+) -> None:
+    h = tmp_path / "history"
+    h.mkdir()
+    (h / "Repo.json").write_text(
+        json.dumps([{"date": "2026-08-01", "commits": commits_value}])
+    )
+    rows = build_run_rows(h)
+    assert rows[0]["commits"] == expected_commits
