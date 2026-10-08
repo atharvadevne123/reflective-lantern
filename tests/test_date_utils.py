@@ -1309,3 +1309,45 @@ def test_minutes_between_parametrized(
     a = datetime(2026, 1, 1, h1, m1)
     b = datetime(2026, 1, 1, h2, m2)
     assert minutes_between(a, b) == expected_minutes
+
+
+@pytest.mark.parametrize(
+    "year,month,expected_last_day",
+    [
+        (2026, 1, 31),
+        (2026, 2, 28),
+        (2024, 2, 29),  # leap year
+        (2026, 4, 30),
+        (2026, 12, 31),
+    ],
+)
+def test_end_of_month_last_day(year: int, month: int, expected_last_day: int) -> None:
+    from datetime import datetime
+
+    from app.date_utils import end_of_month
+
+    dt = datetime(year, month, 1, 0, 0, 0)
+    result = end_of_month(dt)
+    assert result.day == expected_last_day
+    assert result.hour == 23
+    assert result.minute == 59
+    assert result.second == 59
+
+
+@pytest.mark.parametrize(
+    "start_s,end_s,expected",
+    [
+        (0.0, 60.0, 60.0),
+        (0.0, 0.0, 0.0),
+        (100.0, 50.0, -50.0),
+    ],
+)
+def test_elapsed_seconds_parametrized(start_s: float, end_s: float, expected: float) -> None:
+    from datetime import datetime, timedelta
+
+    from app.date_utils import elapsed_seconds
+
+    base = datetime(2026, 6, 1, 12, 0, 0)
+    start = base + timedelta(seconds=start_s)
+    end = base + timedelta(seconds=end_s)
+    assert elapsed_seconds(start, end) == pytest.approx(expected)
