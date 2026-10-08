@@ -50,6 +50,21 @@ def haversine(a: Coordinate, b: Coordinate) -> float:
     return 2 * _EARTH_RADIUS_KM * math.asin(math.sqrt(h))
 
 
+def haversine_distance(a: tuple[float, float], b: tuple[float, float]) -> float:
+    """Compute the haversine distance between two (lat, lon) tuples.
+
+    Convenience wrapper around :func:`haversine` that accepts plain tuples.
+
+    Args:
+        a: First point as ``(latitude, longitude)`` in decimal degrees.
+        b: Second point as ``(latitude, longitude)`` in decimal degrees.
+
+    Returns:
+        Great-circle distance in kilometres.
+    """
+    return haversine(Coordinate(a[0], a[1]), Coordinate(b[0], b[1]))
+
+
 @dataclass(frozen=True)
 class BoundingBox:
     """An axis-aligned bounding box in geographic coordinates.
@@ -216,6 +231,7 @@ __all__ = [
     "bounding_box_of",
     "distance_km",
     "haversine",
+    "haversine_distance",
     "k_nearest",
     "midpoint",
     "nearest_neighbor",
