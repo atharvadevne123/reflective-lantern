@@ -223,6 +223,18 @@ Key variables:
 | `RATE_LIMIT_REQUESTS` | `100` | Max requests per window |
 | `SECRET_KEY` | — | Change before any deployment |
 
+## Utility Modules
+
+The service ships several reusable utility modules under `app/`:
+
+| Module | Purpose |
+|---|---|
+| `date_utils` | UTC helpers, business-day arithmetic, `end_of_month`, `elapsed_seconds` |
+| `geo_utils` | Haversine distance, bounding-box, k-nearest, `haversine_distance` tuple API |
+| `carbon` | Grid CO₂ intensity lookup, kWh → kg CO₂e conversion |
+| `battery` | BESS peak-shaving simulation and sizing |
+| `investment` | Property cap-rate, IRR, DCF, and break-even analysis |
+
 ## License
 
 MIT
