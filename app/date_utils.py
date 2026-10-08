@@ -597,14 +597,3 @@ def end_of_month(dt: datetime) -> datetime:
     return dt.replace(day=last_day, hour=23, minute=59, second=59, microsecond=999999)
 
 
-def elapsed_seconds(start: datetime, end: datetime) -> float:
-    """Return the number of seconds between *start* and *end*.
-
-    Args:
-        start: Start datetime.
-        end: End datetime.
-
-    Returns:
-        Elapsed time in seconds; negative if end < start.
-    """
-    return (end - start).total_seconds()
