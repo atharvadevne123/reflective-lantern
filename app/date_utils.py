@@ -582,3 +582,29 @@ def end_of_day(dt: datetime) -> datetime:
         Datetime at the very end of *dt*'s calendar day.
     """
     return dt.replace(hour=23, minute=59, second=59, microsecond=999999)
+
+
+def end_of_month(dt: datetime) -> datetime:
+    """Return the last microsecond of the month containing *dt*.
+
+    Args:
+        dt: Any datetime (timezone is preserved).
+
+    Returns:
+        Datetime at 23:59:59.999999 on the last day of *dt*'s month.
+    """
+    last_day = days_in_month(dt.year, dt.month)
+    return dt.replace(day=last_day, hour=23, minute=59, second=59, microsecond=999999)
+
+
+def elapsed_seconds(start: datetime, end: datetime) -> float:
+    """Return the number of seconds between *start* and *end*.
+
+    Args:
+        start: Start datetime.
+        end: End datetime.
+
+    Returns:
+        Elapsed time in seconds; negative if end < start.
+    """
+    return (end - start).total_seconds()
