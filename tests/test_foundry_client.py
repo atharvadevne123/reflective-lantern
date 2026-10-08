@@ -303,6 +303,33 @@ def test_upload_dataset_files_empty_raises() -> None:
         client.upload_dataset_files("ri.ds", {})
 
 
+@pytest.mark.parametrize(
+    "hostname,token",
+    [
+        ("", "tok-valid"),
+        ("  ", "tok-valid"),
+        ("https://stack.palantirfoundry.com", ""),
+        ("https://stack.palantirfoundry.com", "   "),
+    ],
+)
+def test_client_rejects_blank_credentials(hostname: str, token: str) -> None:
+    with pytest.raises(FoundryConfigError):
+        FoundryClient(hostname, token)
+
+
+@pytest.mark.parametrize(
+    "base_url,expected_suffix",
+    [
+        ("https://stack.palantirfoundry.com", "/api/v2"),
+        ("https://stack.palantirfoundry.com/", "/api/v2"),
+        ("https://stack.palantirfoundry.com///", "/api/v2"),
+    ],
+)
+def test_client_normalises_base_url(base_url: str, expected_suffix: str) -> None:
+    c = FoundryClient(base_url, "tok-123")
+    assert c.base_url.endswith(expected_suffix)
+
+
 def test_upload_dataset_files_aborts_on_failure() -> None:
     import urllib.error
 
