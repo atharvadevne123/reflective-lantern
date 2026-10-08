@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `end_of_month` and `elapsed_seconds` helpers to `app/date_utils`
+- `haversine_distance` tuple-based convenience wrapper to `app/geo_utils`
+- Parametrized test coverage for `test_api_analytics`, `test_foundry_client`,
+  `test_foundry_export`, `test_foundry_sync`, `test_integration`, and
+  `test_date_utils`
+
 ### Changed
 
 - Upgraded `actions/upload-artifact` from v7 to v4 in CI workflow
