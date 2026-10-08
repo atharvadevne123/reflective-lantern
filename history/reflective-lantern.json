@@ -621,5 +621,25 @@
     "commits": 60,
     "email_status": "blocked_by_classifier",
     "session": "https://claude.ai/code/session_01YBM82yRrBB6Z1JRMBJXQCA"
+  },
+  {
+    "date": "2026-10-08",
+    "mode": "improvement",
+    "improvements": [
+      "test(51/60): add parametrized start-hour and profile-class tests to test_api_analytics",
+      "test(52/60): add parametrized credential and URL-normalisation tests to test_foundry_client",
+      "test(53/60): add parametrized mode-normalisation and commits-field tests to test_foundry_export",
+      "test(54/60): add parametrized format and summary-key tests to test_foundry_sync",
+      "test(55/60): add parametrized validate_history exit-code tests to test_integration",
+      "feat(56/60): add end_of_month and elapsed_seconds helpers to date_utils",
+      "test(57/60): add parametrized end_of_month and elapsed_seconds tests to test_date_utils",
+      "feat(58/60): add haversine_distance tuple-based wrapper to geo_utils",
+      "docs(59/60): update CHANGELOG with new helpers and parametrized test additions",
+      "docs(60/60): add utility modules reference table to README",
+      "fix: remove duplicate elapsed_seconds definition in date_utils"
+    ],
+    "tests_passed": true,
+    "commits": 61,
+    "email_status": "pending"
   }
 ]
