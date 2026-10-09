@@ -132,3 +132,11 @@ class NotificationDispatcher:
     def __len__(self) -> int:
         """Return the number of registered channels."""
         return len(self._channels)
+
+    def disabled_channels(self) -> list[str]:
+        """Return names of all currently disabled channels.
+
+        Returns:
+            Sorted list of channel names where ``enabled`` is False.
+        """
+        return sorted(name for name, ch in self._channels.items() if not ch.enabled)
