@@ -284,3 +284,62 @@ class TestShadowRunnerClear:
         runner.clear()
         stats = runner.stats()
         assert stats.get("total_calls", 0) == 0
+
+
+class TestMatchRate:
+    def test_no_calls_returns_zero(self) -> None:
+        from app.shadow_mode import ShadowRunner
+
+        runner = ShadowRunner(lambda x: x, lambda x: x)
+        assert runner.match_rate() == 0.0
+
+    def test_all_matching_returns_one(self) -> None:
+        from app.shadow_mode import ShadowRunner
+
+        runner = ShadowRunner(lambda x: x, lambda x: x)
+        for i in range(5):
+            runner.call(i)
+        assert runner.match_rate() == 1.0
+
+    def test_no_matching_returns_zero(self) -> None:
+        from app.shadow_mode import ShadowRunner
+
+        runner = ShadowRunner(lambda x: x, lambda x: x + 1)
+        for i in range(4):
+            runner.call(i)
+        assert runner.match_rate() == 0.0
+
+    def test_partial_match_rate(self) -> None:
+        from app.shadow_mode import ShadowRunner
+
+        calls = 0
+
+        def primary(x: int) -> int:
+            return x
+
+        def shadow(x: int) -> int:
+            nonlocal calls
+            calls += 1
+            return x if calls <= 2 else x + 1
+
+        runner = ShadowRunner(primary, shadow)
+        for i in range(4):
+            runner.call(i)
+        assert 0.0 < runner.match_rate() < 1.0
+
+    @pytest.mark.parametrize("n_matches,n_total", [(0, 3), (3, 3), (1, 4)])
+    def test_rate_in_valid_range(self, n_matches: int, n_total: int) -> None:
+        from app.shadow_mode import ShadowRunner
+
+        call_count = 0
+
+        def shadow_fn(x: int) -> int:
+            nonlocal call_count
+            call_count += 1
+            return x if call_count <= n_matches else x + 99
+
+        runner = ShadowRunner(lambda x: x, shadow_fn)
+        for i in range(n_total):
+            runner.call(i)
+        rate = runner.match_rate()
+        assert 0.0 <= rate <= 1.0
