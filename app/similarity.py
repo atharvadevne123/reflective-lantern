@@ -621,3 +621,15 @@ def angular_distance(a: list[float], b: list[float]) -> float:
     dot = sum(x * y for x, y in zip(a, b, strict=False))
     cos_sim = max(-1.0, min(1.0, dot / (mag_a * mag_b)))
     return round(math.acos(cos_sim), 6)
+
+
+def clamp_similarity(value: float) -> float:
+    """Clamp a similarity value to the valid [-1, 1] range.
+
+    Args:
+        value: A raw dot-product or similarity score.
+
+    Returns:
+        Value clamped to [-1.0, 1.0], rounded to 6 decimal places.
+    """
+    return round(max(-1.0, min(1.0, value)), 6)
