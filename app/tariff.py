@@ -322,6 +322,7 @@ __all__ = [
     "daily_cost_summary",
     "tiered_cost",
     "time_of_use_cost",
+    "cost_per_hour_average",
 ]
 
 
@@ -354,3 +355,21 @@ def daily_cost_summary(
         "peak_hour_cost": peak_h,
         "off_peak_cost": off_peak_h,
     }
+
+
+def cost_per_hour_average(hourly_kwh: list[float], rate: float = DEFAULT_FLAT_RATE) -> float:
+    """Return the average hourly energy cost for a load profile.
+
+    Args:
+        hourly_kwh: Energy consumption per hour in kWh.
+        rate: Flat rate in currency per kWh.
+
+    Returns:
+        Average cost per hour.
+
+    Raises:
+        ValueError: If *hourly_kwh* is empty.
+    """
+    if not hourly_kwh:
+        raise ValueError("hourly_kwh must not be empty")
+    return flat_rate_cost(hourly_kwh, rate) / len(hourly_kwh)

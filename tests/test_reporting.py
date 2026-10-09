@@ -1169,3 +1169,33 @@ class TestKwhConversions:
         from app.reporting import kwh_to_wh, wh_to_kwh
 
         assert wh_to_kwh(kwh_to_wh(kwh)) == pytest.approx(kwh)
+
+
+class TestConsumptionDelta:
+    def test_positive_increase(self) -> None:
+        from app.reporting import consumption_delta
+
+        assert consumption_delta(100.0, 150.0) == pytest.approx(50.0)
+
+    def test_negative_decrease(self) -> None:
+        from app.reporting import consumption_delta
+
+        assert consumption_delta(150.0, 100.0) == pytest.approx(-50.0)
+
+    def test_no_change_returns_zero(self) -> None:
+        from app.reporting import consumption_delta
+
+        assert consumption_delta(100.0, 100.0) == pytest.approx(0.0)
+
+    @pytest.mark.parametrize(
+        "before,after,expected",
+        [
+            (0.0, 100.0, 100.0),
+            (200.0, 100.0, -100.0),
+            (50.0, 75.0, 25.0),
+        ],
+    )
+    def test_parametrized_delta(self, before: float, after: float, expected: float) -> None:
+        from app.reporting import consumption_delta
+
+        assert consumption_delta(before, after) == pytest.approx(expected)

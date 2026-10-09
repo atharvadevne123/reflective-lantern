@@ -253,3 +253,39 @@ class TestEnergyUseIntensityExtended:
     def test_eui_positive_for_valid_area(self, area: float) -> None:
         eui = energy_use_intensity(annual_kwh=10000.0, floor_area_m2=area)
         assert eui > 0.0
+
+
+class TestBelowMedianCohort:
+    def test_efficient_building_is_below_median(self) -> None:
+        from app.energy_benchmark import below_median_cohort
+
+        assert below_median_cohort(50.0, [60.0, 70.0, 80.0, 90.0]) is True
+
+    def test_inefficient_building_is_not_below_median(self) -> None:
+        from app.energy_benchmark import below_median_cohort
+
+        assert below_median_cohort(200.0, [60.0, 70.0, 80.0]) is False
+
+    def test_equal_to_median_returns_false(self) -> None:
+        from app.energy_benchmark import below_median_cohort
+
+        assert below_median_cohort(70.0, [60.0, 70.0, 80.0]) is False
+
+    def test_empty_cohort_raises(self) -> None:
+        from app.energy_benchmark import below_median_cohort
+
+        with pytest.raises(ValueError, match="non-empty"):
+            below_median_cohort(100.0, [])
+
+    @pytest.mark.parametrize(
+        "eui,cohort,expected",
+        [
+            (40.0, [50.0, 60.0, 70.0], True),
+            (80.0, [50.0, 60.0, 70.0], False),
+            (55.0, [50.0, 60.0, 70.0], False),
+        ],
+    )
+    def test_parametrized_below_median(self, eui: float, cohort: list, expected: bool) -> None:
+        from app.energy_benchmark import below_median_cohort
+
+        assert below_median_cohort(eui, cohort) is expected

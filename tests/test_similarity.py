@@ -1050,3 +1050,37 @@ class TestPearsonSimilarity:
 
         with pytest.raises(ValueError):
             pearson_similarity([1.0], [1.0, 2.0])
+
+
+class TestClampSimilarity:
+    def test_value_in_range_unchanged(self) -> None:
+        from app.similarity import clamp_similarity
+
+        assert clamp_similarity(0.5) == pytest.approx(0.5)
+
+    def test_above_one_clamped_to_one(self) -> None:
+        from app.similarity import clamp_similarity
+
+        assert clamp_similarity(1.5) == pytest.approx(1.0)
+
+    def test_below_minus_one_clamped(self) -> None:
+        from app.similarity import clamp_similarity
+
+        assert clamp_similarity(-2.0) == pytest.approx(-1.0)
+
+    def test_exactly_one_unchanged(self) -> None:
+        from app.similarity import clamp_similarity
+
+        assert clamp_similarity(1.0) == pytest.approx(1.0)
+
+    def test_exactly_minus_one_unchanged(self) -> None:
+        from app.similarity import clamp_similarity
+
+        assert clamp_similarity(-1.0) == pytest.approx(-1.0)
+
+    @pytest.mark.parametrize("val", [-2.0, -1.0, 0.0, 0.7, 1.0, 1.5])
+    def test_result_always_in_range(self, val: float) -> None:
+        from app.similarity import clamp_similarity
+
+        result = clamp_similarity(val)
+        assert -1.0 <= result <= 1.0

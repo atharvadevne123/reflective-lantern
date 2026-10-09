@@ -163,3 +163,24 @@ class TaskQueue:
         """Return the number of tasks currently waiting in the queue."""
         with self._lock:
             return len(self._heap)
+
+    def is_empty(self) -> bool:
+        """Return True when no tasks are waiting in the queue.
+
+        Returns:
+            True if the queue holds zero pending tasks.
+        """
+        with self._lock:
+            return len(self._heap) == 0
+
+    def priority_range(self) -> tuple[int, int] | None:
+        """Return the (min, max) priority among pending tasks.
+
+        Returns:
+            Tuple (min_priority, max_priority) or ``None`` if the queue is empty.
+        """
+        with self._lock:
+            if not self._heap:
+                return None
+            priorities = [t.priority for t in self._heap]
+            return (min(priorities), max(priorities))

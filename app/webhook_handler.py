@@ -145,3 +145,14 @@ class WebhookHandler:
         else:
             self._handlers.clear()
             self._catch_all.clear()
+
+    def has_handler(self, event_type: str) -> bool:
+        """Return True if at least one handler is registered for *event_type*.
+
+        Args:
+            event_type: The event type string to check.
+
+        Returns:
+            True when a specific or catch-all handler exists for the type.
+        """
+        return event_type in self._handlers or len(self._catch_all) > 0

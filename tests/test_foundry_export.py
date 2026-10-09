@@ -248,8 +248,6 @@ def test_build_run_rows_commits_field(
 ) -> None:
     h = tmp_path / "history"
     h.mkdir()
-    (h / "Repo.json").write_text(
-        json.dumps([{"date": "2026-08-01", "commits": commits_value}])
-    )
+    (h / "Repo.json").write_text(json.dumps([{"date": "2026-08-01", "commits": commits_value}]))
     rows = build_run_rows(h)
     assert rows[0]["commits"] == expected_commits

@@ -191,3 +191,43 @@ class TestHasRequiredFields:
         schema = ConfigSchema()
         schema.add(FieldSpec("field", str, required=required))
         assert has_required_fields(schema) is required
+
+
+class TestOptionalFieldNames:
+    def test_empty_schema_returns_empty(self) -> None:
+        from app.config_validator import optional_field_names
+
+        assert optional_field_names(ConfigSchema()) == []
+
+    def test_all_required_returns_empty(self) -> None:
+        from app.config_validator import optional_field_names
+
+        schema = ConfigSchema()
+        schema.add(FieldSpec("a", str, required=True))
+        schema.add(FieldSpec("b", int, required=True))
+        assert optional_field_names(schema) == []
+
+    def test_optional_fields_listed(self) -> None:
+        from app.config_validator import optional_field_names
+
+        schema = ConfigSchema()
+        schema.add(FieldSpec("x", str, required=False))
+        schema.add(FieldSpec("y", int, required=True))
+        assert optional_field_names(schema) == ["x"]
+
+    def test_names_sorted_alphabetically(self) -> None:
+        from app.config_validator import optional_field_names
+
+        schema = ConfigSchema()
+        for name in ["charlie", "alpha", "beta"]:
+            schema.add(FieldSpec(name, str, required=False))
+        assert optional_field_names(schema) == ["alpha", "beta", "charlie"]
+
+    @pytest.mark.parametrize("n_optional", [0, 2, 4])
+    def test_count_matches_optional_n(self, n_optional: int) -> None:
+        from app.config_validator import optional_field_names
+
+        schema = ConfigSchema()
+        for i in range(n_optional):
+            schema.add(FieldSpec(f"opt_{i}", str, required=False))
+        assert len(optional_field_names(schema)) == n_optional

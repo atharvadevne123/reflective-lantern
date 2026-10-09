@@ -281,6 +281,7 @@ __all__ = [
     "risk_adjusted_return",
     "roi_percentage",
     "total_return_on_investment",
+    "is_profitable",
 ]
 
 
@@ -1026,3 +1027,16 @@ def risk_adjusted_return(
         return 0.0
     excess = annual_return_pct - risk_free_rate_pct
     return round(excess / volatility_pct, 4)
+
+
+def is_profitable(total_cost: float, total_revenue: float) -> bool:
+    """Return True if total_revenue exceeds total_cost.
+
+    Args:
+        total_cost: Total investment or expense amount.
+        total_revenue: Total income or return received.
+
+    Returns:
+        True if the investment is profitable (revenue > cost).
+    """
+    return total_revenue > total_cost

@@ -296,6 +296,54 @@ class TestRatePowerFactorExtended:
         assert isinstance(result, str)
 
 
+class TestLoadUnbalanceFactor:
+    def test_balanced_phases_return_zero(self) -> None:
+        from app.power_quality import load_unbalance_factor
+
+        assert load_unbalance_factor([10.0, 10.0, 10.0]) == pytest.approx(0.0)
+
+    def test_single_phase_returns_zero(self) -> None:
+        from app.power_quality import load_unbalance_factor
+
+        assert load_unbalance_factor([50.0]) == 0.0
+
+    def test_empty_list_raises(self) -> None:
+        from app.power_quality import load_unbalance_factor
+
+        with pytest.raises(ValueError, match="non-empty"):
+            load_unbalance_factor([])
+
+    def test_negative_value_raises(self) -> None:
+        from app.power_quality import load_unbalance_factor
+
+        with pytest.raises(ValueError, match="non-negative"):
+            load_unbalance_factor([10.0, -5.0, 10.0])
+
+    def test_unbalanced_gives_positive(self) -> None:
+        from app.power_quality import load_unbalance_factor
+
+        result = load_unbalance_factor([10.0, 10.0, 20.0])
+        assert result > 0.0
+
+    def test_all_zero_returns_zero(self) -> None:
+        from app.power_quality import load_unbalance_factor
+
+        assert load_unbalance_factor([0.0, 0.0, 0.0]) == 0.0
+
+    @pytest.mark.parametrize(
+        "phases,expected",
+        [
+            ([10.0, 10.0, 10.0], 0.0),
+            ([10.0, 20.0], 33.33),
+            ([5.0, 10.0, 15.0], 50.0),
+        ],
+    )
+    def test_parametrized_unbalance(self, phases: list, expected: float) -> None:
+        from app.power_quality import load_unbalance_factor
+
+        assert load_unbalance_factor(phases) == pytest.approx(expected, rel=0.01)
+
+
 class TestApparentPowerExt:
     def test_positive_result(self) -> None:
         from app.power_quality import apparent_power

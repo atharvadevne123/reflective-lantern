@@ -917,3 +917,27 @@ def effective_days_on_market(
     if original_dom < 0:
         raise ValueError(f"original_dom must be non-negative, got {original_dom}")
     return original_dom + (relist_penalty if relisted else 0)
+
+
+def listing_age_bucket(dom: int) -> str:
+    """Classify a listing's age into a human-readable bucket.
+
+    Args:
+        dom: Days on market (non-negative integer).
+
+    Returns:
+        One of ``"fresh"`` (< 7 days), ``"active"`` (7-29 days),
+        ``"stale"`` (30-89 days), or ``"expired"`` (90+ days).
+
+    Raises:
+        ValueError: If *dom* is negative.
+    """
+    if dom < 0:
+        raise ValueError(f"dom must be non-negative, got {dom}")
+    if dom < 7:
+        return "fresh"
+    if dom < 30:
+        return "active"
+    if dom < 90:
+        return "stale"
+    return "expired"

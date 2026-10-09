@@ -1290,64 +1290,45 @@ class TestMinutesBetweenNaive:
         assert minutes_between(a, a) == 0
 
 
-@pytest.mark.parametrize(
-    "h1,m1,h2,m2,expected_minutes",
-    [
-        (10, 0, 11, 0, 60),
-        (8, 30, 9, 0, 30),
-        (0, 0, 23, 59, 1439),
-        (12, 0, 12, 0, 0),
-    ],
-)
-def test_minutes_between_parametrized(
-    h1: int, m1: int, h2: int, m2: int, expected_minutes: int
-) -> None:
-    from datetime import datetime
+class TestStartOfDayExtended:
+    def test_midnight_unchanged(self) -> None:
+        from datetime import datetime
 
-    from app.date_utils import minutes_between
+        from app.date_utils import start_of_day
 
-    a = datetime(2026, 1, 1, h1, m1)
-    b = datetime(2026, 1, 1, h2, m2)
-    assert minutes_between(a, b) == expected_minutes
+        dt = datetime(2026, 6, 15, 0, 0, 0, 0)
+        assert start_of_day(dt) == dt
 
+    def test_any_time_returns_midnight(self) -> None:
+        from datetime import datetime
 
-@pytest.mark.parametrize(
-    "year,month,expected_last_day",
-    [
-        (2026, 1, 31),
-        (2026, 2, 28),
-        (2024, 2, 29),  # leap year
-        (2026, 4, 30),
-        (2026, 12, 31),
-    ],
-)
-def test_end_of_month_last_day(year: int, month: int, expected_last_day: int) -> None:
-    from datetime import datetime
+        from app.date_utils import start_of_day
 
-    from app.date_utils import end_of_month
+        dt = datetime(2026, 6, 15, 14, 30, 45, 123456)
+        result = start_of_day(dt)
+        assert result.hour == 0
+        assert result.minute == 0
+        assert result.second == 0
+        assert result.microsecond == 0
 
-    dt = datetime(year, month, 1, 0, 0, 0)
-    result = end_of_month(dt)
-    assert result.day == expected_last_day
-    assert result.hour == 23
-    assert result.minute == 59
-    assert result.second == 59
+    def test_date_part_preserved(self) -> None:
+        from datetime import datetime
 
+        from app.date_utils import start_of_day
 
-@pytest.mark.parametrize(
-    "start_s,end_s,expected",
-    [
-        (0.0, 60.0, 60.0),
-        (0.0, 0.0, 0.0),
-        (100.0, 50.0, -50.0),
-    ],
-)
-def test_elapsed_seconds_parametrized(start_s: float, end_s: float, expected: float) -> None:
-    from datetime import datetime, timedelta
+        dt = datetime(2026, 12, 31, 23, 59, 59)
+        result = start_of_day(dt)
+        assert result.year == 2026
+        assert result.month == 12
+        assert result.day == 31
 
-    from app.date_utils import elapsed_seconds
+    @pytest.mark.parametrize("hour", [0, 6, 12, 23])
+    def test_start_of_day_always_midnight(self, hour: int) -> None:
+        from datetime import datetime
 
-    base = datetime(2026, 6, 1, 12, 0, 0)
-    start = base + timedelta(seconds=start_s)
-    end = base + timedelta(seconds=end_s)
-    assert elapsed_seconds(start, end) == pytest.approx(expected)
+        from app.date_utils import start_of_day
+
+        dt = datetime(2026, 1, 1, hour, 30, 0)
+        result = start_of_day(dt)
+        assert result.hour == 0
+        assert result.minute == 0

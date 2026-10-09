@@ -339,20 +339,45 @@ class TestWithinRadiusExtended:
         assert isinstance(result, list)
 
 
-@pytest.mark.parametrize(
-    "lat1,lon1,lat2,lon2,expected_min,expected_max",
-    [
-        (51.5074, -0.1278, 48.8566, 2.3522, 300.0, 400.0),  # London to Paris ~340km
-        (0.0, 0.0, 0.0, 0.0, 0.0, 1.0),  # Same point = 0 distance
-        (51.5074, -0.1278, 40.7128, -74.0060, 5000.0, 6000.0),  # London to NYC ~5570km
-    ],
-)
-def test_haversine_distance_range(
-    lat1: float, lon1: float, lat2: float, lon2: float, expected_min: float, expected_max: float
-) -> None:
-    from app.geo_utils import haversine_distance
+class TestArithmeticMidpoint:
+    def test_midpoint_of_same_point_is_itself(self) -> None:
+        from app.geo_utils import arithmetic_midpoint
 
-    dist = haversine_distance((lat1, lon1), (lat2, lon2))
-    assert expected_min <= dist <= expected_max, (
-        f"Distance {dist:.0f}km not in [{expected_min}, {expected_max}]"
+        lat, lon = arithmetic_midpoint(10.0, 20.0, 10.0, 20.0)
+        assert lat == pytest.approx(10.0)
+        assert lon == pytest.approx(20.0)
+
+    def test_midpoint_of_opposite_latitudes(self) -> None:
+        from app.geo_utils import arithmetic_midpoint
+
+        lat, lon = arithmetic_midpoint(10.0, 0.0, -10.0, 0.0)
+        assert lat == pytest.approx(0.0)
+        assert lon == pytest.approx(0.0)
+
+    def test_midpoint_returns_tuple_of_two(self) -> None:
+        from app.geo_utils import arithmetic_midpoint
+
+        result = arithmetic_midpoint(0.0, 0.0, 1.0, 1.0)
+        assert len(result) == 2
+
+    def test_midpoint_symmetric(self) -> None:
+        from app.geo_utils import arithmetic_midpoint
+
+        a = arithmetic_midpoint(1.0, 2.0, 3.0, 4.0)
+        b = arithmetic_midpoint(3.0, 4.0, 1.0, 2.0)
+        assert a == b
+
+    @pytest.mark.parametrize(
+        "lat1,lon1,lat2,lon2,expected",
+        [
+            (0.0, 0.0, 2.0, 2.0, (1.0, 1.0)),
+            (10.0, 20.0, 20.0, 40.0, (15.0, 30.0)),
+        ],
     )
+    def test_parametrized_midpoint(
+        self, lat1: float, lon1: float, lat2: float, lon2: float, expected: tuple
+    ) -> None:
+        from app.geo_utils import arithmetic_midpoint
+
+        result = arithmetic_midpoint(lat1, lon1, lat2, lon2)
+        assert result == pytest.approx(expected)

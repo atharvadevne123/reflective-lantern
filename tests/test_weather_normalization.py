@@ -288,3 +288,50 @@ class TestNormalizationFactorExtended2:
 
         result = normalization_factor(400.0, 200.0)
         assert result > 1.0
+
+
+class TestDegreeDayRatio:
+    def test_equal_periods_return_one(self) -> None:
+        from app.weather_normalization import degree_day_ratio
+
+        assert degree_day_ratio(100.0, 100.0) == pytest.approx(1.0)
+
+    def test_zero_baseline_returns_zero(self) -> None:
+        from app.weather_normalization import degree_day_ratio
+
+        assert degree_day_ratio(50.0, 0.0) == 0.0
+
+    def test_ratio_above_one_for_hotter_current(self) -> None:
+        from app.weather_normalization import degree_day_ratio
+
+        assert degree_day_ratio(200.0, 100.0) == pytest.approx(2.0)
+
+    def test_ratio_below_one_for_milder_current(self) -> None:
+        from app.weather_normalization import degree_day_ratio
+
+        assert degree_day_ratio(50.0, 100.0) == pytest.approx(0.5)
+
+    def test_negative_current_raises(self) -> None:
+        from app.weather_normalization import degree_day_ratio
+
+        with pytest.raises(ValueError, match="non-negative"):
+            degree_day_ratio(-10.0, 100.0)
+
+    def test_negative_baseline_raises(self) -> None:
+        from app.weather_normalization import degree_day_ratio
+
+        with pytest.raises(ValueError, match="non-negative"):
+            degree_day_ratio(100.0, -10.0)
+
+    @pytest.mark.parametrize(
+        "current,baseline,expected",
+        [
+            (100.0, 100.0, 1.0),
+            (200.0, 100.0, 2.0),
+            (50.0, 200.0, 0.25),
+        ],
+    )
+    def test_parametrized_ratio(self, current: float, baseline: float, expected: float) -> None:
+        from app.weather_normalization import degree_day_ratio
+
+        assert degree_day_ratio(current, baseline) == pytest.approx(expected)

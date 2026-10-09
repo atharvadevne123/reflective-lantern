@@ -976,3 +976,16 @@ def format_kwh(value: float) -> str:
     if value >= 1000.0:
         return f"{value / 1000.0:.2f} MWh"
     return f"{value:.2f} kWh"
+
+
+def consumption_delta(before_kwh: float, after_kwh: float) -> float:
+    """Return the absolute change in consumption between two periods.
+
+    Args:
+        before_kwh: Consumption in the earlier period.
+        after_kwh: Consumption in the later period.
+
+    Returns:
+        Signed difference (after - before) in kWh, rounded to 4 decimal places.
+    """
+    return round(after_kwh - before_kwh, 4)

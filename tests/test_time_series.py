@@ -1891,3 +1891,47 @@ def test_seasonal_baseline_output_length_parametrized(
     result = seasonal_baseline(values, period=period)
     assert isinstance(result, list)
     assert len(result) == expected_len
+
+
+class TestCumulativeSum:
+    def test_empty_list_returns_empty(self) -> None:
+        from app.time_series import cumulative_sum
+
+        assert cumulative_sum([]) == []
+
+    def test_single_value(self) -> None:
+        from app.time_series import cumulative_sum
+
+        assert cumulative_sum([5.0]) == [5.0]
+
+    def test_running_totals_correct(self) -> None:
+        from app.time_series import cumulative_sum
+
+        result = cumulative_sum([1.0, 2.0, 3.0])
+        assert result == pytest.approx([1.0, 3.0, 6.0])
+
+    def test_length_matches_input(self) -> None:
+        from app.time_series import cumulative_sum
+
+        values = [1.0, 2.0, 3.0, 4.0]
+        assert len(cumulative_sum(values)) == len(values)
+
+    def test_last_value_equals_total_sum(self) -> None:
+        from app.time_series import cumulative_sum
+
+        values = [1.0, 5.0, 3.0, 2.0]
+        result = cumulative_sum(values)
+        assert result[-1] == pytest.approx(sum(values))
+
+    @pytest.mark.parametrize(
+        "values,expected",
+        [
+            ([1.0, 2.0], [1.0, 3.0]),
+            ([0.0, 0.0, 0.0], [0.0, 0.0, 0.0]),
+            ([10.0, -5.0, 3.0], [10.0, 5.0, 8.0]),
+        ],
+    )
+    def test_parametrized_cumsum(self, values: list, expected: list) -> None:
+        from app.time_series import cumulative_sum
+
+        assert cumulative_sum(values) == pytest.approx(expected)

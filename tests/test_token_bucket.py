@@ -291,3 +291,35 @@ class TestTokenBucketWaitAndConsume:
         tb.consume()
         result = tb.wait_and_consume(tokens=1.0, timeout=0.01)
         assert isinstance(result, bool)
+
+
+class TestPerKeyTokenBucketIsFull:
+    def test_unused_key_is_full(self) -> None:
+        from app.token_bucket import PerKeyTokenBucket
+
+        limiter = PerKeyTokenBucket(capacity=10.0, rate=1.0)
+        assert limiter.is_full("new-key") is True
+
+    def test_full_bucket_after_no_consumption(self) -> None:
+        import time
+
+        from app.token_bucket import PerKeyTokenBucket
+
+        limiter = PerKeyTokenBucket(capacity=10.0, rate=100.0)
+        limiter.consume("k")
+        time.sleep(0.15)
+        assert limiter.is_full("k") is True
+
+    def test_not_full_after_consumption(self) -> None:
+        from app.token_bucket import PerKeyTokenBucket
+
+        limiter = PerKeyTokenBucket(capacity=5.0, rate=0.001)
+        limiter.consume("k", tokens=3.0)
+        assert limiter.is_full("k") is False
+
+    @pytest.mark.parametrize("key", ["alpha", "beta", "gamma"])
+    def test_distinct_keys_each_start_full(self, key: str) -> None:
+        from app.token_bucket import PerKeyTokenBucket
+
+        limiter = PerKeyTokenBucket(capacity=10.0, rate=1.0)
+        assert limiter.is_full(key) is True

@@ -399,3 +399,41 @@ class TestRSquaredExtended:
 
         values = [float(i + 1) for i in range(n)]
         assert r_squared(values, values) == pytest.approx(1.0)
+
+
+class TestMaxAbsoluteErrorParametrized:
+    def test_perfect_prediction_returns_zero(self) -> None:
+        from app.metrics import max_absolute_error
+
+        assert max_absolute_error([1.0, 2.0, 3.0], [1.0, 2.0, 3.0]) == pytest.approx(0.0)
+
+    def test_identifies_max_error(self) -> None:
+        from app.metrics import max_absolute_error
+
+        result = max_absolute_error([1.0, 2.0, 3.0], [1.5, 2.1, 5.0])
+        assert result == pytest.approx(2.0)
+
+    def test_empty_list_raises(self) -> None:
+        from app.metrics import max_absolute_error
+
+        with pytest.raises(ValueError, match="non-empty"):
+            max_absolute_error([], [])
+
+    def test_mismatched_lengths_raises(self) -> None:
+        from app.metrics import max_absolute_error
+
+        with pytest.raises(ValueError, match="same length"):
+            max_absolute_error([1.0], [1.0, 2.0])
+
+    @pytest.mark.parametrize(
+        "actual,predicted,expected",
+        [
+            ([0.0], [1.0], 1.0),
+            ([0.0, 10.0], [0.0, 10.0], 0.0),
+            ([0.0, 5.0, 10.0], [1.0, 5.0, 7.0], 3.0),
+        ],
+    )
+    def test_parametrized_max_ae(self, actual: list, predicted: list, expected: float) -> None:
+        from app.metrics import max_absolute_error
+
+        assert max_absolute_error(actual, predicted) == pytest.approx(expected)

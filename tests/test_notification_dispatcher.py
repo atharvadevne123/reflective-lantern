@@ -234,3 +234,38 @@ class TestDispatcherLen:
             ch, _ = make_channel(f"ch{i}")
             d.register(ch)
         assert len(d) == n
+
+
+class TestDisabledChannels:
+    def test_no_channels_returns_empty(self) -> None:
+        d = NotificationDispatcher()
+        assert d.disabled_channels() == []
+
+    def test_all_enabled_returns_empty(self) -> None:
+        d = NotificationDispatcher()
+        ch, _ = make_channel("email", enabled=True)
+        d.register(ch)
+        assert d.disabled_channels() == []
+
+    def test_disabled_channel_appears(self) -> None:
+        d = NotificationDispatcher()
+        ch, _ = make_channel("slack", enabled=False)
+        d.register(ch)
+        assert "slack" in d.disabled_channels()
+
+    def test_mix_of_enabled_and_disabled(self) -> None:
+        d = NotificationDispatcher()
+        ch_on, _ = make_channel("email", enabled=True)
+        ch_off, _ = make_channel("sms", enabled=False)
+        d.register(ch_on)
+        d.register(ch_off)
+        assert d.disabled_channels() == ["sms"]
+        assert "email" not in d.disabled_channels()
+
+    @pytest.mark.parametrize("n_disabled", [0, 1, 3])
+    def test_count_matches_disabled_n(self, n_disabled: int) -> None:
+        d = NotificationDispatcher()
+        for i in range(n_disabled):
+            ch, _ = make_channel(f"ch{i}", enabled=False)
+            d.register(ch)
+        assert len(d.disabled_channels()) == n_disabled

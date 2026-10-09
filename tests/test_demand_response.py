@@ -308,3 +308,49 @@ class TestPerformanceScoreExt:
 
         score = performance_score(requested_kwh=100.0, delivered_kwh=delivered)
         assert 0.0 <= score <= 1.0
+
+
+class TestPeakCurtailmentHour:
+    def test_single_hour_returns_zero(self) -> None:
+        from app.demand_response import peak_curtailment_hour
+
+        assert peak_curtailment_hour([10.0], [5.0]) == 0
+
+    def test_identifies_correct_peak_hour(self) -> None:
+        from app.demand_response import peak_curtailment_hour
+
+        baseline = [10.0, 20.0, 15.0]
+        actual = [10.0, 5.0, 14.0]
+        assert peak_curtailment_hour(baseline, actual) == 1
+
+    def test_negative_curtailment_still_selects_max(self) -> None:
+        from app.demand_response import peak_curtailment_hour
+
+        baseline = [10.0, 10.0, 10.0]
+        actual = [12.0, 11.0, 9.0]
+        assert peak_curtailment_hour(baseline, actual) == 2
+
+    def test_empty_list_raises(self) -> None:
+        from app.demand_response import peak_curtailment_hour
+
+        with pytest.raises(ValueError, match="non-empty"):
+            peak_curtailment_hour([], [])
+
+    def test_mismatched_lengths_raise(self) -> None:
+        from app.demand_response import peak_curtailment_hour
+
+        with pytest.raises(ValueError, match="same length"):
+            peak_curtailment_hour([10.0, 20.0], [5.0])
+
+    @pytest.mark.parametrize(
+        "baseline,actual,expected_idx",
+        [
+            ([5.0, 10.0, 8.0], [1.0, 2.0, 7.0], 1),
+            ([20.0, 20.0, 20.0], [10.0, 10.0, 10.0], 0),
+            ([10.0, 15.0, 12.0], [9.0, 5.0, 11.0], 1),
+        ],
+    )
+    def test_parametrized_peak_hour(self, baseline: list, actual: list, expected_idx: int) -> None:
+        from app.demand_response import peak_curtailment_hour
+
+        assert peak_curtailment_hour(baseline, actual) == expected_idx

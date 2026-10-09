@@ -1677,3 +1677,47 @@ class TestAnnualEmissionEstimateExtended:
 
         result = annual_emission_estimate([100.0] * 12, emission_factor=factor)
         assert result > 0.0
+
+
+class TestCo2IntensityLabel:
+    def test_low_label(self) -> None:
+        from app.carbon import co2_intensity_label
+
+        assert co2_intensity_label(0.1) == "low"
+
+    def test_medium_label(self) -> None:
+        from app.carbon import co2_intensity_label
+
+        assert co2_intensity_label(0.3) == "medium"
+
+    def test_high_label(self) -> None:
+        from app.carbon import co2_intensity_label
+
+        assert co2_intensity_label(0.5) == "high"
+
+    def test_very_high_label(self) -> None:
+        from app.carbon import co2_intensity_label
+
+        assert co2_intensity_label(0.7) == "very high"
+
+    def test_negative_raises(self) -> None:
+        from app.carbon import co2_intensity_label
+
+        with pytest.raises(ValueError):
+            co2_intensity_label(-0.1)
+
+    @pytest.mark.parametrize(
+        "value,expected",
+        [
+            (0.0, "low"),
+            (0.19, "low"),
+            (0.2, "medium"),
+            (0.39, "medium"),
+            (0.4, "high"),
+            (0.6, "very high"),
+        ],
+    )
+    def test_parametrized_boundaries(self, value: float, expected: str) -> None:
+        from app.carbon import co2_intensity_label
+
+        assert co2_intensity_label(value) == expected

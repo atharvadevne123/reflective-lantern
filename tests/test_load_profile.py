@@ -286,3 +286,29 @@ class TestOffPeakLoadFraction:
         hourly = [rng.uniform(0, 10) for _ in range(48)]
         result = off_peak_load_fraction(hourly)
         assert 0.0 <= result <= 1.0
+
+
+class TestPeakHourIndex:
+    def test_single_value_returns_zero(self) -> None:
+        from app.load_profile import peak_hour_index
+
+        assert peak_hour_index([5.0]) == 0
+
+    def test_identifies_max_index(self) -> None:
+        from app.load_profile import peak_hour_index
+
+        assert peak_hour_index([1.0, 5.0, 3.0]) == 1
+
+    def test_empty_raises(self) -> None:
+        from app.load_profile import peak_hour_index
+
+        with pytest.raises(ValueError):
+            peak_hour_index([])
+
+    @pytest.mark.parametrize("idx", [0, 1, 2])
+    def test_parametrized_peak_index(self, idx: int) -> None:
+        from app.load_profile import peak_hour_index
+
+        values = [1.0, 1.0, 1.0]
+        values[idx] = 10.0
+        assert peak_hour_index(values) == idx

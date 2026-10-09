@@ -372,3 +372,30 @@ def test_annual_cost_estimate_parametrized(monthly_kwh: list, rate: float, expec
 
     result = annual_cost_estimate(monthly_kwh, rate=rate)
     assert result == pytest.approx(expected, rel=1e-3)
+
+
+class TestCostPerHourAverage:
+    def test_uniform_load(self) -> None:
+        from app.tariff import cost_per_hour_average
+
+        result = cost_per_hour_average([10.0] * 24, rate=0.1)
+        assert result == pytest.approx(1.0)
+
+    def test_single_hour(self) -> None:
+        from app.tariff import cost_per_hour_average
+
+        result = cost_per_hour_average([5.0], rate=0.2)
+        assert result == pytest.approx(1.0)
+
+    def test_empty_raises(self) -> None:
+        from app.tariff import cost_per_hour_average
+
+        with pytest.raises(ValueError):
+            cost_per_hour_average([])
+
+    @pytest.mark.parametrize("rate", [0.10, 0.20, 0.50])
+    def test_average_scales_with_rate(self, rate: float) -> None:
+        from app.tariff import cost_per_hour_average
+
+        result = cost_per_hour_average([1.0] * 10, rate=rate)
+        assert result == pytest.approx(rate)
