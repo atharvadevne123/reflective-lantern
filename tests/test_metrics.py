@@ -401,7 +401,7 @@ class TestRSquaredExtended:
         assert r_squared(values, values) == pytest.approx(1.0)
 
 
-class TestMaxAbsoluteError:
+class TestMaxAbsoluteErrorParametrized:
     def test_perfect_prediction_returns_zero(self) -> None:
         from app.metrics import max_absolute_error
 

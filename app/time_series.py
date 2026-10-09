@@ -1373,19 +1373,3 @@ def range_of_series(values: list[float]) -> float:
     return max(values) - min(values)
 
 
-def cumulative_sum(values: list[float]) -> list[float]:
-    """Return the running cumulative sum of *values*.
-
-    Args:
-        values: List of numeric values.
-
-    Returns:
-        List of the same length where each element is the sum of all
-        preceding elements including itself.
-    """
-    result: list[float] = []
-    total = 0.0
-    for v in values:
-        total += v
-        result.append(round(total, 6))
-    return result

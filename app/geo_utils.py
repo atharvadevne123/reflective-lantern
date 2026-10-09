@@ -236,13 +236,14 @@ __all__ = [
     "midpoint",
     "nearest_neighbor",
     "within_radius",
+    "arithmetic_midpoint",
 ]
 
 
-def midpoint(
+def arithmetic_midpoint(
     lat1: float, lon1: float, lat2: float, lon2: float
 ) -> tuple[float, float]:
-    """Return the geographic midpoint between two coordinate pairs.
+    """Return the arithmetic midpoint between two coordinate pairs.
 
     Uses simple arithmetic averaging, suitable for short distances.
 

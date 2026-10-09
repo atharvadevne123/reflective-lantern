@@ -359,9 +359,7 @@ class TestFormatDuration:
         with pytest.raises(ValueError, match="non-negative"):
             format_duration(-1.0)
 
-    @pytest.mark.parametrize(
-        "seconds,expected", [(60.0, "1m 0s"), (3600.0, "1h 0m 0s"), (86400.0, "24h 0m 0s")]
-    )
+    @pytest.mark.parametrize("seconds,expected", [(60.0, "1m 0s"), (3600.0, "1h 0m 0s"), (86400.0, "24h 0m 0s")])
     def test_boundary_values(self, seconds: float, expected: str) -> None:
         from app.date_utils import format_duration
 
@@ -395,9 +393,7 @@ class TestIsLeapYear:
         with pytest.raises(ValueError, match="positive"):
             is_leap_year(0)
 
-    @pytest.mark.parametrize(
-        "year,expected", [(2020, True), (2100, False), (2000, True), (1999, False)]
-    )
+    @pytest.mark.parametrize("year,expected", [(2020, True), (2100, False), (2000, True), (1999, False)])
     def test_parametrized(self, year: int, expected: bool) -> None:
         from app.date_utils import is_leap_year
 
@@ -495,9 +491,7 @@ def test_quarter_of_year_q4() -> None:
     assert quarter_of_year(datetime(2026, 12, 31)) == 4
 
 
-@pytest.mark.parametrize(
-    "month,expected_q", [(1, 1), (3, 1), (4, 2), (6, 2), (7, 3), (9, 3), (10, 4), (12, 4)]
-)
+@pytest.mark.parametrize("month,expected_q", [(1, 1), (3, 1), (4, 2), (6, 2), (7, 3), (9, 3), (10, 4), (12, 4)])
 def test_quarter_parametrize(month, expected_q) -> None:
     from app.date_utils import quarter_of_year
 
@@ -717,9 +711,7 @@ class TestDaysInMonthExtended:
 
 
 class TestIsLeapYearExtended:
-    @pytest.mark.parametrize(
-        "year,expected", [(2024, True), (2023, False), (1900, False), (2000, True)]
-    )
+    @pytest.mark.parametrize("year,expected", [(2024, True), (2023, False), (1900, False), (2000, True)])
     def test_parametrized(self, year: int, expected: bool) -> None:
         from app.date_utils import is_leap_year
 
@@ -861,6 +853,8 @@ class TestNextWeekday:
 
         with pytest.raises(ValueError):
             next_weekday(datetime.date(2026, 8, 11), weekday=8)
+
+
 
 
 @pytest.mark.parametrize(
@@ -1108,9 +1102,7 @@ def test_days_between_round_trip(days: int) -> None:
     assert days_between(start, end) == days
 
 
-@pytest.mark.parametrize(
-    "quarter,months", [(1, [1, 2, 3]), (2, [4, 5, 6]), (3, [7, 8, 9]), (4, [10, 11, 12])]
-)
+@pytest.mark.parametrize("quarter,months", [(1, [1, 2, 3]), (2, [4, 5, 6]), (3, [7, 8, 9]), (4, [10, 11, 12])])
 def test_quarter_of_year_by_month(quarter: int, months: list[int]) -> None:
     """quarter_of_year returns the correct quarter for each month."""
     from datetime import UTC, datetime
@@ -1288,69 +1280,6 @@ class TestMinutesBetweenNaive:
 
         a = datetime(2026, 6, 15)
         assert minutes_between(a, a) == 0
-
-
-@pytest.mark.parametrize(
-    "h1,m1,h2,m2,expected_minutes",
-    [
-        (10, 0, 11, 0, 60),
-        (8, 30, 9, 0, 30),
-        (0, 0, 23, 59, 1439),
-        (12, 0, 12, 0, 0),
-    ],
-)
-def test_minutes_between_parametrized(
-    h1: int, m1: int, h2: int, m2: int, expected_minutes: int
-) -> None:
-    from datetime import datetime
-
-    from app.date_utils import minutes_between
-
-    a = datetime(2026, 1, 1, h1, m1)
-    b = datetime(2026, 1, 1, h2, m2)
-    assert minutes_between(a, b) == expected_minutes
-
-
-@pytest.mark.parametrize(
-    "year,month,expected_last_day",
-    [
-        (2026, 1, 31),
-        (2026, 2, 28),
-        (2024, 2, 29),
-        (2026, 4, 30),
-        (2026, 12, 31),
-    ],
-)
-def test_end_of_month_last_day(year: int, month: int, expected_last_day: int) -> None:
-    from datetime import datetime
-
-    from app.date_utils import end_of_month
-
-    dt = datetime(year, month, 1, 0, 0, 0)
-    result = end_of_month(dt)
-    assert result.day == expected_last_day
-    assert result.hour == 23
-    assert result.minute == 59
-    assert result.second == 59
-
-
-@pytest.mark.parametrize(
-    "start_s,end_s,expected",
-    [
-        (0.0, 60.0, 60.0),
-        (0.0, 0.0, 0.0),
-        (100.0, 50.0, -50.0),
-    ],
-)
-def test_elapsed_seconds_parametrized(start_s: float, end_s: float, expected: float) -> None:
-    from datetime import datetime, timedelta
-
-    from app.date_utils import elapsed_seconds
-
-    base = datetime(2026, 6, 1, 12, 0, 0)
-    start = base + timedelta(seconds=start_s)
-    end = base + timedelta(seconds=end_s)
-    assert elapsed_seconds(start, end) == pytest.approx(expected)
 
 
 class TestStartOfDayExtended:

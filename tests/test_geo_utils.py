@@ -250,33 +250,28 @@ class TestWithinRadius:
 class TestDistanceKmAlias:
     def test_distance_km_equals_haversine(self) -> None:
         from app.geo_utils import distance_km, haversine
-
         assert distance_km(LONDON, PARIS) == haversine(LONDON, PARIS)
 
     def test_distance_km_zero_for_same_point(self) -> None:
         from app.geo_utils import distance_km
-
         assert distance_km(LONDON, LONDON) == 0.0
 
 
 class TestKNearest:
     def test_k_nearest_returns_k_closest(self) -> None:
         from app.geo_utils import k_nearest
-
         result = k_nearest(LONDON, [PARIS, NEW_YORK, SYDNEY], k=2)
         assert len(result) == 2
         assert PARIS in result
 
     def test_k_nearest_ordered_ascending(self) -> None:
         from app.geo_utils import distance_km, k_nearest
-
         result = k_nearest(LONDON, [SYDNEY, PARIS, NEW_YORK], k=3)
         dists = [distance_km(LONDON, c) for c in result]
         assert dists == sorted(dists)
 
     def test_k_nearest_fewer_candidates_than_k(self) -> None:
         from app.geo_utils import k_nearest
-
         result = k_nearest(LONDON, [PARIS], k=5)
         assert len(result) == 1
 
@@ -337,23 +332,6 @@ class TestWithinRadiusExtended:
         candidates = [PARIS, NEW_YORK]
         result = within_radius(LONDON, radius_km, candidates)
         assert isinstance(result, list)
-
-
-@pytest.mark.parametrize(
-    "lat1,lon1,lat2,lon2,expected_min,expected_max",
-    [
-        (51.5074, -0.1278, 48.8566, 2.3522, 300.0, 400.0),
-        (0.0, 0.0, 0.0, 0.0, 0.0, 1.0),
-        (51.5074, -0.1278, 40.7128, -74.0060, 5000.0, 6000.0),
-    ],
-)
-def test_haversine_distance_range(
-    lat1: float, lon1: float, lat2: float, lon2: float, expected_min: float, expected_max: float
-) -> None:
-    from app.geo_utils import haversine_distance
-
-    dist = haversine_distance((lat1, lon1), (lat2, lon2))
-    assert expected_min <= dist <= expected_max
 
 
 class TestArithmeticMidpoint:

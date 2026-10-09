@@ -697,9 +697,9 @@ class TestPipelineStepCount:
         assert pipeline_step_count(pipe) == 1
 
     def test_two_steps_returns_two(self) -> None:
-        from sklearn.preprocessing import StandardScaler
         from sklearn.linear_model import LinearRegression
         from sklearn.pipeline import Pipeline
+        from sklearn.preprocessing import StandardScaler
 
         from app.pipeline_utils import pipeline_step_count
 
@@ -708,8 +708,8 @@ class TestPipelineStepCount:
 
     @pytest.mark.parametrize("n", [1, 2, 3])
     def test_count_matches_n_steps(self, n: int) -> None:
-        from sklearn.preprocessing import StandardScaler
         from sklearn.pipeline import Pipeline
+        from sklearn.preprocessing import StandardScaler
 
         from app.pipeline_utils import pipeline_step_count
 

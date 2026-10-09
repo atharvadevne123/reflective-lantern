@@ -302,6 +302,7 @@ class TestPerKeyTokenBucketIsFull:
 
     def test_full_bucket_after_no_consumption(self) -> None:
         import time
+
         from app.token_bucket import PerKeyTokenBucket
 
         limiter = PerKeyTokenBucket(capacity=10.0, rate=100.0)

@@ -232,21 +232,3 @@ def normalised_rmse(actual: list[float], predicted: list[float]) -> float:
     return round(rmse / rng, 6)
 
 
-def max_absolute_error(actual: list[float], predicted: list[float]) -> float:
-    """Return the maximum absolute error between *actual* and *predicted*.
-
-    Args:
-        actual: Ground-truth values.
-        predicted: Model predictions.
-
-    Returns:
-        Maximum of ``|actual - predicted|``, rounded to 6 decimal places.
-
-    Raises:
-        ValueError: If either list is empty or lengths differ.
-    """
-    if not actual or not predicted:
-        raise ValueError("actual and predicted must be non-empty")
-    if len(actual) != len(predicted):
-        raise ValueError("actual and predicted must have the same length")
-    return round(max(abs(a - p) for a, p in zip(actual, predicted, strict=False)), 6)
