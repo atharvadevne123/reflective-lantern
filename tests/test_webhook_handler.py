@@ -235,3 +235,30 @@ class TestClearHandlers:
         wh.clear_handlers("push")
         assert wh.handler_count("pr") == 1
         assert wh.handler_count("push") == 0
+
+
+class TestHasHandler:
+    def test_no_handlers_returns_false(self) -> None:
+        wh = WebhookHandler(SECRET)
+        assert wh.has_handler("push") is False
+
+    def test_specific_handler_registered_returns_true(self) -> None:
+        wh = WebhookHandler(SECRET)
+        wh.on("push", lambda e: None)
+        assert wh.has_handler("push") is True
+
+    def test_unregistered_type_returns_false_without_catchall(self) -> None:
+        wh = WebhookHandler(SECRET)
+        wh.on("pr", lambda e: None)
+        assert wh.has_handler("push") is False
+
+    def test_catchall_handler_makes_any_type_true(self) -> None:
+        wh = WebhookHandler(SECRET)
+        wh.on_any(lambda e: None)
+        assert wh.has_handler("any-event-type") is True
+
+    @pytest.mark.parametrize("event_type", ["push", "pull_request", "release"])
+    def test_registered_types_return_true(self, event_type: str) -> None:
+        wh = WebhookHandler(SECRET)
+        wh.on(event_type, lambda e: None)
+        assert wh.has_handler(event_type) is True
