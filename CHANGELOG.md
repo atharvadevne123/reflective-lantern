@@ -5,10 +5,38 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [Unreleased] - 2026-10-09
 
 ### Added
 
+- `peak_curtailment_hour` in `demand_response` — index of maximum curtailment hour
+- `below_median_cohort` in `energy_benchmark` — cohort comparison against median EUI
+- `match_rate` method on `ShadowRunner` in `shadow_mode` — fraction of shadow calls matching primary
+- `is_full` method on `PerKeyTokenBucket` in `token_bucket` — capacity check per key
+- `has_handler` method on `WebhookHandler` in `webhook_handler` — handler registration query
+- `is_empty` and `priority_range` methods on `TaskQueue` in `task_queue`
+- `records_kwh_average` in `energy_export` — average kWh across energy records
+- `degree_day_ratio` in `weather_normalization` — ratio of current to baseline degree-days
+- `load_unbalance_factor` in `power_quality` — maximum load deviation as percentage
+- `alerts_by_source` in `notifications` — group alerts by source attribute
+- `disabled_channels` method on `NotificationDispatcher` in `notification_dispatcher`
+- `registered_model_names` method on `ModelRegistry` in `model_registry`
+- `optional_field_names` in `config_validator` — sorted list of optional schema fields
+- `clamp_similarity` in `similarity` — clamp value to [-1, 1]
+- `consumption_delta` in `reporting` — signed kWh difference
+- `has_duplicates` in `data_quality` — non-None duplicate detection
+- `pipeline_step_count` in `pipeline_utils` — count of pipeline steps
+- `region_ids_with_minimum_load` in `regions` — filter regions by minimum load
+- `max_absolute_error` in `metrics` — maximum |actual - predicted|
+- `listing_age_bucket` in `market_context` — DOM-based age bucket label
+- `arithmetic_midpoint` in `geo_utils` — arithmetic midpoint of two lat/lon pairs
+- `sign_changes` in `stats_utils` — count of zero-crossings in a sequence
+- `cumulative_sum` in `time_series` — running total of a sequence
+- `peak_hour_index` in `load_profile` — index of maximum load hour
+- `cost_per_hour_average` in `tariff` — average hourly energy cost
+- `panel_efficiency_ratio` in `solar` — actual-to-rated output ratio
+- `is_profitable` in `investment` — profitability check
+- `co2_intensity_label` in `carbon` — human-readable grid intensity classification
 - `end_of_month` and `elapsed_seconds` helpers to `app/date_utils`
 - `haversine_distance` tuple-based convenience wrapper to `app/geo_utils`
 - Parametrized test coverage for `test_api_analytics`, `test_foundry_client`,
