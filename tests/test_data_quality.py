@@ -1275,3 +1275,44 @@ class TestRecordsMissingField:
 
         records = [{"f": None}]
         assert records_missing_field(records, "f") == [0]
+
+
+class TestHasDuplicates:
+    def test_empty_list_no_duplicates(self) -> None:
+        from app.data_quality import has_duplicates
+
+        assert has_duplicates([]) is False
+
+    def test_all_unique_returns_false(self) -> None:
+        from app.data_quality import has_duplicates
+
+        assert has_duplicates([1, 2, 3]) is False
+
+    def test_duplicate_detected(self) -> None:
+        from app.data_quality import has_duplicates
+
+        assert has_duplicates([1, 2, 1]) is True
+
+    def test_none_values_ignored(self) -> None:
+        from app.data_quality import has_duplicates
+
+        assert has_duplicates([None, None, 1]) is False
+
+    def test_strings_checked(self) -> None:
+        from app.data_quality import has_duplicates
+
+        assert has_duplicates(["a", "b", "a"]) is True
+
+    @pytest.mark.parametrize(
+        "values,expected",
+        [
+            ([1, 2, 3], False),
+            ([1, 1, 2], True),
+            ([None, None], False),
+            (["x", "y", "x"], True),
+        ],
+    )
+    def test_parametrized_duplicates(self, values: list, expected: bool) -> None:
+        from app.data_quality import has_duplicates
+
+        assert has_duplicates(values) is expected
