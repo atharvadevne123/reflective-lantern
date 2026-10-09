@@ -136,5 +136,16 @@ class ShadowRunner:
         """Reset accumulated results."""
         self._results.clear()
 
+    def match_rate(self) -> float:
+        """Return the fraction of calls where shadow matched the primary.
+
+        Returns:
+            Value in [0.0, 1.0]; 0.0 when no calls have been recorded.
+        """
+        if not self._results:
+            return 0.0
+        matched = sum(1 for r in self._results if r.matched)
+        return round(matched / len(self._results), 4)
+
 
 __all__ = ["ShadowResult", "ShadowRunner"]
