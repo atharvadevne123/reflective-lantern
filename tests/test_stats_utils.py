@@ -1784,8 +1784,8 @@ def test_mae_parametrized_new(actual: list, predicted: list, expected_approx: fl
 @pytest.mark.parametrize(
     "values,z_threshold,expected_fraction",
     [
-        ([0.0] * 100, 3.0, 0.0),  # all same, std=0 -> 0.0
-        (list(range(100)), 10.0, 0.0),  # no outliers at z=10
+        ([0.0] * 100, 3.0, 0.0),
+        (list(range(100)), 10.0, 0.0),
     ],
 )
 def test_outlier_fraction_parametrized(
@@ -1795,3 +1795,43 @@ def test_outlier_fraction_parametrized(
 
     result = outlier_fraction(values, z_threshold=z_threshold)
     assert result == pytest.approx(expected_fraction, abs=0.05)
+
+
+class TestSignChanges:
+    def test_empty_list_returns_zero(self) -> None:
+        from app.stats_utils import sign_changes
+
+        assert sign_changes([]) == 0
+
+    def test_single_value_returns_zero(self) -> None:
+        from app.stats_utils import sign_changes
+
+        assert sign_changes([1.0]) == 0
+
+    def test_no_sign_changes(self) -> None:
+        from app.stats_utils import sign_changes
+
+        assert sign_changes([1.0, 2.0, 3.0]) == 0
+
+    def test_all_sign_changes(self) -> None:
+        from app.stats_utils import sign_changes
+
+        assert sign_changes([1.0, -1.0, 1.0, -1.0]) == 3
+
+    def test_alternating_returns_count(self) -> None:
+        from app.stats_utils import sign_changes
+
+        assert sign_changes([-1.0, 1.0]) == 1
+
+    @pytest.mark.parametrize(
+        "values,expected",
+        [
+            ([1.0, 2.0, 3.0], 0),
+            ([1.0, -1.0], 1),
+            ([1.0, -1.0, 1.0], 2),
+        ],
+    )
+    def test_parametrized_sign_changes(self, values: list, expected: int) -> None:
+        from app.stats_utils import sign_changes
+
+        assert sign_changes(values) == expected
