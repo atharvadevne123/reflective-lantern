@@ -1456,3 +1456,26 @@ class TestEquityMultipleExt:
 
         result = equity_multiple(total_distributions=mult * 100000.0, equity_invested=100000.0)
         assert result == pytest.approx(mult)
+
+
+class TestIsProfitable:
+    def test_profitable_when_revenue_exceeds_cost(self) -> None:
+        from app.investment import is_profitable
+        assert is_profitable(100.0, 200.0) is True
+
+    def test_not_profitable_when_cost_exceeds_revenue(self) -> None:
+        from app.investment import is_profitable
+        assert is_profitable(200.0, 100.0) is False
+
+    def test_equal_cost_and_revenue_not_profitable(self) -> None:
+        from app.investment import is_profitable
+        assert is_profitable(100.0, 100.0) is False
+
+    @pytest.mark.parametrize("cost,revenue,expected", [
+        (0.0, 1.0, True),
+        (1.0, 0.0, False),
+        (50.0, 50.1, True),
+    ])
+    def test_parametrized(self, cost: float, revenue: float, expected: bool) -> None:
+        from app.investment import is_profitable
+        assert is_profitable(cost, revenue) is expected
