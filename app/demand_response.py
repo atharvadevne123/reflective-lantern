@@ -240,6 +240,30 @@ def event_roi(net_payment: float, baseline_cost_per_kwh: float, baseline_kwh: fl
     return round(net_payment / reference_cost, 4)
 
 
+def peak_curtailment_hour(
+    baseline_hourly_kwh: list[float],
+    actual_hourly_kwh: list[float],
+) -> int:
+    """Return the index of the hour with the greatest curtailment.
+
+    Args:
+        baseline_hourly_kwh: Hourly baseline load in kWh.
+        actual_hourly_kwh: Actual metered load in kWh.
+
+    Returns:
+        Zero-based index of the hour where ``baseline - actual`` is largest.
+
+    Raises:
+        ValueError: If either list is empty or lengths differ.
+    """
+    if not baseline_hourly_kwh or not actual_hourly_kwh:
+        raise ValueError("hourly lists must be non-empty")
+    if len(baseline_hourly_kwh) != len(actual_hourly_kwh):
+        raise ValueError("baseline and actual lists must have the same length")
+    diffs = [b - a for b, a in zip(baseline_hourly_kwh, actual_hourly_kwh, strict=False)]
+    return diffs.index(max(diffs))
+
+
 __all__ = [
     "DEFAULT_CBL_DAYS",
     "DEFAULT_INCENTIVE_PER_KWH",
@@ -250,5 +274,6 @@ __all__ = [
     "customer_baseline_load",
     "evaluate_event",
     "event_roi",
+    "peak_curtailment_hour",
     "performance_score",
 ]
