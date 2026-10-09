@@ -331,9 +331,7 @@ class TestDegreeDayRatio:
             (50.0, 200.0, 0.25),
         ],
     )
-    def test_parametrized_ratio(
-        self, current: float, baseline: float, expected: float
-    ) -> None:
+    def test_parametrized_ratio(self, current: float, baseline: float, expected: float) -> None:
         from app.weather_normalization import degree_day_ratio
 
         assert degree_day_ratio(current, baseline) == pytest.approx(expected)

@@ -280,26 +280,34 @@ def test_generation_kwh_parametrized(
 class TestPanelEfficiencyRatio:
     def test_perfect_efficiency(self) -> None:
         from app.solar import panel_efficiency_ratio
+
         assert panel_efficiency_ratio(100.0, 100.0) == pytest.approx(1.0)
 
     def test_partial_efficiency(self) -> None:
         from app.solar import panel_efficiency_ratio
+
         assert panel_efficiency_ratio(80.0, 100.0) == pytest.approx(0.8)
 
     def test_zero_rated_returns_zero(self) -> None:
         from app.solar import panel_efficiency_ratio
+
         assert panel_efficiency_ratio(0.0, 0.0) == pytest.approx(0.0)
 
     def test_negative_raises(self) -> None:
         from app.solar import panel_efficiency_ratio
+
         with pytest.raises(ValueError):
             panel_efficiency_ratio(-1.0, 100.0)
 
-    @pytest.mark.parametrize("actual,rated,expected", [
-        (50.0, 100.0, 0.5),
-        (0.0, 100.0, 0.0),
-        (100.0, 100.0, 1.0),
-    ])
+    @pytest.mark.parametrize(
+        "actual,rated,expected",
+        [
+            (50.0, 100.0, 0.5),
+            (0.0, 100.0, 0.0),
+            (100.0, 100.0, 1.0),
+        ],
+    )
     def test_parametrized(self, actual: float, rated: float, expected: float) -> None:
         from app.solar import panel_efficiency_ratio
+
         assert panel_efficiency_ratio(actual, rated) == pytest.approx(expected)

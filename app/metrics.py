@@ -230,5 +230,3 @@ def normalised_rmse(actual: list[float], predicted: list[float]) -> float:
     if rng == 0:
         return 0.0
     return round(rmse / rng, 6)
-
-

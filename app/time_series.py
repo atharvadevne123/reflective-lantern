@@ -1371,5 +1371,3 @@ def range_of_series(values: list[float]) -> float:
     if not values:
         raise ValueError("values must not be empty")
     return max(values) - min(values)
-
-

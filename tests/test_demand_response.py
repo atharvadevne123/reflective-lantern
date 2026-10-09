@@ -350,9 +350,7 @@ class TestPeakCurtailmentHour:
             ([10.0, 15.0, 12.0], [9.0, 5.0, 11.0], 1),
         ],
     )
-    def test_parametrized_peak_hour(
-        self, baseline: list, actual: list, expected_idx: int
-    ) -> None:
+    def test_parametrized_peak_hour(self, baseline: list, actual: list, expected_idx: int) -> None:
         from app.demand_response import peak_curtailment_hour
 
         assert peak_curtailment_hour(baseline, actual) == expected_idx

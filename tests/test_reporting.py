@@ -1195,9 +1195,7 @@ class TestConsumptionDelta:
             (50.0, 75.0, 25.0),
         ],
     )
-    def test_parametrized_delta(
-        self, before: float, after: float, expected: float
-    ) -> None:
+    def test_parametrized_delta(self, before: float, after: float, expected: float) -> None:
         from app.reporting import consumption_delta
 
         assert consumption_delta(before, after) == pytest.approx(expected)

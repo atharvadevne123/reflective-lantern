@@ -240,9 +240,7 @@ __all__ = [
 ]
 
 
-def arithmetic_midpoint(
-    lat1: float, lon1: float, lat2: float, lon2: float
-) -> tuple[float, float]:
+def arithmetic_midpoint(lat1: float, lon1: float, lat2: float, lon2: float) -> tuple[float, float]:
     """Return the arithmetic midpoint between two coordinate pairs.
 
     Uses simple arithmetic averaging, suitable for short distances.

@@ -285,9 +285,7 @@ class TestBelowMedianCohort:
             (55.0, [50.0, 60.0, 70.0], False),
         ],
     )
-    def test_parametrized_below_median(
-        self, eui: float, cohort: list, expected: bool
-    ) -> None:
+    def test_parametrized_below_median(self, eui: float, cohort: list, expected: bool) -> None:
         from app.energy_benchmark import below_median_cohort
 
         assert below_median_cohort(eui, cohort) is expected

@@ -433,9 +433,7 @@ class TestMaxAbsoluteErrorParametrized:
             ([0.0, 5.0, 10.0], [1.0, 5.0, 7.0], 3.0),
         ],
     )
-    def test_parametrized_max_ae(
-        self, actual: list, predicted: list, expected: float
-    ) -> None:
+    def test_parametrized_max_ae(self, actual: list, predicted: list, expected: float) -> None:
         from app.metrics import max_absolute_error
 
         assert max_absolute_error(actual, predicted) == pytest.approx(expected)
