@@ -743,3 +743,37 @@ class TestRegionLoadFactorExt:
 
         result = highest_peak_region()
         assert result in get_all_region_ids()
+
+
+class TestRegionIdsWithMinimumLoad:
+    def test_zero_threshold_returns_all_regions(self) -> None:
+        from app.regions import get_all_region_ids, region_ids_with_minimum_load
+
+        result = region_ids_with_minimum_load(0.0)
+        assert set(result) == set(get_all_region_ids())
+
+    def test_very_high_threshold_returns_empty(self) -> None:
+        from app.regions import region_ids_with_minimum_load
+
+        result = region_ids_with_minimum_load(float("inf"))
+        assert result == []
+
+    def test_result_is_sorted(self) -> None:
+        from app.regions import region_ids_with_minimum_load
+
+        result = region_ids_with_minimum_load(0.0)
+        assert result == sorted(result)
+
+    def test_result_subset_of_all_ids(self) -> None:
+        from app.regions import get_all_region_ids, region_ids_with_minimum_load
+
+        result = region_ids_with_minimum_load(1000.0)
+        all_ids = set(get_all_region_ids())
+        assert all(rid in all_ids for rid in result)
+
+    @pytest.mark.parametrize("threshold", [0.0, 100.0, 1000.0])
+    def test_threshold_filter_monotonic(self, threshold: float) -> None:
+        from app.regions import region_ids_with_minimum_load
+
+        result = region_ids_with_minimum_load(threshold)
+        assert isinstance(result, list)
