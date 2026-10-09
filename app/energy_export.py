@@ -747,3 +747,19 @@ def records_kwh_range(records: list[dict[str, Any]]) -> tuple[float, float] | No
     if not vals:
         return None
     return (min(vals), max(vals))
+
+
+def records_kwh_average(records: list[dict[str, Any]]) -> float | None:
+    """Return the average consumption_kwh across records that have the field.
+
+    Args:
+        records: List of energy record dicts.
+
+    Returns:
+        Average kWh as a float rounded to 4 decimal places, or ``None`` when
+        no record contains a ``consumption_kwh`` field.
+    """
+    vals = [float(r["consumption_kwh"]) for r in records if "consumption_kwh" in r]
+    if not vals:
+        return None
+    return round(sum(vals) / len(vals), 4)
