@@ -578,3 +578,38 @@ class TestCountAlertsBySourceExtended:
         alerts = [Alert(severity="info", message="m", source="src") for _ in range(n)]
         result = count_alerts_by_source(alerts)
         assert result["src"] == n
+
+
+class TestAlertsBySource:
+    def test_empty_list_returns_empty_dict(self) -> None:
+        from app.notifications import alerts_by_source
+
+        assert alerts_by_source([]) == {}
+
+    def test_single_source_grouped_correctly(self) -> None:
+        from app.notifications import Alert, alerts_by_source
+
+        alerts = [Alert(severity="info", message="m", source="svc-a") for _ in range(3)]
+        result = alerts_by_source(alerts)
+        assert "svc-a" in result
+        assert len(result["svc-a"]) == 3
+
+    def test_multiple_sources_separated(self) -> None:
+        from app.notifications import Alert, alerts_by_source
+
+        alerts = [
+            Alert(severity="warning", message="a", source="svc-a"),
+            Alert(severity="critical", message="b", source="svc-b"),
+            Alert(severity="info", message="c", source="svc-a"),
+        ]
+        result = alerts_by_source(alerts)
+        assert len(result["svc-a"]) == 2
+        assert len(result["svc-b"]) == 1
+
+    @pytest.mark.parametrize("n_sources", [1, 2, 3])
+    def test_key_count_matches_unique_sources(self, n_sources: int) -> None:
+        from app.notifications import Alert, alerts_by_source
+
+        alerts = [Alert(severity="info", message="m", source=f"svc-{i}") for i in range(n_sources)]
+        result = alerts_by_source(alerts)
+        assert len(result) == n_sources
