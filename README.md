@@ -238,3 +238,31 @@ The service ships several reusable utility modules under `app/`:
 ## License
 
 MIT
+
+## Utility Modules
+
+The `app/` package includes a collection of standalone utility helpers used across the service:
+
+| Module | Key helpers |
+|---|---|
+| `demand_response` | `peak_curtailment_hour` |
+| `energy_benchmark` | `below_median_cohort` |
+| `shadow_mode` | `ShadowRunner.match_rate` |
+| `token_bucket` | `PerKeyTokenBucket.is_full` |
+| `webhook_handler` | `WebhookHandler.has_handler` |
+| `task_queue` | `TaskQueue.is_empty`, `TaskQueue.priority_range` |
+| `energy_export` | `records_kwh_average` |
+| `weather_normalization` | `degree_day_ratio` |
+| `power_quality` | `load_unbalance_factor` |
+| `notifications` | `alerts_by_source` |
+| `geo_utils` | `midpoint`, `bearing`, `within_radius`, `k_nearest` |
+| `stats_utils` | `sign_changes` |
+| `time_series` | `cumulative_sum` |
+| `date_utils` | `start_of_day` |
+| `load_profile` | `peak_hour_index` |
+| `tariff` | `cost_per_hour_average` |
+| `solar` | `panel_efficiency_ratio` |
+| `investment` | `is_profitable` |
+| `carbon` | `co2_intensity_label` |
+
+All helpers are covered by parametrized `pytest` tests in `tests/`.
