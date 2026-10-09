@@ -250,6 +250,7 @@ __all__ = [
     "generation_kwh",
     "payback_years",
     "self_consumption",
+    "panel_efficiency_ratio",
 ]
 
 
@@ -280,3 +281,23 @@ def capacity_factor(
     if max_kwh == 0.0:
         return 0.0
     return round(actual_kwh / max_kwh, 6)
+
+
+def panel_efficiency_ratio(actual_output_kwh: float, rated_output_kwh: float) -> float:
+    """Return the ratio of actual to rated panel output.
+
+    Args:
+        actual_output_kwh: Measured energy output in kWh.
+        rated_output_kwh: Manufacturer-rated output in kWh under standard conditions.
+
+    Returns:
+        Efficiency ratio in [0, 1]; 0.0 if rated_output_kwh is zero.
+
+    Raises:
+        ValueError: If either argument is negative.
+    """
+    if actual_output_kwh < 0 or rated_output_kwh < 0:
+        raise ValueError("Arguments must be non-negative")
+    if rated_output_kwh == 0.0:
+        return 0.0
+    return min(actual_output_kwh / rated_output_kwh, 1.0)
