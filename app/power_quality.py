@@ -236,6 +236,35 @@ def build_report(
     return report
 
 
+def load_unbalance_factor(power_values_kw: list[float]) -> float:
+    """Return the load unbalance factor across multiple power phases.
+
+    The factor is the maximum deviation from the average divided by the
+    average, expressed as a percentage.
+
+    Args:
+        power_values_kw: Per-phase active power readings in kW.
+
+    Returns:
+        Load unbalance factor as a percentage, rounded to 2 decimal places.
+        Returns 0.0 for balanced loads or a single-phase system.
+
+    Raises:
+        ValueError: If *power_values_kw* is empty or contains negative values.
+    """
+    if not power_values_kw:
+        raise ValueError("power_values_kw must be non-empty")
+    if any(p < 0 for p in power_values_kw):
+        raise ValueError("power values must be non-negative")
+    if len(power_values_kw) == 1:
+        return 0.0
+    avg = sum(power_values_kw) / len(power_values_kw)
+    if avg == 0:
+        return 0.0
+    max_dev = max(abs(p - avg) for p in power_values_kw)
+    return round((max_dev / avg) * 100, 2)
+
+
 __all__ = [
     "GOOD_POWER_FACTOR",
     "MAX_VOLTAGE_IMBALANCE_PCT",
@@ -244,6 +273,7 @@ __all__ = [
     "apparent_power",
     "build_report",
     "correction_kvar",
+    "load_unbalance_factor",
     "power_factor",
     "rate_power_factor",
     "reactive_power",
