@@ -1107,3 +1107,21 @@ def outlier_fraction(values: list[float], z_threshold: float = 3.0) -> float:
         return 0.0
     count = sum(1 for v in values if abs(v - mean_v) / std_v > z_threshold)
     return round(count / len(values), 6)
+
+
+def sign_changes(values: list[float]) -> int:
+    """Count the number of times consecutive values change sign.
+
+    Args:
+        values: List of numeric values.
+
+    Returns:
+        Integer count of zero-crossings (sign changes) in *values*.
+    """
+    if len(values) < 2:
+        return 0
+    count = 0
+    for i in range(1, len(values)):
+        if values[i - 1] * values[i] < 0:
+            count += 1
+    return count
