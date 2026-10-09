@@ -1060,3 +1060,16 @@ def unique_value_count(values: list[object]) -> int:
         Count of unique non-None entries.
     """
     return len({v for v in values if v is not None})
+
+
+def has_duplicates(values: list[object]) -> bool:
+    """Return True if *values* contains any duplicate non-None entries.
+
+    Args:
+        values: List of values to check.
+
+    Returns:
+        True when at least two non-None entries are equal.
+    """
+    non_none = [v for v in values if v is not None]
+    return len(non_none) != len(set(non_none))
