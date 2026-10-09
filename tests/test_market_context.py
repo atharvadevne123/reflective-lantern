@@ -1399,3 +1399,54 @@ class TestComparableValueAdjustment:
 
         result = comparable_value_adjustment(subject_sqft, 1000, 300000.0)
         assert isinstance(result, float)
+
+
+class TestListingAgeBucket:
+    def test_zero_dom_is_fresh(self) -> None:
+        from app.market_context import listing_age_bucket
+
+        assert listing_age_bucket(0) == "fresh"
+
+    def test_six_days_is_fresh(self) -> None:
+        from app.market_context import listing_age_bucket
+
+        assert listing_age_bucket(6) == "fresh"
+
+    def test_seven_days_is_active(self) -> None:
+        from app.market_context import listing_age_bucket
+
+        assert listing_age_bucket(7) == "active"
+
+    def test_thirty_days_is_stale(self) -> None:
+        from app.market_context import listing_age_bucket
+
+        assert listing_age_bucket(30) == "stale"
+
+    def test_ninety_days_is_expired(self) -> None:
+        from app.market_context import listing_age_bucket
+
+        assert listing_age_bucket(90) == "expired"
+
+    def test_negative_dom_raises(self) -> None:
+        from app.market_context import listing_age_bucket
+
+        with pytest.raises(ValueError, match="non-negative"):
+            listing_age_bucket(-1)
+
+    @pytest.mark.parametrize(
+        "dom,expected",
+        [
+            (0, "fresh"),
+            (6, "fresh"),
+            (7, "active"),
+            (29, "active"),
+            (30, "stale"),
+            (89, "stale"),
+            (90, "expired"),
+            (365, "expired"),
+        ],
+    )
+    def test_parametrized_buckets(self, dom: int, expected: str) -> None:
+        from app.market_context import listing_age_bucket
+
+        assert listing_age_bucket(dom) == expected
