@@ -372,3 +372,35 @@ def test_annual_cost_estimate_parametrized(monthly_kwh: list, rate: float, expec
 
     result = annual_cost_estimate(monthly_kwh, rate=rate)
     assert result == pytest.approx(expected, rel=1e-3)
+
+
+@pytest.mark.parametrize(
+    "hourly_kwh,start_hour,expected_fraction",
+    [
+        ([0.0] * 24, 0, 0.0),
+        ([1.0] * 24, 0, pytest.approx(5 / 24, rel=1e-3)),
+    ],
+)
+def test_peak_hour_fraction_parametrized(
+    hourly_kwh: list, start_hour: int, expected_fraction
+) -> None:
+    """peak_hour_fraction returns expected fraction for uniform consumption series."""
+    from app.tariff import peak_hour_fraction
+
+    result = peak_hour_fraction(hourly_kwh, start_hour=start_hour)
+    assert result == expected_fraction
+
+
+def test_peak_hour_fraction_zero_consumption_returns_zero() -> None:
+    """peak_hour_fraction returns 0.0 when all consumption values are zero."""
+    from app.tariff import peak_hour_fraction
+
+    assert peak_hour_fraction([0.0] * 24) == 0.0
+
+
+def test_peak_hour_fraction_invalid_start_hour_raises() -> None:
+    """peak_hour_fraction raises ValueError for start_hour outside 0-23."""
+    from app.tariff import peak_hour_fraction
+
+    with pytest.raises(ValueError):
+        peak_hour_fraction([1.0] * 24, start_hour=24)
