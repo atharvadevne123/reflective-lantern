@@ -12,6 +12,8 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class _Bucket:
+    """Internal per-client token bucket with current token count and last refill timestamp."""
+
     tokens: float
     last_refill: float = field(default_factory=time.monotonic)
 
