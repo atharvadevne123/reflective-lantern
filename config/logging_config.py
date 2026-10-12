@@ -12,6 +12,7 @@ class JsonFormatter(logging.Formatter):
     """Format log records as JSON lines."""
 
     def format(self, record: logging.LogRecord) -> str:
+        """Serialize a log record to a JSON-formatted string."""
         data: dict[str, Any] = {
             "ts": self.formatTime(record, "%Y-%m-%dT%H:%M:%S"),
             "level": record.levelname,
