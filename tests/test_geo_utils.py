@@ -356,3 +356,40 @@ def test_haversine_distance_range(
     assert expected_min <= dist <= expected_max, (
         f"Distance {dist:.0f}km not in [{expected_min}, {expected_max}]"
     )
+
+
+@pytest.mark.parametrize("k", [1, 2, 3])
+def test_k_nearest_returns_k_results(k: int) -> None:
+    """k_nearest returns exactly k candidates when enough are available."""
+    from app.geo_utils import Coordinate, k_nearest
+
+    query = Coordinate(0.0, 0.0)
+    candidates = [Coordinate(float(i), float(i)) for i in range(10)]
+    result = k_nearest(query, candidates, k=k)
+    assert len(result) == k
+
+
+def test_k_nearest_returns_closest_first() -> None:
+    """k_nearest returns candidates ordered by distance, closest first."""
+    from app.geo_utils import Coordinate, k_nearest
+
+    query = Coordinate(0.0, 0.0)
+    far = Coordinate(10.0, 10.0)
+    close = Coordinate(0.1, 0.1)
+    result = k_nearest(query, [far, close], k=2)
+    assert result[0].lat == pytest.approx(close.lat, abs=0.01)
+
+
+@pytest.mark.parametrize(
+    "a,b,expected_bearing",
+    [
+        ((0.0, 0.0), (1.0, 0.0), pytest.approx(0.0, abs=1.0)),     # due north
+        ((0.0, 0.0), (0.0, 1.0), pytest.approx(90.0, abs=1.0)),    # due east
+    ],
+)
+def test_bearing_cardinal_directions(a: tuple, b: tuple, expected_bearing) -> None:
+    """bearing returns correct degree value for cardinal directions."""
+    from app.geo_utils import Coordinate, bearing
+
+    result = bearing(Coordinate(*a), Coordinate(*b))
+    assert result == expected_bearing
