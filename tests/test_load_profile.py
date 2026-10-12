@@ -286,3 +286,33 @@ class TestOffPeakLoadFraction:
         hourly = [rng.uniform(0, 10) for _ in range(48)]
         result = off_peak_load_fraction(hourly)
         assert 0.0 <= result <= 1.0
+
+
+@pytest.mark.parametrize(
+    "hourly_kwh,expected_min,expected_max",
+    [
+        ([1.0] * 24, 0.0, 1.0),
+        ([0.0] * 24, 0.0, 0.0),
+        ([2.0] * 9 + [0.0] * 12 + [2.0] * 3, 1.0, 1.0),  # load only off-peak hours
+    ],
+)
+def test_off_peak_load_fraction_range(
+    hourly_kwh: list, expected_min: float, expected_max: float
+) -> None:
+    """off_peak_load_fraction returns value in [expected_min, expected_max]."""
+    from app.load_profile import off_peak_load_fraction
+
+    if sum(hourly_kwh) == 0.0:
+        assert off_peak_load_fraction(hourly_kwh) == 0.0
+    else:
+        result = off_peak_load_fraction(hourly_kwh)
+        assert expected_min <= result <= expected_max
+
+
+@pytest.mark.parametrize("n", [1, 12, 24, 48])
+def test_demand_variability_non_negative(n: int) -> None:
+    """demand_variability always returns a non-negative value."""
+    from app.load_profile import demand_variability
+
+    hourly = list(range(n))
+    assert demand_variability(hourly) >= 0.0
