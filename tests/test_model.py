@@ -150,14 +150,14 @@ def test_train_model_different_sizes(n_samples: int) -> None:
     X = prepare_X(df, pipe, fit=True)
     y = df["delivery_minutes"].values
     model, metrics = train_model(X, y)
-    assert "rmse" in metrics
-    assert "r2" in metrics
-    assert metrics["rmse"] > 0
+    assert "rmse_mean" in metrics
+    assert "r2_mean" in metrics
+    assert metrics["rmse_mean"] > 0
 
 
 @pytest.mark.parametrize(
     "metric_key",
-    ["rmse", "mae", "r2", "mape"],
+    ["rmse_mean", "rmse_std", "r2_mean", "r2_std"],
 )
 def test_train_model_metrics_present(metric_key: str) -> None:
     from app.features import build_feature_pipeline, generate_synthetic_data, prepare_X
