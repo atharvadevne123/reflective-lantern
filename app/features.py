@@ -38,10 +38,12 @@ class TemporalFeatureExtractor(BaseEstimator, TransformerMixin):
     """
 
     def fit(self, X: pd.DataFrame, y: Any = None) -> TemporalFeatureExtractor:
+        """Fit the transformer (no-op; present for sklearn compatibility)."""
         self.fitted_ = True
         return self
 
     def transform(self, X: pd.DataFrame) -> pd.DataFrame:
+        """Add cyclical time features and binary flags to *X*."""
         df = X.copy()
         # Support both energy (hour) and logistics (hour_of_day) column names
         if "hour" in df.columns:
@@ -77,10 +79,12 @@ class RouteFeatureEngineer(BaseEstimator, TransformerMixin):
     }
 
     def fit(self, X: pd.DataFrame, y: Any = None) -> RouteFeatureEngineer:
+        """Fit the transformer (no-op; present for sklearn compatibility)."""
         self.fitted_ = True
         return self
 
     def transform(self, X: pd.DataFrame) -> pd.DataFrame:
+        """Add route, distance, weight, and carrier features to *X*."""
         if "distance_km" not in X.columns:
             return X.copy()
         df = X.copy()
@@ -102,6 +106,7 @@ class CategoricalEncoder(BaseEstimator, TransformerMixin):
     """Ordinal-encodes carrier column."""
 
     def fit(self, X: pd.DataFrame, y: Any = None) -> CategoricalEncoder:
+        """Fit a LabelEncoder on known carrier values plus the standard carriers list."""
         if "carrier" not in X.columns:
             self.le_ = None
             return self
@@ -110,6 +115,7 @@ class CategoricalEncoder(BaseEstimator, TransformerMixin):
         return self
 
     def transform(self, X: pd.DataFrame) -> pd.DataFrame:
+        """Encode carrier column to integer ordinal values in *X*."""
         if "carrier" not in X.columns or self.le_ is None:
             return X.copy()
         df = X.copy()
@@ -134,10 +140,12 @@ class LagFeatureExtractor(BaseEstimator, TransformerMixin):
     LAGS: list[int] = [1, 2, 3, 6, 12, 24, 168]
 
     def fit(self, X: pd.DataFrame, y: Any = None) -> LagFeatureExtractor:
+        """Fit the transformer (no-op; present for sklearn compatibility)."""
         self.fitted_ = True
         return self
 
     def transform(self, X: pd.DataFrame) -> pd.DataFrame:
+        """Add shifted lag columns for the consumption_kwh series to *X*."""
         df = X.copy()
         col = "consumption_kwh" if "consumption_kwh" in df.columns else None
         if col is None:
@@ -156,10 +164,12 @@ class RollingStatsExtractor(BaseEstimator, TransformerMixin):
     WINDOWS: list[int] = [3, 6, 24]
 
     def fit(self, X: pd.DataFrame, y: Any = None) -> RollingStatsExtractor:
+        """Fit the transformer (no-op; present for sklearn compatibility)."""
         self.fitted_ = True
         return self
 
     def transform(self, X: pd.DataFrame) -> pd.DataFrame:
+        """Add rolling mean, std, min, and max columns to *X* for each window size."""
         df = X.copy()
         col = "consumption_kwh" if "consumption_kwh" in df.columns else None
         if col is None:
@@ -181,10 +191,12 @@ class WeatherFeatureExtractor(BaseEstimator, TransformerMixin):
     BASE_TEMP_HEATING: float = 15.0
 
     def fit(self, X: pd.DataFrame, y: Any = None) -> WeatherFeatureExtractor:
+        """Fit the transformer (no-op; present for sklearn compatibility)."""
         self.fitted_ = True
         return self
 
     def transform(self, X: pd.DataFrame) -> pd.DataFrame:
+        """Compute heat index, degree-hours, and temp/humidity ratio features."""
         df = X.copy()
         temp = df.get("temperature_c", pd.Series([20.0] * len(df), index=df.index))
         hum = df.get("humidity_pct", pd.Series([50.0] * len(df), index=df.index))
@@ -201,10 +213,12 @@ class OccupancyFeatureExtractor(BaseEstimator, TransformerMixin):
     """Derives occupancy-based load features."""
 
     def fit(self, X: pd.DataFrame, y: Any = None) -> OccupancyFeatureExtractor:
+        """Fit the transformer (no-op; present for sklearn compatibility)."""
         self.fitted_ = True
         return self
 
     def transform(self, X: pd.DataFrame) -> pd.DataFrame:
+        """Add occ_hvac_load and normalized occupancy columns to *X*."""
         df = X.copy()
         if "occupancy" not in df.columns:
             return df
@@ -219,10 +233,12 @@ class RatioFeatureTransformer(BaseEstimator, TransformerMixin):
     """Computes real-estate ratio features (beds-per-bath, etc.)."""
 
     def fit(self, X: pd.DataFrame, y: Any = None) -> RatioFeatureTransformer:
+        """Fit the transformer (no-op; present for sklearn compatibility)."""
         self.fitted_ = True
         return self
 
     def transform(self, X: pd.DataFrame) -> pd.DataFrame:
+        """Add beds_per_bath and price_per_sqft ratio columns to *X*."""
         df = X.copy()
         if "bedrooms" in df.columns and "bathrooms" in df.columns:
             df["beds_per_bath"] = df["bedrooms"] / (df["bathrooms"].replace(0, np.nan) + 1e-9)
@@ -238,10 +254,12 @@ class PropertyAgeTransformer(BaseEstimator, TransformerMixin):
         self.reference_year = reference_year
 
     def fit(self, X: pd.DataFrame, y: Any = None) -> PropertyAgeTransformer:
+        """Fit the transformer (no-op; present for sklearn compatibility)."""
         self.fitted_ = True
         return self
 
     def transform(self, X: pd.DataFrame) -> pd.DataFrame:
+        """Add property_age column derived from year_built to *X*."""
         df = X.copy()
         if "year_built" in df.columns:
             df["property_age"] = self.reference_year - df["year_built"].fillna(self.reference_year)
@@ -252,10 +270,12 @@ class AmenityCompositeTransformer(BaseEstimator, TransformerMixin):
     """Computes a composite amenity score from school, transit, and walk scores."""
 
     def fit(self, X: pd.DataFrame, y: Any = None) -> AmenityCompositeTransformer:
+        """Fit the transformer (no-op; present for sklearn compatibility)."""
         self.fitted_ = True
         return self
 
     def transform(self, X: pd.DataFrame) -> pd.DataFrame:
+        """Add weighted amenity_composite score column to *X*."""
         df = X.copy()
         school = df.get("school_score", pd.Series([5.0] * len(df), index=df.index))
         transit = df.get("transit_score", pd.Series([5.0] * len(df), index=df.index))
@@ -272,10 +292,12 @@ class InteractionFeatureExtractor(BaseEstimator, TransformerMixin):
     PAIRS: list[tuple[str, str]] = [("temperature_c", "occupancy")]
 
     def fit(self, X: pd.DataFrame, y: Any = None) -> InteractionFeatureExtractor:
+        """Record which column pairs are present in *X* for use at transform time."""
         self.available_pairs_ = [(a, b) for a, b in self.PAIRS if a in X.columns and b in X.columns]
         return self
 
     def transform(self, X: pd.DataFrame) -> pd.DataFrame:
+        """Add column-pair product features for each available pair to *X*."""
         df = X.copy()
         for a, b in self.available_pairs_:
             df[f"{a}_x_{b}"] = df[a] * df[b]
