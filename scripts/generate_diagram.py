@@ -67,6 +67,7 @@ ARROWS = [
 
 
 def main() -> None:
+    """Generate a system architecture diagram and save it as a PNG screenshot."""
     os.makedirs("screenshots", exist_ok=True)
     fig, ax = plt.subplots(figsize=(14, 7))
     ax.set_xlim(0, 14)
