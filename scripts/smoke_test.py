@@ -19,11 +19,13 @@ SAMPLE = {
 
 
 def _get(url: str) -> tuple[int, dict]:
+    """Send a GET request to url and return (status_code, json_body)."""
     with urllib.request.urlopen(url, timeout=10) as r:
         return r.status, json.load(r)
 
 
 def _post(url: str, body: dict) -> tuple[int, dict]:
+    """Send a POST request with a JSON body and return (status_code, json_body)."""
     req = urllib.request.Request(
         url,
         data=json.dumps(body).encode(),
@@ -38,6 +40,7 @@ def _post(url: str, body: dict) -> tuple[int, dict]:
 
 
 def main() -> int:
+    """Run health-check and prediction smoke tests against a running API server."""
     parser = argparse.ArgumentParser()
     parser.add_argument("--base-url", default="http://localhost:8000")
     base = parser.parse_args().base_url.rstrip("/")
