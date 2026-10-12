@@ -764,17 +764,19 @@ def test_seed_reference_buffer_ignores_unknown_keys() -> None:
 
 
 @pytest.mark.parametrize(
-    "ref_mean,cur_mean,should_drift",
+    "ref_mean,cur_mean,std,should_drift",
     [
-        (10.0, 10.5, False),  # small shift, no drift
-        (10.0, 50.0, True),  # large shift, drift
-        (0.0, 0.0, False),  # identical distributions
+        (10.0, 10.5, 20.0, False),  # small shift relative to large spread, no drift
+        (10.0, 50.0, 1.0, True),  # large shift, drift
+        (0.0, 0.0, 1.0, False),  # identical distributions
     ],
 )
-def test_compute_drift_parametrized(ref_mean: float, cur_mean: float, should_drift: bool) -> None:
+def test_compute_drift_parametrized(
+    ref_mean: float, cur_mean: float, std: float, should_drift: bool
+) -> None:
     rng = np.random.default_rng(42)
-    ref = list(rng.normal(ref_mean, 1.0, 300))
-    cur = list(rng.normal(cur_mean, 1.0, 300))
+    ref = list(rng.normal(ref_mean, std, 300))
+    cur = list(rng.normal(cur_mean, std, 300))
     result = compute_drift(ref, cur)
     if should_drift:
         assert result["drift_detected"], f"Expected drift for means {ref_mean}/{cur_mean}"

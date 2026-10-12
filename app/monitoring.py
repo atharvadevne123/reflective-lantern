@@ -314,13 +314,19 @@ def error_budget_remaining(
 
 
 def p_value_to_confidence(p_value: float) -> float:
-    """Convert a KS-test p-value to a confidence score in [0.0, 1.0].
+    """Convert a KS-test p-value to a confidence percentage in [0.0, 100.0].
 
     A lower p-value indicates stronger evidence of drift, which corresponds
     to higher confidence that a distribution shift has occurred.
+
+    Args:
+        p_value: KS-test p-value. Values outside [0, 1] are clamped.
+
+    Returns:
+        Confidence percentage: ``(1 - clamped_p_value) * 100``.
     """
     clamped = max(0.0, min(1.0, p_value))
-    return round(1.0 - clamped, 6)
+    return round((1.0 - clamped) * 100, 4)
 
 
 # ---------------------------------------------------------------------------
