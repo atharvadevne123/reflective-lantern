@@ -94,6 +94,7 @@ def count_entries(directory: Path) -> dict[str, int]:
 
 
 def main() -> int:
+    """Parse CLI arguments and remove history entries older than --days."""
     import argparse
     from datetime import timedelta
 
