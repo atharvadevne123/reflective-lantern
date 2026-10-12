@@ -85,6 +85,7 @@ class Capabilities:
         """Return a multi-line human-readable summary."""
 
         def mark(v: bool) -> str:
+            """Return 'yes' for True or 'NO' for False."""
             return "yes" if v else "NO"
 
         lines = [
