@@ -492,3 +492,22 @@ class TestPruneIdleClientsExtended:
         limiter.is_allowed("fresh")
         prune_idle_clients(limiter, max_idle_seconds=9999)
         assert active_client_count(limiter) >= 1
+
+
+@pytest.mark.parametrize("capacity", [1.0, 5.0, 10.0])
+def test_bucket_fill_percentage_unseen_client_is_full(capacity: float) -> None:
+    """An unseen client reports 100% fill (defaults to full bucket)."""
+    from app.rate_limiter import bucket_fill_percentage, make_rate_limiter
+
+    limiter = make_rate_limiter(capacity=capacity, refill_rate=0.0)
+    assert bucket_fill_percentage(limiter, "unseen-client") == pytest.approx(100.0)
+
+
+def test_client_exists_after_first_request() -> None:
+    """client_exists returns True after the client's first request."""
+    from app.rate_limiter import client_exists, make_rate_limiter
+
+    limiter = make_rate_limiter(capacity=5.0, refill_rate=0.0)
+    assert not client_exists(limiter, "new-client")
+    limiter.is_allowed("new-client")
+    assert client_exists(limiter, "new-client")
