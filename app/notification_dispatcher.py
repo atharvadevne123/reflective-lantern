@@ -22,6 +22,8 @@ logger = logging.getLogger(__name__)
 
 
 class Severity(StrEnum):
+    """Notification severity levels, ordered from least to most severe."""
+
     INFO = "info"
     WARNING = "warning"
     ERROR = "error"
