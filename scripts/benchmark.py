@@ -20,6 +20,7 @@ N_RUNS = 200
 
 
 def main() -> None:
+    """Run model inference benchmark: warm-up then timed prediction runs."""
     df = generate_synthetic_data(n=1500, seed=11)
     feat_pipe = build_feature_pipeline()
     X = prepare_X(df, feat_pipe, fit=True)
