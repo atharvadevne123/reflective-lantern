@@ -275,3 +275,35 @@ def test_generation_kwh_parametrized(
     )
     assert result >= expected_min
     assert isinstance(result, float)
+
+
+@pytest.mark.parametrize(
+    "actual_kwh,installed_kw,hours,expected",
+    [
+        (8760.0, 1.0, 8760.0, 1.0),
+        (4380.0, 1.0, 8760.0, 0.5),
+        (0.0, 5.0, 8760.0, 0.0),
+        (1000.0, 2.0, 2000.0, 0.25),
+    ],
+)
+def test_capacity_factor_parametrized(
+    actual_kwh: float, installed_kw: float, hours: float, expected: float
+) -> None:
+    """capacity_factor returns the correct ratio across typical inputs."""
+    from app.solar import capacity_factor
+
+    result = capacity_factor(actual_kwh, installed_kw, hours)
+    assert result == pytest.approx(expected, rel=1e-4)
+
+
+@pytest.mark.parametrize("n", [1, 5, 24])
+def test_self_consumption_equal_generation_and_consumption(n: int) -> None:
+    """When generation equals consumption every hour, all solar is self-consumed."""
+    from app.solar import self_consumption
+
+    gen = [2.0] * n
+    con = [2.0] * n
+    self_kwh, exported_kwh, imported_kwh = self_consumption(gen, con)
+    assert self_kwh == pytest.approx(sum(gen))
+    assert exported_kwh == pytest.approx(0.0)
+    assert imported_kwh == pytest.approx(0.0)
