@@ -95,6 +95,11 @@ class TTLCache:
                 del self._store[k]
         return len(expired)
 
+    def __len__(self) -> int:
+        """Return the number of entries currently stored (including potentially expired)."""
+        with self._lock:
+            return len(self._store)
+
     def __contains__(self, key: str) -> bool:
         """Return True if *key* is present and not expired."""
         return self.get(key) is not None
