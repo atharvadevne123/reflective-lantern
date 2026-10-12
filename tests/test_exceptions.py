@@ -308,3 +308,36 @@ def test_exception_str_contains_message(exc_class: str, message: str) -> None:
         pytest.skip(f"{exc_class} not found in app.exceptions")
     err = exc_type(message)
     assert message in str(err)
+
+
+@pytest.mark.parametrize(
+    "exc_class,expected_status",
+    [
+        ("ModelNotLoadedError", 503),
+        ("FeatureExtractionError", 422),
+        ("RateLimitExceededError", 429),
+        ("PredictionError", 500),
+        ("DatabaseError", 503),
+        ("DriftDetectionError", 500),
+        ("ConfigurationError", 500),
+    ],
+)
+def test_exception_status_codes(exc_class: str, expected_status: int) -> None:
+    """Each exception class carries the expected HTTP status code."""
+    import importlib
+
+    m = importlib.import_module("app.exceptions")
+    exc_type = getattr(m, exc_class, None)
+    if exc_type is None:
+        pytest.skip(f"{exc_class} not found in app.exceptions")
+    assert exc_type.status_code == expected_status
+
+
+def test_feature_validation_error_stores_field_and_reason() -> None:
+    """FeatureValidationError exposes field and reason attributes."""
+    from app.exceptions import FeatureValidationError
+
+    err = FeatureValidationError(field="temperature", reason="out of range")
+    assert err.field == "temperature"
+    assert err.reason == "out of range"
+    assert "temperature" in str(err)
