@@ -310,3 +310,42 @@ class TestTotalCalls:
         for _ in range(n):
             fn()
         assert total_calls() >= n
+
+
+class TestTimedDecorator:
+    @pytest.mark.parametrize("label", [None, "custom_label", "my_func"])
+    def test_timed_preserves_return_value(self, label) -> None:
+        """timed decorator returns the wrapped function's original return value."""
+        from app.profiler import timed
+
+        @timed(label=label)
+        def add(a: int, b: int) -> int:
+            return a + b
+
+        assert add(2, 3) == 5
+
+    def test_timed_raises_original_exception(self) -> None:
+        """timed decorator re-raises exceptions from the wrapped function."""
+        from app.profiler import timed
+
+        @timed()
+        def fail() -> None:
+            raise RuntimeError("oops")
+
+        with pytest.raises(RuntimeError, match="oops"):
+            fail()
+
+    @pytest.mark.parametrize("n_calls", [1, 3, 5])
+    def test_tracked_call_count_increments(self, n_calls: int) -> None:
+        """call_count reflects the number of times a tracked function was called."""
+        from app.profiler import call_count, reset_stats, tracked
+
+        reset_stats()
+
+        @tracked(label=f"cc_test_{n_calls}")
+        def fn() -> None:
+            pass
+
+        for _ in range(n_calls):
+            fn()
+        assert call_count(f"cc_test_{n_calls}") == n_calls
