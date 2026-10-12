@@ -253,3 +253,27 @@ class TestEnergyUseIntensityExtended:
     def test_eui_positive_for_valid_area(self, area: float) -> None:
         eui = energy_use_intensity(annual_kwh=10000.0, floor_area_m2=area)
         assert eui > 0.0
+
+
+@pytest.mark.parametrize(
+    "score,expected_grade",
+    [(100, "A"), (85, "B"), (55, "C"), (40, "D"), (0, "F")],
+)
+def test_grade_from_score_parametrized(score: int, expected_grade: str) -> None:
+    """grade_from_score returns expected letter grade for typical score inputs."""
+    result = grade_from_score(score)
+    assert result == expected_grade
+
+
+@pytest.mark.parametrize(
+    "eui,cohort,expected_pct",
+    [
+        (50.0, [100.0, 150.0, 200.0], 100.0),   # lower eui = better than all
+        (200.0, [100.0, 150.0, 200.0], pytest.approx(16.67, rel=0.1)),
+        (150.0, [100.0, 150.0, 200.0], pytest.approx(50.0, rel=0.1)),
+    ],
+)
+def test_percentile_rank_parametrized(eui: float, cohort: list, expected_pct) -> None:
+    """percentile_rank returns correct percentile for eui against a cohort."""
+    result = percentile_rank(eui, cohort)
+    assert result == expected_pct
