@@ -144,6 +144,7 @@ class DRPayload(BaseModel):
 
     @model_validator(mode="after")
     def check_lengths_match(self) -> DRPayload:
+        """Validate that baseline and actual series have equal length."""
         if len(self.baseline_hourly_kwh) != len(self.actual_hourly_kwh):
             raise ValueError("baseline_hourly_kwh and actual_hourly_kwh must have the same length")
         return self
@@ -183,6 +184,7 @@ def demand_response_evaluate(
 
 
 def _power_factor(real_kw: float, reactive_kvar: float) -> float:
+    """Compute power factor from real and reactive power components."""
     apparent = math.sqrt(real_kw**2 + reactive_kvar**2)
     return real_kw / apparent if apparent > 0 else 1.0
 
@@ -240,6 +242,7 @@ class SolarEconomicsPayload(BaseModel):
 
     @model_validator(mode="after")
     def check_lengths_match(self) -> SolarEconomicsPayload:
+        """Validate that generation and consumption series have equal length."""
         if len(self.generation_hourly_kwh) != len(self.consumption_hourly_kwh):
             raise ValueError(
                 "generation_hourly_kwh and consumption_hourly_kwh must have the same length"
@@ -359,6 +362,7 @@ def battery_sizing(
 
 
 def _grade(percentile: float) -> str:
+    """Return letter grade A–F based on percentile rank in cohort (higher is better)."""
     if percentile >= 80:
         return "A"
     if percentile >= 60:
