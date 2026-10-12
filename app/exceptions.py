@@ -140,6 +140,7 @@ def register_exception_handlers(app: FastAPI) -> None:
 
     @app.exception_handler(LogisticsFlowError)
     async def _handle(request: Request, exc: LogisticsFlowError) -> JSONResponse:
+        """Return a JSON error response with status code, error name, and request ID."""
         request_id = getattr(request.state, "request_id", "n/a")
         logger.warning("[%s] %s: %s", request_id, type(exc).__name__, exc.detail)
         return JSONResponse(
