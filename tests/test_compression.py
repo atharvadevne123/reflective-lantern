@@ -262,3 +262,38 @@ class TestCompressAndMeasure:
 
         result = compress_and_measure(b"hello " * 100, method=method)
         assert result["compressed_bytes"] > 0
+
+
+@pytest.mark.parametrize("method", ["gzip", "zlib"])
+def test_compress_decompress_roundtrip(method: str) -> None:
+    """Data compressed and decompressed is identical to the original."""
+    from app.compression import compress_json, decompress_json
+
+    original = {"key": "value", "numbers": [1, 2, 3]}
+    compressed = compress_json(original, method=method)
+    recovered = decompress_json(compressed, method=method)
+    assert recovered == original
+
+
+@pytest.mark.parametrize("n", [0, 1, 100, 1000])
+def test_compression_ratio_non_negative_for_various_sizes(n: int) -> None:
+    """compression_ratio returns a non-negative float for any non-empty input."""
+    from app.compression import compression_ratio
+
+    if n == 0:
+        data = b"x"
+    else:
+        data = b"a" * n
+    result = compression_ratio(data)
+    assert result >= 0.0
+    assert isinstance(result, float)
+
+
+def test_is_gzip_detects_gzip_compressed_data() -> None:
+    """is_gzip returns True for gzip-compressed bytes and False for plain bytes."""
+    from app.compression import gzip_compress, is_gzip
+
+    plain = b"hello world"
+    compressed = gzip_compress(plain)
+    assert is_gzip(compressed) is True
+    assert is_gzip(plain) is False
