@@ -308,3 +308,30 @@ class TestPerformanceScoreExt:
 
         score = performance_score(requested_kwh=100.0, delivered_kwh=delivered)
         assert 0.0 <= score <= 1.0
+
+
+@pytest.mark.parametrize(
+    "curtailed_kwh,event_hours,expected_min",
+    [
+        (10.0, 1, 10.0),
+        (60.0, 2, 30.0),
+        (0.0, 4, 0.0),
+    ],
+)
+def test_curtailment_rate_parametrized(
+    curtailed_kwh: float, event_hours: int, expected_min: float
+) -> None:
+    """curtailment_rate returns curtailed_kwh / event_hours for positive inputs."""
+    from app.demand_response import curtailment_rate
+
+    result = curtailment_rate(curtailed_kwh, event_hours)
+    assert result == pytest.approx(expected_min, rel=1e-4)
+
+
+@pytest.mark.parametrize("baseline,actual", [(100.0, 80.0), (50.0, 30.0), (200.0, 200.0)])
+def test_curtailment_non_negative(baseline: float, actual: float) -> None:
+    """curtailment always returns a non-negative value."""
+    from app.demand_response import curtailment
+
+    result = curtailment([baseline] * 24, [actual] * 24)
+    assert result >= 0.0
