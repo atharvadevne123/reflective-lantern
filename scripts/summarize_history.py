@@ -33,6 +33,7 @@ def load_latest_entry(path: Path) -> dict | None:
         return None
 
     def _sort_key(e: dict) -> str:
+        """Return the date string from a history entry for chronological sorting."""
         return str(e.get("date") or e.get("last_run") or "")
 
     best = max(entries, key=_sort_key)
@@ -42,6 +43,7 @@ def load_latest_entry(path: Path) -> dict | None:
 
 
 def _collect_rows(history_dir: Path, filter_mode: str | None = None) -> list[dict[str, Any]]:
+    """Collect the latest history entry for each repo into a list of summary dicts."""
     rows = []
     for f in sorted(history_dir.glob("*.json")):
         if f.stem in _NON_RECORD_STEMS:
@@ -65,6 +67,7 @@ def _collect_rows(history_dir: Path, filter_mode: str | None = None) -> list[dic
 
 
 def main() -> int | None:
+    """Parse CLI arguments and print a tabular or JSON summary of run history."""
     parser = argparse.ArgumentParser(description="Summarize run history.")
     parser.add_argument("--sort-by", choices=["commits", "date", "repo"], default="date")
     parser.add_argument("--json", action="store_true", dest="as_json")
