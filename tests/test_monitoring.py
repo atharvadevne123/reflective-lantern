@@ -579,11 +579,11 @@ def test_zscore_alert_empty_flags_for_constant_series(threshold: float) -> None:
 
 @pytest.mark.parametrize("p_value", [0.001, 0.01, 0.05, 0.5, 0.99])
 def test_p_value_to_confidence_extended(p_value: float) -> None:
-    """p_value_to_confidence always returns a value in [0.0, 1.0] for various inputs."""
+    """p_value_to_confidence always returns a value in [0.0, 100.0] for various inputs."""
     from app.monitoring import p_value_to_confidence
 
     conf = p_value_to_confidence(p_value)
-    assert 0.0 <= conf <= 1.0
+    assert 0.0 <= conf <= 100.0
 
 
 @pytest.mark.parametrize("rate,expected", [(0.0, "ok"), (0.05, "warning"), (0.2, "critical")])
