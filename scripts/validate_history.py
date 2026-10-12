@@ -85,6 +85,7 @@ def validate_files(paths: list[Path]) -> dict[str, list[str]]:
 
 
 def main() -> int:
+    """Validate all history JSON files and report errors or success."""
     import argparse
     import sys
 
