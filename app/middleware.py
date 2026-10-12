@@ -35,7 +35,8 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
     replica. Multi-replica deployments should move this to Redis.
     """
 
-    def __init__(self, app, limit: int = 120) -> None:
+    def __init__(self, app: Any, limit: int = 120) -> None:
+        """Initialise the middleware with the ASGI app and per-minute request limit."""
         super().__init__(app)
         self.limit = limit
 
