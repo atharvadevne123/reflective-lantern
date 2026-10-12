@@ -31,6 +31,7 @@ class EnergyReadingIn(BaseModel):
     @field_validator("building_id")
     @classmethod
     def building_id_alphanumeric(cls, v: str) -> str:
+        """Validate that building_id contains only alphanumeric characters, hyphens, and underscores."""
         if not v.replace("-", "").replace("_", "").isalnum():
             raise ValueError("building_id must be alphanumeric with hyphens/underscores only")
         return v
