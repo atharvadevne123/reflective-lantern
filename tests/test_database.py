@@ -424,3 +424,29 @@ def test_get_predictions_by_building_returns_rows(db_session) -> None:
     db_session.commit()
     rows = get_predictions_by_building(db_session, "q-bldg")
     assert len(rows) == 3
+
+
+@pytest.mark.parametrize("n", [1, 3, 5])
+def test_count_anomalies_by_building_returns_correct_count(db_session, n: int) -> None:
+    """count_anomalies_by_building returns the number of anomaly rows for a building."""
+    from app.database import AnomalyLog, count_anomalies_by_building
+
+    bldg = f"count-test-{n}"
+    for i in range(n):
+        db_session.add(
+            AnomalyLog(building_id=bldg, anomaly_score=0.9, is_anomaly=1)
+        )
+    db_session.commit()
+    assert count_anomalies_by_building(db_session, bldg) == n
+
+
+def test_get_recent_anomalies_filters_by_building(db_session) -> None:
+    """get_recent_anomalies returns only rows for the given building."""
+    from app.database import AnomalyLog, get_recent_anomalies
+
+    db_session.add(AnomalyLog(building_id="ra-bldg", anomaly_score=0.95, is_anomaly=1))
+    db_session.add(AnomalyLog(building_id="other-bldg", anomaly_score=0.1, is_anomaly=1))
+    db_session.commit()
+    rows = get_recent_anomalies(db_session, "ra-bldg", limit=10)
+    assert all(r.building_id == "ra-bldg" for r in rows)
+    assert len(rows) == 1
