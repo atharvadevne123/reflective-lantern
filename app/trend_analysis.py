@@ -10,6 +10,8 @@ logger = logging.getLogger(__name__)
 
 
 class TrendResult(NamedTuple):
+    """Immutable container for linear regression trend results."""
+
     slope: float
     intercept: float
     direction: str  # "rising" | "falling" | "stable"
