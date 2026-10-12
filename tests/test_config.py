@@ -111,3 +111,17 @@ def test_new_settings_overrides(monkeypatch):
     assert s.request_timeout_s == 60
     assert s.drift_ks_threshold == 0.1
     assert s.reference_buffer_size == 1000
+
+
+@pytest.mark.parametrize("level", ["DEBUG", "INFO", "WARNING", "ERROR"])
+def test_log_level_accepted(monkeypatch, level: str) -> None:
+    """Settings accepts all standard log levels."""
+    monkeypatch.setenv("LOG_LEVEL", level)
+    assert Settings().log_level == level
+
+
+@pytest.mark.parametrize("limit", [10, 60, 120, 300])
+def test_rate_limit_per_minute_override(monkeypatch, limit: int) -> None:
+    """rate_limit_per_minute accepts a range of values."""
+    monkeypatch.setenv("RATE_LIMIT_PER_MINUTE", str(limit))
+    assert Settings().rate_limit_per_minute == limit
