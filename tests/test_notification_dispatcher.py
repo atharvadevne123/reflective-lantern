@@ -234,3 +234,37 @@ class TestDispatcherLen:
             ch, _ = make_channel(f"ch{i}")
             d.register(ch)
         assert len(d) == n
+
+
+class TestDispatcherSeverityFiltering:
+    @pytest.mark.parametrize(
+        "channel_min,notif_severity,should_receive",
+        [
+            ("info", "info", True),
+            ("warning", "info", False),
+            ("critical", "error", False),
+            ("error", "critical", True),
+        ],
+    )
+    def test_severity_filter_parametrized(
+        self, channel_min: str, notif_severity: str, should_receive: bool
+    ) -> None:
+        """Channel receives notification only when notif severity >= channel min_severity."""
+        from app.notification_dispatcher import (
+            Channel,
+            Notification,
+            NotificationDispatcher,
+            Severity,
+        )
+
+        received = []
+
+        def send(n: Notification) -> None:
+            received.append(n)
+
+        ch = Channel("ch", send=send, min_severity=Severity(channel_min))
+        d = NotificationDispatcher()
+        d.register(ch)
+        n = Notification("t", "b", severity=Severity(notif_severity))
+        d.dispatch(n)
+        assert bool(received) == should_receive
