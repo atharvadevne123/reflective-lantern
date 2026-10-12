@@ -280,3 +280,36 @@ def test_monthly_estimate_always_positive(cpu_cores: int, memory_gb: int, hours:
     result = monthly_estimate(spec)
     assert result > 0.0
     assert isinstance(result, float)
+
+
+@pytest.mark.parametrize(
+    "cpu_cores,memory_gb,duration_hours",
+    [(1, 1, 720), (2, 4, 720), (4, 8, 720)],
+)
+def test_estimate_cost_scales_with_resources(
+    cpu_cores: int, memory_gb: int, duration_hours: int
+) -> None:
+    """Larger resource specs result in higher estimated costs."""
+    from app.cost_estimator import ResourceSpec, estimate_cost
+
+    small = ResourceSpec(cpu_cores=1, memory_gb=1, duration_hours=1)
+    large = ResourceSpec(cpu_cores=cpu_cores, memory_gb=memory_gb, duration_hours=duration_hours)
+    assert estimate_cost(large) >= estimate_cost(small)
+
+
+def test_cost_per_unit_zero_units_returns_zero() -> None:
+    """cost_per_unit returns 0.0 when units=0."""
+    from app.cost_estimator import ResourceSpec, cost_per_unit, estimate_cost
+
+    spec = ResourceSpec(cpu_cores=2, memory_gb=4, duration_hours=1)
+    bd = estimate_cost(spec)
+    assert cost_per_unit(bd, 0) == 0.0
+
+
+def test_cost_per_unit_positive_units() -> None:
+    """cost_per_unit returns a positive value for positive unit count."""
+    from app.cost_estimator import ResourceSpec, cost_per_unit, estimate_cost
+
+    spec = ResourceSpec(cpu_cores=2, memory_gb=4, duration_hours=1)
+    bd = estimate_cost(spec)
+    assert cost_per_unit(bd, 100) > 0.0
