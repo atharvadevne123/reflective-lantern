@@ -29,9 +29,9 @@ class FoundryClient:
     """
 
     def __init__(self, hostname: str, token: str) -> None:
-        if not hostname:
+        if not hostname or not hostname.strip():
             raise FoundryConfigError("Foundry hostname must not be empty.")
-        if not token:
+        if not token or not token.strip():
             raise FoundryConfigError("Foundry token must not be empty.")
         self.base_url = hostname.rstrip("/") + "/api/v2"
         self._token = token
