@@ -589,3 +589,32 @@ def test_retry_eventual_success(
     else:
         with pytest.raises(ValueError):
             flaky()
+
+
+@pytest.mark.parametrize("delay", [0.0, 0.001])
+def test_retry_respects_max_attempts_with_delay(delay: float) -> None:
+    """retry gives up after max_attempts regardless of base_delay."""
+    from app.retry import retry
+
+    calls = [0]
+
+    @retry(exceptions=(RuntimeError,), max_attempts=3, base_delay=delay)
+    def always_fails() -> None:
+        calls[0] += 1
+        raise RuntimeError("boom")
+
+    with pytest.raises(RuntimeError):
+        always_fails()
+    assert calls[0] == 3
+
+
+def test_retry_does_not_suppress_unregistered_exception() -> None:
+    """retry only catches listed exception types."""
+    from app.retry import retry
+
+    @retry(exceptions=(ValueError,), max_attempts=3, base_delay=0.0)
+    def wrong_error() -> None:
+        raise TypeError("not in the list")
+
+    with pytest.raises(TypeError):
+        wrong_error()
