@@ -1123,13 +1123,14 @@ class TestRollingSavingsSummaryEdgeCases:
     def test_equal_series_has_zero_savings(self) -> None:
         series = [5.0] * 12
         result = rolling_savings_summary(series, series, window=4)
-        assert all(s == pytest.approx(0.0) for s in result)
+        assert all(s["saved_kwh"] == pytest.approx(0.0) for s in result)
 
     def test_output_length_matches_input(self) -> None:
         baseline = [10.0] * 20
         optimised = [8.0] * 20
-        result = rolling_savings_summary(optimised, baseline, window=5)
-        assert len(result) == len(baseline)
+        window = 5
+        result = rolling_savings_summary(optimised, baseline, window=window)
+        assert len(result) == len(baseline) - window + 1
 
 
 class TestDailyAverageConsumption:

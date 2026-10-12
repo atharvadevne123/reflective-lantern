@@ -260,19 +260,18 @@ def consumption_efficiency_ratio(
     return round(actual_kwh / target_kwh, 4)
 
 
-def daily_average_consumption(hourly_series: list[float]) -> float:
-    """Compute the average daily energy consumption from an hourly time series.
+def daily_average_consumption(series: list[float]) -> float:
+    """Compute the arithmetic mean of a consumption series.
 
     Args:
-        hourly_series: Hourly kWh readings (any length).
+        series: Consumption readings (daily or hourly kWh values).
 
     Returns:
-        Mean daily consumption (sum over 24-hour blocks) or 0.0 for empty input.
+        Arithmetic mean of the series, or 0.0 for empty input.
     """
-    if not hourly_series:
+    if not series:
         return 0.0
-    days = max(len(hourly_series) / 24.0, 1.0)
-    return round(sum(hourly_series) / days, 4)
+    return round(sum(series) / len(series), 4)
 
 
 def benchmark_vs_portfolio(
