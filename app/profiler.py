@@ -22,10 +22,12 @@ def timed(label: str | None = None, log_level: int = logging.DEBUG) -> Callable:
     """
 
     def decorator(func: Callable) -> Callable:
+        """Wrap *func* to log its wall-clock duration on every call."""
         name = label or func.__qualname__
 
         @functools.wraps(func)
-        def wrapper(*args, **kwargs) -> object:
+        def wrapper(*args: object, **kwargs: object) -> object:
+            """Call the wrapped function and log elapsed time."""
             start = time.perf_counter()
             try:
                 result = func(*args, **kwargs)
@@ -91,7 +93,8 @@ def tracked(label: str | None = None) -> Callable:
         _registry[name] = _Stats()
 
         @functools.wraps(func)
-        def wrapper(*args, **kwargs) -> object:
+        def wrapper(*args: object, **kwargs: object) -> object:
+            """Call the wrapped function and record its duration in the registry."""
             start = time.perf_counter()
             try:
                 return func(*args, **kwargs)
