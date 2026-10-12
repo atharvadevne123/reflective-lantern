@@ -288,3 +288,38 @@ class TestNormalizationFactorExtended2:
 
         result = normalization_factor(400.0, 200.0)
         assert result > 1.0
+
+
+@pytest.mark.parametrize(
+    "daily_temps,base_temp,expected_min",
+    [
+        ([25.0] * 7, 18.0, 0.0),
+        ([10.0] * 7, 18.0, 0.0),
+    ],
+)
+def test_heating_degree_days_non_negative(
+    daily_temps: list, base_temp: float, expected_min: float
+) -> None:
+    """heating_degree_days returns a non-negative sum of degree-days."""
+    from app.weather_normalization import heating_degree_days
+
+    result = heating_degree_days(daily_temps, base_temperature_c=base_temp)
+    assert result >= expected_min
+
+
+@pytest.mark.parametrize(
+    "baseline_dd,current_dd,expected",
+    [
+        (300.0, 300.0, 1.0),
+        (300.0, 150.0, 2.0),
+        (150.0, 300.0, 0.5),
+    ],
+)
+def test_normalization_factor_parametrized(
+    baseline_dd: float, current_dd: float, expected: float
+) -> None:
+    """normalization_factor returns baseline_dd / current_dd."""
+    from app.weather_normalization import normalization_factor
+
+    result = normalization_factor(baseline_dd, current_dd)
+    assert result == pytest.approx(expected, rel=1e-4)
