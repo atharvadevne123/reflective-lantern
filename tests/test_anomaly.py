@@ -1449,7 +1449,7 @@ class TestAnomalyDensityExtended:
 
 
 @pytest.mark.parametrize(
-    "flags,window_size,expected_first",
+    "flags,window_size,expected_last",
     [
         ([1, 1, 1, 1], 2, 1.0),
         ([0, 0, 0, 0], 2, 0.0),
@@ -1457,9 +1457,9 @@ class TestAnomalyDensityExtended:
     ],
 )
 def test_anomaly_density_parametrized(
-    flags: list[int], window_size: int, expected_first: float
+    flags: list[int], window_size: int, expected_last: float
 ) -> None:
     from app.anomaly import anomaly_density
 
     result = anomaly_density(flags, window_size=window_size)
-    assert result[0] == pytest.approx(expected_first)
+    assert result[-1] == pytest.approx(expected_last)
