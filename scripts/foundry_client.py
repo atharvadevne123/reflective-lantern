@@ -29,6 +29,7 @@ class FoundryClient:
     """
 
     def __init__(self, hostname: str, token: str) -> None:
+        """Validate credentials and set the base URL for Foundry API requests."""
         if not hostname or not hostname.strip():
             raise FoundryConfigError("Foundry hostname must not be empty.")
         if not token or not token.strip():
@@ -37,6 +38,7 @@ class FoundryClient:
         self._token = token
 
     def _headers(self) -> dict[str, str]:
+        """Return HTTP headers including Bearer auth token and JSON content type."""
         return {
             "Authorization": f"Bearer {self._token}",
             "Content-Type": "application/json",
