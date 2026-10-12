@@ -888,3 +888,32 @@ def test_ttl_cache_max_size_enforced(max_size: int, n_inserts: int, expected_siz
     for i in range(n_inserts):
         cache.set(f"k{i}", i)
     assert len(cache) <= max_size
+
+
+@pytest.mark.parametrize("n", [0, 3, 5])
+def test_cache_remaining_capacity(n: int) -> None:
+    """cache_remaining_capacity returns max_size minus current size."""
+    from app.cache import TTLCache, cache_remaining_capacity
+
+    max_size = 10
+    cache = TTLCache(ttl_seconds=60, max_size=max_size)
+    for i in range(n):
+        cache.set(f"key-{i}", i)
+    assert cache_remaining_capacity(cache) == max_size - n
+
+
+def test_is_cache_empty_on_new_cache() -> None:
+    """A freshly created cache is empty."""
+    from app.cache import TTLCache, is_cache_empty
+
+    cache = TTLCache(ttl_seconds=60, max_size=10)
+    assert is_cache_empty(cache) is True
+
+
+def test_is_cache_empty_false_after_insert() -> None:
+    """Cache is no longer empty after inserting a key."""
+    from app.cache import TTLCache, is_cache_empty
+
+    cache = TTLCache(ttl_seconds=60, max_size=10)
+    cache.set("key", "value")
+    assert is_cache_empty(cache) is False
