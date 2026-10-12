@@ -449,3 +449,31 @@ class TestBreakEvenCyclesExtended:
 
         result = break_even_cycles(capex, saving)
         assert result > 0.0
+
+
+@pytest.mark.parametrize(
+    "nameplate_kwh,max_dod,expected",
+    [
+        (100.0, 0.8, 80.0),
+        (50.0, 1.0, 50.0),
+        (200.0, 0.5, 100.0),
+        (0.0, 0.8, 0.0),
+    ],
+)
+def test_usable_capacity_kwh_parametrized(
+    nameplate_kwh: float, max_dod: float, expected: float
+) -> None:
+    """usable_capacity_kwh returns nameplate * max_dod for typical inputs."""
+    from app.battery import usable_capacity_kwh
+
+    assert usable_capacity_kwh(nameplate_kwh, max_dod) == pytest.approx(expected, rel=1e-4)
+
+
+@pytest.mark.parametrize("efficiency,charged_kwh", [(0.9, 10.0), (0.95, 50.0), (1.0, 100.0)])
+def test_round_trip_losses_kwh_non_negative(efficiency: float, charged_kwh: float) -> None:
+    """round_trip_losses_kwh always returns a non-negative loss value."""
+    from app.battery import round_trip_losses_kwh
+
+    loss = round_trip_losses_kwh(charged_kwh, efficiency)
+    assert loss >= 0.0
+    assert loss <= charged_kwh
