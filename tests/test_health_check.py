@@ -249,3 +249,25 @@ class TestCheckResultDetailsExt:
 
         result = CheckResult(name="svc", healthy=healthy)
         assert result.healthy is healthy
+
+
+@pytest.mark.parametrize("n", [1, 3, 5])
+def test_registry_len_matches_registered_checks(n: int) -> None:
+    """HealthRegistry.__len__ returns the number of registered checks."""
+    from app.health_check import CheckResult, HealthRegistry
+
+    registry = HealthRegistry()
+    for i in range(n):
+        registry.register(f"check-{i}", lambda: CheckResult(name=f"c{i}", healthy=True))
+    assert len(registry) == n
+
+
+def test_registry_unregister_removes_check() -> None:
+    """Unregistering a check reduces registry size by one."""
+    from app.health_check import CheckResult, HealthRegistry
+
+    registry = HealthRegistry()
+    registry.register("removable", lambda: CheckResult(name="removable", healthy=True))
+    assert len(registry) == 1
+    registry.unregister("removable")
+    assert len(registry) == 0
