@@ -424,3 +424,28 @@ class TestCircuitBreakerFailureCount:
             with pytest.raises(ValueError):
                 cb.call(_always_fail)
         assert cb.failure_count == n_failures
+
+
+class TestCircuitBreakerStateTransitions:
+    @pytest.mark.parametrize("threshold", [1, 3, 5])
+    def test_opens_after_threshold_failures(self, threshold: int) -> None:
+        """Circuit opens after exactly threshold consecutive failures."""
+        cb = CircuitBreaker(failure_threshold=threshold, expected_exceptions=(ValueError,))
+        for _ in range(threshold - 1):
+            with pytest.raises(ValueError):
+                cb.call(_always_fail)
+        assert cb.state == CircuitState.CLOSED
+        with pytest.raises(ValueError):
+            cb.call(_always_fail)
+        assert cb.state == CircuitState.OPEN
+
+    def test_reset_clears_failures_and_closes(self) -> None:
+        """reset() brings circuit back to CLOSED with zero failure count."""
+        cb = CircuitBreaker(failure_threshold=2, expected_exceptions=(ValueError,))
+        for _ in range(2):
+            with pytest.raises(ValueError):
+                cb.call(_always_fail)
+        assert cb.state == CircuitState.OPEN
+        cb.reset()
+        assert cb.state == CircuitState.CLOSED
+        assert cb.failure_count == 0
