@@ -74,11 +74,13 @@ LINES = [
 
 
 def _pdf_string(s: str) -> bytes:
+    """Escape a string for use in PDF text streams and encode as latin-1 bytes."""
     s = s.replace("\\", "\\\\").replace("(", "\\(").replace(")", "\\)")
     return f"({s})".encode("latin-1", errors="replace")
 
 
 def generate_pdf() -> bytes:
+    """Build a minimal PDF report from SECTIONS data and return raw PDF bytes."""
     buf = io.BytesIO()
     buf.write(b"%PDF-1.4\n")
     buf.write(b"%\xe2\xe3\xcf\xd3\n")
@@ -87,6 +89,7 @@ def generate_pdf() -> bytes:
     offsets: list[int] = []
 
     def add_obj(content: bytes) -> int:
+        """Append a PDF object with given content and return its 1-based object ID."""
         idx = len(objects) + 1
         objects.append((idx, content))
         return idx
@@ -104,6 +107,7 @@ def generate_pdf() -> bytes:
     x = 50.0
 
     def emit(tag: str, text: str) -> None:
+        """Append a styled PDF text operator for the given tag ('title', 'sub', etc.)."""
         nonlocal y, stream_parts
         if y < margin_bottom + 30:
             # New page not supported in single-pass; just continue
