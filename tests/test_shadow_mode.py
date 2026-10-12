@@ -284,3 +284,25 @@ class TestShadowRunnerClear:
         runner.clear()
         stats = runner.stats()
         assert stats.get("total_calls", 0) == 0
+
+
+class TestShadowRunnerMismatchDetection:
+    @pytest.mark.parametrize("primary_val,shadow_val", [(1, 2), ("a", "b"), (True, False)])
+    def test_mismatch_recorded_on_different_results(
+        self, primary_val: object, shadow_val: object
+    ) -> None:
+        """A mismatch is recorded when primary and shadow return different values."""
+        from app.shadow_mode import ShadowRunner
+
+        runner = ShadowRunner(lambda: primary_val, lambda: shadow_val)
+        runner.call()
+        assert len(runner.mismatches()) == 1
+
+    @pytest.mark.parametrize("value", [0, "same", None, 3.14])
+    def test_no_mismatch_when_results_match(self, value: object) -> None:
+        """No mismatch recorded when primary and shadow return identical values."""
+        from app.shadow_mode import ShadowRunner
+
+        runner = ShadowRunner(lambda: value, lambda: value)
+        runner.call()
+        assert len(runner.mismatches()) == 0
