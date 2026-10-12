@@ -76,3 +76,5 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         response.headers["X-RateLimit-Remaining"] = str(max(0, current_limit - len(bucket)))
         response.headers["x-correlation-id"] = correlation_id
         return response
+
+__all__ = ["RateLimitMiddleware", "reset_rate_limiter"]
