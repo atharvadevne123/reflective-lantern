@@ -33,8 +33,11 @@ def retry(
     """
 
     def decorator(func: Callable) -> Callable:
+        """Wrap *func* with retry-on-exception logic."""
+
         @functools.wraps(func)
-        def wrapper(*args, **kwargs) -> object:
+        def wrapper(*args: object, **kwargs: object) -> object:
+            """Call the wrapped function, retrying up to max_attempts on allowed exceptions."""
             delay = base_delay
             last_exc: Exception | None = None
             for attempt in range(1, max_attempts + 1):
