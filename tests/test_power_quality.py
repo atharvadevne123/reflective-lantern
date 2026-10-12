@@ -337,3 +337,39 @@ class TestVoltageImbalanceExt:
 
         result = voltage_imbalance(voltages)
         assert result == pytest.approx(0.0, abs=0.01)
+
+
+@pytest.mark.parametrize(
+    "real_kw,apparent_kva,expected",
+    [
+        (100.0, 100.0, 1.0),
+        (80.0, 100.0, 0.8),
+        (0.0, 100.0, 0.0),
+    ],
+)
+def test_power_factor_parametrized(real_kw: float, apparent_kva: float, expected: float) -> None:
+    """power_factor returns correct ratio for typical inputs."""
+    from app.power_quality import power_factor
+
+    result = power_factor(real_kw, apparent_kva)
+    assert result == pytest.approx(expected, rel=1e-4)
+
+
+@pytest.mark.parametrize(
+    "pf_value,expected_rating",
+    [(0.95, "good"), (0.89, "acceptable"), (1.0, "good"), (0.79, "poor")],
+)
+def test_rate_power_factor_parametrized(pf_value: float, expected_rating: str) -> None:
+    """rate_power_factor returns correct rating string."""
+    from app.power_quality import rate_power_factor
+
+    assert rate_power_factor(pf_value) == expected_rating
+
+
+@pytest.mark.parametrize("pf,kw", [(0.8, 100.0), (0.9, 50.0), (0.85, 200.0)])
+def test_correction_kvar_positive_result(pf: float, kw: float) -> None:
+    """correction_kvar returns a positive kVAR value when current_pf < target_pf."""
+    from app.power_quality import correction_kvar
+
+    result = correction_kvar(kw, pf, target_power_factor=0.95)
+    assert result >= 0.0
