@@ -27,6 +27,7 @@ def run_check(name: str, cmd: list) -> tuple[bool, float]:
 
 
 def main() -> int:
+    """Execute all pre-flight check commands and report pass/fail results."""
     parser = argparse.ArgumentParser(description="Run all pre-flight checks.")
     parser.add_argument("--stop-on-failure", action="store_true")
     args = parser.parse_args()
