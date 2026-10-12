@@ -19,6 +19,7 @@ logger = logging.getLogger("seed")
 
 
 def seed_model_registry() -> None:
+    """Register and promote a churn classifier model in the model registry."""
     from app.model_registry import ModelRegistry
 
     reg = ModelRegistry()
@@ -36,6 +37,7 @@ def seed_model_registry() -> None:
 
 
 def seed_feature_store() -> None:
+    """Publish user and item feature sets to the feature store."""
     from app.feature_store import FeatureStore
 
     store = FeatureStore()
@@ -55,6 +57,7 @@ def seed_feature_store() -> None:
 
 
 def seed_experiment_tracker() -> None:
+    """Register A/B experiments in the experiment tracker."""
     from app.experiment_tracker import ExperimentRegistry
 
     reg = ExperimentRegistry()
@@ -68,6 +71,7 @@ def seed_experiment_tracker() -> None:
 
 
 def seed_audit_log() -> None:
+    """Seed the audit log with sample startup and user-action entries."""
     from app.audit_log import AuditLog
 
     log = AuditLog()
@@ -86,6 +90,7 @@ SEED_FUNCTIONS = [
 
 
 def main() -> None:
+    """Run all seed functions to populate development datastores with sample data."""
     parser = argparse.ArgumentParser(description="Seed development data")
     parser.add_argument("--verbose", action="store_true")
     args = parser.parse_args()
