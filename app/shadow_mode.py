@@ -51,6 +51,7 @@ class ShadowRunner:
         shadow: Callable,
         comparer: Callable[[Any, Any], bool] | None = None,
     ) -> None:
+        """Initialise the shadow runner with primary/shadow callables and an optional comparer."""
         self.primary = primary
         self.shadow = shadow
         self.comparer = comparer or (lambda a, b: a == b)
