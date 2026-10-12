@@ -291,3 +291,23 @@ class TestTokenBucketWaitAndConsume:
         tb.consume()
         result = tb.wait_and_consume(tokens=1.0, timeout=0.01)
         assert isinstance(result, bool)
+
+
+@pytest.mark.parametrize("capacity", [1.0, 5.0, 10.0])
+def test_available_tokens_full_at_start(capacity: float) -> None:
+    """A new token bucket starts at full capacity."""
+    from app.token_bucket import TokenBucket
+
+    tb = TokenBucket(capacity=capacity, rate=1.0)
+    assert tb.available() == pytest.approx(capacity)
+
+
+@pytest.mark.parametrize("n_keys", [1, 3, 5])
+def test_per_key_bucket_count_matches_unique_keys(n_keys: int) -> None:
+    """PerKeyTokenBucket.bucket_count equals the number of distinct keys used."""
+    from app.token_bucket import PerKeyTokenBucket
+
+    pkb = PerKeyTokenBucket(capacity=10, rate=1.0)
+    for i in range(n_keys):
+        pkb.consume(f"unique-{i}")
+    assert pkb.bucket_count() == n_keys
