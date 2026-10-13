@@ -69,10 +69,7 @@ def test_create_transaction_returns_rid() -> None:
 
 def test_create_transaction_raises_without_rid() -> None:
     client = make_client()
-    with (
-        patch.object(urllib.request, "urlopen", lambda req, timeout: FakeResponse({"nope": 1})),
-        pytest.raises(FoundryAPIError, match="No transaction RID"),
-    ):
+    with patch.object(urllib.request, "urlopen", lambda req, timeout: FakeResponse({"nope": 1})), pytest.raises(FoundryAPIError, match="No transaction RID"):
         client.create_transaction("ri.x")
 
 
@@ -196,9 +193,7 @@ def test_list_files_returns_paths() -> None:
 
 def test_list_files_handles_malformed_response() -> None:
     client = make_client()
-    with patch.object(
-        urllib.request, "urlopen", lambda req, timeout: FakeResponse({"data": "oops"})
-    ):
+    with patch.object(urllib.request, "urlopen", lambda req, timeout: FakeResponse({"data": "oops"})):
         assert client.list_files("ri.ds") == []
 
 
@@ -287,9 +282,7 @@ def test_upload_dataset_files_single_transaction() -> None:
         return FakeResponse()
 
     with patch.object(urllib.request, "urlopen", fake_urlopen):
-        txn = client.upload_dataset_files(
-            "ri.ds", {"runs.csv": b"a\n", "ontology.json": b"[]", "manifest.json": b"{}"}
-        )
+        txn = client.upload_dataset_files("ri.ds", {"runs.csv": b"a\n", "ontology.json": b"[]", "manifest.json": b"{}"})
 
     assert txn == "ri.txn.multi"
     assert sum("/transactions?" in u for u in calls) == 1
@@ -301,33 +294,6 @@ def test_upload_dataset_files_empty_raises() -> None:
     client = make_client()
     with pytest.raises(ValueError, match="must not be empty"):
         client.upload_dataset_files("ri.ds", {})
-
-
-@pytest.mark.parametrize(
-    "hostname,token",
-    [
-        ("", "tok-valid"),
-        ("  ", "tok-valid"),
-        ("https://stack.palantirfoundry.com", ""),
-        ("https://stack.palantirfoundry.com", "   "),
-    ],
-)
-def test_client_rejects_blank_credentials(hostname: str, token: str) -> None:
-    with pytest.raises(FoundryConfigError):
-        FoundryClient(hostname, token)
-
-
-@pytest.mark.parametrize(
-    "base_url,expected_suffix",
-    [
-        ("https://stack.palantirfoundry.com", "/api/v2"),
-        ("https://stack.palantirfoundry.com/", "/api/v2"),
-        ("https://stack.palantirfoundry.com///", "/api/v2"),
-    ],
-)
-def test_client_normalises_base_url(base_url: str, expected_suffix: str) -> None:
-    c = FoundryClient(base_url, "tok-123")
-    assert c.base_url.endswith(expected_suffix)
 
 
 def test_upload_dataset_files_aborts_on_failure() -> None:

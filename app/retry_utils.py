@@ -4,7 +4,8 @@ from __future__ import annotations
 
 import logging
 import time
-from typing import Any, Callable, Type
+from collections.abc import Callable
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -45,7 +46,7 @@ def retry(
     func: Callable[..., Any],
     *args: Any,
     attempts: int = 3,
-    exceptions: tuple[Type[Exception], ...] = (Exception,),
+    exceptions: tuple[type[Exception], ...] = (Exception,),
     **kwargs: Any,
 ) -> Any:
     """Call *func* up to *attempts* times, re-raising on the last failure.
@@ -82,7 +83,7 @@ def retry_with_backoff(
     base: float = 0.1,
     multiplier: float = 2.0,
     cap: float = 60.0,
-    exceptions: tuple[Type[Exception], ...] = (Exception,),
+    exceptions: tuple[type[Exception], ...] = (Exception,),
     **kwargs: Any,
 ) -> Any:
     """Like :func:`retry` but sleeps between attempts using exponential back-off.
