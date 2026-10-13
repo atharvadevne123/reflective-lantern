@@ -21,7 +21,7 @@ def utc_now() -> datetime.datetime:
     Returns:
         Current UTC datetime with tzinfo set to UTC.
     """
-    return datetime.datetime.now(tz=datetime.timezone.utc)
+    return datetime.datetime.now(tz=datetime.UTC)
 
 
 def iso_now() -> str:
@@ -46,7 +46,7 @@ def parse_iso(timestamp: str) -> datetime.datetime:
     ts = timestamp.rstrip("Z")
     dt = datetime.datetime.fromisoformat(ts)
     if dt.tzinfo is None:
-        dt = dt.replace(tzinfo=datetime.timezone.utc)
+        dt = dt.replace(tzinfo=datetime.UTC)
     return dt
 
 
@@ -59,7 +59,7 @@ def seconds_until(target: datetime.datetime) -> float:
     Returns:
         Positive float when *target* is in the future; negative when in the past.
     """
-    now = datetime.datetime.now(tz=target.tzinfo or datetime.timezone.utc)
+    now = datetime.datetime.now(tz=target.tzinfo or datetime.UTC)
     return (target - now).total_seconds()
 
 
@@ -67,9 +67,9 @@ def format_duration_seconds(seconds: float) -> str:
     """Format a duration in seconds as a human-readable string.
 
     Examples:
-        - 45 -> ``"45s"``
-        - 90 -> ``"1m 30s"``
-        - 3661 -> ``"1h 1m 1s"``
+        - 45 → ``"45s"``
+        - 90 → ``"1m 30s"``
+        - 3661 → ``"1h 1m 1s"``
 
     Args:
         seconds: Duration in seconds (non-negative float).

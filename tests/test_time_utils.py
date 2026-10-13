@@ -58,7 +58,7 @@ class TestParseIso:
 
     def test_naive_gets_utc(self) -> None:
         result = parse_iso("2024-03-01T09:00:00")
-        assert result.tzinfo == datetime.timezone.utc
+        assert result.tzinfo == datetime.UTC
 
     @pytest.mark.parametrize(
         "ts",
@@ -75,15 +75,15 @@ class TestParseIso:
 
 class TestSecondsUntil:
     def test_future_is_positive(self) -> None:
-        future = datetime.datetime.now(tz=datetime.timezone.utc) + datetime.timedelta(hours=1)
+        future = datetime.datetime.now(tz=datetime.UTC) + datetime.timedelta(hours=1)
         assert seconds_until(future) > 0
 
     def test_past_is_negative(self) -> None:
-        past = datetime.datetime.now(tz=datetime.timezone.utc) - datetime.timedelta(hours=1)
+        past = datetime.datetime.now(tz=datetime.UTC) - datetime.timedelta(hours=1)
         assert seconds_until(past) < 0
 
     def test_approximate_value(self) -> None:
-        future = datetime.datetime.now(tz=datetime.timezone.utc) + datetime.timedelta(seconds=60)
+        future = datetime.datetime.now(tz=datetime.UTC) + datetime.timedelta(seconds=60)
         remaining = seconds_until(future)
         assert 55 < remaining <= 60
 
@@ -119,26 +119,26 @@ class TestFormatDurationSeconds:
 
 class TestIsBusinessHours:
     def test_weekday_in_hours(self) -> None:
-        monday_10am = datetime.datetime(2024, 1, 15, 10, 0, tzinfo=datetime.timezone.utc)
+        monday_10am = datetime.datetime(2024, 1, 15, 10, 0, tzinfo=datetime.UTC)
         assert is_business_hours(monday_10am) is True
 
     def test_weekday_before_hours(self) -> None:
-        monday_8am = datetime.datetime(2024, 1, 15, 7, 0, tzinfo=datetime.timezone.utc)
+        monday_8am = datetime.datetime(2024, 1, 15, 7, 0, tzinfo=datetime.UTC)
         assert is_business_hours(monday_8am) is False
 
     def test_weekday_after_hours(self) -> None:
-        monday_6pm = datetime.datetime(2024, 1, 15, 18, 0, tzinfo=datetime.timezone.utc)
+        monday_6pm = datetime.datetime(2024, 1, 15, 18, 0, tzinfo=datetime.UTC)
         assert is_business_hours(monday_6pm) is False
 
     def test_saturday_returns_false(self) -> None:
-        saturday = datetime.datetime(2024, 1, 20, 12, 0, tzinfo=datetime.timezone.utc)
+        saturday = datetime.datetime(2024, 1, 20, 12, 0, tzinfo=datetime.UTC)
         assert is_business_hours(saturday) is False
 
     def test_sunday_returns_false(self) -> None:
-        sunday = datetime.datetime(2024, 1, 21, 12, 0, tzinfo=datetime.timezone.utc)
+        sunday = datetime.datetime(2024, 1, 21, 12, 0, tzinfo=datetime.UTC)
         assert is_business_hours(sunday) is False
 
     @pytest.mark.parametrize("hour", [9, 12, 16])
     def test_valid_business_hours(self, hour: int) -> None:
-        monday = datetime.datetime(2024, 1, 15, hour, 0, tzinfo=datetime.timezone.utc)
+        monday = datetime.datetime(2024, 1, 15, hour, 0, tzinfo=datetime.UTC)
         assert is_business_hours(monday) is True
