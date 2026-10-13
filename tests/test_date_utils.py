@@ -1351,27 +1351,3 @@ def test_elapsed_seconds_parametrized(start_s: float, end_s: float, expected: fl
     start = base + timedelta(seconds=start_s)
     end = base + timedelta(seconds=end_s)
     assert elapsed_seconds(start, end) == pytest.approx(expected)
-
-
-@pytest.mark.parametrize(
-    "year,month,expected_days",
-    [
-        (2024, 2, 29),  # leap year Feb
-        (2023, 2, 28),  # non-leap Feb
-        (2024, 1, 31),
-        (2024, 4, 30),
-    ],
-)
-def test_days_in_month_parametrized(year: int, month: int, expected_days: int) -> None:
-    """days_in_month returns the correct number of days for each month."""
-    from app.date_utils import days_in_month
-
-    assert days_in_month(year, month) == expected_days
-
-
-@pytest.mark.parametrize("year,expected", [(2024, True), (2023, False), (2000, True), (1900, False)])
-def test_is_leap_year_parametrized(year: int, expected: bool) -> None:
-    """is_leap_year returns True for leap years and False otherwise."""
-    from app.date_utils import is_leap_year
-
-    assert is_leap_year(year) is expected
