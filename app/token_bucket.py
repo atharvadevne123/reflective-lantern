@@ -148,5 +148,22 @@ class PerKeyTokenBucket:
         """
         return len(self._buckets)
 
+    def reset(self, key: str | None = None) -> None:
+        """Reset a specific key's bucket or all buckets when *key* is None.
+
+        Args:
+            key: Key to reset, or None to clear all tracked keys.
+        """
+        with self._lock:
+            if key is None:
+                self._buckets.clear()
+            else:
+                self._buckets.pop(key, None)
+
+    def keys(self) -> list[str]:
+        """Return a sorted list of all tracked key strings."""
+        with self._lock:
+            return sorted(self._buckets.keys())
+
 
 __all__ = ["PerKeyTokenBucket", "TokenBucket"]

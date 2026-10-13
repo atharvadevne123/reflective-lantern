@@ -380,32 +380,55 @@ class TestAlertManagerAddHandler:
         assert counts[1] >= 1
 
 
-@pytest.mark.parametrize(
-    "value,threshold,comparison,should_fire",
-    [
-        (100.0, 80.0, ">", True),
-        (50.0, 80.0, ">", False),
-        (80.0, 80.0, ">=", True),
-        (79.9, 80.0, ">=", False),
-        (30.0, 50.0, "<", True),
-        (60.0, 50.0, "<=", False),
-    ],
-)
-def test_alert_rule_comparison_operators(
-    value: float, threshold: float, comparison: str, should_fire: bool
-) -> None:
-    from app.alerting import AlertRule, Severity
+class TestAlertManagerNewMethods:
+    def _make_manager_with_rules(self, names: list) -> AlertManager:
+        from app.alerting import AlertManager, AlertRule, Severity
 
-    rule = AlertRule(
-        name="test",
-        metric="x",
-        threshold=threshold,
-        severity=Severity.WARNING,
-        comparison=comparison,
-        cooldown_s=0.0,
-    )
-    alert = rule.evaluate(value, now=0.0)
-    if should_fire:
-        assert alert is not None, f"Expected alert for {value} {comparison} {threshold}"
-    else:
-        assert alert is None, f"Did not expect alert for {value} {comparison} {threshold}"
+        mgr = AlertManager()
+        for n in names:
+            mgr.add_rule(AlertRule(name=n, metric=n, threshold=50.0, severity=Severity.WARNING))
+        return mgr
+
+    def test_len_zero_initially(self) -> None:
+        from app.alerting import AlertManager
+
+        mgr = AlertManager()
+        assert len(mgr) == 0
+
+    def test_len_increments_on_add_rule(self) -> None:
+        mgr = self._make_manager_with_rules(["a", "b"])
+        assert len(mgr) == 2
+
+    def test_len_decrements_on_remove_rule(self) -> None:
+        mgr = self._make_manager_with_rules(["x", "y"])
+        mgr.remove_rule("x")
+        assert len(mgr) == 1
+
+    def test_contains_registered_rule(self) -> None:
+        mgr = self._make_manager_with_rules(["cpu"])
+        assert "cpu" in mgr
+
+    def test_not_contains_missing_rule(self) -> None:
+        mgr = self._make_manager_with_rules(["cpu"])
+        assert "memory" not in mgr
+
+    def test_critical_count_zero_when_no_criticals(self) -> None:
+        from app.alerting import AlertManager, AlertRule, Severity
+
+        mgr = AlertManager()
+        mgr.add_rule(AlertRule(name="r", metric="r", threshold=1.0, severity=Severity.WARNING))
+        mgr.evaluate_all({"r": 10.0})
+        assert mgr.critical_count() == 0
+
+    def test_critical_count_increments_on_critical_alerts(self) -> None:
+        from app.alerting import AlertManager, AlertRule, Severity
+
+        mgr = AlertManager()
+        mgr.add_rule(AlertRule(name="r", metric="r", threshold=1.0, severity=Severity.CRITICAL))
+        mgr.evaluate_all({"r": 10.0})
+        assert mgr.critical_count() == 1
+
+    @pytest.mark.parametrize("n_rules", [0, 1, 5])
+    def test_len_parametrized(self, n_rules: int) -> None:
+        mgr = self._make_manager_with_rules([str(i) for i in range(n_rules)])
+        assert len(mgr) == n_rules

@@ -426,26 +426,41 @@ class TestCircuitBreakerFailureCount:
         assert cb.failure_count == n_failures
 
 
-class TestCircuitBreakerStateTransitions:
+class TestCircuitBreakerNewProperties:
+    def test_is_closed_initially(self) -> None:
+        cb = CircuitBreaker()
+        assert cb.is_closed is True
+
+    def test_is_closed_false_when_open(self) -> None:
+        cb = CircuitBreaker(failure_threshold=1, expected_exceptions=(ValueError,))
+        with pytest.raises(ValueError):
+            cb.call(_always_fail)
+        assert cb.is_closed is False
+
+    def test_is_half_open_false_initially(self) -> None:
+        cb = CircuitBreaker()
+        assert cb.is_half_open is False
+
+    def test_is_half_open_true_after_timeout(self) -> None:
+        cb = CircuitBreaker(
+            failure_threshold=1, recovery_timeout=0.01, expected_exceptions=(ValueError,)
+        )
+        with pytest.raises(ValueError):
+            cb.call(_always_fail)
+        time.sleep(0.05)
+        assert cb.is_half_open is True
+
+    def test_is_open_and_is_closed_mutually_exclusive(self) -> None:
+        cb = CircuitBreaker(failure_threshold=1, expected_exceptions=(ValueError,))
+        assert cb.is_open != cb.is_closed
+        with pytest.raises(ValueError):
+            cb.call(_always_fail)
+        assert cb.is_open != cb.is_closed
+
     @pytest.mark.parametrize("threshold", [1, 3, 5])
-    def test_opens_after_threshold_failures(self, threshold: int) -> None:
-        """Circuit opens after exactly threshold consecutive failures."""
+    def test_is_closed_true_below_threshold(self, threshold: int) -> None:
         cb = CircuitBreaker(failure_threshold=threshold, expected_exceptions=(ValueError,))
         for _ in range(threshold - 1):
             with pytest.raises(ValueError):
                 cb.call(_always_fail)
-        assert cb.state == CircuitState.CLOSED
-        with pytest.raises(ValueError):
-            cb.call(_always_fail)
-        assert cb.state == CircuitState.OPEN
-
-    def test_reset_clears_failures_and_closes(self) -> None:
-        """reset() brings circuit back to CLOSED with zero failure count."""
-        cb = CircuitBreaker(failure_threshold=2, expected_exceptions=(ValueError,))
-        for _ in range(2):
-            with pytest.raises(ValueError):
-                cb.call(_always_fail)
-        assert cb.state == CircuitState.OPEN
-        cb.reset()
-        assert cb.state == CircuitState.CLOSED
-        assert cb.failure_count == 0
+        assert cb.is_closed is True

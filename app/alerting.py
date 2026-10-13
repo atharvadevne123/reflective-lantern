@@ -197,6 +197,18 @@ class AlertManager:
         """Register an additional alert handler."""
         self._handlers.append(handler)
 
+    def __len__(self) -> int:
+        """Return the number of registered alert rules."""
+        return len(self._rules)
+
+    def __contains__(self, name: str) -> bool:
+        """Return True if a rule with *name* is registered."""
+        return name in self._rules
+
+    def critical_count(self) -> int:
+        """Return number of CRITICAL alerts in history."""
+        return sum(1 for a in self._fired if a.severity == Severity.CRITICAL)
+
 
 def count_by_severity(alerts: list[Alert]) -> dict[str, int]:
     """Count alerts grouped by severity level.
