@@ -433,9 +433,7 @@ def test_count_anomalies_by_building_returns_correct_count(db_session, n: int) -
 
     bldg = f"count-test-{n}"
     for _i in range(n):
-        db_session.add(
-            AnomalyLog(building_id=bldg, anomaly_score=0.9, is_anomaly=1)
-        )
+        db_session.add(AnomalyLog(building_id=bldg, anomaly_score=0.9, is_anomaly=1))
     db_session.commit()
     assert count_anomalies_by_building(db_session, bldg) == n
 

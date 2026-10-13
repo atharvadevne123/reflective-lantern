@@ -255,9 +255,30 @@ class TestCountBySeverity:
         from app.alerting import Alert, Severity, count_by_severity
 
         alerts = [
-            Alert(name="a", metric="x", value=1.0, threshold=0.5, severity=Severity.CRITICAL, message=""),
-            Alert(name="b", metric="y", value=2.0, threshold=1.0, severity=Severity.WARNING, message=""),
-            Alert(name="c", metric="z", value=3.0, threshold=2.0, severity=Severity.CRITICAL, message=""),
+            Alert(
+                name="a",
+                metric="x",
+                value=1.0,
+                threshold=0.5,
+                severity=Severity.CRITICAL,
+                message="",
+            ),
+            Alert(
+                name="b",
+                metric="y",
+                value=2.0,
+                threshold=1.0,
+                severity=Severity.WARNING,
+                message="",
+            ),
+            Alert(
+                name="c",
+                metric="z",
+                value=3.0,
+                threshold=2.0,
+                severity=Severity.CRITICAL,
+                message="",
+            ),
         ]
         result = count_by_severity(alerts)
         assert result["critical"] == 2
@@ -271,7 +292,11 @@ class TestCountBySeverity:
     def test_single_info(self) -> None:
         from app.alerting import Alert, Severity, count_by_severity
 
-        alerts = [Alert(name="a", metric="x", value=0.5, threshold=1.0, severity=Severity.INFO, message="")]
+        alerts = [
+            Alert(
+                name="a", metric="x", value=0.5, threshold=1.0, severity=Severity.INFO, message=""
+            )
+        ]
         result = count_by_severity(alerts)
         assert result == {"info": 1}
 
@@ -287,7 +312,9 @@ class TestAlertManagerRuleNames:
         from app.alerting import AlertManager, AlertRule, Severity
 
         mgr = AlertManager()
-        mgr.add_rule(AlertRule(name="cpu", metric="cpu_pct", threshold=90.0, severity=Severity.WARNING))
+        mgr.add_rule(
+            AlertRule(name="cpu", metric="cpu_pct", threshold=90.0, severity=Severity.WARNING)
+        )
         assert "cpu" in mgr.rule_names()
 
     def test_sorted_order(self) -> None:
@@ -311,7 +338,9 @@ class TestAlertManagerHistoryForMetric:
         from app.alerting import AlertManager, AlertRule, Severity
 
         mgr = AlertManager()
-        mgr.add_rule(AlertRule(name="cpu", metric="cpu_pct", threshold=50.0, severity=Severity.WARNING))
+        mgr.add_rule(
+            AlertRule(name="cpu", metric="cpu_pct", threshold=50.0, severity=Severity.WARNING)
+        )
         mgr.evaluate_all({"cpu_pct": 80.0})
         history = mgr.history_for_metric("cpu_pct")
         assert len(history) >= 1
@@ -320,7 +349,9 @@ class TestAlertManagerHistoryForMetric:
         from app.alerting import AlertManager, AlertRule, Severity
 
         mgr = AlertManager()
-        mgr.add_rule(AlertRule(name="mem", metric="mem_pct", threshold=50.0, severity=Severity.WARNING))
+        mgr.add_rule(
+            AlertRule(name="mem", metric="mem_pct", threshold=50.0, severity=Severity.WARNING)
+        )
         mgr.evaluate_all({"mem_pct": 80.0})
         assert mgr.history_for_metric("cpu_pct") == []
 
@@ -352,6 +383,7 @@ class TestAlertManagerAddHandler:
 class TestAlertManagerNewMethods:
     def _make_manager_with_rules(self, names: list) -> AlertManager:
         from app.alerting import AlertManager, AlertRule, Severity
+
         mgr = AlertManager()
         for n in names:
             mgr.add_rule(AlertRule(name=n, metric=n, threshold=50.0, severity=Severity.WARNING))
@@ -359,6 +391,7 @@ class TestAlertManagerNewMethods:
 
     def test_len_zero_initially(self) -> None:
         from app.alerting import AlertManager
+
         mgr = AlertManager()
         assert len(mgr) == 0
 
@@ -381,6 +414,7 @@ class TestAlertManagerNewMethods:
 
     def test_critical_count_zero_when_no_criticals(self) -> None:
         from app.alerting import AlertManager, AlertRule, Severity
+
         mgr = AlertManager()
         mgr.add_rule(AlertRule(name="r", metric="r", threshold=1.0, severity=Severity.WARNING))
         mgr.evaluate_all({"r": 10.0})
@@ -388,6 +422,7 @@ class TestAlertManagerNewMethods:
 
     def test_critical_count_increments_on_critical_alerts(self) -> None:
         from app.alerting import AlertManager, AlertRule, Severity
+
         mgr = AlertManager()
         mgr.add_rule(AlertRule(name="r", metric="r", threshold=1.0, severity=Severity.CRITICAL))
         mgr.evaluate_all({"r": 10.0})

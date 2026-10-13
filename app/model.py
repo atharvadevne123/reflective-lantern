@@ -1,4 +1,5 @@
 """Ensemble ML model training, persistence, and inference."""
+
 from __future__ import annotations
 
 import json
@@ -89,6 +90,7 @@ def train_model(
     """
     try:
         import pandas as pd
+
         if isinstance(X, pd.DataFrame):
             X = X.values
         if hasattr(y, "values"):
@@ -162,10 +164,12 @@ def train_anomaly_model(df: pd.DataFrame) -> object:
     from sklearn.preprocessing import StandardScaler
 
     X = df.values if isinstance(df, pd.DataFrame) else df
-    pipe = SKPipeline([
-        ("scaler", StandardScaler()),
-        ("iso", IsolationForest(n_estimators=100, contamination=0.05, random_state=42)),
-    ])
+    pipe = SKPipeline(
+        [
+            ("scaler", StandardScaler()),
+            ("iso", IsolationForest(n_estimators=100, contamination=0.05, random_state=42)),
+        ]
+    )
     pipe.fit(X)
     return pipe
 

@@ -95,6 +95,7 @@ def memoize_ttl(ttl: float = 60.0) -> Any:
     Returns:
         Decorator that wraps the function with a TTL cache.
     """
+
     def decorator(func: Any) -> Any:
         cache: TTLCache = TTLCache(ttl=ttl)
 

@@ -108,6 +108,6 @@ def is_valid_url(url: str) -> bool:
     """
     for scheme in ("http://", "https://"):
         if url.startswith(scheme):
-            remainder = url[len(scheme):]
+            remainder = url[len(scheme) :]
             return bool(remainder) and not remainder.startswith("/")
     return False

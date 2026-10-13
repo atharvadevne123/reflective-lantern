@@ -101,7 +101,9 @@ def compress_json(obj: Any, method: str = "gzip", level: int = 6) -> bytes:
     else:
         raise ValueError(f"Unknown compression method: {method}")
     ratio = len(compressed) / len(raw) if raw else 1.0
-    logger.debug("%s compressed %d -> %d bytes (%.1f%%)", method, len(raw), len(compressed), ratio * 100)
+    logger.debug(
+        "%s compressed %d -> %d bytes (%.1f%%)", method, len(raw), len(compressed), ratio * 100
+    )
     return compressed
 
 

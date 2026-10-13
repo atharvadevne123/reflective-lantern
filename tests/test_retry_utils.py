@@ -18,7 +18,9 @@ class TestComputeBackoffSeconds:
         assert compute_backoff_seconds(3, base=1.0, multiplier=2.0) == pytest.approx(4.0)
 
     def test_capped_at_max(self) -> None:
-        assert compute_backoff_seconds(10, base=1.0, multiplier=2.0, cap=30.0) == pytest.approx(30.0)
+        assert compute_backoff_seconds(10, base=1.0, multiplier=2.0, cap=30.0) == pytest.approx(
+            30.0
+        )
 
     @pytest.mark.parametrize("attempt,expected", [(1, 0.5), (2, 1.0), (3, 2.0)])
     def test_parametrized_base_half(self, attempt: int, expected: float) -> None:
@@ -26,7 +28,9 @@ class TestComputeBackoffSeconds:
 
     def test_cap_equals_base_always_returns_cap(self) -> None:
         for attempt in range(1, 6):
-            assert compute_backoff_seconds(attempt, base=5.0, multiplier=2.0, cap=5.0) == pytest.approx(5.0)
+            assert compute_backoff_seconds(
+                attempt, base=5.0, multiplier=2.0, cap=5.0
+            ) == pytest.approx(5.0)
 
 
 class TestRetry:
@@ -48,7 +52,11 @@ class TestRetry:
 
     def test_raises_retry_error_after_exhaustion(self) -> None:
         with pytest.raises(RetryError):
-            retry(lambda: (_ for _ in ()).throw(ValueError("always")), attempts=3, exceptions=(ValueError,))
+            retry(
+                lambda: (_ for _ in ()).throw(ValueError("always")),
+                attempts=3,
+                exceptions=(ValueError,),
+            )
 
     def test_zero_attempts_raises_value_error(self) -> None:
         with pytest.raises(ValueError):

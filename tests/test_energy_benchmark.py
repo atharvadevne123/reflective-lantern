@@ -268,7 +268,7 @@ def test_grade_from_score_parametrized(score: int, expected_grade: str) -> None:
 @pytest.mark.parametrize(
     "eui,cohort,expected_pct",
     [
-        (50.0, [100.0, 150.0, 200.0], 100.0),   # lower eui = better than all
+        (50.0, [100.0, 150.0, 200.0], 100.0),  # lower eui = better than all
         (200.0, [100.0, 150.0, 200.0], pytest.approx(16.67, rel=0.1)),
         (150.0, [100.0, 150.0, 200.0], pytest.approx(50.0, rel=0.1)),
     ],

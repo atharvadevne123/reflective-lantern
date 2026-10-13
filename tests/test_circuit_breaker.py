@@ -442,7 +442,9 @@ class TestCircuitBreakerNewProperties:
         assert cb.is_half_open is False
 
     def test_is_half_open_true_after_timeout(self) -> None:
-        cb = CircuitBreaker(failure_threshold=1, recovery_timeout=0.01, expected_exceptions=(ValueError,))
+        cb = CircuitBreaker(
+            failure_threshold=1, recovery_timeout=0.01, expected_exceptions=(ValueError,)
+        )
         with pytest.raises(ValueError):
             cb.call(_always_fail)
         time.sleep(0.05)
