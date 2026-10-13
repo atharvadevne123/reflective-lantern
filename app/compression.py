@@ -101,9 +101,7 @@ def compress_json(obj: Any, method: str = "gzip", level: int = 6) -> bytes:
     else:
         raise ValueError(f"Unknown compression method: {method}")
     ratio = len(compressed) / len(raw) if raw else 1.0
-    logger.debug(
-        "%s compressed %d -> %d bytes (%.1f%%)", method, len(raw), len(compressed), ratio * 100
-    )
+    logger.debug("%s compressed %d -> %d bytes (%.1f%%)", method, len(raw), len(compressed), ratio * 100)
     return compressed
 
 
@@ -179,12 +177,39 @@ def is_gzip(data: bytes) -> bool:
         data: Bytes to inspect.
 
     Returns:
-        True when the first two bytes match the gzip magic ``\\x1f\\x8b``.
+        True when the first two bytes match the gzip magic ``\x1f\x8b``.
     """
     return len(data) >= 2 and data[:2] == b"\x1f\x8b"
 
 
+def is_zlib(data: bytes) -> bool:
+    """Return True if *data* looks like zlib-compressed bytes.
+
+    Args:
+        data: Bytes to inspect.
+
+    Returns:
+        True when the first byte is ``0x78`` (common zlib header byte).
+    """
+    return len(data) >= 1 and data[0] == 0x78
+
+
+def best_method(data: bytes) -> str:
+    """Return the compression method (``"gzip"`` or ``"zlib"``) that yields the smaller output.
+
+    Args:
+        data: Raw bytes to compress.
+
+    Returns:
+        ``"gzip"`` or ``"zlib"`` - whichever produces the smaller compressed output.
+    """
+    gz = gzip_compress(data)
+    zl = zlib_compress(data)
+    return "gzip" if len(gz) <= len(zl) else "zlib"
+
+
 __all__ = [
+    "best_method",
     "compress_and_measure",
     "compress_json",
     "compression_ratio",
@@ -192,6 +217,7 @@ __all__ = [
     "gzip_compress",
     "gzip_decompress",
     "is_gzip",
+    "is_zlib",
     "zlib_compress",
     "zlib_decompress",
 ]
