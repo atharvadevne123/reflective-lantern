@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from app.config_schema import ConfigSchema, env_bool, env_float, env_int, load_from_env
+from app.config_schema import ConfigSchema, env_bool, env_int, load_from_env
 
 
 class TestEnvBool:
