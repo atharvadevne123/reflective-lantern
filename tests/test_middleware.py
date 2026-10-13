@@ -199,3 +199,37 @@ class TestRateLimitHeaderPresent:
     def test_parametrized_requests_pass(self, n: int, client: TestClient) -> None:
         for _ in range(n):
             assert client.get("/health").status_code == 200
+
+
+class TestMiddlewareHelpers:
+    def test_get_request_count_zero_initially(self) -> None:
+        from app.middleware import get_request_count, reset_rate_limiter
+
+        reset_rate_limiter()
+        assert get_request_count("192.168.1.1") == 0
+
+    def test_active_clients_empty_initially(self) -> None:
+        from app.middleware import active_clients, reset_rate_limiter
+
+        reset_rate_limiter()
+        assert active_clients() == []
+
+    def test_active_clients_returns_list(self) -> None:
+        from app.middleware import active_clients
+
+        result = active_clients()
+        assert isinstance(result, list)
+
+    def test_get_request_count_returns_int(self) -> None:
+        from app.middleware import get_request_count
+
+        result = get_request_count("test-client")
+        assert isinstance(result, int)
+        assert result >= 0
+
+    def test_reset_clears_active_clients(self, client: TestClient) -> None:
+        from app.middleware import active_clients, reset_rate_limiter
+
+        client.get("/health")
+        reset_rate_limiter()
+        assert active_clients() == []

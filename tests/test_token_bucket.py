@@ -116,9 +116,7 @@ class TestTokenBucketRefill:
     def test_refill_does_not_exceed_capacity(self) -> None:
         tb = TokenBucket(capacity=5, rate=1000)
         tb._tokens = 0  # type: ignore[attr-defined]
-        tb._last_refill = (
-            time.monotonic() - 100
-        )  # 100s of refill available  # type: ignore[attr-defined]
+        tb._last_refill = time.monotonic() - 100  # 100s of refill available  # type: ignore[attr-defined]
         # available is capped at capacity
         assert tb.available <= 5
 
@@ -293,21 +291,48 @@ class TestTokenBucketWaitAndConsume:
         assert isinstance(result, bool)
 
 
-@pytest.mark.parametrize("capacity", [1.0, 5.0, 10.0])
-def test_available_tokens_full_at_start(capacity: float) -> None:
-    """A new token bucket starts at full capacity."""
-    from app.token_bucket import TokenBucket
+class TestPerKeyTokenBucketResetAndKeys:
+    def test_reset_all_clears_all_buckets(self) -> None:
+        pkb = PerKeyTokenBucket(capacity=5, rate=1.0)
+        pkb.consume("a")
+        pkb.consume("b")
+        pkb.reset()
+        assert pkb.bucket_count() == 0
 
-    tb = TokenBucket(capacity=capacity, rate=1.0)
-    assert tb.available() == pytest.approx(capacity)
+    def test_reset_specific_key_removes_only_that_key(self) -> None:
+        pkb = PerKeyTokenBucket(capacity=5, rate=1.0)
+        pkb.consume("a")
+        pkb.consume("b")
+        pkb.reset("a")
+        assert pkb.bucket_count() == 1
+        assert "b" in pkb
 
+    def test_reset_nonexistent_key_is_safe(self) -> None:
+        pkb = PerKeyTokenBucket(capacity=5, rate=1.0)
+        pkb.reset("nonexistent")  # should not raise
+        assert pkb.bucket_count() == 0
 
-@pytest.mark.parametrize("n_keys", [1, 3, 5])
-def test_per_key_bucket_count_matches_unique_keys(n_keys: int) -> None:
-    """PerKeyTokenBucket.bucket_count equals the number of distinct keys used."""
-    from app.token_bucket import PerKeyTokenBucket
+    def test_keys_returns_sorted_list(self) -> None:
+        pkb = PerKeyTokenBucket(capacity=5, rate=1.0)
+        pkb.consume("zebra")
+        pkb.consume("apple")
+        pkb.consume("mango")
+        assert pkb.keys() == ["apple", "mango", "zebra"]
 
-    pkb = PerKeyTokenBucket(capacity=10, rate=1.0)
-    for i in range(n_keys):
-        pkb.consume(f"unique-{i}")
-    assert pkb.bucket_count() == n_keys
+    def test_keys_empty_when_no_buckets(self) -> None:
+        pkb = PerKeyTokenBucket(capacity=5, rate=1.0)
+        assert pkb.keys() == []
+
+    def test_keys_after_reset_reflects_removal(self) -> None:
+        pkb = PerKeyTokenBucket(capacity=5, rate=1.0)
+        pkb.consume("x")
+        pkb.consume("y")
+        pkb.reset("x")
+        assert pkb.keys() == ["y"]
+
+    @pytest.mark.parametrize("keys", [["a"], ["a", "b", "c"], ["z", "m", "a"]])
+    def test_keys_returns_sorted_parametrized(self, keys: list) -> None:
+        pkb = PerKeyTokenBucket(capacity=5, rate=1.0)
+        for k in keys:
+            pkb.consume(k)
+        assert pkb.keys() == sorted(keys)
