@@ -104,11 +104,14 @@ class TestSafeDivide:
         assert safe_divide(0.0, 5.0) == pytest.approx(0.0)
 
 
-@pytest.mark.parametrize("value,lo,hi,expected", [
-    (-5.0, 0.0, 10.0, 0.0),
-    (15.0, 0.0, 10.0, 10.0),
-    (5.0, 0.0, 10.0, 5.0),
-    (0.0, 0.0, 1.0, 0.0),
-])
+@pytest.mark.parametrize(
+    "value,lo,hi,expected",
+    [
+        (-5.0, 0.0, 10.0, 0.0),
+        (15.0, 0.0, 10.0, 10.0),
+        (5.0, 0.0, 10.0, 5.0),
+        (0.0, 0.0, 1.0, 0.0),
+    ],
+)
 def test_clamp_parametrized(value: float, lo: float, hi: float, expected: float) -> None:
     assert clamp(value, lo, hi) == expected

@@ -100,11 +100,7 @@ def run_drift_check(
         .filter(Prediction.created_at >= ref_start, Prediction.created_at < cur_start)
         .all()
     )
-    cur_rows = (
-        db.query(Prediction)
-        .filter(Prediction.created_at >= cur_start)
-        .all()
-    )
+    cur_rows = db.query(Prediction).filter(Prediction.created_at >= cur_start).all()
 
     records: list[DriftRecord] = []
 
@@ -183,12 +179,7 @@ def get_drift_summary(db: Session, limit: int = 20) -> list[dict[str, Any]]:
     Returns:
         List of dicts suitable for JSON serialisation.
     """
-    rows = (
-        db.query(DriftRecord)
-        .order_by(DriftRecord.checked_at.desc())
-        .limit(limit)
-        .all()
-    )
+    rows = db.query(DriftRecord).order_by(DriftRecord.checked_at.desc()).limit(limit).all()
     return [
         {
             "feature_name": r.feature_name,

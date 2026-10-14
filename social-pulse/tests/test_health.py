@@ -73,10 +73,13 @@ class TestHealthStatusToDict:
         assert "checks" in d
 
 
-@pytest.mark.parametrize("model_loaded,expected_status", [
-    (True, "ok"),
-    (False, "degraded"),
-])
+@pytest.mark.parametrize(
+    "model_loaded,expected_status",
+    [
+        (True, "ok"),
+        (False, "degraded"),
+    ],
+)
 def test_status_from_model_flag(live_db_session, model_loaded: bool, expected_status: str) -> None:
     status = build_health_status(live_db_session, model_loaded=model_loaded, model_version="1.0")
     assert status.status == expected_status

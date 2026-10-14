@@ -89,11 +89,14 @@ class TestPredictionMetricsToDict:
         assert len(str(d["viral_rate"]).split(".")[-1]) <= 4
 
 
-@pytest.mark.parametrize("n_viral,n_total,expected_rate", [
-    (0, 10, 0.0),
-    (5, 10, 0.5),
-    (10, 10, 1.0),
-])
+@pytest.mark.parametrize(
+    "n_viral,n_total,expected_rate",
+    [
+        (0, 10, 0.0),
+        (5, 10, 0.5),
+        (10, 10, 1.0),
+    ],
+)
 def test_viral_rate_parametrized(
     db_session: Session, n_viral: int, n_total: int, expected_rate: float
 ) -> None:

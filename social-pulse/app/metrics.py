@@ -62,9 +62,8 @@ def compute_metrics(db: Session, model_version: str) -> PredictionMetrics:
     try:
         total = db.query(func.count(Prediction.id)).scalar() or 0
         viral_count = (
-            db.query(func.count(Prediction.id))
-            .filter(Prediction.viral_label.is_(True))
-            .scalar() or 0
+            db.query(func.count(Prediction.id)).filter(Prediction.viral_label.is_(True)).scalar()
+            or 0
         )
         avg_conf = float(db.query(func.avg(Prediction.ensemble_confidence)).scalar() or 0.0)
         avg_lat = float(db.query(func.avg(Prediction.latency_ms)).scalar() or 0.0)
@@ -87,7 +86,11 @@ def compute_metrics(db: Session, model_version: str) -> PredictionMetrics:
         )
         drift_rows = (
             db.query(DriftRecord)
-            .join(subq, (DriftRecord.feature_name == subq.c.feature_name) & (DriftRecord.checked_at == subq.c.latest))
+            .join(
+                subq,
+                (DriftRecord.feature_name == subq.c.feature_name)
+                & (DriftRecord.checked_at == subq.c.latest),
+            )
             .filter(DriftRecord.drift_detected.is_(True))
             .all()
         )

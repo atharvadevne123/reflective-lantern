@@ -9,9 +9,7 @@ from typing import Any
 
 LOG_LEVEL: str = os.environ.get("LOG_LEVEL", "INFO").upper()
 
-LOG_FORMAT: str = (
-    "%(asctime)s %(levelname)-8s %(name)s [%(filename)s:%(lineno)d] %(message)s"
-)
+LOG_FORMAT: str = "%(asctime)s %(levelname)-8s %(name)s [%(filename)s:%(lineno)d] %(message)s"
 
 
 def configure_logging(level: str | None = None) -> None:
@@ -36,9 +34,7 @@ def configure_logging(level: str | None = None) -> None:
     for noisy in ("uvicorn.access", "sqlalchemy.engine", "httpx"):
         logging.getLogger(noisy).setLevel(logging.WARNING)
 
-    logging.getLogger(__name__).debug(
-        "Logging configured at level=%s", effective_level
-    )
+    logging.getLogger(__name__).debug("Logging configured at level=%s", effective_level)
 
 
 def get_logger(name: str) -> logging.Logger:

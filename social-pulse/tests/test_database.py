@@ -38,18 +38,36 @@ class TestPredictionModel:
     def test_unique_request_id(self, db_session: Session) -> None:
         rid = str(uuid.uuid4())
         p1 = Prediction(
-            request_id=rid, text="a", author_followers=0,
-            has_media=False, has_link=False, hashtag_count=0,
-            mention_count=0, hour_of_day=0, day_of_week=0,
-            viral_probability=0.1, viral_label=False,
-            ensemble_confidence=0.8, model_version="1.0", latency_ms=1.0,
+            request_id=rid,
+            text="a",
+            author_followers=0,
+            has_media=False,
+            has_link=False,
+            hashtag_count=0,
+            mention_count=0,
+            hour_of_day=0,
+            day_of_week=0,
+            viral_probability=0.1,
+            viral_label=False,
+            ensemble_confidence=0.8,
+            model_version="1.0",
+            latency_ms=1.0,
         )
         p2 = Prediction(
-            request_id=rid, text="b", author_followers=0,
-            has_media=False, has_link=False, hashtag_count=0,
-            mention_count=0, hour_of_day=0, day_of_week=0,
-            viral_probability=0.2, viral_label=False,
-            ensemble_confidence=0.6, model_version="1.0", latency_ms=1.0,
+            request_id=rid,
+            text="b",
+            author_followers=0,
+            has_media=False,
+            has_link=False,
+            hashtag_count=0,
+            mention_count=0,
+            hour_of_day=0,
+            day_of_week=0,
+            viral_probability=0.2,
+            viral_label=False,
+            ensemble_confidence=0.6,
+            model_version="1.0",
+            latency_ms=1.0,
         )
         db_session.add(p1)
         db_session.commit()
@@ -59,11 +77,20 @@ class TestPredictionModel:
 
     def test_created_at_default(self, db_session: Session) -> None:
         pred = Prediction(
-            request_id=str(uuid.uuid4()), text="t", author_followers=0,
-            has_media=False, has_link=False, hashtag_count=0,
-            mention_count=0, hour_of_day=0, day_of_week=0,
-            viral_probability=0.5, viral_label=True,
-            ensemble_confidence=0.0, model_version="1.0", latency_ms=1.0,
+            request_id=str(uuid.uuid4()),
+            text="t",
+            author_followers=0,
+            has_media=False,
+            has_link=False,
+            hashtag_count=0,
+            mention_count=0,
+            hour_of_day=0,
+            day_of_week=0,
+            viral_probability=0.5,
+            viral_label=True,
+            ensemble_confidence=0.0,
+            model_version="1.0",
+            latency_ms=1.0,
         )
         db_session.add(pred)
         db_session.commit()
@@ -118,12 +145,20 @@ class TestTrainingRunModel:
 def test_prediction_viral_probability_values(db_session: Session, viral_prob: float) -> None:
     """Predictions should persist for any valid probability value."""
     pred = Prediction(
-        request_id=str(uuid.uuid4()), text="test",
-        author_followers=100, has_media=False, has_link=False,
-        hashtag_count=0, mention_count=0, hour_of_day=10, day_of_week=1,
-        viral_probability=viral_prob, viral_label=viral_prob >= 0.5,
+        request_id=str(uuid.uuid4()),
+        text="test",
+        author_followers=100,
+        has_media=False,
+        has_link=False,
+        hashtag_count=0,
+        mention_count=0,
+        hour_of_day=10,
+        day_of_week=1,
+        viral_probability=viral_prob,
+        viral_label=viral_prob >= 0.5,
         ensemble_confidence=abs(viral_prob - 0.5) * 2,
-        model_version="1.0", latency_ms=2.0,
+        model_version="1.0",
+        latency_ms=2.0,
     )
     db_session.add(pred)
     db_session.commit()

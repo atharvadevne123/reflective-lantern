@@ -101,7 +101,7 @@ class TestFeatureCacheStats:
     def test_hit_rate_mixed(self) -> None:
         cache = FeatureCache()
         cache.set("k", {"v": 1})
-        cache.get("k")   # hit
+        cache.get("k")  # hit
         cache.get("miss")  # miss
         assert abs(cache.hit_rate - 0.5) < 0.01
 
