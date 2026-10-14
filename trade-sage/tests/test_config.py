@@ -1,8 +1,6 @@
 """Tests for centralised application configuration."""
 from __future__ import annotations
 
-import os
-
 import pytest
 
 from app.config import AppConfig, load_config

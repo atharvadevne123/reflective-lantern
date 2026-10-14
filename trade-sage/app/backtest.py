@@ -56,7 +56,7 @@ def run_backtest(
     strategy_returns = positions * daily_returns - trades * transaction_cost
 
     equity = np.cumprod(1 + strategy_returns)
-    equity_curve = [1.0] + equity.tolist()
+    equity_curve = [1.0, *equity.tolist()]
 
     total_return = float(equity[-1] - 1.0)
     n_days = len(daily_returns)

@@ -38,7 +38,7 @@ def extract_feature_importances(
     if importances is None or len(importances) != len(feature_names):
         return []
 
-    pairs = list(zip(feature_names, importances.tolist()))
+    pairs = list(zip(feature_names, importances.tolist(), strict=False))
     pairs.sort(key=lambda x: x[1], reverse=True)
     return pairs
 

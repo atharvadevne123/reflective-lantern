@@ -59,7 +59,7 @@ class ServiceMetrics:
 
     @property
     def cache_hit_rate(self) -> float:
-        """Return cache hit rate as fraction 0–1."""
+        """Return cache hit rate as fraction 0-1."""
         total = self.cache_hits + self.cache_misses
         return self.cache_hits / total if total > 0 else 0.0
 

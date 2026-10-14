@@ -2,10 +2,10 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from enum import Enum
+from enum import StrEnum
 
 
-class SignalStrength(str, Enum):
+class SignalStrength(StrEnum):
     """Qualitative signal strength based on model confidence."""
 
     STRONG = "STRONG"

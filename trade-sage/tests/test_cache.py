@@ -1,10 +1,8 @@
 """Tests for the thread-safe TTL/LRU prediction cache."""
 from __future__ import annotations
 
-import time
 import threading
-
-import pytest
+import time
 
 from app.cache import TTLCache
 

@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import pytest
 
-from app.signals import SignalStrength, TradingSignal, classify_signal
+from app.signals import SignalStrength, classify_signal
 
 
 def test_strong_buy_signal():

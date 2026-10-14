@@ -4,7 +4,7 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from app.backtest import BacktestResult, run_backtest
+from app.backtest import run_backtest
 
 
 def _prices(n: int = 100, trend: float = 0.001) -> np.ndarray:
