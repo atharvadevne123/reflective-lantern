@@ -1362,7 +1362,7 @@ def test_elapsed_seconds_parametrized(start_s: float, end_s: float, expected: fl
         (2024, 4, 30),
     ],
 )
-def test_days_in_month_parametrized(year: int, month: int, expected_days: int) -> None:
+def test_days_in_month_parametrized_extended(year: int, month: int, expected_days: int) -> None:
     """days_in_month returns the correct number of days for each month."""
     from app.date_utils import days_in_month
 
@@ -1370,7 +1370,7 @@ def test_days_in_month_parametrized(year: int, month: int, expected_days: int) -
 
 
 @pytest.mark.parametrize("year,expected", [(2024, True), (2023, False), (2000, True), (1900, False)])
-def test_is_leap_year_parametrized(year: int, expected: bool) -> None:
+def test_is_leap_year_parametrized_extended(year: int, expected: bool) -> None:
     """is_leap_year returns True for leap years and False otherwise."""
     from app.date_utils import is_leap_year
 

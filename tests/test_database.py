@@ -432,7 +432,7 @@ def test_count_anomalies_by_building_returns_correct_count(db_session, n: int) -
     from app.database import AnomalyLog, count_anomalies_by_building
 
     bldg = f"count-test-{n}"
-    for i in range(n):
+    for _i in range(n):
         db_session.add(
             AnomalyLog(building_id=bldg, anomaly_score=0.9, is_anomaly=1)
         )
