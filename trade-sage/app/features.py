@@ -131,3 +131,35 @@ FEATURE_NAMES = [
     "vol_5d", "vol_20d", "sma_ratio_5_20", "sma_ratio_10_50", "momentum_10", "momentum_20",
     "oc_spread", "hl_range", "price_position",
 ]
+
+
+def get_feature_description() -> dict[str, str]:
+    """Return human-readable descriptions for each feature name.
+
+    Returns:
+        Mapping from feature name to its description.
+    """
+    return {
+        "rsi": "Relative Strength Index (14-period)",
+        "macd": "MACD line (EMA12 - EMA26)",
+        "macd_signal": "MACD signal line (9-period EMA of MACD)",
+        "macd_hist": "MACD histogram (MACD - signal)",
+        "bb_pct": "Bollinger %B: position within band",
+        "bb_width": "Bollinger Band width normalised by SMA",
+        "atr": "Average True Range (14-period)",
+        "vol_ratio": "Volume vs 20-day average ratio",
+        "ret_1d": "1-day log return",
+        "ret_2d": "2-day log return",
+        "ret_3d": "3-day log return",
+        "ret_5d": "5-day log return",
+        "ret_10d": "10-day log return",
+        "vol_5d": "5-day rolling return volatility",
+        "vol_20d": "20-day rolling return volatility",
+        "sma_ratio_5_20": "SMA(5)/SMA(20) crossover ratio",
+        "sma_ratio_10_50": "SMA(10)/SMA(50) trend ratio",
+        "momentum_10": "10-day momentum (close/close[10]-1)",
+        "momentum_20": "20-day momentum (close/close[20]-1)",
+        "oc_spread": "Open-close spread normalised by open",
+        "hl_range": "High-low range normalised by close",
+        "price_position": "Price position within daily high-low range",
+    }
