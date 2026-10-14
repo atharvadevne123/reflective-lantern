@@ -1,4 +1,5 @@
 """ML model training, prediction, and persistence for Trade-Sage."""
+
 from __future__ import annotations
 
 import json
@@ -35,17 +36,30 @@ def _build_ensemble() -> Any:
         from xgboost import XGBClassifier
 
         xgb = XGBClassifier(
-            n_estimators=100, max_depth=4, learning_rate=0.05,
-            subsample=0.8, colsample_bytree=0.8, eval_metric="logloss",
-            random_state=42, n_jobs=1,
+            n_estimators=100,
+            max_depth=4,
+            learning_rate=0.05,
+            subsample=0.8,
+            colsample_bytree=0.8,
+            eval_metric="logloss",
+            random_state=42,
+            n_jobs=1,
         )
         lgbm = LGBMClassifier(
-            n_estimators=100, max_depth=4, learning_rate=0.05,
-            subsample=0.8, colsample_bytree=0.8, random_state=42,
-            n_jobs=1, verbose=-1,
+            n_estimators=100,
+            max_depth=4,
+            learning_rate=0.05,
+            subsample=0.8,
+            colsample_bytree=0.8,
+            random_state=42,
+            n_jobs=1,
+            verbose=-1,
         )
         rf = RandomForestClassifier(
-            n_estimators=100, max_depth=6, random_state=42, n_jobs=1,
+            n_estimators=100,
+            max_depth=6,
+            random_state=42,
+            n_jobs=1,
         )
         return VotingClassifier(
             estimators=[("xgb", xgb), ("lgbm", lgbm), ("rf", rf)],
@@ -68,10 +82,12 @@ def train_model(X: np.ndarray, y: np.ndarray) -> tuple[Pipeline, dict]:
     run_id = str(uuid.uuid4())[:8]
     logger.info("Training run %s — %d samples, %d features", run_id, len(X), X.shape[1])
 
-    pipe = Pipeline([
-        ("scaler", StandardScaler()),
-        ("model", _build_ensemble()),
-    ])
+    pipe = Pipeline(
+        [
+            ("scaler", StandardScaler()),
+            ("model", _build_ensemble()),
+        ]
+    )
 
     cv = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
     auc_scores = cross_val_score(pipe, X, y, cv=cv, scoring="roc_auc", n_jobs=1)

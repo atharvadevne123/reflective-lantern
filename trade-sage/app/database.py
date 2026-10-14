@@ -1,4 +1,5 @@
 """SQLAlchemy models and database session management."""
+
 from __future__ import annotations
 
 import os

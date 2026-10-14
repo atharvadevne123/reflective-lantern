@@ -1,4 +1,5 @@
 """Tests for trading signal classification."""
+
 from __future__ import annotations
 
 import pytest
@@ -60,23 +61,29 @@ def test_signal_strength_values():
     assert SignalStrength.WEAK == "WEAK"
 
 
-@pytest.mark.parametrize("pred,expected_dir", [
-    (1, "BUY"),
-    (0, "SELL"),
-])
+@pytest.mark.parametrize(
+    "pred,expected_dir",
+    [
+        (1, "BUY"),
+        (0, "SELL"),
+    ],
+)
 def test_direction_by_prediction(pred, expected_dir):
     sig = classify_signal(prediction=pred, confidence=0.8, horizon_days=5)
     assert sig.direction == expected_dir
 
 
-@pytest.mark.parametrize("conf,expected_strength", [
-    (0.90, SignalStrength.STRONG),
-    (0.75, SignalStrength.STRONG),
-    (0.74, SignalStrength.MODERATE),
-    (0.60, SignalStrength.MODERATE),
-    (0.59, SignalStrength.WEAK),
-    (0.50, SignalStrength.WEAK),
-])
+@pytest.mark.parametrize(
+    "conf,expected_strength",
+    [
+        (0.90, SignalStrength.STRONG),
+        (0.75, SignalStrength.STRONG),
+        (0.74, SignalStrength.MODERATE),
+        (0.60, SignalStrength.MODERATE),
+        (0.59, SignalStrength.WEAK),
+        (0.50, SignalStrength.WEAK),
+    ],
+)
 def test_strength_by_confidence(conf, expected_strength):
     sig = classify_signal(prediction=1, confidence=conf, horizon_days=5)
     assert sig.strength == expected_strength

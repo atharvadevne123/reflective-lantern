@@ -1,4 +1,5 @@
 """Tests for drift detection and monitoring utilities."""
+
 from __future__ import annotations
 
 import numpy as np
@@ -46,6 +47,7 @@ def test_update_reference_appends():
 
 def test_update_reference_caps_at_window():
     from app.monitoring import REFERENCE_WINDOW
+
     _reference_store.clear()
     big = [float(i) for i in range(REFERENCE_WINDOW + 100)]
     update_reference("cap_test", big)
@@ -65,6 +67,7 @@ def test_check_drift_all_returns_per_feature():
 def test_log_prediction_persists(db_session):
     log_prediction(db_session, "AAPL", 1, 0.82, 5)
     from app.database import PredictionLog
+
     rows = db_session.query(PredictionLog).filter_by(ticker="AAPL").all()
     assert len(rows) >= 1
     assert rows[-1].prediction == 1
@@ -73,6 +76,7 @@ def test_log_prediction_persists(db_session):
 def test_log_prediction_confidence_stored(db_session):
     log_prediction(db_session, "GOOG", 0, 0.65, 10)
     from app.database import PredictionLog
+
     row = db_session.query(PredictionLog).filter_by(ticker="GOOG").first()
     assert row is not None
     assert abs(row.confidence - 0.65) < 0.01
@@ -82,7 +86,11 @@ def test_log_prediction_confidence_stored(db_session):
 def test_log_prediction_various_confidence(db_session, conf):
     log_prediction(db_session, "TSLA", 1, conf, 5)
     from app.database import PredictionLog
-    row = db_session.query(PredictionLog).filter_by(ticker="TSLA").order_by(
-        PredictionLog.id.desc()
-    ).first()
+
+    row = (
+        db_session.query(PredictionLog)
+        .filter_by(ticker="TSLA")
+        .order_by(PredictionLog.id.desc())
+        .first()
+    )
     assert abs(row.confidence - round(conf, 4)) < 0.001

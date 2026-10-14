@@ -1,4 +1,5 @@
 """Tests for FastAPI endpoints."""
+
 from __future__ import annotations
 
 import os
@@ -81,7 +82,9 @@ def test_train_endpoint(client):
 def test_predict_returns_signal(client):
     client.post("/api/v1/train")
     ohlcv = _make_ohlcv(100)
-    resp = client.post("/api/v1/predict", json={"ticker": "AAPL", "horizon_days": 5, "ohlcv": ohlcv})
+    resp = client.post(
+        "/api/v1/predict", json={"ticker": "AAPL", "horizon_days": 5, "ohlcv": ohlcv}
+    )
     assert resp.status_code == 200
     body = resp.json()
     assert body["ticker"] == "AAPL"
@@ -92,10 +95,13 @@ def test_predict_returns_signal(client):
 def test_predict_without_model_503(client):
     # Force model to None
     import app.main as m
+
     prev = m._model
     m._model = None
     ohlcv = _make_ohlcv(100)
-    resp = client.post("/api/v1/predict", json={"ticker": "TSLA", "horizon_days": 5, "ohlcv": ohlcv})
+    resp = client.post(
+        "/api/v1/predict", json={"ticker": "TSLA", "horizon_days": 5, "ohlcv": ohlcv}
+    )
     assert resp.status_code == 503
     m._model = prev
 
@@ -103,7 +109,9 @@ def test_predict_without_model_503(client):
 def test_predict_insufficient_rows_422(client):
     client.post("/api/v1/train")
     ohlcv = _make_ohlcv(30)  # < 60 minimum
-    resp = client.post("/api/v1/predict", json={"ticker": "AAPL", "horizon_days": 5, "ohlcv": ohlcv})
+    resp = client.post(
+        "/api/v1/predict", json={"ticker": "AAPL", "horizon_days": 5, "ohlcv": ohlcv}
+    )
     assert resp.status_code == 422
 
 

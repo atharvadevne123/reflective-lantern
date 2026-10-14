@@ -1,4 +1,5 @@
 """Portfolio risk analytics: VaR, ES, volatility, Sharpe, max drawdown."""
+
 from __future__ import annotations
 
 import logging
@@ -75,7 +76,7 @@ def compute_portfolio_risk(
     else:
         correlation_avg = 1.0
 
-    all_prices = np.column_stack([np.array(p[-min_len - 1:]) for p in price_series])
+    all_prices = np.column_stack([np.array(p[-min_len - 1 :]) for p in price_series])
     portfolio_value = all_prices @ w
     mdd = compute_max_drawdown(portfolio_value.tolist())
 

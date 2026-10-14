@@ -1,4 +1,5 @@
 """Tests for ML model training and prediction."""
+
 from __future__ import annotations
 
 import json
@@ -31,6 +32,7 @@ def _make_xy(n=500, seed=0):
 
 def test_train_model_returns_pipeline(tmp_model_paths):
     from app.model import train_model
+
     X, y = _make_xy()
     pipe, metrics = train_model(X, y)
     assert hasattr(pipe, "predict_proba")
@@ -40,6 +42,7 @@ def test_train_model_returns_pipeline(tmp_model_paths):
 def test_train_model_creates_files(tmp_model_paths):
     model_path, metrics_path = tmp_model_paths
     from app.model import train_model
+
     X, y = _make_xy()
     train_model(X, y)
     assert os.path.exists(model_path)
@@ -49,6 +52,7 @@ def test_train_model_creates_files(tmp_model_paths):
 def test_metrics_json_valid(tmp_model_paths):
     _, metrics_path = tmp_model_paths
     from app.model import train_model
+
     X, y = _make_xy()
     train_model(X, y)
     with open(metrics_path) as f:
@@ -59,6 +63,7 @@ def test_metrics_json_valid(tmp_model_paths):
 
 def test_predict_output_shape(tmp_model_paths):
     from app.model import predict, train_model
+
     X, y = _make_xy()
     pipe, _ = train_model(X, y)
     preds, confs = predict(pipe, X[:5])
@@ -68,6 +73,7 @@ def test_predict_output_shape(tmp_model_paths):
 
 def test_predict_confidence_in_range(tmp_model_paths):
     from app.model import predict, train_model
+
     X, y = _make_xy()
     pipe, _ = train_model(X, y)
     _, confs = predict(pipe, X)
@@ -76,6 +82,7 @@ def test_predict_confidence_in_range(tmp_model_paths):
 
 def test_predict_classes_binary(tmp_model_paths):
     from app.model import predict, train_model
+
     X, y = _make_xy()
     pipe, _ = train_model(X, y)
     preds, _ = predict(pipe, X)
@@ -84,6 +91,7 @@ def test_predict_classes_binary(tmp_model_paths):
 
 def test_load_model_roundtrip(tmp_model_paths):
     from app.model import load_model, predict, train_model
+
     X, y = _make_xy()
     pipe, _ = train_model(X, y)
     loaded = load_model()
@@ -96,12 +104,14 @@ def test_load_model_missing_raises(tmp_path):
     os.environ["MODEL_PATH"] = str(tmp_path / "nonexistent_model.joblib")
     os.environ["METRICS_PATH"] = str(tmp_path / "nonexistent_metrics.json")
     from app.model import load_model
+
     with pytest.raises(FileNotFoundError):
         load_model()
 
 
 def test_read_champion_auc(tmp_model_paths):
     from app.model import read_champion_auc, train_model
+
     assert read_champion_auc() == 0.0
     X, y = _make_xy()
     _, metrics = train_model(X, y)
@@ -112,6 +122,7 @@ def test_read_champion_auc(tmp_model_paths):
 @pytest.mark.parametrize("n_samples", [200, 500, 1000])
 def test_train_various_sizes(tmp_model_paths, n_samples):
     from app.model import train_model
+
     X, y = _make_xy(n=n_samples)
     _, metrics = train_model(X, y)
     assert metrics["n_samples"] == n_samples

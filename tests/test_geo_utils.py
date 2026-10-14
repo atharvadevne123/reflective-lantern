@@ -383,8 +383,8 @@ def test_k_nearest_returns_closest_first() -> None:
 @pytest.mark.parametrize(
     "a,b,expected_bearing",
     [
-        ((0.0, 0.0), (1.0, 0.0), pytest.approx(0.0, abs=1.0)),     # due north
-        ((0.0, 0.0), (0.0, 1.0), pytest.approx(90.0, abs=1.0)),    # due east
+        ((0.0, 0.0), (1.0, 0.0), pytest.approx(0.0, abs=1.0)),  # due north
+        ((0.0, 0.0), (0.0, 1.0), pytest.approx(90.0, abs=1.0)),  # due east
     ],
 )
 def test_bearing_cardinal_directions(a: tuple, b: tuple, expected_bearing) -> None:

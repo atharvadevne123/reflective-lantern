@@ -1,4 +1,5 @@
 """Simple signal-driven backtester for equity trading strategies."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field
@@ -61,7 +62,9 @@ def run_backtest(
     total_return = float(equity[-1] - 1.0)
     n_days = len(daily_returns)
     trading_days = 252
-    annualised_return = float((1 + total_return) ** (trading_days / n_days) - 1) if n_days > 0 else 0.0
+    annualised_return = (
+        float((1 + total_return) ** (trading_days / n_days) - 1) if n_days > 0 else 0.0
+    )
 
     peak = np.maximum.accumulate(equity)
     drawdown = (equity - peak) / peak

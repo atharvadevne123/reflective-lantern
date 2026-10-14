@@ -1,4 +1,5 @@
 """Tests for service metrics counters."""
+
 from __future__ import annotations
 
 import threading

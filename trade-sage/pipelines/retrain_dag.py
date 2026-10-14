@@ -1,4 +1,5 @@
 """Airflow champion/challenger retraining DAG for Trade-Sage."""
+
 from __future__ import annotations
 
 import logging
@@ -12,6 +13,7 @@ logger = logging.getLogger(__name__)
 try:
     from airflow import DAG
     from airflow.operators.python import PythonOperator
+
     HAS_AIRFLOW = True
 except ImportError:
     HAS_AIRFLOW = False
@@ -41,6 +43,7 @@ def _load_training_data():
 
 def task_read_champion_auc(**ctx) -> float:
     from app.model import read_champion_auc
+
     auc = read_champion_auc()
     logger.info("Champion AUC before retraining: %.4f", auc)
     return auc
@@ -48,10 +51,12 @@ def task_read_champion_auc(**ctx) -> float:
 
 def task_train_challenger(**ctx) -> dict:
     import os
+
     os.environ["MODEL_PATH"] = CHALLENGER_PATH
     os.environ["METRICS_PATH"] = CHALLENGER_METRICS_PATH
 
     from app.model import train_model
+
     X, y = _load_training_data()
     _, metrics = train_model(X, y)
     logger.info("Challenger AUC: %.4f ± %.4f", metrics["auc_mean"], metrics["auc_std"])

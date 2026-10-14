@@ -1,4 +1,5 @@
 """Tests for Pydantic validation models."""
+
 from __future__ import annotations
 
 import pytest
@@ -47,15 +48,19 @@ def test_predict_request_horizon_out_of_range():
 
 def test_portfolio_weights_not_summing():
     with pytest.raises(ValidationError):
-        PortfolioRiskRequest(holdings=[
-            {"ticker": "AAPL", "weight": 0.3, "ohlcv": _rows()},
-            {"ticker": "GOOG", "weight": 0.3, "ohlcv": _rows()},
-        ])
+        PortfolioRiskRequest(
+            holdings=[
+                {"ticker": "AAPL", "weight": 0.3, "ohlcv": _rows()},
+                {"ticker": "GOOG", "weight": 0.3, "ohlcv": _rows()},
+            ]
+        )
 
 
 def test_portfolio_valid():
-    req = PortfolioRiskRequest(holdings=[
-        {"ticker": "AAPL", "weight": 0.6, "ohlcv": _rows()},
-        {"ticker": "GOOG", "weight": 0.4, "ohlcv": _rows()},
-    ])
+    req = PortfolioRiskRequest(
+        holdings=[
+            {"ticker": "AAPL", "weight": 0.6, "ohlcv": _rows()},
+            {"ticker": "GOOG", "weight": 0.4, "ohlcv": _rows()},
+        ]
+    )
     assert len(req.holdings) == 2

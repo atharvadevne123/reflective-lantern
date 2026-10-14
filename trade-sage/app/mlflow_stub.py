@@ -4,6 +4,7 @@ In production, set MLFLOW_TRACKING_URI to enable real logging.
 Without it, this module is a no-op that lets the rest of the codebase
 call MLflow-style APIs without failing on import.
 """
+
 from __future__ import annotations
 
 import logging
@@ -16,6 +17,7 @@ MLFLOW_URI = os.getenv("MLFLOW_TRACKING_URI", "")
 try:
     if MLFLOW_URI:
         import mlflow  # noqa: F401
+
         _MLFLOW_AVAILABLE = True
     else:
         _MLFLOW_AVAILABLE = False

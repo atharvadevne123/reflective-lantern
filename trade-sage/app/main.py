@@ -1,4 +1,5 @@
 """FastAPI application for Trade-Sage equity signal prediction service."""
+
 from __future__ import annotations
 
 import logging

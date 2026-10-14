@@ -1,4 +1,5 @@
 """Tests for FAISS equity pattern similarity search."""
+
 from __future__ import annotations
 
 import numpy as np

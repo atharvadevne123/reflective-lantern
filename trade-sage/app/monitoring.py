@@ -1,4 +1,5 @@
 """Drift detection, prediction logging, and model monitoring."""
+
 from __future__ import annotations
 
 import json
@@ -51,12 +52,14 @@ def check_drift_all(
         results[name] = drift_info
         update_reference(name, col)
         if db is not None:
-            db.add(DriftLog(
-                feature_name=name,
-                ks_statistic=drift_info["ks_statistic"],
-                p_value=drift_info["p_value"],
-                drift_detected=drift_info["drift_detected"],
-            ))
+            db.add(
+                DriftLog(
+                    feature_name=name,
+                    ks_statistic=drift_info["ks_statistic"],
+                    p_value=drift_info["p_value"],
+                    drift_detected=drift_info["drift_detected"],
+                )
+            )
     if db is not None:
         try:
             db.commit()
@@ -89,14 +92,16 @@ def log_prediction(
 
 
 def record_training_run(db: Session, metrics: dict) -> None:
-    db.add(ModelMetrics(
-        run_id=metrics.get("run_id", "unknown"),
-        auc_mean=metrics.get("auc_mean", 0.0),
-        auc_std=metrics.get("auc_std", 0.0),
-        accuracy=metrics.get("accuracy"),
-        n_features=metrics.get("n_features", 0),
-        n_samples=metrics.get("n_samples", 0),
-    ))
+    db.add(
+        ModelMetrics(
+            run_id=metrics.get("run_id", "unknown"),
+            auc_mean=metrics.get("auc_mean", 0.0),
+            auc_std=metrics.get("auc_std", 0.0),
+            accuracy=metrics.get("accuracy"),
+            n_features=metrics.get("n_features", 0),
+            n_samples=metrics.get("n_samples", 0),
+        )
+    )
     try:
         db.commit()
     except Exception:

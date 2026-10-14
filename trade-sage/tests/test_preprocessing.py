@@ -1,4 +1,5 @@
 """Tests for OHLCV data cleaning and preprocessing utilities."""
+
 from __future__ import annotations
 
 import numpy as np
@@ -15,13 +16,15 @@ from app.preprocessing import (
 def _make_df(n: int = 10) -> pd.DataFrame:
     rng = np.random.default_rng(0)
     close = 100 + rng.normal(0, 1, n).cumsum()
-    return pd.DataFrame({
-        "open": close - 0.1,
-        "high": close + 0.5,
-        "low": close - 0.5,
-        "close": close,
-        "volume": rng.integers(1000, 5000, n).astype(float),
-    })
+    return pd.DataFrame(
+        {
+            "open": close - 0.1,
+            "high": close + 0.5,
+            "low": close - 0.5,
+            "close": close,
+            "volume": rng.integers(1000, 5000, n).astype(float),
+        }
+    )
 
 
 def test_validate_clean_df():

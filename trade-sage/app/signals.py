@@ -1,4 +1,5 @@
 """Trading signal utilities and confidence thresholds."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass

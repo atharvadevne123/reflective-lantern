@@ -1,4 +1,5 @@
 """Feature engineering pipeline for equity trading signals."""
+
 from __future__ import annotations
 
 import numpy as np
@@ -46,19 +47,34 @@ class TechnicalIndicators(BaseEstimator, TransformerMixin):
         df["bb_pct"] = (close - df["bb_lower"]) / (df["bb_upper"] - df["bb_lower"] + 1e-9)
         df["bb_width"] = (df["bb_upper"] - df["bb_lower"]) / (sma + 1e-9)
 
-        tr = pd.concat([
-            high - low,
-            (high - close.shift()).abs(),
-            (low - close.shift()).abs(),
-        ], axis=1).max(axis=1)
+        tr = pd.concat(
+            [
+                high - low,
+                (high - close.shift()).abs(),
+                (low - close.shift()).abs(),
+            ],
+            axis=1,
+        ).max(axis=1)
         df["atr"] = tr.rolling(14).mean()
 
         df["vol_ratio"] = volume / (volume.rolling(20).mean() + 1e-9)
 
-        return df[[
-            "rsi", "macd", "macd_signal", "macd_hist",
-            "bb_pct", "bb_width", "atr", "vol_ratio",
-        ]].fillna(0).values
+        return (
+            df[
+                [
+                    "rsi",
+                    "macd",
+                    "macd_signal",
+                    "macd_hist",
+                    "bb_pct",
+                    "bb_width",
+                    "atr",
+                    "vol_ratio",
+                ]
+            ]
+            .fillna(0)
+            .values
+        )
 
 
 class LagRollingFeatures(BaseEstimator, TransformerMixin):
@@ -82,9 +98,17 @@ class LagRollingFeatures(BaseEstimator, TransformerMixin):
         df["momentum_20"] = close / (close.shift(20) + 1e-9) - 1
 
         lag_cols = [
-            "ret_1d", "ret_2d", "ret_3d", "ret_5d", "ret_10d",
-            "vol_5d", "vol_20d", "sma_ratio_5_20", "sma_ratio_10_50",
-            "momentum_10", "momentum_20",
+            "ret_1d",
+            "ret_2d",
+            "ret_3d",
+            "ret_5d",
+            "ret_10d",
+            "vol_5d",
+            "vol_20d",
+            "sma_ratio_5_20",
+            "sma_ratio_10_50",
+            "momentum_10",
+            "momentum_20",
         ]
         return df[lag_cols].fillna(0).values
 
@@ -112,9 +136,11 @@ class RatioFeatures(BaseEstimator, TransformerMixin):
 
 def build_feature_pipeline() -> Pipeline:
     """Return a three-stage feature pipeline producing a numeric array."""
-    return Pipeline([
-        ("scaler", StandardScaler()),
-    ])
+    return Pipeline(
+        [
+            ("scaler", StandardScaler()),
+        ]
+    )
 
 
 def engineer_features(df: pd.DataFrame) -> np.ndarray:
@@ -126,10 +152,28 @@ def engineer_features(df: pd.DataFrame) -> np.ndarray:
 
 
 FEATURE_NAMES = [
-    "rsi", "macd", "macd_signal", "macd_hist", "bb_pct", "bb_width", "atr", "vol_ratio",
-    "ret_1d", "ret_2d", "ret_3d", "ret_5d", "ret_10d",
-    "vol_5d", "vol_20d", "sma_ratio_5_20", "sma_ratio_10_50", "momentum_10", "momentum_20",
-    "oc_spread", "hl_range", "price_position",
+    "rsi",
+    "macd",
+    "macd_signal",
+    "macd_hist",
+    "bb_pct",
+    "bb_width",
+    "atr",
+    "vol_ratio",
+    "ret_1d",
+    "ret_2d",
+    "ret_3d",
+    "ret_5d",
+    "ret_10d",
+    "vol_5d",
+    "vol_20d",
+    "sma_ratio_5_20",
+    "sma_ratio_10_50",
+    "momentum_10",
+    "momentum_20",
+    "oc_spread",
+    "hl_range",
+    "price_position",
 ]
 
 

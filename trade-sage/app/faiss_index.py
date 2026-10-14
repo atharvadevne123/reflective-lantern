@@ -1,4 +1,5 @@
 """FAISS-based similarity search for equity pattern matching."""
+
 from __future__ import annotations
 
 import logging
@@ -13,6 +14,7 @@ _stored_labels: list[str] = []
 
 try:
     import faiss
+
     _FAISS_AVAILABLE = True
 except ImportError:
     _FAISS_AVAILABLE = False

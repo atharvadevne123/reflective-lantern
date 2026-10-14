@@ -77,4 +77,5 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         response.headers["x-correlation-id"] = correlation_id
         return response
 
+
 __all__ = ["RateLimitMiddleware", "reset_rate_limiter"]

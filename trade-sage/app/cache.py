@@ -1,4 +1,5 @@
 """Thread-safe TTL/LRU in-memory cache."""
+
 from __future__ import annotations
 
 import threading

@@ -1,4 +1,5 @@
 """Tests for feature engineering pipeline."""
+
 from __future__ import annotations
 
 import numpy as np
@@ -19,13 +20,15 @@ def ohlcv_df():
     rng = np.random.default_rng(42)
     n = 100
     close = 150 + np.cumsum(rng.normal(0, 1, n))
-    return pd.DataFrame({
-        "open": close + rng.normal(0, 0.5, n),
-        "high": close + rng.uniform(0.5, 2, n),
-        "low": close - rng.uniform(0.5, 2, n),
-        "close": close,
-        "volume": rng.integers(1_000_000, 5_000_000, n).astype(float),
-    })
+    return pd.DataFrame(
+        {
+            "open": close + rng.normal(0, 0.5, n),
+            "high": close + rng.uniform(0.5, 2, n),
+            "low": close - rng.uniform(0.5, 2, n),
+            "close": close,
+            "volume": rng.integers(1_000_000, 5_000_000, n).astype(float),
+        }
+    )
 
 
 def test_technical_indicators_shape(ohlcv_df):
@@ -87,12 +90,14 @@ def test_price_position_in_zero_one(ohlcv_df):
 def test_engineer_features_different_lengths(n_rows):
     rng = np.random.default_rng(n_rows)
     close = 100 + np.cumsum(rng.normal(0, 1, n_rows))
-    df = pd.DataFrame({
-        "open": close,
-        "high": close + 1,
-        "low": close - 1,
-        "close": close,
-        "volume": np.ones(n_rows) * 1e6,
-    })
+    df = pd.DataFrame(
+        {
+            "open": close,
+            "high": close + 1,
+            "low": close - 1,
+            "close": close,
+            "volume": np.ones(n_rows) * 1e6,
+        }
+    )
     result = engineer_features(df)
     assert result.shape == (n_rows, 22)

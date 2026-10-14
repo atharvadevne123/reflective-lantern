@@ -1,4 +1,5 @@
 """Feature importance extraction from trained ensemble models."""
+
 from __future__ import annotations
 
 import numpy as np

@@ -1,4 +1,5 @@
 """In-process metrics counters for monitoring and observability."""
+
 from __future__ import annotations
 
 import threading

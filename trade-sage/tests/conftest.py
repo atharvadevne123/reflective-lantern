@@ -1,4 +1,5 @@
 """Pytest fixtures for Trade-Sage tests."""
+
 from __future__ import annotations
 
 import os
@@ -21,6 +22,7 @@ TEST_DB_URL = "sqlite://"  # in-memory, shared via StaticPool
 @pytest.fixture(scope="session")
 def db_engine():
     from app.database import Base
+
     engine = create_engine(
         TEST_DB_URL,
         connect_args={"check_same_thread": False},
@@ -56,6 +58,7 @@ def sample_ohlcv_df() -> pd.DataFrame:
 @pytest.fixture()
 def sample_features(sample_ohlcv_df) -> np.ndarray:
     from app.features import engineer_features
+
     return engineer_features(sample_ohlcv_df)
 
 
@@ -63,9 +66,11 @@ def sample_features(sample_ohlcv_df) -> np.ndarray:
 def trained_model(sample_features):
     """Quickly trained model for tests."""
     import numpy as np
+
     os.environ["MODEL_PATH"] = "/tmp/test_trade_sage_model.joblib"
     os.environ["METRICS_PATH"] = "/tmp/test_trade_sage_metrics.json"
     from app.model import train_model
+
     X = np.tile(sample_features, (5, 1))
     rng = np.random.default_rng(1)
     y = rng.integers(0, 2, len(X))
@@ -82,6 +87,7 @@ def ohlcv_payload(sample_ohlcv_df) -> list[dict]:
 def fastapi_client(db_session):
     """TestClient with overridden DB dependency."""
     import os
+
     os.environ["MODEL_PATH"] = "/tmp/test_trade_sage_model.joblib"
     os.environ["METRICS_PATH"] = "/tmp/test_trade_sage_metrics.json"
     from fastapi.testclient import TestClient

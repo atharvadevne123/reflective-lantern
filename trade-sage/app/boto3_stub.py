@@ -3,6 +3,7 @@
 Provides upload/download helpers that fall back gracefully when boto3 is
 unavailable or AWS credentials are not configured.
 """
+
 from __future__ import annotations
 
 import logging
@@ -16,6 +17,7 @@ AWS_PREFIX = os.getenv("AWS_MODEL_PREFIX", "trade-sage/models")
 
 try:
     import boto3  # type: ignore[import]
+
     _BOTO3_AVAILABLE = True
 except ImportError:
     _BOTO3_AVAILABLE = False

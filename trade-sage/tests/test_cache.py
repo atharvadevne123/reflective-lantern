@@ -1,4 +1,5 @@
 """Tests for the thread-safe TTL/LRU prediction cache."""
+
 from __future__ import annotations
 
 import threading

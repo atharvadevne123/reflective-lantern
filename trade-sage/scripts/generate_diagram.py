@@ -1,4 +1,5 @@
 """Generate system architecture diagram for Trade-Sage."""
+
 import os
 
 import matplotlib.patches as mpatches
@@ -17,26 +18,58 @@ ax.set_facecolor("#0d1117")
 
 def box(x, y, w, h, color, label, sublabel=""):
     rect = FancyBboxPatch(
-        (x, y), w, h,
+        (x, y),
+        w,
+        h,
         boxstyle="round,pad=0.1",
-        facecolor=color, edgecolor="white", linewidth=1.2, alpha=0.9,
+        facecolor=color,
+        edgecolor="white",
+        linewidth=1.2,
+        alpha=0.9,
     )
     ax.add_patch(rect)
-    ax.text(x + w / 2, y + h / 2 + (0.15 if sublabel else 0), label,
-            ha="center", va="center", fontsize=8.5, fontweight="bold", color="white")
+    ax.text(
+        x + w / 2,
+        y + h / 2 + (0.15 if sublabel else 0),
+        label,
+        ha="center",
+        va="center",
+        fontsize=8.5,
+        fontweight="bold",
+        color="white",
+    )
     if sublabel:
-        ax.text(x + w / 2, y + h / 2 - 0.2, sublabel,
-                ha="center", va="center", fontsize=6.5, color="#aaaaaa")
+        ax.text(
+            x + w / 2,
+            y + h / 2 - 0.2,
+            sublabel,
+            ha="center",
+            va="center",
+            fontsize=6.5,
+            color="#aaaaaa",
+        )
 
 
 def arrow(x1, y1, x2, y2):
-    ax.annotate("", xy=(x2, y2), xytext=(x1, y1),
-                arrowprops={"arrowstyle": "->", "color": "#58a6ff", "lw": 1.5})
+    ax.annotate(
+        "",
+        xy=(x2, y2),
+        xytext=(x1, y1),
+        arrowprops={"arrowstyle": "->", "color": "#58a6ff", "lw": 1.5},
+    )
 
 
 # Title
-ax.text(8, 8.5, "Trade-Sage — System Architecture", ha="center", va="center",
-        fontsize=14, fontweight="bold", color="white")
+ax.text(
+    8,
+    8.5,
+    "Trade-Sage — System Architecture",
+    ha="center",
+    va="center",
+    fontsize=14,
+    fontweight="bold",
+    color="white",
+)
 
 # Client
 box(0.3, 6.5, 2.0, 1.0, "#21262d", "Client", "REST / HTTP")
@@ -72,11 +105,11 @@ box(3.0, 3.0, 2.5, 1.0, "#21262d", "Airflow DAG", "Champion/Challenger\nWeekly R
 box(10.0, 3.0, 2.5, 1.0, "#21262d", "Model Store", "model.joblib\nmetrics.json")
 
 # Arrows
-arrow(2.3, 7.0, 3.0, 7.0)   # Client -> API
-arrow(3.0, 7.0, 2.3, 7.0)   # API -> Client (response)
+arrow(2.3, 7.0, 3.0, 7.0)  # Client -> API
+arrow(3.0, 7.0, 2.3, 7.0)  # API -> Client (response)
 arrow(4.25, 6.5, 4.25, 6.0)  # API -> Middleware
 arrow(4.25, 5.0, 4.25, 4.5)  # Middleware -> (down)
-arrow(5.5, 7.0, 6.5, 7.0)   # API -> Features
+arrow(5.5, 7.0, 6.5, 7.0)  # API -> Features
 arrow(9.0, 7.0, 10.0, 7.0)  # Features -> Ensemble
 arrow(11.25, 6.5, 11.25, 5.8)  # Ensemble -> Portfolio
 arrow(7.75, 6.5, 7.75, 5.8)  # Features -> Drift
@@ -96,10 +129,15 @@ legend_items = [
     mpatches.Patch(color="#bc8cff", label="Analytics"),
     mpatches.Patch(color="#21262d", label="Storage / Infra"),
 ]
-ax.legend(handles=legend_items, loc="lower left", fontsize=7,
-          facecolor="#161b22", edgecolor="#30363d", labelcolor="white")
+ax.legend(
+    handles=legend_items,
+    loc="lower left",
+    fontsize=7,
+    facecolor="#161b22",
+    edgecolor="#30363d",
+    labelcolor="white",
+)
 
 plt.tight_layout(pad=0)
-plt.savefig("screenshots/architecture.png", dpi=150, bbox_inches="tight",
-            facecolor="#0d1117")
+plt.savefig("screenshots/architecture.png", dpi=150, bbox_inches="tight", facecolor="#0d1117")
 print("Architecture diagram saved to screenshots/architecture.png")

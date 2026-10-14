@@ -1,4 +1,5 @@
 """Health check utilities for liveness and readiness probes."""
+
 from __future__ import annotations
 
 import os

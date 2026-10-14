@@ -1,4 +1,5 @@
 """Input validation models (Pydantic v2)."""
+
 from __future__ import annotations
 
 from pydantic import BaseModel, Field, field_validator, model_validator
@@ -20,7 +21,9 @@ class OHLCVRow(BaseModel):
 
 class PredictRequest(BaseModel):
     ticker: str = Field(min_length=1, max_length=16, description="Equity ticker symbol")
-    horizon_days: int = Field(default=5, ge=1, le=60, description="Forecast horizon in trading days")
+    horizon_days: int = Field(
+        default=5, ge=1, le=60, description="Forecast horizon in trading days"
+    )
     ohlcv: list[OHLCVRow] = Field(
         min_length=60,
         description="At least 60 rows of OHLCV data ordered oldest-first",

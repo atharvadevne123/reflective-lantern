@@ -1,4 +1,5 @@
 """Tests for signal-driven backtester."""
+
 from __future__ import annotations
 
 import numpy as np
