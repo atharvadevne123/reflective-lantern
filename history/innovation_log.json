@@ -921,5 +921,71 @@
     "tests_passed": true,
     "server_verified": true,
     "ruff_clean": true
+  },
+  {
+    "date": "2026-10-14",
+    "project": "social-pulse",
+    "description": "Viral-trend prediction API for social media posts. FastAPI + ensemble ML (LightGBM + XGBoost + RandomForest + LR) + FeatureUnion pipeline (17 NLP stats + TF-IDF) + KS-test drift detection + Airflow DAG + FAISS similarity search + rate limiting + model registry + feature store.",
+    "inspired_by": "Social media trend prediction",
+    "repo_url": "https://github.com/atharvadevne123/reflective-lantern/tree/main/social-pulse",
+    "file_count": 60,
+    "test_count": 120,
+    "coverage_pct": 95,
+    "commit_count": 60,
+    "mode": "INNOVATION",
+    "release_tag": "social-pulse-v1.0.0"
+  },
+  {
+    "date": "2026-10-14",
+    "project": "Trade-Sage",
+    "description": "Equity trading signal prediction and portfolio risk scoring API. XGBoost + LightGBM + RandomForest soft-voting VotingClassifier ensemble with 22 engineered features (RSI, MACD, Bollinger Bands, ATR, lag/rolling returns, ratio features). FastAPI with 6 endpoints, portfolio VaR/CVaR/Sharpe/drawdown, KS-test drift monitoring, backtester, feature importance extractor, and comprehensive observability.",
+    "inspired_by": "Growing demand for quantitative trading signal APIs and portfolio risk management tools",
+    "repo_url": "https://github.com/atharvadevne123/reflective-lantern/tree/innovation/trade-sage/trade-sage",
+    "pr_url": "https://github.com/atharvadevne123/reflective-lantern/pull/106",
+    "branch": "innovation/trade-sage",
+    "file_count": 45,
+    "test_count": 166,
+    "coverage_pct": null,
+    "commit_count": 60,
+    "tech_stack": [
+      "FastAPI",
+      "Pydantic v2",
+      "XGBoost",
+      "LightGBM",
+      "sklearn Pipeline",
+      "VotingClassifier",
+      "SQLAlchemy",
+      "Alembic",
+      "Docker+PostgreSQL",
+      "Airflow DAG",
+      "MLflow stub",
+      "boto3/S3 stub",
+      "FAISS",
+      "pytest",
+      "GitHub Actions CI",
+      "ruff"
+    ],
+    "optional_enhancements": [
+      "FAISS similarity index",
+      "feature importance extractor",
+      "backtester with equity curve",
+      "AppConfig centralised configuration",
+      "HealthStatus liveness/readiness probes",
+      "MLflow no-op stub",
+      "AWS/boto3 stub",
+      "Airflow champion/challenger DAG"
+    ],
+    "bugs_found_and_fixed": [
+      "MODEL_PATH/METRICS_PATH read at import time, so test env-var overrides had no effect: changed to dynamic _model_path() functions",
+      "Single-asset portfolio raised ValueError in np.fill_diagonal (requires 2D): added len(weights) > 1 guard",
+      "Pydantic field_validator for high >= low cannot access low (v2 validates in declaration order): changed to model_validator(mode='after')",
+      "In-memory SQLite creates separate DBs per connection causing no such table: fixed with StaticPool",
+      "KS drift test on small RNG samples gave p < 0.05 spuriously: fixed to n=500 identical-distribution samples",
+      "Model training timeout in CI with n_estimators=200, n_jobs=-1: reduced to 100 estimators, n_jobs=1"
+    ],
+    "tests_passed": true,
+    "server_verified": false,
+    "ruff_clean": true,
+    "report_pdf": "history/reports/Trade-Sage_innovation_2026-10-14.pdf"
   }
 ]

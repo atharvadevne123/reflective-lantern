@@ -1,0 +1,46 @@
+name: Social-Pulse CI
+
+on:
+  push:
+    paths:
+      - "social-pulse/**"
+  pull_request:
+    paths:
+      - "social-pulse/**"
+
+defaults:
+  run:
+    working-directory: social-pulse
+
+jobs:
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install ruff
+        run: pip install ruff
+      - name: Run ruff
+        run: ruff check . --select E,F,W,I --ignore E501
+
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install dependencies
+        run: pip install -r requirements.txt pytest pytest-asyncio httpx
+      - name: Run tests
+        run: python -m pytest tests/ -v --tb=short
+      - name: Upload coverage
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-results
+          path: social-pulse/.pytest_cache/
