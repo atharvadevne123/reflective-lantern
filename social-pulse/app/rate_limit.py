@@ -12,7 +12,7 @@ from starlette.middleware.base import BaseHTTPMiddleware
 
 logger = logging.getLogger(__name__)
 
-_DEFAULT_RATE: int = 60   # requests
+_DEFAULT_RATE: int = 60  # requests
 _DEFAULT_WINDOW: int = 60  # seconds
 
 
@@ -57,7 +57,9 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         self._buckets[client_ip] = [t for t in timestamps if t > window_start]
 
         if len(self._buckets[client_ip]) >= self.rate:
-            logger.warning("Rate limit exceeded for %s (%d reqs)", client_ip, len(self._buckets[client_ip]))
+            logger.warning(
+                "Rate limit exceeded for %s (%d reqs)", client_ip, len(self._buckets[client_ip])
+            )
             return Response(
                 content='{"detail":"Rate limit exceeded","code":"RATE_LIMITED"}',
                 status_code=429,

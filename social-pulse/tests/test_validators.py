@@ -107,11 +107,14 @@ class TestValidateSample:
         assert s["day_of_week"] == 6
 
 
-@pytest.mark.parametrize("text,expected", [
-    ("#a", 1),
-    ("#a #b", 2),
-    ("#a #b #c #d", 4),
-    ("no tags", 0),
-])
+@pytest.mark.parametrize(
+    "text,expected",
+    [
+        ("#a", 1),
+        ("#a #b", 2),
+        ("#a #b #c #d", 4),
+        ("no tags", 0),
+    ],
+)
 def test_hashtag_count_parametrized(text: str, expected: int) -> None:
     assert validate_hashtag_consistency(text, 0) == expected

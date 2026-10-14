@@ -112,15 +112,16 @@ def score_post(
         A populated TrendScore instance.
     """
     ep = _engagement_potential(author_followers, hashtag_count, has_media, mention_count)
-    composite = (
-        probability_weight * viral_probability
-        + (1.0 - probability_weight) * ep
-    )
+    composite = probability_weight * viral_probability + (1.0 - probability_weight) * ep
     composite = min(1.0, max(0.0, composite))
     tier = _tier_label(composite)
     logger.debug(
         "score_post post_id=%s vp=%.3f ep=%.3f composite=%.3f tier=%s",
-        post_id, viral_probability, ep, composite, tier,
+        post_id,
+        viral_probability,
+        ep,
+        composite,
+        tier,
     )
     return TrendScore(
         post_id=post_id,

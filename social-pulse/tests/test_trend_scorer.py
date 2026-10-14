@@ -89,10 +89,13 @@ class TestTrendScoreToDict:
         assert "tier" in d
 
 
-@pytest.mark.parametrize("viral_prob,expected_tier", [
-    (0.01, "Low"),
-    (0.99, "Viral"),
-])
+@pytest.mark.parametrize(
+    "viral_prob,expected_tier",
+    [
+        (0.01, "Low"),
+        (0.99, "Viral"),
+    ],
+)
 def test_extreme_probabilities(viral_prob: float, expected_tier: str) -> None:
     result = _score(viral_probability=viral_prob)
     # Very low prob → Low or Medium; very high prob → High or Viral

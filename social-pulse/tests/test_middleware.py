@@ -46,6 +46,7 @@ class TestCorrelationIdMiddleware:
 
     def test_auto_generated_id_is_uuid(self, middleware_client: TestClient) -> None:
         import uuid
+
         resp = middleware_client.get("/echo")
         rid = resp.headers["X-Request-ID"]
         # Should parse as valid UUID

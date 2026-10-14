@@ -160,12 +160,15 @@ class TestShouldRetrain:
         assert not should_retrain(db_session, min_new_samples=10)
 
 
-@pytest.mark.parametrize("viral_prob,expected_label", [
-    (0.0, False),
-    (0.49, False),
-    (0.5, True),
-    (0.99, True),
-])
+@pytest.mark.parametrize(
+    "viral_prob,expected_label",
+    [
+        (0.0, False),
+        (0.49, False),
+        (0.5, True),
+        (0.99, True),
+    ],
+)
 def test_log_prediction_label_threshold(
     db_session: Session, viral_prob: float, expected_label: bool
 ) -> None:

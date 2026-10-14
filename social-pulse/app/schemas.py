@@ -17,9 +17,7 @@ class PostFeaturesFull(BaseModel):
         description="Raw post text.",
         examples=["Just launched! #innovation #tech @everyone 🚀"],
     )
-    author_followers: int = Field(
-        ..., ge=0, le=500_000_000, description="Author follower count."
-    )
+    author_followers: int = Field(..., ge=0, le=500_000_000, description="Author follower count.")
     has_media: bool = Field(False, description="Post includes image/video.")
     has_link: bool = Field(False, description="Post contains a URL.")
     hashtag_count: int = Field(0, ge=0, le=100)
