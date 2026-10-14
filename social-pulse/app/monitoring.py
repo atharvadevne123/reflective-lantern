@@ -12,7 +12,6 @@ from sqlalchemy.orm import Session
 
 from app.database import DriftRecord, Prediction
 
-
 logger = logging.getLogger(__name__)
 
 DRIFT_THRESHOLD: float = 0.05  # p-value below which drift is flagged

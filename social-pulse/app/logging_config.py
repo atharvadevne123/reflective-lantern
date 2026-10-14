@@ -7,7 +7,6 @@ import os
 import sys
 from typing import Any
 
-
 LOG_LEVEL: str = os.environ.get("LOG_LEVEL", "INFO").upper()
 
 LOG_FORMAT: str = (

@@ -9,7 +9,6 @@ from typing import Any
 
 from sqlalchemy.orm import Session
 
-
 logger = logging.getLogger(__name__)
 
 _start_time: float = time.time()

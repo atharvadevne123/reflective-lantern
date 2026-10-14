@@ -7,7 +7,7 @@ import uuid
 import pytest
 from sqlalchemy.orm import Session
 
-from app.database import DriftRecord, Prediction
+from app.database import Prediction
 from app.metrics import PredictionMetrics, compute_metrics
 
 

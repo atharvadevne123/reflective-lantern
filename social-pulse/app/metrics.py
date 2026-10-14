@@ -11,7 +11,6 @@ from sqlalchemy.orm import Session
 
 from app.database import DriftRecord, Prediction
 
-
 logger = logging.getLogger(__name__)
 
 

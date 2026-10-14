@@ -8,7 +8,6 @@ from datetime import datetime, timedelta
 from airflow import DAG  # type: ignore[import]
 from airflow.operators.python import PythonOperator  # type: ignore[import]
 
-
 logger = logging.getLogger(__name__)
 
 DEFAULT_ARGS: dict = {
@@ -26,7 +25,6 @@ def check_drift_task(**context: dict) -> bool:
 
     Returns True if retraining is required; pushes to XCom.
     """
-    import os
     import sys
 
     sys.path.insert(0, "/opt/social-pulse")
@@ -69,7 +67,7 @@ def retrain_model_task(**context: dict) -> dict:
         return {"skipped": True}
 
     from app.database import SessionLocal, init_db
-    from app.model import generate_synthetic_data, load_model, train
+    from app.model import generate_synthetic_data, train
 
     init_db()
     db = SessionLocal()

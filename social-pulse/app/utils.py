@@ -10,7 +10,6 @@ import uuid
 from functools import lru_cache
 from typing import Any
 
-
 logger = logging.getLogger(__name__)
 
 _WHITESPACE_RE = re.compile(r"\s+")

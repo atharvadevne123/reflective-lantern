@@ -10,7 +10,6 @@ from sqlalchemy.orm import Session
 
 from app.database import DriftRecord, Prediction
 from app.monitoring import (
-    DRIFT_THRESHOLD,
     MIN_SAMPLE_SIZE,
     get_drift_summary,
     log_prediction,

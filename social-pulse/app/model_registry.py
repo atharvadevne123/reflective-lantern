@@ -8,7 +8,6 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
-
 logger = logging.getLogger(__name__)
 
 REGISTRY_PATH = Path("/tmp/social_pulse_models/registry.json")

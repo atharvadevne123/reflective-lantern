@@ -19,7 +19,6 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
 
-
 DATABASE_URL: str = os.environ.get(
     "DATABASE_URL", "sqlite:///./social_pulse.db"
 )

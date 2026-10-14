@@ -12,16 +12,14 @@ from pathlib import Path
 from typing import Any
 
 import numpy as np
-from scipy.sparse import hstack, issparse
+from scipy.sparse import issparse
 from sklearn.ensemble import RandomForestClassifier, VotingClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import (
-    auc,
     f1_score,
     precision_score,
     recall_score,
     roc_auc_score,
-    roc_curve,
 )
 from sklearn.model_selection import StratifiedKFold, cross_val_score
 
@@ -37,8 +35,7 @@ try:
 except ImportError:
     _HAS_XGB = False
 
-from app.features import build_feature_pipeline, TextStatTransformer
-
+from app.features import TextStatTransformer, build_feature_pipeline
 
 logger = logging.getLogger(__name__)
 

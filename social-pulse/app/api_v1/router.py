@@ -10,11 +10,10 @@ from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.main import _model, _pipeline, MODEL_VERSION
-from app.model import predict, PredictResult
+from app.main import MODEL_VERSION, _model, _pipeline
+from app.model import PredictResult, predict
 from app.monitoring import log_prediction
 from app.schemas import BatchPredictRequest, BatchPredictResponse, PostFeaturesFull
-
 
 logger = logging.getLogger(__name__)
 

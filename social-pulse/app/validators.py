@@ -6,7 +6,6 @@ import re
 import unicodedata
 from typing import Any
 
-
 _PRINTABLE_RE = re.compile(r"[^\x09\x0a\x0d\x20-\x7e -�]")
 _MAX_CONSECUTIVE_CHARS = 30
 

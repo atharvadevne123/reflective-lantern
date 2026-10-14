@@ -10,16 +10,14 @@ import pytest
 from app.features import (
     TextStatTransformer,
     avg_word_length,
+    build_feature_pipeline,
     capitalisation_ratio,
     count_emojis,
     count_hashtags,
     count_mentions,
     encode_cyclical,
-    exclamation_density,
     follower_bucket,
     has_url,
-    question_density,
-    build_feature_pipeline,
 )
 
 

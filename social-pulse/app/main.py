@@ -11,7 +11,6 @@ from typing import Any, AsyncGenerator
 
 from fastapi import Depends, FastAPI, HTTPException, Request, Response, status
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field, field_validator
 from sqlalchemy.orm import Session
 
@@ -25,7 +24,6 @@ from app.model import (
     train,
 )
 from app.monitoring import get_drift_summary, log_prediction, run_drift_check
-
 
 logging.basicConfig(
     level=logging.INFO,
@@ -262,8 +260,9 @@ def predict_endpoint(
 )
 def metrics_endpoint(db: Session = Depends(get_db)) -> MetricsResponse:
     """Return aggregated prediction metrics from the database."""
-    from app.database import Prediction as PredModel
     from sqlalchemy import func
+
+    from app.database import Prediction as PredModel
 
     total = db.query(func.count(PredModel.id)).scalar() or 0
     viral_count = db.query(func.count(PredModel.id)).filter(PredModel.viral_label.is_(True)).scalar() or 0

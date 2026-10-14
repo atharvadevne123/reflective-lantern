@@ -11,7 +11,6 @@ from app.database import Base, get_db
 from app.main import app
 from app.model import generate_synthetic_data
 
-
 TEST_DATABASE_URL = "sqlite:///./test_social_pulse.db"
 
 test_engine = create_engine(

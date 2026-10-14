@@ -2,22 +2,17 @@
 
 from __future__ import annotations
 
-import pickle
-import tempfile
-from pathlib import Path
-
 import numpy as np
 import pytest
 
 from app.model import (
     PredictResult,
     TrainResult,
+    _to_dense,
     generate_synthetic_data,
     predict,
     train,
-    _to_dense,
 )
-from app.features import build_feature_pipeline
 
 
 class TestGenerateSyntheticData:
@@ -28,7 +23,7 @@ class TestGenerateSyntheticData:
 
     def test_labels_are_binary(self) -> None:
         _, labels = generate_synthetic_data(n=100)
-        assert all(l in (0, 1) for l in labels)
+        assert all(lbl in (0, 1) for lbl in labels)
 
     def test_samples_have_required_keys(self) -> None:
         samples, _ = generate_synthetic_data(n=10)

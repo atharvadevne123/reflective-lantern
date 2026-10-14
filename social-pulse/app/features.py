@@ -10,8 +10,7 @@ from typing import Any
 import numpy as np
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.pipeline import Pipeline, FeatureUnion
-
+from sklearn.pipeline import FeatureUnion, Pipeline
 
 logger = logging.getLogger(__name__)
 

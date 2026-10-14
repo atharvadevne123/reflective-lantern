@@ -11,7 +11,6 @@ from app.database import SessionLocal, init_db
 from app.model import generate_synthetic_data
 from app.monitoring import log_prediction
 
-
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 

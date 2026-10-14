@@ -11,7 +11,6 @@ from typing import Any
 
 import numpy as np
 
-
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
@@ -26,7 +25,6 @@ def evaluate(n_holdout: int = 100, output_path: str | None = None) -> dict[str, 
     Returns:
         Dict of evaluation metrics.
     """
-    from app.model import generate_synthetic_data, load_model, predict, _to_dense
     from sklearn.metrics import (
         accuracy_score,
         f1_score,
@@ -34,6 +32,8 @@ def evaluate(n_holdout: int = 100, output_path: str | None = None) -> dict[str, 
         recall_score,
         roc_auc_score,
     )
+
+    from app.model import _to_dense, generate_synthetic_data, load_model
 
     result = load_model()
     if result is None:

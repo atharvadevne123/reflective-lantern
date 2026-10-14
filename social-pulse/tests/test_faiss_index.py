@@ -10,7 +10,6 @@ import pytest
 
 from app.faiss_index import PostIndex, SimilarPost
 
-
 DIM = 8
 
 
