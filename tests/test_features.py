@@ -989,3 +989,40 @@ def test_generate_synthetic_data_sizes(n: int) -> None:
     assert len(df) == n
     assert "carrier" in df.columns
     assert "delivery_minutes" in df.columns
+
+
+@pytest.mark.parametrize("n_bins", [3, 5, 10])
+def test_bin_feature_output_length(n_bins: int) -> None:
+    from app.features import bin_feature
+
+    values = list(range(100))
+    result = bin_feature(values, n_bins=n_bins)
+    assert len(result) == len(values)
+
+
+@pytest.mark.parametrize("clip_min,clip_max", [(-1.0, 1.0), (0.0, 10.0), (5.0, 15.0)])
+def test_clip_feature_values_parametrized_bounds(clip_min: float, clip_max: float) -> None:
+    from app.features import clip_feature_values
+
+    values = list(range(-5, 20))
+    result = clip_feature_values(values, min_val=clip_min, max_val=clip_max)
+    assert all(clip_min <= v <= clip_max for v in result)
+
+
+@pytest.mark.parametrize("period", [12, 24, 48])
+def test_encode_cyclical_output_columns(period: int) -> None:
+    from app.features import encode_cyclical
+
+    values = list(range(period))
+    sin_vals, cos_vals = encode_cyclical(values, period=period)
+    assert len(sin_vals) == period
+    assert len(cos_vals) == period
+
+
+@pytest.mark.parametrize("n", [5, 10, 20])
+def test_cumulative_sum_feature_last_equals_sum(n: int) -> None:
+    from app.features import cumulative_sum_feature
+
+    values = [1.0] * n
+    result = cumulative_sum_feature(values)
+    assert result[-1] == pytest.approx(float(n))
