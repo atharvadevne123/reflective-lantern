@@ -393,3 +393,50 @@ def test_bearing_cardinal_directions(a: tuple, b: tuple, expected_bearing) -> No
 
     result = bearing(Coordinate(*a), Coordinate(*b))
     assert result == expected_bearing
+
+
+@pytest.mark.parametrize("n", [3, 5, 10])
+def test_bounding_box_center_within_box(n: int) -> None:
+    """The center of a bounding box is contained within that bounding box."""
+    from app.geo_utils import Coordinate, bounding_box_of
+
+    coords = [Coordinate(float(i), float(i)) for i in range(n)]
+    bbox = bounding_box_of(coords)
+    center = bbox.center
+    assert bbox.contains(center)
+
+
+@pytest.mark.parametrize(
+    "coords,expected_count",
+    [
+        ([LONDON, PARIS], 2),
+        ([LONDON, PARIS, NEW_YORK, SYDNEY], 4),
+    ],
+)
+def test_bounding_box_contains_all_input_coords(coords, expected_count: int) -> None:
+    """Every input coordinate is contained in the bounding box."""
+    from app.geo_utils import bounding_box_of
+
+    bbox = bounding_box_of(coords)
+    contained = [c for c in coords if bbox.contains(c)]
+    assert len(contained) == expected_count
+
+
+def test_nearest_neighbor_returns_coord_from_candidates() -> None:
+    """nearest_neighbor always returns one of the provided candidates."""
+    from app.geo_utils import nearest_neighbor
+
+    candidates = [PARIS, NEW_YORK, SYDNEY]
+    result = nearest_neighbor(LONDON, candidates)
+    assert result in candidates
+
+
+@pytest.mark.parametrize("n", [1, 5, 10])
+def test_k_nearest_length_capped_by_candidates(n: int) -> None:
+    """k_nearest never returns more results than there are candidates."""
+    from app.geo_utils import Coordinate, k_nearest
+
+    query = Coordinate(0.0, 0.0)
+    candidates = [Coordinate(float(i), 0.0) for i in range(1, n + 1)]
+    result = k_nearest(query, candidates, k=100)
+    assert len(result) == n
