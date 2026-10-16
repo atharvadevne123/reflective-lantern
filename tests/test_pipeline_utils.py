@@ -684,3 +684,54 @@ class TestPipelineInputFeatures:
         pipe = Pipeline([("reg", LinearRegression())])
         result = pipeline_input_features(pipe)
         assert result is None or isinstance(result, list)
+
+
+@pytest.mark.parametrize("n_steps", [1, 2, 3])
+def test_count_pipeline_steps_returns_n(n_steps: int) -> None:
+    from sklearn.linear_model import LinearRegression
+    from sklearn.pipeline import Pipeline
+    from sklearn.preprocessing import MinMaxScaler, StandardScaler
+
+    from app.pipeline_utils import count_pipeline_steps
+
+    scaler_map = {1: [], 2: [("sc", StandardScaler())], 3: [("sc", StandardScaler()), ("mm", MinMaxScaler())]}
+    steps = scaler_map[n_steps] + [("reg", LinearRegression())]
+    pipe = Pipeline(steps)
+    assert count_pipeline_steps(pipe) == n_steps
+
+
+@pytest.mark.parametrize("n_steps", [2, 3])
+def test_get_step_names_length_matches(n_steps: int) -> None:
+    from sklearn.linear_model import LinearRegression
+    from sklearn.pipeline import Pipeline
+    from sklearn.preprocessing import MinMaxScaler, StandardScaler
+
+    from app.pipeline_utils import get_step_names
+
+    extras = [("sc", StandardScaler()), ("mm", MinMaxScaler())]
+    steps = extras[:n_steps - 1] + [("reg", LinearRegression())]
+    pipe = Pipeline(steps)
+    names = get_step_names(pipe)
+    assert len(names) == n_steps
+
+
+@pytest.mark.parametrize("step_name", ["sc", "reg"])
+def test_has_step_existing_returns_true(step_name: str) -> None:
+    from sklearn.linear_model import LinearRegression
+    from sklearn.pipeline import Pipeline
+    from sklearn.preprocessing import StandardScaler
+
+    from app.pipeline_utils import has_step
+
+    pipe = Pipeline([("sc", StandardScaler()), ("reg", LinearRegression())])
+    assert has_step(pipe, step_name) is True
+
+
+def test_has_step_missing_returns_false() -> None:
+    from sklearn.linear_model import LinearRegression
+    from sklearn.pipeline import Pipeline
+
+    from app.pipeline_utils import has_step
+
+    pipe = Pipeline([("reg", LinearRegression())])
+    assert has_step(pipe, "nonexistent") is False
