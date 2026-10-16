@@ -316,3 +316,35 @@ def test_demand_variability_non_negative(n: int) -> None:
 
     hourly = list(range(n))
     assert demand_variability(hourly) >= 0.0
+
+
+@pytest.mark.parametrize("n", [24, 48, 96])
+def test_build_load_profile_length(n: int) -> None:
+    """build_load_profile returns a list of the requested length."""
+    result = build_load_profile(n)
+    assert len(result) == n
+
+
+@pytest.mark.parametrize("n", [24, 48])
+def test_build_load_profile_non_negative(n: int) -> None:
+    """build_load_profile returns only non-negative values."""
+    result = build_load_profile(n)
+    assert all(v >= 0.0 for v in result)
+
+
+@pytest.mark.parametrize("values,expected_class", [
+    (FLAT, "flat"),
+    (PEAKY, "peaky"),
+])
+def test_classify_profile_expected_classes(values: list, expected_class: str) -> None:
+    """classify_profile correctly identifies flat and peaky profiles."""
+    result = classify_profile(values)
+    assert result == expected_class
+
+
+@pytest.mark.parametrize("n", [12, 24, 48])
+def test_peak_to_average_ratio_gte_one(n: int) -> None:
+    """peak_to_average_ratio is always >= 1 for positive profiles."""
+    values = [float(i + 1) for i in range(n)]
+    result = peak_to_average_ratio(values)
+    assert result >= 1.0
