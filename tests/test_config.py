@@ -68,7 +68,7 @@ def test_drift_window_default(monkeypatch):
     assert Settings().drift_window == 100
 
 
-def test_drift_window_override(monkeypatch):
+def test_drift_window_single_value(monkeypatch):
     monkeypatch.setenv("DRIFT_WINDOW", "250")
     assert Settings().drift_window == 250
 
