@@ -240,3 +240,52 @@ class TestDegradationSeverity:
         from app.monitoring import degradation_severity
 
         assert degradation_severity(0.5) == "high"
+
+
+class TestDriftTrend:
+    @pytest.mark.parametrize(
+        "p_values,expected",
+        [
+            ([0.8, 0.7, 0.6, 0.5, 0.4], "declining"),
+            ([0.1, 0.2, 0.3, 0.4, 0.5], "improving"),
+            ([0.5, 0.5, 0.5, 0.5, 0.5], "stable"),
+        ],
+    )
+    def test_drift_trend_direction(self, p_values: list[float], expected: str) -> None:
+        """drift_trend returns declining/improving/stable based on trend."""
+        from app.monitoring import drift_trend
+
+        result = drift_trend(p_values)
+        assert result == expected
+
+    def test_drift_trend_single_value(self) -> None:
+        """drift_trend handles single-element list as stable."""
+        from app.monitoring import drift_trend
+
+        result = drift_trend([0.5])
+        assert result in ("stable", "improving", "declining")
+
+
+class TestZscoreAlert:
+    @pytest.mark.parametrize(
+        "values,threshold,expected_count",
+        [
+            ([0.0, 0.0, 0.0, 10.0], 2.0, 1),
+            ([1.0, 1.0, 1.0, 1.0], 3.0, 0),
+        ],
+    )
+    def test_zscore_alert_detects_outliers(
+        self, values: list[float], threshold: float, expected_count: int
+    ) -> None:
+        """zscore_alert returns correct number of flagged anomalies."""
+        from app.monitoring import zscore_alert
+
+        flags = zscore_alert(values, threshold=threshold)
+        assert sum(flags) == expected_count
+
+    def test_zscore_alert_returns_int_list(self) -> None:
+        """zscore_alert returns a list of integers (0 or 1)."""
+        from app.monitoring import zscore_alert
+
+        flags = zscore_alert([1.0, 2.0, 100.0, 1.0])
+        assert all(f in (0, 1) for f in flags)
