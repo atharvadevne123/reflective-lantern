@@ -125,3 +125,38 @@ def test_rate_limit_per_minute_override(monkeypatch, limit: int) -> None:
     """rate_limit_per_minute accepts a range of values."""
     monkeypatch.setenv("RATE_LIMIT_PER_MINUTE", str(limit))
     assert Settings().rate_limit_per_minute == limit
+
+
+@pytest.mark.parametrize("window", [50, 100, 500])
+def test_drift_window_override(monkeypatch, window: int) -> None:
+    """DRIFT_WINDOW env var is respected."""
+    monkeypatch.setenv("DRIFT_WINDOW", str(window))
+    assert Settings().drift_window == window
+
+
+@pytest.mark.parametrize("size", [100, 500, 1000])
+def test_reference_buffer_size_override(monkeypatch, size: int) -> None:
+    """REFERENCE_BUFFER_SIZE env var is respected."""
+    monkeypatch.setenv("REFERENCE_BUFFER_SIZE", str(size))
+    assert Settings().reference_buffer_size == size
+
+
+def test_is_postgres_false_for_sqlite(monkeypatch) -> None:
+    """is_postgres returns False when DATABASE_URL is SQLite."""
+    monkeypatch.setenv("DATABASE_URL", "sqlite:///./test.db")
+    assert not Settings().is_postgres()
+
+
+def test_is_postgres_true_for_postgres_url(monkeypatch) -> None:
+    """is_postgres returns True when DATABASE_URL starts with postgresql."""
+    monkeypatch.setenv("DATABASE_URL", "postgresql://user:pass@localhost/db")
+    assert Settings().is_postgres()
+
+
+def test_settings_defaults_are_sane() -> None:
+    """Default settings contain sensible non-empty values."""
+    s = Settings()
+    assert s.database_url
+    assert s.model_path
+    assert s.rate_limit_per_minute > 0
+    assert s.max_workers > 0
