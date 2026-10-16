@@ -74,7 +74,7 @@ def test_predict_all_route_types(client, predict_payload, route_type):
     assert resp.status_code == 200
 
 
-def test_drift_endpoint_returns_200(client):
+def test_drift_endpoint_status_field(client):
     resp = client.get("/api/v1/drift")
     assert resp.status_code == 200
     assert "status" in resp.json()
