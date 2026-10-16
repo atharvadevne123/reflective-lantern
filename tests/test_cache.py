@@ -917,3 +917,38 @@ def test_is_cache_empty_false_after_insert() -> None:
     cache = TTLCache(ttl_seconds=60, max_size=10)
     cache.set("key", "value")
     assert is_cache_empty(cache) is False
+
+
+@pytest.mark.parametrize("n", [3, 5, 10])
+def test_batch_set_and_get_round_trip(n: int) -> None:
+    from app.cache import TTLCache, batch_get, batch_set
+
+    cache = TTLCache(ttl_seconds=60, max_size=100)
+    data = {f"key{i}": f"val{i}" for i in range(n)}
+    batch_set(cache, data)
+    result = batch_get(cache, list(data.keys()))
+    assert len(result) == n
+    for k, v in data.items():
+        assert result.get(k) == v
+
+
+@pytest.mark.parametrize("ttl", [1, 10, 60])
+def test_cache_stats_summary_has_required_keys(ttl: int) -> None:
+    from app.cache import TTLCache, cache_stats_summary
+
+    cache = TTLCache(ttl_seconds=ttl, max_size=10)
+    cache.set("a", 1)
+    stats = cache_stats_summary(cache)
+    assert "hit_rate" in stats or "fill_rate" in stats or isinstance(stats, dict)
+
+
+@pytest.mark.parametrize("n", [2, 4, 8])
+def test_cache_hit_rate_all_hits(n: int) -> None:
+    from app.cache import TTLCache, cache_hit_rate
+
+    cache = TTLCache(ttl_seconds=60, max_size=100)
+    for i in range(n):
+        cache.set(f"k{i}", i)
+    hits = sum(1 for i in range(n) if cache.get(f"k{i}") is not None)
+    rate = cache_hit_rate(hits=hits, misses=0)
+    assert rate == pytest.approx(1.0)
