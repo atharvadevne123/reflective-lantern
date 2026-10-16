@@ -313,3 +313,30 @@ def test_cost_per_unit_positive_units() -> None:
     spec = ResourceSpec(cpu_cores=2, memory_gb=4, duration_hours=1)
     bd = estimate_cost(spec)
     assert cost_per_unit(bd, 100) > 0.0
+
+
+@pytest.mark.parametrize("hours", [1, 8, 24])
+def test_monthly_estimate_scales_with_hours(hours: int) -> None:
+    from app.cost_estimator import ResourceSpec, monthly_estimate
+
+    spec = ResourceSpec(cpu_cores=2, memory_gb=4, duration_hours=hours)
+    result = monthly_estimate(spec)
+    assert result > 0.0
+
+
+@pytest.mark.parametrize("cpu_cores", [1, 4, 8])
+def test_estimate_cost_total_increases_with_cpu(cpu_cores: int) -> None:
+    from app.cost_estimator import ResourceSpec, estimate_cost
+
+    spec = ResourceSpec(cpu_cores=cpu_cores, memory_gb=4, duration_hours=1)
+    bd = estimate_cost(spec)
+    assert bd.total > 0.0
+
+
+@pytest.mark.parametrize("n_specs", [2, 3, 5])
+def test_cheapest_spec_is_in_input_list(n_specs: int) -> None:
+    from app.cost_estimator import ResourceSpec, cheapest_spec
+
+    specs = [ResourceSpec(cpu_cores=i + 1, memory_gb=4, duration_hours=1) for i in range(n_specs)]
+    result = cheapest_spec(specs)
+    assert result in specs
