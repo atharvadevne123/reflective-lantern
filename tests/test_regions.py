@@ -743,3 +743,37 @@ class TestRegionLoadFactorExt:
 
         result = highest_peak_region()
         assert result in get_all_region_ids()
+
+
+@pytest.mark.parametrize("n", [1, 2, 3])
+def test_get_all_region_ids_length_at_least_n(n: int) -> None:
+    from app.regions import get_all_region_ids
+
+    ids = get_all_region_ids()
+    assert len(ids) >= n
+
+
+@pytest.mark.parametrize("region_id", ["NSW", "VIC", "QLD"])
+def test_get_region_name_returns_string(region_id: str) -> None:
+    from app.regions import get_region_name
+
+    name = get_region_name(region_id)
+    assert isinstance(name, str)
+    assert len(name) > 0
+
+
+@pytest.mark.parametrize("region_id", ["NSW", "VIC", "QLD"])
+def test_get_region_timezone_returns_string(region_id: str) -> None:
+    from app.regions import get_region_timezone
+
+    tz = get_region_timezone(region_id)
+    assert isinstance(tz, str)
+    assert "/" in tz or tz == "UTC"
+
+
+@pytest.mark.parametrize("region_id", ["NSW", "VIC", "QLD"])
+def test_compare_peak_loads_self_is_zero(region_id: str) -> None:
+    from app.regions import compare_peak_loads
+
+    diff = compare_peak_loads(region_id, region_id)
+    assert diff == pytest.approx(0.0, abs=1e-6)
