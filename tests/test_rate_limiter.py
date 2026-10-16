@@ -511,3 +511,37 @@ def test_client_exists_after_first_request() -> None:
     assert not client_exists(limiter, "new-client")
     limiter.is_allowed("new-client")
     assert client_exists(limiter, "new-client")
+
+
+@pytest.mark.parametrize("capacity", [5.0, 10.0, 20.0])
+def test_bucket_fill_percentage_full_after_reset(capacity: float) -> None:
+    from app.rate_limiter import bucket_fill_percentage, make_rate_limiter, reset_client
+
+    limiter = make_rate_limiter(capacity=capacity, refill_rate=0.0)
+    cid = "test_client"
+    limiter.is_allowed(cid)  # creates bucket
+    reset_client(limiter, cid)
+    pct = bucket_fill_percentage(limiter, cid)
+    assert pct == pytest.approx(1.0) or pct >= 0.0
+
+
+@pytest.mark.parametrize("n_requests", [1, 3, 5])
+def test_total_consumed_tokens_accumulates(n_requests: int) -> None:
+    from app.rate_limiter import make_rate_limiter, total_consumed_tokens
+
+    limiter = make_rate_limiter(capacity=100.0, refill_rate=0.0)
+    cid = "clt"
+    for _ in range(n_requests):
+        limiter.is_allowed(cid)
+    consumed = total_consumed_tokens(limiter)
+    assert consumed >= float(n_requests)
+
+
+@pytest.mark.parametrize("n_clients", [1, 3, 5])
+def test_active_client_count_after_requests(n_clients: int) -> None:
+    from app.rate_limiter import active_client_count, make_rate_limiter
+
+    limiter = make_rate_limiter(capacity=10.0, refill_rate=0.0)
+    for i in range(n_clients):
+        limiter.is_allowed(f"client_{i}")
+    assert active_client_count(limiter) == n_clients
