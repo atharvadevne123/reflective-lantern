@@ -245,3 +245,41 @@ def test_run_pipeline_returns_metrics_dict() -> None:
     result = run_pipeline(df)
     assert "metrics" in result
     assert isinstance(result["metrics"], dict)
+
+
+def test_run_pipeline_requires_consumption_column() -> None:
+    """run_pipeline raises ValueError when consumption_kwh column is missing."""
+    import pandas as pd
+
+    from app.pipeline import run_pipeline
+
+    df = pd.DataFrame({"hour": range(10), "temperature": [20.0] * 10})
+    with pytest.raises(ValueError, match="consumption_kwh"):
+        run_pipeline(df)
+
+
+def test_run_pipeline_prediction_count_matches_input() -> None:
+    """Number of predictions equals number of input rows."""
+    import pandas as pd
+
+    from app.pipeline import run_pipeline
+
+    n = 15
+    df = pd.DataFrame({"consumption_kwh": [float(i) for i in range(n)], "hour": range(n)})
+    result = run_pipeline(df)
+    assert len(result["predictions"]) == n
+
+
+@pytest.mark.parametrize("n_rows", [5, 20, 50])
+def test_run_pipeline_various_sizes(n_rows: int) -> None:
+    """run_pipeline works for various DataFrame sizes."""
+    import pandas as pd
+
+    from app.pipeline import run_pipeline
+
+    df = pd.DataFrame(
+        {"consumption_kwh": [float(i % 10 + 1) for i in range(n_rows)], "hour": range(n_rows)}
+    )
+    result = run_pipeline(df)
+    assert len(result["predictions"]) == n_rows
+    assert all(isinstance(p, float) for p in result["predictions"])
