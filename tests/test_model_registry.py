@@ -258,3 +258,48 @@ class TestVersionCount:
         for i in range(n):
             reg.register(ModelVersion(name="m", version=f"{i}.0.0", metrics={}))
         assert reg.version_count("m") == n
+
+
+class TestModelRegistryProduction:
+    def test_get_production_returns_none_initially(self) -> None:
+        """get_production returns None before any model is staged."""
+        from app.model_registry import ModelRegistry, ModelVersion
+
+        reg = ModelRegistry()
+        reg.register(ModelVersion(name="m", version="1.0.0", metrics={}))
+        assert reg.get_production("m") is None
+
+    def test_transition_to_production_and_get(self) -> None:
+        """Transitioning to Production makes it retrievable via get_production."""
+        from app.model_registry import ModelRegistry, ModelStage, ModelVersion
+
+        reg = ModelRegistry()
+        mv = ModelVersion(name="m", version="1.0.0", metrics={})
+        reg.register(mv)
+        assert reg.transition_stage("m", "1.0.0", ModelStage.PRODUCTION) is True
+        prod = reg.get_production("m")
+        assert prod is not None
+        assert prod.version == "1.0.0"
+
+    def test_list_models_returns_all_names(self) -> None:
+        """list_models includes every registered model name."""
+        from app.model_registry import ModelRegistry, ModelVersion
+
+        reg = ModelRegistry()
+        reg.register(ModelVersion(name="alpha", version="1.0", metrics={}))
+        reg.register(ModelVersion(name="beta", version="1.0", metrics={}))
+        names = reg.list_models()
+        assert "alpha" in names
+        assert "beta" in names
+
+    def test_add_tag_and_verify(self) -> None:
+        """add_tag stores a tag on the model version."""
+        from app.model_registry import ModelRegistry, ModelVersion
+
+        reg = ModelRegistry()
+        reg.register(ModelVersion(name="m", version="1.0.0", metrics={}))
+        result = reg.add_tag("m", "1.0.0", "owner", "team-a")
+        assert result is True
+        mv = reg._get("m", "1.0.0")
+        assert mv is not None
+        assert mv.tags.get("owner") == "team-a"
