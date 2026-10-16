@@ -226,3 +226,47 @@ class TestFeatureStoreTotalVersions:
         for i in range(n):
             store.publish(_fs(name=f"ds{i}", version="1.0.0"))
         assert store.total_versions() == n
+
+
+class TestFeatureStoreGetSet:
+    def test_get_latest_returns_most_recent(self) -> None:
+        """get_latest returns the highest-version FeatureSet."""
+        from app.feature_store import FeatureSet, FeatureStore
+
+        store = FeatureStore()
+        store.publish(FeatureSet(name="ds", version="1.0.0", features={"x": 1}))
+        store.publish(FeatureSet(name="ds", version="2.0.0", features={"x": 2}))
+        latest = store.get_latest("ds")
+        assert latest is not None
+        assert latest.version == "2.0.0"
+
+    def test_get_version_specific(self) -> None:
+        """get_version retrieves a specific version."""
+        from app.feature_store import FeatureSet, FeatureStore
+
+        store = FeatureStore()
+        store.publish(FeatureSet(name="ds", version="1.0.0", features={"a": 10}))
+        store.publish(FeatureSet(name="ds", version="2.0.0", features={"a": 20}))
+        v1 = store.get_version("ds", "1.0.0")
+        assert v1 is not None
+        assert v1.get("a") == 10
+
+    def test_list_names_includes_all_datasets(self) -> None:
+        """list_names returns all published dataset names."""
+        from app.feature_store import FeatureSet, FeatureStore
+
+        store = FeatureStore()
+        store.publish(FeatureSet(name="ds_x", version="1.0", features={}))
+        store.publish(FeatureSet(name="ds_y", version="1.0", features={}))
+        names = store.list_names()
+        assert "ds_x" in names
+        assert "ds_y" in names
+
+    def test_len_matches_total_versions(self) -> None:
+        """__len__ equals total_versions."""
+        from app.feature_store import FeatureSet, FeatureStore
+
+        store = FeatureStore()
+        store.publish(FeatureSet(name="a", version="1.0", features={}))
+        store.publish(FeatureSet(name="b", version="1.0", features={}))
+        assert len(store) == store.total_versions() == 2
