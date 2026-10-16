@@ -477,3 +477,33 @@ def test_round_trip_losses_kwh_non_negative(efficiency: float, charged_kwh: floa
     loss = round_trip_losses_kwh(charged_kwh, efficiency)
     assert loss >= 0.0
     assert loss <= charged_kwh
+
+
+@pytest.mark.parametrize("capacity", [50.0, 100.0, 200.0])
+def test_battery_spec_usable_kwh_lte_capacity(capacity: float) -> None:
+    """usable_kwh is always <= total capacity."""
+    spec = BatterySpec(capacity_kwh=capacity, max_charge_kw=10.0, max_discharge_kw=10.0)
+    assert spec.usable_kwh <= capacity
+
+
+@pytest.mark.parametrize("n", [8, 16, 24])
+def test_peak_shave_reduces_peak(n: int) -> None:
+    """peak_shave results in a lower or equal peak load."""
+    load = [10.0] * (n - 2) + [50.0, 60.0]
+    spec = make_spec(capacity_kwh=100.0, max_charge_kw=50.0, max_discharge_kw=50.0)
+    shaved = peak_shave(load, spec, target_kw=30.0)
+    assert max(shaved) <= max(load)
+
+
+def test_required_capacity_kwh_scales_with_gap() -> None:
+    """required_capacity_kwh increases when the peak-to-target gap increases."""
+    small_gap = required_capacity_kwh(SPIKY_LOAD, target_kw=40.0)
+    large_gap = required_capacity_kwh(SPIKY_LOAD, target_kw=20.0)
+    assert large_gap >= small_gap
+
+
+@pytest.mark.parametrize("target_kw", [30.0, 40.0, 55.0])
+def test_demand_charge_saving_non_negative(target_kw: float) -> None:
+    """demand_charge_saving is always non-negative."""
+    saving = demand_charge_saving(SPIKY_LOAD, target_kw=target_kw, demand_charge_per_kw=10.0)
+    assert saving >= 0.0
