@@ -1463,3 +1463,40 @@ def test_anomaly_density_parametrized(
 
     result = anomaly_density(flags, window_size=window_size)
     assert result[-1] == pytest.approx(expected_last)
+
+
+@pytest.mark.parametrize("n", [10, 50, 100])
+def test_iqr_flag_all_false_for_constant(n: int) -> None:
+    from app.anomaly import iqr_flag
+
+    values = [5.0] * n
+    flags = iqr_flag(values)
+    assert not any(flags)
+
+
+@pytest.mark.parametrize("threshold", [1.5, 2.0, 3.0])
+def test_zscore_flag_spike_detected_at_varying_thresholds(threshold: float) -> None:
+    from app.anomaly import zscore_flag
+
+    values = [1.0] * 50 + [1000.0] + [1.0] * 50
+    flags = zscore_flag(values, threshold=threshold)
+    assert flags[50] is True
+
+
+@pytest.mark.parametrize("ratio", [0.0, 0.25, 0.5])
+def test_anomaly_rate_matches_ratio(ratio: float) -> None:
+    from app.anomaly import anomaly_rate
+
+    n = 20
+    flags = [True] * int(n * ratio) + [False] * (n - int(n * ratio))
+    result = anomaly_rate(flags)
+    assert result == pytest.approx(ratio, abs=1e-6)
+
+
+@pytest.mark.parametrize("window", [3, 5, 10])
+def test_rolling_anomaly_flag_output_length(window: int) -> None:
+    from app.anomaly import rolling_anomaly_flag
+
+    values = list(range(30))
+    flags = rolling_anomaly_flag(values, window=window)
+    assert len(flags) == len(values)
