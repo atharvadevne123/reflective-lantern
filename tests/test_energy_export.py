@@ -806,3 +806,40 @@ class TestFilterRecordsEdgeCases:
         records = [{"consumption_kwh": 0.5}] * 4
         result = filter_records(records, min_kwh=1.0)
         assert len(result) == 0
+
+
+@pytest.mark.parametrize("n", [3, 5, 10])
+def test_deduplicate_records_removes_dupes(n: int) -> None:
+    from app.energy_export import deduplicate_records
+
+    records = [{"id": i % 3, "kwh": float(i)} for i in range(n)]
+    result = deduplicate_records(records, key="id")
+    assert len(result) <= n
+    ids = [r["id"] for r in result]
+    assert len(ids) == len(set(ids))
+
+
+@pytest.mark.parametrize("mwh", [0.5, 1.0, 10.0])
+def test_mwh_to_kwh_round_trip(mwh: float) -> None:
+    from app.energy_export import kwh_to_mwh, mwh_to_kwh
+
+    assert mwh_to_kwh(kwh_to_mwh(mwh * 1000)) == pytest.approx(mwh * 1000)
+
+
+@pytest.mark.parametrize("n", [5, 10, 20])
+def test_aggregate_by_hour_output_length(n: int) -> None:
+    from app.energy_export import aggregate_by_hour
+
+    records = [{"hour": i % 24, "kwh": float(i)} for i in range(n)]
+    result = aggregate_by_hour(records)
+    assert len(result) <= 24
+
+
+@pytest.mark.parametrize("min_kwh", [0.0, 5.0, 10.0])
+def test_filter_records_count_decreases_with_threshold(min_kwh: float) -> None:
+    from app.energy_export import filter_records
+
+    records = [{"consumption_kwh": float(i)} for i in range(20)]
+    result = filter_records(records, min_kwh=min_kwh)
+    expected_count = sum(1 for r in records if r["consumption_kwh"] >= min_kwh)
+    assert len(result) == expected_count
