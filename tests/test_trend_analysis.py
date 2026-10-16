@@ -1203,3 +1203,52 @@ class TestExponentialGrowthRate:
         from app.trend_analysis import exponential_growth_rate
 
         assert isinstance(exponential_growth_rate([1.0, 2.0, 3.0]), float)
+
+
+@pytest.mark.parametrize("n", [5, 10, 20])
+def test_autocorrelation_finite_result(n: int) -> None:
+    """autocorrelation always returns a finite value for valid inputs."""
+    import math
+
+    values = [float(i) for i in range(n)]
+    result = autocorrelation(values, lag=1)
+    assert math.isfinite(result)
+
+
+@pytest.mark.parametrize(
+    "values,expected_direction",
+    [
+        ([1.0, 1.0, 1.0, 10.0], "rising"),
+        ([10.0, 1.0, 1.0, 1.0], "falling"),
+    ],
+)
+def test_linear_trend_dominated_by_large_change(
+    values: list, expected_direction: str
+) -> None:
+    """linear_trend direction follows the dominant slope direction."""
+    result = linear_trend(values)
+    assert result.direction == expected_direction
+
+
+@pytest.mark.parametrize("window", [3, 5, 10])
+def test_rolling_mean_never_exceeds_max(window: int) -> None:
+    """Rolling mean never exceeds the maximum value in the input."""
+    values = [float(i % 7 + 1) for i in range(30)]
+    result = rolling_mean(values, window=window)
+    assert max(result) <= max(values) + 1e-9
+
+
+class TestPercentageChangeExtended:
+    def test_zero_new_value(self) -> None:
+        """percentage_change returns -100 when new value is zero."""
+        assert percentage_change(100.0, 0.0) == pytest.approx(-100.0)
+
+    def test_returns_float(self) -> None:
+        result = percentage_change(10.0, 12.0)
+        assert isinstance(result, float)
+
+    @pytest.mark.parametrize("old,new", [(100.0, 200.0), (50.0, 25.0)])
+    def test_magnitude_matches_expected(self, old: float, new: float) -> None:
+        result = percentage_change(old, new)
+        expected = (new - old) / old * 100.0
+        assert result == pytest.approx(expected, rel=1e-4)
