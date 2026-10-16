@@ -169,3 +169,49 @@ def test_train_model_metrics_present(metric_key: str) -> None:
     y = df["delivery_minutes"].values
     _, metrics = train_model(X, y)
     assert metric_key in metrics, f"Expected '{metric_key}' in metrics"
+
+
+def test_predict_returns_numpy_array() -> None:
+    """predict returns a numpy array of float values."""
+    import numpy as np
+
+    from app.features import build_feature_pipeline, generate_synthetic_data, prepare_X
+    from app.model import predict, train_model
+
+    df = generate_synthetic_data(n=200, seed=42)
+    pipe = build_feature_pipeline()
+    X = prepare_X(df, pipe, fit=True)
+    y = df["delivery_minutes"].values
+    model, _ = train_model(X, y, save=False)
+    preds = predict(model, X)
+    assert isinstance(preds, np.ndarray)
+    assert preds.shape == (len(y),)
+
+
+def test_model_predictions_within_realistic_range() -> None:
+    """Predictions should be between 1 minute and 1440 minutes (24 hours)."""
+    from app.features import build_feature_pipeline, generate_synthetic_data, prepare_X
+    from app.model import predict, train_model
+
+    df = generate_synthetic_data(n=300, seed=77)
+    pipe = build_feature_pipeline()
+    X = prepare_X(df, pipe, fit=True)
+    y = df["delivery_minutes"].values
+    model, _ = train_model(X, y, save=False)
+    preds = predict(model, X)
+    assert all(1 <= p <= 1440 for p in preds), "Predictions out of realistic range"
+
+
+@pytest.mark.parametrize("seed", [1, 42, 100])
+def test_train_model_deterministic_with_seed(seed: int) -> None:
+    """Training with same seed produces consistent metric ranges."""
+    from app.features import build_feature_pipeline, generate_synthetic_data, prepare_X
+    from app.model import train_model
+
+    df = generate_synthetic_data(n=200, seed=seed)
+    pipe = build_feature_pipeline()
+    X = prepare_X(df, pipe, fit=True)
+    y = df["delivery_minutes"].values
+    _, metrics = train_model(X, y, save=False)
+    assert 0 < metrics["rmse_mean"] < 1000
+    assert -1.0 < metrics["r2_mean"] <= 1.0
