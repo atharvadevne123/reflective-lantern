@@ -1891,3 +1891,49 @@ def test_seasonal_baseline_output_length_parametrized(
     result = seasonal_baseline(values, period=period)
     assert isinstance(result, list)
     assert len(result) == expected_len
+
+
+@pytest.mark.parametrize(
+    "values,window,expected_first",
+    [
+        ([1.0, 2.0, 3.0, 4.0, 5.0], 1, 1.0),
+        ([10.0, 20.0, 30.0], 2, 10.0),
+    ],
+)
+def test_simple_moving_average_first_element(
+    values: list, window: int, expected_first: float
+) -> None:
+    """simple_moving_average first element equals the first input value."""
+    result = simple_moving_average(values, window=window)
+    assert result[0] == pytest.approx(expected_first)
+
+
+@pytest.mark.parametrize("n", [10, 20, 50])
+def test_z_normalize_length_preserved(n: int) -> None:
+    """z_normalize returns a series of the same length as the input."""
+    values = [float(i) for i in range(n)]
+    result = z_normalize(values)
+    assert len(result) == n
+
+
+@pytest.mark.parametrize(
+    "values,lag,expected",
+    [
+        ([1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0], 1, True),
+        ([5.0] * 10, 1, True),
+    ],
+)
+def test_autocorrelation_result_in_range(values: list, lag: int, expected: bool) -> None:
+    """autocorrelation result is always in [-1, 1]."""
+    from app.time_series import autocorrelation as _autocorrelation
+
+    result = _autocorrelation(values, lag=lag)
+    assert -1.0 <= result <= 1.0
+
+
+def test_detect_spikes_threshold_sensitivity() -> None:
+    """A lower z_threshold detects more spikes than a higher one."""
+    values = [1.0] * 20 + [5.0] + [1.0] * 20
+    low_threshold_spikes = detect_spikes(values, z_threshold=1.5)
+    high_threshold_spikes = detect_spikes(values, z_threshold=5.0)
+    assert len(low_threshold_spikes) >= len(high_threshold_spikes)
