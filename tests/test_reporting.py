@@ -1170,3 +1170,44 @@ class TestKwhConversions:
         from app.reporting import kwh_to_wh, wh_to_kwh
 
         assert wh_to_kwh(kwh_to_wh(kwh)) == pytest.approx(kwh)
+
+
+@pytest.mark.parametrize("grade,min_score", [
+    ("A", 90.0),
+    ("B", 75.0),
+    ("C", 60.0),
+])
+def test_energy_efficiency_grade_known_scores(grade: str, min_score: float) -> None:
+    from app.reporting import energy_efficiency_grade
+
+    result = energy_efficiency_grade(min_score)
+    assert result == grade
+
+
+@pytest.mark.parametrize("n", [24, 48, 96])
+def test_consumption_heatmap_data_length(n: int) -> None:
+    from app.reporting import consumption_heatmap_data
+
+    hourly = [float(i % 10 + 1) for i in range(n)]
+    result = consumption_heatmap_data(hourly)
+    assert len(result) > 0
+
+
+@pytest.mark.parametrize("kwh", [1.0, 10.0, 100.0])
+def test_format_kwh_contains_number(kwh: float) -> None:
+    from app.reporting import format_kwh
+
+    result = format_kwh(kwh)
+    assert isinstance(result, str)
+    assert str(int(kwh)) in result or str(kwh) in result
+
+
+@pytest.mark.parametrize("peak_ratio", [0.5, 1.0, 2.0])
+def test_peak_to_offpeak_ratio_returns_float(peak_ratio: float) -> None:
+    from app.reporting import peak_to_offpeak_ratio
+
+    peak = [peak_ratio * 10.0] * 8
+    offpeak = [10.0] * 16
+    result = peak_to_offpeak_ratio(peak_hours=peak, offpeak_hours=offpeak)
+    assert isinstance(result, float)
+    assert result >= 0.0
