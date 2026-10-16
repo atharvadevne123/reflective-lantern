@@ -248,3 +248,42 @@ class TestAugmentTextExt:
         cfg = AugmentationConfig(seed=42)
         result = augment_text(text, cfg)
         assert isinstance(result, str)
+
+
+class TestRandomDeletion:
+    @pytest.mark.parametrize("prob,tokens", [(0.0, ["a", "b", "c"]), (1.0, ["a", "b", "c"])])
+    def test_deletion_probability_bounds(self, prob: float, tokens: list[str]) -> None:
+        """random_deletion with prob=0 keeps all tokens, prob=1 removes most."""
+        from app.data_augmentation import make_rng, random_deletion
+
+        rng = make_rng(42)
+        result = random_deletion(tokens, prob, rng)
+        if prob == 0.0:
+            assert result == tokens
+        assert isinstance(result, list)
+
+    def test_deletion_preserves_at_least_one_token(self) -> None:
+        """random_deletion never returns an empty list."""
+        from app.data_augmentation import make_rng, random_deletion
+
+        rng = make_rng(0)
+        result = random_deletion(["x", "y", "z"], 0.99, rng)
+        assert len(result) >= 1
+
+
+class TestAugmentBatch:
+    def test_augment_batch_length_preserved(self) -> None:
+        """augment_batch returns the same number of items."""
+        from app.data_augmentation import AugmentationConfig, augment_batch
+
+        texts = ["hello world", "foo bar", "test case"]
+        cfg = AugmentationConfig(seed=7)
+        results = augment_batch(texts, cfg)
+        assert len(results) == len(texts)
+
+    def test_augment_batch_empty_input(self) -> None:
+        """augment_batch handles empty list input."""
+        from app.data_augmentation import AugmentationConfig, augment_batch
+
+        cfg = AugmentationConfig()
+        assert augment_batch([], cfg) == []
