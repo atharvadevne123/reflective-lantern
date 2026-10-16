@@ -1677,3 +1677,40 @@ class TestAnnualEmissionEstimateExtended:
 
         result = annual_emission_estimate([100.0] * 12, emission_factor=factor)
         assert result > 0.0
+
+
+@pytest.mark.parametrize("kwh", [100.0, 500.0, 1000.0])
+def test_kwh_to_co2_kg_scales_linearly(kwh: float) -> None:
+    """kwh_to_co2_kg scales linearly with energy consumption."""
+    from app.carbon import kwh_to_co2_kg
+
+    base = kwh_to_co2_kg(100.0)
+    result = kwh_to_co2_kg(kwh)
+    assert result == pytest.approx(base * (kwh / 100.0), rel=1e-4)
+
+
+@pytest.mark.parametrize("tonnes", [0.5, 1.0, 2.5])
+def test_co2_kg_to_tonnes_round_trip(tonnes: float) -> None:
+    """co2_kg_to_tonnes converts correctly for various magnitudes."""
+    from app.carbon import co2_kg_to_tonnes
+
+    kg = tonnes * 1000.0
+    result = co2_kg_to_tonnes(kg)
+    assert result == pytest.approx(tonnes, rel=1e-4)
+
+
+@pytest.mark.parametrize("n", [6, 12, 24])
+def test_annual_carbon_report_monthly_count(n: int) -> None:
+    """annual_carbon_report monthly_co2_kg list length matches input."""
+    from app.carbon import annual_carbon_report
+
+    monthly = [100.0] * n
+    result = annual_carbon_report(monthly)
+    assert len(result["monthly_co2_kg"]) == n
+
+
+def test_carbon_per_sqm_increases_with_kwh() -> None:
+    """carbon_per_sqm returns a higher value for more kWh per m^2."""
+    low = carbon_per_sqm(kwh_per_sqm=10.0)
+    high = carbon_per_sqm(kwh_per_sqm=50.0)
+    assert high > low
