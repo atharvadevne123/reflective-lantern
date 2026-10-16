@@ -1,4 +1,4 @@
-.PHONY: install test lint format run docker clean diagram typecheck coverage audit
+.PHONY: install test lint format run docker clean diagram typecheck coverage audit check ci
 
 install:
 	pip install -r requirements.txt
@@ -48,3 +48,13 @@ seed:
 
 validate:
 	python scripts/validate_history.py
+
+# Run all static checks (lint + format check + typecheck) without executing tests
+check:
+	python -m ruff check .
+	python -m ruff format --check .
+	python -m mypy app/ --ignore-missing-imports --no-error-summary
+
+# Full CI gate: checks + tests with coverage
+ci: check
+	pytest tests/ --cov=app --cov-report=term-missing -q
