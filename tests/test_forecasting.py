@@ -1211,3 +1211,37 @@ def test_forecast_bias_sign_parametrized(actual: list, predicted: list, expected
         assert result < 0.0
     else:
         assert result == pytest.approx(0.0)
+
+
+@pytest.mark.parametrize("steps", [1, 5, 10])
+def test_naive_forecast_seed_value_new(steps: int) -> None:
+    """naive_forecast all elements equal the seed value (new variant)."""
+    seed = 99.5
+    result = naive_forecast(seed, steps=steps)
+    assert all(v == pytest.approx(seed) for v in result)
+
+
+@pytest.mark.parametrize("n", [5, 10, 20])
+def test_ensemble_forecast_length_new(n: int) -> None:
+    """ensemble_forecast returns correct number of steps (new variant)."""
+    result = ensemble_forecast(HISTORY, steps=n)
+    assert len(result) == n
+
+
+@pytest.mark.parametrize("steps", [3, 6, 12])
+def test_seasonal_naive_forecast_length_new(steps: int) -> None:
+    """seasonal_naive_forecast returns correct number of steps (new variant)."""
+    result = seasonal_naive_forecast(HISTORY, steps=steps, period=3)
+    assert len(result) == steps
+
+
+@pytest.mark.parametrize(
+    "actual,predicted",
+    [
+        ([1.0, 2.0, 3.0], [1.0, 2.0, 3.0]),
+        ([10.0, 20.0], [10.0, 20.0]),
+    ],
+)
+def test_mae_score_perfect_prediction_zero(actual: list, predicted: list) -> None:
+    """mae_score is 0 for perfect predictions."""
+    assert mae_score(actual, predicted) == pytest.approx(0.0)
