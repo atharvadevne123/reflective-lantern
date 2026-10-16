@@ -262,3 +262,53 @@ class TestAuditLogClear:
         log.record("bob", "write", "doc/2")
         assert len(log) == 1
         assert log.actors() == ["bob"]
+
+
+class TestAuditLogSearch:
+    def test_search_by_actor_returns_matching(self) -> None:
+        """search filters by actor correctly."""
+        from app.audit_log import AuditLog
+
+        log = AuditLog()
+        log.record("alice", "read", "res/1")
+        log.record("bob", "write", "res/2")
+        results = log.search(actor="alice")
+        assert all(e.actor == "alice" for e in results)
+        assert len(results) == 1
+
+    def test_search_by_action_returns_matching(self) -> None:
+        """search filters by action correctly."""
+        from app.audit_log import AuditLog
+
+        log = AuditLog()
+        log.record("alice", "read", "res/1")
+        log.record("alice", "delete", "res/2")
+        results = log.search(action="read")
+        assert all(e.action == "read" for e in results)
+
+    def test_export_jsonl_contains_records(self) -> None:
+        """export_jsonl produces one JSON line per record."""
+        import json
+
+        from app.audit_log import AuditLog
+
+        log = AuditLog()
+        log.record("alice", "read", "doc/1")
+        log.record("bob", "write", "doc/2")
+        jsonl = log.export_jsonl()
+        lines = [line for line in jsonl.strip().split("\n") if line]
+        assert len(lines) == 2
+        for line in lines:
+            obj = json.loads(line)
+            assert "actor" in obj
+
+    @pytest.mark.parametrize("actor,expected", [("alice", 2), ("bob", 1), ("charlie", 0)])
+    def test_count_by_actor(self, actor: str, expected: int) -> None:
+        """count returns the right number of entries per actor."""
+        from app.audit_log import AuditLog
+
+        log = AuditLog()
+        log.record("alice", "read", "r1")
+        log.record("alice", "write", "r2")
+        log.record("bob", "read", "r3")
+        assert log.count(actor=actor) == expected
