@@ -253,3 +253,36 @@ class TestIsValidUuid:
         from app.correlation_id import is_valid_uuid, new_correlation_id
 
         assert is_valid_uuid(new_correlation_id()) is True
+
+
+class TestCorrelationContext:
+    def test_context_manager_sets_and_clears_id(self) -> None:
+        """correlation_context sets an ID during the block and clears after."""
+        from app.correlation_id import correlation_context, get_correlation_id
+
+        with correlation_context("test-id-123") as cid:
+            assert get_correlation_id() == "test-id-123"
+            assert cid == "test-id-123"
+        assert get_correlation_id() is None
+
+    def test_context_manager_without_id_generates_uuid(self) -> None:
+        """correlation_context with no arg generates a valid UUID."""
+        from app.correlation_id import correlation_context, is_valid_uuid
+
+        with correlation_context() as cid:
+            assert is_valid_uuid(cid)
+
+    def test_set_and_get_correlation_id(self) -> None:
+        """set_correlation_id and get_correlation_id work together."""
+        from app.correlation_id import clear_correlation_id, get_correlation_id, set_correlation_id
+
+        set_correlation_id("my-cid-456")
+        assert get_correlation_id() == "my-cid-456"
+        clear_correlation_id()
+        assert get_correlation_id() is None
+
+    def test_new_correlation_id_is_unique(self) -> None:
+        """Two calls to new_correlation_id produce different UUIDs."""
+        from app.correlation_id import new_correlation_id
+
+        assert new_correlation_id() != new_correlation_id()
