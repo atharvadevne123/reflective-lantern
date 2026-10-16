@@ -373,3 +373,45 @@ def test_correction_kvar_positive_result(pf: float, kw: float) -> None:
 
     result = correction_kvar(kw, pf, target_power_factor=0.95)
     assert result >= 0.0
+
+
+@pytest.mark.parametrize("real_kw,reactive_kvar", [
+    (100.0, 0.0),
+    (60.0, 80.0),
+    (0.0, 100.0),
+])
+def test_apparent_power_pythagorean(real_kw: float, reactive_kvar: float) -> None:
+    import math
+
+    from app.power_quality import apparent_power
+
+    expected = math.sqrt(real_kw**2 + reactive_kvar**2)
+    result = apparent_power(real_kw=real_kw, reactive_kvar=reactive_kvar)
+    assert result == pytest.approx(expected, rel=1e-6)
+
+
+@pytest.mark.parametrize("real_kw,reactive_kvar", [
+    (80.0, 60.0),
+    (100.0, 0.0),
+    (0.0, 50.0),
+])
+def test_reactive_power_non_negative(real_kw: float, reactive_kvar: float) -> None:
+    from app.power_quality import reactive_power
+
+    result = reactive_power(real_kw=real_kw, reactive_kvar=reactive_kvar)
+    assert result >= 0.0
+
+
+@pytest.mark.parametrize("voltages", [
+    [230.0, 230.0, 230.0],
+    [220.0, 230.0, 240.0],
+    [200.0, 230.0, 260.0],
+])
+def test_voltage_imbalance_zero_for_equal_voltages(voltages: list) -> None:
+    from app.power_quality import voltage_imbalance
+
+    result = voltage_imbalance(voltages)
+    if voltages[0] == voltages[1] == voltages[2]:
+        assert result == pytest.approx(0.0, abs=1e-6)
+    else:
+        assert result >= 0.0
