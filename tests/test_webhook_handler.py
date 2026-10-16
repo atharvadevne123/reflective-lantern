@@ -235,3 +235,42 @@ class TestClearHandlers:
         wh.clear_handlers("push")
         assert wh.handler_count("pr") == 1
         assert wh.handler_count("push") == 0
+
+
+class TestWebhookHandlerEventTypes:
+    def test_event_types_empty_initially(self) -> None:
+        """event_types returns empty list when no handlers registered."""
+        from app.webhook_handler import WebhookHandler
+
+        wh = WebhookHandler("secret")
+        assert wh.event_types() == []
+
+    def test_event_types_contains_registered_events(self) -> None:
+        """event_types lists all events that have handlers."""
+        from app.webhook_handler import WebhookHandler
+
+        wh = WebhookHandler("secret")
+        wh.on("push", lambda e: None)
+        wh.on("pull_request", lambda e: None)
+        types = wh.event_types()
+        assert "push" in types
+        assert "pull_request" in types
+
+    def test_on_any_increases_global_handler_count(self) -> None:
+        """on_any adds to the global handler pool."""
+        from app.webhook_handler import WebhookHandler
+
+        wh = WebhookHandler("secret")
+        initial = wh.handler_count()
+        wh.on_any(lambda e: None)
+        assert wh.handler_count() > initial
+
+    @pytest.mark.parametrize("n", [1, 3, 5])
+    def test_handler_count_matches_registered(self, n: int) -> None:
+        """handler_count for a specific event equals registered handlers."""
+        from app.webhook_handler import WebhookHandler
+
+        wh = WebhookHandler("secret")
+        for _ in range(n):
+            wh.on("push", lambda e: None)
+        assert wh.handler_count("push") == n
