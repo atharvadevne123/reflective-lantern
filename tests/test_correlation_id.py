@@ -42,7 +42,7 @@ class TestGetSet:
         assert get_correlation_id() is None
 
 
-class TestCorrelationContext:
+class TestCorrelationContextBasic:
     def setup_method(self) -> None:
         clear_correlation_id()
 
