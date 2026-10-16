@@ -1456,3 +1456,43 @@ class TestEquityMultipleExt:
 
         result = equity_multiple(total_distributions=mult * 100000.0, equity_invested=100000.0)
         assert result == pytest.approx(mult)
+
+
+@pytest.mark.parametrize("rate", [0.04, 0.06, 0.08])
+def test_capitalisation_rate_increases_with_noi(rate: float) -> None:
+    from app.investment import capitalisation_rate
+
+    # cap_rate = noi / value; higher NOI => higher cap rate
+    cap1 = capitalisation_rate(noi=10000.0, property_value=200000.0)
+    cap2 = capitalisation_rate(noi=20000.0, property_value=200000.0)
+    assert cap2 > cap1
+
+
+@pytest.mark.parametrize("ltv", [0.5, 0.7, 0.9])
+def test_loan_to_value_known_ratios(ltv: float) -> None:
+    from app.investment import loan_to_value_ratio
+
+    loan = ltv * 100000.0
+    result = loan_to_value_ratio(loan_amount=loan, property_value=100000.0)
+    assert result == pytest.approx(ltv)
+
+
+@pytest.mark.parametrize("years", [5, 10, 20])
+def test_discounted_cash_flow_length(years: int) -> None:
+    from app.investment import discounted_cash_flow
+
+    cash_flows = [5000.0] * years
+    result = discounted_cash_flow(cash_flows=cash_flows, discount_rate=0.08)
+    assert len(result) == years
+
+
+@pytest.mark.parametrize("score,expected_label", [
+    (0.9, "excellent"),
+    (0.6, "good"),
+    (0.3, "poor"),
+])
+def test_investment_score_label_known_values(score: float, expected_label: str) -> None:
+    from app.investment import investment_score_label
+
+    label = investment_score_label(score)
+    assert label == expected_label
