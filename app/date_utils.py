@@ -595,5 +595,3 @@ def end_of_month(dt: datetime) -> datetime:
     """
     last_day = days_in_month(dt.year, dt.month)
     return dt.replace(day=last_day, hour=23, minute=59, second=59, microsecond=999999)
-
-
