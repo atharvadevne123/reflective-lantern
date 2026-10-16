@@ -1083,11 +1083,14 @@ def test_vector_magnitude_positive_for_nonzero(n: int) -> None:
     assert vector_magnitude(v) > 0.0
 
 
-@pytest.mark.parametrize("a,b,expected", [
-    ([1, 0, 1], [1, 0, 0], pytest.approx(0.5)),
-    ([1, 1], [1, 1], pytest.approx(1.0)),
-    ([0, 0], [0, 0], pytest.approx(0.0)),
-])
+@pytest.mark.parametrize(
+    "a,b,expected",
+    [
+        ([1, 0, 1], [1, 0, 0], pytest.approx(0.5)),
+        ([1, 1], [1, 1], pytest.approx(1.0)),
+        ([0, 0], [0, 0], pytest.approx(0.0)),
+    ],
+)
 def test_jaccard_similarity_known_values(a: list, b: list, expected: float) -> None:
     from app.similarity import jaccard_similarity
 

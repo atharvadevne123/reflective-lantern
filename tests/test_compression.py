@@ -294,3 +294,36 @@ def test_is_gzip_detects_gzip_compressed_data() -> None:
     compressed = gzip_compress(plain)
     assert is_gzip(compressed) is True
     assert is_gzip(plain) is False
+
+
+@pytest.mark.parametrize("data_size", [10, 100, 1000])
+def test_zlib_compress_decompress_round_trip(data_size: int) -> None:
+    from app.compression import zlib_compress, zlib_decompress
+
+    original = b"x" * data_size
+    compressed = zlib_compress(original)
+    restored = zlib_decompress(compressed)
+    assert restored == original
+
+
+@pytest.mark.parametrize("payload", [
+    {"key": "value"},
+    {"a": 1, "b": [1, 2, 3]},
+    {"nested": {"x": True}},
+])
+def test_compress_json_round_trip(payload: dict) -> None:
+    from app.compression import compress_json, decompress_json
+
+    compressed = compress_json(payload)
+    restored = decompress_json(compressed)
+    assert restored == payload
+
+
+@pytest.mark.parametrize("n", [10, 100, 500])
+def test_compression_ratio_gzip_less_than_one_for_repetitive_data(n: int) -> None:
+    from app.compression import compression_ratio, gzip_compress
+
+    original = b"abcdefghij" * n
+    compressed = gzip_compress(original)
+    ratio = compression_ratio(len(original), len(compressed))
+    assert ratio < 1.0 or n < 20  # small data may not compress

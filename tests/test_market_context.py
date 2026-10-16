@@ -1401,11 +1401,14 @@ class TestComparableValueAdjustment:
         assert isinstance(result, float)
 
 
-@pytest.mark.parametrize("income,price,expected", [
-    (50000.0, 200000.0, pytest.approx(4.0)),
-    (100000.0, 300000.0, pytest.approx(3.0)),
-    (80000.0, 400000.0, pytest.approx(5.0)),
-])
+@pytest.mark.parametrize(
+    "income,price,expected",
+    [
+        (50000.0, 200000.0, pytest.approx(4.0)),
+        (100000.0, 300000.0, pytest.approx(3.0)),
+        (80000.0, 400000.0, pytest.approx(5.0)),
+    ],
+)
 def test_affordability_ratio_known_values(income: float, price: float, expected: float) -> None:
     from app.market_context import affordability_ratio
 

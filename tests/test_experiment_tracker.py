@@ -256,47 +256,47 @@ class TestExperimentTotalAssignments:
         assert exp.total_assignments() == n
 
 
-class TestExperimentRegistry:
+class TestExperimentRegistryAdditional:
     def test_register_and_get(self) -> None:
         """Registered experiment can be retrieved by name."""
         from app.experiment_tracker import CONTROL, TREATMENT, Experiment, ExperimentRegistry
 
         registry = ExperimentRegistry()
-        exp = Experiment("my_test", [CONTROL, TREATMENT])
+        exp = Experiment("my_test_2", [CONTROL, TREATMENT])
         registry.register(exp)
-        assert registry.get("my_test") is exp
+        assert registry.get("my_test_2") is exp
 
     def test_get_unregistered_returns_none(self) -> None:
         """get returns None for unknown experiment names."""
         from app.experiment_tracker import ExperimentRegistry
 
         registry = ExperimentRegistry()
-        assert registry.get("ghost") is None
+        assert registry.get("ghost_additional") is None
 
     def test_list_experiments_contains_registered(self) -> None:
         """list_experiments returns all registered names."""
         from app.experiment_tracker import CONTROL, TREATMENT, Experiment, ExperimentRegistry
 
         registry = ExperimentRegistry()
-        registry.register(Experiment("exp_a", [CONTROL, TREATMENT]))
-        registry.register(Experiment("exp_b", [CONTROL, TREATMENT]))
+        registry.register(Experiment("exp_c", [CONTROL, TREATMENT]))
+        registry.register(Experiment("exp_d", [CONTROL, TREATMENT]))
         names = registry.list_experiments()
-        assert "exp_a" in names
-        assert "exp_b" in names
+        assert "exp_c" in names
+        assert "exp_d" in names
 
     def test_deregister_removes_experiment(self) -> None:
         """deregister removes an experiment from the registry."""
         from app.experiment_tracker import CONTROL, TREATMENT, Experiment, ExperimentRegistry
 
         registry = ExperimentRegistry()
-        exp = Experiment("to_remove", [CONTROL, TREATMENT])
+        exp = Experiment("to_remove_2", [CONTROL, TREATMENT])
         registry.register(exp)
-        assert registry.deregister("to_remove") is True
-        assert registry.get("to_remove") is None
+        assert registry.deregister("to_remove_2") is True
+        assert registry.get("to_remove_2") is None
 
     def test_deregister_nonexistent_returns_false(self) -> None:
         """deregister returns False for unknown experiment names."""
         from app.experiment_tracker import ExperimentRegistry
 
         registry = ExperimentRegistry()
-        assert registry.deregister("does_not_exist") is False
+        assert registry.deregister("does_not_exist_2") is False

@@ -603,11 +603,14 @@ def test_make_anomaly_alert_returns_alert(n: int) -> None:
         assert isinstance(alert, Alert)
 
 
-@pytest.mark.parametrize("severities", [
-    ["info", "info"],
-    ["warning", "critical"],
-    ["critical"],
-])
+@pytest.mark.parametrize(
+    "severities",
+    [
+        ["info", "info"],
+        ["warning", "critical"],
+        ["critical"],
+    ],
+)
 def test_highest_severity_is_most_severe(severities: list) -> None:
     from app.notifications import Alert, highest_severity
 

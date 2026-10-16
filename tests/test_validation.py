@@ -1506,11 +1506,14 @@ def test_validate_range_parametrized(
         assert errors == []
 
 
-@pytest.mark.parametrize("url", [
-    "http://example.com",
-    "https://api.example.org/v1",
-    "https://subdomain.test.io/path?q=1",
-])
+@pytest.mark.parametrize(
+    "url",
+    [
+        "http://example.com",
+        "https://api.example.org/v1",
+        "https://subdomain.test.io/path?q=1",
+    ],
+)
 def test_validate_url_valid_inputs(url: str) -> None:
     from app.validation import validate_url
 

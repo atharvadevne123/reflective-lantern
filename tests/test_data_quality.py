@@ -1295,11 +1295,14 @@ def test_null_rate_matches_expected(n_nulls: int) -> None:
     assert result == pytest.approx(n_nulls / total)
 
 
-@pytest.mark.parametrize("values,expected_cardinality", [
-    ([1, 2, 3, 4, 5], 5),
-    ([1, 1, 2, 2], 2),
-    ([7, 7, 7], 1),
-])
+@pytest.mark.parametrize(
+    "values,expected_cardinality",
+    [
+        ([1, 2, 3, 4, 5], 5),
+        ([1, 1, 2, 2], 2),
+        ([7, 7, 7], 1),
+    ],
+)
 def test_column_cardinality_known_values(values: list, expected_cardinality: int) -> None:
     from app.data_quality import column_cardinality
 

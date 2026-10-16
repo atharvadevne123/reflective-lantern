@@ -279,11 +279,14 @@ def test_percentile_rank_parametrized(eui: float, cohort: list, expected_pct) ->
     assert result == expected_pct
 
 
-@pytest.mark.parametrize("eui,budget", [
-    (50.0, 100.0),
-    (80.0, 100.0),
-    (100.0, 100.0),
-])
+@pytest.mark.parametrize(
+    "eui,budget",
+    [
+        (50.0, 100.0),
+        (80.0, 100.0),
+        (100.0, 100.0),
+    ],
+)
 def test_savings_potential_non_negative(eui: float, budget: float) -> None:
     from app.energy_benchmark import savings_potential
 
@@ -291,11 +294,14 @@ def test_savings_potential_non_negative(eui: float, budget: float) -> None:
     assert result >= 0.0
 
 
-@pytest.mark.parametrize("score,expected_grade", [
-    (90, "A"),
-    (75, "B"),
-    (55, "C"),
-])
+@pytest.mark.parametrize(
+    "score,expected_grade",
+    [
+        (90, "A"),
+        (75, "B"),
+        (55, "C"),
+    ],
+)
 def test_grade_from_score_extended(score: int, expected_grade: str) -> None:
     from app.energy_benchmark import grade_from_score
 
@@ -303,11 +309,14 @@ def test_grade_from_score_extended(score: int, expected_grade: str) -> None:
     assert result == expected_grade
 
 
-@pytest.mark.parametrize("kwh,area", [
-    (1000.0, 100.0),
-    (5000.0, 250.0),
-    (10000.0, 500.0),
-])
+@pytest.mark.parametrize(
+    "kwh,area",
+    [
+        (1000.0, 100.0),
+        (5000.0, 250.0),
+        (10000.0, 500.0),
+    ],
+)
 def test_energy_use_intensity_formula(kwh: float, area: float) -> None:
     from app.energy_benchmark import energy_use_intensity
 

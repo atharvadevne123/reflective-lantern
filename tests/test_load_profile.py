@@ -332,10 +332,13 @@ def test_build_load_profile_non_negative(n: int) -> None:
     assert all(v >= 0.0 for v in result)
 
 
-@pytest.mark.parametrize("values,expected_class", [
-    (FLAT, "flat"),
-    (PEAKY, "peaky"),
-])
+@pytest.mark.parametrize(
+    "values,expected_class",
+    [
+        (FLAT, "flat"),
+        (PEAKY, "peaky"),
+    ],
+)
 def test_classify_profile_expected_classes(values: list, expected_class: str) -> None:
     """classify_profile correctly identifies flat and peaky profiles."""
     result = classify_profile(values)

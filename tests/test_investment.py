@@ -1486,11 +1486,14 @@ def test_discounted_cash_flow_length(years: int) -> None:
     assert len(result) == years
 
 
-@pytest.mark.parametrize("score,expected_label", [
-    (0.9, "excellent"),
-    (0.6, "good"),
-    (0.3, "poor"),
-])
+@pytest.mark.parametrize(
+    "score,expected_label",
+    [
+        (0.9, "excellent"),
+        (0.6, "good"),
+        (0.3, "poor"),
+    ],
+)
 def test_investment_score_label_known_values(score: float, expected_label: str) -> None:
     from app.investment import investment_score_label
 

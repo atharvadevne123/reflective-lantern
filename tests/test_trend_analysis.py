@@ -1222,9 +1222,7 @@ def test_autocorrelation_finite_result(n: int) -> None:
         ([10.0, 1.0, 1.0, 1.0], "falling"),
     ],
 )
-def test_linear_trend_dominated_by_large_change(
-    values: list, expected_direction: str
-) -> None:
+def test_linear_trend_dominated_by_large_change(values: list, expected_direction: str) -> None:
     """linear_trend direction follows the dominant slope direction."""
     result = linear_trend(values)
     assert result.direction == expected_direction

@@ -821,6 +821,7 @@ def test_compute_drift_larger_shift_higher_ks(shift: float) -> None:
 @pytest.mark.parametrize("rate", [0.0, 0.5, 1.0])
 def test_alert_rate_in_range(rate: float) -> None:
     from app.monitoring import alert_rate
+
     n = 20
     flags = [True] * int(n * rate) + [False] * (n - int(n * rate))
     result = alert_rate(flags)
@@ -830,6 +831,7 @@ def test_alert_rate_in_range(rate: float) -> None:
 @pytest.mark.parametrize("severity", ["low", "medium", "high"])
 def test_drift_severity_returns_string(severity: str) -> None:
     from app.monitoring import drift_severity
+
     # drift_severity takes a ks_statistic float; map severity to a plausible ks value
     ks_map = {"low": 0.1, "medium": 0.4, "high": 0.9}
     result = drift_severity(ks_map[severity])

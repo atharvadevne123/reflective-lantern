@@ -417,8 +417,16 @@ def test_alert_manager_rule_count_matches_added(n_rules: int) -> None:
 
     mgr = AlertManager()
     for i in range(n_rules):
-        mgr.add_rule(AlertRule(name=f"rule_{i}", metric=f"m{i}", threshold=0.5,
-                               severity=Severity.INFO, comparison="gt", cooldown_s=0.0))
+        mgr.add_rule(
+            AlertRule(
+                name=f"rule_{i}",
+                metric=f"m{i}",
+                threshold=0.5,
+                severity=Severity.INFO,
+                comparison="gt",
+                cooldown_s=0.0,
+            )
+        )
     assert len(mgr.rules) == n_rules
 
 
@@ -434,8 +442,14 @@ def test_severity_enum_from_string(severity: str) -> None:
 def test_alert_rule_fires_above_threshold(threshold: float) -> None:
     from app.alerting import AlertRule, Severity
 
-    rule = AlertRule(name="t", metric="m", threshold=threshold,
-                     severity=Severity.WARNING, comparison="gt", cooldown_s=0.0)
+    rule = AlertRule(
+        name="t",
+        metric="m",
+        threshold=threshold,
+        severity=Severity.WARNING,
+        comparison="gt",
+        cooldown_s=0.0,
+    )
     alert = rule.evaluate(threshold + 1.0, now=0.0)
     assert alert is not None
 
@@ -444,8 +458,14 @@ def test_alert_rule_fires_above_threshold(threshold: float) -> None:
 def test_alert_rule_lt_comparison(below: bool) -> None:
     from app.alerting import AlertRule, Severity
 
-    rule = AlertRule(name="t", metric="m", threshold=10.0,
-                     severity=Severity.WARNING, comparison="lt", cooldown_s=0.0)
+    rule = AlertRule(
+        name="t",
+        metric="m",
+        threshold=10.0,
+        severity=Severity.WARNING,
+        comparison="lt",
+        cooldown_s=0.0,
+    )
     value = 5.0 if below else 15.0
     alert = rule.evaluate(value, now=0.0)
     if below:

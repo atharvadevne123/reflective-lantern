@@ -1172,11 +1172,14 @@ class TestKwhConversions:
         assert wh_to_kwh(kwh_to_wh(kwh)) == pytest.approx(kwh)
 
 
-@pytest.mark.parametrize("grade,min_score", [
-    ("A", 90.0),
-    ("B", 75.0),
-    ("C", 60.0),
-])
+@pytest.mark.parametrize(
+    "grade,min_score",
+    [
+        ("A", 90.0),
+        ("B", 75.0),
+        ("C", 60.0),
+    ],
+)
 def test_energy_efficiency_grade_known_scores(grade: str, min_score: float) -> None:
     from app.reporting import energy_efficiency_grade
 

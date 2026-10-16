@@ -325,11 +325,14 @@ def test_normalization_factor_parametrized(
     assert result == pytest.approx(expected, rel=1e-4)
 
 
-@pytest.mark.parametrize("temp,base", [
-    (30.0, 18.0),
-    (25.0, 22.0),
-    (40.0, 25.0),
-])
+@pytest.mark.parametrize(
+    "temp,base",
+    [
+        (30.0, 18.0),
+        (25.0, 22.0),
+        (40.0, 25.0),
+    ],
+)
 def test_cooling_degree_days_positive_when_hot(temp: float, base: float) -> None:
     from app.weather_normalization import cooling_degree_days
 
@@ -340,11 +343,14 @@ def test_cooling_degree_days_positive_when_hot(temp: float, base: float) -> None
         assert result == pytest.approx(0.0)
 
 
-@pytest.mark.parametrize("temp,base", [
-    (5.0, 18.0),
-    (10.0, 15.0),
-    (-5.0, 18.0),
-])
+@pytest.mark.parametrize(
+    "temp,base",
+    [
+        (5.0, 18.0),
+        (10.0, 15.0),
+        (-5.0, 18.0),
+    ],
+)
 def test_heating_degree_days_positive_when_cold(temp: float, base: float) -> None:
     from app.weather_normalization import heating_degree_days
 
