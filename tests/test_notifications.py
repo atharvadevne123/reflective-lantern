@@ -578,3 +578,49 @@ class TestCountAlertsBySourceExtended:
         alerts = [Alert(severity="info", message="m", source="src") for _ in range(n)]
         result = count_alerts_by_source(alerts)
         assert result["src"] == n
+
+
+@pytest.mark.parametrize("severity", ["info", "warning", "critical"])
+def test_filter_alerts_by_severity_returns_only_matching(severity: str) -> None:
+    from app.notifications import Alert, filter_alerts_by_severity
+
+    alerts = [
+        Alert(severity="info", message="low", source="s"),
+        Alert(severity="warning", message="med", source="s"),
+        Alert(severity="critical", message="high", source="s"),
+    ]
+    result = filter_alerts_by_severity(alerts, severity=severity)
+    assert all(a.severity == severity for a in result)
+    assert len(result) == 1
+
+
+@pytest.mark.parametrize("n", [1, 3, 5])
+def test_make_anomaly_alert_returns_alert(n: int) -> None:
+    from app.notifications import Alert, make_anomaly_alert
+
+    for i in range(n):
+        alert = make_anomaly_alert(metric="consumption", value=float(i * 10), threshold=5.0)
+        assert isinstance(alert, Alert)
+
+
+@pytest.mark.parametrize("severities", [
+    ["info", "info"],
+    ["warning", "critical"],
+    ["critical"],
+])
+def test_highest_severity_is_most_severe(severities: list) -> None:
+    from app.notifications import Alert, highest_severity
+
+    alerts = [Alert(severity=s, message="m", source="s") for s in severities]
+    result = highest_severity(alerts)
+    assert result == max(severities, key=["info", "warning", "critical"].index)
+
+
+@pytest.mark.parametrize("n", [2, 4, 6])
+def test_deduplicate_alerts_unique_messages(n: int) -> None:
+    from app.notifications import Alert, deduplicate_alerts
+
+    alerts = [Alert(severity="info", message=f"msg-{i % 2}", source="s") for i in range(n)]
+    result = deduplicate_alerts(alerts)
+    messages = [a.message for a in result]
+    assert len(set(messages)) == len(messages)
