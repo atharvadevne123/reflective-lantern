@@ -247,3 +247,33 @@ class TestAngularDistance:
 
         result = angular_distance([1.0, 1.0], [1.0, -1.0])
         assert isinstance(result, float)
+
+
+class TestIndexSummary:
+    def test_summary_on_empty_index(self) -> None:
+        """index_summary returns a dict with size=0 on empty index."""
+        from app.faiss_index import index_summary, reset_index
+
+        reset_index()
+        summary = index_summary()
+        assert isinstance(summary, dict)
+        assert summary.get("size") == 0
+
+    def test_summary_after_add(self) -> None:
+        """index_summary reflects added vectors."""
+        from app.faiss_index import add_property, index_summary, reset_index
+
+        reset_index()
+        vec = [0.1] * 32
+        add_property(vec, {"tag": "test"})
+        summary = index_summary()
+        assert summary.get("size", 0) >= 1
+
+    def test_index_is_empty_after_reset(self) -> None:
+        """index_is_empty returns True after reset_index."""
+        from app.faiss_index import add_property, index_is_empty, reset_index
+
+        reset_index()
+        add_property([0.5] * 32)
+        reset_index()
+        assert index_is_empty() is True
