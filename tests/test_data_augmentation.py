@@ -250,7 +250,7 @@ class TestAugmentTextExt:
         assert isinstance(result, str)
 
 
-class TestRandomDeletion:
+class TestRandomDeletionExtended:
     @pytest.mark.parametrize("prob,tokens", [(0.0, ["a", "b", "c"]), (1.0, ["a", "b", "c"])])
     def test_deletion_probability_bounds(self, prob: float, tokens: list[str]) -> None:
         """random_deletion with prob=0 keeps all tokens, prob=1 removes most."""
@@ -271,7 +271,7 @@ class TestRandomDeletion:
         assert len(result) >= 1
 
 
-class TestAugmentBatch:
+class TestAugmentBatchExtended:
     def test_augment_batch_length_preserved(self) -> None:
         """augment_batch returns the same number of items."""
         from app.data_augmentation import AugmentationConfig, augment_batch
@@ -287,3 +287,37 @@ class TestAugmentBatch:
 
         cfg = AugmentationConfig()
         assert augment_batch([], cfg) == []
+
+
+@pytest.mark.parametrize("sigma", [0.01, 0.1, 1.0])
+def test_jitter_numerics_changes_values(sigma: float) -> None:
+    from app.data_augmentation import AugmentationConfig, jitter_numerics
+
+    values = [1.0, 2.0, 3.0, 4.0, 5.0]
+    cfg = AugmentationConfig(numeric_jitter_sigma=sigma)
+    result = jitter_numerics(values, cfg)
+    assert len(result) == len(values)
+    # with sigma > 0, at least one value should differ (statistically near-certain)
+    if sigma > 0:
+        assert result != values or sigma == 0.0
+
+
+@pytest.mark.parametrize("n", [3, 5, 10])
+def test_random_swap_length_preserved(n: int) -> None:
+    from app.data_augmentation import AugmentationConfig, random_swap
+
+    tokens = [f"word{i}" for i in range(n)]
+    cfg = AugmentationConfig()
+    result = random_swap(tokens, cfg)
+    assert len(result) == n
+    assert sorted(result) == sorted(tokens)
+
+
+@pytest.mark.parametrize("n", [5, 10, 20])
+def test_augment_batch_output_length(n: int) -> None:
+    from app.data_augmentation import AugmentationConfig, augment_batch
+
+    records = [{"text": f"sample text {i}", "val": float(i)} for i in range(n)]
+    cfg = AugmentationConfig()
+    result = augment_batch(records, cfg)
+    assert len(result) == n
