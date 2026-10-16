@@ -1050,3 +1050,50 @@ class TestPearsonSimilarity:
 
         with pytest.raises(ValueError):
             pearson_similarity([1.0], [1.0, 2.0])
+
+
+@pytest.mark.parametrize("n", [4, 8, 16])
+def test_cosine_distance_self_is_zero(n: int) -> None:
+    from app.similarity import cosine_distance
+
+    rng = __import__("numpy").random.default_rng(n)
+    v = list(rng.random(n) + 0.1)
+    assert cosine_distance(v, v) == pytest.approx(0.0, abs=1e-9)
+
+
+@pytest.mark.parametrize("dim", [3, 5, 10])
+def test_euclidean_distance_non_negative(dim: int) -> None:
+    import numpy as np
+
+    from app.similarity import euclidean_distance
+
+    rng = np.random.default_rng(dim)
+    a = list(rng.random(dim))
+    b = list(rng.random(dim))
+    assert euclidean_distance(a, b) >= 0.0
+
+
+@pytest.mark.parametrize("n", [10, 20, 50])
+def test_vector_magnitude_positive_for_nonzero(n: int) -> None:
+    import numpy as np
+
+    from app.similarity import vector_magnitude
+
+    v = list(np.ones(n))
+    assert vector_magnitude(v) > 0.0
+
+
+@pytest.mark.parametrize("a,b,expected", [
+    ([1, 0, 1], [1, 0, 0], pytest.approx(0.5)),
+    ([1, 1], [1, 1], pytest.approx(1.0)),
+    ([0, 0], [0, 0], pytest.approx(0.0)),
+])
+def test_jaccard_similarity_known_values(a: list, b: list, expected: float) -> None:
+    from app.similarity import jaccard_similarity
+
+    assert jaccard_similarity(set(range(len(a))), set(range(len(b)))) >= 0.0
+    # direct set-based check
+    sa = {i for i, v in enumerate(a) if v}
+    sb = {i for i, v in enumerate(b) if v}
+    result = jaccard_similarity(sa, sb)
+    assert result == expected
