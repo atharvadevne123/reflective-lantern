@@ -199,3 +199,28 @@ class TestRateLimitHeaderPresent:
     def test_parametrized_requests_pass(self, n: int, client: TestClient) -> None:
         for _ in range(n):
             assert client.get("/health").status_code == 200
+
+
+class TestCORSMiddleware:
+    def test_predict_endpoint_accessible(self, client: TestClient) -> None:
+        """Predict endpoint responds to valid requests (CORS not blocking)."""
+        payload = {
+            "carrier": "DHL",
+            "distance_km": 50.0,
+            "weight_kg": 5.0,
+            "route_type": "urban",
+            "hour_of_day": 10,
+            "day_of_week": 1,
+        }
+        resp = client.post("/api/v1/predict", json=payload)
+        assert resp.status_code == 200
+
+    def test_health_endpoint_returns_status_key(self, client: TestClient) -> None:
+        """Health endpoint always includes a status key."""
+        resp = client.get("/api/v1/health")
+        assert "status" in resp.json()
+
+    @pytest.mark.parametrize("endpoint", ["/api/v1/health", "/api/v1/metrics"])
+    def test_get_endpoints_return_200(self, endpoint: str, client: TestClient) -> None:
+        """Standard GET endpoints return 200."""
+        assert client.get(endpoint).status_code == 200
