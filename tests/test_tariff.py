@@ -404,3 +404,38 @@ def test_peak_hour_fraction_invalid_start_hour_raises() -> None:
 
     with pytest.raises(ValueError):
         peak_hour_fraction([1.0] * 24, start_hour=24)
+
+
+@pytest.mark.parametrize("rate", [0.10, 0.20, 0.30])
+def test_flat_rate_cost_new_rates(rate: float) -> None:
+    """flat_rate_cost scales linearly with the rate."""
+    consumption = [1.0] * 10
+    cost = flat_rate_cost(consumption, rate=rate)
+    assert cost == pytest.approx(10.0 * rate, rel=1e-4)
+
+
+@pytest.mark.parametrize("n", [6, 12, 24])
+def test_flat_rate_cost_scales_with_consumption(n: int) -> None:
+    """flat_rate_cost increases when consumption increases."""
+    cost_small = flat_rate_cost([1.0] * n, rate=0.10)
+    cost_large = flat_rate_cost([2.0] * n, rate=0.10)
+    assert cost_large == pytest.approx(2.0 * cost_small, rel=1e-4)
+
+
+def test_single_band_flat_equals_flat_rate_cost() -> None:
+    """A single-band tiered cost with same rate equals flat_rate_cost."""
+    consumption = [1.0] * 24
+    flat = flat_rate_cost(consumption, rate=0.10)
+    bands = [TieredBand(limit_kwh=None, rate=0.10)]
+    tiered = tiered_cost(consumption, bands=bands)
+    # Both should be equal for a single band with same rate
+    assert flat == pytest.approx(tiered, rel=1e-4)
+
+
+@pytest.mark.parametrize("units", [10.0, 100.0, 1000.0])
+def test_tiered_cost_increases_with_consumption(units: float) -> None:
+    """tiered_cost is monotonically non-decreasing as consumption increases."""
+    bands = [TieredBand(limit_kwh=50.0, rate=0.10), TieredBand(limit_kwh=None, rate=0.25)]
+    cost_half = tiered_cost([units / 2.0], bands=bands)
+    cost_full = tiered_cost([units], bands=bands)
+    assert cost_full >= cost_half
