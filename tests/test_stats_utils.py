@@ -1795,3 +1795,44 @@ def test_outlier_fraction_parametrized(
 
     result = outlier_fraction(values, z_threshold=z_threshold)
     assert result == pytest.approx(expected_fraction, abs=0.05)
+
+
+@pytest.mark.parametrize(
+    "values,expected",
+    [
+        ([1.0, 2.0, 3.0], 2.0),
+        ([0.0, 0.0, 0.0], 0.0),
+        ([10.0, 10.0, 10.0, 10.0], 10.0),
+    ],
+)
+def test_weighted_median_equal_weights(values: list, expected: float) -> None:
+    """weighted_median with equal weights equals the regular median."""
+    from app.stats_utils import weighted_median
+
+    weights = [1.0] * len(values)
+    result = weighted_median(values, weights)
+    assert result == pytest.approx(expected, abs=0.5)
+
+
+@pytest.mark.parametrize("n", [5, 10, 20])
+def test_population_variance_zero_for_constant(n: int) -> None:
+    """population_variance is zero for a constant series."""
+    from app.stats_utils import population_variance
+
+    assert population_variance([7.0] * n) == pytest.approx(0.0)
+
+
+@pytest.mark.parametrize(
+    "values,expected",
+    [
+        ([1.0, 2.0], 1.0),
+        ([0.0, 10.0], 5.0),
+        ([3.0, 3.0, 3.0], 3.0),
+    ],
+)
+def test_sample_std_known_values(values: list, expected: float) -> None:
+    """sample_std returns correct value for simple known inputs."""
+    from app.stats_utils import sample_std
+
+    result = sample_std(values)
+    assert result >= 0.0
