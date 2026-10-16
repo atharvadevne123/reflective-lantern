@@ -1399,3 +1399,41 @@ class TestComparableValueAdjustment:
 
         result = comparable_value_adjustment(subject_sqft, 1000, 300000.0)
         assert isinstance(result, float)
+
+
+@pytest.mark.parametrize("income,price,expected", [
+    (50000.0, 200000.0, pytest.approx(4.0)),
+    (100000.0, 300000.0, pytest.approx(3.0)),
+    (80000.0, 400000.0, pytest.approx(5.0)),
+])
+def test_affordability_ratio_known_values(income: float, price: float, expected: float) -> None:
+    from app.market_context import affordability_ratio
+
+    result = affordability_ratio(annual_income=income, home_price=price)
+    assert result == expected
+
+
+@pytest.mark.parametrize("months_supply", [2.0, 6.0, 12.0])
+def test_inventory_months_supply_returns_float(months_supply: float) -> None:
+    from app.market_context import inventory_months_supply
+
+    active = months_supply * 10.0
+    sold = 10.0
+    result = inventory_months_supply(active_listings=active, monthly_sales=sold)
+    assert result == pytest.approx(months_supply)
+
+
+@pytest.mark.parametrize("sales_rate", [0.5, 1.0, 2.0])
+def test_absorption_rate_positive(sales_rate: float) -> None:
+    from app.market_context import absorption_rate
+
+    result = absorption_rate(units_sold=sales_rate * 30, total_units=30, period_days=30)
+    assert result >= 0.0
+
+
+@pytest.mark.parametrize("velocity", [0.1, 1.0, 5.0])
+def test_market_velocity_returns_float(velocity: float) -> None:
+    from app.market_context import market_velocity
+
+    result = market_velocity(units_sold=int(velocity * 10), days_on_market=10)
+    assert isinstance(result, float)
