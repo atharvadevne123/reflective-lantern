@@ -1377,3 +1377,51 @@ def test_is_leap_year_parametrized_extended(year: int, expected: bool) -> None:
     from app.date_utils import is_leap_year
 
     assert is_leap_year(year) is expected
+
+
+@pytest.mark.parametrize("month,expected_quarter", [
+    (1, 1), (3, 1), (4, 2), (6, 2), (7, 3), (9, 3), (10, 4), (12, 4),
+])
+def test_fiscal_quarter_known_months(month: int, expected_quarter: int) -> None:
+    from datetime import date
+
+    from app.date_utils import fiscal_quarter
+
+    d = date(2024, month, 1)
+    assert fiscal_quarter(d) == expected_quarter
+
+
+@pytest.mark.parametrize("year,month,expected_days", [
+    (2024, 2, 29),
+    (2023, 2, 28),
+    (2024, 1, 31),
+    (2024, 4, 30),
+])
+def test_days_in_month_extended(year: int, month: int, expected_days: int) -> None:
+    from app.date_utils import days_in_month
+
+    assert days_in_month(year, month) == expected_days
+
+
+@pytest.mark.parametrize("n_hours", [1, 12, 24])
+def test_generate_hourly_timestamps_length_extended(n_hours: int) -> None:
+    from datetime import datetime
+
+    from app.date_utils import generate_hourly_timestamps
+
+    start = datetime(2024, 1, 1, 0, 0)
+    stamps = generate_hourly_timestamps(start, n_hours)
+    assert len(stamps) == n_hours
+
+
+@pytest.mark.parametrize("iso_str", [
+    "2024-01-01T00:00:00",
+    "2023-06-15T12:30:00",
+    "2025-12-31T23:59:59",
+])
+def test_iso_to_datetime_round_trip(iso_str: str) -> None:
+    from app.date_utils import datetime_to_iso, iso_to_datetime
+
+    dt = iso_to_datetime(iso_str)
+    back = datetime_to_iso(dt)
+    assert back.startswith(iso_str[:19])
