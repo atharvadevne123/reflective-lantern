@@ -139,6 +139,8 @@ def weather_normalize(
 
 
 class DRPayload(BaseModel):
+    """Demand-response evaluation payload with baseline and actual consumption series."""
+
     baseline_hourly_kwh: list[float]
     actual_hourly_kwh: list[float]
 
@@ -237,6 +239,8 @@ def power_quality_correction(
 
 
 class SolarEconomicsPayload(BaseModel):
+    """Solar economics payload with generation and consumption series."""
+
     generation_hourly_kwh: list[float]
     consumption_hourly_kwh: list[float]
 
