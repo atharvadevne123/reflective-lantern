@@ -160,3 +160,33 @@ def test_predict_invalid_inputs_rejected(
     assert resp.status_code == expected_status, (
         f"Expected {expected_status} for {field}={bad_value!r}"
     )
+
+
+def test_health_returns_model_version(client) -> None:
+    """Health endpoint includes model_version in response."""
+    resp = client.get("/api/v1/health")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert "model_version" in data
+
+
+def test_predict_returns_model_version(client, predict_payload) -> None:
+    """Predict endpoint response includes model_version field."""
+    resp = client.post("/api/v1/predict", json=predict_payload)
+    assert resp.status_code == 200
+    assert "model_version" in resp.json()
+
+
+@pytest.mark.parametrize("day_of_week", [0, 1, 2, 3, 4, 5, 6])
+def test_predict_all_days_of_week_accepted(client, predict_payload, day_of_week: int) -> None:
+    """predict accepts all valid day_of_week values 0-6."""
+    payload = {**predict_payload, "day_of_week": day_of_week}
+    resp = client.post("/api/v1/predict", json=payload)
+    assert resp.status_code == 200
+
+
+def test_drift_endpoint_returns_200(client) -> None:
+    """Drift endpoint returns 200 and a status field."""
+    resp = client.get("/api/v1/drift")
+    assert resp.status_code == 200
+    assert "status" in resp.json()
