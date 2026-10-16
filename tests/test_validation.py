@@ -1504,3 +1504,39 @@ def test_validate_range_parametrized(
         assert len(errors) > 0
     else:
         assert errors == []
+
+
+@pytest.mark.parametrize("url", [
+    "http://example.com",
+    "https://api.example.org/v1",
+    "https://subdomain.test.io/path?q=1",
+])
+def test_validate_url_valid_inputs(url: str) -> None:
+    from app.validation import validate_url
+
+    errors = validate_url(url, "url_field")
+    assert errors == []
+
+
+@pytest.mark.parametrize("year", [2020, 2023, 2025])
+def test_validate_year_valid_values(year: int) -> None:
+    from app.validation import validate_year
+
+    errors = validate_year(year)
+    assert errors == []
+
+
+@pytest.mark.parametrize("ratio", [0.0, 0.5, 1.0])
+def test_validate_ratio_valid(ratio: float) -> None:
+    from app.validation import validate_ratio
+
+    errors = validate_ratio(ratio, "ratio_field")
+    assert errors == []
+
+
+@pytest.mark.parametrize("pct", [0.0, 50.0, 100.0])
+def test_validate_percentage_boundaries(pct: float) -> None:
+    from app.validation import validate_percentage
+
+    errors = validate_percentage(pct)
+    assert errors == []
