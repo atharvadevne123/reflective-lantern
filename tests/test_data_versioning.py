@@ -253,3 +253,42 @@ class TestDataLineageDelete:
         dl = DataLineage()
         dl.record(_snap(version="1.0.0"))
         assert dl.delete("energy", "9.9.9") is False
+
+
+class TestDataLineageSnapshotCount:
+    def test_snapshot_count_empty_dataset(self) -> None:
+        """snapshot_count returns 0 for unregistered dataset."""
+        from app.data_versioning import DataLineage
+
+        dl = DataLineage()
+        assert dl.snapshot_count("nonexistent") == 0
+
+    @pytest.mark.parametrize("n", [1, 3, 5])
+    def test_snapshot_count_matches_records(self, n: int) -> None:
+        """snapshot_count returns the number of recorded versions."""
+        from app.data_versioning import DataLineage, DataSnapshot
+
+        dl = DataLineage()
+        for i in range(n):
+            dl.record(DataSnapshot(name="ds", version=f"{i}.0.0", row_count=10 * i, parent=None))
+        assert dl.snapshot_count("ds") == n
+
+    def test_total_rows_sums_correctly(self) -> None:
+        """total_rows returns the sum of row_count across all versions."""
+        from app.data_versioning import DataLineage, DataSnapshot
+
+        dl = DataLineage()
+        dl.record(DataSnapshot(name="ds", version="1.0.0", row_count=100, parent=None))
+        dl.record(DataSnapshot(name="ds", version="2.0.0", row_count=200, parent=None))
+        assert dl.total_rows("ds") == 300
+
+    def test_list_datasets_returns_all_names(self) -> None:
+        """list_datasets returns every recorded dataset name."""
+        from app.data_versioning import DataLineage, DataSnapshot
+
+        dl = DataLineage()
+        dl.record(DataSnapshot(name="a", version="1.0", row_count=10, parent=None))
+        dl.record(DataSnapshot(name="b", version="1.0", row_count=20, parent=None))
+        names = dl.list_datasets()
+        assert "a" in names
+        assert "b" in names
