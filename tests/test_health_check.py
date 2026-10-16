@@ -258,7 +258,7 @@ def test_registry_len_matches_registered_checks(n: int) -> None:
 
     registry = HealthRegistry()
     for i in range(n):
-        registry.register(f"check-{i}", lambda: CheckResult(name=f"c{i}", healthy=True))
+        registry.register(f"check-{i}", lambda idx=i: CheckResult(name=f"c{idx}", healthy=True))
     assert len(registry) == n
 
 
