@@ -796,3 +796,42 @@ def test_latency_timer_zero_on_no_work() -> None:
     with LatencyTimer() as t:
         pass
     assert t.ms >= 0.0
+
+
+@pytest.mark.parametrize("n", [50, 100, 200])
+def test_compute_drift_ks_statistic_in_range(n: int) -> None:
+    rng = np.random.default_rng(7)
+    ref = list(rng.normal(0, 1, n))
+    cur = list(rng.normal(0, 1, n))
+    result = compute_drift(ref, cur)
+    assert 0.0 <= result["ks_statistic"] <= 1.0
+
+
+@pytest.mark.parametrize("shift", [5.0, 10.0, 20.0])
+def test_compute_drift_larger_shift_higher_ks(shift: float) -> None:
+    rng = np.random.default_rng(8)
+    ref = list(rng.normal(0, 1, 300))
+    cur_small = list(rng.normal(1.0, 1, 300))
+    cur_large = list(rng.normal(shift, 1, 300))
+    res_small = compute_drift(ref, cur_small)
+    res_large = compute_drift(ref, cur_large)
+    assert res_large["ks_statistic"] > res_small["ks_statistic"]
+
+
+@pytest.mark.parametrize("rate", [0.0, 0.5, 1.0])
+def test_alert_rate_in_range(rate: float) -> None:
+    from app.monitoring import alert_rate
+    n = 20
+    flags = [True] * int(n * rate) + [False] * (n - int(n * rate))
+    result = alert_rate(flags)
+    assert 0.0 <= result <= 1.0
+
+
+@pytest.mark.parametrize("severity", ["low", "medium", "high"])
+def test_drift_severity_returns_string(severity: str) -> None:
+    from app.monitoring import drift_severity
+    # drift_severity takes a ks_statistic float; map severity to a plausible ks value
+    ks_map = {"low": 0.1, "medium": 0.4, "high": 0.9}
+    result = drift_severity(ks_map[severity])
+    assert isinstance(result, str)
+    assert len(result) > 0
