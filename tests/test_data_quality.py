@@ -1275,3 +1275,41 @@ class TestRecordsMissingField:
 
         records = [{"f": None}]
         assert records_missing_field(records, "f") == [0]
+
+
+@pytest.mark.parametrize("n", [5, 10, 20])
+def test_duplicate_rate_all_unique_is_zero(n: int) -> None:
+    from app.data_quality import duplicate_rate
+
+    records = [{"id": i, "v": i * 2} for i in range(n)]
+    assert duplicate_rate(records) == pytest.approx(0.0)
+
+
+@pytest.mark.parametrize("n_nulls", [0, 2, 5])
+def test_null_rate_matches_expected(n_nulls: int) -> None:
+    from app.data_quality import null_rate
+
+    total = 10
+    records = [{"v": None if i < n_nulls else i} for i in range(total)]
+    result = null_rate(records, "v")
+    assert result == pytest.approx(n_nulls / total)
+
+
+@pytest.mark.parametrize("values,expected_cardinality", [
+    ([1, 2, 3, 4, 5], 5),
+    ([1, 1, 2, 2], 2),
+    ([7, 7, 7], 1),
+])
+def test_column_cardinality_known_values(values: list, expected_cardinality: int) -> None:
+    from app.data_quality import column_cardinality
+
+    records = [{"v": v} for v in values]
+    assert column_cardinality(records, "v") == expected_cardinality
+
+
+@pytest.mark.parametrize("n", [5, 10, 15])
+def test_field_completeness_all_present(n: int) -> None:
+    from app.data_quality import field_completeness
+
+    records = [{"x": i} for i in range(n)]
+    assert field_completeness(records, "x") == pytest.approx(1.0)
