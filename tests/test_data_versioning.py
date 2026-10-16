@@ -255,7 +255,7 @@ class TestDataLineageDelete:
         assert dl.delete("energy", "9.9.9") is False
 
 
-class TestDataLineageSnapshotCount:
+class TestDataLineageSnapshotCountExt:
     def test_snapshot_count_empty_dataset(self) -> None:
         """snapshot_count returns 0 for unregistered dataset."""
         from app.data_versioning import DataLineage
