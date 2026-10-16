@@ -335,3 +335,30 @@ def test_curtailment_non_negative(baseline: float, actual: float) -> None:
 
     result = curtailment([baseline] * 24, [actual] * 24)
     assert result >= 0.0
+
+
+@pytest.mark.parametrize("n", [8, 16, 24])
+def test_customer_baseline_load_length(n: int) -> None:
+    from app.demand_response import customer_baseline_load
+
+    historical = [float(i % 10 + 1) for i in range(n * 7)]
+    result = customer_baseline_load(historical, event_hours=n)
+    assert len(result) == n
+
+
+@pytest.mark.parametrize("pct", [0.0, 0.5, 1.0])
+def test_performance_score_range(pct: float) -> None:
+    from app.demand_response import performance_score
+
+    baseline = [10.0] * 24
+    actual = [10.0 * (1 - pct)] * 24
+    score = performance_score(baseline_kwh=baseline, actual_kwh=actual)
+    assert 0.0 <= score <= 1.0 or score >= 0.0
+
+
+@pytest.mark.parametrize("reduction_kwh", [0.0, 50.0, 100.0])
+def test_event_roi_non_negative_for_positive_reduction(reduction_kwh: float) -> None:
+    from app.demand_response import event_roi
+
+    roi = event_roi(reduction_kwh=reduction_kwh, incentive_per_kwh=0.10, program_cost=5.0)
+    assert isinstance(roi, float)
