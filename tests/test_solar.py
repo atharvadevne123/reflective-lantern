@@ -307,3 +307,32 @@ def test_self_consumption_equal_generation_and_consumption(n: int) -> None:
     assert self_kwh == pytest.approx(sum(gen))
     assert exported_kwh == pytest.approx(0.0)
     assert imported_kwh == pytest.approx(0.0)
+
+
+@pytest.mark.parametrize("efficiency", [0.1, 0.2, 0.3])
+def test_generation_kwh_scales_with_efficiency(efficiency: float) -> None:
+    """generation_kwh increases proportionally with panel_efficiency."""
+    base = generation_kwh(100.0, 5.0, panel_efficiency=0.1)
+    result = generation_kwh(100.0, 5.0, panel_efficiency=efficiency)
+    assert result == pytest.approx(base * (efficiency / 0.1), rel=1e-4)
+
+
+@pytest.mark.parametrize("area", [50.0, 100.0, 200.0])
+def test_generation_kwh_positive_for_positive_area(area: float) -> None:
+    """generation_kwh returns a positive value for any positive area and irradiance."""
+    result = generation_kwh(area, 5.0)
+    assert result > 0.0
+
+
+def test_payback_years_lower_for_higher_savings() -> None:
+    """Payback period decreases when annual savings increase."""
+    low_savings = payback_years(10000.0, annual_saving_usd=500.0)
+    high_savings = payback_years(10000.0, annual_saving_usd=1000.0)
+    assert high_savings < low_savings
+
+
+@pytest.mark.parametrize("cost", [5000.0, 10000.0, 20000.0])
+def test_payback_years_proportional_to_cost(cost: float) -> None:
+    """Payback period scales linearly with system cost when savings are fixed."""
+    result = payback_years(cost, annual_saving_usd=1000.0)
+    assert result == pytest.approx(cost / 1000.0, rel=1e-4)
