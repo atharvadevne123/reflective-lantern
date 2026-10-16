@@ -409,3 +409,46 @@ def test_alert_rule_comparison_operators(
         assert alert is not None, f"Expected alert for {value} {comparison} {threshold}"
     else:
         assert alert is None, f"Did not expect alert for {value} {comparison} {threshold}"
+
+
+@pytest.mark.parametrize("n_rules", [1, 3, 5])
+def test_alert_manager_rule_count_matches_added(n_rules: int) -> None:
+    from app.alerting import AlertManager, AlertRule, Severity
+
+    mgr = AlertManager()
+    for i in range(n_rules):
+        mgr.add_rule(AlertRule(name=f"rule_{i}", metric=f"m{i}", threshold=0.5,
+                               severity=Severity.INFO, comparison="gt", cooldown_s=0.0))
+    assert len(mgr.rules) == n_rules
+
+
+@pytest.mark.parametrize("severity", ["info", "warning", "critical"])
+def test_severity_enum_from_string(severity: str) -> None:
+    from app.alerting import Severity
+
+    val = Severity(severity)
+    assert val.value == severity
+
+
+@pytest.mark.parametrize("threshold", [0.0, 50.0, 100.0])
+def test_alert_rule_fires_above_threshold(threshold: float) -> None:
+    from app.alerting import AlertRule, Severity
+
+    rule = AlertRule(name="t", metric="m", threshold=threshold,
+                     severity=Severity.WARNING, comparison="gt", cooldown_s=0.0)
+    alert = rule.evaluate(threshold + 1.0, now=0.0)
+    assert alert is not None
+
+
+@pytest.mark.parametrize("below", [True, False])
+def test_alert_rule_lt_comparison(below: bool) -> None:
+    from app.alerting import AlertRule, Severity
+
+    rule = AlertRule(name="t", metric="m", threshold=10.0,
+                     severity=Severity.WARNING, comparison="lt", cooldown_s=0.0)
+    value = 5.0 if below else 15.0
+    alert = rule.evaluate(value, now=0.0)
+    if below:
+        assert alert is not None
+    else:
+        assert alert is None
