@@ -133,3 +133,35 @@ class TestBuildS3UriParametrized:
 
         uri = build_s3_uri(bucket, key)
         assert uri == f"s3://{bucket}/{key}"
+
+
+class TestArtefactOperations:
+    def test_artefact_exists_returns_false_for_unknown(self) -> None:
+        """artefact_exists returns False for non-existent keys (stub behaviour)."""
+        from app.aws_stub import artefact_exists
+
+        assert artefact_exists("nonexistent/key.pkl") is False
+
+    def test_delete_artefact_returns_bool(self) -> None:
+        """delete_artefact always returns a boolean in stub mode."""
+        from app.aws_stub import delete_artefact
+
+        result = delete_artefact("some/key.pkl")
+        assert isinstance(result, bool)
+
+    @pytest.mark.parametrize(
+        "key,expected_format",
+        [
+            ("model.joblib", True),
+            ("nested/model/v1.pkl", True),
+            ("", True),
+        ],
+    )
+    def test_upload_model_returns_s3_uri(self, key: str, expected_format: bool) -> None:
+        """upload_model returns an s3:// URI or empty string."""
+        from app.aws_stub import upload_model
+
+        result = upload_model("/tmp/dummy.pkl", key=key)
+        assert isinstance(result, str)
+        if result:
+            assert result.startswith("s3://") or result == ""
