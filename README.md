@@ -234,6 +234,35 @@ The service ships several reusable utility modules under `app/`:
 | `carbon` | Grid CO₂ intensity lookup, kWh → kg CO₂e conversion |
 | `battery` | BESS peak-shaving simulation and sizing |
 | `investment` | Property cap-rate, IRR, DCF, and break-even analysis |
+| `grid_stability` | Power factor, voltage unbalance, THD, and grid metrics |
+| `emissions_factor` | Regional CO₂ intensity, emissions comparison, annual budget check |
+| `peak_demand` | Peak load analysis, demand charges, and demand response savings |
+| `interval_aggregator` | HH/15-min interval aggregation, resampling, and outlier detection |
+| `tariff_engine` | Time-of-use tariff classification, bill simulation, peak-shifting savings |
+| `flexibility_score` | Load variability, response readiness, and overall flexibility assessment |
+| `energy_label` | EU/UK building EPC classification (A+++–G) and efficiency comparison |
+| `hvac_estimator` | Heating/cooling degree days, HDD/CDD-based energy estimation |
+| `meter_validation` | Smart meter reading validation: negatives, bounds, gaps |
+| `baseline_calculator` | IPMVP/ASHRAE regression baselines, energy savings, normalised savings |
+| `thermal_comfort` | ISO 7730 PMV/PPD Fanger model, comfort category, sensation label |
+| `occupancy_model` | Hourly occupancy scheduling, setpoint adjustment, occupied-hours count |
+| `smart_meter_api` | Half-hourly reading parsing, daily aggregation, gap filling |
+| `roi_calculator` | Simple payback, NPV, lifetime savings, ROI, investment analysis |
+| `water_heating` | DHW energy calculations, boiler vs heat pump comparison |
+| `lighting_efficiency` | Luminous efficacy, lux calculation, upgrade savings, lighting audit |
+| `ev_charging` | EV charging energy, duration, session simulation, smart scheduling |
+| `energy_poverty` | UK 10% rule, after-fuel-costs income, vulnerability score, interventions |
+| `solar_pv` | PV array power, annual yield, capacity factor, system analysis |
+| `battery_storage` | BESS charge/discharge, peak shaving threshold, dispatch simulation |
+| `wind_power` | Wind power density, turbine output, Betz limit, annual yield |
+| `carbon_budget` | GHG scope 1/2/3 tracking, reduction targets, linear pathway |
+| `heat_pump` | Carnot COP, realistic COP, electricity-for-heat, SCOP calculation |
+| `insulation_calculator` | U-value/R-value, heat loss, composite wall, upgrade analysis |
+| `demand_forecaster` | Naive, moving average, exponential smoothing, linear trend forecasting |
+| `power_quality` | RMS, THD, crest factor, K-factor, EN 50160 compliance |
+| `energy_audit` | ASHRAE Level I/II audit, EUI, end-use breakdown, opportunity ranking |
+| `microGrid_controller` | Microgrid self-consumption dispatch, self-sufficiency/consumption ratios |
+| `voltage_drop` | Cable resistance, single/three-phase voltage drop, IEC 60364 compliance |
 
 ## License
 
