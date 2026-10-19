@@ -1,251 +1,219 @@
-"""Electrical power-quality metrics.
-
-Computes the quantities a facilities team watches on the supply side:
-power factor, apparent and reactive power, voltage imbalance across phases,
-and the capacitor sizing needed to correct a lagging power factor.
-"""
+"""Power quality analysis: harmonics, sag/swell detection, and PQ indices."""
 
 from __future__ import annotations
 
 import logging
 import math
-import statistics
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+from enum import Enum
 
 logger = logging.getLogger(__name__)
 
-GOOD_POWER_FACTOR: float = 0.95
-"""Power factor at or above which no correction is usually required."""
+NOMINAL_FREQUENCY_HZ: float = 50.0
+NOMINAL_VOLTAGE_V: float = 230.0
 
-POOR_POWER_FACTOR: float = 0.85
-"""Power factor below which utilities commonly levy a penalty."""
 
-MAX_VOLTAGE_IMBALANCE_PCT: float = 2.0
-"""NEMA guidance: motors should not run above 2% voltage imbalance."""
+class PQEvent(str, Enum):
+    """Types of power quality disturbance events."""
+
+    SAG = "sag"
+    SWELL = "swell"
+    INTERRUPTION = "interruption"
+    NORMAL = "normal"
 
 
 @dataclass
-class PowerQualityReport:
-    """Summary of supply-side power quality for one site."""
+class PQEventRecord:
+    """A detected power quality event."""
 
-    real_power_kw: float
-    apparent_power_kva: float
-    reactive_power_kvar: float
-    power_factor: float
-    power_factor_rating: str
-    voltage_imbalance_pct: float
-    imbalance_within_limit: bool
+    event_type: PQEvent
+    magnitude_pct: float
+    duration_cycles: float
+    timestamp_s: float = 0.0
 
 
-def power_factor(real_power_kw: float, apparent_power_kva: float) -> float:
-    """Return the ratio of real power to apparent power.
+@dataclass
+class PQReport:
+    """Summary power quality report for a monitoring period."""
+
+    vrms_v: float
+    thd_pct: float
+    crest_factor: float
+    k_factor: float
+    events: list[PQEventRecord]
+    within_en50160: bool
+
+
+def rms_voltage(samples: list[float]) -> float:
+    """Compute RMS voltage from instantaneous samples.
 
     Args:
-        real_power_kw: Real (working) power in kW.
-        apparent_power_kva: Apparent (total) power in kVA.
+        samples: List of instantaneous voltage samples in V.
 
     Returns:
-        Power factor in 0-1 rounded to 4 decimal places. Returns ``0.0``
-        when *apparent_power_kva* is zero.
+        RMS voltage in V.
 
     Raises:
-        ValueError: If either argument is negative, or real power exceeds
-            apparent power (physically impossible).
+        ValueError: If samples is empty.
     """
-    if real_power_kw < 0 or apparent_power_kva < 0:
-        raise ValueError(
-            f"power must be non-negative, got real={real_power_kw} apparent={apparent_power_kva}"
-        )
-    if apparent_power_kva == 0:
-        return 0.0
-    if real_power_kw > apparent_power_kva:
-        raise ValueError(
-            f"real power ({real_power_kw} kW) cannot exceed apparent power ({apparent_power_kva} kVA)"
-        )
-    return round(real_power_kw / apparent_power_kva, 4)
+    if not samples:
+        raise ValueError("samples must not be empty")
+    return round(math.sqrt(sum(s**2 for s in samples) / len(samples)), 4)
 
 
-def apparent_power(
-    real_power_kw: float | None = None,
-    reactive_power_kvar: float = 0.0,
-    *,
-    real_kw: float | None = None,
-    reactive_kvar: float | None = None,
+def thd_voltage(
+    fundamental_v: float,
+    harmonics_v: list[float],
 ) -> float:
-    """Return apparent power from the real and reactive components.
+    """Compute Total Harmonic Distortion (THD) as a percentage.
 
     Args:
-        real_power_kw: Real (working) power in kW.
-        reactive_power_kvar: Reactive power in kVAR.
+        fundamental_v: RMS amplitude of the fundamental component in V.
+        harmonics_v: RMS amplitudes of harmonic components (2nd, 3rd, ...) in V.
 
     Returns:
-        Apparent power in kVA rounded to 4 decimal places.
+        THD in percent.
 
     Raises:
-        ValueError: If *real_power_kw* is negative.
+        ValueError: If fundamental_v is non-positive.
     """
-    if real_kw is not None:
-        real_power_kw = real_kw
-    if reactive_kvar is not None:
-        reactive_power_kvar = reactive_kvar
-    if real_power_kw is None:
-        real_power_kw = 0.0
-    if real_power_kw < 0:
-        raise ValueError(f"real_power_kw must be non-negative, got {real_power_kw}")
-    return round(math.hypot(real_power_kw, reactive_power_kvar), 4)
+    if fundamental_v <= 0:
+        raise ValueError("fundamental_v must be positive")
+    harmonic_sum_sq = sum(h**2 for h in harmonics_v)
+    return round(100.0 * math.sqrt(harmonic_sum_sq) / fundamental_v, 4)
 
 
-def reactive_power(real_power_kw: float, power_factor_value: float) -> float:
-    """Return reactive power implied by a real power and power factor.
+def crest_factor(peak_v: float, rms_v: float) -> float:
+    """Compute waveform crest factor (peak-to-RMS ratio).
 
     Args:
-        real_power_kw: Real (working) power in kW.
-        power_factor_value: Power factor in 0-1.
+        peak_v: Peak voltage in V.
+        rms_v: RMS voltage in V.
 
     Returns:
-        Reactive power in kVAR rounded to 4 decimal places. Returns ``0.0``
-        at unity power factor.
+        Crest factor (dimensionless).
 
     Raises:
-        ValueError: If *real_power_kw* is negative or *power_factor_value*
-            is outside the open-closed interval (0, 1].
+        ValueError: If rms_v is non-positive or peak < rms.
     """
-    if real_power_kw < 0:
-        raise ValueError(f"real_power_kw must be non-negative, got {real_power_kw}")
-    if not 0.0 < power_factor_value <= 1.0:
-        raise ValueError(f"power_factor_value must be in (0, 1], got {power_factor_value}")
-    angle = math.acos(power_factor_value)
-    return round(real_power_kw * math.tan(angle), 4)
+    if rms_v <= 0:
+        raise ValueError("rms_v must be positive")
+    if peak_v < rms_v:
+        raise ValueError("peak_v must be >= rms_v")
+    return round(peak_v / rms_v, 4)
 
 
-def rate_power_factor(power_factor_value: float) -> str:
-    """Bucket a power factor into a qualitative rating.
-
-    Args:
-        power_factor_value: Power factor in 0-1.
-
-    Returns:
-        One of ``"good"``, ``"acceptable"``, or ``"poor"``.
-    """
-    if power_factor_value >= GOOD_POWER_FACTOR:
-        return "good"
-    if power_factor_value >= POOR_POWER_FACTOR:
-        return "acceptable"
-    return "poor"
-
-
-def correction_kvar(
-    real_power_kw: float,
-    current_power_factor: float,
-    target_power_factor: float = GOOD_POWER_FACTOR,
+def k_factor(
+    fundamental_a: float,
+    harmonics_a: list[float],
 ) -> float:
-    """Return the capacitor rating needed to reach a target power factor.
+    """Compute K-factor for transformer derating with non-linear loads.
 
     Args:
-        real_power_kw: Real (working) power in kW.
-        current_power_factor: Present power factor in (0, 1].
-        target_power_factor: Desired power factor in (0, 1].
+        fundamental_a: RMS fundamental current in A.
+        harmonics_a: RMS harmonic currents [2nd, 3rd, ...] in A.
 
     Returns:
-        Required capacitor rating in kVAR rounded to 4 decimal places.
-        Returns ``0.0`` when the current factor already meets the target.
+        K-factor (dimensionless).
 
     Raises:
-        ValueError: If *real_power_kw* is negative or either power factor
-            is outside (0, 1].
+        ValueError: If fundamental_a is non-positive.
     """
-    if not 0.0 < target_power_factor <= 1.0:
-        raise ValueError(f"target_power_factor must be in (0, 1], got {target_power_factor}")
-    if current_power_factor >= target_power_factor:
-        return 0.0
-    current_kvar = reactive_power(real_power_kw, current_power_factor)
-    target_kvar = reactive_power(real_power_kw, target_power_factor)
-    return round(current_kvar - target_kvar, 4)
-
-
-def voltage_imbalance(phase_voltages: list[float]) -> float:
-    """Return percentage voltage imbalance across supply phases.
-
-    Uses the NEMA definition: the largest deviation of any phase from the
-    mean, expressed as a percentage of the mean.
-
-    Args:
-        phase_voltages: Measured voltage on each phase.
-
-    Returns:
-        Imbalance percentage rounded to 4 decimal places. Returns ``0.0``
-        when the mean voltage is zero.
-
-    Raises:
-        ValueError: If fewer than two phases are supplied or any voltage
-            is negative.
-    """
-    if len(phase_voltages) < 2:
-        raise ValueError(f"at least 2 phase voltages required, got {len(phase_voltages)}")
-    for voltage in phase_voltages:
-        if voltage < 0:
-            raise ValueError(f"phase voltages must be non-negative, got {voltage}")
-
-    mean_voltage = statistics.fmean(phase_voltages)
-    if mean_voltage == 0:
-        return 0.0
-    max_deviation = max(abs(voltage - mean_voltage) for voltage in phase_voltages)
-    return round(100.0 * max_deviation / mean_voltage, 4)
-
-
-def build_report(
-    real_power_kw: float,
-    reactive_power_kvar: float,
-    phase_voltages: list[float],
-) -> PowerQualityReport:
-    """Assemble a full power-quality report for one site.
-
-    Args:
-        real_power_kw: Real (working) power in kW.
-        reactive_power_kvar: Reactive power in kVAR.
-        phase_voltages: Measured voltage on each supply phase.
-
-    Returns:
-        A populated :class:`PowerQualityReport`.
-
-    Raises:
-        ValueError: If *real_power_kw* is negative, or fewer than two phase
-            voltages are supplied.
-    """
-    kva = apparent_power(real_power_kw, reactive_power_kvar)
-    pf = power_factor(real_power_kw, kva)
-    imbalance = voltage_imbalance(phase_voltages)
-
-    report = PowerQualityReport(
-        real_power_kw=round(real_power_kw, 4),
-        apparent_power_kva=kva,
-        reactive_power_kvar=round(reactive_power_kvar, 4),
-        power_factor=pf,
-        power_factor_rating=rate_power_factor(pf),
-        voltage_imbalance_pct=imbalance,
-        imbalance_within_limit=imbalance <= MAX_VOLTAGE_IMBALANCE_PCT,
+    if fundamental_a <= 0:
+        raise ValueError("fundamental_a must be positive")
+    all_currents = [fundamental_a] + harmonics_a
+    i_sq_sum = sum(i**2 for i in all_currents)
+    weighted_sum = fundamental_a**2 * 1 + sum(
+        (h**2) * ((n + 2) ** 2) for n, h in enumerate(harmonics_a)
     )
-    if report.power_factor_rating == "poor":
-        logger.warning("Poor power factor %.3f — utility penalties likely", pf)
-    if not report.imbalance_within_limit:
-        logger.warning(
-            "Voltage imbalance %.2f%% exceeds the %.1f%% limit",
-            imbalance,
-            MAX_VOLTAGE_IMBALANCE_PCT,
-        )
-    return report
+    if i_sq_sum == 0:
+        return 0.0
+    return round(weighted_sum / i_sq_sum, 4)
 
 
-__all__ = [
-    "GOOD_POWER_FACTOR",
-    "MAX_VOLTAGE_IMBALANCE_PCT",
-    "POOR_POWER_FACTOR",
-    "PowerQualityReport",
-    "apparent_power",
-    "build_report",
-    "correction_kvar",
-    "power_factor",
-    "rate_power_factor",
-    "reactive_power",
-    "voltage_imbalance",
-]
+def classify_voltage_event(
+    voltage_v: float,
+    nominal_v: float = NOMINAL_VOLTAGE_V,
+    sag_threshold_pct: float = 10.0,
+    swell_threshold_pct: float = 10.0,
+    interruption_threshold_pct: float = 90.0,
+) -> PQEvent:
+    """Classify a measured voltage as a PQ event type.
+
+    Args:
+        voltage_v: Measured RMS voltage in V.
+        nominal_v: Nominal voltage in V.
+        sag_threshold_pct: Voltage drop % below nominal to classify as sag.
+        swell_threshold_pct: Voltage rise % above nominal to classify as swell.
+        interruption_threshold_pct: Drop % to classify as interruption.
+
+    Returns:
+        Classified :class:`PQEvent`.
+    """
+    deviation_pct = (voltage_v - nominal_v) / nominal_v * 100.0
+    if deviation_pct < -interruption_threshold_pct:
+        return PQEvent.INTERRUPTION
+    if deviation_pct < -sag_threshold_pct:
+        return PQEvent.SAG
+    if deviation_pct > swell_threshold_pct:
+        return PQEvent.SWELL
+    return PQEvent.NORMAL
+
+
+def en50160_compliance(vrms_v: float, thd_pct: float) -> bool:
+    """Check basic EN 50160 compliance for voltage and THD.
+
+    Args:
+        vrms_v: Measured RMS voltage in V.
+        thd_pct: Measured voltage THD in %.
+
+    Returns:
+        True if within EN 50160 limits.
+    """
+    voltage_ok = 0.90 * NOMINAL_VOLTAGE_V <= vrms_v <= 1.10 * NOMINAL_VOLTAGE_V
+    thd_ok = thd_pct <= 8.0
+    return voltage_ok and thd_ok
+
+
+def analyse_power_quality(
+    samples: list[float],
+    fundamental_v: float,
+    harmonics_v: list[float],
+    peak_v: float,
+    fundamental_a: float,
+    harmonics_a: list[float],
+) -> PQReport:
+    """Run a complete power quality analysis.
+
+    Args:
+        samples: Instantaneous voltage samples in V.
+        fundamental_v: RMS fundamental voltage in V.
+        harmonics_v: RMS harmonic voltages in V.
+        peak_v: Peak voltage in V.
+        fundamental_a: RMS fundamental current in A.
+        harmonics_a: RMS harmonic currents in A.
+
+    Returns:
+        Populated :class:`PQReport`.
+    """
+    vrms = rms_voltage(samples)
+    thd = thd_voltage(fundamental_v, harmonics_v)
+    cf = crest_factor(peak_v, vrms) if vrms > 0 else 0.0
+    kf = k_factor(fundamental_a, harmonics_a)
+    event_type = classify_voltage_event(vrms)
+    events = []
+    if event_type != PQEvent.NORMAL:
+        events.append(PQEventRecord(
+            event_type=event_type,
+            magnitude_pct=abs((vrms - NOMINAL_VOLTAGE_V) / NOMINAL_VOLTAGE_V * 100),
+            duration_cycles=1.0,
+        ))
+    compliant = en50160_compliance(vrms, thd)
+    return PQReport(
+        vrms_v=vrms,
+        thd_pct=thd,
+        crest_factor=cf,
+        k_factor=kf,
+        events=events,
+        within_en50160=compliant,
+    )
