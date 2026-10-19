@@ -5,10 +5,9 @@ from __future__ import annotations
 import pytest
 
 from app.tariff_engine import (
-    BillEstimate,
     DEFAULT_TOU_RATES,
+    BillEstimate,
     RatePeriod,
-    TariffRate,
     classify_hour,
     peak_shifting_savings,
     rate_for_hour,

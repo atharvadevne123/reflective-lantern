@@ -2,12 +2,9 @@
 
 from __future__ import annotations
 
-import math
-
 import pytest
 
 from app.lighting_efficiency import (
-    LED_EFFICACY_LM_PER_W,
     LightingAuditResult,
     annual_kwh,
     audit_space,

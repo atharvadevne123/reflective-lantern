@@ -191,10 +191,13 @@ def smart_charge_schedule(
     schedule = [0.0] * hours_available
     sorted_hours = sorted(range(hours_available), key=lambda i: tou_rates[i])
     remaining = total_kwh
-    for h in sorted_hours:
+    per_hour = total_kwh / hours_available if hours_available > 0 else 0.0
+    for idx, h in enumerate(sorted_hours):
         if remaining <= 0:
             break
-        allocated = min(remaining, total_kwh)
-        schedule[h] = round(allocated / len(sorted_hours), 6)
-        remaining -= schedule[h]
+        if idx == len(sorted_hours) - 1:
+            schedule[h] = round(remaining, 6)
+        else:
+            schedule[h] = round(min(per_hour, remaining), 6)
+        remaining = round(remaining - schedule[h], 8)
     return schedule

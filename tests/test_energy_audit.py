@@ -5,7 +5,6 @@ from __future__ import annotations
 import pytest
 
 from app.energy_audit import (
-    AuditLevel,
     AuditOpportunity,
     AuditReport,
     EndUseCategory,

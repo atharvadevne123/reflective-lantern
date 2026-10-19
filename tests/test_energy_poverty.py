@@ -6,7 +6,6 @@ import pytest
 
 from app.energy_poverty import (
     FuelPovertyAssessment,
-    PovertyMethod,
     after_fuel_costs_income,
     assess_household,
     assess_ten_percent,
