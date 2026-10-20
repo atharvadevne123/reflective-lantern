@@ -140,3 +140,37 @@ class TestSimulatePeakShaving:
         profile = [10.0, 25.0, 45.0, 35.0, 15.0]
         result = simulate_peak_shaving(_battery(), profile, threshold)
         assert 0.0 <= result.final_soc_pct <= 100.0
+
+
+class TestBatteryStorageEdgeCases:
+    def test_battery_soc_never_exceeds_capacity(self) -> None:
+        from app.battery_storage import Battery, simulate_peak_shaving
+        b = Battery(capacity_kwh=50.0, max_charge_kw=20.0, max_discharge_kw=20.0, initial_soc_pct=100.0)
+        profile = [5.0, 5.0, 5.0]
+        result = simulate_peak_shaving(b, profile, 10.0)
+        assert result.final_soc_pct <= 100.0
+
+    def test_battery_soc_never_below_zero(self) -> None:
+        from app.battery_storage import Battery, simulate_peak_shaving
+        b = Battery(capacity_kwh=10.0, max_charge_kw=20.0, max_discharge_kw=20.0, initial_soc_pct=0.0)
+        profile = [100.0, 100.0, 100.0]
+        result = simulate_peak_shaving(b, profile, 5.0)
+        assert result.final_soc_pct >= 0.0
+
+    def test_battery_zero_capacity_raises(self) -> None:
+        from app.battery_storage import Battery
+        with pytest.raises(ValueError):
+            Battery(capacity_kwh=0.0, max_charge_kw=10.0, max_discharge_kw=10.0)
+
+    def test_peak_reduction_non_negative(self) -> None:
+        from app.battery_storage import Battery, simulate_peak_shaving
+        b = Battery(capacity_kwh=50.0, max_charge_kw=25.0, max_discharge_kw=25.0, initial_soc_pct=80.0)
+        profile = [10.0, 60.0, 80.0, 40.0, 20.0]
+        result = simulate_peak_shaving(b, profile, 50.0)
+        assert result.peak_reduction_kw >= 0.0
+
+    @pytest.mark.parametrize("soc_pct", [0.0, 50.0, 100.0])
+    def test_valid_initial_soc(self, soc_pct: float) -> None:
+        from app.battery_storage import Battery
+        b = Battery(capacity_kwh=50.0, max_charge_kw=10.0, max_discharge_kw=10.0, initial_soc_pct=soc_pct)
+        assert b.initial_soc_pct == soc_pct
