@@ -160,3 +160,42 @@ class TestEnergyCostSavings:
     )
     def test_parametrized(self, kwh: float, rate: float, expected: float) -> None:
         assert energy_cost_savings(kwh, rate) == pytest.approx(expected)
+
+
+class TestROICalculatorEdgeCases:
+    def test_simple_payback_doubles_with_half_savings(self) -> None:
+        pb1 = simple_payback(10000.0, 2000.0)
+        pb2 = simple_payback(10000.0, 1000.0)
+        assert pb2 == pytest.approx(2 * pb1, rel=1e-4)
+
+    def test_roi_percent_positive_for_profitable(self) -> None:
+        r = roi_percent(1000.0, 5000.0)
+        assert r > 0.0
+
+    def test_roi_percent_negative_for_loss(self) -> None:
+        r = roi_percent(10000.0, 2000.0)
+        assert r < 0.0
+
+    def test_npv_positive_for_good_project(self) -> None:
+        npv = net_present_value(1000.0, [500.0] * 5, 0.05)
+        assert npv > 0.0
+
+    def test_npv_decreases_with_higher_discount(self) -> None:
+        npv_low = net_present_value(1000.0, [500.0] * 5, 0.05)
+        npv_high = net_present_value(1000.0, [500.0] * 5, 0.20)
+        assert npv_low > npv_high
+
+    def test_lifetime_savings_longer_life_more_savings(self) -> None:
+        s10 = lifetime_savings(200.0, 10)
+        s20 = lifetime_savings(200.0, 20)
+        assert s20 > s10
+
+    def test_analyse_investment_returns_result(self) -> None:
+        result = analyse_investment(5000.0, 1000.0, 20, 0.07)
+        assert isinstance(result, ROIResult)
+        assert result.payback_years > 0.0
+
+    @pytest.mark.parametrize("cost,savings", [(5000.0, 500.0), (10000.0, 2000.0)])
+    def test_analyse_investment_on_track(self, cost: float, savings: float) -> None:
+        result = analyse_investment(cost, savings, 20, 0.05)
+        assert result.npv is not None
