@@ -228,3 +228,82 @@ def forecast_demand(
         rmse=rmse,
         horizon=horizon,
     )
+
+
+def forecast_accuracy_summary(
+    actuals: "list[float]",
+    forecasts: "list[float]",
+) -> "dict[str, float]":
+    """Return a summary dict of MAE, RMSE, and MAPE for a forecast.
+
+    Args:
+        actuals: List of actual observed values.
+        forecasts: List of forecasted values (same length as actuals).
+
+    Returns:
+        Dict with keys 'mae', 'rmse', and 'mape'.
+
+    Raises:
+        ValueError: If lists are empty or unequal in length.
+    """
+    mae = mean_absolute_error(actuals, forecasts)
+    rmse = root_mean_square_error(actuals, forecasts)
+    if any(a == 0 for a in actuals):
+        mape = float("nan")
+    else:
+        mape = sum(abs(a - f) / abs(a) for a, f in zip(actuals, forecasts)) / len(actuals) * 100.0
+    return {"mae": mae, "rmse": rmse, "mape": mape}
+
+
+def bias(actuals: "list[float]", forecasts: "list[float]") -> float:
+    """Return the mean forecast bias (positive = over-forecast).
+
+    Args:
+        actuals: Observed values.
+        forecasts: Forecasted values (must match actuals length).
+
+    Returns:
+        Mean bias (forecast − actual).
+
+    Raises:
+        ValueError: If lists are empty or lengths differ.
+    """
+    if not actuals or not forecasts:
+        raise ValueError("actuals and forecasts must be non-empty")
+    if len(actuals) != len(forecasts):
+        raise ValueError("actuals and forecasts must have the same length")
+    return sum(f - a for f, a in zip(forecasts, actuals)) / len(actuals)
+
+
+def ensemble_forecast(
+    forecasts: "list[list[float]]",
+    weights: "list[float] | None" = None,
+) -> "list[float]":
+    """Return a weighted ensemble average of multiple forecast series.
+
+    Args:
+        forecasts: List of forecast series, all of equal length.
+        weights: Weights for each series (must sum to 1, default uniform).
+
+    Returns:
+        Ensemble-weighted forecast series.
+
+    Raises:
+        ValueError: If forecasts is empty, series have unequal length, or
+            weights don't match or don't sum to 1.
+    """
+    if not forecasts:
+        raise ValueError("forecasts must not be empty")
+    n = len(forecasts[0])
+    if any(len(f) != n for f in forecasts):
+        raise ValueError("all forecast series must have equal length")
+    if weights is None:
+        weights = [1.0 / len(forecasts)] * len(forecasts)
+    if len(weights) != len(forecasts):
+        raise ValueError("weights must match number of forecast series")
+    if abs(sum(weights) - 1.0) > 1e-6:
+        raise ValueError("weights must sum to 1.0")
+    return [
+        sum(w * f[i] for w, f in zip(weights, forecasts))
+        for i in range(n)
+    ]
