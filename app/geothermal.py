@@ -216,3 +216,90 @@ def characterise_resource(
         thermal_gradient_c_per_m=round(gradient_per_m, 6),
         heat_flow_w_per_m2=hf,
     )
+
+
+def levelised_cost_of_energy(
+    capex: float,
+    annual_opex: float,
+    annual_energy_kwh: float,
+    lifetime_years: int = 30,
+    discount_rate: float = 0.07,
+) -> float:
+    """Return the levelised cost of energy (LCOE) in currency units per kWh.
+
+    Uses a simple annualised CAPEX approach with fixed O&M.
+
+    Args:
+        capex: Total capital cost in currency units.
+        annual_opex: Annual operating cost in currency units.
+        annual_energy_kwh: Annual energy generation in kWh.
+        lifetime_years: Plant lifetime in years (must be positive).
+        discount_rate: Discount rate as a fraction (0 < dr < 1).
+
+    Returns:
+        LCOE in currency units per kWh.
+
+    Raises:
+        ValueError: If capex < 0, annual_energy_kwh ≤ 0, or discount_rate invalid.
+    """
+    if capex < 0:
+        raise ValueError("capex must be non-negative")
+    if annual_energy_kwh <= 0:
+        raise ValueError("annual_energy_kwh must be positive")
+    if not 0 < discount_rate < 1:
+        raise ValueError("discount_rate must be between 0 and 1")
+    if lifetime_years <= 0:
+        raise ValueError("lifetime_years must be positive")
+
+    crf = (discount_rate * (1 + discount_rate) ** lifetime_years) / (
+        (1 + discount_rate) ** lifetime_years - 1
+    )
+    annual_capital_cost = capex * crf
+    return (annual_capital_cost + annual_opex) / annual_energy_kwh
+
+
+def brine_enthalpy_kj_per_kg(temperature_c: float, salinity_ppt: float = 0.0) -> float:
+    """Return approximate brine enthalpy in kJ/kg using a linear model.
+
+    Uses the International Steam Tables approximation adjusted for salinity.
+
+    Args:
+        temperature_c: Brine temperature in °C (must be 0–374).
+        salinity_ppt: Salinity in parts per thousand (default 0, pure water).
+
+    Returns:
+        Enthalpy in kJ/kg.
+
+    Raises:
+        ValueError: If temperature_c is outside 0–374 °C.
+    """
+    if not 0 <= temperature_c <= 374:
+        raise ValueError("temperature_c must be in [0, 374] °C")
+    h_water = 4.18 * temperature_c
+    salinity_correction = -0.002 * salinity_ppt * temperature_c
+    return h_water + salinity_correction
+
+
+def geothermal_gradient(
+    surface_temperature_c: float,
+    depth_m: float,
+    gradient_c_per_km: float = 30.0,
+) -> float:
+    """Return the temperature at a given depth using a linear geothermal gradient.
+
+    Args:
+        surface_temperature_c: Ground surface temperature in °C.
+        depth_m: Depth in metres (must be positive).
+        gradient_c_per_km: Geothermal gradient in °C/km (default 30).
+
+    Returns:
+        Temperature at depth in °C.
+
+    Raises:
+        ValueError: If depth_m or gradient_c_per_km is non-positive.
+    """
+    if depth_m <= 0:
+        raise ValueError("depth_m must be positive")
+    if gradient_c_per_km <= 0:
+        raise ValueError("gradient_c_per_km must be positive")
+    return surface_temperature_c + (depth_m / 1000.0) * gradient_c_per_km
