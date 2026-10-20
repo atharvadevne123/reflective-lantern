@@ -213,3 +213,76 @@ def degradation_report(
         eol_reached=eol,
         remaining_cycles=rem_cycles,
     )
+
+
+def state_of_health(
+    current_capacity_kwh: float,
+    initial_capacity_kwh: float,
+) -> float:
+    """Return the State of Health (SoH) as a fraction in [0, 1].
+
+    Args:
+        current_capacity_kwh: Current measurable capacity in kWh.
+        initial_capacity_kwh: Nominal initial capacity in kWh (must be positive).
+
+    Returns:
+        SoH fraction (1.0 = new, 0.8 = end of life for most batteries).
+
+    Raises:
+        ValueError: If initial_capacity_kwh ≤ 0 or current_capacity_kwh < 0.
+    """
+    if initial_capacity_kwh <= 0:
+        raise ValueError("initial_capacity_kwh must be positive")
+    if current_capacity_kwh < 0:
+        raise ValueError("current_capacity_kwh must be non-negative")
+    return min(current_capacity_kwh / initial_capacity_kwh, 1.0)
+
+
+def energy_throughput_kwh(
+    cycles: float,
+    capacity_kwh: float,
+    depth_of_discharge: float = 0.8,
+) -> float:
+    """Return total energy throughput in kWh for a given number of cycles.
+
+    Args:
+        cycles: Number of charge-discharge cycles.
+        capacity_kwh: Battery usable capacity in kWh (must be positive).
+        depth_of_discharge: Fraction of capacity used per cycle (0 < DoD ≤ 1).
+
+    Returns:
+        Total energy throughput in kWh.
+
+    Raises:
+        ValueError: If cycles < 0, capacity_kwh ≤ 0, or DoD invalid.
+    """
+    if cycles < 0:
+        raise ValueError("cycles must be non-negative")
+    if capacity_kwh <= 0:
+        raise ValueError("capacity_kwh must be positive")
+    if not 0 < depth_of_discharge <= 1.0:
+        raise ValueError("depth_of_discharge must be in (0, 1]")
+    return cycles * capacity_kwh * depth_of_discharge
+
+
+def replacement_cost_per_kwh(
+    pack_cost: float,
+    capacity_kwh: float,
+) -> float:
+    """Return battery replacement cost per kWh of capacity.
+
+    Args:
+        pack_cost: Total pack replacement cost in currency units.
+        capacity_kwh: Battery capacity in kWh (must be positive).
+
+    Returns:
+        Cost per kWh in currency units/kWh.
+
+    Raises:
+        ValueError: If pack_cost < 0 or capacity_kwh ≤ 0.
+    """
+    if pack_cost < 0:
+        raise ValueError("pack_cost must be non-negative")
+    if capacity_kwh <= 0:
+        raise ValueError("capacity_kwh must be positive")
+    return pack_cost / capacity_kwh
