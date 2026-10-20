@@ -256,3 +256,85 @@ def ancillary_service_value(
         price_per_mw=price_per_mw,
         total_value=round(total, 4),
     )
+
+
+def frequency_response_capability(
+    rated_power_kw: float,
+    response_time_s: float = 10.0,
+    droop_percent: float = 4.0,
+) -> float:
+    """Return the fast frequency response capability in kW.
+
+    Estimates the active power change available within the response time
+    based on droop setting.
+
+    Args:
+        rated_power_kw: Rated power of the generating or storage unit in kW.
+        response_time_s: Response time window in seconds (must be positive).
+        droop_percent: Governor droop setting as a percentage (1–10%).
+
+    Returns:
+        Frequency response capability in kW.
+
+    Raises:
+        ValueError: If rated_power_kw ≤ 0, response_time_s ≤ 0, or droop invalid.
+    """
+    if rated_power_kw <= 0:
+        raise ValueError("rated_power_kw must be positive")
+    if response_time_s <= 0:
+        raise ValueError("response_time_s must be positive")
+    if not 1.0 <= droop_percent <= 10.0:
+        raise ValueError("droop_percent must be between 1 and 10")
+    return rated_power_kw * (droop_percent / 100.0)
+
+
+def synchronous_inertia_mwh(
+    rated_mva: float,
+    inertia_constant_s: float,
+) -> float:
+    """Return the stored kinetic energy of a synchronous machine in MWh.
+
+    H = E_kinetic / S_rated  →  E_kinetic = H * S_rated
+
+    Args:
+        rated_mva: Machine rated apparent power in MVA (must be positive).
+        inertia_constant_s: Inertia constant H in seconds (must be positive).
+
+    Returns:
+        Stored kinetic energy in MWh.
+
+    Raises:
+        ValueError: If either argument is non-positive.
+    """
+    if rated_mva <= 0:
+        raise ValueError("rated_mva must be positive")
+    if inertia_constant_s <= 0:
+        raise ValueError("inertia_constant_s must be positive")
+    return rated_mva * inertia_constant_s / 3600.0
+
+
+def frequency_nadir(
+    initial_frequency_hz: float,
+    rocof_hz_per_s: float,
+    response_delay_s: float,
+) -> float:
+    """Return the estimated frequency nadir (minimum frequency after disturbance).
+
+    Simple estimate: f_nadir = f_0 + RoCoF × delay
+
+    Args:
+        initial_frequency_hz: Pre-disturbance grid frequency in Hz.
+        rocof_hz_per_s: Rate of change of frequency in Hz/s (should be negative).
+        response_delay_s: Time before governor/storage responds in seconds.
+
+    Returns:
+        Estimated frequency nadir in Hz.
+
+    Raises:
+        ValueError: If initial_frequency_hz ≤ 0 or response_delay_s < 0.
+    """
+    if initial_frequency_hz <= 0:
+        raise ValueError("initial_frequency_hz must be positive")
+    if response_delay_s < 0:
+        raise ValueError("response_delay_s must be non-negative")
+    return initial_frequency_hz + rocof_hz_per_s * response_delay_s
