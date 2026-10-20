@@ -216,3 +216,74 @@ def analyse_curtailment(
         num_events=len(events),
         events=events,
     )
+
+
+def carbon_abatement_lost(
+    curtailed_energy_kwh: float,
+    carbon_intensity_kg_per_kwh: float = 0.233,
+) -> float:
+    """Return the CO2 abatement opportunity lost due to curtailment in kg.
+
+    Args:
+        curtailed_energy_kwh: Energy curtailed in kWh (non-negative).
+        carbon_intensity_kg_per_kwh: Grid carbon intensity in kg CO2e/kWh
+            (default 0.233, UK 2024 average).
+
+    Returns:
+        Lost CO2 abatement in kg CO2e.
+
+    Raises:
+        ValueError: If curtailed_energy_kwh < 0 or carbon_intensity_kg_per_kwh < 0.
+    """
+    if curtailed_energy_kwh < 0:
+        raise ValueError("curtailed_energy_kwh must be non-negative")
+    if carbon_intensity_kg_per_kwh < 0:
+        raise ValueError("carbon_intensity_kg_per_kwh must be non-negative")
+    return curtailed_energy_kwh * carbon_intensity_kg_per_kwh
+
+
+def curtailment_forecast_accuracy(
+    forecast_curtailment_mwh: float,
+    actual_curtailment_mwh: float,
+) -> float:
+    """Return forecast accuracy as a percentage (100% = perfect forecast).
+
+    Calculated as max(0, 1 - |error|/actual) * 100.
+
+    Args:
+        forecast_curtailment_mwh: Forecasted curtailment in MWh.
+        actual_curtailment_mwh: Actual curtailment in MWh (must be positive).
+
+    Returns:
+        Accuracy percentage in [0, 100].
+
+    Raises:
+        ValueError: If actual_curtailment_mwh ≤ 0.
+    """
+    if actual_curtailment_mwh <= 0:
+        raise ValueError("actual_curtailment_mwh must be positive")
+    error_fraction = abs(forecast_curtailment_mwh - actual_curtailment_mwh) / actual_curtailment_mwh
+    return max(0.0, (1.0 - error_fraction) * 100.0)
+
+
+def value_of_curtailment_reduction(
+    curtailment_reduction_kwh: float,
+    marginal_generation_cost: float,
+    curtailment_payment: float = 0.0,
+) -> float:
+    """Return the net value of reducing curtailment by a given amount.
+
+    Args:
+        curtailment_reduction_kwh: Reduction in curtailed energy in kWh.
+        marginal_generation_cost: Marginal cost of curtailed generation per kWh.
+        curtailment_payment: Any curtailment payment received per kWh (default 0).
+
+    Returns:
+        Net value in currency units (positive means net benefit).
+
+    Raises:
+        ValueError: If curtailment_reduction_kwh < 0.
+    """
+    if curtailment_reduction_kwh < 0:
+        raise ValueError("curtailment_reduction_kwh must be non-negative")
+    return curtailment_reduction_kwh * (marginal_generation_cost - curtailment_payment)
