@@ -205,3 +205,73 @@ def demand_charge_reduction(
     if shaved_peak_kw > original_peak_kw:
         raise ValueError("shaved_peak_kw cannot exceed original_peak_kw")
     return round((original_peak_kw - shaved_peak_kw) * demand_rate_per_kw, 2)
+
+
+def battery_cycles_per_year(
+    daily_charge_kwh: float,
+    battery_capacity_kwh: float,
+) -> float:
+    """Return the equivalent full cycles per year based on daily charge throughput.
+
+    Args:
+        daily_charge_kwh: Average daily energy throughput in kWh.
+        battery_capacity_kwh: Usable battery capacity in kWh (must be positive).
+
+    Returns:
+        Equivalent full cycles per year.
+
+    Raises:
+        ValueError: If battery_capacity_kwh ≤ 0 or daily_charge_kwh < 0.
+    """
+    if battery_capacity_kwh <= 0:
+        raise ValueError("battery_capacity_kwh must be positive")
+    if daily_charge_kwh < 0:
+        raise ValueError("daily_charge_kwh must be non-negative")
+    return (daily_charge_kwh * 365.0) / battery_capacity_kwh
+
+
+def revenue_from_peak_shaving(
+    demand_reduction_kw: float,
+    demand_charge_per_kw: float,
+    months: int = 12,
+) -> float:
+    """Return annual revenue from demand charge reduction.
+
+    Args:
+        demand_reduction_kw: Reduction in peak demand in kW (non-negative).
+        demand_charge_per_kw: Demand charge tariff in currency/kW/month.
+        months: Number of months of benefit (default 12).
+
+    Returns:
+        Annual revenue from avoided demand charges in currency units.
+
+    Raises:
+        ValueError: If demand_reduction_kw < 0 or demand_charge_per_kw < 0.
+    """
+    if demand_reduction_kw < 0:
+        raise ValueError("demand_reduction_kw must be non-negative")
+    if demand_charge_per_kw < 0:
+        raise ValueError("demand_charge_per_kw must be non-negative")
+    return demand_reduction_kw * demand_charge_per_kw * months
+
+
+def shaving_effectiveness(
+    original_peak_kw: float, shaved_peak_kw: float
+) -> float:
+    """Return peak shaving effectiveness as a fraction in [0, 1].
+
+    Args:
+        original_peak_kw: Original peak demand before shaving in kW.
+        shaved_peak_kw: Peak demand after shaving in kW.
+
+    Returns:
+        Fraction of peak demand that was shaved.
+
+    Raises:
+        ValueError: If original_peak_kw ≤ 0 or shaved_peak_kw > original_peak_kw.
+    """
+    if original_peak_kw <= 0:
+        raise ValueError("original_peak_kw must be positive")
+    if shaved_peak_kw > original_peak_kw:
+        raise ValueError("shaved_peak_kw cannot exceed original_peak_kw")
+    return (original_peak_kw - shaved_peak_kw) / original_peak_kw
