@@ -221,3 +221,76 @@ def self_sufficiency_rate(
     if site_load_kw == 0:
         return 1.0
     return round(min(1.0, der_generation_kw / site_load_kw), 6)
+
+
+def capacity_factor(
+    actual_energy_kwh: float,
+    rated_power_kw: float,
+    period_hours: float = 8760.0,
+) -> float:
+    """Return the capacity factor of a DER unit.
+
+    Args:
+        actual_energy_kwh: Actual energy generated in kWh.
+        rated_power_kw: Rated power capacity in kW (must be positive).
+        period_hours: Period duration in hours (default 8760 = one year).
+
+    Returns:
+        Capacity factor as a fraction in [0, 1].
+
+    Raises:
+        ValueError: If rated_power_kw ≤ 0 or period_hours ≤ 0.
+    """
+    if rated_power_kw <= 0:
+        raise ValueError("rated_power_kw must be positive")
+    if period_hours <= 0:
+        raise ValueError("period_hours must be positive")
+    max_energy = rated_power_kw * period_hours
+    return min(actual_energy_kwh / max_energy, 1.0)
+
+
+def net_metering_credit(
+    exported_kwh: float,
+    retail_rate: float,
+    net_metering_rate: float,
+) -> float:
+    """Return the net-metering bill credit for exported energy.
+
+    Args:
+        exported_kwh: Energy exported to the grid in kWh (non-negative).
+        retail_rate: Retail electricity rate in currency/kWh.
+        net_metering_rate: Net metering credit rate in currency/kWh.
+
+    Returns:
+        Bill credit in currency units.
+
+    Raises:
+        ValueError: If exported_kwh < 0 or either rate < 0.
+    """
+    if exported_kwh < 0:
+        raise ValueError("exported_kwh must be non-negative")
+    if retail_rate < 0:
+        raise ValueError("retail_rate must be non-negative")
+    if net_metering_rate < 0:
+        raise ValueError("net_metering_rate must be non-negative")
+    return exported_kwh * net_metering_rate
+
+
+def portfolio_availability(portfolio: "DERPortfolio") -> float:
+    """Return the fraction of portfolio capacity that is currently available.
+
+    Args:
+        portfolio: A DERPortfolio instance.
+
+    Returns:
+        Availability fraction in [0, 1] (0 if total capacity is zero).
+    """
+    total = sum(u.rated_power_kw for u in portfolio.assets)
+    if total == 0:
+        return 0.0
+    available = sum(
+        u.rated_power_kw
+        for u in portfolio.assets
+        if u.status == DERStatus.ONLINE
+    )
+    return available / total
