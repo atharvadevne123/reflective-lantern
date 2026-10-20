@@ -722,5 +722,121 @@
     "push_status": "success",
     "email_status": "sent",
     "session": "https://claude.ai/code/session_01GsCkDoghP6HqZcJrjHCCey"
+  },
+  {
+    "date": "2026-10-20",
+    "mode": "IMPROVEMENT",
+    "commits": 61,
+    "modules_added": [
+      "app/fuel_cell.py",
+      "app/tidal_power.py",
+      "app/geothermal.py",
+      "app/peak_shaving.py",
+      "app/cogeneration.py",
+      "app/energy_storage_degradation.py",
+      "app/renewable_curtailment.py",
+      "app/distributed_energy.py",
+      "app/energy_intensity.py",
+      "app/grid_balancing.py"
+    ],
+    "tests_added": [
+      "tests/test_fuel_cell.py",
+      "tests/test_tidal_power.py",
+      "tests/test_geothermal.py",
+      "tests/test_peak_shaving.py",
+      "tests/test_cogeneration.py",
+      "tests/test_energy_storage_degradation.py",
+      "tests/test_renewable_curtailment.py",
+      "tests/test_distributed_energy.py",
+      "tests/test_energy_intensity.py",
+      "tests/test_grid_balancing.py"
+    ],
+    "tests_expanded": [
+      "test_ev_charging",
+      "test_power_quality",
+      "test_voltage_drop",
+      "test_energy_audit",
+      "test_flexibility_score",
+      "test_tariff",
+      "test_roi_calculator",
+      "test_microGrid_controller",
+      "test_load_profile",
+      "test_lighting_efficiency",
+      "test_demand_response",
+      "test_energy_label"
+    ],
+    "functions_enhanced": {
+      "app/fuel_cell.py": [
+        "degradation_rate_per_hour",
+        "water_production_rate",
+        "stack_voltage"
+      ],
+      "app/tidal_power.py": [
+        "tidal_energy_density",
+        "annual_tidal_energy_kwh",
+        "tidal_resource_score"
+      ],
+      "app/geothermal.py": [
+        "levelised_cost_of_energy",
+        "brine_enthalpy_kj_per_kg",
+        "geothermal_gradient"
+      ],
+      "app/peak_shaving.py": [
+        "battery_cycles_per_year",
+        "revenue_from_peak_shaving",
+        "shaving_effectiveness"
+      ],
+      "app/cogeneration.py": [
+        "heat_to_power_ratio",
+        "primary_energy_saving",
+        "annual_fuel_cost"
+      ],
+      "app/energy_storage_degradation.py": [
+        "state_of_health",
+        "energy_throughput_kwh",
+        "replacement_cost_per_kwh"
+      ],
+      "app/renewable_curtailment.py": [
+        "carbon_abatement_lost",
+        "curtailment_forecast_accuracy",
+        "value_of_curtailment_reduction"
+      ],
+      "app/distributed_energy.py": [
+        "capacity_factor",
+        "net_metering_credit",
+        "portfolio_availability"
+      ],
+      "app/energy_intensity.py": [
+        "floor_area_from_eui",
+        "carbon_from_eui",
+        "eui_reduction_needed"
+      ],
+      "app/grid_balancing.py": [
+        "frequency_response_capability",
+        "synchronous_inertia_mwh",
+        "frequency_nadir"
+      ],
+      "app/carbon_budget.py": [
+        "scope_breakdown_percentage",
+        "net_zero_year",
+        "emissions_per_unit"
+      ],
+      "app/demand_forecaster.py": [
+        "forecast_accuracy_summary",
+        "bias",
+        "ensemble_forecast"
+      ],
+      "app/ev_charging.py": [
+        "charging_cost",
+        "v2g_discharge_kw",
+        "co2_saved_vs_ice"
+      ]
+    },
+    "docs_updated": [
+      "CHANGELOG.md",
+      "README.md",
+      "pyproject.toml"
+    ],
+    "summary": "10 new energy domain modules, 10 new test suites, 12 test file expansions, 39 new utility functions across 13 modules, plus docs updates."
   }
 ]
