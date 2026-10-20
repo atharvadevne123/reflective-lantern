@@ -135,3 +135,39 @@ class TestAuditSpace:
     def test_parametrized_areas(self, area: float) -> None:
         result = audit_space(area, area * 10, 10.0)
         assert result.annual_kwh > 0.0
+
+
+class TestLightingEdgeCases:
+    def test_luminous_efficacy_higher_lumens_higher_efficacy(self) -> None:
+        e1 = luminous_efficacy(1000.0, 10.0)
+        e2 = luminous_efficacy(2000.0, 10.0)
+        assert e2 > e1
+
+    def test_annual_kwh_formula(self) -> None:
+        kwh = annual_kwh(100.0, 8.0)
+        assert kwh == pytest.approx(100.0 * 8.0 * 365.0 / 1000.0, rel=1e-4)
+
+    def test_annual_kwh_zero_power_zero(self) -> None:
+        assert annual_kwh(0.0, 8.0) == pytest.approx(0.0)
+
+    def test_power_for_target_lux_positive(self) -> None:
+        power = power_for_target_lux(100.0, 500.0, 0.8, 0.65)
+        assert power > 0.0
+
+    def test_upgrade_savings_positive(self) -> None:
+        savings_kwh, payback = upgrade_savings(100.0, 50.0, 8.0, 0.28, 500.0)
+        assert savings_kwh > 0.0
+
+    def test_upgrade_savings_equal_watts_raises(self) -> None:
+        with pytest.raises(ValueError):
+            upgrade_savings(100.0, 100.0, 8.0, 0.28, 0.0)
+
+    def test_audit_space_returns_result(self) -> None:
+        result = audit_space(200.0, 4000.0, 10.0)
+        assert isinstance(result, LightingAuditResult)
+        assert result.installed_power_w > 0
+
+    @pytest.mark.parametrize("hours", [1.0, 4.0, 8.0, 12.0])
+    def test_annual_kwh_scales_with_hours(self, hours: float) -> None:
+        kwh = annual_kwh(100.0, hours)
+        assert kwh > 0.0
