@@ -130,3 +130,49 @@ class TestCompareTechnologies:
         result = compare_technologies(litres)
         for key in ("boiler", "heat_pump"):
             assert result[key].daily_kwh_consumed > 0.0
+
+
+class TestWaterHeatingEdgeCases:
+    def test_zero_litres_gives_zero_energy(self) -> None:
+        from app.water_heating import energy_to_heat_water
+        assert energy_to_heat_water(0.0, 10.0, 60.0) == pytest.approx(0.0)
+
+    def test_negative_litres_raises(self) -> None:
+        from app.water_heating import energy_to_heat_water
+        with pytest.raises(ValueError):
+            energy_to_heat_water(-1.0, 10.0, 60.0)
+
+    def test_equal_temps_raises(self) -> None:
+        from app.water_heating import energy_to_heat_water
+        with pytest.raises(ValueError):
+            energy_to_heat_water(100.0, 60.0, 60.0)
+
+    def test_boiler_efficiency_one_passes_through(self) -> None:
+        from app.water_heating import boiler_consumption, energy_to_heat_water
+        useful = energy_to_heat_water(100.0, 10.0, 60.0)
+        consumed = boiler_consumption(useful, 1.0)
+        assert consumed == pytest.approx(useful)
+
+    def test_heat_pump_cop_one_equals_direct_electric(self) -> None:
+        from app.water_heating import heat_pump_consumption, energy_to_heat_water
+        useful = energy_to_heat_water(100.0, 10.0, 60.0)
+        consumed = heat_pump_consumption(useful, 1.0)
+        assert consumed == pytest.approx(useful)
+
+    @pytest.mark.parametrize("cop", [2.0, 3.0, 4.0, 5.0])
+    def test_higher_cop_lower_consumption(self, cop: float) -> None:
+        from app.water_heating import estimate_dhw
+        r_low = estimate_dhw(100.0, technology="heat_pump", cop_or_efficiency=2.0)
+        r = estimate_dhw(100.0, technology="heat_pump", cop_or_efficiency=cop)
+        if cop > 2.0:
+            assert r.daily_kwh_consumed <= r_low.daily_kwh_consumed
+
+    def test_invalid_technology_raises(self) -> None:
+        from app.water_heating import estimate_dhw
+        with pytest.raises(ValueError):
+            estimate_dhw(100.0, technology="coal")
+
+    def test_annual_cost_is_365_times_daily(self) -> None:
+        from app.water_heating import estimate_dhw
+        r = estimate_dhw(100.0)
+        assert r.annual_cost == pytest.approx(r.daily_cost * 365, rel=1e-4)
