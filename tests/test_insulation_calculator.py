@@ -130,3 +130,37 @@ class TestAnalyseInsulationUpgrade:
     def test_larger_area_more_savings(self, area: float) -> None:
         result = analyse_insulation_upgrade(area, 2.1, 0.3, 20.0, 5000.0)
         assert result.co2_saved_kg > 0.0
+
+
+class TestInsulationEdgeCases:
+    def test_heat_loss_rate_positive(self) -> None:
+        from app.insulation_calculator import heat_loss_rate
+        rate = heat_loss_rate(50.0, 2.1, 20.0)
+        assert rate > 0
+
+    def test_heat_loss_rate_zero_delta_zero(self) -> None:
+        from app.insulation_calculator import heat_loss_rate
+        rate = heat_loss_rate(50.0, 2.1, 0.0)
+        assert rate == pytest.approx(0.0)
+
+    def test_zero_area_raises(self) -> None:
+        with pytest.raises(ValueError):
+            analyse_insulation_upgrade(0.0, 2.1, 0.3, 20.0, 5000.0)
+
+    def test_zero_u_value_raises(self) -> None:
+        with pytest.raises(ValueError):
+            analyse_insulation_upgrade(50.0, 0.0, 0.3, 20.0, 5000.0)
+
+    def test_payback_positive(self) -> None:
+        result = analyse_insulation_upgrade(50.0, 2.1, 0.3, 20.0, 5000.0, cost=2000.0)
+        if result.payback_years is not None:
+            assert result.payback_years > 0
+
+    @pytest.mark.parametrize("old_u,new_u", [(3.0, 0.2), (2.0, 0.3), (1.5, 0.5)])
+    def test_greater_improvement_more_savings(self, old_u: float, new_u: float) -> None:
+        r_small = analyse_insulation_upgrade(50.0, 1.5, 0.5, 20.0, 5000.0)
+        r_large = analyse_insulation_upgrade(50.0, old_u, new_u, 20.0, 5000.0)
+        improvement_large = old_u - new_u
+        improvement_small = 1.5 - 0.5
+        if improvement_large > improvement_small:
+            assert r_large.annual_energy_saved_kwh >= r_small.annual_energy_saved_kwh
