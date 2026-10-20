@@ -205,3 +205,97 @@ def analyse_chp(
         annual_co2_savings_kg=co2_sav,
         annual_fuel_cost=round(annual_fuel_cost, 2),
     )
+
+
+def heat_to_power_ratio(
+    thermal_output_kw: float, electrical_output_kw: float
+) -> float:
+    """Return the heat-to-power ratio (HPR) of a CHP system.
+
+    HPR > 1 means more heat than power is produced; HPR < 1 indicates
+    power-dominated systems.
+
+    Args:
+        thermal_output_kw: Useful thermal output in kW (non-negative).
+        electrical_output_kw: Electrical output in kW (must be positive).
+
+    Returns:
+        Heat-to-power ratio (dimensionless).
+
+    Raises:
+        ValueError: If electrical_output_kw ≤ 0 or thermal_output_kw < 0.
+    """
+    if electrical_output_kw <= 0:
+        raise ValueError("electrical_output_kw must be positive")
+    if thermal_output_kw < 0:
+        raise ValueError("thermal_output_kw must be non-negative")
+    return thermal_output_kw / electrical_output_kw
+
+
+def primary_energy_saving(
+    chp_fuel_input_kw: float,
+    reference_electrical_efficiency: float = 0.40,
+    reference_thermal_efficiency: float = 0.90,
+    electrical_output_kw: float = 0.0,
+    thermal_output_kw: float = 0.0,
+) -> float:
+    """Return the Primary Energy Saving (PES) factor for a CHP system.
+
+    PES = 1 - 1 / (E/(η_e_ref) + H/(η_h_ref)) / Q_chp, where E and H
+    are electrical and thermal outputs and η refs are reference efficiencies.
+    Simplified here to compare against separate generation.
+
+    Args:
+        chp_fuel_input_kw: Total fuel input to the CHP system in kW.
+        reference_electrical_efficiency: Reference power-only efficiency (0–1).
+        reference_thermal_efficiency: Reference heat-only efficiency (0–1).
+        electrical_output_kw: CHP electrical output in kW.
+        thermal_output_kw: CHP useful heat output in kW.
+
+    Returns:
+        Primary energy saving factor (positive means primary energy saved).
+
+    Raises:
+        ValueError: If chp_fuel_input_kw ≤ 0 or reference efficiencies invalid.
+    """
+    if chp_fuel_input_kw <= 0:
+        raise ValueError("chp_fuel_input_kw must be positive")
+    if not 0 < reference_electrical_efficiency <= 1:
+        raise ValueError("reference_electrical_efficiency must be in (0, 1]")
+    if not 0 < reference_thermal_efficiency <= 1:
+        raise ValueError("reference_thermal_efficiency must be in (0, 1]")
+
+    ref_fuel = (
+        electrical_output_kw / reference_electrical_efficiency
+        + thermal_output_kw / reference_thermal_efficiency
+    )
+    if ref_fuel == 0:
+        return 0.0
+    return 1.0 - chp_fuel_input_kw / ref_fuel
+
+
+def annual_fuel_cost(
+    fuel_input_kw: float,
+    operating_hours: float,
+    fuel_price_per_kwh: float,
+) -> float:
+    """Return the annual fuel cost for a CHP system.
+
+    Args:
+        fuel_input_kw: Fuel input power in kW (must be positive).
+        operating_hours: Annual operating hours (must be positive).
+        fuel_price_per_kwh: Fuel price in currency per kWh thermal.
+
+    Returns:
+        Annual fuel cost in currency units.
+
+    Raises:
+        ValueError: If any argument is non-positive.
+    """
+    if fuel_input_kw <= 0:
+        raise ValueError("fuel_input_kw must be positive")
+    if operating_hours <= 0:
+        raise ValueError("operating_hours must be positive")
+    if fuel_price_per_kwh <= 0:
+        raise ValueError("fuel_price_per_kwh must be positive")
+    return fuel_input_kw * operating_hours * fuel_price_per_kwh
