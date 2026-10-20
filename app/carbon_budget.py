@@ -182,3 +182,78 @@ def analyse_budget(
         on_track=on_track,
         reduction_needed_pct=reduction_needed,
     )
+
+
+def scope_breakdown_percentage(
+    entries: "list[EmissionEntry]",
+) -> "dict[ScopeCategory, float]":
+    """Return each scope's percentage share of total emissions.
+
+    Args:
+        entries: List of EmissionEntry records.
+
+    Returns:
+        Dict mapping each scope to its percentage (0–100). Returns empty dict
+        if total is zero.
+    """
+    total = total_emissions(entries)
+    if total == 0:
+        return {scope: 0.0 for scope in ScopeCategory}
+    return {
+        scope: emissions_by_scope(entries, scope) / total * 100.0
+        for scope in ScopeCategory
+    }
+
+
+def net_zero_year(
+    current_year: int,
+    baseline_kg: float,
+    annual_reduction_rate: float,
+) -> int:
+    """Return the year in which emissions reach net zero at a constant reduction rate.
+
+    Uses compound reduction: E_n = baseline * (1 - rate)^n
+
+    Args:
+        current_year: Starting year for the calculation.
+        baseline_kg: Current annual emissions in kg CO2e (must be positive).
+        annual_reduction_rate: Fractional reduction per year (0 < rate < 1).
+
+    Returns:
+        Year when emissions fall below 1 kg CO2e (proxy for net zero).
+
+    Raises:
+        ValueError: If baseline_kg ≤ 0 or annual_reduction_rate not in (0, 1).
+    """
+    if baseline_kg <= 0:
+        raise ValueError("baseline_kg must be positive")
+    if not 0 < annual_reduction_rate < 1:
+        raise ValueError("annual_reduction_rate must be between 0 and 1")
+    remaining = baseline_kg
+    year = current_year
+    while remaining > 1.0:
+        remaining *= 1.0 - annual_reduction_rate
+        year += 1
+        if year > current_year + 10000:
+            break
+    return year
+
+
+def emissions_per_unit(total_kg: float, units: float) -> float:
+    """Return carbon intensity per unit of activity.
+
+    Args:
+        total_kg: Total emissions in kg CO2e (non-negative).
+        units: Activity level (must be positive).
+
+    Returns:
+        Emissions per unit in kg CO2e/unit.
+
+    Raises:
+        ValueError: If total_kg < 0 or units ≤ 0.
+    """
+    if total_kg < 0:
+        raise ValueError("total_kg must be non-negative")
+    if units <= 0:
+        raise ValueError("units must be positive")
+    return total_kg / units
