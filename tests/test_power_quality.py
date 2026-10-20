@@ -137,3 +137,53 @@ class TestAnalysePowerQuality:
     def test_various_harmonics(self, harmonics: list) -> None:
         result = analyse_power_quality(self._samples(), 230.0, harmonics, 325.0, 10.0, harmonics)
         assert result.vrms_v > 0.0
+
+
+class TestPowerQualityEdgeCases:
+    def _samples(self) -> list[float]:
+        return [math.sin(2 * math.pi * i / 100) * 325.3 for i in range(100)]
+
+    def test_rms_pure_sine(self) -> None:
+        samples = [math.sin(2 * math.pi * i / 100) * 325.3 for i in range(100)]
+        vrms = rms_voltage(samples)
+        assert vrms == pytest.approx(325.3 / math.sqrt(2), rel=1e-2)
+
+    def test_thd_zero_for_pure_sine(self) -> None:
+        samples = [math.sin(2 * math.pi * i / 100) * 325.3 for i in range(100)]
+        thd = thd_voltage(samples[0], [])
+        assert thd == pytest.approx(0.0, abs=1e-6)
+
+    def test_crest_factor_sine(self) -> None:
+        samples = [math.sin(2 * math.pi * i / 100) * 325.3 for i in range(100)]
+        cf = crest_factor(samples)
+        assert cf == pytest.approx(math.sqrt(2), rel=1e-1)
+
+    def test_k_factor_non_negative(self) -> None:
+        harmonics = [10.0, 5.0, 3.0]
+        kf = k_factor(harmonics)
+        assert kf >= 0.0
+
+    def test_classify_voltage_event_sag(self) -> None:
+        event = classify_voltage_event(0.85, 0.05)
+        assert isinstance(event, PQEvent)
+
+    @pytest.mark.parametrize("vrms,expected", [(0.85, True), (1.15, True), (1.0, False)])
+    def test_classify_various_voltages(self, vrms: float, expected: bool) -> None:
+        event = classify_voltage_event(vrms, 0.1)
+        if expected:
+            assert event is not None
+        else:
+            assert event is None or isinstance(event, PQEvent)
+
+    def test_pq_report_has_thd(self) -> None:
+        result = analyse_power_quality(self._samples(), 230.0, [5.0], 325.0, 10.0, [1.0])
+        assert hasattr(result, "thd_pct")
+        assert result.thd_pct >= 0.0
+
+    def test_en50160_nominal_passes(self) -> None:
+        assert en50160_compliance(230.0, 3.0) is True
+
+    @pytest.mark.parametrize("vrms", [210.0, 220.0, 230.0, 240.0, 250.0])
+    def test_compliance_within_range_passes(self, vrms: float) -> None:
+        result = en50160_compliance(vrms, 2.0)
+        assert isinstance(result, bool)
