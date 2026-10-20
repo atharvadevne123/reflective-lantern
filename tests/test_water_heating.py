@@ -154,7 +154,7 @@ class TestWaterHeatingEdgeCases:
         assert consumed == pytest.approx(useful)
 
     def test_heat_pump_cop_one_equals_direct_electric(self) -> None:
-        from app.water_heating import heat_pump_consumption, energy_to_heat_water
+        from app.water_heating import energy_to_heat_water, heat_pump_consumption
         useful = energy_to_heat_water(100.0, 10.0, 60.0)
         consumed = heat_pump_consumption(useful, 1.0)
         assert consumed == pytest.approx(useful)

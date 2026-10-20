@@ -9,7 +9,6 @@ from app.distributed_energy import (
     DERStatus,
     DERType,
     DERUnit,
-    aggregate_generation,
     dispatch_order,
     grid_import_export,
     self_consumption_rate,

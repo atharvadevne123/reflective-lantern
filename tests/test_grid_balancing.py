@@ -7,7 +7,6 @@ import pytest
 from app.grid_balancing import (
     AncillaryServiceBid,
     FrequencyEvent,
-    NOMINAL_FREQUENCY_HZ,
     ancillary_service_value,
     classify_frequency_event,
     droop_response_kw,

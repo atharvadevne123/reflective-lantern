@@ -5,9 +5,8 @@ from __future__ import annotations
 import pytest
 
 from app.energy_intensity import (
-    EUIResult,
     SECTOR_BENCHMARKS_KWH_PER_M2,
-    SectorRanking,
+    EUIResult,
     benchmark_eui,
     energy_use_intensity,
     normalise_weather,

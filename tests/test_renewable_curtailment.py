@@ -7,8 +7,8 @@ import pytest
 from app.renewable_curtailment import (
     CurtailmentSummary,
     analyse_curtailment,
-    curtailment_rate,
     curtailed_energy,
+    curtailment_rate,
     revenue_lost,
 )
 

@@ -5,9 +5,9 @@ from __future__ import annotations
 import pytest
 
 from app.energy_storage_degradation import (
-    DegradationResult,
     EOL_CAPACITY_FRACTION,
     NOMINAL_CYCLES_LFP,
+    DegradationResult,
     calendar_degradation,
     cycle_degradation,
     cycles_to_eol,

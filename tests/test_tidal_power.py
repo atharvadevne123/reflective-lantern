@@ -7,7 +7,6 @@ import pytest
 from app.tidal_power import (
     BarrageResult,
     TidalStreamResult,
-    BETZ_LIMIT_TIDAL,
     current_power_density,
     minimum_cut_in_speed,
     tidal_barrage_energy,
