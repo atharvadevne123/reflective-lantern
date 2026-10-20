@@ -9,6 +9,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- `app/fuel_cell.py`: hydrogen fuel cell modelling (Nernst voltage, overpotentials, stack power, H2 consumption)
+- `app/tidal_power.py`: tidal stream and barrage energy calculations
+- `app/geothermal.py`: geothermal resource and plant modelling with LCOE and gradient functions
+- `app/peak_shaving.py`: battery peak-shaving controller with revenue and effectiveness helpers
+- `app/cogeneration.py`: CHP efficiency, CO2 savings, heat-to-power ratio, and PES factor
+- `app/energy_storage_degradation.py`: battery degradation modelling (cycle, calendar, SoH, throughput)
+- `app/renewable_curtailment.py`: curtailment analysis with carbon abatement and forecast accuracy
+- `app/distributed_energy.py`: DER portfolio management with capacity factor and net metering
+- `app/energy_intensity.py`: EUI benchmarking with sector rankings and carbon calculations
+- `app/grid_balancing.py`: grid frequency regulation, droop response, inertia, and frequency nadir
+- Extended test suites for all ten new modules with parametrized edge-case coverage
+- Expanded edge-case tests for `ev_charging`, `power_quality`, `voltage_drop`, `energy_audit`,
+  `flexibility_score`, `tariff`, `roi_calculator`, `microGrid_controller`, `load_profile`,
+  `grid_stability`, `water_heating`, `thermal_comfort`, `occupancy_model`, `wind_power`,
+  `solar_pv`, `battery_storage`, `heat_pump`, `insulation_calculator`, `carbon_budget`,
+  and `demand_forecaster`
 - `end_of_month` and `elapsed_seconds` helpers to `app/date_utils`
 - `haversine_distance` tuple-based convenience wrapper to `app/geo_utils`
 - Parametrized test coverage for `test_api_analytics`, `test_foundry_client`,
