@@ -190,3 +190,75 @@ def minimum_cut_in_speed(
     area = math.pi * (rotor_diameter_m / 2.0) ** 2
     v_cubed = (rated_power_kw * 1000) / (0.5 * sea_water_density * power_coefficient * area)
     return round(v_cubed ** (1.0 / 3.0), 4)
+
+
+def tidal_energy_density(current_speed_m_s: float, seawater_density: float = 1025.0) -> float:
+    """Return the kinetic energy density of tidal flow in J/m³.
+
+    Args:
+        current_speed_m_s: Tidal current speed in m/s (non-negative).
+        seawater_density: Seawater density in kg/m³ (default 1025).
+
+    Returns:
+        Kinetic energy density in J/m³.
+
+    Raises:
+        ValueError: If current_speed_m_s is negative.
+    """
+    if current_speed_m_s < 0:
+        raise ValueError("current_speed_m_s must be non-negative")
+    return 0.5 * seawater_density * current_speed_m_s**2
+
+
+def annual_tidal_energy_kwh(
+    rated_power_kw: float,
+    capacity_factor: float = 0.35,
+) -> float:
+    """Estimate annual energy output from a tidal device.
+
+    Args:
+        rated_power_kw: Rated power capacity in kW.
+        capacity_factor: Expected capacity factor (0 < cf ≤ 1, default 0.35).
+
+    Returns:
+        Annual energy in kWh.
+
+    Raises:
+        ValueError: If rated_power_kw ≤ 0 or capacity_factor not in (0, 1].
+    """
+    if rated_power_kw <= 0:
+        raise ValueError("rated_power_kw must be positive")
+    if not 0 < capacity_factor <= 1.0:
+        raise ValueError("capacity_factor must be in (0, 1]")
+    return rated_power_kw * 8760.0 * capacity_factor
+
+
+def tidal_resource_score(
+    mean_speed_m_s: float,
+    cut_in_speed_m_s: float = 0.5,
+    rated_speed_m_s: float = 2.5,
+) -> float:
+    """Return a 0–100 score for a tidal resource suitability.
+
+    Score is proportional to how far the mean speed exceeds the cut-in speed
+    relative to the rated speed range.
+
+    Args:
+        mean_speed_m_s: Mean tidal current speed in m/s.
+        cut_in_speed_m_s: Minimum speed for power generation in m/s.
+        rated_speed_m_s: Speed at which rated power is reached in m/s.
+
+    Returns:
+        Resource score in [0, 100].
+
+    Raises:
+        ValueError: If rated_speed_m_s ≤ cut_in_speed_m_s or mean_speed_m_s < 0.
+    """
+    if mean_speed_m_s < 0:
+        raise ValueError("mean_speed_m_s must be non-negative")
+    if rated_speed_m_s <= cut_in_speed_m_s:
+        raise ValueError("rated_speed_m_s must exceed cut_in_speed_m_s")
+    if mean_speed_m_s < cut_in_speed_m_s:
+        return 0.0
+    score = min((mean_speed_m_s - cut_in_speed_m_s) / (rated_speed_m_s - cut_in_speed_m_s), 1.0)
+    return round(score * 100.0, 2)
