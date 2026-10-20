@@ -145,3 +145,43 @@ class TestSmartChargeSchedule:
         rates = [0.10, 0.15, 0.30, 0.08]
         schedule = smart_charge_schedule(total, 4, rates)
         assert sum(schedule) == pytest.approx(total, rel=1e-4)
+
+
+class TestEVChargingEdgeCases:
+    def test_energy_to_charge_full_state(self) -> None:
+        energy = energy_to_charge(60.0, 1.0, 1.0)
+        assert energy == pytest.approx(0.0, abs=1e-6)
+
+    def test_energy_to_charge_invalid_soc_raises(self) -> None:
+        with pytest.raises(ValueError):
+            energy_to_charge(60.0, 1.1, 1.0)
+
+    def test_energy_to_charge_target_below_initial_raises(self) -> None:
+        with pytest.raises(ValueError):
+            energy_to_charge(60.0, 0.8, 0.5)
+
+    def test_charging_duration_zero_energy_zero_duration(self) -> None:
+        duration = charging_duration_hours(0.0, 7.4)
+        assert duration == pytest.approx(0.0)
+
+    def test_simulate_session_returns_result(self) -> None:
+        session = ChargingSession(
+            battery_capacity_kwh=60.0,
+            initial_soc=0.2,
+            target_soc=0.9,
+            charger_level=ChargerLevel.LEVEL_2,
+        )
+        result = simulate_session(session)
+        assert isinstance(result, ChargingResult)
+        assert result.energy_kwh > 0
+
+    def test_fleet_demand_scales_with_fleet_size(self) -> None:
+        d1 = fleet_daily_demand_kw(1, 60.0, 0.2, 0.9)
+        d5 = fleet_daily_demand_kw(5, 60.0, 0.2, 0.9)
+        assert d5 == pytest.approx(d1 * 5, rel=1e-3)
+
+    @pytest.mark.parametrize("charger", list(ChargerLevel))
+    def test_all_charger_levels(self, charger: ChargerLevel) -> None:
+        session = ChargingSession(60.0, 0.2, 0.8, charger)
+        result = simulate_session(session)
+        assert result.duration_hours > 0
