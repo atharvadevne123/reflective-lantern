@@ -117,3 +117,45 @@ class TestAnalyseCable:
     def test_larger_section_less_drop(self, section: float) -> None:
         result = analyse_cable(20.0, 10.0, section, 230.0)
         assert result.voltage_drop_pct >= 0.0
+
+
+class TestVoltageDropEdgeCases:
+    def test_single_phase_positive(self) -> None:
+        drop = voltage_drop_single_phase(10.0, 50.0, 2.5)
+        assert drop > 0.0
+
+    def test_three_phase_less_than_single(self) -> None:
+        sp = voltage_drop_single_phase(10.0, 50.0, 2.5)
+        tp = voltage_drop_three_phase(10.0, 50.0, 2.5)
+        assert tp < sp
+
+    def test_zero_current_zero_drop(self) -> None:
+        drop = voltage_drop_single_phase(0.0, 50.0, 2.5)
+        assert drop == pytest.approx(0.0)
+
+    def test_voltage_drop_percent_positive(self) -> None:
+        pct = voltage_drop_percent(5.0, 230.0)
+        assert pct > 0.0
+
+    def test_longer_cable_more_drop(self) -> None:
+        drop_short = voltage_drop_single_phase(10.0, 10.0, 2.5)
+        drop_long = voltage_drop_single_phase(10.0, 50.0, 2.5)
+        assert drop_long > drop_short
+
+    def test_analyse_cable_returns_result(self) -> None:
+        result = analyse_cable(10.0, 20.0, 4.0, 230.0)
+        assert isinstance(result, CableResult)
+        assert result.voltage_drop_v >= 0.0
+
+    def test_analyse_cable_large_section_within_limit(self) -> None:
+        result = analyse_cable(5.0, 5.0, 25.0, 230.0)
+        assert result.within_limit is True
+
+    @pytest.mark.parametrize("current", [5.0, 10.0, 20.0, 50.0])
+    def test_drop_scales_with_current(self, current: float) -> None:
+        drop = voltage_drop_single_phase(current, 20.0, 4.0)
+        assert drop > 0.0
+
+    def test_cable_resistance_zero_length_raises(self) -> None:
+        with pytest.raises((ValueError, ZeroDivisionError)):
+            cable_resistance(0.0, 2.5)
