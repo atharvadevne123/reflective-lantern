@@ -276,3 +276,64 @@ def operating_point(
         hydrogen_flow_mol_per_s=h2_flow,
         heat_generated_kw=heat_kw,
     )
+
+
+def degradation_rate_per_hour(
+    operating_hours: float,
+    voltage_drop_mv: float = 1.0,
+) -> float:
+    """Return the average cell voltage degradation rate in V/h.
+
+    Args:
+        operating_hours: Total hours the cell has operated (must be positive).
+        voltage_drop_mv: Total observed voltage drop in mV over the period.
+
+    Returns:
+        Degradation rate in V per operating hour.
+
+    Raises:
+        ValueError: If operating_hours is non-positive.
+    """
+    if operating_hours <= 0:
+        raise ValueError("operating_hours must be positive")
+    return (voltage_drop_mv / 1000.0) / operating_hours
+
+
+def water_production_rate(hydrogen_flow_mol_per_s: float) -> float:
+    """Return the water production rate in mol/s from H2 consumption.
+
+    Each mole of H2 reacted produces one mole of H2O (2H2 + O2 → 2H2O,
+    so mol H2O = mol H2 consumed).
+
+    Args:
+        hydrogen_flow_mol_per_s: Hydrogen consumption rate in mol/s (non-negative).
+
+    Returns:
+        Water production rate in mol/s.
+
+    Raises:
+        ValueError: If hydrogen_flow_mol_per_s is negative.
+    """
+    if hydrogen_flow_mol_per_s < 0:
+        raise ValueError("hydrogen_flow_mol_per_s must be non-negative")
+    return hydrogen_flow_mol_per_s
+
+
+def stack_voltage(cell_voltage_v: float, num_cells: int) -> float:
+    """Return total stack voltage for a series-connected cell stack.
+
+    Args:
+        cell_voltage_v: Single cell voltage in V.
+        num_cells: Number of cells in the stack.
+
+    Returns:
+        Stack voltage in V.
+
+    Raises:
+        ValueError: If cell_voltage_v or num_cells are non-positive.
+    """
+    if cell_voltage_v <= 0:
+        raise ValueError("cell_voltage_v must be positive")
+    if num_cells <= 0:
+        raise ValueError("num_cells must be positive")
+    return cell_voltage_v * num_cells
