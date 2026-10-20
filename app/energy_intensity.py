@@ -226,3 +226,74 @@ def savings_potential(
         "cost_dollars": round(energy_kwh * energy_cost_per_kwh, 2),
         "co2_kg": round(energy_kwh * 0.233, 2),
     }
+
+
+def floor_area_from_eui(
+    total_energy_kwh: float,
+    eui_kwh_per_m2: float,
+) -> float:
+    """Return the floor area implied by a total energy consumption and EUI.
+
+    Args:
+        total_energy_kwh: Total annual energy consumption in kWh.
+        eui_kwh_per_m2: Energy use intensity in kWh/m² (must be positive).
+
+    Returns:
+        Floor area in m².
+
+    Raises:
+        ValueError: If total_energy_kwh < 0 or eui_kwh_per_m2 ≤ 0.
+    """
+    if total_energy_kwh < 0:
+        raise ValueError("total_energy_kwh must be non-negative")
+    if eui_kwh_per_m2 <= 0:
+        raise ValueError("eui_kwh_per_m2 must be positive")
+    return total_energy_kwh / eui_kwh_per_m2
+
+
+def carbon_from_eui(
+    eui_kwh_per_m2: float,
+    floor_area_m2: float,
+    carbon_intensity_kg_per_kwh: float = 0.233,
+) -> float:
+    """Return annual carbon emissions in kg CO2e from EUI and floor area.
+
+    Args:
+        eui_kwh_per_m2: Energy use intensity in kWh/m².
+        floor_area_m2: Floor area in m² (must be positive).
+        carbon_intensity_kg_per_kwh: Grid carbon intensity in kg CO2e/kWh.
+
+    Returns:
+        Annual carbon emissions in kg CO2e.
+
+    Raises:
+        ValueError: If eui_kwh_per_m2 < 0 or floor_area_m2 ≤ 0.
+    """
+    if eui_kwh_per_m2 < 0:
+        raise ValueError("eui_kwh_per_m2 must be non-negative")
+    if floor_area_m2 <= 0:
+        raise ValueError("floor_area_m2 must be positive")
+    return eui_kwh_per_m2 * floor_area_m2 * carbon_intensity_kg_per_kwh
+
+
+def eui_reduction_needed(
+    current_eui: float,
+    target_eui: float,
+) -> float:
+    """Return the percentage reduction required to reach a target EUI.
+
+    Args:
+        current_eui: Current EUI in kWh/m² (must be positive).
+        target_eui: Target EUI in kWh/m² (must be non-negative and ≤ current).
+
+    Returns:
+        Required percentage reduction as a value in [0, 100].
+
+    Raises:
+        ValueError: If current_eui ≤ 0 or target_eui > current_eui.
+    """
+    if current_eui <= 0:
+        raise ValueError("current_eui must be positive")
+    if target_eui > current_eui:
+        raise ValueError("target_eui cannot exceed current_eui")
+    return (1.0 - target_eui / current_eui) * 100.0
