@@ -141,3 +141,50 @@ class TestAssessComfort:
     def test_parametrized_conditions(self, ta: float, rh: float) -> None:
         result = assess_comfort(ta, ta, 0.1, rh)
         assert 5.0 <= result.ppd <= 100.0
+
+
+class TestThermalComfortEdgeCases:
+    def test_pmv_cold_negative(self) -> None:
+        from app.thermal_comfort import pmv_ashrae
+        result = pmv_ashrae(10.0, 10.0, 0.1, 30.0)
+        assert result < 0
+
+    def test_pmv_hot_positive(self) -> None:
+        from app.thermal_comfort import pmv_ashrae
+        result = pmv_ashrae(35.0, 35.0, 0.1, 80.0)
+        assert result > 0
+
+    def test_ppd_minimum_five_percent(self) -> None:
+        from app.thermal_comfort import ppd
+        assert ppd(0.0) >= 5.0
+
+    def test_ppd_increases_with_deviation(self) -> None:
+        from app.thermal_comfort import ppd
+        ppd_neutral = ppd(0.0)
+        ppd_warm = ppd(2.0)
+        assert ppd_warm > ppd_neutral
+
+    def test_sensation_label_hot(self) -> None:
+        from app.thermal_comfort import sensation_label
+        assert sensation_label(3.1) == "Hot"
+
+    def test_sensation_label_cold(self) -> None:
+        from app.thermal_comfort import sensation_label
+        assert sensation_label(-3.1) == "Cold"
+
+    @pytest.mark.parametrize("pmv_val,expected", [
+        (-3.5, "Cold"),
+        (-2.5, "Cool"),
+        (-1.5, "Slightly Cool"),
+        (0.0, "Neutral"),
+        (1.5, "Slightly Warm"),
+        (2.5, "Warm"),
+        (3.5, "Hot"),
+    ])
+    def test_all_sensation_labels(self, pmv_val: float, expected: str) -> None:
+        from app.thermal_comfort import sensation_label
+        assert sensation_label(pmv_val) == expected
+
+    def test_assess_comfort_is_comfortable_at_neutral(self) -> None:
+        result = assess_comfort(22.0, 22.0, 0.1, 50.0)
+        assert result.is_comfortable is True
