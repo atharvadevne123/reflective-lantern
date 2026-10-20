@@ -123,3 +123,39 @@ class TestAnalysePvSystem:
     def test_more_panels_more_yield(self, panels: int) -> None:
         result = analyse_pv_system(panels, 400.0, 4.5)
         assert result.annual_yield_kwh > 0.0
+
+
+class TestSolarPVEdgeCases:
+    def test_zero_panels_raises(self) -> None:
+        with pytest.raises(ValueError):
+            analyse_pv_system(0, 400.0, 4.5)
+
+    def test_specific_yield_formula(self) -> None:
+        from app.solar_pv import specific_yield
+        result = analyse_pv_system(10, 400.0, 4.5)
+        sy = specific_yield(result.annual_yield_kwh, result.system_capacity_kwp)
+        assert sy == pytest.approx(result.annual_yield_kwh / result.system_capacity_kwp)
+
+    def test_negative_irradiance_raises(self) -> None:
+        with pytest.raises(ValueError):
+            analyse_pv_system(10, 400.0, -1.0)
+
+    def test_zero_panel_wattage_raises(self) -> None:
+        with pytest.raises(ValueError):
+            analyse_pv_system(10, 0.0, 4.5)
+
+    @pytest.mark.parametrize("irradiance", [2.0, 4.5, 6.0, 8.0])
+    def test_higher_irradiance_more_yield(self, irradiance: float) -> None:
+        r_low = analyse_pv_system(10, 400.0, 2.0)
+        r = analyse_pv_system(10, 400.0, irradiance)
+        if irradiance > 2.0:
+            assert r.annual_yield_kwh >= r_low.annual_yield_kwh
+
+    def test_annual_yield_reasonable_range(self) -> None:
+        result = analyse_pv_system(20, 400.0, 4.5)
+        assert 5000 < result.annual_yield_kwh < 50000
+
+    def test_co2_proportional_to_yield(self) -> None:
+        r1 = analyse_pv_system(10, 400.0, 4.5)
+        r2 = analyse_pv_system(20, 400.0, 4.5)
+        assert r2.co2_saved_kg == pytest.approx(r1.co2_saved_kg * 2, rel=1e-3)
