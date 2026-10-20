@@ -201,3 +201,91 @@ def smart_charge_schedule(
             schedule[h] = round(min(per_hour, remaining), 6)
         remaining = round(remaining - schedule[h], 8)
     return schedule
+
+
+def charging_cost(
+    energy_drawn_kwh: float,
+    energy_rate: float,
+    connection_fee: float = 0.0,
+) -> float:
+    """Return total cost of a charging session.
+
+    Args:
+        energy_drawn_kwh: Energy drawn from the charger in kWh (non-negative).
+        energy_rate: Electricity tariff in currency/kWh (non-negative).
+        connection_fee: Fixed session connection fee in currency (default 0).
+
+    Returns:
+        Total cost in currency units.
+
+    Raises:
+        ValueError: If energy_drawn_kwh < 0 or energy_rate < 0.
+    """
+    if energy_drawn_kwh < 0:
+        raise ValueError("energy_drawn_kwh must be non-negative")
+    if energy_rate < 0:
+        raise ValueError("energy_rate must be non-negative")
+    return energy_drawn_kwh * energy_rate + connection_fee
+
+
+def v2g_discharge_kw(
+    battery_soc_pct: float,
+    battery_kwh: float,
+    min_soc_pct: float = 20.0,
+    charger_power_kw: float = 7.4,
+) -> float:
+    """Return available vehicle-to-grid (V2G) discharge power in kW.
+
+    Discharging is limited by the available energy above the minimum SoC
+    and by the charger's rated power.
+
+    Args:
+        battery_soc_pct: Current battery state of charge in percent (0–100).
+        battery_kwh: Battery usable capacity in kWh (must be positive).
+        min_soc_pct: Minimum SoC to retain for driving range (default 20%).
+        charger_power_kw: Maximum V2G charger power in kW (default 7.4).
+
+    Returns:
+        Available V2G power in kW (0 if SoC ≤ min_soc_pct).
+
+    Raises:
+        ValueError: If battery_kwh ≤ 0 or SoC values out of range.
+    """
+    if battery_kwh <= 0:
+        raise ValueError("battery_kwh must be positive")
+    if not 0 <= battery_soc_pct <= 100:
+        raise ValueError("battery_soc_pct must be in [0, 100]")
+    if not 0 <= min_soc_pct < 100:
+        raise ValueError("min_soc_pct must be in [0, 100)")
+    available_kwh = max(0.0, (battery_soc_pct - min_soc_pct) / 100.0 * battery_kwh)
+    if available_kwh <= 0:
+        return 0.0
+    return min(charger_power_kw, available_kwh)
+
+
+def co2_saved_vs_ice(
+    energy_added_kwh: float,
+    grid_intensity_kg_per_kwh: float = 0.233,
+    ice_emission_kg_per_km: float = 0.120,
+    kwh_per_km: float = 0.20,
+) -> float:
+    """Return CO2 saved by charging an EV compared to an equivalent ICE vehicle.
+
+    Args:
+        energy_added_kwh: Usable energy added to the battery in kWh.
+        grid_intensity_kg_per_kwh: Grid carbon intensity in kg CO2e/kWh.
+        ice_emission_kg_per_km: ICE vehicle emissions in kg CO2e/km.
+        kwh_per_km: EV energy consumption in kWh/km.
+
+    Returns:
+        Net CO2 savings in kg CO2e (positive = EV emits less than ICE).
+
+    Raises:
+        ValueError: If energy_added_kwh < 0.
+    """
+    if energy_added_kwh < 0:
+        raise ValueError("energy_added_kwh must be non-negative")
+    ev_emissions = energy_added_kwh * grid_intensity_kg_per_kwh
+    km_driven = energy_added_kwh / kwh_per_km
+    ice_emissions = km_driven * ice_emission_kg_per_km
+    return ice_emissions - ev_emissions
