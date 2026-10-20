@@ -132,3 +132,36 @@ class TestAnalyseHeatPump:
     def test_warmer_source_better_cop(self, source: float) -> None:
         result = analyse_heat_pump(source, 45.0, 10000.0)
         assert result.cop > 1.0
+
+
+class TestHeatPumpEdgeCases:
+    def test_source_equal_delivery_raises(self) -> None:
+        from app.heat_pump import carnot_cop
+        with pytest.raises(ValueError):
+            carnot_cop(50.0, 50.0)
+
+    def test_delivery_below_source_raises(self) -> None:
+        from app.heat_pump import carnot_cop
+        with pytest.raises(ValueError):
+            carnot_cop(60.0, 40.0)
+
+    def test_cop_increases_with_source_temp(self) -> None:
+        from app.heat_pump import analyse_heat_pump
+        r_cold = analyse_heat_pump(-10.0, 45.0, 10000.0)
+        r_warm = analyse_heat_pump(10.0, 45.0, 10000.0)
+        assert r_warm.cop > r_cold.cop
+
+    def test_higher_delivery_temp_lower_cop(self) -> None:
+        r_low = analyse_heat_pump(5.0, 35.0, 10000.0)
+        r_high = analyse_heat_pump(5.0, 55.0, 10000.0)
+        assert r_high.cop < r_low.cop
+
+    @pytest.mark.parametrize("source_t,delivery_t", [(-5.0, 35.0), (5.0, 45.0), (10.0, 55.0)])
+    def test_parametrized_conditions(self, source_t: float, delivery_t: float) -> None:
+        result = analyse_heat_pump(source_t, delivery_t, 10000.0)
+        assert result.cop > 1.0
+        assert result.electricity_consumed_kwh > 0
+
+    def test_co2_saved_non_negative(self) -> None:
+        result = analyse_heat_pump(5.0, 45.0, 10000.0)
+        assert result.co2_saved_kg >= 0
