@@ -263,6 +263,16 @@ The service ships several reusable utility modules under `app/`:
 | `energy_audit` | ASHRAE Level I/II audit, EUI, end-use breakdown, opportunity ranking |
 | `microGrid_controller` | Microgrid self-consumption dispatch, self-sufficiency/consumption ratios |
 | `voltage_drop` | Cable resistance, single/three-phase voltage drop, IEC 60364 compliance |
+| `fuel_cell` | Nernst voltage, overpotentials, cell/stack voltage, H₂ consumption, degradation |
+| `tidal_power` | Tidal stream power, barrage energy, energy density, annual output, resource score |
+| `geothermal` | Reservoir temperature, heat flow, Carnot efficiency, LCOE, brine enthalpy |
+| `peak_shaving` | Battery peak-shaving controller, optimal threshold, revenue, cycles per year |
+| `cogeneration` | CHP electrical/thermal efficiency, CO₂ savings, heat-to-power ratio, PES |
+| `energy_storage_degradation` | Rainflow cycle depth, calendar degradation, SoH, energy throughput, EOL cycles |
+| `renewable_curtailment` | Curtailment rate, revenue lost, carbon abatement lost, forecast accuracy |
+| `distributed_energy` | DER portfolio, dispatch order, capacity factor, net metering, availability |
+| `energy_intensity` | EUI calculation, weather normalisation, sector benchmarking, carbon from EUI |
+| `grid_balancing` | Frequency deviation, droop response, RoCoF, inertia, frequency nadir |
 
 ## License
 
