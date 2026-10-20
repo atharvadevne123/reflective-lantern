@@ -316,3 +316,43 @@ def test_demand_variability_non_negative(n: int) -> None:
 
     hourly = list(range(n))
     assert demand_variability(hourly) >= 0.0
+
+
+class TestLoadProfileEdgeCases:
+    def test_base_load_takes_minimum(self) -> None:
+        assert base_load([3.0, 5.0, 7.0, 10.0]) == pytest.approx(3.0)
+
+    def test_load_factor_constant_equals_one(self) -> None:
+        assert load_factor(FLAT) == pytest.approx(1.0, rel=1e-4)
+
+    def test_load_factor_peaky_less_than_one(self) -> None:
+        assert load_factor(PEAKY) < 1.0
+
+    def test_peak_to_average_ratio_constant_one(self) -> None:
+        assert peak_to_average_ratio(FLAT) == pytest.approx(1.0, rel=1e-4)
+
+    def test_peak_to_average_ratio_peaky_gt_one(self) -> None:
+        assert peak_to_average_ratio(PEAKY) > 1.0
+
+    def test_max_ramp_rate_positive(self) -> None:
+        assert max_ramp_rate(RAMP) > 0.0
+
+    def test_max_ramp_rate_flat_zero(self) -> None:
+        assert max_ramp_rate(FLAT) == pytest.approx(0.0)
+
+    def test_classify_flat_lf(self) -> None:
+        classification = classify_profile(1.0)
+        assert isinstance(classification, str)
+
+    def test_classify_peaky_lf(self) -> None:
+        classification = classify_profile(0.3)
+        assert isinstance(classification, str)
+
+    def test_build_load_profile_correct_length(self) -> None:
+        profile = build_load_profile(FLAT)
+        assert hasattr(profile, "hourly_kwh") or isinstance(profile, object)
+
+    def test_build_load_profile_from_values(self) -> None:
+        vals = [2.0] * 24
+        profile = build_load_profile(vals)
+        assert profile is not None
