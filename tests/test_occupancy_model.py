@@ -145,3 +145,44 @@ class TestAnnualOccupiedHours:
             OFFICE_BASE_SCHEDULE, weekdays_per_year=weekdays
         )
         assert hours >= 0
+
+
+class TestOccupancyModelEdgeCases:
+    def test_build_profile_returns_dataclass(self) -> None:
+        profile = build_occupancy_profile("office")
+        assert isinstance(profile, OccupancyProfile)
+
+    def test_energy_with_full_occupancy_equals_base(self) -> None:
+        full = {h: 1.0 for h in range(24)}
+        e = energy_with_occupancy(100.0, full)
+        assert e > 0
+
+    def test_energy_with_zero_occupancy_lower(self) -> None:
+        full = {h: 1.0 for h in range(24)}
+        empty = {h: 0.0 for h in range(24)}
+        e_full = energy_with_occupancy(100.0, full)
+        e_empty = energy_with_occupancy(100.0, empty)
+        assert e_empty <= e_full
+
+    def test_setpoint_unoccupied_differs(self) -> None:
+        occ = occupancy_adjusted_setpoint(21.0, occupied=True)
+        unocc = occupancy_adjusted_setpoint(21.0, occupied=False)
+        assert occ != unocc
+
+    @pytest.mark.parametrize("schedule_name", ["office", "residential"])
+    def test_known_profiles(self, schedule_name: str) -> None:
+        profile = build_occupancy_profile(schedule_name)
+        assert profile.name == schedule_name
+
+    def test_apply_daytype_weekend_lower(self) -> None:
+        weekday_sched = OFFICE_BASE_SCHEDULE.copy()
+        weekend_sched = apply_daytype_factor(weekday_sched, factor=0.1)
+        total_wknd = sum(weekend_sched.values())
+        total_wkday = sum(weekday_sched.values())
+        assert total_wknd < total_wkday
+
+    def test_office_schedule_has_24_hours(self) -> None:
+        assert len(OFFICE_BASE_SCHEDULE) == 24
+
+    def test_residential_schedule_has_24_hours(self) -> None:
+        assert len(RESIDENTIAL_BASE_SCHEDULE) == 24
