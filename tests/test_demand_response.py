@@ -335,3 +335,38 @@ def test_curtailment_non_negative(baseline: float, actual: float) -> None:
 
     result = curtailment([baseline] * 24, [actual] * 24)
     assert result >= 0.0
+
+
+class TestDemandResponseEdgeCases:
+    def test_curtailment_full_reduction(self) -> None:
+        curt = curtailment([10.0, 10.0, 10.0], [0.0, 0.0, 0.0])
+        assert curt == pytest.approx(30.0)
+
+    def test_curtailment_no_reduction_zero(self) -> None:
+        curt = curtailment([10.0, 10.0], [10.0, 10.0])
+        assert curt == pytest.approx(0.0)
+
+    def test_performance_score_perfect_delivery(self) -> None:
+        score = performance_score(curtailed_kwh=10.0, committed_kwh=10.0)
+        assert score == pytest.approx(1.0, rel=1e-2)
+
+    def test_performance_score_zero_curtailment_zero(self) -> None:
+        score = performance_score(curtailed_kwh=0.0, committed_kwh=10.0)
+        assert score == pytest.approx(0.0)
+
+    def test_evaluate_event_returns_result(self) -> None:
+        from app.demand_response import DemandResponseResult
+        result = evaluate_event(BASELINE, CURTAILED, committed_kwh=4.0)
+        assert isinstance(result, DemandResponseResult)
+
+    def test_evaluate_event_delivered_positive(self) -> None:
+        from app.demand_response import DemandResponseResult
+        result = evaluate_event(BASELINE, CURTAILED, committed_kwh=4.0)
+        assert result.delivered_kwh >= 0.0
+
+    @pytest.mark.parametrize("pct", [0.25, 0.50, 0.75])
+    def test_curtailment_scales_with_reduction(self, pct: float) -> None:
+        baseline = [100.0] * 4
+        actual = [100.0 * (1 - pct)] * 4
+        curt = curtailment(baseline, actual)
+        assert curt == pytest.approx(100.0 * 4 * pct, rel=1e-4)
