@@ -150,3 +150,45 @@ class TestForecastDemand:
         hist = [float(i) for i in range(1, 11)]
         result = forecast_demand(hist, 3, method=method)
         assert len(result.forecast_values) == 3
+
+
+class TestDemandForecasterEdgeCases:
+    def test_mae_zero_for_perfect_forecast(self) -> None:
+        vals = [10.0, 12.0, 14.0]
+        assert mean_absolute_error(vals, vals) == pytest.approx(0.0)
+
+    def test_rmse_zero_for_perfect_forecast(self) -> None:
+        vals = [10.0, 12.0, 14.0]
+        assert root_mean_square_error(vals, vals) == pytest.approx(0.0)
+
+    def test_mae_positive_for_nonzero_errors(self) -> None:
+        actual = [10.0, 12.0, 14.0]
+        pred = [11.0, 11.0, 15.0]
+        assert mean_absolute_error(actual, pred) > 0
+
+    def test_moving_average_constant_series(self) -> None:
+        hist = [5.0] * 10
+        forecast = moving_average_forecast(hist, 3)
+        assert all(f == pytest.approx(5.0) for f in forecast)
+
+    def test_naive_forecast_repeats_last(self) -> None:
+        hist = [1.0, 2.0, 3.0, 7.0]
+        forecast = naive_forecast(hist, 4)
+        assert all(f == pytest.approx(7.0) for f in forecast)
+
+    def test_linear_trend_increasing(self) -> None:
+        hist = [1.0, 2.0, 3.0, 4.0, 5.0]
+        forecast = linear_trend_forecast(hist, 3)
+        assert forecast[1] > forecast[0]
+
+    def test_exponential_smoothing_within_range(self) -> None:
+        hist = [10.0] * 8
+        forecast = exponential_smoothing_forecast(hist, 3, alpha=0.3)
+        for f in forecast:
+            assert 5.0 <= f <= 20.0
+
+    @pytest.mark.parametrize("horizon", [1, 3, 7])
+    def test_forecast_length_matches_horizon(self, horizon: int) -> None:
+        hist = [float(i) for i in range(1, 15)]
+        result = forecast_demand(hist, horizon)
+        assert len(result.forecast_values) == horizon
