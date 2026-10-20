@@ -404,3 +404,54 @@ def test_peak_hour_fraction_invalid_start_hour_raises() -> None:
 
     with pytest.raises(ValueError):
         peak_hour_fraction([1.0] * 24, start_hour=24)
+
+
+class TestTariffEdgeCases:
+    def test_flat_rate_zero_consumption_zero_cost(self) -> None:
+        assert flat_rate_cost([0.0] * 24, rate=0.15) == pytest.approx(0.0)
+
+    def test_flat_rate_scales_with_rate(self) -> None:
+        c1 = flat_rate_cost([1.0] * 24, rate=0.10)
+        c2 = flat_rate_cost([1.0] * 24, rate=0.20)
+        assert c2 == pytest.approx(2 * c1, rel=1e-4)
+
+    def test_tou_cost_positive_for_peak_hours(self) -> None:
+        load = [0.0] * 24
+        for h in DEFAULT_PEAK_HOURS:
+            load[h] = 1.0
+        cost = time_of_use_cost(load, DEFAULT_PEAK_HOURS)
+        assert cost > 0.0
+
+    def test_tou_off_peak_cheaper_than_peak(self) -> None:
+        peak_load = [0.0] * 24
+        off_peak_load = [0.0] * 24
+        for h in DEFAULT_PEAK_HOURS:
+            peak_load[h] = 1.0
+        non_peak = [h for h in range(24) if h not in DEFAULT_PEAK_HOURS]
+        if non_peak:
+            off_peak_load[non_peak[0]] = 1.0
+        cost_peak = time_of_use_cost(peak_load, DEFAULT_PEAK_HOURS)
+        cost_off = time_of_use_cost(off_peak_load, DEFAULT_PEAK_HOURS)
+        assert cost_peak > cost_off
+
+    def test_tiered_cost_single_band(self) -> None:
+        bands = [TieredBand(limit_kwh=1000.0, rate=0.15)]
+        cost = tiered_cost([20.0] * 25, bands)
+        assert cost > 0.0
+
+    def test_peak_shift_saving_positive(self) -> None:
+        load = [0.0] * 24
+        for h in DEFAULT_PEAK_HOURS:
+            load[h] = 1.0
+        saving = peak_shift_saving(load, 0.5)
+        assert saving >= 0.0
+
+    def test_compare_tariffs_returns_comparison(self) -> None:
+        from app.tariff import TariffComparison
+        result = compare_tariffs([1.0] * 24)
+        assert isinstance(result, TariffComparison)
+
+    @pytest.mark.parametrize("n_hours", [1, 10, 24])
+    def test_tiered_cost_non_negative(self, n_hours: int) -> None:
+        bands = [TieredBand(limit_kwh=200.0, rate=0.12), TieredBand(limit_kwh=float("inf"), rate=0.18)]
+        assert tiered_cost([5.0] * n_hours, bands) >= 0.0
