@@ -143,3 +143,47 @@ class TestAnalyseBudget:
         entries = [_entry(ScopeCategory.SCOPE_2, 300.0)]
         result = analyse_budget(entries, budget)
         assert result.budget_remaining_kg == pytest.approx(budget - 300.0)
+
+
+class TestCarbonBudgetEdgeCases:
+    def test_total_emissions_empty_returns_zero(self) -> None:
+        assert total_emissions([]) == 0.0
+
+    def test_emissions_by_scope_all_scopes(self) -> None:
+        entries = [
+            _entry(ScopeCategory.SCOPE_1, 100.0),
+            _entry(ScopeCategory.SCOPE_2, 200.0),
+            _entry(ScopeCategory.SCOPE_3, 300.0),
+        ]
+        by_scope = emissions_by_scope(entries)
+        assert by_scope[ScopeCategory.SCOPE_1] == pytest.approx(100.0)
+        assert by_scope[ScopeCategory.SCOPE_2] == pytest.approx(200.0)
+        assert by_scope[ScopeCategory.SCOPE_3] == pytest.approx(300.0)
+
+    def test_carbon_intensity_positive(self) -> None:
+        intensity = carbon_intensity(1000.0, 500.0)
+        assert intensity > 0
+
+    def test_carbon_intensity_zero_revenue_raises(self) -> None:
+        with pytest.raises(ValueError):
+            carbon_intensity(1000.0, 0.0)
+
+    def test_linear_reduction_pathway_decreasing(self) -> None:
+        pathway = linear_reduction_pathway(1000.0, 100.0, years=5)
+        assert len(pathway) == 6
+        for i in range(1, len(pathway)):
+            assert pathway[i] <= pathway[i - 1]
+
+    def test_reduction_target_positive(self) -> None:
+        target = reduction_target_kg(1000.0, 0.5)
+        assert target == pytest.approx(500.0)
+
+    def test_reduction_target_zero_rate_returns_base(self) -> None:
+        target = reduction_target_kg(1000.0, 0.0)
+        assert target == pytest.approx(1000.0)
+
+    @pytest.mark.parametrize("rate", [0.1, 0.3, 0.5, 0.9])
+    def test_higher_rate_lower_target(self, rate: float) -> None:
+        targets = [reduction_target_kg(1000.0, r) for r in [0.1, rate]]
+        if rate > 0.1:
+            assert targets[1] <= targets[0]
