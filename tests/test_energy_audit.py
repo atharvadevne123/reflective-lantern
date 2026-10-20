@@ -164,7 +164,7 @@ class TestEnergyAuditEdgeCases:
 
     def test_end_use_percentage_sums_to_100(self) -> None:
         uses = {EndUseCategory.HVAC: 60.0, EndUseCategory.LIGHTING: 40.0}
-        breakdown = build_end_use_breakdown(uses)
+        build_end_use_breakdown(uses)
         total_pct = sum(end_use_percentage(v, sum(uses.values())) for v in uses.values())
         assert total_pct == pytest.approx(100.0, rel=1e-4)
 
