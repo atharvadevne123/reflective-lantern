@@ -142,3 +142,44 @@ class TestAssessFlexibility:
             "z", self._profile(), response_minutes, 5.0, 2.0
         )
         assert 0.0 <= result.flexibility_score <= 100.0
+
+
+class TestFlexibilityScoreEdgeCases:
+    def _profile(self) -> list[float]:
+        return [float(i % 10 + 5) for i in range(24)]
+
+    def test_variability_constant_series_zero(self) -> None:
+        assert load_variability_score([10.0] * 24) == pytest.approx(0.0)
+
+    def test_peak_contribution_flat_load(self) -> None:
+        score = peak_contribution_score([5.0] * 24)
+        assert 0.0 <= score <= 100.0
+
+    def test_response_readiness_instant_max(self) -> None:
+        score = response_readiness_score(0)
+        assert score == pytest.approx(100.0, rel=1e-2)
+
+    def test_response_readiness_long_low(self) -> None:
+        score_fast = response_readiness_score(1)
+        score_slow = response_readiness_score(120)
+        assert score_fast > score_slow
+
+    def test_overall_score_bounded(self) -> None:
+        score = overall_flexibility_score(50.0, 40.0, 60.0)
+        assert 0.0 <= score <= 100.0
+
+    def test_assess_flexibility_high_capacity(self) -> None:
+        result = assess_flexibility("big", self._profile(), 5, 50.0, 25.0)
+        assert result.flexibility_score > 0.0
+
+    def test_assess_flexibility_no_capacity_low_score(self) -> None:
+        result = assess_flexibility("small", self._profile(), 60, 0.0, 0.0)
+        assert result.flexibility_score >= 0.0
+
+    @pytest.mark.parametrize("dispatchable,sheddable", [(5.0, 2.0), (20.0, 10.0)])
+    def test_higher_capacity_higher_or_equal_score(
+        self, dispatchable: float, sheddable: float
+    ) -> None:
+        r_low = assess_flexibility("a", self._profile(), 15, 1.0, 0.5)
+        r_high = assess_flexibility("b", self._profile(), 15, dispatchable, sheddable)
+        assert r_high.flexibility_score >= r_low.flexibility_score
