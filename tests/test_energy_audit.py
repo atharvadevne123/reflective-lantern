@@ -141,3 +141,51 @@ class TestRunAudit:
         end_uses = {EndUseCategory.HVAC: 10000.0}
         result = run_audit("B", area, end_uses, 0.28, [])
         assert result.energy_use_intensity_kwh_per_m2 > 0.0
+
+
+class TestEnergyAuditEdgeCases:
+    def _opportunity(self, payback: float = 3.0, savings: float = 500.0) -> AuditOpportunity:
+        return AuditOpportunity(
+            description="edge",
+            category=EndUseCategory.LIGHTING,
+            estimated_annual_savings_kwh=savings,
+            estimated_annual_savings_cost=100.0,
+            implementation_cost=payback * 100.0,
+            simple_payback_years=payback,
+        )
+
+    def test_eui_formula(self) -> None:
+        eui = energy_use_intensity(10000.0, 500.0)
+        assert eui == pytest.approx(20.0, rel=1e-4)
+
+    def test_eui_zero_area_raises(self) -> None:
+        with pytest.raises(ValueError):
+            energy_use_intensity(1000.0, 0.0)
+
+    def test_end_use_percentage_sums_to_100(self) -> None:
+        uses = {EndUseCategory.HVAC: 60.0, EndUseCategory.LIGHTING: 40.0}
+        breakdown = build_end_use_breakdown(uses)
+        total_pct = sum(end_use_percentage(v, sum(uses.values())) for v in uses.values())
+        assert total_pct == pytest.approx(100.0, rel=1e-4)
+
+    def test_opportunity_payback_formula(self) -> None:
+        pb = opportunity_payback(1000.0, 200.0)
+        assert pb == pytest.approx(5.0, rel=1e-4)
+
+    def test_prioritise_opportunities_sorted(self) -> None:
+        ops = [self._opportunity(5.0), self._opportunity(2.0), self._opportunity(8.0)]
+        ordered = prioritise_opportunities(ops)
+        paybacks = [o.simple_payback_years for o in ordered]
+        assert paybacks == sorted(paybacks)
+
+    def test_run_audit_empty_opportunities(self) -> None:
+        end_uses = {EndUseCategory.HVAC: 3000.0, EndUseCategory.LIGHTING: 2000.0}
+        result = run_audit("B01", 250.0, end_uses, 0.25, [])
+        assert isinstance(result, AuditReport)
+        assert len(result.opportunities) == 0
+
+    @pytest.mark.parametrize("category", list(EndUseCategory))
+    def test_all_end_use_categories(self, category: EndUseCategory) -> None:
+        uses = {category: 1000.0}
+        breakdown = build_end_use_breakdown(uses)
+        assert category in breakdown
