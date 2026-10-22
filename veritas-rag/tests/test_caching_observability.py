@@ -273,3 +273,54 @@ class TestCacheHitMissAccounting:
         c.get("never stored")
         stats = c.stats()
         assert stats["hit_rate"] == 0.0
+
+
+class TestCacheAgeSeconds:
+    def test_none_for_missing_key(self) -> None:
+        from app.caching import RetrievalCache, cache_age_seconds
+
+        cache = RetrievalCache(ttl_seconds=60)
+        assert cache_age_seconds(cache, "not cached query") is None
+
+    def test_returns_non_negative_age(self) -> None:
+        from app.caching import RetrievalCache, cache_age_seconds
+
+        cache = RetrievalCache(ttl_seconds=60)
+        cache.put("my query", [])
+        age = cache_age_seconds(cache, "my query")
+        assert age is not None
+        assert age >= 0.0
+
+    def test_none_after_eviction(self) -> None:
+        from app.caching import RetrievalCache, cache_age_seconds
+
+        cache = RetrievalCache(max_size=1, ttl_seconds=60)
+        cache.put("first query", [])
+        cache.put("second query", [])  # evicts first
+        assert cache_age_seconds(cache, "first query") is None
+
+    def test_none_when_expired(self) -> None:
+        from app.caching import RetrievalCache, cache_age_seconds
+
+        cache = RetrievalCache(ttl_seconds=0.0)
+        cache.put("expiring query", [])
+        import time
+
+        time.sleep(0.01)
+        assert cache_age_seconds(cache, "expiring query") is None
+
+
+class TestPipelineSources:
+    def test_sources_empty_pipeline(self, empty_pipeline) -> None:
+        assert empty_pipeline.sources() == []
+
+    def test_sources_after_ingest(self, empty_pipeline) -> None:
+        empty_pipeline.ingest(b"Content for sources test.", "source-a.txt")
+        assert "source-a.txt" in empty_pipeline.sources()
+
+    def test_sources_multiple_docs(self, empty_pipeline) -> None:
+        for name in ("doc1.txt", "doc2.txt", "doc3.txt"):
+            empty_pipeline.ingest(f"Content for {name}.".encode(), name)
+        sources = empty_pipeline.sources()
+        for name in ("doc1.txt", "doc2.txt", "doc3.txt"):
+            assert name in sources
