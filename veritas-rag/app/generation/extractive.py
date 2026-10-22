@@ -104,4 +104,9 @@ class ExtractiveGenerator:
             )
             for sentence, scored in picked
         ]
+        logger.debug(
+            "ExtractiveGenerator: %d sentence(s) selected from %d candidate(s)",
+            len(picked),
+            len(candidates),
+        )
         return answer, citations
