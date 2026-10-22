@@ -289,16 +289,21 @@ class RagPipeline:
         fused = fused[: self.config.rerank_top_k]
         recorder.end_stage("fusion", candidates=[c for c, _, _, _ in fused])
 
-        candidates = [
-            ScoredChunk(
-                chunk=self.chunks[cid],
-                bm25_rank=b_rank,
-                vector_rank=v_rank,
-                fused_score=round(score, 6),
+        candidates = []
+        for cid, score, b_rank, v_rank in fused:
+            chunk = self.chunks.get(cid)
+            if chunk is None:
+                # Chunk evicted between retrieval and fusion (e.g. version superseded)
+                logger.debug("Skipping evicted chunk %s in fusion results", cid)
+                continue
+            candidates.append(
+                ScoredChunk(
+                    chunk=chunk,
+                    bm25_rank=b_rank,
+                    vector_rank=v_rank,
+                    fused_score=round(score, 6),
+                )
             )
-            for cid, score, b_rank, v_rank in fused
-            if cid in self.chunks
-        ]
 
         # Stage 3b — deep scoring
         recorder.start_stage("rerank")
