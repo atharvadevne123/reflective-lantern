@@ -21,12 +21,24 @@ from .bm25 import tokenize
 
 
 class Embedder(Protocol):
-    """Interface every embedding backend must satisfy."""
+    """Interface every embedding backend must satisfy.
+
+    Implementations must be stateless per call: the same text always produces
+    the same vector. This contract allows the cache to serve vectors across
+    pipeline restarts without consistency issues.
+    """
 
     dim: int
 
     def embed(self, texts: list[str]) -> np.ndarray:
-        """Return an (n, dim) float32 matrix of L2-normalized embeddings."""
+        """Return an (n, dim) float32 matrix of L2-normalized embeddings.
+
+        Args:
+            texts: Batch of strings to embed.
+
+        Returns:
+            Float32 array of shape (len(texts), dim); each row is unit-norm.
+        """
         ...
 
 
