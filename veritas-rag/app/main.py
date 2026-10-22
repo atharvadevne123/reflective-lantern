@@ -127,6 +127,47 @@ async def traces(limit: int = 20) -> dict[str, Any]:
     return {"traces": [t.to_dict() for t in pipeline.traces.recent(limit)]}
 
 
+@app.get(f"{settings.api_prefix}/version", tags=["Operations"], summary="Service version")
+async def version() -> dict[str, str]:
+    """Return the running service version string."""
+    return {"version": __version__, "service": "Veritas-Rag"}
+
+
+@app.get(f"{settings.api_prefix}/documents", tags=["Ingestion"], summary="List ingested documents")
+async def documents() -> dict[str, Any]:
+    """List all currently indexed documents with their version and chunk count."""
+    doc_list = []
+    for source, chain in pipeline.versions._chains.items():
+        latest = chain.latest
+        chunk_count = sum(1 for c in pipeline.chunks.values() if c.doc_id == latest.doc_id)
+        doc_list.append(
+            {
+                "doc_id": latest.doc_id,
+                "source": source,
+                "source_type": latest.source_type,
+                "version": latest.version,
+                "chunks": chunk_count,
+                "created_at": latest.created_at,
+            }
+        )
+    return {"total": len(doc_list), "documents": doc_list}
+
+
+@app.delete(
+    f"{settings.api_prefix}/documents/{{source}}",
+    tags=["Ingestion"],
+    summary="Remove an ingested document",
+)
+async def delete_document(source: str) -> dict[str, Any]:
+    """Remove all chunks for a given source document from the index."""
+    latest = pipeline.versions.latest(source)
+    if latest is None:
+        raise HTTPException(status_code=404, detail=f"Document '{source}' not found")
+    pipeline._remove_document_chunks(latest.doc_id)
+    pipeline.cache.invalidate_all()
+    return {"status": "deleted", "source": source, "doc_id": latest.doc_id}
+
+
 @app.get("/", include_in_schema=False)
 async def root() -> dict[str, str]:
     return {"service": "Veritas-Rag", "version": __version__, "docs": "/docs"}
