@@ -110,3 +110,22 @@ class TestQueryBatch:
         before = pipeline.stats["queries"]
         pipeline.query_batch(["q1", "q2", "q3"])
         assert pipeline.stats["queries"] == before + 3
+
+
+class TestDocumentCount:
+    def test_zero_on_empty_pipeline(self, empty_pipeline) -> None:
+        assert empty_pipeline.document_count() == 0
+
+    def test_count_increments_per_source(self, empty_pipeline) -> None:
+        empty_pipeline.ingest(b"First document for count.", "count-a.txt")
+        assert empty_pipeline.document_count() == 1
+        empty_pipeline.ingest(b"Second document for count.", "count-b.txt")
+        assert empty_pipeline.document_count() == 2
+
+    def test_same_source_version_does_not_increment(self, empty_pipeline) -> None:
+        empty_pipeline.ingest(b"Original version of the document.", "versioned.txt")
+        empty_pipeline.ingest(b"Updated version of the document.", "versioned.txt")
+        assert empty_pipeline.document_count() == 1
+
+    def test_count_matches_sources_length(self, pipeline) -> None:
+        assert pipeline.document_count() == len(pipeline.sources())
