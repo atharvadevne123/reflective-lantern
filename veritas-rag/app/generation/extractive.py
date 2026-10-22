@@ -9,10 +9,13 @@ contract.
 
 from __future__ import annotations
 
+import logging
 import re
 
 from ..retrieval.bm25 import tokenize
 from ..schemas import Citation, ScoredChunk
+
+logger = logging.getLogger(__name__)
 
 _SENTENCE_END = re.compile(r"(?<=[.!?])\s+")
 
