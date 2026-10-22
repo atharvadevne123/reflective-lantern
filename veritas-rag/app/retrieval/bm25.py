@@ -5,6 +5,7 @@ from __future__ import annotations
 import math
 import re
 from collections import Counter
+from functools import lru_cache
 
 _TOKEN = re.compile(r"[a-z0-9]+")
 
@@ -41,8 +42,13 @@ _STOPWORDS = frozenset(
 )
 
 
+@lru_cache(maxsize=4096)
 def tokenize(text: str) -> list[str]:
-    """Lowercase alphanumeric tokens with stopwords removed."""
+    """Lowercase alphanumeric tokens with stopwords removed.
+
+    Cached: query and chunk texts repeat heavily in BM25 scoring loops;
+    memoising tokenization removes the most expensive redundant work.
+    """
     return [t for t in _TOKEN.findall(text.lower()) if t not in _STOPWORDS]
 
 
