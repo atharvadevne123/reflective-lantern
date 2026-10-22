@@ -407,3 +407,37 @@ class TestMinTrustGateAndVariance:
         result = top_k_trust(chunks, k=2)
         assert len(result) == 2
         assert result[0].trust >= result[1].trust
+
+
+class TestNormalizeTrustScores:
+    def test_empty_returns_empty(self) -> None:
+        from app.scoring.trust import normalize_trust_scores
+
+        assert normalize_trust_scores([]) == []
+
+    def test_max_becomes_one(self) -> None:
+        from app.scoring.trust import normalize_trust_scores
+
+        chunks = [
+            ScoredChunk(chunk=make_chunk(), trust=0.4),
+            ScoredChunk(chunk=make_chunk(), trust=0.8),
+            ScoredChunk(chunk=make_chunk(), trust=0.2),
+        ]
+        result = normalize_trust_scores(chunks)
+        assert max(c.trust for c in result) == pytest.approx(1.0)
+
+    def test_order_preserved(self) -> None:
+        from app.scoring.trust import normalize_trust_scores
+
+        original_trusts = [0.6, 0.9, 0.3]
+        chunks = [ScoredChunk(chunk=make_chunk(), trust=t) for t in original_trusts]
+        original_order = [id(c) for c in chunks]
+        normalize_trust_scores(chunks)
+        assert [id(c) for c in chunks] == original_order
+
+    def test_all_zero_unchanged(self) -> None:
+        from app.scoring.trust import normalize_trust_scores
+
+        chunks = [ScoredChunk(chunk=make_chunk(), trust=0.0) for _ in range(3)]
+        result = normalize_trust_scores(chunks)
+        assert all(c.trust == 0.0 for c in result)
