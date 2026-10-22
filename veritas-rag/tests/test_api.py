@@ -235,3 +235,12 @@ def test_sources_lists_all_ingested(client) -> None:
     sources = resp.json()["sources"]
     for name in ("alpha.txt", "beta.txt", "gamma.txt"):
         assert name in sources
+
+
+def test_health_endpoint_includes_config_summary(client) -> None:
+    resp = client.get("/api/v1/health")
+    assert resp.status_code == 200
+    body = resp.json()
+    assert "config" in body
+    assert "generator_backend" in body["config"]
+    assert "final_top_k" in body["config"]
