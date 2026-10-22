@@ -361,6 +361,14 @@ class RagPipeline:
         """
         return list(self.versions._chains.keys())
 
+    def document_count(self) -> int:
+        """Return the number of unique sources currently indexed.
+
+        Returns:
+            Integer count of indexed document sources.
+        """
+        return len(self.versions)
+
     def metrics(self) -> dict[str, Any]:
         """Operational counters for the /metrics endpoint."""
         return {
