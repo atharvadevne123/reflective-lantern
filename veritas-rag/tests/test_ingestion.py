@@ -229,3 +229,55 @@ class TestPipelineIngest:
     def test_empty_document_rejected(self, empty_pipeline) -> None:
         report = empty_pipeline.ingest(b"   \n  ", "blank.txt")
         assert report["status"] == "empty"
+
+
+class TestIngestionEdgeCases:
+    def test_multiple_documents_indexed(self, empty_pipeline) -> None:
+        """Ingesting several distinct documents indexes all of them."""
+        texts = [
+            b"Alpha document about solar policy.",
+            b"Beta document about battery storage.",
+            b"Gamma document about grid connections.",
+        ]
+        for i, text in enumerate(texts):
+            report = empty_pipeline.ingest(text, f"doc_{i}.txt")
+            assert report["status"] == "ingested"
+        assert len(empty_pipeline.versions) == 3
+
+    def test_ingest_with_explicit_created_at(self, empty_pipeline) -> None:
+        """created_at is stored with the document and used in trust scoring."""
+        ts = "2024-06-01T00:00:00+00:00"
+        report = empty_pipeline.ingest(b"Dated document content here.", "dated.txt", created_at=ts)
+        assert report["status"] == "ingested"
+        doc_id = report["doc_id"]
+        chunks = [c for c in empty_pipeline.chunks.values() if c.doc_id == doc_id]
+        assert all(c.created_at == ts for c in chunks)
+
+    def test_ingest_large_document_creates_multiple_chunks(self, empty_pipeline) -> None:
+        """A document larger than chunk_size is split into multiple chunks."""
+        long_text = b"This is a complete sentence about solar energy policy. " * 30
+        report = empty_pipeline.ingest(long_text, "long.txt")
+        assert report["status"] == "ingested"
+        assert report["chunks"] > 1
+
+    def test_version_chain_grows_on_update(self, empty_pipeline) -> None:
+        """Re-ingesting an updated source increments the version counter."""
+        for v, text in enumerate(
+            [
+                b"Version one content for the policy document.",
+                b"Version two content for the policy document.",
+                b"Version three content for the policy document.",
+            ],
+            start=1,
+        ):
+            report = empty_pipeline.ingest(text, "policy.txt")
+            assert report["version"] == v
+
+    def test_metrics_reflect_ingested_counts(self, empty_pipeline) -> None:
+        """pipeline.metrics() documents count matches ingested files."""
+        empty_pipeline.ingest(b"First document content sentence.", "a.txt")
+        empty_pipeline.ingest(b"Second document content sentence.", "b.txt")
+        m = empty_pipeline.metrics()
+        assert m["documents"] == 2
+        assert m["ingested"] == 2
+        assert m["chunks"] >= 2
