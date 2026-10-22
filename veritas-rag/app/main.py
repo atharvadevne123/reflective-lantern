@@ -85,6 +85,36 @@ async def ingest(body: IngestRequest) -> dict[str, Any]:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
 
 
+class BatchIngestRequest(BaseModel):
+    """Payload for /ingest/batch."""
+
+    documents: list[IngestRequest] = Field(..., min_length=1, max_length=100)
+
+
+@app.post(
+    f"{settings.api_prefix}/ingest/batch",
+    tags=["Ingestion"],
+    summary="Ingest multiple documents",
+)
+async def ingest_batch(body: BatchIngestRequest) -> dict[str, Any]:
+    """Ingest up to 100 documents in a single request."""
+    results = []
+    for doc in body.documents:
+        try:
+            data = base64.b64decode(doc.content_base64, validate=True)
+        except Exception as exc:
+            results.append({"source": doc.source, "error": "invalid base64"})
+            continue
+        try:
+            result = pipeline.ingest(
+                data, source=doc.source, source_type=doc.source_type, created_at=doc.created_at
+            )
+            results.append(result)
+        except ValueError as exc:
+            results.append({"source": doc.source, "error": str(exc)})
+    return {"results": results, "total": len(results)}
+
+
 @app.post(f"{settings.api_prefix}/query", tags=["Query"], summary="Ask a question")
 async def query(body: QueryRequest) -> dict[str, Any]:
     """Answer a question with citations, or return insufficient evidence."""
