@@ -10,7 +10,10 @@ without O(n^2) comparisons.
 from __future__ import annotations
 
 import hashlib
+import logging
 import struct
+
+logger = logging.getLogger(__name__)
 
 _NUM_HASHES = 64
 _SHINGLE_SIZE = 3
@@ -94,17 +97,29 @@ class DuplicateDetector:
                 best_id, best_sim = doc_id, sim
 
         if best_id is not None and best_sim >= self.near_threshold:
+            logger.debug(
+                "Near-duplicate detected: similarity=%.4f >= threshold=%.4f, original=%s",
+                best_sim,
+                self.near_threshold,
+                best_id,
+            )
             return best_id, best_sim
         return None, 0.0
 
     def register(self, doc_id: str, text: str) -> None:
-        """Add a document to the duplicate index."""
+        """Add a document to the duplicate index.
+
+        Args:
+            doc_id: Unique document identifier to register.
+            text: Normalized document text.
+        """
         digest = content_hash(text)
         self._exact[digest] = doc_id
         signature = minhash_signature(text)
         self._signatures[doc_id] = signature
         for key in self._bands(signature):
             self._lsh_buckets.setdefault(key, []).append(doc_id)
+        logger.debug("Registered doc %s in dedup index (total=%d)", doc_id, len(self))
 
     def __len__(self) -> int:
         return len(self._signatures)
