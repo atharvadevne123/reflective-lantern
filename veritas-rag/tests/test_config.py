@@ -100,3 +100,34 @@ class TestSettingsCustomValues:
         """chunk_trust_floor=0.0 is a valid boundary value."""
         s = Settings(chunk_trust_floor=0.0)
         assert s.chunk_trust_floor == 0.0
+
+
+class TestSettingsSummary:
+    def test_returns_expected_keys(self) -> None:
+        from app.config import Settings, settings_summary
+
+        s = Settings()
+        summary = settings_summary(s)
+        for key in (
+            "embedding_dim",
+            "chunk_size",
+            "final_top_k",
+            "confidence_threshold",
+            "generator_backend",
+        ):
+            assert key in summary
+
+    def test_values_match_settings(self) -> None:
+        from app.config import Settings, settings_summary
+
+        s = Settings(embedding_dim=128, final_top_k=3)
+        summary = settings_summary(s)
+        assert summary["embedding_dim"] == 128
+        assert summary["final_top_k"] == 3
+
+    def test_summary_has_near_dup_threshold(self) -> None:
+        from app.config import Settings, settings_summary
+
+        s = Settings(near_dup_threshold=0.90)
+        summary = settings_summary(s)
+        assert summary["near_dup_threshold"] == pytest.approx(0.90)
