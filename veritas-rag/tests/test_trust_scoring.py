@@ -310,7 +310,7 @@ class TestScoreChunkIntegration:
             assert 0.0 <= scored.trust <= 1.0, f"trust out of range for {source_type}"
 
 
-class TestTrustTier:
+class TestTrustTierExtended:
     @pytest.mark.parametrize(
         ("score", "expected_tier"),
         [
@@ -324,7 +324,7 @@ class TestTrustTier:
             (0.00, "minimal"),
         ],
     )
-    def test_tier_boundaries(self, score: float, expected_tier: str) -> None:
+    def test_tier_boundaries_extended(self, score: float, expected_tier: str) -> None:
         from app.scoring.trust import trust_tier
 
         assert trust_tier(score) == expected_tier

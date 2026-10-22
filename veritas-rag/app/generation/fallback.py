@@ -75,5 +75,7 @@ def evaluate_evidence(
         )
         return GateDecision(False, confidence, supporting, "confidence_below_threshold")
 
-    logger.debug("Evidence gate: passed with confidence=%.4f, %d chunks", confidence, len(supporting))
+    logger.debug(
+        "Evidence gate: passed with confidence=%.4f, %d chunks", confidence, len(supporting)
+    )
     return GateDecision(True, confidence, supporting, "evidence_sufficient")
