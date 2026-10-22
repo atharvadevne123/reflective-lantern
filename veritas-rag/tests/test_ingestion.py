@@ -14,7 +14,7 @@ from app.ingestion.dedup import (
     signature_similarity,
 )
 from app.ingestion.extractors import detect_source_type, extract_email, extract_html
-from app.ingestion.normalize import normalize_text, strip_email_quotes
+from app.ingestion.normalize import normalize_text, strip_email_quotes, truncate_to_bytes
 from app.ingestion.versioning import VersionStore, make_doc_id
 from app.schemas import Document
 
@@ -281,3 +281,27 @@ class TestIngestionEdgeCases:
         assert m["documents"] == 2
         assert m["ingested"] == 2
         assert m["chunks"] >= 2
+
+
+class TestTruncateToBytes:
+    def test_short_text_unchanged(self) -> None:
+        text = "hello world"
+        assert truncate_to_bytes(text, max_bytes=1000) == text
+
+    def test_truncates_to_limit(self) -> None:
+        text = "a" * 200
+        result = truncate_to_bytes(text, max_bytes=100)
+        assert len(result.encode("utf-8")) <= 100
+
+    def test_exact_limit_unchanged(self) -> None:
+        text = "x" * 50
+        assert truncate_to_bytes(text, max_bytes=50) == text
+
+    def test_multibyte_truncation_is_safe(self) -> None:
+        # "é" encodes as 2 bytes; truncating mid-char must not produce garbage
+        text = "é" * 100
+        result = truncate_to_bytes(text, max_bytes=101)
+        result.encode("utf-8")  # must not raise UnicodeEncodeError
+
+    def test_empty_string(self) -> None:
+        assert truncate_to_bytes("", max_bytes=10) == ""
