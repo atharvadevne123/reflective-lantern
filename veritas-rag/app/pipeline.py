@@ -353,6 +353,14 @@ class RagPipeline:
     # Introspection
     # ------------------------------------------------------------------
 
+    def sources(self) -> list[str]:
+        """Return the source names of all currently indexed documents.
+
+        Returns:
+            List of source strings, one per unique ingested source.
+        """
+        return list(self.versions._chains.keys())
+
     def metrics(self) -> dict[str, Any]:
         """Operational counters for the /metrics endpoint."""
         return {
