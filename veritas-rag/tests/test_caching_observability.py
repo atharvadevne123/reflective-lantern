@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import time
 
+import pytest
+
 from app.caching import RetrievalCache, cache_key, normalize_query
 from app.observability import TraceRecorder, TraceStore
 
@@ -202,3 +204,72 @@ class TestTraceErrorRate:
 
         result = trace_error_rate(TraceStore())
         assert isinstance(result, float)
+
+
+class TestCacheWarmAndEvict:
+    def test_warm_populates_cache(self) -> None:
+        """warm() inserts the supplied (query, value) pairs."""
+        c = RetrievalCache(max_size=100)
+        n = c.warm([("query one", "v1"), ("query two", "v2")])
+        assert n == 2
+        assert c.get("query one") == "v1"
+        assert c.get("query two") == "v2"
+
+    def test_warm_returns_insert_count(self) -> None:
+        c = RetrievalCache(max_size=100)
+        assert c.warm([]) == 0
+        assert c.warm([("q", "v")] * 5) == 5
+
+    def test_evict_expired_removes_stale(self) -> None:
+        """evict_expired() removes entries whose TTL has passed."""
+        import time
+
+        c = RetrievalCache(max_size=100, ttl_seconds=0.01)
+        c.put("expiring", "v")
+        time.sleep(0.05)
+        evicted = c.evict_expired()
+        assert evicted >= 1
+        assert c.get("expiring") is None
+
+    def test_evict_expired_keeps_fresh_entries(self) -> None:
+        """evict_expired() leaves entries whose TTL has not passed."""
+        c = RetrievalCache(max_size=100, ttl_seconds=300.0)
+        c.put("fresh", "value")
+        evicted = c.evict_expired()
+        assert evicted == 0
+        assert c.get("fresh") == "value"
+
+
+class TestCacheFillRatioEdge:
+    def test_zero_max_size_returns_zero(self) -> None:
+        """cache_fill_ratio does not divide by zero for max_size=0."""
+        from app.caching import cache_fill_ratio
+
+        c = RetrievalCache(max_size=0)
+        assert cache_fill_ratio(c) == 0.0
+
+    def test_ratio_reaches_one_when_full(self) -> None:
+        from app.caching import cache_fill_ratio
+
+        c = RetrievalCache(max_size=3)
+        for i in range(3):
+            c.put(f"query {i}", f"v{i}")
+        assert cache_fill_ratio(c) == pytest.approx(1.0)
+
+
+class TestCacheHitMissAccounting:
+    def test_stats_sum_to_total(self) -> None:
+        """hits + misses == total requests."""
+        c = RetrievalCache()
+        c.put("q1", "v1")
+        c.get("q1")  # hit
+        c.get("q1")  # hit
+        c.get("missing")  # miss
+        stats = c.stats()
+        assert stats["hits"] + stats["misses"] == 3
+
+    def test_hit_rate_zero_on_all_misses(self) -> None:
+        c = RetrievalCache()
+        c.get("never stored")
+        stats = c.stats()
+        assert stats["hit_rate"] == 0.0
