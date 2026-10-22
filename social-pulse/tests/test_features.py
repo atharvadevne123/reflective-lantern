@@ -82,21 +82,24 @@ class TestEncodeCyclical:
 
 
 class TestFollowerBucket:
-    @pytest.mark.parametrize("followers,expected", [
-        (0, 0),
-        (99, 0),
-        (100, 1),
-        (999, 1),
-        (1000, 2),
-        (9999, 2),
-        (10000, 3),
-        (99999, 3),
-        (100000, 4),
-        (999999, 4),
-        (1000000, 5),
-        (9999999, 5),
-        (10000000, 6),
-    ])
+    @pytest.mark.parametrize(
+        "followers,expected",
+        [
+            (0, 0),
+            (99, 0),
+            (100, 1),
+            (999, 1),
+            (1000, 2),
+            (9999, 2),
+            (10000, 3),
+            (99999, 3),
+            (100000, 4),
+            (999999, 4),
+            (1000000, 5),
+            (9999999, 5),
+            (10000000, 6),
+        ],
+    )
     def test_bucket_boundaries(self, followers: int, expected: int) -> None:
         assert follower_bucket(followers) == expected
 
@@ -156,7 +159,9 @@ class TestTextStatTransformer:
         assert result.shape == (1, len(TextStatTransformer.FEATURE_NAMES))
 
     def test_feature_names_length(self) -> None:
-        assert len(self.transformer.get_feature_names_out()) == len(TextStatTransformer.FEATURE_NAMES)
+        assert len(self.transformer.get_feature_names_out()) == len(
+            TextStatTransformer.FEATURE_NAMES
+        )
 
     def test_no_nan_in_output(self) -> None:
         result = self.transformer.transform(self.sample)
@@ -167,24 +172,39 @@ class TestBuildFeaturePipeline:
     def test_pipeline_transforms_samples(self) -> None:
         pipeline = build_feature_pipeline(tfidf_features=50)
         samples = [
-            {"text": "hello world #foo", "author_followers": 100,
-             "has_media": False, "has_link": False,
-             "hashtag_count": 1, "mention_count": 0,
-             "hour_of_day": 10, "day_of_week": 2},
-            {"text": "breaking news @alice #trend", "author_followers": 10000,
-             "has_media": True, "has_link": True,
-             "hashtag_count": 1, "mention_count": 1,
-             "hour_of_day": 20, "day_of_week": 5},
+            {
+                "text": "hello world #foo",
+                "author_followers": 100,
+                "has_media": False,
+                "has_link": False,
+                "hashtag_count": 1,
+                "mention_count": 0,
+                "hour_of_day": 10,
+                "day_of_week": 2,
+            },
+            {
+                "text": "breaking news @alice #trend",
+                "author_followers": 10000,
+                "has_media": True,
+                "has_link": True,
+                "hashtag_count": 1,
+                "mention_count": 1,
+                "hour_of_day": 20,
+                "day_of_week": 5,
+            },
         ]
         result = pipeline.fit_transform(samples)
         assert result.shape[0] == 2
         assert result.shape[1] > 0
 
 
-@pytest.mark.parametrize("text,expected_min", [
-    ("#a #b #c", 3),
-    ("#one", 1),
-    ("no tags", 0),
-])
+@pytest.mark.parametrize(
+    "text,expected_min",
+    [
+        ("#a #b #c", 3),
+        ("#one", 1),
+        ("no tags", 0),
+    ],
+)
 def test_count_hashtags_parametrized(text: str, expected_min: int) -> None:
     assert count_hashtags(text) >= expected_min

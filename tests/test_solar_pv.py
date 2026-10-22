@@ -132,6 +132,7 @@ class TestSolarPVEdgeCases:
 
     def test_specific_yield_formula(self) -> None:
         from app.solar_pv import specific_yield
+
         result = analyse_pv_system(10, 400.0, 4.5)
         sy = specific_yield(result.annual_yield_kwh, result.system_capacity_kwp)
         assert sy == pytest.approx(result.annual_yield_kwh / result.system_capacity_kwp)

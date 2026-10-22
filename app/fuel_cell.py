@@ -60,15 +60,21 @@ def nernst_voltage(
     """
     if temperature_k <= 0:
         raise ValueError("temperature_k must be positive")
-    for p, name in [(partial_pressure_h2, "H2"), (partial_pressure_o2, "O2"), (partial_pressure_h2o, "H2O")]:
+    for p, name in [
+        (partial_pressure_h2, "H2"),
+        (partial_pressure_o2, "O2"),
+        (partial_pressure_h2o, "H2O"),
+    ]:
         if p <= 0:
             raise ValueError(f"partial pressure of {name} must be positive")
     R = 8.314
     n = 2
     delta_g0 = -237100.0
     e_rev = -delta_g0 / (n * FARADAY_CONSTANT)
-    nernst_correction = (R * temperature_k) / (n * FARADAY_CONSTANT) * math.log(
-        (partial_pressure_h2 * math.sqrt(partial_pressure_o2)) / partial_pressure_h2o
+    nernst_correction = (
+        (R * temperature_k)
+        / (n * FARADAY_CONSTANT)
+        * math.log((partial_pressure_h2 * math.sqrt(partial_pressure_o2)) / partial_pressure_h2o)
     )
     return round(e_rev + nernst_correction, 6)
 
@@ -100,7 +106,8 @@ def activation_overpotential(
     R = 8.314
     n = 2
     return round(
-        (R * temperature_k) / (transfer_coefficient * n * FARADAY_CONSTANT)
+        (R * temperature_k)
+        / (transfer_coefficient * n * FARADAY_CONSTANT)
         * math.log(current_density_a_per_cm2 / exchange_current_density),
         6,
     )

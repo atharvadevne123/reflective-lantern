@@ -25,12 +25,14 @@ from sklearn.model_selection import StratifiedKFold, cross_val_score
 
 try:
     from lightgbm import LGBMClassifier
+
     _HAS_LGBM = True
 except ImportError:
     _HAS_LGBM = False
 
 try:
     from xgboost import XGBClassifier
+
     _HAS_XGB = True
 except ImportError:
     _HAS_XGB = False
@@ -87,33 +89,37 @@ def _build_base_estimators() -> list[tuple[str, Any]]:
         ),
     ]
     if _HAS_LGBM:
-        estimators.append((
-            "lgbm",
-            LGBMClassifier(
-                n_estimators=300,
-                learning_rate=0.05,
-                max_depth=6,
-                num_leaves=63,
-                class_weight="balanced",
-                random_state=42,
-                n_jobs=-1,
-                verbose=-1,
-            ),
-        ))
+        estimators.append(
+            (
+                "lgbm",
+                LGBMClassifier(
+                    n_estimators=300,
+                    learning_rate=0.05,
+                    max_depth=6,
+                    num_leaves=63,
+                    class_weight="balanced",
+                    random_state=42,
+                    n_jobs=-1,
+                    verbose=-1,
+                ),
+            )
+        )
     if _HAS_XGB:
-        estimators.append((
-            "xgb",
-            XGBClassifier(
-                n_estimators=300,
-                learning_rate=0.05,
-                max_depth=6,
-                scale_pos_weight=3,
-                eval_metric="logloss",
-                random_state=42,
-                n_jobs=-1,
-                verbosity=0,
-            ),
-        ))
+        estimators.append(
+            (
+                "xgb",
+                XGBClassifier(
+                    n_estimators=300,
+                    learning_rate=0.05,
+                    max_depth=6,
+                    scale_pos_weight=3,
+                    eval_metric="logloss",
+                    random_state=42,
+                    n_jobs=-1,
+                    verbosity=0,
+                ),
+            )
+        )
     return estimators
 
 
@@ -282,16 +288,18 @@ def generate_synthetic_data(n: int = 500) -> tuple[list[dict[str, Any]], list[in
         text = f"Check this out! {tags} {mentions_str} " + "word " * (text_length // 5)
         text = text[:280]
 
-        samples.append({
-            "text": text,
-            "author_followers": followers,
-            "has_media": bool(rng.binomial(1, 0.6 if viral else 0.3)),
-            "has_link": bool(rng.binomial(1, 0.4 if viral else 0.2)),
-            "hashtag_count": hashtags,
-            "mention_count": mentions,
-            "hour_of_day": hour,
-            "day_of_week": dow,
-        })
+        samples.append(
+            {
+                "text": text,
+                "author_followers": followers,
+                "has_media": bool(rng.binomial(1, 0.6 if viral else 0.3)),
+                "has_link": bool(rng.binomial(1, 0.4 if viral else 0.2)),
+                "hashtag_count": hashtags,
+                "mention_count": mentions,
+                "hour_of_day": hour,
+                "day_of_week": dow,
+            }
+        )
         labels.append(viral)
 
     return samples, labels

@@ -4,12 +4,12 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass
-from enum import Enum
+from enum import StrEnum
 
 logger = logging.getLogger(__name__)
 
 
-class ScopeCategory(str, Enum):
+class ScopeCategory(StrEnum):
     """GHG Protocol emission scope categories."""
 
     SCOPE_1 = "scope_1"
@@ -185,8 +185,8 @@ def analyse_budget(
 
 
 def scope_breakdown_percentage(
-    entries: "list[EmissionEntry]",
-) -> "dict[ScopeCategory, float]":
+    entries: list[EmissionEntry],
+) -> dict[ScopeCategory, float]:
     """Return each scope's percentage share of total emissions.
 
     Args:
@@ -199,10 +199,7 @@ def scope_breakdown_percentage(
     total = total_emissions(entries)
     if total == 0:
         return {scope: 0.0 for scope in ScopeCategory}
-    return {
-        scope: emissions_by_scope(entries, scope) / total * 100.0
-        for scope in ScopeCategory
-    }
+    return {scope: emissions_by_scope(entries, scope) / total * 100.0 for scope in ScopeCategory}
 
 
 def net_zero_year(

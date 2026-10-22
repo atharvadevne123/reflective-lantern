@@ -4,12 +4,12 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass
-from enum import Enum
+from enum import StrEnum
 
 logger = logging.getLogger(__name__)
 
 
-class RatePeriod(str, Enum):
+class RatePeriod(StrEnum):
     """Time-of-use rate period classification."""
 
     OFF_PEAK = "off_peak"

@@ -71,9 +71,7 @@ class TestLinearRegression:
             ([10.0, 20.0, 30.0], [100.0, 200.0, 300.0]),
         ],
     )
-    def test_parametrized_proportional(
-        self, x: list[float], y: list[float]
-    ) -> None:
+    def test_parametrized_proportional(self, x: list[float], y: list[float]) -> None:
         _, _, r2 = linear_regression(x, y)
         assert r2 == pytest.approx(1.0, rel=1e-5)
 
@@ -142,7 +140,5 @@ class TestNormalisedSavingsPercent:
         "baseline,actual,expected",
         [(200.0, 160.0, 20.0), (500.0, 250.0, 50.0), (100.0, 100.0, 0.0)],
     )
-    def test_parametrized(
-        self, baseline: float, actual: float, expected: float
-    ) -> None:
+    def test_parametrized(self, baseline: float, actual: float, expected: float) -> None:
         assert normalised_savings_percent(baseline, actual) == pytest.approx(expected)

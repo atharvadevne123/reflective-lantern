@@ -1369,7 +1369,9 @@ def test_days_in_month_parametrized_extra(year: int, month: int, expected_days: 
     assert days_in_month(year, month) == expected_days
 
 
-@pytest.mark.parametrize("year,expected", [(2024, True), (2023, False), (2000, True), (1900, False)])
+@pytest.mark.parametrize(
+    "year,expected", [(2024, True), (2023, False), (2000, True), (1900, False)]
+)
 def test_is_leap_year_parametrized_extra(year: int, expected: bool) -> None:
     """is_leap_year returns True for leap years and False otherwise (extended cases)."""
     from app.date_utils import is_leap_year

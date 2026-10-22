@@ -356,6 +356,7 @@ class TestDemandResponseEdgeCases:
 
     def test_evaluate_event_returns_result(self) -> None:
         from app.demand_response import DemandResponseResult
+
         result = evaluate_event(BASELINE, CURTAILED, committed_kwh=4.0)
         assert isinstance(result, DemandResponseResult)
 

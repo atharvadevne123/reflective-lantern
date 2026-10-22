@@ -57,9 +57,7 @@ class TestCheckUpperBound:
         "readings,upper,expected",
         [([5.0, 4.0, 3.0], 10.0, 0), ([100.0, 200.0], 150.0, 1)],
     )
-    def test_parametrized(
-        self, readings: list[float], upper: float, expected: int
-    ) -> None:
+    def test_parametrized(self, readings: list[float], upper: float, expected: int) -> None:
         assert len(check_upper_bound(readings, upper)) == expected
 
 
@@ -85,9 +83,7 @@ class TestCheckZeros:
             ([0.0, 0.0, 1.0, 0.0], 3, 0),
         ],
     )
-    def test_parametrized(
-        self, readings: list[float], max_z: int, expected_issues: int
-    ) -> None:
+    def test_parametrized(self, readings: list[float], max_z: int, expected_issues: int) -> None:
         assert len(check_zeros(readings, max_z)) == expected_issues
 
 
@@ -115,9 +111,7 @@ class TestDetectGaps:
             ([0, 5000], 1800, [1]),
         ],
     )
-    def test_parametrized(
-        self, ts: list[int], interval: int, expected_gaps: list[int]
-    ) -> None:
+    def test_parametrized(self, ts: list[int], interval: int, expected_gaps: list[int]) -> None:
         assert detect_gaps(ts, interval) == expected_gaps
 
 

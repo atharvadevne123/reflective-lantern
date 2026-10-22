@@ -4,12 +4,12 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass, field
-from enum import Enum
+from enum import StrEnum
 
 logger = logging.getLogger(__name__)
 
 
-class DERType(str, Enum):
+class DERType(StrEnum):
     """Supported distributed energy resource types."""
 
     SOLAR_PV = "solar_pv"
@@ -21,7 +21,7 @@ class DERType(str, Enum):
     DEMAND_RESPONSE = "demand_response"
 
 
-class DERStatus(str, Enum):
+class DERStatus(StrEnum):
     """Operational status of a DER unit."""
 
     ONLINE = "online"
@@ -78,7 +78,9 @@ class DERPortfolio:
 
     def total_online_kw(self) -> float:
         """Sum of current output from all online assets."""
-        return round(sum(a.current_output_kw for a in self.assets if a.status == DERStatus.ONLINE), 4)
+        return round(
+            sum(a.current_output_kw for a in self.assets if a.status == DERStatus.ONLINE), 4
+        )
 
     def available_kw(self) -> float:
         """Total dispatchable headroom across online/standby assets."""
@@ -276,7 +278,7 @@ def net_metering_credit(
     return exported_kwh * net_metering_rate
 
 
-def portfolio_availability(portfolio: "DERPortfolio") -> float:
+def portfolio_availability(portfolio: DERPortfolio) -> float:
     """Return the fraction of portfolio capacity that is currently available.
 
     Args:
@@ -288,9 +290,5 @@ def portfolio_availability(portfolio: "DERPortfolio") -> float:
     total = sum(u.rated_power_kw for u in portfolio.assets)
     if total == 0:
         return 0.0
-    available = sum(
-        u.rated_power_kw
-        for u in portfolio.assets
-        if u.status == DERStatus.ONLINE
-    )
+    available = sum(u.rated_power_kw for u in portfolio.assets if u.status == DERStatus.ONLINE)
     return available / total

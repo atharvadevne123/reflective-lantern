@@ -448,10 +448,14 @@ class TestTariffEdgeCases:
 
     def test_compare_tariffs_returns_comparison(self) -> None:
         from app.tariff import TariffComparison
+
         result = compare_tariffs([1.0] * 24)
         assert isinstance(result, TariffComparison)
 
     @pytest.mark.parametrize("n_hours", [1, 10, 24])
     def test_tiered_cost_non_negative(self, n_hours: int) -> None:
-        bands = [TieredBand(limit_kwh=200.0, rate=0.12), TieredBand(limit_kwh=float("inf"), rate=0.18)]
+        bands = [
+            TieredBand(limit_kwh=200.0, rate=0.12),
+            TieredBand(limit_kwh=float("inf"), rate=0.18),
+        ]
         assert tiered_cost([5.0] * n_hours, bands) >= 0.0

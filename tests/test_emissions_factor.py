@@ -123,9 +123,7 @@ class TestAnnualBudgetCheck:
     def test_headroom_calculated(self) -> None:
         budget = 500.0
         result = annual_budget_check(100.0, Region.FR, budget)
-        assert result["headroom_kg"] == pytest.approx(
-            budget - result["projected_kg"], rel=1e-5
-        )
+        assert result["headroom_kg"] == pytest.approx(budget - result["projected_kg"], rel=1e-5)
 
     @pytest.mark.parametrize(
         "kwh,region,budget",
@@ -135,9 +133,7 @@ class TestAnnualBudgetCheck:
             (1000.0, Region.DE, 300.0),
         ],
     )
-    def test_parametrized_budget(
-        self, kwh: float, region: Region, budget: float
-    ) -> None:
+    def test_parametrized_budget(self, kwh: float, region: Region, budget: float) -> None:
         result = annual_budget_check(kwh, region, budget)
         projected = calculate_co2(kwh, region).co2_kg
         assert result["within_budget"] is (projected <= budget)

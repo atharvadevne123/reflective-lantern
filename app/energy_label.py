@@ -4,12 +4,12 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass
-from enum import Enum
+from enum import StrEnum
 
 logger = logging.getLogger(__name__)
 
 
-class EnergyClass(str, Enum):
+class EnergyClass(StrEnum):
     """EU energy efficiency class labels (A+++ best, G worst)."""
 
     A_TRIPLE_PLUS = "A+++"
@@ -135,7 +135,12 @@ def label_building(
 
 def _recommend_actions(label: EnergyClass, eui: float) -> list[str]:
     """Return a prioritised list of improvement recommendations."""
-    if label in (EnergyClass.A, EnergyClass.A_PLUS, EnergyClass.A_DOUBLE_PLUS, EnergyClass.A_TRIPLE_PLUS):
+    if label in (
+        EnergyClass.A,
+        EnergyClass.A_PLUS,
+        EnergyClass.A_DOUBLE_PLUS,
+        EnergyClass.A_TRIPLE_PLUS,
+    ):
         return ["Maintain current efficiency; consider on-site renewable generation"]
     recs: list[str] = []
     if eui > 250:
@@ -162,8 +167,5 @@ def compare_buildings(
     Returns:
         List of (name, :class:`EnergyLabel`) sorted by ascending EUI.
     """
-    labelled = [
-        (name, label_building(area, kwh, reference_eui))
-        for name, area, kwh in buildings
-    ]
+    labelled = [(name, label_building(area, kwh, reference_eui)) for name, area, kwh in buildings]
     return sorted(labelled, key=lambda x: x[1].eui_kwh_per_m2)

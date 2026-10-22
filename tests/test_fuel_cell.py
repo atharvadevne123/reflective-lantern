@@ -181,57 +181,68 @@ class TestOperatingPoint:
 class TestFuelCellNewFunctions:
     def test_degradation_rate_per_hour_basic(self) -> None:
         from app.fuel_cell import degradation_rate_per_hour
+
         rate = degradation_rate_per_hour(1000.0, 5.0)
         assert rate == pytest.approx(5e-6, rel=1e-4)
 
     def test_degradation_rate_zero_hours_raises(self) -> None:
         from app.fuel_cell import degradation_rate_per_hour
+
         with pytest.raises(ValueError):
             degradation_rate_per_hour(0.0, 5.0)
 
     def test_water_production_matches_h2_flow(self) -> None:
         from app.fuel_cell import water_production_rate
+
         assert water_production_rate(0.01) == pytest.approx(0.01)
 
     def test_water_production_negative_raises(self) -> None:
         from app.fuel_cell import water_production_rate
+
         with pytest.raises(ValueError):
             water_production_rate(-0.001)
 
     def test_stack_voltage_scales_with_cells(self) -> None:
         from app.fuel_cell import stack_voltage
+
         v1 = stack_voltage(0.7, 10)
         v2 = stack_voltage(0.7, 20)
         assert v2 == pytest.approx(2 * v1, rel=1e-5)
 
     def test_tidal_energy_density_zero_speed_zero(self) -> None:
         from app.tidal_power import tidal_energy_density
+
         assert tidal_energy_density(0.0) == pytest.approx(0.0)
 
     def test_annual_tidal_energy_scales_with_capacity(self) -> None:
         from app.tidal_power import annual_tidal_energy_kwh
+
         e1 = annual_tidal_energy_kwh(100.0)
         e2 = annual_tidal_energy_kwh(200.0)
         assert e2 == pytest.approx(2 * e1, rel=1e-4)
 
     def test_tidal_resource_score_below_cutin_zero(self) -> None:
         from app.tidal_power import tidal_resource_score
+
         assert tidal_resource_score(0.3, cut_in_speed_m_s=0.5) == pytest.approx(0.0)
 
     def test_geothermal_gradient_increases_with_depth(self) -> None:
         from app.geothermal import geothermal_gradient
+
         t1 = geothermal_gradient(15.0, 1000.0)
         t2 = geothermal_gradient(15.0, 3000.0)
         assert t2 > t1
 
     def test_lcoe_decreases_with_more_generation(self) -> None:
         from app.geothermal import levelised_cost_of_energy
+
         lcoe_low = levelised_cost_of_energy(1e6, 50000, 5e6)
         lcoe_high = levelised_cost_of_energy(1e6, 50000, 10e6)
         assert lcoe_high < lcoe_low
 
     def test_battery_cycles_per_year_scales(self) -> None:
         from app.peak_shaving import battery_cycles_per_year
+
         c1 = battery_cycles_per_year(25.0, 100.0)
         c2 = battery_cycles_per_year(50.0, 100.0)
         assert c2 == pytest.approx(2 * c1, rel=1e-4)
@@ -239,4 +250,5 @@ class TestFuelCellNewFunctions:
     @pytest.mark.parametrize("reduction", [0.0, 50.0, 200.0])
     def test_revenue_from_peak_shaving_non_negative(self, reduction: float) -> None:
         from app.peak_shaving import revenue_from_peak_shaving
+
         assert revenue_from_peak_shaving(reduction, 15.0) >= 0.0

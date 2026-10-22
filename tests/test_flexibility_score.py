@@ -138,9 +138,7 @@ class TestAssessFlexibility:
 
     @pytest.mark.parametrize("response_minutes", [0, 15, 60])
     def test_parametrized_response_times(self, response_minutes: int) -> None:
-        result = assess_flexibility(
-            "z", self._profile(), response_minutes, 5.0, 2.0
-        )
+        result = assess_flexibility("z", self._profile(), response_minutes, 5.0, 2.0)
         assert 0.0 <= result.flexibility_score <= 100.0
 
 

@@ -41,9 +41,7 @@ class TestPowerFactor:
             (0.0, 5.0, 0.0),
         ],
     )
-    def test_parametrized(
-        self, active: float, reactive: float, expected_pf: float
-    ) -> None:
+    def test_parametrized(self, active: float, reactive: float, expected_pf: float) -> None:
         assert power_factor(active, reactive) == pytest.approx(expected_pf, rel=1e-4)
 
 
@@ -58,9 +56,7 @@ class TestApparentPower:
         "active,reactive,expected",
         [(6.0, 8.0, 10.0), (5.0, 12.0, 13.0), (8.0, 15.0, 17.0)],
     )
-    def test_pythagorean_triples(
-        self, active: float, reactive: float, expected: float
-    ) -> None:
+    def test_pythagorean_triples(self, active: float, reactive: float, expected: float) -> None:
         assert apparent_power_kva(active, reactive) == pytest.approx(expected, rel=1e-4)
 
 
@@ -154,9 +150,7 @@ class TestGridMetrics:
     def test_returns_dataclass(self) -> None:
         m = grid_metrics(230.0, 50.0, 5.0, 3.0)
         assert m.active_power_kw == 5.0
-        assert m.apparent_power_kva == pytest.approx(
-            apparent_power_kva(5.0, 3.0), rel=1e-4
-        )
+        assert m.apparent_power_kva == pytest.approx(apparent_power_kva(5.0, 3.0), rel=1e-4)
 
     def test_voltage_normal_flag(self) -> None:
         m = grid_metrics(230.0, 50.0, 10.0, 0.0)
@@ -171,9 +165,7 @@ class TestGridMetrics:
         assert m.thd_percent > 0.0
 
     def test_with_phase_voltages(self) -> None:
-        m = grid_metrics(
-            230.0, 50.0, 5.0, 3.0, phase_voltages=(228.0, 230.0, 232.0)
-        )
+        m = grid_metrics(230.0, 50.0, 5.0, 3.0, phase_voltages=(228.0, 230.0, 232.0))
         assert m.voltage_unbalance_percent >= 0.0
 
 
@@ -188,6 +180,7 @@ class TestGridStabilityEdgeCases:
     def test_thd_multiple_harmonics(self) -> None:
         result = thd_percent([30.0, 20.0, 10.0], 100.0)
         import math
+
         expected = 100.0 * math.sqrt(30**2 + 20**2 + 10**2) / 100.0
         assert result == pytest.approx(expected, rel=1e-4)
 
@@ -203,13 +196,16 @@ class TestGridStabilityEdgeCases:
     def test_frequency_50_6hz_abnormal(self) -> None:
         assert is_frequency_normal(50.6) is False
 
-    @pytest.mark.parametrize("voltage,expected", [
-        (230.0, True),
-        (245.0, True),
-        (215.0, True),
-        (210.0, False),
-        (255.0, False),
-    ])
+    @pytest.mark.parametrize(
+        "voltage,expected",
+        [
+            (230.0, True),
+            (245.0, True),
+            (215.0, True),
+            (210.0, False),
+            (255.0, False),
+        ],
+    )
     def test_voltage_range_parametrized(self, voltage: float, expected: bool) -> None:
         assert is_voltage_normal(voltage) is expected
 

@@ -159,10 +159,13 @@ class TestSelfSufficiencyRate:
         with pytest.raises(ValueError):
             self_sufficiency_rate(100.0, -10.0)
 
-    @pytest.mark.parametrize("gen,load,expected", [
-        (100.0, 200.0, 0.5),
-        (150.0, 100.0, 1.0),
-        (0.0, 100.0, 0.0),
-    ])
+    @pytest.mark.parametrize(
+        "gen,load,expected",
+        [
+            (100.0, 200.0, 0.5),
+            (150.0, 100.0, 1.0),
+            (0.0, 100.0, 0.0),
+        ],
+    )
     def test_parametrized(self, gen: float, load: float, expected: float) -> None:
         assert self_sufficiency_rate(gen, load) == pytest.approx(expected)

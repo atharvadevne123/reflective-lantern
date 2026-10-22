@@ -54,7 +54,7 @@ def rainflow_cycle_depth_factor(depth_of_discharge: float) -> float:
     """
     if not (0 < depth_of_discharge <= 1):
         raise ValueError("depth_of_discharge must be in (0, 1]")
-    return round(depth_of_discharge ** 1.5, 6)
+    return round(depth_of_discharge**1.5, 6)
 
 
 def cycle_degradation(
@@ -199,7 +199,9 @@ def degradation_report(
     cap_frac = max(0.0, 1.0 - total_deg)
     cap_kwh = remaining_capacity(nameplate_kwh, cyc_deg, cal_deg)
     eol = cap_frac <= EOL_CAPACITY_FRACTION
-    rem_cycles = cycles_to_eol(nominal_cycles, cycles_completed, calendar_years, depth_of_discharge, degradation_per_year)
+    rem_cycles = cycles_to_eol(
+        nominal_cycles, cycles_completed, calendar_years, depth_of_discharge, degradation_per_year
+    )
 
     return DegradationResult(
         cycles_completed=cycles_completed,

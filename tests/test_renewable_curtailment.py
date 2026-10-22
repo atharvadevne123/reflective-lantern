@@ -35,11 +35,14 @@ class TestCurtailedEnergy:
         with pytest.raises(ValueError):
             curtailed_energy(100.0, 60.0, 0.0)
 
-    @pytest.mark.parametrize("avail,dispatch,dur,expected", [
-        (200.0, 100.0, 1.0, 100.0),
-        (50.0, 50.0, 2.0, 0.0),
-        (100.0, 0.0, 0.25, 25.0),
-    ])
+    @pytest.mark.parametrize(
+        "avail,dispatch,dur,expected",
+        [
+            (200.0, 100.0, 1.0, 100.0),
+            (50.0, 50.0, 2.0, 0.0),
+            (100.0, 0.0, 0.25, 25.0),
+        ],
+    )
     def test_parametrized(self, avail: float, dispatch: float, dur: float, expected: float) -> None:
         assert curtailed_energy(avail, dispatch, dur) == pytest.approx(expected)
 
@@ -62,10 +65,13 @@ class TestCurtailmentRate:
         with pytest.raises(ValueError):
             curtailment_rate(100.0, 110.0)
 
-    @pytest.mark.parametrize("avail,curtailed,expected_pct", [
-        (1000.0, 100.0, 10.0),
-        (500.0, 250.0, 50.0),
-    ])
+    @pytest.mark.parametrize(
+        "avail,curtailed,expected_pct",
+        [
+            (1000.0, 100.0, 10.0),
+            (500.0, 250.0, 50.0),
+        ],
+    )
     def test_parametrized(self, avail: float, curtailed: float, expected_pct: float) -> None:
         assert curtailment_rate(avail, curtailed) == pytest.approx(expected_pct)
 
@@ -105,7 +111,9 @@ class TestAnalyseCurtailment:
     def test_generated_plus_curtailed_equals_available(self) -> None:
         avail, disp = self._make_series()
         result = analyse_curtailment(avail, disp)
-        assert result.total_generated_kwh + result.total_curtailed_kwh == pytest.approx(result.total_available_kwh, rel=1e-4)
+        assert result.total_generated_kwh + result.total_curtailed_kwh == pytest.approx(
+            result.total_available_kwh, rel=1e-4
+        )
 
     def test_mismatched_series_raises(self) -> None:
         with pytest.raises(ValueError):

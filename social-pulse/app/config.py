@@ -15,25 +15,15 @@ class Settings:
     """
 
     database_url: str = field(
-        default_factory=lambda: os.environ.get(
-            "DATABASE_URL", "sqlite:///./social_pulse.db"
-        )
+        default_factory=lambda: os.environ.get("DATABASE_URL", "sqlite:///./social_pulse.db")
     )
     model_dir: str = field(
         default_factory=lambda: os.environ.get("MODEL_DIR", "/tmp/social_pulse_models")
     )
-    model_version: str = field(
-        default_factory=lambda: os.environ.get("MODEL_VERSION", "1.0.0")
-    )
-    log_level: str = field(
-        default_factory=lambda: os.environ.get("LOG_LEVEL", "INFO").upper()
-    )
-    rate_limit: int = field(
-        default_factory=lambda: int(os.environ.get("RATE_LIMIT", "60"))
-    )
-    rate_window: int = field(
-        default_factory=lambda: int(os.environ.get("RATE_WINDOW", "60"))
-    )
+    model_version: str = field(default_factory=lambda: os.environ.get("MODEL_VERSION", "1.0.0"))
+    log_level: str = field(default_factory=lambda: os.environ.get("LOG_LEVEL", "INFO").upper())
+    rate_limit: int = field(default_factory=lambda: int(os.environ.get("RATE_LIMIT", "60")))
+    rate_window: int = field(default_factory=lambda: int(os.environ.get("RATE_WINDOW", "60")))
     drift_threshold: float = field(
         default_factory=lambda: float(os.environ.get("DRIFT_THRESHOLD", "0.05"))
     )

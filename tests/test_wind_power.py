@@ -150,33 +150,39 @@ class TestAnalyseTurbine:
 class TestWindPowerEdgeCases:
     def test_zero_wind_speed_zero_power(self) -> None:
         from app.wind_power import wind_power_density
+
         assert wind_power_density(0.0) == 0.0
 
     def test_power_density_cubic_scaling(self) -> None:
         from app.wind_power import wind_power_density
+
         d1 = wind_power_density(5.0)
         d2 = wind_power_density(10.0)
         assert d2 == pytest.approx(d1 * 8.0, rel=1e-3)
 
     def test_negative_wind_speed_raises(self) -> None:
         from app.wind_power import wind_power_density
+
         with pytest.raises(ValueError):
             wind_power_density(-1.0)
 
     def test_rotor_area_scales_with_diameter_squared(self) -> None:
         from app.wind_power import rotor_swept_area
+
         a1 = rotor_swept_area(40.0)
         a2 = rotor_swept_area(80.0)
         assert a2 == pytest.approx(a1 * 4.0, rel=1e-3)
 
     def test_zero_diameter_raises(self) -> None:
         from app.wind_power import rotor_swept_area
+
         with pytest.raises(ValueError):
             rotor_swept_area(0.0)
 
     @pytest.mark.parametrize("diameter,speed", [(40.0, 5.0), (80.0, 8.0), (120.0, 10.0)])
     def test_turbine_result_non_negative(self, diameter: float, speed: float) -> None:
         from app.wind_power import analyse_turbine
+
         result = analyse_turbine(diameter, 2000.0, speed)
         assert result.actual_power_kw >= 0
         assert result.annual_kwh >= 0

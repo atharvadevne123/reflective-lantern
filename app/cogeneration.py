@@ -108,7 +108,11 @@ def total_cogeneration_efficiency(
     combined = electrical_output_kw + heat_output_kw
     if combined > fuel_input_kw * 1.001:
         raise ValueError("Combined outputs exceed fuel input (conservation violation)")
-    for val, name in [(electrical_output_kw, "electrical"), (heat_output_kw, "heat"), (fuel_input_kw, "fuel")]:
+    for val, name in [
+        (electrical_output_kw, "electrical"),
+        (heat_output_kw, "heat"),
+        (fuel_input_kw, "fuel"),
+    ]:
         if val <= 0:
             raise ValueError(f"{name} must be positive")
     return round(combined / fuel_input_kw, 6)
@@ -207,9 +211,7 @@ def analyse_chp(
     )
 
 
-def heat_to_power_ratio(
-    thermal_output_kw: float, electrical_output_kw: float
-) -> float:
+def heat_to_power_ratio(thermal_output_kw: float, electrical_output_kw: float) -> float:
     """Return the heat-to-power ratio (HPR) of a CHP system.
 
     HPR > 1 means more heat than power is produced; HPR < 1 indicates

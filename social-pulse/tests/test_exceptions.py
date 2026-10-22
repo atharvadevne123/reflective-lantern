@@ -73,12 +73,15 @@ class TestDriftCheckError:
         assert "insufficient samples" in err.message
 
 
-@pytest.mark.parametrize("exc_cls,code", [
-    (ModelNotLoadedError, "MODEL_NOT_LOADED"),
-    (lambda: FeatureExtractionError("x"), "FEATURE_EXTRACTION_ERROR"),
-    (lambda: DatabaseError("x"), "DATABASE_ERROR"),
-    (lambda: DriftCheckError("x"), "DRIFT_CHECK_ERROR"),
-])
+@pytest.mark.parametrize(
+    "exc_cls,code",
+    [
+        (ModelNotLoadedError, "MODEL_NOT_LOADED"),
+        (lambda: FeatureExtractionError("x"), "FEATURE_EXTRACTION_ERROR"),
+        (lambda: DatabaseError("x"), "DATABASE_ERROR"),
+        (lambda: DriftCheckError("x"), "DRIFT_CHECK_ERROR"),
+    ],
+)
 def test_exception_codes(exc_cls, code: str) -> None:
     exc = exc_cls()
     assert exc.code == code

@@ -4,12 +4,12 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass
-from enum import Enum
+from enum import StrEnum
 
 logger = logging.getLogger(__name__)
 
 
-class AuditLevel(str, Enum):
+class AuditLevel(StrEnum):
     """ASHRAE energy audit levels."""
 
     LEVEL_1 = "walk_through"
@@ -17,7 +17,7 @@ class AuditLevel(str, Enum):
     LEVEL_3 = "investment_grade"
 
 
-class EndUseCategory(str, Enum):
+class EndUseCategory(StrEnum):
     """Building end-use categories."""
 
     HVAC = "hvac"
@@ -173,12 +173,14 @@ def build_end_use_breakdown(
     result = []
     for category, kwh in end_uses.items():
         pct = end_use_percentage(kwh, total_kwh) if total_kwh > 0 else 0.0
-        result.append(EndUseBreakdown(
-            category=category,
-            annual_kwh=round(kwh, 4),
-            annual_cost=round(kwh * energy_rate, 2),
-            pct_of_total=pct,
-        ))
+        result.append(
+            EndUseBreakdown(
+                category=category,
+                annual_kwh=round(kwh, 4),
+                annual_cost=round(kwh * energy_rate, 2),
+                pct_of_total=pct,
+            )
+        )
     return result
 
 

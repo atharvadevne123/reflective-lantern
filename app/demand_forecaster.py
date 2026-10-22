@@ -5,12 +5,12 @@ from __future__ import annotations
 import logging
 import math
 from dataclasses import dataclass
-from enum import Enum
+from enum import StrEnum
 
 logger = logging.getLogger(__name__)
 
 
-class ForecastMethod(str, Enum):
+class ForecastMethod(StrEnum):
     """Demand forecasting methodology."""
 
     NAIVE = "naive"
@@ -160,7 +160,7 @@ def mean_absolute_error(actual: list[float], predicted: list[float]) -> float:
         raise ValueError("actual and predicted must have the same length")
     if not actual:
         raise ValueError("sequences must not be empty")
-    return round(sum(abs(a - p) for a, p in zip(actual, predicted)) / len(actual), 6)
+    return round(sum(abs(a - p) for a, p in zip(actual, predicted, strict=False)) / len(actual), 6)
 
 
 def root_mean_square_error(actual: list[float], predicted: list[float]) -> float:
@@ -180,7 +180,7 @@ def root_mean_square_error(actual: list[float], predicted: list[float]) -> float
         raise ValueError("actual and predicted must have the same length")
     if not actual:
         raise ValueError("sequences must not be empty")
-    mse = sum((a - p) ** 2 for a, p in zip(actual, predicted)) / len(actual)
+    mse = sum((a - p) ** 2 for a, p in zip(actual, predicted, strict=False)) / len(actual)
     return round(math.sqrt(mse), 6)
 
 
@@ -231,9 +231,9 @@ def forecast_demand(
 
 
 def forecast_accuracy_summary(
-    actuals: "list[float]",
-    forecasts: "list[float]",
-) -> "dict[str, float]":
+    actuals: list[float],
+    forecasts: list[float],
+) -> dict[str, float]:
     """Return a summary dict of MAE, RMSE, and MAPE for a forecast.
 
     Args:
@@ -251,11 +251,15 @@ def forecast_accuracy_summary(
     if any(a == 0 for a in actuals):
         mape = float("nan")
     else:
-        mape = sum(abs(a - f) / abs(a) for a, f in zip(actuals, forecasts)) / len(actuals) * 100.0
+        mape = (
+            sum(abs(a - f) / abs(a) for a, f in zip(actuals, forecasts, strict=False))
+            / len(actuals)
+            * 100.0
+        )
     return {"mae": mae, "rmse": rmse, "mape": mape}
 
 
-def bias(actuals: "list[float]", forecasts: "list[float]") -> float:
+def bias(actuals: list[float], forecasts: list[float]) -> float:
     """Return the mean forecast bias (positive = over-forecast).
 
     Args:
@@ -272,13 +276,13 @@ def bias(actuals: "list[float]", forecasts: "list[float]") -> float:
         raise ValueError("actuals and forecasts must be non-empty")
     if len(actuals) != len(forecasts):
         raise ValueError("actuals and forecasts must have the same length")
-    return sum(f - a for f, a in zip(forecasts, actuals)) / len(actuals)
+    return sum(f - a for f, a in zip(forecasts, actuals, strict=False)) / len(actuals)
 
 
 def ensemble_forecast(
-    forecasts: "list[list[float]]",
-    weights: "list[float] | None" = None,
-) -> "list[float]":
+    forecasts: list[list[float]],
+    weights: list[float] | None = None,
+) -> list[float]:
     """Return a weighted ensemble average of multiple forecast series.
 
     Args:
@@ -303,7 +307,4 @@ def ensemble_forecast(
         raise ValueError("weights must match number of forecast series")
     if abs(sum(weights) - 1.0) > 1e-6:
         raise ValueError("weights must sum to 1.0")
-    return [
-        sum(w * f[i] for w, f in zip(weights, forecasts))
-        for i in range(n)
-    ]
+    return [sum(w * f[i] for w, f in zip(weights, forecasts, strict=False)) for i in range(n)]

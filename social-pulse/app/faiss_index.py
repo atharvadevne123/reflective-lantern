@@ -14,6 +14,7 @@ logger = logging.getLogger(__name__)
 
 try:
     import faiss  # type: ignore[import]
+
     _HAS_FAISS = True
 except ImportError:
     _HAS_FAISS = False
@@ -89,7 +90,7 @@ class PostIndex:
         # Brute-force L2 fallback
         matrix = np.stack(self._vectors)
         diffs = matrix - q
-        dists = np.sum(diffs ** 2, axis=1)
+        dists = np.sum(diffs**2, axis=1)
         nearest = np.argsort(dists)[:k_actual]
         return [
             SimilarPost(index=int(i), distance=float(dists[i]), metadata=self._metadata[i])

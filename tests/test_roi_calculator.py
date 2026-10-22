@@ -36,9 +36,7 @@ class TestSimplePayback:
         "capex,annual,expected",
         [(5000.0, 1000.0, 5.0), (0.0, 500.0, 0.0), (1000.0, 250.0, 4.0)],
     )
-    def test_parametrized(
-        self, capex: float, annual: float, expected: float
-    ) -> None:
+    def test_parametrized(self, capex: float, annual: float, expected: float) -> None:
         assert simple_payback(capex, annual) == pytest.approx(expected)
 
 
@@ -119,9 +117,7 @@ class TestROIPercent:
         "capex,savings,expected",
         [(500.0, 1000.0, 100.0), (2000.0, 1000.0, -50.0)],
     )
-    def test_parametrized(
-        self, capex: float, savings: float, expected: float
-    ) -> None:
+    def test_parametrized(self, capex: float, savings: float, expected: float) -> None:
         assert roi_percent(capex, savings) == pytest.approx(expected)
 
 

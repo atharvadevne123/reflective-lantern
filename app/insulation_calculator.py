@@ -4,14 +4,14 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass
-from enum import Enum
+from enum import StrEnum
 
 logger = logging.getLogger(__name__)
 
 HOURS_PER_YEAR: int = 8760
 
 
-class ConstructionType(str, Enum):
+class ConstructionType(StrEnum):
     """Common building construction types with indicative U-values."""
 
     SOLID_WALL_UNINSULATED = "solid_wall_uninsulated"

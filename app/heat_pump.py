@@ -4,12 +4,12 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass
-from enum import Enum
+from enum import StrEnum
 
 logger = logging.getLogger(__name__)
 
 
-class HeatPumpType(str, Enum):
+class HeatPumpType(StrEnum):
     """Classification of heat pump system types."""
 
     AIR_SOURCE = "air_source"
@@ -144,7 +144,7 @@ def seasonal_cop(
     if any(h < 0 for h in monthly_heat_kwh):
         raise ValueError("All heat values must be non-negative")
     total_heat = sum(monthly_heat_kwh)
-    total_elec = sum(h / c for h, c in zip(monthly_heat_kwh, monthly_cops))
+    total_elec = sum(h / c for h, c in zip(monthly_heat_kwh, monthly_cops, strict=False))
     if total_elec == 0:
         return 0.0
     return round(total_heat / total_elec, 4)

@@ -5,7 +5,7 @@ from __future__ import annotations
 import logging
 import math
 from dataclasses import dataclass
-from enum import Enum
+from enum import StrEnum
 
 logger = logging.getLogger(__name__)
 
@@ -13,7 +13,7 @@ NOMINAL_FREQUENCY_HZ: float = 50.0
 NOMINAL_VOLTAGE_V: float = 230.0
 
 
-class PQEvent(str, Enum):
+class PQEvent(StrEnum):
     """Types of power quality disturbance events."""
 
     SAG = "sag"
@@ -203,11 +203,13 @@ def analyse_power_quality(
     event_type = classify_voltage_event(vrms)
     events = []
     if event_type != PQEvent.NORMAL:
-        events.append(PQEventRecord(
-            event_type=event_type,
-            magnitude_pct=abs((vrms - NOMINAL_VOLTAGE_V) / NOMINAL_VOLTAGE_V * 100),
-            duration_cycles=1.0,
-        ))
+        events.append(
+            PQEventRecord(
+                event_type=event_type,
+                magnitude_pct=abs((vrms - NOMINAL_VOLTAGE_V) / NOMINAL_VOLTAGE_V * 100),
+                duration_cycles=1.0,
+            )
+        )
     compliant = en50160_compliance(vrms, thd)
     return PQReport(
         vrms_v=vrms,

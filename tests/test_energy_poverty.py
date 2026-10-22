@@ -93,9 +93,7 @@ class TestVulnerabilityScore:
         "age,disability,epc",
         [(30, False, "A"), (65, False, "D"), (75, True, "G")],
     )
-    def test_parametrized_non_negative(
-        self, age: int, disability: bool, epc: str
-    ) -> None:
+    def test_parametrized_non_negative(self, age: int, disability: bool, epc: str) -> None:
         assert vulnerability_score(age, disability, epc) >= 0.0
 
 
@@ -139,8 +137,6 @@ class TestAssessHousehold:
         "cost,income,expected_poor",
         [(3000.0, 15000.0, True), (200.0, 30000.0, False)],
     )
-    def test_parametrized(
-        self, cost: float, income: float, expected_poor: bool
-    ) -> None:
+    def test_parametrized(self, cost: float, income: float, expected_poor: bool) -> None:
         result = assess_household("Z", cost, income, 35, False, "C")
         assert result.is_fuel_poor is expected_poor

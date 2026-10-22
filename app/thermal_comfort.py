@@ -5,12 +5,12 @@ from __future__ import annotations
 import logging
 import math
 from dataclasses import dataclass
-from enum import Enum
+from enum import StrEnum
 
 logger = logging.getLogger(__name__)
 
 
-class ComfortCategory(str, Enum):
+class ComfortCategory(StrEnum):
     """ASHRAE 55 / ISO 7730 thermal comfort acceptability categories."""
 
     CATEGORY_I = "I"
@@ -80,10 +80,7 @@ def pmv(
     icl = clo * 0.155  # clothing thermal resistance m²K/W
 
     # Clothing surface area factor
-    if icl <= 0.078:
-        fcl = 1 + 1.29 * icl
-    else:
-        fcl = 1.05 + 0.645 * icl
+    fcl = 1 + 1.29 * icl if icl <= 0.078 else 1.05 + 0.645 * icl
 
     # Convective heat transfer coefficient
     hcf = 12.1 * math.sqrt(max(0.0, air_velocity_m_s))
@@ -93,9 +90,7 @@ def pmv(
     tr = mean_radiant_temp_c
 
     # Water vapour partial pressure (Pa) via Magnus formula approximation
-    pa = (relative_humidity_pct / 100.0) * math.exp(
-        16.6536 - 4030.183 / (ta + 235.0)
-    )
+    pa = (relative_humidity_pct / 100.0) * math.exp(16.6536 - 4030.183 / (ta + 235.0))
 
     # Clothing surface temperature (iterative; approximate one-shot)
     tcl = ta + (35.5 - ta) / (3.5 * (6.45 * icl + 0.1))

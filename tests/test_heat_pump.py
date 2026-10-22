@@ -137,16 +137,19 @@ class TestAnalyseHeatPump:
 class TestHeatPumpEdgeCases:
     def test_source_equal_delivery_raises(self) -> None:
         from app.heat_pump import carnot_cop
+
         with pytest.raises(ValueError):
             carnot_cop(50.0, 50.0)
 
     def test_delivery_below_source_raises(self) -> None:
         from app.heat_pump import carnot_cop
+
         with pytest.raises(ValueError):
             carnot_cop(60.0, 40.0)
 
     def test_cop_increases_with_source_temp(self) -> None:
         from app.heat_pump import analyse_heat_pump
+
         r_cold = analyse_heat_pump(-10.0, 45.0, 10000.0)
         r_warm = analyse_heat_pump(10.0, 45.0, 10000.0)
         assert r_warm.cop > r_cold.cop

@@ -75,9 +75,11 @@ def tidal_stream_power(
         raise ValueError(f"power_coefficient cannot exceed Betz limit ({BETZ_LIMIT_TIDAL:.4f})")
 
     area = math.pi * (rotor_diameter_m / 2.0) ** 2
-    theoretical_kw = 0.5 * sea_water_density * area * current_speed_m_per_s ** 3 / 1000.0
+    theoretical_kw = 0.5 * sea_water_density * area * current_speed_m_per_s**3 / 1000.0
     actual_kw = theoretical_kw * power_coefficient / BETZ_LIMIT_TIDAL * BETZ_LIMIT_TIDAL
-    actual_kw = 0.5 * sea_water_density * area * power_coefficient * current_speed_m_per_s ** 3 / 1000.0
+    actual_kw = (
+        0.5 * sea_water_density * area * power_coefficient * current_speed_m_per_s**3 / 1000.0
+    )
     capacity_factor = actual_kw / theoretical_kw if theoretical_kw > 0 else 0.0
     annual_mwh = actual_kw * 8760 / KWH_PER_MWH
     co2_saved_kg = annual_mwh * 1000 * 0.233
@@ -160,7 +162,7 @@ def current_power_density(
     """
     if current_speed_m_per_s < 0:
         raise ValueError("current_speed_m_per_s must be non-negative")
-    return round(0.5 * sea_water_density * current_speed_m_per_s ** 3, 4)
+    return round(0.5 * sea_water_density * current_speed_m_per_s**3, 4)
 
 
 def minimum_cut_in_speed(

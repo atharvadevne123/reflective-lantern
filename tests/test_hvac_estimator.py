@@ -38,9 +38,7 @@ class TestHeatingDegreeDays:
             ([10.0], 15.0, 5.0),
         ],
     )
-    def test_parametrized(
-        self, temps: list[float], base: float, expected: float
-    ) -> None:
+    def test_parametrized(self, temps: list[float], base: float, expected: float) -> None:
         assert heating_degree_days(temps, base) == pytest.approx(expected)
 
 
@@ -63,9 +61,7 @@ class TestCoolingDegreeDays:
             ([20.0, 22.0], 18.0, 6.0),
         ],
     )
-    def test_parametrized(
-        self, temps: list[float], base: float, expected: float
-    ) -> None:
+    def test_parametrized(self, temps: list[float], base: float, expected: float) -> None:
         assert cooling_degree_days(temps, base) == pytest.approx(expected)
 
 
@@ -94,9 +90,7 @@ class TestHeatingKwhFromHDD:
         "hdd,hlc,eff",
         [(50.0, 0.2, 0.9), (200.0, 0.1, 0.85), (0.0, 0.5, 0.95)],
     )
-    def test_returns_non_negative(
-        self, hdd: float, hlc: float, eff: float
-    ) -> None:
+    def test_returns_non_negative(self, hdd: float, hlc: float, eff: float) -> None:
         assert heating_kwh_from_hdd(hdd, hlc, efficiency=eff) >= 0.0
 
 
@@ -132,9 +126,7 @@ class TestEstimateHVAC:
 
     def test_total_is_sum_of_parts(self) -> None:
         result = estimate_hvac(self._temps(), 0.1, 0.05)
-        assert result.total_kwh == pytest.approx(
-            result.heating_kwh + result.cooling_kwh, rel=1e-5
-        )
+        assert result.total_kwh == pytest.approx(result.heating_kwh + result.cooling_kwh, rel=1e-5)
 
     def test_cost_proportional_to_rate(self) -> None:
         r1 = estimate_hvac(self._temps(), 0.1, 0.05, energy_rate=0.20)

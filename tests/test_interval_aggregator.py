@@ -100,9 +100,7 @@ class TestResampleMean:
             ([1.0, 3.0, 5.0, 7.0], 2, [2.0, 6.0]),
         ],
     )
-    def test_parametrized(
-        self, values: list[float], bucket: int, expected: list[float]
-    ) -> None:
+    def test_parametrized(self, values: list[float], bucket: int, expected: list[float]) -> None:
         assert resample_mean(values, bucket) == pytest.approx(expected)
 
 

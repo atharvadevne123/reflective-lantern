@@ -96,7 +96,7 @@ def rocof(
     times = [i * sample_interval_s for i in range(n)]
     mean_t = sum(times) / n
     mean_f = sum(freq_samples_hz) / n
-    num = sum((t - mean_t) * (f - mean_f) for t, f in zip(times, freq_samples_hz))
+    num = sum((t - mean_t) * (f - mean_f) for t, f in zip(times, freq_samples_hz, strict=False))
     den = sum((t - mean_t) ** 2 for t in times)
     if den == 0:
         return 0.0

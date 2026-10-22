@@ -280,10 +280,7 @@ def test_compression_ratio_non_negative_for_various_sizes(n: int) -> None:
     """compression_ratio returns a non-negative float for any non-empty input."""
     from app.compression import compression_ratio
 
-    if n == 0:
-        data = b"x"
-    else:
-        data = b"a" * n
+    data = b"x" if n == 0 else b"a" * n
     result = compression_ratio(data)
     assert result >= 0.0
     assert isinstance(result, float)

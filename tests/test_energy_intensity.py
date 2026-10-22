@@ -31,10 +31,13 @@ class TestEnergyUseIntensity:
     def test_zero_energy_ok(self) -> None:
         assert energy_use_intensity(0.0, 100.0) == 0.0
 
-    @pytest.mark.parametrize("kwh,area,expected", [
-        (10000.0, 100.0, 100.0),
-        (36000.0, 200.0, 180.0),
-    ])
+    @pytest.mark.parametrize(
+        "kwh,area,expected",
+        [
+            (10000.0, 100.0, 100.0),
+            (36000.0, 200.0, 180.0),
+        ],
+    )
     def test_parametrized(self, kwh: float, area: float, expected: float) -> None:
         assert energy_use_intensity(kwh, area) == pytest.approx(expected)
 

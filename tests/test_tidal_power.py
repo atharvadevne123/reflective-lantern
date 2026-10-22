@@ -47,6 +47,7 @@ class TestTidalStreamPower:
 
     def test_rotor_area_computed(self) -> None:
         import math
+
         result = tidal_stream_power(10.0, 2.5)
         expected_area = math.pi * 25.0
         assert result.rotor_area_m2 == pytest.approx(expected_area, rel=1e-3)

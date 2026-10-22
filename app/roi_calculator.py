@@ -137,9 +137,7 @@ def analyse_investment(
         Populated :class:`ROIResult`.
     """
     payback = simple_payback(capex, annual_savings)
-    cashflows = [
-        annual_savings * (1 + escalation_rate) ** y for y in range(lifetime_years)
-    ]
+    cashflows = [annual_savings * (1 + escalation_rate) ** y for y in range(lifetime_years)]
     npv = net_present_value(capex, cashflows, discount_rate)
     total = lifetime_savings(annual_savings, lifetime_years, escalation_rate)
     roi = roi_percent(capex, total)

@@ -156,7 +156,7 @@ def analyse_curtailment(
     event_avail_kw = 0.0
     event_curtailed_kw = 0.0
 
-    for i, (avail, disp) in enumerate(zip(available_kw_series, dispatched_kw_series)):
+    for i, (avail, disp) in enumerate(zip(available_kw_series, dispatched_kw_series, strict=False)):
         avail = max(0.0, avail)
         disp = max(0.0, min(avail, disp))
         c_kw = avail - disp
@@ -179,29 +179,33 @@ def analyse_curtailment(
             if in_event:
                 dur = (i - event_start) * interval_hours
                 e_kwh = event_curtailed_kw * interval_hours
-                events.append(CurtailmentEvent(
-                    start_interval=event_start,
-                    end_interval=i - 1,
-                    available_kw=round(event_avail_kw, 4),
-                    curtailed_kw=round(event_curtailed_kw, 4),
-                    duration_hours=round(dur, 4),
-                    energy_curtailed_kwh=round(e_kwh, 4),
-                    revenue_lost=round(revenue_lost(e_kwh, energy_price_per_kwh), 4),
-                ))
+                events.append(
+                    CurtailmentEvent(
+                        start_interval=event_start,
+                        end_interval=i - 1,
+                        available_kw=round(event_avail_kw, 4),
+                        curtailed_kw=round(event_curtailed_kw, 4),
+                        duration_hours=round(dur, 4),
+                        energy_curtailed_kwh=round(e_kwh, 4),
+                        revenue_lost=round(revenue_lost(e_kwh, energy_price_per_kwh), 4),
+                    )
+                )
                 in_event = False
 
     if in_event:
         dur = (len(available_kw_series) - event_start) * interval_hours
         e_kwh = event_curtailed_kw * interval_hours
-        events.append(CurtailmentEvent(
-            start_interval=event_start,
-            end_interval=len(available_kw_series) - 1,
-            available_kw=round(event_avail_kw, 4),
-            curtailed_kw=round(event_curtailed_kw, 4),
-            duration_hours=round(dur, 4),
-            energy_curtailed_kwh=round(e_kwh, 4),
-            revenue_lost=round(revenue_lost(e_kwh, energy_price_per_kwh), 4),
-        ))
+        events.append(
+            CurtailmentEvent(
+                start_interval=event_start,
+                end_interval=len(available_kw_series) - 1,
+                available_kw=round(event_avail_kw, 4),
+                curtailed_kw=round(event_curtailed_kw, 4),
+                duration_hours=round(dur, 4),
+                energy_curtailed_kwh=round(e_kwh, 4),
+                revenue_lost=round(revenue_lost(e_kwh, energy_price_per_kwh), 4),
+            )
+        )
 
     rate = curtailment_rate(total_available, total_curtailed)
     co2_impact = total_curtailed * co2_factor

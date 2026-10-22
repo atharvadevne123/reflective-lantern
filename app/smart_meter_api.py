@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 logger = logging.getLogger(__name__)
 
@@ -61,7 +61,7 @@ def parse_hh_readings(
         if val < 0:
             raise ValueError(f"Negative kWh value at index {i}: {val}")
         if isinstance(ts, (int, float)):
-            dt = datetime.fromtimestamp(ts, tz=timezone.utc)
+            dt = datetime.fromtimestamp(ts, tz=UTC)
         else:
             dt = datetime.fromisoformat(str(ts))
         quality = "good" if val >= 0 else "negative"
@@ -87,9 +87,7 @@ def aggregate_to_daily(readings: list[MeterReading]) -> list[DailyConsumption]:
     result: list[DailyConsumption] = []
     for day, day_readings in sorted(daily.items()):
         total = round(sum(r.kwh for r in day_readings), 4)
-        peak = round(
-            sum(r.kwh for r in day_readings if 16 <= r.timestamp.hour <= 20), 4
-        )
+        peak = round(sum(r.kwh for r in day_readings if 16 <= r.timestamp.hour <= 20), 4)
         off_peak = round(total - peak, 4)
         result.append(
             DailyConsumption(
@@ -123,8 +121,9 @@ def fill_missing_intervals(
         raise ValueError("readings must not be empty")
     filled: list[MeterReading] = [readings[0]]
     from datetime import timedelta
+
     step = timedelta(seconds=HALF_HOUR_SECONDS)
-    for prev, curr in zip(readings, readings[1:]):
+    for prev, curr in zip(readings, readings[1:], strict=False):
         expected = prev.timestamp + step
         while expected < curr.timestamp:
             filled.append(

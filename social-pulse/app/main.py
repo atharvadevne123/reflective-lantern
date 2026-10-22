@@ -85,6 +85,7 @@ app.add_middleware(
 # Middleware: correlation ID and latency logging
 # ---------------------------------------------------------------------------
 
+
 @app.middleware("http")
 async def add_correlation_id(request: Request, call_next: Any) -> Response:
     """Attach a unique X-Request-ID header to every response."""
@@ -109,6 +110,7 @@ async def add_correlation_id(request: Request, call_next: Any) -> Response:
 # Pydantic schemas
 # ---------------------------------------------------------------------------
 
+
 class PostFeatures(BaseModel):
     """Input features for a single social media post."""
 
@@ -119,17 +121,13 @@ class PostFeatures(BaseModel):
         description="Raw post text (up to 2000 chars).",
         examples=["Just dropped our new product launch! #innovation #tech @everyone"],
     )
-    author_followers: int = Field(
-        ..., ge=0, le=500_000_000, description="Author's follower count."
-    )
+    author_followers: int = Field(..., ge=0, le=500_000_000, description="Author's follower count.")
     has_media: bool = Field(False, description="Post contains an image or video.")
     has_link: bool = Field(False, description="Post contains an external URL.")
     hashtag_count: int = Field(0, ge=0, le=100, description="Number of hashtags.")
     mention_count: int = Field(0, ge=0, le=100, description="Number of @mentions.")
     hour_of_day: int = Field(..., ge=0, le=23, description="UTC hour of posting.")
-    day_of_week: int = Field(
-        ..., ge=0, le=6, description="Day of week (0=Monday, 6=Sunday)."
-    )
+    day_of_week: int = Field(..., ge=0, le=6, description="Day of week (0=Monday, 6=Sunday).")
 
     @field_validator("text")
     @classmethod
@@ -183,6 +181,7 @@ _startup_time: float = time.time()
 # ---------------------------------------------------------------------------
 # Routes
 # ---------------------------------------------------------------------------
+
 
 @app.get("/health", response_model=HealthResponse, tags=["Operations"])
 def health_check() -> HealthResponse:
@@ -265,7 +264,9 @@ def metrics_endpoint(db: Session = Depends(get_db)) -> MetricsResponse:
     from app.database import Prediction as PredModel
 
     total = db.query(func.count(PredModel.id)).scalar() or 0
-    viral_count = db.query(func.count(PredModel.id)).filter(PredModel.viral_label.is_(True)).scalar() or 0
+    viral_count = (
+        db.query(func.count(PredModel.id)).filter(PredModel.viral_label.is_(True)).scalar() or 0
+    )
     avg_conf = db.query(func.avg(PredModel.ensemble_confidence)).scalar() or 0.0
     avg_lat = db.query(func.avg(PredModel.latency_ms)).scalar() or 0.0
 
@@ -319,7 +320,9 @@ def train_endpoint(
         "f1": result.f1,
         "precision": result.precision,
         "recall": result.recall,
-        "cv_auc_mean": sum(result.cv_auc_scores) / len(result.cv_auc_scores) if result.cv_auc_scores else 0.0,
+        "cv_auc_mean": sum(result.cv_auc_scores) / len(result.cv_auc_scores)
+        if result.cv_auc_scores
+        else 0.0,
         "train_samples": result.train_samples,
         "duration_sec": result.duration_sec,
     }

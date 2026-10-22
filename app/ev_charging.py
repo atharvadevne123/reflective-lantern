@@ -4,12 +4,12 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass
-from enum import Enum
+from enum import StrEnum
 
 logger = logging.getLogger(__name__)
 
 
-class ChargerLevel(str, Enum):
+class ChargerLevel(StrEnum):
     """EV charger power level classifications."""
 
     LEVEL_1 = "Level 1"
@@ -154,7 +154,9 @@ def fleet_daily_demand_kw(
     Raises:
         ValueError: If any argument is non-positive.
     """
-    if any(v <= 0 for v in (num_vehicles, avg_daily_miles, efficiency_miles_per_kwh, hours_available)):
+    if any(
+        v <= 0 for v in (num_vehicles, avg_daily_miles, efficiency_miles_per_kwh, hours_available)
+    ):
         raise ValueError("All arguments must be positive")
     if not (0 < charge_efficiency <= 1):
         raise ValueError("charge_efficiency must be in (0, 1]")

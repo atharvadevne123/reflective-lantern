@@ -117,9 +117,9 @@ def notify_task(**context: dict) -> None:
     if not needs_retrain:
         logger.info("Pipeline complete: no retraining needed")
         return
-    metrics: dict = context["task_instance"].xcom_pull(
-        task_ids="retrain_model", key="train_metrics"
-    ) or {}
+    metrics: dict = (
+        context["task_instance"].xcom_pull(task_ids="retrain_model", key="train_metrics") or {}
+    )
     logger.info(
         "Pipeline complete: run_id=%s AUC=%.4f samples=%s",
         metrics.get("run_id"),
@@ -136,7 +136,6 @@ with DAG(
     catchup=False,
     tags=["ml", "social-pulse"],
 ) as dag:
-
     check_drift = PythonOperator(
         task_id="check_drift",
         python_callable=check_drift_task,

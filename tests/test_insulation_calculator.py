@@ -135,11 +135,13 @@ class TestAnalyseInsulationUpgrade:
 class TestInsulationEdgeCases:
     def test_heat_loss_rate_positive(self) -> None:
         from app.insulation_calculator import heat_loss_rate
+
         rate = heat_loss_rate(50.0, 2.1, 20.0)
         assert rate > 0
 
     def test_heat_loss_rate_zero_delta_zero(self) -> None:
         from app.insulation_calculator import heat_loss_rate
+
         rate = heat_loss_rate(50.0, 2.1, 0.0)
         assert rate == pytest.approx(0.0)
 

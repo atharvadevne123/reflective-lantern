@@ -45,9 +45,7 @@ class TestEnergyToCharge:
         "start,target,batt,eff",
         [(0.0, 50.0, 100.0, 0.9), (20.0, 80.0, 60.0, 0.95)],
     )
-    def test_positive_result(
-        self, start: float, target: float, batt: float, eff: float
-    ) -> None:
+    def test_positive_result(self, start: float, target: float, batt: float, eff: float) -> None:
         assert energy_to_charge(start, target, batt, eff) > 0.0
 
 

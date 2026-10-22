@@ -131,8 +131,6 @@ class TestPeakShiftingSavings:
         "shift,from_h,to_h",
         [(0.5, 18, 3), (2.0, 17, 2), (1.0, 20, 5)],
     )
-    def test_parametrized_savings_positive(
-        self, shift: float, from_h: int, to_h: int
-    ) -> None:
+    def test_parametrized_savings_positive(self, shift: float, from_h: int, to_h: int) -> None:
         savings = peak_shifting_savings([1.0] * 24, shift, from_h, to_h)
         assert savings >= 0.0

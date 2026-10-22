@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass, field
-from enum import Enum
+from enum import StrEnum
 
 logger = logging.getLogger(__name__)
 
@@ -15,7 +15,7 @@ MIN_PLAUSIBLE_KWH: float = 0.0
 """Readings below this value are physically impossible."""
 
 
-class ValidationStatus(str, Enum):
+class ValidationStatus(StrEnum):
     """Overall validation result for a meter reading series."""
 
     VALID = "valid"

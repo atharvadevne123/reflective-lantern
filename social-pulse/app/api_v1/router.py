@@ -117,12 +117,14 @@ def v1_batch_predict(
         request_id = str(uuid.uuid4())
         try:
             r = predict(sample, _pipeline, _model, MODEL_VERSION)
-            results.append({
-                "request_id": request_id,
-                "viral_probability": r.viral_probability,
-                "viral_label": r.viral_label,
-                "ensemble_confidence": r.ensemble_confidence,
-            })
+            results.append(
+                {
+                    "request_id": request_id,
+                    "viral_probability": r.viral_probability,
+                    "viral_label": r.viral_label,
+                    "ensemble_confidence": r.ensemble_confidence,
+                }
+            )
         except Exception as exc:
             logger.error("Batch predict failed for sample: %s", exc)
             results.append({"request_id": request_id, "error": str(exc)})

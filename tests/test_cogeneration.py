@@ -31,10 +31,13 @@ class TestCHPElectricalEfficiency:
         with pytest.raises(ValueError):
             chp_electrical_efficiency(1100.0, 1000.0)
 
-    @pytest.mark.parametrize("elec,fuel,expected", [
-        (250.0, 1000.0, 0.25),
-        (400.0, 1000.0, 0.40),
-    ])
+    @pytest.mark.parametrize(
+        "elec,fuel,expected",
+        [
+            (250.0, 1000.0, 0.25),
+            (400.0, 1000.0, 0.40),
+        ],
+    )
     def test_parametrized(self, elec: float, fuel: float, expected: float) -> None:
         assert chp_electrical_efficiency(elec, fuel) == pytest.approx(expected, rel=1e-4)
 
@@ -70,10 +73,13 @@ class TestTotalCogenerationEfficiency:
         with pytest.raises(ValueError):
             total_cogeneration_efficiency(700.0, 700.0, 1000.0)
 
-    @pytest.mark.parametrize("elec,heat,fuel", [
-        (300.0, 500.0, 1000.0),
-        (200.0, 600.0, 900.0),
-    ])
+    @pytest.mark.parametrize(
+        "elec,heat,fuel",
+        [
+            (300.0, 500.0, 1000.0),
+            (200.0, 600.0, 900.0),
+        ],
+    )
     def test_total_eff_in_range(self, elec: float, heat: float, fuel: float) -> None:
         eff = total_cogeneration_efficiency(elec, heat, fuel)
         assert 0 < eff <= 1
@@ -130,11 +136,14 @@ class TestAnalyseCHP:
         result = analyse_chp(1000.0, 0.35, 0.45)
         assert result.annual_co2_savings_kg > 0
 
-    @pytest.mark.parametrize("elec_eff,therm_eff", [
-        (0.25, 0.50),
-        (0.35, 0.45),
-        (0.40, 0.40),
-    ])
+    @pytest.mark.parametrize(
+        "elec_eff,therm_eff",
+        [
+            (0.25, 0.50),
+            (0.35, 0.45),
+            (0.40, 0.40),
+        ],
+    )
     def test_parametrized_efficiencies(self, elec_eff: float, therm_eff: float) -> None:
         result = analyse_chp(1000.0, elec_eff, therm_eff)
         assert result.electrical_efficiency == pytest.approx(elec_eff)

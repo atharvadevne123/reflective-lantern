@@ -27,8 +27,16 @@ class TestGenerateSyntheticData:
 
     def test_samples_have_required_keys(self) -> None:
         samples, _ = generate_synthetic_data(n=10)
-        required = {"text", "author_followers", "has_media", "has_link",
-                    "hashtag_count", "mention_count", "hour_of_day", "day_of_week"}
+        required = {
+            "text",
+            "author_followers",
+            "has_media",
+            "has_link",
+            "hashtag_count",
+            "mention_count",
+            "hour_of_day",
+            "day_of_week",
+        }
         for s in samples:
             assert required.issubset(s.keys())
 
@@ -77,6 +85,7 @@ class TestTrainModel:
 
     def test_model_files_written(self) -> None:
         from app.model import CURRENT_MODEL_PATH, CURRENT_PIPELINE_PATH
+
         assert CURRENT_MODEL_PATH.exists()
         assert CURRENT_PIPELINE_PATH.exists()
 
@@ -87,6 +96,7 @@ class TestPredictModel:
         samples, labels = generate_synthetic_data(n=200)
         train(samples, labels, n_folds=2)
         from app.model import load_model
+
         result = load_model()
         assert result is not None
         return result
@@ -126,6 +136,7 @@ class TestToDense:
 
     def test_sparse_matrix_converted(self) -> None:
         from scipy.sparse import csr_matrix
+
         sparse = csr_matrix([[1, 0], [0, 2]])
         out = _to_dense(sparse)
         assert isinstance(out, np.ndarray)

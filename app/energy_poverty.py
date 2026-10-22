@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass
-from enum import Enum
+from enum import StrEnum
 
 logger = logging.getLogger(__name__)
 
@@ -15,7 +15,7 @@ LIHC_LOW_INCOME_THRESHOLD: float = 0.60
 """Low Income High Costs: income below 60% of median."""
 
 
-class PovertyMethod(str, Enum):
+class PovertyMethod(StrEnum):
     """Fuel poverty assessment methodology."""
 
     TEN_PERCENT = "10_percent"

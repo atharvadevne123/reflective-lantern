@@ -15,12 +15,12 @@ from sklearn.pipeline import FeatureUnion, Pipeline
 logger = logging.getLogger(__name__)
 
 _EMOJI_RE = re.compile(
-    "[\U0001F600-\U0001F64F"
-    "\U0001F300-\U0001F5FF"
-    "\U0001F680-\U0001F6FF"
-    "\U0001F1E0-\U0001F1FF"
-    "\U00002600-\U000027BF"
-    "\U0001F900-\U0001F9FF]+",
+    "[\U0001f600-\U0001f64f"
+    "\U0001f300-\U0001f5ff"
+    "\U0001f680-\U0001f6ff"
+    "\U0001f1e0-\U0001f1ff"
+    "\U00002600-\U000027bf"
+    "\U0001f900-\U0001f9ff]+",
     flags=re.UNICODE,
 )
 _URL_RE = re.compile(r"https?://\S+|www\.\S+")
@@ -179,16 +179,21 @@ class TextExtractor(BaseEstimator, TransformerMixin):
 
 def build_tfidf_pipeline(max_features: int = 500) -> Pipeline:
     """Return a pipeline that extracts text and vectorises it."""
-    return Pipeline([
-        ("extract", TextExtractor()),
-        ("tfidf", TfidfVectorizer(
-            max_features=max_features,
-            ngram_range=(1, 2),
-            sublinear_tf=True,
-            min_df=2,
-            strip_accents="unicode",
-        )),
-    ])
+    return Pipeline(
+        [
+            ("extract", TextExtractor()),
+            (
+                "tfidf",
+                TfidfVectorizer(
+                    max_features=max_features,
+                    ngram_range=(1, 2),
+                    sublinear_tf=True,
+                    min_df=2,
+                    strip_accents="unicode",
+                ),
+            ),
+        ]
+    )
 
 
 def build_feature_pipeline(tfidf_features: int = 200) -> FeatureUnion:
@@ -197,7 +202,9 @@ def build_feature_pipeline(tfidf_features: int = 200) -> FeatureUnion:
     The resulting feature union produces a dense + sparse matrix that
     scikit-learn's ensemble models consume directly.
     """
-    return FeatureUnion([
-        ("stats", TextStatTransformer()),
-        ("tfidf", build_tfidf_pipeline(max_features=tfidf_features)),
-    ])
+    return FeatureUnion(
+        [
+            ("stats", TextStatTransformer()),
+            ("tfidf", build_tfidf_pipeline(max_features=tfidf_features)),
+        ]
+    )

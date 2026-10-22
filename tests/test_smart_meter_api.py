@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 import pytest
 
@@ -22,7 +22,7 @@ def _make_reading(hour: int, kwh: float, day: str = "2024-01-01") -> MeterReadin
 
 
 def _make_raw(n: int = 4) -> list[dict[str, object]]:
-    base = datetime(2024, 1, 1, 0, 0, tzinfo=timezone.utc)
+    base = datetime(2024, 1, 1, 0, 0, tzinfo=UTC)
     return [
         {"timestamp": (base + timedelta(minutes=30 * i)).isoformat(), "value": float(i)}
         for i in range(n)
@@ -95,16 +95,13 @@ class TestAggregateToDaily:
 
 class TestFillMissingIntervals:
     def test_no_gaps_unchanged_length(self) -> None:
-        base = datetime(2024, 1, 1, tzinfo=timezone.utc)
-        readings = [
-            MeterReading(base + timedelta(minutes=30 * i), float(i))
-            for i in range(4)
-        ]
+        base = datetime(2024, 1, 1, tzinfo=UTC)
+        readings = [MeterReading(base + timedelta(minutes=30 * i), float(i)) for i in range(4)]
         result = fill_missing_intervals(readings)
         assert len(result) == 4
 
     def test_single_gap_filled(self) -> None:
-        base = datetime(2024, 1, 1, tzinfo=timezone.utc)
+        base = datetime(2024, 1, 1, tzinfo=UTC)
         readings = [
             MeterReading(base, 1.0),
             MeterReading(base + timedelta(hours=1), 2.0),
@@ -113,7 +110,7 @@ class TestFillMissingIntervals:
         assert len(result) == 3
 
     def test_fill_value_used(self) -> None:
-        base = datetime(2024, 1, 1, tzinfo=timezone.utc)
+        base = datetime(2024, 1, 1, tzinfo=UTC)
         readings = [
             MeterReading(base, 1.0),
             MeterReading(base + timedelta(hours=1), 2.0),

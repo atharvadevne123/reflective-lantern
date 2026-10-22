@@ -39,41 +39,40 @@ class TestPredictEndpoint:
         resp = client.post("/predict", json=sample_post)
         assert resp.status_code in (200, 503)
 
-    def test_predict_returns_probability(
-        self, client: TestClient, sample_post: dict
-    ) -> None:
+    def test_predict_returns_probability(self, client: TestClient, sample_post: dict) -> None:
         resp = client.post("/predict", json=sample_post)
         if resp.status_code == 200:
             data = resp.json()
             assert 0.0 <= data["viral_probability"] <= 1.0
 
-    def test_predict_returns_label(
-        self, client: TestClient, sample_post: dict
-    ) -> None:
+    def test_predict_returns_label(self, client: TestClient, sample_post: dict) -> None:
         resp = client.post("/predict", json=sample_post)
         if resp.status_code == 200:
             data = resp.json()
             assert isinstance(data["viral_label"], bool)
 
-    def test_predict_returns_confidence(
-        self, client: TestClient, sample_post: dict
-    ) -> None:
+    def test_predict_returns_confidence(self, client: TestClient, sample_post: dict) -> None:
         resp = client.post("/predict", json=sample_post)
         if resp.status_code == 200:
             data = resp.json()
             assert 0.0 <= data["ensemble_confidence"] <= 1.0
 
     def test_predict_missing_text_returns_422(self, client: TestClient) -> None:
-        resp = client.post("/predict", json={"author_followers": 100, "hour_of_day": 12, "day_of_week": 0})
+        resp = client.post(
+            "/predict", json={"author_followers": 100, "hour_of_day": 12, "day_of_week": 0}
+        )
         assert resp.status_code == 422
 
     def test_predict_blank_text_returns_422(self, client: TestClient) -> None:
-        resp = client.post("/predict", json={
-            "text": "   ",
-            "author_followers": 100,
-            "hour_of_day": 12,
-            "day_of_week": 0,
-        })
+        resp = client.post(
+            "/predict",
+            json={
+                "text": "   ",
+                "author_followers": 100,
+                "hour_of_day": 12,
+                "day_of_week": 0,
+            },
+        )
         assert resp.status_code == 422
 
     def test_predict_negative_followers_returns_422(
@@ -84,32 +83,24 @@ class TestPredictEndpoint:
         resp = client.post("/predict", json=bad)
         assert resp.status_code == 422
 
-    def test_predict_invalid_hour_returns_422(
-        self, client: TestClient, sample_post: dict
-    ) -> None:
+    def test_predict_invalid_hour_returns_422(self, client: TestClient, sample_post: dict) -> None:
         bad = dict(sample_post)
         bad["hour_of_day"] = 25
         resp = client.post("/predict", json=bad)
         assert resp.status_code == 422
 
-    def test_predict_invalid_dow_returns_422(
-        self, client: TestClient, sample_post: dict
-    ) -> None:
+    def test_predict_invalid_dow_returns_422(self, client: TestClient, sample_post: dict) -> None:
         bad = dict(sample_post)
         bad["day_of_week"] = 7
         resp = client.post("/predict", json=bad)
         assert resp.status_code == 422
 
-    def test_predict_returns_request_id(
-        self, client: TestClient, sample_post: dict
-    ) -> None:
+    def test_predict_returns_request_id(self, client: TestClient, sample_post: dict) -> None:
         resp = client.post("/predict", json=sample_post)
         if resp.status_code == 200:
             assert "request_id" in resp.json()
 
-    def test_predict_custom_request_id_echoed(
-        self, client: TestClient, sample_post: dict
-    ) -> None:
+    def test_predict_custom_request_id_echoed(self, client: TestClient, sample_post: dict) -> None:
         resp = client.post(
             "/predict",
             json=sample_post,
@@ -161,9 +152,7 @@ def test_predict_various_hours(client: TestClient, sample_post: dict, hour: int)
 
 
 @pytest.mark.parametrize("followers", [0, 100, 10_000, 1_000_000, 50_000_000])
-def test_predict_follower_buckets(
-    client: TestClient, sample_post: dict, followers: int
-) -> None:
+def test_predict_follower_buckets(client: TestClient, sample_post: dict, followers: int) -> None:
     """Predictions should succeed across all follower bucket boundaries."""
     post = dict(sample_post)
     post["author_followers"] = followers

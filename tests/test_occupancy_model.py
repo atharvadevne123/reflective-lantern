@@ -141,9 +141,7 @@ class TestAnnualOccupiedHours:
 
     @pytest.mark.parametrize("weekdays", [260, 261, 262])
     def test_parametrized_weekdays(self, weekdays: int) -> None:
-        hours = annual_occupied_hours(
-            OFFICE_BASE_SCHEDULE, weekdays_per_year=weekdays
-        )
+        hours = annual_occupied_hours(OFFICE_BASE_SCHEDULE, weekdays_per_year=weekdays)
         assert hours >= 0
 
 

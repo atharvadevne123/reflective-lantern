@@ -209,11 +209,7 @@ def grid_metrics(
     pf = power_factor(abs(active_kw), abs(reactive_kvar))
     apparent = apparent_power_kva(abs(active_kw), abs(reactive_kvar))
     thd = thd_percent(harmonics, voltage_v) if harmonics else 0.0
-    unbalance = (
-        voltage_unbalance_percent(*phase_voltages)
-        if phase_voltages is not None
-        else 0.0
-    )
+    unbalance = voltage_unbalance_percent(*phase_voltages) if phase_voltages is not None else 0.0
     return GridMetrics(
         voltage_v=voltage_v,
         frequency_hz=frequency_hz,

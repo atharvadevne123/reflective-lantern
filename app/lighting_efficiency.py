@@ -185,7 +185,9 @@ def audit_space(
     led_watts = power_for_target_lux(area_m2, target_lux, 0.80, 0.70)
     capex = led_watts * led_upgrade_cost_per_w
     try:
-        saved_kwh, payback = upgrade_savings(installed_watts, led_watts, daily_hours, energy_rate, capex)
+        saved_kwh, payback = upgrade_savings(
+            installed_watts, led_watts, daily_hours, energy_rate, capex
+        )
     except ValueError:
         saved_kwh, payback = None, None
     return LightingAuditResult(

@@ -173,6 +173,10 @@ def compare_technologies(
         Dict with keys ``'boiler'`` and ``'heat_pump'``, each a :class:`DHWResult`.
     """
     return {
-        "boiler": estimate_dhw(daily_litres, cold_temp_c, hot_temp_c, "boiler", boiler_efficiency, boiler_gas_rate),
-        "heat_pump": estimate_dhw(daily_litres, cold_temp_c, hot_temp_c, "heat_pump", heat_pump_cop, electricity_rate),
+        "boiler": estimate_dhw(
+            daily_litres, cold_temp_c, hot_temp_c, "boiler", boiler_efficiency, boiler_gas_rate
+        ),
+        "heat_pump": estimate_dhw(
+            daily_litres, cold_temp_c, hot_temp_c, "heat_pump", heat_pump_cop, electricity_rate
+        ),
     }

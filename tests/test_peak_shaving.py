@@ -129,9 +129,12 @@ class TestDemandChargeReduction:
         with pytest.raises(ValueError):
             demand_charge_reduction(80.0, 100.0, 15.0)
 
-    @pytest.mark.parametrize("orig,shaved,rate,expected", [
-        (100.0, 80.0, 10.0, 200.0),
-        (200.0, 150.0, 20.0, 1000.0),
-    ])
+    @pytest.mark.parametrize(
+        "orig,shaved,rate,expected",
+        [
+            (100.0, 80.0, 10.0, 200.0),
+            (200.0, 150.0, 20.0, 1000.0),
+        ],
+    )
     def test_parametrized(self, orig: float, shaved: float, rate: float, expected: float) -> None:
         assert demand_charge_reduction(orig, shaved, rate) == pytest.approx(expected)

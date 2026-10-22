@@ -60,7 +60,7 @@ def linear_regression(
         raise ValueError("Need at least 2 data points for regression")
     mean_x = sum(x) / n
     mean_y = sum(y) / n
-    ss_xy = sum((xi - mean_x) * (yi - mean_y) for xi, yi in zip(x, y))
+    ss_xy = sum((xi - mean_x) * (yi - mean_y) for xi, yi in zip(x, y, strict=False))
     ss_xx = sum((xi - mean_x) ** 2 for xi in x)
     if ss_xx == 0.0:
         return (mean_y, 0.0, 0.0)
@@ -70,7 +70,7 @@ def linear_regression(
     if ss_tot == 0.0:
         r_sq = 1.0
     else:
-        ss_res = sum((yi - (intercept + slope * xi)) ** 2 for xi, yi in zip(x, y))
+        ss_res = sum((yi - (intercept + slope * xi)) ** 2 for xi, yi in zip(x, y, strict=False))
         r_sq = max(0.0, 1.0 - ss_res / ss_tot)
     return (round(intercept, 6), round(slope, 6), round(r_sq, 6))
 

@@ -41,7 +41,7 @@ class BatteryState:
         Returns:
             Actual energy charged in kWh (at AC side).
         """
-        sqrt_eff = self.round_trip_efficiency ** 0.5
+        sqrt_eff = self.round_trip_efficiency**0.5
         max_energy = min(
             power_kw * duration_h,
             self.max_charge_rate_kw * duration_h,
@@ -62,7 +62,7 @@ class BatteryState:
         Returns:
             Actual energy delivered in kWh (at AC side).
         """
-        sqrt_eff = self.round_trip_efficiency ** 0.5
+        sqrt_eff = self.round_trip_efficiency**0.5
         max_energy = min(
             power_kw * duration_h,
             self.max_discharge_rate_kw * duration_h,
@@ -255,9 +255,7 @@ def revenue_from_peak_shaving(
     return demand_reduction_kw * demand_charge_per_kw * months
 
 
-def shaving_effectiveness(
-    original_peak_kw: float, shaved_peak_kw: float
-) -> float:
+def shaving_effectiveness(original_peak_kw: float, shaved_peak_kw: float) -> float:
     """Return peak shaving effectiveness as a fraction in [0, 1].
 
     Args:

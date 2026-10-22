@@ -44,7 +44,9 @@ class TestCycleDegradation:
         assert cycle_degradation(0.0, NOMINAL_CYCLES_LFP) == 0.0
 
     def test_eol_at_rated_cycles(self) -> None:
-        deg = cycle_degradation(float(NOMINAL_CYCLES_LFP), NOMINAL_CYCLES_LFP, depth_of_discharge=1.0)
+        deg = cycle_degradation(
+            float(NOMINAL_CYCLES_LFP), NOMINAL_CYCLES_LFP, depth_of_discharge=1.0
+        )
         assert deg == pytest.approx(1.0 - EOL_CAPACITY_FRACTION, rel=1e-3)
 
     def test_negative_cycles_raises(self) -> None:

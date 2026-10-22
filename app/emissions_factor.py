@@ -4,12 +4,12 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass
-from enum import Enum
+from enum import StrEnum
 
 logger = logging.getLogger(__name__)
 
 
-class Region(str, Enum):
+class Region(StrEnum):
     """Major grid regions with representative marginal emissions factors."""
 
     UK = "UK"
