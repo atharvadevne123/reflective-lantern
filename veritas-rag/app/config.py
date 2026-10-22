@@ -78,5 +78,37 @@ class Settings:
     api_prefix: str = "/api/v1"
     log_level: str = field(default_factory=lambda: os.getenv("LOG_LEVEL", "INFO"))
 
+    def __post_init__(self) -> None:
+        """Validate configuration values after initialization."""
+        if self.embedding_dim < 1:
+            raise ValueError(f"embedding_dim must be >= 1, got {self.embedding_dim}")
+        if self.chunk_size < 1:
+            raise ValueError(f"chunk_size must be >= 1, got {self.chunk_size}")
+        if self.chunk_overlap < 0:
+            raise ValueError(f"chunk_overlap must be >= 0, got {self.chunk_overlap}")
+        if self.chunk_overlap >= self.chunk_size:
+            raise ValueError(
+                f"chunk_overlap ({self.chunk_overlap}) must be less than "
+                f"chunk_size ({self.chunk_size})"
+            )
+        if not 0.0 < self.confidence_threshold <= 1.0:
+            raise ValueError(
+                f"confidence_threshold must be in (0, 1], got {self.confidence_threshold}"
+            )
+        if not 0.0 <= self.chunk_trust_floor < 1.0:
+            raise ValueError(
+                f"chunk_trust_floor must be in [0, 1), got {self.chunk_trust_floor}"
+            )
+        if self.freshness_half_life_days <= 0.0:
+            raise ValueError(
+                f"freshness_half_life_days must be > 0, got {self.freshness_half_life_days}"
+            )
+        if not 0.0 < self.near_dup_threshold <= 1.0:
+            raise ValueError(
+                f"near_dup_threshold must be in (0, 1], got {self.near_dup_threshold}"
+            )
+        if self.final_top_k < 1:
+            raise ValueError(f"final_top_k must be >= 1, got {self.final_top_k}")
+
 
 settings = Settings()
