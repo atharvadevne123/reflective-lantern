@@ -102,7 +102,7 @@ async def ingest_batch(body: BatchIngestRequest) -> dict[str, Any]:
     for doc in body.documents:
         try:
             data = base64.b64decode(doc.content_base64, validate=True)
-        except Exception as exc:
+        except Exception:
             results.append({"source": doc.source, "error": "invalid base64"})
             continue
         try:
