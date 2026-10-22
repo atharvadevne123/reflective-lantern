@@ -338,6 +338,17 @@ class RagPipeline:
         )
         return candidates
 
+    def query_batch(self, questions: list[str]) -> list[Answer]:
+        """Answer multiple questions in sequence, sharing cache state.
+
+        Args:
+            questions: List of query strings.
+
+        Returns:
+            One :class:`Answer` per query, in the same order.
+        """
+        return [self.query(q) for q in questions]
+
     # ------------------------------------------------------------------
     # Introspection
     # ------------------------------------------------------------------
