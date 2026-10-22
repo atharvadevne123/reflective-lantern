@@ -197,3 +197,90 @@ class TestEmbedderParametrized:
         texts = [f"document number {i}" for i in range(n_texts)]
         vecs = emb.embed(texts)
         assert vecs.shape[0] == n_texts
+
+
+class TestBM25EdgeCases:
+    def test_remove_nonexistent_chunk_is_noop(self) -> None:
+        """Removing a chunk id not in the index does not raise."""
+        index = BM25Index()
+        index.remove("ghost-id")  # must not raise
+
+    def test_single_char_tokens_indexed(self) -> None:
+        """Single-character non-stopword tokens are preserved."""
+        index = BM25Index()
+        index.add("c1", "x marks the spot")
+        results = index.search("x")
+        assert len(results) >= 1
+        assert results[0][0] == "c1"
+
+    def test_repeated_add_same_id_overwrites(self) -> None:
+        """Adding the same chunk id twice accumulates (no guard, by design)."""
+        index = BM25Index()
+        index.add("c1", "solar energy")
+        index.add("c2", "unrelated content here")
+        results = index.search("solar")
+        assert results[0][0] == "c1"
+
+    @pytest.mark.parametrize("text", ["", "   ", "\t\n"])
+    def test_empty_or_whitespace_text_adds_empty_doc(self, text: str) -> None:
+        """Whitespace-only documents add a zero-token entry without error."""
+        index = BM25Index()
+        index.add("blank", text)
+        assert len(index) == 1
+
+    def test_score_decreases_for_less_matching_docs(self) -> None:
+        """Higher query-term overlap yields higher BM25 score."""
+        index = BM25Index()
+        index.add("good", "solar rebate program kilowatts households")
+        index.add("ok", "solar program")
+        index.add("poor", "unrelated topic weather")
+        results = {cid: score for cid, score in index.search("solar rebate kilowatts")}
+        assert results.get("good", 0.0) > results.get("ok", 0.0)
+
+
+class TestVectorIndexEdgeCases:
+    def test_search_empty_index_returns_empty(self) -> None:
+        """Searching an empty VectorIndex returns []."""
+        index = VectorIndex(dim=32)
+        emb = HashingEmbedder(dim=32)
+        results = index.search(emb.embed(["query"])[0], top_k=5)
+        assert results == []
+
+    def test_len_after_add_and_remove(self) -> None:
+        """VectorIndex.__len__ tracks live (non-deleted) entries."""
+        emb = HashingEmbedder(dim=32)
+        index = VectorIndex(dim=32)
+        index.add(["a", "b", "c"], emb.embed(["text a", "text b", "text c"]))
+        assert len(index) == 3
+        index.remove(["a"])
+        assert len(index) == 2
+
+    def test_top_k_capped_to_corpus_size(self) -> None:
+        """top_k larger than corpus size returns at most corpus size results."""
+        emb = HashingEmbedder(dim=32)
+        index = VectorIndex(dim=32)
+        index.add(["x", "y"], emb.embed(["alpha", "beta"]))
+        results = index.search(emb.embed(["alpha"])[0], top_k=100)
+        assert len(results) <= 2
+
+
+class TestHybridFusionEdgeCases:
+    def test_fusion_empty_both_lists(self) -> None:
+        """RRF of two empty lists returns empty."""
+        assert reciprocal_rank_fusion([], []) == []
+
+    def test_fusion_single_retriever(self) -> None:
+        """RRF with one empty list still ranks the non-empty list."""
+        bm25 = [("c1", 0.9), ("c2", 0.5)]
+        result = reciprocal_rank_fusion(bm25, [])
+        ids = [r[0] for r in result]
+        assert "c1" in ids
+        assert "c2" in ids
+
+    def test_fusion_agreement_boosts_rank(self) -> None:
+        """A chunk in both lists outranks chunks in only one list."""
+        bm25 = [("common", 1.0), ("bm25-only", 0.9)]
+        vec = [("common", 1.0), ("vec-only", 0.9)]
+        result = reciprocal_rank_fusion(bm25, vec)
+        top_id = result[0][0]
+        assert top_id == "common"
