@@ -12,7 +12,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
 from . import __version__
-from .config import settings
+from .config import settings, settings_summary
 from .pipeline import RagPipeline
 
 logging.basicConfig(
@@ -117,6 +117,7 @@ async def health() -> dict[str, Any]:
         "documents": len(pipeline.versions),
         "chunks": len(pipeline.chunks),
         "generator": type(pipeline.generator).__name__,
+        "config": settings_summary(settings),
     }
 
 
