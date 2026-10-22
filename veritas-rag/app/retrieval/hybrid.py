@@ -7,6 +7,8 @@ trust scorer's consistency component.
 
 from __future__ import annotations
 
+__all__ = ["reciprocal_rank_fusion"]
+
 
 def reciprocal_rank_fusion(
     bm25_results: list[tuple[str, float]],
