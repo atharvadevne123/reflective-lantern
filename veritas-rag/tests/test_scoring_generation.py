@@ -330,3 +330,104 @@ class TestTopKTrust:
         from app.scoring.trust import top_k_trust
 
         assert top_k_trust([], k=5) == []
+
+
+class TestExtractiveGeneratorEdgeCases:
+    def test_empty_chunks_returns_empty_answer(self) -> None:
+        """ExtractiveGenerator with no chunks returns empty answer and no citations."""
+        from app.generation.extractive import ExtractiveGenerator
+
+        gen = ExtractiveGenerator()
+        answer, citations = gen.generate("What is the rebate?", [])
+        assert answer == ""
+        assert citations == []
+
+    def test_empty_query_returns_empty(self) -> None:
+        """ExtractiveGenerator with empty query returns empty."""
+        from app.generation.extractive import ExtractiveGenerator
+
+        gen = ExtractiveGenerator()
+        answer, citations = gen.generate("", [make_scored(trust=0.8)])
+        assert answer == ""
+        assert citations == []
+
+    def test_max_sentences_respected(self) -> None:
+        """ExtractiveGenerator respects max_sentences limit."""
+        from app.generation.extractive import ExtractiveGenerator
+        from app.schemas import Chunk, ScoredChunk
+
+        def make_chunk_with_text(text: str) -> ScoredChunk:
+            chunk = Chunk(
+                chunk_id="c1",
+                doc_id="d1",
+                source="test.txt",
+                source_type="text",
+                page=1,
+                seq=0,
+                text=text,
+                created_at="2026-01-01T00:00:00+00:00",
+            )
+            return ScoredChunk(chunk=chunk, bm25_rank=1, vector_rank=1, rerank_score=0.9, trust=0.9)
+
+        gen = ExtractiveGenerator(max_sentences=2)
+        scored = make_chunk_with_text(
+            "Solar rebates help households. Battery incentives boost storage. "
+            "Grid rules govern export limits. Smart meters enable billing."
+        )
+        answer, citations = gen.generate("solar rebates battery incentives grid rules", [scored])
+        sentence_count = len([s for s in answer.split(". ") if s.strip()])
+        assert sentence_count <= 2
+
+    def test_citations_match_answer_sentences(self) -> None:
+        """Each citation claim corresponds to a sentence in the answer."""
+        from app.generation.extractive import ExtractiveGenerator
+        from app.schemas import Chunk, ScoredChunk
+
+        chunk = Chunk(
+            chunk_id="c1",
+            doc_id="d1",
+            source="pol.txt",
+            source_type="text",
+            page=1,
+            seq=0,
+            text="The rebate is nine hundred dollars per kilowatt.",
+            created_at="2026-01-01T00:00:00+00:00",
+        )
+        scored = ScoredChunk(chunk=chunk, bm25_rank=1, vector_rank=1, rerank_score=0.9, trust=0.9)
+        gen = ExtractiveGenerator()
+        answer, citations = gen.generate("What is the rebate per kilowatt?", [scored])
+        if citations:
+            for citation in citations:
+                assert citation.claim in answer or answer in citation.claim
+
+
+class TestGateDecisionEdgeCases:
+    def test_all_chunks_below_floor_blocks_generation(self) -> None:
+        """All chunks below trust floor → gate blocks generation."""
+        from app.generation.fallback import evaluate_evidence
+
+        low_chunks = [make_scored(trust=0.2), make_scored(trust=0.1)]
+        decision = evaluate_evidence(low_chunks, chunk_trust_floor=0.35)
+        assert decision.allowed is False
+        assert decision.reason == "too_few_supporting_chunks"
+
+    def test_high_confidence_passes_gate(self) -> None:
+        """Chunks with high trust clear the gate."""
+        from app.generation.fallback import evaluate_evidence
+
+        high_chunks = [make_scored(trust=0.9), make_scored(trust=0.85)]
+        decision = evaluate_evidence(
+            high_chunks, confidence_threshold=0.45, chunk_trust_floor=0.35
+        )
+        assert decision.allowed is True
+        assert decision.reason == "evidence_sufficient"
+
+    @pytest.mark.parametrize("n_chunks", [0, 1, 5])
+    def test_empty_or_n_chunks(self, n_chunks: int) -> None:
+        """Gate handles 0, 1, and several chunks without error."""
+        from app.generation.fallback import evaluate_evidence
+
+        chunks = [make_scored(trust=0.8) for _ in range(n_chunks)]
+        decision = evaluate_evidence(chunks)
+        assert isinstance(decision.allowed, bool)
+        assert 0.0 <= decision.confidence <= 1.0
