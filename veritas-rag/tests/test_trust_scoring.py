@@ -233,3 +233,78 @@ class TestTrustTier:
         order = {"minimal": 0, "low": 1, "medium": 2, "high": 3}
         tiers = [order[trust_tier(s / 10)] for s in range(11)]
         assert tiers == sorted(tiers)
+
+
+class TestFreshnessEdgeCases:
+    def test_none_created_at_returns_neutral(self) -> None:
+        """None created_at returns the neutral 0.5 score without raising."""
+        score = freshness_score(None, now=NOW)  # type: ignore[arg-type]
+        assert score == 0.5
+
+    def test_future_document_scores_one(self) -> None:
+        """A document with a future timestamp is treated as brand-new (max freshness)."""
+        future = (NOW + __import__("datetime").timedelta(days=30)).isoformat()
+        score = freshness_score(future, now=NOW)
+        assert score == pytest.approx(1.0)
+
+    @pytest.mark.parametrize("half_life", [7.0, 30.0, 90.0, 365.0])
+    def test_half_life_at_boundary(self, half_life: float) -> None:
+        """Freshness is exactly 0.5 at exactly one half-life of age."""
+        from datetime import timedelta
+
+        created = (NOW - timedelta(days=half_life)).isoformat()
+        assert freshness_score(created, half_life_days=half_life, now=NOW) == pytest.approx(
+            0.5, rel=1e-5
+        )
+
+    def test_naive_datetime_treated_as_utc(self) -> None:
+        """A naive ISO datetime string (no tz) is treated as UTC."""
+        naive = "2026-01-01T00:00:00"
+        score = freshness_score(naive, now=NOW)
+        assert 0.0 < score <= 1.0
+
+
+class TestConsistencyEdgeCases:
+    @pytest.mark.parametrize(
+        ("bm25_rank", "vec_rank"),
+        [
+            (None, None),
+            (1, None),
+            (None, 1),
+            (1, 1),
+        ],
+    )
+    def test_consistency_score_valid_range(
+        self, bm25_rank: int | None, vec_rank: int | None
+    ) -> None:
+        """consistency_score always returns a value in [0, 1]."""
+        score = consistency_score(bm25_rank, vec_rank, rerank_score=0.7, top_k=50)
+        assert 0.0 <= score <= 1.0
+
+    def test_both_found_outscores_single_retriever(self) -> None:
+        """A chunk found by both retrievers scores higher than one found by only one."""
+        both = consistency_score(1, 1, rerank_score=0.5, top_k=50)
+        one_only = consistency_score(1, None, rerank_score=0.5, top_k=50)
+        assert both > one_only
+
+    def test_higher_rerank_score_increases_consistency(self) -> None:
+        """A higher rerank score increases the consistency component."""
+        low = consistency_score(1, 1, rerank_score=0.2, top_k=50)
+        high = consistency_score(1, 1, rerank_score=0.9, top_k=50)
+        assert high > low
+
+
+class TestScoreChunkIntegration:
+    def test_all_components_present(self) -> None:
+        """score_chunk populates all three trust_components keys."""
+        scored = make_scored()
+        result = score_chunk(scored, now=NOW)
+        assert set(result.trust_components.keys()) == {"freshness", "source_quality", "consistency"}
+
+    def test_trust_in_unit_interval(self) -> None:
+        """Composite trust score is always in [0, 1]."""
+        for source_type in ("pdf", "markdown", "text", "html", "email", "unknown"):
+            chunk = make_chunk(source_type=source_type)
+            scored = ScoredChunk(chunk=chunk, bm25_rank=1, vector_rank=1, rerank_score=0.8)
+            score_chunk(scored, now=NOW)
+            assert 0.0 <= scored.trust <= 1.0, f"trust out of range for {source_type}"
