@@ -150,3 +150,24 @@ def top_cached_queries(cache: RetrievalCache, n: int = 5) -> list[str]:
     """
     keys = list(cache._store.keys())
     return list(reversed(keys[-n:]))
+
+
+def cache_age_seconds(cache: RetrievalCache, query: str) -> float | None:
+    """Return how many seconds ago the query was cached, or None if not cached.
+
+    Args:
+        cache: The cache to inspect.
+        query: The query string to look up.
+
+    Returns:
+        Age in seconds since the entry was stored, or None if absent/expired.
+    """
+    key = cache_key(query)
+    entry = cache._store.get(key)
+    if entry is None:
+        return None
+    stored_at, _ = entry
+    age = time.monotonic() - stored_at
+    if age > cache.ttl_seconds:
+        return None
+    return round(age, 4)
