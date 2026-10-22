@@ -9,9 +9,12 @@ for a neural cross-encoder in production via the `Reranker` protocol.
 
 from __future__ import annotations
 
+import logging
 from typing import Protocol
 
 from .bm25 import tokenize
+
+logger = logging.getLogger(__name__)
 
 
 class Reranker(Protocol):
@@ -33,10 +36,18 @@ class LexicalReranker:
             proximity: 1 / span of the tightest window containing the most
                 query terms (rewards terms appearing close together).
             density: query-term hits per text token (length calibration).
+
+        Args:
+            query: Natural-language query string.
+            texts: Candidate texts to score.
+
+        Returns:
+            List of relevance scores in [0, 1], one per text.
         """
         query_terms = tokenize(query)
         unique_terms = set(query_terms)
         if not unique_terms:
+            logger.debug("Reranker received stopword-only query; returning zero scores")
             return [0.0] * len(texts)
 
         scores: list[float] = []
