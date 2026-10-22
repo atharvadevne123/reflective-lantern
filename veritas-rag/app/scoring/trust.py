@@ -43,8 +43,14 @@ def freshness_score(
     """
     try:
         created = datetime.fromisoformat(created_at)
-    except ValueError:
-        return 0.5  # unknown age: neutral
+    except (ValueError, TypeError):
+        # Unknown or malformed age: return neutral score and log for visibility
+        import logging
+
+        logging.getLogger(__name__).debug(
+            "Could not parse created_at %r; using neutral freshness", created_at
+        )
+        return 0.5
     if created.tzinfo is None:
         created = created.replace(tzinfo=UTC)
     current = now or datetime.now(UTC)
