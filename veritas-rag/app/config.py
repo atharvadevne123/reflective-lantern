@@ -112,3 +112,26 @@ class Settings:
 
 
 settings = Settings()
+
+
+def settings_summary(s: Settings) -> dict[str, object]:
+    """Return a human-readable summary of key settings for logging/introspection.
+
+    Args:
+        s: Settings instance to summarize.
+
+    Returns:
+        Dict of the most operationally-relevant configuration values.
+    """
+    return {
+        "embedding_dim": s.embedding_dim,
+        "chunk_size": s.chunk_size,
+        "chunk_overlap": s.chunk_overlap,
+        "bm25_top_k": s.bm25_top_k,
+        "vector_top_k": s.vector_top_k,
+        "final_top_k": s.final_top_k,
+        "confidence_threshold": s.confidence_threshold,
+        "chunk_trust_floor": s.chunk_trust_floor,
+        "generator_backend": s.generator_backend,
+        "near_dup_threshold": s.near_dup_threshold,
+    }
