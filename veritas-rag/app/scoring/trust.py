@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import math
 from datetime import UTC, datetime
+from functools import lru_cache
 
 from ..schemas import ScoredChunk
 
@@ -58,8 +59,13 @@ def freshness_score(
     return math.exp(-math.log(2) * age_days / half_life_days)
 
 
+@lru_cache(maxsize=32)
 def source_quality_score(source_type: str) -> float:
-    """Source-type prior in [0, 1]."""
+    """Source-type prior in [0, 1].
+
+    Cached: there are at most a handful of distinct source types and this
+    is called once per retrieved chunk on every query.
+    """
     return SOURCE_QUALITY_PRIORS.get(source_type, _DEFAULT_SOURCE_QUALITY)
 
 
