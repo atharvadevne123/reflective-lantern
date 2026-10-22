@@ -8,10 +8,13 @@ or a generator that produced no grounded sentences — becomes an explicit
 
 from __future__ import annotations
 
+import logging
 from dataclasses import dataclass
 
 from ..schemas import ScoredChunk
 from ..scoring.trust import answer_confidence
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -46,10 +49,16 @@ def evaluate_evidence(
         min_supporting_chunks: How many supporting chunks are required.
     """
     if not chunks:
+        logger.debug("Evidence gate: no chunks retrieved")
         return GateDecision(False, 0.0, [], "no_chunks_retrieved")
 
     supporting = [c for c in chunks if c.trust >= chunk_trust_floor]
     if len(supporting) < min_supporting_chunks:
+        logger.debug(
+            "Evidence gate: only %d supporting chunk(s), need %d",
+            len(supporting),
+            min_supporting_chunks,
+        )
         return GateDecision(
             False,
             answer_confidence(chunks),
@@ -59,6 +68,12 @@ def evaluate_evidence(
 
     confidence = answer_confidence(supporting)
     if confidence < confidence_threshold:
+        logger.debug(
+            "Evidence gate: confidence %.4f below threshold %.4f",
+            confidence,
+            confidence_threshold,
+        )
         return GateDecision(False, confidence, supporting, "confidence_below_threshold")
 
+    logger.debug("Evidence gate: passed with confidence=%.4f, %d chunks", confidence, len(supporting))
     return GateDecision(True, confidence, supporting, "evidence_sufficient")
