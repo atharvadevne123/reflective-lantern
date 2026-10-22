@@ -1,4 +1,9 @@
-"""Reciprocal-rank fusion of BM25 (keyword) and vector (meaning) results."""
+"""Reciprocal-rank fusion of BM25 (keyword) and vector (meaning) results.
+
+RRF is rank-based, so the incommensurable BM25 and cosine score scales
+never need calibration. The fused rank signal is later reused by the
+trust scorer's consistency component.
+"""
 
 from __future__ import annotations
 
@@ -24,6 +29,9 @@ def reciprocal_rank_fusion(
         List of (chunk_id, fused_score, bm25_rank, vector_rank), best first.
         Ranks are 1-indexed, None when a retriever did not return the chunk.
     """
+    if not bm25_results and not vector_results:
+        return []
+
     bm25_rank = {cid: rank for rank, (cid, _) in enumerate(bm25_results, start=1)}
     vector_rank = {cid: rank for rank, (cid, _) in enumerate(vector_results, start=1)}
 
