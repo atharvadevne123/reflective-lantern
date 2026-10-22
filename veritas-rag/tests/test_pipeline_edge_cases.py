@@ -90,3 +90,23 @@ class TestPipelineEdgeCases:
             for citation in answer.citations:
                 assert citation.source
                 assert citation.chunk_id
+
+
+class TestQueryBatch:
+    def test_batch_returns_correct_count(self, pipeline) -> None:
+        answers = pipeline.query_batch(["What is the solar rebate?", "What is the export limit?"])
+        assert len(answers) == 2
+
+    def test_batch_empty_list(self, pipeline) -> None:
+        answers = pipeline.query_batch([])
+        assert answers == []
+
+    def test_batch_each_answer_has_request_id(self, pipeline) -> None:
+        answers = pipeline.query_batch(["solar rebate?", "battery incentive?"])
+        for a in answers:
+            assert a.request_id
+
+    def test_batch_increments_query_stats(self, pipeline) -> None:
+        before = pipeline.stats["queries"]
+        pipeline.query_batch(["q1", "q2", "q3"])
+        assert pipeline.stats["queries"] == before + 3
