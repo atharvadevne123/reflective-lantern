@@ -838,5 +838,59 @@
       "pyproject.toml"
     ],
     "summary": "10 new energy domain modules, 10 new test suites, 12 test file expansions, 39 new utility functions across 13 modules, plus docs updates."
+  },
+  {
+    "date": "2026-10-22",
+    "mode": "IMPROVEMENT",
+    "repo": "veritas-rag",
+    "commits": 60,
+    "new_endpoints": [
+      "GET /api/v1/sources",
+      "GET /api/v1/version",
+      "GET /api/v1/documents",
+      "DELETE /api/v1/documents/{source}",
+      "POST /api/v1/ingest/batch"
+    ],
+    "new_features": [
+      "query_batch() on RagPipeline",
+      "sources() on RagPipeline",
+      "document_count() on RagPipeline",
+      "settings_summary() in config.py",
+      "cache_age_seconds() in caching.py",
+      "normalize_trust_scores() in scoring/trust.py",
+      "truncate_to_bytes() in ingestion/normalize.py",
+      "trust_tier(), weighted_answer_confidence(), min_trust_gate(), trust_variance(), above_threshold_ratio(), top_k_trust()",
+      "__repr__ on ScoredChunk",
+      "CORS middleware",
+      "Correlation ID middleware"
+    ],
+    "test_expansion": "+238 new tests (346 total, 1 pre-existing env failure)",
+    "new_test_files": [
+      "tests/test_config.py",
+      "tests/test_pipeline_edge_cases.py"
+    ],
+    "security_fixes": [
+      "PDF extraction with proper error handling",
+      "LLM retry logic with exponential backoff",
+      "Config validation in __post_init__",
+      "Safe chunk lookup with .get() in fusion"
+    ],
+    "logging_improvements": [
+      "fallback.py",
+      "extractive.py",
+      "dedup.py",
+      "chunker.py",
+      "versioning.py",
+      "rerank.py",
+      "hybrid.py"
+    ],
+    "version_bump": "1.0.0 -> 1.1.0",
+    "docs_updated": [
+      "CHANGELOG.md",
+      "README.md",
+      "pyproject.toml"
+    ],
+    "adversarial_cases_added": 2,
+    "summary": "60 atomic commits to veritas-rag: 5 new API endpoints, 11 new utility functions, 2 new pipeline methods, 238 new tests, structured logging across 7 modules, version bump to 1.1.0."
   }
 ]
