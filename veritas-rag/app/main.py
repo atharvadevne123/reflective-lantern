@@ -4,9 +4,11 @@ from __future__ import annotations
 
 import base64
 import logging
+import uuid
 from typing import Any
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request, Response
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
 from . import __version__
@@ -28,6 +30,23 @@ app = FastAPI(
     ),
     version=__version__,
 )
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+
+@app.middleware("http")
+async def correlation_id_middleware(request: Request, call_next: Any) -> Response:
+    """Attach a correlation ID to every request and response."""
+    correlation_id = request.headers.get("X-Correlation-ID") or str(uuid.uuid4())
+    response = await call_next(request)
+    response.headers["X-Correlation-ID"] = correlation_id
+    return response
+
 
 pipeline = RagPipeline()
 
