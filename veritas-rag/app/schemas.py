@@ -80,6 +80,12 @@ class ScoredChunk:
     trust: float = 0.0
     trust_components: dict[str, float] = field(default_factory=dict)
 
+    def __repr__(self) -> str:
+        return (
+            f"ScoredChunk(chunk_id={self.chunk.chunk_id!r}, "
+            f"trust={self.trust:.4f}, rerank={self.rerank_score:.4f})"
+        )
+
 
 @dataclass
 class Citation:
