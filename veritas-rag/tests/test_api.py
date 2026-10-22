@@ -109,3 +109,97 @@ def test_traces_listing(client) -> None:
     client.post("/api/v1/query", json={"question": "list me in traces"})
     body = client.get("/api/v1/traces?limit=5").json()
     assert len(body["traces"]) >= 1
+
+
+@pytest.mark.parametrize("source_type", ["text", "markdown", "html"])
+def test_ingest_explicit_source_type(client, source_type: str) -> None:
+    resp = client.post(
+        "/api/v1/ingest",
+        json={
+            "source": f"doc.{source_type}",
+            "content_base64": b64(f"Content for {source_type} source."),
+            "source_type": source_type,
+        },
+    )
+    assert resp.status_code == 200
+    assert resp.json()["status"] == "ingested"
+
+
+def test_version_endpoint(client) -> None:
+    resp = client.get("/api/v1/version")
+    assert resp.status_code == 200
+    assert "version" in resp.json()
+
+
+def test_documents_endpoint_empty(client) -> None:
+    resp = client.get("/api/v1/documents")
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["total"] == 0
+    assert body["documents"] == []
+
+
+def test_documents_endpoint_after_ingest(client) -> None:
+    client.post(
+        "/api/v1/ingest",
+        json={"source": "indexed.txt", "content_base64": b64("Some indexed content here.")},
+    )
+    resp = client.get("/api/v1/documents")
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["total"] == 1
+    assert body["documents"][0]["source"] == "indexed.txt"
+
+
+def test_delete_document_endpoint(client) -> None:
+    client.post(
+        "/api/v1/ingest",
+        json={"source": "to_delete.txt", "content_base64": b64("Content to delete.")},
+    )
+    resp = client.delete("/api/v1/documents/to_delete.txt")
+    assert resp.status_code == 200
+    assert resp.json()["status"] == "deleted"
+
+
+def test_delete_nonexistent_document(client) -> None:
+    resp = client.delete("/api/v1/documents/no-such-source.txt")
+    assert resp.status_code == 404
+
+
+def test_correlation_id_header_passthrough(client) -> None:
+    cid = "test-correlation-abc123"
+    resp = client.get("/api/v1/health", headers={"X-Correlation-ID": cid})
+    assert resp.headers.get("X-Correlation-ID") == cid
+
+
+def test_correlation_id_generated_when_absent(client) -> None:
+    resp = client.get("/api/v1/health")
+    assert "X-Correlation-ID" in resp.headers
+    assert len(resp.headers["X-Correlation-ID"]) > 0
+
+
+@pytest.mark.parametrize(
+    "question",
+    [
+        "What is the maximum solar rebate?",
+        "How many kilowatts qualify for the program?",
+        "What are the eligibility requirements?",
+    ],
+)
+def test_query_parametrized_questions(client, question: str) -> None:
+    client.post(
+        "/api/v1/ingest",
+        json={
+            "source": "policy.txt",
+            "content_base64": b64(
+                "The maximum solar rebate is five thousand dollars per household. "
+                "Systems up to ten kilowatts qualify for the program. "
+                "Eligibility requires installation by an accredited contractor."
+            ),
+        },
+    )
+    resp = client.post("/api/v1/query", json={"question": question})
+    assert resp.status_code == 200
+    body = resp.json()
+    assert "answered" in body
+    assert "confidence" in body
