@@ -228,3 +228,26 @@ def top_k_trust(chunks: list[ScoredChunk], k: int = 3) -> list[ScoredChunk]:
         Up to *k* chunks sorted by trust descending.
     """
     return sorted(chunks, key=lambda c: c.trust, reverse=True)[:k]
+
+
+def normalize_trust_scores(chunks: list[ScoredChunk]) -> list[ScoredChunk]:
+    """Rescale trust scores so the maximum is 1.0.
+
+    When all scores are clustered near zero (weak retrieval) the relative
+    differences still matter for ranking; this rescaling preserves order
+    while improving readability.
+
+    Args:
+        chunks: Scored chunks to normalize in-place.
+
+    Returns:
+        The same list with trust scores rescaled; original list is modified.
+    """
+    if not chunks:
+        return chunks
+    max_trust = max(c.trust for c in chunks)
+    if max_trust <= 0.0:
+        return chunks
+    for chunk in chunks:
+        chunk.trust = round(chunk.trust / max_trust, 6)
+    return chunks
