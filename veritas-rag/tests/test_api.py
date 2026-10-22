@@ -244,3 +244,50 @@ def test_health_endpoint_includes_config_summary(client) -> None:
     assert "config" in body
     assert "generator_backend" in body["config"]
     assert "final_top_k" in body["config"]
+
+
+def test_ingest_batch_multiple_docs(client) -> None:
+    resp = client.post(
+        "/api/v1/ingest/batch",
+        json={
+            "documents": [
+                {
+                    "source": "batch-a.txt",
+                    "content_base64": b64("Content of document A for batch ingest test."),
+                },
+                {
+                    "source": "batch-b.txt",
+                    "content_base64": b64("Content of document B for batch ingest test."),
+                },
+            ]
+        },
+    )
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["total"] == 2
+    statuses = {r["source"]: r.get("status") for r in body["results"]}
+    assert statuses.get("batch-a.txt") == "ingested"
+    assert statuses.get("batch-b.txt") == "ingested"
+
+
+def test_ingest_batch_partial_invalid_base64(client) -> None:
+    resp = client.post(
+        "/api/v1/ingest/batch",
+        json={
+            "documents": [
+                {
+                    "source": "good.txt",
+                    "content_base64": b64("Good document content."),
+                },
+                {
+                    "source": "bad.txt",
+                    "content_base64": "NOT_VALID_BASE64!!!",
+                },
+            ]
+        },
+    )
+    assert resp.status_code == 200
+    body = resp.json()
+    results_by_source = {r["source"]: r for r in body["results"]}
+    assert results_by_source["good.txt"].get("status") == "ingested"
+    assert "error" in results_by_source["bad.txt"]
