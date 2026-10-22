@@ -187,6 +187,12 @@ async def delete_document(source: str) -> dict[str, Any]:
     return {"status": "deleted", "source": source, "doc_id": latest.doc_id}
 
 
+@app.get(f"{settings.api_prefix}/sources", tags=["Ingestion"], summary="List source names")
+async def sources() -> dict[str, Any]:
+    """Return a list of all unique source names in the index."""
+    return {"sources": pipeline.sources(), "total": len(pipeline.sources())}
+
+
 @app.get("/", include_in_schema=False)
 async def root() -> dict[str, str]:
     return {"service": "Veritas-Rag", "version": __version__, "docs": "/docs"}
