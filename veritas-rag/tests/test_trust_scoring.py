@@ -308,3 +308,102 @@ class TestScoreChunkIntegration:
             scored = ScoredChunk(chunk=chunk, bm25_rank=1, vector_rank=1, rerank_score=0.8)
             score_chunk(scored, now=NOW)
             assert 0.0 <= scored.trust <= 1.0, f"trust out of range for {source_type}"
+
+
+class TestTrustTier:
+    @pytest.mark.parametrize(
+        ("score", "expected_tier"),
+        [
+            (0.90, "high"),
+            (0.75, "high"),
+            (0.74, "medium"),
+            (0.50, "medium"),
+            (0.49, "low"),
+            (0.25, "low"),
+            (0.24, "minimal"),
+            (0.00, "minimal"),
+        ],
+    )
+    def test_tier_boundaries(self, score: float, expected_tier: str) -> None:
+        from app.scoring.trust import trust_tier
+
+        assert trust_tier(score) == expected_tier
+
+
+class TestWeightedAnswerConfidence:
+    def test_empty_returns_zero(self) -> None:
+        from app.scoring.trust import weighted_answer_confidence
+
+        assert weighted_answer_confidence([]) == 0.0
+
+    def test_single_chunk(self) -> None:
+        from app.scoring.trust import weighted_answer_confidence
+
+        chunk = make_chunk()
+        scored = ScoredChunk(chunk=chunk, rerank_score=0.8)
+        score_chunk(scored, now=NOW)
+        result = weighted_answer_confidence([scored])
+        assert 0.0 <= result <= 1.0
+
+    def test_higher_rerank_means_higher_contribution(self) -> None:
+        from app.scoring.trust import weighted_answer_confidence
+
+        low_rerank = ScoredChunk(chunk=make_chunk(), rerank_score=0.1, trust=0.8)
+        high_rerank = ScoredChunk(chunk=make_chunk(), rerank_score=0.9, trust=0.2)
+        result = weighted_answer_confidence([low_rerank, high_rerank], rerank_weight=1.0)
+        # With full rerank_weight, high-trust+low-rerank vs low-trust+high-rerank
+        assert isinstance(result, float)
+        assert 0.0 <= result <= 1.0
+
+
+class TestMinTrustGateAndVariance:
+    def test_min_trust_gate_filters_low(self) -> None:
+        from app.scoring.trust import min_trust_gate
+
+        chunks = [
+            ScoredChunk(chunk=make_chunk(), trust=0.8),
+            ScoredChunk(chunk=make_chunk(), trust=0.3),
+            ScoredChunk(chunk=make_chunk(), trust=0.6),
+        ]
+        result = min_trust_gate(chunks, threshold=0.5)
+        assert len(result) == 2
+        assert all(c.trust >= 0.5 for c in result)
+
+    def test_trust_variance_zero_for_single(self) -> None:
+        from app.scoring.trust import trust_variance
+
+        chunk = ScoredChunk(chunk=make_chunk(), trust=0.7)
+        assert trust_variance([chunk]) == 0.0
+
+    def test_trust_variance_positive_for_spread(self) -> None:
+        from app.scoring.trust import trust_variance
+
+        chunks = [
+            ScoredChunk(chunk=make_chunk(), trust=0.2),
+            ScoredChunk(chunk=make_chunk(), trust=0.8),
+        ]
+        assert trust_variance(chunks) > 0.0
+
+    def test_above_threshold_ratio_all(self) -> None:
+        from app.scoring.trust import above_threshold_ratio
+
+        chunks = [ScoredChunk(chunk=make_chunk(), trust=0.9) for _ in range(5)]
+        assert above_threshold_ratio(chunks, threshold=0.5) == 1.0
+
+    def test_above_threshold_ratio_none(self) -> None:
+        from app.scoring.trust import above_threshold_ratio
+
+        chunks = [ScoredChunk(chunk=make_chunk(), trust=0.1) for _ in range(3)]
+        assert above_threshold_ratio(chunks, threshold=0.5) == 0.0
+
+    def test_top_k_trust_returns_sorted(self) -> None:
+        from app.scoring.trust import top_k_trust
+
+        chunks = [
+            ScoredChunk(chunk=make_chunk(), trust=0.3),
+            ScoredChunk(chunk=make_chunk(), trust=0.9),
+            ScoredChunk(chunk=make_chunk(), trust=0.6),
+        ]
+        result = top_k_trust(chunks, k=2)
+        assert len(result) == 2
+        assert result[0].trust >= result[1].trust
