@@ -203,3 +203,35 @@ def test_query_parametrized_questions(client, question: str) -> None:
     body = resp.json()
     assert "answered" in body
     assert "confidence" in body
+
+
+def test_sources_empty(client) -> None:
+    resp = client.get("/api/v1/sources")
+    assert resp.status_code == 200
+    body = resp.json()
+    assert "sources" in body
+    assert body["total"] == 0
+
+
+def test_sources_after_ingest(client) -> None:
+    client.post(
+        "/api/v1/ingest",
+        json={"source": "my-doc.txt", "content_base64": b64("Content for source listing test.")},
+    )
+    resp = client.get("/api/v1/sources")
+    assert resp.status_code == 200
+    body = resp.json()
+    assert "my-doc.txt" in body["sources"]
+    assert body["total"] >= 1
+
+
+def test_sources_lists_all_ingested(client) -> None:
+    for name in ("alpha.txt", "beta.txt", "gamma.txt"):
+        client.post(
+            "/api/v1/ingest",
+            json={"source": name, "content_base64": b64(f"Content for {name} in index.")},
+        )
+    resp = client.get("/api/v1/sources")
+    sources = resp.json()["sources"]
+    for name in ("alpha.txt", "beta.txt", "gamma.txt"):
+        assert name in sources
