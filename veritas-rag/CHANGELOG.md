@@ -1,5 +1,29 @@
 # Changelog
 
+## [1.1.0] — 2026-10-22
+
+### Added
+- `query_batch()` on `RagPipeline` for processing multiple questions in one call.
+- `sources()` on `RagPipeline` to list all indexed document source names.
+- `GET /api/v1/sources` endpoint returning all unique source names.
+- `settings_summary()` in `config.py` for runtime configuration introspection.
+- `cache_age_seconds()` helper for cache entry age inspection.
+- `normalize_trust_scores()` in `scoring/trust.py` for relative score rescaling.
+- `truncate_to_bytes()` in `ingestion/normalize.py` for safe byte-bounded text.
+- `trust_tier()`, `weighted_answer_confidence()`, `min_trust_gate()`, `trust_variance()`,
+  `above_threshold_ratio()`, `top_k_trust()` scoring utilities in `scoring/trust.py`.
+- `__repr__` on `ScoredChunk` for clearer debug output.
+- `/health` now exposes a `config` summary field.
+- Two new adversarial test cases: `jailbreak_roleplay` and `empty_query_probe`.
+- Structured logging throughout: `fallback.py`, `extractive.py`, `dedup.py`, `chunker.py`,
+  `versioning.py`, `rerank.py`, `hybrid.py`.
+- 50+ new tests covering new utilities, edge cases, and endpoints.
+
+### Changed
+- Improved docstrings on `BM25Index`, `VectorIndex`, `HashingEmbedder`, `LexicalReranker`.
+- Added `__all__` exports to `schemas.py` and `retrieval/hybrid.py`.
+- `pyproject.toml`: expanded classifiers, added `dev` optional-dependency group.
+
 ## [1.0.0] — 2026-07-17
 
 ### Added
