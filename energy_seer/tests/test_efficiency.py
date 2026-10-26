@@ -236,3 +236,23 @@ class TestExponentialSmoothing:
 
         with pytest.raises(ValueError):
             exponential_smoothing([1.0, 2.0], alpha=0.0)
+
+
+class TestNormalisedEfficiencyIndex:
+    def test_returns_float(self) -> None:
+        from app.efficiency_score import normalised_efficiency_index
+
+        result = normalised_efficiency_index(10.0, "residential", 100.0)
+        assert isinstance(result, float)
+
+    def test_zero_floor_area_returns_zero(self) -> None:
+        from app.efficiency_score import normalised_efficiency_index
+
+        result = normalised_efficiency_index(10.0, "residential", 0.0)
+        assert result == 0.0
+
+    def test_index_bounded_zero_to_one(self) -> None:
+        from app.efficiency_score import normalised_efficiency_index
+
+        result = normalised_efficiency_index(5.0, "residential", 100.0)
+        assert 0.0 <= result <= 1.0
