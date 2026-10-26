@@ -133,3 +133,25 @@ class TestPSIEdgeCases:
         result = psi_report(data)
         max_feature_psi = max(result["a"]["psi"], result["b"]["psi"])
         assert result["summary"]["max_psi"] == pytest.approx(max_feature_psi, rel=0.01)
+
+
+class TestPsiEdgeCases:
+    def test_identical_distributions_psi_near_zero(self) -> None:
+        from app.psi import compute_psi
+
+        result = compute_psi(list(range(100)), list(range(100)))
+        assert result["psi"] < 0.1
+
+    def test_completely_different_distributions(self) -> None:
+        from app.psi import compute_psi
+
+        baseline = [1.0] * 50
+        current = [100.0] * 50
+        result = compute_psi(baseline, current)
+        assert result["psi"] > 0.0
+
+    def test_drift_level_key_present(self) -> None:
+        from app.psi import compute_psi
+
+        result = compute_psi(list(range(30)), list(range(30)))
+        assert "drift_level" in result
