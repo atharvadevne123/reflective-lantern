@@ -134,6 +134,26 @@ def validate_period(period: int, min_period: int = 2) -> int:
     return period
 
 
+def validate_horizon(horizon_h: int, max_hours: int = 168) -> int:
+    """Validate a forecast horizon in hours.
+
+    Args:
+        horizon_h: Requested forecast horizon in hours.
+        max_hours: Upper limit (default 168 = one week).
+
+    Returns:
+        Validated horizon.
+
+    Raises:
+        ValueError: If *horizon_h* < 1 or > *max_hours*.
+    """
+    if horizon_h < 1:
+        raise ValueError(f"horizon must be at least 1 hour, got {horizon_h}")
+    if horizon_h > max_hours:
+        raise ValueError(f"horizon {horizon_h}h exceeds maximum {max_hours}h")
+    return horizon_h
+
+
 def validate_temperature(temp_c: float) -> float:
     """Validate an ambient temperature in Celsius is in the plausible range [-60, 60].
 
@@ -177,6 +197,7 @@ __all__ = [
     "validate_alpha",
     "validate_feature_window",
     "validate_forecast_length",
+    "validate_horizon",
     "validate_humidity",
     "validate_meter_id",
     "validate_period",
