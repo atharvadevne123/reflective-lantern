@@ -265,3 +265,46 @@ class TestValidateReadingsListExtended:
 
         with pytest.raises(ValueError):
             validate_readings_list([])
+
+
+class TestValidateAlpha:
+    def test_valid_alpha(self) -> None:
+        from app.validators import validate_alpha
+
+        assert validate_alpha(0.3) == 0.3
+
+    def test_zero_raises(self) -> None:
+        from app.validators import validate_alpha
+
+        import pytest
+
+        with pytest.raises(ValueError):
+            validate_alpha(0.0)
+
+    def test_above_one_raises(self) -> None:
+        from app.validators import validate_alpha
+
+        import pytest
+
+        with pytest.raises(ValueError):
+            validate_alpha(1.1)
+
+
+class TestValidatePeriod:
+    def test_valid_period(self) -> None:
+        from app.validators import validate_period
+
+        assert validate_period(24) == 24
+
+    def test_period_below_min_raises(self) -> None:
+        from app.validators import validate_period
+
+        import pytest
+
+        with pytest.raises(ValueError):
+            validate_period(1)
+
+    def test_custom_min_period(self) -> None:
+        from app.validators import validate_period
+
+        assert validate_period(4, min_period=4) == 4
