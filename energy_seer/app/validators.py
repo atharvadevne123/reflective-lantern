@@ -134,13 +134,53 @@ def validate_period(period: int, min_period: int = 2) -> int:
     return period
 
 
+def validate_temperature(temp_c: float) -> float:
+    """Validate an ambient temperature in Celsius is in the plausible range [-60, 60].
+
+    Args:
+        temp_c: Temperature value in degrees Celsius.
+
+    Returns:
+        Validated temperature.
+
+    Raises:
+        ValueError: If *temp_c* is outside [-60, 60] or non-finite.
+    """
+    if not math.isfinite(temp_c):
+        raise ValueError(f"temperature must be finite, got {temp_c}")
+    if not -60.0 <= temp_c <= 60.0:
+        raise ValueError(f"temperature must be in [-60, 60] °C, got {temp_c}")
+    return temp_c
+
+
+def validate_humidity(humidity_pct: float) -> float:
+    """Validate a relative humidity percentage is in [0, 100].
+
+    Args:
+        humidity_pct: Relative humidity in percent.
+
+    Returns:
+        Validated humidity.
+
+    Raises:
+        ValueError: If *humidity_pct* is outside [0, 100] or non-finite.
+    """
+    if not math.isfinite(humidity_pct):
+        raise ValueError(f"humidity must be finite, got {humidity_pct}")
+    if not 0.0 <= humidity_pct <= 100.0:
+        raise ValueError(f"humidity must be in [0, 100], got {humidity_pct}")
+    return humidity_pct
+
+
 __all__ = [
     "clamp",
     "validate_alpha",
     "validate_feature_window",
     "validate_forecast_length",
+    "validate_humidity",
     "validate_meter_id",
     "validate_period",
     "validate_readings_list",
     "validate_tariff",
+    "validate_temperature",
 ]
