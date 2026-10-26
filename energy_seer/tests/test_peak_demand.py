@@ -140,7 +140,7 @@ class TestLoadFactor:
         assert 0.0 < result <= 1.0
 
 
-class TestFindPeakHours:
+class TestFindPeakHoursExtra:
     def test_peak_hours_sorted_descending(self) -> None:
         from app.peak_demand import find_peak_hours
 

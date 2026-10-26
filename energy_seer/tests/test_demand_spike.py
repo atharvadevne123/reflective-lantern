@@ -185,7 +185,7 @@ class TestDemandTrend:
         assert result["trend"] == "flat"
 
 
-class TestDemandVariability:
+class TestDemandVariabilityExtra:
     def test_returns_cv_key(self) -> None:
         from app.demand_spike import demand_variability
 

@@ -300,7 +300,7 @@ class TestFeaturePipelineOutputShape:
         assert out.shape[0] == len(sample_df)
 
 
-class TestValidateDataframeColumns:
+class TestValidateDataframeColumnsExtra:
     def test_missing_columns_returned(self) -> None:
         import pandas as pd
         from app.features import validate_dataframe_columns

@@ -238,7 +238,7 @@ class TestExponentialSmoothing:
             exponential_smoothing([1.0, 2.0], alpha=0.0)
 
 
-class TestNormalisedEfficiencyIndex:
+class TestNormalisedEfficiencyIndexExtra:
     def test_returns_float(self) -> None:
         from app.efficiency_score import normalised_efficiency_index
 
@@ -277,7 +277,7 @@ class TestEfficiencyPercentile:
         assert efficiency_percentile(50.0, []) == 0.0
 
 
-class TestEfficiencyDelta:
+class TestEfficiencyDeltaExtra:
     def test_improvement_direction(self) -> None:
         from app.efficiency_score import efficiency_delta
 
@@ -297,7 +297,7 @@ class TestEfficiencyDelta:
         assert result["direction"] == "unchanged"
 
 
-class TestEfficiencyTrend:
+class TestEfficiencyTrendExtra:
     def test_improving_trend(self) -> None:
         from app.efficiency_score import efficiency_trend
 
