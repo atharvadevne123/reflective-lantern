@@ -203,3 +203,20 @@ class TestDemandVariability:
 
         result = demand_variability([5.0] * 10)
         assert result["std"] == pytest.approx(0.0, abs=1e-6)
+
+
+class TestSpikeSeverity:
+    def test_normal_classification(self) -> None:
+        from app.demand_spike import spike_severity
+
+        assert spike_severity(5.0, 5.0, 1.0) == "normal"
+
+    def test_critical_far_outlier(self) -> None:
+        from app.demand_spike import spike_severity
+
+        assert spike_severity(100.0, 5.0, 1.0, z_threshold=2.5) == "critical"
+
+    def test_zero_std_returns_normal(self) -> None:
+        from app.demand_spike import spike_severity
+
+        assert spike_severity(10.0, 5.0, 0.0) == "normal"
