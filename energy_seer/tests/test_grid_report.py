@@ -197,3 +197,21 @@ class TestComputeAnomalyRate:
         from app.grid_report import compute_anomaly_rate
 
         assert compute_anomaly_rate(0, 24) == 0.0
+
+
+class TestAlertFrequency:
+    def test_counts_repeated_alerts(self) -> None:
+        from app.grid_report import alert_frequency
+
+        reports = [
+            {"alerts": ["drift detected", "high variance"]},
+            {"alerts": ["drift detected"]},
+            {"alerts": []},
+        ]
+        freq = alert_frequency(reports)
+        assert freq["drift detected"] == 2
+
+    def test_empty_reports_returns_empty(self) -> None:
+        from app.grid_report import alert_frequency
+
+        assert alert_frequency([]) == {}
