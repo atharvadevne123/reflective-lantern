@@ -1,0 +1,45 @@
+name: Trade-Sage CI
+
+on:
+  push:
+    branches: ["innovation/trade-sage", "main"]
+    paths: ["trade-sage/**"]
+  pull_request:
+    branches: ["main"]
+    paths: ["trade-sage/**"]
+
+jobs:
+  lint-and-test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: trade-sage
+    strategy:
+      matrix:
+        python-version: ["3.11", "3.12"]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Ruff lint
+        run: ruff check .
+
+      - name: Ruff format check
+        run: ruff format --check .
+
+      - name: Run tests
+        run: pytest tests/ -v --tb=short -q 2>&1 | tail -60
+
+      - name: Build wheel
+        run: |
+          pip install build -q
+          python -m build --wheel 2>&1 | tail -5

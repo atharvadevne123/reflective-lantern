@@ -1,0 +1,38 @@
+version: "3.9"
+
+services:
+  api:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=postgresql://trade_sage:trade_sage_pass@db:5432/trade_sage
+      - MODEL_PATH=/app/model.joblib
+      - METRICS_PATH=/app/metrics.json
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - model_data:/app
+    restart: unless-stopped
+
+  db:
+    image: postgres:15-alpine
+    environment:
+      - POSTGRES_USER=trade_sage
+      - POSTGRES_PASSWORD=trade_sage_pass
+      - POSTGRES_DB=trade_sage
+    ports:
+      - "5432:5432"
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U trade_sage"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+volumes:
+  pg_data:
+  model_data:
