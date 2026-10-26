@@ -1,0 +1,38 @@
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.backends.legacy:build"
+
+[project]
+name = "sports-oracle"
+version = "1.0.0"
+description = "ML API predicting sports match outcomes using XGBoost-LightGBM-RandomForest ensemble"
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+authors = [{ name = "Reflective Lantern", email = "devneatharva@gmail.com" }]
+keywords = ["sports", "machine-learning", "fastapi", "prediction", "xgboost"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "License :: OSI Approved :: MIT License",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP"]
+ignore = ["E501"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["S101"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-v --tb=short"
+python_files = "test_*.py"
+python_classes = "Test*"
+python_functions = "test_*"

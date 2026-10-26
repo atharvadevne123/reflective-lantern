@@ -1,0 +1,44 @@
+name: Sports-Oracle CI
+
+on:
+  push:
+    paths:
+      - "sports-oracle/**"
+  pull_request:
+    paths:
+      - "sports-oracle/**"
+
+defaults:
+  run:
+    working-directory: sports-oracle
+
+jobs:
+  lint:
+    name: Lint (ruff)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install ruff --quiet
+      - run: ruff check .
+      - run: ruff format --check .
+
+  test:
+    name: Tests (Python ${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.11", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install dependencies
+        run: pip install -r requirements.txt --quiet
+      - name: Run tests
+        run: pytest tests/ -v --tb=short 2>&1 | tail -60
+      - name: Build wheel
+        run: pip install build --quiet && python -m build --wheel --no-isolation 2>&1 | tail -5
