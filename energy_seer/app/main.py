@@ -305,6 +305,16 @@ async def drift_endpoint(
     }
 
 
+@app.get("/api/v1/version", tags=["System"])
+async def version() -> dict[str, str]:
+    """Return the API version and build metadata."""
+    return {
+        "api_version": "1.0.0",
+        "app_name": "energy-seer",
+        "build": "stable",
+    }
+
+
 @app.post("/api/v1/retrain", tags=["System"], status_code=status.HTTP_202_ACCEPTED)
 async def trigger_retrain() -> dict[str, object]:
     """Trigger synchronous model retraining on synthetic data (demo endpoint)."""
