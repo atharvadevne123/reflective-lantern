@@ -120,3 +120,36 @@ class TestPeakDemandEdgeCases:
         result = identify_peak_hours(values)
         # Maximum is at the last position
         assert result is not None
+
+
+class TestLoadFactor:
+    def test_flat_series_load_factor_one(self) -> None:
+        from app.peak_demand import load_factor
+
+        assert load_factor([5.0] * 24) == pytest.approx(1.0)
+
+    def test_empty_returns_zero(self) -> None:
+        from app.peak_demand import load_factor
+
+        assert load_factor([]) == 0.0
+
+    def test_load_factor_in_bounds(self) -> None:
+        from app.peak_demand import load_factor
+
+        result = load_factor([1.0, 2.0, 3.0, 10.0, 2.0])
+        assert 0.0 < result <= 1.0
+
+
+class TestFindPeakHours:
+    def test_peak_hours_sorted_descending(self) -> None:
+        from app.peak_demand import find_peak_hours
+
+        values = [1.0, 5.0, 3.0, 8.0, 2.0]
+        result = find_peak_hours(values, top_n=2)
+        assert result["peak_values"][0] >= result["peak_values"][-1]
+
+    def test_empty_returns_empty_peaks(self) -> None:
+        from app.peak_demand import find_peak_hours
+
+        result = find_peak_hours([])
+        assert result["peak_hours"] == []
