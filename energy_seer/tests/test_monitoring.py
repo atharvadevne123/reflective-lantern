@@ -226,3 +226,28 @@ class TestMonitoringEdgeCases:
         set_reference_distributions({"feat_a": list(range(30))})
         results = check_all_features({"feat_a": list(range(30))})
         assert isinstance(results, dict)
+
+
+class TestDriftDetectionThreshold:
+    def test_clear_drift_detected(self) -> None:
+        from app.monitoring import compute_drift
+
+        baseline = list(range(100))
+        shifted = [x + 200 for x in range(100)]
+        result = compute_drift(baseline, shifted)
+        assert result["drift_detected"] is True
+
+    def test_no_drift_on_same_data(self) -> None:
+        from app.monitoring import compute_drift
+
+        data = [float(x) for x in range(50)]
+        result = compute_drift(data, data)
+        assert result["drift_detected"] is False
+
+    def test_check_all_features_missing_feature_skipped(self) -> None:
+        from app.monitoring import check_all_features, set_reference_distributions
+
+        set_reference_distributions({"feat_x": list(range(30))})
+        # Passing a different feature key — missing reference should not raise
+        results = check_all_features({"feat_y": list(range(30))})
+        assert isinstance(results, dict)
