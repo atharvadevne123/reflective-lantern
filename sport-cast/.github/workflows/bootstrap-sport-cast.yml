@@ -1,0 +1,38 @@
+name: Publish Sport-Cast Repo
+
+on:
+  workflow_dispatch:
+    inputs:
+      repo_scoped_pat:
+        description: "GitHub PAT with repo scope (create repo + push)"
+        required: true
+
+jobs:
+  bootstrap:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Create standalone Sport-Cast repository
+        env:
+          GH_PAT: ${{ github.event.inputs.repo_scoped_pat }}
+        run: |
+          curl -s -X POST -H "Authorization: Bearer $GH_PAT" \
+            -H "Content-Type: application/json" \
+            "https://api.github.com/user/repos" \
+            -d '{"name":"Sport-Cast","description":"Sports match outcome prediction and player performance scoring API using XGBoost-LightGBM-RandomForest ensemble with 7-stage feature pipeline, KS-drift monitoring, champion/challenger retraining, and PostgreSQL-backed prediction logging.","public":true}' \
+            | python3 -c "import json,sys; r=json.load(sys.stdin); print(r.get('html_url', r.get('message','')))"
+
+      - name: Push Sport-Cast subtree to standalone repo
+        env:
+          GH_PAT: ${{ github.event.inputs.repo_scoped_pat }}
+        run: |
+          git config user.email "devneatharva@gmail.com"
+          git config user.name "Reflective Lantern"
+          git subtree split --prefix=sport-cast -b sport-cast-split
+          git remote add sport-cast-remote "https://x-access-token:${GH_PAT}@github.com/atharvadevne123/Sport-Cast.git"
+          git push sport-cast-remote sport-cast-split:main
+          git tag -a sport-cast-v1.0.0 -m "Sport-Cast v1.0.0"
+          git push sport-cast-remote sport-cast-v1.0.0
