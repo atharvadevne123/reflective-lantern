@@ -346,3 +346,27 @@ class TestValidateHumidity:
 
         with pytest.raises(ValueError):
             validate_humidity(101.0)
+
+
+class TestValidateHorizon:
+    def test_valid_horizon(self) -> None:
+        from app.validators import validate_horizon
+
+        assert validate_horizon(24) == 24
+
+    def test_zero_raises(self) -> None:
+        from app.validators import validate_horizon
+
+        with pytest.raises(ValueError):
+            validate_horizon(0)
+
+    def test_exceeds_max_raises(self) -> None:
+        from app.validators import validate_horizon
+
+        with pytest.raises(ValueError):
+            validate_horizon(200, max_hours=168)
+
+    def test_exact_max_accepted(self) -> None:
+        from app.validators import validate_horizon
+
+        assert validate_horizon(168) == 168
