@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import math
+
 
 def clamp(value: float, lo: float, hi: float) -> float:
     """Clamp a float to [lo, hi]."""
@@ -59,8 +61,6 @@ def validate_tariff(tariff: float) -> float:
     Raises:
         ValueError: If *tariff* is negative or non-finite.
     """
-    import math
-
     if not math.isfinite(tariff):
         raise ValueError(f"tariff must be finite, got {tariff}")
     if tariff < 0:
@@ -94,11 +94,53 @@ def validate_readings_list(readings: list[float], allow_negative: bool = False) 
     return readings
 
 
+# ---------------------------------------------------------------------------
+# Additional validators
+# ---------------------------------------------------------------------------
+
+
+def validate_alpha(alpha: float) -> float:
+    """Validate a smoothing factor alpha is in (0, 1].
+
+    Args:
+        alpha: Smoothing factor for exponential smoothing.
+
+    Returns:
+        Validated alpha.
+
+    Raises:
+        ValueError: If *alpha* is not in (0, 1].
+    """
+    if not math.isfinite(alpha) or not 0 < alpha <= 1.0:
+        raise ValueError(f"alpha must be in (0, 1], got {alpha}")
+    return alpha
+
+
+def validate_period(period: int, min_period: int = 2) -> int:
+    """Validate a seasonality period is a positive integer.
+
+    Args:
+        period: Number of time steps per seasonal cycle.
+        min_period: Minimum acceptable period (default 2).
+
+    Returns:
+        Validated period.
+
+    Raises:
+        ValueError: If *period* < *min_period*.
+    """
+    if period < min_period:
+        raise ValueError(f"period must be >= {min_period}, got {period}")
+    return period
+
+
 __all__ = [
     "clamp",
+    "validate_alpha",
     "validate_feature_window",
     "validate_forecast_length",
     "validate_meter_id",
+    "validate_period",
     "validate_readings_list",
     "validate_tariff",
 ]
