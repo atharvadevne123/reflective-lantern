@@ -272,3 +272,29 @@ class TestFeaturePipelineEdgeCases:
 
         cols = feature_column_names()
         assert len(cols) == len(set(cols))
+
+
+class TestFeaturePipelineOutputShape:
+    def test_output_has_more_columns_than_input(self, sample_df) -> None:
+        from app.features import build_feature_pipeline
+
+        pipe = build_feature_pipeline()
+        out = pipe.fit_transform(sample_df)
+        assert out.shape[1] > sample_df.shape[1]
+
+    def test_no_nan_values_in_output(self, sample_df) -> None:
+        import pandas as pd
+
+        from app.features import build_feature_pipeline
+
+        pipe = build_feature_pipeline()
+        out = pipe.fit_transform(sample_df)
+        if isinstance(out, pd.DataFrame):
+            assert not out.isnull().any().any()
+
+    def test_pipeline_preserves_row_count(self, sample_df) -> None:
+        from app.features import build_feature_pipeline
+
+        pipe = build_feature_pipeline()
+        out = pipe.fit_transform(sample_df)
+        assert out.shape[0] == len(sample_df)
