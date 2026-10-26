@@ -1,0 +1,20 @@
+[
+  {
+    "date": "2026-04-21",
+    "mode": "improvement",
+    "improvements": [
+      "fix: train.py validate_dict arg never validated (was checking symbols twice)",
+      "fix: train.py validation dictionary loaded from train_dict instead of validate_dict",
+      "fix: train.py hard GPU assert replaced with graceful CPU fallback",
+      "chore: added requirements.txt",
+      "chore: added .gitignore",
+      "docs: README rewritten with correct file descriptions",
+      "docs: README all usage example commands corrected",
+      "docs: README full dependency list added"
+    ],
+    "tests_passed": false,
+    "commits": 3,
+    "run_verified": "All 6 Python files parse without syntax errors",
+    "notes": "ML training project - no automated tests (requires model + data files)"
+  }
+]
