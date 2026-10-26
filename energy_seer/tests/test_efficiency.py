@@ -256,3 +256,42 @@ class TestNormalisedEfficiencyIndex:
 
         result = normalised_efficiency_index(5.0, "residential", 100.0)
         assert 0.0 <= result <= 1.0
+
+
+class TestEfficiencyPercentile:
+    def test_top_score_high_percentile(self) -> None:
+        from app.efficiency_score import efficiency_percentile
+
+        result = efficiency_percentile(90.0, [10.0, 20.0, 30.0, 50.0, 70.0])
+        assert result == 100.0
+
+    def test_bottom_score_zero_percentile(self) -> None:
+        from app.efficiency_score import efficiency_percentile
+
+        result = efficiency_percentile(5.0, [10.0, 20.0, 30.0])
+        assert result == 0.0
+
+    def test_empty_population_returns_zero(self) -> None:
+        from app.efficiency_score import efficiency_percentile
+
+        assert efficiency_percentile(50.0, []) == 0.0
+
+
+class TestEfficiencyDelta:
+    def test_improvement_direction(self) -> None:
+        from app.efficiency_score import efficiency_delta
+
+        result = efficiency_delta(60.0, 75.0)
+        assert result["direction"] == "improved"
+
+    def test_degraded_direction(self) -> None:
+        from app.efficiency_score import efficiency_delta
+
+        result = efficiency_delta(75.0, 60.0)
+        assert result["direction"] == "degraded"
+
+    def test_unchanged_direction(self) -> None:
+        from app.efficiency_score import efficiency_delta
+
+        result = efficiency_delta(70.0, 70.0)
+        assert result["direction"] == "unchanged"
