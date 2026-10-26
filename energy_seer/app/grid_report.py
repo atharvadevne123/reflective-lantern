@@ -164,8 +164,24 @@ def alert_frequency(reports: list[dict]) -> dict[str, int]:
     return dict(sorted(counts.items(), key=lambda x: x[1], reverse=True))
 
 
+def compute_anomaly_rate(anomaly_count: int, window_hours: int) -> float:
+    """Compute anomalies per hour, guarding against divide-by-zero.
+
+    Args:
+        anomaly_count: Number of anomaly events detected.
+        window_hours: Length of the observation window in hours.
+
+    Returns:
+        Rate as a float; 0.0 when *window_hours* is zero or negative.
+    """
+    if window_hours <= 0:
+        return 0.0
+    return round(anomaly_count / window_hours, 6)
+
+
 __all__ = [
     "alert_frequency",
+    "compute_anomaly_rate",
     "generate_grid_report",
     "merge_reports",
     "report_status_code",
