@@ -294,10 +294,10 @@ def flag_anomaly_rate(flags: list[bool]) -> float:
     """Return the fraction of True values in *flags* (anomaly rate).
 
     Args:
-        flags: List of bool anomaly labels.
+        flags: List of bool anomaly labels (True = anomaly, False = normal).
 
     Returns:
-        Rate in [0, 1], or 0.0 for an empty list.
+        Rate in [0, 1], rounded to 4 decimal places, or 0.0 for an empty list.
     """
     if not flags:
         return 0.0
@@ -537,11 +537,14 @@ def anomaly_free_streak(flags: list[bool]) -> int:
     encountered. Useful for dashboard widgets showing "days without anomaly."
 
     Args:
-        flags: Ordered list of anomaly flags (True = anomalous).
+        flags: Ordered list of anomaly flags (True = anomalous, False = normal).
 
     Returns:
         Number of consecutive False values at the end of the list.
         Returns 0 if the list is empty or ends with True.
+
+    Note:
+        An empty *flags* list returns 0 (no streak possible).
     """
     streak = 0
     for flag in reversed(flags):
@@ -770,11 +773,15 @@ def modified_zscore(value: float, values: list[float]) -> float:
 def anomaly_persistence_score(flags: list[bool]) -> float:
     """Return the fraction of True flags in *flags* as a persistence score.
 
+    A high score close to 1.0 indicates a system that is anomalous most of
+    the time; a score near 0.0 indicates largely normal behavior.
+
     Args:
-        flags: Non-empty list of boolean anomaly flags.
+        flags: Non-empty list of boolean anomaly flags (True = anomaly).
 
     Returns:
-        Float in [0.0, 1.0]; 1.0 means all timesteps are anomalous.
+        Float in [0.0, 1.0] rounded to 6 decimal places;
+        1.0 means all timesteps are anomalous.
 
     Raises:
         ValueError: If *flags* is empty.

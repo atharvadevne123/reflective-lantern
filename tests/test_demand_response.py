@@ -6,8 +6,10 @@ import pytest
 
 from app.demand_response import (
     curtailment,
+    curtailment_rate,
     customer_baseline_load,
     evaluate_event,
+    event_roi,
     performance_score,
 )
 

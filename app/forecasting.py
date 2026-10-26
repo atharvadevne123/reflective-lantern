@@ -9,7 +9,15 @@ logger = logging.getLogger(__name__)
 
 
 def naive_forecast(last_value: float, steps: int) -> list[float]:
-    """Return a flat naive forecast: repeat *last_value* for *steps* steps."""
+    """Return a flat naive forecast: repeat *last_value* for *steps* steps.
+
+    Args:
+        last_value: The most recent observed value to repeat.
+        steps: Number of future steps to forecast. Returns empty list if <= 0.
+
+    Returns:
+        List of *steps* floats, each equal to *last_value* rounded to 4 decimal places.
+    """
     if steps <= 0:
         return []
     return [round(last_value, 4)] * steps
@@ -22,6 +30,13 @@ def drift_forecast(
     """Drift (random walk with drift) forecast using historical mean change.
 
     Projects the average per-step change forward from the last observed value.
+
+    Args:
+        values: Historical time series observations (must be non-empty).
+        steps: Number of steps ahead to forecast. Returns empty list if <= 0.
+
+    Returns:
+        List of *steps* float forecasts extrapolating the historical drift.
     """
     if not values or steps <= 0:
         return []
@@ -44,6 +59,14 @@ def seasonal_naive_forecast(
     """Seasonal naive forecast: copy values from *period* steps back.
 
     Useful for hourly data where ``period=24`` repeats yesterday's pattern.
+
+    Args:
+        values: Historical time series (must be non-empty for non-empty output).
+        steps: Number of steps to forecast. Returns empty list if <= 0.
+        period: Seasonality period in time steps (default 24 for hourly data).
+
+    Returns:
+        List of *steps* floats copied from the most recent seasonal cycle.
     """
     if not values or steps <= 0:
         return []
@@ -87,7 +110,15 @@ def exponential_smoothing_forecast(
 
 
 def forecast_summary(forecasts: list[float]) -> dict[str, Any]:
-    """Return mean, min, max, and total for a forecast list."""
+    """Return mean, min, max, and total for a forecast list.
+
+    Args:
+        forecasts: List of point forecast values.
+
+    Returns:
+        Dict with keys 'mean', 'min', 'max', 'total', and 'steps'.
+        Returns zeroed-out values when *forecasts* is empty.
+    """
     if not forecasts:
         return {"mean": 0.0, "min": None, "max": None, "total": 0.0, "steps": 0}
     result = {

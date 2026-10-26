@@ -254,3 +254,44 @@ class TestExperimentTotalAssignments:
         for i in range(n):
             exp.assign(str(i))
         assert exp.total_assignments() == n
+
+
+class TestExperimentAdditionalEdgeCases:
+    def test_disabled_experiment_always_returns_first_variant(self) -> None:
+        from app.experiment_tracker import CONTROL, TREATMENT, Experiment
+
+        exp = Experiment("disabled_test", [CONTROL, TREATMENT], enabled=False)
+        results = {exp.assign(str(i)).variant for i in range(20)}
+        assert results == {"control"}
+
+    def test_variant_name_in_result_matches_registered(self) -> None:
+        from app.experiment_tracker import Experiment, Variant
+
+        v = Variant("custom_variant", weight=1.0)
+        exp = Experiment("custom", [v])
+        result = exp.assign("user-a")
+        assert result.variant == "custom_variant"
+
+    def test_registry_get_nonexistent_returns_none(self) -> None:
+        from app.experiment_tracker import ExperimentRegistry
+
+        reg = ExperimentRegistry()
+        assert reg.get("does_not_exist") is None
+
+    def test_experiment_result_experiment_name_preserved(self) -> None:
+        from app.experiment_tracker import CONTROL, Experiment
+
+        exp = Experiment("named_exp", [CONTROL])
+        result = exp.assign("user-1")
+        assert result.experiment == "named_exp"
+
+    def test_distribution_keys_reflect_variant_names(self) -> None:
+        from app.experiment_tracker import Experiment, Variant
+
+        v1 = Variant("alpha", weight=1.0)
+        v2 = Variant("beta", weight=1.0)
+        exp = Experiment("ab", [v1, v2])
+        for i in range(20):
+            exp.assign(str(i))
+        dist = exp.assignment_distribution()
+        assert set(dist.keys()) == {"alpha", "beta"}

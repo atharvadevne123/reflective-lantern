@@ -42,8 +42,13 @@ class CircuitState(Enum):
     """Possible states of a circuit breaker."""
 
     CLOSED = "closed"
+    """Normal operating state; calls are forwarded to the protected function."""
+
     OPEN = "open"
+    """Tripped state; all calls are rejected immediately with CircuitOpenError."""
+
     HALF_OPEN = "half_open"
+    """Probe state; a single call is allowed through to test service recovery."""
 
 
 class CircuitOpenError(Exception):

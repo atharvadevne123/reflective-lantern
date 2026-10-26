@@ -1,0 +1,5 @@
+# Code owners for the reflective-lantern repository
+* @atharvadevne123
+/.github/ @atharvadevne123
+/app/ @atharvadevne123
+/tests/ @atharvadevne123

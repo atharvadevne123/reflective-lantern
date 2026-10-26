@@ -12,6 +12,8 @@ import os
 
 import matplotlib
 
+logger = logging.getLogger(__name__)
+
 matplotlib.use("Agg")
 import matplotlib.patches as mpatches  # noqa: E402
 import matplotlib.pyplot as plt  # noqa: E402

@@ -29,6 +29,23 @@ a weekly Airflow schedule.
 - Logs every inference to SQLite (dev) or PostgreSQL (prod) for auditing
 - Retrains automatically when 30 days of fresh data accumulate
 
+## Features
+
+- **REST API** — versioned `/api/v1` endpoints with OpenAPI docs at `/docs`
+- **Ensemble model** — XGBoost + LightGBM + RandomForest with confidence scoring
+- **Feature engineering** — 13 features derived from 6 raw inputs, including cyclical time encoding
+- **Drift monitoring** — Kolmogorov–Smirnov test comparing live predictions to a reference window
+- **Rate limiting** — sliding-window rate limiter with `X-RateLimit-*` response headers
+- **Structured logging** — all scripts use `logging` instead of `print()` for consistent log levels
+- **Type annotations** — full return-type annotations on all async endpoints and middleware
+- **Version endpoint** — `GET /api/v1/version` returns build metadata and environment info
+- **In-memory caches** — TTL-based caches with hit/miss counters and eviction tracking
+- **Circuit breaker** — configurable failure threshold and recovery timeout
+- **Experiment tracking** — A/B test assignment with deterministic hashing and weighted variants
+- **Feature store** — versioned feature sets with publish/get/delete lifecycle management
+- **Shadow mode** — run a shadow function alongside primary to compare outputs without risk
+- **Cost estimation** — compute resource cost breakdown for CPU, memory, and GPU workloads
+
 ---
 
 ## Setup
@@ -137,6 +154,22 @@ flagged when `p < 0.05`.
 
 Every response carries `X-Request-ID` and `X-Response-Time-Ms` headers.
 
+### `GET /api/v1/version`
+
+Returns build metadata and runtime environment information.
+
+**Response**
+
+```json
+{
+  "version": "1.0.0",
+  "build_date": "2026-10-01",
+  "python_version": "3.11.0",
+  "environment": "production",
+  "service": "reflective-lantern"
+}
+```
+
 ---
 
 ## Architecture
@@ -179,13 +212,32 @@ and surfaced through `/api/v1/drift`.
 
 ## Testing
 
+The test suite currently contains **92 test modules** with **6 000+ individual
+test cases** covering API contracts, feature-pipeline invariants, model
+training, drift detection, and all utility modules.
+
+### Run all tests
+
 ```bash
 pytest tests/ -v
 ```
 
+### Run with coverage
+
+```bash
+pytest tests/ --cov=app --cov-report=term-missing
+```
+
+### Run a single module
+
+```bash
+pytest tests/test_webhook_handler.py -v
+```
+
 The suite covers API contracts (including all carriers and route types via
 parametrization), feature-pipeline invariants, model training and CV metrics,
-and drift detection under known distribution shifts.
+drift detection under known distribution shifts, and edge cases for all
+utility modules added in the 2026-10 improvement run.
 
 ## Development
 

@@ -71,7 +71,19 @@ class BatterySpec:
 
 @dataclass
 class DispatchResult:
-    """Outcome of simulating a battery against an hourly load."""
+    """Outcome of simulating a battery against an hourly load.
+
+    Attributes:
+        peak_before_kw: Highest grid draw before battery dispatch.
+        peak_after_kw: Highest grid draw after battery dispatch.
+        peak_reduction_kw: Absolute peak reduction achieved (before − after).
+        peak_reduction_pct: Peak reduction as a percentage of the pre-dispatch peak.
+        energy_discharged_kwh: Total energy discharged from the battery in kWh.
+        energy_charged_kwh: Total energy drawn from the grid for charging in kWh.
+        equivalent_cycles: Number of full equivalent charge/discharge cycles used.
+        capacity_lost_pct: Estimated capacity degradation as a percentage.
+        grid_hourly_kw: Per-hour net grid draw after battery dispatch.
+    """
 
     peak_before_kw: float
     peak_after_kw: float

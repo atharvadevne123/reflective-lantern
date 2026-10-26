@@ -93,7 +93,8 @@ def main() -> int:
     repo = select_repo(repos, target_date)
 
     if args.json:
-        print(
+        log.info(
+            "%s",
             json.dumps(
                 {
                     "name": repo["name"],
@@ -102,10 +103,10 @@ def main() -> int:
                     "date": target_date.isoformat(),
                 },
                 indent=2,
-            )
+            ),
         )
     else:
-        print(repo["name"])
+        log.info("%s", repo["name"])
     return 0
 
 

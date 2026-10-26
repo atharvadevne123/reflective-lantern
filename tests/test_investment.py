@@ -6,14 +6,18 @@ import pytest
 
 from app.investment import (
     InvestmentAnalysis,
+    annualized_return,
     break_even_occupancy,
     cash_on_cash_return,
     compute_investment_analysis,
     debt_service_coverage_ratio,
     discounted_cash_flow,
     equity_multiple,
+    gross_rent_multiplier,
     irr_estimate,
+    loan_to_value_ratio,
     margin_of_safety,
+    net_present_value,
     operating_expense_ratio,
     payback_period,
 )
