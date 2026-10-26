@@ -14,9 +14,13 @@ from contextlib import contextmanager
 __all__ = [
     "clear_correlation_id",
     "correlation_context",
+    "format_correlation_id",
     "get_correlation_id",
+    "is_valid_uuid",
     "new_correlation_id",
+    "require_correlation_id",
     "set_correlation_id",
+    "short_correlation_id",
 ]
 
 _local = threading.local()
@@ -96,3 +100,30 @@ def is_valid_uuid(value: str) -> bool:
         return True
     except ValueError:
         return False
+
+
+def short_correlation_id(length: int = 8) -> str:
+    """Return a shortened correlation ID (first *length* hex chars of a UUID4).
+
+    Args:
+        length: Number of hex characters to return (1-32).
+
+    Returns:
+        Lowercase hex string of the requested length.
+    """
+    if not (1 <= length <= 32):
+        raise ValueError("length must be between 1 and 32")
+    return uuid.uuid4().hex[:length]
+
+
+def format_correlation_id(cid: str, prefix: str = "req-") -> str:
+    """Return *cid* with a human-readable *prefix* prepended.
+
+    Args:
+        cid: Correlation ID string.
+        prefix: Prefix string, default ``"req-"``.
+
+    Returns:
+        ``"{prefix}{cid}"`` string.
+    """
+    return f"{prefix}{cid}"
