@@ -155,3 +155,23 @@ class TestPsiEdgeCases:
 
         result = compute_psi(list(range(30)), list(range(30)))
         assert "drift_level" in result
+
+
+class TestPsiAlert:
+    def test_stable_no_alert(self) -> None:
+        from app.psi import psi_alert
+
+        result = psi_alert(0.05)
+        assert result["alert"] is False
+
+    def test_significant_triggers_alert(self) -> None:
+        from app.psi import psi_alert
+
+        result = psi_alert(0.30)
+        assert result["alert"] is True
+
+    def test_message_contains_feature_name(self) -> None:
+        from app.psi import psi_alert
+
+        result = psi_alert(0.05, feature_name="consumption_kwh")
+        assert "consumption_kwh" in result["message"]
