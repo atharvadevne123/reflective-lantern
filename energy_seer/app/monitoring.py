@@ -20,14 +20,15 @@ _reference_distributions: dict[str, list[float]] = {}
 _isolation_forest: IsolationForest | None = None
 
 
-# Set reference feature distributions for KS-test drift comparisons.
 def set_reference_distributions(data: dict[str, list[float]]) -> None:
+    """Store reference feature distributions for KS-test drift comparisons."""
     global _reference_distributions
     _reference_distributions = {k: list(v) for k, v in data.items()}
     logger.info("Reference distributions set for %d features", len(data))
 
 
 def compute_drift(reference: list[float], current: list[float]) -> dict:
+    """Run a KS two-sample test between reference and current distributions."""
     if len(reference) < 5 or len(current) < 5:
         return {
             "ks_statistic": 0.0,
@@ -44,6 +45,7 @@ def compute_drift(reference: list[float], current: list[float]) -> dict:
 
 
 def check_all_features(current_window: dict[str, list[float]]) -> dict[str, dict]:
+    """Check drift for every feature in *current_window* against stored references."""
     results: dict[str, dict] = {}
     for feature, current in current_window.items():
         ref = _reference_distributions.get(feature, [])
