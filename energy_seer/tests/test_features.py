@@ -298,3 +298,28 @@ class TestFeaturePipelineOutputShape:
         pipe = build_feature_pipeline()
         out = pipe.fit_transform(sample_df)
         assert out.shape[0] == len(sample_df)
+
+
+class TestValidateDataframeColumns:
+    def test_missing_columns_returned(self) -> None:
+        import pandas as pd
+        from app.features import validate_dataframe_columns
+
+        df = pd.DataFrame({"consumption_kwh": [1.0]})
+        missing = validate_dataframe_columns(df)
+        assert "hour_of_day" in missing
+
+    def test_all_present_returns_empty(self) -> None:
+        import pandas as pd
+        from app.features import validate_dataframe_columns
+
+        df = pd.DataFrame({"consumption_kwh": [1.0], "hour_of_day": [0], "day_of_week": [0]})
+        assert validate_dataframe_columns(df) == []
+
+    def test_custom_required_columns(self) -> None:
+        import pandas as pd
+        from app.features import validate_dataframe_columns
+
+        df = pd.DataFrame({"a": [1]})
+        missing = validate_dataframe_columns(df, required=["a", "b"])
+        assert missing == ["b"]
