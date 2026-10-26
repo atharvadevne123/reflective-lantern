@@ -1,0 +1,79 @@
+REFLECTIVE LANTERN — INNOVATION BUILD REPORT
+============================================
+Date:    2026-09-10 (Wednesday, day 9)
+Mode:    INNOVATION
+Project: Signal-Forge
+
+SUMMARY
+-------
+Built Signal-Forge, a real-time financial market regime detection and
+portfolio stress-testing API, as a 62-commit innovation build inside
+the reflective-lantern repository.
+
+REPOSITORY
+----------
+Branch:  innovation/signal-forge
+PR:      https://github.com/atharvadevne123/reflective-lantern/pull/80
+Status:  Draft (open, awaiting review)
+
+BUILD METRICS
+-------------
+Total commits:      62  (60 feature + 1 ruff style + 1 bug-fix)
+Tests passing:      197 / 197
+Lint (ruff):        0 errors
+Test modules:       17
+CI workflow:        signal-forge/.github/workflows/ci.yml
+
+ARCHITECTURE
+------------
+Ensemble Classifier:
+  - XGBoost + LightGBM + RandomForest (soft-voting)
+  - 5-fold stratified cross-validation + AUC-ROC evaluation
+
+Feature Pipeline (sklearn):
+  - VolatilityFeature    (21-day rolling std of log returns)
+  - MomentumFeature      (21-day rolling mean of log returns)
+  - VolumeRatioFeature   (21-day rolling volume ratio)
+  - MarketCorrelationFeature (21-day rolling correlation with market)
+  - BetaFeature          (63-day rolling OLS beta)
+  - DropRawColumns → StandardScaler
+
+FAISS:
+  - Flat L2 index for historical regime pattern similarity search
+  - Top-k similar periods returned with each prediction
+
+Drift Monitoring:
+  - KS-test (scipy.stats.ks_2samp) per feature
+  - p-value threshold: 0.05
+  - Results logged to DriftEvent table
+
+API (FastAPI):
+  - POST /predict      — regime + confidence + risk_score + similar periods
+  - GET  /health       — service health
+  - GET  /metrics      — request count, uptime, drift summary
+  - GET  /version      — API version
+  - POST /drift-check  — trigger KS-test across all features
+  - Pydantic v2 schemas, CorrelationIdMiddleware, RateLimitMiddleware (60 req/min)
+
+Infrastructure:
+  - SQLAlchemy ORM + PostgreSQL (SQLite for tests)
+  - Alembic migration environment
+  - Airflow-compatible weekly retraining DAG
+  - Docker + docker-compose with PostgreSQL service
+  - ruff, pre-commit, Makefile
+
+KEY BUG FIXES
+-------------
+1. NaN/Inf safety guards in compute_risk_score() — prevented NULL
+   constraint violations when rolling windows had insufficient data
+2. predict() now sanitises raw_values before returning PredictionResult
+3. CorrelationIdMiddleware + RateLimitMiddleware wired into the app
+   (implemented but not previously registered with FastAPI)
+4. Database tests query by record.id to avoid stale-data pollution
+5. sample_ohlcv_df fixture enlarged from 30 to 70 rows for 63-day beta warmup
+
+NOTE: Email delivery blocked by environment proxy (SMTP not supported;
+HTTPS-only egress). Report saved here instead.
+
+Generated: 2026-09-10T02:38:00 UTC
+Session:   https://claude.ai/code/session_01NmWW3uKZJprnkfbSxWeRb1

@@ -1,0 +1,28 @@
+
+╔══════════════════════════════════════════════════════════════════╗
+║                    Signal-Forge Architecture                      ║
+╠══════════════════════════════════════════════════════════════════╣
+║                                                                   ║
+║  Client ──► FastAPI (/predict /health /metrics /drift-check)      ║
+║                  │                                                ║
+║                  ├──► Feature Pipeline (sklearn)                  ║
+║                  │     ├─ VolatilityFeature (21d rolling std)     ║
+║                  │     ├─ MomentumFeature (21d pct change)        ║
+║                  │     ├─ VolumeRatioFeature (volume/avg)         ║
+║                  │     ├─ MarketCorrelationFeature (rolling)       ║
+║                  │     └─ BetaFeature (63d rolling beta)          ║
+║                  │                                                ║
+║                  ├──► Ensemble Model                              ║
+║                  │     ├─ XGBoost (200 trees)                     ║
+║                  │     ├─ LightGBM (200 trees)                    ║
+║                  │     └─ RandomForest (200 trees)                ║
+║                  │          └─ 5-fold CV + AUC-ROC                ║
+║                  │                                                ║
+║                  ├──► FAISS Index (historical regime lookup)      ║
+║                  │                                                ║
+║                  └──► PostgreSQL (predictions + drift events)     ║
+║                                                                   ║
+║  Airflow DAG (weekly):                                            ║
+║    fetch_data → train_model → drift_check → rebuild_faiss         ║
+║                                                                   ║
+╚══════════════════════════════════════════════════════════════════╝
