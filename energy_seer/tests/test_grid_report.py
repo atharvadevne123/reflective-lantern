@@ -124,3 +124,33 @@ class TestMergeReports:
         result = merge_reports(reports)
         assert "A" in result["alerts"] and "B" in result["alerts"]
         assert result["anomaly_count"] == 3
+
+
+class TestGridReportSummaryExtras:
+    def test_single_report_pass_through(self) -> None:
+        from energy_seer.app.grid_report import merge_reports
+
+        report = {"status": "warning", "alerts": ["voltage_low"], "anomaly_count": 2}
+        result = merge_reports([report])
+        assert result["status"] == "warning"
+        assert result["anomaly_count"] == 2
+
+    def test_healthy_plus_warning_yields_warning(self) -> None:
+        from energy_seer.app.grid_report import merge_reports
+
+        reports = [
+            {"status": "healthy", "alerts": [], "anomaly_count": 0},
+            {"status": "warning", "alerts": ["freq_drift"], "anomaly_count": 1},
+        ]
+        result = merge_reports(reports)
+        assert result["status"] == "warning"
+
+    def test_anomaly_count_sums_across_reports(self) -> None:
+        from energy_seer.app.grid_report import merge_reports
+
+        reports = [
+            {"status": "healthy", "alerts": [], "anomaly_count": 3},
+            {"status": "healthy", "alerts": [], "anomaly_count": 7},
+        ]
+        result = merge_reports(reports)
+        assert result["anomaly_count"] == 10
