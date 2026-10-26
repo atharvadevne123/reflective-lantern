@@ -8,18 +8,22 @@ _counters: dict[str, int] = defaultdict(int)
 
 
 def increment(name: str, amount: int = 1) -> None:
+    """Increment counter *name* by *amount* (default 1)."""
     _counters[name] += amount
 
 
 def get(name: str) -> int:
+    """Return the current value of counter *name* (0 if never set)."""
     return _counters[name]
 
 
 def snapshot() -> dict[str, int]:
+    """Return a point-in-time copy of all counters."""
     return dict(_counters)
 
 
 def reset(name: str | None = None) -> None:
+    """Reset counter *name* to 0, or clear all counters if *name* is None."""
     if name:
         _counters[name] = 0
     else:
