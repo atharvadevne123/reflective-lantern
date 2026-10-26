@@ -153,3 +153,25 @@ class TestFindPeakHours:
 
         result = find_peak_hours([])
         assert result["peak_hours"] == []
+
+
+class TestPeakDemandWindow:
+    def test_finds_max_window(self) -> None:
+        from app.peak_demand import peak_demand_window
+
+        # High values at hours 2-5
+        values = [1.0, 1.0, 10.0, 10.0, 10.0, 10.0, 1.0, 1.0]
+        result = peak_demand_window(values, window_hours=4)
+        assert result["window_start"] == 2
+
+    def test_insufficient_data_returns_zeros(self) -> None:
+        from app.peak_demand import peak_demand_window
+
+        result = peak_demand_window([1.0, 2.0], window_hours=5)
+        assert result["total_kwh"] == 0.0
+
+    def test_total_kwh_positive(self) -> None:
+        from app.peak_demand import peak_demand_window
+
+        result = peak_demand_window([2.0] * 10, window_hours=4)
+        assert result["total_kwh"] > 0.0
