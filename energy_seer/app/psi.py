@@ -160,10 +160,32 @@ def psi_feature_rank(
     return ranked
 
 
+def psi_alert(psi_value: float, feature_name: str = "unknown") -> dict[str, object]:
+    """Generate a human-readable alert dict for a PSI measurement.
+
+    Args:
+        psi_value: The computed PSI value.
+        feature_name: Name of the feature being monitored.
+
+    Returns:
+        Dict with 'alert' (bool), 'message' (str), and 'drift_level' (str).
+    """
+    level = _drift_level(psi_value)
+    alert = level != "stable"
+    if level == "significant":
+        message = f"ALERT: {feature_name} PSI={psi_value:.4f} — significant drift, retrain now"
+    elif level == "moderate":
+        message = f"WARNING: {feature_name} PSI={psi_value:.4f} — moderate drift detected"
+    else:
+        message = f"OK: {feature_name} PSI={psi_value:.4f} — distribution stable"
+    return {"alert": alert, "message": message, "drift_level": level}
+
+
 __all__ = [
     "PSI_MODERATE_THRESHOLD",
     "PSI_STABLE_THRESHOLD",
     "compute_psi",
+    "psi_alert",
     "psi_feature_rank",
     "psi_report",
     "psi_series_trend",
