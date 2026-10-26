@@ -73,6 +73,34 @@ class TestSeasonalDecompose:
         assert len(result["seasonal"]) == 24
 
 
+class TestWeightedMovingAverage:
+    def test_flat_series_returns_same_value(self) -> None:
+        from app.forecaster import weighted_moving_average
+
+        result = weighted_moving_average([5.0] * 10, steps=1)
+        assert abs(result[0] - 5.0) < 0.01
+
+    def test_steps_length(self) -> None:
+        from app.forecaster import weighted_moving_average
+
+        result = weighted_moving_average([1.0, 2.0, 3.0], steps=4)
+        assert len(result) == 4
+
+    def test_empty_raises(self) -> None:
+        from app.forecaster import weighted_moving_average
+
+        import pytest
+
+        with pytest.raises(ValueError):
+            weighted_moving_average([])
+
+    def test_custom_weights(self) -> None:
+        from app.forecaster import weighted_moving_average
+
+        result = weighted_moving_average([2.0, 4.0], weights=[1, 3], steps=1)
+        assert result[0] == pytest.approx(3.5)
+
+
 class TestForecastHorizonAccuracy:
     def test_perfect_forecast_zero_mae(self) -> None:
         from app.forecaster import forecast_horizon_accuracy
