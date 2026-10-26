@@ -154,3 +154,29 @@ class TestGridReportSummaryExtras:
         ]
         result = merge_reports(reports)
         assert result["anomaly_count"] == 10
+
+
+class TestReportTrend:
+    def test_escalating_true_when_status_worsens(self) -> None:
+        from app.grid_report import report_trend
+
+        reports = [
+            {"status": "healthy", "anomaly_count": 0},
+            {"status": "warning", "anomaly_count": 2},
+            {"status": "critical", "anomaly_count": 5},
+        ]
+        result = report_trend(reports)
+        assert result["escalating"] is True
+
+    def test_stable_reports_not_escalating(self) -> None:
+        from app.grid_report import report_trend
+
+        reports = [{"status": "healthy", "anomaly_count": 0}] * 4
+        result = report_trend(reports)
+        assert result["escalating"] is False
+
+    def test_empty_reports_returns_defaults(self) -> None:
+        from app.grid_report import report_trend
+
+        result = report_trend([])
+        assert result["anomaly_total"] == 0
