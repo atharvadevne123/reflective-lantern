@@ -99,3 +99,24 @@ class TestBuildVectorTypes:
 
         vec = build_pattern_vector({"consumption_kwh": value})
         assert vec[0] == value
+
+
+class TestBuildPatternVectorFields:
+    def test_temperature_stored_at_index_one(self) -> None:
+        from rag.ingest import build_pattern_vector
+
+        vec = build_pattern_vector({"temperature_c": 25.5})
+        assert vec[1] == pytest.approx(25.5)
+
+    def test_hour_of_day_stored(self) -> None:
+        from rag.ingest import build_pattern_vector
+
+        vec = build_pattern_vector({"hour_of_day": 14})
+        assert vec[2] == pytest.approx(14.0)
+
+    def test_multiple_fields_combined(self) -> None:
+        from rag.ingest import build_pattern_vector
+
+        vec = build_pattern_vector({"consumption_kwh": 5.0, "temperature_c": 20.0})
+        assert vec[0] == pytest.approx(5.0)
+        assert vec[1] == pytest.approx(20.0)
