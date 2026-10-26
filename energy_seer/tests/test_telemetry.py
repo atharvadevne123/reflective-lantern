@@ -128,3 +128,33 @@ class TestReset:
         reset()
         assert get("a") == 0
         assert get("b") == 0
+
+
+class TestSnapshotAndBulk:
+    def setup_method(self) -> None:
+        from app.telemetry import reset
+
+        reset()
+
+    def test_snapshot_returns_copy(self) -> None:
+        from app.telemetry import increment, snapshot
+
+        increment("a", 3)
+        snap = snapshot()
+        assert snap.get("a") == 3
+
+    def test_snapshot_is_isolated(self) -> None:
+        from app.telemetry import increment, snapshot
+
+        increment("b", 1)
+        snap = snapshot()
+        increment("b", 99)
+        # Snapshot taken before second increment should not reflect it
+        assert snap.get("b") == 1
+
+    def test_increment_accumulates_across_calls(self) -> None:
+        from app.telemetry import get, increment
+
+        for _ in range(5):
+            increment("c")
+        assert get("c") == 5
