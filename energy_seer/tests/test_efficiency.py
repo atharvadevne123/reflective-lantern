@@ -295,3 +295,23 @@ class TestEfficiencyDelta:
 
         result = efficiency_delta(70.0, 70.0)
         assert result["direction"] == "unchanged"
+
+
+class TestEfficiencyTrend:
+    def test_improving_trend(self) -> None:
+        from app.efficiency_score import efficiency_trend
+
+        result = efficiency_trend([50.0, 60.0, 75.0, 85.0])
+        assert result["trend"] == "improving"
+
+    def test_declining_trend(self) -> None:
+        from app.efficiency_score import efficiency_trend
+
+        result = efficiency_trend([80.0, 65.0, 50.0, 40.0])
+        assert result["trend"] == "declining"
+
+    def test_empty_returns_defaults(self) -> None:
+        from app.efficiency_score import efficiency_trend
+
+        result = efficiency_trend([])
+        assert result["mean"] == 0.0
