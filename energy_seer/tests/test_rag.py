@@ -120,3 +120,21 @@ class TestBuildPatternVectorFields:
         vec = build_pattern_vector({"consumption_kwh": 5.0, "temperature_c": 20.0})
         assert vec[0] == pytest.approx(5.0)
         assert vec[1] == pytest.approx(20.0)
+
+
+class TestFindSimilarPatternsStub:
+    def test_returns_list(self) -> None:
+        from rag import retriever
+
+        retriever._index = None
+        retriever._meta = []
+        result = retriever.find_similar_patterns({"consumption_kwh": 5.0})
+        assert isinstance(result, list)
+
+    def test_empty_result_when_no_index(self) -> None:
+        from rag import retriever
+
+        retriever._index = None
+        retriever._meta = []
+        result = retriever.find_similar_patterns({})
+        assert result == []
