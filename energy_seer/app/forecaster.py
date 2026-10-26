@@ -5,7 +5,7 @@ from __future__ import annotations
 import numpy as np
 
 
-def linear_trend(values: list[float]) -> dict:
+def linear_trend(values: list[float]) -> dict[str, float]:
     """Fit a linear trend and return slope, intercept, and next-step forecast."""
     arr = np.array(values, dtype=float)
     n = len(arr)
@@ -21,7 +21,7 @@ def linear_trend(values: list[float]) -> dict:
     }
 
 
-def seasonal_decompose_simple(values: list[float], period: int = 24) -> dict:
+def seasonal_decompose_simple(values: list[float], period: int = 24) -> dict[str, list[float]]:
     """Remove linear trend and extract mean seasonal component."""
     arr = np.array(values, dtype=float)
     n = len(arr)
