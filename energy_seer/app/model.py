@@ -25,6 +25,7 @@ METRICS_PATH = Path(os.getenv("METRICS_PATH", "metrics.json"))
 
 
 def build_ensemble() -> VotingRegressor:
+    """Build a soft-voting ensemble of XGBoost, LightGBM, and RandomForest regressors."""
     xgb = XGBRegressor(
         n_estimators=200,
         max_depth=5,
@@ -53,6 +54,7 @@ def build_ensemble() -> VotingRegressor:
 
 
 def generate_synthetic_data(n: int = 2000) -> tuple[pd.DataFrame, pd.Series]:
+    """Generate *n* synthetic hourly energy readings with realistic patterns."""
     rng = np.random.default_rng(42)
     hours = np.arange(n) % 24
     days = (np.arange(n) // 24) % 7
@@ -80,6 +82,11 @@ def train_model(
     X_raw: pd.DataFrame | None = None,
     y: pd.Series | None = None,
 ) -> tuple[Any, dict[str, float]]:
+    """Train the ensemble on *X_raw*/*y* (or synthetic data if omitted) and persist.
+
+    Returns:
+        Tuple of (bundle dict with 'pipeline' and 'model', metrics dict).
+    """
     if X_raw is None or y is None:
         logger.info("No data provided — generating synthetic training data")
         X_raw, y = generate_synthetic_data()
