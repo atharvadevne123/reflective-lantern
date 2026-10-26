@@ -8,6 +8,8 @@ import os
 from pathlib import Path
 from typing import Any
 
+import time
+
 import joblib
 import numpy as np
 import pandas as pd
@@ -102,7 +104,9 @@ def train_model(
     r2_scores = cross_val_score(ensemble, X, y, cv=cv, scoring="r2")
     rmse_scores = cross_val_score(ensemble, X, y, cv=cv, scoring="neg_root_mean_squared_error")
 
+    t0 = time.perf_counter()
     ensemble.fit(X, y)
+    train_time_sec = round(time.perf_counter() - t0, 3)
 
     metrics = {
         "r2_mean": float(r2_scores.mean()),
@@ -111,6 +115,7 @@ def train_model(
         "rmse_std": float(rmse_scores.std()),
         "n_features": int(X.shape[1]),
         "n_samples": int(X.shape[0]),
+        "train_time_sec": train_time_sec,
     }
 
     joblib.dump({"pipeline": pipeline, "model": ensemble}, MODEL_PATH)
