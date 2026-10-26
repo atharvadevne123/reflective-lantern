@@ -305,6 +305,16 @@ def detect(use_cache: bool = True, cache_path: str | None = None) -> Capabilitie
     return caps
 
 
+__all__ = [
+    "Capabilities",
+    "can_create_repo",
+    "can_enumerate_repos",
+    "can_push_git",
+    "credentials_are_honoured",
+    "detect",
+    "smtp_reachable",
+]
+
 if __name__ == "__main__":
     logging.basicConfig(level=logging.WARNING, format="%(message)s")
     logger.warning(detect(use_cache=False).summary())

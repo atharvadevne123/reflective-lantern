@@ -175,7 +175,7 @@ class CircuitBreaker:
         return self.state == CircuitState.HALF_OPEN
 
     def __call__(self, func: Callable) -> Callable:
-        """Use as a decorator."""
+        """Use as a decorator to wrap *func* with circuit-breaker protection."""
 
         @functools.wraps(func)
         def wrapper(*args, **kwargs) -> object:

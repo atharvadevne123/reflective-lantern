@@ -197,6 +197,8 @@ def generate_pdf() -> bytes:
     return buf.getvalue()
 
 
+__all__ = ["generate_pdf"]
+
 if __name__ == "__main__":
     import os
 

@@ -65,5 +65,14 @@ def main() -> None:
     logger.info("Latency p99    : %.2f ms", latencies[int(len(latencies) * 0.99)])
 
 
+__all__ = [
+    "BENCHMARKS",
+    "bench_event_bus",
+    "bench_metrics_counter",
+    "bench_retry",
+    "bench_token_bucket",
+    "main",
+]
+
 if __name__ == "__main__":
     main()

@@ -78,5 +78,7 @@ def main() -> None:
     logger.info("Prediction result:\n%s", json.dumps(result, indent=2))
 
 
+__all__ = ["main", "predict"]
+
 if __name__ == "__main__":
     main()

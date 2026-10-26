@@ -73,9 +73,7 @@ class TestEnumerationProbe:
 
     def test_json_list_means_allowed(self, monkeypatch) -> None:
         """A JSON array response means enumeration works."""
-        monkeypatch.setattr(
-            lantern_env, "_request", lambda *a, **k: (200, json.dumps([{"name": "r"}]))
-        )
+        monkeypatch.setattr(lantern_env, "_request", lambda *a, **k: (200, json.dumps([{"name": "r"}])))
         assert lantern_env.can_enumerate_repos()[0] is True
 
     def test_session_binding_message_means_blocked(self, monkeypatch) -> None:
