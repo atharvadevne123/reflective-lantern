@@ -155,3 +155,31 @@ class TestDetectSpike:
 
         result = detect_spike([1.0, 2.0])
         assert "method" in result
+
+
+class TestDemandTrend:
+    def test_rising_trend(self) -> None:
+        from app.demand_spike import demand_trend
+
+        values = [1.0, 1.0, 5.0, 5.0]
+        result = demand_trend(values)
+        assert result["trend"] == "rising"
+
+    def test_falling_trend(self) -> None:
+        from app.demand_spike import demand_trend
+
+        values = [5.0, 5.0, 1.0, 1.0]
+        result = demand_trend(values)
+        assert result["trend"] == "falling"
+
+    def test_flat_trend(self) -> None:
+        from app.demand_spike import demand_trend
+
+        result = demand_trend([3.0] * 8)
+        assert result["trend"] == "flat"
+
+    def test_insufficient_data_returns_flat(self) -> None:
+        from app.demand_spike import demand_trend
+
+        result = demand_trend([1.0, 2.0])
+        assert result["trend"] == "flat"
