@@ -220,3 +220,33 @@ class TestNormaliseDemand:
         result = normalise_demand(values)
         assert min(result) == pytest.approx(expected_min)
         assert max(result) == pytest.approx(expected_max)
+
+
+class TestCacheGetWithDefault:
+    def test_missing_key_returns_default(self) -> None:
+        from app.cache import get_with_default
+
+        assert get_with_default("no_such_key_xyz", default=99) == 99
+
+    def test_existing_key_returns_value(self) -> None:
+        from app.cache import get_with_default, set_cache
+
+        set_cache("wgd_key", "hello", ttl=10.0)
+        assert get_with_default("wgd_key", default="miss") == "hello"
+
+    def test_default_none_when_not_specified(self) -> None:
+        from app.cache import get_with_default
+
+        assert get_with_default("absent_key") is None
+
+
+class TestCacheKeys:
+    def test_keys_returns_active_entries(self) -> None:
+        from app.cache import clear_all, keys, set_cache
+
+        clear_all()
+        set_cache("key_a", 1, ttl=10.0)
+        set_cache("key_b", 2, ttl=10.0)
+        k = keys()
+        assert "key_a" in k
+        assert "key_b" in k
