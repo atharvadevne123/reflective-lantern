@@ -220,3 +220,24 @@ class TestTrainMetricsKeys:
         X, y = generate_synthetic_data(200)
         _, metrics = train_model(X, y)
         assert metrics["train_time_sec"] >= 0.0
+
+
+class TestPredictOutputBounds:
+    def test_predictions_non_negative(self) -> None:
+        from app.model import generate_synthetic_data, load_model, predict, train_model
+
+        X, y = generate_synthetic_data(100)
+        bundle, _ = train_model(X, y)
+        readings = X.head(3).to_dict(orient="records")
+        preds = predict(bundle, readings, horizon_h=1)
+        assert all(p >= 0.0 for p in preds)
+
+    def test_predict_returns_correct_count(self) -> None:
+        from app.model import generate_synthetic_data, predict, train_model
+
+        X, y = generate_synthetic_data(100)
+        bundle, _ = train_model(X, y)
+        n = 5
+        readings = X.head(n).to_dict(orient="records")
+        preds = predict(bundle, readings, horizon_h=1)
+        assert len(preds) == n
