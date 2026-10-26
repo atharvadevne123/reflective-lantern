@@ -176,6 +176,34 @@ def log_drift(db: Session, feature_results: dict[str, dict]) -> None:
     db.commit()
 
 
+def summarise_anomalies(anomaly_results: list[dict]) -> dict[str, object]:
+    """Aggregate a batch of anomaly detection results into summary statistics.
+
+    Args:
+        anomaly_results: List of dicts as returned by :func:`detect_anomaly`.
+
+    Returns:
+        Dict with 'total', 'anomaly_count', 'anomaly_rate', 'severity_counts',
+        and 'type_counts'.
+    """
+    total = len(anomaly_results)
+    anomaly_count = sum(1 for r in anomaly_results if r.get("is_anomaly"))
+    severity_counts: dict[str, int] = {}
+    type_counts: dict[str, int] = {}
+    for r in anomaly_results:
+        sev = str(r.get("severity", "none"))
+        atype = str(r.get("anomaly_type", "none"))
+        severity_counts[sev] = severity_counts.get(sev, 0) + 1
+        type_counts[atype] = type_counts.get(atype, 0) + 1
+    return {
+        "total": total,
+        "anomaly_count": anomaly_count,
+        "anomaly_rate": round(anomaly_count / max(total, 1), 4),
+        "severity_counts": severity_counts,
+        "type_counts": type_counts,
+    }
+
+
 def compute_prediction_stats(db: Session) -> dict:
     from app.database import PredictionLog
 
