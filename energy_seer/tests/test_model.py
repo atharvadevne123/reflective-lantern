@@ -197,3 +197,26 @@ class TestGetMetrics:
 
         result = load_model()
         assert isinstance(result, dict)
+
+
+class TestTrainMetricsKeys:
+    def test_metrics_contains_r2_mean(self) -> None:
+        from app.model import generate_synthetic_data, train_model
+
+        X, y = generate_synthetic_data(200)
+        _, metrics = train_model(X, y)
+        assert "r2_mean" in metrics
+
+    def test_metrics_contains_train_time_sec(self) -> None:
+        from app.model import generate_synthetic_data, train_model
+
+        X, y = generate_synthetic_data(200)
+        _, metrics = train_model(X, y)
+        assert "train_time_sec" in metrics
+
+    def test_train_time_positive(self) -> None:
+        from app.model import generate_synthetic_data, train_model
+
+        X, y = generate_synthetic_data(200)
+        _, metrics = train_model(X, y)
+        assert metrics["train_time_sec"] >= 0.0
