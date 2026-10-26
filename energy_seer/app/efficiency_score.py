@@ -158,11 +158,28 @@ def normalised_efficiency_index(
     return round(index, 4)
 
 
+def efficiency_percentile(score: float, population: list[float]) -> float:
+    """Return the percentile rank of *score* within *population*.
+
+    Args:
+        score: The efficiency score to rank.
+        population: Distribution of efficiency scores to compare against.
+
+    Returns:
+        Percentile in [0.0, 100.0]; 0.0 when *population* is empty.
+    """
+    if not population:
+        return 0.0
+    below = sum(1 for s in population if s < score)
+    return round(100.0 * below / len(population), 2)
+
+
 __all__ = [
     "BUILDING_BENCHMARKS",
     "GRADE_THRESHOLDS",
     "compute_efficiency_score",
     "efficiency_delta",
+    "efficiency_percentile",
     "efficiency_trend",
     "normalised_efficiency_index",
 ]
