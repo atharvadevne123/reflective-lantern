@@ -1,4 +1,4 @@
-"""Date and time utility helpers for Watt-Guard."""
+"""Date and time utility helpers for Logistics-Flow."""
 
 from __future__ import annotations
 

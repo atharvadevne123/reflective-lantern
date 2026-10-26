@@ -34,6 +34,15 @@ smoke:
 benchmark:
 	python scripts/benchmark.py
 
+typecheck:
+	python -m mypy app
+
+coverage:
+	pytest tests/ --cov=app --cov-report=term-missing --cov-report=html
+
+watch:
+	pytest-watch tests/ -- -v --tb=short
+
 migrate:
 	alembic upgrade head
 

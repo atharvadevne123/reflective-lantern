@@ -1,4 +1,4 @@
-"""Statistical utility functions for Watt-Guard."""
+"""Statistical utility functions for Logistics-Flow."""
 
 from __future__ import annotations
 

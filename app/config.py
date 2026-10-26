@@ -50,6 +50,16 @@ class Settings:
         """True when the configured database is PostgreSQL."""
         return self.database_url.startswith("postgresql")
 
+    @property
+    def is_debug(self) -> bool:
+        """True when LOG_LEVEL is set to DEBUG."""
+        return self.log_level.upper() == "DEBUG"
+
+    @property
+    def cors_origins_list(self) -> list[str]:
+        """Return CORS origins as a list split on commas."""
+        return [o.strip() for o in self.cors_origins.split(",") if o.strip()]
+
 
 @functools.lru_cache(maxsize=1)
 def get_settings() -> Settings:

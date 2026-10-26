@@ -12,3 +12,5 @@ dist/
 build/
 *.egg-info/
 .DS_Store
+mlflow_runs.jsonl
+s3_mirror/

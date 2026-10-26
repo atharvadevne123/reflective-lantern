@@ -133,3 +133,51 @@ class TestBuildS3UriParametrized:
 
         uri = build_s3_uri(bucket, key)
         assert uri == f"s3://{bucket}/{key}"
+
+
+class TestUploadModelArtefacts:
+    def test_no_client_returns_empty(self, tmp_path) -> None:
+        from app.aws_stub import upload_model_artefacts
+
+        f = tmp_path / "model.joblib"
+        f.write_text("data")
+        result = upload_model_artefacts([str(f)])
+        assert isinstance(result, list)
+
+    def test_missing_file_skipped(self, tmp_path) -> None:
+        from app.aws_stub import upload_model_artefacts
+
+        result = upload_model_artefacts([str(tmp_path / "missing.joblib")])
+        assert isinstance(result, list)
+
+    def test_empty_list_returns_empty(self) -> None:
+        from app.aws_stub import upload_model_artefacts
+
+        assert upload_model_artefacts([]) == []
+
+
+class TestDownloadModelArtefacts:
+    def test_returns_list(self, tmp_path) -> None:
+        from app.aws_stub import download_model_artefacts
+
+        result = download_model_artefacts(str(tmp_path))
+        assert isinstance(result, list)
+
+    def test_no_client_returns_empty(self, tmp_path) -> None:
+        from app.aws_stub import download_model_artefacts
+
+        result = download_model_artefacts(str(tmp_path))
+        assert result == []
+
+
+class TestDeleteArtefact:
+    def test_returns_bool(self) -> None:
+        from app.aws_stub import delete_artefact
+
+        result = delete_artefact("some/key.pkl")
+        assert isinstance(result, bool)
+
+    def test_no_client_returns_false(self) -> None:
+        from app.aws_stub import delete_artefact
+
+        assert delete_artefact("key.pkl", bucket="stub-bucket") is False
