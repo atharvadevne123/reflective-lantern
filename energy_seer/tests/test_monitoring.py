@@ -251,3 +251,25 @@ class TestDriftDetectionThreshold:
         # Passing a different feature key — missing reference should not raise
         results = check_all_features({"feat_y": list(range(30))})
         assert isinstance(results, dict)
+
+
+class TestSummariseAnomalies:
+    def test_no_anomalies_rate_zero(self) -> None:
+        from app.monitoring import summarise_anomalies
+
+        results = [{"is_anomaly": False, "severity": "none", "anomaly_type": "none"}] * 5
+        summary = summarise_anomalies(results)
+        assert summary["anomaly_rate"] == 0.0
+
+    def test_all_anomalies_rate_one(self) -> None:
+        from app.monitoring import summarise_anomalies
+
+        results = [{"is_anomaly": True, "severity": "high", "anomaly_type": "spike"}] * 4
+        summary = summarise_anomalies(results)
+        assert summary["anomaly_rate"] == 1.0
+
+    def test_empty_input_total_zero(self) -> None:
+        from app.monitoring import summarise_anomalies
+
+        summary = summarise_anomalies([])
+        assert summary["total"] == 0
