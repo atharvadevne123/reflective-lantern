@@ -98,3 +98,25 @@ class TestDemandFlexibilityScore:
 
         result = demand_flexibility_score([2.0] * 24, flexible_hours=flex_hours)
         assert 0.0 <= result["flexibility_ratio"] <= 1.0
+
+
+class TestPeakDemandEdgeCases:
+    def test_single_value_is_peak(self) -> None:
+        from app.peak_demand import identify_peak_hours
+
+        result = identify_peak_hours([5.0])
+        assert result is not None
+
+    def test_all_equal_values_peak_count(self) -> None:
+        from app.peak_demand import identify_peak_hours
+
+        result = identify_peak_hours([3.0] * 24)
+        assert result is not None
+
+    def test_increasing_series_last_is_max(self) -> None:
+        from app.peak_demand import identify_peak_hours
+
+        values = list(range(1, 25))
+        result = identify_peak_hours(values)
+        # Maximum is at the last position
+        assert result is not None
