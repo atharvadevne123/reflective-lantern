@@ -134,3 +134,24 @@ class TestDemandVariability:
 
         result = demand_variability([1.0])
         assert result == {"cv": 0.0, "range": 0.0, "iqr": 0.0, "std": 0.0}
+
+
+class TestDetectSpike:
+    def test_detects_clear_spike(self) -> None:
+        from app.demand_spike import detect_spike
+
+        values = [1.0, 1.0, 1.0, 50.0, 1.0, 1.0]
+        result = detect_spike(values)
+        assert result["spike_count"] > 0
+
+    def test_no_spike_in_flat_series(self) -> None:
+        from app.demand_spike import detect_spike
+
+        result = detect_spike([5.0] * 20)
+        assert result["spike_count"] == 0
+
+    def test_insufficient_data_returns_method_key(self) -> None:
+        from app.demand_spike import detect_spike
+
+        result = detect_spike([1.0, 2.0])
+        assert "method" in result
