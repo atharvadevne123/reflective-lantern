@@ -44,7 +44,7 @@ METRICS_PATH = Path("metrics.json")
 CHALLENGER_METRICS_PATH = Path("metrics_challenger.json")
 
 
-def extract_booking_data(**context: object) -> int:  # noqa: ANN003
+def extract_booking_data(**context: object) -> int:
     """Pull recent booking records from the database for retraining.
 
     Returns:
@@ -59,12 +59,12 @@ def extract_booking_data(**context: object) -> int:  # noqa: ANN003
         db.close()
         logger.info("Extracted %d booking records for retraining", len(records))
         return len(records)
-    except Exception as exc:  # noqa: BLE001
+    except Exception as exc:
         logger.warning("DB extraction failed (%s) — will use synthetic data", exc)
         return 0
 
 
-def validate_schema(**context: object) -> None:  # noqa: ANN003
+def validate_schema(**context: object) -> None:
     """Assert that extracted data conforms to the expected feature schema."""
     required_cols = {
         "lead_time",
@@ -84,7 +84,7 @@ def validate_schema(**context: object) -> None:  # noqa: ANN003
     logger.info("Schema validation passed — required columns: %s", required_cols)
 
 
-def retrain_model(**context: object) -> dict[str, object]:  # noqa: ANN003
+def retrain_model(**context: object) -> dict[str, object]:
     """Retrain ensemble on fresh data; save challenger artifacts.
 
     Returns:
@@ -95,7 +95,7 @@ def retrain_model(**context: object) -> dict[str, object]:  # noqa: ANN003
     # In production, replace with real DB-sourced data
     logger.info("Training challenger model on refreshed dataset ...")
     X, y = generate_sample_data(n=3000)
-    xgb_pipe, lgbm_pipe, metrics = train_model(X, y)
+    _xgb_pipe, _lgbm_pipe, metrics = train_model(X, y)
 
     # Challenger artefacts written by train_model to MODEL_PATH / LGBM_PATH
     METRICS_PATH.rename(CHALLENGER_METRICS_PATH)
@@ -107,7 +107,7 @@ def retrain_model(**context: object) -> dict[str, object]:  # noqa: ANN003
     return metrics
 
 
-def evaluate_model(**context: object) -> bool:  # noqa: ANN003
+def evaluate_model(**context: object) -> bool:
     """Compare challenger AUC against champion; return True if challenger wins.
 
     Returns:
@@ -130,7 +130,7 @@ def evaluate_model(**context: object) -> bool:  # noqa: ANN003
     return delta > 0.005
 
 
-def promote_if_better(**context: object) -> None:  # noqa: ANN003
+def promote_if_better(**context: object) -> None:
     """Swap champion artefacts with challenger if evaluate_model returned True."""
     should_promote = context["ti"].xcom_pull(task_ids="evaluate_model")
     if not should_promote:
@@ -142,7 +142,7 @@ def promote_if_better(**context: object) -> None:  # noqa: ANN003
     logger.info("Challenger promoted to champion")
 
 
-def detect_drift(**context: object) -> dict[str, object]:  # noqa: ANN003
+def detect_drift(**context: object) -> dict[str, object]:
     """Run KS-test between reference and recent production demand scores.
 
     Returns:
@@ -152,7 +152,7 @@ def detect_drift(**context: object) -> dict[str, object]:  # noqa: ANN003
 
     from app.model import generate_sample_data, load_models
 
-    xgb_pipe, lgbm_pipe, _ = load_models()
+    xgb_pipe, _lgbm_pipe, _ = load_models()
     x_ref, _ = generate_sample_data(500)
     ref_probs: np.ndarray = xgb_pipe.predict_proba(x_ref)[:, 1]
 

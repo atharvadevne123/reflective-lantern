@@ -68,7 +68,7 @@ class HotelFeatureEngineer(BaseEstimator, TransformerMixin):
         room_type_enc, channel_enc: ordinal encodings of categorical fields.
     """
 
-    def fit(self, X: pd.DataFrame, y: object = None) -> HotelFeatureEngineer:  # noqa: ANN001
+    def fit(self, X: pd.DataFrame, y: object = None) -> HotelFeatureEngineer:
         """No-op fit — all transforms are stateless."""
         return self
 

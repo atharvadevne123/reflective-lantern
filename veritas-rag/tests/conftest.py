@@ -10,8 +10,8 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from app.config import Settings  # noqa: E402
-from app.pipeline import RagPipeline  # noqa: E402
+from app.config import Settings
+from app.pipeline import RagPipeline
 
 NOW = datetime.now(UTC)
 

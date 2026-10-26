@@ -69,7 +69,7 @@ class TestAnomalyDetector:
 
         df, feature_cols = feature_matrix
         X = df[feature_cols].to_numpy(dtype=np.float32)
-        model, scaler = train_anomaly_detector(X, contamination=contamination)
+        model, _scaler = train_anomaly_detector(X, contamination=contamination)
         assert model is not None
 
 

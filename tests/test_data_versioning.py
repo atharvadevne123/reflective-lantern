@@ -7,8 +7,8 @@ import pytest
 from app.data_versioning import DataLineage, DataSnapshot
 
 
-def _snap(name="energy", version="1.0.0", **kwargs) -> DataSnapshot:
-    return DataSnapshot(name=name, version=version, source="s3://data/raw", **kwargs)
+def _snap(name="energy", version="1.0.0", source="s3://data/raw", **kwargs) -> DataSnapshot:
+    return DataSnapshot(name=name, version=version, source=source, **kwargs)
 
 
 class TestDataSnapshot:

@@ -142,7 +142,7 @@ def check_all_features(
     return results
 
 
-def log_prediction(  # noqa: PLR0913
+def log_prediction(
     db: Session,
     correlation_id: str,
     user_id: str,

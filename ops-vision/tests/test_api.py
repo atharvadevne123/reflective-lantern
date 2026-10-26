@@ -159,7 +159,7 @@ class TestArtifactPairing:
             routes, "load_model", lambda: (_ for _ in ()).throw(FileNotFoundError())
         )
 
-        model, pipeline = routes._load_artifacts()
+        model, _pipeline = routes._load_artifacts()
         assert model is not None
         assert Path(tmp_path / "p.pkl").exists(), "feature pipeline was not persisted"
         get_settings.cache_clear()

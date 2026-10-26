@@ -64,7 +64,7 @@ def fetch_training_data() -> tuple:
             "request_rate_per_sec",
             "disk_io_util_pct",
         ]
-        df = pd.DataFrame(rows, columns=feature_cols + ["is_incident"])
+        df = pd.DataFrame(rows, columns=[*feature_cols, "is_incident"])
         return df[feature_cols], df["is_incident"]
 
     except Exception:

@@ -165,10 +165,10 @@ def alert_frequency(reports: list[dict]) -> dict[str, int]:
 
 
 __all__ = [
+    "alert_frequency",
     "generate_grid_report",
     "merge_reports",
     "report_status_code",
-    "summarise_alerts",
     "report_trend",
-    "alert_frequency",
+    "summarise_alerts",
 ]

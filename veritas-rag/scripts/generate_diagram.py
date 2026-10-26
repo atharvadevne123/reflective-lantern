@@ -60,7 +60,7 @@ def draw_arrow(ax, x1: float, y1: float, x2: float, y2: float, label: str = "") 
 def main() -> None:
     """Render architecture.png into the screenshots directory."""
     os.makedirs("screenshots", exist_ok=True)
-    fig, ax = plt.subplots(figsize=(16, 8))
+    _fig, ax = plt.subplots(figsize=(16, 8))
     ax.set_xlim(0, 16)
     ax.set_ylim(0, 8)
     ax.axis("off")

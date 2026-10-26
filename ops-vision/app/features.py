@@ -99,7 +99,8 @@ class ColumnSelector(BaseEstimator, TransformerMixin):
         return X[self.columns].values
 
 
-ENGINEERED_COLS: list[str] = FEATURE_COLS + [
+ENGINEERED_COLS: list[str] = [
+    *FEATURE_COLS,
     "resource_pressure",
     "latency_err_ratio",
     "throughput_pressure",

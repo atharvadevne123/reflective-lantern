@@ -233,14 +233,14 @@ def demand_variability(values: list[float]) -> dict[str, float]:
 
 
 __all__ = [
-    "detect_spike",
-    "rolling_spike_count",
-    "spike_severity",
-    "spike_ratio",
     "consecutive_spike_run",
-    "normalise_demand",
-    "sustained_demand_violation",
     "demand_variability",
+    "detect_spike",
+    "normalise_demand",
+    "rolling_spike_count",
+    "spike_ratio",
+    "spike_severity",
+    "sustained_demand_violation",
 ]
 
 
