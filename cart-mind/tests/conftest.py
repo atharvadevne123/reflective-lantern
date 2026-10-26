@@ -73,6 +73,19 @@ def trained_pipeline(feature_df, binary_labels) -> None:
 
 
 @pytest.fixture()
+def fitted_pipeline(feature_df, binary_labels) -> None:
+    from app.model import train_model
+
+    pipe, _ = train_model(feature_df, binary_labels)
+    return pipe
+
+
+@pytest.fixture()
+def sample_features(feature_df: pd.DataFrame) -> pd.DataFrame:
+    return feature_df
+
+
+@pytest.fixture()
 def intent_payload() -> dict:
     return {
         "user_id": "u_001",

@@ -4,9 +4,12 @@ from __future__ import annotations
 
 import argparse
 import json
+import logging
 import sys
 import urllib.error
 import urllib.request
+
+logger = logging.getLogger(__name__)
 
 SAMPLE = {
     "carrier": "DHL",
@@ -68,9 +71,9 @@ def main() -> int:
         failures.append(f"drift returned {status}")
 
     if failures:
-        print("SMOKE TEST FAILED")
+        logger.error("SMOKE TEST FAILED")
         for f in failures:
-            print(f"  - {f}")
+            logger.error("  - %s", f)
         return 1
 
     print(

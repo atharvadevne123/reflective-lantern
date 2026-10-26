@@ -16,6 +16,7 @@ class BuildingSimilarityIndex:
     """
 
     def __init__(self) -> None:
+        """Initialise an empty index and probe for FAISS availability."""
         self._profiles: list[tuple[str, np.ndarray]] = []
         self._use_faiss = False
         try:

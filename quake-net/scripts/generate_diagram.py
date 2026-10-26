@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 import os
 
 import matplotlib
@@ -10,6 +11,8 @@ matplotlib.use("Agg")
 
 import matplotlib.patches as mpatches  # noqa: E402
 import matplotlib.pyplot as plt  # noqa: E402
+
+logger = logging.getLogger(__name__)
 
 INK = "#1b2430"
 MUTED = "#5a6b7d"
@@ -128,7 +131,7 @@ def main(output: str = "screenshots/architecture.png") -> str:
     fig = build_figure()
     fig.savefig(output, dpi=150, bbox_inches="tight")
     plt.close(fig)
-    print(f"Architecture diagram written to {output}")
+    logger.info("Architecture diagram written to %s", output)
     return output
 
 

@@ -17,6 +17,7 @@ class LogisticsFlowError(Exception):
     detail: str = "Internal error"
 
     def __init__(self, detail: str | None = None) -> None:
+        """Initialise with an optional *detail* override, falling back to the class default."""
         self.detail = detail or self.detail
         super().__init__(self.detail)
 

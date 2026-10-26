@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 import sys
 from pathlib import Path
 
@@ -14,6 +15,8 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.patches as mpatches  # noqa: E402
 import matplotlib.pyplot as plt  # noqa: E402
+
+logger = logging.getLogger(__name__)
 
 PROJECT_NAME = "Logistics-Flow"
 
@@ -114,7 +117,7 @@ def main() -> None:
         pad=16,
     )
     plt.savefig("screenshots/architecture.png", dpi=150, bbox_inches="tight")
-    print("Wrote screenshots/architecture.png")
+    logger.info("Wrote screenshots/architecture.png")
 
 
 if __name__ == "__main__":
