@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+from functools import lru_cache
 
 import numpy as np
 
@@ -22,6 +23,7 @@ BUILDING_BENCHMARKS: dict[str, float] = {
 GRADE_THRESHOLDS: dict[str, float] = {"A": 80.0, "B": 60.0, "C": 40.0}
 
 
+@lru_cache(maxsize=200)
 def _grade(score: float) -> str:
     """Map a numeric efficiency score to a letter grade."""
     for letter, threshold in GRADE_THRESHOLDS.items():
