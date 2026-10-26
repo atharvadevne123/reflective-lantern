@@ -49,3 +49,23 @@ def evict_expired() -> int:
     for k in expired_keys:
         del _store[k]
     return len(expired_keys)
+
+
+def get_with_default(key: str, default: Any = None) -> Any:
+    """Return the cached value for *key*, or *default* if missing or expired.
+
+    Args:
+        key: Cache key to look up.
+        default: Value to return when the key is absent or expired.
+
+    Returns:
+        Cached value or *default*.
+    """
+    result = get_cache(key)
+    return result if result is not None else default
+
+
+def keys() -> list[str]:
+    """Return the keys of all non-expired cache entries."""
+    now = time.monotonic()
+    return [k for k, (_, exp) in _store.items() if now <= exp]
