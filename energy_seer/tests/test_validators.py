@@ -308,3 +308,41 @@ class TestValidatePeriod:
         from app.validators import validate_period
 
         assert validate_period(4, min_period=4) == 4
+
+
+class TestValidateTemperature:
+    def test_valid_temp(self) -> None:
+        from app.validators import validate_temperature
+
+        assert validate_temperature(22.5) == pytest.approx(22.5)
+
+    def test_below_min_raises(self) -> None:
+        from app.validators import validate_temperature
+
+        with pytest.raises(ValueError):
+            validate_temperature(-61.0)
+
+    def test_above_max_raises(self) -> None:
+        from app.validators import validate_temperature
+
+        with pytest.raises(ValueError):
+            validate_temperature(61.0)
+
+
+class TestValidateHumidity:
+    def test_valid_humidity(self) -> None:
+        from app.validators import validate_humidity
+
+        assert validate_humidity(50.0) == pytest.approx(50.0)
+
+    def test_below_zero_raises(self) -> None:
+        from app.validators import validate_humidity
+
+        with pytest.raises(ValueError):
+            validate_humidity(-1.0)
+
+    def test_above_100_raises(self) -> None:
+        from app.validators import validate_humidity
+
+        with pytest.raises(ValueError):
+            validate_humidity(101.0)
