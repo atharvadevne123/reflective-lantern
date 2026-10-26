@@ -175,3 +175,23 @@ class TestPsiAlert:
 
         result = psi_alert(0.05, feature_name="consumption_kwh")
         assert "consumption_kwh" in result["message"]
+
+
+class TestPsiSeriesTrend:
+    def test_escalating_when_last_exceeds_mean(self) -> None:
+        from app.psi import psi_series_trend
+
+        result = psi_series_trend([0.05, 0.06, 0.30])
+        assert result["escalating"] is True
+
+    def test_empty_returns_stable(self) -> None:
+        from app.psi import psi_series_trend
+
+        result = psi_series_trend([])
+        assert result["drift_level"] == "stable"
+
+    def test_max_psi_equals_largest(self) -> None:
+        from app.psi import psi_series_trend
+
+        result = psi_series_trend([0.05, 0.15, 0.10])
+        assert result["max_psi"] == pytest.approx(0.15)
