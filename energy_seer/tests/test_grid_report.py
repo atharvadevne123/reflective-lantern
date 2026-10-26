@@ -180,3 +180,20 @@ class TestReportTrend:
 
         result = report_trend([])
         assert result["anomaly_total"] == 0
+
+
+class TestComputeAnomalyRate:
+    def test_simple_rate(self) -> None:
+        from app.grid_report import compute_anomaly_rate
+
+        assert compute_anomaly_rate(10, 5) == pytest.approx(2.0)
+
+    def test_zero_window_returns_zero(self) -> None:
+        from app.grid_report import compute_anomaly_rate
+
+        assert compute_anomaly_rate(10, 0) == 0.0
+
+    def test_zero_anomalies(self) -> None:
+        from app.grid_report import compute_anomaly_rate
+
+        assert compute_anomaly_rate(0, 24) == 0.0
