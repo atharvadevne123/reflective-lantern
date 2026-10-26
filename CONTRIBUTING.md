@@ -26,6 +26,16 @@ Both must pass. CI additionally enforces `ruff format --check`.
 - Google-style docstrings on modules and public functions
 - Use `logger`, never `print`, in `app/`
 
+Before committing, always run:
+
+```bash
+python -m ruff check .       # catch lint errors
+python -m ruff format --check .  # verify formatting
+python -m mypy app/ --ignore-missing-imports  # optional type check
+```
+
+All three must pass (mypy is advisory; ruff is required).
+
 ## Tests
 
 Every behavioural change needs a test. Place tests in the file matching the

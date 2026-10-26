@@ -90,3 +90,35 @@ Once running, the following endpoints are expected:
 2. Run `/health/ready` on the new instance.
 3. Shift traffic via load-balancer weight rules.
 4. Drain and terminate old instance.
+
+## Rate Limiting
+
+The token-bucket middleware (backed by `app.token_bucket.PerKeyTokenBucket`)
+enforces `DEFAULT_RATE_LIMIT_PER_MINUTE` requests per client IP by default.
+Adjust via the `RATE_LIMIT_PER_MINUTE` environment variable at startup.
+Buckets are keyed on the `X-Forwarded-For` header when present, otherwise
+the raw remote address.
+
+## Graceful Shutdown
+
+On `SIGTERM` the application:
+
+1. Stops accepting new requests (readiness probe returns 503 immediately).
+2. Calls `TaskQueue.stop()` to join worker threads with a configurable
+   `timeout` (default 2 s).
+3. Flushes any remaining `MetricsRegistry` snapshots.
+4. Closes the SQLAlchemy connection pool.
+
+Set `SHUTDOWN_TIMEOUT_SECONDS` to override the worker-join timeout.
+
+## Observability Checklist
+
+- **Structured logging** — `JsonFormatter` is enabled by default; set
+  `LOG_LEVEL=DEBUG` for verbose output.
+- **Drift monitoring** — `/metrics/drift` returns KS-test results for
+  `distance_km`, `weight_kg`, and `predicted_minutes`.
+- **Circuit breaker state** — logged at `WARNING` when a breaker opens;
+  `is_open` / `is_closed` / `is_half_open` properties are safe to read from
+  any thread.
+- **Cache stats** — call `prediction_cache.stats()` or the
+  `cache_stats_summary()` helper for hit-rate telemetry.

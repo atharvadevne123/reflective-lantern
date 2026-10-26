@@ -48,6 +48,10 @@ jobs:
       - name: Ruff lint
         run: python -m ruff check .
 
+      - name: Type check
+        run: python -m mypy app/ --ignore-missing-imports --no-error-summary
+        continue-on-error: true
+
       - name: Ruff format check
         run: python -m ruff format --check .
 

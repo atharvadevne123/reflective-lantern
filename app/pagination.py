@@ -1,4 +1,25 @@
-"""Pagination utilities for API endpoints."""
+"""Pagination utilities for API endpoints.
+
+Provides two complementary pagination strategies:
+
+**Offset-based (page + per_page)**
+    Simple numeric page navigation backed by :func:`paginate` and
+    :class:`PageInfo`.  Best for small, stable datasets where jumping
+    to an arbitrary page is needed.
+
+**Cursor-based**
+    Opaque base64 cursors created by :func:`encode_cursor` /
+    :func:`decode_cursor` and consumed by :func:`cursor_paginate`.
+    Avoids the "offset drift" problem for rapidly changing datasets.
+
+Key helpers:
+
+- :func:`paginate` — slice a list into a :class:`Page` with full metadata.
+- :func:`cursor_paginate` — walk a sorted list using opaque cursors.
+- :func:`page_range` — generate page-number windows for navigation UIs.
+- :func:`last_page_items` — calculate the item count on the final page.
+- :func:`is_last_page` — boolean test for the terminal page.
+"""
 
 from __future__ import annotations
 
@@ -49,6 +70,11 @@ class Page(Generic[T]):
 
     items: list[T]
     info: PageInfo
+
+    @property
+    def item_count(self) -> int:
+        """Return the number of items on this page."""
+        return len(self.items)
 
 
 def paginate(items: list, page: int = 1, per_page: int = 20) -> Page:

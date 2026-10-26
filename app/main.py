@@ -127,6 +127,7 @@ class PredictRequest(BaseModel):
     @field_validator("carrier")
     @classmethod
     def carrier_must_be_known(cls, v: str) -> str:
+        """Reject unknown carrier codes at validation time."""
         if v not in CARRIERS:
             raise ValueError(f"carrier must be one of {CARRIERS}")
         return v
@@ -134,6 +135,7 @@ class PredictRequest(BaseModel):
     @field_validator("route_type")
     @classmethod
     def route_must_be_known(cls, v: str) -> str:
+        """Reject unknown route type values at validation time."""
         if v not in ROUTE_TYPES:
             raise ValueError(f"route_type must be one of {ROUTE_TYPES}")
         return v

@@ -73,3 +73,38 @@ Request → correlation_id → API handler
 All stateful components (MetricsRegistry, TokenBucket, TaskQueue) use
 `threading.Lock` or `threading.Condition` for thread safety. The
 `correlation_id` module uses `threading.local` for per-thread isolation.
+
+## Memory Optimisation
+
+Several hot-path classes use `__slots__` or `slots=True` on dataclasses to
+reduce per-instance overhead:
+
+- `CircuitBreaker` — six named slots prevent accidental attribute sprawl.
+- `TokenBucket` — `@dataclass(slots=True)` cuts dict overhead for the four
+  state fields that are updated on every consume/refill cycle.
+
+## Resilience Patterns
+
+### Retry with Exponential Backoff
+
+`app/retry` wraps callables with configurable `max_attempts`, `base_delay`,
+`backoff` multiplier, and `jitter`.  The delay formula is:
+
+```
+sleep = base_delay * backoff^(attempt - 1) + random(0, jitter)
+```
+
+`retry_on_network_error` is a convenience decorator pre-configured for
+`OSError`/`TimeoutError` scenarios.
+
+### Circuit Breaker
+
+`app/circuit_breaker` moves through `CLOSED → OPEN → HALF_OPEN → CLOSED`.
+The `is_closed` and `is_half_open` properties enable callers to branch on
+state without importing `CircuitState`.
+
+### Token Bucket Rate Limiting
+
+`PerKeyTokenBucket` allocates an independent `TokenBucket` per key on first
+use.  `fill_ratio` (0.0–1.0) exposes bucket fullness for dashboards without
+requiring lock-held inspection of internal fields.

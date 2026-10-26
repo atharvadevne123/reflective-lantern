@@ -1,4 +1,31 @@
-"""Circuit breaker implementation for protecting downstream calls."""
+"""Circuit breaker implementation for protecting downstream calls.
+
+Implements the classic three-state circuit breaker pattern:
+
+- **CLOSED** — calls pass through; consecutive failures are counted.
+- **OPEN** — calls are rejected immediately with :class:`CircuitOpenError`
+  after the failure threshold is reached.
+- **HALF_OPEN** — after the recovery timeout, one probe call is allowed;
+  success closes the circuit, failure re-opens it.
+
+Public API:
+
+- :class:`CircuitBreaker` — the breaker itself; can be used directly via
+  :meth:`~CircuitBreaker.call` or as a decorator (``@cb``).
+- :class:`CircuitOpenError` — raised when calls are blocked.
+- :class:`CircuitState` — enum of the three circuit states.
+
+Example::
+
+    from app.circuit_breaker import CircuitBreaker, CircuitOpenError
+
+    cb = CircuitBreaker(failure_threshold=3, recovery_timeout=30.0)
+
+    try:
+        result = cb.call(my_downstream_fn, arg1, arg2)
+    except CircuitOpenError:
+        result = fallback_value
+"""
 
 from __future__ import annotations
 
@@ -31,6 +58,15 @@ class CircuitBreaker:
         recovery_timeout: Seconds to wait in OPEN before trying HALF_OPEN.
         expected_exceptions: Exception types that count as failures.
     """
+
+    __slots__ = (
+        "failure_threshold",
+        "recovery_timeout",
+        "expected_exceptions",
+        "_state",
+        "_failure_count",
+        "_opened_at",
+    )
 
     def __init__(
         self,
@@ -122,6 +158,16 @@ class CircuitBreaker:
     def is_open(self) -> bool:
         """Return True when the circuit is currently open (rejecting calls)."""
         return self.state == CircuitState.OPEN
+
+    @property
+    def is_closed(self) -> bool:
+        """Return True when the circuit is CLOSED (normal operation)."""
+        return self.state == CircuitState.CLOSED
+
+    @property
+    def is_half_open(self) -> bool:
+        """Return True when the circuit is in HALF_OPEN (probe) state."""
+        return self.state == CircuitState.HALF_OPEN
 
     def __call__(self, func: Callable) -> Callable:
         """Use as a decorator."""

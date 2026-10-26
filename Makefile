@@ -9,6 +9,9 @@ test:
 lint:
 	python -m ruff check .
 
+typecheck:
+	python -m mypy app/ --ignore-missing-imports
+
 format:
 	python -m ruff format .
 

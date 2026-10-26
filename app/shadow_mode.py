@@ -57,7 +57,7 @@ class ShadowRunner:
         self.comparer = comparer or (lambda a, b: a == b)
         self._results: list[ShadowResult] = []
 
-    def call(self, *args, **kwargs) -> Any:
+    def call(self, *args: Any, **kwargs: Any) -> Any:
         """Execute primary and shadow handlers, return primary result.
 
         Args:

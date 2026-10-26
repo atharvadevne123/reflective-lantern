@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import functools
 import os
 from dataclasses import dataclass, field
 
@@ -50,8 +51,17 @@ class Settings:
         return self.database_url.startswith("postgresql")
 
 
+@functools.lru_cache(maxsize=1)
 def get_settings() -> Settings:
-    """Return a freshly resolved Settings instance."""
+    """Return a cached Settings instance resolved from environment variables.
+
+    The result is cached after the first call so that repeated calls do not
+    re-read environment variables.  Call ``get_settings.cache_clear()`` in
+    tests to reset between test cases.
+
+    Returns:
+        The singleton :class:`Settings` instance for this process.
+    """
     return Settings()
 
 
