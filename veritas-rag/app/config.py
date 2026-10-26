@@ -96,17 +96,13 @@ class Settings:
                 f"confidence_threshold must be in (0, 1], got {self.confidence_threshold}"
             )
         if not 0.0 <= self.chunk_trust_floor < 1.0:
-            raise ValueError(
-                f"chunk_trust_floor must be in [0, 1), got {self.chunk_trust_floor}"
-            )
+            raise ValueError(f"chunk_trust_floor must be in [0, 1), got {self.chunk_trust_floor}")
         if self.freshness_half_life_days <= 0.0:
             raise ValueError(
                 f"freshness_half_life_days must be > 0, got {self.freshness_half_life_days}"
             )
         if not 0.0 < self.near_dup_threshold <= 1.0:
-            raise ValueError(
-                f"near_dup_threshold must be in (0, 1], got {self.near_dup_threshold}"
-            )
+            raise ValueError(f"near_dup_threshold must be in (0, 1], got {self.near_dup_threshold}")
         if self.final_top_k < 1:
             raise ValueError(f"final_top_k must be >= 1, got {self.final_top_k}")
 

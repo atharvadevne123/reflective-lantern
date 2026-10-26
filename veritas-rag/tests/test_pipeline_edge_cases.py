@@ -80,9 +80,7 @@ class TestPipelineEdgeCases:
             "What department administers the program?",
         ],
     )
-    def test_answered_questions_have_citations(
-        self, pipeline: RagPipeline, question: str
-    ) -> None:
+    def test_answered_questions_have_citations(self, pipeline: RagPipeline, question: str) -> None:
         """Answered questions always include at least one citation."""
         answer = pipeline.query(question)
         if answer.answered:

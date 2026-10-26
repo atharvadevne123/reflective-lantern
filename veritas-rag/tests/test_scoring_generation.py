@@ -416,9 +416,7 @@ class TestGateDecisionEdgeCases:
         from app.generation.fallback import evaluate_evidence
 
         high_chunks = [make_scored(trust=0.9), make_scored(trust=0.85)]
-        decision = evaluate_evidence(
-            high_chunks, confidence_threshold=0.45, chunk_trust_floor=0.35
-        )
+        decision = evaluate_evidence(high_chunks, confidence_threshold=0.45, chunk_trust_floor=0.35)
         assert decision.allowed is True
         assert decision.reason == "evidence_sufficient"
 
