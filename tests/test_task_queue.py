@@ -351,3 +351,72 @@ class TestTaskQueueCompletedCount:
             q.submit(work, 5, i)
         q.stop(timeout=5.0)
         assert len(results) == n
+
+
+class TestIsEmpty:
+    def test_new_queue_is_empty(self) -> None:
+        from app.task_queue import TaskQueue
+
+        q = TaskQueue(workers=0)
+        assert q.is_empty() is True
+
+    def test_nonempty_queue_is_not_empty(self) -> None:
+        from app.task_queue import TaskQueue
+
+        q = TaskQueue(workers=0)
+        q.submit(lambda: None, priority=5)
+        assert q.is_empty() is False
+
+    def test_drained_queue_is_empty(self) -> None:
+        from app.task_queue import TaskQueue
+
+        q = TaskQueue(workers=0)
+        q.submit(lambda: None, priority=5)
+        q.drain()
+        assert q.is_empty() is True
+
+    @pytest.mark.parametrize("n", [1, 3, 5])
+    def test_multiple_tasks_not_empty(self, n: int) -> None:
+        from app.task_queue import TaskQueue
+
+        q = TaskQueue(workers=0)
+        for i in range(n):
+            q.submit(lambda: None, priority=i)
+        assert q.is_empty() is False
+
+
+class TestPriorityRange:
+    def test_empty_returns_none(self) -> None:
+        from app.task_queue import TaskQueue
+
+        q = TaskQueue(workers=0)
+        assert q.priority_range() is None
+
+    def test_single_task_min_equals_max(self) -> None:
+        from app.task_queue import TaskQueue
+
+        q = TaskQueue(workers=0)
+        q.submit(lambda: None, priority=7)
+        result = q.priority_range()
+        assert result == (7, 7)
+
+    def test_range_correct_for_multiple(self) -> None:
+        from app.task_queue import TaskQueue
+
+        q = TaskQueue(workers=0)
+        for p in [3, 1, 5, 2]:
+            q.submit(lambda: None, priority=p)
+        lo, hi = q.priority_range()
+        assert lo == 1
+        assert hi == 5
+
+    @pytest.mark.parametrize("priorities", [[10], [1, 10], [5, 5, 5]])
+    def test_range_tuple_on_nonempty(self, priorities: list) -> None:
+        from app.task_queue import TaskQueue
+
+        q = TaskQueue(workers=0)
+        for p in priorities:
+            q.submit(lambda: None, priority=p)
+        result = q.priority_range()
+        assert result is not None
+        assert result[0] <= result[1]

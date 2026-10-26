@@ -488,3 +488,18 @@ def pipeline_estimator_classes(pipeline: Any) -> list[type]:
         AttributeError: If *pipeline* has no ``steps`` attribute.
     """
     return [type(step) for _, step in pipeline.steps]
+
+
+def pipeline_step_count(pipeline: Any) -> int:
+    """Return the number of steps in a scikit-learn Pipeline.
+
+    Args:
+        pipeline: A scikit-learn Pipeline object.
+
+    Returns:
+        Integer count of steps.
+
+    Raises:
+        AttributeError: If *pipeline* has no ``steps`` attribute.
+    """
+    return len(pipeline.steps)

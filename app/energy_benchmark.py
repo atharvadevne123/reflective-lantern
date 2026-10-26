@@ -193,10 +193,30 @@ def benchmark(
     return result
 
 
+def below_median_cohort(eui: float, cohort_euis: list[float]) -> bool:
+    """Return True if *eui* is below the cohort median (better efficiency).
+
+    Args:
+        eui: The building's energy use intensity in kWh/m².
+        cohort_euis: EUI values for all peers in the cohort.
+
+    Returns:
+        True when *eui* is strictly below the cohort median, False otherwise.
+
+    Raises:
+        ValueError: If *cohort_euis* is empty.
+    """
+    if not cohort_euis:
+        raise ValueError("cohort_euis must be non-empty")
+    median = statistics.median(cohort_euis)
+    return eui < median
+
+
 __all__ = [
     "GRADE_THRESHOLDS",
     "MIN_COHORT_SIZE",
     "BenchmarkResult",
+    "below_median_cohort",
     "benchmark",
     "energy_use_intensity",
     "grade_from_score",

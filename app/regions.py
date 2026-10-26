@@ -395,3 +395,19 @@ def peak_load_range_mw() -> dict[str, float]:
         return {"min": 0.0, "max": 0.0}
     loads = [float(r.get("peak_load_mw", 0.0)) for r in KNOWN_REGIONS.values()]
     return {"min": min(loads), "max": max(loads)}
+
+
+def region_ids_with_minimum_load(min_load_mw: float) -> list[str]:
+    """Return IDs of regions whose peak load meets or exceeds *min_load_mw*.
+
+    Args:
+        min_load_mw: Minimum peak load threshold in MW.
+
+    Returns:
+        Sorted list of region IDs.
+    """
+    return sorted(
+        rid
+        for rid, region in KNOWN_REGIONS.items()
+        if float(region.get("peak_load_mw", 0.0)) >= min_load_mw
+    )

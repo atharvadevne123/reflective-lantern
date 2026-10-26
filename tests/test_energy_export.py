@@ -806,3 +806,49 @@ class TestFilterRecordsEdgeCases:
         records = [{"consumption_kwh": 0.5}] * 4
         result = filter_records(records, min_kwh=1.0)
         assert len(result) == 0
+
+
+class TestRecordsKwhAverage:
+    def test_empty_list_returns_none(self) -> None:
+        from app.energy_export import records_kwh_average
+
+        assert records_kwh_average([]) is None
+
+    def test_records_without_field_returns_none(self) -> None:
+        from app.energy_export import records_kwh_average
+
+        assert records_kwh_average([{"other": 1.0}]) is None
+
+    def test_single_record_average(self) -> None:
+        from app.energy_export import records_kwh_average
+
+        result = records_kwh_average([{"consumption_kwh": 10.0}])
+        assert result == pytest.approx(10.0)
+
+    def test_multiple_records_correct_average(self) -> None:
+        from app.energy_export import records_kwh_average
+
+        records = [{"consumption_kwh": 10.0}, {"consumption_kwh": 20.0}, {"consumption_kwh": 30.0}]
+        result = records_kwh_average(records)
+        assert result == pytest.approx(20.0)
+
+    def test_skips_records_without_field(self) -> None:
+        from app.energy_export import records_kwh_average
+
+        records = [{"consumption_kwh": 10.0}, {"other": 5.0}, {"consumption_kwh": 20.0}]
+        result = records_kwh_average(records)
+        assert result == pytest.approx(15.0)
+
+    @pytest.mark.parametrize(
+        "values,expected",
+        [
+            ([5.0, 5.0], 5.0),
+            ([0.0, 10.0], 5.0),
+            ([100.0, 200.0, 300.0], 200.0),
+        ],
+    )
+    def test_parametrized_average(self, values: list, expected: float) -> None:
+        from app.energy_export import records_kwh_average
+
+        records = [{"consumption_kwh": v} for v in values]
+        assert records_kwh_average(records) == pytest.approx(expected)

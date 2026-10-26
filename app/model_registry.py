@@ -137,5 +137,13 @@ class ModelRegistry:
         """Return number of registered versions for a model."""
         return len(self._models.get(name, []))
 
+    def registered_model_names(self) -> list[str]:
+        """Return a sorted list of all model names in the registry.
+
+        Returns:
+            Sorted list of model name strings.
+        """
+        return sorted(self._models)
+
 
 __all__ = ["ModelRegistry", "ModelStage", "ModelVersion"]

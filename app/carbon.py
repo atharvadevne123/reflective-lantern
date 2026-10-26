@@ -205,6 +205,7 @@ __all__ = [
     "tree_offset_days",
     "trees_equivalent",
     "weighted_carbon_factor",
+    "co2_intensity_label",
 ]
 
 
@@ -1197,3 +1198,26 @@ def carbon_neutral_kwh(
     if intensity == 0.0:
         return 0.0
     return round(remaining_co2 / intensity, 4)
+
+
+def co2_intensity_label(co2_kg_per_kwh: float) -> str:
+    """Classify a grid carbon intensity into a human-readable label.
+
+    Args:
+        co2_kg_per_kwh: Carbon dioxide emissions in kg per kWh.
+
+    Returns:
+        "low" if < 0.2, "medium" if < 0.4, "high" if < 0.6, "very high" otherwise.
+
+    Raises:
+        ValueError: If *co2_kg_per_kwh* is negative.
+    """
+    if co2_kg_per_kwh < 0:
+        raise ValueError("co2_kg_per_kwh must be non-negative")
+    if co2_kg_per_kwh < 0.2:
+        return "low"
+    if co2_kg_per_kwh < 0.4:
+        return "medium"
+    if co2_kg_per_kwh < 0.6:
+        return "high"
+    return "very high"

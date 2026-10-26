@@ -148,5 +148,22 @@ class PerKeyTokenBucket:
         """
         return len(self._buckets)
 
+    def is_full(self, key: str) -> bool:
+        """Return True if the bucket for *key* is at its full capacity.
+
+        A bucket that has never been used is considered full.
+
+        Args:
+            key: The rate-limit key to check.
+
+        Returns:
+            True when the bucket's available tokens equal its capacity.
+        """
+        with self._lock:
+            if key not in self._buckets:
+                return True
+            bucket = self._buckets[key]
+        return bucket.available() >= self.capacity
+
 
 __all__ = ["PerKeyTokenBucket", "TokenBucket"]

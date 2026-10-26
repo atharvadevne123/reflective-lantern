@@ -136,3 +136,15 @@ def has_required_fields(schema: ConfigSchema) -> bool:
         ``True`` when any field has ``required=True``, ``False`` otherwise.
     """
     return any(spec.required for spec in schema.fields)
+
+
+def optional_field_names(schema: ConfigSchema) -> list[str]:
+    """Return a sorted list of optional (non-required) field names in *schema*.
+
+    Args:
+        schema: A :class:`ConfigSchema` to inspect.
+
+    Returns:
+        Sorted list of field name strings where ``required`` is False.
+    """
+    return sorted(spec.name for spec in schema.fields if not spec.required)

@@ -255,3 +255,20 @@ def off_peak_load_fraction(
         return 0.0
     off_peak = sum(v for i, v in enumerate(hourly_kwh) if not (peak_start <= (i % 24) < peak_end))
     return round(off_peak / total, 6)
+
+
+def peak_hour_index(hourly_kwh: list[float]) -> int:
+    """Return the index of the hour with the highest load.
+
+    Args:
+        hourly_kwh: Hourly consumption values in kWh.
+
+    Returns:
+        Zero-based index of the maximum load hour.
+
+    Raises:
+        ValueError: If *hourly_kwh* is empty.
+    """
+    if not hourly_kwh:
+        raise ValueError("hourly_kwh must not be empty")
+    return hourly_kwh.index(max(hourly_kwh))

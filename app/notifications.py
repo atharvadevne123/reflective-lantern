@@ -453,3 +453,20 @@ def alerts_contain_severity(alerts: list[Alert], severity: str) -> bool:
     """
     target = severity.lower()
     return any(a.severity.lower() == target for a in alerts)
+
+
+def alerts_by_source(alerts: list[Alert]) -> dict[str, list[Alert]]:
+    """Group *alerts* by their source attribute.
+
+    Args:
+        alerts: Sequence of Alert objects.
+
+    Returns:
+        Dict mapping each source string to the list of alerts from that source.
+        Alerts without a ``source`` attribute are grouped under the key ``""``.
+    """
+    groups: dict[str, list[Alert]] = {}
+    for alert in alerts:
+        src = getattr(alert, "source", "") or ""
+        groups.setdefault(src, []).append(alert)
+    return groups

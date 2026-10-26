@@ -258,3 +258,43 @@ class TestVersionCount:
         for i in range(n):
             reg.register(ModelVersion(name="m", version=f"{i}.0.0", metrics={}))
         assert reg.version_count("m") == n
+
+
+class TestRegisteredModelNames:
+    def test_empty_registry_returns_empty(self) -> None:
+        from app.model_registry import ModelRegistry
+
+        reg = ModelRegistry()
+        assert reg.registered_model_names() == []
+
+    def test_single_model_listed(self) -> None:
+        from app.model_registry import ModelRegistry, ModelVersion
+
+        reg = ModelRegistry()
+        reg.register(ModelVersion(name="alpha", version="1.0.0", metrics={}))
+        assert reg.registered_model_names() == ["alpha"]
+
+    def test_names_are_sorted(self) -> None:
+        from app.model_registry import ModelRegistry, ModelVersion
+
+        reg = ModelRegistry()
+        for name in ["charlie", "alpha", "beta"]:
+            reg.register(ModelVersion(name=name, version="1.0.0", metrics={}))
+        assert reg.registered_model_names() == ["alpha", "beta", "charlie"]
+
+    def test_duplicate_versions_count_once(self) -> None:
+        from app.model_registry import ModelRegistry, ModelVersion
+
+        reg = ModelRegistry()
+        reg.register(ModelVersion(name="m", version="1.0.0", metrics={}))
+        reg.register(ModelVersion(name="m", version="2.0.0", metrics={}))
+        assert reg.registered_model_names() == ["m"]
+
+    @pytest.mark.parametrize("n", [1, 3, 5])
+    def test_name_count_matches_unique_models(self, n: int) -> None:
+        from app.model_registry import ModelRegistry, ModelVersion
+
+        reg = ModelRegistry()
+        for i in range(n):
+            reg.register(ModelVersion(name=f"model_{i}", version="1.0.0", metrics={}))
+        assert len(reg.registered_model_names()) == n

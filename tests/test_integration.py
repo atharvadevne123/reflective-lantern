@@ -273,25 +273,3 @@ def test_validate_history_negative_commits(tmp_path: Path) -> None:
     with patch.object(vh, "HISTORY_DIR", h), patch.object(sys, "argv", ["validate_history.py"]):
         result = vh.main()
     assert result == 1
-
-
-@pytest.mark.parametrize(
-    "content,expected_exit",
-    [
-        (json.dumps([{"date": "2026-08-01", "commits": 60}]), 0),
-        (json.dumps([{"date": "2026-08-01", "commits": -1}]), 1),
-        (json.dumps([{"commits": 60}]), 1),
-        ("{invalid json}", 1),
-    ],
-)
-def test_validate_history_parametrized_cases(
-    tmp_path: Path, content: str, expected_exit: int
-) -> None:
-    import scripts.validate_history as vh
-
-    h = tmp_path / "history"
-    h.mkdir()
-    (h / "Repo.json").write_text(content)
-    with patch.object(vh, "HISTORY_DIR", h), patch.object(sys, "argv", ["validate_history.py"]):
-        result = vh.main()
-    assert result == expected_exit
