@@ -123,3 +123,33 @@ class TestForecastHorizonAccuracy:
         predicted = [1.0] * 30
         result = forecast_horizon_accuracy(actual, predicted, horizon=horizon)
         assert result["n_evaluated"] <= horizon
+
+
+class TestExponentialSmoothing:
+    def test_flat_series_stays_flat(self) -> None:
+        from app.forecaster import exponential_smoothing
+
+        result = exponential_smoothing([5.0] * 10, alpha=0.3, steps=1)
+        assert abs(result[0] - 5.0) < 0.01
+
+    def test_steps_returns_correct_count(self) -> None:
+        from app.forecaster import exponential_smoothing
+
+        result = exponential_smoothing([1.0, 2.0, 3.0], steps=5)
+        assert len(result) == 5
+
+    def test_empty_raises(self) -> None:
+        from app.forecaster import exponential_smoothing
+
+        import pytest
+
+        with pytest.raises(ValueError):
+            exponential_smoothing([])
+
+    def test_invalid_alpha_raises(self) -> None:
+        from app.forecaster import exponential_smoothing
+
+        import pytest
+
+        with pytest.raises(ValueError):
+            exponential_smoothing([1.0, 2.0], alpha=0.0)
