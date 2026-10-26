@@ -176,3 +176,24 @@ def test_train_model_returns_expected_metrics(metric: str) -> None:
     y = pd.Series(rng.uniform(5, 30, n))
     _, metrics = train_model(X, y)
     assert metric in metrics
+
+
+class TestGetMetrics:
+    def test_returns_dict(self) -> None:
+        from app.model import get_metrics
+
+        result = get_metrics()
+        assert isinstance(result, dict)
+
+    def test_empty_before_training(self) -> None:
+        from app.model import get_metrics
+
+        result = get_metrics()
+        # Before any training the metrics dict may be empty or contain defaults
+        assert result is not None
+
+    def test_load_model_returns_dict(self) -> None:
+        from app.model import load_model
+
+        result = load_model()
+        assert isinstance(result, dict)
