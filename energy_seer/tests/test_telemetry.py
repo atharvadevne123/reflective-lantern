@@ -158,3 +158,45 @@ class TestSnapshotAndBulk:
         for _ in range(5):
             increment("c")
         assert get("c") == 5
+
+
+class TestCounterExists:
+    def test_exists_after_increment(self) -> None:
+        from app.telemetry import counter_exists, increment, reset
+
+        reset("ce_test")
+        increment("ce_test")
+        assert counter_exists("ce_test") is True
+
+    def test_new_counter_not_exists(self) -> None:
+        from app.telemetry import counter_exists, reset
+
+        reset("ce_new_xyz")
+        assert counter_exists("ce_new_xyz") is False
+
+    def test_reset_does_not_delete_counter(self) -> None:
+        from app.telemetry import counter_exists, increment, reset
+
+        increment("ce_check")
+        reset("ce_check")
+        # reset sets to 0 but keeps the key
+        assert counter_exists("ce_check") is True
+
+
+class TestResetPrefix:
+    def test_resets_matching_counters(self) -> None:
+        from app.telemetry import get, increment, reset_prefix
+
+        increment("api_get")
+        increment("api_post")
+        reset_prefix("api_")
+        assert get("api_get") == 0
+        assert get("api_post") == 0
+
+    def test_returns_count_of_reset(self) -> None:
+        from app.telemetry import increment, reset_prefix
+
+        increment("pfx_a")
+        increment("pfx_b")
+        count = reset_prefix("pfx_")
+        assert count >= 2
