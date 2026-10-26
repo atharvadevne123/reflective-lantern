@@ -183,3 +183,23 @@ class TestDemandTrend:
 
         result = demand_trend([1.0, 2.0])
         assert result["trend"] == "flat"
+
+
+class TestDemandVariability:
+    def test_returns_cv_key(self) -> None:
+        from app.demand_spike import demand_variability
+
+        result = demand_variability([1.0, 2.0, 3.0, 4.0])
+        assert "cv" in result
+
+    def test_insufficient_data_zeros(self) -> None:
+        from app.demand_spike import demand_variability
+
+        result = demand_variability([1.0])
+        assert result["cv"] == 0.0
+
+    def test_constant_series_zero_std(self) -> None:
+        from app.demand_spike import demand_variability
+
+        result = demand_variability([5.0] * 10)
+        assert result["std"] == pytest.approx(0.0, abs=1e-6)
