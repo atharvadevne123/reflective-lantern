@@ -178,6 +178,7 @@ class TestFeatureColumnNames:
 class TestValidateDataframeColumns:
     def test_no_missing(self) -> None:
         import pandas as pd
+
         from energy_seer.app.features import validate_dataframe_columns
 
         df = pd.DataFrame({"consumption_kwh": [1], "hour_of_day": [0], "day_of_week": [0]})
@@ -185,6 +186,7 @@ class TestValidateDataframeColumns:
 
     def test_missing_column(self) -> None:
         import pandas as pd
+
         from energy_seer.app.features import validate_dataframe_columns
 
         df = pd.DataFrame({"consumption_kwh": [1]})
@@ -193,6 +195,7 @@ class TestValidateDataframeColumns:
 
     def test_custom_required(self) -> None:
         import pandas as pd
+
         from energy_seer.app.features import validate_dataframe_columns
 
         df = pd.DataFrame({"a": [1], "b": [2]})
@@ -303,6 +306,7 @@ class TestFeaturePipelineOutputShape:
 class TestValidateDataframeColumnsExtra:
     def test_missing_columns_returned(self) -> None:
         import pandas as pd
+
         from app.features import validate_dataframe_columns
 
         df = pd.DataFrame({"consumption_kwh": [1.0]})
@@ -311,6 +315,7 @@ class TestValidateDataframeColumnsExtra:
 
     def test_all_present_returns_empty(self) -> None:
         import pandas as pd
+
         from app.features import validate_dataframe_columns
 
         df = pd.DataFrame({"consumption_kwh": [1.0], "hour_of_day": [0], "day_of_week": [0]})
@@ -318,6 +323,7 @@ class TestValidateDataframeColumnsExtra:
 
     def test_custom_required_columns(self) -> None:
         import pandas as pd
+
         from app.features import validate_dataframe_columns
 
         df = pd.DataFrame({"a": [1]})

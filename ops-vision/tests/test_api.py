@@ -153,7 +153,7 @@ class TestArtifactPairing:
         monkeypatch.setenv("MODEL_PATH", str(tmp_path / "m.pkl"))
         monkeypatch.setenv("FEATURE_PIPELINE_PATH", str(tmp_path / "p.pkl"))
 
-        import app.api.v1.routes as routes
+        from app.api.v1 import routes
 
         monkeypatch.setattr(
             routes, "load_model", lambda: (_ for _ in ()).throw(FileNotFoundError())
@@ -166,7 +166,7 @@ class TestArtifactPairing:
 
     def test_predict_succeeds_on_warm_start(self, client, sample_metrics) -> None:
         """Predicting twice with a reloaded model must not raise NotFittedError."""
-        import app.api.v1.routes as routes
+        from app.api.v1 import routes
 
         first = client.post("/api/v1/predict", json=sample_metrics)
         assert first.status_code == 200

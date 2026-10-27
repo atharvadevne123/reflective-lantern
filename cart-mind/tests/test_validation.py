@@ -732,7 +732,7 @@ class TestCrossFieldPenaltyScoreExtended:
     def test_penalty_never_exceeds_one(self) -> None:
         from app.validation import cross_field_penalty_score
 
-        for n in range(0, 25):
+        for n in range(25):
             assert cross_field_penalty_score(["x"] * n) <= 1.0
 
 

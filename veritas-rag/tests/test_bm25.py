@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-import pytest
-
 from app.retrieval.bm25 import BM25Index, tokenize
 
 

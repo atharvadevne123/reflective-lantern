@@ -4,7 +4,12 @@ from __future__ import annotations
 
 import pytest
 
-from app.monitoring import compute_ks_drift, compute_psi, log_prediction, run_drift_check
+from app.monitoring import (
+    compute_ks_drift,
+    compute_psi,
+    log_prediction,
+    run_drift_check,
+)
 
 
 @pytest.fixture()

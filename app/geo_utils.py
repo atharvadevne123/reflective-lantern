@@ -227,6 +227,7 @@ def k_nearest(query: Coordinate, candidates: list[Coordinate], k: int = 5) -> li
 __all__ = [
     "BoundingBox",
     "Coordinate",
+    "arithmetic_midpoint",
     "bearing",
     "bounding_box_of",
     "distance_km",
@@ -236,7 +237,6 @@ __all__ = [
     "midpoint",
     "nearest_neighbor",
     "within_radius",
-    "arithmetic_midpoint",
 ]
 
 

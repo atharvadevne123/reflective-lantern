@@ -67,7 +67,7 @@ def test_upload_model_uses_version_in_key(monkeypatch, tmp_path) -> None:
     assert result is False
 
 
-import pytest  # noqa: E402
+import pytest
 
 
 @pytest.mark.parametrize("version", ["1.0.0", "2.3.1", "0.0.1"])

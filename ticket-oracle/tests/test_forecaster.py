@@ -3,8 +3,12 @@
 from __future__ import annotations
 
 import pytest
-
-from app.forecaster import compute_sma, detect_volume_spike, fit_linear_trend, forecast_volume
+from app.forecaster import (
+    compute_sma,
+    detect_volume_spike,
+    fit_linear_trend,
+    forecast_volume,
+)
 
 
 def test_compute_sma_basic():

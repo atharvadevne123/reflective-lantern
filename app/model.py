@@ -202,9 +202,9 @@ def score_anomaly(bundle: object, row: np.ndarray) -> dict[str, object]:
 
 
 __all__ = [
+    "METRICS_PATH",
     "MODEL_PATH",
     "MODEL_VERSION",
-    "METRICS_PATH",
     "load_model",
     "predict",
     "score_anomaly",

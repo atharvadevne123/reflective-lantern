@@ -126,7 +126,7 @@ class TextStatTransformer(BaseEstimator, TransformerMixin):
         "has_link",
     ]
 
-    def fit(self, X: list[dict[str, Any]], y: Any = None) -> "TextStatTransformer":
+    def fit(self, X: list[dict[str, Any]], y: Any = None) -> TextStatTransformer:
         return self
 
     def transform(self, X: list[dict[str, Any]]) -> np.ndarray:
@@ -170,7 +170,7 @@ class TextStatTransformer(BaseEstimator, TransformerMixin):
 class TextExtractor(BaseEstimator, TransformerMixin):
     """Pull the raw text string out of a dict for TF-IDF."""
 
-    def fit(self, X: list[dict[str, Any]], y: Any = None) -> "TextExtractor":
+    def fit(self, X: list[dict[str, Any]], y: Any = None) -> TextExtractor:
         return self
 
     def transform(self, X: list[dict[str, Any]]) -> list[str]:

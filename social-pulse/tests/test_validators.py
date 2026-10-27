@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import pytest
-
 from app.validators import (
     check_repetitive_content,
     sanitise_text,

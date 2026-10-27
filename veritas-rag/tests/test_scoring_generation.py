@@ -5,11 +5,9 @@ from __future__ import annotations
 from datetime import UTC, datetime, timedelta
 
 import pytest
-
 from app.generation.extractive import ExtractiveGenerator
 from app.generation.fallback import evaluate_evidence
 from app.generation.prompts import INSUFFICIENT_EVIDENCE_MESSAGE
-from app.schemas import Chunk, ScoredChunk
 from app.scoring.trust import (
     answer_confidence,
     consistency_score,
@@ -17,6 +15,8 @@ from app.scoring.trust import (
     score_chunk,
     source_quality_score,
 )
+
+from app.schemas import Chunk, ScoredChunk
 
 NOW = datetime.now(UTC)
 
@@ -354,6 +354,7 @@ class TestExtractiveGeneratorEdgeCases:
     def test_max_sentences_respected(self) -> None:
         """ExtractiveGenerator respects max_sentences limit."""
         from app.generation.extractive import ExtractiveGenerator
+
         from app.schemas import Chunk, ScoredChunk
 
         def make_chunk_with_text(text: str) -> ScoredChunk:
@@ -381,6 +382,7 @@ class TestExtractiveGeneratorEdgeCases:
     def test_citations_match_answer_sentences(self) -> None:
         """Each citation claim corresponds to a sentence in the answer."""
         from app.generation.extractive import ExtractiveGenerator
+
         from app.schemas import Chunk, ScoredChunk
 
         chunk = Chunk(

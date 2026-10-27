@@ -42,7 +42,6 @@ def test_save_model_creates_dirs() -> None:
 
 def test_load_model_file_not_found_raises() -> None:
     import pytest
-
     from app.utils.serialization import load_model
 
     with pytest.raises(FileNotFoundError):

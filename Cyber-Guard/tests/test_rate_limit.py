@@ -6,7 +6,6 @@ import time
 from collections import deque
 
 import pytest
-
 from app.rate_limit import WINDOW_SECONDS, _prune, reset_rate_limit_state
 
 

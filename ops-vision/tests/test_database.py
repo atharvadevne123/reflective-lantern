@@ -51,7 +51,7 @@ class TestPingDb:
         assert isinstance(result, bool)
 
 
-import pytest  # noqa: E402
+import pytest
 
 
 @pytest.mark.parametrize(

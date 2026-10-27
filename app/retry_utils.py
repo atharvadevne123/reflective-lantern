@@ -11,9 +11,9 @@ logger = logging.getLogger(__name__)
 
 __all__ = [
     "RetryError",
+    "compute_backoff_seconds",
     "retry",
     "retry_with_backoff",
-    "compute_backoff_seconds",
 ]
 
 

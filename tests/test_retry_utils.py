@@ -4,7 +4,12 @@ from __future__ import annotations
 
 import pytest
 
-from app.retry_utils import RetryError, compute_backoff_seconds, retry, retry_with_backoff
+from app.retry_utils import (
+    RetryError,
+    compute_backoff_seconds,
+    retry,
+    retry_with_backoff,
+)
 
 
 class TestComputeBackoffSeconds:

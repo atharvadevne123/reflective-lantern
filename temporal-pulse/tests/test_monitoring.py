@@ -23,7 +23,10 @@ def reset_state() -> None:
 
 class TestDistributionUpdates:
     def test_update_reference_stores_values(self) -> None:
-        from app.monitoring import _REFERENCE_DISTRIBUTIONS, update_reference_distribution
+        from app.monitoring import (
+            _REFERENCE_DISTRIBUTIONS,
+            update_reference_distribution,
+        )
 
         update_reference_distribution("temp", [1.0, 2.0, 3.0])
         assert len(_REFERENCE_DISTRIBUTIONS["temp"]) == 3

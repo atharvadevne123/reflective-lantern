@@ -1,7 +1,6 @@
 """Tests for the experiment tracking module."""
 
 import pytest
-
 from app.experiment_tracking import get_best_run, list_runs, log_run
 
 

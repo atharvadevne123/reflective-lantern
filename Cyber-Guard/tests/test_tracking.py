@@ -2,10 +2,7 @@
 
 from __future__ import annotations
 
-from contextlib import contextmanager
 from unittest.mock import patch
-
-import pytest
 
 from app.tracking import is_tracking_enabled, track_run
 

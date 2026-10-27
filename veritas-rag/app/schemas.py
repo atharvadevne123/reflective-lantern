@@ -5,7 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any
 
-__all__ = ["Answer", "Citation", "Chunk", "Document", "ScoredChunk"]
+__all__ = ["Answer", "Chunk", "Citation", "Document", "ScoredChunk"]
 
 
 @dataclass

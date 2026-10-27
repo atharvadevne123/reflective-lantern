@@ -173,7 +173,12 @@ class TestExperimentRegistryEdgeCases:
 
     @pytest.mark.parametrize("n", [1, 3, 5])
     def test_registry_lists_all_registered(self, n: int) -> None:
-        from app.experiment_tracker import CONTROL, Experiment, ExperimentRegistry, Variant
+        from app.experiment_tracker import (
+            CONTROL,
+            Experiment,
+            ExperimentRegistry,
+            Variant,
+        )
 
         reg = ExperimentRegistry()
         for i in range(n):
@@ -216,7 +221,12 @@ class TestExperimentResetCounts:
 
 class TestExperimentRegistryDeregister:
     def test_deregister_existing_returns_true(self) -> None:
-        from app.experiment_tracker import CONTROL, TREATMENT, Experiment, ExperimentRegistry
+        from app.experiment_tracker import (
+            CONTROL,
+            TREATMENT,
+            Experiment,
+            ExperimentRegistry,
+        )
 
         reg = ExperimentRegistry()
         reg.register(Experiment("exp1", [CONTROL, TREATMENT]))
@@ -230,7 +240,12 @@ class TestExperimentRegistryDeregister:
         assert reg.deregister("ghost") is False
 
     def test_registry_len_decreases_after_deregister(self) -> None:
-        from app.experiment_tracker import CONTROL, TREATMENT, Experiment, ExperimentRegistry
+        from app.experiment_tracker import (
+            CONTROL,
+            TREATMENT,
+            Experiment,
+            ExperimentRegistry,
+        )
 
         reg = ExperimentRegistry()
         reg.register(Experiment("e1", [CONTROL, TREATMENT]))

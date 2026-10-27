@@ -88,7 +88,7 @@ def train_model(
         "auc_mean": round(float(scores.mean()), 4),
         "auc_std": round(float(scores.std()), 4),
         "n_features": int(X_transformed.shape[1]),
-        "n_samples": int(len(y)),
+        "n_samples": len(y),
         "cv_folds": cv_folds,
     }
 

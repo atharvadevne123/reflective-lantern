@@ -5,7 +5,6 @@ from __future__ import annotations
 from datetime import UTC, datetime
 
 import pytest
-
 from app.sla_config import SLA_HOURS, sla_deadline, sla_summary, time_to_breach
 
 

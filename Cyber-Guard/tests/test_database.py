@@ -6,7 +6,7 @@ import pytest
 from sqlalchemy import create_engine, inspect
 from sqlalchemy.orm import Session
 
-from app.database import Base, PredictionLog, get_db, init_db
+from app.database import Base, PredictionLog
 
 
 @pytest.fixture()

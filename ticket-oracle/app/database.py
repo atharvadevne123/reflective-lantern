@@ -6,7 +6,16 @@ import logging
 import os
 from datetime import datetime
 
-from sqlalchemy import Boolean, Column, DateTime, Float, Integer, String, Text, create_engine
+from sqlalchemy import (
+    Boolean,
+    Column,
+    DateTime,
+    Float,
+    Integer,
+    String,
+    Text,
+    create_engine,
+)
 from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
 
 logger = logging.getLogger(__name__)

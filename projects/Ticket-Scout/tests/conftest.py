@@ -13,7 +13,7 @@ from sqlalchemy.orm import sessionmaker
 os.environ.setdefault("DATABASE_URL", "sqlite:///./test_ticket_scout.db")
 os.environ.setdefault("MODEL_DIR", "./test_models")
 
-from app.database import Base, get_db  # noqa: E402
+from app.database import Base, get_db
 
 
 @pytest.fixture(scope="session")

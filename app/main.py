@@ -14,7 +14,7 @@ from typing import Annotated, Any
 
 import joblib
 import numpy as np
-from fastapi import Depends, FastAPI, Request, Response
+from fastapi import Depends, FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field, field_validator
 from sqlalchemy.orm import Session

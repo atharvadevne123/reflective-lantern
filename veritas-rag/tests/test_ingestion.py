@@ -6,7 +6,6 @@ import itertools
 from datetime import UTC, datetime
 
 import pytest
-
 from app.ingestion.chunker import chunk_document
 from app.ingestion.dedup import (
     DuplicateDetector,
@@ -15,8 +14,13 @@ from app.ingestion.dedup import (
     signature_similarity,
 )
 from app.ingestion.extractors import detect_source_type, extract_email, extract_html
-from app.ingestion.normalize import normalize_text, strip_email_quotes, truncate_to_bytes
+from app.ingestion.normalize import (
+    normalize_text,
+    strip_email_quotes,
+    truncate_to_bytes,
+)
 from app.ingestion.versioning import VersionStore, make_doc_id
+
 from app.schemas import Document
 
 

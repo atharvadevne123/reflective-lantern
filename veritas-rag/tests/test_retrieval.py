@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import numpy as np
 import pytest
-
 from app.retrieval.ann import VectorIndex
 from app.retrieval.bm25 import BM25Index, tokenize
 from app.retrieval.embedder import HashingEmbedder

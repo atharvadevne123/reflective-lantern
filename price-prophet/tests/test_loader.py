@@ -47,7 +47,6 @@ def test_generate_synthetic_data_prices_positive() -> None:
 
 def test_load_csv_missing_file() -> None:
     import pytest
-
     from app.data.loader import load_csv
 
     with pytest.raises(FileNotFoundError):
@@ -56,7 +55,6 @@ def test_load_csv_missing_file() -> None:
 
 def test_load_json_missing_file() -> None:
     import pytest
-
     from app.data.loader import load_json
 
     with pytest.raises(FileNotFoundError):

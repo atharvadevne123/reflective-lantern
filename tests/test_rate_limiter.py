@@ -135,7 +135,11 @@ class TestLimiterUtilization:
 
 class TestResetLimiter:
     def test_resets_to_full(self) -> None:
-        from app.rate_limiter import limiter_utilization, make_rate_limiter, reset_limiter
+        from app.rate_limiter import (
+            limiter_utilization,
+            make_rate_limiter,
+            reset_limiter,
+        )
 
         limiter = make_rate_limiter(capacity=10.0, rate_per_second=1.0)
         for _ in range(8):
@@ -353,7 +357,11 @@ class TestIsRateLimitedHelper:
 
 class TestResetClient:
     def test_reset_restores_bucket(self) -> None:
-        from app.rate_limiter import bucket_fill_percentage, make_rate_limiter, reset_client
+        from app.rate_limiter import (
+            bucket_fill_percentage,
+            make_rate_limiter,
+            reset_client,
+        )
 
         limiter = make_rate_limiter(capacity=5.0, refill_rate=0.0)
         for _ in range(5):
@@ -486,7 +494,11 @@ class TestPruneIdleClientsExtended:
         assert removed >= 0
 
     def test_fresh_client_not_pruned(self) -> None:
-        from app.rate_limiter import active_client_count, make_rate_limiter, prune_idle_clients
+        from app.rate_limiter import (
+            active_client_count,
+            make_rate_limiter,
+            prune_idle_clients,
+        )
 
         limiter = make_rate_limiter(capacity=5.0, refill_rate=0.0)
         limiter.is_allowed("fresh")

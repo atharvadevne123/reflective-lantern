@@ -327,11 +327,11 @@ def model_fingerprint(pipeline: Pipeline) -> dict[str, Any]:
 
 
 __all__ = [
-    "train_model",
-    "load_model",
-    "predict_intent",
     "build_faiss_index",
     "load_faiss_index",
-    "search_similar_items",
+    "load_model",
     "model_fingerprint",
+    "predict_intent",
+    "search_similar_items",
+    "train_model",
 ]

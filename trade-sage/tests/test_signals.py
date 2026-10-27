@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import pytest
-
 from app.signals import SignalStrength, classify_signal
 
 

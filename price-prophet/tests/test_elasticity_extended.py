@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import pytest
-
 from app.pricing.elasticity import (
     apply_elasticity,
     estimate_elasticity,

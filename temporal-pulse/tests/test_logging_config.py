@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import json
 import logging
-from io import StringIO
 
 import pytest
 
@@ -55,7 +54,7 @@ class TestConfigureLogging:
     def test_various_levels(self, level: str) -> None:
         configure_logging(level)
         root = logging.getLogger()
-        assert root.level in range(0, logging.CRITICAL + 1)
+        assert root.level in range(logging.CRITICAL + 1)
 
     def test_json_format_flag(self) -> None:
         configure_logging("INFO", json_format=True)

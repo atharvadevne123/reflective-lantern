@@ -185,7 +185,11 @@ class TestCorrelationContextManager:
             assert cid == "ctx-123"
 
     def test_context_manager_clears_on_exit(self) -> None:
-        from app.correlation_id import clear_correlation_id, correlation_context, get_correlation_id
+        from app.correlation_id import (
+            clear_correlation_id,
+            correlation_context,
+            get_correlation_id,
+        )
 
         with correlation_context("ctx-456"):
             pass

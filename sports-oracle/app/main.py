@@ -18,7 +18,14 @@ from slowapi.util import get_remote_address
 
 from app.database import create_tables
 from app.features import make_synthetic_dataset
-from app.model import METRICS_PATH, MODEL_PATH, load_model, predict, read_metrics, train_model
+from app.model import (
+    METRICS_PATH,
+    MODEL_PATH,
+    load_model,
+    predict,
+    read_metrics,
+    train_model,
+)
 from app.monitoring import check_feature_drift, get_recent_predictions, log_prediction
 
 logging.basicConfig(

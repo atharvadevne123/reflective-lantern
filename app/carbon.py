@@ -190,12 +190,14 @@ __all__ = [
     "carbon_intensity_category",
     "carbon_intensity_label",
     "carbon_intensity_rank",
+    "carbon_neutral_kwh",
     "carbon_offset_cost",
     "carbon_per_sqm",
     "carbon_reduction_pct",
     "carbon_saved_kwh",
     "carbon_savings",
     "carbon_savings_vs_baseline",
+    "co2_intensity_label",
     "co2_kg_to_tonnes",
     "compare_regions",
     "daily_carbon_estimate",
@@ -205,11 +207,9 @@ __all__ = [
     "lifetime_carbon_savings",
     "monthly_co2_breakdown",
     "renewable_offset_factor",
-    "carbon_neutral_kwh",
     "tree_offset_days",
     "trees_equivalent",
     "weighted_carbon_factor",
-    "co2_intensity_label",
 ]
 
 

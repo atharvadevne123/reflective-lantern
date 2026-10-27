@@ -157,9 +157,9 @@ def count_anomalies_by_building(db: Session, building_id: str) -> int:
 
 
 __all__ = [
+    "DATABASE_URL",
     "AnomalyLog",
     "Base",
-    "DATABASE_URL",
     "DriftLog",
     "EnergyReading",
     "ModelMetrics",

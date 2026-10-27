@@ -316,13 +316,13 @@ __all__ = [
     "TieredBand",
     "annual_cost_estimate",
     "compare_tariffs",
+    "cost_per_hour_average",
+    "daily_cost_summary",
     "flat_rate_cost",
     "peak_hour_fraction",
     "peak_shift_saving",
-    "daily_cost_summary",
     "tiered_cost",
     "time_of_use_cost",
-    "cost_per_hour_average",
 ]
 
 

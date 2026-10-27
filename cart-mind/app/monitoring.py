@@ -409,14 +409,14 @@ def rolling_mean(values: list[float], window: int) -> list[float]:
 
 
 __all__ = [
-    "compute_drift",
-    "update_reference_window",
-    "get_reference_window",
-    "reset_reference_window",
-    "check_all_features",
-    "log_prediction",
-    "compute_psi",
-    "rolling_mean",
     "alert_on_drift",
+    "check_all_features",
+    "compute_drift",
+    "compute_psi",
     "drift_summary",
+    "get_reference_window",
+    "log_prediction",
+    "reset_reference_window",
+    "rolling_mean",
+    "update_reference_window",
 ]

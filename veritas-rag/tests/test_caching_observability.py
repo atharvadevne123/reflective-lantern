@@ -5,7 +5,6 @@ from __future__ import annotations
 import time
 
 import pytest
-
 from app.caching import RetrievalCache, cache_key, normalize_query
 from app.observability import TraceRecorder, TraceStore
 

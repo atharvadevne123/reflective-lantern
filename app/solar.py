@@ -248,9 +248,9 @@ __all__ = [
     "analyze_economics",
     "capacity_factor",
     "generation_kwh",
+    "panel_efficiency_ratio",
     "payback_years",
     "self_consumption",
-    "panel_efficiency_ratio",
 ]
 
 

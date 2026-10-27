@@ -86,7 +86,10 @@ def test_history_file_dates_are_iso_format(history_file: Path) -> None:
 @pytest.mark.parametrize("history_file", HISTORY_FILES, ids=lambda p: p.stem)
 def test_history_file_email_status_if_present_is_valid(history_file: Path) -> None:
     """email_status must be a recognised value when present."""
-    from scripts.validate_history import VALID_EMAIL_STATUS_PREFIXES, VALID_EMAIL_STATUSES
+    from scripts.validate_history import (
+        VALID_EMAIL_STATUS_PREFIXES,
+        VALID_EMAIL_STATUSES,
+    )
 
     data = json.loads(history_file.read_text())
     entries = data if isinstance(data, list) else [data]

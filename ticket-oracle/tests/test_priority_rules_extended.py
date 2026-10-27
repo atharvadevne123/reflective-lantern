@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import pytest
-
 from app.priority_rules import (
     P1_KEYWORDS,
     P1_TIERS,

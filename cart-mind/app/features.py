@@ -380,17 +380,17 @@ def clip_outlier_features(df: pd.DataFrame, z_threshold: float = 4.0) -> pd.Data
 
 
 __all__ = [
-    "RatioFeatures",
+    "DiscountEncoder",
     "InteractionFeatures",
     "LagRollingFeatures",
-    "DiscountEncoder",
+    "RatioFeatures",
     "build_feature_pipeline",
-    "get_feature_names",
-    "make_sample_dataframe",
-    "make_purchase_labels",
-    "feature_correlation_matrix",
-    "drop_low_variance_features",
     "clip_outlier_features",
-    "summarise_feature_stats",
+    "drop_low_variance_features",
+    "feature_correlation_matrix",
     "feature_importance_report",
+    "get_feature_names",
+    "make_purchase_labels",
+    "make_sample_dataframe",
+    "summarise_feature_stats",
 ]

@@ -8,10 +8,10 @@ from typing import Any
 
 __all__ = [
     "ConfigSchema",
-    "load_from_env",
     "env_bool",
-    "env_int",
     "env_float",
+    "env_int",
+    "load_from_env",
 ]
 
 

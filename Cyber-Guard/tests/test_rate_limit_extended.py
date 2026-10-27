@@ -5,9 +5,7 @@ from __future__ import annotations
 import time
 from collections import deque
 
-import pytest
-
-from app.rate_limit import WINDOW_SECONDS, _HITS, _prune, reset_rate_limit_state
+from app.rate_limit import _HITS, WINDOW_SECONDS, _prune, reset_rate_limit_state
 
 
 class TestPrune:

@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-import time
-
 import pytest
 
 from app.metrics_collector import MetricsCollector

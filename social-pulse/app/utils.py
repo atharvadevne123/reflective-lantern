@@ -8,7 +8,6 @@ import re
 import time
 import uuid
 from functools import lru_cache
-from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -82,11 +81,11 @@ class Timer:
         self._start: float = 0.0
         self.elapsed_ms: float = 0.0
 
-    def __enter__(self) -> "Timer":
+    def __enter__(self) -> Timer:
         self._start = time.perf_counter()
         return self
 
-    def __exit__(self, *args: Any) -> None:
+    def __exit__(self, *args: object) -> None:
         self.elapsed_ms = (time.perf_counter() - self._start) * 1000.0
         logger.debug("Timer: %.2f ms", self.elapsed_ms)
 

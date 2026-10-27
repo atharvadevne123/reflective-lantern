@@ -3,11 +3,11 @@
 from __future__ import annotations
 
 import pytest
+from app.health import build_health_status, check_db
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
 from app.database import Base
-from app.health import build_health_status, check_db
 
 
 @pytest.fixture

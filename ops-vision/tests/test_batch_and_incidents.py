@@ -1,7 +1,6 @@
 """Tests for the batch prediction and incident listing endpoints."""
 
 import pytest
-
 from app.crud import create_incident
 
 

@@ -56,7 +56,7 @@ def _build_estimators() -> list[tuple[str, Any]]:
         ),
     ]
     if _HAS_LGB:
-        import lightgbm as lgb  # noqa: PLC0415
+        import lightgbm as lgb
 
         estimators.append(
             (
@@ -129,7 +129,7 @@ def load_model() -> Pipeline:
         logger.info("Loading model from %s", MODEL_PATH)
         return joblib.load(MODEL_PATH)
     logger.warning("No saved model found — training default model now")
-    from app.features import generate_synthetic_dataset  # noqa: PLC0415
+    from app.features import generate_synthetic_dataset
 
     X, y = generate_synthetic_dataset()
     pipe, _ = train_model(X, y)

@@ -6,7 +6,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from app.anomaly import CONTAMINATION, SeismicAnomalyDetector, zscore_outliers
+from app.anomaly import SeismicAnomalyDetector, zscore_outliers
 from app.similarity import SIGNATURE_COLUMNS
 
 

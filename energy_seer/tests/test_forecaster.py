@@ -87,9 +87,8 @@ class TestWeightedMovingAverage:
         assert len(result) == 4
 
     def test_empty_raises(self) -> None:
-        from app.forecaster import weighted_moving_average
-
         import pytest
+        from app.forecaster import weighted_moving_average
 
         with pytest.raises(ValueError):
             weighted_moving_average([])
@@ -139,17 +138,15 @@ class TestExponentialSmoothing:
         assert len(result) == 5
 
     def test_empty_raises(self) -> None:
-        from app.forecaster import exponential_smoothing
-
         import pytest
+        from app.forecaster import exponential_smoothing
 
         with pytest.raises(ValueError):
             exponential_smoothing([])
 
     def test_invalid_alpha_raises(self) -> None:
-        from app.forecaster import exponential_smoothing
-
         import pytest
+        from app.forecaster import exponential_smoothing
 
         with pytest.raises(ValueError):
             exponential_smoothing([1.0, 2.0], alpha=0.0)

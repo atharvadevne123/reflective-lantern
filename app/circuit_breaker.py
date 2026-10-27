@@ -65,12 +65,12 @@ class CircuitBreaker:
     """
 
     __slots__ = (
-        "failure_threshold",
-        "recovery_timeout",
-        "expected_exceptions",
-        "_state",
         "_failure_count",
         "_opened_at",
+        "_state",
+        "expected_exceptions",
+        "failure_threshold",
+        "recovery_timeout",
     )
 
     def __init__(

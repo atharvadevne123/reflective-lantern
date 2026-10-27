@@ -34,8 +34,8 @@ def check_drift(**context: Any) -> bool:
 
     Pushes drift_detected flag to XCom for downstream tasks.
     """
-    from app.database import SessionLocal  # noqa: PLC0415
-    from app.monitoring import run_full_drift_check  # noqa: PLC0415
+    from app.database import SessionLocal
+    from app.monitoring import run_full_drift_check
 
     db = SessionLocal()
     try:
@@ -56,7 +56,7 @@ def collect_new_samples(**context: Any) -> int:
 
     Returns the count of new samples available for retraining.
     """
-    from app.database import PredictionLog, SessionLocal  # noqa: PLC0415
+    from app.database import PredictionLog, SessionLocal
 
     db = SessionLocal()
     try:
@@ -71,9 +71,9 @@ def collect_new_samples(**context: Any) -> int:
 
 def retrain_model(**context: Any) -> dict[str, Any]:
     """Re-train model if drift detected or sample threshold reached."""
-    from app.database import RetrainingEvent, SessionLocal  # noqa: PLC0415
-    from app.features import generate_synthetic_dataset  # noqa: PLC0415
-    from app.model import load_metrics, train_model  # noqa: PLC0415
+    from app.database import RetrainingEvent, SessionLocal
+    from app.features import generate_synthetic_dataset
+    from app.model import load_metrics, train_model
 
     old_metrics = load_metrics()
     auc_before = old_metrics.get("accuracy_mean", 0.0)
@@ -105,7 +105,7 @@ def retrain_model(**context: Any) -> dict[str, Any]:
 
 def _load_reference_window() -> dict[str, list[float]]:
     """Load or build a reference feature window for KS-test."""
-    from app.features import generate_synthetic_dataset  # noqa: PLC0415
+    from app.features import generate_synthetic_dataset
 
     X, _ = generate_synthetic_dataset(n_samples=500, seed=0)
     return {

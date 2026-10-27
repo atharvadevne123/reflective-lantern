@@ -47,7 +47,7 @@ _request_windows: dict[str, list[float]] = {}
 
 
 @asynccontextmanager
-async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:  # noqa: ANN001
+async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     """Startup: load models and build reference score distribution."""
     global _xgb_model, _lgbm_model, _model_metrics, _reference_scores
 

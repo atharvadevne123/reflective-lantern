@@ -91,7 +91,7 @@ def train_model(
         "accuracy_mean": round(float(acc_scores.mean()), 4),
         "accuracy_std": round(float(acc_scores.std()), 4),
         "n_features": int(X.shape[1]),
-        "n_samples": int(len(y)),
+        "n_samples": len(y),
     }
 
     model_path.parent.mkdir(parents=True, exist_ok=True)
@@ -140,12 +140,12 @@ def predict(
 
 
 __all__ = [
-    "build_model_pipeline",
-    "train_model",
-    "load_model",
-    "read_metrics",
-    "predict",
-    "MODEL_PATH",
     "METRICS_PATH",
+    "MODEL_PATH",
     "OUTCOME_LABELS",
+    "build_model_pipeline",
+    "load_model",
+    "predict",
+    "read_metrics",
+    "train_model",
 ]

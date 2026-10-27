@@ -4,8 +4,11 @@ from __future__ import annotations
 
 import numpy as np
 import pytest
-
-from app.forecaster import fit_channel_forecaster, forecast_with_confidence, prepare_supervised_data
+from app.forecaster import (
+    fit_channel_forecaster,
+    forecast_with_confidence,
+    prepare_supervised_data,
+)
 
 
 class TestPrepareSupervisedData:

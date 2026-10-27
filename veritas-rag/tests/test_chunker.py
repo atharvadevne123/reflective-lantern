@@ -2,9 +2,8 @@
 
 from __future__ import annotations
 
-import pytest
-
 from app.ingestion.chunker import chunk_document
+
 from app.schemas import Document
 
 

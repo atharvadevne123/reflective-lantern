@@ -148,9 +148,9 @@ def get_recent_predictions(n: int = 100) -> list[dict]:
 
 
 __all__ = [
+    "check_feature_drift",
     "compute_drift",
     "compute_psi",
-    "check_feature_drift",
-    "log_prediction",
     "get_recent_predictions",
+    "log_prediction",
 ]

@@ -9,7 +9,11 @@ from fastapi.middleware.cors import CORSMiddleware
 from app import __version__
 from app.api.v1.routes import router as v1_router
 from app.config import get_settings
-from app.middleware import CorrelationIdMiddleware, RateLimitMiddleware, RequestSizeLimitMiddleware
+from app.middleware import (
+    CorrelationIdMiddleware,
+    RateLimitMiddleware,
+    RequestSizeLimitMiddleware,
+)
 
 logging.basicConfig(
     level=os.environ.get("LOG_LEVEL", "INFO"),

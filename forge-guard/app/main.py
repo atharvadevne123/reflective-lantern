@@ -70,7 +70,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-from app.middleware import RequestTimingMiddleware, SecurityHeadersMiddleware  # noqa: E402
+from app.middleware import (
+    RequestTimingMiddleware,
+    SecurityHeadersMiddleware,
+)
 
 app.add_middleware(RequestTimingMiddleware)
 app.add_middleware(SecurityHeadersMiddleware)

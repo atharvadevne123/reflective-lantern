@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import numpy as np
-import pytest
 
 from app.faiss_index import build_index, is_anomalous, load_index
 

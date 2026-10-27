@@ -3,8 +3,8 @@
 from __future__ import annotations
 
 import os
+from collections.abc import Generator
 from datetime import datetime
-from typing import Generator
 
 from sqlalchemy import (
     JSON,

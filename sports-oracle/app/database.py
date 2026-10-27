@@ -5,7 +5,16 @@ from __future__ import annotations
 import os
 from datetime import datetime
 
-from sqlalchemy import JSON, Boolean, Column, DateTime, Float, Integer, String, create_engine
+from sqlalchemy import (
+    JSON,
+    Boolean,
+    Column,
+    DateTime,
+    Float,
+    Integer,
+    String,
+    create_engine,
+)
 from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
 
 DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./sports_oracle.db")

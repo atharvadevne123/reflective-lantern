@@ -260,7 +260,7 @@ async def predict_batch_endpoint(
 @app.get("/api/v1/metrics", response_model=MetricsResponse, tags=["ops"])
 async def metrics_endpoint(db: Session = Depends(get_db)) -> MetricsResponse:
     """Return model training metrics and recent drift reports."""
-    from app.database import PredictionLog  # noqa: PLC0415
+    from app.database import PredictionLog
 
     count = db.query(PredictionLog).count()
 

@@ -224,7 +224,7 @@ class TestTrainMetricsKeys:
 
 class TestPredictOutputBounds:
     def test_predictions_non_negative(self) -> None:
-        from app.model import generate_synthetic_data, load_model, predict, train_model
+        from app.model import generate_synthetic_data, predict, train_model
 
         X, y = generate_synthetic_data(100)
         bundle, _ = train_model(X, y)

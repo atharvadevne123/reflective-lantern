@@ -17,7 +17,13 @@ from pydantic import BaseModel, Field, field_validator
 from sqlalchemy.orm import Session
 
 from app.database import get_db, init_db
-from app.model import generate_synthetic_data, get_metrics, load_model, predict, train_model
+from app.model import (
+    generate_synthetic_data,
+    get_metrics,
+    load_model,
+    predict,
+    train_model,
+)
 from app.monitoring import (
     check_all_features,
     compute_prediction_stats,

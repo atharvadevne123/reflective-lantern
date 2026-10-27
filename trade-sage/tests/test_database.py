@@ -2,14 +2,10 @@
 
 from __future__ import annotations
 
-import os
-from unittest.mock import patch
-
 import pytest
 from sqlalchemy import create_engine, inspect
 from sqlalchemy.orm import Session, sessionmaker
 
-import app.database as db_module
 from app.database import Base, PredictionLog
 
 

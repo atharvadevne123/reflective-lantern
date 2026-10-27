@@ -217,7 +217,6 @@ class TestMaxRampRateEdgeCases:
         assert max_ramp_rate(series) == pytest.approx(step)
 
 
-from app.load_profile import demand_variability, night_load_fraction  # noqa: E402
 
 
 class TestDemandVariability:

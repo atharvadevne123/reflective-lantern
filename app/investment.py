@@ -258,6 +258,7 @@ def portfolio_weighted_score(
 
 __all__ = [
     "InvestmentAnalysis",
+    "annualized_return",
     "break_even_occupancy",
     "cash_on_cash_return",
     "compute_investment_analysis",
@@ -268,6 +269,7 @@ __all__ = [
     "holding_period_return",
     "investment_score_label",
     "irr_estimate",
+    "is_profitable",
     "leverage_ratio",
     "loan_to_value_ratio",
     "margin_of_safety",
@@ -275,13 +277,11 @@ __all__ = [
     "operating_expense_ratio",
     "payback_period",
     "portfolio_weighted_score",
-    "annualized_return",
     "price_to_income_ratio",
     "projected_value",
     "risk_adjusted_return",
     "roi_percentage",
     "total_return_on_investment",
-    "is_profitable",
 ]
 
 

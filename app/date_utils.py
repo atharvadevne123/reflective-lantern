@@ -111,6 +111,7 @@ __all__ = [
     "days_in_month",
     "days_until",
     "elapsed_seconds",
+    "end_of_day",
     "fiscal_quarter",
     "format_duration",
     "format_iso",
@@ -119,8 +120,10 @@ __all__ = [
     "is_business_day",
     "is_business_hour",
     "is_leap_year",
+    "is_same_day",
     "is_weekend",
     "iso_to_datetime",
+    "minutes_between",
     "next_business_day",
     "next_midnight",
     "next_weekday",
@@ -132,9 +135,6 @@ __all__ = [
     "week_number",
     "week_of_month",
     "week_of_year",
-    "is_same_day",
-    "end_of_day",
-    "minutes_between",
 ]
 
 

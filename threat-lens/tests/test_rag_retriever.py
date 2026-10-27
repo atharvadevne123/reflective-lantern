@@ -2,9 +2,7 @@
 
 from __future__ import annotations
 
-import numpy as np
 import pytest
-
 from app.rag_retriever import THREAT_INTEL_CORPUS, ThreatIntelRetriever
 
 

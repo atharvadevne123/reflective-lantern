@@ -3,8 +3,9 @@
 import os
 from logging.config import fileConfig
 
-from alembic import context
 from sqlalchemy import engine_from_config, pool
+
+from alembic import context
 
 config = context.config
 if config.config_file_name is not None:
@@ -13,10 +14,10 @@ if config.config_file_name is not None:
 DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./energy_seer.db")
 config.set_main_option("sqlalchemy.url", DATABASE_URL)
 
-import sys  # noqa: E402
+import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
-from app.database import Base  # noqa: E402
+from app.database import Base
 
 target_metadata = Base.metadata
 

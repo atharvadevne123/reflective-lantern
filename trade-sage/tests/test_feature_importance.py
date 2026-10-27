@@ -4,10 +4,9 @@ from __future__ import annotations
 
 import numpy as np
 import pytest
+from app.feature_importance import extract_feature_importances, top_k_features
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.pipeline import Pipeline
-
-from app.feature_importance import extract_feature_importances, top_k_features
 
 FEATURE_NAMES = [f"f{i}" for i in range(10)]
 

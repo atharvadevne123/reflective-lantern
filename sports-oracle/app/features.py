@@ -181,12 +181,12 @@ def make_synthetic_dataset(n: int = 2000, seed: int = 42) -> tuple[pd.DataFrame,
 
 
 __all__ = [
+    "LABEL_ENCODER",
+    "AttackDefenseRatioEncoder",
+    "DropCategoricalColumns",
     "FormIndexEncoder",
     "HeadToHeadEncoder",
-    "AttackDefenseRatioEncoder",
     "RestDayEncoder",
-    "DropCategoricalColumns",
     "build_feature_pipeline",
     "make_synthetic_dataset",
-    "LABEL_ENCODER",
 ]

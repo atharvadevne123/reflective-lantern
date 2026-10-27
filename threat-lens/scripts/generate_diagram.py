@@ -5,8 +5,8 @@ import os
 import matplotlib
 
 matplotlib.use("Agg")
-import matplotlib.patches as mpatches  # noqa: E402
-import matplotlib.pyplot as plt  # noqa: E402
+import matplotlib.patches as mpatches
+import matplotlib.pyplot as plt
 
 # pad is in data units and inflates the box on every side — keep it small so
 # the declared width/height are what actually gets drawn.

@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import pytest
-
 from app.validators import (
     validate_neighborhood_value,
     validate_property_type_value,

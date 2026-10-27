@@ -134,7 +134,7 @@ def train_models(
         "priority_auc_std": round(float(priority_cv.std()), 4),
         "sla_auc_mean": round(float(sla_cv.mean()), 4),
         "sla_auc_std": round(float(sla_cv.std()), 4),
-        "n_samples": int(len(X)),
+        "n_samples": len(X),
         "n_features": int(X.shape[1]),
     }
 

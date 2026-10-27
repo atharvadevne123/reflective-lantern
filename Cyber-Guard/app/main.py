@@ -16,7 +16,11 @@ from sqlalchemy import text
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
-from app.anomaly import ensure_anomaly_model_exists, load_anomaly_detector, score_anomaly
+from app.anomaly import (
+    ensure_anomaly_model_exists,
+    load_anomaly_detector,
+    score_anomaly,
+)
 from app.config import get_settings
 from app.database import create_tables, get_db
 from app.features import make_sample_df

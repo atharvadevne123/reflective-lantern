@@ -19,11 +19,11 @@ from pathlib import Path
 # scripts/seed_data.py` working alongside `python -m scripts.seed_data`.
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from sqlalchemy.orm import Session  # noqa: E402
+from sqlalchemy.orm import Session
 
-from app.config import get_settings  # noqa: E402
-from app.database import PredictionLog, SessionLocal, create_tables  # noqa: E402
-from app.model import generate_synthetic_data  # noqa: E402
+from app.config import get_settings
+from app.database import PredictionLog, SessionLocal, create_tables
+from app.model import generate_synthetic_data
 
 logger = logging.getLogger(__name__)
 

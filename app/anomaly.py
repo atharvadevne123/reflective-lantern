@@ -200,6 +200,7 @@ def classify_consumption(
 
 
 __all__ = [
+    "anomaly_density",
     "anomaly_rate",
     "anomaly_summary",
     "batch_compute_severity",
@@ -209,12 +210,11 @@ __all__ = [
     "compute_z_score",
     "consecutive_anomaly_runs",
     "ewma_smooth",
+    "first_anomaly_index",
     "flag_anomaly_rate",
     "flag_z_score_outliers",
-    "iqr_flag",
-    "anomaly_density",
-    "first_anomaly_index",
     "inter_anomaly_gap",
+    "iqr_flag",
     "rolling_anomaly_flag",
     "top_anomalies",
     "zscore_flag",

@@ -4,8 +4,6 @@ from __future__ import annotations
 
 import threading
 
-import pytest
-
 import app.metrics_collector as mc
 
 

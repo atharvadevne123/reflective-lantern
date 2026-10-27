@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import numpy as np
-import pytest
 
 import app.anomaly as anomaly_mod
 from app.anomaly import build_index, find_similar_anomalies

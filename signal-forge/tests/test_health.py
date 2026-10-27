@@ -6,7 +6,6 @@ import sys
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 import pytest
-
 from app.health import check_database, check_model, full_health_report, get_uptime
 
 

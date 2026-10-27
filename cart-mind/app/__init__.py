@@ -3,4 +3,4 @@
 __version__ = "1.0.1"
 __author__ = "Reflective Lantern"
 
-__all__ = ["__version__", "__author__"]
+__all__ = ["__author__", "__version__"]

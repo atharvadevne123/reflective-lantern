@@ -4,7 +4,11 @@ import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
-from app.middleware import CorrelationIdMiddleware, RateLimitMiddleware, RequestSizeLimitMiddleware
+from app.middleware import (
+    CorrelationIdMiddleware,
+    RateLimitMiddleware,
+    RequestSizeLimitMiddleware,
+)
 
 
 def _build_app(middleware_cls, **kwargs) -> FastAPI:

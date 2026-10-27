@@ -5,7 +5,6 @@ from __future__ import annotations
 import math
 
 import pytest
-
 from app.validators import (
     SENSOR_RANGES,
     clamp_reading,
@@ -13,7 +12,6 @@ from app.validators import (
     field_statistics,
     is_valid_sensor_reading,
     missing_rate,
-    sanitize_sensor_reading,
     sensor_drift_detected,
     sensor_z_score,
     validate_batch,

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from app.schemas import Answer, Citation, Chunk, Document, ScoredChunk
+from app.schemas import Answer, Chunk, Citation, Document, ScoredChunk
 
 
 class TestDocument:

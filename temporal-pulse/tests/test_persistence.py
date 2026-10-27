@@ -70,7 +70,7 @@ class TestSaveLoad:
         assert key in saved
 
 
-import pytest  # noqa: E402
+import pytest
 
 
 @pytest.mark.parametrize("key", ["isolation_forest", "scaler"])

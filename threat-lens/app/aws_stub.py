@@ -46,7 +46,7 @@ class ModelArtifactStore:
         key = self._key(name or local_path.name)
         if self.enabled:
             try:
-                import boto3  # noqa: PLC0415
+                import boto3
 
                 boto3.client("s3").upload_file(str(local_path), self.bucket, key)
                 logger.info("Uploaded %s to s3://%s/%s", local_path, self.bucket, key)
@@ -62,7 +62,7 @@ class ModelArtifactStore:
         key = self._key(name)
         if self.enabled:
             try:
-                import boto3  # noqa: PLC0415
+                import boto3
 
                 boto3.client("s3").download_file(self.bucket, key, str(dest))
                 logger.info("Downloaded s3://%s/%s to %s", self.bucket, key, dest)
@@ -80,7 +80,7 @@ class ModelArtifactStore:
         key = self._key(name)
         if self.enabled:
             try:
-                import boto3  # noqa: PLC0415
+                import boto3
 
                 boto3.client("s3").head_object(Bucket=self.bucket, Key=key)
                 return True
@@ -92,7 +92,7 @@ class ModelArtifactStore:
         """List artefact keys held by the active backend."""
         if self.enabled:
             try:
-                import boto3  # noqa: PLC0415
+                import boto3
 
                 resp: dict[str, Any] = boto3.client("s3").list_objects_v2(
                     Bucket=self.bucket, Prefix=self.prefix

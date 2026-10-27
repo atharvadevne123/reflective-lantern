@@ -107,7 +107,7 @@ class PostIndex:
         logger.info("Index saved to %s (%d vectors)", path, len(self._vectors))
 
     @classmethod
-    def load(cls, path: Path) -> "PostIndex":
+    def load(cls, path: Path) -> PostIndex:
         """Load a previously saved index from *path*."""
         with open(path, "rb") as fh:
             data = pickle.load(fh)

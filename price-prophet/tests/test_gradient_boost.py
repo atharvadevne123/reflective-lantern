@@ -39,7 +39,6 @@ def test_gradient_boost_feature_importances_empty_before_fit() -> None:
 
 def test_gradient_boost_predict_raises_before_fit() -> None:
     import pytest
-
     from app.models.gradient_boost import GradientBoostPricingModel
 
     m = GradientBoostPricingModel()

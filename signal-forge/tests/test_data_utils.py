@@ -8,7 +8,6 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 import numpy as np
 import pandas as pd
 import pytest
-
 from app.data_utils import (
     compute_log_returns,
     fill_missing_ohlcv,

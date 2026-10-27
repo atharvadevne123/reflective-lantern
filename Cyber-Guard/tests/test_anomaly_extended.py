@@ -6,7 +6,12 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from app.anomaly import DEFAULT_CONTAMINATION, batch_anomaly_rate, score_anomaly, train_anomaly_detector
+from app.anomaly import (
+    DEFAULT_CONTAMINATION,
+    batch_anomaly_rate,
+    score_anomaly,
+    train_anomaly_detector,
+)
 from app.features import make_sample_df
 
 
@@ -34,7 +39,6 @@ class TestDefaultContamination:
 
 class TestTrainAnomalyDetector:
     def test_returns_pipeline(self) -> None:
-        from sklearn.pipeline import Pipeline
         X = _training_df(50)
         pipe = train_anomaly_detector(X, model_path="/dev/null")
         assert hasattr(pipe, "predict")

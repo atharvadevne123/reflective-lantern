@@ -6,7 +6,11 @@ import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
-from app.middleware import CORRELATION_ID_HEADER, CorrelationIDMiddleware, RateLimitHeaderMiddleware
+from app.middleware import (
+    CORRELATION_ID_HEADER,
+    CorrelationIDMiddleware,
+    RateLimitHeaderMiddleware,
+)
 
 
 @pytest.fixture()

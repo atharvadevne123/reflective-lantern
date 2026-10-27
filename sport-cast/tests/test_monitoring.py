@@ -3,7 +3,12 @@ from __future__ import annotations
 
 import pytest
 
-from app.monitoring import compute_drift, compute_psi, get_drift_summary, get_prediction_metrics
+from app.monitoring import (
+    compute_drift,
+    compute_psi,
+    get_drift_summary,
+    get_prediction_metrics,
+)
 
 
 def test_compute_drift_same_distribution():

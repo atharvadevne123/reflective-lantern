@@ -168,9 +168,9 @@ TREATMENT: Variant = Variant(name="treatment", weight=0.5)
 
 __all__ = [
     "CONTROL",
+    "TREATMENT",
     "Experiment",
     "ExperimentRegistry",
     "ExperimentResult",
-    "TREATMENT",
     "Variant",
 ]

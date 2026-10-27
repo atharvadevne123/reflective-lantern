@@ -162,11 +162,11 @@ RECOMMENDATION_CACHE = TTLCache()
 SIMILARITY_CACHE = TTLCache()
 
 __all__ = [
-    "TTLCache",
+    "DEFAULT_MAX_ENTRIES",
+    "DEFAULT_TTL_SECONDS",
     "RECOMMENDATION_CACHE",
     "SIMILARITY_CACHE",
-    "DEFAULT_TTL_SECONDS",
-    "DEFAULT_MAX_ENTRIES",
+    "TTLCache",
     "cache_hit_rate",
     "evict_expired",
     "warm_cache",

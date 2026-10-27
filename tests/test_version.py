@@ -40,7 +40,12 @@ def test_get_version_info_returns_dict() -> None:
 
 def test_get_version_info_values_match_module_attrs() -> None:
     """Values returned by get_version_info() should match module-level attributes."""
-    from app.version import __api_version__, __description__, __version__, get_version_info
+    from app.version import (
+        __api_version__,
+        __description__,
+        __version__,
+        get_version_info,
+    )
 
     info = get_version_info()
     assert info["version"] == __version__

@@ -71,7 +71,7 @@ def test_check_drift_similar_distributions_returns_false(tmp_path) -> None:
         patch("pandas.read_parquet", return_value=df_same),
     ):
         result = check_drift_before_retrain(reference_path=ref_path)
-    assert result == False  # noqa: E712 — np.False_ != False with `is`
+    assert result == False
 
 
 @pytest.mark.parametrize("mean_offset", [50.0, 100.0, 200.0])
@@ -181,7 +181,7 @@ class TestRetainDagEdgeCases:
             patch("pandas.read_parquet", return_value=df),
         ):
             result = check_drift_before_retrain(reference_path=ref_path)
-        assert result == False  # noqa: E712
+        assert result == False
 
 
 def test_check_drift_returns_bool_type(tmp_path) -> None:
@@ -242,7 +242,7 @@ def test_check_drift_identical_data_no_drift(tmp_path) -> None:
         patch("pandas.read_parquet", return_value=df),
     ):
         result = check_drift_before_retrain(reference_path=ref_path)
-    assert result == False  # noqa: E712
+    assert result == False
 
 
 @pytest.mark.parametrize("mean_offset", [0.0, 5.0])
@@ -274,7 +274,7 @@ def test_check_drift_small_offset_no_drift(tmp_path, mean_offset: float) -> None
         patch("pandas.DataFrame.to_parquet"),
     ):
         result = check_drift_before_retrain(reference_path=ref_path)
-    assert result == False  # noqa: E712
+    assert result == False
 
 
 def test_check_drift_extreme_offset_always_true(tmp_path) -> None:

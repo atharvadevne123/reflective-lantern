@@ -5,7 +5,6 @@ from __future__ import annotations
 import numpy as np
 import pandas as pd
 import pytest
-
 from app.data_utils import (
     compute_log_returns,
     fill_missing_ohlcv,

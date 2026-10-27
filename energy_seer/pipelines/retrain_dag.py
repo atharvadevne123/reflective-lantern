@@ -77,8 +77,9 @@ def _rebuild_rag_index(**ctx) -> None:
     import sys
 
     sys.path.insert(0, "/opt/energy_seer")
-    from app.model import generate_synthetic_data
     from rag.ingest import ingest_patterns
+
+    from app.model import generate_synthetic_data
 
     X, _ = generate_synthetic_data(n=300)
     patterns = X.to_dict(orient="records")

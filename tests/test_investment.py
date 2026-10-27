@@ -201,7 +201,7 @@ def test_risk_score_equals_crime_rate_parametrized(crime_rate: float) -> None:
 
 
 def test_default_operating_expense_ratio_constant() -> None:
-    from app.investment import DEFAULT_OPERATING_EXPENSE_RATIO  # noqa: E402
+    from app.investment import DEFAULT_OPERATING_EXPENSE_RATIO
 
     assert 0.0 < DEFAULT_OPERATING_EXPENSE_RATIO < 1.0
 
@@ -1347,12 +1347,6 @@ class TestPaybackPeriodEdgeCases:
         assert result == pytest.approx(cost / 500.0, rel=1e-3)
 
 
-from app.investment import (  # noqa: E402
-    annualized_return,
-    gross_rent_multiplier,
-    loan_to_value_ratio,
-    net_present_value,
-)
 
 
 class TestAnnualizedReturnExtended:

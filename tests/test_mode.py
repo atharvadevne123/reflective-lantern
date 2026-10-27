@@ -307,4 +307,4 @@ def test_is_innovation_day_returns_bool_type() -> None:
     from config.mode import is_innovation_day
 
     result = is_innovation_day(date(2026, 7, 8))
-    assert type(result) is bool  # noqa: E721
+    assert type(result) is bool

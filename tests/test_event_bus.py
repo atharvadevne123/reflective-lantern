@@ -359,7 +359,7 @@ class TestEventBusClearAndCount:
 
     def test_listener_count_after_unsubscribe(self) -> None:
         bus = EventBus()
-        h = lambda e, p: None  # noqa: E731
+        h = lambda e, p: None
         bus.subscribe("evt", h)
         assert bus.listener_count("evt") == 1
         bus.unsubscribe("evt", h)

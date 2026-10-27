@@ -56,7 +56,7 @@ class ExperimentTracker:
 
         if self.enabled:
             try:
-                import mlflow  # noqa: PLC0415
+                import mlflow
 
                 mlflow.set_tracking_uri(self.tracking_uri)
                 mlflow.set_experiment(self.experiment_name)

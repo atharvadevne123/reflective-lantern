@@ -7,10 +7,10 @@ from collections.abc import Sequence
 
 __all__ = [
     "mean",
-    "variance",
-    "std_dev",
     "median",
     "percentile",
+    "std_dev",
+    "variance",
     "z_scores",
 ]
 

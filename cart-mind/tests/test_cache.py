@@ -218,7 +218,7 @@ class TestEvictExpired:
         assert isinstance(result, int)
 
 
-import pytest  # noqa: E402
+import pytest
 
 
 @pytest.mark.parametrize("n_items", [1, 5, 10])

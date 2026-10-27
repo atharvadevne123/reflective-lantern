@@ -1324,7 +1324,7 @@ class TestStartOfDayExtended:
 
     @pytest.mark.parametrize("hour", [0, 6, 12, 23])
     def test_start_of_day_always_midnight(self, hour: int) -> None:
-        from datetime import datetime
+        pass
 
     base = datetime(2026, 6, 1, 12, 0, 0)
     start = base + timedelta(seconds=start_s)

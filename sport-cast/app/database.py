@@ -4,7 +4,16 @@ from __future__ import annotations
 import os
 from datetime import datetime
 
-from sqlalchemy import Boolean, Column, DateTime, Float, Integer, String, Text, create_engine
+from sqlalchemy import (
+    Boolean,
+    Column,
+    DateTime,
+    Float,
+    Integer,
+    String,
+    Text,
+    create_engine,
+)
 from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
 
 DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./sport_cast.db")
@@ -95,5 +104,5 @@ def get_db() -> Session:  # type: ignore[return]
         db.close()
 
 
-def init_db() -> None:  # noqa: D401
+def init_db() -> None:
     Base.metadata.create_all(bind=_get_engine())

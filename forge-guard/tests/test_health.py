@@ -80,7 +80,7 @@ def test_check_database_reachable_returns_url_scheme() -> None:
     assert result["url_scheme"] == "sqlite"
 
 
-import pytest  # noqa: E402
+import pytest
 
 
 @pytest.mark.parametrize(

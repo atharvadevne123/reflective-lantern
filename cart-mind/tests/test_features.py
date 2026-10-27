@@ -234,7 +234,7 @@ class TestDropLowVarianceFeatures:
         assert result is not df
 
 
-import pytest  # noqa: E402
+import pytest
 
 
 @pytest.mark.parametrize("threshold", [0.001, 0.01, 0.1])
