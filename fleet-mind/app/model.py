@@ -4,14 +4,12 @@ from __future__ import annotations
 
 import json
 import logging
-import os
 from pathlib import Path
 from typing import Any
 
 import joblib
 import numpy as np
 from sklearn.ensemble import VotingClassifier
-from sklearn.model_selection import StratifiedKFold, cross_val_score
 from sklearn.metrics import (
     accuracy_score,
     f1_score,
@@ -19,16 +17,17 @@ from sklearn.metrics import (
     recall_score,
     roc_auc_score,
 )
+from sklearn.model_selection import StratifiedKFold, cross_val_score
 
 try:
-    import xgboost as xgb
     import lightgbm as lgb
+    import xgboost as xgb
     _HAS_BOOSTING = True
 except ImportError:
     _HAS_BOOSTING = False
 
 from app.config import get_settings
-from app.features import ALL_FEATURES, build_feature_pipeline
+from app.features import build_feature_pipeline
 
 logger = logging.getLogger(__name__)
 

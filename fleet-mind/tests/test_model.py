@@ -5,7 +5,6 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
-import numpy as np
 import pytest
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
@@ -74,8 +73,9 @@ class TestPredict:
         return load_model()
 
     def test_predict_returns_dict(self, loaded_model, sample_reading):
-        from app.features import build_feature_pipeline
         import pandas as pd
+
+        from app.features import build_feature_pipeline
         pipeline = build_feature_pipeline()
         raw = {k: v for k, v in sample_reading.items() if k != "vehicle_id"}
         features = pipeline.fit_transform(pd.DataFrame([raw]))
@@ -83,8 +83,9 @@ class TestPredict:
         assert isinstance(result, dict)
 
     def test_predict_keys(self, loaded_model, sample_reading):
-        from app.features import build_feature_pipeline
         import pandas as pd
+
+        from app.features import build_feature_pipeline
         pipeline = build_feature_pipeline()
         raw = {k: v for k, v in sample_reading.items() if k != "vehicle_id"}
         features = pipeline.fit_transform(pd.DataFrame([raw]))
@@ -93,8 +94,9 @@ class TestPredict:
             assert key in result
 
     def test_anomaly_score_in_range(self, loaded_model, sample_reading):
-        from app.features import build_feature_pipeline
         import pandas as pd
+
+        from app.features import build_feature_pipeline
         pipeline = build_feature_pipeline()
         raw = {k: v for k, v in sample_reading.items() if k != "vehicle_id"}
         features = pipeline.fit_transform(pd.DataFrame([raw]))
@@ -102,8 +104,9 @@ class TestPredict:
         assert 0.0 <= result["anomaly_score"] <= 1.0
 
     def test_model_version_string(self, loaded_model, sample_reading):
-        from app.features import build_feature_pipeline
         import pandas as pd
+
+        from app.features import build_feature_pipeline
         pipeline = build_feature_pipeline()
         raw = {k: v for k, v in sample_reading.items() if k != "vehicle_id"}
         features = pipeline.fit_transform(pd.DataFrame([raw]))

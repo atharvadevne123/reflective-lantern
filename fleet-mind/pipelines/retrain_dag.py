@@ -4,8 +4,6 @@ from __future__ import annotations
 
 import json
 import logging
-import os
-import subprocess
 import sys
 from datetime import datetime, timedelta
 from pathlib import Path
@@ -34,7 +32,6 @@ def run_retraining() -> dict:
 def check_drift() -> list[dict]:
     """Run drift detection and return flagged features."""
     sys.path.insert(0, str(Path(__file__).parent.parent))
-    from sqlalchemy.orm import Session
     from app.database import _get_session_factory, init_db
     from app.monitoring import run_drift_check
     init_db()

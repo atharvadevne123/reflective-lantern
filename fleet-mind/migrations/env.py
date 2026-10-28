@@ -3,14 +3,15 @@
 from __future__ import annotations
 
 import os
+
+# Import models so Alembic can detect schema changes
+import sys
 from logging.config import fileConfig
+from pathlib import Path
 
 from alembic import context
 from sqlalchemy import engine_from_config, pool
 
-# Import models so Alembic can detect schema changes
-import sys
-from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 from app.database import Base  # noqa: E402
 

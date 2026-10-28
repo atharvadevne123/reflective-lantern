@@ -11,7 +11,6 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from app.monitoring import (
     _feature_buffer,
-    _load_baseline,
     log_prediction,
     maintenance_rate,
     run_drift_check,

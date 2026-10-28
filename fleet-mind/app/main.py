@@ -3,15 +3,13 @@
 from __future__ import annotations
 
 import logging
-import os
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 from typing import Annotated, Any
 
 import pandas as pd
-from fastapi import Depends, FastAPI, HTTPException, Request, status
+from fastapi import Depends, FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 
 from app.config import get_settings
@@ -49,7 +47,6 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     _model = load_model()
     _feature_pipeline = build_feature_pipeline()
     # Fit on dummy data so scaler is initialised
-    import numpy as np
     dummy_df = pd.DataFrame(
         data=[[0] * len(RAW_FEATURES)],
         columns=RAW_FEATURES,

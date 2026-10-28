@@ -5,7 +5,6 @@ from __future__ import annotations
 import logging
 
 from sqlalchemy import inspect, text
-from sqlalchemy.orm import Session
 
 from app.database import Base, _get_engine
 

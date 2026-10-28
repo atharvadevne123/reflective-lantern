@@ -5,14 +5,13 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
-import numpy as np
 import pytest
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from app.data_quality import assess_batch_quality, check_missing_values, check_outliers_zscore
-
 import pandas as pd
+
+from app.data_quality import assess_batch_quality, check_missing_values, check_outliers_zscore
 
 
 @pytest.fixture

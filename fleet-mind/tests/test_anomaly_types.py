@@ -9,7 +9,7 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from app.anomaly_types import ANOMALY_RULES, AnomalyRule, classify_anomalies
+from app.anomaly_types import AnomalyRule, classify_anomalies
 
 
 @pytest.fixture

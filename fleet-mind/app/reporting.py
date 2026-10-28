@@ -3,10 +3,8 @@
 from __future__ import annotations
 
 import logging
-from datetime import datetime
 from typing import Any
 
-from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.database import DriftReport, VehiclePrediction

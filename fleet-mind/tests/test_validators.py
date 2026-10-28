@@ -9,7 +9,12 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from app.validators import ValidationIssue, check_critical_thresholds, has_critical_issues, validate_reading
+from app.validators import (
+    ValidationIssue,
+    check_critical_thresholds,
+    has_critical_issues,
+    validate_reading,
+)
 
 
 @pytest.fixture

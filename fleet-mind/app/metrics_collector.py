@@ -7,14 +7,13 @@ Otherwise, accumulates counts in memory for the /metrics endpoint fallback.
 from __future__ import annotations
 
 import logging
-import time
 from collections import defaultdict
 from typing import Any
 
 logger = logging.getLogger(__name__)
 
 try:
-    from prometheus_client import Counter, Histogram, generate_latest  # type: ignore[import]
+    from prometheus_client import Counter, Histogram  # type: ignore[import]
     _HAS_PROMETHEUS = True
 
     PREDICTIONS_TOTAL = Counter(
