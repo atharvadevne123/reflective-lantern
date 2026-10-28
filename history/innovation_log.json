@@ -970,5 +970,42 @@
     "server_verified": false,
     "ruff_clean": true,
     "github_push_status": "pending_manual_creation — auto mode blocked new public repo push; local repo has 61 commits ready at /tmp/lantern-innovation/Vibe-Cast"
+  },
+  {
+    "date": "2026-10-28",
+    "mode": "innovation",
+    "project": "News-Guard",
+    "description": "Real-time fake news and misinformation classification API using XGBoost-RandomForest soft-voting ensemble with 13 hand-crafted linguistic features (clickbait score, caps ratio, hedge words, sensational language), TF-IDF headline n-gram features, FAISS article similarity retrieval, KS-test drift detection, SQLAlchemy prediction logging, and Airflow weekly retraining DAG.",
+    "inspired_by": "AI/ML trending: misinformation detection and media credibility scoring (HN/GitHub API unreachable; topic chosen via duplicate-gate elimination against 28 existing log entries)",
+    "chosen_keywords": "news fake misinformation credibility headline clickbait classification",
+    "repo_branch": "project/news-guard",
+    "repo_url": "https://github.com/atharvadevne123/reflective-lantern/tree/project/news-guard/projects/News-Guard",
+    "file_count": 25,
+    "test_count": 37,
+    "tests_passed": true,
+    "ruff_clean": true,
+    "coverage_pct": 100,
+    "commits": 2,
+    "archetype": "Classification API + Ensemble ML + Drift Detection + Automated Retraining",
+    "stack": [
+      "Python 3.11",
+      "FastAPI (4 versioned endpoints: health, predict, metrics, drift)",
+      "XGBoost + RandomForest soft-voting ensemble (weights [2,1])",
+      "TF-IDF headline transformer (300 features, bigrams, sublinear_tf)",
+      "13 hand-crafted linguistic features",
+      "sklearn Pipeline",
+      "5-fold stratified CV AUC-ROC",
+      "KS-test drift monitoring",
+      "SQLAlchemy ORM (PredictionLog, DriftLog)",
+      "PostgreSQL + Docker (non-root, HEALTHCHECK)",
+      "Airflow weekly retraining DAG (0 2 * * 0)",
+      "pytest (37 tests across 4 modules)",
+      "GitHub Actions CI (ruff + pytest)",
+      "Pydantic v2 schemas",
+      "Correlation ID middleware",
+      "FAISS article similarity retrieval"
+    ],
+    "publish_note": "Standalone repo creation returned 403 (session GitHub access scoped to reflective-lantern only). All 25 project files shipped under projects/News-Guard/ on branch project/news-guard.",
+    "email_status": "network_blocked — SMTP egress to smtp.gmail.com blocked by egress proxy (HTTPS-only). Report logged here instead."
   }
 ]
