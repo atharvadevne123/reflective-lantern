@@ -66,3 +66,34 @@ def download_model(s3_key: str, local_path: str) -> bool:
     except Exception as exc:
         logger.warning("S3 download failed: %s", exc)
         return False
+
+
+def list_model_artifacts(prefix: str | None = None) -> list[str]:
+    """List S3 keys under the model prefix.
+
+    Args:
+        prefix: Optional sub-prefix to narrow the listing.  Defaults to
+                ``AWS_MODEL_PREFIX``.
+
+    Returns:
+        List of S3 object key strings, or empty list when S3 is unavailable.
+    """
+    if not _BOTO3_AVAILABLE or not AWS_BUCKET:
+        return []
+    search_prefix = prefix or AWS_PREFIX
+    try:
+        client = boto3.client("s3")
+        paginator = client.get_paginator("list_objects_v2")
+        keys: list[str] = []
+        for page in paginator.paginate(Bucket=AWS_BUCKET, Prefix=search_prefix):
+            for obj in page.get("Contents", []):
+                keys.append(obj["Key"])
+        return keys
+    except Exception as exc:
+        logger.warning("S3 list failed: %s", exc)
+        return []
+
+
+def is_s3_configured() -> bool:
+    """Return True when both boto3 and the AWS_MODEL_BUCKET variable are available."""
+    return _BOTO3_AVAILABLE and bool(AWS_BUCKET)
