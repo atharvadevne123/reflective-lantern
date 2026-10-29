@@ -125,6 +125,28 @@ def predict(pipe: Pipeline, X: np.ndarray) -> tuple[list[int], list[float]]:
     return preds, confs
 
 
+def model_is_loaded() -> bool:
+    """Return True when a saved model artifact exists on disk."""
+    return Path(_model_path()).exists()
+
+
+def safe_predict(pipe: Pipeline, X: np.ndarray) -> tuple[list[int], list[float]] | None:
+    """Wrapper around predict that returns None on any exception.
+
+    Args:
+        pipe: Trained sklearn Pipeline.
+        X: Feature matrix of shape (n_samples, n_features).
+
+    Returns:
+        (predictions, confidences) tuple, or None if inference fails.
+    """
+    try:
+        return predict(pipe, X)
+    except Exception:
+        logger.exception("safe_predict failed")
+        return None
+
+
 def read_champion_auc() -> float:
     if not Path(_metrics_path()).exists():
         return 0.0
