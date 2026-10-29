@@ -142,3 +142,33 @@ curl http://localhost:8000/api/v1/health
 ## Data Note
 
 No proprietary market data ships with this repo. The `/api/v1/train` endpoint generates synthetic OHLCV-style data for demonstration. In production, replace with real data via a market data provider (e.g., yfinance, Polygon, Alpaca).
+
+## New in v1.1.0
+
+### Portfolio Analytics
+- **Calmar Ratio** — `compute_calmar_ratio()` in `portfolio.py`: annualised return ÷ max drawdown
+- **Strategy Comparison** — `compare_strategies()` in `backtest.py`: run multiple signal sets side-by-side
+
+### Signal Utilities
+- **Consensus Voting** — `aggregate_signals()` in `signals.py`: aggregate multiple signals into BUY/SELL/NEUTRAL with vote counts and mean confidence
+
+### Preprocessing
+- **Log Returns** — `compute_log_returns()` for log-normal return series
+- **Date Features** — `add_date_features()` extracts day-of-week and month from a date column
+
+### Developer Experience
+- `TTLCache.stats()` — live size and capacity metadata
+- `RequestTimingMiddleware` — `X-Process-Time` response header for latency tracking
+- `reset_config()` and `config_as_dict()` — testable config management with password redaction
+- `reset_metrics()` — clean per-test metrics state
+- `get_logger()` and `silence_noisy_loggers()` — structured logger utilities
+- `check_env_vars()` and `liveness_probe()` — health module additions
+- `count_predictions()` and `count_drift_alerts()` — DB query helpers
+- `is_mlflow_available()` and `log_run_safe()` — safe MLflow wrappers
+- `is_s3_configured()` and `list_model_artifacts()` — S3 utilities
+- `index_size()` and `clear_index()` — FAISS index management
+- `validate_feature_count()` — runtime guard for feature matrix shape
+
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for development workflow, branch naming conventions, and PR guidelines.
