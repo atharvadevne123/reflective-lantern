@@ -66,3 +66,46 @@ def get_config() -> AppConfig:
     if _config is None:
         _config = load_config()
     return _config
+
+
+def reset_config() -> None:
+    """Clear the cached singleton so the next call to get_config() re-reads env vars.
+
+    Primarily useful in tests that set environment variables mid-run.
+    """
+    global _config
+    _config = None
+
+
+def config_as_dict() -> dict[str, object]:
+    """Return the current config as a plain dict (for logging or health endpoints).
+
+    Returns:
+        Dict of config key → value, with database_url partially redacted.
+    """
+    cfg = get_config()
+    d = {
+        "database_url": _redact_url(cfg.database_url),
+        "model_path": cfg.model_path,
+        "metrics_path": cfg.metrics_path,
+        "log_level": cfg.log_level,
+        "api_rate_limit": cfg.api_rate_limit,
+        "cache_ttl_seconds": cfg.cache_ttl_seconds,
+        "cache_maxsize": cfg.cache_maxsize,
+        "drift_threshold": cfg.drift_threshold,
+        "horizon_days": cfg.horizon_days,
+        "cors_origins": cfg.cors_origins,
+    }
+    return d
+
+
+def _redact_url(url: str) -> str:
+    """Replace the password component of a DB URL with '***'."""
+    if "://" not in url or "@" not in url:
+        return url
+    scheme_rest = url.split("://", 1)
+    creds_host = scheme_rest[1].split("@", 1)
+    if ":" in creds_host[0]:
+        user = creds_host[0].split(":", 1)[0]
+        return f"{scheme_rest[0]}://{user}:***@{creds_host[1]}"
+    return url
