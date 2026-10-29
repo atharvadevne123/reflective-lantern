@@ -9,7 +9,6 @@ import pytest
 from pipelines.retrain_dag import (
     AUC_GATE,
     task_read_champion_auc,
-    task_train_challenger,
     task_validate_gate,
 )
 

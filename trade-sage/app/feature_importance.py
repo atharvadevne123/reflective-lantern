@@ -77,7 +77,7 @@ def importance_as_dict(
         Dict mapping feature name to importance score, sorted descending.
     """
     pairs = extract_feature_importances(pipeline, feature_names)
-    return {name: score for name, score in pairs}
+    return dict(pairs)
 
 
 def cumulative_importance(

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from app.signals import SignalStrength, TradingSignal, aggregate_signals, classify_signal
+from app.signals import TradingSignal, aggregate_signals, classify_signal
 
 
 def _make_signal(direction: str, confidence: float = 0.8) -> TradingSignal:

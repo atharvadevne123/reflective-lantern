@@ -2,16 +2,12 @@
 
 from __future__ import annotations
 
-import os
-
 import pytest
 
 from app.health import (
     HealthStatus,
-    build_health_status,
     check_database,
     check_env_vars,
-    check_model_file,
     liveness_probe,
 )
 

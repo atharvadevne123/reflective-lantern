@@ -5,7 +5,7 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from app.backtest import BacktestResult, compare_strategies, run_backtest, summarise_backtest
+from app.backtest import compare_strategies, run_backtest, summarise_backtest
 
 
 def _prices(n: int = 100) -> np.ndarray:

@@ -50,7 +50,7 @@ class TestCountPredictions:
         assert count_predictions(db_session, ticker="TSLA") == 0
 
     def test_no_ticker_filter_counts_all(self, db_session) -> None:
-        for i in range(5):
+        for _i in range(5):
             db_session.add(PredictionLog(ticker="AMZN", prediction=1, confidence=0.75, horizon_days=5))
         db_session.commit()
         assert count_predictions(db_session) == 5

@@ -11,7 +11,6 @@ from sklearn.preprocessing import StandardScaler
 from app.feature_importance import (
     cumulative_importance,
     importance_as_dict,
-    top_k_features,
 )
 
 FEATURE_NAMES = [f"f{i}" for i in range(10)]

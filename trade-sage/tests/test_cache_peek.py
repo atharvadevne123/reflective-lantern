@@ -4,8 +4,6 @@ from __future__ import annotations
 
 import time
 
-import pytest
-
 from app.cache import TTLCache, get_cache_key
 
 
