@@ -78,6 +78,23 @@ def clip_outliers(arr: np.ndarray, z_threshold: float = 3.0) -> np.ndarray:
     return np.clip(arr, lo, hi)
 
 
+def normalize_features(X: np.ndarray) -> np.ndarray:
+    """Min-max normalise a 2D feature matrix column-wise to [0, 1].
+
+    Args:
+        X: 2D array of shape (n_samples, n_features).
+
+    Returns:
+        Normalised array. Constant columns are set to 0.0.
+    """
+    X = np.asarray(X, dtype=float)
+    col_min = X.min(axis=0)
+    col_max = X.max(axis=0)
+    rng = col_max - col_min
+    rng[rng == 0] = 1.0
+    return (X - col_min) / rng
+
+
 def compute_log_returns(close_prices: np.ndarray) -> np.ndarray:
     """Compute log returns from a close price series.
 
