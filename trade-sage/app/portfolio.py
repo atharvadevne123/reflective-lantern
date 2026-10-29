@@ -78,6 +78,33 @@ def compute_sharpe(returns: np.ndarray, risk_free_rate_daily: float = 0.0) -> fl
     return float((np.mean(excess) / std) * np.sqrt(252))
 
 
+def compute_sortino_ratio(
+    returns: np.ndarray,
+    risk_free_rate_daily: float = 0.0,
+    trading_days: int = 252,
+) -> float | None:
+    """Compute the annualised Sortino ratio using downside deviation.
+
+    Args:
+        returns: Array of daily returns.
+        risk_free_rate_daily: Daily risk-free rate subtracted from returns.
+        trading_days: Number of trading days for annualisation.
+
+    Returns:
+        Sortino ratio, or None when the series is too short or downside std is zero.
+    """
+    if len(returns) < 5:
+        return None
+    excess = returns - risk_free_rate_daily
+    downside = excess[excess < 0]
+    if len(downside) == 0:
+        return None
+    downside_std = float(np.std(downside, ddof=1))
+    if downside_std < 1e-10:
+        return None
+    return round(float(np.mean(excess) / downside_std * np.sqrt(trading_days)), 4)
+
+
 def compute_portfolio_risk(
     weights: list[float],
     price_series: list[list[float]],
