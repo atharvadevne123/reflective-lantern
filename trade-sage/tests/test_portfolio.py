@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import numpy as np
 import pytest
+
 from app.portfolio import (
     compute_expected_shortfall,
     compute_max_drawdown,
