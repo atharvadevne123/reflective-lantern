@@ -76,3 +76,36 @@ def clip_outliers(arr: np.ndarray, z_threshold: float = 3.0) -> np.ndarray:
     lo = mean - z_threshold * std
     hi = mean + z_threshold * std
     return np.clip(arr, lo, hi)
+
+
+def compute_log_returns(close_prices: np.ndarray) -> np.ndarray:
+    """Compute log returns from a close price series.
+
+    Args:
+        close_prices: 1D array of closing prices (length N).
+
+    Returns:
+        Log return array of length N-1. Returns empty array for N < 2.
+    """
+    arr = np.asarray(close_prices, dtype=float)
+    if len(arr) < 2:
+        return np.empty(0, dtype=float)
+    return np.log(arr[1:] / (arr[:-1] + 1e-12))
+
+
+def add_date_features(df: pd.DataFrame, date_col: str = "date") -> pd.DataFrame:
+    """Expand a date column into day-of-week and month integer features.
+
+    Args:
+        df: DataFrame containing a parseable date column.
+        date_col: Column name holding the date values.
+
+    Returns:
+        DataFrame with new columns ``day_of_week`` (0=Mon) and ``month`` (1-12).
+        Original ``date_col`` is preserved.
+    """
+    dates = pd.to_datetime(df[date_col])
+    df = df.copy()
+    df["day_of_week"] = dates.dt.dayofweek
+    df["month"] = dates.dt.month
+    return df
