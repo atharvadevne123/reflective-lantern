@@ -33,10 +33,33 @@ def compute_drift(reference: list[float], current: list[float]) -> dict:
 
 
 def update_reference(feature_name: str, values: list[float]) -> None:
+    """Append new observations to the rolling reference window for a feature."""
     buf = _reference_store.setdefault(feature_name, [])
     buf.extend(values)
     if len(buf) > REFERENCE_WINDOW:
         _reference_store[feature_name] = buf[-REFERENCE_WINDOW:]
+
+
+def clear_reference_store() -> None:
+    """Wipe the in-memory reference store (e.g. between test runs or model retrains)."""
+    _reference_store.clear()
+
+
+def get_drift_summary() -> dict[str, dict]:
+    """Return the latest drift status for all tracked features.
+
+    Returns:
+        Dict mapping feature name to its most recent drift result.
+        Empty when no drift has been computed yet.
+    """
+    summary: dict[str, dict] = {}
+    for name, values in _reference_store.items():
+        if len(values) >= 10:
+            mid = len(values) // 2
+            ref = values[:mid]
+            cur = values[mid:]
+            summary[name] = compute_drift(ref, cur)
+    return summary
 
 
 def check_drift_all(
