@@ -92,3 +92,44 @@ def run_backtest(
         win_rate=round(win_rate, 4),
         equity_curve=equity_curve,
     )
+
+
+def summarise_backtest(result: BacktestResult) -> dict[str, object]:
+    """Convert a BacktestResult into a JSON-serialisable summary dict.
+
+    Args:
+        result: BacktestResult from :func:`run_backtest`.
+
+    Returns:
+        Dict with formatted string labels and rounded numeric values.
+    """
+    return {
+        "total_return_pct": round(result.total_return * 100, 2),
+        "annualised_return_pct": round(result.annualised_return * 100, 2),
+        "max_drawdown_pct": round(result.max_drawdown * 100, 2),
+        "sharpe_ratio": result.sharpe_ratio,
+        "n_trades": result.n_trades,
+        "win_rate_pct": round(result.win_rate * 100, 2),
+        "equity_curve_length": len(result.equity_curve),
+    }
+
+
+def compare_strategies(
+    close_prices: np.ndarray,
+    signal_sets: dict[str, np.ndarray],
+    transaction_cost: float = 0.001,
+) -> dict[str, dict[str, object]]:
+    """Run backtest on multiple signal sets and return a comparison summary.
+
+    Args:
+        close_prices: 1D array of closing prices.
+        signal_sets: Mapping of strategy name to signal array.
+        transaction_cost: Cost fraction per trade for all strategies.
+
+    Returns:
+        Dict mapping strategy name to its summarised BacktestResult dict.
+    """
+    return {
+        name: summarise_backtest(run_backtest(close_prices, signals, transaction_cost))
+        for name, signals in signal_sets.items()
+    }
