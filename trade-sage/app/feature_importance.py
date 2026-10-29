@@ -61,3 +61,51 @@ def top_k_features(
     """
     all_pairs = extract_feature_importances(pipeline, feature_names)
     return all_pairs[:k]
+
+
+def importance_as_dict(
+    pipeline,
+    feature_names: list[str],
+) -> dict[str, float]:
+    """Return feature importances as a name-to-score mapping.
+
+    Args:
+        pipeline: Fitted sklearn Pipeline.
+        feature_names: Feature names aligned to columns.
+
+    Returns:
+        Dict mapping feature name to importance score, sorted descending.
+    """
+    pairs = extract_feature_importances(pipeline, feature_names)
+    return {name: score for name, score in pairs}
+
+
+def cumulative_importance(
+    pipeline,
+    feature_names: list[str],
+    threshold: float = 0.90,
+) -> list[str]:
+    """Return the minimal feature set that explains ``threshold`` of total importance.
+
+    Args:
+        pipeline: Fitted sklearn Pipeline.
+        feature_names: Feature names aligned to columns.
+        threshold: Cumulative importance fraction to cover (default 0.90).
+
+    Returns:
+        Ordered list of feature names up to and including the threshold.
+    """
+    pairs = extract_feature_importances(pipeline, feature_names)
+    if not pairs:
+        return []
+    total = sum(score for _, score in pairs)
+    if total == 0:
+        return []
+    cumsum = 0.0
+    selected: list[str] = []
+    for name, score in pairs:
+        cumsum += score / total
+        selected.append(name)
+        if cumsum >= threshold:
+            break
+    return selected
