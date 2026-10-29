@@ -397,5 +397,44 @@
     "test_focus": "Extended edge-case tests: PSI drift, elasticity, Omori aftershock, sensor validation, trend scoring, priority overrides, cart coherence, OHLCV utils",
     "ruff_fixes": 314,
     "summary": "60 atomic extended test file commits across 18 sub-projects plus ruff autofix (314 fixes). Test coverage expanded with edge-case and boundary tests for forecasters, validators, drift detectors, and domain logic."
+  },
+  {
+    "date": "2026-10-29",
+    "mode": "IMPROVEMENT",
+    "commits": 60,
+    "project": "trade-sage",
+    "description": "Equity trading signal prediction and portfolio risk scoring API (XGBoost + LightGBM + RandomForest ensemble)",
+    "modules_added": [
+      "trade-sage/app/utils.py"
+    ],
+    "functions_added": [
+      "portfolio.compute_sortino_ratio",
+      "preprocessing.normalize_features",
+      "utils.safe_round",
+      "utils.flatten_dict",
+      "utils.hash_payload",
+      "utils.clamp",
+      "utils.percentage_change",
+      "utils.truncate_string",
+      "utils.retry_with_backoff",
+      "cache.TTLCache.peek",
+      "cache.TTLCache.keys",
+      "cache.get_cache_key",
+      "config.get_config_value",
+      "config.set_config_override",
+      "model.model_is_loaded",
+      "model.safe_predict"
+    ],
+    "new_test_files": [
+      "trade-sage/tests/test_utils.py",
+      "trade-sage/tests/test_utils_extended.py",
+      "trade-sage/tests/test_portfolio_sortino.py",
+      "trade-sage/tests/test_preprocessing_normalize.py",
+      "trade-sage/tests/test_cache_peek.py",
+      "trade-sage/tests/test_config_value.py",
+      "trade-sage/tests/test_model_helpers.py"
+    ],
+    "ruff_fixes": 11,
+    "summary": "60 atomic improvement commits for trade-sage: 7 ruff import-sort fixes, 17 new utility functions across 10 existing modules, 7 new test files with 150+ test cases, documentation updates (README v1.1.0, CHANGELOG), and residual lint cleanup."
   }
 ]
