@@ -79,6 +79,7 @@ class ModelMetrics(Base):
 
 
 def get_db() -> Session:
+    """FastAPI dependency that yields a database session and closes it afterwards."""
     db = _get_session_factory()()
     try:
         yield db
@@ -87,4 +88,33 @@ def get_db() -> Session:
 
 
 def init_db() -> None:
+    """Create all tables defined on the Base metadata if they do not exist."""
     Base.metadata.create_all(bind=_get_engine())
+
+
+def count_predictions(db: Session, ticker: str | None = None) -> int:
+    """Return the number of prediction log rows, optionally filtered by ticker.
+
+    Args:
+        db: Active SQLAlchemy session.
+        ticker: Optional ticker symbol to filter on.
+
+    Returns:
+        Row count as an integer.
+    """
+    q = db.query(PredictionLog)
+    if ticker:
+        q = q.filter(PredictionLog.ticker == ticker.upper())
+    return q.count()
+
+
+def count_drift_alerts(db: Session) -> int:
+    """Return the number of rows in drift_logs where drift was detected.
+
+    Args:
+        db: Active SQLAlchemy session.
+
+    Returns:
+        Count of drift-detected log entries.
+    """
+    return db.query(DriftLog).filter(DriftLog.drift_detected.is_(True)).count()
