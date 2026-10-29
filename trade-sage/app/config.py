@@ -99,6 +99,42 @@ def config_as_dict() -> dict[str, object]:
     return d
 
 
+def get_config_value(key: str, default: object = None) -> object:
+    """Retrieve a single value from the current config by attribute name.
+
+    Args:
+        key: Attribute name on AppConfig (e.g. ``"log_level"``).
+        default: Returned when the key does not exist on the config object.
+
+    Returns:
+        The config attribute value, or *default* if not found.
+    """
+    cfg = get_config()
+    return getattr(cfg, key, default)
+
+
+def set_config_override(key: str, value: object) -> None:
+    """Override a single config field for the lifetime of this process.
+
+    Creates a new singleton config that is identical to the current one
+    except for the specified field. Useful in tests and at startup.
+
+    Args:
+        key: Attribute name on AppConfig to override.
+        value: New value to set.
+
+    Raises:
+        AttributeError: When *key* is not a valid AppConfig field.
+    """
+    import dataclasses
+
+    cfg = get_config()
+    if not hasattr(cfg, key):
+        raise AttributeError(f"AppConfig has no field '{key}'")
+    global _config
+    _config = dataclasses.replace(cfg, **{key: value})
+
+
 def _redact_url(url: str) -> str:
     """Replace the password component of a DB URL with '***'."""
     if "://" not in url or "@" not in url:
