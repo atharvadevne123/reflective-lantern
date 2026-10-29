@@ -58,4 +58,41 @@ class TTLCache:
             return {"size": len(self._store), "maxsize": self._maxsize}
 
 
+    def peek(self, key: str) -> Any | None:
+        """Return a cached value without updating the LRU order.
+
+        Args:
+            key: Cache key to inspect.
+
+        Returns:
+            Cached value if present and unexpired, otherwise None.
+        """
+        with self._lock:
+            if key not in self._store:
+                return None
+            value, expires_at = self._store[key]
+            if time.monotonic() > expires_at:
+                del self._store[key]
+                return None
+            return value
+
+    def keys(self) -> list[str]:
+        """Return a snapshot of all live, unexpired cache keys."""
+        now = time.monotonic()
+        with self._lock:
+            return [k for k, (_, exp) in list(self._store.items()) if exp > now]
+
+
+def get_cache_key(*parts: object) -> str:
+    """Build a deterministic cache key from an arbitrary sequence of values.
+
+    Args:
+        *parts: Values that will be str-joined with ``|`` as the separator.
+
+    Returns:
+        A single string suitable for use as a TTLCache key.
+    """
+    return "|".join(str(p) for p in parts)
+
+
 _prediction_cache = TTLCache(maxsize=512, ttl_seconds=300)
