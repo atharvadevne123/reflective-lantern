@@ -2,6 +2,42 @@
 
 All notable changes to Trade-Sage are documented in this file.
 
+## [1.1.0] - 2026-10-29
+
+### Added
+
+**Analytics**
+- `compute_calmar_ratio` in `portfolio.py` — annualised return divided by max drawdown
+- `aggregate_signals` in `signals.py` — multi-signal consensus voting with mean confidence
+- `summarise_backtest` and `compare_strategies` in `backtest.py` — JSON-ready summaries and side-by-side strategy comparison
+- `compute_log_returns` and `add_date_features` in `preprocessing.py`
+
+**Utilities**
+- `TTLCache.stats()` — returns `{size, maxsize}` metadata
+- `RequestTimingMiddleware` — adds `X-Process-Time` (ms) header to responses
+- `index_size()` and `clear_index()` in `faiss_index.py`
+- `is_mlflow_available()` and `log_run_safe()` in `mlflow_stub.py`
+- `is_s3_configured()` and `list_model_artifacts()` in `boto3_stub.py`
+- `reset_metrics()` and `record_prediction_latency()` in `metrics.py`
+- `get_logger()` and `silence_noisy_loggers()` in `logging_config.py`
+- `check_env_vars()` and `liveness_probe()` in `health.py`
+- `reset_config()`, `config_as_dict()`, `_redact_url()` in `config.py`
+- `count_predictions()` and `count_drift_alerts()` in `database.py`
+- `validate_feature_count()` in `features.py`
+- `get_drift_summary()` and `clear_reference_store()` in `monitoring.py`
+- `importance_as_dict()` and `cumulative_importance()` in `feature_importance.py`
+
+**Validation Schemas**
+- `TrainRequest`, `TrainResponse`, `VersionResponse` Pydantic models
+
+**Tests**
+- 15 new test files covering all new utilities, edge cases, and parametrized scenarios
+- Import order fixes across 7 test files
+
+### Changed
+- `TTLCache` docstrings improved
+- `update_reference` docstring added
+
 ## [1.0.0] - 2026-10-14
 
 ### Added
