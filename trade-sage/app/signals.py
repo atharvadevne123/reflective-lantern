@@ -60,3 +60,35 @@ def classify_signal(prediction: int, confidence: float, horizon_days: int) -> Tr
         strength=strength,
         horizon_days=horizon_days,
     )
+
+
+def aggregate_signals(signals: list[TradingSignal]) -> dict[str, int | float]:
+    """Summarise a list of trading signals into vote counts and mean confidence.
+
+    Args:
+        signals: Non-empty list of TradingSignal instances.
+
+    Returns:
+        Dict with keys ``buy_votes``, ``sell_votes``, ``consensus``,
+        and ``mean_confidence``.  ``consensus`` is 'BUY', 'SELL', or 'NEUTRAL'.
+
+    Raises:
+        ValueError: If signals is empty.
+    """
+    if not signals:
+        raise ValueError("signals list must not be empty")
+    buy_votes = sum(1 for s in signals if s.direction == "BUY")
+    sell_votes = len(signals) - buy_votes
+    mean_conf = round(sum(s.confidence for s in signals) / len(signals), 4)
+    if buy_votes > sell_votes:
+        consensus = "BUY"
+    elif sell_votes > buy_votes:
+        consensus = "SELL"
+    else:
+        consensus = "NEUTRAL"
+    return {
+        "buy_votes": buy_votes,
+        "sell_votes": sell_votes,
+        "consensus": consensus,
+        "mean_confidence": mean_conf,
+    }
