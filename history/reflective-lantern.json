@@ -521,6 +521,8 @@
       "Property-Sage/SECURITY.md"
     ],
     "version_bump": "1.0.0 -> 1.2.0",
-    "summary": "60+ atomic improvement commits for Property-Sage: 37 new utility functions across 10 modules, 6 new source modules, 20 new test files with comprehensive coverage, SECURITY.md, CHANGELOG v1.2.0, README utilities section."
+    "summary": "60+ atomic improvement commits for Property-Sage: 37 new utility functions across 10 modules, 6 new source modules, 20 new test files with comprehensive coverage, SECURITY.md, CHANGELOG v1.2.0, README utilities section.",
+    "email_status": "blocked_smtp",
+    "ruff_status": "pass"
   }
 ]
