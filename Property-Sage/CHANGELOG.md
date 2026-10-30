@@ -2,6 +2,26 @@
 
 All notable changes to Property-Sage are documented here.
 
+## [1.2.0] – 2026-10-30
+
+### Added
+- `get_recent_runs`, `log_model_version`, `list_experiments` in `experiment_tracking`
+- `calculate_confidence_score`, `batch_predict`, `get_model_version` in `model`
+- `validate_year_built_value`, `sanitize_request_id`, `normalize_neighborhood` in `validators`
+- `format_currency`, `clamp`, `slugify`, `percentage_change`, `is_finite_positive` in `utils`
+- `compute_cap_rate`, `property_age_category`, `compute_price_per_sqft`, `compute_gross_yield` in `features`
+- `encode_property_features`, `sqft_percentile`, `property_type_to_multiplier` in `features`
+- `neighborhood_price_stats`, `neighborhood_benchmark` in `stats`
+- `format_prediction_response`, `format_metrics_response` in `formatters`
+- `get_prediction_count`, `get_recent_predictions` in `database`
+- `yield_category`, `anomaly_score`, `detect_outlier_predictions`, `prediction_summary_stats` in `monitoring`
+- `get_drift_history` in `monitoring`
+- `property_valuation_report` in `reports`
+- `is_healthy`, `get_unhealthy_components` in `health`
+- `NeighborhoodPriceIndex` class in `price_index`
+- `PredictionCache` LRU class in `cache`
+- Comprehensive test coverage for all new utilities (30+ new test modules)
+
 ## [1.0.0] – 2026-09-10
 
 ### Added
