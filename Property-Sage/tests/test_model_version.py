@@ -2,8 +2,6 @@
 
 import json
 
-import pytest
-
 from app.model import get_model_version
 
 

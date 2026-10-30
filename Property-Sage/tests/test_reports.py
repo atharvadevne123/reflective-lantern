@@ -1,5 +1,6 @@
 """Tests for property_valuation_report."""
 import pytest
+
 from app.reports import property_valuation_report
 
 SAMPLE_INPUT = {

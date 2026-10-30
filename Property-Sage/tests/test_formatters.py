@@ -4,7 +4,6 @@ import pytest
 
 from app.formatters import format_metrics_response, format_prediction_response
 
-
 SAMPLE_PREDICTION = {
     "predicted_price": 450000.0,
     "predicted_rental_yield": 0.05,

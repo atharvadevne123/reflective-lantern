@@ -1,5 +1,4 @@
 """Tests for PredictionCache."""
-import pytest
 from app.cache import PredictionCache
 
 

@@ -14,7 +14,6 @@ from fastapi import Depends, FastAPI, HTTPException, Request, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field, field_validator
-from rag.retriever import neighbourhood_summary, retrieve
 from sqlalchemy.orm import Session
 
 from app.database import get_db, init_db
@@ -23,6 +22,7 @@ from app.health import deep_health_check
 from app.model import get_metrics, load_models, predict
 from app.monitoring import check_prediction_drift, get_prediction_stats, log_prediction
 from app.retrain_endpoint import router as retrain_router
+from rag.retriever import neighbourhood_summary, retrieve
 
 logging.basicConfig(
     level=logging.INFO,

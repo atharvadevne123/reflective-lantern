@@ -1,9 +1,8 @@
 """Extended tests for experiment_tracking helpers."""
 
-import json
 import pytest
 
-from app.experiment_tracking import get_recent_runs, list_runs, log_run
+from app.experiment_tracking import get_recent_runs, log_run
 
 
 @pytest.fixture

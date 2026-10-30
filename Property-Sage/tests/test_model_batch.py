@@ -1,6 +1,5 @@
 """Tests for batch_predict helper."""
 
-import pandas as pd
 import pytest
 
 from app.features import generate_synthetic_data

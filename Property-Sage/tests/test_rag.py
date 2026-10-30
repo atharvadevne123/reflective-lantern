@@ -1,6 +1,7 @@
 """Tests for the RAG neighbourhood knowledge pipeline."""
 
 import pytest
+
 from rag.ingest import NEIGHBOURHOOD_DOCS, ingest_documents, load_documents
 from rag.retriever import neighbourhood_summary, retrieve
 
