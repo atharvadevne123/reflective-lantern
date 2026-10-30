@@ -89,3 +89,35 @@ def is_finite_positive(value: float) -> bool:
         True if value > 0 and is finite.
     """
     return math.isfinite(value) and value > 0
+
+
+def hash_payload(data: dict, length: int = 8) -> str:
+    """Compute a short deterministic hash of a JSON-serialisable dict.
+
+    Args:
+        data: Dict to hash.
+        length: Number of hex characters to return.
+
+    Returns:
+        Lowercase hex string of the specified length.
+    """
+    import hashlib
+    import json as _json
+    serialised = _json.dumps(data, sort_keys=True)
+    return hashlib.sha256(serialised.encode()).hexdigest()[:length]
+
+
+def safe_divide(numerator: float, denominator: float, default: float = 0.0) -> float:
+    """Divide numerator by denominator, returning default on zero denominator.
+
+    Args:
+        numerator: Dividend.
+        denominator: Divisor.
+        default: Value to return when denominator is zero.
+
+    Returns:
+        Division result or default.
+    """
+    if denominator == 0:
+        return default
+    return numerator / denominator
