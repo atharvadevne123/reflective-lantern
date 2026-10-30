@@ -42,7 +42,7 @@ def format_metrics_response(metrics: dict[str, Any]) -> dict[str, Any]:
         metrics: Raw metrics dict from model.get_metrics().
 
     Returns:
-        Formatted metrics dict with rounded values and percentage strings.
+        Formatted metrics dict with rounded values.
     """
     if not metrics:
         return {"status": "no_metrics_available"}
