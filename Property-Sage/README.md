@@ -161,3 +161,15 @@ Property-Sage v1.2.0 adds a comprehensive utilities layer:
 - **Price Index**: `NeighborhoodPriceIndex` — per-neighbourhood running price index
 - **Reporting**: `property_valuation_report` — structured valuation report dict
 - **Experiment Tracking**: `log_model_version`, `list_experiments`, `get_recent_runs`
+
+## New Modules (v1.2.0)
+
+| Module | Description |
+|--------|-------------|
+| `app/utils.py` | `format_currency`, `clamp`, `slugify`, `percentage_change`, `hash_payload`, `safe_divide` |
+| `app/stats.py` | `neighborhood_price_stats`, `neighborhood_benchmark`, `property_investment_score` |
+| `app/formatters.py` | `format_prediction_response`, `format_metrics_response` |
+| `app/reports.py` | `property_valuation_report` |
+| `app/price_index.py` | `NeighborhoodPriceIndex` class |
+| `app/cache.py` | `PredictionCache` class with TTL expiry |
+| `app/version.py` | Version constants |
