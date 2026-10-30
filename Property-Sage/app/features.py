@@ -347,3 +347,19 @@ def compute_gross_yield(annual_rental: float, property_price: float) -> float:
     if property_price <= 0:
         return 0.0
     return round(annual_rental / property_price * 100, 4)
+
+
+def sqft_percentile(sqft: float, reference: list[float]) -> float:
+    """Return the percentile rank of a sqft value within a reference distribution.
+
+    Args:
+        sqft: Square footage to rank.
+        reference: Reference distribution of sqft values.
+
+    Returns:
+        Percentile rank in [0.0, 100.0]. Returns 0.0 if reference is empty.
+    """
+    if not reference:
+        return 0.0
+    below = sum(1 for r in reference if r < sqft)
+    return round(below / len(reference) * 100, 1)
