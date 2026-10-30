@@ -209,3 +209,34 @@ def get_metrics() -> dict[str, Any]:
     if METRICS_PATH.exists():
         return json.loads(METRICS_PATH.read_text())
     return {}
+
+
+def calculate_confidence_score(
+    cv_scores: list[float],
+    prediction_value: float,
+    reference_mean: float,
+    reference_std: float,
+) -> float:
+    """Estimate a confidence score (0–1) for a prediction.
+
+    Uses CV R² mean and how many stddevs the prediction is from the
+    training-data mean. Higher score = higher confidence.
+
+    Args:
+        cv_scores: Cross-validation R² scores from training.
+        prediction_value: The raw predicted value.
+        reference_mean: Mean of the training target distribution.
+        reference_std: Std deviation of the training target distribution.
+
+    Returns:
+        Confidence score in [0.0, 1.0].
+    """
+    if not cv_scores:
+        return 0.0
+    r2_confidence = float(max(0.0, min(1.0, sum(cv_scores) / len(cv_scores))))
+    if reference_std <= 0:
+        deviation_penalty = 0.0
+    else:
+        z = abs(prediction_value - reference_mean) / reference_std
+        deviation_penalty = float(min(0.5, z / 10.0))
+    return round(max(0.0, r2_confidence - deviation_penalty), 4)
