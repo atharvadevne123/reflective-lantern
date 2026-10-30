@@ -60,3 +60,24 @@ def validate_sqft_vs_bedrooms(sqft: float, bedrooms: int) -> None:
             f"sqft_per_bedroom={ratio:.1f} is implausibly low "
             f"(minimum 80 sqft per bedroom expected)"
         )
+
+
+def validate_year_built_value(v: int) -> int:
+    """Validate that year_built is a plausible construction year.
+
+    Args:
+        v: Year built value from the request.
+
+    Returns:
+        The validated year.
+
+    Raises:
+        ValueError: If the year is before 1800 or more than 1 year in the future.
+    """
+    import datetime
+    current_year = datetime.date.today().year
+    if v < 1800:
+        raise ValueError("year_built must be 1800 or later")
+    if v > current_year + 1:
+        raise ValueError(f"year_built cannot be in the future (got {v})")
+    return v
