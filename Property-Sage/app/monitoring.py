@@ -168,3 +168,42 @@ def get_prediction_stats(db: Session) -> dict[str, Any]:
         "avg_price_last_24h": round(avg_price, 2),
         "avg_rental_yield_last_24h": round(avg_yield, 4),
     }
+
+
+def yield_category(rental_yield: float) -> str:
+    """Classify a rental yield into a human-readable category.
+
+    Args:
+        rental_yield: Rental yield as a decimal (e.g. 0.05 for 5%).
+
+    Returns:
+        Category string: 'low', 'moderate', 'good', or 'excellent'.
+    """
+    if rental_yield < 0.03:
+        return "low"
+    if rental_yield < 0.05:
+        return "moderate"
+    if rental_yield < 0.08:
+        return "good"
+    return "excellent"
+
+
+def anomaly_score(value: float, reference: list[float]) -> float:
+    """Compute a normalised anomaly score using z-score magnitude.
+
+    Args:
+        value: Observed value to score.
+        reference: Reference distribution (training or recent window).
+
+    Returns:
+        Anomaly score in [0.0, 1.0]. Higher = more anomalous.
+    """
+    if len(reference) < 2:
+        return 0.0
+    import statistics
+    mean = statistics.mean(reference)
+    std = statistics.stdev(reference)
+    if std == 0:
+        return 0.0
+    z = abs(value - mean) / std
+    return round(min(1.0, z / 5.0), 4)
