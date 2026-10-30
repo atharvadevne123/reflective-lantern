@@ -295,3 +295,18 @@ def property_age_category(year_built: int, reference_year: int = 2024) -> str:
     if age <= 60:
         return "vintage"
     return "historic"
+
+
+def compute_price_per_sqft(price: float, sqft: float) -> float:
+    """Compute the price-per-square-foot metric for a property.
+
+    Args:
+        price: Total sale price.
+        sqft: Interior square footage.
+
+    Returns:
+        Price per sqft rounded to 2 decimal places. Returns 0.0 if sqft <= 0.
+    """
+    if sqft <= 0:
+        return 0.0
+    return round(price / sqft, 2)
