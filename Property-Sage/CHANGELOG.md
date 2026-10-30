@@ -41,3 +41,13 @@ All notable changes to Property-Sage are documented here.
 - 98 pytest tests covering features, model, monitoring, drift, RAG, retrain, health, and API endpoints
 - Inference latency benchmarking script (`scripts/benchmark.py`)
 - `.env.example` with all required environment variables
+- `property_investment_score` in `stats`
+- `hash_payload`, `safe_divide` in `utils`
+- `clamp_prediction` in `model`
+- `PredictionCache` class in new `cache.py`
+- `NeighborhoodPriceIndex` class in new `price_index.py`
+- Version constants in new `version.py`
+- `yield_category`, `anomaly_score`, `detect_outlier_predictions`, `prediction_summary_stats`, `get_drift_history` in `monitoring`
+- `get_prediction_count`, `get_recent_predictions` in `database`
+- `is_healthy`, `get_unhealthy_components` in `health`
+- `property_valuation_report` in new `reports.py`
