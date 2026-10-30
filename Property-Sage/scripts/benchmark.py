@@ -24,8 +24,8 @@ sys.path.insert(
 
 logging.basicConfig(level=logging.WARNING)
 
-from app.features import generate_synthetic_data, property_to_dataframe
-from app.model import load_models, predict
+from app.features import generate_synthetic_data, property_to_dataframe  # noqa: E402
+from app.model import load_models, predict  # noqa: E402
 
 
 def benchmark(n: int = 500) -> dict[str, float]:

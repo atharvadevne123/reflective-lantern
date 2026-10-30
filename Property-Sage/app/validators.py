@@ -5,6 +5,8 @@ Central home for reusable validators so endpoint schemas stay lean.
 
 from __future__ import annotations
 
+import re
+
 from app.features import NEIGHBORHOODS, PROPERTY_TYPES
 
 
@@ -83,27 +85,6 @@ def validate_year_built_value(v: int) -> int:
     return v
 
 
-import re as _re
-
-
-def sanitize_request_id(request_id: str) -> str:
-    """Sanitise a request ID to only allow alphanumeric, hyphens, and underscores.
-
-    Args:
-        request_id: Raw request ID string.
-
-    Returns:
-        Sanitised string (non-matching chars replaced with '-').
-
-    Raises:
-        ValueError: If the sanitised string is empty.
-    """
-    sanitised = _re.sub(r"[^a-zA-Z0-9\-_]", "-", request_id)
-    if not sanitised:
-        raise ValueError("request_id cannot be empty after sanitisation")
-    return sanitised
-
-
 def normalize_neighborhood(v: str) -> str:
     """Normalise a neighbourhood string without raising on unknown values.
 
@@ -126,6 +107,5 @@ def sanitize_request_id(request_id: str) -> str:
     Returns:
         Sanitised string with only alphanumeric chars and hyphens, max 64 chars.
     """
-    import re
     sanitized = re.sub(r"[^a-zA-Z0-9\-]", "", request_id)
     return sanitized[:64]
