@@ -87,3 +87,41 @@ def init_db() -> None:
     """Create all tables if they do not already exist."""
     logger.info("Initialising database schema at %s", DATABASE_URL)
     Base.metadata.create_all(bind=engine)
+
+
+def get_prediction_count(db: Session) -> int:
+    """Return the total number of logged predictions in the database.
+
+    Args:
+        db: Active SQLAlchemy session.
+
+    Returns:
+        Integer count of Prediction rows.
+    """
+    try:
+        return db.query(Prediction).count()
+    except Exception as exc:
+        logger.error("Failed to count predictions: %s", exc)
+        return 0
+
+
+def get_recent_predictions(db: Session, limit: int = 20) -> list[Prediction]:
+    """Fetch the most recent logged predictions.
+
+    Args:
+        db: Active SQLAlchemy session.
+        limit: Maximum number of rows to return.
+
+    Returns:
+        List of Prediction ORM objects, newest first.
+    """
+    try:
+        return (
+            db.query(Prediction)
+            .order_by(Prediction.created_at.desc())
+            .limit(limit)
+            .all()
+        )
+    except Exception as exc:
+        logger.error("Failed to fetch recent predictions: %s", exc)
+        return []
