@@ -256,3 +256,20 @@ def property_to_dataframe(data: dict[str, Any]) -> pd.DataFrame:
             }
         ]
     )
+
+
+def compute_cap_rate(annual_income: float, property_value: float) -> float:
+    """Compute the capitalisation rate for a property.
+
+    Cap rate = Net Operating Income / Property Value.
+
+    Args:
+        annual_income: Annual net operating income (rent minus expenses).
+        property_value: Current market value of the property.
+
+    Returns:
+        Cap rate as a decimal (e.g. 0.05 for 5%). Returns 0.0 if property_value <= 0.
+    """
+    if property_value <= 0:
+        return 0.0
+    return round(annual_income / property_value, 6)
