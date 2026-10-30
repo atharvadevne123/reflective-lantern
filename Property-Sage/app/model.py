@@ -288,3 +288,21 @@ def get_model_version() -> str:
         except Exception:
             pass
     return "unknown"
+
+
+def clamp_prediction(
+    value: float,
+    lo: float = 10_000.0,
+    hi: float = 50_000_000.0,
+) -> float:
+    """Clamp a price prediction to a plausible real-estate range.
+
+    Args:
+        value: Raw predicted value.
+        lo: Minimum plausible price.
+        hi: Maximum plausible price.
+
+    Returns:
+        Value clamped to [lo, hi].
+    """
+    return max(lo, min(hi, value))
