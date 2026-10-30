@@ -1,5 +1,4 @@
 """Tests for sanitize_request_id."""
-import pytest
 from app.validators import sanitize_request_id
 
 
