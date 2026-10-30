@@ -310,3 +310,25 @@ def compute_price_per_sqft(price: float, sqft: float) -> float:
     if sqft <= 0:
         return 0.0
     return round(price / sqft, 2)
+
+
+def encode_property_features(
+    property_type: str,
+    neighborhood: str,
+) -> dict[str, int]:
+    """Return ordinal encodings for property_type and neighborhood.
+
+    Args:
+        property_type: Property type string (e.g. 'house').
+        neighborhood: Neighbourhood string (e.g. 'suburb').
+
+    Returns:
+        Dict with 'property_type_code' and 'neighborhood_code' integers.
+        Unknown values are mapped to -1.
+    """
+    pt_map = {pt: i for i, pt in enumerate(PROPERTY_TYPES)}
+    nb_map = {nb: i for i, nb in enumerate(NEIGHBORHOODS)}
+    return {
+        "property_type_code": pt_map.get(property_type.lower().strip(), -1),
+        "neighborhood_code": nb_map.get(neighborhood.lower().strip(), -1),
+    }
