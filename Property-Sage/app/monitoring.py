@@ -207,3 +207,26 @@ def anomaly_score(value: float, reference: list[float]) -> float:
         return 0.0
     z = abs(value - mean) / std
     return round(min(1.0, z / 5.0), 4)
+
+
+def detect_outlier_predictions(
+    prices: list[float],
+    z_threshold: float = 3.0,
+) -> list[int]:
+    """Return indices of prices exceeding z_threshold standard deviations from mean.
+
+    Args:
+        prices: List of predicted prices.
+        z_threshold: Number of standard deviations to use as cutoff.
+
+    Returns:
+        List of integer indices where the prediction is an outlier.
+    """
+    if len(prices) < 3:
+        return []
+    import statistics
+    mean = statistics.mean(prices)
+    std = statistics.stdev(prices)
+    if std == 0:
+        return []
+    return [i for i, p in enumerate(prices) if abs(p - mean) / std > z_threshold]
