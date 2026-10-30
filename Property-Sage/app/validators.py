@@ -115,3 +115,17 @@ def normalize_neighborhood(v: str) -> str:
     """
     normalised = v.lower().strip() if v else ""
     return normalised if normalised else "unknown"
+
+
+def sanitize_request_id(request_id: str) -> str:
+    """Sanitise a request ID to contain only safe alphanumeric characters.
+
+    Args:
+        request_id: Raw request ID string.
+
+    Returns:
+        Sanitised string with only alphanumeric chars and hyphens, max 64 chars.
+    """
+    import re
+    sanitized = re.sub(r"[^a-zA-Z0-9\-]", "", request_id)
+    return sanitized[:64]
