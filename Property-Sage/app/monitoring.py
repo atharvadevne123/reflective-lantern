@@ -230,3 +230,64 @@ def detect_outlier_predictions(
     if std == 0:
         return []
     return [i for i, p in enumerate(prices) if abs(p - mean) / std > z_threshold]
+
+
+def prediction_summary_stats(db: "Any") -> dict[str, Any]:
+    """Aggregate summary statistics from the prediction log table.
+
+    Args:
+        db: Active SQLAlchemy session.
+
+    Returns:
+        Dict with count, mean_price, mean_yield, and latest_request_id.
+    """
+    from app.database import Prediction
+    try:
+        preds = db.query(Prediction).all()
+        if not preds:
+            return {"count": 0, "mean_price": 0.0, "mean_yield": 0.0, "latest_request_id": None}
+        prices = [p.predicted_price for p in preds]
+        yields = [p.predicted_rental_yield for p in preds]
+        import statistics as _stats
+        return {
+            "count": len(preds),
+            "mean_price": round(_stats.mean(prices), 2),
+            "mean_yield": round(_stats.mean(yields), 4),
+            "latest_request_id": preds[-1].request_id,
+        }
+    except Exception as exc:
+        logger.error("Failed to compute prediction summary stats: %s", exc)
+        return {"count": 0, "mean_price": 0.0, "mean_yield": 0.0, "latest_request_id": None}
+
+
+def get_drift_history(db: "Any", limit: int = 50) -> list[dict[str, Any]]:
+    """Fetch recent drift log entries from the database.
+
+    Args:
+        db: Active SQLAlchemy session.
+        limit: Maximum number of entries to return.
+
+    Returns:
+        List of drift log dicts, newest first.
+    """
+    from app.database import DriftLog
+    try:
+        rows = (
+            db.query(DriftLog)
+            .order_by(DriftLog.checked_at.desc())
+            .limit(limit)
+            .all()
+        )
+        return [
+            {
+                "feature_name": r.feature_name,
+                "ks_statistic": r.ks_statistic,
+                "p_value": r.p_value,
+                "drift_detected": bool(r.drift_detected),
+                "checked_at": r.checked_at.isoformat(),
+            }
+            for r in rows
+        ]
+    except Exception as exc:
+        logger.error("Failed to fetch drift history: %s", exc)
+        return []
