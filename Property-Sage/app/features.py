@@ -273,3 +273,25 @@ def compute_cap_rate(annual_income: float, property_value: float) -> float:
     if property_value <= 0:
         return 0.0
     return round(annual_income / property_value, 6)
+
+
+def property_age_category(year_built: int, reference_year: int = 2024) -> str:
+    """Classify a property's age into a descriptive category.
+
+    Args:
+        year_built: Construction year of the property.
+        reference_year: Year to compute age against.
+
+    Returns:
+        Category string: 'new', 'modern', 'established', 'vintage', or 'historic'.
+    """
+    age = reference_year - year_built
+    if age <= 5:
+        return "new"
+    if age <= 15:
+        return "modern"
+    if age <= 30:
+        return "established"
+    if age <= 60:
+        return "vintage"
+    return "historic"
