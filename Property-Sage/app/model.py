@@ -240,3 +240,34 @@ def calculate_confidence_score(
         z = abs(prediction_value - reference_mean) / reference_std
         deviation_penalty = float(min(0.5, z / 10.0))
     return round(max(0.0, r2_confidence - deviation_penalty), 4)
+
+
+def batch_predict(
+    price_model: Pipeline,
+    rental_model: Pipeline,
+    X: pd.DataFrame,
+) -> list[dict[str, float]]:
+    """Run inference for multiple property rows at once.
+
+    Args:
+        price_model: Fitted price prediction pipeline.
+        rental_model: Fitted rental yield prediction pipeline.
+        X: Multi-row property DataFrame.
+
+    Returns:
+        List of prediction dicts, one per row.
+    """
+    prices = price_model.predict(X).tolist()
+    yields = np.clip(rental_model.predict(X), 0.01, 0.20).tolist()
+    results = []
+    for price, rental_yield in zip(prices, yields):
+        price = float(price)
+        rental_yield = float(rental_yield)
+        annual_rental = price * rental_yield
+        results.append({
+            "predicted_price": round(price, 2),
+            "predicted_rental_yield": round(rental_yield, 4),
+            "estimated_annual_rental": round(annual_rental, 2),
+            "estimated_monthly_rental": round(annual_rental / 12, 2),
+        })
+    return results
