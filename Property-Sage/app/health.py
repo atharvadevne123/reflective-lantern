@@ -55,3 +55,28 @@ def deep_health_check(
     logger.info("Deep health check complete — status=%s", overall)
 
     return {"status": overall, "components": checks}
+
+
+def is_healthy(health_report: dict) -> bool:
+    """Return True if a health report indicates overall healthy status.
+
+    Args:
+        health_report: Dict returned by deep_health_check().
+
+    Returns:
+        True if the overall status is 'ok'.
+    """
+    return health_report.get("status") == "ok"
+
+
+def get_unhealthy_components(health_report: dict) -> list[str]:
+    """Return names of components that are not 'ok'.
+
+    Args:
+        health_report: Dict returned by deep_health_check().
+
+    Returns:
+        List of component names with non-ok status.
+    """
+    components = health_report.get("components", {})
+    return [name for name, status in components.items() if status != "ok"]
