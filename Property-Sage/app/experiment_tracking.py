@@ -109,3 +109,16 @@ def list_runs(experiment_name: str) -> list[dict[str, Any]]:
         return []
     runs = [json.loads(line) for line in log_path.read_text().splitlines() if line.strip()]
     return list(reversed(runs))
+
+
+def get_recent_runs(experiment_name: str, n: int = 10) -> list[dict[str, Any]]:
+    """Return the n most-recent runs for an experiment.
+
+    Args:
+        experiment_name: Experiment name to query.
+        n: Maximum number of runs to return.
+
+    Returns:
+        List of the n most-recent run records, newest first.
+    """
+    return list_runs(experiment_name)[:n]
