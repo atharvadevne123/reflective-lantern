@@ -177,6 +177,18 @@ FEATURE_NAMES = [
 ]
 
 
+def validate_feature_count(X: np.ndarray) -> bool:
+    """Return True when the feature matrix has the expected number of columns.
+
+    Args:
+        X: Feature matrix to validate.
+
+    Returns:
+        True if the column count matches ``len(FEATURE_NAMES)``.
+    """
+    return X.shape[1] == len(FEATURE_NAMES) if X.ndim == 2 else False
+
+
 def get_feature_description() -> dict[str, str]:
     """Return human-readable descriptions for each feature name.
 

@@ -1,0 +1,59 @@
+name: Fleet-Mind CI
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "fleet-mind/**"
+  pull_request:
+    branches: [main]
+    paths:
+      - "fleet-mind/**"
+
+jobs:
+  lint-and-test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: fleet-mind
+
+    env:
+      DATABASE_URL: sqlite:///./test_fleet_mind.db
+      MODEL_PATH: /tmp/test_fleet_model.joblib
+      METRICS_PATH: /tmp/test_fleet_metrics.json
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: fleet-mind/requirements.txt
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Ruff lint
+        run: python -m ruff check . --select E,F,W,I --ignore E501
+
+      - name: Ruff format check
+        run: python -m ruff format --check .
+
+      - name: Type check (mypy)
+        run: python -m mypy app/ --ignore-missing-imports --no-error-summary
+        continue-on-error: true
+
+      - name: Run tests with coverage
+        run: |
+          pytest tests/ -v --tb=short \
+            --cov=app --cov-report=xml --cov-report=term-missing \
+            2>&1 | tail -80
+
+      - name: Upload coverage
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: fleet-mind-coverage
+          path: fleet-mind/coverage.xml

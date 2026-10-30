@@ -57,3 +57,32 @@ def log_model(model, artifact_path: str = "model") -> None:
     import mlflow.sklearn
 
     mlflow.sklearn.log_model(model, artifact_path)
+
+
+def is_mlflow_available() -> bool:
+    """Return True when MLflow tracking is configured and importable."""
+    return _MLFLOW_AVAILABLE
+
+
+def log_run_safe(run_name: str, metrics: dict, params: dict | None = None) -> bool:
+    """Log a training run; return True on success, False on any error or no-op.
+
+    Unlike ``log_run``, this wrapper never raises — useful in background jobs
+    where MLflow failures should be observed but not fatal.
+
+    Args:
+        run_name: Human-readable run identifier.
+        metrics: Dict of metric name → float value.
+        params: Optional dict of hyperparameter name → value.
+
+    Returns:
+        True when the run was logged, False otherwise.
+    """
+    if not _MLFLOW_AVAILABLE:
+        return False
+    try:
+        log_run(run_name, metrics, params)
+        return True
+    except Exception as exc:
+        logger.warning("MLflow log_run_safe failed: %s", exc)
+        return False

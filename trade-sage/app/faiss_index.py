@@ -11,6 +11,7 @@ logger = logging.getLogger(__name__)
 FAISS_INDEX_PATH = "faiss_equity_index.bin"
 _index = None
 _stored_labels: list[str] = []
+_index_dim: int = 0
 
 try:
     import faiss
@@ -33,7 +34,7 @@ def build_index(
         labels: String identifier for each row.
         persist: If True, save the index to FAISS_INDEX_PATH.
     """
-    global _index, _stored_labels
+    global _index, _stored_labels, _index_dim
     if not _FAISS_AVAILABLE:
         logger.debug("faiss not installed — similarity index not built")
         return
@@ -42,6 +43,7 @@ def build_index(
     index.add(vectors.astype(np.float32))
     _index = index
     _stored_labels = labels
+    _index_dim = dim
     if persist:
         faiss.write_index(index, FAISS_INDEX_PATH)
         logger.info("FAISS index persisted to %s", FAISS_INDEX_PATH)
@@ -90,3 +92,20 @@ def _brute_force_search(
         return [(_stored_labels[i], 0.0) for i in indices[0] if i >= 0]
     except Exception:
         return []
+
+
+def index_size() -> int:
+    """Return the number of vectors currently indexed.
+
+    Returns:
+        Number of stored vectors, or 0 when the index is not built.
+    """
+    return len(_stored_labels)
+
+
+def clear_index() -> None:
+    """Reset the FAISS index and stored labels (useful in tests and retraining)."""
+    global _index, _stored_labels, _index_dim
+    _index = None
+    _stored_labels = []
+    _index_dim = 0

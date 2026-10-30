@@ -71,3 +71,27 @@ def build_health_status(db_url: str, model_path: str) -> HealthStatus:
         checks=checks,
         uptime_seconds=time.monotonic() - _start_time,
     )
+
+
+def check_env_vars(required_vars: list[str]) -> dict[str, str]:
+    """Check that required environment variables are set.
+
+    Args:
+        required_vars: List of environment variable names to verify.
+
+    Returns:
+        Dict mapping each var name to 'set' or 'missing'.
+    """
+    return {v: ("set" if os.getenv(v) else "missing") for v in required_vars}
+
+
+def liveness_probe() -> dict[str, str]:
+    """Minimal liveness check: returns status 'alive' and uptime.
+
+    Returns:
+        Dict with ``status`` and ``uptime_seconds`` keys.
+    """
+    return {
+        "status": "alive",
+        "uptime_seconds": str(round(time.monotonic() - _start_time, 1)),
+    }

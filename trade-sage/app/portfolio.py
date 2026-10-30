@@ -10,6 +10,7 @@ logger = logging.getLogger(__name__)
 
 
 def compute_returns(close_prices: list[float]) -> np.ndarray:
+    """Compute simple daily returns from a list of closing prices."""
     arr = np.array(close_prices, dtype=float)
     return np.diff(arr) / (arr[:-1] + 1e-9)
 
@@ -31,12 +32,39 @@ def compute_expected_shortfall(returns: np.ndarray, confidence: float = 0.95) ->
 
 
 def compute_max_drawdown(close_prices: list[float]) -> float:
+    """Compute maximum peak-to-trough drawdown from a price series."""
     arr = np.array(close_prices, dtype=float)
     if len(arr) < 2:
         return 0.0
     peak = np.maximum.accumulate(arr)
     drawdown = (arr - peak) / (peak + 1e-9)
     return float(drawdown.min())
+
+
+def compute_calmar_ratio(
+    close_prices: list[float],
+    trading_days: int = 252,
+) -> float | None:
+    """Compute the Calmar ratio: annualised return divided by max drawdown.
+
+    Args:
+        close_prices: Sequence of closing prices.
+        trading_days: Number of trading days per year for annualisation.
+
+    Returns:
+        Calmar ratio, or None when the price series is too short or
+        max drawdown is zero.
+    """
+    if len(close_prices) < 2:
+        return None
+    arr = np.array(close_prices, dtype=float)
+    n = len(arr) - 1
+    total_return = float(arr[-1] / arr[0] - 1.0)
+    annualised = float((1 + total_return) ** (trading_days / n) - 1) if n > 0 else 0.0
+    mdd = abs(compute_max_drawdown(close_prices))
+    if mdd < 1e-9:
+        return None
+    return round(annualised / mdd, 4)
 
 
 def compute_sharpe(returns: np.ndarray, risk_free_rate_daily: float = 0.0) -> float | None:
@@ -48,6 +76,33 @@ def compute_sharpe(returns: np.ndarray, risk_free_rate_daily: float = 0.0) -> fl
         return None
     # annualise assuming 252 trading days
     return float((np.mean(excess) / std) * np.sqrt(252))
+
+
+def compute_sortino_ratio(
+    returns: np.ndarray,
+    risk_free_rate_daily: float = 0.0,
+    trading_days: int = 252,
+) -> float | None:
+    """Compute the annualised Sortino ratio using downside deviation.
+
+    Args:
+        returns: Array of daily returns.
+        risk_free_rate_daily: Daily risk-free rate subtracted from returns.
+        trading_days: Number of trading days for annualisation.
+
+    Returns:
+        Sortino ratio, or None when the series is too short or downside std is zero.
+    """
+    if len(returns) < 5:
+        return None
+    excess = returns - risk_free_rate_daily
+    downside = excess[excess < 0]
+    if len(downside) == 0:
+        return None
+    downside_std = float(np.std(downside, ddof=1))
+    if downside_std < 1e-10:
+        return None
+    return round(float(np.mean(excess) / downside_std * np.sqrt(trading_days)), 4)
 
 
 def compute_portfolio_risk(

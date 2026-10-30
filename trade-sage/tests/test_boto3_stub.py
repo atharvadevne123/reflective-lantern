@@ -5,6 +5,7 @@ from __future__ import annotations
 from unittest.mock import patch
 
 import pytest
+
 from app.boto3_stub import download_model, upload_model
 
 

@@ -83,3 +83,25 @@ class ServiceMetrics:
 
 
 _service_metrics = ServiceMetrics()
+
+
+def reset_metrics() -> None:
+    """Reset the global service metrics instance to a fresh state.
+
+    Useful in tests and after model retraining events to avoid
+    contaminating counters from a previous service lifecycle.
+    """
+    global _service_metrics
+    _service_metrics = ServiceMetrics()
+
+
+def record_prediction_latency(latency_ms: float) -> None:
+    """Log a prediction latency observation.
+
+    Args:
+        latency_ms: Elapsed time for the prediction in milliseconds.
+    """
+    import logging as _logging
+
+    _log = _logging.getLogger(__name__)
+    _log.debug("Prediction latency: %.2fms", latency_ms)

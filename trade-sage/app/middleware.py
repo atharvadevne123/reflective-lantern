@@ -16,6 +16,8 @@ RATE_LIMIT = 200  # requests per minute
 
 
 class RateLimitMiddleware(BaseHTTPMiddleware):
+    """Sliding-window rate limiter: 200 requests per IP per minute."""
+
     async def dispatch(self, request: Request, call_next):
         client_ip = request.client.host if request.client else "unknown"
         now = time.monotonic()
@@ -33,9 +35,22 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
 
 
 class CorrelationIDMiddleware(BaseHTTPMiddleware):
+    """Attach an X-Correlation-ID header to every request and response."""
+
     async def dispatch(self, request: Request, call_next):
         correlation_id = request.headers.get("X-Correlation-ID", str(uuid.uuid4()))
         request.state.correlation_id = correlation_id
         response = await call_next(request)
         response.headers["X-Correlation-ID"] = correlation_id
+        return response
+
+
+class RequestTimingMiddleware(BaseHTTPMiddleware):
+    """Append X-Process-Time (ms) response header for latency tracking."""
+
+    async def dispatch(self, request: Request, call_next):
+        start = time.monotonic()
+        response = await call_next(request)
+        elapsed_ms = round((time.monotonic() - start) * 1000, 2)
+        response.headers["X-Process-Time"] = str(elapsed_ms)
         return response

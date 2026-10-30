@@ -30,7 +30,7 @@ class TestAppConfigDefaults:
 
     def test_frozen(self) -> None:
         cfg = load_config()
-        with pytest.raises(Exception):
+        with pytest.raises((AttributeError, TypeError)):
             cfg.log_level = "DEBUG"  # type: ignore[misc]
 
 

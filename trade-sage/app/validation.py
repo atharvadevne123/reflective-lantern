@@ -87,3 +87,35 @@ class MetricsResponse(BaseModel):
     drift_alerts: int
     model_auc: float | None
     uptime_seconds: float
+
+
+class TrainRequest(BaseModel):
+    """Request body for triggering an on-demand model retrain."""
+
+    n_samples: int = Field(
+        default=1000, ge=100, le=50_000,
+        description="Number of synthetic or historical samples to train on",
+    )
+    force: bool = Field(
+        default=False,
+        description="Retrain even if a champion model already exists",
+    )
+
+
+class TrainResponse(BaseModel):
+    """Response from the train endpoint."""
+
+    run_id: str
+    auc_mean: float
+    auc_std: float
+    n_samples: int
+    n_features: int
+    promoted: bool = Field(description="True when this run becomes the new champion")
+
+
+class VersionResponse(BaseModel):
+    """Service version metadata endpoint response."""
+
+    version: str
+    python_version: str
+    model_loaded: bool
