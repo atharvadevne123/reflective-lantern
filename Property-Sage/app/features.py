@@ -363,3 +363,24 @@ def sqft_percentile(sqft: float, reference: list[float]) -> float:
         return 0.0
     below = sum(1 for r in reference if r < sqft)
     return round(below / len(reference) * 100, 1)
+
+
+PROPERTY_TYPE_MULTIPLIERS: dict[str, float] = {
+    "house": 1.0,
+    "condo": 0.85,
+    "apartment": 0.80,
+    "townhouse": 0.92,
+    "studio": 0.70,
+}
+
+
+def property_type_to_multiplier(property_type: str) -> float:
+    """Return a price adjustment multiplier for a property type.
+
+    Args:
+        property_type: Property type string.
+
+    Returns:
+        Multiplier float. Returns 1.0 for unknown types.
+    """
+    return PROPERTY_TYPE_MULTIPLIERS.get(property_type.lower().strip(), 1.0)
