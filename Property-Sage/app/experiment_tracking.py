@@ -122,3 +122,39 @@ def get_recent_runs(experiment_name: str, n: int = 10) -> list[dict[str, Any]]:
         List of the n most-recent run records, newest first.
     """
     return list_runs(experiment_name)[:n]
+
+
+def log_model_version(
+    model_name: str,
+    version: str,
+    metrics: dict[str, float],
+    tags: dict[str, str] | None = None,
+) -> str:
+    """Log a model version registration event.
+
+    Args:
+        model_name: Name of the model (e.g. 'price_model').
+        version: Version string (e.g. '1.2.3' or a timestamp).
+        metrics: Performance metrics for this version.
+        tags: Optional metadata tags.
+
+    Returns:
+        run_id for this version log entry.
+    """
+    return log_run(
+        experiment_name=f"model_registry_{model_name}",
+        params={"version": version, "model_name": model_name},
+        metrics=metrics,
+        tags=tags or {"event": "version_registered"},
+    )
+
+
+def list_experiments() -> list[str]:
+    """Return a list of all experiment names in the experiment directory.
+
+    Returns:
+        Sorted list of experiment names (JSONL filenames without extension).
+    """
+    if not EXPERIMENT_DIR.exists():
+        return []
+    return sorted(p.stem for p in EXPERIMENT_DIR.glob("*.jsonl"))
