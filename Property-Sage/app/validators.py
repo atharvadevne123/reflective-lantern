@@ -81,3 +81,37 @@ def validate_year_built_value(v: int) -> int:
     if v > current_year + 1:
         raise ValueError(f"year_built cannot be in the future (got {v})")
     return v
+
+
+import re as _re
+
+
+def sanitize_request_id(request_id: str) -> str:
+    """Sanitise a request ID to only allow alphanumeric, hyphens, and underscores.
+
+    Args:
+        request_id: Raw request ID string.
+
+    Returns:
+        Sanitised string (non-matching chars replaced with '-').
+
+    Raises:
+        ValueError: If the sanitised string is empty.
+    """
+    sanitised = _re.sub(r"[^a-zA-Z0-9\-_]", "-", request_id)
+    if not sanitised:
+        raise ValueError("request_id cannot be empty after sanitisation")
+    return sanitised
+
+
+def normalize_neighborhood(v: str) -> str:
+    """Normalise a neighbourhood string without raising on unknown values.
+
+    Args:
+        v: Raw neighbourhood string from any source.
+
+    Returns:
+        Lowercased, stripped string. Returns 'unknown' if empty after stripping.
+    """
+    normalised = v.lower().strip() if v else ""
+    return normalised if normalised else "unknown"
