@@ -271,3 +271,20 @@ def batch_predict(
             "estimated_monthly_rental": round(annual_rental / 12, 2),
         })
     return results
+
+
+def get_model_version() -> str:
+    """Return the current model version string from METRICS_PATH.
+
+    Returns:
+        ISO-format date of the most recent training run, or 'unknown'.
+    """
+    import datetime
+    if METRICS_PATH.exists():
+        try:
+            mtime = METRICS_PATH.stat().st_mtime
+            dt = datetime.datetime.fromtimestamp(mtime)
+            return dt.strftime("%Y%m%d_%H%M%S")
+        except Exception:
+            pass
+    return "unknown"
