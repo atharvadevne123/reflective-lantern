@@ -51,3 +51,35 @@ def neighborhood_benchmark(
         "delta_from_mean": round(subject_price - mean, 2),
         "above_median": subject_price > median,
     }
+
+
+def property_investment_score(
+    cap_rate: float,
+    price_per_sqft: float,
+    market_avg_price_per_sqft: float,
+    yield_rate: float,
+) -> float:
+    """Compute a composite investment attractiveness score.
+
+    Weighs cap rate, yield, and price relative to market average.
+
+    Args:
+        cap_rate: Capitalisation rate as a decimal.
+        price_per_sqft: Subject property price per sqft.
+        market_avg_price_per_sqft: Market average price per sqft.
+        yield_rate: Gross rental yield as a decimal.
+
+    Returns:
+        Score in [0.0, 10.0]. Higher is more attractive.
+    """
+    if market_avg_price_per_sqft <= 0:
+        value_score = 5.0
+    else:
+        ratio = price_per_sqft / market_avg_price_per_sqft
+        value_score = max(0.0, min(10.0, (2.0 - ratio) * 5.0))
+
+    cap_score = min(10.0, cap_rate * 100)
+    yield_score = min(10.0, yield_rate * 100)
+
+    composite = value_score * 0.4 + cap_score * 0.3 + yield_score * 0.3
+    return round(composite, 2)
