@@ -149,3 +149,15 @@ See [CONTRIBUTING.md](CONTRIBUTING.md).
 ## Changelog
 
 See [CHANGELOG.md](CHANGELOG.md).
+
+## Utilities (v1.2.0)
+
+Property-Sage v1.2.0 adds a comprehensive utilities layer:
+
+- **Validators**: `validate_year_built_value`, `sanitize_request_id`, `normalize_neighborhood`
+- **Features**: `compute_cap_rate`, `compute_price_per_sqft`, `compute_gross_yield`, `property_age_category`, `encode_property_features`, `sqft_percentile`, `property_type_to_multiplier`
+- **Monitoring**: `yield_category`, `anomaly_score`, `detect_outlier_predictions`, `prediction_summary_stats`, `get_drift_history`
+- **Caching**: `PredictionCache` — thread-unsafe LRU cache for prediction results
+- **Price Index**: `NeighborhoodPriceIndex` — per-neighbourhood running price index
+- **Reporting**: `property_valuation_report` — structured valuation report dict
+- **Experiment Tracking**: `log_model_version`, `list_experiments`, `get_recent_runs`
