@@ -332,3 +332,18 @@ def encode_property_features(
         "property_type_code": pt_map.get(property_type.lower().strip(), -1),
         "neighborhood_code": nb_map.get(neighborhood.lower().strip(), -1),
     }
+
+
+def compute_gross_yield(annual_rental: float, property_price: float) -> float:
+    """Compute gross rental yield as a percentage.
+
+    Args:
+        annual_rental: Annual rental income.
+        property_price: Property purchase price.
+
+    Returns:
+        Gross yield as a percentage (e.g. 5.0 for 5%). Returns 0.0 if price <= 0.
+    """
+    if property_price <= 0:
+        return 0.0
+    return round(annual_rental / property_price * 100, 4)
