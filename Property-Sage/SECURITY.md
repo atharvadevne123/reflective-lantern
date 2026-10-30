@@ -4,29 +4,20 @@
 
 | Version | Supported |
 |---------|-----------|
-| 1.2.x   | Yes       |
-| 1.1.x   | Yes       |
-| < 1.1   | No        |
+| 1.2.x   | ✅        |
+| 1.1.x   | ✅        |
+| < 1.1   | ❌        |
 
 ## Reporting a Vulnerability
 
-To report a security vulnerability, please email devneatharva@gmail.com with:
+Do not open a public GitHub issue for security vulnerabilities.
 
-1. A description of the vulnerability
-2. Steps to reproduce
-3. Potential impact
-4. Suggested fix (if any)
+Email: devneatharva@gmail.com with subject `[Property-Sage] Security Vulnerability`.
 
-We aim to respond within 48 hours and will work with you to understand and
-address the issue before public disclosure.
+Include:
+- Description of the vulnerability
+- Steps to reproduce
+- Potential impact assessment
+- Suggested fix (if any)
 
-## Security Considerations
-
-- The prediction API accepts user-supplied property data. All inputs are
-  validated before inference.
-- Model files are loaded from the local filesystem at startup. Ensure the
-  `MODEL_DIR` path is not writable by untrusted users.
-- The `/retrain` endpoint triggers model retraining and should be protected
-  behind authentication in production.
-- Database credentials must be supplied via environment variables, never
-  hardcoded.
+You will receive a response within 48 hours. Critical vulnerabilities will be patched within 7 days.
