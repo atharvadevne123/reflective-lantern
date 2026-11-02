@@ -288,9 +288,8 @@ class TestValidateHistoryParametrized:
         h = tmp_path / "history"
         h.mkdir()
         (h / "Repo.json").write_text(json.dumps([{"date": "2026-07-01", "commits": commits}]))
-        with patch.object(vh, "HISTORY_DIR", h):
-            with patch.object(sys, "argv", ["validate_history.py"]):
-                assert vh.main() == expected_exit
+        with patch.object(vh, "HISTORY_DIR", h), patch.object(sys, "argv", ["validate_history.py"]):
+            assert vh.main() == expected_exit
 
     @pytest.mark.parametrize("repo_name", ["Alpha", "BetaRepo", "my-repo_123"])
     def test_valid_repo_name_passes(self, tmp_path: Path, repo_name: str) -> None:
@@ -301,6 +300,5 @@ class TestValidateHistoryParametrized:
         h = tmp_path / "history"
         h.mkdir()
         (h / f"{repo_name}.json").write_text(json.dumps([{"date": "2026-08-01", "commits": 60}]))
-        with patch.object(vh, "HISTORY_DIR", h):
-            with patch.object(sys, "argv", ["validate_history.py"]):
-                assert vh.main() == 0
+        with patch.object(vh, "HISTORY_DIR", h), patch.object(sys, "argv", ["validate_history.py"]):
+            assert vh.main() == 0

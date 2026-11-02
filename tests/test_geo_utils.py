@@ -199,7 +199,6 @@ def test_midpoint_is_between_endpoints() -> None:
     assert min(LONDON.lat, PARIS.lat) <= mid.lat <= max(LONDON.lat, PARIS.lat)
 
 
-from app.geo_utils import bearing, within_radius  # noqa: E402
 
 TOKYO = Coordinate(35.6762, 139.6503)
 
@@ -376,6 +375,11 @@ class TestArithmeticMidpoint:
             (10.0, 20.0, 20.0, 40.0, (15.0, 30.0)),
         ],
     )
+    def test_midpoint_parametrized(self, lat1: float, lon1: float, lat2: float, lon2: float, expected: tuple) -> None:
+        from app.geo_utils import arithmetic_midpoint
+
+        result = arithmetic_midpoint(lat1, lon1, lat2, lon2)
+        assert result == pytest.approx(expected)
 
 
 @pytest.mark.parametrize("k", [1, 2, 3])

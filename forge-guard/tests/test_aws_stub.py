@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import pytest
+
 
 def test_upload_model_returns_false_when_no_bucket(monkeypatch, tmp_path) -> None:
     monkeypatch.setenv("S3_BUCKET", "")
@@ -67,7 +69,6 @@ def test_upload_model_uses_version_in_key(monkeypatch, tmp_path) -> None:
     assert result is False
 
 
-import pytest
 
 
 @pytest.mark.parametrize("version", ["1.0.0", "2.3.1", "0.0.1"])

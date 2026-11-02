@@ -218,7 +218,6 @@ class TestEvictExpired:
         assert isinstance(result, int)
 
 
-import pytest
 
 
 @pytest.mark.parametrize("n_items", [1, 5, 10])

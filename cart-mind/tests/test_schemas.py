@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import pytest
+from pydantic import ValidationError
 
 from app.schemas import UserItemFeatures
 
@@ -27,9 +28,9 @@ class TestUserItemFeatures:
         assert f.item_avg_rating == pytest.approx(4.5)
 
     def test_invalid_cart_abandon_rate(self) -> None:
-        with pytest.raises(Exception):
+        with pytest.raises(ValidationError):
             UserItemFeatures(user_id="u", item_id="i", cart_abandon_rate=2.0)
 
     def test_invalid_item_avg_rating(self) -> None:
-        with pytest.raises(Exception):
+        with pytest.raises(ValidationError):
             UserItemFeatures(user_id="u", item_id="i", item_avg_rating=6.0)

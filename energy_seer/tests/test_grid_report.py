@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import pytest
+
 
 class TestGenerateGridReport:
     def test_healthy_status_no_issues(self) -> None:

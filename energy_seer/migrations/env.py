@@ -1,11 +1,15 @@
 """Alembic environment configuration."""
 
 import os
+import sys
 from logging.config import fileConfig
 
-from sqlalchemy import engine_from_config, pool
+sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
 from alembic import context
+from sqlalchemy import engine_from_config, pool
+
+from app.database import Base
 
 config = context.config
 if config.config_file_name is not None:
@@ -14,13 +18,7 @@ if config.config_file_name is not None:
 DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./energy_seer.db")
 config.set_main_option("sqlalchemy.url", DATABASE_URL)
 
-import sys
-
-sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
-from app.database import Base
-
 target_metadata = Base.metadata
-
 
 def run_migrations_offline() -> None:
     url = config.get_main_option("sqlalchemy.url")

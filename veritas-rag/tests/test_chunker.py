@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from app.ingestion.chunker import chunk_document
-
 from app.schemas import Document
 
 
@@ -57,7 +56,8 @@ class TestChunkDocument:
     def test_chunk_size_limits_chunk_length(self) -> None:
         long_text = " ".join(["word" * 5 + "."] * 50)
         doc = _doc(long_text)
-        chunks = chunk_document(doc, chunk_size=100)
+        chunk_size = 100
+        chunks = chunk_document(doc, chunk_size=chunk_size)
         for chunk in chunks:
             assert len(chunk.text) < chunk_size * 3
 

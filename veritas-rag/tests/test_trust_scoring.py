@@ -9,6 +9,8 @@ from __future__ import annotations
 from datetime import UTC, datetime, timedelta
 
 import pytest
+
+from app.schemas import Chunk, ScoredChunk
 from app.scoring.trust import (
     SOURCE_QUALITY_PRIORS,
     answer_confidence,
@@ -18,8 +20,6 @@ from app.scoring.trust import (
     source_quality_score,
     trust_tier,
 )
-
-from app.schemas import Chunk, ScoredChunk
 
 NOW = datetime(2026, 1, 1, tzinfo=UTC)
 

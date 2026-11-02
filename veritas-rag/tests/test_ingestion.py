@@ -6,6 +6,7 @@ import itertools
 from datetime import UTC, datetime
 
 import pytest
+
 from app.ingestion.chunker import chunk_document
 from app.ingestion.dedup import (
     DuplicateDetector,
@@ -20,7 +21,6 @@ from app.ingestion.normalize import (
     truncate_to_bytes,
 )
 from app.ingestion.versioning import VersionStore, make_doc_id
-
 from app.schemas import Document
 
 

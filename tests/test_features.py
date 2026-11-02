@@ -7,6 +7,7 @@ import pandas as pd
 import pytest
 
 from app.features import (
+    FEATURE_COLS,
     AmenityCompositeTransformer,
     LagFeatureExtractor,
     OccupancyFeatureExtractor,
@@ -17,6 +18,8 @@ from app.features import (
     WeatherFeatureExtractor,
     build_feature_pipeline,
     extract_feature_array,
+    generate_synthetic_data,
+    prepare_X,
 )
 
 
