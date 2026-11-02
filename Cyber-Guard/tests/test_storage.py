@@ -6,6 +6,7 @@ from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest
+
 from app.storage import is_s3_enabled, s3_key_for, upload_artifact
 
 

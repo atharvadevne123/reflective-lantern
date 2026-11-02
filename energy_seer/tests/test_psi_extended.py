@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import pytest
+
 from app.psi import (
     PSI_MODERATE_THRESHOLD,
     PSI_STABLE_THRESHOLD,
@@ -59,10 +60,10 @@ class TestPsiThresholds:
         assert PSI_STABLE_THRESHOLD < PSI_MODERATE_THRESHOLD
 
     def test_stable_threshold_value(self) -> None:
-        assert PSI_STABLE_THRESHOLD == pytest.approx(0.1)
+        assert pytest.approx(0.1) == PSI_STABLE_THRESHOLD
 
     def test_moderate_threshold_value(self) -> None:
-        assert PSI_MODERATE_THRESHOLD == pytest.approx(0.25)
+        assert pytest.approx(0.25) == PSI_MODERATE_THRESHOLD
 
 
 class TestPsiAlert:

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import pytest
+
 from app.priority_rules import (
     apply_priority_rules,
     estimate_resolution_hours,

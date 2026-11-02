@@ -2,8 +2,9 @@
 
 from __future__ import annotations
 
-from app.versioning import include_v1_routes, router
 from fastapi import APIRouter
+
+from app.versioning import include_v1_routes, router
 
 
 class TestVersioningRouter:

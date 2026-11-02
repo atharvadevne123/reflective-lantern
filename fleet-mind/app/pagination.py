@@ -31,7 +31,7 @@ class Page(BaseModel, Generic[T]):
     total_pages: int
 
     @classmethod
-    def from_items(cls, items: list[T], total: int, params: PaginationParams) -> "Page[T]":
+    def from_items(cls, items: list[T], total: int, params: PaginationParams) -> Page[T]:
         """Construct a Page from a slice of items and pagination params.
 
         Args:

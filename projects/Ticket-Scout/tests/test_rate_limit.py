@@ -1,9 +1,10 @@
 """Rate limiting middleware tests."""
 from __future__ import annotations
 
-from app.rate_limit import RateLimitMiddleware
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
+
+from app.rate_limit import RateLimitMiddleware
 
 
 def _make_app(limit: int) -> TestClient:
