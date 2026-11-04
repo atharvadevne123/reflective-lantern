@@ -83,6 +83,7 @@ class IncidentRateBuffer:
 DEFAULT_ALPHA: float = 0.3
 DEFAULT_BETA: float = 0.1
 DEFAULT_HORIZON: int = 24
+DEFAULT_STEP_HOURS: int = 1
 Z80_CONFIDENCE: float = 1.282
 
 
@@ -222,6 +223,10 @@ def get_rate_buffer() -> IncidentRateBuffer:
 
 
 __all__ = [
+    "DEFAULT_ALPHA",
+    "DEFAULT_BETA",
+    "DEFAULT_HORIZON",
+    "DEFAULT_STEP_HOURS",
     "ExponentialSmoothingForecaster",
     "ForecastPoint",
     "IncidentRateBuffer",
