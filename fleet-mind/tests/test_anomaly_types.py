@@ -78,12 +78,15 @@ class TestClassifyAnomalies:
             if critical_indices and warning_indices:
                 assert max(critical_indices) < max(warning_indices)
 
-    @pytest.mark.parametrize("field,value,should_trigger", [
-        ("brake_pad_mm", 1.0, True),
-        ("brake_pad_mm", 8.0, False),
-        ("battery_voltage_v", 10.0, True),
-        ("tire_pressure_bar", 1.5, True),
-    ])
+    @pytest.mark.parametrize(
+        "field,value,should_trigger",
+        [
+            ("brake_pad_mm", 1.0, True),
+            ("brake_pad_mm", 8.0, False),
+            ("battery_voltage_v", 10.0, True),
+            ("tire_pressure_bar", 1.5, True),
+        ],
+    )
     def test_parametrized_field_values(self, healthy_reading, field, value, should_trigger):
         reading = {**healthy_reading, field: value}
         anomalies = classify_anomalies(reading)

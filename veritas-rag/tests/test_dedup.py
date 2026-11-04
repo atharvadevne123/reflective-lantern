@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import pytest
+
 from app.ingestion.dedup import (
     DuplicateDetector,
     content_hash,

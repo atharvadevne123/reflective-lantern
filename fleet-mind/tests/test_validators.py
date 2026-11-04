@@ -43,10 +43,13 @@ class TestValidateReading:
         issues = validate_reading(reading)
         assert any(i.field == "engine_temp_c" for i in issues)
 
-    @pytest.mark.parametrize("brake_mm,expected_severity", [
-        (0.5, "error"),
-        (3.5, "warning"),
-    ])
+    @pytest.mark.parametrize(
+        "brake_mm,expected_severity",
+        [
+            (0.5, "error"),
+            (3.5, "warning"),
+        ],
+    )
     def test_brake_pad_severity(self, healthy_reading, brake_mm, expected_severity):
         reading = {**healthy_reading, "brake_pad_mm": brake_mm}
         issues = validate_reading(reading)

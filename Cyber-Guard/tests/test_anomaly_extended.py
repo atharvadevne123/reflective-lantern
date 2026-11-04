@@ -18,14 +18,16 @@ from app.features import make_sample_df
 def _training_df(n: int = 100) -> pd.DataFrame:
     rows = []
     for _ in range(n):
-        rows.append({
-            "src_bytes": np.random.rand() * 1000,
-            "dst_bytes": np.random.rand() * 1000,
-            "duration": np.random.rand() * 5,
-            "protocol_type": "tcp",
-            "service": "http",
-            "flag": "SF",
-        })
+        rows.append(
+            {
+                "src_bytes": np.random.rand() * 1000,
+                "dst_bytes": np.random.rand() * 1000,
+                "duration": np.random.rand() * 5,
+                "protocol_type": "tcp",
+                "service": "http",
+                "flag": "SF",
+            }
+        )
     return pd.DataFrame(rows)
 
 
@@ -84,7 +86,9 @@ class TestBatchAnomalyRate:
 
     def test_empty_df_returns_zero(self) -> None:
         pipe = self._fitted_pipe()
-        empty = pd.DataFrame(columns=["src_bytes", "dst_bytes", "duration", "protocol_type", "service", "flag"])
+        empty = pd.DataFrame(
+            columns=["src_bytes", "dst_bytes", "duration", "protocol_type", "service", "flag"]
+        )
         result = batch_anomaly_rate(empty, pipe)
         assert result == pytest.approx(0.0)
 

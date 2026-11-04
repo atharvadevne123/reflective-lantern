@@ -21,9 +21,9 @@ def test_yield_category_excellent():
     assert yield_category(0.09) == "excellent"
 
 
-@pytest.mark.parametrize("y,expected", [
-    (0.01, "low"), (0.035, "moderate"), (0.07, "good"), (0.12, "excellent")
-])
+@pytest.mark.parametrize(
+    "y,expected", [(0.01, "low"), (0.035, "moderate"), (0.07, "good"), (0.12, "excellent")]
+)
 def test_yield_category_parametrized(y, expected):
     assert yield_category(y) == expected
 

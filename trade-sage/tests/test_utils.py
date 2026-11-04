@@ -18,11 +18,14 @@ class TestSafeRound:
         result = safe_round(1.23456789)
         assert result == 1.2346
 
-    @pytest.mark.parametrize("value,ndigits,expected", [
-        (0.5555, 2, 0.56),
-        (1.0, 0, 1.0),
-        (-3.7, 0, -4.0),
-    ])
+    @pytest.mark.parametrize(
+        "value,ndigits,expected",
+        [
+            (0.5555, 2, 0.56),
+            (1.0, 0, 1.0),
+            (-3.7, 0, -4.0),
+        ],
+    )
     def test_parametrized_rounding(self, value: float, ndigits: int, expected: float) -> None:
         assert safe_round(value, ndigits) == expected
 
@@ -85,11 +88,14 @@ class TestClamp:
     def test_value_equal_hi(self) -> None:
         assert clamp(1.0, 0.0, 1.0) == 1.0
 
-    @pytest.mark.parametrize("v,lo,hi,expected", [
-        (0.5, 0, 1, 0.5),
-        (-10, -5, 5, -5),
-        (100, 0, 50, 50),
-    ])
+    @pytest.mark.parametrize(
+        "v,lo,hi,expected",
+        [
+            (0.5, 0, 1, 0.5),
+            (-10, -5, 5, -5),
+            (100, 0, 50, 50),
+        ],
+    )
     def test_parametrized(self, v, lo, hi, expected) -> None:
         assert clamp(v, lo, hi) == expected
 

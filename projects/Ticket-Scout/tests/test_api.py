@@ -84,7 +84,11 @@ def test_predict_batch_valid(client):
 
 
 def test_predict_batch_too_many_tickets_returns_422(client):
-    payload = {"tickets": [{"subject": f"Ticket {i}", "body": "body", "priority": "low"} for i in range(60)]}
+    payload = {
+        "tickets": [
+            {"subject": f"Ticket {i}", "body": "body", "priority": "low"} for i in range(60)
+        ]
+    }
     resp = client.post("/api/v1/predict/batch", json=payload)
     assert resp.status_code == 422
 
@@ -110,19 +114,25 @@ def test_correlation_id_forwarded(client):
     assert resp.headers.get("X-Correlation-ID") == custom_cid
 
 
-@pytest.mark.parametrize("subject,expected_in", [
-    ("VPN not connecting", ["network", "access"]),
-    ("Password reset needed", ["access", "network"]),
-    ("Laptop screen flickering", ["hardware", "software"]),
-    ("Outlook not syncing", ["email", "software"]),
-    ("Install software license expired", ["software", "access"]),
-])
+@pytest.mark.parametrize(
+    "subject,expected_in",
+    [
+        ("VPN not connecting", ["network", "access"]),
+        ("Password reset needed", ["access", "network"]),
+        ("Laptop screen flickering", ["hardware", "software"]),
+        ("Outlook not syncing", ["email", "software"]),
+        ("Install software license expired", ["software", "access"]),
+    ],
+)
 def test_predict_category_reasonable(client, subject, expected_in):
-    resp = client.post("/api/v1/predict", json={
-        "subject": subject,
-        "body": f"Details about: {subject}",
-        "priority": "medium",
-    })
+    resp = client.post(
+        "/api/v1/predict",
+        json={
+            "subject": subject,
+            "body": f"Details about: {subject}",
+            "priority": "medium",
+        },
+    )
     assert resp.status_code == 200
     # Category should be in valid set (not asserting exact match due to model variance)
     data = resp.json()

@@ -25,49 +25,64 @@ MODEL_VERSION = "1.0.0"
 
 
 def _make_category_pipeline() -> Pipeline:
-    return Pipeline([
-        ("features", TextFeatureTransformer(max_tfidf_features=200)),
-        ("model", LGBMClassifier(
-            n_estimators=200,
-            max_depth=6,
-            learning_rate=0.05,
-            num_leaves=31,
-            subsample=0.8,
-            colsample_bytree=0.8,
-            random_state=42,
-            verbose=-1,
-        )),
-    ])
+    return Pipeline(
+        [
+            ("features", TextFeatureTransformer(max_tfidf_features=200)),
+            (
+                "model",
+                LGBMClassifier(
+                    n_estimators=200,
+                    max_depth=6,
+                    learning_rate=0.05,
+                    num_leaves=31,
+                    subsample=0.8,
+                    colsample_bytree=0.8,
+                    random_state=42,
+                    verbose=-1,
+                ),
+            ),
+        ]
+    )
 
 
 def _make_breach_pipeline() -> Pipeline:
-    return Pipeline([
-        ("features", TextFeatureTransformer(max_tfidf_features=150)),
-        ("model", LGBMClassifier(
-            n_estimators=200,
-            max_depth=5,
-            learning_rate=0.05,
-            num_leaves=24,
-            subsample=0.8,
-            scale_pos_weight=2.0,
-            random_state=42,
-            verbose=-1,
-        )),
-    ])
+    return Pipeline(
+        [
+            ("features", TextFeatureTransformer(max_tfidf_features=150)),
+            (
+                "model",
+                LGBMClassifier(
+                    n_estimators=200,
+                    max_depth=5,
+                    learning_rate=0.05,
+                    num_leaves=24,
+                    subsample=0.8,
+                    scale_pos_weight=2.0,
+                    random_state=42,
+                    verbose=-1,
+                ),
+            ),
+        ]
+    )
 
 
 def _make_resolution_pipeline() -> Pipeline:
-    return Pipeline([
-        ("features", TextFeatureTransformer(max_tfidf_features=100)),
-        ("model", LGBMRegressor(
-            n_estimators=150,
-            max_depth=5,
-            learning_rate=0.05,
-            num_leaves=24,
-            random_state=42,
-            verbose=-1,
-        )),
-    ])
+    return Pipeline(
+        [
+            ("features", TextFeatureTransformer(max_tfidf_features=100)),
+            (
+                "model",
+                LGBMRegressor(
+                    n_estimators=150,
+                    max_depth=5,
+                    learning_rate=0.05,
+                    num_leaves=24,
+                    random_state=42,
+                    verbose=-1,
+                ),
+            ),
+        ]
+    )
 
 
 def generate_synthetic_data(n_samples: int = 2000) -> pd.DataFrame:
@@ -171,19 +186,21 @@ def generate_synthetic_data(n_samples: int = 2000) -> pd.DataFrame:
         base_hours = {"low": 24.0, "medium": 8.0, "high": 4.0, "critical": 1.5}[priority]
         resolution_hours = float(max(0.5, rng.normal(base_hours, base_hours * 0.3)))
 
-        rows.append({
-            "subject": subject,
-            "body": body,
-            "priority": priority,
-            "created_hour": created_hour,
-            "created_dow": created_dow,
-            "org_size": org_size,
-            "lag_resolution_hours": lag_resolution,
-            "rolling_breach_rate": rolling_breach,
-            "category": cat,
-            "sla_breach": sla_breach,
-            "resolution_hours": resolution_hours,
-        })
+        rows.append(
+            {
+                "subject": subject,
+                "body": body,
+                "priority": priority,
+                "created_hour": created_hour,
+                "created_dow": created_dow,
+                "org_size": org_size,
+                "lag_resolution_hours": lag_resolution,
+                "rolling_breach_rate": rolling_breach,
+                "category": cat,
+                "sla_breach": sla_breach,
+                "resolution_hours": resolution_hours,
+            }
+        )
 
     return pd.DataFrame(rows)
 
@@ -244,6 +261,7 @@ def train_models(df: pd.DataFrame | None = None) -> dict[str, Any]:
 
     try:
         from app.mlflow_tracker import log_training_run
+
         log_training_run(metrics, params={"n_estimators": 200, "max_depth": 6})
     except Exception as _exc:
         logger.debug("MLflow logging skipped: %s", _exc)
@@ -301,10 +319,12 @@ def predict(
 
     results = []
     for i in range(len(ticket_df)):
-        results.append({
-            "predicted_category": cat_preds[i],
-            "confidence": float(cat_probs[i]),
-            "sla_breach_prob": float(breach_probs[i]),
-            "resolution_hours_pred": float(max(0.0, res_preds[i])),
-        })
+        results.append(
+            {
+                "predicted_category": cat_preds[i],
+                "confidence": float(cat_probs[i]),
+                "sla_breach_prob": float(breach_probs[i]),
+                "resolution_hours_pred": float(max(0.0, res_preds[i])),
+            }
+        )
     return results

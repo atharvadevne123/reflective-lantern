@@ -23,6 +23,7 @@ _metadata: list[dict[str, Any]] = []
 def _try_import_faiss():
     try:
         import faiss
+
         return faiss
     except ImportError:
         return None
@@ -56,7 +57,10 @@ def build_index(
         _index = vectors
 
     _metadata = list(metadata)
-    logger.info("similarity_index_built", extra={"n": len(metadata), "backend": "faiss" if faiss else "brute"})
+    logger.info(
+        "similarity_index_built",
+        extra={"n": len(metadata), "backend": "faiss" if faiss else "brute"},
+    )
 
 
 def search_similar(query: np.ndarray, top_k: int = 5) -> list[dict[str, Any]]:
@@ -92,7 +96,7 @@ def search_similar(query: np.ndarray, top_k: int = 5) -> list[dict[str, Any]]:
         # Brute-force L2 over stored vectors
         stored = _index
         diffs = stored - q
-        dists = np.sum(diffs ** 2, axis=1)
+        dists = np.sum(diffs**2, axis=1)
         top_indices = np.argsort(dists)[:top_k]
         return [{**_metadata[i], "distance": round(float(dists[i]), 4)} for i in top_indices]
 

@@ -22,15 +22,23 @@ class TestDocument:
 
     def test_default_version(self) -> None:
         doc = Document(
-            doc_id="d", source="s", source_type="pdf",
-            text="t", pages=["t"], created_at="2024-01-01"
+            doc_id="d",
+            source="s",
+            source_type="pdf",
+            text="t",
+            pages=["t"],
+            created_at="2024-01-01",
         )
         assert doc.version == 1
 
     def test_metadata_default_empty(self) -> None:
         doc = Document(
-            doc_id="d", source="s", source_type="text",
-            text="t", pages=["t"], created_at="2024-01-01"
+            doc_id="d",
+            source="s",
+            source_type="text",
+            text="t",
+            pages=["t"],
+            created_at="2024-01-01",
         )
         assert doc.metadata == {}
 
@@ -67,8 +75,14 @@ class TestChunk:
 class TestScoredChunk:
     def test_create(self) -> None:
         chunk = Chunk(
-            chunk_id="d:1:0", doc_id="d", source="f", source_type="pdf",
-            page=1, seq=0, text="t", created_at="2024-01-01"
+            chunk_id="d:1:0",
+            doc_id="d",
+            source="f",
+            source_type="pdf",
+            page=1,
+            seq=0,
+            text="t",
+            created_at="2024-01-01",
         )
         sc = ScoredChunk(chunk=chunk, score=0.9, rank=1)
         assert sc.score == pytest.approx(0.9)

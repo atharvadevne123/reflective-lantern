@@ -93,7 +93,9 @@ class TrainRequest(BaseModel):
     """Request body for triggering an on-demand model retrain."""
 
     n_samples: int = Field(
-        default=1000, ge=100, le=50_000,
+        default=1000,
+        ge=100,
+        le=50_000,
         description="Number of synthetic or historical samples to train on",
     )
     force: bool = Field(

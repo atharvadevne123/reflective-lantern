@@ -217,8 +217,6 @@ class TestMaxRampRateEdgeCases:
         assert max_ramp_rate(series) == pytest.approx(step)
 
 
-
-
 class TestDemandVariability:
     def test_constant_series_zero_variability(self) -> None:
         assert demand_variability([5.0] * 24) == pytest.approx(0.0)

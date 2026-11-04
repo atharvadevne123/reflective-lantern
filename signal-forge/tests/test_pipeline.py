@@ -44,15 +44,18 @@ def test_ensemble_probabilities_sum_to_one(sample_feature_array, sample_labels):
 def test_pipeline_scales_to_different_sizes(n_samples):
     rng = np.random.default_rng(n_samples)
     import pandas as pd
+
     close = 100.0 + np.cumsum(rng.normal(0, 1, n_samples))
-    df = pd.DataFrame({
-        "open": close * 0.99,
-        "high": close * 1.01,
-        "low": close * 0.98,
-        "close": close,
-        "volume": rng.integers(1_000_000, 5_000_000, n_samples).astype(float),
-        "market_return": rng.normal(0.0005, 0.01, n_samples),
-    })
+    df = pd.DataFrame(
+        {
+            "open": close * 0.99,
+            "high": close * 1.01,
+            "low": close * 0.98,
+            "close": close,
+            "volume": rng.integers(1_000_000, 5_000_000, n_samples).astype(float),
+            "market_return": rng.normal(0.0005, 0.01, n_samples),
+        }
+    )
     pipeline = build_feature_pipeline()
     result = pipeline.fit_transform(df)
     assert result.shape == (n_samples, len(FEATURE_COLS))

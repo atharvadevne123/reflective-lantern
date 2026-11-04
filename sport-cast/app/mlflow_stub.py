@@ -1,4 +1,5 @@
 """MLflow experiment tracking stub for Sport-Cast model logging."""
+
 from __future__ import annotations
 
 import json

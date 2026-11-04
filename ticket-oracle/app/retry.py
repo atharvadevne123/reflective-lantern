@@ -33,6 +33,7 @@ def retry(
     Returns:
         Decorated function.
     """
+
     def decorator(fn: F) -> F:
         @functools.wraps(fn)
         def wrapper(*args: Any, **kwargs: Any) -> Any:
@@ -49,11 +50,18 @@ def retry(
                         raise
                     logger.warning(
                         "retry_attempt",
-                        extra={"fn": fn.__name__, "attempt": attempt, "delay_s": delay, "error": str(exc)},
+                        extra={
+                            "fn": fn.__name__,
+                            "attempt": attempt,
+                            "delay_s": delay,
+                            "error": str(exc),
+                        },
                     )
                     time.sleep(delay)
                     delay *= 2
+
         return wrapper  # type: ignore[return-value]
+
     return decorator
 
 

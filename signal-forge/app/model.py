@@ -196,9 +196,7 @@ def compute_risk_score(
     vol_score = min(vol / 0.5, 1.0)
     mom_score = min(abs(mom) / 0.3, 1.0)
     beta_score = min(abs(b) / 2.0, 1.0)
-    regime_score = {"bull": 0.2, "bear": 0.85, "volatile": 0.9, "sideways": 0.4}.get(
-        regime, 0.5
-    )
+    regime_score = {"bull": 0.2, "bear": 0.85, "volatile": 0.9, "sideways": 0.4}.get(regime, 0.5)
     return round(0.3 * vol_score + 0.2 * mom_score + 0.2 * beta_score + 0.3 * regime_score, 4)
 
 

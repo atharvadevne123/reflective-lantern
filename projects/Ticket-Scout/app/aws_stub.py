@@ -11,6 +11,7 @@ logger = logging.getLogger(__name__)
 _BOTO3_AVAILABLE = False
 try:
     import boto3  # type: ignore[import]
+
     _BOTO3_AVAILABLE = True
 except ImportError:
     pass

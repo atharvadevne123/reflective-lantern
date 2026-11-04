@@ -52,8 +52,15 @@ class TestServiceMetrics:
     def test_snapshot_keys(self) -> None:
         m = ServiceMetrics()
         s = m.snapshot()
-        expected = {"uptime_seconds", "prediction_count", "drift_alert_count",
-                    "error_count", "cache_hits", "cache_misses", "cache_hit_rate"}
+        expected = {
+            "uptime_seconds",
+            "prediction_count",
+            "drift_alert_count",
+            "error_count",
+            "cache_hits",
+            "cache_misses",
+            "cache_hit_rate",
+        }
         assert expected.issubset(set(s.keys()))
 
     def test_uptime_non_negative(self) -> None:
@@ -64,15 +71,19 @@ class TestServiceMetrics:
 class TestResetMetrics:
     def test_resets_prediction_count(self) -> None:
         from app.metrics import _service_metrics as sm
+
         sm.increment_predictions()
         reset_metrics()
         from app.metrics import _service_metrics as sm2
+
         assert sm2.prediction_count == 0
 
     def test_creates_new_instance(self) -> None:
         from app.metrics import _service_metrics as sm1
+
         reset_metrics()
         from app.metrics import _service_metrics as sm2
+
         assert sm1 is not sm2
 
 

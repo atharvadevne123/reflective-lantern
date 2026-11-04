@@ -1,4 +1,5 @@
 """Model monitoring: drift detection and prediction logging."""
+
 from __future__ import annotations
 
 import logging
@@ -15,7 +16,12 @@ logger = logging.getLogger(__name__)
 def compute_drift(reference: list[float], current: list[float]) -> dict:
     """KS-test between reference and current feature distribution."""
     if len(reference) < 2 or len(current) < 2:
-        return {"ks_statistic": 0.0, "p_value": 1.0, "drift_detected": False, "error": "insufficient_data"}
+        return {
+            "ks_statistic": 0.0,
+            "p_value": 1.0,
+            "drift_detected": False,
+            "error": "insufficient_data",
+        }
     stat, p = ks_2samp(reference, current)
     return {
         "ks_statistic": round(float(stat), 4),
@@ -55,7 +61,9 @@ def log_drift(
     db.add(entry)
     db.commit()
     if drift_detected:
-        logger.warning("Drift detected on '%s': KS=%.4f, p=%.4f", feature_name, ks_statistic, p_value)
+        logger.warning(
+            "Drift detected on '%s': KS=%.4f, p=%.4f", feature_name, ks_statistic, p_value
+        )
 
 
 def log_prediction(
@@ -85,7 +93,10 @@ def log_prediction(
     db.commit()
     logger.info(
         "Prediction logged: %s vs %s -> %s (conf=%.3f)",
-        home_team, away_team, predicted_outcome, confidence,
+        home_team,
+        away_team,
+        predicted_outcome,
+        confidence,
     )
 
 

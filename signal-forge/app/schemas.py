@@ -68,7 +68,9 @@ class PredictResponse(BaseModel):
     ticker: str
     regime: str = Field(..., description="Detected market regime: bull/bear/sideways/volatile")
     confidence: float = Field(..., ge=0.0, le=1.0)
-    risk_score: float = Field(..., ge=0.0, le=1.0, description="Portfolio risk score (0=low, 1=high)")
+    risk_score: float = Field(
+        ..., ge=0.0, le=1.0, description="Portfolio risk score (0=low, 1=high)"
+    )
     volatility: float
     momentum: float
     correlation: float

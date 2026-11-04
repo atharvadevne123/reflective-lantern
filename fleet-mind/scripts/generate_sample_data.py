@@ -35,15 +35,29 @@ def generate_sample_readings(
         reading = {
             "vehicle_id": vehicle_id,
             "speed_kmh": round(random.uniform(0, 130), 1),
-            "engine_temp_c": round(random.uniform(95, 130) if is_anomalous else random.uniform(65, 95), 1),
-            "oil_pressure_bar": round(random.uniform(0.5, 2.0) if is_anomalous else random.uniform(2.5, 5.5), 2),
+            "engine_temp_c": round(
+                random.uniform(95, 130) if is_anomalous else random.uniform(65, 95), 1
+            ),
+            "oil_pressure_bar": round(
+                random.uniform(0.5, 2.0) if is_anomalous else random.uniform(2.5, 5.5), 2
+            ),
             "fuel_consumption_lph": round(random.uniform(4, 12), 2),
-            "battery_voltage_v": round(random.uniform(10.5, 12.0) if is_anomalous else random.uniform(12.2, 13.5), 2),
-            "brake_pad_mm": round(random.uniform(0.5, 3.0) if is_anomalous else random.uniform(3.5, 12.0), 1),
-            "tire_pressure_bar": round(random.uniform(1.2, 1.8) if is_anomalous else random.uniform(2.0, 2.8), 2),
+            "battery_voltage_v": round(
+                random.uniform(10.5, 12.0) if is_anomalous else random.uniform(12.2, 13.5), 2
+            ),
+            "brake_pad_mm": round(
+                random.uniform(0.5, 3.0) if is_anomalous else random.uniform(3.5, 12.0), 1
+            ),
+            "tire_pressure_bar": round(
+                random.uniform(1.2, 1.8) if is_anomalous else random.uniform(2.0, 2.8), 2
+            ),
             "rpm": round(random.uniform(700, 5000), 0),
-            "coolant_temp_c": round(random.uniform(88, 115) if is_anomalous else random.uniform(68, 90), 1),
-            "transmission_temp_c": round(random.uniform(110, 145) if is_anomalous else random.uniform(60, 90), 1),
+            "coolant_temp_c": round(
+                random.uniform(88, 115) if is_anomalous else random.uniform(68, 90), 1
+            ),
+            "transmission_temp_c": round(
+                random.uniform(110, 145) if is_anomalous else random.uniform(60, 90), 1
+            ),
         }
         readings.append(reading)
 

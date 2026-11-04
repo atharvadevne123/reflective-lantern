@@ -1,4 +1,5 @@
 """Sport-Cast FastAPI application."""
+
 from __future__ import annotations
 
 import logging
@@ -24,7 +25,9 @@ from app.monitoring import (
 )
 
 logger = logging.getLogger(__name__)
-logging.basicConfig(level=logging.INFO, format='{"time":"%(asctime)s","level":"%(levelname)s","msg":"%(message)s"}')
+logging.basicConfig(
+    level=logging.INFO, format='{"time":"%(asctime)s","level":"%(levelname)s","msg":"%(message)s"}'
+)
 
 _model = None
 _pipeline = None
@@ -49,7 +52,11 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         client = request.client.host if request.client else "unknown"
         _REQUEST_COUNTS[client] = _REQUEST_COUNTS.get(client, 0) + 1
         if _REQUEST_COUNTS[client] > RATE_LIMIT:
-            return Response(content='{"detail":"rate limit exceeded"}', status_code=429, media_type="application/json")
+            return Response(
+                content='{"detail":"rate limit exceeded"}',
+                status_code=429,
+                media_type="application/json",
+            )
         return await call_next(request)
 
 
@@ -75,7 +82,9 @@ app.add_middleware(RateLimitMiddleware)
 
 
 class MatchFeatures(BaseModel):
-    match_id: str = Field(default_factory=lambda: str(uuid.uuid4()), description="Unique match identifier")
+    match_id: str = Field(
+        default_factory=lambda: str(uuid.uuid4()), description="Unique match identifier"
+    )
     home_team: str = Field(..., description="Home team name")
     away_team: str = Field(..., description="Away team name")
     home_wins_last5: int = Field(ge=0, le=5, description="Home team wins in last 5 matches")
@@ -84,20 +93,38 @@ class MatchFeatures(BaseModel):
     away_wins_last5: int = Field(ge=0, le=5, description="Away team wins in last 5 matches")
     away_draws_last5: int = Field(ge=0, le=5, description="Away team draws in last 5 matches")
     away_losses_last5: int = Field(ge=0, le=5, description="Away team losses in last 5 matches")
-    home_goals_avg: float = Field(ge=0.0, le=10.0, description="Home team average goals scored per match")
-    home_goals_conceded_avg: float = Field(ge=0.0, le=10.0, description="Home team average goals conceded per match")
-    away_goals_avg: float = Field(ge=0.0, le=10.0, description="Away team average goals scored per match")
-    away_goals_conceded_avg: float = Field(ge=0.0, le=10.0, description="Away team average goals conceded per match")
+    home_goals_avg: float = Field(
+        ge=0.0, le=10.0, description="Home team average goals scored per match"
+    )
+    home_goals_conceded_avg: float = Field(
+        ge=0.0, le=10.0, description="Home team average goals conceded per match"
+    )
+    away_goals_avg: float = Field(
+        ge=0.0, le=10.0, description="Away team average goals scored per match"
+    )
+    away_goals_conceded_avg: float = Field(
+        ge=0.0, le=10.0, description="Away team average goals conceded per match"
+    )
     h2h_home_wins: int = Field(ge=0, default=1, description="Head-to-head home wins")
     h2h_away_wins: int = Field(ge=0, default=1, description="Head-to-head away wins")
     h2h_draws: int = Field(ge=0, default=0, description="Head-to-head draws")
-    home_ranking: float = Field(ge=1.0, le=500.0, default=20.0, description="Home team world ranking")
-    away_ranking: float = Field(ge=1.0, le=500.0, default=20.0, description="Away team world ranking")
+    home_ranking: float = Field(
+        ge=1.0, le=500.0, default=20.0, description="Home team world ranking"
+    )
+    away_ranking: float = Field(
+        ge=1.0, le=500.0, default=20.0, description="Away team world ranking"
+    )
     home_elo: float = Field(ge=100.0, le=2500.0, default=1500.0, description="Home team Elo rating")
     away_elo: float = Field(ge=100.0, le=2500.0, default=1500.0, description="Away team Elo rating")
-    home_days_rest: int = Field(ge=0, le=365, default=7, description="Home team days since last match")
-    away_days_rest: int = Field(ge=0, le=365, default=7, description="Away team days since last match")
-    home_is_home_ground: float = Field(ge=0.0, le=1.0, default=1.0, description="1 if playing on home ground")
+    home_days_rest: int = Field(
+        ge=0, le=365, default=7, description="Home team days since last match"
+    )
+    away_days_rest: int = Field(
+        ge=0, le=365, default=7, description="Away team days since last match"
+    )
+    home_is_home_ground: float = Field(
+        ge=0.0, le=1.0, default=1.0, description="1 if playing on home ground"
+    )
 
 
 class PlayerRequest(BaseModel):
@@ -166,7 +193,12 @@ def score_player_endpoint(request: PlayerRequest, db: Session = Depends(get_db))
     )
     db.add(row)
     db.commit()
-    return {"player_id": request.player_id, "player_name": request.player_name, "team": request.team, **scores}
+    return {
+        "player_id": request.player_id,
+        "player_name": request.player_name,
+        "team": request.team,
+        **scores,
+    }
 
 
 @app.get("/api/v1/metrics", tags=["monitoring"], summary="Prediction metrics")
@@ -198,6 +230,7 @@ def drift_summary_endpoint(db: Session = Depends(get_db)) -> dict:
 @app.get("/api/v1/predictions/history", tags=["prediction"], summary="Recent prediction history")
 def prediction_history_endpoint(limit: int = 20, db: Session = Depends(get_db)) -> dict:
     from app.database import PredictionLog
+
     rows = db.query(PredictionLog).order_by(PredictionLog.created_at.desc()).limit(limit).all()
     return {
         "predictions": [
@@ -235,5 +268,12 @@ def batch_predict_endpoint(request: BatchMatchRequest, db: Session = Depends(get
             **result,
             model_version=MODEL_VERSION,
         )
-        results.append({"match_id": match.match_id, "home_team": match.home_team, "away_team": match.away_team, **result})
+        results.append(
+            {
+                "match_id": match.match_id,
+                "home_team": match.home_team,
+                "away_team": match.away_team,
+                **result,
+            }
+        )
     return {"count": len(results), "results": results}

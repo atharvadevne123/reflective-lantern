@@ -22,6 +22,7 @@ from sklearn.model_selection import StratifiedKFold, cross_val_score
 try:
     import lightgbm as lgb
     import xgboost as xgb
+
     _HAS_BOOSTING = True
 except ImportError:
     _HAS_BOOSTING = False
@@ -73,6 +74,7 @@ def _build_estimator() -> Any:
             n_jobs=-1,
         )
     from sklearn.ensemble import GradientBoostingClassifier
+
     return GradientBoostingClassifier(n_estimators=200, max_depth=4, random_state=42)
 
 
@@ -99,6 +101,7 @@ def _generate_training_data(n: int = 2000) -> tuple[np.ndarray, np.ndarray]:
         labels.append(0 if normal else 1)
 
     import pandas as pd
+
     df = pd.DataFrame(rows)
     pipeline = build_feature_pipeline()
     X = pipeline.fit_transform(df)
@@ -138,7 +141,12 @@ def train_model() -> dict[str, float]:
     with open(settings.metrics_path, "w") as fh:
         json.dump(metrics, fh, indent=2)
 
-    logger.info("Model trained: AUC=%.4f CV-AUC=%.4f±%.4f", metrics["roc_auc"], metrics["cv_auc_mean"], metrics["cv_auc_std"])
+    logger.info(
+        "Model trained: AUC=%.4f CV-AUC=%.4f±%.4f",
+        metrics["roc_auc"],
+        metrics["cv_auc_mean"],
+        metrics["cv_auc_std"],
+    )
     return metrics
 
 

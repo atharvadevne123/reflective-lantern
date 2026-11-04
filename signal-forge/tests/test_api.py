@@ -76,11 +76,14 @@ def test_drift_check(client):
     assert "features" in data
 
 
-@pytest.mark.parametrize("ticker,close,volume", [
-    ("GOOGL", 150.0, 30_000_000.0),
-    ("TSLA", 250.0, 50_000_000.0),
-    ("AMZN", 180.0, 40_000_000.0),
-])
+@pytest.mark.parametrize(
+    "ticker,close,volume",
+    [
+        ("GOOGL", 150.0, 30_000_000.0),
+        ("TSLA", 250.0, 50_000_000.0),
+        ("AMZN", 180.0, 40_000_000.0),
+    ],
+)
 def test_predict_multiple_tickers(client, ticker, close, volume):
     resp = client.post("/predict", json={"ticker": ticker, "close": close, "volume": volume})
     assert resp.status_code == 200

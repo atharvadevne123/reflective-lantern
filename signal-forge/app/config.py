@@ -20,12 +20,8 @@ class Settings:
     faiss_index_path: str = field(
         default_factory=lambda: os.environ.get("FAISS_INDEX_PATH", "/tmp/signal_forge.faiss")
     )
-    app_env: str = field(
-        default_factory=lambda: os.environ.get("APP_ENV", "development")
-    )
-    log_level: str = field(
-        default_factory=lambda: os.environ.get("LOG_LEVEL", "INFO")
-    )
+    app_env: str = field(default_factory=lambda: os.environ.get("APP_ENV", "development"))
+    log_level: str = field(default_factory=lambda: os.environ.get("LOG_LEVEL", "INFO"))
     drift_ks_threshold: float = field(
         default_factory=lambda: float(os.environ.get("DRIFT_KS_THRESHOLD", "0.05"))
     )

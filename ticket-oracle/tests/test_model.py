@@ -86,21 +86,29 @@ def test_predict_output_keys(small_dataset, tmp_model_dir):
     X, y_p, y_s = small_dataset
     train_models(X, y_p, y_s)
     pp, sp = load_models()
-    row = payload_to_dataframe({
-        "description": "VPN not working for remote team after update",
-        "department": "Engineering",
-        "incident_type": "Network",
-        "channel": "email",
-        "customer_tier": "Gold",
-        "product_area": "Infrastructure",
-        "open_tickets_count": 40,
-        "agent_load": 7,
-        "hour_of_day": 14,
-        "day_of_week": 1,
-    })
+    row = payload_to_dataframe(
+        {
+            "description": "VPN not working for remote team after update",
+            "department": "Engineering",
+            "incident_type": "Network",
+            "channel": "email",
+            "customer_tier": "Gold",
+            "product_area": "Infrastructure",
+            "open_tickets_count": 40,
+            "agent_load": 7,
+            "hour_of_day": 14,
+            "day_of_week": 1,
+        }
+    )
     result = predict(pp, sp, row)
-    for key in ["priority", "priority_probabilities", "sla_breach_risk",
-                "sla_breach_predicted", "estimated_resolution_hours", "confidence"]:
+    for key in [
+        "priority",
+        "priority_probabilities",
+        "sla_breach_risk",
+        "sla_breach_predicted",
+        "estimated_resolution_hours",
+        "confidence",
+    ]:
         assert key in result
 
 
@@ -108,18 +116,20 @@ def test_predict_probability_sums_to_one(small_dataset, tmp_model_dir):
     X, y_p, y_s = small_dataset
     train_models(X, y_p, y_s)
     pp, sp = load_models()
-    row = payload_to_dataframe({
-        "description": "Security breach on production server",
-        "department": "IT",
-        "incident_type": "Security",
-        "channel": "phone",
-        "customer_tier": "Gold",
-        "product_area": "Security",
-        "open_tickets_count": 60,
-        "agent_load": 10,
-        "hour_of_day": 3,
-        "day_of_week": 0,
-    })
+    row = payload_to_dataframe(
+        {
+            "description": "Security breach on production server",
+            "department": "IT",
+            "incident_type": "Security",
+            "channel": "phone",
+            "customer_tier": "Gold",
+            "product_area": "Security",
+            "open_tickets_count": 60,
+            "agent_load": 10,
+            "hour_of_day": 3,
+            "day_of_week": 0,
+        }
+    )
     result = predict(pp, sp, row)
     assert abs(sum(result["priority_probabilities"].values()) - 1.0) < 0.01
 
@@ -128,9 +138,16 @@ def test_predict_sla_risk_in_range(small_dataset, tmp_model_dir):
     X, y_p, y_s = small_dataset
     train_models(X, y_p, y_s)
     pp, sp = load_models()
-    row = payload_to_dataframe({"description": "Minor software glitch", "department": "Finance",
-                                "incident_type": "Software", "channel": "portal",
-                                "customer_tier": "Bronze", "product_area": "ERP"})
+    row = payload_to_dataframe(
+        {
+            "description": "Minor software glitch",
+            "department": "Finance",
+            "incident_type": "Software",
+            "channel": "portal",
+            "customer_tier": "Bronze",
+            "product_area": "ERP",
+        }
+    )
     result = predict(pp, sp, row)
     assert 0.0 <= result["sla_breach_risk"] <= 1.0
 

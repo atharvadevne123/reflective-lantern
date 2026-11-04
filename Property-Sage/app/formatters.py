@@ -21,6 +21,7 @@ def format_prediction_response(
         Enriched response dict with formatted strings and metadata.
     """
     from app.utils import format_currency
+
     return {
         "request_id": request_id,
         "neighborhood": neighborhood,
@@ -29,9 +30,13 @@ def format_prediction_response(
         "predicted_rental_yield": prediction.get("predicted_rental_yield", 0.0),
         "predicted_rental_yield_pct": f"{prediction.get('predicted_rental_yield', 0.0) * 100:.2f}%",
         "estimated_annual_rental": prediction.get("estimated_annual_rental", 0.0),
-        "estimated_annual_rental_formatted": format_currency(prediction.get("estimated_annual_rental", 0.0)),
+        "estimated_annual_rental_formatted": format_currency(
+            prediction.get("estimated_annual_rental", 0.0)
+        ),
         "estimated_monthly_rental": prediction.get("estimated_monthly_rental", 0.0),
-        "estimated_monthly_rental_formatted": format_currency(prediction.get("estimated_monthly_rental", 0.0)),
+        "estimated_monthly_rental_formatted": format_currency(
+            prediction.get("estimated_monthly_rental", 0.0)
+        ),
     }
 
 

@@ -56,6 +56,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         if len(self._buckets[client_ip]) >= self.limit:
             logger.warning("Rate limit exceeded for IP %s", client_ip)
             from fastapi.responses import JSONResponse
+
             return JSONResponse(
                 status_code=429,
                 content={"detail": "Rate limit exceeded. Retry after 60 seconds."},

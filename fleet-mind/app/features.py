@@ -28,17 +28,17 @@ RAW_FEATURES = [
 
 ENGINEERED_FEATURES = [
     # Ratios
-    "engine_heat_ratio",       # engine_temp / coolant_temp
-    "oil_efficiency",          # oil_pressure / rpm_scaled
-    "fuel_speed_ratio",        # fuel_consumption / (speed + 1)
-    "thermal_delta",           # transmission_temp - coolant_temp
-    "power_index",             # rpm * speed_kmh / 1e6
+    "engine_heat_ratio",  # engine_temp / coolant_temp
+    "oil_efficiency",  # oil_pressure / rpm_scaled
+    "fuel_speed_ratio",  # fuel_consumption / (speed + 1)
+    "thermal_delta",  # transmission_temp - coolant_temp
+    "power_index",  # rpm * speed_kmh / 1e6
     # Normalised brake health
-    "brake_health_score",      # brake_pad_mm / 12.0 (new pad = 12mm)
+    "brake_health_score",  # brake_pad_mm / 12.0 (new pad = 12mm)
     # Tyre deviation from nominal 2.4 bar
-    "tire_pressure_deviation", # abs(tire_pressure_bar - 2.4)
+    "tire_pressure_deviation",  # abs(tire_pressure_bar - 2.4)
     # Battery health proxy
-    "battery_delta",           # abs(battery_voltage_v - 12.6)
+    "battery_delta",  # abs(battery_voltage_v - 12.6)
 ]
 
 ALL_FEATURES = RAW_FEATURES + ENGINEERED_FEATURES

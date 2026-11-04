@@ -36,11 +36,15 @@ class TestValidationIssue:
 
 class TestCheckTemporalCoherence:
     def test_purchase_after_registration_ok(self) -> None:
-        result = check_temporal_coherence({"days_since_registration": 30, "days_since_last_purchase": 10})
+        result = check_temporal_coherence(
+            {"days_since_registration": 30, "days_since_last_purchase": 10}
+        )
         assert result == []
 
     def test_purchase_before_registration_warns(self) -> None:
-        result = check_temporal_coherence({"days_since_registration": 10, "days_since_last_purchase": 30})
+        result = check_temporal_coherence(
+            {"days_since_registration": 10, "days_since_last_purchase": 30}
+        )
         assert len(result) == 1
 
     def test_very_old_purchase_with_nonzero_count_warns(self) -> None:

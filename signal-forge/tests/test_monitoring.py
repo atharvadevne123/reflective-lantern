@@ -35,7 +35,14 @@ def test_drift_detected_different_distribution(db_session):
 def test_ks_returns_correct_keys(db_session):
     vals = list(range(50))
     result = run_ks_drift_detection(db_session, "beta", vals, vals[:20])
-    expected = {"feature", "ks_statistic", "p_value", "drift_detected", "reference_mean", "current_mean"}
+    expected = {
+        "feature",
+        "ks_statistic",
+        "p_value",
+        "drift_detected",
+        "reference_mean",
+        "current_mean",
+    }
     assert expected.issubset(result.keys())
 
 

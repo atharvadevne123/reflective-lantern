@@ -31,11 +31,14 @@ class TestChunkReadings:
         chunks = list(chunk_readings(readings, chunk_size=10))
         assert len(chunks) == 1
 
-    @pytest.mark.parametrize("n,chunk_size,expected_chunks", [
-        (10, 3, 4),
-        (9, 3, 3),
-        (0, 5, 0),
-    ])
+    @pytest.mark.parametrize(
+        "n,chunk_size,expected_chunks",
+        [
+            (10, 3, 4),
+            (9, 3, 3),
+            (0, 5, 0),
+        ],
+    )
     def test_chunk_count(self, n, chunk_size, expected_chunks):
         readings = [{"v": i} for i in range(n)]
         chunks = list(chunk_readings(readings, chunk_size=chunk_size))
@@ -50,7 +53,9 @@ class TestChunkReadings:
 class TestProcessBatchWithChunking:
     def test_processes_all_readings(self):
         readings = [{"v": i} for i in range(10)]
-        results = process_batch_with_chunking(readings, lambda c: [{"r": x["v"]} for x in c], chunk_size=3)
+        results = process_batch_with_chunking(
+            readings, lambda c: [{"r": x["v"]} for x in c], chunk_size=3
+        )
         assert len(results) == 10
 
     def test_handles_empty_input(self):

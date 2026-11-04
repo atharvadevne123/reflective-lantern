@@ -233,8 +233,6 @@ class TestCustomerBaselineLoadEdgeCases:
         assert len(result) == 4
 
 
-
-
 class TestCurtailmentRate:
     def test_positive_result_for_valid_inputs(self) -> None:
         rate = curtailment_rate(curtailed_kwh=20.0, event_hours=4)

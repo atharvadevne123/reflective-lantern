@@ -43,9 +43,7 @@ def test_compute_drift_insufficient_data():
     assert result["p_value"] == 1.0
 
 
-@pytest.mark.parametrize("ref_size,curr_size", [
-    (100, 50), (500, 200), (1000, 100)
-])
+@pytest.mark.parametrize("ref_size,curr_size", [(100, 50), (500, 200), (1000, 100)])
 def test_compute_drift_various_sizes(ref_size, curr_size):
     import numpy as np
 
@@ -60,6 +58,7 @@ def test_compute_drift_various_sizes(ref_size, curr_size):
 def test_set_reference_distribution():
     set_reference_distribution("test_feature", [1.0, 2.0, 3.0])
     from app.monitoring import _reference_features
+
     assert "test_feature" in _reference_features
     assert _reference_features["test_feature"] == [1.0, 2.0, 3.0]
 
@@ -95,6 +94,7 @@ def test_build_current_window_keys(db_session):
         confidence=0.9,
     )
     from app.monitoring import get_recent_predictions
+
     recent = get_recent_predictions(db_session, hours=24)
     window = build_current_window(recent)
     assert "text_length" in window
@@ -105,11 +105,13 @@ def test_build_current_window_keys(db_session):
 
 def test_volume_anomaly_empty_returns_false():
     from app.monitoring import detect_volume_anomaly
+
     result = detect_volume_anomaly([])
     assert result["is_anomaly"] is False
 
 
 def test_volume_anomaly_normal_rate():
     from app.monitoring import detect_volume_anomaly
+
     result = detect_volume_anomaly([], baseline_hourly_rate=10.0)
     assert result["is_anomaly"] is False

@@ -52,12 +52,14 @@ def register_model(version: str, metrics: dict[str, float], model_path: str) -> 
         model_path: Absolute path to the saved model file.
     """
     entries = _load_registry()
-    entries.append({
-        "version": version,
-        "trained_at": datetime.utcnow().isoformat(),
-        "metrics": metrics,
-        "model_path": model_path,
-    })
+    entries.append(
+        {
+            "version": version,
+            "trained_at": datetime.utcnow().isoformat(),
+            "metrics": metrics,
+            "model_path": model_path,
+        }
+    )
     _save_registry(entries)
     logger.info("Registered model version %s: AUC=%.4f", version, metrics.get("roc_auc", 0))
 

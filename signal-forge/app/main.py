@@ -106,6 +106,7 @@ def predict_regime(
         row = {"close": req.close, "volume": req.volume, "market_return": req.market_return}
         df = extract_single_row(row)
         from .features import build_feature_pipeline
+
         pipeline = build_feature_pipeline()
         arr = pipeline.fit_transform(df)
         last_row = arr[-1:]
@@ -144,7 +145,9 @@ def predict_regime(
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(e))
     except Exception as e:
         logger.error("Prediction failed: %s", e)
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Prediction error")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Prediction error"
+        )
 
 
 @app.get(

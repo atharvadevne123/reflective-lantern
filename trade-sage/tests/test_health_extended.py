@@ -19,11 +19,14 @@ class TestCheckDatabase:
     def test_valid_url_returns_ok(self) -> None:
         assert check_database("sqlite:///./test.db") == "ok"
 
-    @pytest.mark.parametrize("url", [
-        "postgresql://user:pass@host/db",
-        "sqlite:///test.db",
-        "mysql://localhost/mydb",
-    ])
+    @pytest.mark.parametrize(
+        "url",
+        [
+            "postgresql://user:pass@host/db",
+            "sqlite:///test.db",
+            "mysql://localhost/mydb",
+        ],
+    )
     def test_various_urls_return_ok(self, url: str) -> None:
         assert check_database(url) == "ok"
 

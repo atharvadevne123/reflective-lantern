@@ -8,11 +8,20 @@ model's probability scores.
 
 from __future__ import annotations
 
-P1_KEYWORDS = frozenset([
-    "production down", "outage", "data loss", "security breach",
-    "ransomware", "all users affected", "complete failure",
-    "database unreachable", "cannot login", "breach",
-])
+P1_KEYWORDS = frozenset(
+    [
+        "production down",
+        "outage",
+        "data loss",
+        "security breach",
+        "ransomware",
+        "all users affected",
+        "complete failure",
+        "database unreachable",
+        "cannot login",
+        "breach",
+    ]
+)
 
 P1_TIERS = frozenset(["Gold"])
 P1_INCIDENT_TYPES = frozenset(["outage", "security_incident", "data_loss"])
@@ -40,9 +49,8 @@ def apply_priority_rules(
     tier = payload.get("customer_tier", "")
     incident_type = payload.get("incident_type", "")
 
-    forced_p1 = (
-        _contains_p1_keyword(description)
-        or (tier in P1_TIERS and incident_type in P1_INCIDENT_TYPES)
+    forced_p1 = _contains_p1_keyword(description) or (
+        tier in P1_TIERS and incident_type in P1_INCIDENT_TYPES
     )
 
     if forced_p1 and prediction.get("priority") != "P1":

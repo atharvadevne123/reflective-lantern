@@ -62,13 +62,16 @@ class TestUpdateReference:
     def test_values_are_appended(self) -> None:
         update_reference("rsi", [50.0, 60.0, 70.0])
         from app.monitoring import _reference_store
+
         assert "rsi" in _reference_store
         assert len(_reference_store["rsi"]) == 3
 
     def test_window_is_bounded(self) -> None:
         from app.monitoring import REFERENCE_WINDOW
+
         update_reference("macd", list(range(REFERENCE_WINDOW + 100)))
         from app.monitoring import _reference_store
+
         assert len(_reference_store["macd"]) == REFERENCE_WINDOW
 
 

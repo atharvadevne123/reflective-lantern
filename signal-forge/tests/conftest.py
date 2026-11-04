@@ -61,14 +61,16 @@ def sample_ohlcv_df():
     rng = np.random.default_rng(42)
     n = 70
     close = 100.0 + np.cumsum(rng.normal(0, 1, n))
-    return pd.DataFrame({
-        "open": close * 0.99,
-        "high": close * 1.01,
-        "low": close * 0.98,
-        "close": close,
-        "volume": rng.integers(1_000_000, 5_000_000, n).astype(float),
-        "market_return": rng.normal(0.0005, 0.01, n),
-    })
+    return pd.DataFrame(
+        {
+            "open": close * 0.99,
+            "high": close * 1.01,
+            "low": close * 0.98,
+            "close": close,
+            "volume": rng.integers(1_000_000, 5_000_000, n).astype(float),
+            "market_return": rng.normal(0.0005, 0.01, n),
+        }
+    )
 
 
 @pytest.fixture

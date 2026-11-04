@@ -8,6 +8,7 @@ from app.experiment_tracking import get_recent_runs, log_run
 @pytest.fixture
 def experiment_dir(tmp_path, monkeypatch):
     import app.experiment_tracking as et
+
     monkeypatch.setattr(et, "EXPERIMENT_DIR", tmp_path)
     return tmp_path
 

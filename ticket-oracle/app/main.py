@@ -106,23 +106,34 @@ async def correlation_id_middleware(request: Request, call_next):
 
 # ── Pydantic schemas ──────────────────────────────────────────────────────────
 
+
 class TicketPayload(BaseModel):
     """Input schema for a single ticket prediction request."""
 
     ticket_id: str = Field(..., min_length=1, max_length=64, description="Unique ticket identifier")
-    description: str = Field(..., min_length=3, max_length=2000, description="Ticket description text")
+    description: str = Field(
+        ..., min_length=3, max_length=2000, description="Ticket description text"
+    )
     department: str = Field("Unknown", max_length=64, description="Reporting department")
     incident_type: str = Field("Unknown", max_length=64, description="Incident classification")
     channel: str = Field("email", description="Submission channel: email|phone|chat|portal")
     customer_tier: str = Field("Standard", description="Customer tier: Bronze|Standard|Silver|Gold")
-    product_area: str = Field("Unknown", max_length=64, description="Affected product or service area")
-    open_tickets_count: int = Field(10, ge=0, le=10000, description="Current open ticket count in queue")
-    agent_load: int = Field(5, ge=0, le=100, description="Number of tickets assigned to current agent")
+    product_area: str = Field(
+        "Unknown", max_length=64, description="Affected product or service area"
+    )
+    open_tickets_count: int = Field(
+        10, ge=0, le=10000, description="Current open ticket count in queue"
+    )
+    agent_load: int = Field(
+        5, ge=0, le=100, description="Number of tickets assigned to current agent"
+    )
     hour_of_day: int = Field(12, ge=0, le=23, description="Hour when ticket was submitted (0-23)")
     day_of_week: int = Field(0, ge=0, le=6, description="Day of week (0=Monday, 6=Sunday)")
     day_of_month: int = Field(15, ge=1, le=31, description="Day of month for month-end detection")
     ticket_age_minutes: float = Field(0.0, ge=0.0, description="Minutes since ticket was opened")
-    same_user_last_7d: int = Field(0, ge=0, description="Tickets submitted by same user in last 7 days")
+    same_user_last_7d: int = Field(
+        0, ge=0, description="Tickets submitted by same user in last 7 days"
+    )
 
     @field_validator("channel")
     @classmethod
@@ -162,6 +173,7 @@ class PredictionResponse(BaseModel):
 
 # ── Endpoints ─────────────────────────────────────────────────────────────────
 
+
 @app.get("/api/v1/health", tags=["Operations"])
 @limiter.limit("60/minute")
 async def health(request: Request, db: Session = Depends(get_db)) -> dict[str, Any]:
@@ -176,7 +188,12 @@ async def health(request: Request, db: Session = Depends(get_db)) -> dict[str, A
     except Exception:
         db_ok = False
     status = "healthy" if model_loaded and db_ok else "degraded"
-    return {"status": status, "model_loaded": model_loaded, "db_ok": db_ok, "version": MODEL_VERSION}
+    return {
+        "status": status,
+        "model_loaded": model_loaded,
+        "db_ok": db_ok,
+        "version": MODEL_VERSION,
+    }
 
 
 @app.post("/api/v1/predict", response_model=PredictionResponse, tags=["Prediction"])
@@ -218,7 +235,9 @@ async def predict_batch(
         X = payload_to_dataframe(ticket.model_dump())
         result = predict(_priority_model, _sla_model, X)
         log_prediction(db, ticket.ticket_id, result, MODEL_VERSION)
-        responses.append(PredictionResponse(ticket_id=ticket.ticket_id, model_version=MODEL_VERSION, **result))
+        responses.append(
+            PredictionResponse(ticket_id=ticket.ticket_id, model_version=MODEL_VERSION, **result)
+        )
     return responses
 
 

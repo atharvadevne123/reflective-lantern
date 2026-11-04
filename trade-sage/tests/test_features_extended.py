@@ -13,13 +13,15 @@ def _make_ohlcv(n: int = 100) -> pd.DataFrame:
     rng = np.random.default_rng(42)
     close = 100 + rng.standard_normal(n).cumsum()
     close = np.abs(close) + 10
-    return pd.DataFrame({
-        "open": close * rng.uniform(0.99, 1.01, n),
-        "high": close * rng.uniform(1.0, 1.02, n),
-        "low": close * rng.uniform(0.98, 1.0, n),
-        "close": close,
-        "volume": rng.integers(100_000, 1_000_000, n).astype(float),
-    })
+    return pd.DataFrame(
+        {
+            "open": close * rng.uniform(0.99, 1.01, n),
+            "high": close * rng.uniform(1.0, 1.02, n),
+            "low": close * rng.uniform(0.98, 1.0, n),
+            "close": close,
+            "volume": rng.integers(100_000, 1_000_000, n).astype(float),
+        }
+    )
 
 
 class TestValidateFeatureCount:

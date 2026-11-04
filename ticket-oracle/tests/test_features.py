@@ -40,7 +40,13 @@ def test_engineer_features_not_month_end():
 
 
 def test_engineer_features_preserves_original_fields():
-    raw = {"description": "Test ticket", "department": "IT", "hour_of_day": 9, "day_of_week": 0, "day_of_month": 5}
+    raw = {
+        "description": "Test ticket",
+        "department": "IT",
+        "hour_of_day": 9,
+        "day_of_week": 0,
+        "day_of_month": 5,
+    }
     result = engineer_features(raw)
     assert result["description"] == "Test ticket"
     assert result["department"] == "IT"
@@ -107,6 +113,7 @@ def test_make_synthetic_dataset_reproducible():
 
 def test_make_feature_pipeline_returns_column_transformer():
     from sklearn.compose import ColumnTransformer
+
     ct = make_feature_pipeline()
     assert isinstance(ct, ColumnTransformer)
 

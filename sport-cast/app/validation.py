@@ -1,4 +1,5 @@
 """Input validation utilities for Sport-Cast API."""
+
 from __future__ import annotations
 
 import logging

@@ -1,5 +1,7 @@
 """Tests for Ops-Vision database utilities."""
 
+import pytest
+
 from app.database import Base, DriftAlert, Incident, Prediction, ping_db
 
 
@@ -49,9 +51,6 @@ class TestPingDb:
         """ping_db() returns a boolean."""
         result = ping_db()
         assert isinstance(result, bool)
-
-
-import pytest
 
 
 @pytest.mark.parametrize(

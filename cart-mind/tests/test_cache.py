@@ -218,9 +218,6 @@ class TestEvictExpired:
         assert isinstance(result, int)
 
 
-import pytest
-
-
 @pytest.mark.parametrize("n_items", [1, 5, 10])
 def test_cache_size_after_n_sets(n_items: int) -> None:
     """TTLCache grows to exactly n_items after n distinct sets."""

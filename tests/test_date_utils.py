@@ -1326,11 +1326,6 @@ class TestStartOfDayExtended:
     def test_start_of_day_always_midnight(self, hour: int) -> None:
         pass
 
-    base = datetime(2026, 6, 1, 12, 0, 0)
-    start = base + timedelta(seconds=start_s)
-    end = base + timedelta(seconds=end_s)
-    assert elapsed_seconds(start, end) == pytest.approx(expected)
-
 
 @pytest.mark.parametrize(
     "year,month,expected_days",

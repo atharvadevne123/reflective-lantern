@@ -55,14 +55,18 @@ class TestAggregateSignals:
         result = aggregate_signals(signals)
         assert result["buy_votes"] + result["sell_votes"] == 3
 
-    @pytest.mark.parametrize("n_buy,n_sell,expected", [
-        (5, 2, "BUY"),
-        (2, 5, "SELL"),
-        (3, 3, "NEUTRAL"),
-        (1, 0, "BUY"),
-    ])
+    @pytest.mark.parametrize(
+        "n_buy,n_sell,expected",
+        [
+            (5, 2, "BUY"),
+            (2, 5, "SELL"),
+            (3, 3, "NEUTRAL"),
+            (1, 0, "BUY"),
+        ],
+    )
     def test_consensus_parametrized(self, n_buy: int, n_sell: int, expected: str) -> None:
-        signals = [_make_signal("BUY") for _ in range(n_buy)] + \
-                  [_make_signal("SELL") for _ in range(n_sell)]
+        signals = [_make_signal("BUY") for _ in range(n_buy)] + [
+            _make_signal("SELL") for _ in range(n_sell)
+        ]
         result = aggregate_signals(signals)
         assert result["consensus"] == expected

@@ -31,8 +31,15 @@ class TestSummariseBacktest:
     def test_has_expected_keys(self) -> None:
         result = run_backtest(_prices(), _all_buy())
         summary = summarise_backtest(result)
-        expected = {"total_return_pct", "annualised_return_pct", "max_drawdown_pct",
-                    "sharpe_ratio", "n_trades", "win_rate_pct", "equity_curve_length"}
+        expected = {
+            "total_return_pct",
+            "annualised_return_pct",
+            "max_drawdown_pct",
+            "sharpe_ratio",
+            "n_trades",
+            "win_rate_pct",
+            "equity_curve_length",
+        }
         assert expected == set(summary.keys())
 
     def test_returns_in_percentage(self) -> None:

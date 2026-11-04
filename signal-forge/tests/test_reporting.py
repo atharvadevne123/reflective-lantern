@@ -11,12 +11,26 @@ import pytest
 
 from app.reporting import format_prediction_report, report_to_json
 
-FEATURES = {"volatility": 0.18, "momentum": 0.04, "volume_ratio": 1.1, "correlation": 0.6, "beta": 1.05}
+FEATURES = {
+    "volatility": 0.18,
+    "momentum": 0.04,
+    "volume_ratio": 1.1,
+    "correlation": 0.6,
+    "beta": 1.05,
+}
 
 
 def test_format_prediction_report_keys():
     report = format_prediction_report("AAPL", "bull", 0.8, 0.3, FEATURES, [])
-    required = {"ticker", "regime", "confidence", "risk_score", "risk_tier", "features", "generated_at"}
+    required = {
+        "ticker",
+        "regime",
+        "confidence",
+        "risk_score",
+        "risk_tier",
+        "features",
+        "generated_at",
+    }
     assert required.issubset(report.keys())
 
 
@@ -41,12 +55,15 @@ def test_report_to_json_empty():
     assert report_to_json({}) == "{}"
 
 
-@pytest.mark.parametrize("regime,score", [
-    ("bull", 0.2),
-    ("bear", 0.8),
-    ("sideways", 0.35),
-    ("volatile", 0.85),
-])
+@pytest.mark.parametrize(
+    "regime,score",
+    [
+        ("bull", 0.2),
+        ("bear", 0.8),
+        ("sideways", 0.35),
+        ("volatile", 0.85),
+    ],
+)
 def test_format_report_all_regimes(regime, score):
     report = format_prediction_report("TEST", regime, 0.7, score, FEATURES, [])
     assert report["regime"] == regime

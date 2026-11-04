@@ -49,11 +49,14 @@ def test_drift_critical_alert():
     assert alert.level == "CRITICAL"
 
 
-@pytest.mark.parametrize("risk_score,expected_alert", [
-    (0.2, None),
-    (0.76, "WARNING"),
-    (0.91, "CRITICAL"),
-])
+@pytest.mark.parametrize(
+    "risk_score,expected_alert",
+    [
+        (0.2, None),
+        (0.76, "WARNING"),
+        (0.91, "CRITICAL"),
+    ],
+)
 def test_risk_alert_thresholds(risk_score, expected_alert):
     alert = check_risk_alert("SPY", risk_score, "sideways")
     if expected_alert is None:

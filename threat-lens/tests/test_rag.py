@@ -3,6 +3,7 @@
 import json
 
 import pytest
+
 from app.rag_retriever import THREAT_INTEL_CORPUS, ThreatIntelRetriever
 from rag.index import build_tfidf_index, load_index, save_index
 from rag.ingest import load_corpus, validate_corpus

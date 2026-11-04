@@ -231,8 +231,6 @@ class TestTimeOfUseCostEdgeCases:
         assert cost_high > cost_low
 
 
-
-
 class TestAnnualCostEstimate:
     def test_twelve_months_of_equal_usage(self) -> None:
         monthly = [100.0] * 12

@@ -36,6 +36,7 @@ def db_session(test_engine):
 @pytest.fixture()
 def client(db_session):
     """TestClient with the DB dependency overridden."""
+
     def override_get_db():
         yield db_session
 

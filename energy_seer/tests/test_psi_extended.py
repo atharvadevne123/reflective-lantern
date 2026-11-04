@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import pytest
+
 from app.psi import (
     PSI_MODERATE_THRESHOLD,
     PSI_STABLE_THRESHOLD,

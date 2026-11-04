@@ -43,7 +43,9 @@ def task_check_drift(**context) -> dict:
     result = {
         "should_retrain": should_retrain,
         "breach_auc_mean": breach_auc,
-        "reason": f"AUC {breach_auc:.3f} below threshold {RETRAIN_THRESHOLD_AUC}" if should_retrain else "metrics healthy",
+        "reason": f"AUC {breach_auc:.3f} below threshold {RETRAIN_THRESHOLD_AUC}"
+        if should_retrain
+        else "metrics healthy",
         "checked_at": datetime.utcnow().isoformat(),
     }
     logger.info("Drift/quality check: %s", result)
@@ -82,8 +84,8 @@ def task_retrain_models(**context) -> dict:
     logger.info("Retrain metrics: %s", metrics)
     # Optionally upload artifacts to S3
     try:
-
         from app.aws_stub import upload_model_artifact
+
         for fname in ["category_model.joblib", "breach_model.joblib", "resolution_model.joblib"]:
             upload_model_artifact(MODEL_DIR / fname, f"models/{fname}")
     except Exception as exc:

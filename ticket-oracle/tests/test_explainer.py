@@ -63,6 +63,7 @@ def test_explain_prediction_no_importance_attr():
     from app.explainer import explain_prediction
 
     names = ["a", "b"]
+
     # Pipeline with no importances or coef_
     class DummyClf:
         pass

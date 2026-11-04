@@ -78,6 +78,8 @@ def summarise_batch_results(results: list[dict[str, Any]]) -> dict[str, Any]:
     return {
         "total": len(results),
         "maintenance_flagged": maintenance_flagged,
-        "avg_anomaly_score": round(sum(anomaly_scores) / len(anomaly_scores), 4) if anomaly_scores else 0.0,
+        "avg_anomaly_score": round(sum(anomaly_scores) / len(anomaly_scores), 4)
+        if anomaly_scores
+        else 0.0,
         "anomaly_types_found": anomaly_types,
     }

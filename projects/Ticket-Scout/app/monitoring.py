@@ -79,7 +79,9 @@ def check_all_drift(
         if result["drift_detected"]:
             logger.warning(
                 "Drift detected on feature '%s': KS=%.4f p=%.4f",
-                feature, result["ks_statistic"], result["p_value"],
+                feature,
+                result["ks_statistic"],
+                result["p_value"],
             )
         results.append(result)
 
@@ -180,9 +182,7 @@ def detect_volume_anomaly(predictions: list, baseline_hourly_rate: float = 10.0)
     times = [p.created_at for p in predictions if p.created_at]
     if len(times) < 2:
         return {"is_anomaly": False, "observed_rate": 0.0, "baseline": baseline_hourly_rate}
-    span_hours = max(
-        (max(times) - min(times)).total_seconds() / 3600, 0.017
-    )  # min 1 minute
+    span_hours = max((max(times) - min(times)).total_seconds() / 3600, 0.017)  # min 1 minute
     rate = len(predictions) / span_hours
     threshold = baseline_hourly_rate * 5.0
     return {

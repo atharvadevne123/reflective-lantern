@@ -24,10 +24,15 @@ def test_prediction_count_empty(db_session):
 def test_prediction_count_after_insert(db_session):
     pred = Prediction(
         request_id="test-1",
-        bedrooms=3, bathrooms=2.0, sqft=1500.0,
-        lot_size=5000.0, year_built=2005,
-        neighborhood="suburb", property_type="house",
-        predicted_price=400000.0, predicted_rental_yield=0.05,
+        bedrooms=3,
+        bathrooms=2.0,
+        sqft=1500.0,
+        lot_size=5000.0,
+        year_built=2005,
+        neighborhood="suburb",
+        property_type="house",
+        predicted_price=400000.0,
+        predicted_rental_yield=0.05,
     )
     db_session.add(pred)
     db_session.commit()

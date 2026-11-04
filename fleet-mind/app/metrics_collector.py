@@ -14,6 +14,7 @@ logger = logging.getLogger(__name__)
 
 try:
     from prometheus_client import Counter, Histogram  # type: ignore[import]
+
     _HAS_PROMETHEUS = True
 
     PREDICTIONS_TOTAL = Counter(

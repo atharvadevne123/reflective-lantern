@@ -47,9 +47,7 @@ class TestPredictionLog:
 
     def test_is_attack_values(self, db_session: Session) -> None:
         for is_attack in [0, 1]:
-            db_session.add(
-                PredictionLog(predicted_class="c", confidence=0.5, is_attack=is_attack)
-            )
+            db_session.add(PredictionLog(predicted_class="c", confidence=0.5, is_attack=is_attack))
         db_session.commit()
         assert db_session.query(PredictionLog).count() == 2
 

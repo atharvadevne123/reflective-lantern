@@ -36,10 +36,14 @@ def test_format_metrics_empty():
 
 def test_format_metrics_structure():
     metrics = {
-        "price_r2_mean": 0.85, "price_r2_std": 0.02,
-        "price_rmse": 25000.0, "price_mae": 15000.0,
-        "rental_r2_mean": 0.72, "rental_r2_std": 0.03,
-        "rental_rmse": 0.01, "rental_mae": 0.008,
+        "price_r2_mean": 0.85,
+        "price_r2_std": 0.02,
+        "price_rmse": 25000.0,
+        "price_mae": 15000.0,
+        "rental_r2_mean": 0.72,
+        "rental_r2_std": 0.03,
+        "rental_rmse": 0.01,
+        "rental_mae": 0.008,
         "n_train": 1000,
     }
     result = format_metrics_response(metrics)

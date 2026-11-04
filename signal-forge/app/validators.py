@@ -42,5 +42,7 @@ def validate_predict_input(close: float, volume: float, market_return: float) ->
     validate_market_return(market_return)
     logger.debug(
         "Input validated: close=%.2f volume=%.0f market_return=%.4f",
-        close, volume, market_return,
+        close,
+        volume,
+        market_return,
     )

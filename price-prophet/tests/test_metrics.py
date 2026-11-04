@@ -100,7 +100,7 @@ def test_revenue_uplift_non_negative_when_optimized_ge_baseline(
 
 
 def test_mae_empty_raises() -> None:
-    import pytest
+
     from app.evaluation.metrics import mae
 
     with pytest.raises(ValueError):
@@ -155,9 +155,6 @@ def test_mae_non_negative() -> None:
 
     result = mae([1.0, 2.0, 3.0], [3.0, 2.0, 1.0])
     assert result >= 0.0
-
-
-import pytest
 
 
 @pytest.mark.parametrize(

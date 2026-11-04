@@ -71,7 +71,9 @@ def forecast_volume(
     """
     if len(historical_hourly_counts) < 4:
         return {
-            "forecast": [float(historical_hourly_counts[-1])] * horizon_hours if historical_hourly_counts else [],
+            "forecast": [float(historical_hourly_counts[-1])] * horizon_hours
+            if historical_hourly_counts
+            else [],
             "trend": "insufficient_data",
             "slope": 0.0,
         }

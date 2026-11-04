@@ -34,6 +34,7 @@ def format_prediction_report(
         Report dict suitable for API response or logging.
     """
     from app.cache import get_risk_tier
+
     risk_tier = get_risk_tier(round(risk_score, 2))
     return {
         "ticker": ticker,

@@ -47,22 +47,14 @@ filterwarnings = ["ignore::DeprecationWarning"]
 
 [tool.mypy]
 python_version = "3.11"
-strict = false
 ignore_missing_imports = true
-no_implicit_optional = true
+no_error_summary = true
+strict = false
 warn_return_any = false
+warn_unused_configs = true
 disallow_untyped_defs = false
+check_untyped_defs = true
 
 [tool.setuptools.packages.find]
 where = ["."]
 include = ["app*"]
-
-[tool.mypy]
-python_version = "3.11"
-ignore_missing_imports = true
-no_error_summary = true
-strict = false
-warn_return_any = true
-warn_unused_configs = true
-disallow_untyped_defs = true
-check_untyped_defs = true

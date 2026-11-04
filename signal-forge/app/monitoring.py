@@ -30,6 +30,7 @@ def log_prediction(
 ) -> MarketRegimePrediction:
     """Persist a prediction record to the database."""
     import json
+
     record = MarketRegimePrediction(
         ticker=ticker,
         regime=regime,
@@ -87,7 +88,9 @@ def run_ks_drift_detection(
     if drift_detected:
         logger.warning(
             "DRIFT DETECTED: feature=%s, ks=%.4f, p=%.4f",
-            feature_name, ks_stat, p_value,
+            feature_name,
+            ks_stat,
+            p_value,
         )
     return {
         "feature": feature_name,

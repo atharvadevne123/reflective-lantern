@@ -51,8 +51,11 @@ async def lifespan(app: FastAPI):
 
     # Seed reference distributions from training stats
     from app.model import generate_synthetic_data
+
     df = generate_synthetic_data(n_samples=500)
-    set_reference_distribution("text_length", (df["subject"].str.len() + df["body"].str.len()).tolist())
+    set_reference_distribution(
+        "text_length", (df["subject"].str.len() + df["body"].str.len()).tolist()
+    )
     set_reference_distribution("sla_breach_prob", df["sla_breach"].astype(float).tolist())
     set_reference_distribution("resolution_hours_pred", df["resolution_hours"].tolist())
     set_reference_distribution("confidence", [0.75] * 500)
@@ -82,6 +85,7 @@ app.add_middleware(
 
 app.add_middleware(RateLimitMiddleware, requests_per_minute=60)
 
+
 @app.middleware("http")
 async def correlation_id_middleware(request: Request, call_next):
     """Attach a correlation ID to every request and response."""
@@ -94,7 +98,11 @@ async def correlation_id_middleware(request: Request, call_next):
     response.headers["X-Response-Time-Ms"] = f"{elapsed:.1f}"
     logger.info(
         "method=%s path=%s status=%d ms=%.1f cid=%s",
-        request.method, request.url.path, response.status_code, elapsed, correlation_id,
+        request.method,
+        request.url.path,
+        response.status_code,
+        elapsed,
+        correlation_id,
     )
     return response
 
@@ -103,13 +111,16 @@ async def correlation_id_middleware(request: Request, call_next):
 # Request / response schemas
 # ---------------------------------------------------------------------------
 
+
 class TicketRequest(BaseModel):
     """A single support ticket to triage."""
 
     ticket_id: str | None = Field(default=None, description="Optional caller-supplied ticket ID")
     subject: str = Field(..., min_length=3, max_length=500, description="Ticket subject line")
     body: str = Field(default="", max_length=5000, description="Ticket body text")
-    priority: str = Field(default="medium", description="Reported priority: low/medium/high/critical")
+    priority: str = Field(
+        default="medium", description="Reported priority: low/medium/high/critical"
+    )
     created_hour: int = Field(default=9, ge=0, le=23)
     created_dow: int = Field(default=0, ge=0, le=6, description="Day of week (0=Mon)")
     org_size: int = Field(default=500, ge=1, le=100000)
@@ -158,7 +169,13 @@ def _risk_level(breach_prob: float) -> str:
 # Endpoints
 # ---------------------------------------------------------------------------
 
-@app.get("/api/v1/health", tags=["ops"], summary="Check service health", response_description="Health status and uptime")
+
+@app.get(
+    "/api/v1/health",
+    tags=["ops"],
+    summary="Check service health",
+    response_description="Health status and uptime",
+)
 def health() -> dict[str, Any]:
     """Return service health status and uptime."""
     return {
@@ -248,14 +265,16 @@ def predict_batch(
             confidence=r["confidence"],
             model_version=MODEL_VERSION,
         )
-        predictions.append(TicketPrediction(
-            ticket_id=ticket_ids[i],
-            predicted_category=r["predicted_category"],
-            confidence=round(r["confidence"], 4),
-            sla_breach_prob=round(r["sla_breach_prob"], 4),
-            resolution_hours_pred=round(r["resolution_hours_pred"], 2),
-            risk_level=_risk_level(r["sla_breach_prob"]),
-        ))
+        predictions.append(
+            TicketPrediction(
+                ticket_id=ticket_ids[i],
+                predicted_category=r["predicted_category"],
+                confidence=round(r["confidence"], 4),
+                sla_breach_prob=round(r["sla_breach_prob"], 4),
+                resolution_hours_pred=round(r["resolution_hours_pred"], 2),
+                risk_level=_risk_level(r["sla_breach_prob"]),
+            )
+        )
 
     return BatchPredictionResponse(predictions=predictions, model_version=MODEL_VERSION)
 

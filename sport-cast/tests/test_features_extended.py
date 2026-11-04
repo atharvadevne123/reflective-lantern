@@ -1,4 +1,5 @@
 """Extended feature engineering tests."""
+
 from __future__ import annotations
 
 import numpy as np
@@ -22,8 +23,18 @@ def test_synthetic_dataset_reproducible(seed):
 
 
 def test_form_encoder_all_wins():
-    df = pd.DataFrame([{"home_wins_last5": 5, "home_draws_last5": 0, "home_losses_last5": 0,
-                         "away_wins_last5": 5, "away_draws_last5": 0, "away_losses_last5": 0}])
+    df = pd.DataFrame(
+        [
+            {
+                "home_wins_last5": 5,
+                "home_draws_last5": 0,
+                "home_losses_last5": 0,
+                "away_wins_last5": 5,
+                "away_draws_last5": 0,
+                "away_losses_last5": 0,
+            }
+        ]
+    )
     out = FormEncoder().fit_transform(df)
     assert float(out["home_win_rate"].iloc[0]) == pytest.approx(1.0)
 

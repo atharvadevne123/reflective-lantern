@@ -24,6 +24,7 @@ class TestIndexSize:
 
     def test_size_after_build(self) -> None:
         from app.faiss_index import build_index
+
         vectors = np.random.default_rng(0).standard_normal((10, 5)).astype(np.float32)
         labels = [f"eq{i}" for i in range(10)]
         build_index(vectors, labels)
@@ -31,6 +32,7 @@ class TestIndexSize:
 
     def test_size_after_clear(self) -> None:
         from app.faiss_index import build_index
+
         vectors = np.random.default_rng(0).standard_normal((5, 4)).astype(np.float32)
         build_index(vectors, [f"v{i}" for i in range(5)])
         clear_index()
@@ -43,6 +45,7 @@ class TestClearIndex:
 
     def test_clear_resets_size(self) -> None:
         from app.faiss_index import build_index
+
         vectors = np.random.default_rng(1).standard_normal((3, 4)).astype(np.float32)
         build_index(vectors, ["a", "b", "c"])
         clear_index()
@@ -50,6 +53,7 @@ class TestClearIndex:
 
     def test_clear_then_rebuild(self) -> None:
         from app.faiss_index import build_index
+
         v1 = np.random.default_rng(0).standard_normal((5, 4)).astype(np.float32)
         build_index(v1, [f"old{i}" for i in range(5)])
         clear_index()
@@ -59,6 +63,7 @@ class TestClearIndex:
 
     def test_search_after_clear_returns_empty(self) -> None:
         from app.faiss_index import search_similar
+
         clear_index()
         result = search_similar(np.zeros(4, dtype=np.float32))
         assert result == []

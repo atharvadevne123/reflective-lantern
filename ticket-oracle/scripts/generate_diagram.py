@@ -11,7 +11,9 @@ from matplotlib.patches import FancyBboxPatch
 
 def draw_box(ax, x, y, w, h, label, color="#2563EB", fontsize=9):
     box = FancyBboxPatch(
-        (x, y), w, h,
+        (x, y),
+        w,
+        h,
         boxstyle="round,pad=0.05",
         facecolor=color,
         edgecolor="white",
@@ -20,9 +22,15 @@ def draw_box(ax, x, y, w, h, label, color="#2563EB", fontsize=9):
     )
     ax.add_patch(box)
     ax.text(
-        x + w / 2, y + h / 2, label,
-        ha="center", va="center",
-        fontsize=fontsize, color="white", fontweight="bold", zorder=4,
+        x + w / 2,
+        y + h / 2,
+        label,
+        ha="center",
+        va="center",
+        fontsize=fontsize,
+        color="white",
+        fontweight="bold",
+        zorder=4,
     )
 
 
@@ -46,8 +54,14 @@ def main():
     ax.axis("off")
 
     ax.text(
-        8, 8.5, "Ticket-Oracle — System Architecture",
-        ha="center", va="center", fontsize=14, color="white", fontweight="bold",
+        8,
+        8.5,
+        "Ticket-Oracle — System Architecture",
+        ha="center",
+        va="center",
+        fontsize=14,
+        color="white",
+        fontweight="bold",
     )
 
     # Client
@@ -57,29 +71,63 @@ def main():
     draw_box(ax, 3.5, 6.8, 3.0, 1.2, "FastAPI\n/api/v1/*\n(rate-limit, CID)", color="#2563EB")
 
     # Feature engineering
-    draw_box(ax, 7.5, 7.0, 2.5, 0.8, "Feature Pipeline\nTF-IDF + OrdinalEnc\n+ StandardScaler", color="#7C3AED")
+    draw_box(
+        ax,
+        7.5,
+        7.0,
+        2.5,
+        0.8,
+        "Feature Pipeline\nTF-IDF + OrdinalEnc\n+ StandardScaler",
+        color="#7C3AED",
+    )
 
     # Models
     draw_box(ax, 7.5, 5.5, 1.1, 1.2, "Priority\nModel\nXGB+LGBM\n+RF", color="#059669")
     draw_box(ax, 9.0, 5.5, 1.0, 1.2, "SLA Breach\nModel\nXGBoost", color="#059669")
 
     # Monitoring
-    draw_box(ax, 7.5, 4.0, 2.5, 0.9, "Drift Monitor\nKS-test + PSI\nPrediction Log", color="#D97706")
+    draw_box(
+        ax, 7.5, 4.0, 2.5, 0.9, "Drift Monitor\nKS-test + PSI\nPrediction Log", color="#D97706"
+    )
 
     # Database
-    draw_box(ax, 3.5, 4.0, 2.5, 1.2, "SQLAlchemy ORM\nPredictionLog\nDriftLog\nModelMetrics", color="#1E40AF")
+    draw_box(
+        ax,
+        3.5,
+        4.0,
+        2.5,
+        1.2,
+        "SQLAlchemy ORM\nPredictionLog\nDriftLog\nModelMetrics",
+        color="#1E40AF",
+    )
 
     # PostgreSQL
     draw_box(ax, 3.5, 2.3, 2.5, 0.9, "PostgreSQL\n(Docker)", color="#1E3A5F")
 
     # Airflow DAG
-    draw_box(ax, 7.5, 2.3, 2.5, 1.2, "Airflow DAG\nWeekly Retrain\nChampion/Challenger\nAUC Gate", color="#9333EA")
+    draw_box(
+        ax,
+        7.5,
+        2.3,
+        2.5,
+        1.2,
+        "Airflow DAG\nWeekly Retrain\nChampion/Challenger\nAUC Gate",
+        color="#9333EA",
+    )
 
     # Model store
     draw_box(ax, 11.5, 4.0, 2.0, 0.8, "Model Store\n(joblib)\nmetrics.json", color="#374151")
 
     # CI/CD
-    draw_box(ax, 11.5, 5.5, 2.0, 1.2, "GitHub Actions CI\nruff lint\npytest 3.11/3.12\nwheel build", color="#64748B")
+    draw_box(
+        ax,
+        11.5,
+        5.5,
+        2.0,
+        1.2,
+        "GitHub Actions CI\nruff lint\npytest 3.11/3.12\nwheel build",
+        color="#64748B",
+    )
 
     # Arrows
     draw_arrow(ax, 2.5, 7.4, 3.5, 7.3)
@@ -102,8 +150,14 @@ def main():
         mpatches.Patch(color="#D97706", label="Monitoring"),
         mpatches.Patch(color="#9333EA", label="Retraining Pipeline"),
     ]
-    ax.legend(handles=legend_items, loc="lower left", fontsize=8, facecolor="#1E293B",
-              labelcolor="white", framealpha=0.8)
+    ax.legend(
+        handles=legend_items,
+        loc="lower left",
+        fontsize=8,
+        facecolor="#1E293B",
+        labelcolor="white",
+        framealpha=0.8,
+    )
 
     plt.tight_layout()
     out = "screenshots/architecture.png"

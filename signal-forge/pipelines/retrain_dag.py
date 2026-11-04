@@ -11,6 +11,7 @@ logger = logging.getLogger(__name__)
 try:
     from airflow import DAG
     from airflow.operators.python import PythonOperator
+
     AIRFLOW_AVAILABLE = True
 except ImportError:
     AIRFLOW_AVAILABLE = False
@@ -44,14 +45,23 @@ def fetch_training_data(**context: Any) -> dict[str, Any]:
         )
         logger.info("Fetched %d training samples", len(rows))
         if len(rows) < MODEL_MIN_SAMPLES:
-            logger.warning("Insufficient data for retraining: %d < %d", len(rows), MODEL_MIN_SAMPLES)
+            logger.warning(
+                "Insufficient data for retraining: %d < %d", len(rows), MODEL_MIN_SAMPLES
+            )
             return {"skip": True}
 
-        X = np.array([
-            [r.volatility or 0, r.momentum or 0, r.volume_ratio or 1,
-             r.correlation or 0, r.beta or 1]
-            for r in rows
-        ])
+        X = np.array(
+            [
+                [
+                    r.volatility or 0,
+                    r.momentum or 0,
+                    r.volume_ratio or 1,
+                    r.correlation or 0,
+                    r.beta or 1,
+                ]
+                for r in rows
+            ]
+        )
         regime_map = {"bull": 0, "bear": 1, "sideways": 2, "volatile": 3}
         y = np.array([regime_map.get(r.regime, 2) for r in rows])
 
@@ -82,6 +92,7 @@ def train_new_model(**context: Any) -> None:
         y = rng.integers(0, 4, 400)
 
     from app.model import save_model, train_model
+
     model, metrics = train_model(X, y)
     save_model(model)
     logger.info("Retraining complete: %s", metrics)
@@ -127,17 +138,24 @@ def rebuild_faiss_index(**context: Any) -> None:
             logger.info("No predictions available for FAISS rebuild")
             return
 
-        embeddings = np.array([
-            [r.volatility or 0, r.momentum or 0, r.volume_ratio or 1,
-             r.correlation or 0, r.beta or 1]
-            for r in rows
-        ], dtype=np.float32)
+        embeddings = np.array(
+            [
+                [
+                    r.volatility or 0,
+                    r.momentum or 0,
+                    r.volume_ratio or 1,
+                    r.correlation or 0,
+                    r.beta or 1,
+                ]
+                for r in rows
+            ],
+            dtype=np.float32,
+        )
 
         build_faiss_index(embeddings)
 
         metadata = [
-            {"id": r.id, "ticker": r.ticker, "regime": r.regime,
-             "date": r.created_at.isoformat()}
+            {"id": r.id, "ticker": r.ticker, "regime": r.regime, "date": r.created_at.isoformat()}
             for r in rows
         ]
         meta_path = FAISS_INDEX_PATH.with_suffix(".meta.json")

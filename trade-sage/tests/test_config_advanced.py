@@ -22,9 +22,11 @@ class TestResetConfig:
 
     def test_reset_clears_singleton(self) -> None:
         from app.config import get_config
+
         _ = get_config()
         reset_config()
         from app.config import _config
+
         assert _config is None
 
 
@@ -35,8 +37,15 @@ class TestConfigAsDict:
 
     def test_has_expected_keys(self) -> None:
         result = config_as_dict()
-        expected = {"database_url", "model_path", "log_level", "api_rate_limit",
-                    "cache_ttl_seconds", "drift_threshold", "horizon_days"}
+        expected = {
+            "database_url",
+            "model_path",
+            "log_level",
+            "api_rate_limit",
+            "cache_ttl_seconds",
+            "drift_threshold",
+            "horizon_days",
+        }
         assert expected.issubset(set(result.keys()))
 
     def test_database_url_not_empty(self) -> None:
@@ -73,11 +82,14 @@ class TestRedactUrl:
         result = _redact_url(url)
         assert "myuser" in result
 
-    @pytest.mark.parametrize("url,should_contain_stars", [
-        ("postgresql://admin:password@host/db", True),
-        ("sqlite:///test.db", False),
-        ("mysql://root:pass@localhost/mydb", True),
-    ])
+    @pytest.mark.parametrize(
+        "url,should_contain_stars",
+        [
+            ("postgresql://admin:password@host/db", True),
+            ("sqlite:///test.db", False),
+            ("mysql://root:pass@localhost/mydb", True),
+        ],
+    )
     def test_redaction_parametrized(self, url: str, should_contain_stars: bool) -> None:
         result = _redact_url(url)
         assert ("***" in result) == should_contain_stars

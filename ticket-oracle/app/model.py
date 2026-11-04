@@ -67,10 +67,12 @@ def _build_priority_pipeline() -> Pipeline:
         estimators=[("xgb", xgb), ("lgbm", lgbm), ("rf", rf)],
         voting="soft",
     )
-    return Pipeline([
-        ("features", make_feature_pipeline()),
-        ("classifier", voter),
-    ])
+    return Pipeline(
+        [
+            ("features", make_feature_pipeline()),
+            ("classifier", voter),
+        ]
+    )
 
 
 def _build_sla_pipeline() -> Pipeline:
@@ -79,18 +81,23 @@ def _build_sla_pipeline() -> Pipeline:
     Returns:
         Unfitted sklearn Pipeline with ColumnTransformer + XGBClassifier.
     """
-    return Pipeline([
-        ("features", make_feature_pipeline()),
-        ("classifier", XGBClassifier(
-            n_estimators=100,
-            max_depth=4,
-            learning_rate=0.1,
-            eval_metric="logloss",
-            use_label_encoder=False,
-            verbosity=0,
-            random_state=42,
-        )),
-    ])
+    return Pipeline(
+        [
+            ("features", make_feature_pipeline()),
+            (
+                "classifier",
+                XGBClassifier(
+                    n_estimators=100,
+                    max_depth=4,
+                    learning_rate=0.1,
+                    eval_metric="logloss",
+                    use_label_encoder=False,
+                    verbosity=0,
+                    random_state=42,
+                ),
+            ),
+        ]
+    )
 
 
 def train_models(
@@ -118,14 +125,17 @@ def train_models(
     priority_cv = cross_val_score(
         priority_pipe, X, y_priority, cv=cv, scoring="roc_auc_ovr_weighted"
     )
-    logger.info("priority_cv_complete", extra={"auc_mean": float(priority_cv.mean()), "auc_std": float(priority_cv.std())})
+    logger.info(
+        "priority_cv_complete",
+        extra={"auc_mean": float(priority_cv.mean()), "auc_std": float(priority_cv.std())},
+    )
     priority_pipe.fit(X, y_priority)
 
     sla_pipe = _build_sla_pipeline()
-    sla_cv = cross_val_score(
-        sla_pipe, X, y_sla, cv=cv, scoring="roc_auc"
+    sla_cv = cross_val_score(sla_pipe, X, y_sla, cv=cv, scoring="roc_auc")
+    logger.info(
+        "sla_cv_complete", extra={"auc_mean": float(sla_cv.mean()), "auc_std": float(sla_cv.std())}
     )
-    logger.info("sla_cv_complete", extra={"auc_mean": float(sla_cv.mean()), "auc_std": float(sla_cv.std())})
     sla_pipe.fit(X, y_sla)
 
     metrics: dict[str, Any] = {
