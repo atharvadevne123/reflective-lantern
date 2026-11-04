@@ -190,6 +190,15 @@ class ExponentialSmoothingForecaster:
         logger.info("Forecast generated: %d points, next=%.4f", len(points), points[0].value)
         return points
 
+    def __repr__(self) -> str:
+        """Return a concise representation including key parameters."""
+        fitted = "fitted" if self._is_fitted else "unfitted"
+        return (
+            f"ExponentialSmoothingForecaster("
+            f"alpha={self.alpha}, beta={self.beta}, "
+            f"horizon={self.horizon}, {fitted})"
+        )
+
     @property
     def is_fitted(self) -> bool:
         """Return True if fit() has been called successfully."""
