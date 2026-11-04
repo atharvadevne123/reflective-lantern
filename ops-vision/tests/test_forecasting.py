@@ -17,6 +17,63 @@ from app.forecasting import (
 )
 
 
+class TestForecastPointToDict:
+    """Tests for ForecastPoint.to_dict()."""
+
+    def test_to_dict_returns_dict(self) -> None:
+        """to_dict() returns a dict."""
+        fp = ForecastPoint(
+            timestamp=datetime.utcnow(),
+            value=3.0,
+            lower_bound=1.0,
+            upper_bound=5.0,
+        )
+        assert isinstance(fp.to_dict(), dict)
+
+    def test_to_dict_has_timestamp_key(self) -> None:
+        """to_dict() includes 'timestamp' key."""
+        fp = ForecastPoint(
+            timestamp=datetime.utcnow(),
+            value=1.0,
+            lower_bound=0.0,
+            upper_bound=2.0,
+        )
+        assert "timestamp" in fp.to_dict()
+
+    def test_to_dict_timestamp_is_iso_string(self) -> None:
+        """to_dict() timestamp is an ISO-format string."""
+        fp = ForecastPoint(
+            timestamp=datetime(2026, 1, 15, 12, 0, 0),
+            value=2.0,
+            lower_bound=1.0,
+            upper_bound=3.0,
+        )
+        d = fp.to_dict()
+        assert isinstance(d["timestamp"], str)
+        assert "2026" in d["timestamp"]
+
+    @pytest.mark.parametrize("value", [0.0, 1.5, 3.0, 10.0])
+    def test_to_dict_value_matches(self, value: float) -> None:
+        """to_dict() value key matches the ForecastPoint value."""
+        fp = ForecastPoint(
+            timestamp=datetime.utcnow(),
+            value=value,
+            lower_bound=0.0,
+            upper_bound=value + 1.0,
+        )
+        assert fp.to_dict()["value"] == value
+
+    def test_to_dict_has_all_keys(self) -> None:
+        """to_dict() output has timestamp, value, lower_bound, upper_bound."""
+        fp = ForecastPoint(
+            timestamp=datetime.utcnow(),
+            value=1.0,
+            lower_bound=0.0,
+            upper_bound=2.0,
+        )
+        assert set(fp.to_dict()) == {"timestamp", "value", "lower_bound", "upper_bound"}
+
+
 class TestForecastingConstants:
     """Tests for module-level constants."""
 
