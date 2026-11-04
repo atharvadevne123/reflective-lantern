@@ -65,6 +65,20 @@ class IncidentRateBuffer:
         sorted_counts = sorted(self.counts, key=lambda x: x[0])
         return np.array([c for _, c in sorted_counts], dtype=np.float64)
 
+    def get_counts_since(self, cutoff: datetime) -> list[tuple[datetime, int]]:
+        """Return (timestamp, count) pairs recorded at or after cutoff.
+
+        Args:
+            cutoff: Earliest timestamp to include.
+
+        Returns:
+            Filtered list of (timestamp, count) tuples, oldest first.
+        """
+        return sorted(
+            [(t, c) for t, c in self.counts if t >= cutoff],
+            key=lambda x: x[0],
+        )
+
     def reset(self) -> None:
         """Clear all accumulated counts."""
         self.counts.clear()
