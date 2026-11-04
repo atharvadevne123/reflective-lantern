@@ -237,3 +237,44 @@ class TestGetRateBufferSingleton:
         b1 = get_rate_buffer()
         b2 = get_rate_buffer()
         assert b1 is b2
+
+
+class TestExponentialSmoothingParametrized:
+    """Parametrized tests for ExponentialSmoothingForecaster."""
+
+    @pytest.mark.parametrize("horizon", [6, 12, 24, 48])
+    def test_forecast_length_equals_horizon(self, horizon: int) -> None:
+        """forecast() returns exactly horizon ForecastPoint objects."""
+        forecaster = ExponentialSmoothingForecaster(horizon=horizon)
+        series = np.array([1.0, 2.0, 1.5, 3.0, 2.0, 1.0, 2.5], dtype=float)
+        forecaster.fit(series)
+        points = forecaster.forecast(base_time=datetime.utcnow())
+        assert len(points) == horizon
+
+    @pytest.mark.parametrize("alpha", [0.1, 0.3, 0.5, 0.9])
+    def test_forecast_with_various_alpha(self, alpha: float) -> None:
+        """ExponentialSmoothingForecaster accepts different alpha values."""
+        forecaster = ExponentialSmoothingForecaster(horizon=6, alpha=alpha)
+        series = np.array([2.0, 3.0, 2.5, 4.0, 3.0, 2.0], dtype=float)
+        forecaster.fit(series)
+        points = forecaster.forecast(base_time=datetime.utcnow())
+        assert all(isinstance(p, ForecastPoint) for p in points)
+
+    @pytest.mark.parametrize("n_points", [2, 5, 10, 20])
+    def test_forecast_timestamps_are_monotone(self, n_points: int) -> None:
+        """forecast() timestamps are strictly increasing."""
+        forecaster = ExponentialSmoothingForecaster(horizon=n_points)
+        series = np.ones(10, dtype=float)
+        forecaster.fit(series)
+        points = forecaster.forecast(base_time=datetime.utcnow())
+        timestamps = [p.timestamp for p in points]
+        assert all(t1 < t2 for t1, t2 in zip(timestamps[:-1], timestamps[1:]))
+
+    @pytest.mark.parametrize("incident_count", [0, 1, 5, 10])
+    def test_buffer_records_correct_count(self, incident_count: int) -> None:
+        """IncidentRateBuffer records the right sum across intervals."""
+        buf = IncidentRateBuffer()
+        now = datetime.utcnow()
+        buf.record(now, incident_count)
+        arr = buf.as_array()
+        assert arr.sum() == incident_count
