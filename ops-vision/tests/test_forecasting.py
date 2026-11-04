@@ -293,6 +293,32 @@ class TestExponentialSmoothingForecasterRepr:
         assert str(alpha) in repr(f)
 
 
+class TestIncidentRateBufferRepr:
+    """Tests for IncidentRateBuffer.__repr__."""
+
+    def test_repr_is_string(self) -> None:
+        """repr() returns a str."""
+        buf = IncidentRateBuffer()
+        assert isinstance(repr(buf), str)
+
+    def test_repr_contains_len(self) -> None:
+        """repr includes the current buffer length."""
+        buf = IncidentRateBuffer()
+        buf.record(datetime.utcnow(), 3)
+        assert "1" in repr(buf)
+
+    def test_repr_contains_window_hours(self) -> None:
+        """repr includes the window_hours configuration."""
+        buf = IncidentRateBuffer(window_hours=48)
+        assert "48" in repr(buf)
+
+    @pytest.mark.parametrize("window_hours", [24, 48, 72, 168])
+    def test_repr_window_hours_parametrized(self, window_hours: int) -> None:
+        """repr contains the window_hours for any configured value."""
+        buf = IncidentRateBuffer(window_hours=window_hours)
+        assert str(window_hours) in repr(buf)
+
+
 class TestGetRateBufferSingleton:
     """Tests for the get_rate_buffer() singleton helper."""
 
