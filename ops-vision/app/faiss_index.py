@@ -2,6 +2,8 @@
 
 import json
 import logging
+import re
+from collections import Counter
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -48,14 +50,10 @@ class RunbookIndex:
 
     def _tokenize(self, text: str) -> list[str]:
         """Lowercase and split text into tokens, stripping punctuation."""
-        import re
-
         return re.findall(r"[a-z]+", text.lower())
 
     def _build_vocab(self, corpus: list[str]) -> None:
         """Build vocabulary from corpus, keeping the top embedding_dim terms."""
-        from collections import Counter
-
         counts: Counter = Counter()
         for doc in corpus:
             counts.update(self._tokenize(doc))
