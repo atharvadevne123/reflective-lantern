@@ -1,5 +1,7 @@
 """Tests for Ops-Vision CRUD database operations."""
 
+import pytest
+
 from app.crud import (
     avg_confidence,
     count_drift_alerts_last_24h,
@@ -221,3 +223,44 @@ class TestBulkCreateAndDeleteOld:
         result = delete_old_predictions(db_session, older_than_days=365)
         assert isinstance(result, int)
         assert result >= 0
+
+
+class TestCrudParametrized:
+    """Parametrized CRUD tests for edge cases and multiple service names."""
+
+    def _make_prediction(self, service: str = "svc-a", confidence: float = 0.8) -> dict:
+        return {
+            "service_name": service,
+            "features": {"cpu_usage_pct": 50.0},
+            "predicted_incident": True,
+            "predicted_severity": "high",
+            "confidence": confidence,
+            "model_version": "1.0.0",
+        }
+
+    @pytest.mark.parametrize("service", ["svc-a", "svc-b", "payments", "auth-service"])
+    def test_create_and_count_by_service(self, db_session, service: str) -> None:
+        """count_predictions_by_service returns exactly the rows inserted."""
+        from app.crud import bulk_create_predictions, count_predictions_by_service
+
+        n = 3
+        items = [self._make_prediction(service=service) for _ in range(n)]
+        before = count_predictions_by_service(db_session, service)
+        bulk_create_predictions(db_session, items)
+        after = count_predictions_by_service(db_session, service)
+        assert after == before + n
+
+    @pytest.mark.parametrize("confidence", [0.0, 0.25, 0.5, 0.75, 1.0])
+    def test_create_prediction_various_confidence(self, db_session, confidence: float) -> None:
+        """create_prediction stores any confidence value in [0, 1]."""
+        pred = create_prediction(db_session, self._make_prediction(confidence=confidence))
+        assert pred.confidence == pytest.approx(confidence)
+
+    @pytest.mark.parametrize("n", [1, 5, 10])
+    def test_count_predictions_increases_by_n(self, db_session, n: int) -> None:
+        """count_predictions increases exactly by n after n inserts."""
+        before = count_predictions(db_session)
+        for _ in range(n):
+            create_prediction(db_session, self._make_prediction())
+        after = count_predictions(db_session)
+        assert after == before + n
