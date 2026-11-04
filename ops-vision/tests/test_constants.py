@@ -12,6 +12,7 @@ from app.constants import (
     SEVERITY_HIGH_THRESHOLD,
     SEVERITY_LEVELS,
     SEVERITY_MEDIUM_THRESHOLD,
+    severity_from_confidence,
 )
 
 
@@ -106,3 +107,35 @@ class TestOtherConstants:
     def test_health_path_is_exempt(self) -> None:
         """'/health' is in HEALTH_EXEMPT_PATHS."""
         assert "/health" in HEALTH_EXEMPT_PATHS
+
+
+class TestSeverityFromConfidence:
+    """Tests for the severity_from_confidence() helper."""
+
+    @pytest.mark.parametrize(
+        "confidence,expected",
+        [
+            (0.9, "critical"),
+            (1.0, "critical"),
+            (0.95, "critical"),
+            (0.75, "high"),
+            (0.85, "high"),
+            (0.5, "medium"),
+            (0.65, "medium"),
+            (0.0, "low"),
+            (0.1, "low"),
+            (0.49, "low"),
+        ],
+    )
+    def test_severity_mapping(self, confidence: float, expected: str) -> None:
+        """severity_from_confidence maps each confidence range to the right level."""
+        assert severity_from_confidence(confidence) == expected
+
+    def test_returns_string(self) -> None:
+        """severity_from_confidence always returns a str."""
+        assert isinstance(severity_from_confidence(0.5), str)
+
+    def test_result_is_in_severity_levels(self) -> None:
+        """Result is always a known severity level."""
+        for conf in [0.0, 0.3, 0.5, 0.75, 0.9, 1.0]:
+            assert severity_from_confidence(conf) in SEVERITY_LEVELS
