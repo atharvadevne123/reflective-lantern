@@ -33,6 +33,31 @@ SAMPLE_RUNBOOKS = [
 ]
 
 
+class TestRunbookRepr:
+    """Tests for Runbook.__repr__."""
+
+    def test_repr_contains_title(self) -> None:
+        """repr includes the runbook title."""
+        rb = Runbook(title="High CPU", content="Check CPU.", category="cpu")
+        assert "High CPU" in repr(rb)
+
+    def test_repr_contains_category(self) -> None:
+        """repr includes the runbook category."""
+        rb = Runbook(title="Memory Leak", content="Profile heap.", category="memory")
+        assert "memory" in repr(rb)
+
+    def test_repr_is_string(self) -> None:
+        """repr() returns a str."""
+        rb = Runbook(title="Disk I/O", content="Check iostat.", category="disk")
+        assert isinstance(repr(rb), str)
+
+    @pytest.mark.parametrize("category", ["cpu", "memory", "network", "disk", "database"])
+    def test_repr_category_parametrized(self, category: str) -> None:
+        """repr contains the category for each category value."""
+        rb = Runbook(title="Test", content="Body.", category=category)
+        assert category in repr(rb)
+
+
 class TestRunbookIndexBuild:
     """Tests for RunbookIndex.build()."""
 
