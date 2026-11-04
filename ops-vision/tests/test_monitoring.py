@@ -564,3 +564,55 @@ class TestDriftMonitorDriftSummary:
         results = self._make_results(flags)
         summary = monitor.drift_summary(results)
         assert len(summary["drifted_features"]) + len(summary["stable_features"]) == summary["total_features"]
+
+
+class TestDriftMonitorRates:
+    """Parametrized tests for DriftMonitor.drift_rate() and boundary conditions."""
+
+    def _make_results(self, drifted_flags: list[bool]) -> list[DriftResult]:
+        from datetime import datetime
+        results = []
+        for i, flag in enumerate(drifted_flags):
+            col = FEATURE_COLS[i % len(FEATURE_COLS)]
+            results.append(
+                DriftResult(
+                    feature_name=col,
+                    ks_statistic=0.3 if flag else 0.05,
+                    p_value=0.01 if flag else 0.5,
+                    drifted=flag,
+                    timestamp=datetime.utcnow(),
+                )
+            )
+        return results
+
+    def test_drift_rate_empty_returns_zero(self) -> None:
+        """drift_rate returns 0.0 for an empty results list."""
+        monitor = DriftMonitor()
+        assert monitor.drift_rate([]) == 0.0
+
+    def test_drift_rate_all_drifted(self) -> None:
+        """drift_rate returns 1.0 when all features drifted."""
+        monitor = DriftMonitor()
+        results = self._make_results([True, True, True])
+        assert monitor.drift_rate(results) == 1.0
+
+    def test_drift_rate_none_drifted(self) -> None:
+        """drift_rate returns 0.0 when no features drifted."""
+        monitor = DriftMonitor()
+        results = self._make_results([False, False, False])
+        assert monitor.drift_rate(results) == 0.0
+
+    @pytest.mark.parametrize(
+        "flags,expected_rate",
+        [
+            ([True, False], 0.5),
+            ([True, False, False], pytest.approx(1 / 3)),
+            ([True, True, False], pytest.approx(2 / 3)),
+            ([True, False, False, False], 0.25),
+        ],
+    )
+    def test_drift_rate_parametrized(self, flags: list, expected_rate) -> None:
+        """drift_rate returns the correct fraction of drifted features."""
+        monitor = DriftMonitor()
+        results = self._make_results(flags)
+        assert monitor.drift_rate(results) == expected_rate
