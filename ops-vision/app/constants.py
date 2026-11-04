@@ -24,6 +24,18 @@ DEFAULT_PAGINATION_LIMIT: int = 50
 MAX_PAGINATION_LIMIT: int = 500
 
 
+def is_valid_severity(label: str) -> bool:
+    """Return True if label is a recognised severity level.
+
+    Args:
+        label: Severity string to validate.
+
+    Returns:
+        True when label is one of SEVERITY_LEVELS, False otherwise.
+    """
+    return label in SEVERITY_LEVELS
+
+
 def severity_from_confidence(confidence: float) -> str:
     """Map a model confidence score to a severity label.
 
@@ -55,5 +67,6 @@ __all__ = [
     "SEVERITY_HIGH_THRESHOLD",
     "SEVERITY_LEVELS",
     "SEVERITY_MEDIUM_THRESHOLD",
+    "is_valid_severity",
     "severity_from_confidence",
 ]
