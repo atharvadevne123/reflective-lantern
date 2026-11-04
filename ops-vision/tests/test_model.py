@@ -204,3 +204,46 @@ class TestModelSummary:
         from app.model import model_summary
 
         assert model_summary(trained_model)["voting"] == "soft"
+
+
+class TestPredictParametrized:
+    """Parametrized tests for predict() output constraints."""
+
+    @pytest.fixture
+    def model_and_data(self):
+        """Return a fitted model and a test feature matrix."""
+        from app.model import generate_synthetic_data, train
+
+        df, labels = generate_synthetic_data(n_samples=300)
+        X = df.values
+        model, _ = train(X, labels.values)
+        return model, X[:10]
+
+    @pytest.mark.parametrize("batch_size", [1, 5, 10])
+    def test_predict_output_length_matches_input(self, model_and_data, batch_size: int) -> None:
+        """predict() returns exactly batch_size predictions."""
+        from app.model import predict
+
+        model, X_all = model_and_data
+        preds, proba = predict(model, X_all[:batch_size])
+        assert len(preds) == batch_size
+        assert len(proba) == batch_size
+
+    @pytest.mark.parametrize("idx", [0, 1, 2, 3, 4])
+    def test_confidence_in_unit_interval(self, model_and_data, idx: int) -> None:
+        """Every confidence score is in [0, 1]."""
+        from app.model import predict
+
+        model, X_all = model_and_data
+        _, proba = predict(model, X_all)
+        assert 0.0 <= proba[idx] <= 1.0
+
+    @pytest.mark.parametrize("incident_rate", [0.1, 0.3, 0.5])
+    def test_model_trained_on_various_rates(self, incident_rate: float) -> None:
+        """Training succeeds with varying incident rates."""
+        from app.model import generate_synthetic_data, train
+
+        df, labels = generate_synthetic_data(n_samples=300, incident_rate=incident_rate)
+        model, metrics = train(df.values, labels.values)
+        assert model is not None
+        assert "auc_mean" in metrics
