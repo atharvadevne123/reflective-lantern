@@ -163,6 +163,18 @@ def validate_positive_float(value: float, name: str) -> float:
     return value
 
 
+def clip_to_unit_interval(value: float) -> float:
+    """Clip a float to [0.0, 1.0], rounding floating-point noise at the edges.
+
+    Args:
+        value: Float value to clip.
+
+    Returns:
+        Value clamped to [0.0, 1.0].
+    """
+    return max(0.0, min(1.0, value))
+
+
 def safe_dataframe_from_dict(payload: dict) -> pd.DataFrame:
     """Convert a metric dict to a DataFrame, coercing and validating values.
 
@@ -194,6 +206,7 @@ __all__ = [
     "ResourcePressureTransformer",
     "ThroughputPressureTransformer",
     "build_feature_pipeline",
+    "clip_to_unit_interval",
     "dataframe_from_dict",
     "safe_dataframe_from_dict",
     "validate_positive_float",
