@@ -132,6 +132,7 @@ class ExponentialSmoothingForecaster:
             logger.warning("Series too short (%d pts) — using naive forecast", len(series))
             self._level = float(series[-1]) if len(series) == 1 else 0.0
             self._trend = 0.0
+            self._is_fitted = True
             return self
 
         level = series[0]
