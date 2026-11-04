@@ -260,7 +260,7 @@ def batch_predict(
     prices = price_model.predict(X).tolist()
     yields = np.clip(rental_model.predict(X), 0.01, 0.20).tolist()
     results = []
-    for price, rental_yield in zip(prices, yields):
+    for price, rental_yield in zip(prices, yields, strict=False):
         price = float(price)
         rental_yield = float(rental_yield)
         annual_rental = price * rental_yield

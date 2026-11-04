@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import pytest
+from pydantic import ValidationError
 
 from app.config import Settings, get_settings
 
@@ -38,19 +39,19 @@ class TestSettingsDefaults:
 
 class TestSettingsValidation:
     def test_invalid_drift_threshold_zero(self) -> None:
-        with pytest.raises(Exception):
+        with pytest.raises((ValidationError, ValueError)):
             Settings(drift_threshold=0.0)
 
     def test_invalid_drift_threshold_one(self) -> None:
-        with pytest.raises(Exception):
+        with pytest.raises((ValidationError, ValueError)):
             Settings(drift_threshold=1.0)
 
     def test_invalid_rate_limit_zero(self) -> None:
-        with pytest.raises(Exception):
+        with pytest.raises((ValidationError, ValueError)):
             Settings(rate_limit_requests=0)
 
     def test_invalid_rate_limit_negative(self) -> None:
-        with pytest.raises(Exception):
+        with pytest.raises((ValidationError, ValueError)):
             Settings(rate_limit_requests=-1)
 
 

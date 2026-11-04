@@ -106,7 +106,7 @@ def weighted_moving_average(
     tail = values[-w_len:] if len(values) >= w_len else values
     effective_weights = window[-len(tail) :]
     total_w = sum(effective_weights)
-    wma = round(sum(v * w for v, w in zip(tail, effective_weights)) / total_w, 4)
+    wma = round(sum(v * w for v, w in zip(tail, effective_weights, strict=False)) / total_w, 4)
     return [wma] * steps
 
 
