@@ -237,6 +237,36 @@ class TestRunbookIndexSearchByCategory:
         assert results == []
 
 
+class TestRunbookIndexRepr:
+    """Tests for RunbookIndex.__repr__."""
+
+    def test_repr_is_string(self) -> None:
+        """repr() returns a str."""
+        assert isinstance(repr(RunbookIndex()), str)
+
+    def test_repr_shows_empty_before_build(self) -> None:
+        """repr shows 'empty' before build()."""
+        assert "empty" in repr(RunbookIndex())
+
+    def test_repr_shows_built_after_build(self) -> None:
+        """repr shows 'built' after build()."""
+        index = RunbookIndex()
+        index.build(SAMPLE_RUNBOOKS)
+        assert "built" in repr(index)
+
+    def test_repr_contains_size(self) -> None:
+        """repr contains the index size after building."""
+        index = RunbookIndex()
+        index.build(SAMPLE_RUNBOOKS)
+        assert str(len(SAMPLE_RUNBOOKS)) in repr(index)
+
+    @pytest.mark.parametrize("dim", [32, 64, 128])
+    def test_repr_contains_embedding_dim(self, dim: int) -> None:
+        """repr contains the embedding dimensionality."""
+        index = RunbookIndex(embedding_dim=dim)
+        assert str(dim) in repr(index)
+
+
 class TestRunbookIndexParametrized:
     """Parametrized tests for RunbookIndex search behaviour."""
 
