@@ -93,6 +93,13 @@ class IncidentRateBuffer:
         return len(self.counts)
 
     @property
+    def last_timestamp(self) -> "datetime | None":
+        """Return the most recent timestamp in the buffer, or None if empty."""
+        if not self.counts:
+            return None
+        return max(t for t, _ in self.counts)
+
+    @property
     def total_incidents(self) -> int:
         """Return the sum of all incident counts in the buffer."""
         return sum(c for _, c in self.counts)
