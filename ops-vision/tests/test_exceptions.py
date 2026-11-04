@@ -89,6 +89,38 @@ def test_reason_attribute_preserved(exc_class: type, detail: str) -> None:
     assert hasattr(exc, "reason") or hasattr(exc, "detail")
 
 
+class TestOpsVisionErrorRepr:
+    """Tests for OpsVisionError.__repr__."""
+
+    def test_repr_contains_class_name(self) -> None:
+        """repr includes the exception class name."""
+        exc = ModelNotLoadedError()
+        assert "ModelNotLoadedError" in repr(exc)
+
+    def test_repr_contains_message(self) -> None:
+        """repr includes the exception message."""
+        exc = FeatureEngineeringError("pipeline failed")
+        assert "pipeline failed" in repr(exc)
+
+    def test_repr_is_string(self) -> None:
+        """repr() always returns a str."""
+        assert isinstance(repr(OpsVisionError("oops")), str)
+
+    @pytest.mark.parametrize(
+        "exc_class,args",
+        [
+            (ModelNotLoadedError, []),
+            (FeatureEngineeringError, ["scaler missing"]),
+            (DriftMonitorError, ["empty window"]),
+            (RunbookIndexError, ["vocab not built"]),
+        ],
+    )
+    def test_repr_class_name_in_output(self, exc_class, args) -> None:
+        """repr output starts with the exception class name for all subclasses."""
+        exc = exc_class(*args)
+        assert type(exc).__name__ in repr(exc)
+
+
 class TestExceptionRaiseAndCatchParametrized:
     """Parametrized raise-and-catch tests for each custom exception."""
 
