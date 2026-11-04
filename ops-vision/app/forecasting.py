@@ -238,6 +238,18 @@ class ExponentialSmoothingForecaster:
         return {"alpha": self.alpha, "beta": self.beta, "horizon": self.horizon}
 
 
+def forecast_to_dicts(points: list[ForecastPoint]) -> list[dict]:
+    """Serialise a list of ForecastPoint objects to a list of plain dicts.
+
+    Args:
+        points: Forecast points to serialise.
+
+    Returns:
+        List of JSON-compatible dicts, one per point.
+    """
+    return [p.to_dict() for p in points]
+
+
 _buffer_singleton: IncidentRateBuffer | None = None
 
 
@@ -257,5 +269,6 @@ __all__ = [
     "ExponentialSmoothingForecaster",
     "ForecastPoint",
     "IncidentRateBuffer",
+    "forecast_to_dicts",
     "get_rate_buffer",
 ]
