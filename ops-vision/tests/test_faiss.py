@@ -210,3 +210,57 @@ class TestRunbookIndexSearchByCategory:
         index = RunbookIndex()
         results = index.search_by_category("cpu", "cpu", top_k=3)
         assert results == []
+
+
+class TestRunbookIndexParametrized:
+    """Parametrized tests for RunbookIndex search behaviour."""
+
+    @pytest.fixture
+    def built_index(self) -> RunbookIndex:
+        index = RunbookIndex()
+        index.build(SAMPLE_RUNBOOKS)
+        return index
+
+    @pytest.mark.parametrize("top_k", [1, 2, 3, 5])
+    def test_search_top_k_bound(self, built_index, top_k: int) -> None:
+        """search() never returns more than top_k results."""
+        results = built_index.search("cpu memory disk", top_k=top_k)
+        assert len(results) <= top_k
+
+    @pytest.mark.parametrize("category", ["cpu", "memory", "network", "disk", "database"])
+    def test_search_by_category_all_results_match(self, built_index, category: str) -> None:
+        """Every result from search_by_category belongs to the given category."""
+        results = built_index.search_by_category("issue problem", category, top_k=5)
+        for rb, _ in results:
+            assert rb.category == category
+
+    @pytest.mark.parametrize(
+        "query",
+        [
+            "cpu high load consumer",
+            "memory heap dump leak",
+            "network dns latency retransmit",
+            "disk io iotop fsync",
+            "database pool connection idle",
+        ],
+    )
+    def test_search_scores_finite(self, built_index, query: str) -> None:
+        """All similarity scores returned by search() are finite floats."""
+        import math
+
+        results = built_index.search(query, top_k=3)
+        for _, score in results:
+            assert math.isfinite(score)
+
+    @pytest.mark.parametrize("n_runbooks", [1, 3, 5])
+    def test_index_size_after_build(self, n_runbooks: int) -> None:
+        """index.size equals the number of runbooks passed to build()."""
+        index = RunbookIndex()
+        index.build(SAMPLE_RUNBOOKS[:n_runbooks])
+        assert index.size == n_runbooks
+
+    @pytest.mark.parametrize("top_k", [1, 2, 3])
+    def test_search_by_category_top_k_bound(self, built_index, top_k: int) -> None:
+        """search_by_category never returns more results than top_k."""
+        results = built_index.search_by_category("process high load", "cpu", top_k=top_k)
+        assert len(results) <= top_k
