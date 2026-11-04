@@ -26,6 +26,10 @@ class Runbook:
     content: str
     category: str
 
+    def __repr__(self) -> str:
+        """Return a compact representation showing title and category."""
+        return f"Runbook(title={self.title!r}, category={self.category!r})"
+
 
 class RunbookIndex:
     """TF-IDF + FAISS runbook retrieval index.
