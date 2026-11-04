@@ -1,6 +1,7 @@
 """Feature engineering pipeline for Ops-Vision SRE incident prediction."""
 
 import logging
+import math
 from typing import Any
 
 import numpy as np
@@ -155,8 +156,6 @@ def validate_positive_float(value: float, name: str) -> float:
     Raises:
         ValueError: If value is negative or non-finite.
     """
-    import math
-
     if not math.isfinite(value):
         raise ValueError(f"{name} must be finite, got {value}")
     if value < 0:
