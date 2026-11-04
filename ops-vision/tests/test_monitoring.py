@@ -348,6 +348,31 @@ class TestDriftMonitorStableAndRate:
         assert monitor.drift_rate(all_drifted) == 1.0
 
 
+class TestDriftMonitorRepr:
+    """Tests for DriftMonitor.__repr__."""
+
+    def test_repr_contains_threshold(self) -> None:
+        """DriftMonitor repr includes the threshold value."""
+        monitor = DriftMonitor(threshold=0.03)
+        assert "0.03" in repr(monitor)
+
+    def test_repr_contains_ref_size(self) -> None:
+        """DriftMonitor repr includes reference window size."""
+        monitor = DriftMonitor()
+        monitor.update_reference(_normal_batch(50))
+        assert "50" in repr(monitor)
+
+    def test_repr_is_string(self) -> None:
+        """DriftMonitor repr returns a string."""
+        assert isinstance(repr(DriftMonitor()), str)
+
+    @pytest.mark.parametrize("threshold", [0.01, 0.05, 0.10])
+    def test_repr_threshold_parametrized(self, threshold: float) -> None:
+        """repr includes the configured threshold for any valid value."""
+        monitor = DriftMonitor(threshold=threshold)
+        assert str(threshold) in repr(monitor)
+
+
 class TestDriftMonitorToDict:
     """Tests for DriftMonitor.to_dict()."""
 
