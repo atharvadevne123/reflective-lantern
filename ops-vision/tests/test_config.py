@@ -82,3 +82,43 @@ class TestSettingsValidators:
         """rate_limit_window_seconds=0 raises ValidationError."""
         with pytest.raises(ValidationError, match="rate_limit_window_seconds"):
             Settings(rate_limit_window_seconds=0)
+
+
+class TestSettingsParametrized:
+    """Parametrized tests for Settings field validation."""
+
+    @pytest.mark.parametrize("threshold", [0.01, 0.05, 0.10, 0.20, 0.50, 0.99])
+    def test_valid_drift_thresholds_accepted(self, threshold: float) -> None:
+        """Any drift_threshold strictly between 0 and 1 is valid."""
+        s = Settings(drift_threshold=threshold)
+        assert s.drift_threshold == threshold
+
+    @pytest.mark.parametrize("bad_threshold", [0.0, 1.0, -0.1, 1.5])
+    def test_invalid_drift_thresholds_rejected(self, bad_threshold: float) -> None:
+        """drift_threshold outside (0, 1) raises ValidationError."""
+        with pytest.raises(ValidationError):
+            Settings(drift_threshold=bad_threshold)
+
+    @pytest.mark.parametrize("max_req", [1, 10, 50, 100, 1000])
+    def test_valid_rate_limit_requests(self, max_req: int) -> None:
+        """Positive rate_limit_requests values are accepted."""
+        s = Settings(rate_limit_requests=max_req)
+        assert s.rate_limit_requests == max_req
+
+    @pytest.mark.parametrize("bad_req", [0, -1, -100])
+    def test_invalid_rate_limit_requests_rejected(self, bad_req: int) -> None:
+        """Non-positive rate_limit_requests raises ValidationError."""
+        with pytest.raises(ValidationError):
+            Settings(rate_limit_requests=bad_req)
+
+    @pytest.mark.parametrize("window", [1, 10, 30, 60, 300])
+    def test_valid_rate_limit_window_seconds(self, window: int) -> None:
+        """Positive rate_limit_window_seconds values are accepted."""
+        s = Settings(rate_limit_window_seconds=window)
+        assert s.rate_limit_window_seconds == window
+
+    @pytest.mark.parametrize("log_level", ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"])
+    def test_valid_log_levels(self, log_level: str) -> None:
+        """All standard Python log level strings are accepted."""
+        s = Settings(log_level=log_level)
+        assert s.log_level == log_level
