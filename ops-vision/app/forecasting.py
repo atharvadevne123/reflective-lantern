@@ -25,6 +25,15 @@ class ForecastPoint:
     lower_bound: float
     upper_bound: float
 
+    def to_dict(self) -> dict:
+        """Serialise this forecast point to a JSON-compatible dict."""
+        return {
+            "timestamp": self.timestamp.isoformat(),
+            "value": self.value,
+            "lower_bound": self.lower_bound,
+            "upper_bound": self.upper_bound,
+        }
+
 
 @dataclass
 class IncidentRateBuffer:
