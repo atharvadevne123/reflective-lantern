@@ -348,6 +348,37 @@ class TestDriftMonitorStableAndRate:
         assert monitor.drift_rate(all_drifted) == 1.0
 
 
+class TestDriftResultToDict:
+    """Tests for DriftResult.to_dict()."""
+
+    def test_to_dict_returns_dict(self) -> None:
+        """to_dict() returns a dict."""
+        r = DriftResult("cpu_usage_pct", 0.3, 0.001, True)
+        assert isinstance(r.to_dict(), dict)
+
+    def test_to_dict_has_all_keys(self) -> None:
+        """to_dict() output has feature_name, ks_statistic, p_value, drifted, timestamp."""
+        r = DriftResult("cpu_usage_pct", 0.3, 0.001, True)
+        keys = {"feature_name", "ks_statistic", "p_value", "drifted", "timestamp"}
+        assert keys.issubset(r.to_dict())
+
+    def test_to_dict_drifted_matches(self) -> None:
+        """to_dict() drifted key matches the DriftResult drifted field."""
+        r = DriftResult("memory_usage_pct", 0.5, 0.0001, True)
+        assert r.to_dict()["drifted"] is True
+
+    def test_to_dict_timestamp_is_string(self) -> None:
+        """to_dict() timestamp is an ISO-format string."""
+        r = DriftResult("disk_io_util_pct", 0.1, 0.5, False)
+        assert isinstance(r.to_dict()["timestamp"], str)
+
+    @pytest.mark.parametrize("feature", FEATURE_COLS)
+    def test_to_dict_feature_name_matches(self, feature: str) -> None:
+        """to_dict() feature_name matches the DriftResult feature_name for all features."""
+        r = DriftResult(feature, 0.2, 0.1, False)
+        assert r.to_dict()["feature_name"] == feature
+
+
 class TestDriftMonitorAnyDrifted:
     """Tests for DriftMonitor.any_drifted()."""
 
