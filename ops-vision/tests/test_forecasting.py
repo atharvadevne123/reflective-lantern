@@ -13,8 +13,43 @@ from app.forecasting import (
     ExponentialSmoothingForecaster,
     ForecastPoint,
     IncidentRateBuffer,
+    forecast_to_dicts,
     get_rate_buffer,
 )
+
+
+class TestForecastToDicts:
+    """Tests for forecast_to_dicts() batch helper."""
+
+    def _make_point(self, value: float = 1.0) -> ForecastPoint:
+        return ForecastPoint(
+            timestamp=datetime.utcnow(),
+            value=value,
+            lower_bound=0.0,
+            upper_bound=value + 1.0,
+        )
+
+    def test_empty_list_returns_empty(self) -> None:
+        """forecast_to_dicts([]) returns []."""
+        assert forecast_to_dicts([]) == []
+
+    def test_single_point_returns_one_dict(self) -> None:
+        """forecast_to_dicts() with one point returns a list of one dict."""
+        result = forecast_to_dicts([self._make_point()])
+        assert len(result) == 1
+        assert isinstance(result[0], dict)
+
+    def test_multiple_points_correct_length(self) -> None:
+        """forecast_to_dicts() length matches input list length."""
+        points = [self._make_point(float(i)) for i in range(5)]
+        result = forecast_to_dicts(points)
+        assert len(result) == 5
+
+    @pytest.mark.parametrize("n", [1, 3, 6, 12, 24])
+    def test_length_parametrized(self, n: int) -> None:
+        """forecast_to_dicts always returns exactly n dicts for n input points."""
+        points = [self._make_point() for _ in range(n)]
+        assert len(forecast_to_dicts(points)) == n
 
 
 class TestForecastPointToDict:
