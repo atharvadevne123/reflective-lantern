@@ -12,6 +12,7 @@ from app.constants import (
     SEVERITY_HIGH_THRESHOLD,
     SEVERITY_LEVELS,
     SEVERITY_MEDIUM_THRESHOLD,
+    is_valid_severity,
     severity_from_confidence,
 )
 
@@ -139,3 +140,22 @@ class TestSeverityFromConfidence:
         """Result is always a known severity level."""
         for conf in [0.0, 0.3, 0.5, 0.75, 0.9, 1.0]:
             assert severity_from_confidence(conf) in SEVERITY_LEVELS
+
+
+class TestIsValidSeverity:
+    """Tests for is_valid_severity() helper."""
+
+    @pytest.mark.parametrize("label", ["low", "medium", "high", "critical"])
+    def test_valid_labels_return_true(self, label: str) -> None:
+        """All members of SEVERITY_LEVELS are considered valid."""
+        assert is_valid_severity(label) is True
+
+    @pytest.mark.parametrize("label", ["", "unknown", "CRITICAL", "High", "none", "urgent"])
+    def test_invalid_labels_return_false(self, label: str) -> None:
+        """Labels not in SEVERITY_LEVELS return False."""
+        assert is_valid_severity(label) is False
+
+    def test_severity_levels_all_valid(self) -> None:
+        """Every entry in SEVERITY_LEVELS validates successfully."""
+        for level in SEVERITY_LEVELS:
+            assert is_valid_severity(level) is True
