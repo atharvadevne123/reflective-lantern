@@ -200,3 +200,44 @@ class TestRequestSizeLimitMiddleware:
         client = self._build(max_bytes=100)
         resp = client.post("/upload")
         assert resp.status_code == 200
+
+
+class TestRateLimitMiddlewareParametrized:
+    """Parametrized tests for RateLimitMiddleware edge cases."""
+
+    @pytest.mark.parametrize("max_requests", [1, 5, 10, 50])
+    def test_allows_exactly_max_requests(self, max_requests: int) -> None:
+        """Should allow exactly max_requests before throttling."""
+        client = TestClient(_build_app(RateLimitMiddleware, max_requests=max_requests, window_seconds=60))
+        for _ in range(max_requests):
+            resp = client.get("/ping")
+            assert resp.status_code == 200
+        throttled = client.get("/ping")
+        assert throttled.status_code == 429
+
+    @pytest.mark.parametrize("path", ["/health", "/docs", "/openapi.json"])
+    def test_exempt_paths_bypass_rate_limit(self, path: str) -> None:
+        """Health, docs and openapi paths are always exempt from rate limiting."""
+        client = TestClient(_build_app(RateLimitMiddleware, max_requests=1, window_seconds=60))
+        client.get("/ping")  # exhaust limit
+        resp = client.get(path)
+        assert resp.status_code != 429
+
+    @pytest.mark.parametrize("max_bytes,content_len,expected_status", [
+        (100, 50, 200),
+        (100, 100, 200),
+        (100, 101, 413),
+        (1024, 512, 200),
+    ])
+    def test_size_limit_boundary(self, max_bytes: int, content_len: int, expected_status: int) -> None:
+        """RequestSizeLimitMiddleware respects byte boundaries correctly."""
+        app = FastAPI()
+        app.add_middleware(RequestSizeLimitMiddleware, max_bytes=max_bytes)
+
+        @app.post("/upload")
+        def upload() -> dict:
+            return {"ok": True}
+
+        client = TestClient(app)
+        resp = client.post("/upload", headers={"Content-Length": str(content_len)})
+        assert resp.status_code == expected_status
