@@ -513,3 +513,54 @@ class TestDriftMonitorParametrized:
         results = monitor.check_drift()
         assert isinstance(results, list)
         assert all(isinstance(r, DriftResult) for r in results)
+
+
+class TestDriftMonitorDriftSummary:
+    """Tests for DriftMonitor.drift_summary()."""
+
+    def _make_results(self, drifted_flags: list[bool]) -> list[DriftResult]:
+        from app.monitoring import FEATURE_COLS
+        from datetime import datetime
+        results = []
+        for i, flag in enumerate(drifted_flags):
+            col = FEATURE_COLS[i % len(FEATURE_COLS)]
+            results.append(
+                DriftResult(
+                    feature_name=col,
+                    ks_statistic=0.3 if flag else 0.05,
+                    p_value=0.01 if flag else 0.5,
+                    drifted=flag,
+                    timestamp=datetime.utcnow(),
+                )
+            )
+        return results
+
+    def test_summary_has_any_drifted_key(self) -> None:
+        """drift_summary() result contains any_drifted key."""
+        monitor = DriftMonitor()
+        results = self._make_results([True, False])
+        summary = monitor.drift_summary(results)
+        assert "any_drifted" in summary
+
+    def test_summary_has_drift_rate_key(self) -> None:
+        """drift_summary() result contains drift_rate key."""
+        monitor = DriftMonitor()
+        results = self._make_results([True, False])
+        summary = monitor.drift_summary(results)
+        assert "drift_rate" in summary
+
+    def test_summary_total_features_matches_results_length(self) -> None:
+        """total_features equals the number of DriftResult objects passed."""
+        monitor = DriftMonitor()
+        results = self._make_results([True, False, True])
+        summary = monitor.drift_summary(results)
+        assert summary["total_features"] == 3
+
+    @pytest.mark.parametrize("n_drifted,n_stable", [(0, 3), (1, 2), (2, 1), (3, 0)])
+    def test_summary_drifted_plus_stable_equals_total(self, n_drifted: int, n_stable: int) -> None:
+        """drifted_features + stable_features counts equal total_features."""
+        monitor = DriftMonitor()
+        flags = [True] * n_drifted + [False] * n_stable
+        results = self._make_results(flags)
+        summary = monitor.drift_summary(results)
+        assert len(summary["drifted_features"]) + len(summary["stable_features"]) == summary["total_features"]
