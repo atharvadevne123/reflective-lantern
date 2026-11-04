@@ -13,6 +13,7 @@ from app.features import (
     ResourcePressureTransformer,
     ThroughputPressureTransformer,
     build_feature_pipeline,
+    clip_to_unit_interval,
     dataframe_from_dict,
     safe_dataframe_from_dict,
     validate_positive_float,
@@ -212,6 +213,46 @@ class TestValidatePositiveFloat:
         """Error message includes the field name for diagnostics."""
         with pytest.raises(ValueError, match="latency_p99_ms"):
             validate_positive_float(-0.1, "latency_p99_ms")
+
+
+class TestClipToUnitInterval:
+    """Tests for clip_to_unit_interval()."""
+
+    def test_value_within_range_unchanged(self) -> None:
+        """Values already in [0, 1] are returned unchanged."""
+        assert clip_to_unit_interval(0.5) == 0.5
+
+    def test_zero_returned_as_zero(self) -> None:
+        """0.0 is returned as 0.0."""
+        assert clip_to_unit_interval(0.0) == 0.0
+
+    def test_one_returned_as_one(self) -> None:
+        """1.0 is returned as 1.0."""
+        assert clip_to_unit_interval(1.0) == 1.0
+
+    def test_negative_clipped_to_zero(self) -> None:
+        """Values below 0 are clipped to 0.0."""
+        assert clip_to_unit_interval(-0.5) == 0.0
+
+    def test_above_one_clipped_to_one(self) -> None:
+        """Values above 1 are clipped to 1.0."""
+        assert clip_to_unit_interval(1.5) == 1.0
+
+    @pytest.mark.parametrize(
+        "value,expected",
+        [
+            (-10.0, 0.0),
+            (-0.001, 0.0),
+            (0.0, 0.0),
+            (0.5, 0.5),
+            (1.0, 1.0),
+            (1.001, 1.0),
+            (99.0, 1.0),
+        ],
+    )
+    def test_clipping_parametrized(self, value: float, expected: float) -> None:
+        """clip_to_unit_interval clamps to [0, 1] for all edge-case values."""
+        assert clip_to_unit_interval(value) == pytest.approx(expected)
 
 
 class TestSafeDataframeFromDict:
