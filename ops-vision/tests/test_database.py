@@ -73,3 +73,58 @@ def test_column_exists_on_table(model_key: str, column: str) -> None:
 def test_table_registered_in_metadata(table_name: str) -> None:
     """All ORM tables are registered in SQLAlchemy metadata."""
     assert table_name in Base.metadata.tables
+
+
+class TestDatabaseModelsParametrized:
+    """Parametrized schema tests for ORM models."""
+
+    @pytest.mark.parametrize(
+        "column",
+        [
+            "id",
+            "service_name",
+            "cpu_usage_pct",
+            "memory_usage_pct",
+            "error_rate_per_min",
+            "latency_p99_ms",
+            "is_incident",
+            "severity",
+        ],
+    )
+    def test_incident_columns_present(self, column: str) -> None:
+        """Incident table has all expected metric columns."""
+        cols = [c.name for c in Incident.__table__.columns]
+        assert column in cols
+
+    @pytest.mark.parametrize(
+        "column",
+        [
+            "id",
+            "service_name",
+            "predicted_incident",
+            "predicted_severity",
+            "confidence",
+            "model_version",
+        ],
+    )
+    def test_prediction_columns_present(self, column: str) -> None:
+        """Prediction table has all expected columns."""
+        cols = [c.name for c in Prediction.__table__.columns]
+        assert column in cols
+
+    @pytest.mark.parametrize(
+        "column",
+        [
+            "id",
+            "feature_name",
+            "ks_statistic",
+            "p_value",
+            "drifted",
+            "reference_window",
+            "current_window",
+        ],
+    )
+    def test_drift_alert_columns_present(self, column: str) -> None:
+        """DriftAlert table has all expected columns."""
+        cols = [c.name for c in DriftAlert.__table__.columns]
+        assert column in cols
