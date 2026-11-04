@@ -164,6 +164,14 @@ class DriftMonitor:
         """Number of samples accumulated in the current window."""
         return len(self._current)
 
+    def __repr__(self) -> str:
+        """Return a concise representation showing window sizes and threshold."""
+        return (
+            f"DriftMonitor(ref={self.reference_size}, "
+            f"cur={self.current_size}/{self.current_window_size}, "
+            f"threshold={self.threshold})"
+        )
+
     def reset(self) -> None:
         """Clear both reference and current windows, resetting the monitor."""
         self._reference.clear()
