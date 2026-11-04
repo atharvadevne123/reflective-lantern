@@ -319,3 +319,33 @@ class TestRunbookIndexParametrized:
         """search_by_category never returns more results than top_k."""
         results = built_index.search_by_category("process high load", "cpu", top_k=top_k)
         assert len(results) <= top_k
+
+
+class TestRunbookToDict:
+    """Tests for Runbook.to_dict()."""
+
+    def test_to_dict_returns_dict(self) -> None:
+        """to_dict() returns a plain dict."""
+        rb = Runbook(title="Check CPU", content="Run top to view usage.", category="cpu")
+        assert isinstance(rb.to_dict(), dict)
+
+    def test_to_dict_has_title(self) -> None:
+        """to_dict() result contains the title field."""
+        rb = Runbook(title="Check CPU", content="Run top to view usage.", category="cpu")
+        assert rb.to_dict()["title"] == "Check CPU"
+
+    def test_to_dict_has_content(self) -> None:
+        """to_dict() result contains the content field."""
+        rb = Runbook(title="Check CPU", content="Run top.", category="cpu")
+        assert rb.to_dict()["content"] == "Run top."
+
+    def test_to_dict_has_category(self) -> None:
+        """to_dict() result contains the category field."""
+        rb = Runbook(title="Check CPU", content="Run top.", category="cpu")
+        assert rb.to_dict()["category"] == "cpu"
+
+    @pytest.mark.parametrize("category", ["cpu", "memory", "network", "disk", "latency"])
+    def test_to_dict_category_parametrized(self, category: str) -> None:
+        """to_dict() category field matches the runbook category."""
+        rb = Runbook(title="Test", content="Test content.", category=category)
+        assert rb.to_dict()["category"] == category
