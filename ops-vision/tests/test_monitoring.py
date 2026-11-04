@@ -372,3 +372,43 @@ class TestDriftMonitorToDict:
         """to_dict() threshold matches the value at construction."""
         monitor = DriftMonitor(threshold=0.02)
         assert monitor.to_dict()["threshold"] == 0.02
+
+
+class TestDriftMonitorParametrized:
+    """Parametrized threshold and batch size tests for DriftMonitor."""
+
+    @pytest.mark.parametrize("threshold", [0.01, 0.05, 0.10, 0.20])
+    def test_threshold_stored_correctly(self, threshold: float) -> None:
+        """DriftMonitor stores the threshold passed at construction."""
+        monitor = DriftMonitor(threshold=threshold)
+        assert monitor.to_dict()["threshold"] == pytest.approx(threshold)
+
+    @pytest.mark.parametrize("n_samples", [50, 100, 200, 500])
+    def test_reference_size_after_recording(self, n_samples: int) -> None:
+        """reference_size equals exactly the number of samples recorded."""
+        monitor = DriftMonitor()
+        rng = np.random.default_rng(42)
+        for _ in range(n_samples):
+            monitor.record(_make_sample(
+                cpu=float(rng.uniform(20, 60)),
+                mem=float(rng.uniform(30, 70)),
+            ))
+        assert monitor.reference_size == n_samples
+
+    @pytest.mark.parametrize("feature", FEATURE_COLS)
+    def test_feature_col_in_to_dict(self, feature: str) -> None:
+        """Every expected feature column appears in to_dict output."""
+        monitor = DriftMonitor()
+        assert feature in monitor.to_dict()["feature_cols"]
+
+    @pytest.mark.parametrize("n_ref,n_cur", [(100, 50), (200, 100), (500, 200)])
+    def test_check_returns_drift_result(self, n_ref: int, n_cur: int) -> None:
+        """check() always returns a DriftResult regardless of window sizes."""
+        monitor = DriftMonitor()
+        rng = np.random.default_rng(7)
+        for _ in range(n_ref):
+            monitor.record(_make_sample(cpu=float(rng.uniform(20, 60))))
+        for _ in range(n_cur):
+            monitor.record(_make_sample(cpu=float(rng.uniform(20, 60))))
+        result = monitor.check()
+        assert isinstance(result, DriftResult)
