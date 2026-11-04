@@ -187,6 +187,8 @@ def safe_dataframe_from_dict(payload: dict) -> pd.DataFrame:
 
 __all__ = [
     "ColumnSelector",
+    "ENGINEERED_COLS",
+    "FEATURE_COLS",
     "LatencyErrRatioTransformer",
     "LogLatencyTransformer",
     "ResourcePressureTransformer",
