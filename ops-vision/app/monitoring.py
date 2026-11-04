@@ -207,6 +207,24 @@ class DriftMonitor:
         """
         return any(r.drifted for r in results)
 
+    def drift_summary(self, results: list[DriftResult]) -> dict:
+        """Return a compact summary dict for a completed drift check.
+
+        Args:
+            results: List of DriftResult from check_drift().
+
+        Returns:
+            Dict with keys: any_drifted, drift_rate, drifted_features,
+            stable_features, and total_features.
+        """
+        return {
+            "any_drifted": self.any_drifted(results),
+            "drift_rate": self.drift_rate(results),
+            "drifted_features": self.drifted_features(results),
+            "stable_features": self.stable_features(results),
+            "total_features": len(results),
+        }
+
     def drift_rate(self, results: list[DriftResult]) -> float:
         """Return the fraction of features that drifted.
 
