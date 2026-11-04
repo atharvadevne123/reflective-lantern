@@ -233,6 +233,8 @@ def get_monitor() -> DriftMonitor:
 
 
 __all__ = [
+    "DRIFT_THRESHOLD",
+    "FEATURE_COLS",
     "DriftMonitor",
     "DriftResult",
     "MetricSample",
