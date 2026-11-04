@@ -224,6 +224,41 @@ class TestIncidentRateBufferResetAndLen:
         assert len(buf) == 0
 
 
+class TestExponentialSmoothingForecasterRepr:
+    """Tests for ExponentialSmoothingForecaster.__repr__."""
+
+    def test_repr_is_string(self) -> None:
+        """repr() returns a string."""
+        assert isinstance(repr(ExponentialSmoothingForecaster()), str)
+
+    def test_repr_contains_alpha(self) -> None:
+        """repr includes the alpha parameter."""
+        f = ExponentialSmoothingForecaster(alpha=0.4)
+        assert "0.4" in repr(f)
+
+    def test_repr_contains_horizon(self) -> None:
+        """repr includes the horizon parameter."""
+        f = ExponentialSmoothingForecaster(horizon=18)
+        assert "18" in repr(f)
+
+    def test_repr_shows_fitted_state(self) -> None:
+        """repr shows 'fitted' after calling fit()."""
+        f = ExponentialSmoothingForecaster()
+        f.fit(np.array([1.0, 2.0, 3.0]))
+        assert "fitted" in repr(f)
+
+    def test_repr_shows_unfitted_before_fit(self) -> None:
+        """repr shows 'unfitted' before calling fit()."""
+        f = ExponentialSmoothingForecaster()
+        assert "unfitted" in repr(f)
+
+    @pytest.mark.parametrize("alpha", [0.1, 0.3, 0.7, 0.9])
+    def test_repr_alpha_parametrized(self, alpha: float) -> None:
+        """repr contains the alpha value for any configured alpha."""
+        f = ExponentialSmoothingForecaster(alpha=alpha)
+        assert str(alpha) in repr(f)
+
+
 class TestGetRateBufferSingleton:
     """Tests for the get_rate_buffer() singleton helper."""
 
