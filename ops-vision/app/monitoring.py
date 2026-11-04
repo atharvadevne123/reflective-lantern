@@ -63,6 +63,16 @@ class DriftResult:
             f"KS={self.ks_statistic:.4f}, p={self.p_value:.6f})"
         )
 
+    def to_dict(self) -> dict:
+        """Serialise this drift result to a JSON-compatible dict."""
+        return {
+            "feature_name": self.feature_name,
+            "ks_statistic": self.ks_statistic,
+            "p_value": self.p_value,
+            "drifted": self.drifted,
+            "timestamp": self.timestamp.isoformat(),
+        }
+
 
 class DriftMonitor:
     """Monitors feature distributions for covariate shift using the KS test.
