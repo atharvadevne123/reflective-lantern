@@ -513,3 +513,43 @@ class TestExponentialSmoothingParametrized:
         buf.record(now, incident_count)
         arr = buf.as_array()
         assert arr.sum() == incident_count
+
+
+class TestIncidentRateBufferLastTimestamp:
+    """Tests for IncidentRateBuffer.last_timestamp property."""
+
+    def test_last_timestamp_none_on_empty_buffer(self) -> None:
+        """last_timestamp is None when the buffer is empty."""
+        buf = IncidentRateBuffer()
+        assert buf.last_timestamp is None
+
+    def test_last_timestamp_returns_datetime(self) -> None:
+        """last_timestamp returns a datetime after a record is added."""
+        from datetime import datetime
+        buf = IncidentRateBuffer()
+        ts = datetime(2024, 1, 1, 12, 0)
+        buf.record(ts, 3)
+        assert isinstance(buf.last_timestamp, datetime)
+
+    def test_last_timestamp_is_max_of_recorded_timestamps(self) -> None:
+        """last_timestamp equals the latest recorded timestamp."""
+        from datetime import datetime, timedelta
+        buf = IncidentRateBuffer()
+        t0 = datetime(2024, 1, 1, 10, 0)
+        t1 = t0 + timedelta(hours=1)
+        t2 = t0 + timedelta(hours=2)
+        buf.record(t0, 1)
+        buf.record(t2, 3)
+        buf.record(t1, 2)
+        assert buf.last_timestamp == t2
+
+    @pytest.mark.parametrize("hours_offset", [1, 5, 12, 24])
+    def test_last_timestamp_advances_parametrized(self, hours_offset: int) -> None:
+        """last_timestamp moves forward when a later record is added."""
+        from datetime import datetime, timedelta
+        buf = IncidentRateBuffer()
+        t0 = datetime(2024, 6, 1, 0, 0)
+        t1 = t0 + timedelta(hours=hours_offset)
+        buf.record(t0, 1)
+        buf.record(t1, 2)
+        assert buf.last_timestamp == t1
