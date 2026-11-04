@@ -186,6 +186,17 @@ class DriftMonitor:
         """Return names of features that did NOT drift from a results list."""
         return [r.feature_name for r in results if not r.drifted]
 
+    def any_drifted(self, results: list[DriftResult]) -> bool:
+        """Return True if at least one feature drifted in the results list.
+
+        Args:
+            results: List of DriftResult from check_drift().
+
+        Returns:
+            True if any feature has drifted, False otherwise.
+        """
+        return any(r.drifted for r in results)
+
     def drift_rate(self, results: list[DriftResult]) -> float:
         """Return the fraction of features that drifted.
 
