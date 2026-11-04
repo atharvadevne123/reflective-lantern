@@ -136,6 +136,11 @@ class RunbookIndex:
 
         return results
 
+    def __repr__(self) -> str:
+        """Return a compact representation showing size and build state."""
+        status = "built" if self.is_built else "empty"
+        return f"RunbookIndex(size={self.size}, {status}, dim={self.embedding_dim})"
+
     @property
     def size(self) -> int:
         """Return the number of runbooks in the index."""
