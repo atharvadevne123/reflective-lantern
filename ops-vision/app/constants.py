@@ -23,6 +23,25 @@ HEALTH_EXEMPT_PATHS: frozenset[str] = frozenset(
 DEFAULT_PAGINATION_LIMIT: int = 50
 MAX_PAGINATION_LIMIT: int = 500
 
+
+def severity_from_confidence(confidence: float) -> str:
+    """Map a model confidence score to a severity label.
+
+    Args:
+        confidence: Probability in [0, 1] that an incident will occur.
+
+    Returns:
+        One of 'critical', 'high', 'medium', or 'low'.
+    """
+    if confidence >= SEVERITY_CRITICAL_THRESHOLD:
+        return "critical"
+    if confidence >= SEVERITY_HIGH_THRESHOLD:
+        return "high"
+    if confidence >= SEVERITY_MEDIUM_THRESHOLD:
+        return "medium"
+    return "low"
+
+
 __all__ = [
     "APP_DESCRIPTION",
     "APP_NAME",
@@ -36,4 +55,5 @@ __all__ = [
     "SEVERITY_HIGH_THRESHOLD",
     "SEVERITY_LEVELS",
     "SEVERITY_MEDIUM_THRESHOLD",
+    "severity_from_confidence",
 ]
