@@ -348,6 +348,46 @@ class TestDriftMonitorStableAndRate:
         assert monitor.drift_rate(all_drifted) == 1.0
 
 
+class TestDriftMonitorAnyDrifted:
+    """Tests for DriftMonitor.any_drifted()."""
+
+    def test_any_drifted_true_when_one_drifted(self) -> None:
+        """any_drifted() returns True when at least one feature drifted."""
+        monitor = DriftMonitor()
+        results = [
+            DriftResult("cpu_usage_pct", 0.9, 0.0001, True),
+            DriftResult("memory_usage_pct", 0.05, 0.6, False),
+        ]
+        assert monitor.any_drifted(results) is True
+
+    def test_any_drifted_false_when_none_drifted(self) -> None:
+        """any_drifted() returns False when no features drifted."""
+        monitor = DriftMonitor()
+        results = [DriftResult(f, 0.05, 0.6, False) for f in FEATURE_COLS]
+        assert monitor.any_drifted(results) is False
+
+    def test_any_drifted_false_for_empty_list(self) -> None:
+        """any_drifted() returns False for an empty results list."""
+        assert DriftMonitor().any_drifted([]) is False
+
+    @pytest.mark.parametrize(
+        "drifted_flags,expected",
+        [
+            ([True, False, False], True),
+            ([False, False, False], False),
+            ([True, True, True], True),
+        ],
+    )
+    def test_any_drifted_parametrized(self, drifted_flags, expected) -> None:
+        """any_drifted returns expected value for mixed drift patterns."""
+        monitor = DriftMonitor()
+        results = [
+            DriftResult(FEATURE_COLS[i], 0.3, 0.001, flag)
+            for i, flag in enumerate(drifted_flags)
+        ]
+        assert monitor.any_drifted(results) is expected
+
+
 class TestDriftMonitorRepr:
     """Tests for DriftMonitor.__repr__."""
 
