@@ -384,15 +384,18 @@ class TestDriftMonitorParametrized:
         assert monitor.to_dict()["threshold"] == pytest.approx(threshold)
 
     @pytest.mark.parametrize("n_samples", [50, 100, 200, 500])
-    def test_reference_size_after_recording(self, n_samples: int) -> None:
-        """reference_size equals exactly the number of samples recorded."""
+    def test_reference_size_after_update(self, n_samples: int) -> None:
+        """reference_size equals exactly the number of samples in the reference window."""
         monitor = DriftMonitor()
         rng = np.random.default_rng(42)
-        for _ in range(n_samples):
-            monitor.record(_make_sample(
+        samples = [
+            _make_sample(
                 cpu=float(rng.uniform(20, 60)),
                 mem=float(rng.uniform(30, 70)),
-            ))
+            )
+            for _ in range(n_samples)
+        ]
+        monitor.update_reference(samples)
         assert monitor.reference_size == n_samples
 
     @pytest.mark.parametrize("feature", FEATURE_COLS)
@@ -402,13 +405,15 @@ class TestDriftMonitorParametrized:
         assert feature in monitor.to_dict()["feature_cols"]
 
     @pytest.mark.parametrize("n_ref,n_cur", [(100, 50), (200, 100), (500, 200)])
-    def test_check_returns_drift_result(self, n_ref: int, n_cur: int) -> None:
-        """check() always returns a DriftResult regardless of window sizes."""
-        monitor = DriftMonitor()
+    def test_check_drift_returns_results_list(self, n_ref: int, n_cur: int) -> None:
+        """check_drift() returns a list of DriftResult for different window sizes."""
+        monitor = DriftMonitor(current_window_size=n_cur)
         rng = np.random.default_rng(7)
-        for _ in range(n_ref):
-            monitor.record(_make_sample(cpu=float(rng.uniform(20, 60))))
+        monitor.update_reference(
+            [_make_sample(cpu=float(rng.uniform(20, 60))) for _ in range(n_ref)]
+        )
         for _ in range(n_cur):
-            monitor.record(_make_sample(cpu=float(rng.uniform(20, 60))))
-        result = monitor.check()
-        assert isinstance(result, DriftResult)
+            monitor._current.append(_make_sample(cpu=float(rng.uniform(20, 60))))
+        results = monitor.check_drift()
+        assert isinstance(results, list)
+        assert all(isinstance(r, DriftResult) for r in results)
