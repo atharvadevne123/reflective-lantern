@@ -30,6 +30,14 @@ class Runbook:
         """Return a compact representation showing title and category."""
         return f"Runbook(title={self.title!r}, category={self.category!r})"
 
+    def to_dict(self) -> dict:
+        """Serialise this runbook to a JSON-compatible dict."""
+        return {
+            "title": self.title,
+            "content": self.content,
+            "category": self.category,
+        }
+
 
 class RunbookIndex:
     """TF-IDF + FAISS runbook retrieval index.
