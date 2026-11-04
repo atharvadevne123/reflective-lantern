@@ -61,6 +61,10 @@ class IncidentRateBuffer:
         self.counts.clear()
         logger.debug("IncidentRateBuffer reset")
 
+    def __repr__(self) -> str:
+        """Return a concise representation showing buffer size and window."""
+        return f"IncidentRateBuffer(len={len(self)}, window_hours={self.window_hours})"
+
     def __len__(self) -> int:
         """Return the number of observations in the buffer."""
         return len(self.counts)
