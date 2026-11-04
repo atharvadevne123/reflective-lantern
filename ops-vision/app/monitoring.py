@@ -280,8 +280,10 @@ def get_monitor() -> DriftMonitor:
 
 
 __all__ = [
+    "CURRENT_WINDOW_SIZE",
     "DRIFT_THRESHOLD",
     "FEATURE_COLS",
+    "REFERENCE_WINDOW_SIZE",
     "DriftMonitor",
     "DriftResult",
     "MetricSample",
