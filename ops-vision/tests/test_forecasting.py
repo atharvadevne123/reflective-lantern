@@ -6,11 +6,45 @@ import numpy as np
 import pytest
 
 from app.forecasting import (
+    DEFAULT_ALPHA,
+    DEFAULT_BETA,
+    DEFAULT_HORIZON,
+    DEFAULT_STEP_HOURS,
     ExponentialSmoothingForecaster,
     ForecastPoint,
     IncidentRateBuffer,
     get_rate_buffer,
 )
+
+
+class TestForecastingConstants:
+    """Tests for module-level constants."""
+
+    def test_default_alpha_in_range(self) -> None:
+        """DEFAULT_ALPHA is strictly between 0 and 1."""
+        assert 0.0 < DEFAULT_ALPHA < 1.0
+
+    def test_default_beta_in_range(self) -> None:
+        """DEFAULT_BETA is strictly between 0 and 1."""
+        assert 0.0 < DEFAULT_BETA < 1.0
+
+    def test_default_horizon_positive(self) -> None:
+        """DEFAULT_HORIZON is a positive integer."""
+        assert DEFAULT_HORIZON > 0
+
+    def test_default_step_hours_positive(self) -> None:
+        """DEFAULT_STEP_HOURS is a positive integer."""
+        assert DEFAULT_STEP_HOURS > 0
+
+    def test_forecaster_uses_default_alpha(self) -> None:
+        """ExponentialSmoothingForecaster default alpha matches the constant."""
+        f = ExponentialSmoothingForecaster()
+        assert f.alpha == DEFAULT_ALPHA
+
+    def test_forecaster_uses_default_horizon(self) -> None:
+        """ExponentialSmoothingForecaster default horizon matches the constant."""
+        f = ExponentialSmoothingForecaster()
+        assert f.horizon == DEFAULT_HORIZON
 
 
 class TestIncidentRateBuffer:
