@@ -350,6 +350,54 @@ class TestExponentialSmoothingForecasterRepr:
         assert str(alpha) in repr(f)
 
 
+class TestIncidentRateBufferGetCountsSince:
+    """Tests for IncidentRateBuffer.get_counts_since()."""
+
+    def test_returns_list(self) -> None:
+        """get_counts_since() returns a list."""
+        buf = IncidentRateBuffer()
+        buf.record(datetime.utcnow(), 3)
+        result = buf.get_counts_since(datetime.utcnow() - timedelta(hours=1))
+        assert isinstance(result, list)
+
+    def test_filters_old_entries(self) -> None:
+        """get_counts_since() excludes entries before the cutoff."""
+        buf = IncidentRateBuffer()
+        now = datetime.utcnow()
+        buf.record(now - timedelta(hours=5), 10)
+        buf.record(now, 3)
+        result = buf.get_counts_since(now - timedelta(hours=1))
+        assert len(result) == 1
+        assert result[0][1] == 3
+
+    def test_returns_sorted_by_timestamp(self) -> None:
+        """get_counts_since() returns entries sorted by timestamp."""
+        buf = IncidentRateBuffer()
+        now = datetime.utcnow()
+        buf.record(now + timedelta(hours=2), 5)
+        buf.record(now, 1)
+        buf.record(now + timedelta(hours=1), 3)
+        result = buf.get_counts_since(now - timedelta(hours=1))
+        timestamps = [t for t, _ in result]
+        assert timestamps == sorted(timestamps)
+
+    def test_empty_buffer_returns_empty(self) -> None:
+        """get_counts_since() on empty buffer returns []."""
+        buf = IncidentRateBuffer()
+        assert buf.get_counts_since(datetime.utcnow()) == []
+
+    @pytest.mark.parametrize("hours_back", [1, 6, 12, 24])
+    def test_cutoff_hours_parametrized(self, hours_back: int) -> None:
+        """get_counts_since() with varying cutoffs returns only recent entries."""
+        buf = IncidentRateBuffer()
+        now = datetime.utcnow()
+        buf.record(now - timedelta(hours=hours_back + 1), 100)
+        buf.record(now - timedelta(hours=1), 5)
+        cutoff = now - timedelta(hours=hours_back)
+        result = buf.get_counts_since(cutoff)
+        assert all(t >= cutoff for t, _ in result)
+
+
 class TestIncidentRateBufferRepr:
     """Tests for IncidentRateBuffer.__repr__."""
 
