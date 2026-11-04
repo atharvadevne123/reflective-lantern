@@ -246,4 +246,4 @@ class TestPredictParametrized:
         df, labels = generate_synthetic_data(n_samples=300, incident_rate=incident_rate)
         model, metrics = train(df.values, labels.values)
         assert model is not None
-        assert "auc_mean" in metrics
+        assert "cv_auc_mean" in metrics
