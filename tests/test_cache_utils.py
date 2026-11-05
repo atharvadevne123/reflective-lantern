@@ -175,3 +175,69 @@ class TestMemoizeTtl:
         for _ in range(n):
             f(42)
         assert call_count["c"] == 1
+
+
+class TestGetOrSet:
+    def test_returns_existing_value(self) -> None:
+        from app.cache_utils import TTLCache, get_or_set
+        cache = TTLCache(ttl=60.0)
+        cache.set("k", "existing")
+        result = get_or_set(cache, "k", lambda: "new")
+        assert result == "existing"
+
+    def test_computes_and_stores_on_miss(self) -> None:
+        from app.cache_utils import TTLCache, get_or_set
+        cache = TTLCache(ttl=60.0)
+        result = get_or_set(cache, "k", lambda: "computed")
+        assert result == "computed"
+        assert cache.get("k") == "computed"
+
+    def test_factory_called_once_on_multiple_misses(self) -> None:
+        from app.cache_utils import TTLCache, get_or_set
+        cache = TTLCache(ttl=60.0)
+        call_count = 0
+
+        def factory() -> int:
+            nonlocal call_count
+            call_count += 1
+            return 42
+
+        get_or_set(cache, "k", factory)
+        get_or_set(cache, "k", factory)
+        assert call_count == 1
+
+
+class TestInvalidatePrefix:
+    def test_removes_matching_keys(self) -> None:
+        from app.cache_utils import TTLCache, invalidate_prefix
+        cache = TTLCache(ttl=60.0)
+        cache.set("user:1", "a")
+        cache.set("user:2", "b")
+        cache.set("order:1", "c")
+        removed = invalidate_prefix(cache, "user:")
+        assert removed == 2
+        assert cache.get("order:1") == "c"
+
+    def test_no_matching_keys(self) -> None:
+        from app.cache_utils import TTLCache, invalidate_prefix
+        cache = TTLCache(ttl=60.0)
+        cache.set("other:1", "x")
+        removed = invalidate_prefix(cache, "user:")
+        assert removed == 0
+
+    def test_empty_cache(self) -> None:
+        from app.cache_utils import TTLCache, invalidate_prefix
+        cache = TTLCache(ttl=60.0)
+        assert invalidate_prefix(cache, "prefix:") == 0
+
+    @pytest.mark.parametrize(
+        ("prefix", "expected_removed"),
+        [("a:", 2), ("b:", 1), ("c:", 0)],
+    )
+    def test_parametrized(self, prefix: str, expected_removed: int) -> None:
+        from app.cache_utils import TTLCache, invalidate_prefix
+        cache = TTLCache(ttl=60.0)
+        cache.set("a:1", 1)
+        cache.set("a:2", 2)
+        cache.set("b:1", 3)
+        assert invalidate_prefix(cache, prefix) == expected_removed
