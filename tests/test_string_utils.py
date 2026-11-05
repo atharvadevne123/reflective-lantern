@@ -151,3 +151,62 @@ class TestSanitizeIdentifier:
     )
     def test_parametrized(self, input_name: str, expected: str) -> None:
         assert sanitize_identifier(input_name) == expected
+
+
+class TestPadLeft:
+    def test_pads_short_string(self) -> None:
+        from app.string_utils import pad_left
+        assert pad_left("hi", 5) == "   hi"
+
+    def test_no_pad_needed(self) -> None:
+        from app.string_utils import pad_left
+        assert pad_left("hello", 5) == "hello"
+
+    def test_already_longer(self) -> None:
+        from app.string_utils import pad_left
+        assert pad_left("toolong", 3) == "toolong"
+
+    def test_custom_fill_char(self) -> None:
+        from app.string_utils import pad_left
+        assert pad_left("7", 3, "0") == "007"
+
+    def test_invalid_fill_raises(self) -> None:
+        from app.string_utils import pad_left
+        with pytest.raises(ValueError):
+            pad_left("x", 5, "ab")
+
+
+class TestPadRight:
+    def test_pads_short_string(self) -> None:
+        from app.string_utils import pad_right
+        assert pad_right("hi", 5) == "hi   "
+
+    def test_no_pad_needed(self) -> None:
+        from app.string_utils import pad_right
+        assert pad_right("hello", 5) == "hello"
+
+    def test_custom_fill_char(self) -> None:
+        from app.string_utils import pad_right
+        assert pad_right("x", 4, "-") == "x---"
+
+
+class TestRemoveWhitespace:
+    def test_removes_spaces(self) -> None:
+        from app.string_utils import remove_whitespace
+        assert remove_whitespace("h e l l o") == "hello"
+
+    def test_removes_newlines(self) -> None:
+        from app.string_utils import remove_whitespace
+        assert remove_whitespace("a\nb\tc") == "abc"
+
+    def test_empty_string(self) -> None:
+        from app.string_utils import remove_whitespace
+        assert remove_whitespace("") == ""
+
+    @pytest.mark.parametrize(
+        ("text", "expected"),
+        [("  hello  ", "hello"), ("a b c", "abc"), ("no_spaces", "no_spaces")],
+    )
+    def test_parametrized(self, text: str, expected: str) -> None:
+        from app.string_utils import remove_whitespace
+        assert remove_whitespace(text) == expected
