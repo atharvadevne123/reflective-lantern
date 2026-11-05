@@ -241,3 +241,48 @@ class TestInvalidatePrefix:
         cache.set("a:2", 2)
         cache.set("b:1", 3)
         assert invalidate_prefix(cache, prefix) == expected_removed
+
+
+class TestMemoize:
+    def test_caches_result(self) -> None:
+        from app.cache_utils import memoize
+
+        call_count = [0]
+
+        @memoize
+        def expensive(x: int) -> int:
+            call_count[0] += 1
+            return x * 2
+
+        assert expensive(5) == 10
+        assert expensive(5) == 10
+        assert call_count[0] == 1
+
+    def test_different_args_computed_separately(self) -> None:
+        from app.cache_utils import memoize
+
+        @memoize
+        def square(x: int) -> int:
+            return x * x
+
+        assert square(3) == 9
+        assert square(4) == 16
+
+    def test_cache_attribute_accessible(self) -> None:
+        from app.cache_utils import memoize
+
+        @memoize
+        def identity(x: int) -> int:
+            return x
+
+        identity(1)
+        assert hasattr(identity, "__cache__")
+
+    def test_wrapped_attribute_points_to_original(self) -> None:
+        from app.cache_utils import memoize
+
+        def original(x: int) -> int:
+            return x
+
+        wrapped = memoize(original)
+        assert wrapped.__wrapped__ is original
