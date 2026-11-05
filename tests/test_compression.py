@@ -294,3 +294,36 @@ def test_is_gzip_detects_gzip_compressed_data() -> None:
     compressed = gzip_compress(plain)
     assert is_gzip(compressed) is True
     assert is_gzip(plain) is False
+
+
+class TestEncodeDecodeBase64:
+    def test_roundtrip(self) -> None:
+        from app.compression import decode_from_base64, encode_to_base64
+
+        data = b"hello world"
+        assert decode_from_base64(encode_to_base64(data)) == data
+
+    def test_empty_bytes(self) -> None:
+        from app.compression import decode_from_base64, encode_to_base64
+
+        assert decode_from_base64(encode_to_base64(b"")) == b""
+
+    def test_binary_data(self) -> None:
+        from app.compression import decode_from_base64, encode_to_base64
+
+        data = bytes(range(256))
+        assert decode_from_base64(encode_to_base64(data)) == data
+
+    def test_invalid_base64_raises(self) -> None:
+        import pytest
+
+        from app.compression import decode_from_base64
+
+        with pytest.raises(ValueError):
+            decode_from_base64("not!!valid@@base64##")
+
+    def test_encode_returns_string(self) -> None:
+        from app.compression import encode_to_base64
+
+        result = encode_to_base64(b"test")
+        assert isinstance(result, str)
