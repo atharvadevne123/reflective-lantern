@@ -147,3 +147,46 @@ def annual_budget_check(
         "within_budget": result.co2_kg <= budget_kg_co2,
         "headroom_kg": round(headroom, 4),
     }
+
+
+def emissions_per_kwh_tonne(region: Region) -> float:
+    """Return the CO2 intensity for *region* in tonnes per kWh.
+
+    Args:
+        region: Grid region.
+
+    Returns:
+        CO2 intensity in tCO2/kWh (1 tonne = 1000 kg).
+    """
+    return emissions_factor_kg_per_kwh(region) / 1000.0
+
+
+def co2_intensity_label(region: Region) -> str:
+    """Return a human-readable intensity label for *region*.
+
+    Args:
+        region: Grid region.
+
+    Returns:
+        ``"low"``, ``"medium"``, or ``"high"`` based on CO2 intensity.
+    """
+    factor = emissions_factor_kg_per_kwh(region)
+    if factor < 0.1:
+        return "low"
+    if factor < 0.35:
+        return "medium"
+    return "high"
+
+
+__all__ = [
+    "EmissionResult",
+    "GRID_INTENSITY_KG_CO2_PER_KWH",
+    "Region",
+    "annual_budget_check",
+    "calculate_co2",
+    "co2_intensity_label",
+    "compare_regions",
+    "emissions_factor_kg_per_kwh",
+    "emissions_per_kwh_tonne",
+    "emissions_saved_by_renewables",
+]
