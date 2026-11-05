@@ -7,6 +7,8 @@ from typing import Any
 
 __all__ = [
     "TTLCache",
+    "get_or_set",
+    "invalidate_prefix",
     "memoize_ttl",
 ]
 
@@ -112,3 +114,38 @@ def memoize_ttl(ttl: float = 60.0) -> Any:
         return wrapper
 
     return decorator
+
+
+def get_or_set(cache: TTLCache, key: str, factory: "Any", ttl: float | None = None) -> "Any":
+    """Return cached value for *key*, computing it via *factory* if absent.
+
+    Args:
+        cache: :class:`TTLCache` instance to query.
+        key: Cache key string.
+        factory: Zero-argument callable invoked on cache miss.
+        ttl: Unused (TTLCache uses per-instance TTL); present for API symmetry.
+
+    Returns:
+        Cached or freshly computed value.
+    """
+    value = cache.get(key)
+    if value is None:
+        value = factory()
+        cache.set(key, value)
+    return value
+
+
+def invalidate_prefix(cache: TTLCache, prefix: str) -> int:
+    """Remove all keys from *cache* that start with *prefix*.
+
+    Args:
+        cache: :class:`TTLCache` instance to modify.
+        prefix: Key prefix string to match.
+
+    Returns:
+        Number of keys removed.
+    """
+    to_delete = [k for k in cache.keys() if k.startswith(prefix)]
+    for k in to_delete:
+        cache.delete(k)
+    return len(to_delete)
