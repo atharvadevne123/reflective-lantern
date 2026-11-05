@@ -7,9 +7,13 @@ import unicodedata
 
 __all__ = [
     "camel_to_snake",
+    "pad_left",
+    "pad_right",
+    "remove_whitespace",
     "sanitize_identifier",
     "slugify",
     "snake_to_camel",
+    "title_case",
     "truncate",
 ]
 
@@ -96,3 +100,67 @@ def sanitize_identifier(name: str) -> str:
     if sanitised and sanitised[0].isdigit():
         sanitised = "_" + sanitised
     return sanitised or "_"
+
+
+def pad_left(text: str, width: int, fill: str = " ") -> str:
+    """Left-pad *text* with *fill* characters to reach *width*.
+
+    Args:
+        text: String to pad.
+        width: Minimum output width.
+        fill: Single padding character. Defaults to a space.
+
+    Returns:
+        Original string when already >= *width*; padded string otherwise.
+
+    Raises:
+        ValueError: If *fill* is not exactly one character.
+    """
+    if len(fill) != 1:
+        raise ValueError("fill must be exactly one character")
+    return text.rjust(width, fill)
+
+
+def pad_right(text: str, width: int, fill: str = " ") -> str:
+    """Right-pad *text* with *fill* characters to reach *width*.
+
+    Args:
+        text: String to pad.
+        width: Minimum output width.
+        fill: Single padding character. Defaults to a space.
+
+    Returns:
+        Original string when already >= *width*; padded string otherwise.
+
+    Raises:
+        ValueError: If *fill* is not exactly one character.
+    """
+    if len(fill) != 1:
+        raise ValueError("fill must be exactly one character")
+    return text.ljust(width, fill)
+
+
+def remove_whitespace(text: str) -> str:
+    """Remove all whitespace characters from *text*.
+
+    Args:
+        text: Input string.
+
+    Returns:
+        String with all spaces, tabs, newlines etc. removed.
+    """
+    return re.sub(r"\s+", "", text)
+
+
+def title_case(text: str) -> str:
+    """Convert *text* to Title Case, preserving existing mixed case in words.
+
+    Uses Python's built-in :meth:`str.title` for compatibility.
+
+    Args:
+        text: Arbitrary string.
+
+    Returns:
+        Title-cased version of *text*.
+    """
+    return text.title()
