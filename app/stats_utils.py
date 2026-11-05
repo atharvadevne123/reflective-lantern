@@ -19,6 +19,7 @@ __all__ = [
     "signal_to_noise_ratio",
     "std_dev",
     "variance",
+    "weighted_average",
     "weighted_median",
     "z_scores",
 ]
@@ -351,3 +352,29 @@ def weighted_median(values: Sequence[float], weights: Sequence[float]) -> float:
         if cumulative >= total_w / 2.0:
             return float(val)
     return float(paired[-1][0])
+
+
+def weighted_average(values: Sequence[float], weights: Sequence[float]) -> float:
+    """Return the weighted arithmetic average of *values*.
+
+    Args:
+        values: Non-empty sequence of numeric values.
+        weights: Non-negative weights of the same length as *values*.
+
+    Returns:
+        Weighted average as a float.
+
+    Raises:
+        ValueError: If inputs are empty, lengths mismatch, any weight is negative,
+            or the total weight is zero.
+    """
+    if not values:
+        raise ValueError("values must not be empty")
+    if len(values) != len(weights):
+        raise ValueError("values and weights must have the same length")
+    if any(w < 0 for w in weights):
+        raise ValueError("All weights must be non-negative")
+    total_w = sum(weights)
+    if total_w == 0:
+        raise ValueError("Total weight must be greater than zero")
+    return sum(v * w for v, w in zip(values, weights, strict=False)) / total_w
