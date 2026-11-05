@@ -163,3 +163,81 @@ class TestDeepMerge:
         override = {"x": 10}
         result = deep_merge({}, override)
         assert result == override
+
+
+class TestPartition:
+    def test_basic_partition(self) -> None:
+        from app.collection_utils import partition
+        evens, odds = partition([1, 2, 3, 4, 5], lambda x: x % 2 == 0)
+        assert evens == [2, 4]
+        assert odds == [1, 3, 5]
+
+    def test_empty_list(self) -> None:
+        from app.collection_utils import partition
+        a, b = partition([], lambda x: x > 0)
+        assert a == []
+        assert b == []
+
+    def test_all_true(self) -> None:
+        from app.collection_utils import partition
+        a, b = partition([1, 2, 3], lambda x: x > 0)
+        assert a == [1, 2, 3]
+        assert b == []
+
+    def test_all_false(self) -> None:
+        from app.collection_utils import partition
+        a, b = partition([1, 2, 3], lambda x: x > 10)
+        assert a == []
+        assert b == [1, 2, 3]
+
+
+class TestSlidingWindow:
+    def test_basic(self) -> None:
+        from app.collection_utils import sliding_window
+        result = sliding_window([1, 2, 3, 4, 5], size=3)
+        assert result == [[1, 2, 3], [2, 3, 4], [3, 4, 5]]
+
+    def test_step_2(self) -> None:
+        from app.collection_utils import sliding_window
+        result = sliding_window([1, 2, 3, 4, 5], size=2, step=2)
+        assert result == [[1, 2], [3, 4]]
+
+    def test_window_larger_than_list(self) -> None:
+        from app.collection_utils import sliding_window
+        result = sliding_window([1, 2], size=5)
+        assert result == []
+
+    def test_invalid_size_raises(self) -> None:
+        from app.collection_utils import sliding_window
+        with pytest.raises(ValueError):
+            sliding_window([1, 2, 3], size=0)
+
+    def test_invalid_step_raises(self) -> None:
+        from app.collection_utils import sliding_window
+        with pytest.raises(ValueError):
+            sliding_window([1, 2, 3], size=1, step=0)
+
+    @pytest.mark.parametrize(
+        ("items", "size", "expected_len"),
+        [([1, 2, 3, 4], 2, 3), ([1, 2, 3], 3, 1), ([1, 2, 3, 4, 5], 1, 5)],
+    )
+    def test_window_counts(self, items: list, size: int, expected_len: int) -> None:
+        from app.collection_utils import sliding_window
+        assert len(sliding_window(items, size)) == expected_len
+
+
+class TestGroupBy:
+    def test_basic(self) -> None:
+        from app.collection_utils import group_by
+        result = group_by([1, 2, 3, 4], lambda x: x % 2)
+        assert result[0] == [2, 4]
+        assert result[1] == [1, 3]
+
+    def test_empty_list(self) -> None:
+        from app.collection_utils import group_by
+        assert group_by([], lambda x: x) == {}
+
+    def test_all_same_key(self) -> None:
+        from app.collection_utils import group_by
+        result = group_by(["a", "b", "c"], lambda x: "same")
+        assert result == {"same": ["a", "b", "c"]}
