@@ -360,8 +360,8 @@ class TestEventBusClearAndCount:
     def test_listener_count_after_unsubscribe(self) -> None:
         bus = EventBus()
 
-        def h(e, p):
-            return None
+        def h(e: str, p: object) -> None:
+            pass
 
         bus.subscribe("evt", h)
         assert bus.listener_count("evt") == 1
@@ -510,3 +510,62 @@ class TestEventBusHasListeners:
         bus.subscribe("temp", lambda e, p: None)
         bus.clear("temp")
         assert bus.has_listeners("temp") is False
+
+
+class TestEventBusOnce:
+    def test_handler_fires_once(self) -> None:
+        from app.event_bus import EventBus
+
+        calls: list[str] = []
+        bus = EventBus()
+        bus.once("ping", lambda e, p: calls.append(p))
+        bus.publish("ping", "first")
+        bus.publish("ping", "second")
+        assert calls == ["first"]
+
+    def test_once_does_not_affect_regular_subscribers(self) -> None:
+        from app.event_bus import EventBus
+
+        once_calls: list[str] = []
+        always_calls: list[str] = []
+        bus = EventBus()
+        bus.once("ev", lambda e, p: once_calls.append(p))
+        bus.subscribe("ev", lambda e, p: always_calls.append(p))
+        bus.publish("ev", "a")
+        bus.publish("ev", "b")
+        assert once_calls == ["a"]
+        assert always_calls == ["a", "b"]
+
+
+class TestEventBusUnsubscribeAll:
+    def test_clears_specific_event(self) -> None:
+        from app.event_bus import EventBus
+
+        calls: list[str] = []
+        bus = EventBus()
+        bus.subscribe("x", lambda e, p: calls.append(p))
+        bus.unsubscribe_all("x")
+        bus.publish("x", "should not arrive")
+        assert calls == []
+
+    def test_clears_all_events(self) -> None:
+        from app.event_bus import EventBus
+
+        calls: list[str] = []
+        bus = EventBus()
+        bus.subscribe("a", lambda e, p: calls.append(p))
+        bus.subscribe("b", lambda e, p: calls.append(p))
+        bus.unsubscribe_all()
+        bus.publish("a", "1")
+        bus.publish("b", "2")
+        assert calls == []
+
+    def test_clears_wildcards(self) -> None:
+        from app.event_bus import EventBus
+
+        calls: list[str] = []
+        bus = EventBus()
+        bus.subscribe("*", lambda e, p: calls.append(p))
+        bus.unsubscribe_all("*")
+        bus.publish("any", "nope")
+        assert calls == []
