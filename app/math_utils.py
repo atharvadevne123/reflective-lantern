@@ -6,8 +6,12 @@ import math
 
 __all__ = [
     "clamp",
+    "geometric_mean",
+    "harmonic_mean",
+    "is_close",
     "linear_interpolate",
     "moving_average",
+    "normalize",
     "percent_change",
     "round_to_decimals",
     "safe_divide",
@@ -140,3 +144,67 @@ def is_close(a: float, b: float, rel_tol: float = 1e-9, abs_tol: float = 0.0) ->
         True if the values are considered equal within tolerance.
     """
     return math.isclose(a, b, rel_tol=rel_tol, abs_tol=abs_tol)
+
+
+def geometric_mean(values: list[float]) -> float:
+    """Return the geometric mean of *values* (all must be positive).
+
+    Args:
+        values: Non-empty list of strictly positive numbers.
+
+    Returns:
+        Geometric mean as a float.
+
+    Raises:
+        ValueError: If *values* is empty or any value is non-positive.
+    """
+    if not values:
+        raise ValueError("values must not be empty")
+    if any(v <= 0 for v in values):
+        raise ValueError("All values must be strictly positive")
+    return math.exp(sum(math.log(v) for v in values) / len(values))
+
+
+def harmonic_mean(values: list[float]) -> float:
+    """Return the harmonic mean of *values* (all must be non-zero).
+
+    Args:
+        values: Non-empty list of non-zero numbers.
+
+    Returns:
+        Harmonic mean as a float.
+
+    Raises:
+        ValueError: If *values* is empty or any value is zero.
+    """
+    if not values:
+        raise ValueError("values must not be empty")
+    if any(v == 0 for v in values):
+        raise ValueError("All values must be non-zero for harmonic mean")
+    return len(values) / sum(1.0 / v for v in values)
+
+
+def normalize(values: list[float], low: float = 0.0, high: float = 1.0) -> list[float]:
+    """Rescale *values* to the interval [*low*, *high*] (min-max normalization).
+
+    Args:
+        values: Non-empty list of numeric values.
+        low: Target minimum. Defaults to 0.0.
+        high: Target maximum. Defaults to 1.0.
+
+    Returns:
+        Rescaled list; all *low* when min == max.
+
+    Raises:
+        ValueError: If *values* is empty or *low* >= *high*.
+    """
+    if not values:
+        raise ValueError("values must not be empty")
+    if low >= high:
+        raise ValueError(f"low ({low}) must be less than high ({high})")
+    v_min, v_max = min(values), max(values)
+    if v_min == v_max:
+        return [low] * len(values)
+    span_in = v_max - v_min
+    span_out = high - low
+    return [low + (v - v_min) / span_in * span_out for v in values]
