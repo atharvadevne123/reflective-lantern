@@ -203,3 +203,63 @@ class TestDaysBetween:
         start = datetime.datetime(2024, 1, 1, tzinfo=datetime.UTC)
         end = start + datetime.timedelta(days=offset_days)
         assert days_between(start, end) == expected
+
+
+class TestSecondsBetween:
+    def test_one_hour_apart(self) -> None:
+        from datetime import UTC, datetime
+
+        from app.time_utils import seconds_between
+
+        start = datetime(2026, 1, 1, 10, 0, 0, tzinfo=UTC)
+        end = datetime(2026, 1, 1, 11, 0, 0, tzinfo=UTC)
+        assert seconds_between(start, end) == 3600.0
+
+    def test_negative_when_reversed(self) -> None:
+        from datetime import UTC, datetime
+
+        from app.time_utils import seconds_between
+
+        start = datetime(2026, 1, 1, 11, 0, 0, tzinfo=UTC)
+        end = datetime(2026, 1, 1, 10, 0, 0, tzinfo=UTC)
+        assert seconds_between(start, end) == -3600.0
+
+    def test_same_time(self) -> None:
+        from datetime import UTC, datetime
+
+        from app.time_utils import seconds_between
+
+        t = datetime(2026, 1, 1, tzinfo=UTC)
+        assert seconds_between(t, t) == 0.0
+
+
+class TestFormatDurationHuman:
+    def test_zero(self) -> None:
+        from app.time_utils import format_duration_human
+
+        assert format_duration_human(0) == "0s"
+
+    def test_seconds_only(self) -> None:
+        from app.time_utils import format_duration_human
+
+        assert format_duration_human(45) == "45s"
+
+    def test_minutes_and_seconds(self) -> None:
+        from app.time_utils import format_duration_human
+
+        assert format_duration_human(90) == "1m 30s"
+
+    def test_hours(self) -> None:
+        from app.time_utils import format_duration_human
+
+        assert format_duration_human(3600) == "1h"
+
+    def test_hours_minutes_seconds(self) -> None:
+        from app.time_utils import format_duration_human
+
+        assert format_duration_human(3661) == "1h 1m 1s"
+
+    def test_negative_clamped_to_zero(self) -> None:
+        from app.time_utils import format_duration_human
+
+        assert format_duration_human(-10) == "0s"
