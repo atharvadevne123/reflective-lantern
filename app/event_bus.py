@@ -139,6 +139,37 @@ class EventBus:
         """Return True if any handlers are registered for *event*."""
         return bool(self._handlers.get(event)) or bool(self._wildcard_handlers)
 
+    def unsubscribe_all(self, event: str | None = None) -> None:
+        """Remove all handlers for *event*, or every handler when *event* is None.
+
+        Args:
+            event: Event name to clear. Pass ``None`` to clear all events and
+                wildcards; pass ``"*"`` to clear only wildcard handlers.
+        """
+        if event is None:
+            self._handlers.clear()
+            self._wildcard_handlers.clear()
+        elif event == "*":
+            self._wildcard_handlers.clear()
+        else:
+            self._handlers.pop(event, None)
+
+    def once(self, event: str, handler: Handler) -> None:
+        """Subscribe a handler that fires at most once then auto-unsubscribes.
+
+        Args:
+            event: Event name to listen for.
+            handler: Callable that will be called with (event_name, payload)
+                exactly once and then removed.
+        """
+        def _wrapper(ev: str, payload: Any) -> None:
+            try:
+                handler(ev, payload)
+            finally:
+                self.unsubscribe(event, _wrapper)
+
+        self.subscribe(event, _wrapper)
+
     def __len__(self) -> int:
         """Return the total number of registered handlers (specific + wildcard)."""
         return self.total_listeners()
