@@ -6,11 +6,20 @@ import math
 from collections.abc import Sequence
 
 __all__ = [
+    "confidence_interval",
+    "correlation_coefficient",
     "mean",
     "median",
+    "outlier_fraction",
     "percentile",
+    "population_variance",
+    "rolling_rmse",
+    "sample_std",
+    "sign_changes",
+    "signal_to_noise_ratio",
     "std_dev",
     "variance",
+    "weighted_median",
     "z_scores",
 ]
 
@@ -311,3 +320,34 @@ def sign_changes(values: list[float]) -> int:
         if values[i - 1] * values[i] < 0:
             count += 1
     return count
+
+
+def weighted_median(values: Sequence[float], weights: Sequence[float]) -> float:
+    """Return the weighted median of *values* with corresponding *weights*.
+
+    Args:
+        values: Non-empty sequence of numeric values.
+        weights: Non-negative weights of the same length as *values*.
+
+    Returns:
+        Weighted median as a float.
+
+    Raises:
+        ValueError: If inputs are empty, lengths mismatch, or any weight is negative.
+    """
+    if not values:
+        raise ValueError("values must not be empty")
+    if len(values) != len(weights):
+        raise ValueError("values and weights must have the same length")
+    if any(w < 0 for w in weights):
+        raise ValueError("All weights must be non-negative")
+    total_w = sum(weights)
+    if total_w == 0:
+        return float(values[len(values) // 2])
+    paired = sorted(zip(values, weights, strict=False), key=lambda x: x[0])
+    cumulative = 0.0
+    for val, w in paired:
+        cumulative += w
+        if cumulative >= total_w / 2.0:
+            return float(val)
+    return float(paired[-1][0])
