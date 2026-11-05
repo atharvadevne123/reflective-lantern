@@ -137,3 +137,54 @@ class TestAnnualBudgetCheck:
         result = annual_budget_check(kwh, region, budget)
         projected = calculate_co2(kwh, region).co2_kg
         assert result["within_budget"] is (projected <= budget)
+
+
+class TestEmissionsPerKwhTonne:
+    def test_uk_less_than_kg(self) -> None:
+        from app.emissions_factor import Region, emissions_per_kwh_tonne
+
+        result = emissions_per_kwh_tonne(Region.UK)
+        assert result == pytest.approx(0.000233)
+
+    def test_always_less_than_kg_per_kwh(self) -> None:
+        from app.emissions_factor import (
+            Region,
+            emissions_factor_kg_per_kwh,
+            emissions_per_kwh_tonne,
+        )
+
+        for region in Region:
+            assert emissions_per_kwh_tonne(region) < emissions_factor_kg_per_kwh(region)
+
+    def test_conversion_factor(self) -> None:
+        from app.emissions_factor import (
+            Region,
+            emissions_factor_kg_per_kwh,
+            emissions_per_kwh_tonne,
+        )
+
+        kg = emissions_factor_kg_per_kwh(Region.DE)
+        assert emissions_per_kwh_tonne(Region.DE) == pytest.approx(kg / 1000.0)
+
+
+class TestCo2IntensityLabel:
+    def test_france_low(self) -> None:
+        from app.emissions_factor import Region, co2_intensity_label
+
+        assert co2_intensity_label(Region.FR) == "low"
+
+    def test_uk_medium(self) -> None:
+        from app.emissions_factor import Region, co2_intensity_label
+
+        assert co2_intensity_label(Region.UK) == "medium"
+
+    def test_australia_high(self) -> None:
+        from app.emissions_factor import Region, co2_intensity_label
+
+        assert co2_intensity_label(Region.AU_NEM) == "high"
+
+    def test_returns_string(self) -> None:
+        from app.emissions_factor import Region, co2_intensity_label
+
+        for region in Region:
+            assert co2_intensity_label(region) in {"low", "medium", "high"}
