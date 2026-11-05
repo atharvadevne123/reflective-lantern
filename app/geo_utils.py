@@ -233,6 +233,7 @@ __all__ = [
     "coordinate_to_dms",
     "distance_km",
     "dms_to_decimal",
+    "format_coordinate",
     "haversine",
     "haversine_distance",
     "k_nearest",
@@ -298,3 +299,18 @@ def dms_to_decimal(degrees: int, minutes: int, seconds: float, negative: bool = 
         raise ValueError(f"seconds must be in [0, 60), got {seconds}")
     result = degrees + minutes / 60.0 + seconds / 3600.0
     return -result if negative else result
+
+
+def format_coordinate(coord: Coordinate, precision: int = 4) -> str:
+    """Format a coordinate as a human-readable string.
+
+    Args:
+        coord: Coordinate to format.
+        precision: Decimal places for lat/lon. Defaults to 4.
+
+    Returns:
+        String like ``"51.5074°N, 0.1278°W"``.
+    """
+    lat_dir = "N" if coord.lat >= 0 else "S"
+    lon_dir = "E" if coord.lon >= 0 else "W"
+    return f"{abs(coord.lat):.{precision}f}°{lat_dir}, {abs(coord.lon):.{precision}f}°{lon_dir}"
