@@ -133,3 +133,65 @@ class TestRetryWithBackoff:
                 base=0.001,
                 exceptions=(ValueError,),
             )
+
+
+class TestRetryOnException:
+    def test_succeeds_on_first_attempt(self) -> None:
+        from app.retry_utils import retry_on_exception
+
+        @retry_on_exception(exceptions=(ValueError,), attempts=3)
+        def good() -> str:
+            return "ok"
+
+        assert good() == "ok"
+
+    def test_retries_on_exception(self) -> None:
+        from app.retry_utils import RetryError, retry_on_exception
+
+        call_count = 0
+
+        @retry_on_exception(exceptions=(ValueError,), attempts=3)
+        def flaky() -> None:
+            nonlocal call_count
+            call_count += 1
+            raise ValueError("fail")
+
+        with pytest.raises(RetryError):
+            flaky()
+        assert call_count == 3
+
+    def test_does_not_retry_unspecified_exception(self) -> None:
+        from app.retry_utils import retry_on_exception
+
+        @retry_on_exception(exceptions=(ValueError,), attempts=3)
+        def raises_key_error() -> None:
+            raise KeyError("not retried")
+
+        with pytest.raises(KeyError):
+            raises_key_error()
+
+    def test_succeeds_after_initial_failures(self) -> None:
+        from app.retry_utils import retry_on_exception
+
+        attempts = 0
+
+        @retry_on_exception(exceptions=(RuntimeError,), attempts=3)
+        def eventually_ok() -> str:
+            nonlocal attempts
+            attempts += 1
+            if attempts < 3:
+                raise RuntimeError("not yet")
+            return "done"
+
+        assert eventually_ok() == "done"
+
+    @pytest.mark.parametrize("max_attempts", [1, 2, 3])
+    def test_all_attempts_exhausted(self, max_attempts: int) -> None:
+        from app.retry_utils import RetryError, retry_on_exception
+
+        @retry_on_exception(exceptions=(Exception,), attempts=max_attempts)
+        def always_fails() -> None:
+            raise RuntimeError("always")
+
+        with pytest.raises(RetryError):
+            always_fails()
