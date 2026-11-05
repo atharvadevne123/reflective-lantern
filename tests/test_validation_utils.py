@@ -266,3 +266,36 @@ class TestIsValidHostname:
         from app.validation_utils import is_valid_hostname
 
         assert is_valid_hostname("invalid_host.com") is False
+
+
+class TestValidateNonNegative:
+    def test_zero_allowed(self) -> None:
+        from app.validation_utils import validate_non_negative
+
+        assert validate_non_negative(0.0) == 0.0
+
+    def test_positive_allowed(self) -> None:
+        from app.validation_utils import validate_non_negative
+
+        assert validate_non_negative(5.0) == 5.0
+
+    def test_negative_raises(self) -> None:
+        import pytest
+
+        from app.validation_utils import validate_non_negative
+
+        with pytest.raises(ValueError):
+            validate_non_negative(-0.001)
+
+    def test_custom_name_in_error(self) -> None:
+        import pytest
+
+        from app.validation_utils import validate_non_negative
+
+        with pytest.raises(ValueError, match="speed"):
+            validate_non_negative(-1.0, name="speed")
+
+    def test_returns_value_unchanged(self) -> None:
+        from app.validation_utils import validate_non_negative
+
+        assert validate_non_negative(3.14) == 3.14
