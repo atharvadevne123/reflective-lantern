@@ -15,9 +15,11 @@ __all__ = [
     "clear_correlation_id",
     "correlation_context",
     "format_correlation_id",
+    "generate_trace_id",
     "get_correlation_id",
     "is_valid_uuid",
     "new_correlation_id",
+    "parse_correlation_id",
     "require_correlation_id",
     "set_correlation_id",
     "short_correlation_id",
@@ -127,3 +129,28 @@ def format_correlation_id(cid: str, prefix: str = "req-") -> str:
         ``"{prefix}{cid}"`` string.
     """
     return f"{prefix}{cid}"
+
+
+def generate_trace_id() -> str:
+    """Generate a 32-character hex trace ID (similar to W3C traceparent format).
+
+    Returns:
+        32-character lowercase hex string.
+    """
+    return uuid.uuid4().hex
+
+
+def parse_correlation_id(header_value: str, prefix: str = "req-") -> str:
+    """Extract the raw ID from a formatted correlation header value.
+
+    Args:
+        header_value: Value like ``"req-<uuid>"``.
+        prefix: Expected prefix. Defaults to ``"req-"``.
+
+    Returns:
+        The ID portion after the prefix, or the original string if the
+        prefix is absent.
+    """
+    if header_value.startswith(prefix):
+        return header_value[len(prefix):]
+    return header_value
