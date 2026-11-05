@@ -230,7 +230,9 @@ __all__ = [
     "arithmetic_midpoint",
     "bearing",
     "bounding_box_of",
+    "coordinate_to_dms",
     "distance_km",
+    "dms_to_decimal",
     "haversine",
     "haversine_distance",
     "k_nearest",
@@ -255,3 +257,44 @@ def arithmetic_midpoint(lat1: float, lon1: float, lat2: float, lon2: float) -> t
         Tuple of (latitude, longitude) for the midpoint, each rounded to 6 dp.
     """
     return (round((lat1 + lat2) / 2, 6), round((lon1 + lon2) / 2, 6))
+
+
+def coordinate_to_dms(decimal_deg: float) -> tuple[int, int, float]:
+    """Convert a decimal degree value to degrees, minutes, seconds.
+
+    Args:
+        decimal_deg: Latitude or longitude in decimal degrees (may be negative).
+
+    Returns:
+        Tuple of (degrees, minutes, seconds) where degrees is an int >= 0,
+        minutes is an int in [0, 59], and seconds is a float in [0, 60).
+    """
+    abs_deg = abs(decimal_deg)
+    degrees = int(abs_deg)
+    minutes_full = (abs_deg - degrees) * 60
+    minutes = int(minutes_full)
+    seconds = (minutes_full - minutes) * 60
+    return (degrees, minutes, round(seconds, 4))
+
+
+def dms_to_decimal(degrees: int, minutes: int, seconds: float, negative: bool = False) -> float:
+    """Convert degrees, minutes, seconds to a decimal degree value.
+
+    Args:
+        degrees: Whole degrees (non-negative integer).
+        minutes: Whole minutes in [0, 59].
+        seconds: Seconds in [0, 60).
+        negative: When True the result is negated (for South/West).
+
+    Returns:
+        Decimal degree value.
+
+    Raises:
+        ValueError: If minutes or seconds are out of range.
+    """
+    if not 0 <= minutes < 60:
+        raise ValueError(f"minutes must be in [0, 59], got {minutes}")
+    if not 0 <= seconds < 60:
+        raise ValueError(f"seconds must be in [0, 60), got {seconds}")
+    result = degrees + minutes / 60.0 + seconds / 3600.0
+    return -result if negative else result
