@@ -102,6 +102,9 @@ def z_scores(values: Sequence[float]) -> list[float]:
 
     Returns:
         List of z-scores; all zeros if std_dev is 0.
+
+    Raises:
+        ValueError: If *values* is empty.
     """
     if not values:
         raise ValueError("values must not be empty")
