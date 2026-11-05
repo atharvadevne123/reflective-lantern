@@ -1835,3 +1835,47 @@ class TestSignChanges:
         from app.stats_utils import sign_changes
 
         assert sign_changes(values) == expected
+
+
+class TestWeightedMedian:
+    def test_basic(self) -> None:
+        from app.stats_utils import weighted_median
+        result = weighted_median([1.0, 2.0, 3.0], [1.0, 1.0, 1.0])
+        assert result == pytest.approx(2.0)
+
+    def test_zero_weight_fallback(self) -> None:
+        from app.stats_utils import weighted_median
+        result = weighted_median([10.0, 20.0, 30.0], [0.0, 0.0, 0.0])
+        assert isinstance(result, float)
+
+    def test_empty_raises(self) -> None:
+        from app.stats_utils import weighted_median
+        with pytest.raises(ValueError, match="empty"):
+            weighted_median([], [])
+
+    def test_length_mismatch_raises(self) -> None:
+        from app.stats_utils import weighted_median
+        with pytest.raises(ValueError, match="same length"):
+            weighted_median([1.0, 2.0], [1.0])
+
+    def test_negative_weight_raises(self) -> None:
+        from app.stats_utils import weighted_median
+        with pytest.raises(ValueError, match="non-negative"):
+            weighted_median([1.0, 2.0], [1.0, -1.0])
+
+    def test_single_element(self) -> None:
+        from app.stats_utils import weighted_median
+        assert weighted_median([42.0], [1.0]) == pytest.approx(42.0)
+
+    @pytest.mark.parametrize(
+        ("values", "weights", "expected"),
+        [
+            ([1.0, 2.0, 3.0, 4.0], [1.0, 1.0, 1.0, 1.0], 2.0),
+            ([5.0, 10.0], [3.0, 1.0], 5.0),
+        ],
+    )
+    def test_parametrized(
+        self, values: list, weights: list, expected: float
+    ) -> None:
+        from app.stats_utils import weighted_median
+        assert weighted_median(values, weights) == pytest.approx(expected)
