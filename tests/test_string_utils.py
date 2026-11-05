@@ -210,3 +210,62 @@ class TestRemoveWhitespace:
     def test_parametrized(self, text: str, expected: str) -> None:
         from app.string_utils import remove_whitespace
         assert remove_whitespace(text) == expected
+
+
+class TestFormatBytes:
+    def test_bytes(self) -> None:
+        from app.string_utils import format_bytes
+
+        assert format_bytes(500) == "500.00 B"
+
+    def test_kilobytes(self) -> None:
+        from app.string_utils import format_bytes
+
+        assert format_bytes(1024) == "1.00 KB"
+
+    def test_megabytes(self) -> None:
+        from app.string_utils import format_bytes
+
+        assert format_bytes(1024 * 1024) == "1.00 MB"
+
+    def test_zero(self) -> None:
+        from app.string_utils import format_bytes
+
+        assert format_bytes(0) == "0.00 B"
+
+    def test_negative_raises(self) -> None:
+        import pytest
+
+        from app.string_utils import format_bytes
+
+        with pytest.raises(ValueError):
+            format_bytes(-1)
+
+    def test_custom_precision(self) -> None:
+        from app.string_utils import format_bytes
+
+        result = format_bytes(1500, precision=1)
+        assert "KB" in result
+
+
+class TestFormatNumber:
+    def test_basic(self) -> None:
+        from app.string_utils import format_number
+
+        assert format_number(1234.56) == "1,234.56"
+
+    def test_zero_precision(self) -> None:
+        from app.string_utils import format_number
+
+        assert format_number(1000.0, precision=0) == "1,000"
+
+    def test_custom_separator(self) -> None:
+        from app.string_utils import format_number
+
+        result = format_number(1000.0, thousands_sep=".")
+        assert "." in result
+
+    def test_negative_number(self) -> None:
+        from app.string_utils import format_number
+
+        assert format_number(-1000.0) == "-1,000.00"
