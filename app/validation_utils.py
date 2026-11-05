@@ -6,6 +6,8 @@ __all__ = [
     "clamp_to_range",
     "is_non_empty_string",
     "is_valid_email",
+    "is_valid_hostname",
+    "is_valid_ipv4",
     "is_valid_percentage",
     "is_valid_port",
     "is_valid_temperature_c",
@@ -152,3 +154,43 @@ def clamp_to_range(value: float, low: float, high: float) -> float:
         *value* bounded to [*low*, *high*].
     """
     return max(low, min(high, value))
+
+
+def is_valid_ipv4(address: str) -> bool:
+    """Return True if *address* is a valid IPv4 address string.
+
+    Args:
+        address: String to check, e.g. ``"192.168.1.1"``.
+
+    Returns:
+        True for valid dotted-decimal IPv4 addresses; False otherwise.
+    """
+    parts = address.split(".")
+    if len(parts) != 4:
+        return False
+    for part in parts:
+        if not part.isdigit():
+            return False
+        if not 0 <= int(part) <= 255:
+            return False
+        if len(part) > 1 and part.startswith("0"):
+            return False
+    return True
+
+
+def is_valid_hostname(hostname: str) -> bool:
+    """Return True if *hostname* is a syntactically valid DNS hostname.
+
+    Args:
+        hostname: Hostname string, e.g. ``"api.example.com"``.
+
+    Returns:
+        True if the hostname conforms to basic DNS label rules; False otherwise.
+    """
+    import re
+
+    if not hostname or len(hostname) > 253:
+        return False
+    hostname = hostname.rstrip(".")
+    label_re = re.compile(r"^[a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?$")
+    return all(label_re.match(label) for label in hostname.split("."))
