@@ -1879,3 +1879,45 @@ class TestWeightedMedian:
     ) -> None:
         from app.stats_utils import weighted_median
         assert weighted_median(values, weights) == pytest.approx(expected)
+
+
+class TestWeightedAverageExtended:
+    def test_equal_weights(self) -> None:
+        from app.stats_utils import weighted_average
+
+        assert weighted_average([1.0, 2.0, 3.0], [1.0, 1.0, 1.0]) == pytest.approx(2.0)
+
+    def test_unequal_weights(self) -> None:
+        from app.stats_utils import weighted_average
+
+        result = weighted_average([0.0, 10.0], [3.0, 1.0])
+        assert result == pytest.approx(2.5)
+
+    def test_single_value(self) -> None:
+        from app.stats_utils import weighted_average
+
+        assert weighted_average([5.0], [2.0]) == pytest.approx(5.0)
+
+    def test_empty_raises(self) -> None:
+        import pytest
+
+        from app.stats_utils import weighted_average
+
+        with pytest.raises(ValueError):
+            weighted_average([], [])
+
+    def test_length_mismatch_raises(self) -> None:
+        import pytest
+
+        from app.stats_utils import weighted_average
+
+        with pytest.raises(ValueError):
+            weighted_average([1.0, 2.0], [1.0])
+
+    def test_zero_total_weight_raises(self) -> None:
+        import pytest
+
+        from app.stats_utils import weighted_average
+
+        with pytest.raises(ValueError):
+            weighted_average([1.0, 2.0], [0.0, 0.0])
