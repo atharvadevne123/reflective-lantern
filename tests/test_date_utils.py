@@ -1324,7 +1324,14 @@ class TestStartOfDayExtended:
 
     @pytest.mark.parametrize("hour", [0, 6, 12, 23])
     def test_start_of_day_always_midnight(self, hour: int) -> None:
-        pass
+        from datetime import datetime
+
+        from app.date_utils import start_of_day
+
+        dt = datetime(2026, 6, 15, hour, 30, 0)
+        result = start_of_day(dt)
+        assert result.hour == 0
+        assert result.minute == 0
 
 
 @pytest.mark.parametrize(
@@ -1351,3 +1358,72 @@ def test_is_leap_year_parametrized_extra(year: int, expected: bool) -> None:
     from app.date_utils import is_leap_year
 
     assert is_leap_year(year) is expected
+
+
+class TestFirstDayOfMonth:
+    def test_returns_first_day(self) -> None:
+        from datetime import UTC, datetime
+
+        from app.date_utils import first_day_of_month
+
+        dt = datetime(2026, 6, 15, 14, 30, 0, tzinfo=UTC)
+        result = first_day_of_month(dt)
+        assert result.day == 1
+        assert result.hour == 0
+        assert result.minute == 0
+
+    def test_already_first_day(self) -> None:
+        from datetime import UTC, datetime
+
+        from app.date_utils import first_day_of_month
+
+        dt = datetime(2026, 1, 1, 0, 0, 0, tzinfo=UTC)
+        result = first_day_of_month(dt)
+        assert result.day == 1
+
+    def test_preserves_timezone(self) -> None:
+        from datetime import UTC, datetime
+
+        from app.date_utils import first_day_of_month
+
+        dt = datetime(2026, 3, 20, 12, 0, 0, tzinfo=UTC)
+        result = first_day_of_month(dt)
+        assert result.tzinfo is not None
+
+
+class TestAddBusinessDays:
+    def test_add_zero(self) -> None:
+        from datetime import UTC, datetime
+
+        from app.date_utils import add_business_days
+
+        dt = datetime(2026, 11, 2, tzinfo=UTC)  # Monday
+        assert add_business_days(dt, 0) == dt
+
+    def test_add_one_weekday(self) -> None:
+        from datetime import UTC, datetime
+
+        from app.date_utils import add_business_days
+
+        dt = datetime(2026, 11, 2, tzinfo=UTC)  # Monday
+        result = add_business_days(dt, 1)
+        assert result.weekday() == 1  # Tuesday
+
+    def test_skips_weekend(self) -> None:
+        from datetime import UTC, datetime
+
+        from app.date_utils import add_business_days
+
+        dt = datetime(2026, 11, 6, tzinfo=UTC)  # Friday
+        result = add_business_days(dt, 1)
+        assert result.weekday() == 0  # Monday
+
+    def test_negative_raises(self) -> None:
+        from datetime import UTC, datetime
+
+        import pytest
+
+        from app.date_utils import add_business_days
+
+        with pytest.raises(ValueError):
+            add_business_days(datetime(2026, 1, 1, tzinfo=UTC), -1)
