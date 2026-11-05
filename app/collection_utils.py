@@ -12,11 +12,13 @@ __all__ = [
     "chunk",
     "deep_merge",
     "flatten",
+    "flatten_list",
     "frequency_map",
     "group_by",
     "partition",
     "sliding_window",
     "unique_ordered",
+    "unique_sorted",
 ]
 
 
@@ -169,3 +171,30 @@ def group_by(items: list[Any], key: Callable[[Any], Any]) -> dict[Any, list[Any]
     for item in items:
         result[key(item)].append(item)
     return dict(result)
+
+
+def flatten_list(nested: list[list[T]]) -> list[T]:
+    """Flatten a list of lists into a single flat list.
+
+    Args:
+        nested: A list whose elements are themselves lists.
+
+    Returns:
+        New flat list with all sublists concatenated in order.
+    """
+    result: list[T] = []
+    for sublist in nested:
+        result.extend(sublist)
+    return result
+
+
+def unique_sorted(items: list[T]) -> list[T]:
+    """Return a deduplicated, sorted copy of *items*.
+
+    Args:
+        items: Input list (elements must be comparable and hashable).
+
+    Returns:
+        Sorted list with duplicate values removed.
+    """
+    return sorted(set(items))  # type: ignore[type-var]
