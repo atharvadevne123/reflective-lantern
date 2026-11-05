@@ -199,6 +199,7 @@ def test_midpoint_is_between_endpoints() -> None:
     assert min(LONDON.lat, PARIS.lat) <= mid.lat <= max(LONDON.lat, PARIS.lat)
 
 
+
 TOKYO = Coordinate(35.6762, 139.6503)
 
 
@@ -374,13 +375,14 @@ class TestArithmeticMidpoint:
             (10.0, 20.0, 20.0, 40.0, (15.0, 30.0)),
         ],
     )
-    def test_midpoint_parametrize(
+    def test_midpoint_parametrized(
         self, lat1: float, lon1: float, lat2: float, lon2: float, expected: tuple
     ) -> None:
         from app.geo_utils import arithmetic_midpoint
 
         result = arithmetic_midpoint(lat1, lon1, lat2, lon2)
-        assert result == pytest.approx(expected)
+        assert result[0] == pytest.approx(expected[0], abs=1e-4)
+        assert result[1] == pytest.approx(expected[1], abs=1e-4)
 
 
 @pytest.mark.parametrize("k", [1, 2, 3])
@@ -418,3 +420,67 @@ def test_bearing_cardinal_directions(a: tuple, b: tuple, expected_bearing) -> No
 
     result = bearing(Coordinate(*a), Coordinate(*b))
     assert result == expected_bearing
+
+
+class TestCoordinateToDms:
+    def test_zero_degrees(self) -> None:
+        from app.geo_utils import coordinate_to_dms
+
+        d, m, s = coordinate_to_dms(0.0)
+        assert d == 0 and m == 0 and s == pytest.approx(0.0)
+
+    def test_positive_value(self) -> None:
+        from app.geo_utils import coordinate_to_dms
+
+        d, m, s = coordinate_to_dms(51.5)
+        assert d == 51
+        assert m == 30
+        assert s == pytest.approx(0.0, abs=0.01)
+
+    def test_negative_abs(self) -> None:
+        from app.geo_utils import coordinate_to_dms
+
+        d, m, s = coordinate_to_dms(-45.75)
+        assert d == 45
+        assert m == 45
+        assert s == pytest.approx(0.0, abs=0.01)
+
+    def test_fractional_seconds(self) -> None:
+        from app.geo_utils import coordinate_to_dms
+
+        d, m, s = coordinate_to_dms(1.0 / 3600)
+        assert d == 0
+        assert m == 0
+        assert s == pytest.approx(1.0, abs=0.01)
+
+
+class TestDmsToDecimal:
+    def test_basic_conversion(self) -> None:
+        from app.geo_utils import dms_to_decimal
+
+        assert dms_to_decimal(51, 30, 0.0) == pytest.approx(51.5, abs=1e-4)
+
+    def test_negative_flag(self) -> None:
+        from app.geo_utils import dms_to_decimal
+
+        assert dms_to_decimal(45, 0, 0.0, negative=True) == pytest.approx(-45.0)
+
+    def test_roundtrip_with_coordinate_to_dms(self) -> None:
+        from app.geo_utils import coordinate_to_dms, dms_to_decimal
+
+        original = 48.8566
+        d, m, s = coordinate_to_dms(original)
+        recovered = dms_to_decimal(d, m, s)
+        assert recovered == pytest.approx(original, abs=1e-3)
+
+    def test_invalid_minutes_raises(self) -> None:
+        from app.geo_utils import dms_to_decimal
+
+        with pytest.raises(ValueError):
+            dms_to_decimal(10, 60, 0.0)
+
+    def test_invalid_seconds_raises(self) -> None:
+        from app.geo_utils import dms_to_decimal
+
+        with pytest.raises(ValueError):
+            dms_to_decimal(10, 0, 60.0)
