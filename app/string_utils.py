@@ -7,8 +7,10 @@ import unicodedata
 
 __all__ = [
     "camel_to_snake",
+    "count_words",
     "format_bytes",
     "format_number",
+    "is_palindrome",
     "pad_left",
     "pad_right",
     "remove_whitespace",
@@ -207,3 +209,31 @@ def format_number(value: float, precision: int = 2, thousands_sep: str = ",") ->
     if thousands_sep != ",":
         formatted = formatted.replace(",", thousands_sep)
     return formatted
+
+
+def is_palindrome(text: str) -> bool:
+    """Return True if *text* is a palindrome (ignoring case and spaces).
+
+    Args:
+        text: Input string.
+
+    Returns:
+        True if the string reads the same forwards and backwards
+        after stripping spaces and lowercasing.
+    """
+    cleaned = text.replace(" ", "").lower()
+    return cleaned == cleaned[::-1]
+
+
+def count_words(text: str) -> int:
+    """Count the number of words in *text*.
+
+    Words are separated by any whitespace.
+
+    Args:
+        text: Input string.
+
+    Returns:
+        Number of whitespace-separated tokens; 0 for empty or whitespace-only input.
+    """
+    return len(text.split())
