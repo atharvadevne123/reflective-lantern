@@ -241,3 +241,57 @@ class TestGroupBy:
         from app.collection_utils import group_by
         result = group_by(["a", "b", "c"], lambda x: "same")
         assert result == {"same": ["a", "b", "c"]}
+
+
+class TestFlattenList:
+    def test_basic_flatten(self) -> None:
+        from app.collection_utils import flatten_list
+
+        assert flatten_list([[1, 2], [3, 4]]) == [1, 2, 3, 4]
+
+    def test_empty_sublists(self) -> None:
+        from app.collection_utils import flatten_list
+
+        assert flatten_list([[], [], []]) == []
+
+    def test_single_sublist(self) -> None:
+        from app.collection_utils import flatten_list
+
+        assert flatten_list([[1, 2, 3]]) == [1, 2, 3]
+
+    def test_empty_outer(self) -> None:
+        from app.collection_utils import flatten_list
+
+        assert flatten_list([]) == []
+
+    def test_strings(self) -> None:
+        from app.collection_utils import flatten_list
+
+        assert flatten_list([["a", "b"], ["c"]]) == ["a", "b", "c"]
+
+
+class TestUniqueSorted:
+    def test_removes_duplicates(self) -> None:
+        from app.collection_utils import unique_sorted
+
+        assert unique_sorted([3, 1, 2, 1, 3]) == [1, 2, 3]
+
+    def test_already_sorted(self) -> None:
+        from app.collection_utils import unique_sorted
+
+        assert unique_sorted([1, 2, 3]) == [1, 2, 3]
+
+    def test_empty(self) -> None:
+        from app.collection_utils import unique_sorted
+
+        assert unique_sorted([]) == []
+
+    def test_single_element(self) -> None:
+        from app.collection_utils import unique_sorted
+
+        assert unique_sorted([5]) == [5]
+
+    def test_strings_sorted(self) -> None:
+        from app.collection_utils import unique_sorted
+
+        assert unique_sorted(["banana", "apple", "apple"]) == ["apple", "banana"]
