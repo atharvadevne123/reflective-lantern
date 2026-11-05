@@ -11,6 +11,7 @@ logger = logging.getLogger(__name__)
 
 __all__ = [
     "RetryError",
+    "bounded_retry",
     "compute_backoff_seconds",
     "retry",
     "retry_on_exception",
@@ -153,3 +154,35 @@ def retry_on_exception(
         return wrapper
 
     return decorator
+
+
+def bounded_retry(
+    fn: "Any",
+    *args: "Any",
+    attempts: int = 3,
+    exceptions: type[Exception] | tuple[type[Exception], ...] = Exception,
+    **kwargs: "Any",
+) -> "Any":
+    """Call *fn* directly with retry logic (non-decorator form).
+
+    Args:
+        fn: Callable to invoke.
+        *args: Positional arguments forwarded to *fn*.
+        attempts: Total attempts before raising :class:`RetryError`.
+        exceptions: Exception type(s) that trigger a retry.
+        **kwargs: Keyword arguments forwarded to *fn*.
+
+    Returns:
+        Return value of the first successful call to *fn*.
+
+    Raises:
+        RetryError: When all attempts are exhausted.
+    """
+    last_exc: Exception | None = None
+    for i in range(1, attempts + 1):
+        try:
+            return fn(*args, **kwargs)
+        except exceptions as exc:
+            last_exc = exc
+            logger.debug("bounded_retry attempt %d/%d failed: %s", i, attempts, exc)
+    raise RetryError(f"All {attempts} attempts failed") from last_exc
