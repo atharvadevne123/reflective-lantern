@@ -254,3 +254,63 @@ class TestNormalize:
         from app.math_utils import normalize
         with pytest.raises(ValueError):
             normalize([1.0], low=1.0, high=0.0)
+
+
+class TestSafeSqrt:
+    def test_positive_value(self) -> None:
+        from app.math_utils import safe_sqrt
+
+        assert safe_sqrt(4.0) == pytest.approx(2.0)
+
+    def test_zero(self) -> None:
+        from app.math_utils import safe_sqrt
+
+        assert safe_sqrt(0.0) == pytest.approx(0.0)
+
+    def test_negative_returns_zero(self) -> None:
+        from app.math_utils import safe_sqrt
+
+        assert safe_sqrt(-1.0) == pytest.approx(0.0)
+
+    @pytest.mark.parametrize("v", [1.0, 9.0, 16.0, 100.0])
+    def test_perfect_squares(self, v: float) -> None:
+        import math
+
+        from app.math_utils import safe_sqrt
+
+        assert safe_sqrt(v) == pytest.approx(math.sqrt(v))
+
+
+class TestLogBase:
+    def test_base10(self) -> None:
+        from app.math_utils import log_base
+
+        assert log_base(100.0, 10.0) == pytest.approx(2.0)
+
+    def test_base2(self) -> None:
+        from app.math_utils import log_base
+
+        assert log_base(8.0, 2.0) == pytest.approx(3.0)
+
+    def test_natural_log(self) -> None:
+        import math
+
+        from app.math_utils import log_base
+
+        assert log_base(math.e, math.e) == pytest.approx(1.0)
+
+    def test_negative_value_raises(self) -> None:
+        import pytest
+
+        from app.math_utils import log_base
+
+        with pytest.raises(ValueError):
+            log_base(-1.0)
+
+    def test_invalid_base_raises(self) -> None:
+        import pytest
+
+        from app.math_utils import log_base
+
+        with pytest.raises(ValueError):
+            log_base(10.0, 1.0)
