@@ -484,3 +484,36 @@ class TestDmsToDecimal:
 
         with pytest.raises(ValueError):
             dms_to_decimal(10, 0, 60.0)
+
+
+class TestFormatCoordinate:
+    def test_north_east(self) -> None:
+        from app.geo_utils import Coordinate, format_coordinate
+
+        c = Coordinate(51.5074, 0.1278)
+        result = format_coordinate(c)
+        assert "N" in result
+        assert "E" in result
+
+    def test_south_west(self) -> None:
+        from app.geo_utils import Coordinate, format_coordinate
+
+        c = Coordinate(-33.8688, -70.6693)
+        result = format_coordinate(c)
+        assert "S" in result
+        assert "W" in result
+
+    def test_zero_equator(self) -> None:
+        from app.geo_utils import Coordinate, format_coordinate
+
+        c = Coordinate(0.0, 0.0)
+        result = format_coordinate(c)
+        assert "N" in result
+        assert "E" in result
+
+    def test_custom_precision(self) -> None:
+        from app.geo_utils import Coordinate, format_coordinate
+
+        c = Coordinate(51.5074, 0.1278)
+        result = format_coordinate(c, precision=2)
+        assert "51.51" in result or "51.50" in result
