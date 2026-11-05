@@ -10,11 +10,13 @@ __all__ = [
     "harmonic_mean",
     "is_close",
     "linear_interpolate",
+    "log_base",
     "moving_average",
     "normalize",
     "percent_change",
     "round_to_decimals",
     "safe_divide",
+    "safe_sqrt",
 ]
 
 
@@ -208,3 +210,37 @@ def normalize(values: list[float], low: float = 0.0, high: float = 1.0) -> list[
     span_in = v_max - v_min
     span_out = high - low
     return [low + (v - v_min) / span_in * span_out for v in values]
+
+
+def safe_sqrt(value: float) -> float:
+    """Return the square root of *value*, returning 0.0 for negative inputs.
+
+    Args:
+        value: Input value.
+
+    Returns:
+        Square root of *value*, or 0.0 if *value* is negative.
+    """
+    if value < 0:
+        return 0.0
+    return math.sqrt(value)
+
+
+def log_base(value: float, base: float = 10.0) -> float:
+    """Return the logarithm of *value* in the given *base*.
+
+    Args:
+        value: Positive number to take the log of.
+        base: Logarithm base. Defaults to 10.0.
+
+    Returns:
+        log_{base}(value).
+
+    Raises:
+        ValueError: If *value* <= 0 or *base* <= 0 or *base* == 1.
+    """
+    if value <= 0:
+        raise ValueError(f"value must be positive, got {value}")
+    if base <= 0 or base == 1:
+        raise ValueError(f"base must be positive and != 1, got {base}")
+    return math.log(value) / math.log(base)
