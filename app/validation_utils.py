@@ -3,8 +3,11 @@
 from __future__ import annotations
 
 __all__ = [
+    "clamp_to_range",
+    "is_non_empty_string",
     "is_valid_email",
     "is_valid_percentage",
+    "is_valid_port",
     "is_valid_temperature_c",
     "is_valid_url",
     "validate_positive",
@@ -111,3 +114,41 @@ def is_valid_url(url: str) -> bool:
             remainder = url[len(scheme) :]
             return bool(remainder) and not remainder.startswith("/")
     return False
+
+
+def is_non_empty_string(value: str) -> bool:
+    """Return True if *value* is a string with at least one non-whitespace character.
+
+    Args:
+        value: String to check.
+
+    Returns:
+        True when the stripped string is non-empty.
+    """
+    return isinstance(value, str) and bool(value.strip())
+
+
+def is_valid_port(port: int) -> bool:
+    """Return True if *port* is a valid TCP/UDP port number (1–65535).
+
+    Args:
+        port: Integer port number.
+
+    Returns:
+        True for values in [1, 65535].
+    """
+    return isinstance(port, int) and 1 <= port <= 65535
+
+
+def clamp_to_range(value: float, low: float, high: float) -> float:
+    """Return *value* clamped to [*low*, *high*].
+
+    Args:
+        value: Numeric value to clamp.
+        low: Inclusive lower bound.
+        high: Inclusive upper bound.
+
+    Returns:
+        *value* bounded to [*low*, *high*].
+    """
+    return max(low, min(high, value))
