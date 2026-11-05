@@ -9,6 +9,7 @@ __all__ = [
     "TTLCache",
     "get_or_set",
     "invalidate_prefix",
+    "memoize",
     "memoize_ttl",
 ]
 
@@ -149,3 +150,27 @@ def invalidate_prefix(cache: TTLCache, prefix: str) -> int:
     for k in to_delete:
         cache.delete(k)
     return len(to_delete)
+
+
+def memoize(func: Any) -> Any:
+    """Simple permanent memoization decorator (no expiry).
+
+    Caches function results keyed by positional arguments. Results are
+    kept indefinitely. Only use for pure, deterministic functions.
+
+    Args:
+        func: Function to memoize.
+
+    Returns:
+        Wrapped function with an in-memory result cache.
+    """
+    _cache: dict[tuple[Any, ...], Any] = {}
+
+    def wrapper(*args: Any) -> Any:
+        if args not in _cache:
+            _cache[args] = func(*args)
+        return _cache[args]
+
+    wrapper.__wrapped__ = func  # type: ignore[attr-defined]
+    wrapper.__cache__ = _cache  # type: ignore[attr-defined]
+    return wrapper
