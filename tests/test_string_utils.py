@@ -269,3 +269,62 @@ class TestFormatNumber:
         from app.string_utils import format_number
 
         assert format_number(-1000.0) == "-1,000.00"
+
+
+class TestIsPalindrome:
+    def test_simple_palindrome(self) -> None:
+        from app.string_utils import is_palindrome
+
+        assert is_palindrome("racecar") is True
+
+    def test_non_palindrome(self) -> None:
+        from app.string_utils import is_palindrome
+
+        assert is_palindrome("hello") is False
+
+    def test_case_insensitive(self) -> None:
+        from app.string_utils import is_palindrome
+
+        assert is_palindrome("Racecar") is True
+
+    def test_with_spaces(self) -> None:
+        from app.string_utils import is_palindrome
+
+        assert is_palindrome("a man a plan a canal panama".replace(" ", "")) is True
+
+    def test_empty_string(self) -> None:
+        from app.string_utils import is_palindrome
+
+        assert is_palindrome("") is True
+
+    def test_single_char(self) -> None:
+        from app.string_utils import is_palindrome
+
+        assert is_palindrome("a") is True
+
+
+class TestCountWords:
+    def test_simple_sentence(self) -> None:
+        from app.string_utils import count_words
+
+        assert count_words("hello world") == 2
+
+    def test_empty_string(self) -> None:
+        from app.string_utils import count_words
+
+        assert count_words("") == 0
+
+    def test_whitespace_only(self) -> None:
+        from app.string_utils import count_words
+
+        assert count_words("   ") == 0
+
+    def test_multiple_spaces(self) -> None:
+        from app.string_utils import count_words
+
+        assert count_words("one  two  three") == 3
+
+    def test_single_word(self) -> None:
+        from app.string_utils import count_words
+
+        assert count_words("python") == 1
