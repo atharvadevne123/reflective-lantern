@@ -12,6 +12,7 @@ __all__ = [
     "is_valid_port",
     "is_valid_temperature_c",
     "is_valid_url",
+    "validate_non_negative",
     "validate_positive",
     "validate_range",
 ]
@@ -194,3 +195,21 @@ def is_valid_hostname(hostname: str) -> bool:
     hostname = hostname.rstrip(".")
     label_re = re.compile(r"^[a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?$")
     return all(label_re.match(label) for label in hostname.split("."))
+
+
+def validate_non_negative(value: float, name: str = "value") -> float:
+    """Assert *value* is non-negative (>= 0) and return it.
+
+    Args:
+        value: Numeric value to check.
+        name: Human-readable name used in the error message.
+
+    Returns:
+        *value* unchanged.
+
+    Raises:
+        ValueError: If *value* is negative.
+    """
+    if value < 0:
+        raise ValueError(f"{name} must be non-negative, got {value}")
+    return value
