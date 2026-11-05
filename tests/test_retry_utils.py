@@ -195,3 +195,40 @@ class TestRetryOnException:
 
         with pytest.raises(RetryError):
             always_fails()
+
+
+class TestBoundedRetry:
+    def test_success_on_first_attempt(self) -> None:
+        from app.retry_utils import bounded_retry
+
+        result = bounded_retry(lambda: 42)
+        assert result == 42
+
+    def test_retries_until_success(self) -> None:
+        from app.retry_utils import bounded_retry
+
+        call_count = [0]
+
+        def flaky() -> int:
+            call_count[0] += 1
+            if call_count[0] < 3:
+                raise ValueError("not yet")
+            return 99
+
+        result = bounded_retry(flaky, attempts=3)
+        assert result == 99
+        assert call_count[0] == 3
+
+    def test_raises_retry_error_on_exhaustion(self) -> None:
+        import pytest
+
+        from app.retry_utils import RetryError, bounded_retry
+
+        with pytest.raises(RetryError):
+            bounded_retry(lambda: (_ for _ in ()).throw(ValueError("fail")), attempts=2)
+
+    def test_passes_args_to_fn(self) -> None:
+        from app.retry_utils import bounded_retry
+
+        result = bounded_retry(lambda x, y: x + y, 3, 4)
+        assert result == 7
