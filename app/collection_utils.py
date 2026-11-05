@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
-from collections import Counter
+from collections import Counter, defaultdict
+from collections.abc import Callable
 from typing import Any, TypeVar
 
 T = TypeVar("T")
@@ -12,6 +13,9 @@ __all__ = [
     "deep_merge",
     "flatten",
     "frequency_map",
+    "group_by",
+    "partition",
+    "sliding_window",
     "unique_ordered",
 ]
 
@@ -108,3 +112,60 @@ def deep_merge(base: dict[str, Any], override: dict[str, Any]) -> dict[str, Any]
         else:
             result[key] = value
     return result
+
+
+def partition(
+    items: list[T],
+    predicate: Callable[[T], bool],
+) -> tuple[list[T], list[T]]:
+    """Split *items* into two lists based on *predicate*.
+
+    Args:
+        items: List to partition.
+        predicate: Callable returning True for items in the first group.
+
+    Returns:
+        (truthy_items, falsy_items) where truthy_items passed the predicate.
+    """
+    true_items: list[T] = []
+    false_items: list[T] = []
+    for item in items:
+        (true_items if predicate(item) else false_items).append(item)
+    return true_items, false_items
+
+
+def sliding_window(items: list[T], size: int, step: int = 1) -> list[list[T]]:
+    """Return overlapping windows of *size* from *items* with the given *step*.
+
+    Args:
+        items: Input list.
+        size: Number of elements per window.
+        step: Advance between consecutive windows. Defaults to 1.
+
+    Returns:
+        List of windows (sub-lists); empty when len(items) < size.
+
+    Raises:
+        ValueError: If *size* < 1 or *step* < 1.
+    """
+    if size < 1:
+        raise ValueError(f"size must be >= 1, got {size}")
+    if step < 1:
+        raise ValueError(f"step must be >= 1, got {step}")
+    return [items[i : i + size] for i in range(0, len(items) - size + 1, step)]
+
+
+def group_by(items: list[Any], key: Callable[[Any], Any]) -> dict[Any, list[Any]]:
+    """Group *items* by the result of *key*.
+
+    Args:
+        items: Input list.
+        key: Callable that returns a grouping key for each item.
+
+    Returns:
+        Dict mapping key → list of items with that key (insertion order preserved).
+    """
+    result: dict[Any, list[Any]] = defaultdict(list)
+    for item in items:
+        result[key(item)].append(item)
+    return dict(result)
