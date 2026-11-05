@@ -13,6 +13,7 @@ __all__ = [
     "RetryError",
     "compute_backoff_seconds",
     "retry",
+    "retry_on_exception",
     "retry_with_backoff",
 ]
 
@@ -117,3 +118,38 @@ def retry_with_backoff(
                 logger.debug("Attempt %d/%d failed; sleeping %.2fs: %s", i, attempts, delay, exc)
                 time.sleep(delay)
     raise RetryError(f"All {attempts} attempts failed") from last_exc
+
+
+def retry_on_exception(
+    exceptions: tuple[type[Exception], ...] = (Exception,),
+    attempts: int = 3,
+    delay: float = 0.0,
+) -> "Any":
+    """Decorator factory that retries a function on specified exceptions.
+
+    Args:
+        exceptions: Exception types that trigger a retry.
+        attempts: Maximum number of invocations.
+        delay: Fixed seconds to wait between retries.
+
+    Returns:
+        Decorator that wraps the function with retry logic.
+    """
+    from typing import Any as _Any
+
+    def decorator(func: "Any") -> "Any":
+        def wrapper(*args: _Any, **kwargs: _Any) -> _Any:
+            last_exc: Exception | None = None
+            for i in range(1, attempts + 1):
+                try:
+                    return func(*args, **kwargs)
+                except exceptions as exc:
+                    last_exc = exc
+                    logger.debug("Attempt %d/%d failed: %s", i, attempts, exc)
+                    if delay > 0 and i < attempts:
+                        time.sleep(delay)
+            raise RetryError(f"All {attempts} attempts failed") from last_exc
+
+        return wrapper
+
+    return decorator
