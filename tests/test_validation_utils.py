@@ -197,3 +197,72 @@ class TestClampToRange:
     ) -> None:
         from app.validation_utils import clamp_to_range
         assert clamp_to_range(value, low, high) == expected
+
+
+class TestIsValidIpv4:
+    def test_valid_address(self) -> None:
+        from app.validation_utils import is_valid_ipv4
+
+        assert is_valid_ipv4("192.168.1.1") is True
+
+    def test_localhost(self) -> None:
+        from app.validation_utils import is_valid_ipv4
+
+        assert is_valid_ipv4("127.0.0.1") is True
+
+    def test_max_values(self) -> None:
+        from app.validation_utils import is_valid_ipv4
+
+        assert is_valid_ipv4("255.255.255.255") is True
+
+    def test_too_many_octets(self) -> None:
+        from app.validation_utils import is_valid_ipv4
+
+        assert is_valid_ipv4("1.2.3.4.5") is False
+
+    def test_octet_out_of_range(self) -> None:
+        from app.validation_utils import is_valid_ipv4
+
+        assert is_valid_ipv4("256.0.0.1") is False
+
+    def test_non_numeric(self) -> None:
+        from app.validation_utils import is_valid_ipv4
+
+        assert is_valid_ipv4("abc.def.ghi.jkl") is False
+
+    def test_leading_zeros(self) -> None:
+        from app.validation_utils import is_valid_ipv4
+
+        assert is_valid_ipv4("01.02.03.04") is False
+
+
+class TestIsValidHostname:
+    def test_simple_hostname(self) -> None:
+        from app.validation_utils import is_valid_hostname
+
+        assert is_valid_hostname("example") is True
+
+    def test_fqdn(self) -> None:
+        from app.validation_utils import is_valid_hostname
+
+        assert is_valid_hostname("api.example.com") is True
+
+    def test_hyphen_allowed(self) -> None:
+        from app.validation_utils import is_valid_hostname
+
+        assert is_valid_hostname("my-host.example.com") is True
+
+    def test_empty_string(self) -> None:
+        from app.validation_utils import is_valid_hostname
+
+        assert is_valid_hostname("") is False
+
+    def test_starts_with_hyphen(self) -> None:
+        from app.validation_utils import is_valid_hostname
+
+        assert is_valid_hostname("-invalid.com") is False
+
+    def test_underscore_invalid(self) -> None:
+        from app.validation_utils import is_valid_hostname
+
+        assert is_valid_hostname("invalid_host.com") is False
