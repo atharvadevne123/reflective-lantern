@@ -142,3 +142,64 @@ class TestIsBusinessHours:
     def test_valid_business_hours(self, hour: int) -> None:
         monday = datetime.datetime(2024, 1, 15, hour, 0, tzinfo=datetime.UTC)
         assert is_business_hours(monday) is True
+
+
+class TestToAndFromUnixTimestamp:
+    def test_round_trip(self) -> None:
+        import datetime
+
+        from app.time_utils import from_unix_timestamp, to_unix_timestamp
+        dt = datetime.datetime(2024, 6, 15, 12, 0, 0, tzinfo=datetime.UTC)
+        ts = to_unix_timestamp(dt)
+        back = from_unix_timestamp(ts)
+        assert back == dt
+
+    def test_naive_treated_as_utc(self) -> None:
+        import datetime
+
+        from app.time_utils import to_unix_timestamp
+        naive = datetime.datetime(2024, 1, 1, 0, 0, 0)
+        aware = datetime.datetime(2024, 1, 1, 0, 0, 0, tzinfo=datetime.UTC)
+        assert to_unix_timestamp(naive) == to_unix_timestamp(aware)
+
+    def test_from_unix_timestamp_is_utc_aware(self) -> None:
+        from app.time_utils import from_unix_timestamp
+        dt = from_unix_timestamp(0.0)
+        assert dt.tzinfo is not None
+
+
+class TestDaysBetween:
+    def test_same_day(self) -> None:
+        import datetime
+
+        from app.time_utils import days_between
+        d = datetime.datetime(2024, 1, 15, tzinfo=datetime.UTC)
+        assert days_between(d, d) == 0
+
+    def test_positive_days(self) -> None:
+        import datetime
+
+        from app.time_utils import days_between
+        start = datetime.datetime(2024, 1, 1, tzinfo=datetime.UTC)
+        end = datetime.datetime(2024, 1, 10, tzinfo=datetime.UTC)
+        assert days_between(start, end) == 9
+
+    def test_negative_days(self) -> None:
+        import datetime
+
+        from app.time_utils import days_between
+        start = datetime.datetime(2024, 1, 10, tzinfo=datetime.UTC)
+        end = datetime.datetime(2024, 1, 1, tzinfo=datetime.UTC)
+        assert days_between(start, end) == -9
+
+    @pytest.mark.parametrize(
+        ("offset_days", "expected"),
+        [(0, 0), (1, 1), (30, 30), (365, 365)],
+    )
+    def test_parametrized(self, offset_days: int, expected: int) -> None:
+        import datetime
+
+        from app.time_utils import days_between
+        start = datetime.datetime(2024, 1, 1, tzinfo=datetime.UTC)
+        end = start + datetime.timedelta(days=offset_days)
+        assert days_between(start, end) == expected
