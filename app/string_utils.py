@@ -7,6 +7,8 @@ import unicodedata
 
 __all__ = [
     "camel_to_snake",
+    "format_bytes",
+    "format_number",
     "pad_left",
     "pad_right",
     "remove_whitespace",
@@ -164,3 +166,44 @@ def title_case(text: str) -> str:
         Title-cased version of *text*.
     """
     return text.title()
+
+
+def format_bytes(size: int, precision: int = 2) -> str:
+    """Return a human-readable string for a byte count.
+
+    Args:
+        size: Number of bytes (non-negative integer).
+        precision: Decimal places for fractional values. Defaults to 2.
+
+    Returns:
+        String like ``"1.23 KB"`` or ``"4.56 MB"``.
+
+    Raises:
+        ValueError: If *size* is negative.
+    """
+    if size < 0:
+        raise ValueError(f"size must be non-negative, got {size}")
+    units = ["B", "KB", "MB", "GB", "TB", "PB"]
+    value = float(size)
+    for unit in units[:-1]:
+        if value < 1024:
+            return f"{value:.{precision}f} {unit}"
+        value /= 1024
+    return f"{value:.{precision}f} {units[-1]}"
+
+
+def format_number(value: float, precision: int = 2, thousands_sep: str = ",") -> str:
+    """Format a number with thousands separators and fixed decimal places.
+
+    Args:
+        value: Number to format.
+        precision: Decimal places. Defaults to 2.
+        thousands_sep: Separator character. Defaults to ``,``.
+
+    Returns:
+        Formatted string, e.g. ``"1,234.56"``.
+    """
+    formatted = f"{value:,.{precision}f}"
+    if thousands_sep != ",":
+        formatted = formatted.replace(",", thousands_sep)
+    return formatted
