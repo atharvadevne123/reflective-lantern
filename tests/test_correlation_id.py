@@ -257,3 +257,43 @@ class TestIsValidUuid:
         from app.correlation_id import is_valid_uuid, new_correlation_id
 
         assert is_valid_uuid(new_correlation_id()) is True
+
+
+class TestGenerateTraceId:
+    def test_returns_32_chars(self) -> None:
+        from app.correlation_id import generate_trace_id
+
+        assert len(generate_trace_id()) == 32
+
+    def test_returns_hex_string(self) -> None:
+        from app.correlation_id import generate_trace_id
+
+        tid = generate_trace_id()
+        assert all(c in "0123456789abcdef" for c in tid)
+
+    def test_unique_on_each_call(self) -> None:
+        from app.correlation_id import generate_trace_id
+
+        assert generate_trace_id() != generate_trace_id()
+
+
+class TestParseCorrelationId:
+    def test_strips_prefix(self) -> None:
+        from app.correlation_id import parse_correlation_id
+
+        assert parse_correlation_id("req-abc123") == "abc123"
+
+    def test_no_prefix_returns_original(self) -> None:
+        from app.correlation_id import parse_correlation_id
+
+        assert parse_correlation_id("abc123") == "abc123"
+
+    def test_custom_prefix(self) -> None:
+        from app.correlation_id import parse_correlation_id
+
+        assert parse_correlation_id("trace-xyz", prefix="trace-") == "xyz"
+
+    def test_empty_string(self) -> None:
+        from app.correlation_id import parse_correlation_id
+
+        assert parse_correlation_id("") == ""
