@@ -4,7 +4,15 @@ from __future__ import annotations
 
 import pytest
 
-from app.grid_report import generate_grid_report
+from app.grid_report import (
+    alert_frequency,
+    compute_anomaly_rate,
+    generate_grid_report,
+    merge_reports,
+    report_status_code,
+    report_trend,
+    summarise_alerts,
+)
 
 
 class TestGenerateGridReportExtended:
@@ -47,3 +55,127 @@ class TestGenerateGridReportExtended:
     def test_anomaly_rate_parametrized(self, count: int, hours: int) -> None:
         result = generate_grid_report({}, {}, anomaly_count=count, window_hours=hours)
         assert abs(result["anomaly_rate_per_hour"] - count / hours) < 0.001
+
+
+class TestSummariseAlertsExtended:
+    def test_no_alerts_returns_no_alerts_message(self) -> None:
+        assert summarise_alerts({"alerts": []}) == "No alerts."
+
+    def test_missing_alerts_key_returns_no_alerts(self) -> None:
+        assert summarise_alerts({}) == "No alerts."
+
+    def test_single_alert_formatted(self) -> None:
+        result = summarise_alerts({"alerts": ["Drift detected"]})
+        assert "Drift detected" in result
+        assert result.startswith("- ")
+
+    def test_multiple_alerts_one_per_line(self) -> None:
+        alerts = ["Alert 1", "Alert 2", "Alert 3"]
+        result = summarise_alerts({"alerts": alerts})
+        lines = result.strip().split("\n")
+        assert len(lines) == 3
+
+    def test_all_lines_start_with_dash(self) -> None:
+        alerts = ["A", "B", "C"]
+        result = summarise_alerts({"alerts": alerts})
+        for line in result.split("\n"):
+            assert line.startswith("- ")
+
+
+class TestReportStatusCodeExtended:
+    def test_healthy_returns_200(self) -> None:
+        assert report_status_code({"status": "healthy"}) == 200
+
+    def test_warning_returns_207(self) -> None:
+        assert report_status_code({"status": "warning"}) == 207
+
+    def test_critical_returns_503(self) -> None:
+        assert report_status_code({"status": "critical"}) == 503
+
+    def test_missing_status_returns_200(self) -> None:
+        assert report_status_code({}) == 200
+
+    def test_unknown_status_returns_200(self) -> None:
+        assert report_status_code({"status": "unknown"}) == 200
+
+    @pytest.mark.parametrize(
+        "status,expected",
+        [("healthy", 200), ("warning", 207), ("critical", 503)],
+    )
+    def test_all_status_codes(self, status: str, expected: int) -> None:
+        assert report_status_code({"status": status}) == expected
+
+
+class TestMergeReportsExtended:
+    def test_empty_list_returns_healthy(self) -> None:
+        result = merge_reports([])
+        assert result["status"] == "healthy"
+        assert result["anomaly_count"] == 0
+
+    def test_all_healthy_merges_to_healthy(self) -> None:
+        reports = [{"status": "healthy", "alerts": [], "anomaly_count": 0}] * 3
+        result = merge_reports(reports)
+        assert result["status"] == "healthy"
+
+    def test_critical_dominates(self) -> None:
+        reports = [
+            {"status": "healthy", "alerts": [], "anomaly_count": 0},
+            {"status": "critical", "alerts": ["Big problem"], "anomaly_count": 10},
+        ]
+        result = merge_reports(reports)
+        assert result["status"] == "critical"
+
+    def test_anomaly_counts_summed(self) -> None:
+        reports = [
+            {"status": "healthy", "alerts": [], "anomaly_count": 3},
+            {"status": "healthy", "alerts": [], "anomaly_count": 7},
+        ]
+        result = merge_reports(reports)
+        assert result["anomaly_count"] == 10
+
+    def test_alerts_combined(self) -> None:
+        reports = [
+            {"status": "warning", "alerts": ["A"], "anomaly_count": 0},
+            {"status": "warning", "alerts": ["B"], "anomaly_count": 0},
+        ]
+        result = merge_reports(reports)
+        assert "A" in result["alerts"]
+        assert "B" in result["alerts"]
+
+
+class TestReportTrendAndAlertFrequency:
+    def test_empty_reports_returns_defaults(self) -> None:
+        result = report_trend([])
+        assert result["escalating"] is False
+        assert result["anomaly_total"] == 0
+
+    def test_escalating_true_when_worsening(self) -> None:
+        reports = [{"status": "healthy", "anomaly_count": 0}, {"status": "critical", "anomaly_count": 5}]
+        result = report_trend(reports)
+        assert result["escalating"] is True
+
+    def test_not_escalating_when_stable(self) -> None:
+        reports = [{"status": "warning", "anomaly_count": 2}, {"status": "warning", "anomaly_count": 3}]
+        result = report_trend(reports)
+        assert result["escalating"] is False
+
+    def test_anomaly_total_summed(self) -> None:
+        reports = [{"status": "healthy", "anomaly_count": 2}, {"status": "healthy", "anomaly_count": 5}]
+        result = report_trend(reports)
+        assert result["anomaly_total"] == 7
+
+    def test_alert_frequency_counts_occurrences(self) -> None:
+        reports = [
+            {"alerts": ["A", "B"]},
+            {"alerts": ["A", "C"]},
+            {"alerts": ["A"]},
+        ]
+        freq = alert_frequency(reports)
+        assert freq["A"] == 3
+        assert freq["B"] == 1
+
+    def test_compute_anomaly_rate_zero_hours(self) -> None:
+        assert compute_anomaly_rate(10, 0) == 0.0
+
+    def test_compute_anomaly_rate_basic(self) -> None:
+        assert compute_anomaly_rate(24, 24) == pytest.approx(1.0)
