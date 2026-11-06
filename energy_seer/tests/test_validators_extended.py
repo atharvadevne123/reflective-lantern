@@ -4,7 +4,15 @@ from __future__ import annotations
 
 import pytest
 
-from app.validators import clamp, validate_alpha, validate_meter_id, validate_period
+from app.validators import (
+    clamp,
+    validate_alpha,
+    validate_horizon,
+    validate_humidity,
+    validate_meter_id,
+    validate_period,
+    validate_temperature,
+)
 
 
 class TestClampExtended:
@@ -98,3 +106,81 @@ class TestValidatePeriodExtended:
     @pytest.mark.parametrize("period", [2, 7, 12, 24, 52, 365])
     def test_common_seasonal_periods(self, period: int) -> None:
         assert validate_period(period) == period
+
+
+class TestValidateTemperatureExtended:
+    def test_zero_celsius_accepted(self) -> None:
+        assert validate_temperature(0.0) == pytest.approx(0.0)
+
+    def test_exactly_negative_60_accepted(self) -> None:
+        assert validate_temperature(-60.0) == pytest.approx(-60.0)
+
+    def test_exactly_60_accepted(self) -> None:
+        assert validate_temperature(60.0) == pytest.approx(60.0)
+
+    def test_negative_61_raises(self) -> None:
+        with pytest.raises(ValueError, match="-60"):
+            validate_temperature(-61.0)
+
+    def test_positive_61_raises(self) -> None:
+        with pytest.raises(ValueError):
+            validate_temperature(61.0)
+
+    def test_nan_raises(self) -> None:
+        with pytest.raises(ValueError):
+            validate_temperature(float("nan"))
+
+    def test_infinity_raises(self) -> None:
+        with pytest.raises(ValueError):
+            validate_temperature(float("inf"))
+
+    @pytest.mark.parametrize("temp", [-60.0, -30.0, 0.0, 20.0, 37.0, 60.0])
+    def test_common_temperatures(self, temp: float) -> None:
+        assert validate_temperature(temp) == pytest.approx(temp)
+
+
+class TestValidateHumidityExtended:
+    def test_zero_pct_accepted(self) -> None:
+        assert validate_humidity(0.0) == pytest.approx(0.0)
+
+    def test_100_pct_accepted(self) -> None:
+        assert validate_humidity(100.0) == pytest.approx(100.0)
+
+    def test_negative_raises(self) -> None:
+        with pytest.raises(ValueError):
+            validate_humidity(-0.001)
+
+    def test_above_100_raises(self) -> None:
+        with pytest.raises(ValueError):
+            validate_humidity(100.001)
+
+    def test_nan_raises(self) -> None:
+        with pytest.raises(ValueError):
+            validate_humidity(float("nan"))
+
+    @pytest.mark.parametrize("h", [0.0, 25.0, 50.0, 75.0, 100.0])
+    def test_valid_humidity_values(self, h: float) -> None:
+        assert validate_humidity(h) == pytest.approx(h)
+
+
+class TestValidateHorizonExtended:
+    def test_one_hour_accepted(self) -> None:
+        assert validate_horizon(1) == 1
+
+    def test_168_hours_accepted(self) -> None:
+        assert validate_horizon(168) == 168
+
+    def test_zero_raises(self) -> None:
+        with pytest.raises(ValueError, match="1 hour"):
+            validate_horizon(0)
+
+    def test_above_max_raises(self) -> None:
+        with pytest.raises(ValueError, match="maximum"):
+            validate_horizon(169, max_hours=168)
+
+    def test_custom_max_accepted(self) -> None:
+        assert validate_horizon(500, max_hours=720) == 500
+
+    @pytest.mark.parametrize("h", [1, 6, 12, 24, 48, 72, 168])
+    def test_common_forecast_horizons(self, h: int) -> None:
+        assert validate_horizon(h) == h
