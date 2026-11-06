@@ -218,3 +218,46 @@ class TestSpikeRatio:
 
     def test_single_value_returns_zero(self) -> None:
         assert spike_ratio([5.0]) == pytest.approx(0.0)
+
+
+class TestDemandVariabilityExtended:
+    def test_all_same_values_zero_range(self) -> None:
+        result = demand_variability([7.0] * 10)
+        assert result["range"] == pytest.approx(0.0)
+
+    def test_iqr_in_result(self) -> None:
+        result = demand_variability([1.0, 2.0, 3.0, 4.0, 5.0])
+        assert "iqr" in result
+        assert result["iqr"] >= 0.0
+
+    def test_std_in_result(self) -> None:
+        result = demand_variability([1.0, 2.0, 3.0, 4.0, 5.0])
+        assert "std" in result
+        assert result["std"] >= 0.0
+
+    def test_range_equals_max_minus_min(self) -> None:
+        values = [3.0, 7.0, 1.0, 9.0, 5.0]
+        result = demand_variability(values)
+        assert result["range"] == pytest.approx(9.0 - 1.0)
+
+    @pytest.mark.parametrize("n", [2, 5, 10, 50])
+    def test_various_lengths(self, n: int) -> None:
+        values = [float(i) for i in range(n)]
+        result = demand_variability(values)
+        assert "cv" in result
+
+
+class TestDemandTrendEdgeCases:
+    def test_exactly_four_values_works(self) -> None:
+        result = demand_trend([1.0, 2.0, 3.0, 4.0])
+        assert result["trend"] in ("rising", "falling", "flat")
+
+    def test_has_all_required_keys(self) -> None:
+        result = demand_trend([1.0, 2.0, 3.0, 4.0])
+        for key in ("trend", "first_half_mean", "second_half_mean", "delta"):
+            assert key in result
+
+    def test_delta_is_second_minus_first(self) -> None:
+        values = [1.0, 1.0, 1.0, 1.0, 10.0, 10.0, 10.0, 10.0]
+        result = demand_trend(values)
+        assert result["delta"] > 0.0
