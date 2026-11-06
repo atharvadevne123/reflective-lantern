@@ -89,10 +89,36 @@ def reset_prefix(prefix: str) -> int:
     return len(to_reset)
 
 
+def batch_increment(counts: dict[str, int]) -> None:
+    """Increment multiple counters in a single call.
+
+    Args:
+        counts: Mapping of counter name to amount to add. Negative amounts
+            are silently ignored to avoid accidental decrements.
+    """
+    for name, amount in counts.items():
+        if amount >= 0:
+            _counters[name] += amount
+
+
+def get_many(names: list[str]) -> dict[str, int]:
+    """Return current values for a list of counter names.
+
+    Args:
+        names: Counter names to look up.
+
+    Returns:
+        Dict mapping each name to its current count (0 if never set).
+    """
+    return {name: _counters[name] for name in names}
+
+
 __all__ = [
     "all_above",
+    "batch_increment",
     "counter_exists",
     "get",
+    "get_many",
     "increment",
     "increment_by",
     "reset",
