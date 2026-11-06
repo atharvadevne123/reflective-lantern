@@ -216,7 +216,7 @@ class TestOffPeakAverageAndRollingPeakSums:
         assert result == [pytest.approx(9.0)]
 
 
-class TestPeakDemandWindowExtended:
+class TestPeakDemandWindowEdgeCases:
     def test_too_short_returns_zeros(self) -> None:
         result = peak_demand_window([1.0, 2.0], window_hours=4)
         assert result["total_kwh"] == pytest.approx(0.0)
