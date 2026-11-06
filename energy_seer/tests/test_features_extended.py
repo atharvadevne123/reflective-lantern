@@ -6,6 +6,8 @@ import pandas as pd
 import pytest
 
 from app.features import (
+    BuildingEncoderTransformer,
+    TemporalFeatureTransformer,
     describe_dataframe,
     validate_dataframe_columns,
 )
@@ -80,3 +82,57 @@ class TestDescribeDataframeExtended:
         assert "vals" in result
         assert result["vals"]["min"] == pytest.approx(0.0)
         assert result["vals"]["max"] == pytest.approx(float(n - 1))
+
+
+class TestTemporalFeatureTransformerExtended:
+    def test_adds_hour_sin_cos(self) -> None:
+        df = pd.DataFrame({"hour_of_day": [0, 6, 12, 18]})
+        result = TemporalFeatureTransformer().transform(df)
+        assert "hour_sin" in result.columns
+        assert "hour_cos" in result.columns
+
+    def test_adds_peak_flags(self) -> None:
+        df = pd.DataFrame({"hour_of_day": [8]})
+        result = TemporalFeatureTransformer().transform(df)
+        assert "is_peak_morning" in result.columns
+        assert result["is_peak_morning"].iloc[0] == 1
+
+    def test_no_hour_column_no_hour_features(self) -> None:
+        df = pd.DataFrame({"day_of_week": [1, 2, 3]})
+        result = TemporalFeatureTransformer().transform(df)
+        assert "hour_sin" not in result.columns
+
+    def test_adds_weekend_flag(self) -> None:
+        df = pd.DataFrame({"day_of_week": [5, 6]})
+        result = TemporalFeatureTransformer().transform(df)
+        assert "is_weekend" in result.columns
+        assert all(result["is_weekend"] == 1)
+
+    def test_weekday_not_weekend(self) -> None:
+        df = pd.DataFrame({"day_of_week": [0, 1, 2, 3, 4]})
+        result = TemporalFeatureTransformer().transform(df)
+        assert all(result["is_weekend"] == 0)
+
+
+class TestBuildingEncoderTransformerExtended:
+    def test_known_building_type_encoded(self) -> None:
+        df = pd.DataFrame({"building_type": ["residential"]})
+        result = BuildingEncoderTransformer().transform(df)
+        assert "building_intensity" in result.columns
+        assert "building_type" not in result.columns
+
+    def test_unknown_building_type_fallback(self) -> None:
+        df = pd.DataFrame({"building_type": ["spaceship"]})
+        result = BuildingEncoderTransformer().transform(df)
+        assert result["building_intensity"].iloc[0] == pytest.approx(2.0)
+
+    def test_no_building_type_column_unchanged(self) -> None:
+        df = pd.DataFrame({"value": [1, 2, 3]})
+        result = BuildingEncoderTransformer().transform(df)
+        assert "building_intensity" not in result.columns
+
+    @pytest.mark.parametrize("bt", ["residential", "commercial", "industrial"])
+    def test_various_known_types(self, bt: str) -> None:
+        df = pd.DataFrame({"building_type": [bt]})
+        result = BuildingEncoderTransformer().transform(df)
+        assert result["building_intensity"].iloc[0] > 0.0
