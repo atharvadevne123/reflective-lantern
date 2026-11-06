@@ -203,3 +203,44 @@ class TestBatchIncrementAndGetMany:
         from app.telemetry import get_many
         result = get_many(["never_set"])
         assert result["never_set"] == 0
+
+
+class TestTelemetryIncrementByExtended:
+    def setup_method(self) -> None:
+        _reset_all()
+
+    def test_increment_by_accumulates(self) -> None:
+        increment_by("hits", 10)
+        increment_by("hits", 5)
+        assert get("hits") == 15
+
+    def test_increment_by_zero_no_change(self) -> None:
+        increment("base", 7)
+        increment_by("base", 0)
+        assert get("base") == 7
+
+    def test_multiple_distinct_counters(self) -> None:
+        for name in ("a", "b", "c"):
+            increment_by(name, 3)
+        assert get("a") == 3
+        assert get("b") == 3
+        assert get("c") == 3
+
+    @pytest.mark.parametrize("amount", [1, 10, 100, 1000])
+    def test_large_increments(self, amount: int) -> None:
+        increment_by("big", amount)
+        assert get("big") == amount
+
+    def test_snapshot_after_increments(self) -> None:
+        increment_by("x", 2)
+        increment_by("y", 4)
+        snap = snapshot()
+        assert snap["x"] == 2
+        assert snap["y"] == 4
+
+    def test_all_above_threshold(self) -> None:
+        increment_by("low", 2)
+        increment_by("high", 10)
+        above = all_above(5)
+        assert "high" in above
+        assert "low" not in above
