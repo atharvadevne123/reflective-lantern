@@ -136,3 +136,42 @@ def exponential_smoothing(
     for v in values[1:]:
         level = alpha * v + (1 - alpha) * level
     return [round(level, 4)] * steps
+
+
+def forecast_confidence_band(
+    forecast: list[float],
+    residuals: list[float],
+    z: float = 1.96,
+) -> dict[str, list[float]]:
+    """Compute upper and lower confidence bands around a point forecast.
+
+    Uses the standard deviation of historical residuals as the error estimate.
+
+    Args:
+        forecast: Point forecast values.
+        residuals: Historical forecast errors (used to estimate uncertainty).
+        z: Z-score multiplier for the confidence interval (default 1.96 = 95%).
+
+    Returns:
+        Dict with 'lower' and 'upper' lists the same length as *forecast*.
+        Returns equal bands at forecast values when *residuals* is empty.
+    """
+    if not residuals:
+        return {"lower": list(forecast), "upper": list(forecast)}
+    std = float(np.std(residuals))
+    margin = z * std
+    return {
+        "lower": [round(v - margin, 4) for v in forecast],
+        "upper": [round(v + margin, 4) for v in forecast],
+    }
+
+
+__all__ = [
+    "exponential_smoothing",
+    "forecast_confidence_band",
+    "forecast_horizon_accuracy",
+    "linear_trend",
+    "moving_average_forecast",
+    "seasonal_decompose_simple",
+    "weighted_moving_average",
+]
