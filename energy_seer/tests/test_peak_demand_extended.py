@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from app.peak_demand import find_peak_hours
+from app.peak_demand import estimate_peak_shaving_savings, find_peak_hours
 
 
 class TestFindPeakHoursExtended:
@@ -45,3 +45,40 @@ class TestFindPeakHoursExtended:
         values = list(range(1, 25))
         result = find_peak_hours(values, top_n=top_n)
         assert len(result["peak_hours"]) == min(top_n, 24)
+
+
+class TestEstimatePeakShavingSavingsExtended:
+    def test_returns_required_keys(self) -> None:
+        result = estimate_peak_shaving_savings([1.0] * 24)
+        for key in ("savings_kwh", "savings_cost", "shave_pct", "peak_threshold_kwh"):
+            assert key in result
+
+    def test_zero_cost_per_kwh_zero_savings_cost(self) -> None:
+        result = estimate_peak_shaving_savings([1.0] * 10 + [5.0] * 2, cost_per_kwh=0.0)
+        assert result["savings_cost"] == pytest.approx(0.0)
+
+    def test_savings_kwh_non_negative(self) -> None:
+        values = list(range(1, 25))
+        result = estimate_peak_shaving_savings(values, shave_pct=0.1)
+        assert result["savings_kwh"] >= 0.0
+
+    def test_shave_pct_stored(self) -> None:
+        result = estimate_peak_shaving_savings([1.0] * 24, shave_pct=0.2)
+        assert result["shave_pct"] == pytest.approx(0.2)
+
+    def test_savings_cost_proportional_to_cost_per_kwh(self) -> None:
+        vals = list(range(1, 25))
+        r1 = estimate_peak_shaving_savings(vals, cost_per_kwh=0.10)
+        r2 = estimate_peak_shaving_savings(vals, cost_per_kwh=0.20)
+        assert r2["savings_cost"] == pytest.approx(r1["savings_cost"] * 2, rel=1e-3)
+
+    def test_full_shave_reduces_all_to_threshold(self) -> None:
+        values = [1.0] * 20 + [10.0] * 4
+        result = estimate_peak_shaving_savings(values, shave_pct=0.0)
+        assert result["savings_kwh"] == pytest.approx(0.0, abs=0.001)
+
+    @pytest.mark.parametrize("shave", [0.05, 0.1, 0.15, 0.2, 0.3])
+    def test_shave_pct_range(self, shave: float) -> None:
+        vals = list(range(1, 25))
+        result = estimate_peak_shaving_savings(vals, shave_pct=shave)
+        assert result["savings_kwh"] >= 0.0
