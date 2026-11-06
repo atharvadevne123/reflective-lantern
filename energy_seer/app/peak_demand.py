@@ -158,10 +158,57 @@ def load_factor(hourly_forecasts: list[float]) -> float:
     return round(float(arr.mean()) / peak, 4)
 
 
+def off_peak_average(
+    hourly_forecasts: list[float],
+    off_peak_hours: list[int] | None = None,
+) -> float:
+    """Compute average consumption during off-peak hours.
+
+    Args:
+        hourly_forecasts: Hourly consumption values.
+        off_peak_hours: Hour indices to include (default: 22–06 i.e. [22, 23, 0–6]).
+
+    Returns:
+        Mean kWh during off-peak hours; 0.0 if no valid hours or empty input.
+    """
+    if not hourly_forecasts:
+        return 0.0
+    if off_peak_hours is None:
+        off_peak_hours = [22, 23, 0, 1, 2, 3, 4, 5, 6]
+    arr = np.array(hourly_forecasts, dtype=float)
+    valid = [arr[h] for h in off_peak_hours if 0 <= h < len(arr)]
+    if not valid:
+        return 0.0
+    return round(float(np.mean(valid)), 4)
+
+
+def rolling_peak_sums(
+    hourly_forecasts: list[float],
+    window_hours: int = 4,
+) -> list[float]:
+    """Compute rolling window sums over *hourly_forecasts*.
+
+    Args:
+        hourly_forecasts: Hourly consumption values.
+        window_hours: Number of consecutive hours per window.
+
+    Returns:
+        List of rolling sums, length ``len(hourly_forecasts) - window_hours + 1``.
+        Empty list when input is shorter than *window_hours*.
+    """
+    n = len(hourly_forecasts)
+    if n < window_hours:
+        return []
+    arr = np.array(hourly_forecasts, dtype=float)
+    return [round(float(arr[i : i + window_hours].sum()), 4) for i in range(n - window_hours + 1)]
+
+
 __all__ = [
     "demand_flexibility_score",
     "estimate_peak_shaving_savings",
     "find_peak_hours",
     "load_factor",
+    "off_peak_average",
     "peak_demand_window",
+    "rolling_peak_sums",
 ]
