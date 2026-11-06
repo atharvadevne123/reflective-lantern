@@ -136,3 +136,67 @@ class TestPsiFeatureRank:
         result = psi_feature_rank(fd)
         psi_values = [float(r["psi"]) for r in result]
         assert psi_values == sorted(psi_values, reverse=True)
+
+
+class TestPsiReportExtended:
+    def test_empty_feature_dict_returns_empty(self) -> None:
+        result = psi_report({})
+        assert result == {}
+
+    def test_multiple_features_all_in_result(self) -> None:
+        fd = {
+            "temp": (list(range(10)), list(range(10, 20))),
+            "humidity": (list(range(10)), list(range(10, 20))),
+        }
+        result = psi_report(fd)
+        assert "temp" in result
+        assert "humidity" in result
+        assert "summary" in result
+
+    def test_summary_max_psi_is_non_negative(self) -> None:
+        fd = {"a": (list(range(10)), list(range(10)))}
+        result = psi_report(fd)
+        assert float(result["summary"]["max_psi"]) >= 0.0
+
+    def test_summary_worst_feature_identified(self) -> None:
+        fd = {
+            "stable": ([0.0] * 10, [0.0] * 10),
+            "drifted": ([0.0] * 10, [1.0] * 10),
+        }
+        result = psi_report(fd)
+        assert result["summary"]["worst_feature"] == "drifted"
+
+    def test_drifted_features_counted(self) -> None:
+        fd = {
+            "a": ([0.0] * 10, [1.0] * 10),
+            "b": ([0.0] * 10, [0.0] * 10),
+        }
+        result = psi_report(fd)
+        assert int(result["summary"]["drifted_features"]) >= 1
+
+
+class TestPsiSeriesTrendExtended:
+    def test_single_value_not_escalating(self) -> None:
+        result = psi_series_trend([0.05])
+        assert result["escalating"] is False
+
+    def test_mean_psi_correct(self) -> None:
+        result = psi_series_trend([0.1, 0.2, 0.3])
+        assert result["mean_psi"] == pytest.approx(0.2, abs=0.001)
+
+    def test_max_psi_correct(self) -> None:
+        result = psi_series_trend([0.05, 0.3, 0.15])
+        assert result["max_psi"] == pytest.approx(0.3, abs=0.001)
+
+    def test_latest_drift_level_reported(self) -> None:
+        result = psi_series_trend([0.3])
+        assert result["drift_level"] == "significant"
+
+    @pytest.mark.parametrize("psi_val,expected_level", [
+        (0.05, "stable"),
+        (0.15, "moderate"),
+        (0.30, "significant"),
+    ])
+    def test_drift_levels_at_boundaries(self, psi_val: float, expected_level: str) -> None:
+        result = psi_series_trend([psi_val])
+        assert result["drift_level"] == expected_level
