@@ -214,3 +214,46 @@ class TestScoreToColorExtended:
     def test_color_mapping_parametrized(self, score: float, color: str) -> None:
         from app.efficiency_score import score_to_color
         assert score_to_color(score) == color
+
+
+class TestBuildingBenchmarksExtended:
+    def test_all_benchmarks_positive(self) -> None:
+        for bt, benchmark in BUILDING_BENCHMARKS.items():
+            assert benchmark > 0.0, f"{bt} benchmark must be positive"
+
+    def test_data_center_highest_benchmark(self) -> None:
+        assert BUILDING_BENCHMARKS["data_center"] == max(BUILDING_BENCHMARKS.values())
+
+    def test_residential_benchmark_exists(self) -> None:
+        assert "residential" in BUILDING_BENCHMARKS
+
+    def test_known_building_types_count(self) -> None:
+        assert len(BUILDING_BENCHMARKS) >= 7
+
+    @pytest.mark.parametrize("bt", ["residential", "commercial", "industrial", "office"])
+    def test_common_building_types_present(self, bt: str) -> None:
+        assert bt in BUILDING_BENCHMARKS
+
+    def test_all_values_are_floats(self) -> None:
+        for v in BUILDING_BENCHMARKS.values():
+            assert isinstance(v, float)
+
+
+class TestComputeEfficiencyScoreEdgeCasesExtended:
+    def test_unknown_building_type_uses_fallback(self) -> None:
+        result = compute_efficiency_score(100.0, "spaceship", floor_area_sqm=100.0)
+        assert "score" in result
+        assert result["building_type"] == "spaceship"
+
+    def test_zero_consumption_max_score(self) -> None:
+        result = compute_efficiency_score(0.0, "residential", floor_area_sqm=100.0)
+        assert result["score"] == pytest.approx(100.0)
+
+    def test_very_high_consumption_zero_score(self) -> None:
+        result = compute_efficiency_score(1e9, "residential", floor_area_sqm=1.0)
+        assert result["score"] == pytest.approx(0.0)
+
+    @pytest.mark.parametrize("bt", list(BUILDING_BENCHMARKS.keys()))
+    def test_all_known_building_types_return_valid_score(self, bt: str) -> None:
+        result = compute_efficiency_score(100.0, bt, floor_area_sqm=100.0)
+        assert 0.0 <= result["score"] <= 100.0
