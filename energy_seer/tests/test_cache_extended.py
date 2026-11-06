@@ -157,3 +157,32 @@ class TestGetWithDefaultAndKeysExtended:
         set_cache("x", 1)
         clear_all()
         assert keys() == []
+
+
+class TestGetOrSetAndUpdateMany:
+    def setup_method(self) -> None:
+        from app.cache import clear_all
+        clear_all()
+
+    def test_get_or_set_returns_existing_value(self) -> None:
+        from app.cache import get_or_set, set_cache
+        set_cache("k", "original")
+        result = get_or_set("k", "new_value")
+        assert result == "original"
+
+    def test_get_or_set_sets_missing_key(self) -> None:
+        from app.cache import get_cache, get_or_set
+        result = get_or_set("missing", "default_val")
+        assert result == "default_val"
+        assert get_cache("missing") == "default_val"
+
+    def test_update_many_sets_all_entries(self) -> None:
+        from app.cache import get_cache, update_many
+        update_many({"a": 1, "b": 2, "c": 3})
+        assert get_cache("a") == 1
+        assert get_cache("b") == 2
+        assert get_cache("c") == 3
+
+    def test_update_many_empty_dict_no_error(self) -> None:
+        from app.cache import update_many
+        update_many({})  # should not raise
