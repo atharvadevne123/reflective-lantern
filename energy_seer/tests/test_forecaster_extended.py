@@ -127,7 +127,7 @@ class TestForecastConfidenceBandExtended:
         forecast = [10.0, 10.0]
         residuals = [1.0, -1.0, 2.0, -2.0]
         result = forecast_confidence_band(forecast, residuals)
-        for lo, up, f in zip(result["lower"], result["upper"], forecast):
+        for lo, up, f in zip(result["lower"], result["upper"], forecast, strict=True):
             assert lo <= f
             assert up >= f
 
