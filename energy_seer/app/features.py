@@ -209,6 +209,31 @@ def validate_dataframe_columns(df: pd.DataFrame, required: list[str] | None = No
     return [col for col in required if col not in df.columns]
 
 
+def describe_dataframe(df: pd.DataFrame) -> dict[str, object]:
+    """Return summary statistics for numeric columns in *df*.
+
+    Args:
+        df: Input DataFrame to summarise.
+
+    Returns:
+        Dict mapping each numeric column name to a dict with 'mean', 'std',
+        'min', and 'max'.  Empty dict when *df* has no numeric columns.
+    """
+    numeric_cols = df.select_dtypes(include="number").columns.tolist()
+    result: dict[str, object] = {}
+    for col in numeric_cols:
+        series = df[col].dropna()
+        if series.empty:
+            continue
+        result[col] = {
+            "mean": round(float(series.mean()), 4),
+            "std": round(float(series.std()), 4) if len(series) > 1 else 0.0,
+            "min": round(float(series.min()), 4),
+            "max": round(float(series.max()), 4),
+        }
+    return result
+
+
 __all__ = [
     "BuildingEncoderTransformer",
     "DropRawColumnsTransformer",
@@ -217,6 +242,7 @@ __all__ = [
     "TemporalFeatureTransformer",
     "WeatherRatioTransformer",
     "build_feature_pipeline",
+    "describe_dataframe",
     "feature_column_names",
     "prepare_dataframe",
     "validate_dataframe_columns",
