@@ -167,3 +167,50 @@ class TestLoadFactorExtended:
         values = [1.0] * 10 + [peak_val]
         lf = load_factor(values)
         assert 0.0 <= lf <= 1.0
+
+
+class TestOffPeakAverageAndRollingPeakSums:
+    def test_off_peak_average_empty_returns_zero(self) -> None:
+        from app.peak_demand import off_peak_average
+        assert off_peak_average([]) == 0.0
+
+    def test_off_peak_average_all_hours_flexible(self) -> None:
+        from app.peak_demand import off_peak_average
+        values = [3.0] * 24
+        result = off_peak_average(values, off_peak_hours=list(range(24)))
+        assert result == pytest.approx(3.0)
+
+    def test_off_peak_average_specific_hours(self) -> None:
+        from app.peak_demand import off_peak_average
+        values = [1.0] * 20 + [5.0] * 4
+        result = off_peak_average(values, off_peak_hours=list(range(20)))
+        assert result == pytest.approx(1.0)
+
+    def test_off_peak_average_out_of_bounds_hours(self) -> None:
+        from app.peak_demand import off_peak_average
+        values = [2.0] * 10
+        result = off_peak_average(values, off_peak_hours=[0, 100])
+        assert result == pytest.approx(2.0)
+
+    def test_rolling_peak_sums_empty_when_too_short(self) -> None:
+        from app.peak_demand import rolling_peak_sums
+        assert rolling_peak_sums([1.0, 2.0], window_hours=5) == []
+
+    def test_rolling_peak_sums_length(self) -> None:
+        from app.peak_demand import rolling_peak_sums
+        values = list(range(10))
+        result = rolling_peak_sums(values, window_hours=3)
+        assert len(result) == 8
+
+    def test_rolling_peak_sums_values(self) -> None:
+        from app.peak_demand import rolling_peak_sums
+        values = [1.0, 2.0, 3.0, 4.0, 5.0]
+        result = rolling_peak_sums(values, window_hours=2)
+        assert result[0] == pytest.approx(3.0)
+        assert result[-1] == pytest.approx(9.0)
+
+    def test_rolling_peak_sums_single_window(self) -> None:
+        from app.peak_demand import rolling_peak_sums
+        values = [2.0, 3.0, 4.0]
+        result = rolling_peak_sums(values, window_hours=3)
+        assert result == [pytest.approx(9.0)]
