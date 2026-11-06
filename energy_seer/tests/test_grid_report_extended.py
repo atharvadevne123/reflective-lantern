@@ -9,6 +9,7 @@ from app.grid_report import (
     compute_anomaly_rate,
     generate_grid_report,
     merge_reports,
+    report_health_score,
     report_status_code,
     report_trend,
     summarise_alerts,
@@ -179,3 +180,46 @@ class TestReportTrendAndAlertFrequency:
 
     def test_compute_anomaly_rate_basic(self) -> None:
         assert compute_anomaly_rate(24, 24) == pytest.approx(1.0)
+
+
+class TestReportHealthScore:
+    def test_healthy_no_issues_scores_100(self) -> None:
+        report = {
+            "status": "healthy",
+            "alerts": [],
+            "drifted_features": [],
+            "anomaly_rate_per_hour": 0.0,
+        }
+        assert report_health_score(report) == pytest.approx(100.0)
+
+    def test_critical_status_lowers_score(self) -> None:
+        report = {
+            "status": "critical",
+            "alerts": [],
+            "drifted_features": [],
+            "anomaly_rate_per_hour": 0.0,
+        }
+        assert report_health_score(report) < 50.0
+
+    def test_alerts_reduce_score(self) -> None:
+        no_alert = {"status": "healthy", "alerts": [], "drifted_features": [], "anomaly_rate_per_hour": 0.0}
+        with_alert = {"status": "healthy", "alerts": ["X", "Y"], "drifted_features": [], "anomaly_rate_per_hour": 0.0}
+        assert report_health_score(with_alert) < report_health_score(no_alert)
+
+    def test_score_clamped_to_zero(self) -> None:
+        report = {
+            "status": "critical",
+            "alerts": ["A"] * 20,
+            "drifted_features": ["x"] * 10,
+            "anomaly_rate_per_hour": 10.0,
+        }
+        assert report_health_score(report) >= 0.0
+
+    def test_score_clamped_to_100(self) -> None:
+        report = {"status": "healthy", "alerts": [], "drifted_features": [], "anomaly_rate_per_hour": 0.0}
+        assert report_health_score(report) <= 100.0
+
+    def test_drifted_features_reduce_score(self) -> None:
+        clean = {"status": "healthy", "alerts": [], "drifted_features": [], "anomaly_rate_per_hour": 0.0}
+        drifted = {"status": "healthy", "alerts": [], "drifted_features": ["a", "b", "c"], "anomaly_rate_per_hour": 0.0}
+        assert report_health_score(drifted) < report_health_score(clean)
