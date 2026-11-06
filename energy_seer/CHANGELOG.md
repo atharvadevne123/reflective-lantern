@@ -1,45 +1,39 @@
-# Changelog
+# Energy Seer — Changelog
 
-## [1.1.0] - 2026-10-26
+All notable changes to the `energy_seer` sub-project are documented here.
+This file follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) conventions.
 
-### Added
-- `validate_temperature`, `validate_humidity`, `validate_horizon` in `validators.py`
-- `weighted_moving_average` and `exponential_smoothing` forecasters
-- `psi_alert` function for human-readable PSI alerts
-- `summarise_anomalies` helper in `monitoring.py`
-- `efficiency_percentile` in `efficiency_score.py`
-- `demand_trend` function in `demand_spike.py`
-- `compute_anomaly_rate` helper in `grid_report.py`
-- `counter_exists` and `reset_prefix` in `telemetry.py`
-- `get_with_default` and `keys` helpers in `cache.py`
-- `/api/v1/version` endpoint
-- `scripts/health_check.py` liveness probe
-- `train_time_sec` in model training metrics
-- 50+ new unit tests across all modules
-
-### Changed
-- `Makefile` — added `health`, `typecheck`, and `test-fast` targets
-- `_grade()` in `efficiency_score.py` memoised with `@lru_cache`
-- Module-level docstrings improved throughout
-
-## [1.0.0] - 2026-07-14
+## [Unreleased]
 
 ### Added
-- XGBoost + LightGBM + RandomForest VotingRegressor ensemble
-- 7-stage sklearn feature engineering pipeline (lag, rolling, temporal, weather, building, drop, scaler)
-- IsolationForest + Z-score anomaly detection
-- KS-test drift detection per feature
-- FastAPI with 8 versioned /api/v1/ endpoints
-- Multi-step hourly forecast endpoint
-- Batch prediction endpoint
-- FAISS-based similar pattern retrieval (RAG)
-- SQLAlchemy ORM with PostgreSQL/SQLite
-- Airflow weekly retraining DAG with R2 gate
-- Docker + docker-compose setup
-- pytest suite with 60+ tests
-- GitHub Actions CI (ruff lint + pytest)
-- Rate limiting middleware (300 req/min per IP)
-- Correlation ID middleware
-- Alembic database migrations
-- 5-fold cross-validation R2/RMSE metrics
-- MLflow-ready model tracking hooks
+- `demand_spike`: expanded `__all__` to include `spike_windows`, `demand_trend`,
+  `demand_percentile`, and `smooth_demand` (functions defined after the original
+  `__all__` block were silently excluded from the public API).
+- `monitoring`: new `get_drift_summary` aggregation helper; added `__all__`.
+- `forecaster`: new `forecast_confidence_band` helper; added `__all__`.
+- `features`: new `describe_dataframe` summary helper.
+- `grid_report`: new `report_health_score` numeric health metric.
+- `psi`: new `psi_batch_alert` convenience wrapper; updated `__all__`.
+- `aws_stub`: new `delete_model` and `model_exists` stub helpers; added `__all__`.
+
+### Tests
+- `test_demand_spike_extended.py` — expanded with `TestDemandVariabilityExtended`,
+  `TestDemandTrendEdgeCases`.
+- `test_monitoring_extended.py` — added `TestGetDriftSummaryExtended`,
+  `TestSummariseAnomaliesExtended`.
+- `test_forecaster_extended.py` — new file with 6 test classes covering all
+  public functions including `forecast_confidence_band`.
+- `test_features_extended.py` — new file covering `validate_dataframe_columns`,
+  `describe_dataframe`, `TemporalFeatureTransformer`, `BuildingEncoderTransformer`.
+- `test_psi_extended.py` — added `TestPsiReportExtended`, `TestPsiSeriesTrendExtended`,
+  `TestPsiBatchAlert`.
+- `test_efficiency_score_extended.py` — added `TestBuildingBenchmarksExtended`,
+  `TestComputeEfficiencyScoreEdgeCasesExtended`.
+- `test_cache_extended.py` — added `TestCacheDefaultTTLExtended`.
+- `test_telemetry_extended.py` — added `TestTelemetryIncrementByExtended`.
+- `test_validators_extended.py` — added `TestValidateForecastLengthExtended`.
+- `test_peak_demand_extended.py` — added `TestPeakDemandWindowEdgeCases`.
+- `test_grid_report_extended.py` — added `TestReportHealthScore`.
+- `test_aws_stub_extended.py` — new file covering upload, download, list, delete,
+  model_exists stubs.
+- `test_mlflow_stub_extended.py` — added `TestLogParamsTypesExtended`.
