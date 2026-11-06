@@ -96,3 +96,60 @@ class TestSetReferenceDistributionsExtended:
         set_reference_distributions(original)
         original["feat"].append(999.0)
         assert len(_reference_distributions["feat"]) == 5
+
+
+class TestGetDriftSummaryExtended:
+    def test_empty_results(self) -> None:
+        from app.monitoring import get_drift_summary
+        result = get_drift_summary({})
+        assert result["total_features"] == 0
+        assert result["drifted_count"] == 0
+
+    def test_all_stable(self) -> None:
+        from app.monitoring import get_drift_summary
+        feature_results = {
+            "a": {"drift_detected": False, "ks_statistic": 0.1, "p_value": 0.5},
+            "b": {"drift_detected": False, "ks_statistic": 0.05, "p_value": 0.8},
+        }
+        result = get_drift_summary(feature_results)
+        assert result["drifted_count"] == 0
+        assert result["drifted_features"] == []
+
+    def test_some_drifted(self) -> None:
+        from app.monitoring import get_drift_summary
+        feature_results = {
+            "a": {"drift_detected": True, "ks_statistic": 0.9, "p_value": 0.01},
+            "b": {"drift_detected": False, "ks_statistic": 0.1, "p_value": 0.5},
+        }
+        result = get_drift_summary(feature_results)
+        assert result["drifted_count"] == 1
+        assert "a" in result["drifted_features"]
+
+    def test_error_features_reported(self) -> None:
+        from app.monitoring import get_drift_summary
+        feature_results = {
+            "x": {"drift_detected": False, "error": "insufficient_data"},
+        }
+        result = get_drift_summary(feature_results)
+        assert "x" in result["error_features"]
+        assert result["drifted_count"] == 0
+
+    def test_drift_rate_calculation(self) -> None:
+        from app.monitoring import get_drift_summary
+        feature_results = {
+            "a": {"drift_detected": True},
+            "b": {"drift_detected": True},
+            "c": {"drift_detected": False},
+            "d": {"drift_detected": False},
+        }
+        result = get_drift_summary(feature_results)
+        assert result["drift_rate"] == pytest.approx(0.5)
+
+    def test_all_drifted(self) -> None:
+        from app.monitoring import get_drift_summary
+        feature_results = {
+            "p": {"drift_detected": True},
+            "q": {"drift_detected": True},
+        }
+        result = get_drift_summary(feature_results)
+        assert result["drift_rate"] == pytest.approx(1.0)
