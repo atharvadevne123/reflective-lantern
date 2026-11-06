@@ -591,6 +591,6 @@
       "energy_seer/README.md"
     ],
     "ruff_status": "passing",
-    "email_status": "pending"
+    "email_status": "network_blocked"
   }
 ]
