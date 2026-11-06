@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import pytest
 
+from app.monitoring import summarise_anomalies
+
 
 class TestComputeDriftExtended:
     def test_insufficient_reference_data(self) -> None:
@@ -153,3 +155,49 @@ class TestGetDriftSummaryExtended:
         }
         result = get_drift_summary(feature_results)
         assert result["drift_rate"] == pytest.approx(1.0)
+
+
+class TestSummariseAnomaliesExtended:
+    def test_empty_list_returns_zero(self) -> None:
+        result = summarise_anomalies([])
+        assert result["total"] == 0
+        assert result["anomaly_count"] == 0
+        assert result["anomaly_rate"] == pytest.approx(0.0)
+
+    def test_all_normal_zero_anomalies(self) -> None:
+        results = [{"is_anomaly": False, "severity": "none", "anomaly_type": "none"}] * 5
+        result = summarise_anomalies(results)
+        assert result["anomaly_count"] == 0
+
+    def test_all_anomalies_full_rate(self) -> None:
+        results = [{"is_anomaly": True, "severity": "high", "anomaly_type": "spike"}] * 4
+        result = summarise_anomalies(results)
+        assert result["anomaly_count"] == 4
+        assert result["anomaly_rate"] == pytest.approx(1.0)
+
+    def test_mixed_severities_counted(self) -> None:
+        results = [
+            {"is_anomaly": True, "severity": "high", "anomaly_type": "spike"},
+            {"is_anomaly": True, "severity": "critical", "anomaly_type": "drop"},
+            {"is_anomaly": False, "severity": "none", "anomaly_type": "none"},
+        ]
+        result = summarise_anomalies(results)
+        assert result["severity_counts"]["high"] == 1
+        assert result["severity_counts"]["critical"] == 1
+        assert result["severity_counts"]["none"] == 1
+
+    def test_type_counts_in_result(self) -> None:
+        results = [
+            {"is_anomaly": True, "severity": "high", "anomaly_type": "spike"},
+            {"is_anomaly": True, "severity": "low", "anomaly_type": "spike"},
+        ]
+        result = summarise_anomalies(results)
+        assert result["type_counts"]["spike"] == 2
+
+    def test_anomaly_rate_between_zero_and_one(self) -> None:
+        results = [
+            {"is_anomaly": True, "severity": "high", "anomaly_type": "spike"},
+            {"is_anomaly": False, "severity": "none", "anomaly_type": "none"},
+        ]
+        result = summarise_anomalies(results)
+        assert 0.0 <= result["anomaly_rate"] <= 1.0
