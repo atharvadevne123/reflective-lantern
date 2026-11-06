@@ -174,12 +174,49 @@ def efficiency_percentile(score: float, population: list[float]) -> float:
     return round(100.0 * below / len(population), 2)
 
 
+def compare_buildings(
+    scores: dict[str, float],
+) -> dict[str, object]:
+    """Rank buildings by efficiency score and assign grades.
+
+    Args:
+        scores: Mapping of building identifier to efficiency score (0–100).
+
+    Returns:
+        Dict with 'ranked' list (descending by score), 'best', and 'worst'
+        building identifiers.  Returns empty result when *scores* is empty.
+    """
+    if not scores:
+        return {"ranked": [], "best": None, "worst": None}
+    ranked = sorted(scores.items(), key=lambda x: x[1], reverse=True)
+    return {
+        "ranked": [{"id": k, "score": v, "grade": _grade(v)} for k, v in ranked],
+        "best": ranked[0][0],
+        "worst": ranked[-1][0],
+    }
+
+
+def score_to_color(score: float) -> str:
+    """Map an efficiency score to a traffic-light colour for dashboard display.
+
+    Args:
+        score: Efficiency score in [0, 100].
+
+    Returns:
+        'green' for A/B grades, 'amber' for C, 'red' for D.
+    """
+    grade = _grade(score)
+    return "green" if grade in ("A", "B") else ("amber" if grade == "C" else "red")
+
+
 __all__ = [
     "BUILDING_BENCHMARKS",
     "GRADE_THRESHOLDS",
+    "compare_buildings",
     "compute_efficiency_score",
     "efficiency_delta",
     "efficiency_percentile",
     "efficiency_trend",
     "normalised_efficiency_index",
+    "score_to_color",
 ]
