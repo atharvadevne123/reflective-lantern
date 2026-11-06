@@ -214,3 +214,38 @@ class TestOffPeakAverageAndRollingPeakSums:
         values = [2.0, 3.0, 4.0]
         result = rolling_peak_sums(values, window_hours=3)
         assert result == [pytest.approx(9.0)]
+
+
+class TestPeakDemandWindowExtended:
+    def test_too_short_returns_zeros(self) -> None:
+        result = peak_demand_window([1.0, 2.0], window_hours=4)
+        assert result["total_kwh"] == pytest.approx(0.0)
+        assert result["window_start"] == 0
+
+    def test_window_start_and_end_correct(self) -> None:
+        values = [0.0] * 5 + [10.0, 10.0, 10.0, 10.0] + [0.0] * 5
+        result = peak_demand_window(values, window_hours=4)
+        assert result["window_start"] == 5
+        assert result["window_end"] == 8
+
+    def test_avg_kwh_is_total_divided_by_window(self) -> None:
+        values = [1.0, 2.0, 3.0, 4.0, 5.0, 6.0]
+        result = peak_demand_window(values, window_hours=3)
+        expected_avg = result["total_kwh"] / 3
+        assert result["avg_kwh"] == pytest.approx(expected_avg, abs=0.01)
+
+    @pytest.mark.parametrize("window", [2, 3, 4, 6])
+    def test_various_window_sizes(self, window: int) -> None:
+        values = [float(i) for i in range(24)]
+        result = peak_demand_window(values, window_hours=window)
+        assert result["total_kwh"] > 0.0
+
+    def test_flat_series_start_at_zero(self) -> None:
+        values = [5.0] * 10
+        result = peak_demand_window(values, window_hours=4)
+        assert result["window_start"] == 0
+
+    def test_window_end_equals_start_plus_window_minus_one(self) -> None:
+        values = list(range(1, 13))
+        result = peak_demand_window(values, window_hours=4)
+        assert result["window_end"] == result["window_start"] + 3
