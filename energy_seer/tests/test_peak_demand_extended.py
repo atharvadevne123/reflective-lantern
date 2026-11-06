@@ -4,7 +4,13 @@ from __future__ import annotations
 
 import pytest
 
-from app.peak_demand import estimate_peak_shaving_savings, find_peak_hours
+from app.peak_demand import (
+    demand_flexibility_score,
+    estimate_peak_shaving_savings,
+    find_peak_hours,
+    load_factor,
+    peak_demand_window,
+)
 
 
 class TestFindPeakHoursExtended:
@@ -82,3 +88,82 @@ class TestEstimatePeakShavingSavingsExtended:
         vals = list(range(1, 25))
         result = estimate_peak_shaving_savings(vals, shave_pct=shave)
         assert result["savings_kwh"] >= 0.0
+
+
+class TestDemandFlexibilityScoreExtended:
+    def test_empty_flexible_hours_zero_ratio(self) -> None:
+        result = demand_flexibility_score([2.0] * 24, flexible_hours=[])
+        assert result["flexibility_ratio"] == 0.0
+        assert result["shiftable_pct"] == 0.0
+
+    def test_all_flexible_ratio_is_one(self) -> None:
+        result = demand_flexibility_score([1.0] * 24, flexible_hours=list(range(24)))
+        assert abs(result["flexibility_ratio"] - 1.0) < 0.001
+
+    def test_default_flexible_hours_set(self) -> None:
+        result = demand_flexibility_score([1.0] * 24)
+        assert 0.0 < result["flexibility_ratio"] < 1.0
+
+    def test_flexible_and_peak_sum_to_total_kwh(self) -> None:
+        values = [float(i) for i in range(24)]
+        result = demand_flexibility_score(values, flexible_hours=[0, 1, 2])
+        total = sum(values)
+        assert abs(result["flexible_kwh"] + result["peak_kwh"] - total) < 0.001
+
+    def test_shiftable_pct_is_ratio_times_100(self) -> None:
+        result = demand_flexibility_score([2.0] * 24, flexible_hours=[0, 1, 2])
+        assert abs(result["shiftable_pct"] - result["flexibility_ratio"] * 100) < 0.001
+
+    def test_out_of_bounds_flexible_hours_ignored(self) -> None:
+        result = demand_flexibility_score([1.0] * 24, flexible_hours=[0, 25, 100])
+        assert result["flexible_kwh"] == pytest.approx(1.0)
+
+
+class TestPeakDemandWindowExtended:
+    def test_window_covers_highest_block(self) -> None:
+        values = [1.0] * 4 + [10.0] * 4 + [1.0] * 4
+        result = peak_demand_window(values, window_hours=4)
+        assert result["window_start"] == 4
+
+    def test_window_end_is_start_plus_window_minus_one(self) -> None:
+        values = list(range(10))
+        result = peak_demand_window(values, window_hours=3)
+        assert result["window_end"] == result["window_start"] + 2
+
+    def test_avg_kwh_equals_total_over_window(self) -> None:
+        values = [3.0] * 10
+        result = peak_demand_window(values, window_hours=4)
+        assert abs(result["avg_kwh"] - result["total_kwh"] / 4) < 0.001
+
+    def test_window_one_hour(self) -> None:
+        values = [5.0, 1.0, 1.0, 10.0, 2.0]
+        result = peak_demand_window(values, window_hours=1)
+        assert result["window_start"] == 3
+
+    @pytest.mark.parametrize("w", [1, 2, 3, 6])
+    def test_window_size_varied(self, w: int) -> None:
+        values = [float(i) for i in range(24)]
+        result = peak_demand_window(values, window_hours=w)
+        assert result["total_kwh"] > 0.0
+
+
+class TestLoadFactorExtended:
+    def test_all_zeros_returns_zero(self) -> None:
+        assert load_factor([0.0] * 10) == 0.0
+
+    def test_flat_nonzero_returns_one(self) -> None:
+        assert load_factor([7.5] * 24) == pytest.approx(1.0)
+
+    def test_highly_variable_less_than_one(self) -> None:
+        values = [0.1] * 23 + [100.0]
+        lf = load_factor(values)
+        assert 0.0 < lf < 1.0
+
+    def test_single_value_returns_one(self) -> None:
+        assert load_factor([5.0]) == pytest.approx(1.0)
+
+    @pytest.mark.parametrize("peak_val", [1.0, 10.0, 100.0])
+    def test_load_factor_in_unit_interval(self, peak_val: float) -> None:
+        values = [1.0] * 10 + [peak_val]
+        lf = load_factor(values)
+        assert 0.0 <= lf <= 1.0
