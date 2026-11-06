@@ -77,8 +77,39 @@ __all__ = [
     "clear_all",
     "evict_expired",
     "get_cache",
+    "get_or_set",
     "get_with_default",
     "invalidate",
     "keys",
     "set_cache",
+    "update_many",
 ]
+
+
+def get_or_set(key: str, value: object, ttl: float = DEFAULT_TTL) -> object:
+    """Return the cached value for *key*, or set it to *value* and return *value*.
+
+    Args:
+        key: Cache key to look up or populate.
+        value: Value to store if the key is not present or has expired.
+        ttl: Time-to-live in seconds for a new entry (default DEFAULT_TTL).
+
+    Returns:
+        The existing cached value if present and unexpired, otherwise *value*.
+    """
+    existing = get_cache(key)
+    if existing is not None:
+        return existing
+    set_cache(key, value, ttl=ttl)
+    return value
+
+
+def update_many(entries: dict[str, object], ttl: float = DEFAULT_TTL) -> None:
+    """Bulk-set multiple cache entries with the same TTL.
+
+    Args:
+        entries: Mapping of key → value to store.
+        ttl: Time-to-live in seconds for each entry (default DEFAULT_TTL).
+    """
+    for key, value in entries.items():
+        set_cache(key, value, ttl=ttl)
