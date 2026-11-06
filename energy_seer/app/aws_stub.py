@@ -24,3 +24,40 @@ def list_model_versions(bucket: str, prefix: str = "models/") -> list[str]:
     """List model versions stored in S3."""
     logger.info("s3_list bucket=%s prefix=%s", bucket, prefix)
     return []
+
+
+def delete_model(bucket: str, key: str) -> bool:
+    """Delete a model artifact from S3 (stub logs instead of calling S3).
+
+    Args:
+        bucket: S3 bucket name.
+        key: Object key to delete.
+
+    Returns:
+        True (stub always succeeds).
+    """
+    logger.info("s3_delete bucket=%s key=%s", bucket, key)
+    return True
+
+
+def model_exists(bucket: str, key: str) -> bool:
+    """Check whether a model artifact exists in S3 (stub always returns False).
+
+    Args:
+        bucket: S3 bucket name.
+        key: Object key to check.
+
+    Returns:
+        False (stub — no real S3 lookup performed).
+    """
+    logger.info("s3_exists bucket=%s key=%s", bucket, key)
+    return False
+
+
+__all__ = [
+    "delete_model",
+    "download_model",
+    "list_model_versions",
+    "model_exists",
+    "upload_model",
+]
