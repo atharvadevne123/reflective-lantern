@@ -171,3 +171,35 @@ class TestCounterExistsAndResetExtended:
         reset("clear")
         assert get("keep") == 7
         assert get("clear") == 0
+
+
+class TestBatchIncrementAndGetMany:
+    def setup_method(self) -> None:
+        _reset_all()
+
+    def test_batch_increment_multiple_counters(self) -> None:
+        from app.telemetry import batch_increment, get
+        batch_increment({"req": 5, "err": 2})
+        assert get("req") == 5
+        assert get("err") == 2
+
+    def test_batch_increment_empty_dict(self) -> None:
+        from app.telemetry import batch_increment
+        batch_increment({})  # should not raise
+
+    def test_batch_increment_ignores_negatives(self) -> None:
+        from app.telemetry import batch_increment, get
+        batch_increment({"c": -5})
+        assert get("c") == 0
+
+    def test_get_many_returns_all_values(self) -> None:
+        from app.telemetry import get_many, increment
+        increment("x", 3)
+        increment("y", 7)
+        result = get_many(["x", "y"])
+        assert result == {"x": 3, "y": 7}
+
+    def test_get_many_missing_key_returns_zero(self) -> None:
+        from app.telemetry import get_many
+        result = get_many(["never_set"])
+        assert result["never_set"] == 0
