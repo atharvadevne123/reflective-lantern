@@ -9,6 +9,7 @@ from app.psi import (
     PSI_STABLE_THRESHOLD,
     compute_psi,
     psi_alert,
+    psi_batch_alert,
     psi_feature_rank,
     psi_report,
     psi_series_trend,
@@ -200,3 +201,30 @@ class TestPsiSeriesTrendExtended:
     def test_drift_levels_at_boundaries(self, psi_val: float, expected_level: str) -> None:
         result = psi_series_trend([psi_val])
         assert result["drift_level"] == expected_level
+
+
+class TestPsiBatchAlert:
+    def test_empty_dict_returns_empty(self) -> None:
+        result = psi_batch_alert({})
+        assert result == []
+
+    def test_one_feature_one_alert(self) -> None:
+        result = psi_batch_alert({"temp": 0.3})
+        assert len(result) == 1
+        assert result[0]["alert"] is True
+
+    def test_multiple_features_all_returned(self) -> None:
+        result = psi_batch_alert({"a": 0.05, "b": 0.15, "c": 0.30})
+        assert len(result) == 3
+
+    def test_stable_feature_no_alert(self) -> None:
+        result = psi_batch_alert({"x": 0.05})
+        assert result[0]["alert"] is False
+
+    def test_message_contains_feature_name(self) -> None:
+        result = psi_batch_alert({"humidity": 0.30})
+        assert "humidity" in result[0]["message"]
+
+    def test_drift_level_assigned(self) -> None:
+        result = psi_batch_alert({"f": 0.15})
+        assert result[0]["drift_level"] == "moderate"
