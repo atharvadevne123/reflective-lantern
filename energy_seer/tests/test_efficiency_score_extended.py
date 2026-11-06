@@ -164,3 +164,53 @@ class TestEfficiencyPercentileExtended:
         population = [float(i * 10) for i in range(11)]
         pct = efficiency_percentile(score, population)
         assert 0.0 <= pct <= 100.0
+
+
+class TestCompareBuildingsExtended:
+    def test_empty_scores_returns_no_ranked(self) -> None:
+        from app.efficiency_score import compare_buildings
+        result = compare_buildings({})
+        assert result["ranked"] == []
+        assert result["best"] is None
+        assert result["worst"] is None
+
+    def test_single_building(self) -> None:
+        from app.efficiency_score import compare_buildings
+        result = compare_buildings({"A": 75.0})
+        assert result["best"] == "A"
+        assert result["worst"] == "A"
+
+    def test_ranked_descending(self) -> None:
+        from app.efficiency_score import compare_buildings
+        result = compare_buildings({"Low": 30.0, "Mid": 60.0, "High": 90.0})
+        ranked_ids = [r["id"] for r in result["ranked"]]
+        assert ranked_ids[0] == "High"
+        assert ranked_ids[-1] == "Low"
+
+    def test_grade_assigned_in_ranked(self) -> None:
+        from app.efficiency_score import compare_buildings
+        result = compare_buildings({"X": 85.0})
+        assert result["ranked"][0]["grade"] == "A"
+
+
+class TestScoreToColorExtended:
+    def test_a_grade_is_green(self) -> None:
+        from app.efficiency_score import score_to_color
+        assert score_to_color(90.0) == "green"
+
+    def test_b_grade_is_green(self) -> None:
+        from app.efficiency_score import score_to_color
+        assert score_to_color(70.0) == "green"
+
+    def test_c_grade_is_amber(self) -> None:
+        from app.efficiency_score import score_to_color
+        assert score_to_color(50.0) == "amber"
+
+    def test_d_grade_is_red(self) -> None:
+        from app.efficiency_score import score_to_color
+        assert score_to_color(20.0) == "red"
+
+    @pytest.mark.parametrize("score,color", [(95.0, "green"), (65.0, "green"), (45.0, "amber"), (10.0, "red")])
+    def test_color_mapping_parametrized(self, score: float, color: str) -> None:
+        from app.efficiency_score import score_to_color
+        assert score_to_color(score) == color
