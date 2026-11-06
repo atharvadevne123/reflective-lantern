@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from app.validators import clamp, validate_meter_id
+from app.validators import clamp, validate_alpha, validate_meter_id, validate_period
 
 
 class TestClampExtended:
@@ -50,3 +50,51 @@ class TestValidateMeterIdExtended:
     @pytest.mark.parametrize("meter_id", ["A", "1", "X" * 64])
     def test_valid_meter_ids(self, meter_id: str) -> None:
         assert validate_meter_id(meter_id) == meter_id.strip()
+
+
+class TestValidateAlphaExtended:
+    def test_alpha_one_accepted(self) -> None:
+        assert validate_alpha(1.0) == pytest.approx(1.0)
+
+    def test_alpha_very_small_accepted(self) -> None:
+        assert validate_alpha(0.001) == pytest.approx(0.001)
+
+    def test_zero_raises(self) -> None:
+        with pytest.raises(ValueError):
+            validate_alpha(0.0)
+
+    def test_above_one_raises(self) -> None:
+        with pytest.raises(ValueError):
+            validate_alpha(1.0001)
+
+    def test_negative_raises(self) -> None:
+        with pytest.raises(ValueError):
+            validate_alpha(-0.5)
+
+    def test_nan_raises(self) -> None:
+        with pytest.raises(ValueError):
+            validate_alpha(float("nan"))
+
+    @pytest.mark.parametrize("alpha", [0.1, 0.3, 0.5, 0.9, 1.0])
+    def test_valid_alpha_values(self, alpha: float) -> None:
+        assert validate_alpha(alpha) == pytest.approx(alpha)
+
+
+class TestValidatePeriodExtended:
+    def test_period_equals_min_accepted(self) -> None:
+        assert validate_period(2, min_period=2) == 2
+
+    def test_period_below_default_min_raises(self) -> None:
+        with pytest.raises(ValueError):
+            validate_period(1)
+
+    def test_large_period_accepted(self) -> None:
+        assert validate_period(8760) == 8760
+
+    def test_custom_min_period_zero_raises(self) -> None:
+        with pytest.raises(ValueError):
+            validate_period(1, min_period=2)
+
+    @pytest.mark.parametrize("period", [2, 7, 12, 24, 52, 365])
+    def test_common_seasonal_periods(self, period: int) -> None:
+        assert validate_period(period) == period
