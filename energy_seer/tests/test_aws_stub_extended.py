@@ -6,7 +6,13 @@ import logging
 
 import pytest
 
-from app.aws_stub import delete_model, download_model, list_model_versions, model_exists, upload_model
+from app.aws_stub import (
+    delete_model,
+    download_model,
+    list_model_versions,
+    model_exists,
+    upload_model,
+)
 
 
 class TestUploadModelExtended:
