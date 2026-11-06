@@ -69,3 +69,16 @@ def keys() -> list[str]:
     """Return the keys of all non-expired cache entries."""
     now = time.monotonic()
     return [k for k, (_, exp) in _store.items() if now <= exp]
+
+
+__all__ = [
+    "DEFAULT_TTL",
+    "cache_size",
+    "clear_all",
+    "evict_expired",
+    "get_cache",
+    "get_with_default",
+    "invalidate",
+    "keys",
+    "set_cache",
+]
