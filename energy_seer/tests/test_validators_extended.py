@@ -332,3 +332,39 @@ class TestValidateNonNegativeFloatExtended:
     def test_valid_values(self, v: float) -> None:
         from app.validators import validate_non_negative_float
         assert validate_non_negative_float(v) == pytest.approx(v)
+
+
+class TestValidateForecastLengthExtended:
+    def test_minimum_one_accepted(self) -> None:
+        from app.validators import validate_forecast_length
+        assert validate_forecast_length(1) == 1
+
+    def test_max_length_accepted(self) -> None:
+        from app.validators import validate_forecast_length
+        assert validate_forecast_length(8760) == 8760
+
+    def test_zero_raises(self) -> None:
+        from app.validators import validate_forecast_length
+        with pytest.raises(ValueError, match="at least 1"):
+            validate_forecast_length(0)
+
+    def test_negative_raises(self) -> None:
+        from app.validators import validate_forecast_length
+        with pytest.raises(ValueError):
+            validate_forecast_length(-10)
+
+    def test_exceeds_max_raises(self) -> None:
+        from app.validators import validate_forecast_length
+        with pytest.raises(ValueError, match="exceeds"):
+            validate_forecast_length(8761)
+
+    def test_custom_max_length(self) -> None:
+        from app.validators import validate_forecast_length
+        assert validate_forecast_length(48, max_length=48) == 48
+        with pytest.raises(ValueError):
+            validate_forecast_length(49, max_length=48)
+
+    @pytest.mark.parametrize("n", [1, 24, 168, 720, 8760])
+    def test_valid_horizons(self, n: int) -> None:
+        from app.validators import validate_forecast_length
+        assert validate_forecast_length(n) == n
