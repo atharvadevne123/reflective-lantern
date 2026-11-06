@@ -218,3 +218,43 @@ def compute_prediction_stats(db: Session) -> dict:
         "min_kwh": round(float(np.min(preds)), 4),
         "max_kwh": round(float(np.max(preds)), 4),
     }
+
+
+def get_drift_summary(feature_results: dict[str, dict]) -> dict[str, object]:
+    """Summarise per-feature drift results into an aggregate report.
+
+    Args:
+        feature_results: Mapping of feature name to drift result dicts as
+            returned by :func:`compute_drift` or :func:`check_all_features`.
+
+    Returns:
+        Dict with 'total_features', 'drifted_count', 'drift_rate',
+        'drifted_features' (list of names), and 'error_features' (list of
+        names where insufficient_data was returned).
+    """
+    total = len(feature_results)
+    drifted: list[str] = []
+    errors: list[str] = []
+    for feature, result in feature_results.items():
+        if result.get("error") == "insufficient_data":
+            errors.append(feature)
+        elif result.get("drift_detected"):
+            drifted.append(feature)
+    return {
+        "total_features": total,
+        "drifted_count": len(drifted),
+        "drift_rate": round(len(drifted) / max(total, 1), 4),
+        "drifted_features": drifted,
+        "error_features": errors,
+    }
+
+
+__all__ = [
+    "check_all_features",
+    "compute_drift",
+    "detect_anomaly",
+    "get_drift_summary",
+    "set_reference_distributions",
+    "summarise_anomalies",
+    "train_anomaly_detector",
+]
