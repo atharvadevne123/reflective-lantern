@@ -261,3 +261,74 @@ class TestValidateFeatureWindowExtended:
     def test_various_min_lengths(self, min_len: int) -> None:
         values = [1.0] * min_len
         assert validate_feature_window(values, min_length=min_len) == values
+
+
+class TestValidatePositiveIntExtended:
+    def test_valid_positive_int(self) -> None:
+        from app.validators import validate_positive_int
+        assert validate_positive_int(5) == 5
+
+    def test_zero_raises(self) -> None:
+        from app.validators import validate_positive_int
+        with pytest.raises(ValueError, match="positive"):
+            validate_positive_int(0)
+
+    def test_negative_raises(self) -> None:
+        from app.validators import validate_positive_int
+        with pytest.raises(ValueError):
+            validate_positive_int(-1)
+
+    def test_bool_raises(self) -> None:
+        from app.validators import validate_positive_int
+        with pytest.raises(ValueError):
+            validate_positive_int(True)  # type: ignore[arg-type]
+
+    def test_float_raises(self) -> None:
+        from app.validators import validate_positive_int
+        with pytest.raises(ValueError):
+            validate_positive_int(1.5)  # type: ignore[arg-type]
+
+    def test_custom_name_in_error(self) -> None:
+        from app.validators import validate_positive_int
+        with pytest.raises(ValueError, match="count"):
+            validate_positive_int(-1, name="count")
+
+    @pytest.mark.parametrize("v", [1, 2, 100, 10000])
+    def test_various_positive_ints(self, v: int) -> None:
+        from app.validators import validate_positive_int
+        assert validate_positive_int(v) == v
+
+
+class TestValidateNonNegativeFloatExtended:
+    def test_zero_accepted(self) -> None:
+        from app.validators import validate_non_negative_float
+        assert validate_non_negative_float(0.0) == 0.0
+
+    def test_positive_accepted(self) -> None:
+        from app.validators import validate_non_negative_float
+        assert validate_non_negative_float(3.14) == pytest.approx(3.14)
+
+    def test_negative_raises(self) -> None:
+        from app.validators import validate_non_negative_float
+        with pytest.raises(ValueError, match="non-negative"):
+            validate_non_negative_float(-0.001)
+
+    def test_infinity_raises(self) -> None:
+        from app.validators import validate_non_negative_float
+        with pytest.raises(ValueError, match="finite"):
+            validate_non_negative_float(float("inf"))
+
+    def test_nan_raises(self) -> None:
+        from app.validators import validate_non_negative_float
+        with pytest.raises(ValueError, match="finite"):
+            validate_non_negative_float(float("nan"))
+
+    def test_custom_name_in_error(self) -> None:
+        from app.validators import validate_non_negative_float
+        with pytest.raises(ValueError, match="consumption"):
+            validate_non_negative_float(-1.0, name="consumption")
+
+    @pytest.mark.parametrize("v", [0.0, 0.001, 1.0, 100.0, 9999.9])
+    def test_valid_values(self, v: float) -> None:
+        from app.validators import validate_non_negative_float
+        assert validate_non_negative_float(v) == pytest.approx(v)
