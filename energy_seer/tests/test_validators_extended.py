@@ -7,10 +7,13 @@ import pytest
 from app.validators import (
     clamp,
     validate_alpha,
+    validate_feature_window,
     validate_horizon,
     validate_humidity,
     validate_meter_id,
     validate_period,
+    validate_readings_list,
+    validate_tariff,
     validate_temperature,
 )
 
@@ -184,3 +187,77 @@ class TestValidateHorizonExtended:
     @pytest.mark.parametrize("h", [1, 6, 12, 24, 48, 72, 168])
     def test_common_forecast_horizons(self, h: int) -> None:
         assert validate_horizon(h) == h
+
+
+class TestValidateReadingsListExtended:
+    def test_single_value_list_accepted(self) -> None:
+        assert validate_readings_list([0.0]) == [0.0]
+
+    def test_infinity_raises(self) -> None:
+        with pytest.raises(ValueError):
+            validate_readings_list([1.0, float("inf")])
+
+    def test_negative_infinity_raises(self) -> None:
+        with pytest.raises(ValueError):
+            validate_readings_list([float("-inf")])
+
+    def test_nan_at_first_index_raises(self) -> None:
+        with pytest.raises(ValueError):
+            validate_readings_list([float("nan"), 1.0])
+
+    def test_all_zeros_allowed(self) -> None:
+        result = validate_readings_list([0.0, 0.0, 0.0])
+        assert result == [0.0, 0.0, 0.0]
+
+    def test_large_list_accepted(self) -> None:
+        readings = [float(i) for i in range(1000)]
+        result = validate_readings_list(readings)
+        assert len(result) == 1000
+
+    def test_allow_negative_true_accepts_negatives(self) -> None:
+        readings = [-5.0, -1.0, 0.0, 1.0]
+        result = validate_readings_list(readings, allow_negative=True)
+        assert result[0] == -5.0
+
+
+class TestValidateTariffExtended:
+    def test_zero_tariff_accepted(self) -> None:
+        assert validate_tariff(0.0) == 0.0
+
+    def test_very_large_tariff_accepted(self) -> None:
+        assert validate_tariff(9999.99) == pytest.approx(9999.99)
+
+    def test_infinity_raises(self) -> None:
+        with pytest.raises(ValueError):
+            validate_tariff(float("inf"))
+
+    def test_negative_infinity_raises(self) -> None:
+        with pytest.raises(ValueError):
+            validate_tariff(float("-inf"))
+
+    @pytest.mark.parametrize("t", [0.0, 0.01, 0.12, 0.25, 1.0])
+    def test_common_tariffs(self, t: float) -> None:
+        assert validate_tariff(t) == pytest.approx(t)
+
+
+class TestValidateFeatureWindowExtended:
+    def test_exactly_min_length_accepted(self) -> None:
+        values = [1.0, 2.0, 3.0, 4.0, 5.0]
+        assert validate_feature_window(values, min_length=5) == values
+
+    def test_min_length_1_accepts_single_value(self) -> None:
+        assert validate_feature_window([42.0], min_length=1) == [42.0]
+
+    def test_large_window_accepted(self) -> None:
+        values = list(range(100))
+        result = validate_feature_window(values, min_length=10)
+        assert len(result) == 100
+
+    def test_values_returned_unchanged(self) -> None:
+        values = [3.14, 2.71, 1.41]
+        assert validate_feature_window(values, min_length=3) == values
+
+    @pytest.mark.parametrize("min_len", [1, 3, 5, 10, 24])
+    def test_various_min_lengths(self, min_len: int) -> None:
+        values = [1.0] * min_len
+        assert validate_feature_window(values, min_length=min_len) == values
