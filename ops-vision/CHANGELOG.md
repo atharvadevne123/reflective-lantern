@@ -4,6 +4,14 @@ All notable changes to Ops-Vision are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project
 adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.0] — 2026-11-10
+
+### Added
+- Tests for `severity_from_confidence` covering all severity threshold boundaries
+- Tests for `OpsVisionError.__repr__`, `FeatureEngineeringError` default message, and subclass inheritance
+- Extended exception tests for `DriftMonitorError` and `RunbookIndexError` reason storage
+- Parametrized tests covering all severity level mappings (critical, high, medium, low)
+
 ## [1.0.0] — 2026-08-26
 
 ### Added
