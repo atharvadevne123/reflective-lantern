@@ -4,6 +4,17 @@ All notable changes to Ops-Vision are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project
 adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.0] — 2026-11-10
+
+### Added
+- Extended test suites for `app/features.py`: validate_positive_float, clip_to_unit_interval, dataframe_from_dict
+- Extended test suites for `app/crud.py`: count_predictions, avg_confidence, bulk_create_predictions, count_by_service
+- Extended test suites for `app/monitoring.py`: DriftMonitor reference tracking, drift_rate, DriftResult
+- Extended test suites for `app/forecasting.py`: IncidentRateBuffer record, as_array, properties, reset
+- Extended test suites for `app/schemas.py`: MetricsPayload and RunbookSearchRequest validation
+- Extended test suites for `app/exceptions.py`: exception hierarchy, messages, parametrized raises
+- Extended test suites for `app/constants.py`: is_valid_severity, severity_from_confidence boundaries
+
 ## [1.1.0] — 2026-11-10
 
 ### Added
