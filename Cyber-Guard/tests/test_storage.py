@@ -78,3 +78,29 @@ class TestUploadArtifact:
         ):
             result = upload_artifact(str(f))
         assert result is None or (isinstance(result, str) and "s3://" in result)
+
+
+class TestDownloadArtifact:
+    def test_returns_false_when_s3_disabled(self, tmp_path) -> None:
+        from app.storage import download_artifact
+        with patch("app.storage._BOTO_AVAILABLE", False):
+            result = download_artifact(str(tmp_path / "model.joblib"))
+        assert result is False
+
+    def test_returns_false_when_no_bucket(self, tmp_path) -> None:
+        from app.storage import download_artifact
+        with patch("app.storage.S3_BUCKET", ""), patch("app.storage._BOTO_AVAILABLE", True):
+            result = download_artifact(str(tmp_path / "model.joblib"))
+        assert result is False
+
+
+class TestS3KeyForExtra:
+    def test_key_format_with_prefix(self) -> None:
+        with patch("app.storage.S3_PREFIX", "ml-artifacts"):
+            key = s3_key_for("model.joblib")
+            assert key == "ml-artifacts/model.joblib"
+
+    def test_nested_path_uses_basename_only(self) -> None:
+        key = s3_key_for("/deep/nested/path/model.joblib")
+        assert "/" in key
+        assert key.endswith("model.joblib")
