@@ -303,3 +303,55 @@ def test_compute_drift_returns_required_keys() -> None:
     result = compute_drift(list(rng.normal(0, 1, 50)), list(rng.normal(5, 1, 50)))
     for key in ("ks_statistic", "p_value", "drift_detected"):
         assert key in result
+
+
+class TestModelPredictionSummary:
+    def test_returns_empty_when_no_logs(self, db_session) -> None:
+        from app.monitoring import model_prediction_summary
+
+        result = model_prediction_summary(db_session, model_version="v9.9.9")
+        assert result["total"] == 0
+        assert result["model_version"] == "v9.9.9"
+
+    def test_counts_by_model_version(self, db_session) -> None:
+        from app.database import PredictionLog
+        from app.monitoring import model_prediction_summary
+
+        for _ in range(3):
+            db_session.add(
+                PredictionLog(
+                    temperature=70.0, pressure=50.0, vibration=2.0,
+                    cycle_time=30.0, tool_wear=15.0, power_consumption=100.0,
+                    humidity=50.0, prediction=0, defect_probability=0.1,
+                    model_version="v2.0",
+                )
+            )
+        db_session.commit()
+        result = model_prediction_summary(db_session, model_version="v2.0")
+        assert result["total"] == 3
+
+    def test_defect_rate_calculation(self, db_session) -> None:
+        from app.database import PredictionLog
+        from app.monitoring import model_prediction_summary
+
+        for pred in [0, 0, 1, 1]:
+            db_session.add(
+                PredictionLog(
+                    temperature=70.0, pressure=50.0, vibration=2.0,
+                    cycle_time=30.0, tool_wear=15.0, power_consumption=100.0,
+                    humidity=50.0, prediction=pred, defect_probability=0.5,
+                    model_version="v3.0",
+                )
+            )
+        db_session.commit()
+        result = model_prediction_summary(db_session, model_version="v3.0")
+        assert result["defect_rate"] == pytest.approx(0.5)
+
+
+class TestDefectRate:
+    def test_empty_returns_zeros(self, db_session) -> None:
+        from app.monitoring import defect_rate
+
+        result = defect_rate(db_session, hours=1)
+        assert result["total"] == 0
+        assert result["defect_rate"] == pytest.approx(0.0)
