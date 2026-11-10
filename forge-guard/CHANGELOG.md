@@ -2,6 +2,17 @@
 
 All notable changes to Forge-Guard are documented here.
 
+## [1.2.0] — 2026-11-10
+
+### Added
+- Extended tests for `sensor_range_feature` and `generate_synthetic_data` reproducibility
+- Tests for `model_prediction_summary` and `defect_rate` monitoring functions
+- Tests for `format_defect_rate_pct`, `export_drift_reports_json`, and `prediction_trend`
+- `TestSensorRangeFeature` covers empty row, single value, negative values, and range calculation
+
+### Changed
+- `generate_synthetic_data` validated to produce binary defect labels deterministically
+
 ## [1.1.0] — 2026-08-04
 
 ### Added
