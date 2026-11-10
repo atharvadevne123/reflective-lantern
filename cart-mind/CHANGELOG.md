@@ -2,6 +2,13 @@
 
 All notable changes to this project are documented in this file.
 
+## [1.1.0] - 2026-11-10
+
+### Added
+- Tests for `revenue_impact_score` covering zero cart value, discount reduction, and negative values
+- Tests for `price_discount_pct` covering zero original price, full discount, and half discount
+- Validation extended tests now cover all major numeric validators
+
 ## [1.0.0] - 2026-08-05
 
 ### Added
