@@ -28,14 +28,14 @@ class TestPredictionLog:
         record = PredictionLog(
             user_id="u1",
             item_id="i1",
-            intent_score=0.75,
+            score=0.75,
         )
         session.add(record)
         session.commit()
         assert record.id is not None
 
     def test_defaults(self, session: Session) -> None:
-        record = PredictionLog(user_id="u2", item_id="i2", intent_score=0.5)
+        record = PredictionLog(user_id="u2", item_id="i2", score=0.5)
         session.add(record)
         session.commit()
         assert record.created_at is not None
@@ -43,7 +43,7 @@ class TestPredictionLog:
 
 class TestDriftLog:
     def test_create_record(self, session: Session) -> None:
-        record = DriftLog(feature="price", drift_score=0.12)
+        record = DriftLog(feature_name="price", ks_statistic=0.12)
         session.add(record)
         session.commit()
         assert record.id is not None
