@@ -581,3 +581,30 @@ class TestUpdateReferenceWindowExtended:
         window = get_reference_window("acc_feat")
         assert len(window) == 4
         reset_reference_window("acc_feat")
+
+
+class TestRollingMean:
+    def test_empty_returns_empty(self) -> None:
+        from app.monitoring import rolling_mean
+        assert rolling_mean([], window=3) == []
+
+    def test_single_element(self) -> None:
+        from app.monitoring import rolling_mean
+        result = rolling_mean([5.0], window=3)
+        assert result == pytest.approx([5.0])
+
+    def test_flat_series(self) -> None:
+        from app.monitoring import rolling_mean
+        result = rolling_mean([3.0, 3.0, 3.0, 3.0], window=2)
+        assert result == pytest.approx([3.0, 3.0, 3.0, 3.0])
+
+    def test_same_length_as_input(self) -> None:
+        from app.monitoring import rolling_mean
+        vals = [1.0, 2.0, 3.0, 4.0, 5.0]
+        result = rolling_mean(vals, window=3)
+        assert len(result) == len(vals)
+
+    def test_full_window_average(self) -> None:
+        from app.monitoring import rolling_mean
+        result = rolling_mean([1.0, 2.0, 3.0], window=3)
+        assert result[-1] == pytest.approx(2.0)
