@@ -177,3 +177,54 @@ class TestCrossFieldPenaltyScore:
 
     def test_ten_warnings_max_1_0(self) -> None:
         assert cross_field_penalty_score(["w"] * 10) == pytest.approx(1.0)
+
+
+class TestRevenueImpactScore:
+    def test_zero_cart_value(self) -> None:
+        from app.validation import revenue_impact_score
+
+        assert revenue_impact_score(0.0, 0.8) == pytest.approx(0.0)
+
+    def test_full_probability(self) -> None:
+        from app.validation import revenue_impact_score
+
+        assert revenue_impact_score(100.0, 1.0) == pytest.approx(100.0)
+
+    def test_half_probability(self) -> None:
+        from app.validation import revenue_impact_score
+
+        assert revenue_impact_score(100.0, 0.5) == pytest.approx(50.0)
+
+    def test_discount_reduces_score(self) -> None:
+        from app.validation import revenue_impact_score
+
+        full = revenue_impact_score(100.0, 1.0, discount_pct=0.0)
+        discounted = revenue_impact_score(100.0, 1.0, discount_pct=20.0)
+        assert discounted < full
+
+    def test_negative_cart_returns_zero(self) -> None:
+        from app.validation import revenue_impact_score
+
+        assert revenue_impact_score(-10.0, 0.5) == pytest.approx(0.0)
+
+
+class TestPriceDiscountPct:
+    def test_zero_original_returns_zero(self) -> None:
+        from app.validation import price_discount_pct
+
+        assert price_discount_pct(0.0, 0.0) == pytest.approx(0.0)
+
+    def test_no_discount(self) -> None:
+        from app.validation import price_discount_pct
+
+        assert price_discount_pct(100.0, 100.0) == pytest.approx(0.0)
+
+    def test_half_discount(self) -> None:
+        from app.validation import price_discount_pct
+
+        assert price_discount_pct(100.0, 50.0) == pytest.approx(50.0)
+
+    def test_full_discount(self) -> None:
+        from app.validation import price_discount_pct
+
+        assert price_discount_pct(100.0, 0.0) == pytest.approx(100.0)
