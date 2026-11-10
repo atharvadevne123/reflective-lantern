@@ -519,8 +519,9 @@ class TestDriftMonitorDriftSummary:
     """Tests for DriftMonitor.drift_summary()."""
 
     def _make_results(self, drifted_flags: list[bool]) -> list[DriftResult]:
-        from app.monitoring import FEATURE_COLS
         from datetime import datetime
+
+        from app.monitoring import FEATURE_COLS
         results = []
         for i, flag in enumerate(drifted_flags):
             col = FEATURE_COLS[i % len(FEATURE_COLS)]

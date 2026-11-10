@@ -125,7 +125,7 @@ def retry_on_exception(
     exceptions: tuple[type[Exception], ...] = (Exception,),
     attempts: int = 3,
     delay: float = 0.0,
-) -> "Any":
+) -> Any:
     """Decorator factory that retries a function on specified exceptions.
 
     Args:
@@ -138,7 +138,7 @@ def retry_on_exception(
     """
     from typing import Any as _Any
 
-    def decorator(func: "Any") -> "Any":
+    def decorator(func: Any) -> Any:
         def wrapper(*args: _Any, **kwargs: _Any) -> _Any:
             last_exc: Exception | None = None
             for i in range(1, attempts + 1):
@@ -157,12 +157,12 @@ def retry_on_exception(
 
 
 def bounded_retry(
-    fn: "Any",
-    *args: "Any",
+    fn: Any,
+    *args: Any,
     attempts: int = 3,
     exceptions: type[Exception] | tuple[type[Exception], ...] = Exception,
-    **kwargs: "Any",
-) -> "Any":
+    **kwargs: Any,
+) -> Any:
     """Call *fn* directly with retry logic (non-decorator form).
 
     Args:

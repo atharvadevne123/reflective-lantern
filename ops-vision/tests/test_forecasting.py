@@ -503,7 +503,7 @@ class TestExponentialSmoothingParametrized:
         forecaster.fit(series)
         points = forecaster.forecast(base_time=datetime.utcnow())
         timestamps = [p.timestamp for p in points]
-        assert all(t1 < t2 for t1, t2 in zip(timestamps[:-1], timestamps[1:]))
+        assert all(t1 < t2 for t1, t2 in zip(timestamps[:-1], timestamps[1:], strict=False))
 
     @pytest.mark.parametrize("incident_count", [0, 1, 5, 10])
     def test_buffer_records_correct_count(self, incident_count: int) -> None:

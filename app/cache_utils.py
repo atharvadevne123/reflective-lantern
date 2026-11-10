@@ -117,7 +117,7 @@ def memoize_ttl(ttl: float = 60.0) -> Any:
     return decorator
 
 
-def get_or_set(cache: TTLCache, key: str, factory: "Any", ttl: float | None = None) -> "Any":
+def get_or_set(cache: TTLCache, key: str, factory: Any, ttl: float | None = None) -> Any:
     """Return cached value for *key*, computing it via *factory* if absent.
 
     Args:
@@ -146,7 +146,7 @@ def invalidate_prefix(cache: TTLCache, prefix: str) -> int:
     Returns:
         Number of keys removed.
     """
-    to_delete = [k for k in cache.keys() if k.startswith(prefix)]
+    to_delete = [k for k in cache if k.startswith(prefix)]
     for k in to_delete:
         cache.delete(k)
     return len(to_delete)
