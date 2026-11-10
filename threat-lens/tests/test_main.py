@@ -28,19 +28,19 @@ def client():
 
 class TestHealthEndpoint:
     def test_returns_200(self, client: TestClient) -> None:
-        assert client.get("/health").status_code == 200
+        assert client.get("/api/v1/health").status_code == 200
 
     def test_returns_dict(self, client: TestClient) -> None:
-        assert isinstance(client.get("/health").json(), dict)
+        assert isinstance(client.get("/api/v1/health").json(), dict)
 
     def test_has_status(self, client: TestClient) -> None:
-        data = client.get("/health").json()
+        data = client.get("/api/v1/health").json()
         assert "status" in data or isinstance(data, dict)
 
 
 class TestMetricsEndpoint:
     def test_returns_200(self, client: TestClient) -> None:
-        assert client.get("/metrics").status_code == 200
+        assert client.get("/api/v1/metrics").status_code == 200
 
 
 class TestPredictEndpoint:

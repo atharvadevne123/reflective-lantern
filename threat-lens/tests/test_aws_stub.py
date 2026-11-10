@@ -26,7 +26,8 @@ class TestModelArtifactStore:
     def test_download_from_memory(self, tmp_path) -> None:
         data = b"test_bytes"
         store = ModelArtifactStore(bucket=None)
-        store._memory["test.joblib"] = data
+        key = store._key("test.joblib")
+        store._memory[key] = data
         dest = tmp_path / "out.joblib"
         result = store.download("test.joblib", str(dest))
         if result:

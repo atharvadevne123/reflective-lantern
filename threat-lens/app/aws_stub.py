@@ -30,7 +30,7 @@ class ModelArtifactStore:
     def _key(self, name: str) -> str:
         return f"{self.prefix}/{name}"
 
-    def upload(self, local_path: Path, name: str | None = None) -> str:
+    def upload(self, local_path: Path | str, name: str | None = None) -> str:
         """Upload a local file and return the storage key.
 
         Args:
@@ -40,6 +40,7 @@ class ModelArtifactStore:
         Returns:
             The `s3://` URI when S3-backed, otherwise a `memory://` URI.
         """
+        local_path = Path(local_path)
         if not local_path.exists():
             raise FileNotFoundError(f"No artefact at {local_path}")
 
@@ -57,8 +58,9 @@ class ModelArtifactStore:
         self._memory[key] = local_path.read_bytes()
         return f"memory://{key}"
 
-    def download(self, name: str, dest: Path) -> Path:
+    def download(self, name: str, dest: Path | str) -> Path:
         """Fetch an artefact into `dest` and return that path."""
+        dest = Path(dest)
         key = self._key(name)
         if self.enabled:
             try:
