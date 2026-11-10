@@ -67,10 +67,14 @@ class TestUploadArtifact:
         f = tmp_path / "model.joblib"
         f.write_bytes(b"data")
         mock_client = MagicMock()
+        import sys
+        import types
+        fake_boto3 = types.ModuleType("boto3")
+        fake_boto3.client = MagicMock(return_value=mock_client)
         with (
             patch("app.storage._BOTO_AVAILABLE", True),
             patch("app.storage.S3_BUCKET", "test-bucket"),
-            patch("boto3.client", return_value=mock_client),
+            patch.dict(sys.modules, {"boto3": fake_boto3}),
         ):
             result = upload_artifact(str(f))
         assert result is None or (isinstance(result, str) and "s3://" in result)
