@@ -368,3 +368,68 @@ class TestValidateForecastLengthExtended:
     def test_valid_horizons(self, n: int) -> None:
         from app.validators import validate_forecast_length
         assert validate_forecast_length(n) == n
+
+
+class TestValidateTemperature:
+    def test_valid_range(self) -> None:
+        from app.validators import validate_temperature
+        assert validate_temperature(20.0) == pytest.approx(20.0)
+
+    def test_lower_bound(self) -> None:
+        from app.validators import validate_temperature
+        assert validate_temperature(-60.0) == pytest.approx(-60.0)
+
+    def test_upper_bound(self) -> None:
+        from app.validators import validate_temperature
+        assert validate_temperature(60.0) == pytest.approx(60.0)
+
+    def test_above_upper_raises(self) -> None:
+        from app.validators import validate_temperature
+        with pytest.raises(ValueError):
+            validate_temperature(61.0)
+
+    def test_nan_raises(self) -> None:
+        from app.validators import validate_temperature
+        import math
+        with pytest.raises(ValueError):
+            validate_temperature(math.nan)
+
+
+class TestValidateHumidity:
+    def test_valid_range(self) -> None:
+        from app.validators import validate_humidity
+        assert validate_humidity(50.0) == pytest.approx(50.0)
+
+    def test_zero(self) -> None:
+        from app.validators import validate_humidity
+        assert validate_humidity(0.0) == pytest.approx(0.0)
+
+    def test_hundred(self) -> None:
+        from app.validators import validate_humidity
+        assert validate_humidity(100.0) == pytest.approx(100.0)
+
+    def test_above_max_raises(self) -> None:
+        from app.validators import validate_humidity
+        with pytest.raises(ValueError):
+            validate_humidity(100.1)
+
+
+class TestValidatePositiveInt:
+    def test_positive_passes(self) -> None:
+        from app.validators import validate_positive_int
+        assert validate_positive_int(5) == 5
+
+    def test_zero_raises(self) -> None:
+        from app.validators import validate_positive_int
+        with pytest.raises(ValueError):
+            validate_positive_int(0)
+
+    def test_negative_raises(self) -> None:
+        from app.validators import validate_positive_int
+        with pytest.raises(ValueError):
+            validate_positive_int(-1)
+
+    def test_bool_raises(self) -> None:
+        from app.validators import validate_positive_int
+        with pytest.raises(ValueError):
+            validate_positive_int(True)
