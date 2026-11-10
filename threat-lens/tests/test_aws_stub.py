@@ -47,3 +47,38 @@ class TestModelArtifactStore:
         store = ModelArtifactStore(prefix="models")
         key = store._key(name)
         assert name in key
+
+
+class TestModelArtifactStoreExists:
+    def test_absent_returns_false(self) -> None:
+        store = ModelArtifactStore(bucket=None)
+        assert store.exists("not_there.joblib") is False
+
+    def test_present_returns_true(self) -> None:
+        store = ModelArtifactStore(bucket=None)
+        key = store._key("model.joblib")
+        store._memory[key] = b"data"
+        assert store.exists("model.joblib") is True
+
+
+class TestModelArtifactStoreListArtifacts:
+    def test_empty_store_returns_empty(self) -> None:
+        store = ModelArtifactStore(bucket=None)
+        assert store.list_artifacts() == []
+
+    def test_lists_uploaded_keys(self, tmp_path) -> None:
+        store = ModelArtifactStore(bucket=None)
+        f = tmp_path / "model.joblib"
+        f.write_bytes(b"data")
+        store.upload(str(f), "model.joblib")
+        artifacts = store.list_artifacts()
+        assert any("model.joblib" in k for k in artifacts)
+
+    def test_sorted_output(self, tmp_path) -> None:
+        store = ModelArtifactStore(bucket=None)
+        for name in ["z.joblib", "a.joblib", "m.joblib"]:
+            f = tmp_path / name
+            f.write_bytes(b"data")
+            store.upload(str(f), name)
+        artifacts = store.list_artifacts()
+        assert artifacts == sorted(artifacts)
