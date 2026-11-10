@@ -244,3 +244,59 @@ class TestTelemetryIncrementByExtended:
         above = all_above(5)
         assert "high" in above
         assert "low" not in above
+
+
+from app.telemetry import batch_increment, get_many, reset_prefix
+
+
+class TestBatchIncrement:
+    def setup_method(self) -> None:
+        reset()
+
+    def test_increments_all_names(self) -> None:
+        batch_increment({"a": 1, "b": 2, "c": 3})
+        assert get("a") == 1
+        assert get("b") == 2
+        assert get("c") == 3
+
+    def test_negative_amount_ignored(self) -> None:
+        batch_increment({"x": -5})
+        assert get("x") == 0
+
+    def test_empty_dict_no_error(self) -> None:
+        batch_increment({})
+
+
+class TestGetMany:
+    def setup_method(self) -> None:
+        reset()
+
+    def test_returns_zeros_for_unknown(self) -> None:
+        result = get_many(["missing1", "missing2"])
+        assert result["missing1"] == 0
+        assert result["missing2"] == 0
+
+    def test_returns_known_values(self) -> None:
+        increment("p", 7)
+        result = get_many(["p"])
+        assert result["p"] == 7
+
+
+class TestResetPrefix:
+    def setup_method(self) -> None:
+        reset()
+
+    def test_resets_matching_prefix(self) -> None:
+        increment("app.req", 10)
+        increment("app.err", 5)
+        count = reset_prefix("app.")
+        assert count == 2
+        assert get("app.req") == 0
+
+    def test_non_matching_prefix_unaffected(self) -> None:
+        increment("other.metric", 3)
+        reset_prefix("app.")
+        assert get("other.metric") == 3
+
+    def test_returns_zero_when_no_match(self) -> None:
+        assert reset_prefix("nonexistent.") == 0
