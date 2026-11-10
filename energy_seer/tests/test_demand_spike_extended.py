@@ -261,3 +261,47 @@ class TestDemandTrendEdgeCases:
         values = [1.0, 1.0, 1.0, 1.0, 10.0, 10.0, 10.0, 10.0]
         result = demand_trend(values)
         assert result["delta"] > 0.0
+
+
+class TestDemandPercentile:
+    def test_p50_of_sorted_list(self) -> None:
+        vals = [1.0, 2.0, 3.0, 4.0, 5.0]
+        p50 = demand_percentile(vals, 50.0)
+        assert p50 == pytest.approx(3.0)
+
+    def test_p100_equals_max(self) -> None:
+        vals = [10.0, 20.0, 30.0]
+        assert demand_percentile(vals, 100.0) == pytest.approx(30.0)
+
+    def test_empty_raises_value_error(self) -> None:
+        with pytest.raises(ValueError):
+            demand_percentile([])
+
+    def test_invalid_percentile_raises_value_error(self) -> None:
+        with pytest.raises(ValueError):
+            demand_percentile([1.0, 2.0], percentile=0.0)
+
+    def test_single_element(self) -> None:
+        assert demand_percentile([42.0], percentile=99.0) == pytest.approx(42.0)
+
+
+class TestSmoothDemand:
+    def test_single_element_unchanged(self) -> None:
+        assert smooth_demand([5.0]) == pytest.approx([5.0])
+
+    def test_alpha_one_equals_original(self) -> None:
+        vals = [1.0, 2.0, 3.0]
+        smoothed = smooth_demand(vals, alpha=1.0)
+        assert smoothed == pytest.approx(vals)
+
+    def test_same_length_as_input(self) -> None:
+        vals = [float(i) for i in range(10)]
+        assert len(smooth_demand(vals)) == len(vals)
+
+    def test_empty_raises_value_error(self) -> None:
+        with pytest.raises(ValueError):
+            smooth_demand([])
+
+    def test_invalid_alpha_raises_value_error(self) -> None:
+        with pytest.raises(ValueError):
+            smooth_demand([1.0, 2.0], alpha=0.0)
