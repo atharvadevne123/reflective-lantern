@@ -190,3 +190,46 @@ class TestClampReading:
     def test_lo_gt_hi_raises(self) -> None:
         with pytest.raises(ValueError):
             clamp_reading(5.0, 10.0, 1.0)
+
+
+class TestValidateBatch:
+    def test_all_valid(self) -> None:
+        records = [_valid_reading() for _ in range(3)]
+        result = validate_batch(records)
+        assert result["valid_count"] == 3
+        assert result["invalid_count"] == 0
+        assert result["errors"] == []
+
+    def test_one_invalid_flagged(self) -> None:
+        records = [_valid_reading(), {"temperature": 999.0, "pressure": 50.0, "vibration": 3.0,
+                                       "cycle_time": 30.0, "tool_wear": 20.0, "power_consumption": 100.0, "humidity": 50.0}]
+        result = validate_batch(records)
+        assert result["invalid_count"] == 1
+        assert result["errors"][0]["index"] == 1
+
+    def test_empty_batch(self) -> None:
+        result = validate_batch([])
+        assert result["total"] == 0
+        assert result["valid_count"] == 0
+
+    def test_total_equals_valid_plus_invalid(self) -> None:
+        records = [_valid_reading(), {"invalid": 999}]
+        result = validate_batch(records)
+        assert result["total"] == result["valid_count"] + result["invalid_count"]
+
+
+class TestMissingRate:
+    def test_all_present(self) -> None:
+        records = [{"x": 1.0}, {"x": 2.0}]
+        assert missing_rate(records, "x") == pytest.approx(0.0)
+
+    def test_all_missing(self) -> None:
+        records = [{"y": 1.0}, {"y": 2.0}]
+        assert missing_rate(records, "x") == pytest.approx(1.0)
+
+    def test_half_missing(self) -> None:
+        records = [{"x": 1.0}, {}]
+        assert missing_rate(records, "x") == pytest.approx(0.5)
+
+    def test_empty_records(self) -> None:
+        assert missing_rate([], "x") == pytest.approx(0.0)
