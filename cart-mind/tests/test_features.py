@@ -537,3 +537,57 @@ class TestDropLowVarianceFeaturesExtended:
         df = pd.DataFrame({"high": [0.0, 50.0, 100.0], "const": [1.0, 1.0, 1.0]})
         result = drop_low_variance_features(df, threshold=threshold)
         assert "high" in result.columns
+
+
+class TestFeatureImportanceReport:
+    def test_sorted_descending(self) -> None:
+        import pandas as pd
+        from app.features import feature_importance_report
+
+        result = feature_importance_report(["a", "b", "c"], [0.1, 0.5, 0.3])
+        assert result.iloc[0]["feature"] == "b"
+        assert result["importance"].iloc[0] >= result["importance"].iloc[1]
+
+    def test_mismatched_lengths_raises(self) -> None:
+        from app.features import feature_importance_report
+
+        with pytest.raises(ValueError):
+            feature_importance_report(["a", "b"], [0.5])
+
+    def test_returns_dataframe(self) -> None:
+        import pandas as pd
+        from app.features import feature_importance_report
+
+        result = feature_importance_report(["x"], [0.9])
+        assert isinstance(result, pd.DataFrame)
+        assert "feature" in result.columns
+        assert "importance" in result.columns
+
+
+class TestClipOutlierFeatures:
+    def test_extreme_values_clipped(self) -> None:
+        import pandas as pd
+        import numpy as np
+        from app.features import clip_outlier_features
+
+        data = [1.0] * 20 + [1000.0]
+        df = pd.DataFrame({"x": data})
+        result = clip_outlier_features(df, z_threshold=2.0)
+        assert result["x"].max() < 1000.0
+
+    def test_shape_preserved(self) -> None:
+        import pandas as pd
+        from app.features import clip_outlier_features
+
+        df = pd.DataFrame({"a": [1.0, 2.0, 3.0], "b": [4.0, 5.0, 6.0]})
+        result = clip_outlier_features(df)
+        assert result.shape == df.shape
+
+    def test_no_mutation_of_original(self) -> None:
+        import pandas as pd
+        from app.features import clip_outlier_features
+
+        df = pd.DataFrame({"x": [1.0, 2.0, 1000.0]})
+        orig_max = df["x"].max()
+        clip_outlier_features(df, z_threshold=1.5)
+        assert df["x"].max() == orig_max
