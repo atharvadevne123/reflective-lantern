@@ -159,3 +159,46 @@ class TestIsValidSeverity:
         """Every entry in SEVERITY_LEVELS validates successfully."""
         for level in SEVERITY_LEVELS:
             assert is_valid_severity(level) is True
+
+
+class TestSeverityFromConfidence:
+    def test_critical_at_threshold(self) -> None:
+        from app.constants import SEVERITY_CRITICAL_THRESHOLD, severity_from_confidence
+
+        assert severity_from_confidence(SEVERITY_CRITICAL_THRESHOLD) == "critical"
+
+    def test_high_at_threshold(self) -> None:
+        from app.constants import SEVERITY_HIGH_THRESHOLD, severity_from_confidence
+
+        assert severity_from_confidence(SEVERITY_HIGH_THRESHOLD) == "high"
+
+    def test_medium_at_threshold(self) -> None:
+        from app.constants import SEVERITY_MEDIUM_THRESHOLD, severity_from_confidence
+
+        assert severity_from_confidence(SEVERITY_MEDIUM_THRESHOLD) == "medium"
+
+    def test_low_below_medium(self) -> None:
+        from app.constants import severity_from_confidence
+
+        assert severity_from_confidence(0.1) == "low"
+
+    def test_zero_confidence(self) -> None:
+        from app.constants import severity_from_confidence
+
+        assert severity_from_confidence(0.0) == "low"
+
+    def test_one_confidence(self) -> None:
+        from app.constants import severity_from_confidence
+
+        assert severity_from_confidence(1.0) == "critical"
+
+    @pytest.mark.parametrize("conf,expected", [
+        (0.95, "critical"),
+        (0.80, "high"),
+        (0.60, "medium"),
+        (0.30, "low"),
+    ])
+    def test_parametrized_mappings(self, conf: float, expected: str) -> None:
+        from app.constants import severity_from_confidence
+
+        assert severity_from_confidence(conf) == expected
