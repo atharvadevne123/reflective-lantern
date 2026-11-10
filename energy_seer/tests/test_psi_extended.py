@@ -228,3 +228,42 @@ class TestPsiBatchAlert:
     def test_drift_level_assigned(self) -> None:
         result = psi_batch_alert({"f": 0.15})
         assert result[0]["drift_level"] == "moderate"
+
+
+class TestPsiSeriesTrend:
+    def test_empty_returns_stable(self) -> None:
+        result = psi_series_trend([])
+        assert result["escalating"] is False
+        assert result["drift_level"] == "stable"
+
+    def test_single_value_not_escalating(self) -> None:
+        result = psi_series_trend([0.05])
+        assert result["escalating"] is False
+
+    def test_escalating_when_last_exceeds_mean(self) -> None:
+        vals = [0.01, 0.01, 0.01, 0.50]
+        result = psi_series_trend(vals)
+        assert result["escalating"] is True
+
+    def test_max_psi_correct(self) -> None:
+        vals = [0.1, 0.3, 0.2]
+        result = psi_series_trend(vals)
+        assert result["max_psi"] == pytest.approx(0.3)
+
+
+class TestPsiFeatureRank:
+    def test_empty_dict_returns_empty(self) -> None:
+        assert psi_feature_rank({}) == []
+
+    def test_sorted_descending(self) -> None:
+        from app.psi import compute_psi
+        import numpy as np
+
+        rng = np.random.default_rng(0)
+        ref_a = list(rng.normal(0, 1, 200))
+        cur_a = list(rng.normal(5, 1, 200))
+        ref_b = list(rng.normal(0, 1, 200))
+        cur_b = list(rng.normal(0.1, 1, 200))
+        result = psi_feature_rank({"a": (ref_a, cur_a), "b": (ref_b, cur_b)})
+        assert len(result) == 2
+        assert result[0]["psi"] >= result[1]["psi"]
