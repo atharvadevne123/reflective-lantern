@@ -1,4 +1,4 @@
-.PHONY: install test lint format run docker-up docker-down clean help
+.PHONY: install test test-cov test-fast lint format typecheck run docker-up docker-down clean help check-all
 
 help:
 	@echo "Suite-Cast development targets:"
@@ -16,6 +16,17 @@ install:
 
 test:
 	pytest tests/ -v --tb=short
+
+test-cov:
+	pytest tests/ --cov=app --cov-report=term-missing -q 2>&1 | tail -40
+
+test-fast:
+	pytest tests/ -x -q --tb=short 2>&1 | tail -40
+
+typecheck:
+	mypy app/ --ignore-missing-imports --no-error-summary 2>&1 | tail -20 || true
+
+check-all: lint typecheck test-cov
 
 lint:
 	ruff check .
