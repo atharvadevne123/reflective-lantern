@@ -148,3 +148,35 @@ class TestConstants:
 
     def test_feature_cols_not_empty(self) -> None:
         assert len(FEATURE_COLS) > 0
+
+
+class TestCompetitorRateRatioExtra:
+    def test_equal_rates_give_one(self) -> None:
+        assert competitor_rate_ratio(100.0, 100.0) == pytest.approx(1.0)
+
+    def test_zero_competitor_uses_fallback(self) -> None:
+        ratio = competitor_rate_ratio(150.0, 0.0)
+        assert ratio == pytest.approx(1.0)
+
+    def test_clipped_at_max(self) -> None:
+        assert competitor_rate_ratio(1000.0, 10.0) == pytest.approx(3.0)
+
+    def test_clipped_at_min(self) -> None:
+        assert competitor_rate_ratio(1.0, 1000.0) == pytest.approx(0.5)
+
+
+class TestOccupancyYoyDelta:
+    def test_positive_growth(self) -> None:
+        assert occupancy_yoy_delta(0.9, 0.7) == pytest.approx(0.2)
+
+    def test_negative_growth(self) -> None:
+        assert occupancy_yoy_delta(0.5, 0.8) == pytest.approx(-0.3)
+
+    def test_clamped_to_negative_one(self) -> None:
+        assert occupancy_yoy_delta(0.0, 1.0) == pytest.approx(-1.0)
+
+    def test_clamped_to_positive_one(self) -> None:
+        assert occupancy_yoy_delta(1.0, 0.0) == pytest.approx(1.0)
+
+    def test_no_change(self) -> None:
+        assert occupancy_yoy_delta(0.75, 0.75) == pytest.approx(0.0)
