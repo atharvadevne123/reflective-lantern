@@ -16,6 +16,7 @@ from sqlalchemy.orm import Session
 
 from app.database import get_db, create_tables
 from app.features import extract_raw_features, risk_category
+from app.middleware import CorrelationIdMiddleware, RateLimitMiddleware
 from app.model import generate_synthetic_data, load_model, train, save_model
 
 logging.basicConfig(level=logging.INFO)
@@ -36,6 +37,8 @@ app.add_middleware(
     allow_methods=["GET", "POST"],
     allow_headers=["*"],
 )
+app.add_middleware(CorrelationIdMiddleware)
+app.add_middleware(RateLimitMiddleware)
 
 _model: Any = None
 _pipeline: Any = None
