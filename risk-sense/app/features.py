@@ -27,7 +27,12 @@ FEATURE_NAMES = [
 
 
 class LogIncomeTransformer(BaseEstimator, TransformerMixin):
-    """Log-transform annual income to reduce skew."""
+    """Log-transform annual income (column 6) to reduce right skew.
+
+    Uses log1p to handle zero-income edge cases without producing -inf.
+    Clipping to [0, inf) first guards against negative sentinel values
+    that can appear in imputed datasets.
+    """
 
     def fit(self, X: Any, y: Any = None) -> "LogIncomeTransformer":
         return self
@@ -39,7 +44,14 @@ class LogIncomeTransformer(BaseEstimator, TransformerMixin):
 
 
 class InteractionFeatureTransformer(BaseEstimator, TransformerMixin):
-    """Adds interaction features: utilization*derogatory, income/accounts."""
+    """Append two interaction features that capture credit-risk co-dependence.
+
+    Adds:
+      - utilization_x_derogatory: high utilization combined with derogatory marks
+        is a stronger default signal than either feature alone.
+      - income_per_account: log-income divided by open accounts (clipped to ≥1)
+        normalises income relative to credit exposure.
+    """
 
     def fit(self, X: Any, y: Any = None) -> "InteractionFeatureTransformer":
         return self
