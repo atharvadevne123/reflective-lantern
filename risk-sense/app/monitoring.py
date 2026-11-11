@@ -15,7 +15,12 @@ DRIFT_THRESHOLD_P = 0.05
 
 
 def ks_drift_test(reference: list[float], current: list[float]) -> dict[str, Any]:
-    """Run KS-test to detect distribution drift between reference and current samples."""
+    """Run a two-sample Kolmogorov-Smirnov test to detect distribution drift.
+
+    Uses scipy.stats.ks_2samp; drift is flagged when p_value < DRIFT_THRESHOLD_P (0.05).
+    Returns early with drift_detected=False when either sample has fewer than 10 points,
+    because KS power is very low for tiny samples and would produce noisy false positives.
+    """
     if len(reference) < 10 or len(current) < 10:
         return {"drift_detected": False, "reason": "insufficient_data", "ks_statistic": 0.0, "p_value": 1.0}
 
@@ -44,7 +49,13 @@ def drift_severity(ks_statistic: float) -> str:
 def compute_population_stability_index(
     reference: list[float], current: list[float], bins: int = 10
 ) -> float:
-    """Compute PSI between reference and current distributions."""
+    """Compute the Population Stability Index (PSI) between two distributions.
+
+    PSI < 0.1  → stable;  0.1–0.25 → moderate shift;  > 0.25 → major shift.
+    Small epsilon (1e-7) added to each bin to avoid log(0).
+    Joint bin edges (computed over both samples combined) ensure the same
+    boundaries apply to both histograms, which is required for a valid PSI.
+    """
     all_values = reference + current
     min_val, max_val = min(all_values), max(all_values)
     if min_val == max_val:
