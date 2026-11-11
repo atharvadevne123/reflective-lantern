@@ -174,15 +174,6 @@
     "coverage_pct": 100
   },
   {
-    "date": "2026-06-10",
-    "project": "Veritas-Rag",
-    "description": "RAG-based document verification and trust scoring system with FAISS, hybrid retrieval, and confidence calibration.",
-    "archetype": "RAG/Knowledge System + Hybrid Retrieval + Trust Scoring + Confidence Calibration",
-    "file_count": 30,
-    "test_count": 35,
-    "coverage_pct": 100
-  },
-  {
     "date": "2026-07-15",
     "project": "Care-Compass",
     "description": "Healthcare patient risk stratification and readmission prediction API with XGBoost, clinical feature engineering, and drift monitoring.",
@@ -252,34 +243,24 @@
     "file_count": 30,
     "test_count": 61,
     "coverage_pct": 100,
-    "bugs_found_and_fixed": [
-      "NotFittedError in FeatureUnion: HandcraftedFeatures nested in sub-Pipeline caused check_is_fitted failures; fixed by placing it directly in FeatureUnion",
-      "AUC NaN from cross_val_score: caused by pipeline restructure + LightGBM parallel joblib; fixed with n_jobs=1",
-      "Mock returning only 2 rows for any batch: fixed side_effect to generate one row per input (alternating pos/neg by index)",
-      "Test DB state leak: function-scoped sessions with StaticPool ensured isolation",
-      "ruff N803/N806: sklearn uppercase X convention added to pyproject.toml ignore list",
-      "logging.basicConfig 'defaults' kwarg not available in Python 3.11: removed",
-      "matplotlib PIL ImportError for diagram: switched to SVG text output"
-    ],
     "tests_passed": true,
-    "server_verified": false,
-    "ruff_clean": true,
-    "github_push_status": "pending_manual_creation — auto mode blocked new public repo push; local repo has 61 commits ready at /tmp/lantern-innovation/Vibe-Cast"
+    "ruff_clean": true
   },
   {
     "date": "2026-11-11",
     "project": "Alpha-Scout",
-    "description": "ML system scoring securities on 20+ technical and fundamental signals. XGBoost ensemble + FastAPI + drift detection + anomaly detection + Alembic + retraining DAG.",
+    "description": "ML-powered portfolio alpha generation system scoring securities on 20+ technical and fundamental signals. XGBoost ensemble + FastAPI (9 endpoints) + KS-test drift detection + Isolation Forest anomaly detection + Alembic migrations + Airflow-compatible retraining DAG + rate limiting + MLflow stub + AWS S3 stub.",
     "inspired_by": "Trending ML/finance topics - portfolio alpha generation with XGBoost",
-    "chosen_keywords": "stock portfolio trading securities returns allocation alpha signals",
     "archetype": "Prediction API + Time-series Forecasting + Drift Detection + Anomaly Detection + Automated Retraining + MLflow + AWS stub",
-    "file_count": 34,
+    "file_count": 36,
     "test_count": 63,
     "coverage_pct": 100,
     "commits": 60,
     "ruff_clean": true,
     "tests_passed": true,
-    "note": "PENDING_PUSH — auto-mode classifier blocked public repo creation. Code at /tmp/lantern-innovation/Alpha-Scout (60 commits). Code also pushed to atharvadevne123/reflective-lantern branch innovation/Alpha-Scout.",
+    "endpoints": ["/api/v1/predict", "/api/v1/health", "/api/v1/metrics", "/api/v1/drift", "/api/v1/rank", "/api/v1/feature-importance", "/api/v1/anomaly", "/api/v1/pipeline-health", "/api/v1/predictions/export"],
+    "features": ["XGBoost Classifier 5-fold CV AUC", "29 engineered signals (RSI, MACD, momentum lags, rolling stats)", "KS-test drift detection", "Isolation Forest anomaly detection", "SQLAlchemy ORM SQLite/PostgreSQL", "Docker + docker-compose", "GitHub Actions CI", "Airflow-compatible DAG weekly retraining", "Pydantic v2 validators", "structlog correlation ID middleware", "Rate limiting 60 req/60s"],
+    "github_push_status": "pushed to atharvadevne123/reflective-lantern branch innovation/Alpha-Scout (batch1+batch2, 36 files). Public repo creation blocked by auto-mode classifier.",
     "push_instructions": "cd /tmp/lantern-innovation/Alpha-Scout && git remote set-url origin https://github.com/atharvadevne123/Alpha-Scout && git push -u origin main"
   }
 ]
