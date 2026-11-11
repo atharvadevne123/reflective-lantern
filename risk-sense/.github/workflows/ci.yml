@@ -1,0 +1,40 @@
+name: Risk-Sense CI
+
+on:
+  push:
+    paths:
+      - "risk-sense/**"
+  pull_request:
+    paths:
+      - "risk-sense/**"
+
+jobs:
+  lint-and-test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: risk-sense
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Ruff lint
+        run: ruff check . --select E,F,W,I --ignore E501
+
+      - name: Run tests
+        run: pytest tests/ -v --tb=short
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: risk-sense/.pytest_cache

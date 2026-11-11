@@ -1,0 +1,37 @@
+version: "3.9"
+
+services:
+  api:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=postgresql://risk_sense:risk_sense_pass@db:5432/risk_sense
+      - MODEL_PATH=/app/models/risk_sense_model.pkl
+      - PIPELINE_PATH=/app/models/risk_sense_pipeline.pkl
+    volumes:
+      - model_data:/app/models
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
+  db:
+    image: postgres:15
+    environment:
+      - POSTGRES_USER=risk_sense
+      - POSTGRES_PASSWORD=risk_sense_pass
+      - POSTGRES_DB=risk_sense
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U risk_sense"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_data:
+  model_data:
