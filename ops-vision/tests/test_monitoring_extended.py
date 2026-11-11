@@ -4,8 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from app.monitoring import DriftMonitor, DriftResult, get_monitor
-
+from app.monitoring import DriftMonitor, DriftResult
 
 FEATURES = ["cpu_util", "mem_util", "latency_ms"]
 

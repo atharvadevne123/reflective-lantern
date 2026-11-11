@@ -389,8 +389,9 @@ class TestValidateTemperature:
             validate_temperature(61.0)
 
     def test_nan_raises(self) -> None:
-        from app.validators import validate_temperature
         import math
+
+        from app.validators import validate_temperature
         with pytest.raises(ValueError):
             validate_temperature(math.nan)
 

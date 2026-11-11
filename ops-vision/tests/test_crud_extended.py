@@ -10,8 +10,6 @@ from app.crud import (
     count_predictions,
     count_predictions_by_service,
     create_prediction,
-    delete_old_predictions,
-    get_prediction_by_id,
 )
 
 

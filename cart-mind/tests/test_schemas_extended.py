@@ -7,7 +7,6 @@ from pydantic import ValidationError
 
 from app.schemas import RecommendRequest, SimilarItemsRequest, UserItemFeatures
 
-
 VALID_USER_FEATURES = {
     "user_id": "u123",
     "item_id": "i456",

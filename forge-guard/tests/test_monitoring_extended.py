@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-import pytest
-
 from app.monitoring import compute_drift, compute_zscore_outliers
 
 

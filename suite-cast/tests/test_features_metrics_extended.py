@@ -5,7 +5,6 @@ from __future__ import annotations
 import pytest
 
 from app.features import (
-    adr_from_revenue,
     average_daily_rate,
     competitor_rate_ratio,
     lead_time_bucket_label,

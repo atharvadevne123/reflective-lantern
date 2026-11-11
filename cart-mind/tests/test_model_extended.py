@@ -2,14 +2,10 @@
 
 from __future__ import annotations
 
-from unittest.mock import MagicMock
-
-import numpy as np
 import pandas as pd
-import pytest
+from sklearn.linear_model import LogisticRegression
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
-from sklearn.linear_model import LogisticRegression
 
 from app.model import model_fingerprint, predict_intent
 

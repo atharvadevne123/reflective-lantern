@@ -7,7 +7,6 @@ from pydantic import ValidationError
 
 from app.schemas import MetricsPayload, RunbookSearchRequest
 
-
 VALID_PAYLOAD = {
     "service_name": "api-svc",
     "cpu_usage_pct": 75.0,
