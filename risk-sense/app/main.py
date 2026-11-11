@@ -3,21 +3,19 @@
 from __future__ import annotations
 
 import logging
-import os
 import uuid
 from typing import Any
 
 import numpy as np
-from fastapi import Depends, FastAPI, HTTPException, Request
+from fastapi import Depends, FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field, field_validator
 from sqlalchemy.orm import Session
 
-from app.database import get_db, create_tables
+from app.database import create_tables, get_db
 from app.features import extract_raw_features, risk_category
 from app.middleware import CorrelationIdMiddleware, RateLimitMiddleware
-from app.model import generate_synthetic_data, load_model, train, save_model
+from app.model import generate_synthetic_data, load_model, save_model, train
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -127,9 +125,6 @@ async def score_application(
     try:
         features_dict = request.model_dump()
         X_raw = extract_raw_features(features_dict)
-        proba = float(_pipeline.transform(X_raw)[0] if _pipeline else X_raw[0])
-
-        # Actually predict
         X_transformed = _pipeline.transform(X_raw) if _pipeline else X_raw
         default_prob = float(_model.predict_proba(X_transformed)[0, 1])
 

@@ -6,7 +6,7 @@ import pytest
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
-from app.database import Base, CreditApplication, DriftLog, create_tables
+from app.database import Base, CreditApplication, DriftLog
 
 
 @pytest.fixture()

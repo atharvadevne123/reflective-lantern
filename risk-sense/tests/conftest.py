@@ -2,23 +2,21 @@
 
 from __future__ import annotations
 
-import sys
 import os
+import sys
 
 # Add project root to path so app imports work
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 import pytest
-import numpy as np
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
 from app.database import Base, get_db
-from app.main import app
 from app.features import build_pipeline
+from app.main import app
 from app.model import generate_synthetic_data, train
-
 
 TEST_DATABASE_URL = "sqlite:///./test_risk_sense.db"
 

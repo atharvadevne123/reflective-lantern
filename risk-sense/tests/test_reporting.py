@@ -81,5 +81,5 @@ class TestExportPredictionsCsv:
             for i in range(5)
         ]
         csv = export_predictions_csv(records)
-        lines = [l for l in csv.strip().split("\n") if l]
+        lines = [line for line in csv.strip().split("\n") if line]
         assert len(lines) == 6  # header + 5 data rows

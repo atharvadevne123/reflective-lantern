@@ -4,8 +4,6 @@ from __future__ import annotations
 
 import json
 
-import pytest
-
 from app.audit import (
     _hash_applicant_id,
     build_audit_record,

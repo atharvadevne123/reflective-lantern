@@ -10,7 +10,6 @@ from app.features import (
     InteractionFeatureTransformer,
     LogIncomeTransformer,
     build_pipeline,
-    extract_raw_features,
 )
 
 

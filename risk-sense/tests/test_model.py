@@ -5,8 +5,8 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from app.model import generate_synthetic_data, predict, train
 from app.features import build_pipeline
+from app.model import generate_synthetic_data, predict, train
 
 
 class TestGenerateSyntheticData:
