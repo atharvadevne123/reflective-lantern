@@ -9,7 +9,6 @@ from app.database import DriftLog, PredictionLog
 
 logger = structlog.get_logger(__name__)
 
-# Reference distribution seeded at startup from first N predictions
 _reference_store: dict[str, list[float]] = {}
 
 
@@ -98,14 +97,7 @@ def get_prediction_metrics(db: Session) -> dict:
 
 
 def check_pipeline_health(pipe) -> dict[str, object]:
-    """Check whether a fitted sklearn pipeline passes basic sanity checks.
-
-    Args:
-        pipe: Fitted sklearn Pipeline.
-
-    Returns:
-        Dict with 'healthy' (bool) and diagnostics.
-    """
+    """Check whether a fitted sklearn pipeline passes basic sanity checks."""
     issues = []
     try:
         from sklearn.utils.validation import check_is_fitted

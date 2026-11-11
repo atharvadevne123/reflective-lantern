@@ -23,11 +23,6 @@ MODEL_VERSION = "1.0.0"
 
 
 def _build_pipeline() -> Pipeline:
-    """Construct the sklearn Pipeline with scaler and XGBClassifier.
-
-    Returns:
-        Unfitted sklearn Pipeline.
-    """
     return Pipeline([
         ("scaler", StandardScaler()),
         (
@@ -54,15 +49,12 @@ def prepare_training_data(n_tickers: int = 5) -> tuple[pd.DataFrame, pd.Series]:
         eng = StockFeatureEngineer()
         eng.fit(df)
         features = eng.transform(df)
-        # Label: 1 if next-period 5-day return > 0, else 0
         future_return = df["close"].pct_change(5).shift(-5)
         labels = (future_return > 0).astype(int)
         valid = features.index.intersection(labels.dropna().index)
         frames.append((features.loc[valid], labels.loc[valid]))
-
     X = pd.concat([f for f, _ in frames]).reset_index(drop=True)
     y = pd.concat([lbl for _, lbl in frames]).reset_index(drop=True)
-    # Keep only columns that exist
     cols = [c for c in FEATURE_COLUMNS if c in X.columns]
     return X[cols].fillna(0), y
 
@@ -90,7 +82,7 @@ def save_model(pipe: Pipeline, metrics: dict) -> None:
 
 def load_model() -> Pipeline:
     if not MODEL_PATH.exists():
-        logger.warning("model not found — training a new one")
+        logger.warning("model not found -- training a new one")
         X, y = prepare_training_data()
         pipe, metrics = train_model(X, y)
         save_model(pipe, metrics)
