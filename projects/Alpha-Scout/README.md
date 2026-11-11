@@ -16,10 +16,10 @@ Alpha-Scout ingests OHLCV (open/high/low/close/volume) data for individual secur
 ![Architecture](screenshots/architecture.svg)
 
 | Layer | Technology |
-|-------|-----------|
-| API | FastAPI + Uvicorn (3+ endpoints, OpenAPI docs) |
+|-------|------------|
+| API | FastAPI + Uvicorn (8+ endpoints, OpenAPI docs) |
 | ML Model | XGBoost + sklearn Pipeline + 5-fold CV |
-| Features | 20+ signals: RSI, MACD, rolling stats, momentum lags, ratios |
+| Features | 29 signals: RSI, MACD, rolling stats, momentum lags, ratios |
 | Monitoring | KS-test drift detection, prediction logging |
 | Persistence | SQLAlchemy ORM (SQLite dev / PostgreSQL prod) |
 | Infrastructure | Docker + docker-compose + PostgreSQL |
@@ -46,79 +46,15 @@ docker-compose up --build
 
 ## API Reference
 
-### POST `/api/v1/predict`
-
-Score a security and get an alpha score.
-
-**Request:**
-```json
-{
-  "ticker": "AAPL",
-  "close": 180.0,
-  "open": 179.5,
-  "high": 181.2,
-  "low": 178.9,
-  "volume": 5000000,
-  "pe_ratio": 28.5,
-  "market_cap": 2900000000000
-}
-```
-
-**Response:**
-```json
-{
-  "ticker": "AAPL",
-  "alpha_score": 72.4,
-  "return_prediction": 0.224,
-  "confidence": 0.724,
-  "model_version": "1.0.0",
-  "prediction_id": 42
-}
-```
-
-`alpha_score` ranges from 0-100 where higher values indicate stronger buy signals.
-
-### GET `/api/v1/health`
-
-Returns service health: model loaded status, DB connectivity.
-
-### GET `/api/v1/metrics`
-
-Returns aggregate prediction statistics over the last 100 predictions.
-
-### POST `/api/v1/drift`
-
-Run a KS-test drift check for any named feature distribution.
-
-### POST `/api/v1/rank`
-
-Rank a list of securities by alpha score. Highest alpha_score = rank 1.
-
-### GET `/api/v1/feature-importance`
-
-Returns top 10 feature importances from the XGBoost model.
-
-### POST `/api/v1/anomaly`
-
-Detect anomalous input features via Isolation Forest.
-
-### GET `/api/v1/pipeline-health`
-
-Diagnostics for the loaded ML pipeline (fitted check, predict_proba availability).
-
-## Feature Engineering
-
-`StockFeatureEngineer` computes 29 features per row:
-
-| Category | Features |
-|----------|---------|
-| Momentum (lags) | `return_lag_{1,3,5,10,20}` |
-| Rolling stats | `mean/std/max/min_{5,10,20}` |
-| Price ratios | `price_to_ma5`, `price_to_ma20`, `high_low_ratio` |
-| Volume | `volume_ratio` |
-| Volatility | `volatility_{5,20}` |
-| Technical | `rsi_14`, `macd`, `macd_signal`, `macd_hist` |
-| Fundamental | `pe_ratio`, `log_market_cap` |
+### POST `/api/v1/predict` — Score a security
+### GET `/api/v1/health` — Service health
+### GET `/api/v1/metrics` — Aggregate prediction stats
+### POST `/api/v1/drift` — KS-test drift check
+### POST `/api/v1/rank` — Rank a portfolio of securities
+### GET `/api/v1/feature-importance` — Top 10 XGBoost feature importances
+### POST `/api/v1/anomaly` — Isolation Forest anomaly detection
+### GET `/api/v1/pipeline-health` — ML pipeline diagnostics
+### GET `/api/v1/predictions/export` — Export recent predictions as JSON
 
 ## Running Tests
 
@@ -128,25 +64,17 @@ make test
 pytest tests/ -v
 ```
 
+63 tests, all passing. Ruff: clean (0 errors).
+
 ## Retraining
 
 ```bash
 python -c "from pipelines.retrain_dag import run_pipeline; run_pipeline()"
 ```
 
-The pipeline trains on 5-ticker synthetic OHLCV data with 5-fold CV, validates AUC >= 0.52, and saves the model.
-
 ## Environment Variables
 
 See `.env.example` for all configuration options.
-
-## Contributing
-
-See [CONTRIBUTING.md](CONTRIBUTING.md).
-
-## Changelog
-
-See [CHANGELOG.md](CHANGELOG.md).
 
 ## Model Quality
 

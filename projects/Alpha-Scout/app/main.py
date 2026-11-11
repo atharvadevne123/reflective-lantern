@@ -68,7 +68,6 @@ async def correlation_id_middleware(request: Request, call_next):
 
 @app.get("/api/v1/health", response_model=HealthResponse, tags=["Operations"], summary="Service health check")
 async def health(db: Session = Depends(get_db)) -> HealthResponse:
-    """Return service health status."""
     db_ok = True
     try:
         db.execute(__import__("sqlalchemy").text("SELECT 1"))
@@ -79,10 +78,8 @@ async def health(db: Session = Depends(get_db)) -> HealthResponse:
 
 @app.post("/api/v1/predict", response_model=PredictResponse, tags=["Scoring"], summary="Score a security")
 async def predict(payload: OHLCVInput, db: Session = Depends(get_db)) -> PredictResponse:
-    """Score a single security and return an alpha score + return prediction."""
     if _model is None:
         raise HTTPException(status_code=503, detail="model not loaded")
-
     history = make_sample_ohlcv(60, ticker=payload.ticker)
     history.iloc[-1] = {
         "ticker": payload.ticker,
@@ -96,13 +93,10 @@ async def predict(payload: OHLCVInput, db: Session = Depends(get_db)) -> Predict
         history["pe_ratio"] = payload.pe_ratio
     if payload.market_cap is not None:
         history["market_cap"] = payload.market_cap
-
     eng = StockFeatureEngineer()
     eng.fit(history)
     features = eng.transform(history)
-
     result = predict_alpha(_model, features)
-
     record = log_prediction(
         db=db,
         ticker=payload.ticker,
@@ -111,7 +105,6 @@ async def predict(payload: OHLCVInput, db: Session = Depends(get_db)) -> Predict
         confidence=result["confidence"],
         model_version=result["model_version"],
     )
-
     return PredictResponse(
         ticker=payload.ticker,
         alpha_score=result["alpha_score"],
@@ -122,20 +115,13 @@ async def predict(payload: OHLCVInput, db: Session = Depends(get_db)) -> Predict
     )
 
 
-@app.get(
-    "/api/v1/metrics",
-    response_model=MetricsResponse,
-    tags=["Operations"],
-    summary="Prediction aggregate metrics",
-)
+@app.get("/api/v1/metrics", response_model=MetricsResponse, tags=["Operations"], summary="Prediction aggregate metrics")
 async def metrics(db: Session = Depends(get_db)) -> MetricsResponse:
-    """Return aggregate prediction metrics."""
     return MetricsResponse(**get_prediction_metrics(db))
 
 
 @app.post("/api/v1/drift", response_model=DriftResponse, tags=["Monitoring"], summary="KS-test drift check")
 async def drift_check(payload: DriftRequest, db: Session = Depends(get_db)) -> DriftResponse:
-    """Run a KS-test drift check for a named feature distribution."""
     result = run_drift_check(db, payload.feature_name, payload.values)
     return DriftResponse(
         feature_name=payload.feature_name,
@@ -165,12 +151,10 @@ async def rate_limit_middleware(request: Request, call_next):
 
 
 class PortfolioRankRequest(BaseModel):
-    """Request to rank a list of securities by alpha score."""
     securities: list[OHLCVInput]
 
 
 class RankedSecurity(BaseModel):
-    """Single security with alpha score for portfolio ranking."""
     ticker: str
     alpha_score: float
     return_prediction: float
@@ -178,14 +162,8 @@ class RankedSecurity(BaseModel):
     rank: int
 
 
-@app.post(
-    "/api/v1/rank",
-    response_model=list[RankedSecurity],
-    tags=["Scoring"],
-    summary="Rank a portfolio of securities by alpha score",
-)
+@app.post("/api/v1/rank", response_model=list[RankedSecurity], tags=["Scoring"], summary="Rank a portfolio")
 async def rank_portfolio(payload: PortfolioRankRequest, db: Session = Depends(get_db)) -> list[RankedSecurity]:
-    """Score and rank multiple securities; highest alpha_score = rank 1."""
     if _model is None:
         raise HTTPException(status_code=503, detail="model not loaded")
     results = []
@@ -212,9 +190,8 @@ async def rank_portfolio(payload: PortfolioRankRequest, db: Session = Depends(ge
     ]
 
 
-@app.get("/api/v1/feature-importance", tags=["Scoring"], summary="Return top feature importances from the trained model")
+@app.get("/api/v1/feature-importance", tags=["Scoring"], summary="Return top feature importances")
 async def feature_importance() -> dict:
-    """Return feature importances from the XGBoost model (top 10)."""
     if _model is None:
         raise HTTPException(status_code=503, detail="model not loaded")
     xgb_model = _model.named_steps.get("model")
@@ -225,14 +202,14 @@ async def feature_importance() -> dict:
     n = min(len(importances), len(FEATURE_COLUMNS))
     pairs = sorted(
         zip(FEATURE_COLUMNS[:n], importances[:n].tolist(), strict=False),
-        key=lambda x: x[1], reverse=True,
+        key=lambda x: x[1],
+        reverse=True,
     )
     return {"feature_importances": [{"feature": f, "importance": round(v, 6)} for f, v in pairs[:10]]}
 
 
 @app.post("/api/v1/anomaly", tags=["Monitoring"], summary="Detect anomalous input rows")
 async def anomaly_check(payload: OHLCVInput) -> dict:
-    """Check if a security's current features are anomalous vs training distribution."""
     from app.anomaly import predict_anomaly
     history = make_sample_ohlcv(100, ticker=payload.ticker)
     history.iloc[-1] = {
@@ -247,7 +224,6 @@ async def anomaly_check(payload: OHLCVInput) -> dict:
 
 @app.get("/api/v1/pipeline-health", tags=["Operations"], summary="Check ML pipeline health")
 async def pipeline_health() -> dict:
-    """Return health diagnostics for the loaded ML pipeline."""
     from app.monitoring import check_pipeline_health
     if _model is None:
         return {"healthy": False, "issues": ["no model loaded"]}
@@ -256,7 +232,6 @@ async def pipeline_health() -> dict:
 
 @app.get("/api/v1/predictions/export", tags=["Operations"], summary="Export recent predictions as JSON")
 async def export_predictions(limit: int = 100, db: Session = Depends(get_db)) -> dict:
-    """Export the most recent predictions for downstream analysis."""
     from app.database import PredictionLog
     rows = (
         db.query(PredictionLog)
@@ -268,9 +243,13 @@ async def export_predictions(limit: int = 100, db: Session = Depends(get_db)) ->
         "count": len(rows),
         "predictions": [
             {
-                "id": r.id, "ticker": r.ticker, "alpha_score": r.alpha_score,
-                "return_prediction": r.return_prediction, "confidence": r.confidence,
-                "model_version": r.model_version, "created_at": str(r.created_at),
+                "id": r.id,
+                "ticker": r.ticker,
+                "alpha_score": r.alpha_score,
+                "return_prediction": r.return_prediction,
+                "confidence": r.confidence,
+                "model_version": r.model_version,
+                "created_at": str(r.created_at),
             }
             for r in rows
         ],
