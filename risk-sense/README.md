@@ -172,3 +172,11 @@ pytest tests/ -v --cov=app --cov-report=term-missing
 # Run only monitoring tests
 pytest tests/test_monitoring.py -v
 ```
+
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for development workflow, code style, and PR guidelines.
+
+## License
+
+MIT
