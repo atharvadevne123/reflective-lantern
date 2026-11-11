@@ -6,11 +6,14 @@ import pytest
 
 from app.telemetry import (
     all_above,
+    batch_increment,
     counter_exists,
     get,
+    get_many,
     increment,
     increment_by,
     reset,
+    reset_prefix,
     snapshot,
     top_n,
 )
@@ -245,8 +248,6 @@ class TestTelemetryIncrementByExtended:
         assert "high" in above
         assert "low" not in above
 
-
-from app.telemetry import batch_increment, get_many, reset_prefix
 
 
 class TestBatchIncrement:

@@ -161,7 +161,7 @@ class TestIsValidSeverity:
             assert is_valid_severity(level) is True
 
 
-class TestSeverityFromConfidence:
+class TestSeverityFromConfidenceExtended:
     def test_critical_at_threshold(self) -> None:
         from app.constants import SEVERITY_CRITICAL_THRESHOLD, severity_from_confidence
 

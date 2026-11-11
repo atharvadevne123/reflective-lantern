@@ -539,9 +539,8 @@ class TestDropLowVarianceFeaturesExtended:
         assert "high" in result.columns
 
 
-class TestFeatureImportanceReport:
+class TestFeatureImportanceReportExtended:
     def test_sorted_descending(self) -> None:
-        import pandas as pd
         from app.features import feature_importance_report
 
         result = feature_importance_report(["a", "b", "c"], [0.1, 0.5, 0.3])
@@ -556,6 +555,7 @@ class TestFeatureImportanceReport:
 
     def test_returns_dataframe(self) -> None:
         import pandas as pd
+
         from app.features import feature_importance_report
 
         result = feature_importance_report(["x"], [0.9])
@@ -564,10 +564,10 @@ class TestFeatureImportanceReport:
         assert "importance" in result.columns
 
 
-class TestClipOutlierFeatures:
+class TestClipOutlierFeaturesExtended:
     def test_extreme_values_clipped(self) -> None:
         import pandas as pd
-        import numpy as np
+
         from app.features import clip_outlier_features
 
         data = [1.0] * 20 + [1000.0]
@@ -577,6 +577,7 @@ class TestClipOutlierFeatures:
 
     def test_shape_preserved(self) -> None:
         import pandas as pd
+
         from app.features import clip_outlier_features
 
         df = pd.DataFrame({"a": [1.0, 2.0, 3.0], "b": [4.0, 5.0, 6.0]})
@@ -585,6 +586,7 @@ class TestClipOutlierFeatures:
 
     def test_no_mutation_of_original(self) -> None:
         import pandas as pd
+
         from app.features import clip_outlier_features
 
         df = pd.DataFrame({"x": [1.0, 2.0, 1000.0]})

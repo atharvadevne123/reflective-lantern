@@ -165,7 +165,7 @@ class TestCompetitorRateRatioExtra:
         assert competitor_rate_ratio(1.0, 1000.0) == pytest.approx(0.5)
 
 
-class TestOccupancyYoyDelta:
+class TestOccupancyYoyDeltaExtended:
     def test_positive_growth(self) -> None:
         assert occupancy_yoy_delta(0.9, 0.7) == pytest.approx(0.2)
 

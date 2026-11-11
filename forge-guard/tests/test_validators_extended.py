@@ -192,7 +192,7 @@ class TestClampReading:
             clamp_reading(5.0, 10.0, 1.0)
 
 
-class TestValidateBatch:
+class TestValidateBatchExtended:
     def test_all_valid(self) -> None:
         records = [_valid_reading() for _ in range(3)]
         result = validate_batch(records)
@@ -218,7 +218,7 @@ class TestValidateBatch:
         assert result["total"] == result["valid_count"] + result["invalid_count"]
 
 
-class TestMissingRate:
+class TestMissingRateExtended:
     def test_all_present(self) -> None:
         records = [{"x": 1.0}, {"x": 2.0}]
         assert missing_rate(records, "x") == pytest.approx(0.0)

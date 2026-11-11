@@ -311,7 +311,7 @@ class TestDefectRiskIndex:
         assert risk >= 0.5
 
 
-class TestSensorRangeFeature:
+class TestSensorRangeFeatureExtended:
     def test_empty_row_returns_zeros(self) -> None:
         from app.features import sensor_range_feature
 

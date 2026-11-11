@@ -583,7 +583,7 @@ class TestUpdateReferenceWindowExtended:
         reset_reference_window("acc_feat")
 
 
-class TestRollingMean:
+class TestRollingMeanExtended2:
     def test_empty_returns_empty(self) -> None:
         from app.monitoring import rolling_mean
         assert rolling_mean([], window=3) == []

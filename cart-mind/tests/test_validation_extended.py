@@ -179,7 +179,7 @@ class TestCrossFieldPenaltyScore:
         assert cross_field_penalty_score(["w"] * 10) == pytest.approx(1.0)
 
 
-class TestRevenueImpactScore:
+class TestRevenueImpactScoreExtended:
     def test_zero_cart_value(self) -> None:
         from app.validation import revenue_impact_score
 

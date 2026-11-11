@@ -187,7 +187,7 @@ def test_format_defect_rate_pct_half() -> None:
     assert format_defect_rate_pct(0.5) == "50.00%"
 
 
-def test_export_drift_reports_json_empty(db_session) -> None:
+def test_export_drift_reports_json_empty_extended(db_session) -> None:
     from app.reporting import export_drift_reports_json
 
     result = export_drift_reports_json(db_session)

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from app.monitoring import compute_drift, drift_severity
+from app.monitoring import compute_drift, drift_severity, rate_spread
 
 
 class TestComputeDrift:
@@ -75,8 +75,6 @@ class TestDriftSeverity:
     def test_boundary_severe(self) -> None:
         assert drift_severity(0.50) == "severe"
 
-
-from app.monitoring import rate_spread
 
 
 class TestRateSpread:

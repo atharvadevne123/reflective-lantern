@@ -230,7 +230,7 @@ class TestPsiBatchAlert:
         assert result[0]["drift_level"] == "moderate"
 
 
-class TestPsiSeriesTrend:
+class TestPsiSeriesTrendExtended2:
     def test_empty_returns_stable(self) -> None:
         result = psi_series_trend([])
         assert result["escalating"] is False
@@ -251,12 +251,11 @@ class TestPsiSeriesTrend:
         assert result["max_psi"] == pytest.approx(0.3)
 
 
-class TestPsiFeatureRank:
+class TestPsiFeatureRankExtended:
     def test_empty_dict_returns_empty(self) -> None:
         assert psi_feature_rank({}) == []
 
     def test_sorted_descending(self) -> None:
-        from app.psi import compute_psi
         import numpy as np
 
         rng = np.random.default_rng(0)

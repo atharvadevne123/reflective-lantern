@@ -9,7 +9,9 @@ from app.peak_demand import (
     estimate_peak_shaving_savings,
     find_peak_hours,
     load_factor,
+    off_peak_average,
     peak_demand_window,
+    rolling_peak_sums,
 )
 
 
@@ -250,8 +252,6 @@ class TestPeakDemandWindowEdgeCases:
         result = peak_demand_window(values, window_hours=4)
         assert result["window_end"] == result["window_start"] + 3
 
-
-from app.peak_demand import off_peak_average, rolling_peak_sums
 
 
 class TestLoadFactor:

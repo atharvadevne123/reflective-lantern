@@ -263,7 +263,7 @@ class TestDemandTrendEdgeCases:
         assert result["delta"] > 0.0
 
 
-class TestDemandPercentile:
+class TestDemandPercentileExtended:
     def test_p50_of_sorted_list(self) -> None:
         vals = [1.0, 2.0, 3.0, 4.0, 5.0]
         p50 = demand_percentile(vals, 50.0)
@@ -285,7 +285,7 @@ class TestDemandPercentile:
         assert demand_percentile([42.0], percentile=99.0) == pytest.approx(42.0)
 
 
-class TestSmoothDemand:
+class TestSmoothDemandExtended:
     def test_single_element_unchanged(self) -> None:
         assert smooth_demand([5.0]) == pytest.approx([5.0])
 
