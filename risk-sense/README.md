@@ -47,3 +47,44 @@ curl -X POST http://localhost:8000/api/v1/score \
   "recommendation": "Approve — low risk applicant"
 }
 ```
+
+## Setup
+
+### Local Development
+
+```bash
+# Install dependencies
+pip install -r requirements.txt
+
+# Configure environment
+cp .env.example .env
+# Edit .env to set DATABASE_URL, MODEL_PATH, etc.
+
+# Run with SQLite (no Postgres needed locally)
+DATABASE_URL="sqlite:///./risk_sense.db" uvicorn app.main:app --reload
+
+# Run tests
+pytest tests/ -v
+```
+
+### Docker
+
+```bash
+# Build and start all services
+docker-compose up --build -d
+
+# View logs
+docker-compose logs -f api
+
+# Stop
+docker-compose down
+```
+
+### Environment Variables
+
+| Variable | Default | Description |
+|---|---|---|
+| `DATABASE_URL` | `sqlite:///./risk_sense.db` | PostgreSQL or SQLite URL |
+| `MODEL_PATH` | `/tmp/risk_sense_model.pkl` | Path to trained model |
+| `PIPELINE_PATH` | `/tmp/risk_sense_pipeline.pkl` | Path to feature pipeline |
+| `LOG_LEVEL` | `INFO` | Logging level |
