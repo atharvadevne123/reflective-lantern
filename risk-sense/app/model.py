@@ -23,6 +23,7 @@ def _make_ensemble() -> VotingClassifier:
     """Build XGBoost + LightGBM + RandomForest soft-voting ensemble."""
     try:
         from xgboost import XGBClassifier
+
         xgb = XGBClassifier(
             n_estimators=200,
             max_depth=5,
@@ -38,6 +39,7 @@ def _make_ensemble() -> VotingClassifier:
 
     try:
         from lightgbm import LGBMClassifier
+
         lgbm = LGBMClassifier(
             n_estimators=200,
             max_depth=5,
@@ -125,21 +127,23 @@ def generate_synthetic_data(n_samples: int = 1000, seed: int = 42) -> tuple[np.n
     """Generate synthetic credit application data for testing."""
     rng = np.random.default_rng(seed)
     n = n_samples
-    X = np.column_stack([
-        rng.uniform(0.1, 0.8, n),          # debt_to_income
-        rng.uniform(0.0, 1.0, n),           # payment_history_score
-        rng.uniform(0.0, 0.95, n),          # credit_utilization
-        rng.integers(6, 300, n).astype(float),  # account_age_months
-        rng.integers(1, 15, n).astype(float),   # num_open_accounts
-        rng.integers(0, 5, n).astype(float),    # num_derogatory_marks
-        rng.uniform(20_000, 200_000, n),    # annual_income
-    ])
+    X = np.column_stack(
+        [
+            rng.uniform(0.1, 0.8, n),  # debt_to_income
+            rng.uniform(0.0, 1.0, n),  # payment_history_score
+            rng.uniform(0.0, 0.95, n),  # credit_utilization
+            rng.integers(6, 300, n).astype(float),  # account_age_months
+            rng.integers(1, 15, n).astype(float),  # num_open_accounts
+            rng.integers(0, 5, n).astype(float),  # num_derogatory_marks
+            rng.uniform(20_000, 200_000, n),  # annual_income
+        ]
+    )
     # Higher risk correlated with high DTI, high utilization, low payment score, derogatory marks
     score = (
-        0.3 * X[:, 0]            # debt_to_income
-        - 0.4 * X[:, 1]          # payment_history_score (inverse)
-        + 0.3 * X[:, 2]          # credit_utilization
-        + 0.2 * (X[:, 5] / 4)   # derogatory_marks
+        0.3 * X[:, 0]  # debt_to_income
+        - 0.4 * X[:, 1]  # payment_history_score (inverse)
+        + 0.3 * X[:, 2]  # credit_utilization
+        + 0.2 * (X[:, 5] / 4)  # derogatory_marks
         - 0.1 * (X[:, 6] / 200_000)  # annual_income (inverse)
     )
     prob = 1 / (1 + np.exp(-5 * (score - 0.3)))

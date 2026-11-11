@@ -71,12 +71,15 @@ class TestAdverseActionReasons:
 
 
 class TestScoreBandDescription:
-    @pytest.mark.parametrize("score,expected_word", [
-        (0.1, "Low"),
-        (0.35, "Medium"),
-        (0.6, "High"),
-        (0.9, "Very high"),
-    ])
+    @pytest.mark.parametrize(
+        "score,expected_word",
+        [
+            (0.1, "Low"),
+            (0.35, "Medium"),
+            (0.6, "High"),
+            (0.9, "Very high"),
+        ],
+    )
     def test_score_band_labels(self, score: float, expected_word: str) -> None:
         desc = score_band_description(score)
         assert desc.startswith(expected_word)

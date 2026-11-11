@@ -67,8 +67,15 @@ class TestExportPredictionsCsv:
         assert "applicant_id" in lines[0]
 
     def test_single_record(self) -> None:
-        records = [{"applicant_id": "test-001", "risk_score": 0.3, "risk_category": "low",
-                    "default_probability": 0.3, "created_at": "2026-11-11"}]
+        records = [
+            {
+                "applicant_id": "test-001",
+                "risk_score": 0.3,
+                "risk_category": "low",
+                "default_probability": 0.3,
+                "created_at": "2026-11-11",
+            }
+        ]
         csv = export_predictions_csv(records)
         lines = csv.strip().split("\n")
         assert len(lines) == 2  # header + 1 data row
@@ -76,8 +83,13 @@ class TestExportPredictionsCsv:
 
     def test_multiple_records(self) -> None:
         records = [
-            {"applicant_id": f"app-{i}", "risk_score": 0.3, "risk_category": "low",
-             "default_probability": 0.3, "created_at": "2026-11-11"}
+            {
+                "applicant_id": f"app-{i}",
+                "risk_score": 0.3,
+                "risk_category": "low",
+                "default_probability": 0.3,
+                "created_at": "2026-11-11",
+            }
             for i in range(5)
         ]
         csv = export_predictions_csv(records)

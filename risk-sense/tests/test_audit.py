@@ -39,8 +39,15 @@ class TestBuildAuditRecord:
             threshold_used=0.5,
             decision="denied",
         )
-        for field in ("applicant_hash", "risk_score", "risk_category", "decision",
-                      "threshold_used", "model_version", "decided_at"):
+        for field in (
+            "applicant_hash",
+            "risk_score",
+            "risk_category",
+            "decision",
+            "threshold_used",
+            "model_version",
+            "decided_at",
+        ):
             assert field in record
 
     def test_decision_is_denied_for_high_score(self) -> None:

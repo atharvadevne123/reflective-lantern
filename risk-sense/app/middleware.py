@@ -64,9 +64,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         now = time.monotonic()
 
         # Evict timestamps outside the window
-        _request_log[client_ip] = [
-            ts for ts in _request_log[client_ip] if now - ts < RATE_LIMIT_WINDOW
-        ]
+        _request_log[client_ip] = [ts for ts in _request_log[client_ip] if now - ts < RATE_LIMIT_WINDOW]
 
         if len(_request_log[client_ip]) >= RATE_LIMIT_REQUESTS:
             logger.warning("Rate limit exceeded for IP %s", client_ip)

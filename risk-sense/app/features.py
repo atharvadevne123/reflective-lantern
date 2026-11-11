@@ -87,12 +87,14 @@ class ClipOutlierTransformer(BaseEstimator, TransformerMixin):
 
 def build_pipeline() -> Pipeline:
     """Return the full sklearn feature engineering + scaling pipeline."""
-    return Pipeline([
-        ("log_income", LogIncomeTransformer()),
-        ("interactions", InteractionFeatureTransformer()),
-        ("clip_outliers", ClipOutlierTransformer()),
-        ("scaler", StandardScaler()),
-    ])
+    return Pipeline(
+        [
+            ("log_income", LogIncomeTransformer()),
+            ("interactions", InteractionFeatureTransformer()),
+            ("clip_outliers", ClipOutlierTransformer()),
+            ("scaler", StandardScaler()),
+        ]
+    )
 
 
 def extract_raw_features(application: dict[str, Any]) -> np.ndarray:
@@ -110,15 +112,19 @@ def extract_raw_features(application: dict[str, Any]) -> np.ndarray:
     if missing:
         raise ValueError(f"Missing required fields: {missing}")
 
-    return np.array([[
-        float(application["debt_to_income"]),
-        float(application["payment_history_score"]),
-        float(application["credit_utilization"]),
-        float(application["account_age_months"]),
-        float(application["num_open_accounts"]),
-        float(application["num_derogatory_marks"]),
-        float(application["annual_income"]),
-    ]])
+    return np.array(
+        [
+            [
+                float(application["debt_to_income"]),
+                float(application["payment_history_score"]),
+                float(application["credit_utilization"]),
+                float(application["account_age_months"]),
+                float(application["num_open_accounts"]),
+                float(application["num_derogatory_marks"]),
+                float(application["annual_income"]),
+            ]
+        ]
+    )
 
 
 def risk_category(score: float) -> str:

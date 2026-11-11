@@ -53,11 +53,13 @@ def top_risk_drivers(
     result = []
     for idx in ranked_idx:
         name = FEATURE_NAMES[idx] if idx < len(FEATURE_NAMES) else f"feature_{idx}"
-        result.append({
-            "feature": name,
-            "contribution": float(round(contributions[idx], 6)),
-            "explanation": RISK_FACTORS.get(name, ""),
-        })
+        result.append(
+            {
+                "feature": name,
+                "contribution": float(round(contributions[idx], 6)),
+                "explanation": RISK_FACTORS.get(name, ""),
+            }
+        )
     return result
 
 

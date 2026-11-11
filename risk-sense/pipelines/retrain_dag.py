@@ -25,15 +25,17 @@ def fetch_training_data(db_session: Any, min_records: int = 500) -> tuple[np.nda
     for r in records:
         if r.default_probability is None:
             continue
-        X_rows.append([
-            r.debt_to_income or 0.0,
-            r.payment_history_score or 0.0,
-            r.credit_utilization or 0.0,
-            r.account_age_months or 1,
-            r.num_open_accounts or 1,
-            r.num_derogatory_marks or 0,
-            r.annual_income or 50_000.0,
-        ])
+        X_rows.append(
+            [
+                r.debt_to_income or 0.0,
+                r.payment_history_score or 0.0,
+                r.credit_utilization or 0.0,
+                r.account_age_months or 1,
+                r.num_open_accounts or 1,
+                r.num_derogatory_marks or 0,
+                r.annual_income or 50_000.0,
+            ]
+        )
         y_rows.append(1 if r.default_probability > 0.5 else 0)
 
     return np.array(X_rows), np.array(y_rows)
@@ -44,9 +46,7 @@ def should_retrain(db_session: Any, drift_threshold: float = 0.25) -> bool:
     from app.database import CreditApplication
     from app.monitoring import ks_drift_test
 
-    records = db_session.query(CreditApplication).order_by(
-        CreditApplication.created_at.asc()
-    ).all()
+    records = db_session.query(CreditApplication).order_by(CreditApplication.created_at.asc()).all()
 
     if len(records) < 40:
         return False

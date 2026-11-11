@@ -93,9 +93,13 @@ class TestBuildPipeline:
 class TestExtractRawFeatures:
     def test_extracts_7_features(self) -> None:
         app = {
-            "debt_to_income": 0.3, "payment_history_score": 0.8,
-            "credit_utilization": 0.2, "account_age_months": 48,
-            "num_open_accounts": 4, "num_derogatory_marks": 0, "annual_income": 50_000.0
+            "debt_to_income": 0.3,
+            "payment_history_score": 0.8,
+            "credit_utilization": 0.2,
+            "account_age_months": 48,
+            "num_open_accounts": 4,
+            "num_derogatory_marks": 0,
+            "annual_income": 50_000.0,
         }
         X = extract_raw_features(app)
         assert X.shape == (1, 7)
@@ -104,14 +108,22 @@ class TestExtractRawFeatures:
         with pytest.raises(ValueError, match="Missing required fields"):
             extract_raw_features({"debt_to_income": 0.3})
 
-    @pytest.mark.parametrize("field,value", [
-        ("debt_to_income", "0.5"), ("annual_income", "80000"),
-    ])
+    @pytest.mark.parametrize(
+        "field,value",
+        [
+            ("debt_to_income", "0.5"),
+            ("annual_income", "80000"),
+        ],
+    )
     def test_string_values_coerced_to_float(self, field: str, value: str) -> None:
         app = {
-            "debt_to_income": "0.3", "payment_history_score": "0.8",
-            "credit_utilization": "0.2", "account_age_months": "48",
-            "num_open_accounts": "4", "num_derogatory_marks": "0", "annual_income": "50000.0"
+            "debt_to_income": "0.3",
+            "payment_history_score": "0.8",
+            "credit_utilization": "0.2",
+            "account_age_months": "48",
+            "num_open_accounts": "4",
+            "num_derogatory_marks": "0",
+            "annual_income": "50000.0",
         }
         app[field] = value
         X = extract_raw_features(app)
@@ -119,11 +131,19 @@ class TestExtractRawFeatures:
 
 
 class TestRiskCategory:
-    @pytest.mark.parametrize("score,expected", [
-        (0.0, "low"), (0.19, "low"), (0.2, "medium"),
-        (0.49, "medium"), (0.5, "high"), (0.74, "high"),
-        (0.75, "very_high"), (1.0, "very_high"),
-    ])
+    @pytest.mark.parametrize(
+        "score,expected",
+        [
+            (0.0, "low"),
+            (0.19, "low"),
+            (0.2, "medium"),
+            (0.49, "medium"),
+            (0.5, "high"),
+            (0.74, "high"),
+            (0.75, "very_high"),
+            (1.0, "very_high"),
+        ],
+    )
     def test_category_boundaries(self, score: float, expected: str) -> None:
         assert risk_category(score) == expected
 

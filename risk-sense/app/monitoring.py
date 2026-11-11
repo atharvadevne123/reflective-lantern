@@ -46,9 +46,7 @@ def drift_severity(ks_statistic: float) -> str:
     return "severe"
 
 
-def compute_population_stability_index(
-    reference: list[float], current: list[float], bins: int = 10
-) -> float:
+def compute_population_stability_index(reference: list[float], current: list[float], bins: int = 10) -> float:
     """Compute the Population Stability Index (PSI) between two distributions.
 
     PSI < 0.1  → stable;  0.1–0.25 → moderate shift;  > 0.25 → major shift.
@@ -72,9 +70,7 @@ def compute_population_stability_index(
     return psi
 
 
-def rolling_default_rate(
-    predictions: list[float], window: int = 100
-) -> list[float]:
+def rolling_default_rate(predictions: list[float], window: int = 100) -> list[float]:
     """Compute rolling mean default probability over a sliding window."""
     if not predictions:
         return []

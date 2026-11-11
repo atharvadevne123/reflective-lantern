@@ -53,6 +53,7 @@ async def startup_event() -> None:
         logger.info("No saved model found — training on synthetic data")
         X, y = generate_synthetic_data(n_samples=2000)
         from app.features import build_pipeline
+
         _pipeline = build_pipeline()
         _model, metrics = train(X, y, _pipeline)
         save_model(_model, _pipeline)
@@ -138,6 +139,7 @@ async def score_application(
 
         try:
             from app.monitoring import log_prediction
+
             log_prediction(
                 db_session=db,
                 applicant_id=request.applicant_id,
@@ -167,6 +169,7 @@ async def score_application(
 async def metrics(db: Session = Depends(get_db)) -> MetricsResponse:
     """Return aggregate prediction metrics."""
     from app.database import CreditApplication
+
     try:
         records = db.query(CreditApplication).all()
         if not records:
@@ -197,4 +200,8 @@ async def drift_report(db: Session = Depends(get_db)) -> dict[str, Any]:
     reference = [r.default_probability for r in records[:mid] if r.default_probability is not None]
     current = [r.default_probability for r in records[mid:] if r.default_probability is not None]
 
-    return {"drift_analysis": ks_drift_test(reference, current), "reference_n": len(reference), "current_n": len(current)}
+    return {
+        "drift_analysis": ks_drift_test(reference, current),
+        "reference_n": len(reference),
+        "current_n": len(current),
+    }

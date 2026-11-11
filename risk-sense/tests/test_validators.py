@@ -62,27 +62,39 @@ class TestValidateIncome:
 class TestValidateApplication:
     def test_valid_application_passes(self) -> None:
         app = {
-            "debt_to_income": 0.3, "payment_history_score": 0.8,
-            "credit_utilization": 0.2, "account_age_months": 48,
-            "num_open_accounts": 4, "num_derogatory_marks": 0, "annual_income": 50_000.0
+            "debt_to_income": 0.3,
+            "payment_history_score": 0.8,
+            "credit_utilization": 0.2,
+            "account_age_months": 48,
+            "num_open_accounts": 4,
+            "num_derogatory_marks": 0,
+            "annual_income": 50_000.0,
         }
         result = validate_application(app)
         assert result["debt_to_income"] == 0.3
 
     def test_invalid_dti_raises(self) -> None:
         app = {
-            "debt_to_income": -1.0, "payment_history_score": 0.8,
-            "credit_utilization": 0.2, "account_age_months": 48,
-            "num_open_accounts": 4, "num_derogatory_marks": 0, "annual_income": 50_000.0
+            "debt_to_income": -1.0,
+            "payment_history_score": 0.8,
+            "credit_utilization": 0.2,
+            "account_age_months": 48,
+            "num_open_accounts": 4,
+            "num_derogatory_marks": 0,
+            "annual_income": 50_000.0,
         }
         with pytest.raises(ValueError):
             validate_application(app)
 
     def test_multiple_errors_reported_together(self) -> None:
         app = {
-            "debt_to_income": -1.0, "payment_history_score": 2.0,
-            "credit_utilization": 0.2, "account_age_months": 48,
-            "num_open_accounts": 4, "num_derogatory_marks": 0, "annual_income": 50_000.0
+            "debt_to_income": -1.0,
+            "payment_history_score": 2.0,
+            "credit_utilization": 0.2,
+            "account_age_months": 48,
+            "num_open_accounts": 4,
+            "num_derogatory_marks": 0,
+            "annual_income": 50_000.0,
         }
         with pytest.raises(ValueError) as exc_info:
             validate_application(app)

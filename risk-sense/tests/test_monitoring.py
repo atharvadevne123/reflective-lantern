@@ -46,12 +46,19 @@ class TestKsDriftTest:
 
 
 class TestDriftSeverity:
-    @pytest.mark.parametrize("stat,expected", [
-        (0.0, "none"), (0.09, "none"),
-        (0.1, "mild"), (0.24, "mild"),
-        (0.25, "moderate"), (0.49, "moderate"),
-        (0.5, "severe"), (1.0, "severe"),
-    ])
+    @pytest.mark.parametrize(
+        "stat,expected",
+        [
+            (0.0, "none"),
+            (0.09, "none"),
+            (0.1, "mild"),
+            (0.24, "mild"),
+            (0.25, "moderate"),
+            (0.49, "moderate"),
+            (0.5, "severe"),
+            (1.0, "severe"),
+        ],
+    )
     def test_severity_boundaries(self, stat: float, expected: str) -> None:
         assert drift_severity(stat) == expected
 
@@ -100,6 +107,7 @@ class TestRollingDefaultRate:
 
     def test_all_values_between_0_and_1(self) -> None:
         import random
+
         predictions = [random.random() for _ in range(50)]
         result = rolling_default_rate(predictions, window=10)
         assert all(0.0 <= v <= 1.0 for v in result)

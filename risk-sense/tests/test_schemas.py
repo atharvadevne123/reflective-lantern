@@ -26,33 +26,53 @@ class TestCreditApplicationSchema:
     def test_dti_above_10_raises(self) -> None:
         with pytest.raises(ValidationError):
             CreditApplicationSchema(
-                applicant_id="x", debt_to_income=11.0, payment_history_score=0.5,
-                credit_utilization=0.5, account_age_months=12, num_open_accounts=2,
-                num_derogatory_marks=0, annual_income=50_000.0
+                applicant_id="x",
+                debt_to_income=11.0,
+                payment_history_score=0.5,
+                credit_utilization=0.5,
+                account_age_months=12,
+                num_open_accounts=2,
+                num_derogatory_marks=0,
+                annual_income=50_000.0,
             )
 
     def test_negative_income_raises(self) -> None:
         with pytest.raises(ValidationError):
             CreditApplicationSchema(
-                applicant_id="x", debt_to_income=0.3, payment_history_score=0.5,
-                credit_utilization=0.5, account_age_months=12, num_open_accounts=2,
-                num_derogatory_marks=0, annual_income=-100.0
+                applicant_id="x",
+                debt_to_income=0.3,
+                payment_history_score=0.5,
+                credit_utilization=0.5,
+                account_age_months=12,
+                num_open_accounts=2,
+                num_derogatory_marks=0,
+                annual_income=-100.0,
             )
 
     def test_utilization_over_1_raises(self) -> None:
         with pytest.raises(ValidationError):
             CreditApplicationSchema(
-                applicant_id="x", debt_to_income=0.3, payment_history_score=0.5,
-                credit_utilization=1.5, account_age_months=12, num_open_accounts=2,
-                num_derogatory_marks=0, annual_income=50_000.0
+                applicant_id="x",
+                debt_to_income=0.3,
+                payment_history_score=0.5,
+                credit_utilization=1.5,
+                account_age_months=12,
+                num_open_accounts=2,
+                num_derogatory_marks=0,
+                annual_income=50_000.0,
             )
 
     @pytest.mark.parametrize("dti", [0.0, 0.5, 5.0, 10.0])
     def test_valid_dti_range(self, dti: float) -> None:
         app = CreditApplicationSchema(
-            applicant_id="x", debt_to_income=dti, payment_history_score=0.5,
-            credit_utilization=0.5, account_age_months=12, num_open_accounts=2,
-            num_derogatory_marks=0, annual_income=50_000.0
+            applicant_id="x",
+            debt_to_income=dti,
+            payment_history_score=0.5,
+            credit_utilization=0.5,
+            account_age_months=12,
+            num_open_accounts=2,
+            num_derogatory_marks=0,
+            annual_income=50_000.0,
         )
         assert app.debt_to_income == dti
 
@@ -71,8 +91,11 @@ class TestCreditScoreSchema:
     def test_invalid_risk_category_raises(self) -> None:
         with pytest.raises(ValidationError):
             CreditScoreSchema(
-                applicant_id="x", risk_score=0.5, risk_category="unknown",
-                default_probability=0.5, recommendation="test"
+                applicant_id="x",
+                risk_score=0.5,
+                risk_category="unknown",
+                default_probability=0.5,
+                recommendation="test",
             )
 
 

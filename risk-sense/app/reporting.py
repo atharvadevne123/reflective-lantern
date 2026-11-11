@@ -45,7 +45,10 @@ def generate_risk_summary(predictions: list[float]) -> dict[str, Any]:
         "p90": round(p90, 4),
         "p95": round(p95, 4),
         "risk_distribution": {
-            "low": low, "medium": medium, "high": high, "very_high": very_high,
+            "low": low,
+            "medium": medium,
+            "high": high,
+            "very_high": very_high,
         },
         "default_rate": round(sum(1 for p in predictions if p >= 0.5) / n, 4),
     }

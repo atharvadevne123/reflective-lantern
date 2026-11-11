@@ -61,12 +61,14 @@ class TestCreditApplication:
 
     def test_query_by_risk_category(self, db_session) -> None:
         for cat in ["low", "medium", "high"]:
-            db_session.add(CreditApplication(
-                applicant_id=f"app-{cat}",
-                risk_score=0.3,
-                risk_category=cat,
-                default_probability=0.3,
-            ))
+            db_session.add(
+                CreditApplication(
+                    applicant_id=f"app-{cat}",
+                    risk_score=0.3,
+                    risk_category=cat,
+                    default_probability=0.3,
+                )
+            )
         db_session.commit()
         low_count = db_session.query(CreditApplication).filter_by(risk_category="low").count()
         assert low_count == 1
