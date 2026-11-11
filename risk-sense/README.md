@@ -125,3 +125,50 @@ Returns aggregate prediction statistics: total predictions, avg default probabil
 
 ### GET `/api/v1/drift`
 Returns KS-test drift analysis comparing recent vs historical predictions.
+
+## Architecture
+
+```
+┌────────────────────────────────────────────┐
+│          Risk-Sense FastAPI Service         │
+│  /score  /health  /metrics  /drift          │
+└──────────────┬─────────────────────────────┘
+               │
+     ┌─────────▼──────────┐
+     │  Feature Pipeline   │
+     │  LogIncome          │
+     │  Interactions       │  ─── sklearn Pipeline
+     │  ClipOutliers       │
+     │  StandardScaler     │
+     └─────────┬───────────┘
+               │
+     ┌─────────▼──────────────┐
+     │  Soft-Voting Ensemble   │
+     │  XGBoost + LightGBM    │  ─── CalibratedClassifierCV
+     │  + RandomForest         │      5-fold CV AUC-ROC
+     └─────────┬───────────────┘
+               │
+     ┌─────────▼──────────┐
+     │  Drift Monitoring   │
+     │  KS-test / PSI      │  ─── Triggers retraining
+     └─────────┬───────────┘
+               │
+     ┌─────────▼──────────┐
+     │  PostgreSQL DB      │
+     │  credit_applications│
+     │  drift_logs         │
+     └─────────────────────┘
+```
+
+## Testing
+
+```bash
+# Run all tests
+pytest tests/ -v
+
+# Run with coverage
+pytest tests/ -v --cov=app --cov-report=term-missing
+
+# Run only monitoring tests
+pytest tests/test_monitoring.py -v
+```
