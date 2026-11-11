@@ -23,9 +23,9 @@ class OHLCVInput(BaseModel):
 
 class PredictResponse(BaseModel):
     ticker: str
-    alpha_score: float = Field(..., description="Alpha score 0–100; higher = stronger buy signal")
+    alpha_score: float = Field(..., description="Alpha score 0-100; higher = stronger buy signal")
     return_prediction: float = Field(..., description="Predicted excess return (-0.5 to 0.5)")
-    confidence: float = Field(..., description="Model confidence 0–1")
+    confidence: float = Field(..., description="Model confidence 0-1")
     model_version: str
     prediction_id: int
 

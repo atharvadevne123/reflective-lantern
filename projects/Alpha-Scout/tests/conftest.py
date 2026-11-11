@@ -17,7 +17,11 @@ TEST_DATABASE_URL = "sqlite://"
 
 @pytest.fixture(scope="session")
 def engine():
-    eng = create_engine(TEST_DATABASE_URL, connect_args={"check_same_thread": False}, poolclass=StaticPool)
+    eng = create_engine(
+        TEST_DATABASE_URL,
+        connect_args={"check_same_thread": False},
+        poolclass=StaticPool,
+    )
     Base.metadata.create_all(bind=eng)
     return eng
 
@@ -58,6 +62,7 @@ def client(engine):
             session.close()
 
     app.dependency_overrides[get_db] = override_get_db
+
     import app.main as main_module
     X, y = prepare_training_data(n_tickers=2)
     pipe = _build_pipeline()
@@ -72,5 +77,6 @@ def client(engine):
 
 @pytest.fixture(scope="session")
 def settings():
+    """Override settings for tests."""
     from app.config import Settings
     return Settings(DATABASE_URL="sqlite://", LOG_LEVEL="WARNING")

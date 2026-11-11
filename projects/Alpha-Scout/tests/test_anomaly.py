@@ -39,7 +39,7 @@ def test_extreme_values_flagged_as_anomaly(fitted_detector):
     features = eng.transform(df)
     cols = [c for c in FEATURE_COLUMNS if c in features.columns]
     extreme = features[cols].copy()
-    extreme.iloc[-1] = 999999.0  # extreme outlier
+    extreme.iloc[-1] = 999999.0
     result = predict_anomaly(extreme.iloc[[-1]])
     assert result["is_anomaly"] is True
 
