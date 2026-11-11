@@ -88,3 +88,40 @@ docker-compose down
 | `MODEL_PATH` | `/tmp/risk_sense_model.pkl` | Path to trained model |
 | `PIPELINE_PATH` | `/tmp/risk_sense_pipeline.pkl` | Path to feature pipeline |
 | `LOG_LEVEL` | `INFO` | Logging level |
+
+## API Reference
+
+### POST `/api/v1/score`
+
+Score a credit application.
+
+**Request body:**
+```json
+{
+  "applicant_id": "optional-uuid",
+  "debt_to_income": 0.35,
+  "payment_history_score": 0.85,
+  "credit_utilization": 0.30,
+  "account_age_months": 48,
+  "num_open_accounts": 4,
+  "num_derogatory_marks": 0,
+  "annual_income": 75000
+}
+```
+
+**Risk categories:**
+| Category | Default Probability | Recommendation |
+|---|---|---|
+| `low` | < 0.20 | Approve |
+| `medium` | 0.20–0.49 | Approve with standard terms |
+| `high` | 0.50–0.74 | Manual review |
+| `very_high` | ≥ 0.75 | Decline |
+
+### GET `/api/v1/health`
+Returns `{"status": "healthy", "model_loaded": true, "version": "1.0.0"}`.
+
+### GET `/api/v1/metrics`
+Returns aggregate prediction statistics: total predictions, avg default probability, high risk rate.
+
+### GET `/api/v1/drift`
+Returns KS-test drift analysis comparing recent vs historical predictions.
