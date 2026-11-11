@@ -2,12 +2,15 @@
 
 from __future__ import annotations
 
+import logging
 import os
 from datetime import datetime
+from typing import Generator
 
 from sqlalchemy import Column, DateTime, Float, Integer, String, create_engine
 from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
 
+logger = logging.getLogger(__name__)
 
 DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./risk_sense.db")
 
@@ -52,7 +55,8 @@ class DriftLog(Base):
     logged_at = Column(DateTime, default=datetime.utcnow)
 
 
-def get_db() -> Session:
+def get_db() -> Generator[Session, None, None]:
+    """Yield a database session and ensure it is closed after use."""
     db = SessionLocal()
     try:
         yield db
@@ -61,4 +65,6 @@ def get_db() -> Session:
 
 
 def create_tables() -> None:
+    """Create all database tables if they do not already exist."""
     Base.metadata.create_all(bind=engine)
+    logger.info("Database tables created/verified")
