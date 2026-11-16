@@ -42,7 +42,7 @@
       "ruff: all lint issues auto-fixed"
     ]
   },
-  "email_status": "pending",
+  "email_status": "failed_smtp_blocked_by_proxy",
   "date": "2026-11-16",
   "commits": 61
 }
