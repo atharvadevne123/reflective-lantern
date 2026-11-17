@@ -908,5 +908,320 @@
     ],
     "ruff_status": "passing",
     "email_status": "network_blocked"
+  },
+  {
+    "date": "2026-11-17",
+    "mode": "improvement",
+    "commit_count": 60,
+    "commits": [
+      {
+        "hash": "96b1dfe6",
+        "subject": "ci: apply ruff auto-fixes for import ordering and style issues"
+      },
+      {
+        "hash": "f5c7d475",
+        "subject": "test(60/60): add extended HealthResponse, PredictionResponse, DriftCheckResponse, and NeighbourhoodReport schema tests in Property-Sage"
+      },
+      {
+        "hash": "4b5f701f",
+        "subject": "test(59/60): add extended sma, linear_trend, and forecast_form time-series tests in sports-oracle"
+      },
+      {
+        "hash": "e1b12601",
+        "subject": "test(58/60): add extended TelemetryInput field validation and BatchPredictionResponse tests in fleet-mind"
+      },
+      {
+        "hash": "0de7bb86",
+        "subject": "test(57/60): add extended content_hash, minhash_signature, and DuplicateDetector tests in veritas-rag"
+      },
+      {
+        "hash": "70153515",
+        "subject": "test(56/60): add extended MetricsCollector thread-safety, latency percentile, and counter tests in sports-oracle"
+      },
+      {
+        "hash": "95fafbc5",
+        "subject": "test(55/60): add extended retry decorator backoff, exception-filter, and attempt-count tests in fleet-mind"
+      },
+      {
+        "hash": "a877d4ad",
+        "subject": "test(54/60): add extended efficiency score grading and building type tests in energy_seer"
+      },
+      {
+        "hash": "6031b71d",
+        "subject": "test(53/60): add extended alerting threshold and drift alert tests in fleet-mind"
+      },
+      {
+        "hash": "933750ea",
+        "subject": "test(52/60): add extended compute_drift and compute_psi drift detection tests in sports-oracle"
+      },
+      {
+        "hash": "5041373f",
+        "subject": "test(51/60): add extended validate_match_features, validate_probability, and validate_positive tests in sports-oracle"
+      },
+      {
+        "hash": "11a99246",
+        "subject": "test(50/60): add validate_year_built, normalize_neighborhood, sanitize_request_id tests in Property-Sage"
+      },
+      {
+        "hash": "cd2bd1c0",
+        "subject": "test(49/60): add extended chunk_document page-aware chunking tests in veritas-rag"
+      },
+      {
+        "hash": "c772cbce",
+        "subject": "test(48/60): add extended BM25Index and tokenize coverage tests in veritas-rag"
+      },
+      {
+        "hash": "b47a4bd6",
+        "subject": "test(47/60): add CorrelationIDMiddleware and RateLimitMiddleware tests in fleet-mind"
+      },
+      {
+        "hash": "6296a79f",
+        "subject": "test(46/60): add VehiclePrediction and DriftReport ORM model tests in fleet-mind"
+      },
+      {
+        "hash": "4faaddab",
+        "subject": "test(45/60): add EnergyReading, PredictionLog, AnomalyLog, DriftLog model tests in energy_seer"
+      },
+      {
+        "hash": "a0eaba8e",
+        "subject": "test(44/60): add Match model, create_tables, and session management tests in sports-oracle"
+      },
+      {
+        "hash": "3048504a",
+        "subject": "test(43/60): add build_index and search_similar brute-force fallback tests in sports-oracle"
+      },
+      {
+        "hash": "61e1bcc4",
+        "subject": "test(42/60): add AnthropicGenerator mocked API tests in veritas-rag"
+      },
+      {
+        "hash": "2af4d22d",
+        "subject": "test(41/60): add EvalCase and EvalReport dataclass tests in veritas-rag"
+      },
+      {
+        "hash": "92f50a2e",
+        "subject": "test(40/60): add extract_html, extract_text, and detect_source_type tests in veritas-rag"
+      },
+      {
+        "hash": "20363c8c",
+        "subject": "test(39/60): add ExtractiveGenerator sentence selection and citation tests in veritas-rag"
+      },
+      {
+        "hash": "55e9709b",
+        "subject": "test(38/60): add set_cache, get_cache, evict_expired, and cache_size tests in energy_seer"
+      },
+      {
+        "hash": "3f499e36",
+        "subject": "test(37/60): add upload_model, download_model, delete_model, and list_model_versions tests in energy_seer"
+      },
+      {
+        "hash": "69a522e0",
+        "subject": "test(36/60): add CONSTRAINED_SYSTEM_PROMPT and INSUFFICIENT_EVIDENCE_MESSAGE tests in veritas-rag"
+      },
+      {
+        "hash": "15decea4",
+        "subject": "test(35/60): add ADVERSARIAL_QUERIES structure, uniqueness, and injection document tests in veritas-rag"
+      },
+      {
+        "hash": "799fdfb9",
+        "subject": "test(34/60): add check_db and build_health_payload status tests in fleet-mind"
+      },
+      {
+        "hash": "eb538e40",
+        "subject": "test(33/60): add HealthResponse, PredictionResponse, and DriftCheckResponse tests in Property-Sage"
+      },
+      {
+        "hash": "a42ee554",
+        "subject": "test(32/60): add validate_neighborhood, validate_property_type, and sqft_vs_bedrooms tests in Property-Sage"
+      },
+      {
+        "hash": "07bded0b",
+        "subject": "test(31/60): add upload_model and download_model boto3-mock and error tests in sports-oracle"
+      },
+      {
+        "hash": "d16f721a",
+        "subject": "test(30/60): add log_run metrics, tags, and unique run_id tests in sports-oracle"
+      },
+      {
+        "hash": "10bc269e",
+        "subject": "test(29/60): add configure_logging and suppressed-logger tests in sports-oracle"
+      },
+      {
+        "hash": "d64e5b4d",
+        "subject": "test(28/60): add TAGS_METADATA structure and uniqueness tests in energy_seer"
+      },
+      {
+        "hash": "62804d2d",
+        "subject": "test(27/60): add log_params, log_metrics, start_run, and end_run tests in energy_seer"
+      },
+      {
+        "hash": "d0bd186e",
+        "subject": "test(26/60): add compute_efficiency_score grade, range, and boundary tests in energy_seer"
+      },
+      {
+        "hash": "a9e8cbf2",
+        "subject": "test(25/60): add freshness_score decay, half-life, and source_quality_score tests in veritas-rag"
+      },
+      {
+        "hash": "4c952708",
+        "subject": "test(24/60): add VectorIndex add, search, remove, and top_k tests in veritas-rag"
+      },
+      {
+        "hash": "f7443256",
+        "subject": "test(23/60): add evaluate_evidence gate allowed, threshold, and min-chunks tests in veritas-rag"
+      },
+      {
+        "hash": "e31c5bc0",
+        "subject": "test(22/60): add make_doc_id, VersionStore next_version, and is_unchanged tests in veritas-rag"
+      },
+      {
+        "hash": "7a03e4c7",
+        "subject": "test(21/60): add LexicalReranker coverage, relevance, and edge-case tests in veritas-rag"
+      },
+      {
+        "hash": "eb0113e9",
+        "subject": "test(20/60): add normalize_text, strip_email_quotes, and truncate_to_bytes tests in veritas-rag"
+      },
+      {
+        "hash": "2de8c1a0",
+        "subject": "test(19/60): add HashingEmbedder shape, norm, determinism, and dim tests in veritas-rag"
+      },
+      {
+        "hash": "4f86223b",
+        "subject": "test(18/60): add reciprocal_rank_fusion overlap, rank, and k-parameter tests in veritas-rag"
+      },
+      {
+        "hash": "cd72dbfa",
+        "subject": "test(17/60): add ensure_tables_exist, column_exists, and add_column_if_missing tests in fleet-mind"
+      },
+      {
+        "hash": "3ecc5447",
+        "subject": "test(16/60): add domain constant ordering and positivity tests in fleet-mind"
+      },
+      {
+        "hash": "fb4f3661",
+        "subject": "test(15/60): add Settings defaults, env-override, and get_settings tests in fleet-mind"
+      },
+      {
+        "hash": "222deb2a",
+        "subject": "test(14/60): add TelemetryInput validation and BatchTelemetryInput tests in fleet-mind"
+      },
+      {
+        "hash": "7798934e",
+        "subject": "test(13/60): add register_model, list_models, and get_latest_model tests in fleet-mind"
+      },
+      {
+        "hash": "e2822730",
+        "subject": "test(12/60): add log_training_run fallback and tag tests in fleet-mind mlflow_compat"
+      },
+      {
+        "hash": "897007b4",
+        "subject": "test(11/60): add configure_logging and JSON formatter tests in fleet-mind"
+      },
+      {
+        "hash": "51b3ee15",
+        "subject": "test(10/60): add record_prediction, record_drift, and avg_latency tests in fleet-mind"
+      },
+      {
+        "hash": "470d2283",
+        "subject": "test(9/60): add store_features, get_features, and evict_expired tests in fleet-mind"
+      },
+      {
+        "hash": "32979e75",
+        "subject": "test(8/60): add log_prediction_request, log_retrain_event, recent_audit_entries tests in fleet-mind"
+      },
+      {
+        "hash": "df72f67e",
+        "subject": "test(7/60): add get_feature_importances and VotingClassifier tests in fleet-mind"
+      },
+      {
+        "hash": "1e8acb97",
+        "subject": "test(6/60): add register_challenger, shadow_predict, and get_shadow_stats tests in fleet-mind"
+      },
+      {
+        "hash": "ba5a0f00",
+        "subject": "test(5/60): add check_critical_thresholds and alert_on_drift tests in fleet-mind"
+      },
+      {
+        "hash": "f34a66cf",
+        "subject": "test(4/60): add retry decorator success, failure, and exception-filter tests in fleet-mind"
+      },
+      {
+        "hash": "a9524cd2",
+        "subject": "test(3/60): add PaginationParams offset and Page.from_items tests in fleet-mind"
+      },
+      {
+        "hash": "1bfbbe8f",
+        "subject": "test(2/60): add version_info and constant tests in fleet-mind version module"
+      },
+      {
+        "hash": "f172432c",
+        "subject": "test(1/60): add FleetMindError hierarchy and exception attribute tests in fleet-mind"
+      }
+    ],
+    "files_changed": [
+      "Property-Sage/tests/test_schemas.py",
+      "Property-Sage/tests/test_schemas_extended.py",
+      "Property-Sage/tests/test_validators.py",
+      "Property-Sage/tests/test_validators_extended.py",
+      "energy_seer/tests/test_aws_stub.py",
+      "energy_seer/tests/test_cache.py",
+      "energy_seer/tests/test_database.py",
+      "energy_seer/tests/test_efficiency_score.py",
+      "energy_seer/tests/test_efficiency_score_extended.py",
+      "energy_seer/tests/test_mlflow_stub.py",
+      "energy_seer/tests/test_openapi_meta.py",
+      "fleet-mind/tests/test_alerting.py",
+      "fleet-mind/tests/test_alerting_extended.py",
+      "fleet-mind/tests/test_audit_log.py",
+      "fleet-mind/tests/test_config.py",
+      "fleet-mind/tests/test_constants.py",
+      "fleet-mind/tests/test_database.py",
+      "fleet-mind/tests/test_exceptions.py",
+      "fleet-mind/tests/test_feature_store.py",
+      "fleet-mind/tests/test_health.py",
+      "fleet-mind/tests/test_logging_config.py",
+      "fleet-mind/tests/test_metrics_collector.py",
+      "fleet-mind/tests/test_middleware.py",
+      "fleet-mind/tests/test_mlflow_compat.py",
+      "fleet-mind/tests/test_model_explainability.py",
+      "fleet-mind/tests/test_model_registry.py",
+      "fleet-mind/tests/test_pagination.py",
+      "fleet-mind/tests/test_retry.py",
+      "fleet-mind/tests/test_retry_extended.py",
+      "fleet-mind/tests/test_schema_migrations.py",
+      "fleet-mind/tests/test_schemas.py",
+      "fleet-mind/tests/test_schemas_extended.py",
+      "fleet-mind/tests/test_shadow_mode.py",
+      "fleet-mind/tests/test_version.py",
+      "sports-oracle/tests/test_aws_stub_extended.py",
+      "sports-oracle/tests/test_database.py",
+      "sports-oracle/tests/test_faiss_index.py",
+      "sports-oracle/tests/test_logging_config.py",
+      "sports-oracle/tests/test_mlflow_stub.py",
+      "sports-oracle/tests/test_monitoring_extended.py",
+      "sports-oracle/tests/test_stats_extended.py",
+      "sports-oracle/tests/test_timeseries_extended.py",
+      "sports-oracle/tests/test_validation_extended.py",
+      "veritas-rag/tests/test_adversarial.py",
+      "veritas-rag/tests/test_ann.py",
+      "veritas-rag/tests/test_bm25_extended.py",
+      "veritas-rag/tests/test_chunker_extended.py",
+      "veritas-rag/tests/test_dedup_extended.py",
+      "veritas-rag/tests/test_embedder.py",
+      "veritas-rag/tests/test_extractive.py",
+      "veritas-rag/tests/test_extractors.py",
+      "veritas-rag/tests/test_fallback.py",
+      "veritas-rag/tests/test_harness.py",
+      "veritas-rag/tests/test_hybrid.py",
+      "veritas-rag/tests/test_llm.py",
+      "veritas-rag/tests/test_normalize.py",
+      "veritas-rag/tests/test_prompts.py",
+      "veritas-rag/tests/test_rerank.py",
+      "veritas-rag/tests/test_trust.py",
+      "veritas-rag/tests/test_versioning.py"
+    ],
+    "ruff_status": "passing",
+    "email_status": "pending"
   }
 ]
