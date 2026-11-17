@@ -9,7 +9,7 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from app.efficiency_score import BUILDING_BENCHMARKS, GRADE_THRESHOLDS, compute_efficiency_score
+from app.efficiency_score import BUILDING_BENCHMARKS, compute_efficiency_score
 
 
 def test_compute_returns_dict():

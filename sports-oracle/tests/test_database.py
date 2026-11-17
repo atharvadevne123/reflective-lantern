@@ -8,13 +8,11 @@ from pathlib import Path
 from unittest.mock import patch
 
 import pytest
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 import app.database as db_module
-from app.database import Base, Match, ModelMetrics, create_tables, get_engine, get_session
+from app.database import Match, ModelMetrics, create_tables, get_engine, get_session
 
 
 @pytest.fixture(autouse=True)

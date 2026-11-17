@@ -10,7 +10,12 @@ from pydantic import ValidationError
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from app.schemas import BatchPredictionResponse, BatchTelemetryInput, PredictionResponse, TelemetryInput
+from app.schemas import (
+    BatchPredictionResponse,
+    BatchTelemetryInput,
+    PredictionResponse,
+    TelemetryInput,
+)
 
 
 def _valid_reading(**overrides) -> dict:

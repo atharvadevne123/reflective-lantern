@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import os
 import sys
 from pathlib import Path
 from unittest.mock import patch
@@ -14,7 +13,7 @@ from sqlalchemy.orm import sessionmaker
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 import app.database as db_module
-from app.database import AnomalyLog, Base, DriftLog, EnergyReading, PredictionLog, init_db
+from app.database import AnomalyLog, Base, DriftLog, EnergyReading, PredictionLog
 
 
 @pytest.fixture(autouse=True)

@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import json
 import sys
-import tempfile
 from pathlib import Path
 
 import pytest
@@ -17,7 +16,6 @@ def temp_audit_log(tmp_path, monkeypatch):
     log_path = tmp_path / "audit.jsonl"
     monkeypatch.setenv("AUDIT_LOG_PATH", str(log_path))
     # Force reload so the module picks up the new env var
-    import importlib
     import app.audit_log as audit_module
     audit_module._AUDIT_LOG_PATH = log_path
     yield log_path
