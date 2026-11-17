@@ -1,79 +1,95 @@
-"""Extended tests for Property-Sage app/validators.py."""
+"""Extended tests for Property-Sage validators and sanitizers."""
 
 from __future__ import annotations
 
+import sys
+from pathlib import Path
+
 import pytest
 
+sys.path.insert(0, str(Path(__file__).parent.parent))
+
 from app.validators import (
-    validate_neighborhood_value,
-    validate_property_type_value,
-    validate_sqft_vs_bedrooms,
+    normalize_neighborhood,
+    sanitize_request_id,
+    validate_year_built_value,
 )
 
 
-class TestValidateNeighborhoodValue:
-    def test_valid_neighborhood_lowercase(self) -> None:
-        assert validate_neighborhood_value("downtown") == "downtown"
-
-    def test_valid_neighborhood_uppercase_normalised(self) -> None:
-        assert validate_neighborhood_value("DOWNTOWN") == "downtown"
-
-    def test_valid_neighborhood_with_spaces(self) -> None:
-        assert validate_neighborhood_value("  suburb  ") == "suburb"
-
-    def test_invalid_neighborhood_raises(self) -> None:
-        with pytest.raises(ValueError, match="neighbourhood must be one of"):
-            validate_neighborhood_value("mars")
-
-    def test_all_known_neighborhoods_pass(self) -> None:
-        from app.features import NEIGHBORHOODS
-
-        for n in NEIGHBORHOODS:
-            assert validate_neighborhood_value(n) == n
-
-    def test_empty_string_raises(self) -> None:
-        with pytest.raises(ValueError):
-            validate_neighborhood_value("")
+def test_validate_year_built_valid():
+    result = validate_year_built_value(2000)
+    assert result == 2000
 
 
-class TestValidatePropertyTypeValue:
-    def test_valid_apartment(self) -> None:
-        assert validate_property_type_value("apartment") == "apartment"
-
-    def test_case_insensitive(self) -> None:
-        assert validate_property_type_value("CONDO") == "condo"
-
-    def test_strips_whitespace(self) -> None:
-        assert validate_property_type_value("  house  ") == "house"
-
-    def test_invalid_type_raises(self) -> None:
-        with pytest.raises(ValueError, match="property_type must be one of"):
-            validate_property_type_value("castle")
-
-    def test_all_known_types_pass(self) -> None:
-        from app.features import PROPERTY_TYPES
-
-        for pt in PROPERTY_TYPES:
-            assert validate_property_type_value(pt) == pt
+def test_validate_year_built_minimum_1800():
+    result = validate_year_built_value(1800)
+    assert result == 1800
 
 
-class TestValidateSqftVsBedrooms:
-    def test_valid_ratio_no_error(self) -> None:
-        validate_sqft_vs_bedrooms(1000.0, 3)  # 333 sqft/bed
+def test_validate_year_built_too_old_raises():
+    with pytest.raises(ValueError):
+        validate_year_built_value(1799)
 
-    def test_borderline_valid_exactly_80(self) -> None:
-        validate_sqft_vs_bedrooms(80.0, 1)  # exactly 80
 
-    def test_below_minimum_raises(self) -> None:
-        with pytest.raises(ValueError, match="sqft_per_bedroom"):
-            validate_sqft_vs_bedrooms(79.0, 1)
+def test_validate_year_built_far_future_raises():
+    with pytest.raises(ValueError):
+        validate_year_built_value(3000)
 
-    def test_zero_bedrooms_uses_max_1(self) -> None:
-        validate_sqft_vs_bedrooms(500.0, 0)  # ratio = 500/1 = 500, OK
 
-    def test_very_large_sqft_no_error(self) -> None:
-        validate_sqft_vs_bedrooms(10000.0, 5)
+def test_validate_year_built_recent():
+    result = validate_year_built_value(2020)
+    assert result == 2020
 
-    def test_low_sqft_many_bedrooms_raises(self) -> None:
-        with pytest.raises(ValueError):
-            validate_sqft_vs_bedrooms(200.0, 5)  # 40 sqft/bed
+
+def test_normalize_neighborhood_lowercases():
+    result = normalize_neighborhood("Downtown")
+    assert result == "downtown"
+
+
+def test_normalize_neighborhood_strips_whitespace():
+    result = normalize_neighborhood("  midtown  ")
+    assert result == "midtown"
+
+
+def test_normalize_neighborhood_empty_returns_unknown():
+    result = normalize_neighborhood("")
+    assert result == "unknown"
+
+
+def test_normalize_neighborhood_whitespace_only_returns_unknown():
+    result = normalize_neighborhood("   ")
+    assert result == "unknown"
+
+
+def test_sanitize_request_id_removes_special_chars():
+    result = sanitize_request_id("req!@#$id")
+    assert "!" not in result
+    assert "@" not in result
+    assert "#" not in result
+
+
+def test_sanitize_request_id_keeps_hyphens():
+    result = sanitize_request_id("req-123-abc")
+    assert result == "req-123-abc"
+
+
+def test_sanitize_request_id_keeps_alphanumeric():
+    result = sanitize_request_id("abc123")
+    assert result == "abc123"
+
+
+def test_sanitize_request_id_truncates_to_64():
+    long_id = "a" * 100
+    result = sanitize_request_id(long_id)
+    assert len(result) <= 64
+
+
+def test_sanitize_request_id_empty():
+    result = sanitize_request_id("")
+    assert result == ""
+
+
+@pytest.mark.parametrize("year", [1850, 1900, 1950, 2000, 2024])
+def test_validate_year_built_range(year):
+    result = validate_year_built_value(year)
+    assert result == year
