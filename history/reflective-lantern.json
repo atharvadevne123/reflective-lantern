@@ -1222,6 +1222,6 @@
       "veritas-rag/tests/test_versioning.py"
     ],
     "ruff_status": "passing",
-    "email_status": "pending"
+    "email_status": "failed_smtp_blocked_by_proxy"
   }
 ]
