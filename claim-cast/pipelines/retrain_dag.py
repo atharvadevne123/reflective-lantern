@@ -34,19 +34,19 @@ def fetch_training_data() -> str:
         "days_since_last_claim": rng.integers(10, 1000, n).astype(float),
         "policy_type": rng.choice(["home", "auto", "life", "commercial"], n),
     })
-    output_path = "/tmp/retrain_data.parquet"
-    df.to_parquet(output_path, index=False)
+    output_path = "/tmp/retrain_data.csv"
+    df.to_csv(output_path, index=False)
     logger.info("fetch_training_data: saved %d rows to %s", n, output_path)
     return output_path
 
 
-def run_retraining(data_path: str = "/tmp/retrain_data.parquet") -> dict:
+def run_retraining(data_path: str = "/tmp/retrain_data.csv") -> dict:
     """Retrain the XGBoost pipeline and log metrics."""
     import pandas as pd
 
     from app.model import train_model
 
-    df = pd.read_parquet(data_path)
+    df = pd.read_csv(data_path)
     import pandas as _pd
     ratio = (df["claimed_amount"] / df["policy_limit"]).clip(0, 1.0)
     y = _pd.cut(
@@ -98,7 +98,7 @@ if _AIRFLOW_AVAILABLE:
         t_retrain = PythonOperator(
             task_id="run_retraining",
             python_callable=run_retraining,
-            op_kwargs={"data_path": "/tmp/retrain_data.parquet"},
+            op_kwargs={"data_path": "/tmp/retrain_data.csv"},
         )
         t_eval = PythonOperator(task_id="evaluate_model", python_callable=evaluate_model)
         t_promote = PythonOperator(task_id="promote_model", python_callable=promote_model)

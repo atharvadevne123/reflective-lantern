@@ -1,8 +1,6 @@
 """Tests for the automated retraining pipeline."""
 from __future__ import annotations
 
-import pytest
-
 
 def test_fetch_training_data_creates_parquet(tmp_path, monkeypatch):
     import sys
