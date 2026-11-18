@@ -15,3 +15,19 @@
 - Rate limiting middleware (60 req/min)
 - Risk-adjusted premium recommendation endpoint
 - Triage priority SLA lookup endpoint
+
+## [1.0.1] - 2026-11-18
+### Added
+- Batch prediction endpoint (POST /api/v1/predict/batch)
+- Claim statistics endpoint (GET /api/v1/claims/stats)
+- Feature importance endpoint (GET /api/v1/feature-importance)
+- Retrain trigger endpoint (POST /api/v1/retrain)
+- MLflow experiment tracking stub
+- AWS S3 artifact storage stub
+- Alembic migration configuration
+- Synthetic data generator (app/data.py)
+- Input validation utilities (app/validators.py)
+- Cross-validation function with StratifiedKFold
+- Drift summary function in monitoring module
+- bulk_claims pytest fixture
+- 20+ additional tests (now 75+ total)
