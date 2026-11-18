@@ -168,3 +168,28 @@ def train_model_tracked(X: "pd.DataFrame", y: "pd.Series") -> "tuple[Pipeline, d
     log_metric(run, "f1_macro_std", metrics["f1_macro_std"])
     end_run(run)
     return pipe, metrics
+
+
+def cross_validate_model(X: "pd.DataFrame", y: "pd.Series", cv: int = 5) -> dict:
+    """Run cross-validation and return detailed fold metrics.
+
+    Args:
+        X: Feature DataFrame.
+        y: Target Series with severity class labels.
+        cv: Number of CV folds. Default 5.
+
+    Returns:
+        Dict with per-fold scores and aggregate stats.
+    """
+    from sklearn.model_selection import StratifiedKFold, cross_validate
+
+    pipe = build_pipeline()
+    cv_splitter = StratifiedKFold(n_splits=cv, shuffle=True, random_state=42)
+    results = cross_validate(pipe, X, y, cv=cv_splitter, scoring=["f1_macro", "accuracy"], return_train_score=True)
+    return {
+        "cv_folds": cv,
+        "test_f1_macro": [round(float(s), 4) for s in results["test_f1_macro"]],
+        "test_accuracy": [round(float(s), 4) for s in results["test_accuracy"]],
+        "mean_f1_macro": round(float(results["test_f1_macro"].mean()), 4),
+        "mean_accuracy": round(float(results["test_accuracy"].mean()), 4),
+    }
