@@ -201,8 +201,18 @@ class TestValidateBatchExtended:
         assert result["errors"] == []
 
     def test_one_invalid_flagged(self) -> None:
-        records = [_valid_reading(), {"temperature": 999.0, "pressure": 50.0, "vibration": 3.0,
-                                       "cycle_time": 30.0, "tool_wear": 20.0, "power_consumption": 100.0, "humidity": 50.0}]
+        records = [
+            _valid_reading(),
+            {
+                "temperature": 999.0,
+                "pressure": 50.0,
+                "vibration": 3.0,
+                "cycle_time": 30.0,
+                "tool_wear": 20.0,
+                "power_consumption": 100.0,
+                "humidity": 50.0,
+            },
+        ]
         result = validate_batch(records)
         assert result["invalid_count"] == 1
         assert result["errors"][0]["index"] == 1

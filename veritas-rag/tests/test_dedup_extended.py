@@ -104,11 +104,14 @@ def test_duplicate_detector_same_doc_is_duplicate():
     assert result is True
 
 
-@pytest.mark.parametrize("text", [
-    "short text here",
-    "a" * 500,
-    "energy model prediction accuracy measurement threshold",
-])
+@pytest.mark.parametrize(
+    "text",
+    [
+        "short text here",
+        "a" * 500,
+        "energy model prediction accuracy measurement threshold",
+    ],
+)
 def test_minhash_signature_various_lengths(text):
     result = minhash_signature(text)
     assert len(result) == 64

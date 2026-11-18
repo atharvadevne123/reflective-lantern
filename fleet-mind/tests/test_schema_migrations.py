@@ -31,21 +31,25 @@ def test_engine(tmp_path_factory):
 
 def test_ensure_tables_exist_runs_without_error(test_engine):
     from app.schema_migrations import ensure_tables_exist
+
     ensure_tables_exist()
 
 
 def test_column_exists_on_known_column(test_engine):
     from app.schema_migrations import column_exists
+
     assert column_exists("vehicle_predictions", "vehicle_id")
 
 
 def test_column_exists_on_missing_column(test_engine):
     from app.schema_migrations import column_exists
+
     assert not column_exists("vehicle_predictions", "nonexistent_col_xyz")
 
 
 def test_add_column_if_missing_adds_new_column(test_engine):
     from app.schema_migrations import add_column_if_missing, column_exists
+
     result = add_column_if_missing("vehicle_predictions", "test_new_col", "FLOAT DEFAULT 0")
     assert result is True
     assert column_exists("vehicle_predictions", "test_new_col")
@@ -53,5 +57,6 @@ def test_add_column_if_missing_adds_new_column(test_engine):
 
 def test_add_column_if_missing_skips_existing(test_engine):
     from app.schema_migrations import add_column_if_missing
+
     result = add_column_if_missing("vehicle_predictions", "vehicle_id", "TEXT")
     assert result is False

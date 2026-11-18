@@ -22,6 +22,7 @@ def _make_model_with_importances(values):
 
 def test_returns_list():
     from app.features import ALL_FEATURES
+
     n = len(ALL_FEATURES)
     model = _make_model_with_importances([1.0 / n] * n)
     result = get_feature_importances(model)
@@ -30,6 +31,7 @@ def test_returns_list():
 
 def test_result_length_matches_feature_count():
     from app.features import ALL_FEATURES
+
     n = len(ALL_FEATURES)
     model = _make_model_with_importances([1.0 / n] * n)
     result = get_feature_importances(model)
@@ -38,6 +40,7 @@ def test_result_length_matches_feature_count():
 
 def test_result_sorted_descending():
     from app.features import ALL_FEATURES
+
     n = len(ALL_FEATURES)
     values = [float(i) for i in range(n)]
     model = _make_model_with_importances(values)
@@ -48,6 +51,7 @@ def test_result_sorted_descending():
 
 def test_result_entries_have_feature_and_importance():
     from app.features import ALL_FEATURES
+
     n = len(ALL_FEATURES)
     model = _make_model_with_importances([0.1] * n)
     result = get_feature_importances(model)
@@ -72,6 +76,7 @@ def test_mismatched_importance_count_returns_empty():
 
 def test_voting_classifier_averages_importances():
     from app.features import ALL_FEATURES
+
     n = len(ALL_FEATURES)
     sub1 = MagicMock()
     sub1.feature_importances_ = np.ones(n) * 0.2

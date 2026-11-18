@@ -37,6 +37,7 @@ def test_configure_logging_does_not_raise():
 
 def test_json_formatter_produces_valid_json():
     from app.logging_config import _JsonFormatter
+
     formatter = _JsonFormatter()
     record = logging.LogRecord(
         name="test",
@@ -56,6 +57,7 @@ def test_json_formatter_produces_valid_json():
 
 def test_json_formatter_includes_logger_name():
     from app.logging_config import _JsonFormatter
+
     formatter = _JsonFormatter()
     record = logging.LogRecord(
         name="mylogger",

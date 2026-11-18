@@ -36,6 +36,7 @@ def test_anthropic_generator_init_with_mock():
     mock_mod, mock_client = _mock_anthropic()
     with patch.dict("sys.modules", {"anthropic": mock_mod}):
         from app.generation.llm import AnthropicGenerator
+
         gen = AnthropicGenerator()
         assert gen.model is not None
         assert gen.max_tokens > 0
@@ -45,6 +46,7 @@ def test_anthropic_generator_default_model():
     mock_mod, _ = _mock_anthropic()
     with patch.dict("sys.modules", {"anthropic": mock_mod}):
         from app.generation.llm import AnthropicGenerator
+
         gen = AnthropicGenerator()
         assert isinstance(gen.model, str)
         assert len(gen.model) > 0
@@ -54,6 +56,7 @@ def test_anthropic_generator_custom_model():
     mock_mod, _ = _mock_anthropic()
     with patch.dict("sys.modules", {"anthropic": mock_mod}):
         from app.generation.llm import AnthropicGenerator
+
         gen = AnthropicGenerator(model="claude-haiku-5-5", max_tokens=512)
         assert gen.model == "claude-haiku-5-5"
         assert gen.max_tokens == 512
@@ -70,6 +73,7 @@ def test_generate_returns_tuple_on_success():
 
     with patch.dict("sys.modules", {"anthropic": mock_mod}):
         from app.generation.llm import AnthropicGenerator
+
         gen = AnthropicGenerator()
         answer, citations = gen.generate("What is energy?", [_make_scored("Energy is power.")])
         assert isinstance(answer, str)
@@ -84,6 +88,7 @@ def test_generate_empty_chunks_returns_empty():
 
     with patch.dict("sys.modules", {"anthropic": mock_mod}):
         from app.generation.llm import AnthropicGenerator
+
         gen = AnthropicGenerator()
         answer, citations = gen.generate("test query", [])
         assert isinstance(answer, str)
@@ -96,6 +101,7 @@ def test_generate_handles_api_exception():
 
     with patch.dict("sys.modules", {"anthropic": mock_mod}):
         from app.generation.llm import AnthropicGenerator
+
         gen = AnthropicGenerator()
         answer, citations = gen.generate("test", [_make_scored("text")])
         assert isinstance(answer, str)

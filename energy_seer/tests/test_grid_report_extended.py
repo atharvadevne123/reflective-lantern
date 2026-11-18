@@ -151,17 +151,26 @@ class TestReportTrendAndAlertFrequency:
         assert result["anomaly_total"] == 0
 
     def test_escalating_true_when_worsening(self) -> None:
-        reports = [{"status": "healthy", "anomaly_count": 0}, {"status": "critical", "anomaly_count": 5}]
+        reports = [
+            {"status": "healthy", "anomaly_count": 0},
+            {"status": "critical", "anomaly_count": 5},
+        ]
         result = report_trend(reports)
         assert result["escalating"] is True
 
     def test_not_escalating_when_stable(self) -> None:
-        reports = [{"status": "warning", "anomaly_count": 2}, {"status": "warning", "anomaly_count": 3}]
+        reports = [
+            {"status": "warning", "anomaly_count": 2},
+            {"status": "warning", "anomaly_count": 3},
+        ]
         result = report_trend(reports)
         assert result["escalating"] is False
 
     def test_anomaly_total_summed(self) -> None:
-        reports = [{"status": "healthy", "anomaly_count": 2}, {"status": "healthy", "anomaly_count": 5}]
+        reports = [
+            {"status": "healthy", "anomaly_count": 2},
+            {"status": "healthy", "anomaly_count": 5},
+        ]
         result = report_trend(reports)
         assert result["anomaly_total"] == 7
 
@@ -202,8 +211,18 @@ class TestReportHealthScore:
         assert report_health_score(report) < 50.0
 
     def test_alerts_reduce_score(self) -> None:
-        no_alert = {"status": "healthy", "alerts": [], "drifted_features": [], "anomaly_rate_per_hour": 0.0}
-        with_alert = {"status": "healthy", "alerts": ["X", "Y"], "drifted_features": [], "anomaly_rate_per_hour": 0.0}
+        no_alert = {
+            "status": "healthy",
+            "alerts": [],
+            "drifted_features": [],
+            "anomaly_rate_per_hour": 0.0,
+        }
+        with_alert = {
+            "status": "healthy",
+            "alerts": ["X", "Y"],
+            "drifted_features": [],
+            "anomaly_rate_per_hour": 0.0,
+        }
         assert report_health_score(with_alert) < report_health_score(no_alert)
 
     def test_score_clamped_to_zero(self) -> None:
@@ -216,12 +235,27 @@ class TestReportHealthScore:
         assert report_health_score(report) >= 0.0
 
     def test_score_clamped_to_100(self) -> None:
-        report = {"status": "healthy", "alerts": [], "drifted_features": [], "anomaly_rate_per_hour": 0.0}
+        report = {
+            "status": "healthy",
+            "alerts": [],
+            "drifted_features": [],
+            "anomaly_rate_per_hour": 0.0,
+        }
         assert report_health_score(report) <= 100.0
 
     def test_drifted_features_reduce_score(self) -> None:
-        clean = {"status": "healthy", "alerts": [], "drifted_features": [], "anomaly_rate_per_hour": 0.0}
-        drifted = {"status": "healthy", "alerts": [], "drifted_features": ["a", "b", "c"], "anomaly_rate_per_hour": 0.0}
+        clean = {
+            "status": "healthy",
+            "alerts": [],
+            "drifted_features": [],
+            "anomaly_rate_per_hour": 0.0,
+        }
+        drifted = {
+            "status": "healthy",
+            "alerts": [],
+            "drifted_features": ["a", "b", "c"],
+            "anomaly_rate_per_hour": 0.0,
+        }
         assert report_health_score(drifted) < report_health_score(clean)
 
 
@@ -242,7 +276,10 @@ class TestReportTrend:
         assert result["escalating"] is False
 
     def test_anomaly_total_summed(self) -> None:
-        reports = [{"status": "healthy", "anomaly_count": 3}, {"status": "healthy", "anomaly_count": 5}]
+        reports = [
+            {"status": "healthy", "anomaly_count": 3},
+            {"status": "healthy", "anomaly_count": 5},
+        ]
         result = report_trend(reports)
         assert result["anomaly_total"] == 8
 

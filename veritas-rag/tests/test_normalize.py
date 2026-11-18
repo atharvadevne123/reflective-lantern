@@ -83,10 +83,13 @@ def test_truncate_to_bytes_valid_utf8():
     result.encode("utf-8")  # should not raise
 
 
-@pytest.mark.parametrize("text,expected_len", [
-    ("", 0),
-    ("abc", 3),
-])
+@pytest.mark.parametrize(
+    "text,expected_len",
+    [
+        ("", 0),
+        ("abc", 3),
+    ],
+)
 def test_normalize_known_outputs(text, expected_len):
     result = normalize_text(text)
     assert len(result) == expected_len

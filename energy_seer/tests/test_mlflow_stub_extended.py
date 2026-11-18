@@ -113,7 +113,9 @@ class TestLogParamsTypesExtended:
         assert any("mlflow_run_end" in m for m in messages)
 
     @pytest.mark.parametrize("step", [0, 1, 10, 100])
-    def test_log_metrics_with_various_steps(self, step: int, caplog: pytest.LogCaptureFixture) -> None:
+    def test_log_metrics_with_various_steps(
+        self, step: int, caplog: pytest.LogCaptureFixture
+    ) -> None:
         with caplog.at_level(logging.INFO, logger="app.mlflow_stub"):
             log_metrics({"loss": 0.5}, step=step)
         assert any(f"step={step}" in r.message for r in caplog.records)

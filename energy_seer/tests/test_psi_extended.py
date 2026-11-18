@@ -193,11 +193,14 @@ class TestPsiSeriesTrendExtended:
         result = psi_series_trend([0.3])
         assert result["drift_level"] == "significant"
 
-    @pytest.mark.parametrize("psi_val,expected_level", [
-        (0.05, "stable"),
-        (0.15, "moderate"),
-        (0.30, "significant"),
-    ])
+    @pytest.mark.parametrize(
+        "psi_val,expected_level",
+        [
+            (0.05, "stable"),
+            (0.15, "moderate"),
+            (0.30, "significant"),
+        ],
+    )
     def test_drift_levels_at_boundaries(self, psi_val: float, expected_level: str) -> None:
         result = psi_series_trend([psi_val])
         assert result["drift_level"] == expected_level

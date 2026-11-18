@@ -162,6 +162,7 @@ class EventBus:
             handler: Callable that will be called with (event_name, payload)
                 exactly once and then removed.
         """
+
         def _wrapper(ev: str, payload: Any) -> None:
             try:
                 handler(ev, payload)

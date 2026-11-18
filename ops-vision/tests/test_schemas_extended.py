@@ -52,15 +52,17 @@ class TestMetricsPayloadValidation:
         assert p.memory_usage_pct == 100.0
 
     def test_zero_values_ok(self) -> None:
-        p = MetricsPayload(**{
-            **VALID_PAYLOAD,
-            "cpu_usage_pct": 0.0,
-            "memory_usage_pct": 0.0,
-            "error_rate_per_min": 0.0,
-            "latency_p99_ms": 0.0,
-            "request_rate_per_sec": 0.0,
-            "disk_io_util_pct": 0.0,
-        })
+        p = MetricsPayload(
+            **{
+                **VALID_PAYLOAD,
+                "cpu_usage_pct": 0.0,
+                "memory_usage_pct": 0.0,
+                "error_rate_per_min": 0.0,
+                "latency_p99_ms": 0.0,
+                "request_rate_per_sec": 0.0,
+                "disk_io_util_pct": 0.0,
+            }
+        )
         assert p.cpu_usage_pct == 0.0
 
 

@@ -68,19 +68,22 @@ def test_scaler_warmup_rows_positive():
     assert SCALER_WARMUP_ROWS > 0
 
 
-@pytest.mark.parametrize("constant", [
-    BRAKE_PAD_NEW_MM,
-    BRAKE_PAD_WORN_THRESHOLD_MM,
-    BRAKE_PAD_CRITICAL_MM,
-    ENGINE_TEMP_NORMAL_MAX_C,
-    ENGINE_TEMP_WARNING_C,
-    ENGINE_TEMP_CRITICAL_C,
-    OIL_PRESSURE_MIN_BAR,
-    OIL_PRESSURE_CRITICAL_BAR,
-    BATTERY_VOLTAGE_NOMINAL_V,
-    BATTERY_VOLTAGE_LOW_V,
-    BATTERY_VOLTAGE_CRITICAL_V,
-    RUL_KM_PER_MM_BRAKE,
-])
+@pytest.mark.parametrize(
+    "constant",
+    [
+        BRAKE_PAD_NEW_MM,
+        BRAKE_PAD_WORN_THRESHOLD_MM,
+        BRAKE_PAD_CRITICAL_MM,
+        ENGINE_TEMP_NORMAL_MAX_C,
+        ENGINE_TEMP_WARNING_C,
+        ENGINE_TEMP_CRITICAL_C,
+        OIL_PRESSURE_MIN_BAR,
+        OIL_PRESSURE_CRITICAL_BAR,
+        BATTERY_VOLTAGE_NOMINAL_V,
+        BATTERY_VOLTAGE_LOW_V,
+        BATTERY_VOLTAGE_CRITICAL_V,
+        RUL_KM_PER_MM_BRAKE,
+    ],
+)
 def test_constants_are_positive(constant):
     assert constant > 0

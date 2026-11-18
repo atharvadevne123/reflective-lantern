@@ -92,11 +92,14 @@ def test_detect_source_type_case_insensitive():
     assert result == "pdf"
 
 
-@pytest.mark.parametrize("ext,expected", [
-    ("file.pdf", "pdf"),
-    ("file.txt", "text"),
-    ("file.md", "markdown"),
-])
+@pytest.mark.parametrize(
+    "ext,expected",
+    [
+        ("file.pdf", "pdf"),
+        ("file.txt", "text"),
+        ("file.md", "markdown"),
+    ],
+)
 def test_detect_source_type_common_extensions(ext, expected):
     result = detect_source_type(ext)
     assert result == expected

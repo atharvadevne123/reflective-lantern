@@ -83,11 +83,14 @@ def test_gate_decision_is_dataclass():
     assert isinstance(decision, GateDecision)
 
 
-@pytest.mark.parametrize("trust,should_allow", [
-    (0.9, True),
-    (0.5, True),
-    (0.1, False),
-])
+@pytest.mark.parametrize(
+    "trust,should_allow",
+    [
+        (0.9, True),
+        (0.5, True),
+        (0.1, False),
+    ],
+)
 def test_trust_threshold_parametrized(trust, should_allow):
     chunks = [_chunk(trust=trust)]
     decision = evaluate_evidence(chunks, confidence_threshold=0.45, chunk_trust_floor=0.35)

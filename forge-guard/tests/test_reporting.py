@@ -193,6 +193,7 @@ def test_export_drift_reports_json_empty_extended(db_session) -> None:
     result = export_drift_reports_json(db_session)
     assert isinstance(result, str)
     import json
+
     data = json.loads(result)
     assert isinstance(data, list)
 

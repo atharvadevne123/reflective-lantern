@@ -174,19 +174,23 @@ class TestGeometricMean:
         import math
 
         from app.math_utils import geometric_mean
+
         assert math.isclose(geometric_mean([1.0, 4.0]), 2.0, rel_tol=1e-9)
 
     def test_single_value(self) -> None:
         from app.math_utils import geometric_mean
+
         assert geometric_mean([5.0]) == 5.0
 
     def test_empty_raises(self) -> None:
         from app.math_utils import geometric_mean
+
         with pytest.raises(ValueError):
             geometric_mean([])
 
     def test_non_positive_raises(self) -> None:
         from app.math_utils import geometric_mean
+
         with pytest.raises(ValueError):
             geometric_mean([1.0, -1.0, 2.0])
 
@@ -202,6 +206,7 @@ class TestGeometricMean:
         import math
 
         from app.math_utils import geometric_mean
+
         assert math.isclose(geometric_mean(values), expected, rel_tol=1e-6)
 
 
@@ -210,26 +215,31 @@ class TestHarmonicMean:
         import math
 
         from app.math_utils import harmonic_mean
+
         assert math.isclose(harmonic_mean([1.0, 2.0]), 4.0 / 3.0, rel_tol=1e-9)
 
     def test_zero_raises(self) -> None:
         from app.math_utils import harmonic_mean
+
         with pytest.raises(ValueError):
             harmonic_mean([1.0, 0.0])
 
     def test_empty_raises(self) -> None:
         from app.math_utils import harmonic_mean
+
         with pytest.raises(ValueError):
             harmonic_mean([])
 
     def test_single_value(self) -> None:
         from app.math_utils import harmonic_mean
+
         assert harmonic_mean([5.0]) == 5.0
 
 
 class TestNormalize:
     def test_basic_normalization(self) -> None:
         from app.math_utils import normalize
+
         result = normalize([0.0, 5.0, 10.0])
         assert result[0] == pytest.approx(0.0)
         assert result[1] == pytest.approx(0.5)
@@ -237,21 +247,25 @@ class TestNormalize:
 
     def test_all_same_returns_low(self) -> None:
         from app.math_utils import normalize
+
         assert normalize([3.0, 3.0, 3.0]) == [0.0, 0.0, 0.0]
 
     def test_custom_range(self) -> None:
         from app.math_utils import normalize
+
         result = normalize([0.0, 10.0], low=0.0, high=100.0)
         assert result[0] == pytest.approx(0.0)
         assert result[1] == pytest.approx(100.0)
 
     def test_empty_raises(self) -> None:
         from app.math_utils import normalize
+
         with pytest.raises(ValueError):
             normalize([])
 
     def test_invalid_range_raises(self) -> None:
         from app.math_utils import normalize
+
         with pytest.raises(ValueError):
             normalize([1.0], low=1.0, high=0.0)
 

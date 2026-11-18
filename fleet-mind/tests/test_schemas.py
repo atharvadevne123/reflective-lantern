@@ -95,7 +95,7 @@ def test_batch_input_accepts_single_reading():
 
 
 def test_batch_prediction_response_counts():
-    readings = [TelemetryInput(**_valid_reading())]
+    [TelemetryInput(**_valid_reading())]
     pr = PredictionResponse(
         vehicle_id="VH-001",
         maintenance_needed=False,
@@ -109,12 +109,15 @@ def test_batch_prediction_response_counts():
     assert batch_resp.total == 1
 
 
-@pytest.mark.parametrize("field,bad_value", [
-    ("oil_pressure_bar", -1.0),
-    ("battery_voltage_v", 25.0),
-    ("brake_pad_mm", 25.0),
-    ("tire_pressure_bar", 6.0),
-])
+@pytest.mark.parametrize(
+    "field,bad_value",
+    [
+        ("oil_pressure_bar", -1.0),
+        ("battery_voltage_v", 25.0),
+        ("brake_pad_mm", 25.0),
+        ("tire_pressure_bar", 6.0),
+    ],
+)
 def test_out_of_range_fields_rejected(field, bad_value):
     with pytest.raises(Exception):
         TelemetryInput(**_valid_reading(**{field: bad_value}))

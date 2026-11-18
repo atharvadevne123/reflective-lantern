@@ -88,10 +88,13 @@ def test_bm25_index_relevance_ordering():
         assert ids[0] == "high" or results[0][1] >= results[1][1]
 
 
-@pytest.mark.parametrize("query,doc,should_match", [
-    ("renewable energy", "Renewable energy sources growing.", True),
-    ("quantum physics", "Energy prediction model.", False),
-])
+@pytest.mark.parametrize(
+    "query,doc,should_match",
+    [
+        ("renewable energy", "Renewable energy sources growing.", True),
+        ("quantum physics", "Energy prediction model.", False),
+    ],
+)
 def test_bm25_index_relevance_match(query, doc, should_match):
     index = BM25Index()
     index.add("doc1", doc)

@@ -85,12 +85,15 @@ def test_page_from_items_carries_params():
     assert page.page_size == 15
 
 
-@pytest.mark.parametrize("total,page_size,expected", [
-    (100, 10, 10),
-    (101, 10, 11),
-    (1, 10, 1),
-    (0, 10, 1),
-])
+@pytest.mark.parametrize(
+    "total,page_size,expected",
+    [
+        (100, 10, 10),
+        (101, 10, 11),
+        (1, 10, 1),
+        (0, 10, 1),
+    ],
+)
 def test_total_pages_calculation(total, page_size, expected):
     params = PaginationParams(page=1, page_size=page_size)
     page = Page.from_items(items=[], total=total, params=params)

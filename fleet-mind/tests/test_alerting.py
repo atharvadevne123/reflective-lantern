@@ -88,11 +88,14 @@ def test_alert_on_drift_does_not_raise():
     alert_on_drift("speed_kmh", 0.45, 0.001)
 
 
-@pytest.mark.parametrize("field,safe_val,critical_val", [
-    ("engine_temp_c", 90.0, 120.0),
-    ("oil_pressure_bar", 3.0, 0.5),
-    ("brake_pad_mm", 8.0, 1.0),
-])
+@pytest.mark.parametrize(
+    "field,safe_val,critical_val",
+    [
+        ("engine_temp_c", 90.0, 120.0),
+        ("oil_pressure_bar", 3.0, 0.5),
+        ("brake_pad_mm", 8.0, 1.0),
+    ],
+)
 def test_threshold_boundary(field, safe_val, critical_val):
     safe = _safe_reading()
     safe[field] = safe_val

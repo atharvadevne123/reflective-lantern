@@ -64,10 +64,13 @@ def test_exact_match_scores_high(reranker):
     assert scores[0] > 0.5
 
 
-@pytest.mark.parametrize("query,text,expect_nonzero", [
-    ("brake pad worn", "brake pad worn to 2mm", True),
-    ("engine temperature", "oil pressure low", False),
-])
+@pytest.mark.parametrize(
+    "query,text,expect_nonzero",
+    [
+        ("brake pad worn", "brake pad worn to 2mm", True),
+        ("engine temperature", "oil pressure low", False),
+    ],
+)
 def test_query_text_relevance(query, text, expect_nonzero, reranker):
     scores = reranker.score(query, [text])
     if expect_nonzero:

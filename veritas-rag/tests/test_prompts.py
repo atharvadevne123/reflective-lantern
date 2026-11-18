@@ -47,4 +47,7 @@ def test_system_prompt_contains_numbered_rules():
 
 
 def test_system_prompt_mentions_prior_knowledge():
-    assert "prior" in CONSTRAINED_SYSTEM_PROMPT.lower() or "knowledge" in CONSTRAINED_SYSTEM_PROMPT.lower()
+    assert (
+        "prior" in CONSTRAINED_SYSTEM_PROMPT.lower()
+        or "knowledge" in CONSTRAINED_SYSTEM_PROMPT.lower()
+    )

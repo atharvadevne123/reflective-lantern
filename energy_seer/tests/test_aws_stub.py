@@ -58,10 +58,13 @@ def test_download_accepts_path_object():
     assert result is True
 
 
-@pytest.mark.parametrize("bucket,key", [
-    ("prod-bucket", "models/v1.joblib"),
-    ("dev-bucket", "models/latest.joblib"),
-])
+@pytest.mark.parametrize(
+    "bucket,key",
+    [
+        ("prod-bucket", "models/v1.joblib"),
+        ("dev-bucket", "models/latest.joblib"),
+    ],
+)
 def test_upload_various_buckets(bucket, key):
     result = upload_model("/tmp/m.joblib", bucket, key)
     assert result is True

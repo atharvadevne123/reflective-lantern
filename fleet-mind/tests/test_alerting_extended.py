@@ -89,11 +89,14 @@ def test_alert_on_drift_emits_warning(caplog):
     assert any("DRIFT ALERT" in r.message for r in caplog.records)
 
 
-@pytest.mark.parametrize("field,safe_value", [
-    ("engine_temp_c", 100.0),
-    ("oil_pressure_bar", 2.0),
-    ("brake_pad_mm", 5.0),
-])
+@pytest.mark.parametrize(
+    "field,safe_value",
+    [
+        ("engine_temp_c", 100.0),
+        ("oil_pressure_bar", 2.0),
+        ("brake_pad_mm", 5.0),
+    ],
+)
 def test_safe_values_do_not_trigger(field, safe_value):
     alerts = check_critical_thresholds("v1", {field: safe_value})
     assert alerts == []

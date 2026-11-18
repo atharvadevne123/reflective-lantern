@@ -106,19 +106,27 @@ def test_prediction_response_valid():
 
 def test_batch_prediction_response_total():
     pr = PredictionResponse(
-        vehicle_id="v1", maintenance_needed=True, anomaly_score=0.9,
-        anomaly_type="wear", remaining_useful_life_km=None, confidence=0.8, model_version="1.0",
+        vehicle_id="v1",
+        maintenance_needed=True,
+        anomaly_score=0.9,
+        anomaly_type="wear",
+        remaining_useful_life_km=None,
+        confidence=0.8,
+        model_version="1.0",
     )
     bpr = BatchPredictionResponse(results=[pr], total=1, maintenance_flagged=1)
     assert bpr.total == 1
 
 
-@pytest.mark.parametrize("field,value", [
-    ("oil_pressure_bar", -0.1),
-    ("battery_voltage_v", -1.0),
-    ("brake_pad_mm", -0.1),
-    ("tire_pressure_bar", -0.1),
-])
+@pytest.mark.parametrize(
+    "field,value",
+    [
+        ("oil_pressure_bar", -0.1),
+        ("battery_voltage_v", -1.0),
+        ("brake_pad_mm", -0.1),
+        ("tire_pressure_bar", -0.1),
+    ],
+)
 def test_negative_physical_values_raise(field, value):
     with pytest.raises(ValidationError):
         TelemetryInput(**_valid_reading(**{field: value}))
