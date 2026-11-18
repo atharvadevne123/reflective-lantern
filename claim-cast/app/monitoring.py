@@ -79,3 +79,23 @@ def log_drift(
 def get_recent_scores(db: Session, limit: int = 200) -> list[float]:
     rows = db.query(ClaimPrediction.severity_score).order_by(ClaimPrediction.id.desc()).limit(limit).all()
     return [r[0] for r in rows]
+
+
+def drift_summary(db: Session) -> dict:
+    """Return a summary of recent drift detection results.
+
+    Args:
+        db: SQLAlchemy database session.
+
+    Returns:
+        Dict with total checks, alerts, and latest p-value.
+    """
+    total = db.query(DriftLog).count()
+    alerts = db.query(DriftLog).filter(DriftLog.drift_detected == 1).count()
+    latest = db.query(DriftLog).order_by(DriftLog.id.desc()).first()
+    return {
+        "total_checks": total,
+        "total_alerts": alerts,
+        "latest_p_value": latest.p_value if latest else None,
+        "latest_drift_detected": bool(latest.drift_detected) if latest else None,
+    }
