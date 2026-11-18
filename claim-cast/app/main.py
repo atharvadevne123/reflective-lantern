@@ -253,3 +253,20 @@ def predict_batch(requests_list: list[ClaimRequest], db: Session = Depends(get_d
             logger.error("batch_predict_failed", claim_id=req.claim_id, error=str(exc))
             raise HTTPException(status_code=500, detail=f"prediction_failed for {req.claim_id}") from exc
     return results
+
+
+@app.get("/api/v1/feature-importance", tags=["Prediction"])
+def feature_importance():
+    """Return feature importance scores from the trained XGBoost model.
+
+    Returns:
+        Dict mapping feature names to importance scores, sorted descending.
+    """
+    from app.features import get_feature_names
+
+    pipe, _ = load_model()
+    xgb_model = pipe.named_steps["model"]
+    scores = xgb_model.feature_importances_.tolist()
+    names = get_feature_names()
+    pairs = sorted(zip(names, scores, strict=False), key=lambda x: x[1], reverse=True)
+    return {"feature_importance": [{"feature": n, "importance": round(s, 4)} for n, s in pairs]}
