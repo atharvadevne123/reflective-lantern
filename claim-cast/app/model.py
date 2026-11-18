@@ -124,3 +124,22 @@ def _compute_triage(severity_class: int, anomaly_flag: int) -> int:
     if severity_class == 1:
         return 3
     return 4
+
+
+def get_model_info() -> dict:
+    """Return metadata about the loaded model artifacts.
+
+    Returns:
+        Dict with model path, anomaly path, and metrics path strings.
+    """
+    import logging
+    logger = logging.getLogger(__name__)
+    info = {
+        "model_path": str(MODEL_PATH),
+        "anomaly_path": str(ANOMALY_PATH),
+        "metrics_path": str(METRICS_PATH),
+        "model_exists": MODEL_PATH.exists(),
+        "anomaly_exists": ANOMALY_PATH.exists(),
+    }
+    logger.info("model_info model_exists=%s anomaly_exists=%s", info["model_exists"], info["anomaly_exists"])
+    return info
