@@ -131,3 +131,16 @@ def test_batch_predict_exceeds_limit(client, sample_claim):
     batch = [{**sample_claim, "claim_id": f"CLM-BIG-{i}"} for i in range(51)]
     resp = client.post("/api/v1/predict/batch", json=batch)
     assert resp.status_code == 400
+
+
+def test_feature_importance_endpoint(client):
+    resp = client.get("/api/v1/feature-importance")
+    assert resp.status_code == 200
+    body = resp.json()
+    assert "feature_importance" in body
+    scores = body["feature_importance"]
+    assert len(scores) == 12
+    assert all("feature" in s and "importance" in s for s in scores)
+    # Verify sorted descending
+    importances = [s["importance"] for s in scores]
+    assert importances == sorted(importances, reverse=True)
