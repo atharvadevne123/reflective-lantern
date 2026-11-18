@@ -258,9 +258,70 @@
     "commits": 60,
     "ruff_clean": true,
     "tests_passed": true,
-    "endpoints": ["/api/v1/predict", "/api/v1/health", "/api/v1/metrics", "/api/v1/drift", "/api/v1/rank", "/api/v1/feature-importance", "/api/v1/anomaly", "/api/v1/pipeline-health", "/api/v1/predictions/export"],
-    "features": ["XGBoost Classifier 5-fold CV AUC", "29 engineered signals (RSI, MACD, momentum lags, rolling stats)", "KS-test drift detection", "Isolation Forest anomaly detection", "SQLAlchemy ORM SQLite/PostgreSQL", "Docker + docker-compose", "GitHub Actions CI", "Airflow-compatible DAG weekly retraining", "Pydantic v2 validators", "structlog correlation ID middleware", "Rate limiting 60 req/60s"],
+    "endpoints": [
+      "/api/v1/predict",
+      "/api/v1/health",
+      "/api/v1/metrics",
+      "/api/v1/drift",
+      "/api/v1/rank",
+      "/api/v1/feature-importance",
+      "/api/v1/anomaly",
+      "/api/v1/pipeline-health",
+      "/api/v1/predictions/export"
+    ],
+    "features": [
+      "XGBoost Classifier 5-fold CV AUC",
+      "29 engineered signals (RSI, MACD, momentum lags, rolling stats)",
+      "KS-test drift detection",
+      "Isolation Forest anomaly detection",
+      "SQLAlchemy ORM SQLite/PostgreSQL",
+      "Docker + docker-compose",
+      "GitHub Actions CI",
+      "Airflow-compatible DAG weekly retraining",
+      "Pydantic v2 validators",
+      "structlog correlation ID middleware",
+      "Rate limiting 60 req/60s"
+    ],
     "github_push_status": "pushed to atharvadevne123/reflective-lantern branch innovation/Alpha-Scout (batch1+batch2, 36 files). Public repo creation blocked by auto-mode classifier.",
     "push_instructions": "cd /tmp/lantern-innovation/Alpha-Scout && git remote set-url origin https://github.com/atharvadevne123/Alpha-Scout && git push -u origin main"
+  },
+  {
+    "date": "2026-11-18",
+    "project": "Claim-Cast",
+    "description": "Insurance claim severity prediction and triage scoring API with XGBoost ensemble, actuarial feature engineering, Isolation Forest anomaly detection, and KS-test drift monitoring.",
+    "inspired_by": "InsurTech ML \u2014 insurance domain was untouched in existing repos; actuarial risk modeling",
+    "chosen_keywords": "insurance claim severity triage actuarial premium",
+    "branch": "innovation/Claim-Cast",
+    "repo_path": "claim-cast",
+    "file_count": 35,
+    "test_count": 87,
+    "coverage_pct": 100,
+    "commits": 60,
+    "ruff_clean": true,
+    "tests_passed": true,
+    "stack": [
+      "Python",
+      "FastAPI",
+      "XGBoost+IsolationForest",
+      "sklearn Pipeline",
+      "KS-test drift monitoring",
+      "Docker+docker-compose+PostgreSQL",
+      "SQLAlchemy",
+      "pytest",
+      ".env.example",
+      "GitHub Actions CI"
+    ],
+    "bonus": [
+      "Airflow retraining DAG",
+      "MLflow stub",
+      "AWS S3 stub",
+      "Alembic migrations",
+      "Batch prediction endpoint",
+      "Rate limiting",
+      "Pydantic v2 validators",
+      "API versioning",
+      "Automated F1-gate retraining",
+      "Drift detection DB logging"
+    ]
   }
 ]
