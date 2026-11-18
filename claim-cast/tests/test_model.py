@@ -80,3 +80,29 @@ def test_train_model_metrics(trained_model):
     assert "f1_macro_mean" in metrics
     assert 0.0 <= metrics["f1_macro_mean"] <= 1.0
     assert metrics["n_features"] > 0
+
+
+def test_cross_validate_model(trained_model):
+    import numpy as np
+    import pandas as pd
+
+    from app.model import cross_validate_model
+
+    rng = np.random.default_rng(55)
+    n = 200
+    X = pd.DataFrame({
+        "claim_age_days": rng.integers(0, 400, n).astype(float),
+        "policy_limit": rng.choice([50_000, 100_000, 250_000], n).astype(float),
+        "claimed_amount": rng.exponential(20_000, n),
+        "num_prior_claims": rng.integers(0, 6, n).astype(float),
+        "policy_tenure_years": rng.uniform(1, 15, n),
+        "geo_risk_tier": rng.integers(1, 6, n).astype(float),
+        "days_since_last_claim": rng.integers(10, 800, n).astype(float),
+        "policy_type": rng.choice(["home", "auto", "life", "commercial"], n),
+    })
+    ratio = (X["claimed_amount"] / X["policy_limit"]).clip(0, 1.0)
+    y = pd.cut(ratio, bins=[-0.001, 0.1, 0.3, 0.6, 1.001], labels=[0, 1, 2, 3]).astype(int)
+    cv_results = cross_validate_model(X, y, cv=3)
+    assert cv_results["cv_folds"] == 3
+    assert len(cv_results["test_f1_macro"]) == 3
+    assert 0.0 <= cv_results["mean_f1_macro"] <= 1.0
