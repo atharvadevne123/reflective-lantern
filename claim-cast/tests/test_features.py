@@ -102,3 +102,29 @@ def test_prepare_input_returns_dataframe():
     df = prepare_input(raw)
     assert isinstance(df, pd.DataFrame)
     assert len(df) == 1
+
+
+@pytest.mark.parametrize("age_days,expected_tier", [
+    (3, 0.0),
+    (15, 1.0),
+    (60, 2.0),
+    (200, 3.0),
+    (500, 4.0),
+])
+def test_age_tier_values(age_days, expected_tier):
+    df = _make_df(1)
+    df["claim_age_days"] = [float(age_days)]
+    eng = ActuarialFeatureEngineer()
+    out = eng.fit_transform(df)
+    assert out["age_tier"].iloc[0] == expected_tier
+
+
+def test_sev_age_interaction_matches():
+    df = _make_df(1)
+    df["claimed_amount"] = [30_000.0]
+    df["policy_limit"] = [100_000.0]
+    df["claim_age_days"] = [15.0]
+    eng = ActuarialFeatureEngineer()
+    out = eng.fit_transform(df)
+    expected = out["severity_ratio"].iloc[0] * out["age_tier"].iloc[0]
+    assert abs(out["sev_age_interaction"].iloc[0] - expected) < 1e-6
