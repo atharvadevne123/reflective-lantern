@@ -222,3 +222,34 @@ def claim_stats(db: Session = Depends(get_db)):
         ],
         "total": sum(r[2] for r in rows),
     }
+
+
+@app.post("/api/v1/predict/batch", tags=["Prediction"])
+def predict_batch(requests_list: list[ClaimRequest], db: Session = Depends(get_db)):
+    """Predict severity for a batch of insurance claims (max 50 per call).
+
+    Args:
+        requests_list: List of ClaimRequest objects.
+        db: Database session dependency.
+
+    Returns:
+        List of ClaimResponse objects.
+    """
+    import pandas as pd
+
+    if len(requests_list) > 50:
+        raise HTTPException(status_code=400, detail="batch_size_exceeds_limit_50")
+    if not _model_loaded:
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="model_not_loaded")
+
+    results = []
+    for req in requests_list:
+        try:
+            X = pd.DataFrame([req.model_dump(exclude={"claim_id"})])
+            result = predict(X)
+            log_prediction(db, req.claim_id, result["severity_score"], result["severity_label"], result["triage_priority"], MODEL_VERSION)
+            results.append(ClaimResponse(claim_id=req.claim_id, model_version=MODEL_VERSION, **result))
+        except Exception as exc:
+            logger.error("batch_predict_failed", claim_id=req.claim_id, error=str(exc))
+            raise HTTPException(status_code=500, detail=f"prediction_failed for {req.claim_id}") from exc
+    return results
