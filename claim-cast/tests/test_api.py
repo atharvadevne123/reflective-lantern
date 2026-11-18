@@ -144,3 +144,12 @@ def test_feature_importance_endpoint(client):
     # Verify sorted descending
     importances = [s["importance"] for s in scores]
     assert importances == sorted(importances, reverse=True)
+
+
+def test_batch_predict_bulk(client, bulk_claims):
+    resp = client.post("/api/v1/predict/batch", json=bulk_claims)
+    assert resp.status_code == 200
+    results = resp.json()
+    assert len(results) == 10
+    priorities = [r["triage_priority"] for r in results]
+    assert all(p in {1, 2, 3, 4} for p in priorities)
