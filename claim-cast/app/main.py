@@ -270,3 +270,27 @@ def feature_importance():
     names = get_feature_names()
     pairs = sorted(zip(names, scores, strict=False), key=lambda x: x[1], reverse=True)
     return {"feature_importance": [{"feature": n, "importance": round(s, 4)} for n, s in pairs]}
+
+
+@app.post("/api/v1/retrain", tags=["Operations"])
+def trigger_retrain(background_tasks: "BackgroundTasks"):
+    """Trigger model retraining in a background task.
+
+    Returns:
+        Dict with status and task id.
+    """
+    import uuid
+
+    task_id = str(uuid.uuid4())[:8]
+
+    def _run_retrain():
+        import sys
+        sys.path.insert(0, ".")
+        from pipelines.retrain_dag import evaluate_model, fetch_training_data, promote_model, run_retraining
+        path = fetch_training_data()
+        metrics = run_retraining(path)
+        if evaluate_model(metrics):
+            promote_model()
+
+    background_tasks.add_task(_run_retrain)
+    return {"status": "retraining_scheduled", "task_id": task_id}
