@@ -73,3 +73,17 @@ def build_feature_pipeline() -> Pipeline:
 
 def prepare_input(raw: dict) -> pd.DataFrame:
     return pd.DataFrame([raw])
+
+
+def get_feature_names() -> list[str]:
+    """Return the ordered list of engineered feature names.
+
+    Returns:
+        List of feature name strings in pipeline output order.
+    """
+    return [
+        "claim_age_days", "age_tier", "severity_ratio", "log_claimed",
+        "log_policy_limit", "prior_claim_rate", "high_frequency_flag",
+        "geo_risk", "days_since_last_claim", "recency_flag",
+        "sev_age_interaction", "policy_type_enc",
+    ]
