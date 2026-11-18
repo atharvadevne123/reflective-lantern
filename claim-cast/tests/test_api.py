@@ -103,3 +103,31 @@ def test_premium_low_risk(client):
     assert resp.status_code == 200
     body = resp.json()
     assert body["risk_multiplier"] == 1.0
+
+
+def test_claim_stats_endpoint(client, sample_claim):
+    client.post("/api/v1/predict", json=sample_claim)
+    resp = client.get("/api/v1/claims/stats")
+    assert resp.status_code == 200
+    body = resp.json()
+    assert "breakdown" in body
+    assert "total" in body
+
+
+def test_batch_predict(client, sample_claim):
+    batch = [
+        {**sample_claim, "claim_id": f"CLM-BATCH-{i}"}
+        for i in range(3)
+    ]
+    resp = client.post("/api/v1/predict/batch", json=batch)
+    assert resp.status_code == 200
+    results = resp.json()
+    assert len(results) == 3
+    for r in results:
+        assert r["severity_label"] in {"low", "medium", "high", "critical"}
+
+
+def test_batch_predict_exceeds_limit(client, sample_claim):
+    batch = [{**sample_claim, "claim_id": f"CLM-BIG-{i}"} for i in range(51)]
+    resp = client.post("/api/v1/predict/batch", json=batch)
+    assert resp.status_code == 400
