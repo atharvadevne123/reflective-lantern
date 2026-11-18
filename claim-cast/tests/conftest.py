@@ -72,3 +72,12 @@ def high_severity_claim() -> dict:
         "days_since_last_claim": 30.0,
         "policy_type": "commercial",
     }
+
+
+@pytest.fixture
+def bulk_claims(sample_claim) -> list[dict]:
+    """Return 10 claims for bulk/batch testing."""
+    return [
+        {**sample_claim, "claim_id": f"CLM-BULK-{i:03d}", "claimed_amount": float(5000 * (i + 1))}
+        for i in range(10)
+    ]
