@@ -70,3 +70,15 @@ def test_log_drift_record(db_session):
 def test_get_recent_scores_empty(db_session):
     scores = get_recent_scores(db_session, limit=10)
     assert isinstance(scores, list)
+
+
+def test_drift_summary_empty(db_session):
+    summary = drift_summary(db_session)
+    assert "total_checks" in summary
+    assert "total_alerts" in summary
+
+
+def test_drift_summary_after_log(db_session):
+    log_drift(db_session, "test_feature", 0.25, 0.01, True, 50)
+    summary = drift_summary(db_session)
+    assert summary["total_checks"] >= 1
