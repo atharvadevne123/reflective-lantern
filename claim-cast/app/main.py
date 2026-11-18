@@ -6,7 +6,7 @@ import os
 from contextlib import asynccontextmanager
 
 import structlog
-from fastapi import Depends, FastAPI, HTTPException, status
+from fastapi import BackgroundTasks, Depends, FastAPI, HTTPException, status
 from fastapi import Path as FPath
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
@@ -273,7 +273,7 @@ def feature_importance():
 
 
 @app.post("/api/v1/retrain", tags=["Operations"])
-def trigger_retrain(background_tasks: "BackgroundTasks"):
+def trigger_retrain(background_tasks: BackgroundTasks):
     """Trigger model retraining in a background task.
 
     Returns:
@@ -286,7 +286,12 @@ def trigger_retrain(background_tasks: "BackgroundTasks"):
     def _run_retrain():
         import sys
         sys.path.insert(0, ".")
-        from pipelines.retrain_dag import evaluate_model, fetch_training_data, promote_model, run_retraining
+        from pipelines.retrain_dag import (
+            evaluate_model,
+            fetch_training_data,
+            promote_model,
+            run_retraining,
+        )
         path = fetch_training_data()
         metrics = run_retraining(path)
         if evaluate_model(metrics):

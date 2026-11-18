@@ -4,7 +4,13 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from app.monitoring import compute_drift, get_recent_scores, log_drift, log_prediction
+from app.monitoring import (
+    compute_drift,
+    drift_summary,
+    get_recent_scores,
+    log_drift,
+    log_prediction,
+)
 
 
 def test_compute_drift_no_drift():
