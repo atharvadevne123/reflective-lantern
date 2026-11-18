@@ -153,3 +153,18 @@ def test_batch_predict_bulk(client, bulk_claims):
     assert len(results) == 10
     priorities = [r["triage_priority"] for r in results]
     assert all(p in {1, 2, 3, 4} for p in priorities)
+
+
+def test_correlation_id_header_returned(client, sample_claim):
+    resp = client.post("/api/v1/predict", json=sample_claim)
+    assert "x-correlation-id" in resp.headers or "X-Correlation-ID" in resp.headers
+
+
+def test_health_endpoint_response_time(client):
+    import time
+
+    start = time.time()
+    resp = client.get("/api/v1/health")
+    elapsed = time.time() - start
+    assert resp.status_code == 200
+    assert elapsed < 2.0
