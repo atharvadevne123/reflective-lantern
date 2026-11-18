@@ -59,3 +59,13 @@ def get_db():
 
 def init_db() -> None:
     Base.metadata.create_all(bind=engine)
+
+
+def get_session() -> Session:
+    """Create and return a new database session."""
+    return SessionLocal()
+
+
+def count_predictions(db: Session) -> int:
+    """Return total prediction count."""
+    return db.query(ClaimPrediction).count()
