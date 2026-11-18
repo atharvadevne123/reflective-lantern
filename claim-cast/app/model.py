@@ -143,3 +143,28 @@ def get_model_info() -> dict:
     }
     logger.info("model_info model_exists=%s anomaly_exists=%s", info["model_exists"], info["anomaly_exists"])
     return info
+
+
+def train_model_tracked(X: "pd.DataFrame", y: "pd.Series") -> "tuple[Pipeline, dict]":
+    """Train model with MLflow experiment tracking.
+
+    Args:
+        X: Feature DataFrame.
+        y: Target severity class Series.
+
+    Returns:
+        Tuple of (fitted Pipeline, metrics dict).
+    """
+    from app.mlflow_stub import end_run, log_metric, log_param, start_run
+
+    run = start_run("train")
+    log_param(run, "n_estimators", 200)
+    log_param(run, "max_depth", 5)
+    log_param(run, "n_samples", len(X))
+
+    pipe, metrics = train_model(X, y)
+
+    log_metric(run, "f1_macro_mean", metrics["f1_macro_mean"])
+    log_metric(run, "f1_macro_std", metrics["f1_macro_std"])
+    end_run(run)
+    return pipe, metrics
