@@ -161,3 +161,14 @@ The retraining DAG can be imported into Airflow:
 ```bash
 cp pipelines/retrain_dag.py $AIRFLOW_HOME/dags/
 ```
+
+---
+
+## Additional Endpoints
+
+| Method | Path | Description |
+|--------|------|-------------|
+| POST | `/api/v1/predict/batch` | Batch predict up to 50 claims |
+| GET | `/api/v1/claims/stats` | Severity breakdown statistics |
+| GET | `/api/v1/feature-importance` | XGBoost feature importance scores |
+| POST | `/api/v1/retrain` | Trigger background model retraining |
