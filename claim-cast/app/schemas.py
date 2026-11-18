@@ -83,3 +83,38 @@ class PremiumResponse(BaseModel):
     risk_multiplier: float
     adjusted_premium: float
     recommendation: str
+
+
+class RetrainResponse(BaseModel):
+    """Response model for retrain trigger endpoint."""
+
+    status: str
+    task_id: str
+
+
+class FeatureImportanceItem(BaseModel):
+    """Single feature importance score."""
+
+    feature: str
+    importance: float
+
+
+class FeatureImportanceResponse(BaseModel):
+    """Response model for feature importance endpoint."""
+
+    feature_importance: list[FeatureImportanceItem]
+
+
+class ClaimStatsBreakdownItem(BaseModel):
+    """Single row in claim stats breakdown."""
+
+    severity_label: str
+    triage_priority: int
+    count: int
+
+
+class ClaimStatsResponse(BaseModel):
+    """Aggregate claim prediction statistics."""
+
+    breakdown: list[ClaimStatsBreakdownItem]
+    total: int
