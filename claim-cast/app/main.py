@@ -197,3 +197,28 @@ def triage_summary(triage_priority: int = FPath(..., ge=1, le=4)):
         4: {"level": "P4 — Low", "sla_hours": 168, "action": "Automated fast-track processing"},
     }
     return slas[triage_priority]
+
+
+@app.get("/api/v1/claims/stats", tags=["Prediction"])
+def claim_stats(db: Session = Depends(get_db)):
+    """Return aggregate statistics for all predictions in the database.
+
+    Returns:
+        Dict with count breakdowns by severity label and triage priority.
+    """
+    from sqlalchemy import func
+
+    from app.database import ClaimPrediction
+
+    rows = (
+        db.query(ClaimPrediction.severity_label, ClaimPrediction.triage_priority, func.count())
+        .group_by(ClaimPrediction.severity_label, ClaimPrediction.triage_priority)
+        .all()
+    )
+    return {
+        "breakdown": [
+            {"severity_label": r[0], "triage_priority": r[1], "count": r[2]}
+            for r in rows
+        ],
+        "total": sum(r[2] for r in rows),
+    }
