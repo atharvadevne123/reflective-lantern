@@ -81,3 +81,42 @@ def latest_model_entry() -> dict[str, Any] | None:
     """
     entries = _load_registry()
     return entries[-1] if entries else None
+
+
+def delete_model(version: str) -> bool:
+    """Remove a model entry by version string.
+
+    Args:
+        version: Version string to remove.
+
+    Returns:
+        True if an entry was removed, False if the version was not found.
+    """
+    entries = _load_registry()
+    new_entries = [e for e in entries if e["version"] != version]
+    if len(new_entries) == len(entries):
+        return False
+    _save_registry(new_entries)
+    logger.info("Removed model version %s from registry", version)
+    return True
+
+
+def best_model_entry(metric: str = "roc_auc") -> dict[str, Any] | None:
+    """Return the entry with the highest value of a given metric.
+
+    Args:
+        metric: Metric key to rank by (must be present in all entries' metrics).
+
+    Returns:
+        Registry entry with the highest metric value, or None if registry empty.
+    """
+    entries = _load_registry()
+    candidates = [e for e in entries if metric in e.get("metrics", {})]
+    if not candidates:
+        return None
+    return max(candidates, key=lambda e: e["metrics"][metric])
+
+
+def model_count() -> int:
+    """Return the number of models currently in the registry."""
+    return len(_load_registry())
