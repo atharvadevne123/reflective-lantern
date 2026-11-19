@@ -5,7 +5,6 @@ from __future__ import annotations
 import math
 from dataclasses import dataclass
 
-
 EARTH_RADIUS_KM = 6371.0
 
 

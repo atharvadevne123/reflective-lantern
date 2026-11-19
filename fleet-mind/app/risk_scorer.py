@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-
 WEIGHT_ANOMALY = 0.35
 WEIGHT_OVERDUE = 0.30
 WEIGHT_AGE = 0.20

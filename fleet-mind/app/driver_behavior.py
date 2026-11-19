@@ -30,7 +30,9 @@ def speeding_fraction(events: list[DrivingEvent], speed_limit_kmh: float) -> flo
     return len(over) / len(events)
 
 
-def driver_score(events: list[DrivingEvent], total_km: float, speed_limit_kmh: float = 110.0) -> float:
+def driver_score(
+    events: list[DrivingEvent], total_km: float, speed_limit_kmh: float = 110.0
+) -> float:
     """Return 0-100 driver score (higher is safer)."""
     if total_km <= 0:
         return 100.0

@@ -53,9 +53,7 @@ class InvalidReadingError(FleetMindError):
         self.vehicle_id = vehicle_id
         self.field = field
         self.value = value
-        super().__init__(
-            f"Invalid reading for vehicle {vehicle_id!r}: {field}={value!r}"
-        )
+        super().__init__(f"Invalid reading for vehicle {vehicle_id!r}: {field}={value!r}")
 
 
 class ThresholdExceededError(FleetMindError):
@@ -71,9 +69,7 @@ class ThresholdExceededError(FleetMindError):
         self.metric = metric
         self.value = value
         self.threshold = threshold
-        super().__init__(
-            f"{metric} value {value:.4f} exceeded threshold {threshold:.4f}"
-        )
+        super().__init__(f"{metric} value {value:.4f} exceeded threshold {threshold:.4f}")
 
 
 class RegistryError(FleetMindError):

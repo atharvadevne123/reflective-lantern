@@ -84,14 +84,16 @@ def check_warning_thresholds(
         if value is None:
             continue
         if value <= threshold:
-            warnings.append({
-                "vehicle_id": vehicle_id,
-                "alert_type": alert_type,
-                "field": field,
-                "value": value,
-                "threshold": threshold,
-                "severity": "warning",
-            })
+            warnings.append(
+                {
+                    "vehicle_id": vehicle_id,
+                    "alert_type": alert_type,
+                    "field": field,
+                    "value": value,
+                    "threshold": threshold,
+                    "severity": "warning",
+                }
+            )
             logger.warning(
                 "FLEET WARNING %s: vehicle=%s %s=%.2f (threshold=%.2f)",
                 alert_type,

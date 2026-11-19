@@ -47,7 +47,7 @@ def remove_spikes(values: list[float], z_threshold: float = 3.0) -> list[float]:
         return list(values)
     mu = sum(values) / len(values)
     variance = sum((v - mu) ** 2 for v in values) / (len(values) - 1)
-    sigma = variance ** 0.5
+    sigma = variance**0.5
     if sigma == 0:
         return list(values)
     return [v if abs(v - mu) / sigma <= z_threshold else mu for v in values]

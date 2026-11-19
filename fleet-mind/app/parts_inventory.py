@@ -49,11 +49,13 @@ def reorder_suggestions(inventory: Inventory) -> list[dict[str, object]]:
     """Return suggested reorder orders for parts at or below reorder point."""
     suggestions = []
     for part in inventory.below_reorder_point():
-        suggestions.append({
-            "part_id": part.part_id,
-            "name": part.name,
-            "current_qty": part.quantity_on_hand,
-            "reorder_qty": part.reorder_quantity,
-            "estimated_cost": part.unit_cost * part.reorder_quantity,
-        })
+        suggestions.append(
+            {
+                "part_id": part.part_id,
+                "name": part.name,
+                "current_qty": part.quantity_on_hand,
+                "reorder_qty": part.reorder_quantity,
+                "estimated_cost": part.unit_cost * part.reorder_quantity,
+            }
+        )
     return suggestions

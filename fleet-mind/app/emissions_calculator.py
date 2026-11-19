@@ -3,10 +3,10 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from enum import Enum
+from enum import StrEnum
 
 
-class FuelType(str, Enum):
+class FuelType(StrEnum):
     PETROL = "petrol"
     DIESEL = "diesel"
     LPG = "lpg"
@@ -33,7 +33,9 @@ class VehicleEmission:
     electricity_consumed_kwh: float = 0.0
 
 
-def co2_kg(emission: VehicleEmission, grid_intensity: float = ELECTRICITY_EMISSION_KG_PER_KWH) -> float:
+def co2_kg(
+    emission: VehicleEmission, grid_intensity: float = ELECTRICITY_EMISSION_KG_PER_KWH
+) -> float:
     """Return CO2 emissions in kg for a vehicle emission record."""
     factor = EMISSION_FACTORS_KG_PER_LITRE.get(emission.fuel_type, 0.0)
     combustion_co2 = emission.fuel_consumed_litres * factor

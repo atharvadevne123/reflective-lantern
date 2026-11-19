@@ -35,7 +35,9 @@ def efficiency_score(l_per_100km: float, baseline: float = 10.0) -> float:
     return max(0.0, min(1.0, 2.0 - ratio))
 
 
-def load_adjusted_consumption(base_l_per_100km: float, load_kg: float, factor: float = 0.002) -> float:
+def load_adjusted_consumption(
+    base_l_per_100km: float, load_kg: float, factor: float = 0.002
+) -> float:
     """Return consumption adjusted for vehicle load."""
     return base_l_per_100km * (1 + factor * load_kg)
 

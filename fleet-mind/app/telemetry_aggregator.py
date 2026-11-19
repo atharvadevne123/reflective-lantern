@@ -20,7 +20,13 @@ def aggregate(readings: list[TelemetryReading]) -> dict[str, float]:
     """Return mean of each numeric field across all readings."""
     if not readings:
         return {}
-    fields = ["engine_temp_c", "oil_pressure_bar", "brake_pad_mm", "battery_voltage_v", "odometer_km"]
+    fields = [
+        "engine_temp_c",
+        "oil_pressure_bar",
+        "brake_pad_mm",
+        "battery_voltage_v",
+        "odometer_km",
+    ]
     return {f: mean(getattr(r, f) for r in readings) for f in fields}
 
 
@@ -28,7 +34,13 @@ def median_values(readings: list[TelemetryReading]) -> dict[str, float]:
     """Return median of each numeric field."""
     if not readings:
         return {}
-    fields = ["engine_temp_c", "oil_pressure_bar", "brake_pad_mm", "battery_voltage_v", "odometer_km"]
+    fields = [
+        "engine_temp_c",
+        "oil_pressure_bar",
+        "brake_pad_mm",
+        "battery_voltage_v",
+        "odometer_km",
+    ]
     return {f: median(getattr(r, f) for r in readings) for f in fields}
 
 
@@ -44,7 +56,7 @@ def outlier_vehicles(
     mu = mean(values)
     # manual std to avoid importing stdev from statistics twice
     variance = sum((v - mu) ** 2 for v in values) / (len(values) - 1)
-    sigma = variance ** 0.5
+    sigma = variance**0.5
     if sigma == 0:
         return []
     return [r.vehicle_id for r in readings if abs(getattr(r, field) - mu) / sigma > z_threshold]

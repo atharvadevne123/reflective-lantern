@@ -22,8 +22,6 @@ def ks_statistic(reference: list[float], current: list[float]) -> float:
     if not reference or not current:
         return 0.0
     all_vals = sorted(set(reference + current))
-    n_ref = len(reference)
-    n_cur = len(current)
     ref_sorted = sorted(reference)
     cur_sorted = sorted(current)
 

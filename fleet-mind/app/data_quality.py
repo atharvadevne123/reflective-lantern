@@ -95,7 +95,7 @@ def assess_batch_quality(readings: list[dict[str, Any]]) -> dict[str, Any]:
     return result
 
 
-def completeness_rate(df: "pd.DataFrame", required_columns: list[str] | None = None) -> float:
+def completeness_rate(df: pd.DataFrame, required_columns: list[str] | None = None) -> float:
     """Return fraction of non-null cells across required columns (0-1).
 
     Args:

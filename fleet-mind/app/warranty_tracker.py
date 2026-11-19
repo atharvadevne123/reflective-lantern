@@ -45,12 +45,13 @@ def expiring_soon(
     """Return records expiring within the given number of days."""
     today = today or date.today()
     return [
-        r for r in records
-        if not r.is_expired(today) and r.days_remaining(today) <= within_days
+        r for r in records if not r.is_expired(today) and r.days_remaining(today) <= within_days
     ]
 
 
-def active_warranties(records: list[WarrantyRecord], today: date | None = None) -> list[WarrantyRecord]:
+def active_warranties(
+    records: list[WarrantyRecord], today: date | None = None
+) -> list[WarrantyRecord]:
     """Return non-expired warranty records."""
     today = today or date.today()
     return [r for r in records if not r.is_expired(today)]

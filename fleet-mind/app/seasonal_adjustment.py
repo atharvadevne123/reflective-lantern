@@ -2,9 +2,7 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
 from datetime import date
-
 
 SEASON_MONTHS: dict[str, list[int]] = {
     "winter": [12, 1, 2],
@@ -55,14 +53,14 @@ def seasonal_maintenance_schedule(
 ) -> list[dict[str, object]]:
     """Return recommended maintenance intervals adjusted for each season."""
     result = []
-    for season, months in SEASON_MONTHS.items():
-        representative_month = months[1]
-        d = date(year, representative_month, 15)
+    for season in SEASON_MONTHS:
         factor = (factors or DEFAULT_SEASON_FACTORS).get(season, 1.0)
         adjusted_interval = max(1, round(base_interval_days / factor))
-        result.append({
-            "season": season,
-            "adjustment_factor": factor,
-            "recommended_interval_days": adjusted_interval,
-        })
+        result.append(
+            {
+                "season": season,
+                "adjustment_factor": factor,
+                "recommended_interval_days": adjusted_interval,
+            }
+        )
     return result
