@@ -38,3 +38,43 @@ class ModelTrainingError(FleetMindError):
     def __init__(self, message: str, cause: Exception | None = None) -> None:
         self.cause = cause
         super().__init__(message)
+
+
+class InvalidReadingError(FleetMindError):
+    """Raised when a telemetry reading fails validation.
+
+    Args:
+        vehicle_id: Vehicle that submitted the invalid reading.
+        field: The field that failed validation.
+        value: The offending value.
+    """
+
+    def __init__(self, vehicle_id: str, field: str, value: object) -> None:
+        self.vehicle_id = vehicle_id
+        self.field = field
+        self.value = value
+        super().__init__(
+            f"Invalid reading for vehicle {vehicle_id!r}: {field}={value!r}"
+        )
+
+
+class ThresholdExceededError(FleetMindError):
+    """Raised when a metric crosses a critical threshold.
+
+    Args:
+        metric: Metric name that exceeded its threshold.
+        value: Observed value.
+        threshold: The configured threshold.
+    """
+
+    def __init__(self, metric: str, value: float, threshold: float) -> None:
+        self.metric = metric
+        self.value = value
+        self.threshold = threshold
+        super().__init__(
+            f"{metric} value {value:.4f} exceeded threshold {threshold:.4f}"
+        )
+
+
+class RegistryError(FleetMindError):
+    """Raised when model registry read/write operations fail."""
