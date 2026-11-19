@@ -38,3 +38,29 @@ DEFAULT_RATE_LIMIT_RPM: int = 100
 
 # Feature scaler warm-up reads
 SCALER_WARMUP_ROWS: int = 10
+
+# Coolant temperature thresholds (°C)
+COOLANT_TEMP_NORMAL_MAX_C: float = 95.0
+COOLANT_TEMP_WARNING_C: float = 100.0
+COOLANT_TEMP_CRITICAL_C: float = 110.0
+
+# Transmission temperature thresholds (°C)
+TRANSMISSION_TEMP_NORMAL_MAX_C: float = 100.0
+TRANSMISSION_TEMP_WARNING_C: float = 115.0
+TRANSMISSION_TEMP_CRITICAL_C: float = 130.0
+
+# RPM operating ranges
+RPM_IDLE_MIN: float = 650.0
+RPM_IDLE_MAX: float = 900.0
+RPM_REDLINE: float = 7500.0
+
+# Fuel consumption benchmarks (L/100 km)
+FUEL_CONSUMPTION_LOW_LPH: float = 5.0
+FUEL_CONSUMPTION_HIGH_LPH: float = 12.0
+
+# Maintenance scheduling defaults
+DEFAULT_SERVICE_INTERVAL_KM: float = 15_000.0
+DEFAULT_SERVICE_INTERVAL_DAYS: int = 365
+
+# Alert rate limits
+ALERT_COOLDOWN_SECONDS: int = 300
