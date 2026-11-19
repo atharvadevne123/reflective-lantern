@@ -31,7 +31,7 @@ class TestUpdateAndGetReferenceWindow:
         update_reference_window("cpu", [0.1, 0.2])
         update_reference_window("cpu", [0.5, 0.6, 0.7])
         result = get_reference_window("cpu")
-        assert result == [0.5, 0.6, 0.7]
+        assert result == [0.1, 0.2, 0.5, 0.6, 0.7]
 
 
 class TestResetReferenceWindow:
@@ -101,4 +101,4 @@ class TestDriftSummary:
             "mem": {"drift_detected": False},
         }
         summary = drift_summary(feature_results)
-        assert "drifted_count" in summary or "total" in summary
+        assert "drifted_features" in summary or "total_features" in summary

@@ -33,21 +33,21 @@ def test_log_run_creates_file(temp_mlflow_path):
 
 def test_log_run_entry_has_metrics(temp_mlflow_path):
     stub_module.log_run("my_run", {"f1": 0.88}, params={"n": 100})
-    lines = [ln for ln in temp_mlflow_path.read_text().strip().split("\n") if ln]
+    lines = [line for line in temp_mlflow_path.read_text().strip().split("\n") if line]
     entry = json.loads(lines[-1])
     assert entry["metrics"]["f1"] == 0.88
 
 
 def test_log_run_entry_has_run_name(temp_mlflow_path):
     stub_module.log_run("named_run", {})
-    lines = [ln for ln in temp_mlflow_path.read_text().strip().split("\n") if ln]
+    lines = [line for line in temp_mlflow_path.read_text().strip().split("\n") if line]
     entry = json.loads(lines[-1])
     assert entry["run_name"] == "named_run"
 
 
 def test_log_run_with_tags(temp_mlflow_path):
     stub_module.log_run("tagged", {}, tags={"env": "prod"})
-    lines = [ln for ln in temp_mlflow_path.read_text().strip().split("\n") if ln]
+    lines = [line for line in temp_mlflow_path.read_text().strip().split("\n") if line]
     entry = json.loads(lines[-1])
     assert entry["tags"].get("env") == "prod"
 
@@ -55,7 +55,7 @@ def test_log_run_with_tags(temp_mlflow_path):
 def test_multiple_runs_appended(temp_mlflow_path):
     stub_module.log_run("run1", {"acc": 0.9})
     stub_module.log_run("run2", {"acc": 0.95})
-    lines = [ln for ln in temp_mlflow_path.read_text().strip().split("\n") if ln]
+    lines = [line for line in temp_mlflow_path.read_text().strip().split("\n") if line]
     assert len(lines) == 2
 
 

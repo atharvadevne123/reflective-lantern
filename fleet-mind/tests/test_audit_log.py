@@ -59,7 +59,7 @@ def test_multiple_entries_appended(temp_audit_log):
 
     audit_module.log_prediction_request("VH-001", "127.0.0.1", "c1", True)
     audit_module.log_prediction_request("VH-002", "127.0.0.1", "c2", False)
-    lines = [ln for ln in temp_audit_log.read_text().strip().split("\n") if ln]
+    lines = [line for line in temp_audit_log.read_text().strip().split("\n") if line]
     assert len(lines) == 2
 
 

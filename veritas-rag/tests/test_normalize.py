@@ -19,7 +19,7 @@ def test_normalize_strips_leading_trailing_whitespace():
 def test_normalize_collapses_multiple_spaces():
     result = normalize_text("hello   world")
     assert "   " not in result
-    assert "hello world" == result
+    assert result == "hello world"
 
 
 def test_normalize_removes_control_chars():

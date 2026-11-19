@@ -40,7 +40,7 @@ def test_log_training_run_entry_has_params_and_metrics(use_temp_mlflow_log):
     import app.mlflow_compat as mc
 
     mc.log_training_run("run1", {"n_estimators": 100}, {"f1": 0.88})
-    lines = [ln for ln in use_temp_mlflow_log.read_text().strip().split("\n") if ln]
+    lines = [line for line in use_temp_mlflow_log.read_text().strip().split("\n") if line]
     entry = json.loads(lines[-1])
     assert entry["run_name"] == "run1"
     assert entry["params"]["n_estimators"] == 100
@@ -51,7 +51,7 @@ def test_log_training_run_with_tags(use_temp_mlflow_log):
     import app.mlflow_compat as mc
 
     mc.log_training_run("tagged", {}, {}, tags={"env": "test"})
-    lines = [ln for ln in use_temp_mlflow_log.read_text().strip().split("\n") if ln]
+    lines = [line for line in use_temp_mlflow_log.read_text().strip().split("\n") if line]
     entry = json.loads(lines[-1])
     assert entry.get("tags", {}).get("env") == "test"
 
@@ -61,7 +61,7 @@ def test_multiple_runs_appended(use_temp_mlflow_log):
 
     mc.log_training_run("run1", {}, {"acc": 0.9})
     mc.log_training_run("run2", {}, {"acc": 0.95})
-    lines = [ln for ln in use_temp_mlflow_log.read_text().strip().split("\n") if ln]
+    lines = [line for line in use_temp_mlflow_log.read_text().strip().split("\n") if line]
     assert len(lines) == 2
 
 
@@ -69,6 +69,6 @@ def test_log_training_run_entry_has_timestamp(use_temp_mlflow_log):
     import app.mlflow_compat as mc
 
     mc.log_training_run("timed", {}, {})
-    lines = [ln for ln in use_temp_mlflow_log.read_text().strip().split("\n") if ln]
+    lines = [line for line in use_temp_mlflow_log.read_text().strip().split("\n") if line]
     entry = json.loads(lines[-1])
     assert "logged_at" in entry

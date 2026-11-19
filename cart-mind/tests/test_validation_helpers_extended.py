@@ -75,14 +75,14 @@ class TestCrossFieldPenaltyScore:
 
 class TestRevenueImpactScore:
     def test_returns_float(self) -> None:
-        result = revenue_impact_score(cart_value=100.0, confidence=0.9)
+        result = revenue_impact_score(cart_value=100.0, purchase_probability=0.9)
         assert isinstance(result, float)
 
     def test_higher_confidence_higher_score(self) -> None:
-        low = revenue_impact_score(cart_value=100.0, confidence=0.1)
-        high = revenue_impact_score(cart_value=100.0, confidence=0.9)
+        low = revenue_impact_score(cart_value=100.0, purchase_probability=0.1)
+        high = revenue_impact_score(cart_value=100.0, purchase_probability=0.9)
         assert high >= low
 
     def test_zero_cart_value(self) -> None:
-        score = revenue_impact_score(cart_value=0.0, confidence=0.9)
+        score = revenue_impact_score(cart_value=0.0, purchase_probability=0.9)
         assert score == pytest.approx(0.0)

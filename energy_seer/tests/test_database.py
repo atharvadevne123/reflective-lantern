@@ -20,12 +20,14 @@ from app.database import AnomalyLog, Base, DriftLog, EnergyReading, PredictionLo
 def in_memory_db(tmp_path):
     test_url = "sqlite:///:memory:"
     engine = create_engine(test_url, connect_args={"check_same_thread": False})
-    with patch.object(db_module, "engine", engine):
-        with patch.object(
+    with (
+        patch.object(db_module, "engine", engine),
+        patch.object(
             db_module, "SessionLocal", sessionmaker(autocommit=False, autoflush=False, bind=engine)
-        ):
-            Base.metadata.create_all(bind=engine)
-            yield engine
+        ),
+    ):
+        Base.metadata.create_all(bind=engine)
+        yield engine
     Base.metadata.drop_all(bind=engine)
 
 
