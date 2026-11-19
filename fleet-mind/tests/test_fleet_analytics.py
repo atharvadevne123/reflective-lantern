@@ -15,7 +15,14 @@ from app.fleet_analytics import (
 )
 
 
-def _summary(vid: str, uptime: float = 0.9, cost: float = 1000.0, anomalies: int = 2, km: float = 50_000.0, efficiency: float = 9.0) -> VehicleSummary:
+def _summary(
+    vid: str,
+    uptime: float = 0.9,
+    cost: float = 1000.0,
+    anomalies: int = 2,
+    km: float = 50_000.0,
+    efficiency: float = 9.0,
+) -> VehicleSummary:
     return VehicleSummary(vid, km, cost, uptime, anomalies, efficiency)
 
 

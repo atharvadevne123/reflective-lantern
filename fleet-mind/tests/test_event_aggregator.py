@@ -17,7 +17,9 @@ from app.event_aggregator import (
 )
 
 
-def _ev(vid: str, etype: str = "sensor", severity: str = "low", occurred_on: date = date(2026, 11, 19)) -> FleetEvent:
+def _ev(
+    vid: str, etype: str = "sensor", severity: str = "low", occurred_on: date = date(2026, 11, 19)
+) -> FleetEvent:
     return FleetEvent(vid, etype, severity, occurred_on)
 
 

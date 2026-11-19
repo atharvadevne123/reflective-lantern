@@ -8,7 +8,14 @@ from app.parts_inventory import Inventory, Part, reorder_suggestions
 
 
 def _part(pid: str, qty: int = 10, reorder: int = 5, unit_cost: float = 100.0) -> Part:
-    return Part(part_id=pid, name=f"Part {pid}", unit_cost=unit_cost, quantity_on_hand=qty, reorder_point=reorder, reorder_quantity=20)
+    return Part(
+        part_id=pid,
+        name=f"Part {pid}",
+        unit_cost=unit_cost,
+        quantity_on_hand=qty,
+        reorder_point=reorder,
+        reorder_quantity=20,
+    )
 
 
 class TestInventoryConsume:

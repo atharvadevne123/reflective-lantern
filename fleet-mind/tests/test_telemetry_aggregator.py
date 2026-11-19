@@ -15,7 +15,13 @@ from app.telemetry_aggregator import (
 
 
 def _r(vid: str, **kwargs) -> TelemetryReading:
-    defaults = dict(engine_temp_c=90.0, oil_pressure_bar=3.0, brake_pad_mm=8.0, battery_voltage_v=12.5, odometer_km=50_000.0)
+    defaults = dict(
+        engine_temp_c=90.0,
+        oil_pressure_bar=3.0,
+        brake_pad_mm=8.0,
+        battery_voltage_v=12.5,
+        odometer_km=50_000.0,
+    )
     defaults.update(kwargs)
     return TelemetryReading(vehicle_id=vid, **defaults)
 
@@ -35,7 +41,11 @@ class TestMedianValues:
         assert median_values([]) == {}
 
     def test_median_of_three(self) -> None:
-        readings = [_r("v1", engine_temp_c=80.0), _r("v2", engine_temp_c=90.0), _r("v3", engine_temp_c=100.0)]
+        readings = [
+            _r("v1", engine_temp_c=80.0),
+            _r("v2", engine_temp_c=90.0),
+            _r("v3", engine_temp_c=100.0),
+        ]
         result = median_values(readings)
         assert result["engine_temp_c"] == pytest.approx(90.0)
 
