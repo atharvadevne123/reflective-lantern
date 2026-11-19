@@ -2,12 +2,10 @@
 
 from __future__ import annotations
 
-import pytest
-
 from app.risk_scorer import (
     RiskInput,
-    composite_risk_score,
     component_scores,
+    composite_risk_score,
     fleet_risk_summary,
     risk_tier,
 )

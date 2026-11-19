@@ -9,8 +9,8 @@ import pytest
 from app.seasonal_adjustment import (
     adjust_forecast,
     adjustment_factor,
-    seasonal_maintenance_schedule,
     season_for_date,
+    seasonal_maintenance_schedule,
 )
 
 

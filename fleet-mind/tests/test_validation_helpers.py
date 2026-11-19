@@ -4,8 +4,6 @@ from __future__ import annotations
 
 from datetime import date
 
-import pytest
-
 from app.validation_helpers import (
     all_valid,
     validate_battery_voltage,
