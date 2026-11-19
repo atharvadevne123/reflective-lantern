@@ -84,3 +84,40 @@ def detect_monotonic_degradation(
     if stats is None:
         return False
     return abs(stats["slope"]) >= min_slope
+
+
+def clear_vehicle_windows(vehicle_id: str | None = None) -> None:
+    """Clear rolling windows for one vehicle or all vehicles.
+
+    Args:
+        vehicle_id: If provided, clear only that vehicle's windows.
+            If None, clear all vehicle windows.
+    """
+    if vehicle_id is None:
+        _VEHICLE_WINDOWS.clear()
+    else:
+        _VEHICLE_WINDOWS.pop(vehicle_id, None)
+
+
+def window_size_for(vehicle_id: str, feature: str) -> int:
+    """Return the number of observations in a vehicle-feature window."""
+    return len(_get_window(vehicle_id, feature))
+
+
+def forecast_linear(vehicle_id: str, feature: str, steps_ahead: int = 5) -> list[float] | None:
+    """Forecast future values using the rolling window's linear trend.
+
+    Args:
+        vehicle_id: The vehicle to forecast for.
+        feature: The telemetry feature to forecast.
+        steps_ahead: Number of future time steps to project.
+
+    Returns:
+        List of forecasted values, or None if insufficient data.
+    """
+    stats = rolling_stats(vehicle_id, feature)
+    if stats is None:
+        return None
+    last_value = stats["mean"]
+    slope = stats["slope"]
+    return [last_value + slope * i for i in range(1, steps_ahead + 1)]
