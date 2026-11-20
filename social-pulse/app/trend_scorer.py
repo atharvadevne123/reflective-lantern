@@ -142,3 +142,30 @@ def rank_posts(scores: list[TrendScore]) -> list[TrendScore]:
         A new list sorted by trend_score descending.
     """
     return sorted(scores, key=lambda s: s.trend_score, reverse=True)
+
+
+def top_n_posts(scores: list[TrendScore], n: int = 10) -> list[TrendScore]:
+    """Return at most *n* highest-scoring posts.
+
+    Args:
+        scores: Unordered list of TrendScore instances.
+        n: Maximum number of results to return.
+
+    Returns:
+        Up to *n* TrendScore instances sorted by trend_score descending.
+    """
+    return rank_posts(scores)[:n]
+
+
+def filter_by_tier(scores: list[TrendScore], tier: str) -> list[TrendScore]:
+    """Return only the scores whose tier matches *tier* (case-insensitive).
+
+    Args:
+        scores: List of TrendScore instances.
+        tier: One of "Viral", "High", "Medium", or "Low".
+
+    Returns:
+        Filtered list preserving original order.
+    """
+    target = tier.strip().capitalize()
+    return [s for s in scores if s.tier == target]
