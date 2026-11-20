@@ -8,7 +8,9 @@ from app.exceptions import (
     DatabaseError,
     DriftCheckError,
     FeatureExtractionError,
+    InvalidFeatureVectorError,
     ModelNotLoadedError,
+    RateLimitExceededError,
     SocialPulseError,
 )
 
@@ -85,3 +87,44 @@ class TestDriftCheckError:
 def test_exception_codes(exc_cls, code: str) -> None:
     exc = exc_cls()
     assert exc.code == code
+
+
+class TestRateLimitExceededError:
+    def test_code(self) -> None:
+        assert RateLimitExceededError().code == "RATE_LIMITED"
+
+    def test_default_client_ip(self) -> None:
+        err = RateLimitExceededError()
+        assert err.client_ip == "unknown"
+
+    def test_custom_client_ip(self) -> None:
+        err = RateLimitExceededError("192.168.1.1")
+        assert err.client_ip == "192.168.1.1"
+
+    def test_ip_in_message(self) -> None:
+        err = RateLimitExceededError("10.0.0.5")
+        assert "10.0.0.5" in err.message
+
+    def test_is_social_pulse_error(self) -> None:
+        assert isinstance(RateLimitExceededError(), SocialPulseError)
+
+
+class TestInvalidFeatureVectorError:
+    def test_code(self) -> None:
+        assert InvalidFeatureVectorError(217, 100).code == "INVALID_FEATURE_VECTOR"
+
+    def test_expected_stored(self) -> None:
+        err = InvalidFeatureVectorError(217, 100)
+        assert err.expected == 217
+
+    def test_got_stored(self) -> None:
+        err = InvalidFeatureVectorError(217, 100)
+        assert err.got == 100
+
+    def test_message_contains_dimensions(self) -> None:
+        err = InvalidFeatureVectorError(217, 100)
+        assert "217" in err.message
+        assert "100" in err.message
+
+    def test_is_social_pulse_error(self) -> None:
+        assert isinstance(InvalidFeatureVectorError(1, 2), SocialPulseError)
