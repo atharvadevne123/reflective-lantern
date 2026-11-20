@@ -127,6 +127,7 @@ class TextStatTransformer(BaseEstimator, TransformerMixin):
     ]
 
     def fit(self, X: list[dict[str, Any]], y: Any = None) -> TextStatTransformer:
+        """No-op fit — transformer is stateless."""
         return self
 
     def transform(self, X: list[dict[str, Any]]) -> np.ndarray:
@@ -164,6 +165,7 @@ class TextStatTransformer(BaseEstimator, TransformerMixin):
         return result
 
     def get_feature_names_out(self) -> list[str]:
+        """Return the ordered list of feature names produced by transform."""
         return self.FEATURE_NAMES
 
 
@@ -171,9 +173,11 @@ class TextExtractor(BaseEstimator, TransformerMixin):
     """Pull the raw text string out of a dict for TF-IDF."""
 
     def fit(self, X: list[dict[str, Any]], y: Any = None) -> TextExtractor:
+        """No-op fit — transformer is stateless."""
         return self
 
     def transform(self, X: list[dict[str, Any]]) -> list[str]:
+        """Extract raw text field from each sample dict."""
         return [item.get("text", "") or "" for item in X]
 
 
