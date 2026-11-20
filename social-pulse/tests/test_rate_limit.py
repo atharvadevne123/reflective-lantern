@@ -75,3 +75,49 @@ def test_blocks_at_rate_plus_one(rate: int) -> None:
         assert resp.status_code == 200
     resp = client.get("/ping")
     assert resp.status_code == 429
+
+
+class TestRatePerMinute:
+    def test_60_per_60_is_60(self) -> None:
+        from app.rate_limit import RateLimitMiddleware
+        from fastapi import FastAPI
+
+        app = FastAPI()
+        middleware = RateLimitMiddleware.__new__(RateLimitMiddleware)
+        middleware.rate = 60
+        middleware.window = 60
+        assert middleware.rate_per_minute() == pytest.approx(60.0)
+
+    def test_30_per_60_is_30(self) -> None:
+        from app.rate_limit import RateLimitMiddleware
+        from fastapi import FastAPI
+
+        app = FastAPI()
+        middleware = RateLimitMiddleware.__new__(RateLimitMiddleware)
+        middleware.rate = 30
+        middleware.window = 60
+        assert middleware.rate_per_minute() == pytest.approx(30.0)
+
+    def test_120_per_60_is_120(self) -> None:
+        from app.rate_limit import RateLimitMiddleware
+
+        middleware = RateLimitMiddleware.__new__(RateLimitMiddleware)
+        middleware.rate = 120
+        middleware.window = 60
+        assert middleware.rate_per_minute() == pytest.approx(120.0)
+
+    @pytest.mark.parametrize(
+        "rate,window,expected",
+        [
+            (60, 60, 60.0),
+            (30, 30, 60.0),
+            (10, 120, 5.0),
+        ],
+    )
+    def test_parametrized(self, rate: int, window: int, expected: float) -> None:
+        from app.rate_limit import RateLimitMiddleware
+
+        m = RateLimitMiddleware.__new__(RateLimitMiddleware)
+        m.rate = rate
+        m.window = window
+        assert m.rate_per_minute() == pytest.approx(expected)
