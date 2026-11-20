@@ -181,6 +181,27 @@ class TextExtractor(BaseEstimator, TransformerMixin):
         return [item.get("text", "") or "" for item in X]
 
 
+def char_ngram_density(text: str, n: int = 3) -> float:
+    """Return the ratio of unique character n-grams to total n-grams.
+
+    A score near 1.0 indicates high lexical diversity; near 0.0 indicates
+    repetitive text that may distort TF-IDF features.
+
+    Args:
+        text: Input string.
+        n: Character n-gram size.
+
+    Returns:
+        Float in [0, 1], or 0.0 for text shorter than *n* characters.
+    """
+    if len(text) < n:
+        return 0.0
+    ngrams = [text[i : i + n] for i in range(len(text) - n + 1)]
+    if not ngrams:
+        return 0.0
+    return len(set(ngrams)) / len(ngrams)
+
+
 def build_tfidf_pipeline(max_features: int = 500) -> Pipeline:
     """Return a pipeline that extracts text and vectorises it."""
     return Pipeline(
