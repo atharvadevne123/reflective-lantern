@@ -200,6 +200,31 @@ def build_tfidf_pipeline(max_features: int = 500) -> Pipeline:
     )
 
 
+def sentiment_score(text: str) -> float:
+    """Return a simple rule-based sentiment signal in [-1, 1].
+
+    Uses a small set of positive and negative indicator words.  This is
+    intentionally lightweight — a placeholder for a full model — so it is
+    cheap enough to compute at inference time.
+
+    Args:
+        text: Raw post text.
+
+    Returns:
+        Float in [-1, 1] where positive values indicate positive sentiment.
+    """
+    lower = text.lower()
+    positives = {"great", "love", "awesome", "amazing", "excellent", "good", "happy", "win", "best", "🎉", "😀", "🚀"}
+    negatives = {"hate", "terrible", "awful", "bad", "worst", "fail", "broken", "sad", "😢", "😡", "💔"}
+    words = set(re.findall(r"\w+|[^\w\s]", lower))
+    pos = len(words & positives)
+    neg = len(words & negatives)
+    total = pos + neg
+    if total == 0:
+        return 0.0
+    return round((pos - neg) / total, 4)
+
+
 def hashtag_diversity_score(text: str) -> float:
     """Return the ratio of unique hashtags to total hashtags in *text*.
 
