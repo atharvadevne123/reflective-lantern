@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from app.config import Settings, get_settings, reset_settings
+from app.config import Settings, get_settings, is_valid_model_version, reset_settings
 
 
 class TestSettings:
@@ -70,3 +70,39 @@ def test_drift_threshold_from_env(monkeypatch: pytest.MonkeyPatch, threshold: st
     s = Settings()
     assert abs(s.drift_threshold - float(threshold)) < 1e-9
     reset_settings()
+
+
+class TestIsValidModelVersion:
+    def test_valid_semver(self) -> None:
+        assert is_valid_model_version("1.0.0") is True
+
+    def test_valid_large_numbers(self) -> None:
+        assert is_valid_model_version("10.14.300") is True
+
+    def test_missing_patch_invalid(self) -> None:
+        assert is_valid_model_version("1.0") is False
+
+    def test_missing_minor_invalid(self) -> None:
+        assert is_valid_model_version("1") is False
+
+    def test_letters_invalid(self) -> None:
+        assert is_valid_model_version("v1.0.0") is False
+
+    def test_empty_string_invalid(self) -> None:
+        assert is_valid_model_version("") is False
+
+    def test_prerelease_invalid(self) -> None:
+        assert is_valid_model_version("1.0.0-beta") is False
+
+    @pytest.mark.parametrize(
+        "version,expected",
+        [
+            ("0.0.0", True),
+            ("1.0.0", True),
+            ("2.14.3", True),
+            ("1.0", False),
+            ("abc", False),
+        ],
+    )
+    def test_parametrized(self, version: str, expected: bool) -> None:
+        assert is_valid_model_version(version) == expected
