@@ -8,7 +8,7 @@ import pytest
 from sqlalchemy.orm import Session
 
 from app.database import Prediction
-from app.metrics import PredictionMetrics, compute_metrics
+from app.metrics import PredictionMetrics, compute_metrics, format_metrics_prometheus
 
 
 def _insert_prediction(db: Session, viral: bool = False, latency: float = 10.0) -> Prediction:
@@ -104,3 +104,31 @@ def test_viral_rate_parametrized(
         _insert_prediction(db_session, viral=(i < n_viral))
     m = compute_metrics(db_session, "1.0.0")
     assert abs(m.viral_rate - expected_rate) < 0.01
+
+
+class TestFormatMetricsPrometheus:
+    def test_returns_string(self, db_session: Session) -> None:
+        m = compute_metrics(db_session, "1.0.0")
+        result = format_metrics_prometheus(m)
+        assert isinstance(result, str)
+
+    def test_contains_total_predictions(self, db_session: Session) -> None:
+        m = compute_metrics(db_session, "1.0.0")
+        result = format_metrics_prometheus(m)
+        assert "social_pulse_total_predictions" in result
+
+    def test_contains_viral_rate(self, db_session: Session) -> None:
+        m = compute_metrics(db_session, "1.0.0")
+        result = format_metrics_prometheus(m)
+        assert "social_pulse_viral_rate" in result
+
+    def test_ends_with_newline(self, db_session: Session) -> None:
+        m = compute_metrics(db_session, "1.0.0")
+        result = format_metrics_prometheus(m)
+        assert result.endswith("\n")
+
+    def test_includes_help_lines(self, db_session: Session) -> None:
+        m = compute_metrics(db_session, "1.0.0")
+        result = format_metrics_prometheus(m)
+        assert "# HELP" in result
+        assert "# TYPE" in result
