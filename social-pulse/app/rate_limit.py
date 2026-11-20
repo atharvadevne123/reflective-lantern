@@ -31,6 +31,13 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         rate: int = _DEFAULT_RATE,
         window: int = _DEFAULT_WINDOW,
     ) -> None:
+        """Configure the rate limiter.
+
+        Args:
+            app: The ASGI application to wrap.
+            rate: Maximum requests allowed per window.
+            window: Sliding window size in seconds.
+        """
         super().__init__(app)
         self.rate = rate
         self.window = window
