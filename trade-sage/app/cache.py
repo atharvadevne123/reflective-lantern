@@ -57,7 +57,6 @@ class TTLCache:
         with self._lock:
             return {"size": len(self._store), "maxsize": self._maxsize}
 
-
     def peek(self, key: str) -> Any | None:
         """Return a cached value without updating the LRU order.
 

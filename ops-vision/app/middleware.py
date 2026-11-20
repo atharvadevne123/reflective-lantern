@@ -4,10 +4,13 @@ import logging
 import time
 import uuid
 from collections import defaultdict, deque
+from collections.abc import Awaitable, Callable
 
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
 from starlette.responses import JSONResponse, Response
+
+_CallNext = Callable[[Request], Awaitable[Response]]
 
 logger = logging.getLogger(__name__)
 
@@ -19,7 +22,7 @@ class CorrelationIdMiddleware(BaseHTTPMiddleware):
     value is forwarded; otherwise a new UUID-4 is generated.
     """
 
-    async def dispatch(self, request: Request, call_next) -> Response:
+    async def dispatch(self, request: Request, call_next: _CallNext) -> Response:
         """Process the request and attach a correlation ID."""
         correlation_id = request.headers.get("X-Correlation-ID", str(uuid.uuid4()))
         request.state.correlation_id = correlation_id
@@ -52,7 +55,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
 
     def __init__(
         self,
-        app,
+        app: object,
         max_requests: int = 100,
         window_seconds: int = 60,
     ) -> None:
@@ -75,7 +78,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
             return forwarded.split(",")[0].strip()
         return request.client.host if request.client else "unknown"
 
-    async def dispatch(self, request: Request, call_next) -> Response:
+    async def dispatch(self, request: Request, call_next: _CallNext) -> Response:
         """Enforce rate limit before forwarding the request."""
         if request.url.path in ("/health", "/docs", "/openapi.json"):
             return await call_next(request)
@@ -119,7 +122,7 @@ class RequestSizeLimitMiddleware(BaseHTTPMiddleware):
         max_bytes: Maximum allowed Content-Length in bytes.
     """
 
-    def __init__(self, app, max_bytes: int = MAX_REQUEST_BYTES) -> None:
+    def __init__(self, app: object, max_bytes: int = MAX_REQUEST_BYTES) -> None:
         """Initialise with the byte limit.
 
         Args:
@@ -129,7 +132,7 @@ class RequestSizeLimitMiddleware(BaseHTTPMiddleware):
         super().__init__(app)
         self.max_bytes = max_bytes
 
-    async def dispatch(self, request: Request, call_next) -> Response:
+    async def dispatch(self, request: Request, call_next: _CallNext) -> Response:
         """Reject oversized requests before forwarding."""
         content_length = request.headers.get("Content-Length")
         if content_length and int(content_length) > self.max_bytes:

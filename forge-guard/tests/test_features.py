@@ -309,3 +309,59 @@ class TestDefectRiskIndex:
 
         risk = defect_risk_index(150.0, 20.0, 100.0, 120.0)
         assert risk >= 0.5
+
+
+class TestSensorRangeFeature:
+    def test_empty_row_returns_zeros(self) -> None:
+        from app.features import sensor_range_feature
+
+        result = sensor_range_feature({})
+        assert result == {"sensor_min": 0.0, "sensor_max": 0.0, "sensor_range": 0.0}
+
+    def test_single_value(self) -> None:
+        from app.features import sensor_range_feature
+
+        result = sensor_range_feature({"temperature": 75.0})
+        assert result["sensor_min"] == pytest.approx(75.0)
+        assert result["sensor_max"] == pytest.approx(75.0)
+        assert result["sensor_range"] == pytest.approx(0.0)
+
+    def test_range_equals_max_minus_min(self) -> None:
+        from app.features import sensor_range_feature
+
+        result = sensor_range_feature({"a": 10.0, "b": 30.0, "c": 20.0})
+        assert result["sensor_range"] == pytest.approx(20.0)
+
+    def test_negative_values(self) -> None:
+        from app.features import sensor_range_feature
+
+        result = sensor_range_feature({"x": -5.0, "y": 5.0})
+        assert result["sensor_range"] == pytest.approx(10.0)
+
+
+class TestGenerateSyntheticDataExtra:
+    def test_reproducible_with_same_seed(self) -> None:
+        from app.features import generate_synthetic_data
+
+        df1 = generate_synthetic_data(seed=99)
+        df2 = generate_synthetic_data(seed=99)
+        assert (df1.values == df2.values).all()
+
+    def test_different_seeds_differ(self) -> None:
+        from app.features import generate_synthetic_data
+
+        df1 = generate_synthetic_data(seed=1)
+        df2 = generate_synthetic_data(seed=2)
+        assert not (df1["temperature"].values == df2["temperature"].values).all()
+
+    def test_defect_column_binary(self) -> None:
+        from app.features import generate_synthetic_data
+
+        df = generate_synthetic_data(n_samples=200)
+        assert set(df["defect"].unique()).issubset({0, 1})
+
+    def test_custom_n_samples(self) -> None:
+        from app.features import generate_synthetic_data
+
+        df = generate_synthetic_data(n_samples=150)
+        assert len(df) == 150

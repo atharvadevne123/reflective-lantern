@@ -1,13 +1,17 @@
 """Extended API tests with parametrized edge cases."""
+
 from __future__ import annotations
 
 import pytest
 
 
-@pytest.mark.parametrize("elo_diff,expected_favoured", [
-    (400, "home_win"),
-    (-400, "away_win"),
-])
+@pytest.mark.parametrize(
+    "elo_diff,expected_favoured",
+    [
+        (400, "home_win"),
+        (-400, "away_win"),
+    ],
+)
 def test_predict_elo_extreme_difference(client, sample_match_payload, elo_diff, expected_favoured):
     payload = dict(sample_match_payload)
     payload["match_id"] = f"elo-extreme-{elo_diff}"

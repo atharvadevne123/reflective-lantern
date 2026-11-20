@@ -1347,8 +1347,6 @@ class TestPaybackPeriodEdgeCases:
         assert result == pytest.approx(cost / 500.0, rel=1e-3)
 
 
-
-
 class TestAnnualizedReturnExtended:
     def test_positive_return_over_multiple_years(self) -> None:
         result = annualized_return(total_return=0.5, years=5.0)

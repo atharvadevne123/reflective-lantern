@@ -125,3 +125,177 @@ class TestIsValidUrl:
     )
     def test_invalid_urls(self, url: str) -> None:
         assert is_valid_url(url) is False
+
+
+class TestIsNonEmptyString:
+    def test_non_empty_string(self) -> None:
+        from app.validation_utils import is_non_empty_string
+        assert is_non_empty_string("hello") is True
+
+    def test_whitespace_only_returns_false(self) -> None:
+        from app.validation_utils import is_non_empty_string
+        assert is_non_empty_string("   ") is False
+
+    def test_empty_string_returns_false(self) -> None:
+        from app.validation_utils import is_non_empty_string
+        assert is_non_empty_string("") is False
+
+    def test_non_string_returns_false(self) -> None:
+        from app.validation_utils import is_non_empty_string
+        assert is_non_empty_string(123) is False  # type: ignore[arg-type]
+
+    @pytest.mark.parametrize(
+        ("value", "expected"),
+        [("hello", True), ("  x  ", True), ("  ", False), ("", False)],
+    )
+    def test_parametrized(self, value: str, expected: bool) -> None:
+        from app.validation_utils import is_non_empty_string
+        assert is_non_empty_string(value) is expected
+
+
+class TestIsValidPort:
+    def test_valid_port(self) -> None:
+        from app.validation_utils import is_valid_port
+        assert is_valid_port(8080) is True
+
+    def test_port_zero_invalid(self) -> None:
+        from app.validation_utils import is_valid_port
+        assert is_valid_port(0) is False
+
+    def test_port_max_valid(self) -> None:
+        from app.validation_utils import is_valid_port
+        assert is_valid_port(65535) is True
+
+    def test_port_above_max_invalid(self) -> None:
+        from app.validation_utils import is_valid_port
+        assert is_valid_port(65536) is False
+
+    def test_port_negative_invalid(self) -> None:
+        from app.validation_utils import is_valid_port
+        assert is_valid_port(-1) is False
+
+
+class TestClampToRange:
+    def test_clamps_low(self) -> None:
+        from app.validation_utils import clamp_to_range
+        assert clamp_to_range(-5.0, 0.0, 10.0) == 0.0
+
+    def test_clamps_high(self) -> None:
+        from app.validation_utils import clamp_to_range
+        assert clamp_to_range(15.0, 0.0, 10.0) == 10.0
+
+    def test_within_range(self) -> None:
+        from app.validation_utils import clamp_to_range
+        assert clamp_to_range(5.0, 0.0, 10.0) == 5.0
+
+    @pytest.mark.parametrize(
+        ("value", "low", "high", "expected"),
+        [(-1.0, 0.0, 1.0, 0.0), (0.5, 0.0, 1.0, 0.5), (2.0, 0.0, 1.0, 1.0)],
+    )
+    def test_parametrized(
+        self, value: float, low: float, high: float, expected: float
+    ) -> None:
+        from app.validation_utils import clamp_to_range
+        assert clamp_to_range(value, low, high) == expected
+
+
+class TestIsValidIpv4:
+    def test_valid_address(self) -> None:
+        from app.validation_utils import is_valid_ipv4
+
+        assert is_valid_ipv4("192.168.1.1") is True
+
+    def test_localhost(self) -> None:
+        from app.validation_utils import is_valid_ipv4
+
+        assert is_valid_ipv4("127.0.0.1") is True
+
+    def test_max_values(self) -> None:
+        from app.validation_utils import is_valid_ipv4
+
+        assert is_valid_ipv4("255.255.255.255") is True
+
+    def test_too_many_octets(self) -> None:
+        from app.validation_utils import is_valid_ipv4
+
+        assert is_valid_ipv4("1.2.3.4.5") is False
+
+    def test_octet_out_of_range(self) -> None:
+        from app.validation_utils import is_valid_ipv4
+
+        assert is_valid_ipv4("256.0.0.1") is False
+
+    def test_non_numeric(self) -> None:
+        from app.validation_utils import is_valid_ipv4
+
+        assert is_valid_ipv4("abc.def.ghi.jkl") is False
+
+    def test_leading_zeros(self) -> None:
+        from app.validation_utils import is_valid_ipv4
+
+        assert is_valid_ipv4("01.02.03.04") is False
+
+
+class TestIsValidHostname:
+    def test_simple_hostname(self) -> None:
+        from app.validation_utils import is_valid_hostname
+
+        assert is_valid_hostname("example") is True
+
+    def test_fqdn(self) -> None:
+        from app.validation_utils import is_valid_hostname
+
+        assert is_valid_hostname("api.example.com") is True
+
+    def test_hyphen_allowed(self) -> None:
+        from app.validation_utils import is_valid_hostname
+
+        assert is_valid_hostname("my-host.example.com") is True
+
+    def test_empty_string(self) -> None:
+        from app.validation_utils import is_valid_hostname
+
+        assert is_valid_hostname("") is False
+
+    def test_starts_with_hyphen(self) -> None:
+        from app.validation_utils import is_valid_hostname
+
+        assert is_valid_hostname("-invalid.com") is False
+
+    def test_underscore_invalid(self) -> None:
+        from app.validation_utils import is_valid_hostname
+
+        assert is_valid_hostname("invalid_host.com") is False
+
+
+class TestValidateNonNegative:
+    def test_zero_allowed(self) -> None:
+        from app.validation_utils import validate_non_negative
+
+        assert validate_non_negative(0.0) == 0.0
+
+    def test_positive_allowed(self) -> None:
+        from app.validation_utils import validate_non_negative
+
+        assert validate_non_negative(5.0) == 5.0
+
+    def test_negative_raises(self) -> None:
+        import pytest
+
+        from app.validation_utils import validate_non_negative
+
+        with pytest.raises(ValueError):
+            validate_non_negative(-0.001)
+
+    def test_custom_name_in_error(self) -> None:
+        import pytest
+
+        from app.validation_utils import validate_non_negative
+
+        with pytest.raises(ValueError, match="speed"):
+            validate_non_negative(-1.0, name="speed")
+
+    def test_returns_value_unchanged(self) -> None:
+        from app.validation_utils import validate_non_negative
+
+        assert validate_non_negative(3.14) == 3.14

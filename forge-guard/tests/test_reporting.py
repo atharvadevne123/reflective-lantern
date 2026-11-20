@@ -167,3 +167,41 @@ def test_csv_export_includes_field_names(db_session) -> None:
     result = export_predictions_csv(db_session, limit=1)
     first_line = result.strip().splitlines()[0]
     assert "defect_probability" in first_line or "prediction" in first_line
+
+
+def test_format_defect_rate_pct_zero() -> None:
+    from app.reporting import format_defect_rate_pct
+
+    assert format_defect_rate_pct(0.0) == "0.00%"
+
+
+def test_format_defect_rate_pct_one() -> None:
+    from app.reporting import format_defect_rate_pct
+
+    assert format_defect_rate_pct(1.0) == "100.00%"
+
+
+def test_format_defect_rate_pct_half() -> None:
+    from app.reporting import format_defect_rate_pct
+
+    assert format_defect_rate_pct(0.5) == "50.00%"
+
+
+def test_export_drift_reports_json_empty(db_session) -> None:
+    from app.reporting import export_drift_reports_json
+
+    result = export_drift_reports_json(db_session)
+    assert isinstance(result, str)
+    import json
+    data = json.loads(result)
+    assert isinstance(data, list)
+
+
+def test_prediction_trend_no_data(db_session) -> None:
+    from app.reporting import prediction_trend
+
+    result = prediction_trend(db_session, windows=3, window_hours=1)
+    assert len(result) == 3
+    for w in result:
+        assert w["total"] == 0
+        assert w["defect_rate"] == 0.0

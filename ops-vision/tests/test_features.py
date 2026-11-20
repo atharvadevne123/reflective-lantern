@@ -13,6 +13,7 @@ from app.features import (
     ResourcePressureTransformer,
     ThroughputPressureTransformer,
     build_feature_pipeline,
+    clip_to_unit_interval,
     dataframe_from_dict,
     safe_dataframe_from_dict,
     validate_positive_float,
@@ -214,6 +215,46 @@ class TestValidatePositiveFloat:
             validate_positive_float(-0.1, "latency_p99_ms")
 
 
+class TestClipToUnitInterval:
+    """Tests for clip_to_unit_interval()."""
+
+    def test_value_within_range_unchanged(self) -> None:
+        """Values already in [0, 1] are returned unchanged."""
+        assert clip_to_unit_interval(0.5) == 0.5
+
+    def test_zero_returned_as_zero(self) -> None:
+        """0.0 is returned as 0.0."""
+        assert clip_to_unit_interval(0.0) == 0.0
+
+    def test_one_returned_as_one(self) -> None:
+        """1.0 is returned as 1.0."""
+        assert clip_to_unit_interval(1.0) == 1.0
+
+    def test_negative_clipped_to_zero(self) -> None:
+        """Values below 0 are clipped to 0.0."""
+        assert clip_to_unit_interval(-0.5) == 0.0
+
+    def test_above_one_clipped_to_one(self) -> None:
+        """Values above 1 are clipped to 1.0."""
+        assert clip_to_unit_interval(1.5) == 1.0
+
+    @pytest.mark.parametrize(
+        "value,expected",
+        [
+            (-10.0, 0.0),
+            (-0.001, 0.0),
+            (0.0, 0.0),
+            (0.5, 0.5),
+            (1.0, 1.0),
+            (1.001, 1.0),
+            (99.0, 1.0),
+        ],
+    )
+    def test_clipping_parametrized(self, value: float, expected: float) -> None:
+        """clip_to_unit_interval clamps to [0, 1] for all edge-case values."""
+        assert clip_to_unit_interval(value) == pytest.approx(expected)
+
+
 class TestSafeDataframeFromDict:
     """Tests for safe_dataframe_from_dict()."""
 
@@ -249,3 +290,84 @@ class TestSafeDataframeFromDict:
         data["cpu_usage_pct"] = "75.0"
         df = safe_dataframe_from_dict(data)
         assert df["cpu_usage_pct"].iloc[0] == 75.0
+
+
+class TestFeaturePipelineParametrized:
+    """Parametrized tests for the full feature engineering pipeline."""
+
+    @pytest.fixture
+    def fitted_pipeline(self):
+        """Return a pipeline fitted on minimal synthetic data."""
+        rng = np.random.default_rng(99)
+        n = 50
+        rows = [
+            {
+                "cpu_usage_pct": float(rng.uniform(10, 90)),
+                "memory_usage_pct": float(rng.uniform(10, 90)),
+                "error_rate_per_min": float(rng.uniform(0, 10)),
+                "latency_p99_ms": float(rng.uniform(50, 500)),
+                "request_rate_per_sec": float(rng.uniform(10, 300)),
+                "disk_io_util_pct": float(rng.uniform(5, 80)),
+            }
+            for _ in range(n)
+        ]
+        df = pd.DataFrame(rows)
+        pipeline = build_feature_pipeline()
+        pipeline.fit(df)
+        return pipeline
+
+    @pytest.mark.parametrize("cpu,mem", [
+        (10.0, 20.0),
+        (50.0, 50.0),
+        (90.0, 90.0),
+        (0.1, 0.1),
+    ])
+    def test_pipeline_produces_expected_columns(self, fitted_pipeline, cpu: float, mem: float) -> None:
+        """Pipeline output has exactly the ENGINEERED_COLS columns."""
+        row = dataframe_from_dict({
+            "cpu_usage_pct": cpu,
+            "memory_usage_pct": mem,
+            "error_rate_per_min": 1.0,
+            "latency_p99_ms": 100.0,
+            "request_rate_per_sec": 50.0,
+            "disk_io_util_pct": 20.0,
+        })
+        X = fitted_pipeline.transform(row)
+        assert X.shape[1] == len(ENGINEERED_COLS)
+
+    @pytest.mark.parametrize("feature", FEATURE_COLS)
+    def test_all_input_features_accepted(self, feature: str) -> None:
+        """Every expected input feature is accepted by the pipeline."""
+        rng = np.random.default_rng(42)
+        rows = [
+            {
+                "cpu_usage_pct": float(rng.uniform(10, 90)),
+                "memory_usage_pct": float(rng.uniform(10, 90)),
+                "error_rate_per_min": float(rng.uniform(0, 10)),
+                "latency_p99_ms": float(rng.uniform(50, 500)),
+                "request_rate_per_sec": float(rng.uniform(10, 300)),
+                "disk_io_util_pct": float(rng.uniform(5, 80)),
+            }
+            for _ in range(20)
+        ]
+        df = pd.DataFrame(rows)
+        assert feature in df.columns
+
+    @pytest.mark.parametrize("n_rows", [1, 5, 20])
+    def test_pipeline_output_shape(self, fitted_pipeline, n_rows: int) -> None:
+        """Pipeline output has n_rows rows and ENGINEERED_COLS columns."""
+        rng = np.random.default_rng(13)
+        rows = [
+            {
+                "cpu_usage_pct": float(rng.uniform(10, 90)),
+                "memory_usage_pct": float(rng.uniform(10, 90)),
+                "error_rate_per_min": float(rng.uniform(0, 10)),
+                "latency_p99_ms": float(rng.uniform(50, 500)),
+                "request_rate_per_sec": float(rng.uniform(10, 300)),
+                "disk_io_util_pct": float(rng.uniform(5, 80)),
+            }
+            for _ in range(n_rows)
+        ]
+        df = pd.DataFrame(rows)
+        X = fitted_pipeline.transform(df)
+        assert X.shape == (n_rows, len(ENGINEERED_COLS))

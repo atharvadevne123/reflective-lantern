@@ -10,6 +10,7 @@ from app.model import batch_predict, train_model
 def batch_models(tmp_path_factory):
     tmp = tmp_path_factory.mktemp("batch_models")
     import app.model as m
+
     m.MODEL_DIR = tmp
     m.PRICE_MODEL_PATH = tmp / "price_model.joblib"
     m.RENTAL_MODEL_PATH = tmp / "rental_model.joblib"
@@ -17,6 +18,7 @@ def batch_models(tmp_path_factory):
     X, y_price, y_rental = generate_synthetic_data(n=200, seed=7)
     train_model(X, y_price, y_rental)
     import joblib
+
     return joblib.load(m.PRICE_MODEL_PATH), joblib.load(m.RENTAL_MODEL_PATH)
 
 

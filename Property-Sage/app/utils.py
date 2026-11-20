@@ -103,6 +103,7 @@ def hash_payload(data: dict, length: int = 8) -> str:
     """
     import hashlib
     import json as _json
+
     serialised = _json.dumps(data, sort_keys=True)
     return hashlib.sha256(serialised.encode()).hexdigest()[:length]
 

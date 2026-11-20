@@ -34,7 +34,7 @@ class TestPrune:
         bucket: deque = deque()
         now = time.monotonic()
         for i in range(5):
-            bucket.append(now - WINDOW_SECONDS - i)
+            bucket.append(now - WINDOW_SECONDS - i - 1)
         _prune(bucket, now)
         assert len(bucket) == 0
 

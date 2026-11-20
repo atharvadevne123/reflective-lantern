@@ -179,11 +179,34 @@ def compute_anomaly_rate(anomaly_count: int, window_hours: int) -> float:
     return round(anomaly_count / window_hours, 6)
 
 
+def report_health_score(report: dict) -> float:
+    """Compute a numeric health score in [0, 100] from a grid report.
+
+    A score of 100 means perfectly healthy; 0 means critically degraded.
+    The score penalises each drifted feature, each alert, and high anomaly
+    rates.
+
+    Args:
+        report: Report dict as returned by :func:`generate_grid_report`.
+
+    Returns:
+        Health score rounded to two decimal places.
+    """
+    status = str(report.get("status", "healthy"))
+    base = {"healthy": 100.0, "warning": 70.0, "critical": 30.0}.get(status, 100.0)
+    n_alerts = len(report.get("alerts", []))
+    n_drifted = len(report.get("drifted_features", []))
+    anomaly_rate = float(report.get("anomaly_rate_per_hour", 0.0))
+    penalty = n_alerts * 5.0 + n_drifted * 3.0 + min(anomaly_rate * 20.0, 20.0)
+    return round(max(0.0, min(100.0, base - penalty)), 2)
+
+
 __all__ = [
     "alert_frequency",
     "compute_anomaly_rate",
     "generate_grid_report",
     "merge_reports",
+    "report_health_score",
     "report_status_code",
     "report_trend",
     "summarise_alerts",

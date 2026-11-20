@@ -14,6 +14,7 @@ def check_db(db: Session) -> bool:
     """Return True if the database is reachable, False otherwise."""
     try:
         import sqlalchemy
+
         db.execute(sqlalchemy.text("SELECT 1"))
         return True
     except Exception as exc:

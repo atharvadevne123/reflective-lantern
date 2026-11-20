@@ -1,4 +1,5 @@
 """Generate Sport-Cast system architecture diagram."""
+
 import os
 
 import matplotlib.patches as mpatches
@@ -24,22 +25,48 @@ colors = {
 
 def box(ax, x, y, w, h, label, color, fontsize=9):
     rect = mpatches.FancyBboxPatch(
-        (x, y), w, h,
+        (x, y),
+        w,
+        h,
         boxstyle="round,pad=0.1",
-        facecolor=color, edgecolor="white", linewidth=1.2, alpha=0.85,
+        facecolor=color,
+        edgecolor="white",
+        linewidth=1.2,
+        alpha=0.85,
     )
     ax.add_patch(rect)
-    ax.text(x + w / 2, y + h / 2, label, ha="center", va="center",
-            color="white", fontsize=fontsize, fontweight="bold", wrap=True)
+    ax.text(
+        x + w / 2,
+        y + h / 2,
+        label,
+        ha="center",
+        va="center",
+        color="white",
+        fontsize=fontsize,
+        fontweight="bold",
+        wrap=True,
+    )
 
 
 def arrow(ax, x1, y1, x2, y2):
-    ax.annotate("", xy=(x2, y2), xytext=(x1, y1),
-                arrowprops={"arrowstyle": "->", "color": "#58a6ff", "lw": 1.5})
+    ax.annotate(
+        "",
+        xy=(x2, y2),
+        xytext=(x1, y1),
+        arrowprops={"arrowstyle": "->", "color": "#58a6ff", "lw": 1.5},
+    )
 
 
-ax.text(8, 7.6, "Sport-Cast — System Architecture", ha="center", va="center",
-        color="white", fontsize=14, fontweight="bold")
+ax.text(
+    8,
+    7.6,
+    "Sport-Cast — System Architecture",
+    ha="center",
+    va="center",
+    color="white",
+    fontsize=14,
+    fontweight="bold",
+)
 
 box(ax, 0.3, 5.5, 2.0, 1.0, "Client /\nAPI Consumer", colors["client"])
 box(ax, 3.0, 5.5, 2.5, 1.0, "FastAPI\n/api/v1/predict\n/health /metrics", colors["api"])
@@ -67,9 +94,17 @@ legend_items = [
     mpatches.Patch(color=colors["db"], label="Storage"),
     mpatches.Patch(color=colors["monitor"], label="Monitoring"),
 ]
-ax.legend(handles=legend_items, loc="lower left", fontsize=8,
-          facecolor="#161b22", labelcolor="white", edgecolor="#30363d")
+ax.legend(
+    handles=legend_items,
+    loc="lower left",
+    fontsize=8,
+    facecolor="#161b22",
+    labelcolor="white",
+    edgecolor="#30363d",
+)
 
 plt.tight_layout()
-plt.savefig("screenshots/architecture.png", dpi=150, bbox_inches="tight", facecolor=fig.get_facecolor())
+plt.savefig(
+    "screenshots/architecture.png", dpi=150, bbox_inches="tight", facecolor=fig.get_facecolor()
+)
 print("Architecture diagram saved to screenshots/architecture.png")

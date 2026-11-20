@@ -89,5 +89,7 @@ class TestDetectMonotonicDegradation:
         for i in range(10):
             r = {**READING, "oil_pressure_bar": 5.0 - i * 0.1}
             update_window("VH-TS-08", r)
-        result = detect_monotonic_degradation("VH-TS-08", "oil_pressure_bar", min_slope=slope_threshold)
+        result = detect_monotonic_degradation(
+            "VH-TS-08", "oil_pressure_bar", min_slope=slope_threshold
+        )
         assert isinstance(result, bool)

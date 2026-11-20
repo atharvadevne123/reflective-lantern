@@ -1,4 +1,5 @@
 """TTL/LRU cache tests."""
+
 from __future__ import annotations
 
 import time

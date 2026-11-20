@@ -348,6 +348,102 @@ class TestDriftMonitorStableAndRate:
         assert monitor.drift_rate(all_drifted) == 1.0
 
 
+class TestDriftResultToDict:
+    """Tests for DriftResult.to_dict()."""
+
+    def test_to_dict_returns_dict(self) -> None:
+        """to_dict() returns a dict."""
+        r = DriftResult("cpu_usage_pct", 0.3, 0.001, True)
+        assert isinstance(r.to_dict(), dict)
+
+    def test_to_dict_has_all_keys(self) -> None:
+        """to_dict() output has feature_name, ks_statistic, p_value, drifted, timestamp."""
+        r = DriftResult("cpu_usage_pct", 0.3, 0.001, True)
+        keys = {"feature_name", "ks_statistic", "p_value", "drifted", "timestamp"}
+        assert keys.issubset(r.to_dict())
+
+    def test_to_dict_drifted_matches(self) -> None:
+        """to_dict() drifted key matches the DriftResult drifted field."""
+        r = DriftResult("memory_usage_pct", 0.5, 0.0001, True)
+        assert r.to_dict()["drifted"] is True
+
+    def test_to_dict_timestamp_is_string(self) -> None:
+        """to_dict() timestamp is an ISO-format string."""
+        r = DriftResult("disk_io_util_pct", 0.1, 0.5, False)
+        assert isinstance(r.to_dict()["timestamp"], str)
+
+    @pytest.mark.parametrize("feature", FEATURE_COLS)
+    def test_to_dict_feature_name_matches(self, feature: str) -> None:
+        """to_dict() feature_name matches the DriftResult feature_name for all features."""
+        r = DriftResult(feature, 0.2, 0.1, False)
+        assert r.to_dict()["feature_name"] == feature
+
+
+class TestDriftMonitorAnyDrifted:
+    """Tests for DriftMonitor.any_drifted()."""
+
+    def test_any_drifted_true_when_one_drifted(self) -> None:
+        """any_drifted() returns True when at least one feature drifted."""
+        monitor = DriftMonitor()
+        results = [
+            DriftResult("cpu_usage_pct", 0.9, 0.0001, True),
+            DriftResult("memory_usage_pct", 0.05, 0.6, False),
+        ]
+        assert monitor.any_drifted(results) is True
+
+    def test_any_drifted_false_when_none_drifted(self) -> None:
+        """any_drifted() returns False when no features drifted."""
+        monitor = DriftMonitor()
+        results = [DriftResult(f, 0.05, 0.6, False) for f in FEATURE_COLS]
+        assert monitor.any_drifted(results) is False
+
+    def test_any_drifted_false_for_empty_list(self) -> None:
+        """any_drifted() returns False for an empty results list."""
+        assert DriftMonitor().any_drifted([]) is False
+
+    @pytest.mark.parametrize(
+        "drifted_flags,expected",
+        [
+            ([True, False, False], True),
+            ([False, False, False], False),
+            ([True, True, True], True),
+        ],
+    )
+    def test_any_drifted_parametrized(self, drifted_flags, expected) -> None:
+        """any_drifted returns expected value for mixed drift patterns."""
+        monitor = DriftMonitor()
+        results = [
+            DriftResult(FEATURE_COLS[i], 0.3, 0.001, flag)
+            for i, flag in enumerate(drifted_flags)
+        ]
+        assert monitor.any_drifted(results) is expected
+
+
+class TestDriftMonitorRepr:
+    """Tests for DriftMonitor.__repr__."""
+
+    def test_repr_contains_threshold(self) -> None:
+        """DriftMonitor repr includes the threshold value."""
+        monitor = DriftMonitor(threshold=0.03)
+        assert "0.03" in repr(monitor)
+
+    def test_repr_contains_ref_size(self) -> None:
+        """DriftMonitor repr includes reference window size."""
+        monitor = DriftMonitor()
+        monitor.update_reference(_normal_batch(50))
+        assert "50" in repr(monitor)
+
+    def test_repr_is_string(self) -> None:
+        """DriftMonitor repr returns a string."""
+        assert isinstance(repr(DriftMonitor()), str)
+
+    @pytest.mark.parametrize("threshold", [0.01, 0.05, 0.10])
+    def test_repr_threshold_parametrized(self, threshold: float) -> None:
+        """repr includes the configured threshold for any valid value."""
+        monitor = DriftMonitor(threshold=threshold)
+        assert str(threshold) in repr(monitor)
+
+
 class TestDriftMonitorToDict:
     """Tests for DriftMonitor.to_dict()."""
 
@@ -372,3 +468,152 @@ class TestDriftMonitorToDict:
         """to_dict() threshold matches the value at construction."""
         monitor = DriftMonitor(threshold=0.02)
         assert monitor.to_dict()["threshold"] == 0.02
+
+
+class TestDriftMonitorParametrized:
+    """Parametrized threshold and batch size tests for DriftMonitor."""
+
+    @pytest.mark.parametrize("threshold", [0.01, 0.05, 0.10, 0.20])
+    def test_threshold_stored_correctly(self, threshold: float) -> None:
+        """DriftMonitor stores the threshold passed at construction."""
+        monitor = DriftMonitor(threshold=threshold)
+        assert monitor.to_dict()["threshold"] == pytest.approx(threshold)
+
+    @pytest.mark.parametrize("n_samples", [50, 100, 200, 500])
+    def test_reference_size_after_update(self, n_samples: int) -> None:
+        """reference_size equals exactly the number of samples in the reference window."""
+        monitor = DriftMonitor()
+        rng = np.random.default_rng(42)
+        samples = [
+            _make_sample(
+                cpu=float(rng.uniform(20, 60)),
+                mem=float(rng.uniform(30, 70)),
+            )
+            for _ in range(n_samples)
+        ]
+        monitor.update_reference(samples)
+        assert monitor.reference_size == n_samples
+
+    @pytest.mark.parametrize("feature", FEATURE_COLS)
+    def test_feature_col_in_to_dict(self, feature: str) -> None:
+        """Every expected feature column appears in to_dict output."""
+        monitor = DriftMonitor()
+        assert feature in monitor.to_dict()["feature_cols"]
+
+    @pytest.mark.parametrize("n_ref,n_cur", [(100, 50), (200, 100), (500, 200)])
+    def test_check_drift_returns_results_list(self, n_ref: int, n_cur: int) -> None:
+        """check_drift() returns a list of DriftResult for different window sizes."""
+        monitor = DriftMonitor(current_window_size=n_cur)
+        rng = np.random.default_rng(7)
+        monitor.update_reference(
+            [_make_sample(cpu=float(rng.uniform(20, 60))) for _ in range(n_ref)]
+        )
+        for _ in range(n_cur):
+            monitor._current.append(_make_sample(cpu=float(rng.uniform(20, 60))))
+        results = monitor.check_drift()
+        assert isinstance(results, list)
+        assert all(isinstance(r, DriftResult) for r in results)
+
+
+class TestDriftMonitorDriftSummary:
+    """Tests for DriftMonitor.drift_summary()."""
+
+    def _make_results(self, drifted_flags: list[bool]) -> list[DriftResult]:
+        from datetime import datetime
+
+        from app.monitoring import FEATURE_COLS
+        results = []
+        for i, flag in enumerate(drifted_flags):
+            col = FEATURE_COLS[i % len(FEATURE_COLS)]
+            results.append(
+                DriftResult(
+                    feature_name=col,
+                    ks_statistic=0.3 if flag else 0.05,
+                    p_value=0.01 if flag else 0.5,
+                    drifted=flag,
+                    timestamp=datetime.utcnow(),
+                )
+            )
+        return results
+
+    def test_summary_has_any_drifted_key(self) -> None:
+        """drift_summary() result contains any_drifted key."""
+        monitor = DriftMonitor()
+        results = self._make_results([True, False])
+        summary = monitor.drift_summary(results)
+        assert "any_drifted" in summary
+
+    def test_summary_has_drift_rate_key(self) -> None:
+        """drift_summary() result contains drift_rate key."""
+        monitor = DriftMonitor()
+        results = self._make_results([True, False])
+        summary = monitor.drift_summary(results)
+        assert "drift_rate" in summary
+
+    def test_summary_total_features_matches_results_length(self) -> None:
+        """total_features equals the number of DriftResult objects passed."""
+        monitor = DriftMonitor()
+        results = self._make_results([True, False, True])
+        summary = monitor.drift_summary(results)
+        assert summary["total_features"] == 3
+
+    @pytest.mark.parametrize("n_drifted,n_stable", [(0, 3), (1, 2), (2, 1), (3, 0)])
+    def test_summary_drifted_plus_stable_equals_total(self, n_drifted: int, n_stable: int) -> None:
+        """drifted_features + stable_features counts equal total_features."""
+        monitor = DriftMonitor()
+        flags = [True] * n_drifted + [False] * n_stable
+        results = self._make_results(flags)
+        summary = monitor.drift_summary(results)
+        assert len(summary["drifted_features"]) + len(summary["stable_features"]) == summary["total_features"]
+
+
+class TestDriftMonitorRates:
+    """Parametrized tests for DriftMonitor.drift_rate() and boundary conditions."""
+
+    def _make_results(self, drifted_flags: list[bool]) -> list[DriftResult]:
+        from datetime import datetime
+        results = []
+        for i, flag in enumerate(drifted_flags):
+            col = FEATURE_COLS[i % len(FEATURE_COLS)]
+            results.append(
+                DriftResult(
+                    feature_name=col,
+                    ks_statistic=0.3 if flag else 0.05,
+                    p_value=0.01 if flag else 0.5,
+                    drifted=flag,
+                    timestamp=datetime.utcnow(),
+                )
+            )
+        return results
+
+    def test_drift_rate_empty_returns_zero(self) -> None:
+        """drift_rate returns 0.0 for an empty results list."""
+        monitor = DriftMonitor()
+        assert monitor.drift_rate([]) == 0.0
+
+    def test_drift_rate_all_drifted(self) -> None:
+        """drift_rate returns 1.0 when all features drifted."""
+        monitor = DriftMonitor()
+        results = self._make_results([True, True, True])
+        assert monitor.drift_rate(results) == 1.0
+
+    def test_drift_rate_none_drifted(self) -> None:
+        """drift_rate returns 0.0 when no features drifted."""
+        monitor = DriftMonitor()
+        results = self._make_results([False, False, False])
+        assert monitor.drift_rate(results) == 0.0
+
+    @pytest.mark.parametrize(
+        "flags,expected_rate",
+        [
+            ([True, False], 0.5),
+            ([True, False, False], pytest.approx(1 / 3)),
+            ([True, True, False], pytest.approx(2 / 3)),
+            ([True, False, False, False], 0.25),
+        ],
+    )
+    def test_drift_rate_parametrized(self, flags: list, expected_rate) -> None:
+        """drift_rate returns the correct fraction of drifted features."""
+        monitor = DriftMonitor()
+        results = self._make_results(flags)
+        assert monitor.drift_rate(results) == expected_rate

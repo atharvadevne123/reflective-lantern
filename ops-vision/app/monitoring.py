@@ -63,6 +63,16 @@ class DriftResult:
             f"KS={self.ks_statistic:.4f}, p={self.p_value:.6f})"
         )
 
+    def to_dict(self) -> dict:
+        """Serialise this drift result to a JSON-compatible dict."""
+        return {
+            "feature_name": self.feature_name,
+            "ks_statistic": self.ks_statistic,
+            "p_value": self.p_value,
+            "drifted": self.drifted,
+            "timestamp": self.timestamp.isoformat(),
+        }
+
 
 class DriftMonitor:
     """Monitors feature distributions for covariate shift using the KS test.
@@ -164,6 +174,14 @@ class DriftMonitor:
         """Number of samples accumulated in the current window."""
         return len(self._current)
 
+    def __repr__(self) -> str:
+        """Return a concise representation showing window sizes and threshold."""
+        return (
+            f"DriftMonitor(ref={self.reference_size}, "
+            f"cur={self.current_size}/{self.current_window_size}, "
+            f"threshold={self.threshold})"
+        )
+
     def reset(self) -> None:
         """Clear both reference and current windows, resetting the monitor."""
         self._reference.clear()
@@ -177,6 +195,35 @@ class DriftMonitor:
     def stable_features(self, results: list[DriftResult]) -> list[str]:
         """Return names of features that did NOT drift from a results list."""
         return [r.feature_name for r in results if not r.drifted]
+
+    def any_drifted(self, results: list[DriftResult]) -> bool:
+        """Return True if at least one feature drifted in the results list.
+
+        Args:
+            results: List of DriftResult from check_drift().
+
+        Returns:
+            True if any feature has drifted, False otherwise.
+        """
+        return any(r.drifted for r in results)
+
+    def drift_summary(self, results: list[DriftResult]) -> dict:
+        """Return a compact summary dict for a completed drift check.
+
+        Args:
+            results: List of DriftResult from check_drift().
+
+        Returns:
+            Dict with keys: any_drifted, drift_rate, drifted_features,
+            stable_features, and total_features.
+        """
+        return {
+            "any_drifted": self.any_drifted(results),
+            "drift_rate": self.drift_rate(results),
+            "drifted_features": self.drifted_features(results),
+            "stable_features": self.stable_features(results),
+            "total_features": len(results),
+        }
 
     def drift_rate(self, results: list[DriftResult]) -> float:
         """Return the fraction of features that drifted.
@@ -233,6 +280,10 @@ def get_monitor() -> DriftMonitor:
 
 
 __all__ = [
+    "CURRENT_WINDOW_SIZE",
+    "DRIFT_THRESHOLD",
+    "FEATURE_COLS",
+    "REFERENCE_WINDOW_SIZE",
     "DriftMonitor",
     "DriftResult",
     "MetricSample",

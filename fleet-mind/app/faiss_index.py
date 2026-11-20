@@ -15,6 +15,7 @@ logger = logging.getLogger(__name__)
 
 try:
     import faiss  # type: ignore[import]
+
     _HAS_FAISS = True
 except ImportError:
     _HAS_FAISS = False
@@ -40,7 +41,9 @@ def build_index(vectors: np.ndarray, vehicle_ids: list[str]) -> None:
         logger.info("FAISS index built: %d vectors (dim=%d)", len(vehicle_ids), dim)
     else:
         _index = vectors.astype(np.float32)
-        logger.info("Brute-force index built: %d vectors (dim=%d)", len(vehicle_ids), vectors.shape[1])
+        logger.info(
+            "Brute-force index built: %d vectors (dim=%d)", len(vehicle_ids), vectors.shape[1]
+        )
 
 
 def query_similar(
@@ -74,9 +77,6 @@ def query_similar(
         diffs = _index - q
         dists = np.linalg.norm(diffs, axis=1)
         top_k = np.argsort(dists)[:k_actual]
-        results = [
-            {"vehicle_id": _stored_ids[int(i)], "distance": float(dists[i])}
-            for i in top_k
-        ]
+        results = [{"vehicle_id": _stored_ids[int(i)], "distance": float(dists[i])} for i in top_k]
 
     return results

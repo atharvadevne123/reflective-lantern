@@ -7,6 +7,7 @@ compression ratio and savings percentage.
 
 from __future__ import annotations
 
+import base64
 import gzip
 import io
 import json
@@ -216,12 +217,44 @@ def best_method(data: bytes) -> str:
     return "gzip" if len(gz) <= len(zl) else "zlib"
 
 
+def encode_to_base64(data: bytes) -> str:
+    """Encode bytes to a URL-safe base64 string.
+
+    Args:
+        data: Raw bytes to encode.
+
+    Returns:
+        URL-safe base64 encoded string.
+    """
+    return base64.urlsafe_b64encode(data).decode()
+
+
+def decode_from_base64(encoded: str) -> bytes:
+    """Decode a URL-safe base64 string back to bytes.
+
+    Args:
+        encoded: URL-safe base64 encoded string.
+
+    Returns:
+        Original bytes.
+
+    Raises:
+        ValueError: If the string is not valid base64.
+    """
+    try:
+        return base64.urlsafe_b64decode(encoded.encode())
+    except Exception as exc:
+        raise ValueError(f"Invalid base64 data: {exc}") from exc
+
+
 __all__ = [
     "best_method",
     "compress_and_measure",
     "compress_json",
     "compression_ratio",
+    "decode_from_base64",
     "decompress_json",
+    "encode_to_base64",
     "gzip_compress",
     "gzip_decompress",
     "is_gzip",

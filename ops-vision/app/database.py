@@ -15,6 +15,7 @@ from sqlalchemy import (
     String,
     Text,
     create_engine,
+    text,
 )
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
@@ -179,8 +180,6 @@ def ping_db() -> bool:
         True if the database is reachable, False otherwise.
     """
     try:
-        from sqlalchemy import text
-
         with get_engine().connect() as conn:
             conn.execute(text("SELECT 1"))
         return True

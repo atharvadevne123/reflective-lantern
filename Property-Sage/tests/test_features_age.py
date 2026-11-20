@@ -25,9 +25,15 @@ def test_historic():
     assert property_age_category(1900, 2024) == "historic"
 
 
-@pytest.mark.parametrize("year,expected", [
-    (2023, "new"), (2014, "modern"), (1999, "established"),
-    (1964, "vintage"), (1800, "historic"),
-])
+@pytest.mark.parametrize(
+    "year,expected",
+    [
+        (2023, "new"),
+        (2014, "modern"),
+        (1999, "established"),
+        (1964, "vintage"),
+        (1800, "historic"),
+    ],
+)
 def test_age_category_parametrized(year, expected):
     assert property_age_category(year, 2024) == expected

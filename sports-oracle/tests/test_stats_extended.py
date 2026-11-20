@@ -5,6 +5,7 @@ from __future__ import annotations
 import threading
 
 import pytest
+
 from app.stats import MetricsCollector, get_collector
 
 
@@ -70,10 +71,7 @@ class TestMetricsCollector:
 
     def test_thread_safety_concurrent_increments(self) -> None:
         mc = MetricsCollector()
-        threads = [
-            threading.Thread(target=lambda: mc.inc("predict_total"))
-            for _ in range(100)
-        ]
+        threads = [threading.Thread(target=lambda: mc.inc("predict_total")) for _ in range(100)]
         for t in threads:
             t.start()
         for t in threads:

@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import pytest
+
 
 def test_check_model_loaded_returns_false_when_missing(tmp_path, monkeypatch) -> None:
     monkeypatch.setenv("MODEL_PATH", str(tmp_path / "nonexistent.joblib"))
@@ -78,9 +80,6 @@ def test_check_database_reachable_returns_url_scheme() -> None:
 
     result = health.check_database_reachable("sqlite:///:memory:")
     assert result["url_scheme"] == "sqlite"
-
-
-import pytest
 
 
 @pytest.mark.parametrize(

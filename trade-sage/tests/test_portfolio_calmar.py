@@ -20,7 +20,7 @@ class TestComputeCalmarRatio:
         assert result is None
 
     def test_uptrend_gives_positive_calmar(self) -> None:
-        prices = [100.0 * (1.001 ** i) for i in range(252)]
+        prices = [100.0 * (1.001**i) for i in range(252)]
         result = compute_calmar_ratio(prices)
         assert result is not None
         assert result > 0
@@ -47,7 +47,7 @@ class TestComputeCalmarRatio:
         assert result is None or isinstance(result, float)
 
     def test_downtrend_gives_negative_calmar(self) -> None:
-        prices = [100.0 * (0.999 ** i) for i in range(100)]
+        prices = [100.0 * (0.999**i) for i in range(100)]
         result = compute_calmar_ratio(prices)
         if result is not None:
             assert result < 0

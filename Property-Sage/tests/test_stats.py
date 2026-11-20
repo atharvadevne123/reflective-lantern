@@ -32,10 +32,13 @@ def test_benchmark_empty_neighborhood():
     assert result["percentile_rank"] == 0.0
 
 
-@pytest.mark.parametrize("subject,expected_ge", [
-    (400.0, 60.0),
-    (50.0, 0.0),
-])
+@pytest.mark.parametrize(
+    "subject,expected_ge",
+    [
+        (400.0, 60.0),
+        (50.0, 0.0),
+    ],
+)
 def test_benchmark_percentile(subject, expected_ge):
     prices = [100.0, 200.0, 300.0, 400.0, 500.0]
     result = neighborhood_benchmark(subject, prices)

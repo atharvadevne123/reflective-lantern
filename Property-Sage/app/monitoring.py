@@ -201,6 +201,7 @@ def anomaly_score(value: float, reference: list[float]) -> float:
     if len(reference) < 2:
         return 0.0
     import statistics
+
     mean = statistics.mean(reference)
     std = statistics.stdev(reference)
     if std == 0:
@@ -225,6 +226,7 @@ def detect_outlier_predictions(
     if len(prices) < 3:
         return []
     import statistics
+
     mean = statistics.mean(prices)
     std = statistics.stdev(prices)
     if std == 0:
@@ -242,6 +244,7 @@ def prediction_summary_stats(db: "Any") -> dict[str, Any]:
         Dict with count, mean_price, mean_yield, and latest_request_id.
     """
     from app.database import Prediction
+
     try:
         preds = db.query(Prediction).all()
         if not preds:
@@ -249,6 +252,7 @@ def prediction_summary_stats(db: "Any") -> dict[str, Any]:
         prices = [p.predicted_price for p in preds]
         yields = [p.predicted_rental_yield for p in preds]
         import statistics as _stats
+
         return {
             "count": len(preds),
             "mean_price": round(_stats.mean(prices), 2),
@@ -271,13 +275,9 @@ def get_drift_history(db: "Any", limit: int = 50) -> list[dict[str, Any]]:
         List of drift log dicts, newest first.
     """
     from app.database import DriftLog
+
     try:
-        rows = (
-            db.query(DriftLog)
-            .order_by(DriftLog.checked_at.desc())
-            .limit(limit)
-            .all()
-        )
+        rows = db.query(DriftLog).order_by(DriftLog.checked_at.desc()).limit(limit).all()
         return [
             {
                 "feature_name": r.feature_name,

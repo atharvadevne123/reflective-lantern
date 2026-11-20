@@ -19,10 +19,13 @@ def test_sanitize_uuid_preserved():
     assert sanitize_request_id(uid) == uid
 
 
-@pytest.mark.parametrize("raw,expected", [
-    ("clean_id", "clean_id"),
-    ("with space", "with-space"),
-])
+@pytest.mark.parametrize(
+    "raw,expected",
+    [
+        ("clean_id", "clean_id"),
+        ("with space", "with-space"),
+    ],
+)
 def test_sanitize_parametrized(raw, expected):
     assert sanitize_request_id(raw) == expected
 
@@ -39,9 +42,12 @@ def test_normalize_whitespace_stripped():
     assert normalize_neighborhood("  downtown  ") == "downtown"
 
 
-@pytest.mark.parametrize("raw,expected", [
-    ("DOWNTOWN", "downtown"),
-    ("SUBURB", "suburb"),
-])
+@pytest.mark.parametrize(
+    "raw,expected",
+    [
+        ("DOWNTOWN", "downtown"),
+        ("SUBURB", "suburb"),
+    ],
+)
 def test_normalize_case_insensitive(raw, expected):
     assert normalize_neighborhood(raw) == expected

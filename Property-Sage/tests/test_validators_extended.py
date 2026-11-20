@@ -27,6 +27,7 @@ class TestValidateNeighborhoodValue:
 
     def test_all_known_neighborhoods_pass(self) -> None:
         from app.features import NEIGHBORHOODS
+
         for n in NEIGHBORHOODS:
             assert validate_neighborhood_value(n) == n
 
@@ -51,6 +52,7 @@ class TestValidatePropertyTypeValue:
 
     def test_all_known_types_pass(self) -> None:
         from app.features import PROPERTY_TYPES
+
         for pt in PROPERTY_TYPES:
             assert validate_property_type_value(pt) == pt
 

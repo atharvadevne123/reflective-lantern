@@ -1,4 +1,5 @@
 """Feature engineering pipeline tests."""
+
 from __future__ import annotations
 
 import numpy as np
@@ -19,17 +20,32 @@ from app.features import (
 
 @pytest.fixture()
 def base_df() -> pd.DataFrame:
-    return pd.DataFrame([{
-        "home_wins_last5": 3, "home_draws_last5": 1, "home_losses_last5": 1,
-        "away_wins_last5": 2, "away_draws_last5": 1, "away_losses_last5": 2,
-        "home_goals_avg": 1.8, "home_goals_conceded_avg": 1.1,
-        "away_goals_avg": 1.4, "away_goals_conceded_avg": 1.5,
-        "h2h_home_wins": 3, "h2h_away_wins": 2, "h2h_draws": 1,
-        "home_ranking": 5.0, "away_ranking": 12.0,
-        "home_elo": 1650.0, "away_elo": 1520.0,
-        "home_days_rest": 7, "away_days_rest": 4,
-        "home_is_home_ground": 1.0,
-    }])
+    return pd.DataFrame(
+        [
+            {
+                "home_wins_last5": 3,
+                "home_draws_last5": 1,
+                "home_losses_last5": 1,
+                "away_wins_last5": 2,
+                "away_draws_last5": 1,
+                "away_losses_last5": 2,
+                "home_goals_avg": 1.8,
+                "home_goals_conceded_avg": 1.1,
+                "away_goals_avg": 1.4,
+                "away_goals_conceded_avg": 1.5,
+                "h2h_home_wins": 3,
+                "h2h_away_wins": 2,
+                "h2h_draws": 1,
+                "home_ranking": 5.0,
+                "away_ranking": 12.0,
+                "home_elo": 1650.0,
+                "away_elo": 1520.0,
+                "home_days_rest": 7,
+                "away_days_rest": 4,
+                "home_is_home_ground": 1.0,
+            }
+        ]
+    )
 
 
 def test_form_encoder_produces_win_rate(base_df):
@@ -41,10 +57,18 @@ def test_form_encoder_produces_win_rate(base_df):
 
 
 def test_form_encoder_zero_games():
-    df = pd.DataFrame([{
-        "home_wins_last5": 0, "home_draws_last5": 0, "home_losses_last5": 0,
-        "away_wins_last5": 0, "away_draws_last5": 0, "away_losses_last5": 0,
-    }])
+    df = pd.DataFrame(
+        [
+            {
+                "home_wins_last5": 0,
+                "home_draws_last5": 0,
+                "home_losses_last5": 0,
+                "away_wins_last5": 0,
+                "away_draws_last5": 0,
+                "away_losses_last5": 0,
+            }
+        ]
+    )
     enc = FormEncoder()
     out = enc.fit_transform(df)
     assert not out["home_win_rate"].isna().any()

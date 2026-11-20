@@ -6,11 +6,21 @@ import math
 from collections.abc import Sequence
 
 __all__ = [
+    "confidence_interval",
+    "correlation_coefficient",
     "mean",
     "median",
+    "outlier_fraction",
     "percentile",
+    "population_variance",
+    "rolling_rmse",
+    "sample_std",
+    "sign_changes",
+    "signal_to_noise_ratio",
     "std_dev",
     "variance",
+    "weighted_average",
+    "weighted_median",
     "z_scores",
 ]
 
@@ -102,23 +112,19 @@ def z_scores(values: Sequence[float]) -> list[float]:
 
     Returns:
         List of z-scores; all zeros if std_dev is 0.
+
+    Raises:
+        ValueError: If *values* is empty.
     """
     if not values:
         raise ValueError("values must not be empty")
-    if len(values) != len(weights):
-        raise ValueError("values and weights must have the same length")
-    if any(w < 0 for w in weights):
-        raise ValueError("All weights must be non-negative")
-    total_w = sum(weights)
-    if total_w == 0:
-        return values[len(values) // 2]
-    paired = sorted(zip(values, weights, strict=False), key=lambda x: x[0])
-    cumulative = 0.0
-    for val, w in paired:
-        cumulative += w
-        if cumulative >= total_w / 2.0:
-            return float(val)
-    return float(paired[-1][0])
+    n = len(values)
+    mean = sum(values) / n
+    variance = sum((v - mean) ** 2 for v in values) / n
+    std_dev = variance**0.5
+    if std_dev == 0:
+        return [0.0] * n
+    return [(v - mean) / std_dev for v in values]
 
 
 def population_variance(values: list[float]) -> float:
@@ -315,3 +321,60 @@ def sign_changes(values: list[float]) -> int:
         if values[i - 1] * values[i] < 0:
             count += 1
     return count
+
+
+def weighted_median(values: Sequence[float], weights: Sequence[float]) -> float:
+    """Return the weighted median of *values* with corresponding *weights*.
+
+    Args:
+        values: Non-empty sequence of numeric values.
+        weights: Non-negative weights of the same length as *values*.
+
+    Returns:
+        Weighted median as a float.
+
+    Raises:
+        ValueError: If inputs are empty, lengths mismatch, or any weight is negative.
+    """
+    if not values:
+        raise ValueError("values must not be empty")
+    if len(values) != len(weights):
+        raise ValueError("values and weights must have the same length")
+    if any(w < 0 for w in weights):
+        raise ValueError("All weights must be non-negative")
+    total_w = sum(weights)
+    if total_w == 0:
+        return float(values[len(values) // 2])
+    paired = sorted(zip(values, weights, strict=False), key=lambda x: x[0])
+    cumulative = 0.0
+    for val, w in paired:
+        cumulative += w
+        if cumulative >= total_w / 2.0:
+            return float(val)
+    return float(paired[-1][0])
+
+
+def weighted_average(values: Sequence[float], weights: Sequence[float]) -> float:
+    """Return the weighted arithmetic average of *values*.
+
+    Args:
+        values: Non-empty sequence of numeric values.
+        weights: Non-negative weights of the same length as *values*.
+
+    Returns:
+        Weighted average as a float.
+
+    Raises:
+        ValueError: If inputs are empty, lengths mismatch, any weight is negative,
+            or the total weight is zero.
+    """
+    if not values:
+        raise ValueError("values must not be empty")
+    if len(values) != len(weights):
+        raise ValueError("values and weights must have the same length")
+    if any(w < 0 for w in weights):
+        raise ValueError("All weights must be non-negative")
+    total_w = sum(weights)
+    if total_w == 0:
+        raise ValueError("Total weight must be greater than zero")
+    return sum(v * w for v, w in zip(values, weights, strict=False)) / total_w

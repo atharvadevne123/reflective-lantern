@@ -56,7 +56,7 @@ def run_benchmark(base_url: str, n: int) -> None:
             with urllib.request.urlopen(req, timeout=10) as resp:
                 resp.read()
         except Exception as exc:
-            print(f"Request {i+1} failed: {exc}")
+            print(f"Request {i + 1} failed: {exc}")
             continue
         latencies.append((time.perf_counter() - t0) * 1000)
 

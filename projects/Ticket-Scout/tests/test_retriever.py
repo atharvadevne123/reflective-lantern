@@ -1,8 +1,10 @@
 """FAISS/numpy retriever tests."""
+
 from __future__ import annotations
 
 import numpy as np
 import pytest
+
 from app.retriever import TicketRetriever
 
 

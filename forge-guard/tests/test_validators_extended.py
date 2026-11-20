@@ -5,6 +5,7 @@ from __future__ import annotations
 import math
 
 import pytest
+
 from app.validators import (
     SENSOR_RANGES,
     clamp_reading,

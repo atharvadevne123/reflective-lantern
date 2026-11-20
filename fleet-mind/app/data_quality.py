@@ -68,10 +68,7 @@ def assess_batch_quality(readings: list[dict[str, Any]]) -> dict[str, Any]:
     if not readings:
         return {"total_rows": 0, "quality_score": 0.0}
 
-    numeric_readings = [
-        {k: v for k, v in r.items() if k in RAW_FEATURES}
-        for r in readings
-    ]
+    numeric_readings = [{k: v for k, v in r.items() if k in RAW_FEATURES} for r in readings]
     df = pd.DataFrame(numeric_readings)
 
     missing = check_missing_values(df)
@@ -89,6 +86,10 @@ def assess_batch_quality(readings: list[dict[str, Any]]) -> dict[str, Any]:
         "outliers": {k: len(v) for k, v in outliers.items()},
         "quality_score": round(quality_score, 4),
     }
-    logger.info("Batch quality assessment: score=%.4f missing=%d outliers=%d",
-                quality_score, missing_cells, outlier_cells)
+    logger.info(
+        "Batch quality assessment: score=%.4f missing=%d outliers=%d",
+        quality_score,
+        missing_cells,
+        outlier_cells,
+    )
     return result

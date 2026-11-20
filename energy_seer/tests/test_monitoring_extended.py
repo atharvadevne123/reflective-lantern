@@ -10,27 +10,23 @@ from app.monitoring import summarise_anomalies
 class TestComputeDriftExtended:
     def test_insufficient_reference_data(self) -> None:
         from app.monitoring import compute_drift
-
         result = compute_drift([0.1, 0.2], [0.1] * 20)
         assert result.get("error") == "insufficient_data"
         assert result["drift_detected"] is False
 
     def test_insufficient_current_data(self) -> None:
         from app.monitoring import compute_drift
-
         result = compute_drift([0.1] * 20, [0.5, 0.6])
         assert result["drift_detected"] is False
 
     def test_identical_distributions_no_drift(self) -> None:
         from app.monitoring import compute_drift
-
         data = [float(i) for i in range(50)]
         result = compute_drift(data, data[:])
         assert result["drift_detected"] is False
 
     def test_very_different_distributions_drift_detected(self) -> None:
         from app.monitoring import compute_drift
-
         ref = [0.0] * 50
         cur = [100.0] * 50
         result = compute_drift(ref, cur)
@@ -38,7 +34,6 @@ class TestComputeDriftExtended:
 
     def test_ks_statistic_in_range(self) -> None:
         from app.monitoring import compute_drift
-
         ref = [float(i) for i in range(30)]
         cur = [float(i + 5) for i in range(30)]
         result = compute_drift(ref, cur)
@@ -46,7 +41,6 @@ class TestComputeDriftExtended:
 
     def test_p_value_in_range(self) -> None:
         from app.monitoring import compute_drift
-
         ref = [float(i) for i in range(20)]
         cur = [float(i) for i in range(20)]
         result = compute_drift(ref, cur)
@@ -54,7 +48,6 @@ class TestComputeDriftExtended:
 
     def test_result_has_required_keys(self) -> None:
         from app.monitoring import compute_drift
-
         ref = list(range(10))
         result = compute_drift(ref, ref[:])
         for key in ("ks_statistic", "p_value", "drift_detected"):
@@ -63,7 +56,6 @@ class TestComputeDriftExtended:
     @pytest.mark.parametrize("n", [5, 10, 20, 50])
     def test_various_sample_sizes(self, n: int) -> None:
         from app.monitoring import compute_drift
-
         data = [float(i) for i in range(n)]
         result = compute_drift(data, data[:])
         assert result["drift_detected"] is False
@@ -72,7 +64,6 @@ class TestComputeDriftExtended:
 class TestSetReferenceDistributionsExtended:
     def test_set_and_check_all_features(self) -> None:
         from app.monitoring import check_all_features, set_reference_distributions
-
         ref = {"temp": [float(i) for i in range(50)]}
         set_reference_distributions(ref)
         result = check_all_features({"temp": [float(i) for i in range(50)]})
@@ -81,7 +72,6 @@ class TestSetReferenceDistributionsExtended:
 
     def test_missing_feature_returns_insufficient_data(self) -> None:
         from app.monitoring import check_all_features, set_reference_distributions
-
         set_reference_distributions({})
         result = check_all_features({"unknown_feat": [1.0] * 20})
         assert "unknown_feat" in result
@@ -89,7 +79,6 @@ class TestSetReferenceDistributionsExtended:
 
     def test_multiple_features_checked(self) -> None:
         from app.monitoring import check_all_features, set_reference_distributions
-
         refs = {
             "a": [float(i) for i in range(30)],
             "b": [float(i) for i in range(30)],
@@ -105,7 +94,6 @@ class TestSetReferenceDistributionsExtended:
 
     def test_reference_is_copy_not_reference(self) -> None:
         from app.monitoring import _reference_distributions, set_reference_distributions
-
         original = {"feat": [1.0, 2.0, 3.0, 4.0, 5.0]}
         set_reference_distributions(original)
         original["feat"].append(999.0)
@@ -115,14 +103,12 @@ class TestSetReferenceDistributionsExtended:
 class TestGetDriftSummaryExtended:
     def test_empty_results(self) -> None:
         from app.monitoring import get_drift_summary
-
         result = get_drift_summary({})
         assert result["total_features"] == 0
         assert result["drifted_count"] == 0
 
     def test_all_stable(self) -> None:
         from app.monitoring import get_drift_summary
-
         feature_results = {
             "a": {"drift_detected": False, "ks_statistic": 0.1, "p_value": 0.5},
             "b": {"drift_detected": False, "ks_statistic": 0.05, "p_value": 0.8},
@@ -133,7 +119,6 @@ class TestGetDriftSummaryExtended:
 
     def test_some_drifted(self) -> None:
         from app.monitoring import get_drift_summary
-
         feature_results = {
             "a": {"drift_detected": True, "ks_statistic": 0.9, "p_value": 0.01},
             "b": {"drift_detected": False, "ks_statistic": 0.1, "p_value": 0.5},
@@ -144,7 +129,6 @@ class TestGetDriftSummaryExtended:
 
     def test_error_features_reported(self) -> None:
         from app.monitoring import get_drift_summary
-
         feature_results = {
             "x": {"drift_detected": False, "error": "insufficient_data"},
         }
@@ -154,7 +138,6 @@ class TestGetDriftSummaryExtended:
 
     def test_drift_rate_calculation(self) -> None:
         from app.monitoring import get_drift_summary
-
         feature_results = {
             "a": {"drift_detected": True},
             "b": {"drift_detected": True},
@@ -166,7 +149,6 @@ class TestGetDriftSummaryExtended:
 
     def test_all_drifted(self) -> None:
         from app.monitoring import get_drift_summary
-
         feature_results = {
             "p": {"drift_detected": True},
             "q": {"drift_detected": True},

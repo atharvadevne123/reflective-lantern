@@ -1,4 +1,5 @@
 """AWS S3 stub for model artifact upload/download in Sport-Cast."""
+
 from __future__ import annotations
 
 import logging

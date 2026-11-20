@@ -43,6 +43,7 @@ def test_feature_names_count():
 
 def test_annualisation_factor():
     import math
+
     assert ANNUALISATION_FACTOR == pytest.approx(math.sqrt(252), rel=1e-5)
 
 

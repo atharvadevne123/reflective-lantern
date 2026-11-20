@@ -44,6 +44,9 @@ class Settings:
     reference_buffer_size: int = field(
         default_factory=lambda: int(os.getenv("REFERENCE_BUFFER_SIZE", "500"))
     )
+    cors_origins: str = field(
+        default_factory=lambda: os.getenv("CORS_ORIGINS", "*")
+    )
 
     @property
     def is_postgres(self) -> bool:

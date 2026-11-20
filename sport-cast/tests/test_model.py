@@ -1,4 +1,5 @@
 """Model training and prediction tests."""
+
 from __future__ import annotations
 
 import pytest
@@ -48,11 +49,14 @@ def test_predict_match_valid_outcome(sample_dataframe):
     assert result["predicted_outcome"] in OUTCOME_LABELS.values()
 
 
-@pytest.mark.parametrize("goals,assists,win_rate,minutes,injury,expected_min", [
-    (1.0, 0.5, 0.8, 0.9, 0, 40),
-    (0.0, 0.0, 0.0, 0.0, 0, 0),
-    (0.5, 0.3, 0.6, 0.8, 0, 20),
-])
+@pytest.mark.parametrize(
+    "goals,assists,win_rate,minutes,injury,expected_min",
+    [
+        (1.0, 0.5, 0.8, 0.9, 0, 40),
+        (0.0, 0.0, 0.0, 0.0, 0, 0),
+        (0.5, 0.3, 0.6, 0.8, 0, 20),
+    ],
+)
 def test_score_player_performance(goals, assists, win_rate, minutes, injury, expected_min):
     result = score_player_performance(goals, assists, win_rate, minutes, injury)
     assert result["performance_score"] >= expected_min

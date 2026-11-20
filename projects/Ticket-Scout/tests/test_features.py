@@ -17,8 +17,11 @@ from app.features import (
 
 def _make_df(n: int = 10) -> pd.DataFrame:
     subjects = [
-        "VPN not connecting", "Password reset needed", "Laptop screen broken",
-        "Cannot install software", "Outlook not syncing",
+        "VPN not connecting",
+        "Password reset needed",
+        "Laptop screen broken",
+        "Cannot install software",
+        "Outlook not syncing",
     ]
     bodies = [
         "Urgent: VPN drops every 10 minutes blocking all work.",
@@ -31,14 +34,16 @@ def _make_df(n: int = 10) -> pd.DataFrame:
     rows = []
     for i in range(n):
         idx = i % 5
-        rows.append({
-            "subject": subjects[idx],
-            "body": bodies[idx],
-            "priority": priorities[idx],
-            "created_hour": i % 24,
-            "created_dow": i % 7,
-            "org_size": 500,
-        })
+        rows.append(
+            {
+                "subject": subjects[idx],
+                "body": bodies[idx],
+                "priority": priorities[idx],
+                "created_hour": i % 24,
+                "created_dow": i % 7,
+                "org_size": 500,
+            }
+        )
     return pd.DataFrame(rows)
 
 
@@ -61,9 +66,9 @@ def test_count_urgency_zero_for_neutral():
     assert _count_urgency("please update my email preference") == 0
 
 
-@pytest.mark.parametrize("priority,expected", [
-    ("low", 0), ("medium", 1), ("high", 2), ("critical", 3)
-])
+@pytest.mark.parametrize(
+    "priority,expected", [("low", 0), ("medium", 1), ("high", 2), ("critical", 3)]
+)
 def test_priority_map_values(priority, expected):
     assert PRIORITY_MAP[priority] == expected
 
@@ -112,14 +117,18 @@ def test_text_feature_transformer_new_unseen_text():
     t = TextFeatureTransformer(max_tfidf_features=50)
     t.fit(df_train)
 
-    df_new = pd.DataFrame([{
-        "subject": "Brand new issue type never seen before xyzzy",
-        "body": "Some completely novel body text here.",
-        "priority": "low",
-        "created_hour": 12,
-        "created_dow": 3,
-        "org_size": 300,
-    }])
+    df_new = pd.DataFrame(
+        [
+            {
+                "subject": "Brand new issue type never seen before xyzzy",
+                "body": "Some completely novel body text here.",
+                "priority": "low",
+                "created_hour": 12,
+                "created_dow": 3,
+                "org_size": 300,
+            }
+        ]
+    )
     result = t.transform(df_new)
     assert result.shape[0] == 1
     assert not np.isnan(result).any()

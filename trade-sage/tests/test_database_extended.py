@@ -51,7 +51,9 @@ class TestCountPredictions:
 
     def test_no_ticker_filter_counts_all(self, db_session) -> None:
         for _i in range(5):
-            db_session.add(PredictionLog(ticker="AMZN", prediction=1, confidence=0.75, horizon_days=5))
+            db_session.add(
+                PredictionLog(ticker="AMZN", prediction=1, confidence=0.75, horizon_days=5)
+            )
         db_session.commit()
         assert count_predictions(db_session) == 5
 
@@ -61,15 +63,19 @@ class TestCountDriftAlerts:
         assert count_drift_alerts(db_session) == 0
 
     def test_counts_only_detected_drifts(self, db_session) -> None:
-        db_session.add(DriftLog(feature_name="rsi", ks_statistic=0.4, p_value=0.01, drift_detected=True))
-        db_session.add(DriftLog(feature_name="macd", ks_statistic=0.1, p_value=0.6, drift_detected=False))
+        db_session.add(
+            DriftLog(feature_name="rsi", ks_statistic=0.4, p_value=0.01, drift_detected=True)
+        )
+        db_session.add(
+            DriftLog(feature_name="macd", ks_statistic=0.1, p_value=0.6, drift_detected=False)
+        )
         db_session.commit()
         assert count_drift_alerts(db_session) == 1
 
     def test_multiple_detected_drifts(self, db_session) -> None:
         for i in range(3):
-            db_session.add(DriftLog(
-                feature_name=f"f{i}", ks_statistic=0.5, p_value=0.01, drift_detected=True
-            ))
+            db_session.add(
+                DriftLog(feature_name=f"f{i}", ks_statistic=0.5, p_value=0.01, drift_detected=True)
+            )
         db_session.commit()
         assert count_drift_alerts(db_session) == 3

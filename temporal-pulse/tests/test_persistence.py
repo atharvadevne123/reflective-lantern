@@ -7,6 +7,7 @@ import sys
 from pathlib import Path
 
 import numpy as np
+import pytest
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
@@ -60,17 +61,12 @@ class TestSaveLoad:
         saved = save_models(tmp_path)
         assert all(isinstance(v, str) for v in saved.values())
 
-    import pytest
-
     @pytest.mark.parametrize("key", ["isolation_forest", "scaler"])
     def test_saved_keys_present(self, trained_models, tmp_path, key: str) -> None:
         from app.model import save_models
 
         saved = save_models(tmp_path)
         assert key in saved
-
-
-import pytest
 
 
 @pytest.mark.parametrize("key", ["isolation_forest", "scaler"])

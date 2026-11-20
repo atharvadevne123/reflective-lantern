@@ -37,6 +37,7 @@ def generate_diagram() -> str:
 def save_diagram(path: str = "screenshots/architecture.txt") -> None:
     """Write architecture diagram to file."""
     import os
+
     os.makedirs(os.path.dirname(path), exist_ok=True)
     with open(path, "w") as f:
         f.write(generate_diagram())

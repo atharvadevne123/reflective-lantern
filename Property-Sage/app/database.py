@@ -116,12 +116,7 @@ def get_recent_predictions(db: Session, limit: int = 20) -> list[Prediction]:
         List of Prediction ORM objects, newest first.
     """
     try:
-        return (
-            db.query(Prediction)
-            .order_by(Prediction.created_at.desc())
-            .limit(limit)
-            .all()
-        )
+        return db.query(Prediction).order_by(Prediction.created_at.desc()).limit(limit).all()
     except Exception as exc:
         logger.error("Failed to fetch recent predictions: %s", exc)
         return []

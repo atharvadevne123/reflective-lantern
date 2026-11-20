@@ -25,18 +25,22 @@ from app.features import (
 @pytest.fixture
 def base_df():
     """Return a minimal single-row DataFrame with all raw features."""
-    return pd.DataFrame([{
-        "speed_kmh": 80.0,
-        "engine_temp_c": 90.0,
-        "oil_pressure_bar": 3.5,
-        "fuel_consumption_lph": 8.0,
-        "battery_voltage_v": 12.8,
-        "brake_pad_mm": 7.0,
-        "tire_pressure_bar": 2.3,
-        "rpm": 2500.0,
-        "coolant_temp_c": 85.0,
-        "transmission_temp_c": 75.0,
-    }])
+    return pd.DataFrame(
+        [
+            {
+                "speed_kmh": 80.0,
+                "engine_temp_c": 90.0,
+                "oil_pressure_bar": 3.5,
+                "fuel_consumption_lph": 8.0,
+                "battery_voltage_v": 12.8,
+                "brake_pad_mm": 7.0,
+                "tire_pressure_bar": 2.3,
+                "rpm": 2500.0,
+                "coolant_temp_c": 85.0,
+                "transmission_temp_c": 75.0,
+            }
+        ]
+    )
 
 
 class TestTelemetryFeatureEngineer:
@@ -65,11 +69,14 @@ class TestTelemetryFeatureEngineer:
         result = eng.fit_transform(base_df)
         assert 0.0 <= result["brake_health_score"].values[0] <= 1.5
 
-    @pytest.mark.parametrize("tire_bar,expected_deviation", [
-        (2.4, 0.0),
-        (2.0, 0.4),
-        (3.0, 0.6),
-    ])
+    @pytest.mark.parametrize(
+        "tire_bar,expected_deviation",
+        [
+            (2.4, 0.0),
+            (2.0, 0.4),
+            (3.0, 0.6),
+        ],
+    )
     def test_tire_pressure_deviation(self, base_df, tire_bar, expected_deviation):
         df = base_df.copy()
         df["tire_pressure_bar"] = tire_bar

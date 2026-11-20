@@ -10,12 +10,15 @@ import pytest
 from app.cache import get_regime_label, get_risk_tier
 
 
-@pytest.mark.parametrize("idx,expected", [
-    (0, "bull"),
-    (1, "bear"),
-    (2, "sideways"),
-    (3, "volatile"),
-])
+@pytest.mark.parametrize(
+    "idx,expected",
+    [
+        (0, "bull"),
+        (1, "bear"),
+        (2, "sideways"),
+        (3, "volatile"),
+    ],
+)
 def test_get_regime_label(idx, expected):
     assert get_regime_label(idx) == expected
 
@@ -24,12 +27,15 @@ def test_get_regime_label_unknown():
     assert get_regime_label(99) == "unknown"
 
 
-@pytest.mark.parametrize("score,expected", [
-    (0.1, "low"),
-    (0.3, "moderate"),
-    (0.6, "high"),
-    (0.9, "critical"),
-])
+@pytest.mark.parametrize(
+    "score,expected",
+    [
+        (0.1, "low"),
+        (0.3, "moderate"),
+        (0.6, "high"),
+        (0.9, "critical"),
+    ],
+)
 def test_get_risk_tier(score, expected):
     assert get_risk_tier(score) == expected
 

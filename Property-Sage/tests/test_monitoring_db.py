@@ -27,9 +27,13 @@ def test_summary_stats_with_data(db):
     for i in range(3):
         pred = Prediction(
             request_id=f"mdb-sumstat-{i}",
-            bedrooms=3, bathrooms=2.0, sqft=1500.0,
-            lot_size=5000.0, year_built=2005,
-            neighborhood="suburb", property_type="house",
+            bedrooms=3,
+            bathrooms=2.0,
+            sqft=1500.0,
+            lot_size=5000.0,
+            year_built=2005,
+            neighborhood="suburb",
+            property_type="house",
             predicted_price=400_000.0 + i * 10_000,
             predicted_rental_yield=0.05,
         )

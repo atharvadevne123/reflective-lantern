@@ -75,6 +75,16 @@ MAX_STRING_INPUT_LENGTH: int = 1_000
 DEFAULT_CB_FAILURE_THRESHOLD: int = 5
 DEFAULT_CB_RECOVERY_TIMEOUT: float = 30.0
 
+# ── Delivery / Logistics ─────────────────────────────────────────────────────
+MAX_DELIVERY_MINUTES: int = 1_440  # 24 hours
+MIN_DELIVERY_MINUTES: int = 1
+MAX_DISTANCE_KM: float = 5_000.0
+MAX_WEIGHT_KG: float = 10_000.0
+
+# ── Model Metadata ────────────────────────────────────────────────────────────
+MODEL_VERSION: str = "1.0.0"
+CONFIDENCE_SCORE_DEFAULT: float = 0.5
+
 __all__ = [
     "CONFIDENCE_SCORE_DEFAULT",
     "DEFAULT_CACHE_MAX_SIZE",

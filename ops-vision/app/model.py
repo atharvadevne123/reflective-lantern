@@ -244,6 +244,8 @@ def generate_synthetic_data(
 
 
 __all__ = [
+    "MODEL_PATH",
+    "MODEL_VERSION",
     "build_model",
     "evaluate",
     "generate_synthetic_data",

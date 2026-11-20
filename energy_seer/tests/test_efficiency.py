@@ -111,6 +111,7 @@ class TestEfficiencyDelta:
 class TestComputeEfficiencyScoreValidation:
     def test_negative_consumption_raises(self) -> None:
         import pytest
+
         from app.efficiency_score import compute_efficiency_score
 
         with pytest.raises(ValueError, match="non-negative"):
@@ -118,6 +119,7 @@ class TestComputeEfficiencyScoreValidation:
 
     def test_zero_floor_area_raises(self) -> None:
         import pytest
+
         from app.efficiency_score import compute_efficiency_score
 
         with pytest.raises(ValueError, match="positive"):

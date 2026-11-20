@@ -45,6 +45,11 @@ a weekly Airflow schedule.
 - **Feature store** — versioned feature sets with publish/get/delete lifecycle management
 - **Shadow mode** — run a shadow function alongside primary to compare outputs without risk
 - **Cost estimation** — compute resource cost breakdown for CPU, memory, and GPU workloads
+- **Utility library** — 100+ helpers across math, stats, string, time, geo, collection, and validation modules
+- **Health checks** — composable `HealthRegistry` with `run_check` for ad-hoc probes and liveness endpoints
+- **Event bus** — synchronous pub/sub with wildcard subscriptions, `once` handlers, and clean teardown
+- **Compression** — gzip/zlib compress/decompress with base64 encode/decode utilities
+- **Emissions factors** — per-region CO₂ intensity lookups with intensity labels and tonne conversions
 
 ---
 

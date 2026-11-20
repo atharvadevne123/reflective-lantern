@@ -42,14 +42,16 @@ def log_prediction_request(
         correlation_id: Request correlation identifier.
         maintenance_needed: Whether the model flagged maintenance.
     """
-    _write_entry({
-        "event": "prediction_request",
-        "ts": datetime.utcnow().isoformat(),
-        "vehicle_id": vehicle_id,
-        "client_ip": client_ip,
-        "correlation_id": correlation_id,
-        "maintenance_needed": maintenance_needed,
-    })
+    _write_entry(
+        {
+            "event": "prediction_request",
+            "ts": datetime.utcnow().isoformat(),
+            "vehicle_id": vehicle_id,
+            "client_ip": client_ip,
+            "correlation_id": correlation_id,
+            "maintenance_needed": maintenance_needed,
+        }
+    )
 
 
 def log_retrain_event(
@@ -64,13 +66,15 @@ def log_retrain_event(
         metrics: Post-training evaluation metrics.
         correlation_id: Request correlation identifier.
     """
-    _write_entry({
-        "event": "model_retrain",
-        "ts": datetime.utcnow().isoformat(),
-        "triggered_by": triggered_by,
-        "metrics": metrics,
-        "correlation_id": correlation_id,
-    })
+    _write_entry(
+        {
+            "event": "model_retrain",
+            "ts": datetime.utcnow().isoformat(),
+            "triggered_by": triggered_by,
+            "metrics": metrics,
+            "correlation_id": correlation_id,
+        }
+    )
 
 
 def recent_audit_entries(n: int = 50) -> list[dict[str, Any]]:

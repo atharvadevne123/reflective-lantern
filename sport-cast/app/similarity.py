@@ -1,4 +1,5 @@
 """FAISS-based historical match similarity search for Sport-Cast."""
+
 from __future__ import annotations
 
 import logging
@@ -82,7 +83,7 @@ class _BruteForceIndex:
 
     def search(self, query: np.ndarray, top_k: int) -> list[dict]:
         diffs = self._vectors - query
-        distances = (diffs ** 2).sum(axis=1)
+        distances = (diffs**2).sum(axis=1)
         indices = np.argsort(distances)[:top_k]
         return [
             {"rank": i + 1, "distance": float(distances[indices[i]]), "index": int(indices[i])}

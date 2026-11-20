@@ -111,13 +111,15 @@ def run_drift_check(db: Session) -> list[dict[str, Any]]:
             db.rollback()
             logger.error("Failed to save drift report: %s", exc)
 
-        reports.append({
-            "feature": feature,
-            "ks_statistic": round(ks_stat, 6),
-            "p_value": round(float(p_value), 6),
-            "drift_detected": drift_detected,
-            "sample_size": len(observed),
-        })
+        reports.append(
+            {
+                "feature": feature,
+                "ks_statistic": round(ks_stat, 6),
+                "p_value": round(float(p_value), 6),
+                "drift_detected": drift_detected,
+                "sample_size": len(observed),
+            }
+        )
         if drift_detected:
             logger.warning("Drift detected in %s: KS=%.4f p=%.6f", feature, ks_stat, p_value)
 

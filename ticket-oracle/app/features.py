@@ -39,18 +39,38 @@ NUMERIC_COLS = [
 TEXT_COL = "description"
 
 DEPARTMENTS = [
-    "Engineering", "Finance", "HR", "IT", "Legal",
-    "Marketing", "Operations", "Sales", "Support", "Unknown",
+    "Engineering",
+    "Finance",
+    "HR",
+    "IT",
+    "Legal",
+    "Marketing",
+    "Operations",
+    "Sales",
+    "Support",
+    "Unknown",
 ]
 INCIDENT_TYPES = [
-    "Access", "Application", "Hardware", "Network",
-    "Security", "Service Request", "Software", "Unknown",
+    "Access",
+    "Application",
+    "Hardware",
+    "Network",
+    "Security",
+    "Service Request",
+    "Software",
+    "Unknown",
 ]
 CHANNELS = ["chat", "email", "phone", "portal"]
 TIERS = ["Bronze", "Gold", "Silver", "Standard"]
 PRODUCT_AREAS = [
-    "CRM", "Database", "ERP", "Infrastructure",
-    "Networking", "Security", "Workstation", "Unknown",
+    "CRM",
+    "Database",
+    "ERP",
+    "Infrastructure",
+    "Networking",
+    "Security",
+    "Workstation",
+    "Unknown",
 ]
 
 
@@ -61,9 +81,11 @@ def make_feature_pipeline() -> ColumnTransformer:
         A fitted-ready ColumnTransformer combining TF-IDF, ordinal encoding,
         and standard scaling for the three feature groups.
     """
-    text_pipe = Pipeline([
-        ("tfidf", TfidfVectorizer(max_features=80, stop_words="english", ngram_range=(1, 2))),
-    ])
+    text_pipe = Pipeline(
+        [
+            ("tfidf", TfidfVectorizer(max_features=80, stop_words="english", ngram_range=(1, 2))),
+        ]
+    )
 
     cat_encoder = OrdinalEncoder(
         categories=[
@@ -136,7 +158,9 @@ def payload_to_dataframe(payload: dict[str, Any]) -> pd.DataFrame:
     return df
 
 
-def make_synthetic_dataset(n_samples: int = 2000, random_state: int = 42) -> tuple[pd.DataFrame, np.ndarray, np.ndarray]:
+def make_synthetic_dataset(
+    n_samples: int = 2000, random_state: int = 42
+) -> tuple[pd.DataFrame, np.ndarray, np.ndarray]:
     """Generate a synthetic IT helpdesk dataset with realistic label signal.
 
     Priority is driven by a weighted latent score over tier, incident_type,
@@ -169,10 +193,14 @@ def make_synthetic_dataset(n_samples: int = 2000, random_state: int = 42) -> tup
         for inc, dep in zip(incident_types, departments, strict=True)
     ]
 
-    tier_score = np.where(np.isin(tiers, ["Gold"]), 1.5,
-                 np.where(np.isin(tiers, ["Silver"]), 0.8, 0.0))
-    inc_score = np.where(np.isin(incident_types, ["Security", "Network"]), 1.5,
-                np.where(np.isin(incident_types, ["Application", "Access"]), 0.8, 0.0))
+    tier_score = np.where(
+        np.isin(tiers, ["Gold"]), 1.5, np.where(np.isin(tiers, ["Silver"]), 0.8, 0.0)
+    )
+    inc_score = np.where(
+        np.isin(incident_types, ["Security", "Network"]),
+        1.5,
+        np.where(np.isin(incident_types, ["Application", "Access"]), 0.8, 0.0),
+    )
     workload_score = (open_tickets / 50.0) + (agent_load / 15.0)
     hour_score = np.where((hour_of_day >= 8) & (hour_of_day <= 18), 0.5, 1.0)
 
@@ -181,15 +209,19 @@ def make_synthetic_dataset(n_samples: int = 2000, random_state: int = 42) -> tup
 
     # Map latent score to 4-class priority (0=P1 critical, 3=P4 low)
     thresholds = np.percentile(latent, [20, 50, 75])
-    y_priority = np.where(latent >= thresholds[2], 0,
-                 np.where(latent >= thresholds[1], 1,
-                 np.where(latent >= thresholds[0], 2, 3)))
+    y_priority = np.where(
+        latent >= thresholds[2],
+        0,
+        np.where(latent >= thresholds[1], 1, np.where(latent >= thresholds[0], 2, 3)),
+    )
 
     # SLA breach: P1/P2 tickets + high workload raises breach probability
     breach_prob = (
-        np.where(y_priority == 0, 0.85,
-        np.where(y_priority == 1, 0.60,
-        np.where(y_priority == 2, 0.30, 0.10)))
+        np.where(
+            y_priority == 0,
+            0.85,
+            np.where(y_priority == 1, 0.60, np.where(y_priority == 2, 0.30, 0.10)),
+        )
         + 0.1 * workload_score
     ).clip(0.0, 1.0)
     y_sla = (rng.uniform(0, 1, n_samples) < breach_prob).astype(int)
@@ -197,26 +229,31 @@ def make_synthetic_dataset(n_samples: int = 2000, random_state: int = 42) -> tup
     is_weekend = (day_of_week >= 5).astype(float)
     is_month_end = rng.integers(0, 2, n_samples).astype(float)
 
-    X = pd.DataFrame({
-        TEXT_COL: descriptions,
-        "department": departments,
-        "incident_type": incident_types,
-        "channel": channels,
-        "customer_tier": tiers,
-        "product_area": product_areas,
-        "open_tickets_count": open_tickets,
-        "agent_load": agent_load,
-        "hour_of_day": hour_of_day,
-        "day_of_week": day_of_week,
-        "is_weekend": is_weekend,
-        "is_month_end": is_month_end,
-        "ticket_age_minutes": ticket_age,
-        "same_user_last_7d": same_user,
-    })
+    X = pd.DataFrame(
+        {
+            TEXT_COL: descriptions,
+            "department": departments,
+            "incident_type": incident_types,
+            "channel": channels,
+            "customer_tier": tiers,
+            "product_area": product_areas,
+            "open_tickets_count": open_tickets,
+            "agent_load": agent_load,
+            "hour_of_day": hour_of_day,
+            "day_of_week": day_of_week,
+            "is_weekend": is_weekend,
+            "is_month_end": is_month_end,
+            "ticket_age_minutes": ticket_age,
+            "same_user_last_7d": same_user,
+        }
+    )
 
     logger.info(
         "synthetic_dataset_generated",
-        extra={"n_samples": n_samples, "priority_dist": dict(zip(*np.unique(y_priority, return_counts=True), strict=True))},
+        extra={
+            "n_samples": n_samples,
+            "priority_dist": dict(zip(*np.unique(y_priority, return_counts=True), strict=True)),
+        },
     )
     return X, y_priority, y_sla
 

@@ -1,4 +1,5 @@
 """Drift detection and monitoring tests."""
+
 from __future__ import annotations
 
 import pytest
@@ -50,10 +51,13 @@ def test_compute_psi_shifted_distribution():
     assert psi > 0.1
 
 
-@pytest.mark.parametrize("ref,cur,expected_drift", [
-    ([0.0] * 50 + [1.0] * 50, [0.0] * 50 + [1.0] * 50, False),
-    ([0.0] * 100, [100.0] * 100, True),
-])
+@pytest.mark.parametrize(
+    "ref,cur,expected_drift",
+    [
+        ([0.0] * 50 + [1.0] * 50, [0.0] * 50 + [1.0] * 50, False),
+        ([0.0] * 100, [100.0] * 100, True),
+    ],
+)
 def test_compute_drift_parametrized(ref, cur, expected_drift):
     result = compute_drift(ref, cur)
     assert result["drift_detected"] is expected_drift
@@ -82,9 +86,12 @@ def test_log_prediction_and_metrics(db_session):
     log_prediction(
         db_session,
         match_id="metric-test-001",
-        home_team="A", away_team="B",
+        home_team="A",
+        away_team="B",
         predicted_outcome="home_win",
-        home_win_prob=0.6, draw_prob=0.25, away_win_prob=0.15,
+        home_win_prob=0.6,
+        draw_prob=0.25,
+        away_win_prob=0.15,
         confidence=0.6,
     )
     metrics = get_prediction_metrics(db_session)

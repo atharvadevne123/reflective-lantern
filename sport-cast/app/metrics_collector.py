@@ -1,4 +1,5 @@
 """Thread-safe metrics counters and timing for Sport-Cast telemetry."""
+
 from __future__ import annotations
 
 import logging

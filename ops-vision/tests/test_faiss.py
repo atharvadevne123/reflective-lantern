@@ -33,6 +33,31 @@ SAMPLE_RUNBOOKS = [
 ]
 
 
+class TestRunbookRepr:
+    """Tests for Runbook.__repr__."""
+
+    def test_repr_contains_title(self) -> None:
+        """repr includes the runbook title."""
+        rb = Runbook(title="High CPU", content="Check CPU.", category="cpu")
+        assert "High CPU" in repr(rb)
+
+    def test_repr_contains_category(self) -> None:
+        """repr includes the runbook category."""
+        rb = Runbook(title="Memory Leak", content="Profile heap.", category="memory")
+        assert "memory" in repr(rb)
+
+    def test_repr_is_string(self) -> None:
+        """repr() returns a str."""
+        rb = Runbook(title="Disk I/O", content="Check iostat.", category="disk")
+        assert isinstance(repr(rb), str)
+
+    @pytest.mark.parametrize("category", ["cpu", "memory", "network", "disk", "database"])
+    def test_repr_category_parametrized(self, category: str) -> None:
+        """repr contains the category for each category value."""
+        rb = Runbook(title="Test", content="Body.", category=category)
+        assert category in repr(rb)
+
+
 class TestRunbookIndexBuild:
     """Tests for RunbookIndex.build()."""
 
@@ -210,3 +235,117 @@ class TestRunbookIndexSearchByCategory:
         index = RunbookIndex()
         results = index.search_by_category("cpu", "cpu", top_k=3)
         assert results == []
+
+
+class TestRunbookIndexRepr:
+    """Tests for RunbookIndex.__repr__."""
+
+    def test_repr_is_string(self) -> None:
+        """repr() returns a str."""
+        assert isinstance(repr(RunbookIndex()), str)
+
+    def test_repr_shows_empty_before_build(self) -> None:
+        """repr shows 'empty' before build()."""
+        assert "empty" in repr(RunbookIndex())
+
+    def test_repr_shows_built_after_build(self) -> None:
+        """repr shows 'built' after build()."""
+        index = RunbookIndex()
+        index.build(SAMPLE_RUNBOOKS)
+        assert "built" in repr(index)
+
+    def test_repr_contains_size(self) -> None:
+        """repr contains the index size after building."""
+        index = RunbookIndex()
+        index.build(SAMPLE_RUNBOOKS)
+        assert str(len(SAMPLE_RUNBOOKS)) in repr(index)
+
+    @pytest.mark.parametrize("dim", [32, 64, 128])
+    def test_repr_contains_embedding_dim(self, dim: int) -> None:
+        """repr contains the embedding dimensionality."""
+        index = RunbookIndex(embedding_dim=dim)
+        assert str(dim) in repr(index)
+
+
+class TestRunbookIndexParametrized:
+    """Parametrized tests for RunbookIndex search behaviour."""
+
+    @pytest.fixture
+    def built_index(self) -> RunbookIndex:
+        index = RunbookIndex()
+        index.build(SAMPLE_RUNBOOKS)
+        return index
+
+    @pytest.mark.parametrize("top_k", [1, 2, 3, 5])
+    def test_search_top_k_bound(self, built_index, top_k: int) -> None:
+        """search() never returns more than top_k results."""
+        results = built_index.search("cpu memory disk", top_k=top_k)
+        assert len(results) <= top_k
+
+    @pytest.mark.parametrize("category", ["cpu", "memory", "network", "disk", "database"])
+    def test_search_by_category_all_results_match(self, built_index, category: str) -> None:
+        """Every result from search_by_category belongs to the given category."""
+        results = built_index.search_by_category("issue problem", category, top_k=5)
+        for rb, _ in results:
+            assert rb.category == category
+
+    @pytest.mark.parametrize(
+        "query",
+        [
+            "cpu high load consumer",
+            "memory heap dump leak",
+            "network dns latency retransmit",
+            "disk io iotop fsync",
+            "database pool connection idle",
+        ],
+    )
+    def test_search_scores_finite(self, built_index, query: str) -> None:
+        """All similarity scores returned by search() are finite floats."""
+        import math
+
+        results = built_index.search(query, top_k=3)
+        for _, score in results:
+            assert math.isfinite(score)
+
+    @pytest.mark.parametrize("n_runbooks", [1, 3, 5])
+    def test_index_size_after_build(self, n_runbooks: int) -> None:
+        """index.size equals the number of runbooks passed to build()."""
+        index = RunbookIndex()
+        index.build(SAMPLE_RUNBOOKS[:n_runbooks])
+        assert index.size == n_runbooks
+
+    @pytest.mark.parametrize("top_k", [1, 2, 3])
+    def test_search_by_category_top_k_bound(self, built_index, top_k: int) -> None:
+        """search_by_category never returns more results than top_k."""
+        results = built_index.search_by_category("process high load", "cpu", top_k=top_k)
+        assert len(results) <= top_k
+
+
+class TestRunbookToDict:
+    """Tests for Runbook.to_dict()."""
+
+    def test_to_dict_returns_dict(self) -> None:
+        """to_dict() returns a plain dict."""
+        rb = Runbook(title="Check CPU", content="Run top to view usage.", category="cpu")
+        assert isinstance(rb.to_dict(), dict)
+
+    def test_to_dict_has_title(self) -> None:
+        """to_dict() result contains the title field."""
+        rb = Runbook(title="Check CPU", content="Run top to view usage.", category="cpu")
+        assert rb.to_dict()["title"] == "Check CPU"
+
+    def test_to_dict_has_content(self) -> None:
+        """to_dict() result contains the content field."""
+        rb = Runbook(title="Check CPU", content="Run top.", category="cpu")
+        assert rb.to_dict()["content"] == "Run top."
+
+    def test_to_dict_has_category(self) -> None:
+        """to_dict() result contains the category field."""
+        rb = Runbook(title="Check CPU", content="Run top.", category="cpu")
+        assert rb.to_dict()["category"] == "cpu"
+
+    @pytest.mark.parametrize("category", ["cpu", "memory", "network", "disk", "latency"])
+    def test_to_dict_category_parametrized(self, category: str) -> None:
+        """to_dict() category field matches the runbook category."""
+        rb = Runbook(title="Test", content="Test content.", category=category)
+        assert rb.to_dict()["category"] == category

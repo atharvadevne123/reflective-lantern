@@ -132,7 +132,6 @@ def test_validate_forecast_length_valid(n: int) -> None:
 @pytest.mark.parametrize("n", [0, -1, 8761])
 def test_validate_forecast_length_invalid_raises(n: int) -> None:
     import pytest
-
     from energy_seer.app.validators import validate_forecast_length
 
     with pytest.raises(ValueError):
@@ -149,7 +148,6 @@ def test_validate_tariff_positive_returns_value(tariff: float) -> None:
 @pytest.mark.parametrize("tariff", [0.0, -0.1, -10.0])
 def test_validate_tariff_non_positive_raises(tariff: float) -> None:
     import pytest
-
     from energy_seer.app.validators import validate_tariff
 
     with pytest.raises(ValueError):
@@ -277,6 +275,7 @@ class TestValidateAlpha:
 
     def test_zero_raises(self) -> None:
         import pytest
+
         from app.validators import validate_alpha
 
         with pytest.raises(ValueError):
@@ -284,6 +283,7 @@ class TestValidateAlpha:
 
     def test_above_one_raises(self) -> None:
         import pytest
+
         from app.validators import validate_alpha
 
         with pytest.raises(ValueError):
@@ -298,6 +298,7 @@ class TestValidatePeriod:
 
     def test_period_below_min_raises(self) -> None:
         import pytest
+
         from app.validators import validate_period
 
         with pytest.raises(ValueError):

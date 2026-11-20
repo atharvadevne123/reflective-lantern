@@ -181,11 +181,32 @@ def psi_alert(psi_value: float, feature_name: str = "unknown") -> dict[str, obje
     return {"alert": alert, "message": message, "drift_level": level}
 
 
+def psi_batch_alert(
+    feature_psi_values: dict[str, float],
+) -> list[dict[str, object]]:
+    """Generate alert dicts for a batch of feature PSI measurements.
+
+    Args:
+        feature_psi_values: Mapping of feature name to its PSI value.
+
+    Returns:
+        List of alert dicts (as returned by :func:`psi_alert`) for each
+        feature, sorted by PSI value descending.
+    """
+    alerts = [
+        psi_alert(psi_value, feature_name=feature)
+        for feature, psi_value in feature_psi_values.items()
+    ]
+    alerts.sort(key=lambda a: float(a.get("psi_value", 0.0)), reverse=True)
+    return alerts
+
+
 __all__ = [
     "PSI_MODERATE_THRESHOLD",
     "PSI_STABLE_THRESHOLD",
     "compute_psi",
     "psi_alert",
+    "psi_batch_alert",
     "psi_feature_rank",
     "psi_report",
     "psi_series_trend",

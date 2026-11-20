@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import pytest
+
 
 def test_upload_model_returns_false_when_no_bucket(monkeypatch, tmp_path) -> None:
     monkeypatch.setenv("S3_BUCKET", "")
@@ -65,9 +67,6 @@ def test_upload_model_uses_version_in_key(monkeypatch, tmp_path) -> None:
     monkeypatch.setattr(aws_stub, "S3_BUCKET", "")
     result = aws_stub.upload_model(Path("model.joblib"), version="2.0.0")
     assert result is False
-
-
-import pytest
 
 
 @pytest.mark.parametrize("version", ["1.0.0", "2.3.1", "0.0.1"])

@@ -8,17 +8,23 @@ from pydantic import BaseModel, Field, field_validator
 class TelemetryInput(BaseModel):
     """Single vehicle telemetry reading."""
 
-    vehicle_id: str = Field(..., min_length=1, max_length=64, description="Unique vehicle identifier")
+    vehicle_id: str = Field(
+        ..., min_length=1, max_length=64, description="Unique vehicle identifier"
+    )
     speed_kmh: float = Field(..., ge=0, le=300, description="Current speed in km/h")
     engine_temp_c: float = Field(..., ge=-40, le=200, description="Engine temperature in Celsius")
     oil_pressure_bar: float = Field(..., ge=0, le=10, description="Oil pressure in bar")
-    fuel_consumption_lph: float = Field(..., ge=0, le=100, description="Fuel consumption in litres/hour")
+    fuel_consumption_lph: float = Field(
+        ..., ge=0, le=100, description="Fuel consumption in litres/hour"
+    )
     battery_voltage_v: float = Field(..., ge=0, le=20, description="Battery voltage in volts")
     brake_pad_mm: float = Field(..., ge=0, le=20, description="Brake pad thickness in millimetres")
     tire_pressure_bar: float = Field(..., ge=0, le=5, description="Tyre pressure in bar")
     rpm: float = Field(..., ge=0, le=10000, description="Engine RPM")
     coolant_temp_c: float = Field(..., ge=-40, le=150, description="Coolant temperature in Celsius")
-    transmission_temp_c: float = Field(..., ge=-40, le=200, description="Transmission temperature in Celsius")
+    transmission_temp_c: float = Field(
+        ..., ge=-40, le=200, description="Transmission temperature in Celsius"
+    )
 
     @field_validator("vehicle_id")
     @classmethod

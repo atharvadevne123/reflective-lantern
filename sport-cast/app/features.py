@@ -6,6 +6,7 @@ via a 7-stage sklearn-compatible Pipeline:
     → RatioFeatureTransformer → FatigueTransformer
     → DropCategoricalTransformer → StandardScaler
 """
+
 from __future__ import annotations
 
 import logging
@@ -255,14 +256,25 @@ class DropCategoricalTransformer(BaseEstimator, TransformerMixin):
 
 
 FEATURE_COLUMNS: list[str] = [
-    "home_wins_last5", "home_draws_last5", "home_losses_last5",
-    "away_wins_last5", "away_draws_last5", "away_losses_last5",
-    "home_goals_avg", "home_goals_conceded_avg",
-    "away_goals_avg", "away_goals_conceded_avg",
-    "h2h_home_wins", "h2h_away_wins", "h2h_draws",
-    "home_ranking", "away_ranking",
-    "home_elo", "away_elo",
-    "home_days_rest", "away_days_rest",
+    "home_wins_last5",
+    "home_draws_last5",
+    "home_losses_last5",
+    "away_wins_last5",
+    "away_draws_last5",
+    "away_losses_last5",
+    "home_goals_avg",
+    "home_goals_conceded_avg",
+    "away_goals_avg",
+    "away_goals_conceded_avg",
+    "h2h_home_wins",
+    "h2h_away_wins",
+    "h2h_draws",
+    "home_ranking",
+    "away_ranking",
+    "home_elo",
+    "away_elo",
+    "home_days_rest",
+    "away_days_rest",
     "home_is_home_ground",
 ]
 
@@ -273,15 +285,17 @@ def make_feature_pipeline() -> Pipeline:
     Returns:
         sklearn Pipeline ready for fit_transform.
     """
-    return Pipeline([
-        ("form", FormEncoder()),
-        ("lag_rolling", LagRollingTransformer()),
-        ("h2h", HeadToHeadTransformer()),
-        ("ratios", RatioFeatureTransformer()),
-        ("fatigue", FatigueTransformer()),
-        ("drop_cat", DropCategoricalTransformer()),
-        ("scaler", StandardScaler()),
-    ])
+    return Pipeline(
+        [
+            ("form", FormEncoder()),
+            ("lag_rolling", LagRollingTransformer()),
+            ("h2h", HeadToHeadTransformer()),
+            ("ratios", RatioFeatureTransformer()),
+            ("fatigue", FatigueTransformer()),
+            ("drop_cat", DropCategoricalTransformer()),
+            ("scaler", StandardScaler()),
+        ]
+    )
 
 
 def make_synthetic_dataset(n: int = 2000, seed: int = 42) -> tuple[pd.DataFrame, np.ndarray]:
@@ -306,28 +320,30 @@ def make_synthetic_dataset(n: int = 2000, seed: int = 42) -> tuple[pd.DataFrame,
     home_days_rest = rng.integers(2, 14, n).astype(float)
     away_days_rest = rng.integers(2, 14, n).astype(float)
 
-    df = pd.DataFrame({
-        "home_wins_last5": rng.integers(0, 6, n),
-        "home_draws_last5": rng.integers(0, 3, n),
-        "home_losses_last5": rng.integers(0, 6, n),
-        "away_wins_last5": rng.integers(0, 6, n),
-        "away_draws_last5": rng.integers(0, 3, n),
-        "away_losses_last5": rng.integers(0, 6, n),
-        "home_goals_avg": rng.uniform(0.5, 3.0, n),
-        "home_goals_conceded_avg": rng.uniform(0.5, 3.0, n),
-        "away_goals_avg": rng.uniform(0.5, 3.0, n),
-        "away_goals_conceded_avg": rng.uniform(0.5, 3.0, n),
-        "h2h_home_wins": rng.integers(0, 10, n),
-        "h2h_away_wins": rng.integers(0, 10, n),
-        "h2h_draws": rng.integers(0, 5, n),
-        "home_ranking": rng.integers(1, 100, n).astype(float),
-        "away_ranking": rng.integers(1, 100, n).astype(float),
-        "home_elo": home_elo,
-        "away_elo": away_elo,
-        "home_days_rest": home_days_rest,
-        "away_days_rest": away_days_rest,
-        "home_is_home_ground": rng.integers(0, 2, n).astype(float),
-    })
+    df = pd.DataFrame(
+        {
+            "home_wins_last5": rng.integers(0, 6, n),
+            "home_draws_last5": rng.integers(0, 3, n),
+            "home_losses_last5": rng.integers(0, 6, n),
+            "away_wins_last5": rng.integers(0, 6, n),
+            "away_draws_last5": rng.integers(0, 3, n),
+            "away_losses_last5": rng.integers(0, 6, n),
+            "home_goals_avg": rng.uniform(0.5, 3.0, n),
+            "home_goals_conceded_avg": rng.uniform(0.5, 3.0, n),
+            "away_goals_avg": rng.uniform(0.5, 3.0, n),
+            "away_goals_conceded_avg": rng.uniform(0.5, 3.0, n),
+            "h2h_home_wins": rng.integers(0, 10, n),
+            "h2h_away_wins": rng.integers(0, 10, n),
+            "h2h_draws": rng.integers(0, 5, n),
+            "home_ranking": rng.integers(1, 100, n).astype(float),
+            "away_ranking": rng.integers(1, 100, n).astype(float),
+            "home_elo": home_elo,
+            "away_elo": away_elo,
+            "home_days_rest": home_days_rest,
+            "away_days_rest": away_days_rest,
+            "home_is_home_ground": rng.integers(0, 2, n).astype(float),
+        }
+    )
 
     elo_diff = home_elo - away_elo
     form_home = (df["home_wins_last5"] * 3 + df["home_draws_last5"]) / 15.0
@@ -342,5 +358,7 @@ def make_synthetic_dataset(n: int = 2000, seed: int = 42) -> tuple[pd.DataFrame,
 
     labels = np.where(latent > 0.3, 2, np.where(latent < -0.3, 0, 1))
     uniq, counts = np.unique(labels, return_counts=True)
-    logger.debug("Synthetic dataset: n=%d, class distribution=%s", n, dict(zip(uniq, counts, strict=True)))
+    logger.debug(
+        "Synthetic dataset: n=%d, class distribution=%s", n, dict(zip(uniq, counts, strict=True))
+    )
     return df, labels

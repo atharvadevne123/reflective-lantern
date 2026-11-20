@@ -46,7 +46,9 @@ class TestPredictionLog:
 
     def test_query_by_ticker(self, db_session: Session) -> None:
         for ticker in ["AAPL", "GOOG", "AAPL"]:
-            db_session.add(PredictionLog(ticker=ticker, prediction=1, confidence=0.8, model_version="1"))
+            db_session.add(
+                PredictionLog(ticker=ticker, prediction=1, confidence=0.8, model_version="1")
+            )
         db_session.commit()
         appl = db_session.query(PredictionLog).filter_by(ticker="AAPL").count()
         assert appl == 2

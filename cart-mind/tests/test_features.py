@@ -234,9 +234,6 @@ class TestDropLowVarianceFeatures:
         assert result is not df
 
 
-import pytest
-
-
 @pytest.mark.parametrize("threshold", [0.001, 0.01, 0.1])
 def test_constant_column_dropped_at_any_threshold(threshold: float) -> None:
     """A zero-variance column is removed for any threshold strictly above zero."""

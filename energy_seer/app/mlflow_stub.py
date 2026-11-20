@@ -30,3 +30,12 @@ def start_run(run_name: str = "energy-seer") -> None:
 def end_run() -> None:
     """End the active MLflow run (stub logs locally)."""
     logger.info("mlflow_run_end")
+
+
+__all__ = [
+    "end_run",
+    "log_metrics",
+    "log_model",
+    "log_params",
+    "start_run",
+]

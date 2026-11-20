@@ -117,15 +117,17 @@ FEATURE_COLS = ["volatility", "momentum", "volume_ratio", "correlation", "beta"]
 
 def build_feature_pipeline() -> Pipeline:
     """Return the full sklearn feature-engineering pipeline."""
-    return Pipeline([
-        ("volatility", VolatilityFeature()),
-        ("momentum", MomentumFeature()),
-        ("volume_ratio", VolumeRatioFeature()),
-        ("correlation", MarketCorrelationFeature()),
-        ("beta", BetaFeature()),
-        ("drop_raw", DropRawColumns()),
-        ("scaler", StandardScaler()),
-    ])
+    return Pipeline(
+        [
+            ("volatility", VolatilityFeature()),
+            ("momentum", MomentumFeature()),
+            ("volume_ratio", VolumeRatioFeature()),
+            ("correlation", MarketCorrelationFeature()),
+            ("beta", BetaFeature()),
+            ("drop_raw", DropRawColumns()),
+            ("scaler", StandardScaler()),
+        ]
+    )
 
 
 def prepare_features(df: pd.DataFrame) -> np.ndarray:
@@ -146,8 +148,12 @@ def extract_single_row(row: dict) -> pd.DataFrame:
     for col in required:
         if col not in row:
             raise ValueError(f"Missing required field: {col}")
-    defaults = {"open": row["close"], "high": row["close"], "low": row["close"],
-                "market_return": 0.0}
+    defaults = {
+        "open": row["close"],
+        "high": row["close"],
+        "low": row["close"],
+        "market_return": 0.0,
+    }
     merged = {**defaults, **row}
     df = pd.DataFrame([merged] * 22)  # pad to allow rolling window
     df["close"] = float(merged["close"])

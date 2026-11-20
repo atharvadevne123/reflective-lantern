@@ -1,4 +1,5 @@
 """API endpoint tests."""
+
 from __future__ import annotations
 
 import pytest
@@ -73,14 +74,18 @@ def test_metrics_endpoint(client):
 
 def test_drift_check_endpoint(client):
     import random
+
     random.seed(42)
     ref = [random.gauss(0, 1) for _ in range(100)]
     cur = [random.gauss(0, 1) for _ in range(100)]
-    resp = client.post("/api/v1/drift", json={
-        "feature_name": "home_elo",
-        "reference_values": ref,
-        "current_values": cur,
-    })
+    resp = client.post(
+        "/api/v1/drift",
+        json={
+            "feature_name": "home_elo",
+            "reference_values": ref,
+            "current_values": cur,
+        },
+    )
     assert resp.status_code == 200
     data = resp.json()
     assert "ks_statistic" in data
@@ -90,11 +95,14 @@ def test_drift_check_endpoint(client):
 def test_drift_detects_shift(client):
     ref = [1.0] * 100
     cur = [10.0] * 100
-    resp = client.post("/api/v1/drift", json={
-        "feature_name": "home_elo",
-        "reference_values": ref,
-        "current_values": cur,
-    })
+    resp = client.post(
+        "/api/v1/drift",
+        json={
+            "feature_name": "home_elo",
+            "reference_values": ref,
+            "current_values": cur,
+        },
+    )
     assert resp.status_code == 200
     assert resp.json()["drift_detected"] is True
 

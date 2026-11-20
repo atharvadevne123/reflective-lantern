@@ -54,7 +54,9 @@ def generate_training_data(**context) -> None:
     """Task 1: Generate synthetic training data and push to XCom."""
     from app.features import make_synthetic_dataset
 
-    X, y_p, y_s = make_synthetic_dataset(n_samples=2000, random_state=int(datetime.utcnow().timestamp()))
+    X, y_p, y_s = make_synthetic_dataset(
+        n_samples=2000, random_state=int(datetime.utcnow().timestamp())
+    )
     context["ti"].xcom_push(key="n_samples", value=len(X))
     logger.info("training_data_generated", extra={"n_samples": len(X)})
 
@@ -84,7 +86,10 @@ def evaluate_and_promote(**context) -> None:
     from app.model import METRICS_PATH
 
     ti = context["ti"]
-    champion_auc = ti.xcom_pull(task_ids="train_challenger", key="champion_auc") or {"priority": 0.0, "sla": 0.0}
+    champion_auc = ti.xcom_pull(task_ids="train_challenger", key="champion_auc") or {
+        "priority": 0.0,
+        "sla": 0.0,
+    }
     challenger = ti.xcom_pull(task_ids="train_challenger", key="challenger_metrics") or {}
 
     ch_priority = challenger.get("priority_auc_mean", 0.0)
@@ -133,7 +138,9 @@ if AIRFLOW_AVAILABLE:
         catchup=False,
         tags=["ticket-oracle", "ml", "retraining"],
     ) as dag:
-        t1 = PythonOperator(task_id="generate_training_data", python_callable=generate_training_data)
+        t1 = PythonOperator(
+            task_id="generate_training_data", python_callable=generate_training_data
+        )
         t2 = PythonOperator(task_id="train_challenger", python_callable=train_challenger)
         t3 = PythonOperator(task_id="evaluate_and_promote", python_callable=evaluate_and_promote)
         t4 = PythonOperator(task_id="run_drift_report", python_callable=run_drift_report)

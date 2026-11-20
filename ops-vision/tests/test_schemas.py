@@ -226,3 +226,56 @@ class TestModelInfoResponse:
             estimators=["xgb", "lgbm", "rf"],
         )
         assert len(resp.estimators) == 3
+
+
+class TestMetricsPayloadParametrized:
+    """Parametrized validation tests for MetricsPayload."""
+
+    def _valid(self) -> dict:
+        return {
+            "service_name": "test-svc",
+            "cpu_usage_pct": 50.0,
+            "memory_usage_pct": 50.0,
+            "error_rate_per_min": 1.0,
+            "latency_p99_ms": 100.0,
+            "request_rate_per_sec": 50.0,
+            "disk_io_util_pct": 20.0,
+        }
+
+    @pytest.mark.parametrize("cpu", [0.0, 1.0, 50.0, 99.9, 100.0])
+    def test_cpu_boundary_values_accepted(self, cpu: float) -> None:
+        """MetricsPayload accepts cpu_usage_pct at the valid boundaries."""
+        data = {**self._valid(), "cpu_usage_pct": cpu}
+        payload = MetricsPayload(**data)
+        assert payload.cpu_usage_pct == cpu
+
+    @pytest.mark.parametrize("bad_cpu", [-0.1, 100.1, 200.0, -50.0])
+    def test_cpu_out_of_range_rejected(self, bad_cpu: float) -> None:
+        """MetricsPayload rejects cpu_usage_pct outside [0, 100]."""
+        data = {**self._valid(), "cpu_usage_pct": bad_cpu}
+        with pytest.raises(ValidationError):
+            MetricsPayload(**data)
+
+    @pytest.mark.parametrize("latency", [0.1, 10.0, 500.0, 5000.0])
+    def test_latency_positive_values_accepted(self, latency: float) -> None:
+        """MetricsPayload accepts positive latency_p99_ms values."""
+        data = {**self._valid(), "latency_p99_ms": latency}
+        payload = MetricsPayload(**data)
+        assert payload.latency_p99_ms == latency
+
+    @pytest.mark.parametrize("service_name", ["api", "payments-api", "svc_1", "x" * 64])
+    def test_various_service_names_accepted(self, service_name: str) -> None:
+        """MetricsPayload accepts well-formed service names."""
+        data = {**self._valid(), "service_name": service_name}
+        payload = MetricsPayload(**data)
+        assert payload.service_name == service_name
+
+
+class TestSeverityLevelParametrized:
+    """Parametrized tests for SeverityLevel enum."""
+
+    @pytest.mark.parametrize("level", ["low", "medium", "high", "critical"])
+    def test_valid_severity_levels(self, level: str) -> None:
+        """All four severity levels parse correctly."""
+        sev = SeverityLevel(level)
+        assert sev.value == level

@@ -192,6 +192,46 @@ def validate_humidity(humidity_pct: float) -> float:
     return humidity_pct
 
 
+def validate_positive_int(value: int, name: str = "value") -> int:
+    """Validate that an integer is strictly positive.
+
+    Args:
+        value: Integer to validate.
+        name: Field name used in the error message.
+
+    Returns:
+        Validated value.
+
+    Raises:
+        ValueError: If *value* is not a positive integer.
+    """
+    if not isinstance(value, int) or isinstance(value, bool):
+        raise ValueError(f"{name} must be an integer, got {type(value).__name__}")
+    if value <= 0:
+        raise ValueError(f"{name} must be positive, got {value}")
+    return value
+
+
+def validate_non_negative_float(value: float, name: str = "value") -> float:
+    """Validate that a float is finite and non-negative.
+
+    Args:
+        value: Float to validate.
+        name: Field name used in the error message.
+
+    Returns:
+        Validated value.
+
+    Raises:
+        ValueError: If *value* is negative or non-finite.
+    """
+    if not math.isfinite(value):
+        raise ValueError(f"{name} must be finite, got {value}")
+    if value < 0.0:
+        raise ValueError(f"{name} must be non-negative, got {value}")
+    return value
+
+
 __all__ = [
     "clamp",
     "validate_alpha",
@@ -200,7 +240,9 @@ __all__ = [
     "validate_horizon",
     "validate_humidity",
     "validate_meter_id",
+    "validate_non_negative_float",
     "validate_period",
+    "validate_positive_int",
     "validate_readings_list",
     "validate_tariff",
     "validate_temperature",

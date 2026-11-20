@@ -88,6 +88,7 @@ class TestWeightedMovingAverage:
 
     def test_empty_raises(self) -> None:
         import pytest
+
         from app.forecaster import weighted_moving_average
 
         with pytest.raises(ValueError):
@@ -139,6 +140,7 @@ class TestExponentialSmoothing:
 
     def test_empty_raises(self) -> None:
         import pytest
+
         from app.forecaster import exponential_smoothing
 
         with pytest.raises(ValueError):
@@ -146,6 +148,7 @@ class TestExponentialSmoothing:
 
     def test_invalid_alpha_raises(self) -> None:
         import pytest
+
         from app.forecaster import exponential_smoothing
 
         with pytest.raises(ValueError):

@@ -133,3 +133,102 @@ class TestRetryWithBackoff:
                 base=0.001,
                 exceptions=(ValueError,),
             )
+
+
+class TestRetryOnException:
+    def test_succeeds_on_first_attempt(self) -> None:
+        from app.retry_utils import retry_on_exception
+
+        @retry_on_exception(exceptions=(ValueError,), attempts=3)
+        def good() -> str:
+            return "ok"
+
+        assert good() == "ok"
+
+    def test_retries_on_exception(self) -> None:
+        from app.retry_utils import RetryError, retry_on_exception
+
+        call_count = 0
+
+        @retry_on_exception(exceptions=(ValueError,), attempts=3)
+        def flaky() -> None:
+            nonlocal call_count
+            call_count += 1
+            raise ValueError("fail")
+
+        with pytest.raises(RetryError):
+            flaky()
+        assert call_count == 3
+
+    def test_does_not_retry_unspecified_exception(self) -> None:
+        from app.retry_utils import retry_on_exception
+
+        @retry_on_exception(exceptions=(ValueError,), attempts=3)
+        def raises_key_error() -> None:
+            raise KeyError("not retried")
+
+        with pytest.raises(KeyError):
+            raises_key_error()
+
+    def test_succeeds_after_initial_failures(self) -> None:
+        from app.retry_utils import retry_on_exception
+
+        attempts = 0
+
+        @retry_on_exception(exceptions=(RuntimeError,), attempts=3)
+        def eventually_ok() -> str:
+            nonlocal attempts
+            attempts += 1
+            if attempts < 3:
+                raise RuntimeError("not yet")
+            return "done"
+
+        assert eventually_ok() == "done"
+
+    @pytest.mark.parametrize("max_attempts", [1, 2, 3])
+    def test_all_attempts_exhausted(self, max_attempts: int) -> None:
+        from app.retry_utils import RetryError, retry_on_exception
+
+        @retry_on_exception(exceptions=(Exception,), attempts=max_attempts)
+        def always_fails() -> None:
+            raise RuntimeError("always")
+
+        with pytest.raises(RetryError):
+            always_fails()
+
+
+class TestBoundedRetry:
+    def test_success_on_first_attempt(self) -> None:
+        from app.retry_utils import bounded_retry
+
+        result = bounded_retry(lambda: 42)
+        assert result == 42
+
+    def test_retries_until_success(self) -> None:
+        from app.retry_utils import bounded_retry
+
+        call_count = [0]
+
+        def flaky() -> int:
+            call_count[0] += 1
+            if call_count[0] < 3:
+                raise ValueError("not yet")
+            return 99
+
+        result = bounded_retry(flaky, attempts=3)
+        assert result == 99
+        assert call_count[0] == 3
+
+    def test_raises_retry_error_on_exhaustion(self) -> None:
+        import pytest
+
+        from app.retry_utils import RetryError, bounded_retry
+
+        with pytest.raises(RetryError):
+            bounded_retry(lambda: (_ for _ in ()).throw(ValueError("fail")), attempts=2)
+
+    def test_passes_args_to_fn(self) -> None:
+        from app.retry_utils import bounded_retry
+
+        result = bounded_retry(lambda x, y: x + y, 3, 4)
+        assert result == 7

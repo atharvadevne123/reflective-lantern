@@ -250,10 +250,12 @@ def length_of_stay_mix(stays: list[int]) -> dict[str, float]:
     one = sum(1 for s in stays if s == 1)
     two_three = sum(1 for s in stays if 2 <= s <= 3)
     four_plus = sum(1 for s in stays if s >= 4)
+    one_frac = one / n
+    two_three_frac = two_three / n
     return {
-        "one_night": round(one / n, 4),
-        "two_three_nights": round(two_three / n, 4),
-        "four_plus_nights": round(four_plus / n, 4),
+        "one_night": one_frac,
+        "two_three_nights": two_three_frac,
+        "four_plus_nights": 1.0 - one_frac - two_three_frac,
     }
 
 

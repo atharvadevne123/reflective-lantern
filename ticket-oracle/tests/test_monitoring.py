@@ -15,6 +15,7 @@ from app.monitoring import (
 @pytest.fixture()
 def reference_dist():
     import numpy as np
+
     rng = np.random.default_rng(0)
     return rng.normal(0.3, 0.1, 1000).tolist()
 
@@ -22,6 +23,7 @@ def reference_dist():
 @pytest.fixture()
 def stable_dist():
     import numpy as np
+
     rng = np.random.default_rng(1)
     return rng.normal(0.3, 0.1, 1000).tolist()
 
@@ -29,6 +31,7 @@ def stable_dist():
 @pytest.fixture()
 def drifted_dist():
     import numpy as np
+
     rng = np.random.default_rng(2)
     return rng.normal(0.8, 0.05, 1000).tolist()
 

@@ -1,4 +1,5 @@
 """Input validation utility tests."""
+
 from __future__ import annotations
 
 import pytest
@@ -45,9 +46,14 @@ def test_validate_elo_range_invalid(elo):
 
 def test_validate_match_features_clean():
     payload = {
-        "home_wins_last5": 3, "home_draws_last5": 1, "home_losses_last5": 1,
-        "away_wins_last5": 2, "away_draws_last5": 1, "away_losses_last5": 2,
-        "home_elo": 1600.0, "away_elo": 1500.0,
+        "home_wins_last5": 3,
+        "home_draws_last5": 1,
+        "home_losses_last5": 1,
+        "away_wins_last5": 2,
+        "away_draws_last5": 1,
+        "away_losses_last5": 2,
+        "home_elo": 1600.0,
+        "away_elo": 1500.0,
     }
     warnings = validate_match_features(payload)
     assert warnings == []

@@ -66,11 +66,6 @@ def main() -> None:
 
 
 __all__ = [
-    "BENCHMARKS",
-    "bench_event_bus",
-    "bench_metrics_counter",
-    "bench_retry",
-    "bench_token_bucket",
     "main",
 ]
 

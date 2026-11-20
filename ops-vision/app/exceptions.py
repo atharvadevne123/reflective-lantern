@@ -4,6 +4,10 @@
 class OpsVisionError(Exception):
     """Base class for all Ops-Vision application errors."""
 
+    def __repr__(self) -> str:
+        """Return a debug-friendly representation including the class name."""
+        return f"{type(self).__name__}({str(self)!r})"
+
 
 class ModelNotLoadedError(OpsVisionError):
     """Raised when a prediction is attempted before the model is loaded."""

@@ -119,6 +119,38 @@ pytest tests/ -v --tb=short
 
 See `.env.example` for all configurable variables.
 
+## Testing
+
+The test suite lives in `energy_seer/tests/` and covers all public API surface.
+
+```bash
+# Run all tests
+pytest energy_seer/tests/ -v
+
+# Run a specific module's tests
+pytest energy_seer/tests/test_demand_spike_extended.py -v
+
+# Run with coverage report
+pytest energy_seer/tests/ --cov=energy_seer/app --cov-report=term-missing
+```
+
+### Test coverage highlights
+
+| Test file | Module tested | Key scenarios |
+|-----------|--------------|---------------|
+| `test_demand_spike_extended.py` | `demand_spike` | spike detection, severity, rolling count, normalise, trend, smooth, percentile, windows |
+| `test_validators_extended.py` | `validators` | meter ID, alpha, temperature, humidity, readings list, tariff, positive int, non-negative float |
+| `test_peak_demand_extended.py` | `peak_demand` | peak hours, shaving savings, flexibility score, window, load factor, off-peak average, rolling sums |
+| `test_efficiency_score_extended.py` | `efficiency_score` | boundary scores, delta, trend, normalised index, percentile, building comparison, color mapping |
+| `test_cache_extended.py` | `cache` | set/get, TTL, invalidate, evict, size, keys, default, get-or-set, batch update |
+| `test_telemetry_extended.py` | `telemetry` | increment, increment-by, snapshot, all-above, top-N, counter exists, reset, batch |
+| `test_psi_extended.py` | `psi` | PSI report, series trend, batch alert |
+| `test_grid_report_extended.py` | `grid_report` | status, drift, anomaly, health score, alert summary |
+| `test_mlflow_stub_extended.py` | `mlflow_stub` | log params/metrics/model, start/end run, sequence types |
+| `test_forecaster_extended.py` | `forecaster` | linear trend, moving average, exponential smoothing, confidence band |
+| `test_monitoring_extended.py` | `monitoring` | drift compute, reference distributions, drift summary, anomaly summary |
+| `test_aws_stub_extended.py` | `aws_stub` | upload, download, list, delete, model exists |
+
 ## License
 
 MIT — see [LICENSE](LICENSE).

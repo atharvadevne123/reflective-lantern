@@ -119,6 +119,7 @@ class TestLoadBaseline:
 
     def test_baseline_populated(self):
         from app.monitoring import _baseline_stats
+
         assert len(_baseline_stats) > 0
         for vals in _baseline_stats.values():
             assert len(vals) > 0

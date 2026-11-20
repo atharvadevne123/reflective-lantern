@@ -46,11 +46,14 @@ def test_predict_request_rejects_long_ticker():
         PredictRequest(ticker="TOOLONGTICKER", close=100.0, volume=1_000.0)
 
 
-@pytest.mark.parametrize("ticker,close,volume", [
-    ("BTC-USD", 60000.0, 1_000_000.0),
-    ("ETH", 3000.0, 500_000.0),
-    ("NVDA", 900.0, 20_000_000.0),
-])
+@pytest.mark.parametrize(
+    "ticker,close,volume",
+    [
+        ("BTC-USD", 60000.0, 1_000_000.0),
+        ("ETH", 3000.0, 500_000.0),
+        ("NVDA", 900.0, 20_000_000.0),
+    ],
+)
 def test_predict_request_valid_tickers(ticker, close, volume):
     req = PredictRequest(ticker=ticker, close=close, volume=volume)
     assert req.close == close

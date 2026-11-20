@@ -1,4 +1,5 @@
 """FAISS-based similar ticket retrieval for RAG-style context augmentation."""
+
 from __future__ import annotations
 
 import logging
@@ -11,6 +12,7 @@ logger = logging.getLogger(__name__)
 _FAISS_AVAILABLE = False
 try:
     import faiss  # type: ignore[import]
+
     _FAISS_AVAILABLE = True
 except ImportError:
     pass

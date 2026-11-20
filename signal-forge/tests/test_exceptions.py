@@ -23,14 +23,17 @@ def test_signal_forge_error_base():
         raise SignalForgeError("base error")
 
 
-@pytest.mark.parametrize("exc_class,msg", [
-    (FeatureExtractionError, "feature failed"),
-    (ModelNotFoundError, "model not found"),
-    (PredictionError, "prediction failed"),
-    (DriftDetectionError, "drift error"),
-    (DatabaseError, "db error"),
-    (ValidationError, "validation failed"),
-])
+@pytest.mark.parametrize(
+    "exc_class,msg",
+    [
+        (FeatureExtractionError, "feature failed"),
+        (ModelNotFoundError, "model not found"),
+        (PredictionError, "prediction failed"),
+        (DriftDetectionError, "drift error"),
+        (DatabaseError, "db error"),
+        (ValidationError, "validation failed"),
+    ],
+)
 def test_subclasses_inherit_base(exc_class, msg):
     err = exc_class(msg)
     assert isinstance(err, SignalForgeError)

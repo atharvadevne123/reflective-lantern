@@ -19,6 +19,7 @@ from sqlalchemy.orm import Session
 from app.database import get_db, init_db
 from app.features import engineer_single
 from app.logging_config import configure_logging
+from app.middleware import RequestTimingMiddleware, SecurityHeadersMiddleware
 from app.model import MODEL_VERSION, get_metrics, load_model, predict
 from app.monitoring import defect_rate, log_prediction, run_drift_check
 from app.schemas import BatchPredictionResponse, BatchSensorInput
@@ -68,11 +69,6 @@ app.add_middleware(
     allow_origins=os.getenv("CORS_ORIGINS", "*").split(","),
     allow_methods=["*"],
     allow_headers=["*"],
-)
-
-from app.middleware import (
-    RequestTimingMiddleware,
-    SecurityHeadersMiddleware,
 )
 
 app.add_middleware(RequestTimingMiddleware)

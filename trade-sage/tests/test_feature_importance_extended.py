@@ -21,7 +21,12 @@ def fitted_pipeline() -> Pipeline:
     rng = np.random.default_rng(0)
     X = rng.standard_normal((200, 10))
     y = (X[:, 0] + rng.standard_normal(200) > 0).astype(int)
-    pipe = Pipeline([("scaler", StandardScaler()), ("model", RandomForestClassifier(n_estimators=20, random_state=0))])
+    pipe = Pipeline(
+        [
+            ("scaler", StandardScaler()),
+            ("model", RandomForestClassifier(n_estimators=20, random_state=0)),
+        ]
+    )
     pipe.fit(X, y)
     return pipe
 

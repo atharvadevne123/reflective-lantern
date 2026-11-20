@@ -3,10 +3,16 @@
 from __future__ import annotations
 
 __all__ = [
+    "clamp_to_range",
+    "is_non_empty_string",
     "is_valid_email",
+    "is_valid_hostname",
+    "is_valid_ipv4",
     "is_valid_percentage",
+    "is_valid_port",
     "is_valid_temperature_c",
     "is_valid_url",
+    "validate_non_negative",
     "validate_positive",
     "validate_range",
 ]
@@ -111,3 +117,99 @@ def is_valid_url(url: str) -> bool:
             remainder = url[len(scheme) :]
             return bool(remainder) and not remainder.startswith("/")
     return False
+
+
+def is_non_empty_string(value: str) -> bool:
+    """Return True if *value* is a string with at least one non-whitespace character.
+
+    Args:
+        value: String to check.
+
+    Returns:
+        True when the stripped string is non-empty.
+    """
+    return isinstance(value, str) and bool(value.strip())
+
+
+def is_valid_port(port: int) -> bool:
+    """Return True if *port* is a valid TCP/UDP port number (1–65535).
+
+    Args:
+        port: Integer port number.
+
+    Returns:
+        True for values in [1, 65535].
+    """
+    return isinstance(port, int) and 1 <= port <= 65535
+
+
+def clamp_to_range(value: float, low: float, high: float) -> float:
+    """Return *value* clamped to [*low*, *high*].
+
+    Args:
+        value: Numeric value to clamp.
+        low: Inclusive lower bound.
+        high: Inclusive upper bound.
+
+    Returns:
+        *value* bounded to [*low*, *high*].
+    """
+    return max(low, min(high, value))
+
+
+def is_valid_ipv4(address: str) -> bool:
+    """Return True if *address* is a valid IPv4 address string.
+
+    Args:
+        address: String to check, e.g. ``"192.168.1.1"``.
+
+    Returns:
+        True for valid dotted-decimal IPv4 addresses; False otherwise.
+    """
+    parts = address.split(".")
+    if len(parts) != 4:
+        return False
+    for part in parts:
+        if not part.isdigit():
+            return False
+        if not 0 <= int(part) <= 255:
+            return False
+        if len(part) > 1 and part.startswith("0"):
+            return False
+    return True
+
+
+def is_valid_hostname(hostname: str) -> bool:
+    """Return True if *hostname* is a syntactically valid DNS hostname.
+
+    Args:
+        hostname: Hostname string, e.g. ``"api.example.com"``.
+
+    Returns:
+        True if the hostname conforms to basic DNS label rules; False otherwise.
+    """
+    import re
+
+    if not hostname or len(hostname) > 253:
+        return False
+    hostname = hostname.rstrip(".")
+    label_re = re.compile(r"^[a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?$")
+    return all(label_re.match(label) for label in hostname.split("."))
+
+
+def validate_non_negative(value: float, name: str = "value") -> float:
+    """Assert *value* is non-negative (>= 0) and return it.
+
+    Args:
+        value: Numeric value to check.
+        name: Human-readable name used in the error message.
+
+    Returns:
+        *value* unchanged.
+
+    Raises:
+        ValueError: If *value* is negative.
+    """
+    if value < 0:
+        raise ValueError(f"{name} must be non-negative, got {value}")
+    return value

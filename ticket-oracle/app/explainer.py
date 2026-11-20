@@ -47,14 +47,16 @@ def top_features(
         List of dicts with 'feature' and 'importance' (absolute value, rounded).
     """
     if len(feature_names) != len(importances):
-        logger.warning("feature_name_mismatch", extra={"names": len(feature_names), "importances": len(importances)})
+        logger.warning(
+            "feature_name_mismatch",
+            extra={"names": len(feature_names), "importances": len(importances)},
+        )
         return []
 
     abs_imp = np.abs(importances)
     top_idx = np.argsort(abs_imp)[::-1][:top_n]
     return [
-        {"feature": feature_names[i], "importance": round(float(abs_imp[i]), 6)}
-        for i in top_idx
+        {"feature": feature_names[i], "importance": round(float(abs_imp[i]), 6)} for i in top_idx
     ]
 
 

@@ -11,6 +11,7 @@ __all__ = [
     "env_bool",
     "env_float",
     "env_int",
+    "env_str",
     "load_from_env",
 ]
 
@@ -113,3 +114,16 @@ def load_from_env(prefix: str = "APP_") -> ConfigSchema:
         max_workers=env_int(f"{prefix}MAX_WORKERS", default=4),
         request_timeout=env_float(f"{prefix}REQUEST_TIMEOUT", default=30.0),
     )
+
+
+def env_str(key: str, default: str = "") -> str:
+    """Read *key* from environment and return as string.
+
+    Args:
+        key: Environment variable name.
+        default: Returned when the variable is absent.
+
+    Returns:
+        String value of the environment variable, or *default*.
+    """
+    return os.environ.get(key, default)

@@ -1,4 +1,5 @@
 """Time-series trend and performance forecasting for Sport-Cast."""
+
 from __future__ import annotations
 
 import logging
@@ -18,13 +19,21 @@ def linear_trend(values: list[float]) -> dict:
         Dict with 'slope', 'intercept', 'next_predicted' (one step ahead).
     """
     if len(values) < 2:
-        return {"slope": 0.0, "intercept": float(values[0]) if values else 0.0, "next_predicted": float(values[0]) if values else 0.0}
+        return {
+            "slope": 0.0,
+            "intercept": float(values[0]) if values else 0.0,
+            "next_predicted": float(values[0]) if values else 0.0,
+        }
     x = np.arange(len(values), dtype=float)
     y = np.array(values, dtype=float)
     coeffs = np.polyfit(x, y, 1)
     slope, intercept = float(coeffs[0]), float(coeffs[1])
     next_pred = slope * len(values) + intercept
-    return {"slope": round(slope, 4), "intercept": round(intercept, 4), "next_predicted": round(next_pred, 4)}
+    return {
+        "slope": round(slope, 4),
+        "intercept": round(intercept, 4),
+        "next_predicted": round(next_pred, 4),
+    }
 
 
 def rolling_average(values: list[float], window: int = 5) -> list[float]:
@@ -43,7 +52,7 @@ def rolling_average(values: list[float], window: int = 5) -> list[float]:
     result = []
     for i in range(len(arr)):
         start = max(0, i - window + 1)
-        result.append(round(float(arr[start:i + 1].mean()), 4))
+        result.append(round(float(arr[start : i + 1].mean()), 4))
     return result
 
 

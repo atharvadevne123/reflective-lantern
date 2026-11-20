@@ -1,4 +1,5 @@
 """Package version for Property-Sage."""
+
 from __future__ import annotations
 
 VERSION: str = "1.2.0"

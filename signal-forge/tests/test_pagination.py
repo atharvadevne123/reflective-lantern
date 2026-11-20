@@ -46,12 +46,15 @@ def test_page_to_dict_keys():
     assert set(d.keys()) == {"total", "page", "page_size", "total_pages", "has_next", "has_prev"}
 
 
-@pytest.mark.parametrize("total,page_size,expected_pages", [
-    (0, 10, 1),
-    (10, 10, 1),
-    (11, 10, 2),
-    (100, 20, 5),
-])
+@pytest.mark.parametrize(
+    "total,page_size,expected_pages",
+    [
+        (0, 10, 1),
+        (10, 10, 1),
+        (11, 10, 2),
+        (100, 20, 5),
+    ],
+)
 def test_page_total_pages_parametrize(total, page_size, expected_pages):
     p = Page(items=[], total=total, page=1, page_size=page_size)
     assert p.total_pages == expected_pages

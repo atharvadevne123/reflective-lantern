@@ -31,7 +31,9 @@ def validate_ticket_id(ticket_id: str) -> str:
     if not tid:
         raise ValueError("ticket_id must not be empty")
     if not _TICKET_ID_RE.match(tid):
-        raise ValueError(f"ticket_id '{tid}' contains invalid characters (allowed: A-Z, a-z, 0-9, -, _)")
+        raise ValueError(
+            f"ticket_id '{tid}' contains invalid characters (allowed: A-Z, a-z, 0-9, -, _)"
+        )
     return tid
 
 

@@ -77,6 +77,7 @@ def validate_year_built_value(v: int) -> int:
         ValueError: If the year is before 1800 or more than 1 year in the future.
     """
     import datetime
+
     current_year = datetime.date.today().year
     if v < 1800:
         raise ValueError("year_built must be 1800 or later")

@@ -1,4 +1,5 @@
 """Alembic environment for Sport-Cast database migrations."""
+
 from __future__ import annotations
 
 import os

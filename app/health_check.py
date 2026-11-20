@@ -11,10 +11,12 @@ from collections.abc import Callable
 from dataclasses import dataclass, field
 
 __all__ = [
+    "CheckRegistry",
     "CheckResult",
     "HealthRegistry",
     "HealthStatus",
     "check",
+    "run_check",
 ]
 
 
@@ -144,3 +146,29 @@ def registered_check_names() -> list[str]:
         List of check names in alphabetical order.
     """
     return sorted(_default_registry._checks)
+
+
+def run_check(name: str, fn: CheckFn) -> CheckResult:
+    """Run a single ad-hoc check without registering it.
+
+    Args:
+        name: Display name for the check result.
+        fn: Zero-argument callable returning a :class:`CheckResult`.
+
+    Returns:
+        The :class:`CheckResult` produced by *fn*, or a failure result
+        if *fn* raises an exception.
+    """
+    import traceback
+
+    try:
+        return fn()
+    except Exception:
+        return CheckResult(
+            name=name,
+            healthy=False,
+            message=traceback.format_exc(limit=3),
+        )
+
+
+CheckRegistry = HealthRegistry

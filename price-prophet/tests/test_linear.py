@@ -48,6 +48,7 @@ def test_linear_model_coef_empty_before_fit() -> None:
 
 def test_linear_model_predict_raises_before_fit() -> None:
     import pytest
+
     from app.models.linear import LinearPricingModel
 
     m = LinearPricingModel()

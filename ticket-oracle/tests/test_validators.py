@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import pytest
+
 from app.validators import (
     sanitise_text_input,
     validate_day_of_week,

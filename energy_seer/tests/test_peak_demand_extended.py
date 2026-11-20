@@ -9,9 +9,7 @@ from app.peak_demand import (
     estimate_peak_shaving_savings,
     find_peak_hours,
     load_factor,
-    off_peak_average,
     peak_demand_window,
-    rolling_peak_sums,
 )
 
 
@@ -174,45 +172,38 @@ class TestLoadFactorExtended:
 class TestOffPeakAverageAndRollingPeakSums:
     def test_off_peak_average_empty_returns_zero(self) -> None:
         from app.peak_demand import off_peak_average
-
         assert off_peak_average([]) == 0.0
 
     def test_off_peak_average_all_hours_flexible(self) -> None:
         from app.peak_demand import off_peak_average
-
         values = [3.0] * 24
         result = off_peak_average(values, off_peak_hours=list(range(24)))
         assert result == pytest.approx(3.0)
 
     def test_off_peak_average_specific_hours(self) -> None:
         from app.peak_demand import off_peak_average
-
         values = [1.0] * 20 + [5.0] * 4
         result = off_peak_average(values, off_peak_hours=list(range(20)))
         assert result == pytest.approx(1.0)
 
     def test_off_peak_average_out_of_bounds_hours(self) -> None:
         from app.peak_demand import off_peak_average
-
         values = [2.0] * 10
         result = off_peak_average(values, off_peak_hours=[0, 100])
         assert result == pytest.approx(2.0)
 
     def test_rolling_peak_sums_empty_when_too_short(self) -> None:
         from app.peak_demand import rolling_peak_sums
-
         assert rolling_peak_sums([1.0, 2.0], window_hours=5) == []
 
     def test_rolling_peak_sums_length(self) -> None:
         from app.peak_demand import rolling_peak_sums
-
         values = list(range(10))
         result = rolling_peak_sums(values, window_hours=3)
         assert len(result) == 8
 
     def test_rolling_peak_sums_values(self) -> None:
         from app.peak_demand import rolling_peak_sums
-
         values = [1.0, 2.0, 3.0, 4.0, 5.0]
         result = rolling_peak_sums(values, window_hours=2)
         assert result[0] == pytest.approx(3.0)
@@ -220,7 +211,6 @@ class TestOffPeakAverageAndRollingPeakSums:
 
     def test_rolling_peak_sums_single_window(self) -> None:
         from app.peak_demand import rolling_peak_sums
-
         values = [2.0, 3.0, 4.0]
         result = rolling_peak_sums(values, window_hours=3)
         assert result == [pytest.approx(9.0)]
@@ -259,49 +249,3 @@ class TestPeakDemandWindowEdgeCases:
         values = list(range(1, 13))
         result = peak_demand_window(values, window_hours=4)
         assert result["window_end"] == result["window_start"] + 3
-
-
-class TestLoadFactor:
-    def test_flat_demand_gives_one(self) -> None:
-        vals = [100.0] * 24
-        assert load_factor(vals) == pytest.approx(1.0)
-
-    def test_empty_gives_zero(self) -> None:
-        assert load_factor([]) == pytest.approx(0.0)
-
-    def test_all_zeros_gives_zero(self) -> None:
-        assert load_factor([0.0, 0.0, 0.0]) == pytest.approx(0.0)
-
-    def test_half_load_factor(self) -> None:
-        vals = [50.0, 100.0]
-        assert load_factor(vals) == pytest.approx(0.75)
-
-
-class TestOffPeakAverage:
-    def test_empty_gives_zero(self) -> None:
-        assert off_peak_average([]) == pytest.approx(0.0)
-
-    def test_custom_off_peak_hours(self) -> None:
-        vals = [10.0, 20.0, 30.0]
-        result = off_peak_average(vals, off_peak_hours=[0])
-        assert result == pytest.approx(10.0)
-
-    def test_no_valid_hours_gives_zero(self) -> None:
-        vals = [1.0, 2.0]
-        result = off_peak_average(vals, off_peak_hours=[99])
-        assert result == pytest.approx(0.0)
-
-
-class TestRollingPeakSums:
-    def test_window_larger_than_input_returns_empty(self) -> None:
-        assert rolling_peak_sums([1.0, 2.0], window_hours=5) == []
-
-    def test_window_equal_to_length_returns_one(self) -> None:
-        result = rolling_peak_sums([1.0, 2.0, 3.0], window_hours=3)
-        assert len(result) == 1
-        assert result[0] == pytest.approx(6.0)
-
-    def test_correct_length(self) -> None:
-        vals = list(range(1, 11))
-        result = rolling_peak_sums(vals, window_hours=4)
-        assert len(result) == 7

@@ -24,6 +24,7 @@ def run_retraining() -> dict:
     """Execute model retraining and return metrics."""
     sys.path.insert(0, str(Path(__file__).parent.parent))
     from app.model import train_model
+
     metrics = train_model()
     logger.info("Retraining complete: %s", metrics)
     return metrics
@@ -34,6 +35,7 @@ def check_drift() -> list[dict]:
     sys.path.insert(0, str(Path(__file__).parent.parent))
     from app.database import _get_session_factory, init_db
     from app.monitoring import run_drift_check
+
     init_db()
     factory = _get_session_factory()
     db = factory()
@@ -41,7 +43,9 @@ def check_drift() -> list[dict]:
         reports = run_drift_check(db)
         drifted = [r for r in reports if r.get("drift_detected")]
         if drifted:
-            logger.warning("Drift in %d feature(s): %s", len(drifted), [r["feature"] for r in drifted])
+            logger.warning(
+                "Drift in %d feature(s): %s", len(drifted), [r["feature"] for r in drifted]
+            )
         return drifted
     finally:
         db.close()

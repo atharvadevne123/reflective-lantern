@@ -27,8 +27,16 @@ def test_predict_returns_200(client, sample_ticket_payload):
 def test_predict_response_has_required_fields(client, sample_ticket_payload):
     r = client.post("/api/v1/predict", json=sample_ticket_payload)
     body = r.json()
-    for field in ["ticket_id", "priority", "priority_probabilities", "sla_breach_risk",
-                  "sla_breach_predicted", "estimated_resolution_hours", "confidence", "model_version"]:
+    for field in [
+        "ticket_id",
+        "priority",
+        "priority_probabilities",
+        "sla_breach_risk",
+        "sla_breach_predicted",
+        "estimated_resolution_hours",
+        "confidence",
+        "model_version",
+    ]:
         assert field in body, f"Missing field: {field}"
 
 

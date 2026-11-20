@@ -17,8 +17,18 @@ logger = logging.getLogger(__name__)
 PRIORITY_MAP = {"low": 0, "medium": 1, "high": 2, "critical": 3}
 
 URGENCY_KEYWORDS = [
-    "urgent", "critical", "asap", "immediately", "broken", "down",
-    "cannot", "failed", "error", "outage", "blocked", "emergency",
+    "urgent",
+    "critical",
+    "asap",
+    "immediately",
+    "broken",
+    "down",
+    "cannot",
+    "failed",
+    "error",
+    "outage",
+    "blocked",
+    "emergency",
 ]
 
 CATEGORY_KEYWORDS = {
@@ -81,9 +91,9 @@ def extract_structured_features(df: pd.DataFrame) -> pd.DataFrame:
     feats["org_size_log"] = np.log1p(df.get("org_size", pd.Series(500, index=df.index)))
 
     # After-hours flag: tickets after 5pm or before 8am have higher breach risk
-    feats["is_after_hours"] = (
-        (feats["created_hour"] >= 17) | (feats["created_hour"] < 8)
-    ).astype(int)
+    feats["is_after_hours"] = ((feats["created_hour"] >= 17) | (feats["created_hour"] < 8)).astype(
+        int
+    )
     feats["is_weekend"] = (feats["created_dow"] >= 5).astype(int)
     feats["after_hours_x_priority"] = feats["is_after_hours"] * feats["priority_num"]
 
@@ -92,12 +102,8 @@ def extract_structured_features(df: pd.DataFrame) -> pd.DataFrame:
     feats["text_x_urgency"] = feats["text_length"] * feats["urgency_score"]
 
     # Rolling/lag placeholder (filled with mean when single row)
-    feats["lag_resolution_hours"] = df.get(
-        "lag_resolution_hours", pd.Series(8.0, index=df.index)
-    )
-    feats["rolling_breach_rate"] = df.get(
-        "rolling_breach_rate", pd.Series(0.1, index=df.index)
-    )
+    feats["lag_resolution_hours"] = df.get("lag_resolution_hours", pd.Series(8.0, index=df.index))
+    feats["rolling_breach_rate"] = df.get("rolling_breach_rate", pd.Series(0.1, index=df.index))
 
     return feats.fillna(0)
 
@@ -130,7 +136,9 @@ class TextFeatureTransformer(BaseEstimator, TransformerMixin):
         full = np.hstack([struct.values, tfidf_matrix])
         self.scaler_.fit(full)
         self._fitted = True
-        logger.info("TextFeatureTransformer fitted on %d samples, %d features", len(df), full.shape[1])
+        logger.info(
+            "TextFeatureTransformer fitted on %d samples, %d features", len(df), full.shape[1]
+        )
         return self
 
     def transform(self, X: Any) -> np.ndarray:
@@ -143,11 +151,24 @@ class TextFeatureTransformer(BaseEstimator, TransformerMixin):
 
     def get_feature_names(self) -> list[str]:
         struct_cols = [
-            "text_length", "word_count", "urgency_score", "subject_length",
-            "has_question", "kw_network", "kw_hardware", "kw_software",
-            "kw_access", "kw_email", "priority_num", "created_hour",
-            "created_dow", "org_size_log", "urgency_x_priority",
-            "text_x_urgency", "lag_resolution_hours", "rolling_breach_rate",
+            "text_length",
+            "word_count",
+            "urgency_score",
+            "subject_length",
+            "has_question",
+            "kw_network",
+            "kw_hardware",
+            "kw_software",
+            "kw_access",
+            "kw_email",
+            "priority_num",
+            "created_hour",
+            "created_dow",
+            "org_size_log",
+            "urgency_x_priority",
+            "text_x_urgency",
+            "lag_resolution_hours",
+            "rolling_breach_rate",
         ]
         tfidf_cols = [f"tfidf_{t}" for t in self.tfidf_.get_feature_names_out()]
         return struct_cols + tfidf_cols

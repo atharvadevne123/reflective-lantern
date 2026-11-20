@@ -32,6 +32,7 @@ class TestIsAnomalous:
 
     def test_no_index_not_anomalous(self) -> None:
         import app.faiss_index as fi
+
         original = fi._index
         fi._index = None
         result = is_anomalous(np.random.rand(4).astype(np.float32))

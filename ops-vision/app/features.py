@@ -1,6 +1,7 @@
 """Feature engineering pipeline for Ops-Vision SRE incident prediction."""
 
 import logging
+import math
 from typing import Any
 
 import numpy as np
@@ -155,13 +156,23 @@ def validate_positive_float(value: float, name: str) -> float:
     Raises:
         ValueError: If value is negative or non-finite.
     """
-    import math
-
     if not math.isfinite(value):
         raise ValueError(f"{name} must be finite, got {value}")
     if value < 0:
         raise ValueError(f"{name} must be >= 0, got {value}")
     return value
+
+
+def clip_to_unit_interval(value: float) -> float:
+    """Clip a float to [0.0, 1.0], rounding floating-point noise at the edges.
+
+    Args:
+        value: Float value to clip.
+
+    Returns:
+        Value clamped to [0.0, 1.0].
+    """
+    return max(0.0, min(1.0, value))
 
 
 def safe_dataframe_from_dict(payload: dict) -> pd.DataFrame:
@@ -188,11 +199,14 @@ def safe_dataframe_from_dict(payload: dict) -> pd.DataFrame:
 
 __all__ = [
     "ColumnSelector",
+    "ENGINEERED_COLS",
+    "FEATURE_COLS",
     "LatencyErrRatioTransformer",
     "LogLatencyTransformer",
     "ResourcePressureTransformer",
     "ThroughputPressureTransformer",
     "build_feature_pipeline",
+    "clip_to_unit_interval",
     "dataframe_from_dict",
     "safe_dataframe_from_dict",
     "validate_positive_float",

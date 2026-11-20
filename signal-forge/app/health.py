@@ -15,6 +15,7 @@ def check_database(db_session: Any) -> dict[str, Any]:
     """Probe the database connection by running a cheap scalar query."""
     try:
         from sqlalchemy import text
+
         db_session.execute(text("SELECT 1"))
         return {"status": "ok"}
     except Exception as e:
@@ -26,6 +27,7 @@ def check_model() -> dict[str, Any]:
     """Verify the serialised model file is present and loadable."""
     try:
         from app.model import MODEL_PATH
+
         if not MODEL_PATH.exists():
             return {"status": "cold_start", "detail": "model not yet trained"}
         return {"status": "ok", "path": str(MODEL_PATH)}

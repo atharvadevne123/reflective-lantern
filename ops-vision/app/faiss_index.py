@@ -2,6 +2,8 @@
 
 import json
 import logging
+import re
+from collections import Counter
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -23,6 +25,18 @@ class Runbook:
     title: str
     content: str
     category: str
+
+    def __repr__(self) -> str:
+        """Return a compact representation showing title and category."""
+        return f"Runbook(title={self.title!r}, category={self.category!r})"
+
+    def to_dict(self) -> dict:
+        """Serialise this runbook to a JSON-compatible dict."""
+        return {
+            "title": self.title,
+            "content": self.content,
+            "category": self.category,
+        }
 
 
 class RunbookIndex:
@@ -48,14 +62,10 @@ class RunbookIndex:
 
     def _tokenize(self, text: str) -> list[str]:
         """Lowercase and split text into tokens, stripping punctuation."""
-        import re
-
         return re.findall(r"[a-z]+", text.lower())
 
     def _build_vocab(self, corpus: list[str]) -> None:
         """Build vocabulary from corpus, keeping the top embedding_dim terms."""
-        from collections import Counter
-
         counts: Counter = Counter()
         for doc in corpus:
             counts.update(self._tokenize(doc))
@@ -133,6 +143,11 @@ class RunbookIndex:
             results = [(self.runbooks[int(i)], float(scores[i])) for i in top_indices]
 
         return results
+
+    def __repr__(self) -> str:
+        """Return a compact representation showing size and build state."""
+        status = "built" if self.is_built else "empty"
+        return f"RunbookIndex(size={self.size}, {status}, dim={self.embedding_dim})"
 
     @property
     def size(self) -> int:

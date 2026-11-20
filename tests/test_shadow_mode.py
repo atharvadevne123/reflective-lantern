@@ -183,8 +183,12 @@ def test_shadow_runner_primary_result_always_returned(n_calls: int) -> None:
     """call() always returns the primary function's result, ignoring shadow."""
     from app.shadow_mode import ShadowRunner
 
-    primary = lambda x: x * 3
-    shadow = lambda x: x * 99
+    def primary(x):
+        return x * 3
+
+    def shadow(x):
+        return x * 99
+
     runner = ShadowRunner(primary, shadow)
     for i in range(n_calls):
         assert runner.call(i) == i * 3

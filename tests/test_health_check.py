@@ -271,3 +271,43 @@ def test_registry_unregister_removes_check() -> None:
     assert len(registry) == 1
     registry.unregister("removable")
     assert len(registry) == 0
+
+
+class TestRunCheck:
+    def test_successful_check(self) -> None:
+        from app.health_check import CheckResult, run_check
+
+        result = run_check("test", lambda: CheckResult(name="test", healthy=True, message="ok"))
+        assert result.healthy is True
+        assert result.name == "test"
+
+    def test_failed_check_on_exception(self) -> None:
+        from app.health_check import run_check
+
+        def boom() -> None:
+            raise RuntimeError("failure")
+
+        result = run_check("failing", boom)  # type: ignore[arg-type]
+        assert result.healthy is False
+        assert "RuntimeError" in result.message
+
+    def test_unhealthy_result_returned(self) -> None:
+        from app.health_check import CheckResult, run_check
+
+        result = run_check("unhealthy", lambda: CheckResult(name="u", healthy=False, message="bad"))
+        assert result.healthy is False
+
+
+class TestCheckRegistryAlias:
+    def test_check_registry_is_health_registry(self) -> None:
+        from app.health_check import CheckRegistry, HealthRegistry
+
+        assert CheckRegistry is HealthRegistry
+
+    def test_check_registry_instance_works(self) -> None:
+        from app.health_check import CheckRegistry, CheckResult
+
+        reg = CheckRegistry()
+        reg.register("x", lambda: CheckResult(name="x", healthy=True))
+        status = reg.run()
+        assert status.healthy is True

@@ -32,10 +32,7 @@ class TestComputeDrift:
     def test_has_ks_statistic(self) -> None:
         ref = list(range(10))
         cur = list(range(10, 20))
-        result = compute_drift(
-            [float(x) for x in ref],
-            [float(x) for x in cur]
-        )
+        result = compute_drift([float(x) for x in ref], [float(x) for x in cur])
         assert "ks_statistic" in result
 
     def test_has_p_value(self) -> None:

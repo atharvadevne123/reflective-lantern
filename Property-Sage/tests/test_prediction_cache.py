@@ -40,9 +40,7 @@ def test_clear(cache):
     assert cache.size() == 0
 
 
-@pytest.mark.parametrize("payload", [
-    {"bedrooms": 2}, {"bedrooms": 3}, {"sqft": 1000}
-])
+@pytest.mark.parametrize("payload", [{"bedrooms": 2}, {"bedrooms": 3}, {"sqft": 1000}])
 def test_make_key_different_payloads(payload):
     k = PredictionCache.make_key(payload)
     assert isinstance(k, str)

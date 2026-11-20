@@ -26,6 +26,7 @@ def test_engine():
     yield engine
     Base.metadata.drop_all(bind=engine)
     import os as _os
+
     for path in ["./test_ticket_scout.db"]:
         if _os.path.exists(path):
             _os.remove(path)
@@ -57,53 +58,59 @@ def trained_models():
 @pytest.fixture
 def sample_ticket_df():
     """A minimal single-row ticket DataFrame."""
-    return pd.DataFrame([{
-        "subject": "VPN not connecting after the update",
-        "body": "My VPN drops every 10 minutes. Blocking all remote work.",
-        "priority": "high",
-        "created_hour": 9,
-        "created_dow": 1,
-        "org_size": 500,
-        "lag_resolution_hours": 8.0,
-        "rolling_breach_rate": 0.15,
-    }])
+    return pd.DataFrame(
+        [
+            {
+                "subject": "VPN not connecting after the update",
+                "body": "My VPN drops every 10 minutes. Blocking all remote work.",
+                "priority": "high",
+                "created_hour": 9,
+                "created_dow": 1,
+                "org_size": 500,
+                "lag_resolution_hours": 8.0,
+                "rolling_breach_rate": 0.15,
+            }
+        ]
+    )
 
 
 @pytest.fixture
 def sample_batch_df():
     """A small batch of tickets for batch prediction tests."""
-    return pd.DataFrame([
-        {
-            "subject": "Password reset needed",
-            "body": "Account locked out. Please reset my password urgently.",
-            "priority": "critical",
-            "created_hour": 8,
-            "created_dow": 0,
-            "org_size": 200,
-            "lag_resolution_hours": 2.0,
-            "rolling_breach_rate": 0.4,
-        },
-        {
-            "subject": "Outlook not syncing",
-            "body": "Emails stopped arriving since yesterday. Low priority.",
-            "priority": "low",
-            "created_hour": 15,
-            "created_dow": 3,
-            "org_size": 1000,
-            "lag_resolution_hours": 24.0,
-            "rolling_breach_rate": 0.05,
-        },
-        {
-            "subject": "Laptop screen flickering",
-            "body": "Screen flickers intermittently when unplugged from charger.",
-            "priority": "medium",
-            "created_hour": 10,
-            "created_dow": 2,
-            "org_size": 750,
-            "lag_resolution_hours": 8.0,
-            "rolling_breach_rate": 0.1,
-        },
-    ])
+    return pd.DataFrame(
+        [
+            {
+                "subject": "Password reset needed",
+                "body": "Account locked out. Please reset my password urgently.",
+                "priority": "critical",
+                "created_hour": 8,
+                "created_dow": 0,
+                "org_size": 200,
+                "lag_resolution_hours": 2.0,
+                "rolling_breach_rate": 0.4,
+            },
+            {
+                "subject": "Outlook not syncing",
+                "body": "Emails stopped arriving since yesterday. Low priority.",
+                "priority": "low",
+                "created_hour": 15,
+                "created_dow": 3,
+                "org_size": 1000,
+                "lag_resolution_hours": 24.0,
+                "rolling_breach_rate": 0.05,
+            },
+            {
+                "subject": "Laptop screen flickering",
+                "body": "Screen flickers intermittently when unplugged from charger.",
+                "priority": "medium",
+                "created_hour": 10,
+                "created_dow": 2,
+                "org_size": 750,
+                "lag_resolution_hours": 8.0,
+                "rolling_breach_rate": 0.1,
+            },
+        ]
+    )
 
 
 @pytest.fixture
