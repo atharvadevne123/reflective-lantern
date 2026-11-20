@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from app.trend_scorer import TrendScore, rank_posts, score_post
+from app.trend_scorer import TrendScore, filter_by_tier, rank_posts, score_post, top_n_posts
 
 
 def _score(
@@ -103,3 +103,46 @@ def test_extreme_probabilities(viral_prob: float, expected_tier: str) -> None:
         assert result.tier in ("Low", "Medium")
     else:
         assert result.tier in ("High", "Viral")
+
+
+class TestTopNPosts:
+    def test_returns_at_most_n(self) -> None:
+        scores = [_score(viral_probability=0.5, post_id=str(i)) for i in range(20)]
+        result = top_n_posts(scores, n=5)
+        assert len(result) <= 5
+
+    def test_empty_input(self) -> None:
+        assert top_n_posts([], n=10) == []
+
+    def test_fewer_than_n_returns_all(self) -> None:
+        scores = [_score(post_id=str(i)) for i in range(3)]
+        result = top_n_posts(scores, n=10)
+        assert len(result) == 3
+
+    def test_sorted_descending(self) -> None:
+        scores = [_score(viral_probability=p / 10.0, post_id=str(p)) for p in range(1, 11)]
+        result = top_n_posts(scores, n=5)
+        trend_scores = [s.trend_score for s in result]
+        assert trend_scores == sorted(trend_scores, reverse=True)
+
+
+class TestFilterByTier:
+    def test_filters_viral(self) -> None:
+        viral = _score(viral_probability=0.99, author_followers=5_000_000)
+        low = _score(viral_probability=0.01, author_followers=10)
+        result = filter_by_tier([viral, low], "Viral")
+        assert all(s.tier == "Viral" for s in result)
+
+    def test_case_insensitive(self) -> None:
+        s = _score(viral_probability=0.01, author_followers=10)
+        result_lower = filter_by_tier([s], "low")
+        result_upper = filter_by_tier([s], "LOW")
+        assert len(result_lower) == len(result_upper)
+
+    def test_no_match_returns_empty(self) -> None:
+        s = _score(viral_probability=0.5)
+        result = filter_by_tier([s], "NonExistentTier")
+        assert result == []
+
+    def test_empty_input(self) -> None:
+        assert filter_by_tier([], "Viral") == []
