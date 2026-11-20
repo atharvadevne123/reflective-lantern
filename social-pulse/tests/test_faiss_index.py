@@ -99,3 +99,38 @@ def test_search_k_values(k: int) -> None:
         idx.add(_random_vec(rng))
     results = idx.search(_random_vec(rng), k=k)
     assert len(results) <= k
+
+
+class TestPostIndexClear:
+    def test_clear_empties_index(self) -> None:
+        idx = PostIndex(dim=DIM)
+        idx.add(_random_vec())
+        idx.clear()
+        assert idx.size == 0
+
+    def test_clear_allows_new_adds(self) -> None:
+        idx = PostIndex(dim=DIM)
+        for _ in range(3):
+            idx.add(_random_vec())
+        idx.clear()
+        idx.add(_random_vec())
+        assert idx.size == 1
+
+    def test_search_after_clear_returns_empty(self) -> None:
+        idx = PostIndex(dim=DIM)
+        idx.add(_random_vec())
+        idx.clear()
+        assert idx.search(_random_vec(), k=1) == []
+
+    def test_clear_empty_index_noop(self) -> None:
+        idx = PostIndex(dim=DIM)
+        idx.clear()
+        assert idx.size == 0
+
+    def test_clear_resets_metadata(self) -> None:
+        idx = PostIndex(dim=DIM)
+        idx.add(_random_vec(), metadata={"x": 1})
+        idx.clear()
+        idx.add(_random_vec(), metadata={"y": 2})
+        results = idx.search(_random_vec(), k=1)
+        assert "x" not in results[0].metadata
