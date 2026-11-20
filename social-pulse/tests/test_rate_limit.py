@@ -80,9 +80,7 @@ def test_blocks_at_rate_plus_one(rate: int) -> None:
 class TestRatePerMinute:
     def test_60_per_60_is_60(self) -> None:
         from app.rate_limit import RateLimitMiddleware
-        from fastapi import FastAPI
 
-        app = FastAPI()
         middleware = RateLimitMiddleware.__new__(RateLimitMiddleware)
         middleware.rate = 60
         middleware.window = 60
@@ -90,9 +88,7 @@ class TestRatePerMinute:
 
     def test_30_per_60_is_30(self) -> None:
         from app.rate_limit import RateLimitMiddleware
-        from fastapi import FastAPI
 
-        app = FastAPI()
         middleware = RateLimitMiddleware.__new__(RateLimitMiddleware)
         middleware.rate = 30
         middleware.window = 60

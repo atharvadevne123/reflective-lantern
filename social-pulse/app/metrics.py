@@ -156,20 +156,20 @@ def format_metrics_prometheus(metrics: PredictionMetrics) -> str:
         Multi-line string in Prometheus text format.
     """
     lines = [
-        f"# HELP social_pulse_total_predictions Total inference requests logged",
-        f"# TYPE social_pulse_total_predictions gauge",
+        "# HELP social_pulse_total_predictions Total inference requests logged",
+        "# TYPE social_pulse_total_predictions gauge",
         f"social_pulse_total_predictions {metrics.total_predictions}",
-        f"# HELP social_pulse_viral_rate Fraction of predictions labelled viral",
-        f"# TYPE social_pulse_viral_rate gauge",
+        "# HELP social_pulse_viral_rate Fraction of predictions labelled viral",
+        "# TYPE social_pulse_viral_rate gauge",
         f"social_pulse_viral_rate {metrics.viral_rate:.6f}",
-        f"# HELP social_pulse_avg_confidence Mean ensemble confidence",
-        f"# TYPE social_pulse_avg_confidence gauge",
+        "# HELP social_pulse_avg_confidence Mean ensemble confidence",
+        "# TYPE social_pulse_avg_confidence gauge",
         f"social_pulse_avg_confidence {metrics.avg_confidence:.6f}",
-        f"# HELP social_pulse_avg_latency_ms Mean inference latency in ms",
-        f"# TYPE social_pulse_avg_latency_ms gauge",
+        "# HELP social_pulse_avg_latency_ms Mean inference latency in ms",
+        "# TYPE social_pulse_avg_latency_ms gauge",
         f"social_pulse_avg_latency_ms {metrics.avg_latency_ms:.3f}",
-        f"# HELP social_pulse_drifted_features Number of drifted features",
-        f"# TYPE social_pulse_drifted_features gauge",
+        "# HELP social_pulse_drifted_features Number of drifted features",
+        "# TYPE social_pulse_drifted_features gauge",
         f"social_pulse_drifted_features {len(metrics.drifted_features)}",
     ]
     return "\n".join(lines) + "\n"

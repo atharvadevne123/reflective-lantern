@@ -8,7 +8,12 @@ import pytest
 from sqlalchemy.orm import Session
 
 from app.database import Prediction
-from app.metrics import PredictionMetrics, compute_confidence_distribution, compute_metrics, format_metrics_prometheus
+from app.metrics import (
+    PredictionMetrics,
+    compute_confidence_distribution,
+    compute_metrics,
+    format_metrics_prometheus,
+)
 
 
 def _insert_prediction(db: Session, viral: bool = False, latency: float = 10.0) -> Prediction:

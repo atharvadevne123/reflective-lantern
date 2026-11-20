@@ -6,7 +6,11 @@ import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
-from app.middleware import ContentSecurityPolicyMiddleware, CorrelationIdMiddleware, SecurityHeadersMiddleware
+from app.middleware import (
+    ContentSecurityPolicyMiddleware,
+    CorrelationIdMiddleware,
+    SecurityHeadersMiddleware,
+)
 
 
 def _make_app() -> FastAPI:

@@ -4,7 +4,15 @@ from __future__ import annotations
 
 import pytest
 
-from app.trend_scorer import TrendScore, avg_score, filter_by_tier, get_trending_hashtags, rank_posts, score_post, top_n_posts
+from app.trend_scorer import (
+    TrendScore,
+    avg_score,
+    filter_by_tier,
+    get_trending_hashtags,
+    rank_posts,
+    score_post,
+    top_n_posts,
+)
 
 
 def _score(
