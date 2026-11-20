@@ -60,6 +60,29 @@ class BatchPredictResponse(BaseModel):
     model_version: str
 
 
+class SimilaritySearchRequest(BaseModel):
+    """Request body for FAISS similarity search."""
+
+    text: str = Field(..., min_length=1, max_length=2000, description="Query post text.")
+    author_followers: int = Field(0, ge=0, le=500_000_000)
+    has_media: bool = Field(False)
+    has_link: bool = Field(False)
+    hashtag_count: int = Field(0, ge=0, le=100)
+    mention_count: int = Field(0, ge=0, le=100)
+    hour_of_day: int = Field(12, ge=0, le=23)
+    day_of_week: int = Field(0, ge=0, le=6)
+    top_k: int = Field(5, ge=1, le=50, description="Number of similar posts to return.")
+
+    @field_validator("text")
+    @classmethod
+    def strip_text(cls, v: str) -> str:
+        """Strip surrounding whitespace from query text."""
+        stripped = v.strip()
+        if not stripped:
+            raise ValueError("text must not be blank after stripping whitespace")
+        return stripped
+
+
 class ErrorResponse(BaseModel):
     """Standard error response shape."""
 
