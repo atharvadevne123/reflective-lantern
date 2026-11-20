@@ -22,6 +22,7 @@ class ModelNotLoadedError(SocialPulseError):
     """Raised when inference is attempted before the model is loaded."""
 
     def __init__(self) -> None:
+        """Initialise with a fixed message and MODEL_NOT_LOADED code."""
         super().__init__(
             "Model is not loaded. Call /train first.",
             code="MODEL_NOT_LOADED",
