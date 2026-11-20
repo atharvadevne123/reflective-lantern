@@ -7,11 +7,13 @@ import pytest
 from app.validators import (
     check_repetitive_content,
     estimate_reading_time_seconds,
+    is_alpha_text,
     sanitise_text,
     validate_hashtag_consistency,
     validate_mention_consistency,
     validate_sample,
     validate_url,
+    word_count,
 )
 
 
@@ -164,3 +166,48 @@ class TestEstimateReadingTime:
         text = " ".join(["word"] * 238)
         result = estimate_reading_time_seconds(text, wpm=238)
         assert result == pytest.approx(60.0, abs=1.0)
+
+
+class TestIsAlphaText:
+    def test_pure_alpha(self) -> None:
+        assert is_alpha_text("hello") is True
+
+    def test_mixed_alpha_digits(self) -> None:
+        assert is_alpha_text("hello123") is True
+
+    def test_digits_only_false(self) -> None:
+        assert is_alpha_text("12345") is False
+
+    def test_empty_string_false(self) -> None:
+        assert is_alpha_text("") is False
+
+    def test_hashtag_with_text(self) -> None:
+        assert is_alpha_text("#trending") is True
+
+    def test_symbols_only_false(self) -> None:
+        assert is_alpha_text("!!!???") is False
+
+
+class TestWordCount:
+    def test_single_word(self) -> None:
+        assert word_count("hello") == 1
+
+    def test_multiple_words(self) -> None:
+        assert word_count("hello world foo") == 3
+
+    def test_empty_string(self) -> None:
+        assert word_count("") == 0
+
+    def test_extra_spaces(self) -> None:
+        assert word_count("  hi  there  ") == 2
+
+    @pytest.mark.parametrize(
+        "text,expected",
+        [
+            ("a b c d", 4),
+            ("one", 1),
+            ("", 0),
+        ],
+    )
+    def test_parametrized(self, text: str, expected: int) -> None:
+        assert word_count(text) == expected
