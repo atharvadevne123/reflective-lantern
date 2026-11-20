@@ -106,3 +106,12 @@ def get_db() -> Generator[Session, None, None]:
 def init_db() -> None:
     """Create all tables if they do not exist."""
     Base.metadata.create_all(bind=engine)
+
+
+def table_names() -> list[str]:
+    """Return the names of all tables registered in the declarative base.
+
+    Returns:
+        Sorted list of table name strings.
+    """
+    return sorted(Base.metadata.tables.keys())
