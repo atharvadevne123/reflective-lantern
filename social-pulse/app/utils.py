@@ -74,7 +74,7 @@ class Timer:
 
         with Timer() as t:
             ...
-        print(t.elapsed_ms)
+        logger.debug("elapsed: %s ms", t.elapsed_ms)
     """
 
     def __init__(self) -> None:
