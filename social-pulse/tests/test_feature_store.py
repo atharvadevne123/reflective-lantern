@@ -114,6 +114,36 @@ def test_cache_respects_max_size(max_size: int) -> None:
     assert cache.size <= max_size
 
 
+class TestGetAllKeys:
+    def test_empty_cache_returns_empty_list(self) -> None:
+        cache = FeatureCache()
+        assert cache.get_all_keys() == []
+
+    def test_returns_all_keys(self) -> None:
+        cache = FeatureCache()
+        cache.set("alpha", {})
+        cache.set("beta", {})
+        keys = cache.get_all_keys()
+        assert "alpha" in keys
+        assert "beta" in keys
+
+    def test_length_matches_size(self) -> None:
+        cache = FeatureCache()
+        for i in range(5):
+            cache.set(str(i), {})
+        assert len(cache.get_all_keys()) == cache.size
+
+    def test_clear_empties_keys(self) -> None:
+        cache = FeatureCache()
+        cache.set("k", {})
+        cache.clear()
+        assert cache.get_all_keys() == []
+
+    def test_returns_list_type(self) -> None:
+        cache = FeatureCache()
+        assert isinstance(cache.get_all_keys(), list)
+
+
 class TestFeatureCacheWarm:
     def test_warm_inserts_entries(self) -> None:
         cache = FeatureCache(max_size=100)
