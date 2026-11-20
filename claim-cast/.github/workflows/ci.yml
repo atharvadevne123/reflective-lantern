@@ -1,0 +1,39 @@
+name: CI
+
+on:
+  push:
+    paths:
+      - "claim-cast/**"
+  pull_request:
+    paths:
+      - "claim-cast/**"
+
+jobs:
+  lint-and-test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: claim-cast
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Ruff lint
+        run: python -m ruff check . --output-format=github
+
+      - name: Run tests
+        run: python -m pytest tests/ -v --tb=short 2>&1 | tail -60
+        env:
+          DATABASE_URL: sqlite:///./test_ci.db
+          MODEL_PATH: ./model_ci.joblib
+          ANOMALY_PATH: ./anomaly_ci.joblib
+          METRICS_PATH: ./metrics_ci.json
