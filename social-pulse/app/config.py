@@ -54,3 +54,17 @@ def reset_settings() -> None:
     """Reset the singleton (useful in tests to pick up env var changes)."""
     global _settings
     _settings = None
+
+
+def is_valid_model_version(version: str) -> bool:
+    """Return True if *version* follows the MAJOR.MINOR.PATCH semver pattern.
+
+    Args:
+        version: Version string to validate.
+
+    Returns:
+        True for strings like "1.0.0", "2.14.3"; False otherwise.
+    """
+    import re
+
+    return bool(re.fullmatch(r"\d+\.\d+\.\d+", version))
