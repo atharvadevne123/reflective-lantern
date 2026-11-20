@@ -118,6 +118,29 @@ def compute_metrics(db: Session, model_version: str) -> PredictionMetrics:
         )
 
 
+def compute_confidence_distribution(db: Session) -> dict[str, int]:
+    """Bucket ensemble confidence scores into low/medium/high counts.
+
+    Args:
+        db: Active SQLAlchemy session.
+
+    Returns:
+        Dict with keys "low" (< 0.4), "medium" (0.4–0.7), "high" (>= 0.7).
+    """
+    rows = db.query(Prediction.ensemble_confidence).all()
+    counts = {"low": 0, "medium": 0, "high": 0}
+    for (confidence,) in rows:
+        if confidence is None:
+            continue
+        if confidence < 0.4:
+            counts["low"] += 1
+        elif confidence < 0.7:
+            counts["medium"] += 1
+        else:
+            counts["high"] += 1
+    return counts
+
+
 def format_metrics_prometheus(metrics: PredictionMetrics) -> str:
     """Format *metrics* as Prometheus-compatible text exposition.
 
