@@ -43,6 +43,14 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         self.window = window
         self._buckets: dict[str, list[float]] = defaultdict(list)
 
+    def rate_per_minute(self) -> float:
+        """Return the configured rate normalised to requests-per-minute.
+
+        Returns:
+            Requests per minute as a float.
+        """
+        return self.rate / (self.window / 60.0)
+
     def _get_client_ip(self, request: Request) -> str:
         """Extract the real client IP, honoring X-Forwarded-For."""
         forwarded = request.headers.get("X-Forwarded-For")
