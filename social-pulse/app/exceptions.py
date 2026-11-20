@@ -72,3 +72,37 @@ class DriftCheckError(SocialPulseError):
             f"Drift check error: {detail}",
             code="DRIFT_CHECK_ERROR",
         )
+
+
+class RateLimitExceededError(SocialPulseError):
+    """Raised when a client exceeds the configured request rate."""
+
+    def __init__(self, client_ip: str = "unknown") -> None:
+        """Create a rate limit exceeded error.
+
+        Args:
+            client_ip: The IP address of the client that was rate-limited.
+        """
+        super().__init__(
+            f"Rate limit exceeded for client {client_ip}",
+            code="RATE_LIMITED",
+        )
+        self.client_ip = client_ip
+
+
+class InvalidFeatureVectorError(SocialPulseError):
+    """Raised when a feature vector has incorrect dimensionality."""
+
+    def __init__(self, expected: int, got: int) -> None:
+        """Create an invalid feature vector error.
+
+        Args:
+            expected: Expected vector dimensionality.
+            got: Actual dimensionality received.
+        """
+        super().__init__(
+            f"Invalid feature vector: expected dim={expected}, got dim={got}",
+            code="INVALID_FEATURE_VECTOR",
+        )
+        self.expected = expected
+        self.got = got
