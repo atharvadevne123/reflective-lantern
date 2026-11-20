@@ -67,3 +67,30 @@ class TestRunbookIndexError:
         err = RunbookIndexError("index corrupt")
         assert "index corrupt" in str(err)
         assert err.reason == "index corrupt"
+
+
+class TestOpsVisionErrorRepr:
+    def test_repr_includes_class_name(self) -> None:
+        err = OpsVisionError("test msg")
+        assert "OpsVisionError" in repr(err)
+
+    def test_repr_includes_message(self) -> None:
+        err = OpsVisionError("test message")
+        assert "test message" in repr(err)
+
+    def test_subclass_repr_uses_subclass_name(self) -> None:
+        err = ModelNotLoadedError()
+        assert "ModelNotLoadedError" in repr(err)
+
+
+class TestFeatureEngineeringErrorExtra:
+    def test_default_detail_message(self) -> None:
+        err = FeatureEngineeringError()
+        assert "Feature engineering failed" in str(err)
+
+    def test_custom_detail_stored(self) -> None:
+        err = FeatureEngineeringError("pipeline transform error")
+        assert err.detail == "pipeline transform error"
+
+    def test_inherits_from_ops_vision_error(self) -> None:
+        assert issubclass(FeatureEngineeringError, OpsVisionError)

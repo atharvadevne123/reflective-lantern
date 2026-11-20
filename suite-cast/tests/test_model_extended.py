@@ -38,7 +38,6 @@ class TestPredictDemand:
 
     def _make_X(self, n: int = 1):
         import pandas as pd
-
         return pd.DataFrame({"feature": [0.5] * n})
 
     def test_returns_dict(self) -> None:

@@ -25,15 +25,12 @@ class TestFormatDefectRatePct:
     def test_returns_string(self) -> None:
         assert isinstance(format_defect_rate_pct(0.75), str)
 
-    @pytest.mark.parametrize(
-        "rate,expected",
-        [
-            (0.0, "0.00%"),
-            (0.25, "25.00%"),
-            (0.5, "50.00%"),
-            (0.75, "75.00%"),
-            (1.0, "100.00%"),
-        ],
-    )
+    @pytest.mark.parametrize("rate,expected", [
+        (0.0, "0.00%"),
+        (0.25, "25.00%"),
+        (0.5, "50.00%"),
+        (0.75, "75.00%"),
+        (1.0, "100.00%"),
+    ])
     def test_parametrized_rates(self, rate: float, expected: str) -> None:
         assert format_defect_rate_pct(rate) == expected

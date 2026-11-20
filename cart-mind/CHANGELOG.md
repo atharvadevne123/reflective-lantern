@@ -2,6 +2,22 @@
 
 All notable changes to this project are documented in this file.
 
+## [1.2.0] - 2026-11-10
+
+### Added
+- Extended test suites for `app/cache.py`: cache_hit_rate, warm_cache, evict_expired helpers
+- Extended test suites for `app/monitoring.py`: reference windows, rolling_mean, compute_psi, drift_summary
+- Extended test suites for `app/validation.py`: price_discount_pct, cart_value_tier, revenue_impact_score, item_count_flag, cross_field_penalty_score
+- Extended test suites for `app/model.py`: model_fingerprint, predict_intent with real sklearn pipeline
+- Extended test suites for `app/schemas.py`: UserItemFeatures, RecommendRequest, SimilarItemsRequest validation
+
+## [1.1.0] - 2026-11-10
+
+### Added
+- Tests for `revenue_impact_score` covering zero cart value, discount reduction, and negative values
+- Tests for `price_discount_pct` covering zero original price, full discount, and half discount
+- Validation extended tests now cover all major numeric validators
+
 ## [1.0.0] - 2026-08-05
 
 ### Added

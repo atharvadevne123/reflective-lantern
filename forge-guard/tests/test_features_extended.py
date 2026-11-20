@@ -17,9 +17,7 @@ class TestDefectRiskIndex:
         assert score > 0.9
 
     def test_capped_at_one(self) -> None:
-        score = defect_risk_index(
-            temperature=200.0, vibration=100.0, tool_wear=100.0, pressure=200.0
-        )
+        score = defect_risk_index(temperature=200.0, vibration=100.0, tool_wear=100.0, pressure=200.0)
         assert score <= 1.0
 
     def test_temperature_alone(self) -> None:

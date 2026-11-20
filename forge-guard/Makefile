@@ -1,5 +1,5 @@
-.PHONY: install install-dev test test-cov lint format run docker-up docker-down \
-        retrain diagram clean typecheck healthcheck seed
+.PHONY: install install-dev test test-cov test-fast lint format run docker-up docker-down \
+        retrain diagram clean typecheck healthcheck seed check-all
 
 install:
 	pip install -r requirements.txt
@@ -44,6 +44,11 @@ healthcheck:
 
 seed:
 	python scripts/seed_data.py
+
+test-fast:
+	pytest tests/ -x -q --tb=short -m "not slow" 2>&1 | tail -40
+
+check-all: lint typecheck test-cov
 
 clean:
 	find . -type d -name __pycache__ -exec rm -rf {} + 2>/dev/null || true

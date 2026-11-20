@@ -11,7 +11,7 @@ from app.cache import TTLCache, cache_hit_rate, evict_expired, warm_cache
 
 @pytest.fixture()
 def cache() -> TTLCache:
-    return TTLCache(ttl_seconds=10, max_entries=100)
+    return TTLCache(ttl_seconds=10, max_size=100)
 
 
 class TestCacheHitRate:
@@ -56,7 +56,7 @@ class TestWarmCache:
 
 class TestEvictExpired:
     def test_evicts_expired_entries(self) -> None:
-        short_cache = TTLCache(ttl_seconds=1, max_entries=100)
+        short_cache = TTLCache(ttl_seconds=1, max_size=100)
         short_cache.set("k", "v")
         time.sleep(1.1)
         evicted = evict_expired(short_cache)

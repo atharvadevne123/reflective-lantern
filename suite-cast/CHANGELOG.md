@@ -3,6 +3,16 @@
 All notable changes to Suite-Cast are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versioning follows [SemVer](https://semver.org/).
 
+## [1.1.0] — 2026-11-10
+
+### Added
+- Tests for `competitor_rate_ratio` covering zero competitor rate, clamping at min/max
+- Tests for `occupancy_yoy_delta` covering positive growth, negative growth, clamping, and no-change
+- Fixed `length_of_stay_mix` to guarantee sum of probabilities equals exactly 1.0
+
+### Fixed
+- `length_of_stay_mix`: last bucket now computed as `1.0 - one_frac - two_three_frac` to avoid floating-point rounding errors
+
 ## [1.0.0] — 2026-07-15
 
 ### Added

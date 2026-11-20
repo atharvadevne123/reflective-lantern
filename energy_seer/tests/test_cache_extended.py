@@ -227,3 +227,44 @@ class TestCacheDefaultTTLExtended:
         from app.cache import get_cache, set_cache
         set_cache(key, key + "_val")
         assert get_cache(key) == key + "_val"
+
+
+class TestGetOrSet:
+    def setup_method(self) -> None:
+        from app.cache import clear_all
+        clear_all()
+
+    def test_sets_new_key(self) -> None:
+        from app.cache import get_cache, get_or_set
+        result = get_or_set("new_key", "value")
+        assert result == "value"
+        assert get_cache("new_key") == "value"
+
+    def test_returns_existing_value(self) -> None:
+        from app.cache import get_or_set, set_cache
+        set_cache("existing", "old_value")
+        result = get_or_set("existing", "new_value")
+        assert result == "old_value"
+
+
+class TestUpdateMany:
+    def setup_method(self) -> None:
+        from app.cache import clear_all
+        clear_all()
+
+    def test_sets_multiple_keys(self) -> None:
+        from app.cache import get_cache, update_many
+        update_many({"a": 1, "b": 2, "c": 3})
+        assert get_cache("a") == 1
+        assert get_cache("b") == 2
+        assert get_cache("c") == 3
+
+    def test_empty_dict_no_error(self) -> None:
+        from app.cache import update_many
+        update_many({})
+
+    def test_overwrites_existing(self) -> None:
+        from app.cache import get_cache, set_cache, update_many
+        set_cache("x", 10)
+        update_many({"x": 99})
+        assert get_cache("x") == 99

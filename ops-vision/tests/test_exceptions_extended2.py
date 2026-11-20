@@ -61,15 +61,12 @@ class TestExceptionMessages:
         err = FeatureEngineeringError("field missing")
         assert "field missing" in str(err)
 
-    @pytest.mark.parametrize(
-        "exc_cls,msg",
-        [
-            (ModelNotLoadedError, "no model"),
-            (FeatureEngineeringError, "bad input"),
-            (DriftMonitorError, "drift"),
-            (RunbookIndexError, "index error"),
-        ],
-    )
+    @pytest.mark.parametrize("exc_cls,msg", [
+        (ModelNotLoadedError, "no model"),
+        (FeatureEngineeringError, "bad input"),
+        (DriftMonitorError, "drift"),
+        (RunbookIndexError, "index error"),
+    ])
     def test_all_exceptions_preserve_message(self, exc_cls, msg) -> None:
         err = exc_cls(msg)
         assert msg in str(err)

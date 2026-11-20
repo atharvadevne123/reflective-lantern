@@ -58,16 +58,13 @@ class TestSeverityFromConfidence:
     def test_low_below_medium_threshold(self) -> None:
         assert severity_from_confidence(0.4) == "low"
 
-    @pytest.mark.parametrize(
-        "conf,expected",
-        [
-            (1.0, "critical"),
-            (0.9, "critical"),
-            (0.75, "high"),
-            (0.5, "medium"),
-            (0.0, "low"),
-        ],
-    )
+    @pytest.mark.parametrize("conf,expected", [
+        (1.0, "critical"),
+        (0.9, "critical"),
+        (0.75, "high"),
+        (0.5, "medium"),
+        (0.0, "low"),
+    ])
     def test_boundary_values(self, conf: float, expected: str) -> None:
         assert severity_from_confidence(conf) == expected
 

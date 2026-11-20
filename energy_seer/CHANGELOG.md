@@ -5,7 +5,14 @@ This file follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) conve
 
 ## [Unreleased]
 
-### Added
+### Added (2026-11-10)
+- Tests for `demand_percentile` and `smooth_demand` covering boundary conditions and error cases
+- Tests for `load_factor`, `off_peak_average`, `rolling_peak_sums` in peak_demand
+- Tests for `psi_series_trend` and `psi_feature_rank` covering empty inputs and descending sort
+- Tests for `report_trend`, `alert_frequency`, `compute_anomaly_rate` in grid_report
+- Tests for `batch_increment`, `get_many`, `reset_prefix` in telemetry
+- Tests for `validate_temperature`, `validate_humidity`, `validate_positive_int` in validators
+- Tests for `get_or_set` and `update_many` cache functions
 - `demand_spike`: expanded `__all__` to include `spike_windows`, `demand_trend`,
   `demand_percentile`, and `smooth_demand` (functions defined after the original
   `__all__` block were silently excluded from the public API).

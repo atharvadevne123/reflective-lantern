@@ -592,5 +592,321 @@
     ],
     "ruff_status": "passing",
     "email_status": "network_blocked"
+  },
+  {
+    "date": "2026-11-10",
+    "mode": "improvement",
+    "commit_count": 60,
+    "commits": [
+      {
+        "hash": "942a1599",
+        "subject": "docs(60/60): update cart-mind CHANGELOG with 2026-11-10 test additions"
+      },
+      {
+        "hash": "6e4dad89",
+        "subject": "docs(59/60): update ops-vision CHANGELOG with 2026-11-10 test additions"
+      },
+      {
+        "hash": "ace9899f",
+        "subject": "docs(58/60): update forge-guard CHANGELOG with 2026-11-10 test additions"
+      },
+      {
+        "hash": "20c936f8",
+        "subject": "test(57/60): add is_valid_severity, severity_from_confidence, and constant tests in ops-vision"
+      },
+      {
+        "hash": "c69ce22f",
+        "subject": "test(56/60): add OpsVisionError hierarchy and message tests in ops-vision exceptions"
+      },
+      {
+        "hash": "99f23374",
+        "subject": "test(55/60): add defect_risk_index and sensor_range_feature extended tests in forge-guard"
+      },
+      {
+        "hash": "14029cab",
+        "subject": "test(54/60): add Settings defaults and env-var override tests in suite-cast config"
+      },
+      {
+        "hash": "25e6c49e",
+        "subject": "test(53/60): add UserItemFeatures, RecommendRequest, SimilarItemsRequest validation tests in cart-mind"
+      },
+      {
+        "hash": "38fc4d64",
+        "subject": "test(52/60): add MetricsPayload and RunbookSearchRequest validation tests in ops-vision schemas"
+      },
+      {
+        "hash": "ebfbbc27",
+        "subject": "test(51/60): add model_fingerprint and predict_intent tests in cart-mind model"
+      },
+      {
+        "hash": "8caec266",
+        "subject": "test(50/60): add IncidentRateBuffer record, as_array, and property tests in ops-vision"
+      },
+      {
+        "hash": "d536d293",
+        "subject": "test(49/60): add predict_demand and generate_sample_data tests in suite-cast model"
+      },
+      {
+        "hash": "ee239cea",
+        "subject": "test(48/60): add compute_drift and compute_zscore_outliers tests in forge-guard monitoring"
+      },
+      {
+        "hash": "88009b88",
+        "subject": "test(47/60): add format_defect_rate_pct parametrized tests in forge-guard reporting"
+      },
+      {
+        "hash": "b8a52e05",
+        "subject": "test(46/60): add rolling_mean, compute_psi, drift_summary, reference_window tests in cart-mind"
+      },
+      {
+        "hash": "bb737238",
+        "subject": "test(45/60): add DriftMonitor reference_size, drift_rate, and DriftResult tests in ops-vision"
+      },
+      {
+        "hash": "d9987fbd",
+        "subject": "test(44/60): add sensor_z_score, clamp_reading, missing_rate, field_statistics tests in forge-guard"
+      },
+      {
+        "hash": "ec16fc95",
+        "subject": "test(43/60): add revpar, adr, occupancy_delta, seasonality tests in suite-cast features"
+      },
+      {
+        "hash": "c4052a15",
+        "subject": "test(42/60): add price_discount_pct, cart_value_tier, revenue_impact_score tests in cart-mind"
+      },
+      {
+        "hash": "2d4ac46e",
+        "subject": "test(41/60): add count_predictions, avg_confidence, bulk_create tests in ops-vision crud"
+      },
+      {
+        "hash": "f0e4f03e",
+        "subject": "test(40/60): add cache_hit_rate, warm_cache, evict_expired tests in cart-mind"
+      },
+      {
+        "hash": "10766760",
+        "subject": "test(39/60): add validate_positive_float and clip_to_unit_interval tests in ops-vision"
+      },
+      {
+        "hash": "eea7ec03",
+        "subject": "test(38/60): add TTLCache get, size, and purge tests in forge-guard"
+      },
+      {
+        "hash": "5ce024be",
+        "subject": "test(37/60): add rate_spread and drift_severity tests in suite-cast monitoring"
+      },
+      {
+        "hash": "c3bfd9e4",
+        "subject": "test(36/60): add feature_importance_report and clip_outlier_features tests in cart-mind"
+      },
+      {
+        "hash": "ab85ced4",
+        "subject": "test(35/60): add rolling_mean tests in cart-mind monitoring"
+      },
+      {
+        "hash": "372cf31d",
+        "subject": "test(34/60): add Settings field type validation tests in ops-vision config"
+      },
+      {
+        "hash": "38fcf745",
+        "subject": "test(33/60): add validate_batch and missing_rate tests in forge-guard validators"
+      },
+      {
+        "hash": "31fd3a86",
+        "subject": "test(32/60): add download_artifact and S3KeyFor extra tests in Cyber-Guard storage"
+      },
+      {
+        "hash": "c7847a61",
+        "subject": "test(31/60): add PredictionLog query and filter tests in Cyber-Guard database"
+      },
+      {
+        "hash": "075e5e82",
+        "subject": "test(30/60): add prune ordering and reset isolation tests in Cyber-Guard rate_limit"
+      },
+      {
+        "hash": "66a6a8ee",
+        "subject": "test(29/60): add exists and list_artifacts tests in threat-lens aws_stub"
+      },
+      {
+        "hash": "c14d2f0b",
+        "subject": "chore(28/60): add test-cov and check-all targets to energy_seer Makefile"
+      },
+      {
+        "hash": "6fe2d542",
+        "subject": "chore(27/60): add test-cov, test-fast, typecheck, check-all targets to suite-cast Makefile"
+      },
+      {
+        "hash": "00d7eef0",
+        "subject": "chore(26/60): add test-fast and check-all Makefile targets to forge-guard"
+      },
+      {
+        "hash": "ae287647",
+        "subject": "docs(25/60): update energy_seer CHANGELOG with 2026-11-10 test additions"
+      },
+      {
+        "hash": "85d95f58",
+        "subject": "docs(24/60): add v1.1.0 CHANGELOG entry for suite-cast feature test improvements"
+      },
+      {
+        "hash": "6ee4f89c",
+        "subject": "docs(23/60): add v1.1.0 CHANGELOG entry for cart-mind validation test improvements"
+      },
+      {
+        "hash": "1e780678",
+        "subject": "docs(22/60): add v1.1.0 CHANGELOG entry for ops-vision test improvements"
+      },
+      {
+        "hash": "8b1a9364",
+        "subject": "docs(21/60): add v1.2.0 CHANGELOG entry for forge-guard test improvements"
+      },
+      {
+        "hash": "7a811f82",
+        "subject": "test(20/60): add get_or_set and update_many cache tests in energy_seer"
+      },
+      {
+        "hash": "30408f61",
+        "subject": "test(19/60): add temperature, humidity, positive_int validator tests in energy_seer"
+      },
+      {
+        "hash": "d61ded94",
+        "subject": "test(18/60): add batch_increment, get_many, reset_prefix tests in energy_seer telemetry"
+      },
+      {
+        "hash": "b380aa68",
+        "subject": "test(17/60): add report_trend, alert_frequency, compute_anomaly_rate tests in energy_seer"
+      },
+      {
+        "hash": "6c94b54e",
+        "subject": "test(16/60): add psi_series_trend and psi_feature_rank tests in energy_seer"
+      },
+      {
+        "hash": "d09d20cf",
+        "subject": "test(15/60): add load_factor, off_peak_average, rolling_peak_sums tests in energy_seer"
+      },
+      {
+        "hash": "caca9925",
+        "subject": "test(14/60): add demand_percentile and smooth_demand tests in energy_seer"
+      },
+      {
+        "hash": "34326638",
+        "subject": "test(13/60): add competitor_rate_ratio and occupancy_yoy_delta tests in suite-cast"
+      },
+      {
+        "hash": "db528d37",
+        "subject": "test(12/60): add revenue_impact_score and price_discount_pct tests in cart-mind"
+      },
+      {
+        "hash": "396fe756",
+        "subject": "test(11/60): add repr and FeatureEngineeringError tests in ops-vision exceptions"
+      },
+      {
+        "hash": "5560a384",
+        "subject": "test(10/60): add severity_from_confidence parametrized tests in ops-vision"
+      },
+      {
+        "hash": "3115235d",
+        "subject": "test(9/60): add format_defect_rate_pct and reporting edge-case tests in forge-guard"
+      },
+      {
+        "hash": "92724a53",
+        "subject": "test(8/60): add model_prediction_summary and defect_rate tests in forge-guard"
+      },
+      {
+        "hash": "fafa54a8",
+        "subject": "test(7/60): add sensor_range_feature and synthetic data tests in forge-guard"
+      },
+      {
+        "hash": "509b43ca",
+        "subject": "fix(6/60): relax pinned dependency versions in ops-vision and energy-seer to fix install conflicts"
+      },
+      {
+        "hash": "9fe8b5fd",
+        "subject": "fix(5/60): fix Cyber-Guard tests - correct column names, endpoint paths, stale pruning, boto3 mock"
+      },
+      {
+        "hash": "ad8f607e",
+        "subject": "fix(4/60): fix threat-lens test endpoint paths and aws_stub str/Path handling"
+      },
+      {
+        "hash": "95a93821",
+        "subject": "fix(3/60): fix cart-mind test - correct column names and endpoint path"
+      },
+      {
+        "hash": "8a8a18bb",
+        "subject": "fix(2/60): fix suite-cast tests - correct API prefix and test fixture"
+      },
+      {
+        "hash": "640703b0",
+        "subject": "ci: fix ruff lint errors in root CI workflow (1/60)"
+      }
+    ],
+    "files_changed": [
+      "Cyber-Guard/tests/test_database.py",
+      "Cyber-Guard/tests/test_main.py",
+      "Cyber-Guard/tests/test_rate_limit_extended.py",
+      "Cyber-Guard/tests/test_storage.py",
+      "app/cache_utils.py",
+      "app/retry_utils.py",
+      "cart-mind/CHANGELOG.md",
+      "cart-mind/tests/test_cache_extended.py",
+      "cart-mind/tests/test_database.py",
+      "cart-mind/tests/test_features.py",
+      "cart-mind/tests/test_main.py",
+      "cart-mind/tests/test_model_extended.py",
+      "cart-mind/tests/test_monitoring.py",
+      "cart-mind/tests/test_monitoring_extended2.py",
+      "cart-mind/tests/test_schemas_extended.py",
+      "cart-mind/tests/test_validation_extended.py",
+      "cart-mind/tests/test_validation_helpers_extended.py",
+      "energy_seer/CHANGELOG.md",
+      "energy_seer/Makefile",
+      "energy_seer/requirements.txt",
+      "energy_seer/tests/test_cache_extended.py",
+      "energy_seer/tests/test_demand_spike_extended.py",
+      "energy_seer/tests/test_grid_report_extended.py",
+      "energy_seer/tests/test_peak_demand_extended.py",
+      "energy_seer/tests/test_psi_extended.py",
+      "energy_seer/tests/test_telemetry_extended.py",
+      "energy_seer/tests/test_validators_extended.py",
+      "forge-guard/CHANGELOG.md",
+      "forge-guard/Makefile",
+      "forge-guard/app/model.py",
+      "forge-guard/tests/test_cache_extended.py",
+      "forge-guard/tests/test_features.py",
+      "forge-guard/tests/test_features_extended.py",
+      "forge-guard/tests/test_monitoring.py",
+      "forge-guard/tests/test_monitoring_extended.py",
+      "forge-guard/tests/test_reporting.py",
+      "forge-guard/tests/test_reporting_extended.py",
+      "forge-guard/tests/test_validators_extended.py",
+      "forge-guard/tests/test_validators_extended2.py",
+      "ops-vision/CHANGELOG.md",
+      "ops-vision/requirements.txt",
+      "ops-vision/tests/test_config_extended.py",
+      "ops-vision/tests/test_constants.py",
+      "ops-vision/tests/test_constants_extended.py",
+      "ops-vision/tests/test_crud_extended.py",
+      "ops-vision/tests/test_exceptions_extended.py",
+      "ops-vision/tests/test_exceptions_extended2.py",
+      "ops-vision/tests/test_features_extended.py",
+      "ops-vision/tests/test_forecasting.py",
+      "ops-vision/tests/test_forecasting_extended2.py",
+      "ops-vision/tests/test_monitoring.py",
+      "ops-vision/tests/test_monitoring_extended.py",
+      "ops-vision/tests/test_schemas_extended.py",
+      "suite-cast/CHANGELOG.md",
+      "suite-cast/Makefile",
+      "suite-cast/app/features.py",
+      "suite-cast/tests/test_config_extended.py",
+      "suite-cast/tests/test_features_extended.py",
+      "suite-cast/tests/test_features_metrics_extended.py",
+      "suite-cast/tests/test_main.py",
+      "suite-cast/tests/test_model_extended.py",
+      "suite-cast/tests/test_monitoring_extended.py",
+      "threat-lens/app/aws_stub.py",
+      "threat-lens/tests/test_aws_stub.py",
+      "threat-lens/tests/test_main.py"
+    ],
+    "ruff_status": "passing",
+    "email_status": "network_blocked"
   }
 ]

@@ -77,7 +77,8 @@ class TestDriftMonitorDriftRate:
     def test_one_on_all_drifted(self) -> None:
         m = DriftMonitor(features=FEATURES, min_reference=10)
         results = [
-            DriftResult(feature=f, ks_stat=0.9, p_value=0.001, drifted=True) for f in FEATURES
+            DriftResult(feature=f, ks_stat=0.9, p_value=0.001, drifted=True)
+            for f in FEATURES
         ]
         assert m.drift_rate(results) == pytest.approx(1.0)
 
