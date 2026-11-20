@@ -207,6 +207,42 @@ def should_retrain(db: Session, min_new_samples: int = 1000) -> bool:
     return count >= min_new_samples
 
 
+def get_feature_distribution(
+    db: Session,
+    feature: str = "viral_probability",
+) -> dict[str, float]:
+    """Return basic descriptive statistics for a numeric Prediction column.
+
+    Args:
+        db: Active SQLAlchemy session.
+        feature: Column name on the Prediction model to summarise.
+
+    Returns:
+        Dict with keys "mean", "std", "min", "max", "count"; empty dict if
+        the feature is unknown or no predictions exist.
+    """
+    if not hasattr(Prediction, feature):
+        logger.warning("get_feature_distribution: unknown feature %r", feature)
+        return {}
+
+    col = getattr(Prediction, feature)
+    rows = db.query(col).all()
+    if not rows:
+        return {}
+
+    values = np.array([r[0] for r in rows if r[0] is not None], dtype=float)
+    if values.size == 0:
+        return {}
+
+    return {
+        "mean": round(float(np.mean(values)), 4),
+        "std": round(float(np.std(values)), 4),
+        "min": round(float(np.min(values)), 4),
+        "max": round(float(np.max(values)), 4),
+        "count": int(values.size),
+    }
+
+
 def get_prediction_percentiles(
     db: Session,
     feature: str = "viral_probability",
