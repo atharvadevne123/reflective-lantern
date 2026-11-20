@@ -169,3 +169,40 @@ def filter_by_tier(scores: list[TrendScore], tier: str) -> list[TrendScore]:
     """
     target = tier.strip().capitalize()
     return [s for s in scores if s.tier == target]
+
+
+def avg_score(scores: list[TrendScore]) -> float:
+    """Return the mean trend_score across all *scores*.
+
+    Args:
+        scores: List of TrendScore instances.
+
+    Returns:
+        Mean trend_score, or 0.0 if the list is empty.
+    """
+    if not scores:
+        return 0.0
+    return sum(s.trend_score for s in scores) / len(scores)
+
+
+def get_trending_hashtags(scores: list[TrendScore], posts: list[dict[str, Any]], top_k: int = 5) -> list[str]:
+    """Return the most common hashtags among the top-scoring posts.
+
+    Args:
+        scores: Ranked list of TrendScore instances.
+        posts: Original post dicts keyed by "post_id" and "text".
+        top_k: Number of top-k posts to scan for hashtags.
+
+    Returns:
+        List of hashtag strings (without #) sorted by frequency descending.
+    """
+    import re
+    from collections import Counter
+
+    top_ids = {s.post_id for s in scores[:top_k]}
+    counter: Counter[str] = Counter()
+    for post in posts:
+        if post.get("post_id") in top_ids:
+            tags = re.findall(r"#(\w+)", post.get("text", "").lower())
+            counter.update(tags)
+    return [tag for tag, _ in counter.most_common()]
